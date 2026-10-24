@@ -1,0 +1,71 @@
+{
+  "stage": "G1_HOTSPOT_LOOP",
+  "commit": "b98f49e3f84bac8a0e044adfff89c3341e2422d7",
+  "delivery_branch": "codex/web-d1-investment-workbench",
+  "working_tree_delivery": true,
+  "status": "PARTIAL",
+  "action": "no_order",
+  "files_changed": [
+    "src/value_investment_agent/application/hotspot/intraday_completed_plan.py",
+    "src/value_investment_agent/application/hotspot/public_condition_notifications.py",
+    "src/value_investment_agent/application/hotspot/public_observation_session.py",
+    "src/value_investment_agent/infrastructure/hotspot/intraday_bars.py",
+    "src/value_investment_agent/presentation/web_api/condition_alert_routes.py",
+    "web/src/pages/ConditionAlerts/index.tsx",
+    "tests/test_intraday_completed_plan.py",
+    "tests/test_public_condition_notifications.py",
+    "tests/test_public_completed_bar_integration.py"
+  ],
+  "actual_data_used": [
+    "Current public packet pub-e6ecac1599c3cdbe4155 with 14 hotspot observations; all remain formally ineligible and are observation-only.",
+    "Retained browser captures browser-alerts-desktop.png and browser-daily-desktop.png from the local Web workbench."
+  ],
+  "test_only_data_used": [
+    "Injected completed bars, condition transitions, reading lifecycle, duplicate deliveries, stale sessions and restart recovery."
+  ],
+  "tests_passed": {
+    "targeted_four_loop_regression": 75,
+    "full_python_regression": "6662 passed, 44 skipped",
+    "web_regression": 251,
+    "web_typecheck": "PASS",
+    "web_format": "PASS",
+    "web_build": "PASS"
+  },
+  "tests_failed": [],
+  "api_checks": [
+    "Authenticated reminder API tests cover completed-bar source observation, normal-view isolation and TEST_ONLY lifecycle.",
+    "Normal mode remains empty when no admitted reminder exists; TEST_ONLY records do not leak into the normal view."
+  ],
+  "browser_checks": {
+    "status": "PARTIAL",
+    "evidence": [
+      "artifacts/current/four-business-loops/browser-alerts-desktop.png",
+      "artifacts/current/four-business-loops/browser-daily-desktop.png",
+      "artifacts/current/four-business-loops/browser-daily-mobile390.png"
+    ],
+    "interaction_acceptance": "NOT_RUN",
+    "limitation": "Static page evidence exists; a complete real-source positive alert interaction and user acceptance are not claimed."
+  },
+  "replay_checks": [
+    "Completed-bar observations persist across restart, remain deduplicated and preserve read/acknowledged lifecycle.",
+    "A stale or incomplete observation fails closed and cannot become a reminder."
+  ],
+  "negative_checks": [
+    "Outside-session and incomplete-bar observations do not grant price judgment or formal eligibility.",
+    "Public observation is explicitly marked PUBLIC_SOURCE_OBSERVATION_ONLY with formal_eligibility=false."
+  ],
+  "user_visible_result": "The authenticated reminder page can present bounded source-backed conditions and preserves normal-view separation for TEST_ONLY data.",
+  "real_world_gates": {
+    "formal_hotspot_admission": "NOT_PROVEN",
+    "current_signed_positive_chain": "WAITING_REAL_SESSION",
+    "live_monitoring": "NOT_AUTHORIZED",
+    "user_visible_acceptance": "NOT_PASSED",
+    "production_scheduling": "NOT_AUTHORIZED"
+  },
+  "remaining_p0": [],
+  "remaining_p1": [
+    "Collect a complete in-session source-backed positive chain and verify the user-visible inbox interaction end to end.",
+    "Do not treat the current observation-only public packet as an admitted opportunity."
+  ],
+  "next_executable_step": "Run one bounded real-session observation through completed-bar conditions and the authenticated reminder page without changing admissibility rules."
+}

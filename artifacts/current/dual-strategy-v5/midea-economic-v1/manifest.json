@@ -1,0 +1,63 @@
+{
+  "action": "no_order",
+  "status": "UNREGISTERED_RESEARCH_CANDIDATE_VERIFIED_PENDING_INDEPENDENT_REVIEW",
+  "generated_at": "2026-10-21T19:17:12.305055+00:00",
+  "script": {
+    "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/build-inputs.py",
+    "sha256": "82df7d365b65f33b2acd9315b70d1469a4c8c018f169a5cb2f05cbd2bc5c8d07"
+  },
+  "files": [
+    {
+      "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/build-inputs.py",
+      "sha256": "82df7d365b65f33b2acd9315b70d1469a4c8c018f169a5cb2f05cbd2bc5c8d07"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/candidate-binding.json",
+      "sha256": "8456d623778e715148167d035cfe867a60bacd5d233450cde79bc74faa90c2c4"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+      "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.md",
+      "sha256": "d263ee5a473ec320c062552d7385c2cf23b5dda0aa4fa854fd3e0d72aa93d384"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/package.json",
+      "sha256": "1b08925f28c1e9fb70cebb77f99433832b5bc79f12b87ae20aa143b9c7b0f8bc"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/public-draft.json",
+      "sha256": "33f9dc6d84dcd640650bf866bbd9664476a9f9c97186fa8bb259c8c66529f6aa"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/research-case-source.json",
+      "sha256": "e8f9b1053233c3cc3ac738567a4072adaa062ef636c504f7a4e4526c937382dc"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/research-case.json",
+      "sha256": "19160182169c0a837a8c438c0f95c653c8e8429c111f33e584c43f5758eecff0"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/shared-model-check.json",
+      "sha256": "0bb3c12f41e1714e6d47c68b07e09087505b5e562ec199d50fb8ae7cb95a4b78"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/verification.json",
+      "sha256": "573276bd7ca7d18267c14fe7cbd2f117ef6194d45b0c9f99e1d943921c394b94"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/upload-allowlist.json",
+      "sha256": "6da0802ffa9b96255d7afe1911b28f0490e811a414372a6eebab39421a050483"
+    }
+  ],
+  "candidate_binding": {
+    "path": "runtime/midea-economic-v1-20261021T191517191943Z/candidate.json",
+    "sha256": "505713d6d0a2ec88739261da39dec2132eef955699039a033a56db9284022f78"
+  },
+  "verification_binding": {
+    "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/verification.json",
+    "sha256": "573276bd7ca7d18267c14fe7cbd2f117ef6194d45b0c9f99e1d943921c394b94"
+  }
+}

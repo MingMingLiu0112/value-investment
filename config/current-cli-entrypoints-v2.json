@@ -10,6 +10,7 @@
     "all_v1_paths_preserved": true
   },
   "SUPPORTED_PRODUCT_CLI": [
+    "scripts/current/run_daily_workbench.ps1",
     "scripts/current/use_trade_assistant.py",
     "scripts/current/review_research.py",
     "scripts/current/scan_market_hotspots.py",
@@ -34,16 +35,22 @@
     "scripts/current/register_prospective_research.py",
     "scripts/current/build_prospective_baselines.py",
     "scripts/build_company_valuation_result.py",
-    "scripts/run_m2_opportunity_discovery.py",
     "scripts/build_m5_disclosure_review_briefing.py"
   ],
   "SUPPORTED_ENGINEERING_CLI": [
+    "scripts/current/accept_p10_assisted_use.ps1",
+    "scripts/current/audit_p9_readonly.ps1",
+    "scripts/current/review_materiality.py",
     "scripts/current/build_value_research_queue.py",
     "scripts/current/open_m2_pending_research.py",
     "scripts/current/run_agent_research_pilot.py",
     "scripts/current/build_historical_company_closure.py",
     "scripts/current/build_historical_execution_replay.py",
     "scripts/current/replay_workbench_cutoffs.py",
+    "scripts/current/replay_intraday_test_only.py",
+    "scripts/current/replay_pending_candidate.py",
+    "scripts/current/reobserve_pending_sources.py",
+    "scripts/current/prepare_event_scan_supplement.py",
     "scripts/build_m5_disclosure_queue.py",
     "scripts/apply_m5_disclosure_review.py",
     "scripts/run_server_excel_sync.ps1",
@@ -81,10 +88,25 @@
     "scripts/collect_m1_event_scan.py",
     "scripts/collect_m1_dividend_lifecycle.py",
     "scripts/render_m1_human_review_packet.py",
-    "scripts/report_m1_research_dossiers.py"
+    "scripts/report_m1_research_dossiers.py",
+    "scripts/current/start_web_workbench.ps1",
+    "scripts/current/backup_private_portfolio.py",
+    "scripts/current/pin_current_quote_bridge.py",
+    "scripts/current/review_research_validity.py",
+    "scripts/current/review_registered_research_validity.py",
+    "scripts/current/collect_registered_validity_scan.py",
+    "scripts/current/build_daily_research_summary.py",
+    "scripts/run_m2_opportunity_discovery.py",
+    "scripts/current/run_closure_restore_drill.py",
+    "scripts/current/resolve_evidence_stop.py",
+    "scripts/current/audit_decision_writers.py",
+    "scripts/current/audit_research_funnel.py",
+    "scripts/current/build_hotspot_structure_validation.py"
   ],
   "INTERNAL_PRODUCT_HELPERS": [
+    "scripts/current/refresh_current_price_conditions.py",
     "scripts/current/audit_tracked_xlsx_privacy.py",
+    "scripts/current/build_daily_public_packet.py",
     "scripts/current/build_stage3_product_preview.py",
     "scripts/current/daily_product_packet.py",
     "scripts/current/daily_quote_binding.py",
@@ -104,8 +126,8 @@
   ],
   "counts": {
     "product": 26,
-    "engineering": 44,
-    "internal_helpers": 17,
-    "total": 87
+    "engineering": 64,
+    "internal_helpers": 19,
+    "total": 109
   }
 }

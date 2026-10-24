@@ -1,0 +1,1678 @@
+{
+  "schema_version": "materiality-review-handoff-v1",
+  "action": "no_order",
+  "symbol": "600887",
+  "package_binding": {
+    "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/package.json",
+    "sha256": "32ae408776c9efd2ab7a492926db035af85a3ce86d93229ea1a0e2c93479a91c"
+  },
+  "scan_binding": {
+    "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/event-scan.json",
+    "sha256": "fbe2e916a74c04e36be11b062c7fbcfdd54319d37604d5a4a56289a4c7f47ae9"
+  },
+  "model_context": {
+    "input_descriptor_sha256": "d431e3b6aa4162f95b6ecb8a1ecdbabd3f8187315f01acc6654ad1b439b66c18",
+    "research_case_sha256": "9d10cb31215181fccd8d85ba9fc70ec7482e205283fe830097a9ad02c9c512ff",
+    "facts_sha256": "fc07327fe76e26c93731685fe0bb4d3c6ea2cb5a1d131fbb2073377c5d1cf00a",
+    "assumptions_sha256": "ec8dbcd55fde80531afe3eb01f5836db0d25d1f44eb29bd9d51fc9a84a317e62",
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "profile_id": "quality_compounder",
+    "research_as_of": "2026-10-22"
+  },
+  "scan_window": {
+    "scan_from": "2026-07-01",
+    "scan_to": "2026-10-21",
+    "retrieved_at": "2026-10-21T16:15:58.325431+00:00"
+  },
+  "announcements": [
+    {
+      "announcement_id": "1225598746",
+      "published_at": "2026-10-10T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于股份回购进展公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-10/1225598746.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225598746",
+          "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225598746.pdf",
+          "sha256": "bf56246ba820acaa7e523c884da7f5a09f4da62e3d8235c4ee109e4fc208c2f1",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-10/1225598746.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225598739",
+      "published_at": "2026-10-10T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于出资设立风险投资基金相关事项变更的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-10/1225598739.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225598739",
+          "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225598739.pdf",
+          "sha256": "06d7cda0a54663d851fba04762dd72b3cbd197398ce2f24feb4853188a316901",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-10/1225598739.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225591152",
+      "published_at": "2026-10-01T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于2026年度第十、十一期超短期融资券兑付完成的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-01/1225591152.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225591152",
+          "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225591152.pdf",
+          "sha256": "f59267675689f0d77cc142d91e910e2e839adfc0282a260483e0858cc82a1ba3",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-01/1225591152.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225591147",
+      "published_at": "2026-10-01T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于为全资子公司提供担保的进展公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-01/1225591147.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225591147",
+          "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225591147.pdf",
+          "sha256": "62815ec8a6fed035e1ead0d11f73ae8ce8d5f783a2c40a1b090259cbf6f4fe19",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-01/1225591147.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225584526",
+      "published_at": "2026-09-29T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于2026年度第十二、十三、十四期超短期融资券兑付完成的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-29/1225584526.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225584526",
+          "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225584526.pdf",
+          "sha256": "4ef69c200e7b3d0cde3e1b667bcbb4304d15dd6aa406585ca796aa2c3ab4a270",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-29/1225584526.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225578520",
+      "published_at": "2026-09-24T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于2023年持股计划（第三期）完成股票购买的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-24/1225578520.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225578520",
+          "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225578520.pdf",
+          "sha256": "7c669db8bb3b5a362ecad92c6a96745a3b5039a3288f5e13b498e9e72971111c",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-24/1225578520.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225568026",
+      "published_at": "2026-09-17T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司2026年第一次临时股东会决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568026.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225568026",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225568026.pdf",
+          "sha256": "9d3b29c5d2664c07b7bf5074970f0f971806c55f6dbf1fb45bb339787775c0ed",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568026.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225568025",
+      "published_at": "2026-09-17T00:00:00+08:00",
+      "title": "北京天驰君泰律师事务所关于内蒙古伊利实业集团股份有限公司2026年第一次临时股东会的法律意见书",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568025.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225568025",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225568025.pdf",
+          "sha256": "4a836cfeca6078c7db7397e00d949a30a00237e6041b738da3b6aff9a382f9ae",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568025.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225568022",
+      "published_at": "2026-09-17T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于以集中竞价交易方式回购公司股份的回购报告书",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568022.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225568022",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225568022.pdf",
+          "sha256": "5e5baa57776faf72d1993606f9044cb634298615c6841a3aedb30dbc52b67583",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568022.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225568017",
+      "published_at": "2026-09-17T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于回购股份减少注册资本通知债权人的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568017.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225568017",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225568017.pdf",
+          "sha256": "65e4ed5f54c235e887f34b6c98f14f993d283b1b810cd059a2c1b7c958ea1ed3",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568017.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225559652",
+      "published_at": "2026-09-12T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于为控股子公司提供担保的进展公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-12/1225559652.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225559652",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225559652.pdf",
+          "sha256": "2b0109b9633f77a0eaba8e86769fb3a7f48736584c87dbfb4a6151017bfc9e44",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-12/1225559652.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225559649",
+      "published_at": "2026-09-12T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于回购股份事项前十名股东持股情况的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-12/1225559649.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225559649",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225559649.pdf",
+          "sha256": "fed832b763bcd241a09dcad4a1e6a250ad24d2892dabcc00a4098feedfc513a1",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-12/1225559649.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225552949",
+      "published_at": "2026-09-09T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司2026年第一次临时股东会会议资料",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-09/1225552949.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225552949",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225552949.pdf",
+          "sha256": "9881a0bac7b205736c0a5be5932145164f1c86e46d6f5c7ab2cee49bdbad55e2",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-09/1225552949.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225547701",
+      "published_at": "2026-09-05T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司2023年持股计划（第三期）第二次持有人会议决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-05/1225547701.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225547701",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225547701.pdf",
+          "sha256": "382ce62c80197a2c343d5288db0445ffa62681e68e0e6e64f5488562f8c2b56e",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-05/1225547701.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225547678",
+      "published_at": "2026-09-05T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司第六期长期服务计划第二次持有人会议决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-05/1225547678.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225547678",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225547678.pdf",
+          "sha256": "b5ef55521fda3a39edc95d72e23eafc5318010e19214db0096684a3967382ba1",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-05/1225547678.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225536213",
+      "published_at": "2026-09-01T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于回购股份事项前十名股东持股情况的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-01/1225536213.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225536213",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225536213.pdf",
+          "sha256": "6286c438ecc425f204c1e9a4fb7a0a037f330558c084d45c68eedb2b1af1a05b",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-01/1225536213.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225511505",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司2026年半年度报告摘要",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511505.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225511505",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511505.pdf",
+          "sha256": "4bfeb24fa8d2974576eacfa7e9785561d296d789754344445a990306b812edaf",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511505.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225511493",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于计提资产减值准备的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511493.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225511493",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511493.pdf",
+          "sha256": "bf3a21d0c92b4f05c8c484720e3480396d4b00b78df3e94fce3e1476acc85d2d",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511493.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225511485",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司第十二届董事会第一次会议决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511485.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225511485",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511485.pdf",
+          "sha256": "77b0025534be78d6cd5d8efeae8d0b43b77d03921a214820280bbe8a02d0d63d",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511485.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225511474",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司2026年半年度募集资金存放、管理与实际使用情况的专项报告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511474.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225511474",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511474.pdf",
+          "sha256": "0a086e25a805acc62c4b5cfcc1cc80aa75d6d20713c9f960f771d8199aeabed9",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511474.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225511473",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于以集中竞价交易方式回购公司股份方案的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511473.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225511473",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511473.pdf",
+          "sha256": "afdd5cf950e7b1910470e57ef63ac09d65ba88c14e115566425eb4715817956e",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511473.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225511470",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于2026年半年度经营数据的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511470.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225511470",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511470.pdf",
+          "sha256": "c84f92a52e3018c17c8b20d49ca6a96d5e9d4b6e514f4b4bfdfb2aaf6a4f20e1",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511470.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225511468",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于召开2026年第一次临时股东会的通知",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511468.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225511468",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511468.pdf",
+          "sha256": "af7947f63ab18f89ae8e9af1bbdee98346d3401b4ac48678cbfa4746bdae45da",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511468.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225511466",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司第十二届董事会临时会议决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511466.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225511466",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511466.pdf",
+          "sha256": "154e9f61da262b53a84d6d3123c8439f81ad1ab7ffcbe66249c3cd280745235e",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511466.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225511409",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司2026年半年度报告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225511409",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511409.pdf",
+          "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225496541",
+      "published_at": "2026-08-25T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于收到中国银行间市场交易商协会《接受注册通知书》的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-25/1225496541.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225496541",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225496541.pdf",
+          "sha256": "67e97a323a9cde855100237a15e8847252371b6e056fd59332d2e399397102af",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-25/1225496541.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225481292",
+      "published_at": "2026-08-20T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于召开2026年半年度业绩说明会的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-20/1225481292.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225481292",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225481292.pdf",
+          "sha256": "720d4cc94202ff6eb76159e175542f47c63dfc0b721cfb299ec8fc9b21281518",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-20/1225481292.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225476619",
+      "published_at": "2026-08-18T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于为呼和浩特市伊兴奶业投资管理有限公司提供担保的进展公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-18/1225476619.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225476619",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225476619.pdf",
+          "sha256": "fbfa10a1588378429b747fd70a3c19eefb55838e49f309a943b986979ffb1c1b",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-18/1225476619.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225436626",
+      "published_at": "2026-07-23T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于补选2023年持股计划管理委员会委员的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-23/1225436626.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225436626",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225436626.pdf",
+          "sha256": "aeb07c1aa8461ac93021cb9638b75d85e213760a2d5fe3359f53d8d4a3651a1c",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-23/1225436626.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225436623",
+      "published_at": "2026-07-23T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于补选长期服务计划管理委员会委员的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-23/1225436623.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225436623",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225436623.pdf",
+          "sha256": "9e646e92a90809b9163523d08768c0ab82d53f525b514d184c304a908f6d34d9",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-23/1225436623.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225422777",
+      "published_at": "2026-07-15T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于股东股份质押公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-15/1225422777.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225422777",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225422777.pdf",
+          "sha256": "816bf7a70547c76f31c8c0d09fdfc70c0f1a1d9184a778d2239e37954ea162b2",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-15/1225422777.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225418978",
+      "published_at": "2026-07-11T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于全资子公司内蒙古惠商融资担保有限公司2026年第二季度对外担保情况公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-11/1225418978.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225418978",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225418978.pdf",
+          "sha256": "81d781db799d3ac8c6e1d17c48ef72c18505c0ab6ba74f198ad2743b1b562073",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-11/1225418978.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225412264",
+      "published_at": "2026-07-07T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于2026年度第十、十一、十二、十三、十四期超短期融资券发行结果的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-07/1225412264.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-0:cninfo:1225412264",
+          "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225412264.pdf",
+          "sha256": "f8c529139b7f49d73f355ecd41c8dea44e68ff35765379538dd090ccba5f6a2d",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-07/1225412264.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225603138",
+      "published_at": "2026-10-14T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于2026年度第十五、十六、十七、十八、十九期超短期融资券发行结果的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603138.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-1:cninfo:1225603138",
+          "path": "runtime/web-first-event-coverage/600887-20261018/600887-1225603138.pdf",
+          "sha256": "bb98b2d13f492eed41c090e96156af41c41bdb1ef2a4d4d5a07ae197d5281d19",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603138.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225600810",
+      "published_at": "2026-10-13T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于全资子公司内蒙古惠商融资担保有限公司2026年第三季度对外担保情况公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-13/1225600810.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-1:cninfo:1225600810",
+          "path": "runtime/web-first-event-coverage/600887-20261018/600887-1225600810.pdf",
+          "sha256": "1ba54ca786f66efbaebe67f6e6c17cb50f52284251bd46c3b7ae7f226be6a3e2",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-13/1225600810.PDF"
+        }
+      ]
+    },
+    {
+      "announcement_id": "1225608261",
+      "published_at": "2026-10-17T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于为控股子公司提供担保的进展公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608261.PDF",
+      "evidence_refs": [
+        {
+          "id": "window-2:cninfo:1225608261",
+          "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/600887-1225608261.pdf",
+          "sha256": "59d39ce2e5792bf0cba3311c6e0793ca2ad4a453f0ab48c5628e35cd9ada5896",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608261.PDF"
+        }
+      ]
+    }
+  ],
+  "signature_contract": {
+    "algorithm": "Ed25519",
+    "canonicalization": "canonical_contract_payload",
+    "purpose_hex": "76616c75652d696e766573746d656e742f6d6174657269616c6974792d72657365617263682d726573706f6e73652f763100",
+    "required_scope": "human_event_materiality",
+    "trust_schema": "research-review-transport-trust-root-v1",
+    "envelope_fields": [
+      "payload",
+      "signature"
+    ]
+  },
+  "unsigned_response": {
+    "schema_version": "materiality-review-response-v1",
+    "action": "no_order",
+    "symbol": "600887",
+    "handoff_sha256": "e74a4fcb621f38adbe56c0805c8970ad71439c2c3a980f5bd2909679531c1980",
+    "model_context": {
+      "input_descriptor_sha256": "d431e3b6aa4162f95b6ecb8a1ecdbabd3f8187315f01acc6654ad1b439b66c18",
+      "research_case_sha256": "9d10cb31215181fccd8d85ba9fc70ec7482e205283fe830097a9ad02c9c512ff",
+      "facts_sha256": "fc07327fe76e26c93731685fe0bb4d3c6ea2cb5a1d131fbb2073377c5d1cf00a",
+      "assumptions_sha256": "ec8dbcd55fde80531afe3eb01f5836db0d25d1f44eb29bd9d51fc9a84a317e62",
+      "model_id": "residual_income_or_equity_value",
+      "model_version": "residual-income-equity-shared-dated-v2",
+      "profile_id": "quality_compounder",
+      "research_as_of": "2026-10-22"
+    },
+    "reviewer_id": null,
+    "reviewed_at": null,
+    "event_materiality": {
+      "schema_version": "post-m1-event-materiality-v1",
+      "action": "no_order",
+      "review_id": null,
+      "symbol": "600887",
+      "scan_id": "daily-event-fbe2e916a74c04e36be11b062c7fbcfdd54319d37604d5a4a56289a4c7f47ae9",
+      "scan_sha256": "fbe2e916a74c04e36be11b062c7fbcfdd54319d37604d5a4a56289a4c7f47ae9",
+      "scan_from": "2026-07-01",
+      "scan_to": "2026-10-21",
+      "reviewed_at": null,
+      "review_as_of": null,
+      "reviewer_type": "human_research_lead",
+      "reviewer_id": null,
+      "reviewer_authorization_ref": null,
+      "model_context": {
+        "input_descriptor_sha256": "d431e3b6aa4162f95b6ecb8a1ecdbabd3f8187315f01acc6654ad1b439b66c18",
+        "research_case_sha256": "9d10cb31215181fccd8d85ba9fc70ec7482e205283fe830097a9ad02c9c512ff",
+        "facts_sha256": "fc07327fe76e26c93731685fe0bb4d3c6ea2cb5a1d131fbb2073377c5d1cf00a",
+        "assumptions_sha256": "ec8dbcd55fde80531afe3eb01f5836db0d25d1f44eb29bd9d51fc9a84a317e62",
+        "model_id": "residual_income_or_equity_value",
+        "model_version": "residual-income-equity-shared-dated-v2",
+        "profile_id": "quality_compounder",
+        "research_as_of": "2026-10-22"
+      },
+      "evidence_refs": [
+        {
+          "id": "daily-event-fbe2e916a74c04e36be11b062c7fbcfdd54319d37604d5a4a56289a4c7f47ae9",
+          "symbol": "600887",
+          "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/event-scan.json",
+          "sha256": "fbe2e916a74c04e36be11b062c7fbcfdd54319d37604d5a4a56289a4c7f47ae9"
+        }
+      ],
+      "decisions": [
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225598746",
+          "title": "内蒙古伊利实业集团股份有限公司关于股份回购进展公告",
+          "published_at": "2026-10-10T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225598746",
+            "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225598746.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-10/1225598746.PDF"
+          },
+          "source_sha256": "bf56246ba820acaa7e523c884da7f5a09f4da62e3d8235c4ee109e4fc208c2f1",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225598739",
+          "title": "内蒙古伊利实业集团股份有限公司关于出资设立风险投资基金相关事项变更的公告",
+          "published_at": "2026-10-10T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225598739",
+            "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225598739.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-10/1225598739.PDF"
+          },
+          "source_sha256": "06d7cda0a54663d851fba04762dd72b3cbd197398ce2f24feb4853188a316901",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225591152",
+          "title": "内蒙古伊利实业集团股份有限公司关于2026年度第十、十一期超短期融资券兑付完成的公告",
+          "published_at": "2026-10-01T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225591152",
+            "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225591152.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-01/1225591152.PDF"
+          },
+          "source_sha256": "f59267675689f0d77cc142d91e910e2e839adfc0282a260483e0858cc82a1ba3",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225591147",
+          "title": "内蒙古伊利实业集团股份有限公司关于为全资子公司提供担保的进展公告",
+          "published_at": "2026-10-01T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225591147",
+            "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225591147.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-01/1225591147.PDF"
+          },
+          "source_sha256": "62815ec8a6fed035e1ead0d11f73ae8ce8d5f783a2c40a1b090259cbf6f4fe19",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225584526",
+          "title": "内蒙古伊利实业集团股份有限公司关于2026年度第十二、十三、十四期超短期融资券兑付完成的公告",
+          "published_at": "2026-09-29T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225584526",
+            "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225584526.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-29/1225584526.PDF"
+          },
+          "source_sha256": "4ef69c200e7b3d0cde3e1b667bcbb4304d15dd6aa406585ca796aa2c3ab4a270",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225578520",
+          "title": "内蒙古伊利实业集团股份有限公司关于2023年持股计划（第三期）完成股票购买的公告",
+          "published_at": "2026-09-24T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225578520",
+            "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225578520.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-24/1225578520.PDF"
+          },
+          "source_sha256": "7c669db8bb3b5a362ecad92c6a96745a3b5039a3288f5e13b498e9e72971111c",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225568026",
+          "title": "内蒙古伊利实业集团股份有限公司2026年第一次临时股东会决议公告",
+          "published_at": "2026-09-17T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225568026",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225568026.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568026.PDF"
+          },
+          "source_sha256": "9d3b29c5d2664c07b7bf5074970f0f971806c55f6dbf1fb45bb339787775c0ed",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225568025",
+          "title": "北京天驰君泰律师事务所关于内蒙古伊利实业集团股份有限公司2026年第一次临时股东会的法律意见书",
+          "published_at": "2026-09-17T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225568025",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225568025.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568025.PDF"
+          },
+          "source_sha256": "4a836cfeca6078c7db7397e00d949a30a00237e6041b738da3b6aff9a382f9ae",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225568022",
+          "title": "内蒙古伊利实业集团股份有限公司关于以集中竞价交易方式回购公司股份的回购报告书",
+          "published_at": "2026-09-17T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225568022",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225568022.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568022.PDF"
+          },
+          "source_sha256": "5e5baa57776faf72d1993606f9044cb634298615c6841a3aedb30dbc52b67583",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225568017",
+          "title": "内蒙古伊利实业集团股份有限公司关于回购股份减少注册资本通知债权人的公告",
+          "published_at": "2026-09-17T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225568017",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225568017.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568017.PDF"
+          },
+          "source_sha256": "65e4ed5f54c235e887f34b6c98f14f993d283b1b810cd059a2c1b7c958ea1ed3",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225559652",
+          "title": "内蒙古伊利实业集团股份有限公司关于为控股子公司提供担保的进展公告",
+          "published_at": "2026-09-12T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225559652",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225559652.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-12/1225559652.PDF"
+          },
+          "source_sha256": "2b0109b9633f77a0eaba8e86769fb3a7f48736584c87dbfb4a6151017bfc9e44",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225559649",
+          "title": "内蒙古伊利实业集团股份有限公司关于回购股份事项前十名股东持股情况的公告",
+          "published_at": "2026-09-12T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225559649",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225559649.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-12/1225559649.PDF"
+          },
+          "source_sha256": "fed832b763bcd241a09dcad4a1e6a250ad24d2892dabcc00a4098feedfc513a1",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225552949",
+          "title": "内蒙古伊利实业集团股份有限公司2026年第一次临时股东会会议资料",
+          "published_at": "2026-09-09T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225552949",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225552949.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-09/1225552949.PDF"
+          },
+          "source_sha256": "9881a0bac7b205736c0a5be5932145164f1c86e46d6f5c7ab2cee49bdbad55e2",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225547701",
+          "title": "内蒙古伊利实业集团股份有限公司2023年持股计划（第三期）第二次持有人会议决议公告",
+          "published_at": "2026-09-05T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225547701",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225547701.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-05/1225547701.PDF"
+          },
+          "source_sha256": "382ce62c80197a2c343d5288db0445ffa62681e68e0e6e64f5488562f8c2b56e",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225547678",
+          "title": "内蒙古伊利实业集团股份有限公司第六期长期服务计划第二次持有人会议决议公告",
+          "published_at": "2026-09-05T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225547678",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225547678.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-05/1225547678.PDF"
+          },
+          "source_sha256": "b5ef55521fda3a39edc95d72e23eafc5318010e19214db0096684a3967382ba1",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225536213",
+          "title": "内蒙古伊利实业集团股份有限公司关于回购股份事项前十名股东持股情况的公告",
+          "published_at": "2026-09-01T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225536213",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225536213.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-01/1225536213.PDF"
+          },
+          "source_sha256": "6286c438ecc425f204c1e9a4fb7a0a037f330558c084d45c68eedb2b1af1a05b",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225511505",
+          "title": "内蒙古伊利实业集团股份有限公司2026年半年度报告摘要",
+          "published_at": "2026-08-27T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225511505",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511505.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511505.PDF"
+          },
+          "source_sha256": "4bfeb24fa8d2974576eacfa7e9785561d296d789754344445a990306b812edaf",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225511493",
+          "title": "内蒙古伊利实业集团股份有限公司关于计提资产减值准备的公告",
+          "published_at": "2026-08-27T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225511493",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511493.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511493.PDF"
+          },
+          "source_sha256": "bf3a21d0c92b4f05c8c484720e3480396d4b00b78df3e94fce3e1476acc85d2d",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225511485",
+          "title": "内蒙古伊利实业集团股份有限公司第十二届董事会第一次会议决议公告",
+          "published_at": "2026-08-27T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225511485",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511485.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511485.PDF"
+          },
+          "source_sha256": "77b0025534be78d6cd5d8efeae8d0b43b77d03921a214820280bbe8a02d0d63d",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225511474",
+          "title": "内蒙古伊利实业集团股份有限公司2026年半年度募集资金存放、管理与实际使用情况的专项报告",
+          "published_at": "2026-08-27T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225511474",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511474.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511474.PDF"
+          },
+          "source_sha256": "0a086e25a805acc62c4b5cfcc1cc80aa75d6d20713c9f960f771d8199aeabed9",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225511473",
+          "title": "内蒙古伊利实业集团股份有限公司关于以集中竞价交易方式回购公司股份方案的公告",
+          "published_at": "2026-08-27T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225511473",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511473.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511473.PDF"
+          },
+          "source_sha256": "afdd5cf950e7b1910470e57ef63ac09d65ba88c14e115566425eb4715817956e",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225511470",
+          "title": "内蒙古伊利实业集团股份有限公司关于2026年半年度经营数据的公告",
+          "published_at": "2026-08-27T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225511470",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511470.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511470.PDF"
+          },
+          "source_sha256": "c84f92a52e3018c17c8b20d49ca6a96d5e9d4b6e514f4b4bfdfb2aaf6a4f20e1",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225511468",
+          "title": "内蒙古伊利实业集团股份有限公司关于召开2026年第一次临时股东会的通知",
+          "published_at": "2026-08-27T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225511468",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511468.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511468.PDF"
+          },
+          "source_sha256": "af7947f63ab18f89ae8e9af1bbdee98346d3401b4ac48678cbfa4746bdae45da",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225511466",
+          "title": "内蒙古伊利实业集团股份有限公司第十二届董事会临时会议决议公告",
+          "published_at": "2026-08-27T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225511466",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511466.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511466.PDF"
+          },
+          "source_sha256": "154e9f61da262b53a84d6d3123c8439f81ad1ab7ffcbe66249c3cd280745235e",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225511409",
+          "title": "内蒙古伊利实业集团股份有限公司2026年半年度报告",
+          "published_at": "2026-08-27T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225511409",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511409.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225496541",
+          "title": "内蒙古伊利实业集团股份有限公司关于收到中国银行间市场交易商协会《接受注册通知书》的公告",
+          "published_at": "2026-08-25T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225496541",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225496541.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-25/1225496541.PDF"
+          },
+          "source_sha256": "67e97a323a9cde855100237a15e8847252371b6e056fd59332d2e399397102af",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225481292",
+          "title": "内蒙古伊利实业集团股份有限公司关于召开2026年半年度业绩说明会的公告",
+          "published_at": "2026-08-20T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225481292",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225481292.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-20/1225481292.PDF"
+          },
+          "source_sha256": "720d4cc94202ff6eb76159e175542f47c63dfc0b721cfb299ec8fc9b21281518",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225476619",
+          "title": "内蒙古伊利实业集团股份有限公司关于为呼和浩特市伊兴奶业投资管理有限公司提供担保的进展公告",
+          "published_at": "2026-08-18T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225476619",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225476619.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-18/1225476619.PDF"
+          },
+          "source_sha256": "fbfa10a1588378429b747fd70a3c19eefb55838e49f309a943b986979ffb1c1b",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225436626",
+          "title": "内蒙古伊利实业集团股份有限公司关于补选2023年持股计划管理委员会委员的公告",
+          "published_at": "2026-07-23T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225436626",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225436626.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-23/1225436626.PDF"
+          },
+          "source_sha256": "aeb07c1aa8461ac93021cb9638b75d85e213760a2d5fe3359f53d8d4a3651a1c",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225436623",
+          "title": "内蒙古伊利实业集团股份有限公司关于补选长期服务计划管理委员会委员的公告",
+          "published_at": "2026-07-23T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225436623",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225436623.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-23/1225436623.PDF"
+          },
+          "source_sha256": "9e646e92a90809b9163523d08768c0ab82d53f525b514d184c304a908f6d34d9",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225422777",
+          "title": "内蒙古伊利实业集团股份有限公司关于股东股份质押公告",
+          "published_at": "2026-07-15T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225422777",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225422777.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-15/1225422777.PDF"
+          },
+          "source_sha256": "816bf7a70547c76f31c8c0d09fdfc70c0f1a1d9184a778d2239e37954ea162b2",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225418978",
+          "title": "内蒙古伊利实业集团股份有限公司关于全资子公司内蒙古惠商融资担保有限公司2026年第二季度对外担保情况公告",
+          "published_at": "2026-07-11T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225418978",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225418978.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-11/1225418978.PDF"
+          },
+          "source_sha256": "81d781db799d3ac8c6e1d17c48ef72c18505c0ab6ba74f198ad2743b1b562073",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225412264",
+          "title": "内蒙古伊利实业集团股份有限公司关于2026年度第十、十一、十二、十三、十四期超短期融资券发行结果的公告",
+          "published_at": "2026-07-07T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-0:cninfo:1225412264",
+            "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225412264.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-07/1225412264.PDF"
+          },
+          "source_sha256": "f8c529139b7f49d73f355ecd41c8dea44e68ff35765379538dd090ccba5f6a2d",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225603138",
+          "title": "内蒙古伊利实业集团股份有限公司关于2026年度第十五、十六、十七、十八、十九期超短期融资券发行结果的公告",
+          "published_at": "2026-10-14T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-1:cninfo:1225603138",
+            "path": "runtime/web-first-event-coverage/600887-20261018/600887-1225603138.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603138.PDF"
+          },
+          "source_sha256": "bb98b2d13f492eed41c090e96156af41c41bdb1ef2a4d4d5a07ae197d5281d19",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225600810",
+          "title": "内蒙古伊利实业集团股份有限公司关于全资子公司内蒙古惠商融资担保有限公司2026年第三季度对外担保情况公告",
+          "published_at": "2026-10-13T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-1:cninfo:1225600810",
+            "path": "runtime/web-first-event-coverage/600887-20261018/600887-1225600810.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-13/1225600810.PDF"
+          },
+          "source_sha256": "1ba54ca786f66efbaebe67f6e6c17cb50f52284251bd46c3b7ae7f226be6a3e2",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        },
+        {
+          "schema_version": "post-m1-event-materiality-v1",
+          "action": "no_order",
+          "event_decision_id": null,
+          "symbol": "600887",
+          "announcement_id": "1225608261",
+          "title": "内蒙古伊利实业集团股份有限公司关于为控股子公司提供担保的进展公告",
+          "published_at": "2026-10-17T00:00:00+08:00",
+          "source_ref": {
+            "id": "window-2:cninfo:1225608261",
+            "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/600887-1225608261.pdf",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608261.PDF"
+          },
+          "source_sha256": "59d39ce2e5792bf0cba3311c6e0793ca2ad4a453f0ab48c5628e35cd9ada5896",
+          "machine_candidate_reason": "Acquired announcement; independent human classification required",
+          "human_decision": null,
+          "affected_domains": [],
+          "affected_fact_fields": [],
+          "affected_assumptions": [],
+          "affected_artifacts": [],
+          "requires_recalculation": null,
+          "requires_model_stale": null,
+          "requires_followup": null,
+          "reviewed_at": null,
+          "reviewer_type": "human_research_lead",
+          "reviewer_id": null,
+          "reviewer_authorization_ref": null,
+          "review_notes": [],
+          "decision_version": "20260923.1"
+        }
+      ]
+    }
+  }
+}

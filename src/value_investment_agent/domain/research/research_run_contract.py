@@ -14,6 +14,7 @@ import hashlib
 import json
 import re
 from typing import Any, Mapping, Sequence
+from zoneinfo import ZoneInfo
 
 
 INPUT_DESCRIPTOR_SCHEMA = "m1-fixed-sample-input-v1"
@@ -89,6 +90,7 @@ class ResearchSourceDescriptor:
     retrieved_at: datetime | None = None
     parser_version: str | None = None
     issuer_identity: ResearchIssuerIdentity | None = None
+    local_path: str | None = None
 
     def __post_init__(self) -> None:
         if not self.id.strip() or not self.kind.strip() or not self.location.strip():
@@ -106,6 +108,10 @@ class ResearchSourceDescriptor:
             self.issuer_identity, ResearchIssuerIdentity
         ):
             raise TypeError("Research source issuer identity must use its typed contract")
+        if self.local_path is not None:
+            if not isinstance(self.local_path, str) or not self.local_path.strip():
+                raise ValueError("Research source local_path must be a nonempty string")
+            object.__setattr__(self, "local_path", self.local_path.strip())
 
     def as_policy(self) -> dict[str, Any]:
         policy = {
@@ -123,6 +129,8 @@ class ResearchSourceDescriptor:
         }
         if self.issuer_identity is not None:
             policy["issuer_identity"] = self.issuer_identity.as_policy()
+        if self.local_path is not None:
+            policy["local_path"] = self.local_path
         return policy
 
 
@@ -173,7 +181,7 @@ class ResearchPitFrame:
             raise ValueError("Research report period cannot follow research as-of")
         if self.valuation_date > self.research_as_of:
             raise ValueError("Valuation date cannot follow research as-of")
-        if self.available_at.date() < self.research_as_of:
+        if self.available_at.astimezone(ZoneInfo("Asia/Shanghai")).date() < self.research_as_of:
             raise ValueError("Research availability cannot precede research as-of")
 
     def as_policy(self) -> dict[str, Any]:

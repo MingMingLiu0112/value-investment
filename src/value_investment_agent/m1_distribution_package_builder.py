@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -207,4 +208,19 @@ def optional_dividend_result_for_symbol(
 ) -> DividendResearchResult | None:
     if not (root / "config" / DISTRIBUTION_DIRECTORY).exists():
         return None
-    return dividend_results_by_symbol(root).get(symbol)
+    result = None
+    for attempt in load_dividend_package_attempts(root):
+        # An identified sibling's failed evidence must not invalidate this
+        # issuer. Unknown identities remain blocking; full-package audit stays strict.
+        if attempt.symbol is not None and re.fullmatch(r"[0-9]{6}", attempt.symbol) is None:
+            raise ValueError(f"Dividend package has invalid security identity: {attempt.package_id}")
+        if attempt.symbol is not None and attempt.symbol != symbol:
+            continue
+        if attempt.error is not None:
+            raise ValueError(f"Dividend package is invalid: {attempt.package_id}: {attempt.error}")
+        if attempt.symbol is None or attempt.result is None:
+            raise ValueError(f"Dividend package has no symbol/result: {attempt.package_id}")
+        if result is not None:
+            raise ValueError(f"Duplicate dividend package symbol: {symbol}")
+        result = attempt.result
+    return result

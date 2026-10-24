@@ -1,5 +1,127 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
+## 2026-10-24 当前执行入口与剩余业务闭环
+
+当前唯一 Goal 为 `DUAL-STRATEGY-RESEARCH-TO-DECISION-CLOSURE-20261023`。
+完整范围、最新基线、A-E剩余工作包和验收以
+[current/dual-strategy-closure-goal-prompt-20261023.md](current/dual-strategy-closure-goal-prompt-20261023.md)
+为本次用户授权的执行提示词；永久架构/方法/证据边界不变。
+唯一台账仍是 current/web-first-full-product-execution-ledger.md。
+下面按日期保留的旧任务只作历史，不重新排队执行。
+
+2026-10-24只读核对：8001运行d2892512，源码/前后端/发布登记MATCHED，
+对应Core/Web CI成功；集成与远程PR分支353a43ed是后续文档提交，
+其Web CI成功、Core取消，不宣称全部通过。
+早期三份波段提交和后续现金事件包已整合，不再要求重做合并。
+已上线临时双策略账户演练不等于持久账户；eb1的4f1a739d为独立提交，
+仍待独立审查、共享接口/Web接线、回归与发布，成交确认后更正尚不支持。
+
+剩余主线：经济研究与主估值准入、持久SIMULATED账户及Entry买卖一致性、
+波段真实独立验证和消费者、当前覆盖/事件/交易日历/每日增量、最终用户验收。
+主会话负责价值、共享API/Web/组合、审查、合并和8001；“框架搭建 (2)”
+负责波段，复用有界subagents。不得把签名工具、审计对象或测试数量当作策略有效。
+用户已授权完成大节点提交并推送现有PR #1分支，不含main合并、私人数据公开、
+服务器/生产任务/数据库或Canonical Excel操作。永久action=no_order。
+
+本次仅审查和修改目标文档，Goal工具状态为PAUSED；不自动恢复或标记完成。
+之后恢复时重新核对状态与提交，文档快照不覆盖新的实际证据。
+
+## 2026-10-23 Dual-strategy research-to-decision closure
+
+The latest user-started Goal is DUAL-STRATEGY-RESEARCH-TO-DECISION-CLOSURE-20261023.
+Inherit the verified local 4b5b35b7 release and the existing execution ledger;
+integrate the reviewed sibling swing work before extending the business chains.
+Root owns value research, shared API/Web/portfolio, independent review,
+integration and the sole local port 8001. The existing sibling owns swing
+research and implementation; bounded workers have disjoint scopes.
+Strategy research/source review, independent validation and user confirmation
+remain distinct from engineering tests. Actual-source cases, simulated-account
+workflow, source-bound daily research review and usable Web are required.
+Preserve immutable research dates, private records, Excel, server/PTA and
+production boundaries. No paid API, production reviewer identity, order,
+broker, remote push or production task change is implied. action=no_order.
+Earlier stage scopes below are inherited context, not competing current tasks.
+
+## 2026-10-21 V5 end-to-end closure
+
+Latest explicit user scope is DUAL-STRATEGY-END-TO-END-CLOSURE-V5, attachment
+946dfca3-5100-4dcc-98df-ec0e63dfbf0d (SHA256
+db301e6e0bd5ab5af6df4d283b769b0a03b2863ebdec92facada95e4f41cb5de),
+read together with the 2026-10-21 dual-strategy PRD. Inherit HEAD 815315a3 and
+all existing V4 working changes. Complete the shortest source-to-research/value,
+independent hotspot, private thesis/risk/fill and Web/history paths before
+expanding coverage. Root owns shared decision/API/Web, publication, Git and CI;
+three disjoint workers own value, hotspot and portfolio implementations.
+Keep the existing execution ledger as the only current engineering ledger;
+machine evidence belongs in artifacts/current/dual-strategy-v5/.
+Engineering tests, actual evidence, economic/strategy admission, private account
+readiness and browser acceptance require separate results. No synthetic approval
+may promote real inputs. Preserve frozen engines/evidence, private journals,
+Web-first, Excel-frozen and action=no_order. No paid calls, production deployment,
+scheduler changes, production migrations or PR merge are authorized.
+The dated V4 and earlier blocks below remain inherited scope and evidence.
+
+## 2026-10-21 V4 trade-readiness closure
+
+Latest explicit user scope is DUAL-STRATEGY-TRADE-READINESS-CLOSURE-V4,
+attachment 622da781-f1e0-46c5-b204-cb85dbc38787. Baseline is
+815315a33ae6a0bf579735cace886afa8068e453 plus preserved existing working changes.
+Execute S0-S7 within four existing business boundaries: trusted financial
+enrichment/adoption, independent hotspot validation, authenticated personal
+Entry Thesis/held actions, and unified conditional decisions/Web verification.
+The existing execution ledger remains the single progress authority; V4 machine
+receipts belong in artifacts/current/trade-readiness-v4/. Keep engineering,
+real evidence, economic/strategy authorization and actual personal use separate.
+No new valuation framework, database, journal system or Web application.
+Excel remains frozen; no production/scheduler/server changes, paid APIs,
+fabricated reviewer signatures or orders. Permanent action=no_order.
+The dated V3 and earlier blocks below remain inherited context, not current scope.
+
+## 2026-10-20 V3 real decision closure
+
+Latest explicit user scope: DUAL-STRATEGY-REAL-DECISION-CLOSURE-V3, attachment
+d07f560e-3f56-47c8-86b4-8c856e63121c. Inherit the dirty V2 working tree on
+e435d1fcb7f9636c6c540f7c61e3372c6cbf1c00; it is not a new committed baseline.
+Execute A-G progressively: real source-bound financial enrichment and ranking,
+independent hotspot structure/continuity, application-owned decision assembly,
+private risk and Web verification through the existing daily entry. Preserve
+legacy engines and historical receipts. UNASSESSABLE is not NO_TRADE; screening,
+strategy and personal action review remain distinct. Existing ledger:
+current/web-first-full-product-execution-ledger.md. V3 receipts:
+artifacts/current/dual-strategy-decision-v3/. Excel frozen; no orders, paid calls,
+approval fabrication, production deployment or scheduler changes. G3, strategy
+authorization and personal account inputs retain their respective human gates.
+Earlier successor blocks below are historical context.
+
+## 2026-10-20 Actionable dual-strategy successor
+
+Latest explicit user task: DUAL-STRATEGY-ACTIONABLE-DECISION-V2, attachment
+2323127a-977e-45c0-bb0c-a616500a9784. Baseline e435d1fc. Continue actual
+screening, registered research/structure plans, shared private risk and Web
+decision integration. Existing plan, journal, risk and publication authorities
+remain authoritative; display envelopes cannot grant admission. Distinguish
+evaluated NO_TRADE from NOT_ASSESSABLE and do not infer market-wide absence of
+opportunities from incomplete coverage. Web first; Excel frozen; no orders.
+Real approvals, personal inputs, paid model calls and production scheduling
+retain their separate gates. Earlier scopes below remain historical context.
+
+## 2026-10-18 Web-first full product successor
+
+Latest explicit user Goal: WEB-FIRST-FULL-PRODUCT-CLOSURE-V1, objective attachment
+064c26dd-a712-499f-9db8-7a12da99e3eb/goal-objective.md. Future scope is defined by
+[product requirements](current/product-requirements-web-first-v1.md) and the single
+[execution ledger](current/web-first-full-product-execution-ledger.md).
+Implement S0 through S7 in dependency order, reusing existing infrastructure.
+Web-first; Excel-frozen (preserve history/integrity, no synchronization or new
+publication development). Introduce a VERSIONED independent HOTSPOT_SATELLITE
+admission policy: value valuation/G3 is not its prerequisite; security, events,
+data timing, strategy validation, execution and shared private risk remain gates.
+Historical D5 policies and evidence retain their original meaning.
+No orders, production task changes/migration/deployment, paid calls without cost
+authorization, real reviewer enrollment/signatures, fabricated private inputs or
+final user acceptance. External waits block dependent nodes only.
+Earlier scopes below are retained historical context, not competing current tasks.
+
 ## 2026-10-11 P0-P3 dual-strategy productization
 
 Latest explicit task: P0-P3-DUAL-STRATEGY-PRODUCTIZATION, inheriting f226656.
@@ -60,6 +182,30 @@ INITIAL_ASSISTED_USE=NOT_REACHED until actual evidence passes inherited gates.
 This is ordinary continuous development, not a new Goal Mode run. The following
 dated sections are inherited evidence and prior scopes, superseded by this package.
 
+## 2026-10-11 D2 Real Research Decision Closure (S1-S8)
+
+Latest explicit user task: D2_REAL_RESEARCH_DECISION_CLOSURE, inheriting actual
+0c68e06551b721cecfd70e57bae2065b92faf285. Execute S1-S8: close 600519 finite
+economic research into an exact pending candidate, minimal Chinese review
+materials, event/ModelValidity and lawful price proof, 600887 economic successor,
+Agent counterevidence, protected product preview and assisted-use readiness.
+Reuse the existing model and application; do not add scenarios, Web, D5, M8 or
+parallel roadmap. Current Canonical SHA879e9c44...fd922b is already published and
+v5 verified, not a new pointer-repair task. Existing research/publication receipts
+and original bytes remain historical evidence.
+
+Code, isolated public research, candidate versions/replays/previews, tests and
+scoped commits/pushes are authorized. New Canonical content publication requires
+its corresponding approval. Human economic/model/G3/materiality approvals,
+private IPS/portfolio, paid Provider, production/real Shadow, natural-session
+requirements and final actual user acceptance cannot be supplied by Codex.
+Missing approval blocks its dependent conclusion, not independent S1-S8 work.
+Root owns shared integration and commits; disjoint SubAgents review economics,
+events/PIT and counterevidence. action=no_order, null private positions and
+IN_PROGRESS/INITIAL_ASSISTED_USE=NOT_REACHED remain until actual gates pass.
+
+This supersedes the P0-P8 execution package below, not its validated assets.
+
 ## 2026-10-11 Real Valuation Admission and Product Closure
 
 Latest user package: `D2-REAL-VALUATION-PRICE-ADMISSION-AND-PRODUCT-CLOSURE`,
@@ -111,7 +257,6 @@ showing verified research sources, valuation scope, quote admission, candidate
 or exact blockers, risks and reopen triggers, then the same path for three
 companies. Do not call D2 or INITIAL_ASSISTED_USE complete on code alone.
 
-
 ## 2026-10-07 Current Goal Supersession
 
 当前授权 Goal 为：
@@ -121,7 +266,7 @@ VALUE-INVESTMENT-ADVISORY-AND-SENTIMENT-SATELLITE
 CURRENT_STAGE = D2_CANONICAL_COMPANY_DECISION_SLICE
 D0_STATUS = COMPLETE
 D1_STATUS = INTERFACE_ONLY_NOT_EXPANDED
-D2_STATUS = READY_TO_START
+D2_STATUS = IN_PROGRESS
 action = no_order
 ```
 

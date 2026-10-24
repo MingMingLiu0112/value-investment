@@ -1,0 +1,71 @@
+{
+  "pinned": {
+    "action": "no_order",
+    "pointer_path": "config/current-quote-bridge.json",
+    "pointer_sha256": "fdf081bedca27b624ca70456dde054d6c24a26fad7709be7d9ab6ac0a18f6720",
+    "symbol": "600519",
+    "quote_bundle_sha256": "728dcaa78c1837eae1b652f187fa45444253012b140148d993710bff8d338246",
+    "research_case": {
+      "package_path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/package.json",
+      "package_sha256": "f100c2a26b0d61a3f9d90a1b60976b00d8217b55592360f6940b0696a46829bf",
+      "package_version": "pending-600519-2026-10-11-B_CONTINUITY_ALTERNATIVE-91daee7dc978",
+      "research_as_of": "2026-10-11"
+    },
+    "registered_at": "2026-10-15T17:56:56.568079+00:00"
+  },
+  "verdict": {
+    "schema_version": "quote-bridge-execution-v1",
+    "action": "no_order",
+    "symbol": "600519",
+    "status": "NOT_ADMITTED",
+    "reason": "双源收盘行情未通过准入：B1 requires same-session post-close acquisition",
+    "price_admitted": false,
+    "research_case": {
+      "package_path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/package.json",
+      "package_sha256": "f100c2a26b0d61a3f9d90a1b60976b00d8217b55592360f6940b0696a46829bf",
+      "package_version": "pending-600519-2026-10-11-B_CONTINUITY_ALTERNATIVE-91daee7dc978",
+      "research_as_of": "2026-10-11"
+    },
+    "research_day": "2026-10-11",
+    "quote": {
+      "quote_date": null,
+      "display_price": null,
+      "collected_at": null,
+      "display_scope": null,
+      "is_historical_close": null,
+      "latest_completed_session": null,
+      "bundle_path": "runtime/quote-sessions/20261015T175655790597Z/bundle.json",
+      "bundle_sha256": null
+    },
+    "pointer": {
+      "path": "config/current-quote-bridge.json",
+      "sha256": "fdf081bedca27b624ca70456dde054d6c24a26fad7709be7d9ab6ac0a18f6720"
+    },
+    "sources": [],
+    "compatibility": {
+      "verified_quote": {
+        "eligible": false,
+        "reason": "双源收盘行情未通过准入：B1 requires same-session post-close acquisition"
+      },
+      "research_compatible": {
+        "eligible": false,
+        "reason": "报价未通过核验，无法判断研究覆盖。"
+      },
+      "historical_reconstruction_eligible": {
+        "eligible": false,
+        "reason": "报价未通过核验，无法用于历史重建对比。"
+      },
+      "comparison_eligible": {
+        "eligible": false,
+        "reason": "报价未通过核验，无法判断研究覆盖。"
+      },
+      "formal_decision_eligible": {
+        "eligible": false,
+        "reason": "正式投资决策资格需 G3 人工批准与决策门通过；执行层不评估、不预支。"
+      }
+    },
+    "next_step": "先修复上方原因（登记、来源或官方日历校验），再重跑价格桥接。",
+    "quote_verification_status": "NOT_ADMITTED"
+  },
+  "action": "no_order"
+}

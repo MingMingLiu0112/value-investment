@@ -152,6 +152,7 @@ def evaluate_pre_decision_eligibility(
     facts_payload: Mapping[str, Any],
     assumptions_payload: Mapping[str, Any],
     price_attractiveness: PriceAttractivenessAssessment | None = None,
+    require_authenticated_approval_provenance: bool = False,
 ) -> PreDecisionEligibility:
     """Apply the decision-layer prerequisites without producing any decision."""
     if not (gate.symbol == valuation.symbol == price_bridge.symbol == model_validity.symbol):
@@ -167,6 +168,7 @@ def evaluate_pre_decision_eligibility(
             research_case_payload=research_case_payload,
             facts_payload=facts_payload,
             assumptions_payload=assumptions_payload,
+            require_authenticated_provenance=require_authenticated_approval_provenance,
         ) if approval is not None else None
     )
     blockers: list[str] = []

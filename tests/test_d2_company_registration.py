@@ -5,6 +5,7 @@ import json
 
 import pytest
 
+from approval_transport_fixture import mint_fixture_approval
 from test_current_decision_surface import decision_workbench, forged_candidate
 from test_product_workbench_excel import _payload
 from test_decision_recommendation import AS_OF, SYMBOL, _case
@@ -20,7 +21,8 @@ def _inputs(tmp_path, workbench):
     payload["as_of"] = AS_OF.isoformat()
     payload["generated_at"] = "2026-09-22T13:00:00+00:00"
     return payload, dict(root=tmp_path, path=source,
-                         expected_sha256=hashlib.sha256(source.read_bytes()).hexdigest())
+                         expected_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+                         human_approval_provenance_verifier=mint_fixture_approval)
 
 
 @pytest.mark.parametrize("missing_approval", [False, True])

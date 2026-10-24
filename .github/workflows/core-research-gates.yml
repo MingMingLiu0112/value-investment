@@ -2,7 +2,7 @@ name: Core Research Gates
 
 on:
   push:
-    branches: [main]
+    branches: [main, codex/web-d1-investment-workbench]
   pull_request:
 
 permissions:
@@ -17,7 +17,7 @@ env:
 jobs:
   offline-core:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Prepare project-local temporary directory
@@ -26,11 +26,114 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install core test dependencies
-        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev,web]"
       - name: Verify fail-closed offline research gates
         run: >-
           mkdir -p .tmp && python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest --junitxml=.tmp/offline-core-results.xml
           tests/test_research_gate.py
+          tests/test_strategy_readiness.py
+          tests/test_first_use_value_analysis.py
+          tests/test_public_financial_snapshot.py
+          tests/test_hotspot_current_case_review.py
+          tests/test_hotspot_observation_plan.py
+          tests/test_hotspot_pool_web_projection.py
+          tests/test_core_workflow_targets.py
+          tests/test_hotspot_price_behavior.py
+          tests/test_hotspot_event_replay.py
+          tests/test_hotspot_retained_originals.py
+          tests/test_hotspot_retained_source_adapter.py
+          tests/test_hotspot_structure_replay.py
+          tests/test_intraday_conditions.py
+          tests/test_intraday_observation.py
+          tests/test_intraday_bar_observation.py
+          tests/test_intraday_monitor.py
+          tests/test_intraday_monitor_alerts.py
+          tests/test_intraday_monitor_lifecycle.py
+          tests/test_public_observation_session.py
+          tests/test_intraday_plan_observation.py
+          tests/test_web_agent_research.py
+          tests/test_daily_agent_research.py
+          tests/test_daily_agent_research_cli.py
+          tests/test_daily_research_registration.py
+          tests/test_daily_retrospective_research.py
+          tests/web_api/test_private_retrospective_api.py
+          tests/web_api/test_agent_research_api.py
+          tests/web_api/test_condition_alert_api.py
+          tests/test_hotspot_replay_read_model.py
+          tests/test_judgment_snapshot.py
+          tests/test_public_evidence_archive.py
+          tests/test_public_snapshot_retained_path.py
+          tests/test_private_judgment_snapshot_service.py
+          tests/test_recording_time_risk_snapshot.py
+          tests/test_security_attributes.py
+          tests/test_value_model_identity.py
+          tests/test_value_policy_review.py
+          tests/test_value_price_policy.py
+          tests/test_value_review_replay.py
+          tests/web_api/test_p5_reviews.py
+          tests/web_api/test_dual_simulated_journey.py
+          tests/web_api/test_simulated_portfolio_api.py
+          tests/test_simulated_portfolio_service_v1.py
+          tests/test_simulated_portfolio_corrections.py
+          tests/test_private_first_use_workflow.py
+          tests/test_private_risk_preview.py
+          tests/test_private_hotspot_add_preview.py
+          tests/test_screening_financial_export_v2.py
+          tests/test_m2_cli_versioned_integration.py
+          tests/test_hotspot_two_stage_retained.py
+          tests/test_personal_entry_thesis.py
+          tests/test_owned_held_actions.py
+          tests/test_owned_concentration_review.py
+          tests/test_owned_multi_entry_continuity.py
+          tests/test_owned_portfolio_closure.py
+          tests/web_api/test_personal_entry_thesis_api.py
+          tests/test_held_decision_code_gap.py
+          tests/test_value_research_priority_v2.py
+          tests/test_hotspot_observation_continuity.py
+          tests/test_observation_history_read.py
+          tests/test_daily_refresh_value_adoption_integration.py
+          tests/test_hotspot_quantitative_validation.py
+          tests/test_hotspot_review_handoff.py
+          tests/test_value_evidence_enrichment_v1.py
+          tests/test_financial_funding_scope.py
+          tests/test_value_enrichment_batch.py
+          tests/test_value_enrichment_durable_reuse.py
+          tests/test_income_source_correlation.py
+          tests/test_income_chinese_note.py
+          tests/test_retained_income_financial_input.py
+          tests/test_income_source_correlation_integration.py
+          tests/test_value_income_durable_queue.py
+          tests/test_sina_income_automatic_enrichment.py
+          tests/test_private_committed_risk.py
+          tests/test_private_committed_risk_service.py
+          tests/test_current_security_metadata.py
+          tests/test_private_risk_partial_facts.py
+          tests/test_p62_positive_workflow.py
+          tests/test_p7_signed_review_workflow.py
+          tests/test_p7_materiality_review_transport.py
+          tests/test_p8_decision_chain.py
+          tests/test_held_continuity.py
+          tests/test_private_risk_held_marks.py
+          tests/test_incremental_quote_bridge.py
+          tests/test_current_snapshot_quote_bridge.py
+          tests/test_daily_public_packet_identity.py
+          tests/web_api/test_value_decision_detail.py
+          tests/web_api/test_current_price_decisions.py
+          tests/test_private_risk_experience.py
+          tests/test_private_risk_cash_floor.py
+          tests/test_value_policy_interaction.py
+          tests/web_api/test_p61_route_boundaries.py
+          tests/test_daily_quote_binding.py
+          tests/test_quote_session_collection.py
+          tests/test_quote_session_conversion.py
+          tests/test_daily_refresh_readiness.py
+          tests/test_hotspot_operational_evidence.py
+          tests/test_independent_hotspot_open_wording.py
+          tests/test_workbench_startup_readiness.py
+          tests/test_daily_workbench_failure_e2e.py
+          tests/web_api/test_daily_update_status.py
+          tests/web_api/test_first_use_legacy_risk.py
+          tests/web_api/test_private_risk_preview_api.py
           tests/test_workbench_cutoff_replay.py
           tests/test_disclosure_availability.py
           tests/test_event_evidence_audit.py
@@ -53,6 +156,39 @@ jobs:
           tests/test_reported_earnings_cash_trends.py
           tests/test_valuation_result.py
           tests/test_price_bridge.py
+          tests/test_quote_bridge_execution.py
+          tests/test_research_validity_review.py
+          tests/test_incremental_validity.py
+          tests/test_current_snapshot_validity.py
+          tests/test_source_native_candidate_v2.py
+          tests/test_source_native_workflow_integration.py
+          tests/test_source_native_signed_review_v2.py
+          tests/test_source_native_review_cli.py
+          tests/test_source_native_economic_review_v1.py
+          tests/test_operating_realization_erosion_v1.py
+          tests/test_source_native_operating_erosion_v1.py
+          tests/test_research_only_mode.py
+          tests/test_research_only_draft.py
+          tests/test_source_native_economic_comparison.py
+          tests/test_joint_adverse_cash_v1.py
+          tests/test_operating_earnings_bridge.py
+          tests/test_current_operating_earnings.py
+          tests/test_retained_operating_consumer.py
+          tests/web_api/test_source_native_economic_api.py
+          tests/test_content_addressed_economic_bridge.py
+          tests/test_hotspot_cash_basis_v2.py
+          tests/test_hotspot_cash_related_disclosures.py
+          tests/test_hotspot_cash_execution_exposure.py
+          tests/test_daily_research_status.py
+          tests/test_hotspot_current_price_case.py
+          tests/test_hotspot_current_refresh.py
+          tests/test_hotspot_daily_selection.py
+          tests/test_current_price_registry.py
+          tests/test_private_ledger_candidate_fill.py
+          tests/test_private_ips_policy.py
+          tests/test_value_action_plan.py
+          tests/test_core_public_review.py
+          tests/test_current_value_plan.py
           tests/test_research_profile.py
           tests/test_distribution.py
           tests/test_valuation_confidence.py
@@ -124,6 +260,7 @@ jobs:
           tests/test_authorization_trust_root_pinning.py
           tests/test_m5_run_request.py
           tests/test_m5_outbox_transition.py
+          tests/test_m5_outbox_lifecycle.py
           tests/test_m5_event_run_state_boundaries.py
           tests/test_m5_event_state_store.py
           tests/test_m5_event_workbook.py
@@ -181,6 +318,9 @@ jobs:
           tests/test_research_e2e_replay.py
           tests/test_m1_post_review_receipts_boundary.py
           tests/test_m2_opportunity_discovery.py
+          tests/test_official_universe.py
+          tests/test_official_universe_partial.py
+          tests/test_scoped_screening.py
           tests/test_m2_coverage_sampling.py
           tests/test_m2_research_report.py
           tests/test_m2_acceptance_audit.py
@@ -203,6 +343,7 @@ jobs:
           tests/test_daily_event_observation.py
           tests/test_research_review_packet.py
           tests/test_agent_source_context.py
+          tests/test_pdfium_serialization.py
           tests/test_monthly_research_review.py
           tests/test_llm_agent_research.py
           tests/test_agent_research_pilot.py
@@ -224,9 +365,25 @@ jobs:
           tests/test_workbook_publication_restore_mapping.py
           tests/test_user_research_workflow.py
           tests/test_research_review_wizard.py
+          tests/test_pending_candidate_replay.py
+          tests/test_source_reobservation.py
+          tests/test_source_reobservation_v2.py
+          tests/test_research_market_date.py
+          tests/test_pending_candidate_supplement.py
+          tests/test_supplement_external_review_handoff.py
+          tests/test_event_scan_supplement.py
+          tests/test_event_supplement_handoff.py
+          tests/test_replay_external_review_handoff.py
           tests/test_daily_product_update.py
           tests/test_daily_composer_integration_independent.py
           tests/test_hotspot_manual_scan.py
+          tests/test_independent_hotspot_admission.py
+          tests/test_independent_hotspot_projection.py
+          tests/test_independent_hotspot_signed_pipeline.py
+          tests/test_consumed_financial_input_bindings.py
+          tests/test_bound_research_draft.py
+          tests/test_bound_draft_review_handoff.py
+          tests/test_strategy_decision_read_model.py
           tests/test_dual_sleeve_risk.py
           tests/test_dual_sleeve_records.py
           tests/test_dual_sleeve_input_sheet.py
@@ -246,7 +403,42 @@ jobs:
           tests/test_evidence_stop_schedule.py
           tests/test_m5_product_event_state_projection.py
           tests/test_midea_unified_valuation_provenance.py
+          tests/test_hkex_issuer_window_capture.py
           tests/test_statement_adapter.py
+          tests/test_decision_logic.py
+          tests/test_value_economic_assessment.py
+          tests/test_hotspot_strategy_execution_replay.py
+          tests/test_simulated_trade_journey.py
+          tests/test_source_bound_dual_sleeve_journey.py
+          tests/test_hotspot_action_lineage.py
+          tests/test_hotspot_capital_disclosure.py
+          tests/test_hotspot_simulated_lifecycle.py
+          tests/test_account_observations.py
+          tests/test_dual_strategy_selection.py
+          tests/test_value_candidate_selection.py
+          tests/test_hotspot_candidate_selection.py
+          tests/test_economic_review_cli.py
+          tests/test_economic_review_bundle.py
+          tests/test_economic_review_materials.py
+          tests/test_hotspot_audit_cli.py
+          tests/test_hotspot_independent_validation.py
+          tests/test_hotspot_lifecycle_review.py
+          tests/test_hotspot_selection_history.py
+          tests/test_hotspot_lifecycle_bound_history.py
+          tests/test_hotspot_history_namespace.py
+          tests/test_hotspot_lifecycle_explanation.py
+          tests/test_hotspot_lifecycle_explanation_text.py
+          tests/test_hotspot_entry_reason.py
+          tests/test_joint_capital_path.py
+          tests/test_hotspot_price_comparability.py
+          tests/test_hotspot_official_action_coverage.py
+          tests/test_hotspot_action_coverage_lifecycle.py
+          tests/test_owned_hotspot_lifecycle.py
+          tests/test_hotspot_cash_event_mapping.py
+          tests/test_hotspot_cash_action_window.py
+          tests/test_hotspot_statutory_fee_evidence.py
+          tests/web_api/test_hotspot_lifecycle_surface.py
+          tests/test_hotspot_machine_admission.py
 
       - name: Verify isolated synthetic private-workspace rehearsal
         run: python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest-m4-synthetic --junitxml=.tmp/m4-synthetic-results.xml tests/test_m4_synthetic_onboarding_rehearsal.py

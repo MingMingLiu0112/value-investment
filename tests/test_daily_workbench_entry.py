@@ -1,0 +1,143 @@
+"""TL9 MVP-2: the one daily entry stays thin, registered and fail-closed."""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import shutil
+import subprocess
+
+import pytest
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "scripts/current/run_daily_workbench.ps1"
+
+
+def _pwsh() -> str | None:
+    for name in ("pwsh", "pwsh.exe"):
+        found = shutil.which(name)
+        if found:
+            return found
+    return None
+
+
+def test_daily_entry_is_registered_in_both_registries():
+    v2 = json.loads(
+        (ROOT / "config/current-cli-entrypoints-v2.json").read_text(encoding="utf-8")
+    )
+    assert "scripts/current/run_daily_workbench.ps1" in v2["SUPPORTED_PRODUCT_CLI"]
+    inventory = json.loads(
+        (ROOT / "docs/architecture/script-inventory-v1.json").read_text(encoding="utf-8")
+    )
+    entry = next(
+        item for item in inventory["entries"]
+        if item["path"] == "scripts/current/run_daily_workbench.ps1"
+    )
+    assert entry["category"] == "CURRENT_PRODUCT_CLI"
+    assert "config/current-cli-entrypoints-v2.json" in entry["current_consumers"]
+
+
+def test_daily_entry_orchestrates_existing_clis_without_new_side_doors():
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "ValidateSet('READ_ONLY', 'SAFE_REFRESH')" in text
+    # The entry orchestrates the existing packet builder, collector and Web
+    # starter instead of re-implementing any business calculation.
+    assert "scripts/current/build_daily_public_packet.py" in text
+    assert "scripts/collect_quote_sessions.py" in text
+    assert "scripts/current/pin_current_quote_bridge.py" in text
+    assert "start_web_workbench.ps1" in text
+    assert "-AutoDiscoverResearchContexts" in text
+    assert "--discover-contexts" in text
+    assert "--test-only-retrospective" in text
+    assert "--authorize-paid-api" not in text
+    # It never orders, never publishes the canonical workbook and never signs
+    # a human approval.
+    assert "action=no_order" in text
+    assert "publish_product_workbench_to_canonical" not in text
+    assert "git " not in text
+    assert '--no-publish' in text
+    assert 'open_current_trial_workbook.py' not in text
+
+
+def test_event_review_day_is_independent_from_quote_reuse_and_always_fresh():
+    text = SCRIPT.read_text(encoding="utf-8")
+    review = text[text.index("# Filings can change on non-trading days"):
+                  text.index("# Recompute after incremental registration")]
+    assert "[DateTimeOffset]::UtcNow.ToOffset([TimeSpan]::FromHours(8))" in review
+    assert "$reviewCutoff-$scanStamp" in review
+    assert "collect_registered_validity_scan.py" in review
+    assert "'--review-cutoff', $reviewCutoff" in review
+    assert "'--output-dir', $scanDirectory" in review
+    assert "market_trade_dates" not in review
+    assert "expected_session" not in review
+    assert "incremental_validity_binding" not in review
+
+
+@pytest.mark.parametrize('retention', ['none', 'previous_success', 'previous_retained', 'explicit'])
+def test_daily_entry_runs_read_only_and_reports_plain_language(tmp_path, retention):
+    pwsh = _pwsh()
+    if pwsh is None:
+        pytest.skip("PowerShell 7 is unavailable")
+    project = tmp_path / "isolated-entry"
+    current = project / "scripts/current"
+    current.mkdir(parents=True)
+    shutil.copy2(SCRIPT, current / SCRIPT.name)
+    shutil.copy2(ROOT / "scripts/current/build_daily_public_packet.py", current)
+    shutil.copytree(ROOT / "src", project / "src", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    import hashlib
+    screen = None
+    extra = []
+    if retention != 'none':
+        manifest = project / 'runtime/daily-marketwide/retained/manifest.json'
+        manifest.parent.mkdir(parents=True)
+        manifest.write_bytes(b'{}')
+        screen = dict(status='RESEARCH_ONLY', manifest_path=manifest.relative_to(project).as_posix(),
+                      manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest())
+        if retention == 'explicit':
+            extra = ['-RetainedMarketwideManifest', screen['manifest_path'],
+                     '-RetainedMarketwideManifestSha256', screen['manifest_sha256']]
+        else:
+            previous = dict(schema_version='daily-workbench-run-v1', mode='SAFE_REFRESH', action='no_order')
+            previous['marketwide_screen' if retention == 'previous_success' else 'retained_marketwide_screen'] = screen
+            scratch = project / '.tmp'
+            scratch.mkdir()
+            (scratch / 'daily-workbench-latest-run.json').write_text(json.dumps(previous), encoding='utf-8')
+    protected = [ROOT / "config/current-daily-public-snapshot.json",
+                 ROOT / ".tmp/daily-workbench-latest-run.json"]
+    before = {path: path.read_bytes() if path.exists() else None for path in protected}
+    completed = subprocess.run(
+        [pwsh, "-NoProfile", "-File", str(current / SCRIPT.name), "-Mode", "READ_ONLY", "-NoServer", "-Symbols", "600519", *extra],
+        cwd=project, capture_output=True, text=True, encoding="utf-8", timeout=60,
+    )
+    output = completed.stdout or ""
+    assert completed.returncode == 2, (completed.returncode, output, completed.stderr)
+    assert "运行结果" in output
+    assert "action=no_order" in output
+    assert {path: path.read_bytes() if path.exists() else None for path in protected} == before
+    receipt = json.loads((project / ".tmp/daily-workbench-latest-run.json").read_text(encoding="utf-8-sig"))
+    assert receipt["status"] == "BLOCKED"
+    assert receipt["action"] == "no_order"
+    if screen:
+        assert receipt['retained_marketwide_screen'] == screen
+        assert 'marketwide_screen' not in receipt
+        # Binding propagation is not source admission; the dummy manifest fails application replay.
+        from value_investment_agent.application.discovery.value_candidate_selection import select_current_value_candidates
+        from datetime import datetime, timezone
+        assert select_current_value_candidates(root=project, now=datetime.now(timezone.utc))['data_status'] == 'SOURCE_REVALIDATION_FAILED'
+
+
+def test_daily_entry_keeps_update_and_web_results_separate():
+    """TL10-RC: a Web failure must never mask a failed update."""
+    text = SCRIPT.read_text(encoding="utf-8")
+    for marker in ("运行结果", "公开快照", "Web 服务", "整体结果"):
+        assert marker in text
+    # The header documents the four update-first outcomes, including exit 4.
+    assert "4  Web failed to start while the update itself succeeded" in text
+    # Both Web-failure paths fall back to 4 only when the update reported 0.
+    assert "} else { 4 }" in text
+    assert "} elseif ($webExit -ne 0) { 4 } else { 0 }" in text
+    assert "数据更新优先" in text
+    # Still no shell-based repo mutation and no canonical workbook publish.
+    assert "git " not in text
+    assert "publish_product_workbench_to_canonical" not in text
+    assert 'if (-not $coreBlocked)' in text

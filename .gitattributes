@@ -27,3 +27,99 @@ docs/current/600519-full-window-materiality-review-20261008.md -text
 docs/current/600519-primary-earnings-assumption-research-20261009.md -text
 docs/archive/legacy-research-20260925/** -text
 docs/archive/legacy-financing-debt-20260926/** -text
+
+# TL11-P4 public evidence must retain the captured bytes across platforms.
+config/current-price-conditions.json -text whitespace=cr-at-eol
+config/current-daily-public-snapshot.json -text whitespace=cr-at-eol
+runtime/hotspot-daily-selection/** -text
+runtime/hotspot-current-price-cases/** -text
+runtime/hotspot-current-refresh/** -text
+runtime/daily-public-packet/** -text
+runtime/quote-sessions/20261014T090240643969Z/bundle.json -text
+artifacts/current/tl11-p4-20261014/** -text
+artifacts/current/tl11-p5-20261014/** -text
+artifacts/current/tl11-p6-20261014/** -text
+artifacts/current/tl11-p61-20261015/** -text whitespace=cr-at-eol
+artifacts/current/tl11-p62-20261015/** -text whitespace=cr-at-eol
+artifacts/current/tl11-p8-20261016/** -text whitespace=cr-at-eol
+config/hotspot-confirmed-structure-v1.json -text
+config/hotspot-replay-review-v1.json -text
+config/public-market-evidence-retention-v1.json -text
+
+# Retained replay originals include source-code bytes pinned by the manifest.
+artifacts/current/dual-strategy-v5/retained-hotspot-sources/** -text whitespace=cr-at-eol
+
+# These executing bytes are pinned by the retained research replay receipts.
+src/value_investment_agent/application/product/company_research.py -text whitespace=cr-at-eol
+src/value_investment_agent/m1_valuation_package_builder.py -text whitespace=cr-at-eol
+src/value_investment_agent/research_application.py -text whitespace=cr-at-eol
+src/value_investment_agent/research_input.py -text whitespace=cr-at-eol
+config/m1-valuation-packages-v1/600887-quality-compounder.json -text whitespace=cr-at-eol
+config/research-evidence-stop-ledger-v1.json -text whitespace=cr-at-eol
+config/research-proposals/600519-20261011-v3.json -text whitespace=cr-at-eol
+config/research-proposals/600887-20261011-v3.json -text whitespace=cr-at-eol
+docs/current/600519-bounded-research-preference-20261011.md -text whitespace=cr-at-eol
+docs/current/600519-economic-candidate-closure-20261011.md -text whitespace=cr-at-eol
+docs/current/600519-equity-cost-independent-review-20261008.md -text whitespace=cr-at-eol
+docs/current/600519-financial-scope-independent-review-20261008.md -text whitespace=cr-at-eol
+docs/current/600519-forward-path-independent-review-20261008-v2.md -text whitespace=cr-at-eol
+docs/current/600519-normalized-assumption-research-20261008.md -text whitespace=cr-at-eol
+docs/current/600519-operating-mechanism-research-20261008.md -text whitespace=cr-at-eol
+docs/current/600519-parent-distribution-capital-bridge-20261008.md -text whitespace=cr-at-eol
+docs/current/600519-profit-adjustment-bridge-20261008.md -text whitespace=cr-at-eol
+docs/current/600887-economic-closure-review-20261011.md -text whitespace=cr-at-eol
+docs/current/600887-shared-valuation-result-20260929.json -text whitespace=cr-at-eol
+docs/current/600887-valuation-readiness-review-20260929.json -text whitespace=cr-at-eol
+scripts/build_moutai_consolidated_equity_discount_range.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/product/pending_candidate_replay.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/product/pending_replay_publication.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/product/pending_research_candidate.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/product/research_review_packet.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/product/research_reviews.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/product/source_bound_inputs.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/product/source_reobservation.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/product/workbench.py -text whitespace=cr-at-eol
+src/value_investment_agent/valuation_models/residual_income.py -text whitespace=cr-at-eol
+src/value_investment_agent/valuation_router.py -text whitespace=cr-at-eol
+artifacts/current/dual-strategy-v5/retained-research-sources/** -text whitespace=cr-at-eol
+artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json -text whitespace=cr-at-eol
+artifacts/current/dual-strategy-v5/retained-quote-snapshot/** -text whitespace=cr-at-eol
+config/current-company-research-registry.json -text whitespace=cr-at-eol
+src/value_investment_agent/application/decision/value_action_plan.py -text whitespace=cr-at-eol
+artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json -text whitespace=cr-at-eol
+
+# Current company registry evidence is hash-bound to the original Git bytes.
+artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/public-draft-v4.json -text whitespace=cr-at-eol
+artifacts/current/screened-research-000544-20261024/research-only-draft.json -text whitespace=cr-at-eol
+artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/package.json -text whitespace=cr-at-eol
+docs/current/tl8-c-000333-share-denominator-recheck-receipt-20261013.json -text whitespace=cr-at-eol
+docs/current/tl8-c-601088-cycle-model-boundary-receipt-20261013.json -text whitespace=cr-at-eol
+
+# Unregistered research candidates and event supplements are byte-bound public
+# evidence; failed build diagnostics remain local and are never included.
+artifacts/current/dual-strategy-v5/midea-economic-v1/** -text whitespace=cr-at-eol
+runtime/event-scan-supplements/000333-economic-v1-unsigned-20261021T193558422113Z/** -text whitespace=cr-at-eol
+
+# These public audit outputs are verified by their original byte hashes.
+artifacts/current/research-funnel-audit-20261017-v2/manifest.json -text
+artifacts/current/research-funnel-audit-20261017-v2/result.json -text
+artifacts/current/research-funnel-audit-20261017-v2/report.md -text
+artifacts/current/research-funnel-audit-20261017-v2/human-review-packet.json -text
+config/archive/price-conditions-20261017-e65444f2.json -text whitespace=cr-at-eol
+config/current-quote-bridge.json -text whitespace=cr-at-eol
+
+# Prettier-managed Web sources must survive Windows clean checkouts unchanged.
+web/**/*.ts text eol=lf
+web/**/*.tsx text eol=lf
+web/**/*.css text eol=lf
+web/scripts/*.mjs text eol=lf
+web/package.json text eol=lf
+web/tsconfig.json text eol=lf
+
+# Original exchange notice bytes: never normalize or format fetched evidence.
+docs/evidence/official-list-calendar-2026/*.raw -text -diff
+
+# Preserve the actual implementation bytes bound by native cash candidates.
+src/value_investment_agent/application/product/source_native_candidate_v2.py -text whitespace=cr-at-eol
+src/value_investment_agent/domain/valuation/source_native_cash_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/product/source_reobservation_v2.py -text whitespace=cr-at-eol

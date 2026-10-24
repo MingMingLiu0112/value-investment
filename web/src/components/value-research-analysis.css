@@ -1,0 +1,85 @@
+.value-research-analysis {
+  min-width: 0;
+  max-width: 100%;
+  margin: 16px 0;
+  padding: 12px 0;
+  border-top: 1px solid #dce3e5;
+  border-bottom: 1px solid #dce3e5;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.value-research-analysis summary {
+  cursor: pointer;
+  padding: 6px 0;
+}
+.value-research-analysis > summary {
+  font-weight: 600;
+}
+.value-research-analysis summary:focus-visible {
+  outline: 2px solid #31635c;
+  outline-offset: 3px;
+}
+.value-research-analysis h3 {
+  font-size: 15px;
+  margin: 16px 0 8px;
+}
+.value-research-analysis h4 {
+  font-size: 13px;
+  margin: 8px 0;
+}
+.value-research-analysis p {
+  margin: 6px 0;
+}
+.value-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 10px 20px;
+}
+.value-analysis-grid > *,
+.value-analysis-inputs > * {
+  min-width: 0;
+}
+.value-analysis-grid dd,
+.value-analysis-inputs dd {
+  margin: 3px 0 8px;
+}
+.value-research-analysis .value-analysis-number {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.value-analysis-boundary {
+  color: #82521e;
+}
+.value-analysis-muted {
+  color: #5c696e;
+}
+.value-analysis-sensitivity {
+  padding: 8px 0;
+  border-top: 1px solid #dce3e5;
+}
+.value-research-analysis code {
+  display: block;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.value-research-analysis ul {
+  padding-left: 20px;
+}
+.earnings-driver-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.earnings-driver-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+.earnings-driver-table th,
+.earnings-driver-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #dce3e5;
+  text-align: left;
+  vertical-align: top;
+}

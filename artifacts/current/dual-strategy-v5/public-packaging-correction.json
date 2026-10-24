@@ -1,0 +1,59 @@
+{
+  "schema_version": "v5-public-packaging-correction-v1",
+  "action": "no_order",
+  "observed_at": "2026-10-21T15:16:14.873792+00:00",
+  "prior_source": "e64460c7ffe40ddd2744408b14d0f36c1ec7c023",
+  "prior_ci": {
+    "core": "FAIL_THREE_ARCHITECTURE_CHECKS",
+    "web": "PASS",
+    "postgres": "PASS",
+    "core_run": 39620480006,
+    "web_run": 39620472716
+  },
+  "cause": [
+    "CLI_SCRIPT_INVENTORY_MISSING",
+    "CLI_V2_ENTRYPOINT_MISSING",
+    "TRACKED_TOP_LEVEL_RUNTIME_FORBIDDEN"
+  ],
+  "fixes": [
+    "REGISTER_EXACT_NEW_CLI",
+    "EXPORT_EXACT_PUBLIC_COPY_TO_ARTIFACTS",
+    "REMOVE_RUNTIME_FROM_DELIVERY_INDEX_ONLY"
+  ],
+  "original_runtime_unchanged": true,
+  "architecture_tests_relaxed": false,
+  "public_manifest": {
+    "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/manifest.json",
+    "sha256": "953946578be56c252539825e102af7ae344b828db981266d1f3022c730be6995"
+  },
+  "retained_public_files": 20,
+  "raw_source_hashes_unchanged": true,
+  "mandatory_archive_only_test": true,
+  "rule_identity_scope": "ARCHIVE_RAW_SHA256_EXACT_RUNNING_PYTHON_CRLF_TO_LF_ONLY",
+  "expected_signals": {
+    "triggered": 161,
+    "mature": 150,
+    "right_censored": 11,
+    "actual_trades": null
+  },
+  "formal_eligibility": false,
+  "strategy_validation": "NOT_PROVEN",
+  "source_bindings": [
+    {
+      "path": "src/value_investment_agent/application/hotspot/retained_source_replay.py",
+      "sha256": "e82b9f87fb4e791eb6a014fcdb92dcfa0707d047ecaa73a0ad2f85b07a8f77ca"
+    },
+    {
+      "path": "tests/test_hotspot_retained_source_adapter.py",
+      "sha256": "e4cf0e386633264a48e6a42a44bae7510fd54cb4b0a3360947b4f4f17ede6f76"
+    },
+    {
+      "path": "config/current-cli-entrypoints-v2.json",
+      "sha256": "77ba66f26caf0ae51bfe427f235527695cca195d9e47af79a9a217e1578a9e80"
+    },
+    {
+      "path": "docs/architecture/script-inventory-v1.json",
+      "sha256": "d4fb8193f91ce56dc0e1d600469b767378dd34f9015df99fdc9942fc40030abf"
+    }
+  ]
+}

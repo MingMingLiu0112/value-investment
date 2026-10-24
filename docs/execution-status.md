@@ -1,5 +1,127 @@
 # CURRENT STATUS
 
+## 2026-10-16 TL11-P8: scoped engineering workflow accepted
+
+Latest explicit user scope is TL11-P8-FINAL-DECISION-PRODUCT, inheriting
+437b8dc7395763f643f3e4efb021694b14f15c8b. Current evidence and remaining acceptance
+are tracked in `docs/current/tl11-p8-delivery-20261016.md` and
+`artifacts/current/tl11-p8-20261016/`. Research interpretations, latest-close
+observations, signed research permission, private facts and formal eligibility
+remain separate. Local Core 2921 passed / 35 skipped, Web 196 passed and actual
+Windows four-viewport interactions are recorded. Code 7757a00 passed remote Core
+38789058416 (offline and isolated Postgres) and Web 38789058461/38789049731.
+No total-Goal, formal investment or final user acceptance is asserted.
+The canonical workbook is read-only under this task. action=no_order.
+
+## 2026-10-15 TL11-P7: scoped engineering workflow accepted
+
+The latest explicit user task is TL11-P7, not completion of the historical
+TL10/P6 work below. Current evidence and remaining checks are recorded in
+`docs/current/tl11-p7-workflow-acceptance-20261015.md` and
+`artifacts/current/tl11-p7-20261015/`. Signed-review engineering tests,
+TEST_ONLY portfolio interactions and real negative gates are distinct from
+formal investment eligibility, strategy validation and final user acceptance.
+`REAL_DECISION_ENGINEERING_CLOSURE=PASS` for this P7 engineering package:
+code 19fcde7, remote Core run 38728644080 and Web runs 38728644031/38728637018
+passed; local Core 2848 passed/35 skipped, Web 194, API 158, final signed-chain
+15 passed. Final v16 snapshot is pub-a1f4249523ba0cfb7537. Formal investment
+eligibility remains NOT_REACHED, strategy advantage NOT_PROVEN, final user
+acceptance PENDING_USER. No total Goal completion is asserted. `action=no_order`.
+
+## 2026-10-13 TL10-RC: one verified daily snapshot, one entry, fail-closed reads
+
+TL10-RC engineering delivery is complete on `codex/web-d1-investment-workbench`.
+The daily public packet now has a sound version identity (engine
+`daily-public-packet-engine-v2`, identity schema v4): `publication_id` covers
+the verified publication chain, the quote pointer and archived bundles, the
+research registry and its evidence, the bound decision-explanation files, the
+engine revision and the business clock; `generated_at`/`excel_sync` stay
+volatile and out of both the identity and `content_sha256`. Identity v4 was
+added because a bound explanation file change could otherwise mint the same
+identity with different content and be refused by the exit 4 guard for the
+rest of the day; now every content input mints a new version and exit 4 stands
+only against a stored record disagreeing with recomputation (tamper/engine
+regression, pinned by test). `scripts/current/build_daily_public_packet.py`
+publishes one versioned artifact plus an immutable receipt and atomically
+repoints `config/current-daily-public-snapshot.json` (WRITTEN/UNCHANGED exit 0,
+chain unavailable exit 2, unreadable record exit 3, identity conflict exit 4).
+Real run: `pub-d4b9f0f5f78a1e2ef00d`, `content_sha256` 848277...,
+artifact sha256 0a288c..., re-run `UNCHANGED` byte-identical, exit 0.
+`/api/v1/daily-public-packet` serves the verified stored bytes (only falling
+back to a live composition, marked `NO_VERIFIED_SNAPSHOT`, when no snapshot
+exists); `/api/v1/daily-public-snapshot` reports pointer state plus the
+read-only Excel comparison (MATCHED against canonical workbook `aeaa3c7f...`).
+`/daily` shows the snapshot identity, date boundaries, freshness, symbol-
+deduplicated count semantics and the Excel comparison; the dual-sleeve table
+is annotated as a publication snapshot whenever the live private state is
+locked/unavailable. `run_daily_workbench.ps1` keeps update result, Web result
+and overall exit code separate (0/2/3/4) and states the SAFE_REFRESH boundary
+(quotes only; research reruns, event review and G3 stay human/engineering).
+Tests: TL10 target suites 163 passed (identity 8, snapshot CLI 7, workbench
+entry 4, web_api + research status 144); web typecheck 72 tests, build,
+prettier all passed. The 8001 workbench was restarted on the new code and
+verified through the real API and the in-app browser: 600887 shows the
+conditional range (9.80/10.08/10.30), the verified close (2026-10-13, 27.77)
+and the exact not-comparable reason (quote later than the research cutoff);
+000333/601088 keep honest not-ready states with 0 formal admissions. Usage
+note: docs/current/tl10-rc-daily-usage-20261013.md; identity/snapshot note:
+docs/current/tl10-rc-identity-and-snapshot-20261013.md. action=no_order
+unchanged; the canonical workbook and all private data were untouched.
+Full local Core Gates: 5095 passed / 42 skipped (10m05s). Remote CI on
+c6ac4b3: Core Research Gates run 38395725401 and Web Workbench run 38395725273
+both success. PR #1 description updated to the TL10-RC scope and kept Draft.
+FINAL user acceptance: run
+`pwsh -NoProfile -File scripts/current/run_daily_workbench.ps1 -Mode READ_ONLY -Open`.
+
+## 2026-10-13 TL9-MVP: one trustworthy daily packet, one command, consistent private state
+
+TL9 MVP-1..MVP-5 engineering delivery is complete on
+`codex/web-d1-investment-workbench` at `e027c5e` (bdcb968 + 6e5cad0 + e027c5e).
+`application/product/daily_public_packet.py` now builds one hash-chained public
+packet (engine `daily-public-packet-engine-v1`, identity schema v2) shared by
+`GET /api/v1/daily-public-packet`, `/daily-decisions`, `/decisions/{id}` and
+`/decision-history`; `/daily` renders version, date boundaries, freshness,
+counts, real todo and blockers. `scripts/current/run_daily_workbench.ps1`
+(READ_ONLY default, SAFE_REFRESH idempotent) is the single daily entry and was
+run for real: SAFE_REFRESH collected 600887 dual-source close 27.77 on
+2026-10-13, re-ran idempotently, exit 0. The daily page now derives one private
+state (LOCKED / NOT_CONNECTED / BLOCKED_PRIVATE_INPUT / CONNECTED /
+UNAVAILABLE) once and shares it across sections; an isolated private ledger
+verified NOT_CONNECTED -> CONNECTED -> BLOCKED_PRIVATE_INPUT end to end,
+including a publication-vs-ledger mismatch warning. The company page now opens
+with a generated one-line conclusion and closes with concrete next steps from
+published `next_step`/`next_action` fields only; 000333/601088 render the same
+component with honest "no usable valuation" states. A corrupt quote registry is
+now reported as REGISTRY_UNAVAILABLE instead of "nothing registered"
+(`daily_research_status.py`, packet blocker `QUOTE_REGISTRY_UNAVAILABLE`).
+Web: typecheck/format/60 tests/build passed. Full local Core Gates:
+5079 passed / 42 skipped. Remote CI on e027c5e: Core Research Gates run
+38383628464/38383628465 and the push run 38383621088, all Success. Usage and
+acceptance note: current/tl9-mvp-usage-acceptance-20261013.md. action=no_order
+unchanged; no canonical workbook was touched.
+
+## 2026-10-13 WEB-D4 work package F: dual-sleeve guardrails on /daily
+
+The daily workbench now restates the formally bound dual-sleeve risk review
+instead of leaving the section implicit. `/api/v1/daily-decisions` carries a
+`dual_sleeve` surface projected by
+`presentation/read_models/dual_sleeve_surface.py` from the published binding
+(`dual-sleeve-risk.json`, sha256 7d8f49bc...4fb2e9): status NOT_CONNECTED,
+blockers [portfolio.private_input_missing], position_guidance null,
+trade_eligible false, acceptance_authority NONE, plus next_user_input naming
+the private portfolio input the user still has to provide. A publication
+without the binding falls back to the shared run_dual_sleeve_review
+not-connected result; a tampered report fails closed alone and never takes the
+research page down. The /daily page shows the state, whether the private
+portfolio is connected, why guidance is absent and what input comes next.
+Tests: tests/web_api/test_read_api.py 17 passed, tests/web_api 134 passed, web
+typecheck/format/41 tests/build passed. action=no_order and
+position_guidance=null are unchanged; no private data was read or fabricated.
+Commits 2026f9e (API projection) and ae0ecf0 (workbench section plus records)
+are pushed to origin/codex/web-d1-investment-workbench. Full local Core Gates:
+5071 passed / 42 skipped. Remote CI on ae0ecf0: Core Research Gates run
+38361373957 and Web Workbench run 38361373941, both success.
+
 ## 2026-10-11 D2 user workflow and reliable review consumption
 
 Current task is D2-USER-WORKFLOW-RESEARCH-ADMISSION-AND-RELIABILITY, ordinary
@@ -8735,3 +8857,15 @@ Research update: [600887-liquidity-event-followup-20261002.md](current/600887-li
 Existing `replay_workbench_cutoffs.py --event-source-pages` produced the real source-review packet; shared `prepare_event_source_review` / `project_company_event_questions` appended the two pending questions to the retained three-company product data. A new source-reverified handoff and readable company cards are in `runtime/public-event-followup-20261002/`. Handoff SHA-256 `2199bfa212d1345424206b2122aec5b7cee9c06e33da726085708ef00ae65627`; fresh verification receipt `integration-receipt.json` confirms investment values/gates, other companies, portfolio/events/stages and historical execution unchanged. Prior numerical receipt remains intact. The original JSON comparison was rechecked on actual `snapshot` fields with required-field assertions, not missing top-level keys.
 
 ENGINEERING_DELIVERY=REAL_SOURCE_PACKET_AND_SHARED_HANDOFF; CURRENT_RESEARCH_ADMISSION=NOT_READY; FINAL_OPERATIONAL_ACCEPTANCE=NOT_REACHED; materiality_approved=false; model_validity_admitted=false; strict_pit_admitted=false; canonical_written=false; action=no_order. Official publication DATE_ONLY is separate from conservative next-day availability and actual October 2 acquisition. Full model-window event coverage, quote, dividend, portfolio and final operational gates remain unchanged. No production code, canonical workbook, server/PTA, database or scheduler change; no unchanged Core/CI rerun. This is a real evidence advance, not a status-only claim or total completion. Next product work is a scoped successor research/decision explanation incorporating these new originals while preserving the unresolved post-payment liquidity and guarantee gates, followed by the protected canonical publishing chain when ready.
+
+# 2026-10-13 TL8-LONG-RUN 交付（工作包 A/B、D/E 切片与 C 现状）
+
+TL8 记录见 [tl8-delivery-20261013.md](current/tl8-delivery-20261013.md)。要点：600887 研究有效性复核实测为 `BLOCKED_ON_HUMAN_EVENT_REVIEW`（反事实模型有效性 VALID，事件窗口仍待人工材料性复核），产物 `current/tl8-a-600887-research-validity-review-20261013.json`（`aa8f8080…`）；共享 PriceBridge 新增五级比较资格阶梯并在公司页与历史模式区分展示。真实历史回放（600887，三个 2026-08-27/09-22/10-01 截止时点）复现此前绑定产物并新增合成执行机制场景，`runtime/tl8-b-600887-replay-bound-20261013/result.json`（`985cf871…`），并封存一处扫描目录原件被覆盖的真实取证漂移（不绑定封存副本时 fail-closed）。`/api/v1/daily-decisions` 与 `/daily` 新增“研究状态与重新研究清单”，实际显示 600887 需要重新研究（核验收盘 2026-10-12 晚于研究截止 2026-10-11，27.96 元双源），正式候选计数改为从已发布行派生；新增薄 CLI `build_daily_research_summary.py` 写出不可覆盖的 `daily-summary.json`，同输入复跑返回 `UNCHANGED`。真实接口核查：600887 RESEARCH_ONLY、000333 PENDING_RESEARCH、601088 PENDING_RESEARCH（周期模型已注册但输入未准入，NOT_ESTABLISHED）。提交 `eb0e9df`、`07cf0d0`、`5b58881`；Core Gates 2340 passed / 33 skipped；Web typecheck/format/test/build 通过。下一工作包：000333 2026-06-30 股本分母的有界官方核验并接回共享研究链。
+
+# 2026-10-13 TL8 工作包 C：000333 2026-06-30 股本分母闭环
+
+TL8-C 记录见 [tl8-c-000333-share-denominator-recheck-20261013.md](current/tl8-c-000333-share-denominator-recheck-20261013.md)。在既有封存窗口之外做有界官方复查，命中发行人港交所月报表：2026-06-30 已发行 7,613,438,907（A 6,962,590,407 + H 650,848,500），库存 A 149,091,572（注销用途 68,679,031 + 激励用途 80,412,541），**已发行不含库存 = 7,464,347,335 股**，与 2026H1 报告总数逐位对账；7 月月报表的上月结存行互证；9 月滚动恒等式（23,212,340 回购 − 15,772,385 持股计划过户 = +7,439,955 = 月报表库存变动）验证“库存股 = 回购专用账户”口径。新增有界 HKEX 采集工具 `scripts/cases/capture_hkex_issuer_disclosure_window.py`（身份固定/行数上限/窗口校验/原件哈希/目录不可覆盖）与 4 例合成测试（已入 CI 清单），脚本清单与行数基线同步更新。共享链接入：`midea-valuation-applicability-v5`（`runtime/company-research/midea-valuation-applicability-20261013-v5/evidence.json`，`b69e2fc9…`）`A_BLOCKING_UNKNOWN = 0`、决定 `AUTHORIZED_DENOMINATOR_VERIFIED_PENDING_B_SCENARIO_INPUTS`；6 项 B 类情景输入与三项 FCFF 证据停止不变，无 `ValuationResult` 输出、无正式 Excel/门禁变更，2026-09-29 计数未回填。回执：`current/tl8-c-000333-share-denominator-recheck-receipt-20261013.json`。ENGINEERING_DELIVERY=DELIVERED；CURRENT_RESEARCH_ADMISSION=NOT_ADMITTED（000333 仍为 PENDING_RESEARCH）；FINAL_OPERATIONAL_ACCEPTANCE=NOT_PASSED；action=no_order。
+
+# 2026-10-13 TL8 工作包 C：601088 周期模型路由边界核验
+
+TL8-C3 记录见 [tl8-c-601088-cycle-model-boundary-20261013.md](current/tl8-c-601088-cycle-model-boundary-20261013.md)。只读复用生产路由器与共享合同核验中国神华的周期估值边界：`cyclical_cash_return` 画像 → `cyclical_normalized`（`SUPPORTED`，合同 `CyclicalFacts`）；同一画像请求成熟消费制造业的 `residual_income_or_equity_value` 与通用 `fcff` 均被路由器拒绝（`model_not_authorized_for_profile:*`），从代码层排除“残余收益模型无条件套用到周期公司”。合同 13 项必需输入 **0 项准入**：候选包 9 组推导全部 `model_input = null`，两个周期审计包 `registered_cyclical_facts_operating_inputs = []`，普通股分母仅有未复核候选 21,689,434,304 股（2026-06-30），归母净现金仅有候选区间。既有 stage-b 失效关闭结果（`runtime/valuation-results/601088-cyclical-b3/evidence.json`，`b03eaa05…`）以 13 条 `cyclical_input_missing:*` 阻塞、状态 `not_ready`、价格桥 `PENDING_EXTERNAL_DATA`，被本轮记录锚定。决定 `CYCLE_MODEL_ROUTE_VERIFIED_INPUTS_NOT_ADMITTED`，`valuation_status = NOT_ESTABLISHED`；封存停止项 `601088-acquisition-adjusted-through-cycle-profit` 不变并给出 6 条重开条件。新增 `scripts/research_cases/shenhua/build_shenhua_valuation_applicability.py`（薄构建器，产物 `runtime/company-research/shenhua-valuation-applicability-20261013-v1/evidence.json`，`148e56a3…`）与 `tests/test_shenhua_valuation_applicability.py`（4 项）；回执 `current/tl8-c-601088-cycle-model-boundary-receipt-20261013.json`。未新增模型家族、未登记研究、未产出估值数字或仓位、未修改 Web/Excel/门禁；601088 维持 PENDING_RESEARCH。ENGINEERING_DELIVERY=DELIVERED；CURRENT_RESEARCH_ADMISSION=NOT_ADMITTED；FINAL_OPERATIONAL_ACCEPTANCE=NOT_PASSED；action=no_order。

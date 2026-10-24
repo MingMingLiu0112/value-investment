@@ -1,0 +1,80 @@
+{
+  "stage": "G5_WEB_INTEGRATION",
+  "commit": "b98f49e3f84bac8a0e044adfff89c3341e2422d7",
+  "delivery_branch": "codex/web-d1-investment-workbench",
+  "working_tree_delivery": true,
+  "status": "PARTIAL",
+  "action": "no_order",
+  "files_changed": [
+    "scripts/current/run_daily_workbench.ps1",
+    "scripts/current/run_agent_research_pilot.py",
+    "src/value_investment_agent/presentation/web_api/agent_research_routes.py",
+    "src/value_investment_agent/presentation/web_api/condition_alert_routes.py",
+    "web/src/components/FillPanel.tsx",
+    "web/src/components/HotspotSizingPanel.tsx",
+    "web/src/pages/ConditionAlerts/index.tsx",
+    "web/src/pages/DecisionDetail/AgentResearchPanel.tsx",
+    "web/src/pages/DecisionDetail/ResearchDraftPanel.tsx",
+    "web/src/pages/Portfolio/index.tsx",
+    "web/src/services/api.ts"
+  ],
+  "actual_data_used": [
+    "Authenticated local workbench at http://127.0.0.1:8001 with daily, alerts, portfolio, company and history routes.",
+    "Scoped S6 event/financial/legacy Mock API evidence and S7 isolated public-chain restore evidence."
+  ],
+  "test_only_data_used": [
+    "TEST_ONLY account and alerts, injected workflow drafts, synthetic five-action decisions and isolated recovery fixtures."
+  ],
+  "tests_passed": {
+    "targeted_four_loop_regression": 75,
+    "full_python_regression": "6662 passed, 44 skipped",
+    "web_regression": "251 passed in 41 files",
+    "web_typecheck": "PASS",
+    "web_format": "PASS",
+    "web_build": "PASS"
+  },
+  "tests_failed": [],
+  "api_checks": [
+    "Existing event, financial and legacy authenticated Mock reads remain VERIFIED.",
+    "New hotspot, retrospective, condition-alert, G2 portfolio and G3 five-action contracts have Python and Web API coverage."
+  ],
+  "browser_checks": {
+    "status": "PARTIAL",
+    "evidence": [
+      "artifacts/current/four-business-loops/browser-daily-desktop.png",
+      "artifacts/current/four-business-loops/browser-alerts-desktop.png",
+      "artifacts/current/four-business-loops/browser-portfolio-desktop.png",
+      "artifacts/current/four-business-loops/browser-value-000333-desktop.png",
+      "artifacts/current/four-business-loops/browser-history-desktop.png",
+      "artifacts/current/four-business-loops/browser-system-desktop.png",
+      "artifacts/current/four-business-loops/browser-daily-mobile390.png"
+    ],
+    "interaction_acceptance": "NOT_PROVEN",
+    "limitation": "The captures demonstrate static rendering only; a complete real five-workflow interaction and final user acceptance were not rerun in this closure."
+  },
+  "replay_checks": [
+    "The workflow API restart replay returns the same registered draft and preserves the session boundary.",
+    "The isolated public-chain restore verifies 28 files with no mismatch and rejects corrupted ciphertext."
+  ],
+  "negative_checks": [
+    "Anonymous or invalid-session reads remain rejected.",
+    "Normal mode does not show TEST_ONLY alerts; no live provider call or formal investment eligibility is inferred from Mock reads."
+  ],
+  "user_visible_result": "The current local workbench presents daily decisions, alerts, portfolio, company research, history and system status from one Web-first shell while preserving explicit blocked or test-only states.",
+  "real_world_gates": {
+    "full_five_workflow_integration": "NOT_PROVEN",
+    "actual_browser_interaction": "NOT_RUN",
+    "real_private_account": "NOT_PROVIDED",
+    "live_llm": "NOT_AUTHORIZED",
+    "off_machine_recovery": "NOT_CONFIRMED",
+    "final_user_acceptance": "NOT_PASSED",
+    "production_scheduling": "NOT_AUTHORIZED"
+  },
+  "remaining_p0": [],
+  "remaining_p1": [
+    "Run a same-commit browser flow across all five workflows with actual interactions and retained evidence.",
+    "Extend recovery evidence to Agent registry, alert history, private ledgers and the production database with a real off-machine retrieval.",
+    "Do not treat the current static captures or scoped Mock API reads as user acceptance."
+  ],
+  "next_executable_step": "After this commit and exact-SHA CI, restart the local runtime from the committed build and execute the bounded five-workflow browser acceptance script."
+}

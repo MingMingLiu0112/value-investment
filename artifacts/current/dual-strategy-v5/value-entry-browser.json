@@ -1,0 +1,15 @@
+{
+  "action": "no_order",
+  "observation_date_local": "2026-10-22",
+  "url": "http://127.0.0.1:8001/daily#daily-value",
+  "runtime": "shared dirty checkout; scoped source delivery verified separately",
+  "desktop": {"viewport_width": 1280, "document_scroll_width": 1265, "value_links": 15, "screenshot": "value-entry-desktop.png"},
+  "mobile": {"viewport_width": 390, "viewport_height": 844, "document_scroll_width": 375, "value_links": 15, "screenshot": "value-entry-mobile.png"},
+  "clicked_company": "600887",
+  "observed_detail": "New source consumed on 2026-10-21; no economic or trading approval; current verified reference 27.60 is not valuation-comparable; private account locked.",
+  "current_public_counts": {"NO_TRADE": 6, "UNASSESSABLE": 24, "formal_candidates": 0},
+  "checks": {"focused_homepage_tests_passed": 15, "web_tests_passed": 321, "web_tests_failed": 0, "typecheck": "PASS", "format": "PASS", "build": "PASS", "bounded_independent_review": "NO_P0_P1"},
+  "investment_eligibility_changed": false,
+  "real_private_data_changed": false,
+  "total_goal_status": "IN_PROGRESS"
+}

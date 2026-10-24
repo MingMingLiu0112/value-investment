@@ -1,0 +1,27 @@
+{
+  "schema_version": "p7-excel-readonly-publication-preview-v1",
+  "action": "no_order",
+  "canonical_written": false,
+  "preserved_sha256": "aeaa3c7fec2b46d34c0651b0384dec49fb3ca16747dc41fcf675bbd022be82f1",
+  "workbook_original_baseline": "2026-10-01",
+  "registered_research_update": {
+    "receipt": "runtime/publication-receipts/canonical-reviewed-research-20261012T113935Z-362d7928.json",
+    "receipt_sha256": "cc524ff8e94173b146c578b6bc8dbde1f103aacc95cf9b0f6c8d9ee41e51c48d",
+    "wps_receipt": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/published-native-review/receipt.json",
+    "wps_receipt_sha256": "df91b8e1db9258dc4352298ccd2b5bcd17bb5213427b4a863f66bd92d4370339",
+    "status": "PUBLISHED_WPS_READONLY_VERIFIED",
+    "registered_at": "2026-10-12",
+    "research_as_of": "2026-10-11",
+    "registered_research_dates": {
+      "600519": "2026-10-08",
+      "600887": "2026-09-22"
+    },
+    "pending_candidate_generated_on": "2026-10-11",
+    "quote_observation_as_of": "2026-10-09",
+    "price_admitted": false
+  },
+  "web_quote_observation": "2026-10-15",
+  "preview_only": true,
+  "proposed_summary": "Receive current published research and quote summaries without replacing manual records; no investment admission or private ledger publication.",
+  "not_performed": "No native Excel preservation/publication verification in this P7 run; canonical workbook unchanged."
+}

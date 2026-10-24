@@ -1,0 +1,60 @@
+{
+  "schema_version": "quote-bridge-execution-v1",
+  "action": "no_order",
+  "symbol": "600887",
+  "status": "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
+  "reason": "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性",
+  "price_admitted": false,
+  "research_case": {
+    "package_path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
+    "package_sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5",
+    "package_version": "pending-600887-2026-10-11-short-advantage-fc7dba372686",
+    "research_as_of": "2026-10-11"
+  },
+  "research_day": "2026-10-11",
+  "quote": {
+    "quote_date": "2026-10-12",
+    "display_price": "27.96",
+    "collected_at": "2026-10-12T09:23:13.080145+00:00",
+    "display_scope": "LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+    "is_historical_close": true,
+    "latest_completed_session": "2026-10-12",
+    "bundle_path": "runtime/quote-sessions/20261012T092313080159Z/bundle.json",
+    "bundle_sha256": "628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f"
+  },
+  "pointer": {
+    "path": "config/current-quote-bridge.json",
+    "sha256": "414551e2579f3826fdf6fb18ad34afab7b10c50a17d2676d24f8b6942ffb751e"
+  },
+  "sources": [
+    {
+      "id": "daily-assistant-quote-628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f",
+      "kind": "quote_session",
+      "path": "runtime/quote-sessions/20261012T092313080159Z/bundle.json",
+      "sha256": "628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f",
+      "status": "collected_not_verified",
+      "expected_session": "2026-10-12",
+      "session_result": "matched_close",
+      "reason": "带日期双源报价与最近已完成交易日一致"
+    },
+    {
+      "id": "daily-assistant-quote-628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f-tencent",
+      "kind": "quote_provider_document",
+      "provider": "tencent",
+      "source_url": "https://qt.gtimg.cn/q=sh600887",
+      "fetched_at": "2026-10-12T09:23:12.983524+00:00",
+      "sha256": "4787985d63fa7cce86868d3e3bbeed8b48fcf95ccbf7fb601d1b000e88e900db",
+      "observed_trade_at": "2026-10-12T16:15:00+08:00"
+    },
+    {
+      "id": "daily-assistant-quote-628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f-sina",
+      "kind": "quote_provider_document",
+      "provider": "sina",
+      "source_url": "https://hq.sinajs.cn/list=sh600887",
+      "fetched_at": "2026-10-12T09:23:13.079577+00:00",
+      "sha256": "702da032ffb390f44df8dc2139a36c320eaa29f0e88fe21fc9556beea035268b",
+      "observed_trade_at": "2026-10-12T15:34:58+08:00"
+    }
+  ],
+  "next_step": "行情晚于研究截止日：先完成研究重登记与事件复核，再重跑价格桥接。"
+}

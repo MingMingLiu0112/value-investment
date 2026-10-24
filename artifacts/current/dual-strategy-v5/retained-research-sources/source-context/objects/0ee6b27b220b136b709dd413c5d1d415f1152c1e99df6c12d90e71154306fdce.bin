@@ -1,0 +1,160 @@
+{
+  "schema_version": "shared-valuation-result-artifact-v1",
+  "run_id": "600887-bounded-valuation-review-20260929",
+  "available_at": "2026-09-29T06:58:23.845102+00:00",
+  "computed_at": "2026-09-29T06:58:23.845102+00:00",
+  "source_package": {
+    "path": "config/m1-valuation-packages-v1/600887-quality-compounder.json",
+    "sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803"
+  },
+  "input_descriptor_sha256": "8ee8e489c002c06413d5c06002aff10d87ddbf55860bf3221a5ead7c3c0e5c04",
+  "issuer_identity_status": "VERIFIED",
+  "valuation_route": {
+    "profile_id": "quality_compounder",
+    "requested_model": null,
+    "selected_model": "residual_income_or_equity_value",
+    "status": "SUPPORTED",
+    "model_type": "residual_income_or_equity_value",
+    "model_factory": "ResidualIncomeEquityValuationModel",
+    "facts_contract": "QualityCompounderFacts",
+    "required_inputs": [
+      "start_book_equity",
+      "ordinary_shares",
+      "scenario_inputs"
+    ],
+    "blockers": []
+  },
+  "valuation_result_sha256": "51eafc6f61bb4f69a24bf5d921417e2748401ef2ddb4c85485c0926e07bc02e6",
+  "valuation_result": {
+    "symbol": "600887",
+    "model_type": "residual_income_or_equity_value",
+    "valuation_date": "2026-06-30",
+    "bear_value": "8.047594047901643105382499412",
+    "base_value": "11.02337489167396119279021126",
+    "bull_value": "13.13345272896486710447382700",
+    "confidence": "低",
+    "assumptions": {
+      "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+      "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+      "status": "conditional_research_only",
+      "disclaimer": "No market price, margin of safety, position or order is produced here."
+    },
+    "sensitivities": [
+      {
+        "scenario": "bear",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "50903934854.5803671834581977728386845171096012738",
+        "per_share_value": "8.047594047901643105382499412",
+        "terminal_residual_contribution_ratio": "-0.1111101820624202513685076270",
+        "dividend_crosscheck_difference": "0E-37",
+        "arithmetic_status": "research_arithmetic_only"
+      },
+      {
+        "scenario": "base",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "69726821957.3898599169596062812475583926059150946",
+        "per_share_value": "11.02337489167396119279021126",
+        "terminal_residual_contribution_ratio": "0E+25",
+        "dividend_crosscheck_difference": "-1E-37",
+        "arithmetic_status": "research_arithmetic_only"
+      },
+      {
+        "scenario": "bull",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "83073825313.6981820075209250126695788388833175835",
+        "per_share_value": "13.13345272896486710447382700",
+        "terminal_residual_contribution_ratio": "0.07570581514865340050409796321",
+        "dividend_crosscheck_difference": "0E-37",
+        "arithmetic_status": "research_arithmetic_only"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "cninfo:1225511409",
+        "kind": "issuer_interim_report",
+        "url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+        "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+        "supports": [
+          "2026-06-30 parent equity",
+          "share capital 6,325,360,667 at period start/end",
+          "H1 weighted ROE 10.09%",
+          "H1 earnings and counterevidence",
+          "impairment and liquidity facts"
+        ],
+        "issuer_identity": {
+          "venue": "CNINFO",
+          "security_code": "600887",
+          "issuer_name": "伊利股份",
+          "organization_id": "gssh0600887"
+        }
+      },
+      {
+        "id": "cninfo:1225259562",
+        "kind": "issuer_audited_annual_report",
+        "url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF",
+        "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+        "supports": [
+          "FY2024-FY2025 audited financial indicators and weighted ROE",
+          "parent cash-flow statement"
+        ],
+        "issuer_identity": {
+          "venue": "CNINFO",
+          "security_code": "600887",
+          "issuer_name": "伊利股份",
+          "organization_id": "gssh0600887"
+        }
+      },
+      {
+        "id": "cninfo:1213169501",
+        "kind": "issuer_audited_annual_report",
+        "url": "https://static.cninfo.com.cn/finalpage/2022-04-28/1213169501.PDF",
+        "sha256": "49935af2e517fe10592bc943f3de4321ecd837d7dda0cf26f86495325b9ed6eb",
+        "supports": ["FY2021 reported weighted ROE"],
+        "issuer_identity": {
+          "venue": "CNINFO",
+          "security_code": "600887",
+          "issuer_name": "伊利股份",
+          "organization_id": "gssh0600887"
+        }
+      },
+      {
+        "id": "cninfo:1216664083",
+        "kind": "issuer_audited_annual_report",
+        "url": "https://static.cninfo.com.cn/finalpage/2023-04-28/1216664083.PDF",
+        "sha256": "9b555197f8a45f40ea4b9f336aae05345798fe6d96ad116c0c3f2bf4e19edab8",
+        "supports": ["FY2022 reported weighted ROE"],
+        "issuer_identity": {
+          "venue": "CNINFO",
+          "security_code": "600887",
+          "issuer_name": "伊利股份",
+          "organization_id": "gssh0600887"
+        }
+      },
+      {
+        "id": "cninfo:1219916433",
+        "kind": "issuer_audited_annual_report",
+        "url": "https://static.cninfo.com.cn/finalpage/2024-04-30/1219916433.PDF",
+        "sha256": "d56b0be917eb89a07f092a3ecf1c269aea9f1698c51b648a53f69a0759ef44fe",
+        "supports": ["FY2023 reported weighted ROE"],
+        "issuer_identity": {
+          "venue": "CNINFO",
+          "security_code": "600887",
+          "issuer_name": "伊利股份",
+          "organization_id": "gssh0600887"
+        }
+      }
+    ],
+    "blockers": [],
+    "status": "conditional_research_only",
+    "model_version": "residual-income-equity-shared-v1"
+  },
+  "product_boundary": {
+    "price_bridge": null,
+    "price_review": "NOT_ASSESSABLE",
+    "formal_fair_value": null,
+    "valuation_approved": false,
+    "trade_approved": false,
+    "live_eligible": false,
+    "action": "no_order"
+  }
+}

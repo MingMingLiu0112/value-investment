@@ -1,0 +1,210 @@
+{
+  "action": "no_order",
+  "exported_at": "2026-10-21T15:01:19.826329+00:00",
+  "files": [
+    {
+      "original_binding": {
+        "path": "artifacts/current/tl11-p8-20261016/strategy/current-five-retrospective-spec.json",
+        "sha256": "742db87da9961e2a9b96722c886112f96994e767a45e4134643a27a42af31347"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/artifacts/current/tl11-p8-20261016/strategy/current-five-retrospective-spec.json",
+        "sha256": "742db87da9961e2a9b96722c886112f96994e767a45e4134643a27a42af31347"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/case.json",
+        "sha256": "846ba8d1ddab43b0e3d22985917161ce3a7236f903ee88262f2ea6410d6d1f9b"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/case.json",
+        "sha256": "846ba8d1ddab43b0e3d22985917161ce3a7236f903ee88262f2ea6410d6d1f9b"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/sina-15m.jsonp",
+        "sha256": "13daa9df322200fb067878bae7ec3c26cbe3b7b106e899c2ecff2b0f9ddf4283"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/sina-15m.jsonp",
+        "sha256": "13daa9df322200fb067878bae7ec3c26cbe3b7b106e899c2ecff2b0f9ddf4283"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/sina-60m.jsonp",
+        "sha256": "b7e0e9d336013f78d349d070c784fcc68494500b42152963f46f93c7ec9aa626"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/sina-60m.jsonp",
+        "sha256": "b7e0e9d336013f78d349d070c784fcc68494500b42152963f46f93c7ec9aa626"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/case.json",
+        "sha256": "f5a1c3a6021896c073c014b064114713e5dbd397df185c4a86b874fc6b00437e"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/case.json",
+        "sha256": "f5a1c3a6021896c073c014b064114713e5dbd397df185c4a86b874fc6b00437e"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/sina-15m.jsonp",
+        "sha256": "8a370ea88bda3e284a1db0bf2b73e3469f1483b7704cd795a190d9e2454802c7"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/sina-15m.jsonp",
+        "sha256": "8a370ea88bda3e284a1db0bf2b73e3469f1483b7704cd795a190d9e2454802c7"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/sina-60m.jsonp",
+        "sha256": "68c489a56bd6cf502b33dcb8b93875680fc279362cae553b5ab7f6cf00b7d263"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/sina-60m.jsonp",
+        "sha256": "68c489a56bd6cf502b33dcb8b93875680fc279362cae553b5ab7f6cf00b7d263"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/case.json",
+        "sha256": "6b98c3c625776610acc02fbc1e83a07ccc3861e61ad9498b839caebc5b1c49d3"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/case.json",
+        "sha256": "6b98c3c625776610acc02fbc1e83a07ccc3861e61ad9498b839caebc5b1c49d3"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/sina-15m.jsonp",
+        "sha256": "f147279eae4c262324a5f51ddc091a82b5e9ccc083f480336987996233dd1168"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/sina-15m.jsonp",
+        "sha256": "f147279eae4c262324a5f51ddc091a82b5e9ccc083f480336987996233dd1168"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/sina-60m.jsonp",
+        "sha256": "1d1580f8f41adc8d121e21869d859f487fe467a2f422fdc7e10593866d483c77"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/sina-60m.jsonp",
+        "sha256": "1d1580f8f41adc8d121e21869d859f487fe467a2f422fdc7e10593866d483c77"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/case.json",
+        "sha256": "c3f589d1f70a77da633e52bf63bf74e65ac262561b19f0d8d206b681fadad2c3"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/case.json",
+        "sha256": "c3f589d1f70a77da633e52bf63bf74e65ac262561b19f0d8d206b681fadad2c3"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/sina-15m.jsonp",
+        "sha256": "10069bcb64a9e99ceed23c0558cdfeb0db2b8b04b736c4b457645a26aa1d7eeb"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/sina-15m.jsonp",
+        "sha256": "10069bcb64a9e99ceed23c0558cdfeb0db2b8b04b736c4b457645a26aa1d7eeb"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/sina-60m.jsonp",
+        "sha256": "dfb9180baa045655590d5081d653759d4a820f86f032409d0c24cc0464eae828"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/sina-60m.jsonp",
+        "sha256": "dfb9180baa045655590d5081d653759d4a820f86f032409d0c24cc0464eae828"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/case.json",
+        "sha256": "92ad443d0f6b0d4187b202035e0aba9df7953115c406f0ab72cedca0f6f4d580"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/case.json",
+        "sha256": "92ad443d0f6b0d4187b202035e0aba9df7953115c406f0ab72cedca0f6f4d580"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/sina-15m.jsonp",
+        "sha256": "a233050c2b8d24fcb4243135e7d968e3d86967cc63b9b60efa39d5851cd8f9d2"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/sina-15m.jsonp",
+        "sha256": "a233050c2b8d24fcb4243135e7d968e3d86967cc63b9b60efa39d5851cd8f9d2"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/sina-60m.jsonp",
+        "sha256": "d03417da11e212c140ec791243f06dec016814db3b4c99bafa4c82002f11da99"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/sina-60m.jsonp",
+        "sha256": "d03417da11e212c140ec791243f06dec016814db3b4c99bafa4c82002f11da99"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "runtime/hotspot-current-refresh/dda4df9526804eda9b2d963a18efc6a6/bundle.json",
+        "sha256": "edd2587299ae075ca4374d01bb4d9206d10ec788d5eac1a55153e6de77d8fbff"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/runtime/hotspot-current-refresh/dda4df9526804eda9b2d963a18efc6a6/bundle.json",
+        "sha256": "edd2587299ae075ca4374d01bb4d9206d10ec788d5eac1a55153e6de77d8fbff"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "src/value_investment_agent/domain/hotspot/current_price.py",
+        "sha256": "123ca42eaa208959c3ff145f7fc7617db35aafe9d259412adfb7a3c23b99b26d"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/src/value_investment_agent/domain/hotspot/current_price.py",
+        "sha256": "123ca42eaa208959c3ff145f7fc7617db35aafe9d259412adfb7a3c23b99b26d"
+      }
+    },
+    {
+      "original_binding": {
+        "path": "src/value_investment_agent/domain/hotspot/price_action_plan.py",
+        "sha256": "45804be98e7f05135befc5f14c1e57bb69fa14aaef57e41d1dbee45b359adc80"
+      },
+      "retained_binding": {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-sources/fde29d8729f84fa9b5ca4e9e07785f09/sources/src/value_investment_agent/domain/hotspot/price_action_plan.py",
+        "sha256": "45804be98e7f05135befc5f14c1e57bb69fa14aaef57e41d1dbee45b359adc80"
+      }
+    }
+  ],
+  "formal_eligibility": false,
+  "historical_protocol_binding": {
+    "path": "artifacts/current/tl11-p8-20261016/strategy/current-five-retrospective-spec.json",
+    "sha256": "742db87da9961e2a9b96722c886112f96994e767a45e4134643a27a42af31347"
+  },
+  "historical_selection_status": "NOT_REVALIDATED_RETAINED_CASES_ONLY",
+  "namespace": "ACTUAL",
+  "original_manifest_binding": {
+    "path": "runtime/hotspot-retained-source-replays/90a2563ecff349719e9f70318a9caf4d/manifest.json",
+    "sha256": "ce5725c8667f72d96023b778f864fa59d835f2314fe97964ceaaf0cefc32f61e"
+  },
+  "retained_at": "2026-10-21T14:08:32.995141+00:00",
+  "schema_version": "hotspot-retained-source-manifest-v1",
+  "scope": "DESCRIPTIVE"
+}

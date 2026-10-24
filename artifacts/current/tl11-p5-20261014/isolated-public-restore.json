@@ -1,0 +1,753 @@
+{
+  "action": "no_order",
+  "status": "PUBLIC_ARCHIVE_RESTORED_AND_VERIFIED",
+  "restored_files": 66,
+  "private_data": false,
+  "full_inherited_research_restored": false,
+  "schema_version": "tl11-p5-isolated-public-restore-v1",
+  "generated_at": "2026-10-14T13:22:30.159788+00:00",
+  "manifest_sha256": "b5e65a81336f25993ecaa25903affbb26da2e0f5298cd5c77de41557f86fab6c",
+  "selection_replayed": true,
+  "case_count": 5,
+  "cases": [
+    {
+      "symbol": "300364",
+      "case_sha256": "a385019f1b9097fdd3bc19d6ea08596ecb07df2939efed4cb8ab023b5d4dec49",
+      "behavior": {
+        "rule_version": "hotspot-confirmed-structure-v1",
+        "action": "no_order",
+        "formal_eligibility": false,
+        "daily_trend": "DOWNTREND",
+        "confirmed_swings": [
+          {
+            "kind": "LOW",
+            "price": "24.190",
+            "pivot_at": "2026-08-07",
+            "known_at": "2026-08-11"
+          },
+          {
+            "kind": "HIGH",
+            "price": "26.600",
+            "pivot_at": "2026-08-13",
+            "known_at": "2026-08-17"
+          },
+          {
+            "kind": "LOW",
+            "price": "23.830",
+            "pivot_at": "2026-08-14",
+            "known_at": "2026-08-18"
+          },
+          {
+            "kind": "HIGH",
+            "price": "23.200",
+            "pivot_at": "2026-08-25",
+            "known_at": "2026-08-27"
+          },
+          {
+            "kind": "LOW",
+            "price": "21.810",
+            "pivot_at": "2026-08-26",
+            "known_at": "2026-08-28"
+          },
+          {
+            "kind": "HIGH",
+            "price": "29.900",
+            "pivot_at": "2026-09-01",
+            "known_at": "2026-09-03"
+          },
+          {
+            "kind": "LOW",
+            "price": "24.990",
+            "pivot_at": "2026-09-03",
+            "known_at": "2026-09-07"
+          },
+          {
+            "kind": "HIGH",
+            "price": "27.450",
+            "pivot_at": "2026-09-08",
+            "known_at": "2026-09-10"
+          },
+          {
+            "kind": "LOW",
+            "price": "23.090",
+            "pivot_at": "2026-09-16",
+            "known_at": "2026-09-18"
+          },
+          {
+            "kind": "HIGH",
+            "price": "26.200",
+            "pivot_at": "2026-09-22",
+            "known_at": "2026-09-24"
+          },
+          {
+            "kind": "LOW",
+            "price": "22.710",
+            "pivot_at": "2026-09-28",
+            "known_at": "2026-09-30"
+          },
+          {
+            "kind": "LOW",
+            "price": "20.110",
+            "pivot_at": "2026-10-09",
+            "known_at": "2026-10-13"
+          }
+        ],
+        "higher_high": false,
+        "higher_low": false,
+        "lower_high": true,
+        "lower_low": true,
+        "confirmed_support": {
+          "kind": "LOW",
+          "price": "20.110",
+          "pivot_at": "2026-10-09",
+          "known_at": "2026-10-13"
+        },
+        "confirmed_resistance": {
+          "kind": "HIGH",
+          "price": "26.200",
+          "pivot_at": "2026-09-22",
+          "known_at": "2026-09-24"
+        },
+        "potential_reversal": true,
+        "breakout": {
+          "observed": false,
+          "confirmed_on_next_completed_bar": false,
+          "confirmation_level": null,
+          "breakout_at": null,
+          "confirmed_at": null,
+          "level": "27.880"
+        },
+        "pullback_recovery": {
+          "observed": false,
+          "evidence": null
+        },
+        "range_breakout": {
+          "observed": false
+        },
+        "auxiliary_15m": {
+          "observed": false,
+          "scope": "AUXILIARY_OBSERVATION_ONLY"
+        },
+        "volume_ratio": "0.6320420394038465979969764911",
+        "structural_protection_price": "24.700",
+        "structural_invalidation": false,
+        "nearest_confirmed_upper_resistance": null,
+        "risk_reward_ratio": null,
+        "risk_reward_scope": "STRUCTURAL_DISTANCE_BEFORE_COST_NOT_EXPECTED_RETURN",
+        "risk_reward_blocker": "NO_CONFIRMED_TARGET_ABOVE_ENTRY_OR_INVALID_PRICE_RISK",
+        "observation_quality": "UNFAVORABLE_DAILY_TREND",
+        "observed_at": "2026-10-14 15:00:00",
+        "first_action_session": "SUBSEQUENT_EXCHANGE_SESSION",
+        "execution_checks": [
+          "GAP",
+          "PRICE_LIMIT",
+          "SUSPENSION",
+          "UNFILLED",
+          "SLIPPAGE",
+          "T_PLUS_ONE"
+        ],
+        "blockers": [
+          "RULE_VALIDATION_NOT_ADMITTED",
+          "HISTORICAL_CLASSIFICATION_PIT_NOT_PROVEN",
+          "MINUTE_SINGLE_SOURCE",
+          "PERSONAL_RISK_AND_EVENT_REVIEW_REQUIRED"
+        ]
+      }
+    },
+    {
+      "symbol": "300413",
+      "case_sha256": "38954bd8c9a43d30bc14a7f915d43def5ddb6c31d88a763823f2d5f9788dfcec",
+      "behavior": {
+        "rule_version": "hotspot-confirmed-structure-v1",
+        "action": "no_order",
+        "formal_eligibility": false,
+        "daily_trend": "RANGE",
+        "confirmed_swings": [
+          {
+            "kind": "LOW",
+            "price": "14.390",
+            "pivot_at": "2026-07-14",
+            "known_at": "2026-07-16"
+          },
+          {
+            "kind": "LOW",
+            "price": "14.520",
+            "pivot_at": "2026-07-27",
+            "known_at": "2026-07-29"
+          },
+          {
+            "kind": "HIGH",
+            "price": "17.000",
+            "pivot_at": "2026-08-04",
+            "known_at": "2026-08-06"
+          },
+          {
+            "kind": "LOW",
+            "price": "15.620",
+            "pivot_at": "2026-08-07",
+            "known_at": "2026-08-11"
+          },
+          {
+            "kind": "HIGH",
+            "price": "16.440",
+            "pivot_at": "2026-08-13",
+            "known_at": "2026-08-17"
+          },
+          {
+            "kind": "LOW",
+            "price": "14.820",
+            "pivot_at": "2026-08-19",
+            "known_at": "2026-08-21"
+          },
+          {
+            "kind": "LOW",
+            "price": "13.810",
+            "pivot_at": "2026-08-25",
+            "known_at": "2026-08-27"
+          },
+          {
+            "kind": "HIGH",
+            "price": "23.500",
+            "pivot_at": "2026-09-04",
+            "known_at": "2026-09-08"
+          },
+          {
+            "kind": "LOW",
+            "price": "16.400",
+            "pivot_at": "2026-09-16",
+            "known_at": "2026-09-18"
+          },
+          {
+            "kind": "HIGH",
+            "price": "19.680",
+            "pivot_at": "2026-09-22",
+            "known_at": "2026-09-24"
+          },
+          {
+            "kind": "LOW",
+            "price": "18.490",
+            "pivot_at": "2026-09-28",
+            "known_at": "2026-09-30"
+          },
+          {
+            "kind": "LOW",
+            "price": "18.790",
+            "pivot_at": "2026-10-09",
+            "known_at": "2026-10-13"
+          }
+        ],
+        "higher_high": false,
+        "higher_low": true,
+        "lower_high": true,
+        "lower_low": false,
+        "confirmed_support": {
+          "kind": "LOW",
+          "price": "18.790",
+          "pivot_at": "2026-10-09",
+          "known_at": "2026-10-13"
+        },
+        "confirmed_resistance": {
+          "kind": "HIGH",
+          "price": "19.680",
+          "pivot_at": "2026-09-22",
+          "known_at": "2026-09-24"
+        },
+        "potential_reversal": false,
+        "breakout": {
+          "observed": false,
+          "confirmed_on_next_completed_bar": false,
+          "confirmation_level": null,
+          "breakout_at": null,
+          "confirmed_at": null,
+          "level": "27.120"
+        },
+        "pullback_recovery": {
+          "observed": false,
+          "evidence": null
+        },
+        "range_breakout": {
+          "observed": false
+        },
+        "auxiliary_15m": {
+          "observed": false,
+          "scope": "AUXILIARY_OBSERVATION_ONLY"
+        },
+        "volume_ratio": "0.6642375964295831295375065011",
+        "structural_protection_price": "22.500",
+        "structural_invalidation": false,
+        "nearest_confirmed_upper_resistance": null,
+        "risk_reward_ratio": null,
+        "risk_reward_scope": "STRUCTURAL_DISTANCE_BEFORE_COST_NOT_EXPECTED_RETURN",
+        "risk_reward_blocker": "NO_CONFIRMED_TARGET_ABOVE_ENTRY_OR_INVALID_PRICE_RISK",
+        "observation_quality": "UNKNOWN",
+        "observed_at": "2026-10-14 15:00:00",
+        "first_action_session": "SUBSEQUENT_EXCHANGE_SESSION",
+        "execution_checks": [
+          "GAP",
+          "PRICE_LIMIT",
+          "SUSPENSION",
+          "UNFILLED",
+          "SLIPPAGE",
+          "T_PLUS_ONE"
+        ],
+        "blockers": [
+          "RULE_VALIDATION_NOT_ADMITTED",
+          "HISTORICAL_CLASSIFICATION_PIT_NOT_PROVEN",
+          "MINUTE_SINGLE_SOURCE",
+          "PERSONAL_RISK_AND_EVENT_REVIEW_REQUIRED"
+        ]
+      }
+    },
+    {
+      "symbol": "300418",
+      "case_sha256": "055bbfd15f2c6963e2ac07a8b71602a67a6fe6f36211fc871690887a4f133099",
+      "behavior": {
+        "rule_version": "hotspot-confirmed-structure-v1",
+        "action": "no_order",
+        "formal_eligibility": false,
+        "daily_trend": "DOWNTREND",
+        "confirmed_swings": [
+          {
+            "kind": "LOW",
+            "price": "42.460",
+            "pivot_at": "2026-08-07",
+            "known_at": "2026-08-11"
+          },
+          {
+            "kind": "HIGH",
+            "price": "45.290",
+            "pivot_at": "2026-08-13",
+            "known_at": "2026-08-17"
+          },
+          {
+            "kind": "LOW",
+            "price": "41.610",
+            "pivot_at": "2026-08-14",
+            "known_at": "2026-08-18"
+          },
+          {
+            "kind": "LOW",
+            "price": "42.280",
+            "pivot_at": "2026-08-19",
+            "known_at": "2026-08-21"
+          },
+          {
+            "kind": "HIGH",
+            "price": "47.690",
+            "pivot_at": "2026-08-20",
+            "known_at": "2026-08-24"
+          },
+          {
+            "kind": "LOW",
+            "price": "39.390",
+            "pivot_at": "2026-08-26",
+            "known_at": "2026-08-28"
+          },
+          {
+            "kind": "LOW",
+            "price": "39.710",
+            "pivot_at": "2026-08-31",
+            "known_at": "2026-09-02"
+          },
+          {
+            "kind": "HIGH",
+            "price": "47.590",
+            "pivot_at": "2026-09-01",
+            "known_at": "2026-09-03"
+          },
+          {
+            "kind": "LOW",
+            "price": "43.770",
+            "pivot_at": "2026-09-03",
+            "known_at": "2026-09-07"
+          },
+          {
+            "kind": "LOW",
+            "price": "42.160",
+            "pivot_at": "2026-09-14",
+            "known_at": "2026-09-16"
+          },
+          {
+            "kind": "HIGH",
+            "price": "45.670",
+            "pivot_at": "2026-09-22",
+            "known_at": "2026-09-24"
+          },
+          {
+            "kind": "LOW",
+            "price": "37.120",
+            "pivot_at": "2026-10-09",
+            "known_at": "2026-10-13"
+          }
+        ],
+        "higher_high": false,
+        "higher_low": false,
+        "lower_high": true,
+        "lower_low": true,
+        "confirmed_support": {
+          "kind": "LOW",
+          "price": "37.120",
+          "pivot_at": "2026-10-09",
+          "known_at": "2026-10-13"
+        },
+        "confirmed_resistance": {
+          "kind": "HIGH",
+          "price": "45.670",
+          "pivot_at": "2026-09-22",
+          "known_at": "2026-09-24"
+        },
+        "potential_reversal": false,
+        "breakout": {
+          "observed": false,
+          "confirmed_on_next_completed_bar": false,
+          "confirmation_level": null,
+          "breakout_at": null,
+          "confirmed_at": null,
+          "level": "43.420"
+        },
+        "pullback_recovery": {
+          "observed": false,
+          "evidence": null
+        },
+        "range_breakout": {
+          "observed": false
+        },
+        "auxiliary_15m": {
+          "observed": false,
+          "scope": "AUXILIARY_OBSERVATION_ONLY"
+        },
+        "volume_ratio": "0.6880917633039483216684206641",
+        "structural_protection_price": "40.310",
+        "structural_invalidation": false,
+        "nearest_confirmed_upper_resistance": {
+          "kind": "HIGH",
+          "price": "45.670",
+          "pivot_at": "2026-09-22",
+          "known_at": "2026-09-24"
+        },
+        "risk_reward_ratio": "0.7234726688102893890675241158",
+        "risk_reward_scope": "STRUCTURAL_DISTANCE_BEFORE_COST_NOT_EXPECTED_RETURN",
+        "risk_reward_blocker": null,
+        "observation_quality": "UNFAVORABLE_DAILY_TREND",
+        "observed_at": "2026-10-14 15:00:00",
+        "first_action_session": "SUBSEQUENT_EXCHANGE_SESSION",
+        "execution_checks": [
+          "GAP",
+          "PRICE_LIMIT",
+          "SUSPENSION",
+          "UNFILLED",
+          "SLIPPAGE",
+          "T_PLUS_ONE"
+        ],
+        "blockers": [
+          "RULE_VALIDATION_NOT_ADMITTED",
+          "HISTORICAL_CLASSIFICATION_PIT_NOT_PROVEN",
+          "MINUTE_SINGLE_SOURCE",
+          "PERSONAL_RISK_AND_EVENT_REVIEW_REQUIRED"
+        ]
+      }
+    },
+    {
+      "symbol": "300058",
+      "case_sha256": "584ad23ef03881fec209f3860f2b6955100af30b2d84c499b6249635c7f5fa63",
+      "behavior": {
+        "rule_version": "hotspot-confirmed-structure-v1",
+        "action": "no_order",
+        "formal_eligibility": false,
+        "daily_trend": "DOWNTREND",
+        "confirmed_swings": [
+          {
+            "kind": "HIGH",
+            "price": "16.100",
+            "pivot_at": "2026-08-04",
+            "known_at": "2026-08-06"
+          },
+          {
+            "kind": "LOW",
+            "price": "14.630",
+            "pivot_at": "2026-08-07",
+            "known_at": "2026-08-11"
+          },
+          {
+            "kind": "HIGH",
+            "price": "16.380",
+            "pivot_at": "2026-08-10",
+            "known_at": "2026-08-12"
+          },
+          {
+            "kind": "HIGH",
+            "price": "16.980",
+            "pivot_at": "2026-08-13",
+            "known_at": "2026-08-17"
+          },
+          {
+            "kind": "LOW",
+            "price": "12.920",
+            "pivot_at": "2026-08-25",
+            "known_at": "2026-08-27"
+          },
+          {
+            "kind": "LOW",
+            "price": "13.120",
+            "pivot_at": "2026-08-31",
+            "known_at": "2026-09-02"
+          },
+          {
+            "kind": "HIGH",
+            "price": "14.580",
+            "pivot_at": "2026-09-01",
+            "known_at": "2026-09-03"
+          },
+          {
+            "kind": "LOW",
+            "price": "13.180",
+            "pivot_at": "2026-09-03",
+            "known_at": "2026-09-07"
+          },
+          {
+            "kind": "HIGH",
+            "price": "15.000",
+            "pivot_at": "2026-09-04",
+            "known_at": "2026-09-08"
+          },
+          {
+            "kind": "LOW",
+            "price": "12.600",
+            "pivot_at": "2026-09-14",
+            "known_at": "2026-09-16"
+          },
+          {
+            "kind": "HIGH",
+            "price": "14.220",
+            "pivot_at": "2026-09-22",
+            "known_at": "2026-09-24"
+          },
+          {
+            "kind": "LOW",
+            "price": "11.900",
+            "pivot_at": "2026-10-09",
+            "known_at": "2026-10-13"
+          }
+        ],
+        "higher_high": false,
+        "higher_low": false,
+        "lower_high": true,
+        "lower_low": true,
+        "confirmed_support": {
+          "kind": "LOW",
+          "price": "11.900",
+          "pivot_at": "2026-10-09",
+          "known_at": "2026-10-13"
+        },
+        "confirmed_resistance": {
+          "kind": "HIGH",
+          "price": "14.220",
+          "pivot_at": "2026-09-22",
+          "known_at": "2026-09-24"
+        },
+        "potential_reversal": false,
+        "breakout": {
+          "observed": false,
+          "confirmed_on_next_completed_bar": false,
+          "confirmation_level": null,
+          "breakout_at": null,
+          "confirmed_at": null,
+          "level": "13.320"
+        },
+        "pullback_recovery": {
+          "observed": false,
+          "evidence": null
+        },
+        "range_breakout": {
+          "observed": false
+        },
+        "auxiliary_15m": {
+          "observed": false,
+          "scope": "AUXILIARY_OBSERVATION_ONLY"
+        },
+        "volume_ratio": "0.6468777407348154089802849725",
+        "structural_protection_price": "12.660",
+        "structural_invalidation": false,
+        "nearest_confirmed_upper_resistance": {
+          "kind": "HIGH",
+          "price": "14.220",
+          "pivot_at": "2026-09-22",
+          "known_at": "2026-09-24"
+        },
+        "risk_reward_ratio": "1.363636363636363636363636364",
+        "risk_reward_scope": "STRUCTURAL_DISTANCE_BEFORE_COST_NOT_EXPECTED_RETURN",
+        "risk_reward_blocker": null,
+        "observation_quality": "UNFAVORABLE_DAILY_TREND",
+        "observed_at": "2026-10-14 15:00:00",
+        "first_action_session": "SUBSEQUENT_EXCHANGE_SESSION",
+        "execution_checks": [
+          "GAP",
+          "PRICE_LIMIT",
+          "SUSPENSION",
+          "UNFILLED",
+          "SLIPPAGE",
+          "T_PLUS_ONE"
+        ],
+        "blockers": [
+          "RULE_VALIDATION_NOT_ADMITTED",
+          "HISTORICAL_CLASSIFICATION_PIT_NOT_PROVEN",
+          "MINUTE_SINGLE_SOURCE",
+          "PERSONAL_RISK_AND_EVENT_REVIEW_REQUIRED"
+        ]
+      }
+    },
+    {
+      "symbol": "002354",
+      "case_sha256": "7794a725e534860630d8bbf49957a2fa6436e325f2184da6aab351f2808d3bfb",
+      "behavior": {
+        "rule_version": "hotspot-confirmed-structure-v1",
+        "action": "no_order",
+        "formal_eligibility": false,
+        "daily_trend": "DOWNTREND",
+        "confirmed_swings": [
+          {
+            "kind": "LOW",
+            "price": "5.840",
+            "pivot_at": "2026-07-21",
+            "known_at": "2026-07-23"
+          },
+          {
+            "kind": "LOW",
+            "price": "5.880",
+            "pivot_at": "2026-07-27",
+            "known_at": "2026-07-29"
+          },
+          {
+            "kind": "HIGH",
+            "price": "6.480",
+            "pivot_at": "2026-07-28",
+            "known_at": "2026-07-30"
+          },
+          {
+            "kind": "LOW",
+            "price": "5.880",
+            "pivot_at": "2026-07-30",
+            "known_at": "2026-08-03"
+          },
+          {
+            "kind": "HIGH",
+            "price": "8.970",
+            "pivot_at": "2026-08-12",
+            "known_at": "2026-08-14"
+          },
+          {
+            "kind": "LOW",
+            "price": "6.790",
+            "pivot_at": "2026-08-25",
+            "known_at": "2026-08-27"
+          },
+          {
+            "kind": "HIGH",
+            "price": "8.800",
+            "pivot_at": "2026-09-01",
+            "known_at": "2026-09-03"
+          },
+          {
+            "kind": "LOW",
+            "price": "7.740",
+            "pivot_at": "2026-09-03",
+            "known_at": "2026-09-07"
+          },
+          {
+            "kind": "HIGH",
+            "price": "8.620",
+            "pivot_at": "2026-09-07",
+            "known_at": "2026-09-09"
+          },
+          {
+            "kind": "LOW",
+            "price": "7.280",
+            "pivot_at": "2026-09-14",
+            "known_at": "2026-09-16"
+          },
+          {
+            "kind": "HIGH",
+            "price": "8.270",
+            "pivot_at": "2026-09-22",
+            "known_at": "2026-09-24"
+          },
+          {
+            "kind": "LOW",
+            "price": "6.810",
+            "pivot_at": "2026-10-09",
+            "known_at": "2026-10-13"
+          }
+        ],
+        "higher_high": false,
+        "higher_low": false,
+        "lower_high": true,
+        "lower_low": true,
+        "confirmed_support": {
+          "kind": "LOW",
+          "price": "6.810",
+          "pivot_at": "2026-10-09",
+          "known_at": "2026-10-13"
+        },
+        "confirmed_resistance": {
+          "kind": "HIGH",
+          "price": "8.270",
+          "pivot_at": "2026-09-22",
+          "known_at": "2026-09-24"
+        },
+        "potential_reversal": false,
+        "breakout": {
+          "observed": false,
+          "confirmed_on_next_completed_bar": false,
+          "confirmation_level": null,
+          "breakout_at": null,
+          "confirmed_at": null,
+          "level": "8.030"
+        },
+        "pullback_recovery": {
+          "observed": false,
+          "evidence": null
+        },
+        "range_breakout": {
+          "observed": false
+        },
+        "auxiliary_15m": {
+          "observed": false,
+          "scope": "AUXILIARY_OBSERVATION_ONLY"
+        },
+        "volume_ratio": "0.5890180054839617331223506349",
+        "structural_protection_price": "7.390",
+        "structural_invalidation": false,
+        "nearest_confirmed_upper_resistance": {
+          "kind": "HIGH",
+          "price": "8.270",
+          "pivot_at": "2026-09-22",
+          "known_at": "2026-09-24"
+        },
+        "risk_reward_ratio": "0.375",
+        "risk_reward_scope": "STRUCTURAL_DISTANCE_BEFORE_COST_NOT_EXPECTED_RETURN",
+        "risk_reward_blocker": null,
+        "observation_quality": "UNFAVORABLE_DAILY_TREND",
+        "observed_at": "2026-10-14 15:00:00",
+        "first_action_session": "SUBSEQUENT_EXCHANGE_SESSION",
+        "execution_checks": [
+          "GAP",
+          "PRICE_LIMIT",
+          "SUSPENSION",
+          "UNFILLED",
+          "SLIPPAGE",
+          "T_PLUS_ONE"
+        ],
+        "blockers": [
+          "RULE_VALIDATION_NOT_ADMITTED",
+          "HISTORICAL_CLASSIFICATION_PIT_NOT_PROVEN",
+          "MINUTE_SINGLE_SOURCE",
+          "PERSONAL_RISK_AND_EVENT_REVIEW_REQUIRED"
+        ]
+      }
+    }
+  ],
+  "historic_report_available_at": "2026-10-14T10:04:58.306265+00:00",
+  "effective_available_at": "2026-10-14T10:05:01.453902+00:00",
+  "historical_report_clock_requires_correction_receipt": true,
+  "originals_rewritten": false
+}

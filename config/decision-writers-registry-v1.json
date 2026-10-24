@@ -1,0 +1,147 @@
+{
+  "schema_version": "decision-writers-registry-v1",
+  "action": "no_order",
+  "updated_at": "2026-10-17",
+  "note": "One authoritative writer per decision-state scope. Data collectors may coexist; only the named pipeline may publish the current authoritative state.",
+  "authority_scopes": {
+    "public_daily_observation": {
+      "authoritative_pipeline": "daily-public-packet",
+      "description": "The verified daily public packet and snapshot pointer consumed by the Web workbench."
+    },
+    "formal_research_version": {
+      "authoritative_pipeline": "canonical-reviewed-research",
+      "description": "The current publication of reviewed research versions."
+    },
+    "valuation_review": {
+      "authoritative_pipeline": "signed-research-review",
+      "description": "G3/materiality decisions consumed only through the authenticated review workflow."
+    },
+    "current_price_policy": {
+      "authoritative_pipeline": "daily-public-packet",
+      "description": "Dated price-condition observations bound to the current publication."
+    },
+    "private_ledger": {
+      "authoritative_pipeline": "private-portfolio-ledger",
+      "description": "User-confirmed private journal; locked until the local owner unlocks it."
+    },
+    "excel_publication": {
+      "authoritative_pipeline": "canonical-excel-publication",
+      "description": "The single canonical workbook. Currently a frozen 2026-10-01 snapshot, not live data."
+    }
+  },
+  "pipelines": [
+    {
+      "id": "daily-public-packet",
+      "kind": "PRODUCT",
+      "status": "KEEP_READONLY",
+      "entry": "scripts/current/run_daily_workbench.ps1",
+      "writes_scopes": ["public_daily_observation", "current_price_policy"],
+      "effective_authority": true,
+      "consumed_by_current_product": true,
+      "recovery": "Re-run SAFE_REFRESH or restore the last verified snapshot pointer and packet from backup."
+    },
+    {
+      "id": "canonical-reviewed-research",
+      "kind": "PRODUCT",
+      "status": "KEEP_READONLY",
+      "entry": "config/current-daily-public-snapshot.json",
+      "writes_scopes": ["formal_research_version"],
+      "effective_authority": true,
+      "consumed_by_current_product": true,
+      "recovery": "Restore the publication receipt and its bound research package; never edit the pointer alone."
+    },
+    {
+      "id": "signed-research-review",
+      "kind": "PRODUCT",
+      "status": "KEEP_READONLY",
+      "entry": "src/value_investment_agent/application/product/research_reviews.py",
+      "writes_scopes": ["valuation_review"],
+      "effective_authority": true,
+      "consumed_by_current_product": true,
+      "recovery": "Re-import the signed response and pinned trust root; replay is rejected by design."
+    },
+    {
+      "id": "private-portfolio-ledger",
+      "kind": "PRODUCT",
+      "status": "KEEP_READONLY",
+      "entry": "src/value_investment_agent/application/portfolio/private_portfolio_service.py",
+      "writes_scopes": ["private_ledger"],
+      "effective_authority": true,
+      "consumed_by_current_product": true,
+      "recovery": "Restore the private journal from its independent encrypted backup; the ledger stays locked without the local owner."
+    },
+    {
+      "id": "canonical-excel-publication",
+      "kind": "PRODUCT",
+      "status": "KEEP_READONLY",
+      "entry": "config/current-trial-workbook.json",
+      "writes_scopes": ["excel_publication"],
+      "effective_authority": true,
+      "consumed_by_current_product": true,
+      "recovery": "The workbook is a frozen snapshot. Any refresh requires the protected publication mechanism and explicit user authorization."
+    },
+    {
+      "id": "moutai-b1-daily-update",
+      "kind": "LEGACY",
+      "status": "RETIRE_PENDING_APPROVAL",
+      "entry": "scripts/run_moutai_b1_after_close.ps1",
+      "scheduled_task": "ValueInvestmentAgent-DailyUpdate",
+      "writes_scopes": ["legacy_b1_archive"],
+      "effective_authority": false,
+      "consumed_by_current_product": false,
+      "legacy_label": "HISTORICAL_MOUTAI_B1",
+      "recovery": "Disable only with explicit user approval; re-enable by restoring the recorded task XML and runtime inputs."
+    },
+    {
+      "id": "moutai-b1-excel-publish",
+      "kind": "LEGACY",
+      "status": "RETIRE_PENDING_APPROVAL",
+      "entry": "scripts/run_moutai_b1_excel_publish.ps1",
+      "scheduled_task": "ValueInvestmentAgent-MoutaiB1ExcelPublish",
+      "writes_scopes": ["legacy_excel_attempt"],
+      "effective_authority": false,
+      "consumed_by_current_product": false,
+      "legacy_label": "HISTORICAL_MOUTAI_B1",
+      "recovery": "Last run failed with exit 1. Disable only with explicit user approval; the canonical workbook is not written by this task."
+    },
+    {
+      "id": "moutai-preclose-capital-refresh",
+      "kind": "LEGACY",
+      "status": "RETIRE_PENDING_APPROVAL",
+      "entry": "scripts/run_moutai_preclose_capital_refresh.ps1",
+      "scheduled_task": "ValueInvestmentAgent-MoutaiPrecloseCapitalRefresh",
+      "writes_scopes": ["legacy_capital_archive"],
+      "effective_authority": false,
+      "consumed_by_current_product": false,
+      "legacy_label": "HISTORICAL_MOUTAI_B1",
+      "recovery": "Disable only with explicit user approval; re-enable by restoring the recorded task XML."
+    },
+    {
+      "id": "moutai-postclose-policy-stage",
+      "kind": "LEGACY",
+      "status": "ARCHIVE",
+      "entry": "scripts/run_moutai_postclose_p1_refresh.ps1",
+      "scheduled_task": "ValueInvestmentAgent-MoutaiPostclosePolicyStage",
+      "writes_scopes": ["legacy_policy_archive"],
+      "effective_authority": false,
+      "consumed_by_current_product": false,
+      "legacy_label": "HISTORICAL_MOUTAI_B1",
+      "recovery": "Task is already disabled; leave the archived outputs untouched."
+    },
+    {
+      "id": "server-db-research-pipeline",
+      "kind": "OBSERVATION",
+      "status": "KEEP_READONLY",
+      "entry": "Aliyun PostgreSQL scheduled pipeline (refresh-valuations, collect-filings, enrich-financials)",
+      "writes_scopes": ["research_observation"],
+      "effective_authority": false,
+      "consumed_by_current_product": false,
+      "legacy_label": "SERVER_OBSERVATION_ONLY",
+      "recovery": "Read-only consumption only. Any change to its schedule or schema requires explicit user approval."
+    }
+  ],
+  "conflict_policy": {
+    "mode": "FAIL_CLOSED",
+    "rule": "A scope may have exactly one effective_authority writer. Non-authoritative writers must declare consumed_by_current_product=false and must not publish that scope."
+  }
+}

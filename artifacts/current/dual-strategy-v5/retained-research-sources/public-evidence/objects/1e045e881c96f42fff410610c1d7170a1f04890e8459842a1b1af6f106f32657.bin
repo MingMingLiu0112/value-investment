@@ -1,0 +1,102 @@
+{
+  "schema_version": "current-local-source-reobservation-v1",
+  "action": "no_order",
+  "scope": "CURRENT_LOCAL_BYTES_NOT_HISTORICAL_ACQUISITION_OR_ECONOMIC_APPROVAL",
+  "symbol": "600887",
+  "observed_at": "2026-10-21T15:09:03.852772+00:00",
+  "case_registry_binding": {
+    "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/prior-case-registry.json",
+    "sha256": "bcd27349fb18aa17dd4f17820e642d7d07c8865a1652abe0b1a78e9f4aed2996"
+  },
+  "package_binding": {
+    "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
+    "sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5"
+  },
+  "policy_binding": {
+    "path": "config/research-proposals/600887-20261011-v3.json",
+    "sha256": "fc7dba372686f7fefb17364546046ae9bc8b2cd9eef29431a3ad2d83e6aa0edb"
+  },
+  "source_ids": [
+    "china_cost_equity_20260914",
+    "yili_quote_20260922"
+  ],
+  "implementation_binding": {
+    "path": "src/value_investment_agent/application/product/source_reobservation.py",
+    "sha256": "d2e5e61585321f6f10a07a5d31937dd37363c670264d8ed039d9c251598d8555"
+  },
+  "reference_manifest_binding": {
+    "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/manifest.json",
+    "sha256": "1d2d17b65d22a770fb3417ade7ae6599586b2a85de805077db7e6847030b852b"
+  },
+  "reference_script_binding": {
+    "path": "scripts/build_moutai_consolidated_equity_discount_range.py",
+    "sha256": "101ae422674ab2d7b993939aa485ab482eead32684a5741c38f19a1d52534339"
+  },
+  "observations": [
+    {
+      "prior_source": {
+        "id": "china_cost_equity_20260914",
+        "kind": "valuation_reference",
+        "location": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+        "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154",
+        "published_at": "2026-09-14T10:43:55+00:00",
+        "retrieved_at": "2026-09-23T00:53:00+00:00",
+        "parser_version": "valuation-evidence-v1",
+        "local_path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+        "source_available_at": "2026-10-11T08:21:25.089557+00:00",
+        "availability_basis": "current_candidate_acquisition"
+      },
+      "verification": {
+        "kind": "RETAINED_DERIVATION_HASHES_NOT_ISSUER_ECONOMIC_APPROVAL",
+        "bindings": [
+          {
+            "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/manifest.json",
+            "sha256": "1d2d17b65d22a770fb3417ade7ae6599586b2a85de805077db7e6847030b852b"
+          },
+          {
+            "path": "scripts/build_moutai_consolidated_equity_discount_range.py",
+            "sha256": "101ae422674ab2d7b993939aa485ab482eead32684a5741c38f19a1d52534339"
+          },
+          {
+            "path": "runtime/company-research/600519-consolidated-parent-equity-model-feasibility-20260914T104237Z/evidence.json",
+            "sha256": "fd701df519ec2bb5734e1faa9306b9914fa16f0aa5ee5fefc1b788d2019ba00f"
+          },
+          {
+            "path": "runtime/valuation-research/moutai-discount-basis-20260909T120002401955Z/evidence.json",
+            "sha256": "6dea599866140d28b7058d60b7c9a0d235aaed1def4df902011fc46e854de709"
+          },
+          {
+            "path": "runtime/valuation-research/moutai-market-beta-20260912T161052067136Z/evidence.json",
+            "sha256": "edb4592aa6a5d81f5f8c5e9c8c48578950d0b59f65b79f9db6f3b173546c7a3c"
+          }
+        ]
+      }
+    },
+    {
+      "prior_source": {
+        "id": "yili_quote_20260922",
+        "kind": "quote_session",
+        "location": "runtime/quote-sessions/20260923T005634211464Z/bundle.json",
+        "sha256": "5e49dc79bbc0132b040175e993e2f5dd5a3813c7167ade7aa2afc5c51cea19c0",
+        "retrieved_at": "2026-09-23T00:56:34+00:00",
+        "parser_version": "quote-session-collection-v1",
+        "local_path": "runtime/quote-sessions/20260923T005634211464Z/bundle.json",
+        "source_available_at": "2026-10-11T08:21:25.089557+00:00",
+        "availability_basis": "current_candidate_acquisition"
+      },
+      "verification": {
+        "kind": "HISTORICAL_QUOTE_ARCHIVE_NOT_CURRENT_PRICE_ADMISSION",
+        "historical_session": "2026-09-22",
+        "current_status": "unverified",
+        "price_admitted": false
+      }
+    }
+  ],
+  "approval_changed": false,
+  "research_admitted": false,
+  "price_admitted": false,
+  "observed_case_registry": {
+    "original_path": "config/user-daily-trade-assistant-v1.json",
+    "observed_sha256": "bcd27349fb18aa17dd4f17820e642d7d07c8865a1652abe0b1a78e9f4aed2996"
+  }
+}

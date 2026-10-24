@@ -347,15 +347,16 @@ def test_batch_blocks_stopped_task_and_reopens_only_once_with_hash_bound_source(
     new_source = ResearchSourceDescriptor(
         id="cninfo_1230000000",
         kind="official_issuer_filing",
-        location="fixtures/new-share-filing.pdf",
+        location="https://static.cninfo.com.cn/finalpage/2026-09-20/synthetic-test.pdf",
+        local_path="fixtures/new-share-filing.pdf",
         sha256=hashlib.sha256(source_path.read_bytes()).hexdigest(),
         published_at=datetime(2026, 9, 20, tzinfo=timezone.utc),
         retrieved_at=datetime(2026, 9, 21, tzinfo=timezone.utc),
         issuer_identity=ResearchIssuerIdentity(
             venue="CNINFO",
             security_code="000333",
-            issuer_name="Midea Group",
-            organization_id="gssh0000333",
+            issuer_name="美的集团",
+            organization_id="9900005965",
         ),
     )
     reopened_spec = replace(
@@ -418,15 +419,16 @@ def test_batch_refuses_reopen_when_source_hash_does_not_match_bytes(tmp_path):
     bad_source = ResearchSourceDescriptor(
         id="cninfo_1230000000",
         kind="official_issuer_filing",
-        location="fixtures/new-share-filing.pdf",
+        location="https://static.cninfo.com.cn/finalpage/2026-09-20/synthetic-test.pdf",
+        local_path="fixtures/new-share-filing.pdf",
         sha256="c" * 64,
         published_at=datetime(2026, 9, 20, tzinfo=timezone.utc),
         retrieved_at=datetime(2026, 9, 21, tzinfo=timezone.utc),
         issuer_identity=ResearchIssuerIdentity(
             venue="CNINFO",
             security_code="000333",
-            issuer_name="Midea Group",
-            organization_id="gssh0000333",
+            issuer_name="美的集团",
+            organization_id="9900005965",
         ),
     )
     spec = ResearchBatchSpec(

@@ -1,0 +1,124 @@
+{
+  "symbol": "600519",
+  "assessment_version": "moutai-consolidated-parent-equity-model-feasibility-v2",
+  "input": {
+    "path": "runtime\\company-research\\600519-consolidated-parent-equity-inputs-20260914T104011Z\\evidence.json",
+    "sha256": "3ba2b4caa8584100fc41c2ec76ad04794a49dde215cc334abe5a879275dba728"
+  },
+  "candidate_model": {
+    "name": "consolidated_parent_equity_residual_income_or_dividend_capacity",
+    "economic_scope": "Listed-company parent-attributable consolidated equity, parent-attributable profit, and issued-share denominator.",
+    "scope_match": "The starting book equity, earnings and share denominator all describe the same parent-attributable listed equity claim.",
+    "why_considered": "It avoids using an industrial FCFF estimate together with a separately valued finance subsidiary and a later enterprise-to-equity bridge."
+  },
+  "point_in_time_facts": [
+    {
+      "period_end": "2014-12-31",
+      "available_at": "2015-04-22T00:00:00+08:00",
+      "ending_equity_profit_ratio": "0.2872859574239139591868730830",
+      "book_value_per_issued_share_cny": "46.78677409775673862826379731",
+      "profit_per_issued_share_cny": "13.44118319145042285538153307"
+    },
+    {
+      "period_end": "2015-12-31",
+      "available_at": "2016-03-25T00:00:00+08:00",
+      "ending_equity_profit_ratio": "0.2425162767148870164322202260",
+      "book_value_per_issued_share_cny": "50.88846552588294614112522725",
+      "profit_per_issued_share_cny": "12.34128118707101700066661476"
+    },
+    {
+      "period_end": "2016-12-31",
+      "available_at": "2017-04-16T00:00:00+08:00",
+      "ending_equity_profit_ratio": "0.2293512653084928002799870473",
+      "book_value_per_issued_share_cny": "58.02759548157941368787622459",
+      "profit_per_issued_share_cny": "13.30870244650961815089948414"
+    },
+    {
+      "period_end": "2017-12-31",
+      "available_at": "2018-03-29T00:00:00+08:00",
+      "ending_equity_profit_ratio": "0.2961061709861955987925853921",
+      "book_value_per_issued_share_cny": "72.80025711632355987249778657",
+      "profit_per_issued_share_cny": "21.55660538152510695369789694"
+    },
+    {
+      "period_end": "2018-12-31",
+      "available_at": "2019-03-30T00:00:00+08:00",
+      "ending_equity_profit_ratio": "0.3119822152258717634358523115",
+      "book_value_per_issued_share_cny": "89.82547520147702853802163959",
+      "profit_per_issued_share_cny": "28.02395073707341312013124048"
+    },
+    {
+      "period_end": "2019-12-31",
+      "available_at": "2020-04-23T00:00:00+08:00",
+      "ending_equity_profit_ratio": "0.3029657011563266061547053577",
+      "book_value_per_issued_share_cny": "108.2714440951178230052623878",
+      "profit_per_issued_share_cny": "32.80253397548538932324192894"
+    },
+    {
+      "period_end": "2020-12-31",
+      "available_at": "2021-04-01T00:00:00+08:00",
+      "ending_equity_profit_ratio": "0.2894649994897770896623784492",
+      "book_value_per_issued_share_cny": "128.4214437308837827928054006",
+      "profit_per_issued_share_cny": "37.17351314403671141598878775"
+    },
+    {
+      "period_end": "2021-12-31",
+      "available_at": "2022-04-01T00:00:00+08:00",
+      "ending_equity_profit_ratio": "0.2767770342965817967994823072",
+      "book_value_per_issued_share_cny": "150.8833790325775128725746853",
+      "profit_per_issued_share_cny": "41.76105417328385704862721460"
+    },
+    {
+      "period_end": "2022-12-31",
+      "available_at": "2023-04-01T00:00:00+08:00",
+      "ending_equity_profit_ratio": "0.3175408859733295954405098791",
+      "book_value_per_issued_share_cny": "157.2257747911992840617934532",
+      "profit_per_issued_share_cny": "49.92561182504061064268700359"
+    },
+    {
+      "period_end": "2023-12-31",
+      "available_at": "2024-04-04T00:00:00+08:00",
+      "ending_equity_profit_ratio": "0.3465227733171268232865402244",
+      "book_value_per_issued_share_cny": "171.6836087496969028285195214",
+      "profit_per_issued_share_cny": "59.49228023703751113081076881"
+    },
+    {
+      "period_end": "2024-12-31",
+      "available_at": "2025-04-04T00:00:00+08:00",
+      "ending_equity_profit_ratio": "0.3699096213413903761593472711",
+      "book_value_per_issued_share_cny": "185.5647131363149975266633965",
+      "profit_per_issued_share_cny": "68.64217277057800929121194130"
+    },
+    {
+      "period_end": "2025-12-31",
+      "available_at": "2026-04-18T00:00:00+08:00",
+      "ending_equity_profit_ratio": "0.3364977259825608199947521310",
+      "book_value_per_issued_share_cny": "195.3554497279007789864266635",
+      "profit_per_issued_share_cny": "65.73666459173909202975014462"
+    }
+  ],
+  "latest_fact_summary": {
+    "period_end": "2025-12-31",
+    "available_at": "2026-04-18T00:00:00+08:00",
+    "ending_equity_profit_ratio": "0.3364977259825608199947521310",
+    "book_value_per_issued_share_cny": "195.3554497279007789864266635",
+    "profit_per_issued_share_cny": "65.73666459173909202975014462"
+  },
+  "scope_findings": {
+    "industrial_finance_carveout_required": false,
+    "enterprise_to_equity_bridge_required": false,
+    "reason": "This candidate values the parent-attributable equity claim directly. These findings do not repair or approve the existing industrial FCFF model."
+  },
+  "unresolved_required_inputs": [
+    "A dated, scope-matched CNY cost-of-equity range and a rule for its historical point-in-time version.",
+    "Economically supported bear/base/bull return-on-equity, retention, payout, and fade assumptions; historical end-equity ratios are observations, not forecasts.",
+    "A current ordinary-share and post-2025 capital-action treatment for a current per-share output.",
+    "Independent arithmetic and accounting-policy checks before any value may become formal."
+  ],
+  "separate_execution_requirements": "A dated daily simulation contract with prices/status/actions, fees, adverse slippage, order limits and prior-session capacity; historical queue proof is not required for ordinary daily simulation.",
+  "conclusion": "candidate_scope_matched_but_not_admitted",
+  "allowed_output": "The fact chain may support model research and a future bounded residual-income or dividend-capacity contract. It does not produce a fair value, safety margin, order, historical strategy return, or simulation admission.",
+  "valuation_approved": false,
+  "simulation_eligible": false,
+  "trade_approved": false
+}

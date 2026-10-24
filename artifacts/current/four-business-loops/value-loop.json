@@ -1,0 +1,67 @@
+{
+  "stage": "G3_VALUE_LOOP",
+  "commit": "b98f49e3f84bac8a0e044adfff89c3341e2422d7",
+  "delivery_branch": "codex/web-d1-investment-workbench",
+  "working_tree_delivery": true,
+  "status": "PARTIAL",
+  "action": "no_order",
+  "files_changed": [
+    "src/value_investment_agent/application/decision/current_value_plan.py",
+    "src/value_investment_agent/application/product/research_draft.py",
+    "src/value_investment_agent/domain/decision/value_action_plan.py",
+    "web/src/components/CurrentJudgment.tsx",
+    "web/src/pages/DecisionDetail/ResearchDraftPanel.tsx",
+    "tests/test_current_value_plan.py",
+    "tests/test_g3_five_action_integrated_contract.py",
+    "tests/test_bound_research_draft.py"
+  ],
+  "actual_data_used": [
+    "Current 000333 bound research draft with retained official half-year report and HKEX share-capital evidence.",
+    "Current 000333 loader verification: model validity UNKNOWN, PriceBridge INVALID, economic approval false and action no_order."
+  ],
+  "test_only_data_used": [
+    "Synthetic five-action plan projections and risk transitions used to prove contract behavior only."
+  ],
+  "tests_passed": {
+    "targeted_four_loop_regression": 75,
+    "full_python_regression": "6662 passed, 44 skipped",
+    "web_regression": 251,
+    "web_typecheck": "PASS",
+    "web_format": "PASS",
+    "web_build": "PASS"
+  },
+  "tests_failed": [],
+  "api_checks": [
+    "Research-draft API regression verifies current financial facts, null preservation, source scope and model diagnostics.",
+    "The current admitted path still returns RESEARCH_DRAFT_NOT_APPROVED and does not fabricate a BUY or ADD recommendation."
+  ],
+  "browser_checks": {
+    "status": "PARTIAL",
+    "evidence": ["artifacts/current/four-business-loops/browser-value-000333-desktop.png"],
+    "interaction_acceptance": "NOT_RUN",
+    "limitation": "The 000333 page is visible, but formal economic, materiality, model-validity and PriceBridge gates remain unresolved."
+  },
+  "replay_checks": [
+    "The bound draft is reproducible from retained source hashes and shared model inputs; diagnostics must match shared sensitivities.",
+    "Five-action semantics preserve HOLD and reject stale or mismatched plans."
+  ],
+  "negative_checks": [
+    "Altered terminal contribution, timing factor or dividend cross-check diagnostics are rejected.",
+    "Missing evidence stays blocked; no threshold or valuation assumption was relaxed to create BUY/ADD."
+  ],
+  "user_visible_result": "The 000333 research view exposes real financial facts and conditional valuation inputs while stating that formal investment admission is still blocked.",
+  "real_world_gates": {
+    "g1_economic_approval": "NOT_APPROVED",
+    "g3_formal_approval": "NOT_APPROVED",
+    "model_validity": "UNKNOWN",
+    "price_bridge": "INVALID",
+    "recommendation": "NO_ACTION",
+    "formal_investment_eligibility": false
+  },
+  "remaining_p0": [],
+  "remaining_p1": [
+    "Complete approved economic assumptions, announcement materiality review and model validity before admitting current price comparison.",
+    "Do not treat the conditional Bear/Base/Bull values as a formal valuation result or a trade instruction."
+  ],
+  "next_executable_step": "Close the current 000333 economic/materiality evidence gaps and rerun the shared valuation and PriceBridge path without changing thresholds."
+}

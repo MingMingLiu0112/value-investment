@@ -1,0 +1,84 @@
+{
+  "stage": "S3_INDEPENDENT_PREPARATION",
+  "status": "PARTIAL",
+  "action": "no_order",
+  "source_report": "runtime\\hotspot-daily-selection\\561a1e66bf424d4e87426fbf1f080106\\report.json",
+  "source_sha256": "c2ef47a982ea85f04ed4d5e6324f9beda00e0f80f55cd4b19590d1c96d53f4f1",
+  "trade_date": "2026-10-16",
+  "replay_parameters": {
+    "limit": 10,
+    "candidate_pool_limit": 10
+  },
+  "original_report_limit": 5,
+  "replay_not_original_ranking": true,
+  "candidates": [
+    {
+      "symbol": "600150",
+      "company_name": "中国船舶",
+      "industry": "国防军工",
+      "rank": 1
+    },
+    {
+      "symbol": "000338",
+      "company_name": "潍柴动力",
+      "industry": "汽车",
+      "rank": 135
+    },
+    {
+      "symbol": "600176",
+      "company_name": "XD中国巨",
+      "industry": "建筑材料",
+      "rank": 420
+    },
+    {
+      "symbol": "000560",
+      "company_name": "我爱我家",
+      "industry": "房地产",
+      "rank": 487
+    },
+    {
+      "symbol": "600667",
+      "company_name": "太极实业",
+      "industry": "建筑装饰",
+      "rank": 573
+    },
+    {
+      "symbol": "601857",
+      "company_name": "中国石油",
+      "industry": "石油石化",
+      "rank": 704
+    },
+    {
+      "symbol": "002008",
+      "company_name": "大族激光",
+      "industry": "机械设备",
+      "rank": 748
+    },
+    {
+      "symbol": "600019",
+      "company_name": "宝钢股份",
+      "industry": "钢铁",
+      "rank": 1269
+    },
+    {
+      "symbol": "600127",
+      "company_name": "金健米业",
+      "industry": "农林牧渔",
+      "rank": 1312
+    },
+    {
+      "symbol": "000333",
+      "company_name": "美的集团",
+      "industry": "家用电器",
+      "rank": 1411
+    }
+  ],
+  "scope": "DATED_DAILY_CROSS_INDUSTRY_CANDIDATE_POOL",
+  "candidate_count": 10,
+  "industry_count": 10,
+  "source_collection": false,
+  "structure_coverage_completed": false,
+  "current_pointer_changed": false,
+  "investment_eligibility": false,
+  "actual_browser_evidence": "NOT_VERIFIED"
+}

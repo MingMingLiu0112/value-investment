@@ -124,9 +124,13 @@ def build_current_workbench_for_symbol(
         if not isinstance(bundle, dict) or not isinstance(recommendation, dict):
             raise ValueError("Current workbench requires replayable decision artifacts")
         repository = ReadOnlyArtifactBundleRepository(bundle)
+        from .research_reviews import verify_human_approval_transport_provenance
         verify_decision_recommendation_payload(
             repository, payload=recommendation,
             recommendation_artifact=repository.recommendation_artifact(recommendation),
+            human_approval_provenance_verifier=lambda approval: (
+                verify_human_approval_transport_provenance(root, approval)
+            ),
         )
     evidence_stops = []
     if stopped:

@@ -1,0 +1,78 @@
+{
+  "action": "no_order",
+  "observed_at": "2026-10-21T17:20:01.343262+00:00",
+  "code_sha": "a1692f3fe5ef997ca83e64d3072e91ce2186932c",
+  "workflows": {
+    "Core Research Gates": {
+      "id": 39641980365,
+      "name": "Core Research Gates",
+      "head_sha": "a1692f3fe5ef997ca83e64d3072e91ce2186932c",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39641980365",
+      "jobs": [
+        {
+          "id": 119367584030,
+          "name": "offline-core",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-21T17:14:22Z",
+          "active_steps": []
+        },
+        {
+          "id": 119367584632,
+          "name": "postgres-integration",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-21T17:14:17Z",
+          "active_steps": []
+        }
+      ]
+    },
+    "Web Workbench": {
+      "id": 39641979967,
+      "name": "Web Workbench",
+      "head_sha": "a1692f3fe5ef997ca83e64d3072e91ce2186932c",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39641979967",
+      "jobs": [
+        {
+          "id": 119367582782,
+          "name": "web",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-21T17:14:16Z",
+          "active_steps": []
+        }
+      ]
+    }
+  },
+  "bindings": [
+    {
+      "path": "artifacts/current/dual-strategy-v5/prior-session-decision-closure.json",
+      "sha256": "f30baf05fa1c25b298514a374cf020469167839859328b06803a7f6d503f1cf1"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/prior-session-handoff-verification.json",
+      "sha256": "f0cb42c8d88e5048974d8b870039e7eab6ef3afc09d56541d9be3e02395e7407"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/test-results/v5-prior-basis-integration.xml",
+      "sha256": "4cab603a5c93c1fc369a6d8b04c83b10c8e6ee9624c874339972ca135fa12e53"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/test-results/v5-materiality-transport.xml",
+      "sha256": "17679cdb51b355dfeedf3567d01e976b2910af8e84e824fd886e609c5f13d162"
+    }
+  ],
+  "web_tests": 323,
+  "total_goal": "IN_PROGRESS",
+  "real_assisted_use": "NOT_PROVEN",
+  "final_browser_acceptance": "PENDING_NOT_PASSED",
+  "private_data_uploaded": false,
+  "real_signature_created": false,
+  "real_order_created": false,
+  "shared_dirty_checkout_preserved": true,
+  "excel_modified": false
+}

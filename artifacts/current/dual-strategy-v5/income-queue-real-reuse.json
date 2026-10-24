@@ -1,0 +1,28 @@
+{
+  "schema_version": "v5-real-income-reuse-v1",
+  "action": "no_order",
+  "checked_at": "2026-10-21T13:38:56.354118+00:00",
+  "real_or_test": "REAL_PUBLIC_DATA",
+  "original_export": {
+    "path": "runtime/daily-marketwide/20261021T0128041036021Z/retained-financial-points.json",
+    "sha256": "d08dfd0f23a2dacb98ae6d053e7ed4a55ec7b4ca0d92c4d653520197ec1f9b40"
+  },
+  "original_export_unchanged": true,
+  "reused_export": {
+    "path": "runtime/value-evidence-enrichment/inputs/2c2ae2bf66972e75c6529ffb48b332912811e619a9c03881ae99a2ad69c920f1.json",
+    "sha256": "f8ac88538ed8d1a50a7e6e1bed1efa9628e6638367441cefe0b1a49a4d8ec24c"
+  },
+  "new_input_count": 2,
+  "metrics": {
+    "debt_ratio": "16.41536219224762329957853997",
+    "revenue_yoy": "-1.206003502122310075731217400",
+    "net_income_yoy": "-4.532254817158085759953691710"
+  },
+  "coverage": "0.8889",
+  "total_quality_score": null,
+  "complete_debt_verified": false,
+  "formal_eligibility": false,
+  "outside_candidate_pool_excluded": true,
+  "candidate_pool_modified": false,
+  "limitation": "Source reuse tested on actual 600519; full queue/worker integration is separately isolated test evidence. No synthetic discovery candidate was inserted."
+}
