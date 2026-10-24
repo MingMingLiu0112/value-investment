@@ -44,6 +44,34 @@ def test_a_subtotal_is_reconciled_independently_of_all_share_amount():
     assert terms['declared_total_gross_cash_cny'] == '1600'
     assert terms['all_share_terms']['current_total_gross_cash_cny'] == '2000'
     assert terms['reference_deduction_per_total_a_share'] is None
+    assert terms['body_payment_date_review']['status'] == 'UNKNOWN'
+
+
+@pytest.mark.parametrize('day', [25, 27])
+@pytest.mark.parametrize('prefix,suffix', [('（', '）'), ('为', '')])
+def test_explicit_body_payment_date_conflicts_reject_without_changing_tables(day, prefix, suffix):
+    pages = _ah_pages()
+    pages[1] = pages[1].replace('TEST_ONLY董事会', '四、分配实施办法。'
+        f'已办理指定交易的投资者可于红利发放日{prefix}2026年6月{day}日{suffix}'
+        '在其指定的证券营业部领取现金红利，未办理指定交易的股东暂由结算保管。'
+        '五、有关咨询办法。TEST_ONLY董事会')
+    with pytest.raises(ValueError, match='Body payment date conflicts'):
+        parse_sse_cash_entitlement(pages, symbol='000001')
+
+
+@pytest.mark.parametrize('wording,status', [
+    ('已办理指定交易的投资者可于红利发放日（2026年6月26日）在其指定的证券营业部领取现金红利，',
+     'EXPLICIT_SUPPORTED_SENTENCE_MATCHES_TABLE'),
+    ('预计现金将于2026年6月26日到账。', 'UNKNOWN'),
+    ('并非已办理指定交易的投资者可于红利发放日（2026年6月26日）在其指定的证券营业部领取现金红利，', 'UNKNOWN'),
+    ('咨询日期为2026年6月27日。', 'UNKNOWN'), ('图像不可读。', 'UNKNOWN')])
+def test_only_explicit_supported_body_sentence_is_cross_checked(wording, status):
+    pages = _ah_pages()
+    pages[1] = pages[1].replace('TEST_ONLY董事会',
+        '四、分配实施办法。' + wording + '五、有关咨询办法。TEST_ONLY董事会')
+    result = parse_sse_cash_entitlement(pages, symbol='000001')
+    assert result['body_payment_date_review']['status'] == status
+    assert result['body_payment_date_review']['absence_of_conflict_proven'] is False
 
 
 @pytest.mark.parametrize('old,new', [('1600元', '2000元'), ('2000元', '1600元'),
@@ -148,12 +176,21 @@ def test_real_fixed_sample_signal_crosses_ex_date_without_adjusting_returns():
     row = next(r for r in scan['announcements'] if r['announcement_id'] == '1225348864')
     binding = dict(row['evidence_refs'][0], url=row['source_url'], available_at=observation['acquired_at'])
     assert binding['sha256'] == '12923c8bd35dcc7411639d2393893464b6153e1f8afd2285f98f446d6aa54be3'
+    from value_investment_agent.infrastructure.hotspot.cash_implementation import _pdf
+    pages, _ = _pdf(root, binding, now)
+    needle = '（2026年6月10日）'
+    assert pages[1].count(needle) == 1
+    changed = list(pages)
+    changed[1] = changed[1].replace(needle, '（2026年6月11日）')
+    with pytest.raises(ValueError, match='Body payment date conflicts'):
+        parse_sse_cash_entitlement(changed, symbol='600030')
     before = {r['path']: sha256((root/r['path']).read_bytes()).hexdigest() for r in observation['source_bindings']}
     result = app.inspect_cash_execution_exposure(root=root, symbol='600030', cash_binding=binding, now=now)
     assert result['cash_proof']['terms']['gross_cash_per_eligible_a_share'] == '0.41'
     assert result['cash_proof']['terms']['eligible_a_shares'] == '12200469974'
     assert result['cash_proof']['provider_url_date'] == '2026-06-04'
     assert result['cash_proof']['terms']['published_date'] == '2026-06-03'
+    assert result['cash_proof']['terms']['body_payment_date_review']['status'] == 'EXPLICIT_SUPPORTED_SENTENCE_MATCHES_TABLE'
     assert result['original_replay_summary']['signal_event_count'] == 161
     applicable = [lane for lane in result['lanes'] if lane['event_dates_within_partition']]
     assert len(applicable) == 3

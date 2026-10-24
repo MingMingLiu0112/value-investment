@@ -10,6 +10,28 @@ from ...quote_sessions import CHINA
 from ..evidence.historical_price_correspondence import require_inside, sha256_file
 
 
+def _body_payment_date_review(pages, payment_date):
+    sections = re.findall(r'四、分配实施办法(.*?)五、有关咨询办法', ''.join(_page_texts(pages)))
+    unknown = dict(status='UNKNOWN', reason='SUPPORTED_BODY_PAYMENT_SENTENCE_NOT_ESTABLISHED',
+        declared_dates=[], absence_of_conflict_proven=False)
+    if len(sections) != 1:
+        return unknown
+    body = sections[0]
+    day = r'(20\d{2})年(\d{1,2})月(\d{1,2})日'
+    mentions = re.findall(r'(?:现金)?红利发放日(?:\(|为|:)' + day, body)
+    dates = [date(*map(int, values)).isoformat() for values in mentions]
+    if any(value != payment_date for value in dates):
+        raise ValueError('Body payment date conflicts with cash date table')
+    supported = re.findall(r'(?:^|。)已办理指定交易的(?:投资者|股东)可于红利发放日\('
+        + day + r'\)在其指定的证券营业部领取现金红利[,，]', body)
+    if (not dates or len(supported) != len(dates)
+            or body.count('红利发放日') != len(dates)):
+        return dict(unknown, declared_dates=dates)
+    return dict(status='EXPLICIT_SUPPORTED_SENTENCE_MATCHES_TABLE', declared_dates=dates,
+        absence_of_conflict_proven=False,
+        scope='SUPPORTED_PAYMENT_SENTENCE_ONLY_NOT_ALL_SEMANTIC_DATE_CLAIMS')
+
+
 def parse_sse_cash_entitlement(pages, *, symbol):
     if not isinstance(symbol, str) or re.fullmatch(r'\d{6}', symbol) is None:
         raise ValueError('Six-digit issuer required')
@@ -72,6 +94,7 @@ def parse_sse_cash_entitlement(pages, *, symbol):
     published = date(*map(int, footer.groups())).isoformat()
     if not published <= dates['record_date'] < dates['ex_date'] == dates['cash_payment_date']:
         raise ValueError("Cash chronology conflict")
+    payment_review = _body_payment_date_review(pages, dates['cash_payment_date'])
     return dict(parser_version='sse-explicit-a-subtotal-gross-cash-v1', symbol=symbol,
         announcement_number=identity[0], published_date=published, **dates,
         eligible_a_shares=str(eligible), gross_cash_per_eligible_a_share=str(cash),
@@ -79,6 +102,7 @@ def parse_sse_cash_entitlement(pages, *, symbol):
         scheme_pages=[i for i, p in enumerate(_page_texts(pages), 1)
             if any(token in p for token in ('分配方案:', '连同本次现金红利分配'))],
         source_pages=list(range(1, len(pages) + 1)),
+        body_payment_date_review=payment_review,
         reference_deduction_per_total_a_share=None, amendment_chain_verified=False,
         scope='DECLARED_GROSS_ENTITLEMENT_NOT_PRICE_REFERENCE_OR_ACCOUNT_RECEIPT', action='no_order')
 
