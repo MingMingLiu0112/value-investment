@@ -3987,3 +3987,67 @@ P2 extraction-contract issues (blank comparative borrowing and annual/interim
 identity). Author fixes are in progress. It is NOT integrated or economic approval.
 No new simulation peripheral feature, account reset, Canonical Excel, server/PTA,
 production DB/task, production signing identity or broker change. action=no_order.
+
+### 2026-10-24 - Two-company earnings and actual swing wait explanations consumed
+
+The scoped discovery0be2081b checkpoint has clean-checkout discovery304 passed/
+5 skipped including the explicit new real batch, frontend46 passed and typecheck
+passed. GitHub Web40074476842 SUCCESS, but Core40074476823 FAILED:14 failures and
+38 setup errors share one old non-JSON official fixture in
+test_value_research_priority_v2._inputs. Root now writes the real fixture-shaped
+official JSON and updates its exact Hash, without weakening the source contract.
+The five affected queue/enrichment suites119 passed. This was not a green Core
+checkpoint and no release was performed from it. Running8001 remainsed46931d.
+
+eb6642ad integrates sibling6aca1ed2 after independent43 tests and26 source/rule/
+output Hash checks. Five missing Oct21 minute windows are real retrospectively
+acquired data; each remains WATCH. Later reference breaches are NOT owned Entry
+exits. Original historical3/7 coverage, zero new PIT credit, UNKNOWN comparability
+and NOT_PROVEN strategy status are preserved. No strategy threshold changed.
+
+c2164676/659b6817 integrate author378667e4/bd2f6b7f. Independent economic review
+used a second PDF decoder and integer-cent calculations: all204 real amounts and
+48 identities match. Two P2s (missing comparative borrowing the next CFO row,
+and annual-as-interim identity) were reproduced then independently confirmed
+closed. The final author test suite49 passed; original PDFs and old results were
+not overwritten. Updated research-results-v2 remains a research artifact, not
+approved financial/model input.
+
+Root now cold-recomputes this bridge through the existing current economic
+assessment, requiring the exact current source IDs/Hashes, historical TTM anchor,
+descriptor and candidate identity. Saved author results are not the calculation
+source. Failed/mismatched originals hide appendix numbers while keeping the
+unaffected parent research intact. The current company page shows the H1 profit
+drivers, commercial subtotal, annual/TTM anchors and original excerpts/pages.
+No impairment addback, guessed tax/ownership, normalized earnings, G3, price,
+strategy or position approval is created. Independent consumer8 backend tests
+including both real companies,7 frontend tests and own wrong-company/anchor/read
+failure probes passed with no required P1/P2.
+
+Actual public application read models600519/600887 and the existing local native
+HTTP diagnostic passed in .tmp/real-economic-api/333010a9585b433b99d052f4f46f15d6.
+Receipt SHA256 edc248c1fcb000dca9c28ea340f4e1e7468b9eb45ede92b8da5e20e096c8890a.
+Analysis Hashes:600519=653b702bb382d3f273a40749d22d8ded6c4d67370ac9d736f1a94d089f3e0226;
+600887=457b3f0e09b6e7008dc9057e36a475497a7dea9a9138a98a78708a772b3365f4.
+Both exact JSON outputs rendered through the new frontend component, with no
+fixture substitution. This is local TestClient/application/component validation,
+NOT actual8001 browser acceptance or primary economic approval. Workflow registry
+Hash remained unchanged. H1/FY/TTM amounts remain historical, not normalized.
+
+2333b596 integrates sibling38cf01ce after independent85 tests and61 source Hash/
+five output/input bindings. Latest completed-session Oct23 run:source market5219,
+10 candidates,5 EXCLUDED/5 PENDING/0 SELECTED. This is not all-A certification.
+Its wait reasons derive from existing trend/space/volume/next-bar/pullback rules;
+thresholds, class, rank and counts remain unchanged. Shared selection aggregation
+already preserves the new explanation. Root's existing selection view now shows
+the concrete reason and actual CURRENT inputs, hides stale numbers, distinguishes
+exclusion from missing data, and never shows reference ADD/REDUCE/EXIT predicates
+as holding actions. Independent frontend3 probes passed, no required P1/P2.
+
+Integrated targeted backend170 passed/3 skipped; frontend137 passed/4 skipped
+including actual600887 output, plus actual600519 component8 passed. Typecheck
+passed. New research tests join the SINGLE existing Core CI list. Exact clean
+full regression, new commit's GitHub CI and release/user browser verification
+remain pending. No simulation peripheral expansion or persistent account retry;
+private accounts, Canonical Excel, server/PTA, production DB/jobs, broker and
+production identities remain untouched. Goal ACTIVE; action=no_order.

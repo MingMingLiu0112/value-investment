@@ -12,6 +12,7 @@ import "./value-research-analysis.css";
 import { AccountingBridgeReview } from "./AccountingBridgeReview";
 import { PublicJointCapitalReview } from "./JointCapitalReview";
 import { SourceNativeCashReview } from "./SourceNativeCashReview";
+import { OperatingEarningsBridge } from "./OperatingEarningsBridge";
 
 const scenarios = { bear: "保守 Bear", base: "基准 Base", bull: "乐观 Bull" };
 
@@ -166,6 +167,7 @@ export function ValueResearchAnalysis({
               symbol={decision.symbol}
               descriptor={analysis.input_descriptor_sha256}
             />
+            <OperatingEarningsBridge analysis={analysis} />
             {!!analysis.economic_assessment.historical_cash_observations
               ?.length && (
               <details>

@@ -236,6 +236,44 @@ export interface AccountingBridgeReview {
   }[];
 }
 
+export interface OperatingEarningsReview {
+  status: string;
+  schema_version?: string;
+  symbol: string;
+  action: "no_order";
+  input_descriptor_sha256?: string;
+  candidate_binding?: { path: string; sha256: string };
+  g3_changed: false;
+  price_admitted: false;
+  strategy_admitted: false;
+  normalized_parent_profit_cny: null;
+  normalized_range?: null;
+  normalized_earnings_admitted?: false;
+  historical_ttm_cny?: string;
+  h1_change?: {
+    period: string;
+    computed_change_cny: string;
+    arithmetic_residual_cny: string;
+    rows: {
+      field: string;
+      current_cny: string;
+      comparative_cny: string;
+      contribution_cny: string;
+      fact_refs: {
+        field: string;
+        label: string;
+        source_id: string;
+        source_url: string;
+        sha256: string;
+        physical_page: number;
+        excerpt: string;
+      }[];
+    }[];
+  };
+  annual_change?: { computed_change_cny: string };
+  commercial_subtotal?: { change_cny: string };
+}
+
 export interface ValueResearchAnalysis {
   source_native_cash_review?:
     import("../services/valuePolicy").SourceNativeCashReview | null;
@@ -277,6 +315,7 @@ export interface ValueResearchAnalysis {
     earnings?: {
       historical_ex_nonrecurring_ttm_cny: string | null;
       normalization_status: string;
+      operating_quality_bridge?: OperatingEarningsReview;
     };
     sustainable_distribution_status?: string;
     historical_cash_observations?: {

@@ -11,6 +11,7 @@ from ...valuation_models.residual_income import scenario_value
 from ..product.common import normalize_symbol
 from .value_research_analysis import _available, _bound, load_current_value_research_analysis
 from .economic_review_bundle import _build_economic_review_bundle
+from .operating_earnings_bridge import research_from_retained_sources
 
 
 METHODOLOGY = [
@@ -31,6 +32,53 @@ def _number(value):
 
 def _ratio(numerator, denominator):
     return str(numerator / denominator) if denominator is not None and denominator > 0 else None
+
+
+def _current_operating_bridge(root, analysis, historical, now):
+    """Cold-read only the originals already bound to this current research case."""
+    name = 'docs/current/two-company-earnings-bridge-20261024/sources.json'
+    path = root / name
+    if not path.exists():
+        return None
+    unavailable = dict(status='SOURCE_REVALIDATION_FAILED', symbol=analysis['symbol'],
+        action='no_order', normalized_parent_profit_cny=None, g3_changed=False,
+        price_admitted=False, strategy_admitted=False)
+    try:
+        raw = path.read_bytes()
+        binding = dict(path=name, sha256=sha256(raw).hexdigest())
+        spec = json.loads(raw)
+        if (spec['schema_version'] != 'two-company-earnings-source-spec-v1'
+                or spec['scope'] != 'RETAINED_PUBLIC_ORIGINALS_NOT_RESEARCH_ADMISSION'
+                or spec['action'] != 'no_order'):
+            raise ValueError('Unsupported operating research source specification')
+        items = spec['companies'].get(analysis['symbol'])
+        if items is None:
+            return None
+        catalog = {row['id']: row for row in analysis['source_catalog']}
+        for item in items:
+            if (item['symbol'] != analysis['symbol'] or item['source_id'] not in catalog
+                    or catalog[item['source_id']]['sha256'] != item['sha256']):
+                return dict(unavailable, status='SOURCES_DIFFER_FROM_CURRENT_RESEARCH')
+        result = research_from_retained_sources(root=root,
+            specs=[dict(row, fields=spec['common_fields'] + row['extra_fields']) for row in items], now=now)
+        if historical is None or _number(result['ttm']['lines_cny']['ex_parent_profit']) != historical:
+            return dict(unavailable, status='HISTORICAL_ANCHOR_MISMATCH')
+        _bound(root, binding)
+        # Expose the computed bridge, not the separately saved author result JSON.
+        review = {key: result[key] for key in (
+            'schema_version', 'symbol', 'action', 'scope', 'breakdown_status',
+            'h1_change', 'annual_change', 'commercial_subtotal', 'unallocated_balances_cny',
+            'normalized_parent_profit_cny', 'normalized_range', 'tax_rate_assumption',
+            'parent_attribution_assumption', 'normalization_open_items', 'interpretation_limits',
+            'g3_changed', 'price_admitted', 'strategy_admitted', 'normalized_earnings_admitted')}
+        review.update(status='SOURCE_VERIFIED_HISTORICAL_DRIVERS_NOT_NORMALIZED',
+            input_descriptor_sha256=analysis['input_descriptor_sha256'],
+            candidate_binding=analysis['review_binding']['candidate_binding'],
+            historical_ttm_cny=result['ttm']['lines_cny']['ex_parent_profit'],
+            source_spec_binding=binding, source_bindings=result['source_bindings'])
+        return review
+    except (OSError, ValueError, KeyError, TypeError, StopIteration):
+        return unavailable
 
 
 def _review_calculations(review: dict, catalog: dict, symbol: str, now: datetime) -> list[dict]:
@@ -256,6 +304,15 @@ def load_current_value_economic_assessment(*, root: Path, symbol: str, now: date
         official_fact_anchors=analysis["official_fact_anchors"], source_catalog=analysis["source_catalog"],
         source_bindings=analysis["source_bindings"], blockers=blockers, next_verifications=tasks,
         methodology_sources=METHODOLOGY)
+    operating_bridge = _current_operating_bridge(root, analysis, historical, now)
+    if operating_bridge is not None:
+        result['earnings']['operating_quality_bridge'] = operating_bridge
+        if operating_bridge['status'] == 'SOURCE_VERIFIED_HISTORICAL_DRIVERS_NOT_NORMALIZED':
+            for binding in [operating_bridge['source_spec_binding'], *(
+                    dict(path=source['path'], sha256=source['sha256'])
+                    for source in operating_bridge['source_bindings'])]:
+                if binding not in result['source_bindings']:
+                    result['source_bindings'].append(binding)
     for binding in result["source_bindings"]:
         _bound(root, binding)
     content = {key: value for key, value in result.items() if key != "assessed_at"}

@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from test_m2_opportunity_discovery import _receipt, _financial_points
+from test_m2_opportunity_discovery import _receipt, _financial_points, _official_payload
 from value_investment_agent.application.product.value_discovery_surface import publish_value_discovery_report
 from value_investment_agent.application.research.value_research_priority_v2 import build_value_research_priority_v2
 from value_investment_agent.application.research.value_research_queue import build_value_research_queue
@@ -31,8 +31,9 @@ def _inputs(root, *, future=False, pending=False):
         if ref.id == "financial":
             refs.append(replace(ref, path="runtime/financial.json", sha256=digest(export)))
         else:
-            (root / ref.path).write_text(ref.id, encoding="utf-8")
-            refs.append(ref)
+            raw = (json.dumps(_official_payload()) if ref.id == 'official' else ref.id).encode('utf-8')
+            (root / ref.path).write_bytes(raw)
+            refs.append(replace(ref, sha256=digest(root / ref.path)))
     receipt = replace(receipt, evidence_refs=tuple(refs))
     receipt_path = runtime / "receipt.json"
     receipt_path.write_text(json.dumps(receipt.as_policy(), ensure_ascii=False), encoding="utf-8")

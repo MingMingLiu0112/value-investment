@@ -15,6 +15,18 @@ const reasons: Record<string, string> = {
   WATCH_POOL_STALE: "候选池日期已过期，需要更新后重评",
   DAILY_AND_PRIMARY_STRUCTURE_CONFIRMED:
     "日线及主要周期结构确认，仍待策略与账户准入",
+  DAILY_TREND_NOT_ESTABLISHED: "日线趋势尚未满足原规则条件",
+  UPPER_TRADE_SPACE_NOT_ESTABLISHED:
+    "尚不能确认上方结构空间，无法评估结构距离比",
+  PRIMARY_PRICE_OR_VOLUME_BREAKOUT_NOT_MET:
+    "主要周期的价格或量能突破条件尚未同时满足",
+  PRIMARY_VOLUME_CONFIRMATION_NOT_MET:
+    "价格已越过参考高点，但量能尚未达到原规则要求",
+  PRIMARY_CLOSE_NOT_ABOVE_PRIOR_HIGH: "主要周期完成收盘价尚未超过前高",
+  NEXT_BAR_OR_PULLBACK_CONFIRMATION_NOT_OBSERVED:
+    "尚未观察到下一根完成K线或回踩恢复确认",
+  INDEPENDENT_STRATEGY_ADMISSION_REVIEW_REQUIRED: "独立策略验证和准入仍未完成",
+  STRUCTURE_CONFIRMATION_PENDING: "多周期结构仍待确认",
 };
 const explain = (code: string) =>
   reasons[code] || blockerText(describeCode(code));
@@ -22,7 +34,7 @@ const explain = (code: string) =>
 const fields: Record<string, string> = {
   roe_weighted: "加权 ROE",
   gross_margin: "毛利率",
-  total_revenue_yoy: "营业收入同比",
+  total_revenue_yoy: "营业总收入同比",
   parent_net_income_yoy: "归母净利润同比",
 };
 const states: Record<string, string> = {
@@ -98,6 +110,64 @@ function Condition({ item }: { item: SelectionCondition }) {
         </div>
       ))}
     </li>
+  );
+}
+export function SwingWaitExplanation({ row }: { row: SelectionRow }) {
+  const review = row.decision_explanation;
+  if (!review) return null;
+  if (
+    review.state !== "WAIT" ||
+    review.action !== "no_order" ||
+    review.formal_eligibility !== false ||
+    review.holding_action_eligibility !== false ||
+    review.owned_entry_supplied !== false
+  )
+    return <p>波段条件解释无法核验，未生成操作建议。</p>;
+  const labels: Record<string, string> = {
+    UPTREND: "上行",
+    DOWNTREND: "下行",
+    RANGE: "震荡区间",
+    BREAKOUT: "价量突破",
+    PRICE_ABOVE_VOLUME_PENDING: "价格突破、量能待确认",
+  };
+  const inputs = row.data_status === "CURRENT" ? review.rule_inputs : undefined;
+  const observed = (value: boolean | undefined) =>
+    value === true ? "已观察" : value === false ? "尚未观察" : "未知";
+  return (
+    <section aria-label="波段等待原因">
+      <p>
+        {row.selection_status === "EXCLUDED"
+          ? "当前结构已排除"
+          : row.selection_status === "UNKNOWN"
+            ? "当前资料不足"
+            : "当前仍需等待"}
+        ，原因如下：
+      </p>
+      <ul>
+        {review.wait_reasons.map((reason) => (
+          <li key={reason}>{explain(reason)}</li>
+        ))}
+      </ul>
+      {inputs && (
+        <dl>
+          <dt>日线趋势 / 主要周期结构</dt>
+          <dd>
+            {labels[inputs.daily_trend] ?? inputs.daily_trend} /{" "}
+            {labels[inputs.primary_structure] ?? inputs.primary_structure}
+          </dd>
+          <dt>上下结构距离比（未计费用，不是预期收益）</dt>
+          <dd>{inputs.structural_distance_ratio ?? "无法评估"}</dd>
+          <dt>后续完成K线确认 / 回踩恢复</dt>
+          <dd>
+            {observed(inputs.next_bar_confirmed)} /{" "}
+            {observed(inputs.pullback_recovery_observed)}
+          </dd>
+        </dl>
+      )}
+      <p>
+        仅为结构条件观察；未核验个人原始入场逻辑，不构成持仓加减仓或退出建议。
+      </p>
+    </section>
   );
 }
 export function DualStrategySelection() {
@@ -283,6 +353,7 @@ export function DualStrategySelection() {
                       <li key={reason}>{explain(reason)}</li>
                     ))}
                   </ul>
+                  <SwingWaitExplanation row={row} />
                   <p>
                     进入条件：
                     {selectionPriceCondition(row.entry_condition)}

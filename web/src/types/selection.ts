@@ -31,6 +31,21 @@ export interface SelectionRow {
   structure_status?: string;
   data_status?: string;
   reasons?: string[];
+  decision_explanation?: {
+    state: "WAIT";
+    action: "no_order";
+    formal_eligibility: false;
+    holding_action_eligibility: false;
+    owned_entry_supplied: false;
+    wait_reasons: string[];
+    rule_inputs?: {
+      daily_trend: string;
+      primary_structure: string;
+      structural_distance_ratio: string | number | null;
+      next_bar_confirmed: boolean;
+      pullback_recovery_observed: boolean;
+    };
+  };
   conditions?: SelectionCondition[];
   missing_periods?: string[];
   entry_condition?: unknown;

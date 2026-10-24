@@ -67,3 +67,19 @@
 .value-research-analysis ul {
   padding-left: 20px;
 }
+.earnings-driver-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.earnings-driver-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+.earnings-driver-table th,
+.earnings-driver-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #dce3e5;
+  text-align: left;
+  vertical-align: top;
+}

@@ -6,8 +6,64 @@ vi.mock("../src/services/api", () => ({ api: { strategySelection: vi.fn() } }));
 import {
   DualStrategySelection,
   selectionPriceCondition,
+  SwingWaitExplanation,
 } from "../src/components/DualStrategySelection";
+import type { SelectionRow } from "../src/types/selection";
 const { renderToStaticMarkup } = require("react-dom/server");
+function waitRow(): SelectionRow {
+  return {
+    symbol: "TEST_ONLY",
+    data_status: "CURRENT",
+    selection_status: "PENDING_CONFIRMATION",
+    decision_explanation: {
+      state: "WAIT",
+      action: "no_order",
+      formal_eligibility: false,
+      holding_action_eligibility: false,
+      owned_entry_supplied: false,
+      wait_reasons: [
+        "PRIMARY_VOLUME_CONFIRMATION_NOT_MET",
+        "NEXT_BAR_OR_PULLBACK_CONFIRMATION_NOT_OBSERVED",
+        "INDEPENDENT_STRATEGY_ADMISSION_REVIEW_REQUIRED",
+      ],
+      rule_inputs: {
+        daily_trend: "RANGE",
+        primary_structure: "PRICE_ABOVE_VOLUME_PENDING",
+        structural_distance_ratio: "1.234567",
+        next_bar_confirmed: false,
+        pullback_recovery_observed: false,
+      },
+    },
+  };
+}
+it("explains the actual failed predicates without turning a watch case into a holding recommendation", () => {
+  const html = renderToStaticMarkup(<SwingWaitExplanation row={waitRow()} />);
+  for (const text of [
+    "量能尚未达到原规则要求",
+    "下一根完成K线",
+    "独立策略验证",
+    "1.234567",
+    "不是预期收益",
+    "不构成持仓加减仓或退出建议",
+  ])
+    expect(html).toContain(text);
+  expect(html).not.toContain("PRIMARY_VOLUME_CONFIRMATION_NOT_MET");
+});
+it("does not display stale numeric conditions and distinguishes an excluded case", () => {
+  const row = waitRow();
+  row.data_status = "STALE";
+  row.selection_status = "EXCLUDED";
+  const html = renderToStaticMarkup(<SwingWaitExplanation row={row} />);
+  expect(html).toContain("当前结构已排除");
+  expect(html).not.toContain("1.234567");
+});
+it("rejects an explanation claiming ownership or holding authority", () => {
+  const row = waitRow();
+  (row.decision_explanation as any).owned_entry_supplied = true;
+  const html = renderToStaticMarkup(<SwingWaitExplanation row={row} />);
+  expect(html).toContain("无法核验");
+  expect(html).not.toContain("1.234567");
+});
 it("renders only condition price and rule, never raw permission JSON", () => {
   expect(
     selectionPriceCondition({
