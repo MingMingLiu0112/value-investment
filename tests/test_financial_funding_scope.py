@@ -150,7 +150,11 @@ def test_real_maotai_fy_h1_originals_and_unchanged_income_implementations():
                  'src/value_investment_agent/financing_rollforward.py',
                  'src/value_investment_agent/infrastructure/filings/pdf_text.py',
                  'src/value_investment_agent/infrastructure/filings/pdfium_runtime.py']
-    assert hash_file(root/preserved[2]) == hash_file(Path(__file__).resolve().parents[1]/preserved[2])
+    code_root = Path(__file__).resolve().parents[1]
+    assert Path(extract.__code__.co_filename).resolve() == (code_root/preserved[2]).resolve()
+    # The retained-data checkout need not share the execution checkout's EOLs.
+    # Bind the actual executing implementations separately, never normalize IDs.
+    executing_before = {name: hash_file(code_root/name) for name in preserved}
     before = {name: hash_file(root/name) for name in preserved}
     reports = []
     for source_id, period, expected, prior in [
@@ -180,6 +184,7 @@ def test_real_maotai_fy_h1_originals_and_unchanged_income_implementations():
         reports.append(dict(source_id=source_id, source_url=row['location'], path=row['local_path'],
             sha256=row['sha256'], observations=observations))
     assert {name: hash_file(root/name) for name in before} == before
+    assert {name: hash_file(code_root/name) for name in executing_before} == executing_before
     output = os.environ.get('FUNDING_SCOPE_RECEIPT_DIR')
     if output:
         from datetime import datetime, timezone
@@ -191,6 +196,8 @@ def test_real_maotai_fy_h1_originals_and_unchanged_income_implementations():
             candidate_binding=dict(path=candidate_path.relative_to(root).as_posix(), sha256=hash_file(candidate_path)),
             package_binding=package_binding, reports=reports, source_hashes_before=before,
             source_hashes_after={name: hash_file(root/name) for name in before},
+            executing_implementations_before=executing_before,
+            executing_implementations_after={name: hash_file(code_root/name) for name in executing_before},
             verification_created=False, formal_eligibility=False,
             source_adapter_created=False, income_implementations_unchanged=True,
             raw_pages_authenticate_identity=False,

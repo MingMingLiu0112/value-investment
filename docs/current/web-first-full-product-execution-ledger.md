@@ -4432,3 +4432,28 @@ Its official originals are not yet available in the retained inventory; a
 bounded public FY2025/H12026 acquisition and common ResearchCase path is now
 authorized, with profile applicability/rejection rather than forcing coal or
 Moutai economics. Shared API/current/portfolio/production authority unchanged.
+
+cb46211cc69fee9cf55e70371a055da507a73451 was pushed; GitHub Core40097066638 and
+Web40097066635 both SUCCESS. Clean checkout build/typecheck and component32
+passed/2 optional skipped. Clean backend181 passed/1 FAILED: the actual-source
+fixture incorrectly required identical raw helper bytes in DATA and EXECUTION
+checkouts, which share a Git blob but use LF/CRLF. Initial failure retained in
+gc1/.tmp/funding-core-cb46211c.xml. No source or production identity check failed.
+Test-only correction separately binds actual executing code/dependencies and
+retained source-root files, verifies imported callable location, and checks
+both before/after sets. Original candidate/package/PDF SHA checks stay strict.
+Independent gc1 in-memory replay passed; actual repaired clean pytest is still
+pending until this correction is committed/synced. Do not rewrite the first
+failed receipt or call that first clean aggregatePASS.
+
+Sibling09d67fc67b5caf86e3cf4b297bc4bc6a65239565 (base4f524ef8) closes an actual
+observation-deadline bug: expire at the deadline completed session, not the next
+day. Display-only missing expiry derives ONCE from original market_trade_date.
+Independent public-service retrospective test used true300750 case/bundle,
+constructing replay-only registry/watch membership: beforeOct23 close continue,
+at15:00/after/weekend expired; no rolling renewal. Expired watch is NOT sell,
+owned Entry or a new strategy approval. Receipt vv1/.tmp/oc09d-retrospective-
+058137f279914867bae12cdc6b46756a/receipt.json SHA256
+3b47a406950e4805c4b1e3e496e80c190113950072c9bd81770c966b58700171.
+This is software replay evidence, not historical selection/PIT/Shadow or Web
+acceptance. Independent review found no explicitP1/P2. Integration follows.
