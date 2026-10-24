@@ -12,10 +12,10 @@ from pathlib import Path
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-from .common import require_inside, sha256_file, write_new_json
+from .common import require_inside, sha256_file, sha256_bytes, write_new_json
 from .company_research import _serialize_outcome
 from .decision_surface import verify_current_decision_workbench, current_recommendation_type
-from .research_reviews import _strict_review_json, _review_time
+from .research_reviews import _strict_review_json, _review_time, _review_json_bytes
 from .source_native_candidate_v2 import verify_source_native_candidate
 from ..portfolio.private_journal_lock import InterProcessLock
 from ...infrastructure.evidence.trust_root_registry import require_pinned_trust_root
@@ -456,3 +456,63 @@ def run_native_reviewed_research(*, root: Path, candidate_binding: dict, consump
             research_gate=result['gate'],
             strategy_approved=False, primary_registered=False, action='no_order')
         return wb
+
+
+def consume_and_run_native_review(*, root: Path, symbol: str, candidate_path: Path,
+    candidate_sha256: str, response_path: Path, response_sha256: str,
+    trust_root_path: Path, trust_root_sha256: str, output_dir: Path) -> dict:
+    """CLI application slice: consume, actual research, immutable output and disk replay.
+
+    Failure after consumption may leave a completed transport without readback.
+    This function never resumes, repairs, registers or retries that transaction.
+    A saved readback is publication-time evidence, not lasting approval authority.
+    """
+    root = root.resolve()
+    template = prepare_native_signed_review_response(root=root, candidate_path=candidate_path,
+        candidate_sha256=candidate_sha256)
+    if template['symbol'] != symbol:
+        raise ValueError('Native CLI candidate issuer mismatch')
+    candidate_ref = template['candidate_binding']
+    result = consume_native_signed_review_response(root=root, candidate_path=candidate_path,
+        candidate_sha256=candidate_sha256, response_path=response_path, response_sha256=response_sha256,
+        trust_root_path=trust_root_path, trust_root_sha256=trust_root_sha256, output_dir=output_dir)
+    consumption_ref = result['consumption_binding']
+    wb = run_native_reviewed_research(root=root, candidate_binding=candidate_ref,
+        consumption_binding=consumption_ref)
+    target = require_inside(root / CONSUMPTIONS, output_dir, 'native reviewed output')
+    with InterProcessLock(_journal_dir(root, candidate_ref) / 'transaction.lock'):
+        receipt, payload, _ = _completed(root, candidate_ref, _clock(None), consumption_ref=consumption_ref)
+        workbench_path = target / 'workbench.json'
+        wb_ref = dict(path=workbench_path.relative_to(root).as_posix(), sha256=sha256_bytes(_review_json_bytes(wb)))
+        write_new_json(workbench_path, wb)
+        disk_wb = _read(root, wb_ref)
+
+        def verify_disk_approval(approval):
+            binding = getattr(approval, 'authenticated_transport_binding', None)
+            if not isinstance(binding, dict) or binding.get('candidate_binding') != candidate_ref:
+                raise ValueError('Native disk workbench candidate identity mismatch')
+            return _verify_approval_in_transaction(root, approval, _clock(None),
+                consumption_ref=consumption_ref)
+
+        restored = verify_current_decision_workbench(disk_wb,
+            human_approval_provenance_verifier=verify_disk_approval)
+        if (disk_wb != wb or restored.recommendation.action != 'no_order'
+                or current_recommendation_type(restored.recommendation) != 'NO_ACTION'):
+            raise ValueError('Native disk readback differs from research-only run')
+        readback = dict(schema_version='source-native-reviewed-readback-v2', symbol=symbol,
+            action='no_order', scope='RESEARCH_ONLY',
+            verification_scope='PUBLICATION_TIME_REPLAY_ONLY_REVERIFY_BEFORE_USE',
+            candidate_binding=candidate_ref, consumption_binding=consumption_ref, workbench_binding=wb_ref,
+            verified_at=_clock(None).isoformat(), price_admitted=False, formal_eligibility=False,
+            strategy_approved=False, registered_current_case_changed=False, canonical_written=False)
+        _completed(root, candidate_ref, _clock(None), consumption_ref=consumption_ref)
+        _closure(root, [consumption_ref, wb_ref, *payload['source_bindings'],
+            receipt['response_binding'], receipt['trust_root_binding']])
+        readback_path = target / 'readback.json'
+        readback_ref = dict(path=readback_path.relative_to(root).as_posix(), sha256=sha256_bytes(_review_json_bytes(readback)))
+        write_new_json(readback_path, readback)
+        if _read(root, readback_ref) != readback:
+            raise ValueError('Native saved readback changed')
+        _completed(root, candidate_ref, _clock(None), consumption_ref=consumption_ref)
+        _closure(root, [readback_ref, wb_ref, consumption_ref, *payload['source_bindings']])
+        return dict(readback, readback_binding=readback_ref)
