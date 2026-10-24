@@ -4846,3 +4846,49 @@ production validation was not relaxed. v2 implementation remains
 ec7724e031776e6a004922dc817eb0e4bdb9762f77390db1c9a866b28067e67b.
 Clean-checkout/CI/data-staging/live-browser verification is still pending; do
 not count this working acceptance as an8001 release or investment approval.
+
+### 2026-10-25 600887 exact09dc7e59 actual product acceptance
+
+Delivery09dc7e5977139c172722bf199541defa0742aa69 is pushed to the existing
+PR1 branch, not merged to main. Core40123367898 and Web40123367888 completed
+SUCCESS. Clean checkout targeted regression184 passed/4 explicitly optional
+skipped; this is not a full local regression claim. Clean frontend build passed.
+Clean-code/retained-public-data API proof:
+vv1/.tmp/yili-current-public-20261024T190925Z/result.json,
+06414b5f026779c3b196d14d62dbe30ddfc0866e3aefa1a6d226ea573b0520ab.
+Self-contained clean checkout lacks the legacy general public snapshot; that
+DATA_GAP was not hidden by weakening tests or claiming standalone acceptance.
+
+Sole8001 now exact09dc7e59/MATCHED. Existing publisher receipt PASS:
+dual1/.tmp/release-joint-20261024T192244Z/receipt.json.
+Native v2 source/candidate replay passed against the actual live public files.
+Existing READ_ONLY public packet refreshed; no new acquisition, observation
+recompute, authority/signature, private account or Canonical Excel change.
+User workflow/trust/parser protected hashes remain unchanged.
+
+Actual empty-profile browser acceptance PASS at1440/390/320:
+vv1/.tmp/live-ui-09dc7e59/e9ccdcd4-0e05-4eaf-b653-ddb69ece6891/receipt.json.
+Public600887 now displays current-input CONDITIONAL_ANALYSIS_VERIFIED instead
+of the stale producer rejection, with4 review groups and the retained earnings
+bridge. Actual API keeps primary_valuation_usable=false and unapproved economic
+assumptions; the page explicitly describes stress-only, not neutral main value.
+600519 economic/cash limits and screened000544 source research also passed.
+No document-wide horizontal overflow at the three widths; large source tables
+retain their existing scroll containers. Private API/write requests blocked.
+
+Current shortest core queue, not a new roadmap:
+1. CORE_VALUE: strengthen or explicitly reject issuer-specific central economic
+   assumptions (profit persistence, capital/distribution capacity, required
+   return and advantage duration). Fresh arithmetic is not main valuation
+   admission. No invented normalized profit, impairment/tax addback or G3.
+2. HOTSPOT: retained current branch unchanged; historical3/7 remains PARTIAL /
+   NOT_PROVEN. Qualified historical security-state inputs and independent OOS /
+   real Shadow remain separate from replay/code correctness; no repeated
+   exhausted-source queries or parameter tuning for signals.
+3. Root: connect only evidence-backed results through existing public decision
+   and risk paths. Three observed securities remain UNASSESSABLE, eligibility
+   false, personal quantities/weights/cash impact null. Peripheral simulation,
+   generic infrastructure, new pages/Excel and production work remain frozen.
+
+ENGINEERING_INPUT_RECOVERY=COMPLETE; ECONOMIC_PRIMARY_ADMISSION=NOT_COMPLETE;
+REAL_ASSISTED_USE_NOT_READY; action=no_order. This is not whole-Goal completion.
