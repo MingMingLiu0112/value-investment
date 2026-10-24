@@ -4457,3 +4457,92 @@ owned Entry or a new strategy approval. Receipt vv1/.tmp/oc09d-retrospective-
 3b47a406950e4805c4b1e3e496e80c190113950072c9bd81770c966b58700171.
 This is software replay evidence, not historical selection/PIT/Shadow or Web
 acceptance. Independent review found no explicitP1/P2. Integration follows.
+
+### 2026-10-24: verified62f5a04c local release and core-only continuation
+
+Actual sole8001 code/build is62f5a04c72f1573138121a0486ce9504c9d584f7;
+runtime and public registries MATCHED. Remote Core40098855216 and Web40098855302
+succeeded. Clean targeted repair/continuity replay27 passed/1 optional skipped;
+the earlier181-pass/1-failure receipt above is preserved, not relabelled.
+Release receipt: dual1/.tmp/release-joint-20261024T135538Z/receipt.json.
+Existing READ_ONLY publication is pub-1d53e726b040ce833c47 (formal0, pending2).
+No new current research, approval, private account or canonical workbook write.
+
+New actual-time continuity computation preserves the old inputs/artifacts:
+000333/601857 triggered -> expired;003006/600036/601318 continue -> expired.
+This is expiry of a watch plan, not a sell or actual holding transition.
+No historical PIT/OOS/Shadow credit. Browser receipt
+vv1/.tmp/live-ui-62f5a04c/8ac3de45-dd0b-48b3-a2f8-cd0409dd91f3/receipt.json
+passed at1440/390/320 widths, including true two-company financial observations
+and funding disclosure. Empty test profile was used, not owner authorization.
+
+Current independent CORE work (not yet released or accepted):
+-600519 operating erosion: author13e58b22 replaces only bear operating path;
+  base/bull unchanged, conditional historical-share values809.417/929.145/937.872.
+  LOW, normalized profit unknown, no G3/price admission. Independent review and
+  existing economic consumer integration remain pending.
+-000544 actually screened lead: official FY2025/H12026 originals acquired at
+  actual Oct24 clock. Explicit research-only common runner now stores case and
+  10 unadmitted observations, returns UNSUPPORTED valuation (not NO_TRADE).
+  Core code is uncommitted; independent review and existing draft consumer
+  integration pending. PPP cash/capital classification and restated comparatives
+  prevent fabricated normalized earnings or forced use of the three models.
+-Hotspot expiry bug is delivered; remaining dated-state evidence and strict
+  independent validation remain NOT_PROVEN. Do not repeat exhausted source
+  searches or create simulated product work to hide that boundary.
+
+Next autonomous tasks are the two existing research consumer integrations and
+their real-source/negative validation. Portfolio quantities remain unavailable
+without valid personal facts. ENGINEERING delivery is distinct from research
+admission and REAL_ASSISTED_USE_NOT_READY. Goal remains active; action=no_order.
+
+Core-only delivery nodes7db911c5 (operating bear) and6fc9425b27c3c6c6cfccdb65e35b06b1b3f5d758
+(explicit unmodeled research) are pushed to PR1, not main or8001. Independent
+reviews found no explicitP1/P2 in either bounded core package. Root actual
+000544 tests30 passed/0 skipped; actual operating input/kernel23 passed.
+Root rebuilt the600519 alternate at actual14:15:09Z into a NEW runtime directory:
+runtime/operating-realization-erosion-v1/root-20261024T141509782492Z;
+candidate SHAbe796bf830d39d4c86396476034a64c3c492c01bf9f906f0a4b88ba25863db25.
+Original candidate and base/bull inputs remain unchanged. No approval/current
+promotion is implied by this alternate candidate.
+
+Clean6fc targeted six-suite run:83 passed/1 skipped/9 failed, preserved in
+gc1/.tmp/core-research-6fc9425b.xml. All nine are legacy M1 builder cases hitting
+missing distribution originals, not the new30 research-only tests. Independent
+in-memory execution of exact62f5a04c builder reproduced the same first missing
+yili_fy2025_annual error before new changes. No source fallback, config alteration
+or weakened assertion was used to obtain a passing result. This is not a claim
+that the full clean regression passed. New core tests are being added to the
+existing explicit CI list; consumer integration remains in progress.
+
+### Core consumer integration, before final CI/local activation
+
+000544 consumer86012628 preserves UNSUPPORTED/UNASSESSABLE and exposes only
+source-bound research observations. Two independently reproduced displayP2s
+(invalid hashes/dangling refs; Case-only evidence missing Facts sources) were
+fixed and independently closed. Root repaired-scope backend78 passed/0 skipped;
+true TestClient JSON frontend21 passed. Earlier106-pass aggregate remains a
+separate run, not additional unique coverage.
+
+6fc remote Core40101738436 FAILED:6461 passed/216 skipped/one architecture
+failure (issuer literal in application operating compiler). Isolated Postgres
+and Web40101738434 passed. Corrective change moves official issuer layout,
+identity and raw table parsing into ONE infrastructure provider; application
+keeps orchestration. The original architecture guard is unchanged. No string
+splitting or allowlist weakening. Old archived compiler/candidates untouched.
+
+Two economic consumerP2s (trusting proxy JSON rather than original table; broken
+date/basis relationships) were reproduced, repaired and independently closed.
+Root final source/native/API/architecture scope118 passed/0 skipped; two true
+HTTP JSON component suites46 passed/0 skipped. Wrong proxy source/table/percent,
+future/invalid dates and basis mismatch reject; equivalent UTC/CST instants
+pass. These tests do not confer economic approval or strategy effectiveness.
+
+Existing research-only pointer now selects000544 binding-only draft and an
+optional600519 economic comparison. Original000333 draft entry and pending
+candidate/approval registry unchanged. Working-tree actual public HTTP returns
+000544 RESEARCH_ONLY/UNASSESSABLE and600519 VERIFIED_BOUND_RESEARCH_COMPARISON.
+This is not live8001 acceptance yet.41 public research files have been staged
+with exact matching hashes into local dual1 runtime, refusing overwrite of
+different bytes. No existing current pointer, private fact or server changed
+by staging. Final exact commit/clean verification/CI/8001 activation pending.

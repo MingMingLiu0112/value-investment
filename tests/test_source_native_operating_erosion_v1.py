@@ -73,11 +73,27 @@ def test_future_or_naive_clock_rejected(public_js2):
                 output_dir=root/'runtime/not-created',now=now)
 
 
+@pytest.mark.parametrize('damage', ['issuer', 'url', 'hash', 'unsupported_symbol'])
+def test_readonly_provider_rejects_wrong_official_identity(public_js2, damage):
+    root, ref, _ = public_js2
+    candidate = json.loads((root/ref['path']).read_bytes())
+    package = json.loads((root/candidate['source_package_binding']['path']).read_bytes())
+    sources = deepcopy(package['sources'])
+    symbol = candidate['symbol']
+    annual = next(s for s in sources if s['id']=='cninfo:1225114741')
+    if damage == 'issuer': annual['issuer_identity']['security_code'] = '000000'
+    elif damage == 'url': annual['location'] = 'https://example.invalid/NOT_OFFICIAL.pdf'
+    elif damage == 'hash': annual['sha256'] = '0'*64
+    else: symbol = '600887'
+    with pytest.raises(ValueError):
+        app.source_provider.read_operating_erosion_sources(root=root,symbol=symbol,sources=sources,fields=app.FIELDS)
+
+
 @pytest.mark.parametrize('damage', ['revenue_missing', 'volume_missing', 'header_missing', 'extra_wine_row'])
 def test_real_table_extraction_corruption_rejects_without_borrowing(public_js2, monkeypatch, damage):
     """Fault-inject extraction output only; native source verifier is real."""
     root, ref, _ = public_js2
-    extract = app.extract_pages
+    extract = app.source_provider.extract_pages
     def corrupted(*args, **kwargs):
         pages = list(extract(*args, **kwargs))
         if damage == 'revenue_missing': pages[9] = pages[9].replace('91.23 -1.08 8.63', '91.23 8.63')
@@ -85,7 +101,7 @@ def test_real_table_extraction_corruption_rejects_without_borrowing(public_js2, 
         elif damage == 'header_missing': pages[9] = pages[9].replace('主营业务分产品情况', 'MISSING')
         else: pages[9] = pages[9].replace('酒类 吨 ', '酒类 吨 1 1 1 1 1 1\n酒类 吨 ')
         return pages
-    monkeypatch.setattr(app, 'extract_pages', corrupted)
+    monkeypatch.setattr(app.source_provider, 'extract_pages', corrupted)
     with pytest.raises(ValueError, match='boundaries|row shape'): run(root, ref)
     assert not (root/'runtime/erosion-test-v1').exists()
 

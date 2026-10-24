@@ -14,7 +14,9 @@ from .incremental_validity import read_bound_json
 from .source_native_candidate_v2 import SCHEMA as NATIVE_SCHEMA, verify_source_native_candidate, _equal_numbers
 from ...domain.valuation.source_native_cash_v1 import replay_timing_delay_inputs
 from ...domain.valuation.joint_adverse_cash_v1 import diagnose_joint_adverse_cash
-from ..research.operating_earnings_bridge import research_from_retained_sources
+from ...domain.valuation.operating_realization_erosion_v1 import FIELDS, build_erosion_bear
+from ..research.operating_earnings_bridge import research_from_retained_sources, extract_statement
+from ...infrastructure.filings.operating_erosion_sources import read_operating_erosion_sources
 from ...m1_valuation_package_builder import build_descriptor
 from ...valuation_models.residual_income import _shared_scenario_calculation
 
@@ -31,6 +33,7 @@ IMPLEMENTATIONS = (
     'src/value_investment_agent/application/research/operating_earnings_bridge.py',
     'src/value_investment_agent/infrastructure/filings/pdf_text.py',
     'src/value_investment_agent/infrastructure/filings/pdfium_runtime.py',
+    'src/value_investment_agent/infrastructure/filings/operating_erosion_sources.py',
 )
 GROUP_NOTES = {
     'EARNINGS': ('\u76c8\u5229\u57fa\u7840',
@@ -101,6 +104,121 @@ def _decimal_strings(value):
     if isinstance(value, (list, tuple)):
         return [_decimal_strings(item) for item in value]
     return value
+
+
+def _replacement_bear(root, baseline_ref, candidate, package, ledger, replacement_ref, clock, refs):
+    """Compare two independently replayed, pinned inputs; never replace the baseline."""
+    path, replacement = _json(root, replacement_ref)
+    if replacement_ref == baseline_ref or replacement.get('schema_version') != NATIVE_SCHEMA:
+        raise ValueError('Replacement requires a distinct native candidate')
+    if verify_source_native_candidate(root=root, path=path,
+            expected_sha256=replacement_ref['sha256'], now=clock) != replacement:
+        raise ValueError('Replacement candidate changed')
+    _, new_package = _json(root, replacement['source_package_binding'])
+    _, new_ledger = _json(root, replacement['native_cash_ledger_binding'])
+    if replacement['symbol'] != candidate['symbol']:
+        raise ValueError('Replacement issuer differs')
+    for key in ('model_id', 'model_version', 'profile_id'):
+        if replacement['model_context'][key] != candidate['model_context'][key]:
+            raise ValueError('Replacement model/profile differs')
+    # Context hashes must change with a changed bear; compare the actual model
+    # basis rather than requiring old whole-input fingerprints to stay equal.
+    for section, excluded in (('facts', {'scenario_inputs', 'evidence_refs'}),
+                              ('point_in_time', {'available_at', 'computed_at', 'research_as_of'})):
+        if ({k:v for k,v in package[section].items() if k not in excluded}
+                != {k:v for k,v in new_package[section].items() if k not in excluded}):
+            raise ValueError('Replacement financial/model basis differs')
+    if (ledger['history'] != new_ledger['history']
+            or ledger['financial_basis'] != new_ledger['financial_basis']
+            or {k:v for k,v in ledger['plan'].items() if k != 'operating_states'}
+                != {k:v for k,v in new_ledger['plan'].items() if k != 'operating_states'}):
+        raise ValueError('Replacement changed cash/history/terminal policy')
+    for name in ('base', 'bull'):
+        if (package['facts']['scenario_inputs'][name] != new_package['facts']['scenario_inputs'][name]
+                or ledger['cases']['TIMING_DELAY'][name] != new_ledger['cases']['TIMING_DELAY'][name]
+                or [a[name] for a in package['assumptions']['assumptions']]
+                    != [a[name] for a in new_package['assumptions']['assumptions']]
+                or [b for b in package['assumption_bindings'] if b['scenario'] == name]
+                    != [b for b in new_package['assumption_bindings'] if b['scenario'] == name]
+                or candidate['candidate_valuation'][name+'_value'] != replacement['candidate_valuation'][name+'_value']):
+            raise ValueError('Replacement base/bull not exactly preserved')
+    old_catalog = {s['id']:s for s in package['sources']}
+    new_catalog = {s['id']:s for s in new_package['sources']}
+    if any(new_catalog.get(key) != value for key, value in old_catalog.items()):
+        raise ValueError('Replacement lost or changed original source catalog')
+    item = new_catalog['erosion-operating-inputs']
+    evidence_ref = dict(path=item['local_path'], sha256=item['sha256'])
+    _, evidence = _json(root, evidence_ref)
+    observed = datetime.fromisoformat(evidence['observed_at'])
+    timing = [datetime.fromisoformat(value) for value in (
+        replacement['generated_at'], new_package['point_in_time']['available_at'],
+        new_package['point_in_time']['computed_at'], new_ledger['generated_at'],
+        item['source_available_at'], item['retrieved_at'])]
+    if (evidence['schema_version'] != 'source-native-operating-input-v1'
+            or evidence['symbol'] != candidate['symbol'] or observed.utcoffset() is None or observed > clock
+            or any(value.utcoffset() is None or value != observed for value in timing)
+            or evidence['action'] != 'no_order'
+            or evidence['research_assumptions']['repeat_mixed_proxy_years'] != 5
+            or evidence['research_assumptions']['h1_cost_ratio_from_year_one'] is not True
+            or evidence['unknown']['normalized_profit'] is not None
+            or evidence['unknown']['full_downside_bound'] is not None
+            or not evidence['research_assumptions']['negative_conditions']):
+        raise ValueError('Replacement operating scope unsupported')
+    # Producer and consumer share the same read-only official-layout adapter.
+    source_inputs = read_operating_erosion_sources(root=root, symbol=candidate['symbol'],
+        sources=package['sources'], fields=FIELDS)
+    specs = source_inputs['specs']
+    if (specs != evidence['parameter_metadata']['mixed_proxy_and_cost_ratio']['source_bindings']
+            or evidence['mixed_proxy'] != source_inputs['mixed_proxy']
+            or type(evidence['mixed_proxy']['source_binding']['page']) is not int):
+        raise ValueError('Replacement mixed proxy differs from official source/page/percentages')
+    statements = [extract_statement(root=root, spec=spec) for spec in specs]
+    if statements != evidence['historical_statement_facts']:
+        raise ValueError('Replacement financial inputs differ from official originals')
+    regenerated = build_erosion_bear(
+        annual={key:statements[0]['rows'][key]['values'] for key in FIELDS},
+        interim={key:statements[1]['rows'][key]['values'] for key in FIELDS},
+        wine_revenue_yoy_pct=evidence['mixed_proxy']['revenue_yoy_pct'],
+        wine_volume_yoy_pct=evidence['mixed_proxy']['volume_yoy_pct'], ledger=ledger,
+        opening_book=package['facts']['operating_inputs']['start_book_equity'])
+    if (regenerated['status'] != 'CASH_CONTRACT_REPLAYED_NOT_ECONOMIC_APPROVAL'
+            or regenerated['scenarios'] != new_ledger['cases']['TIMING_DELAY']
+            or regenerated['operating_rows'] != evidence['operating_rows']
+            or regenerated['mixed_realization_factor'] != evidence['derived_historical_ratios']['mixed_realization_factor']
+            or regenerated['h1_cost_ratio'] != evidence['derived_historical_ratios']['h1_cost_ratio']):
+        raise ValueError('Replacement operating path cannot be reproduced')
+    code_name = 'src/value_investment_agent/domain/valuation/operating_realization_erosion_v1.py'
+    code_root = Path(__file__).resolve().parents[4]
+    if sha256_file(root/code_name) != sha256_file(code_root/code_name):
+        raise ValueError('Replacement executing implementation differs')
+    refs.append(dict(path=code_name, sha256=sha256_file(root/code_name)))
+    replacement_refs = _closure(root, [replacement_ref, *replacement['source_bindings'], evidence_ref])
+    refs[:] = _closure(root, [*refs, *replacement_refs])
+    facts = build_descriptor(new_package, root=root).facts
+    with localcontext() as context:
+        context.prec = 48
+        old_facts = build_descriptor(package, root=root).facts
+        old = _kernel_projection(old_facts, old_facts.scenario_inputs['bear'])
+        new = _kernel_projection(facts, facts.scenario_inputs['bear'])
+        for model, projection in ((candidate, old), (replacement, new)):
+            if not _equal_numbers(projection['per_historical_share_cny'], model['candidate_valuation']['bear_value']):
+                raise ValueError('Replacement comparison differs from native kernel')
+        difference = str(Decimal(new['per_historical_share_cny'])-Decimal(old['per_historical_share_cny']))
+    return dict(schema_version='source-native-replacement-bear-comparison-v1',
+        status='VERIFIED_BOUND_RESEARCH_COMPARISON', symbol=candidate['symbol'],
+        baseline_candidate_binding=deepcopy(baseline_ref), replacement_candidate_binding=deepcopy(replacement_ref),
+        evidence_binding=evidence_ref, observed_at=evidence['observed_at'], confidence='LOW',
+        replacement_generated_at=replacement['generated_at'], input_available_at=item['source_available_at'],
+        scope='CONDITIONAL_OPERATING_EROSION_NOT_FULL_DOWNSIDE_OR_ENTRY_PRICE', action='no_order',
+        research_admitted=False, price_admitted=False, formal_eligibility=False, strategy_approved=False,
+        base_bull_exactly_preserved=True, normalized_parent_profit_cny=None,
+        original_bear=old, replacement_bear=new, difference_per_historical_share_cny=difference,
+        mixed_proxy=deepcopy(evidence['mixed_proxy']),
+        derived_historical_ratios=deepcopy(evidence['derived_historical_ratios']),
+        operating_rows=deepcopy(evidence['operating_rows']),
+        annual_cash_rows=deepcopy(new_ledger['cases']['TIMING_DELAY']['bear']['annual_rows']),
+        negative_conditions=deepcopy(evidence['research_assumptions']['negative_conditions']),
+        source_bindings=replacement_refs)
 
 
 def _joint_adverse_review(root, package, ledger, clock, refs):
@@ -217,10 +335,12 @@ def _first_year_boundary(plan, case):
 
 def build_source_native_economic_review(*, root: Path, candidate_binding: dict,
                                       review_document_binding: dict | None = None,
+                                      replacement_candidate_binding: dict | None = None,
                                       now: datetime | None = None) -> dict:
     """Return company-page-ready research diagnostics without current/approval reads or writes."""
     root = root.resolve()
     candidate_binding, review_document_binding = deepcopy(candidate_binding), deepcopy(review_document_binding)
+    replacement_candidate_binding = deepcopy(replacement_candidate_binding)
     clock = now if now is not None else datetime.now(timezone.utc)
     if not isinstance(clock, datetime) or clock.utcoffset() is None:
         raise ValueError('Economic review requires an aware trusted clock')
@@ -230,6 +350,8 @@ def build_source_native_economic_review(*, root: Path, candidate_binding: dict,
         formal_eligibility=False, strategy_approved=False, position_guidance=None,
         canonical_written=False, registered_current_case_changed=False)
     if candidate.get('schema_version') == 'pending-research-candidate-v1':
+        if replacement_candidate_binding is not None:
+            raise ValueError('Replacement comparison requires native baseline')
         _bound(root, candidate_binding)
         return dict(envelope, status='NOT_APPLICABLE', reason='Native TIMING_DELAY RI inputs required',
             scope='UNASSESSED_NON_NATIVE_CANDIDATE', scenarios=[])
@@ -327,6 +449,12 @@ def build_source_native_economic_review(*, root: Path, candidate_binding: dict,
             ('PERSISTENT_UPSTREAM_RESTRICTION', 'Frozen cash kernel requires full release in year two; no replacement ledger built.'),
             ('TERMINAL_APPROPRIATION_CONTINUES', 'Frozen cash kernel requires conditional terminal appropriation zero.'),
             ('DELAY_BOUNDARY_FULL_PATH', 'First-year algebra is not a new cash ledger or multi-year stress validation.'))])
+    if replacement_candidate_binding is not None:
+        result['replacement_bear'] = _replacement_bear(root, candidate_binding, candidate, package,
+            ledger, replacement_candidate_binding, clock, refs)
+        result['source_bindings'] = refs
+        verify_source_native_candidate(root=root, path=root/replacement_candidate_binding['path'],
+            expected_sha256=replacement_candidate_binding['sha256'], now=clock)
     if verify_source_native_candidate(root=root, path=path,
             expected_sha256=candidate_binding['sha256'], now=clock) != candidate:
         raise ValueError('Economic candidate changed during projection')

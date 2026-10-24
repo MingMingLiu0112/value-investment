@@ -932,7 +932,21 @@ def create_app(
     register_simulated_journey_routes(api, project=project)
     register_dual_simulated_journey_routes(api, project=project)
     register_simulated_portfolio_routes(api, project=project, port=bound_port)
-    register_source_native_economic_routes(api, project=project)
+    def economic_replacement_bindings():
+        # Reuse the research-only publication pointer, never the approval registry.
+        pointer = project / "config/current-research-drafts.json"
+        if not pointer.exists():
+            return {}
+        payload = json.loads(pointer.read_text(encoding="utf-8"))
+        if (not isinstance(payload, dict)
+                or payload.get("schema_version") != "current-research-drafts-v1"
+                or payload.get("action") != "no_order"
+                or not isinstance(payload.get("economic_comparisons", {}), dict)):
+            raise ValueError("Invalid research-only comparison pointer")
+        return payload.get("economic_comparisons", {})
+
+    register_source_native_economic_routes(
+        api, project=project, replacement_bindings=economic_replacement_bindings)
     register_value_policy_routes(api, sessions=sessions, port=bound_port,
         principal_resolver=lambda request: PolicyPrincipal("local-account-owner", frozenset({PERMISSION})),
         get_service=lambda: value_policy_service or ValuePolicyInteractionService(

@@ -5,7 +5,10 @@ import type {
   EconomicBinding,
   EconomicReview,
 } from "../services/sourceNativeEconomicReview";
-import { verifiedEconomicReview } from "../services/sourceNativeEconomicReview";
+import {
+  verifiedEconomicReview,
+  verifiedReplacementBear,
+} from "../services/sourceNativeEconomicReview";
 import { readinessNumber } from "../utils/strategyReadiness";
 
 const percent = (value: string) =>
@@ -91,6 +94,75 @@ export function EconomicReviewResult({ value }: { value: EconomicReview }) {
       <p>
         首年现金边界仅为固定盈利、分配、分析底线及付款假设下的关系，不是长期安全阈值、延迟概率或分红保证。资本成本挑战不是当前目标价或获批的新估值。
       </p>
+      {value.replacement_bear &&
+        verifiedReplacementBear(value.replacement_bear, value) && (
+          <section aria-label="经营侵蚀替代bear比较">
+            <h5>经营侵蚀替代 bear：未批准的条件研究</h5>
+            <p>
+              旧 bear{" "}
+              {readinessNumber(
+                value.replacement_bear.original_bear.per_historical_share_cny,
+              )}
+              ； 替代 bear{" "}
+              {readinessNumber(
+                value.replacement_bear.replacement_bear
+                  .per_historical_share_cny,
+              )}
+              ； 差额{" "}
+              {readinessNumber(
+                value.replacement_bear.difference_per_historical_share_cny,
+              )}{" "}
+              元／历史股。base/bull 参数及现金路径保持原样。
+            </p>
+            <p>
+              混合实现收入代理不是纯售价；连续五年递推与 H1
+              成本率持续全年均为研究假设，季节性或结构恢复可能推翻假设。 仍为
+              LOW
+              条件研究，不是完整下行、公允价批准、入场价或买入资格。此处沿用首年暂留、次年回款，不是下面的持续暂留逆境。
+            </p>
+            <ol>
+              {value.replacement_bear.operating_rows.map((operating, i) => {
+                const cash = value.replacement_bear!.annual_cash_rows[i];
+                return (
+                  <li key={operating.year}>
+                    第{operating.year}年：收入{" "}
+                    {readinessNumber(operating.revenue)}元； 经营桥盈利{" "}
+                    {readinessNumber(operating.legacy_ex_parent)}元；
+                    含增量现金收益盈利 {readinessNumber(cash.profit)}
+                    元；期末现金 {readinessNumber(cash.cash_close)}元； 期末权益{" "}
+                    {readinessNumber(cash.book_close)}元。
+                  </li>
+                );
+              })}
+            </ol>
+            <p>
+              来源观察时间：{value.replacement_bear.observed_at}
+              。反证与否决条件：
+            </p>
+            <ul>
+              {value.replacement_bear.negative_conditions.map(
+                (condition, i) => (
+                  <li key={i}>{condition}</li>
+                ),
+              )}
+            </ul>
+            <details>
+              <summary>新旧候选绑定</summary>
+              <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                {JSON.stringify(
+                  {
+                    baseline: value.replacement_bear.baseline_candidate_binding,
+                    replacement:
+                      value.replacement_bear.replacement_candidate_binding,
+                    evidence: value.replacement_bear.evidence_binding,
+                  },
+                  null,
+                  2,
+                )}
+              </pre>
+            </details>
+          </section>
+        )}
       {value.joint_adverse_cash && (
         <section aria-label="联合逆境现金诊断">
           <h5>盈利下降与持续资金暂留：联合逆境反例</h5>

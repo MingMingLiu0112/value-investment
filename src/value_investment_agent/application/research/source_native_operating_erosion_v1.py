@@ -3,7 +3,6 @@ from copy import deepcopy
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal as D, localcontext
 import json
-import re
 from pathlib import Path
 
 from ..product.common import require_inside, sha256_file, write_new_json, write_new_bytes
@@ -13,7 +12,7 @@ from ..product.source_bound_inputs import source_catalog_sha256
 from ...domain.valuation.operating_realization_erosion_v1 import FIELDS, build_erosion_bear
 from ...domain.valuation import operating_realization_erosion_v1 as operating
 from .operating_earnings_bridge import extract_statement
-from ...infrastructure.filings.pdf_text import extract_pages
+from ...infrastructure.filings import operating_erosion_sources as source_provider
 
 
 NEGATIVE_CONDITIONS = [
@@ -44,15 +43,15 @@ def build_source_native_operating_erosion(*, root: Path, candidate_binding: dict
     candidate_binding = deepcopy(candidate_binding)
     candidate = verify_source_native_candidate(root=root, path=root/candidate_binding['path'],
         expected_sha256=candidate_binding['sha256'], now=clock)
-    if candidate['symbol'] != '600519' or datetime.fromisoformat(candidate['generated_at']) > clock:
-        raise ValueError('This bounded issuer/input version requires available 600519 JS2')
+    if datetime.fromisoformat(candidate['generated_at']) > clock:
+        raise ValueError('This bounded input version requires an available native candidate')
     refs = [candidate_binding, *candidate['source_bindings']]
     closure = {}
     for ref in refs:
         if ref['path'] in closure and closure[ref['path']] != ref['sha256']:
             raise ValueError('Conflicting original closure bindings')
         closure[ref['path']] = ref['sha256']
-    implementations = [Path(__file__), Path(operating.__file__)]
+    implementations = [Path(__file__), Path(operating.__file__), Path(source_provider.__file__)]
     code = {path: sha256_file(path) for path in implementations}
     def recheck():
         for path, digest in closure.items():
@@ -64,42 +63,14 @@ def build_source_native_operating_erosion(*, root: Path, candidate_binding: dict
     recheck()
     _, old_package = read_bound_json(root, candidate['source_package_binding'], 'original native package')
     _, ledger = read_bound_json(root, candidate['native_cash_ledger_binding'], 'original native ledger')
-    catalog = {item['id']: item for item in old_package['sources']}
-    specs = []
-    declarations = [
-        ('cninfo:1225114741', '2026-04-17', [61, 62], 6, ['FY2025', 'FY2024'], ['2025年度', '2024年度']),
-        ('cninfo:1225475868', '2026-08-15', [30, 31], 5, ['H12026', 'H12025'], ['2026年半年度', '2025年半年度']),
-    ]
-    for source_id, published, pages, summary, periods, columns in declarations:
-        item = catalog[source_id]
-        local = item['local_path']
-        if closure.get(local) != item['sha256']:
-            raise ValueError('Official statement outside original bound closure')
-        specs.append(dict(symbol='600519', issuer='贵州茅台', source_id=source_id,
-            path=local, sha256=item['sha256'], source_url='https://static.cninfo.com.cn/finalpage/'
-                +published+'/'+source_id.split(':')[1]+'.PDF', published_date=published,
-            original_acquired_at=None, statement_pages=pages, summary_page=summary,
-            periods=periods, column_labels=columns, fields=sorted(FIELDS)))
+    source_inputs = source_provider.read_operating_erosion_sources(root=root, symbol=candidate['symbol'],
+        sources=old_package['sources'], fields=FIELDS)
+    specs = source_inputs['specs']
+    if any(closure.get(ref['path']) != ref['sha256'] for ref in source_inputs['source_bindings']):
+        raise ValueError('Official statement outside original bound closure')
     statements = [extract_statement(root=root, spec=spec) for spec in specs]
-    # Existing JS1 uses the two rounded FY wine percentages. Read their original
-    # rows, not constants or the old sealed result. Explicit row boundaries fail closed.
-    page = extract_pages(root/specs[0]['path'], limit=10)[9]
-    lines = [line.strip() for line in page.splitlines() if line.strip()]
-    text = '\n'.join(lines)
-    if (text.count('主营业务分行业情况') != 1 or text.count('主营业务分产品情况') != 1
-            or text.count('产销量情况分析') != 1):
-        raise ValueError('FY wine revenue/volume table boundaries unsupported')
-    industry = text.split('主营业务分行业情况', 1)[1].split('主营业务分产品情况', 1)[0]
-    volume = text.split('产销量情况分析', 1)[1].split('(3).', 1)[0]
-    number = r'(-?\d[\d,]*(?:\.\d+)?)'
-    industry_rows = re.findall(r'^酒类\s+' + r'\s+'.join([number]*5)
-                               + r'\s+(?:减少|增加)\s+[\d.]+\s*个百', industry, re.M)
-    volume_rows = re.findall(r'^酒类\s+吨\s+' + r'\s+'.join([number]*6)
-                             + r'\s*$', volume, re.M)
-    if (len(industry_rows) != 1 or len(volume_rows) != 1
-            or '营业收入比上' not in industry or '销售量比\n上年增减' not in volume):
-        raise ValueError('FY mixed proxy row shape unsupported')
-    revenue_pct, volume_pct = industry_rows[0][3], volume_rows[0][4]
+    proxy = source_inputs['mixed_proxy']
+    revenue_pct, volume_pct = proxy['revenue_yoy_pct'], proxy['volume_yoy_pct']
     # Parsing belongs to the same strict Decimal contract as the pure kernel.
     D(revenue_pct), D(volume_pct)
     original_scenarios = deepcopy(old_package['facts']['scenario_inputs'])
@@ -136,13 +107,9 @@ def build_source_native_operating_erosion(*, root: Path, candidate_binding: dict
         return dict(path=ref['path'], sha256=ref['sha256'])
     for path in implementations:
         artifact(path.name, path.read_bytes(), 'erosion-code-'+path.stem, raw=True)
-    evidence = dict(schema_version='source-native-operating-input-v1', symbol='600519',
+    evidence = dict(schema_version='source-native-operating-input-v1', symbol=candidate['symbol'],
         observed_at=clock.isoformat(), historical_statement_facts=statements,
-        mixed_proxy=dict(identity='DISCLOSED_ROUNDED_WINE_REVENUE_AND_VOLUME_PERCENTAGES',
-            source_binding=dict(path=specs[0]['path'], sha256=specs[0]['sha256'], page=10),
-            revenue_yoy_pct=revenue_pct, volume_yoy_pct=volume_pct,
-            revenue_excerpt=industry.strip(), volume_excerpt=volume.strip(),
-            identity_class='SOURCE_FACT_ROUNDED_NOT_PURE_PRICE'),
+        mixed_proxy=deepcopy(proxy),
         derived_historical_ratios=dict(identity_class='DERIVED_FROM_SOURCE_FACTS_NOT_FORECAST',
             mixed_realization_factor=generated['mixed_realization_factor'],
             h1_cost_ratio=generated['h1_cost_ratio']),
@@ -174,7 +141,7 @@ def build_source_native_operating_erosion(*, root: Path, candidate_binding: dict
     new_ledger['plan']['operating_states'] = 'Versioned compounded mixed-realization erosion bear; exact original base/bull'
     ledger_ref = artifact('cash-ledger.json', new_ledger, 'erosion-cash-ledger')
     package = deepcopy(old_package)
-    version = '600519-operating-realization-erosion-v1-'+clock.strftime('%Y%m%dT%H%M%S%fZ')
+    version = candidate['symbol']+'-operating-realization-erosion-v1-'+clock.strftime('%Y%m%dT%H%M%S%fZ')
     package.update(package_version=version, descriptor_version=version, run_id=version, quote=None)
     research_day = clock.astimezone(timezone(timedelta(hours=8))).date().isoformat()
     package['point_in_time'].update(available_at=clock.isoformat(), computed_at=clock.isoformat(),
@@ -214,7 +181,7 @@ def build_source_native_operating_erosion(*, root: Path, candidate_binding: dict
     prepared = prepare_source_native_candidate(root=root, package_binding=package_ref, ledger_binding=ledger_ref,
         output_dir=target/'candidate', now=clock)
     recheck()
-    return dict(status='PENDING_NATIVE_RESEARCH_CANDIDATE_NOT_APPROVED', symbol='600519',
+    return dict(status='PENDING_NATIVE_RESEARCH_CANDIDATE_NOT_APPROVED', symbol=candidate['symbol'],
         observed_at=clock.isoformat(), source_package_binding=package_ref, native_cash_ledger_binding=ledger_ref,
         candidate_binding=dict(path=(target/'candidate/candidate.json').relative_to(root).as_posix(),
                                sha256=sha256_file(target/'candidate/candidate.json')),

@@ -71,3 +71,62 @@ def test_missing_current_candidate_returns_unavailable_without_writes(tmp_path):
     assert response.status_code == 409
     assert response.json()['action'] == 'no_order'
     assert not list(tmp_path.rglob('*'))
+
+
+@pytest.mark.parametrize('mode', ['exception', 'null', 'wrong_baseline', 'drift', 'empty_entry'])
+def test_explicit_comparison_mapping_fails_closed(published, mode):
+    _, root, candidate, binding, _ = published
+    calls = 0
+    def mapping():
+        nonlocal calls
+        calls += 1
+        if mode == 'exception': raise RuntimeError('TEST_ONLY pointer read error')
+        if mode == 'null': return None
+        if mode == 'empty_entry': return {candidate['symbol']:{}}
+        if mode == 'drift': return {} if calls == 1 else {candidate['symbol']:{}}
+        return {candidate['symbol']:dict(baseline_candidate_binding=dict(binding,sha256='0'*64),
+            replacement_candidate_binding=binding)}
+    api = FastAPI()
+    routes.register_source_native_economic_routes(api,project=root,replacement_bindings=mapping)
+    response = TestClient(api).get('/api/v1/value-economic-review/'+candidate['symbol'])
+    assert response.status_code == 409
+    assert 'scenarios' not in response.json() and 'replacement_bear' not in response.json()
+
+
+def test_empty_callback_is_backward_compatible(published):
+    _, root, candidate, _, _ = published
+    api = FastAPI()
+    routes.register_source_native_economic_routes(api,project=root,replacement_bindings=lambda:{})
+    response = TestClient(api).get('/api/v1/value-economic-review/'+candidate['symbol'])
+    assert response.status_code == 200
+    assert 'replacement_bear' not in response.json()
+
+
+def test_real_app_factory_consumes_pointer_and_invalid_pointer_fails_closed(published, monkeypatch):
+    from value_investment_agent.presentation.web_api.app import create_app
+    _, root, candidate, binding, _ = published
+    pointer = root/'config/current-research-drafts.json'
+    calls = []
+    original = routes.build_source_native_economic_review
+    def observe(**kwargs):
+        calls.append(kwargs.get('replacement_candidate_binding'))
+        return original(**kwargs)
+    # Observe the real route call, not a replacement verifier/model.
+    monkeypatch.setattr(routes, 'build_source_native_economic_review', observe)
+    client = TestClient(create_app(root,port=8791),base_url='http://127.0.0.1:8791')
+    url = '/api/v1/value-economic-review/'+candidate['symbol']
+    assert client.get(url).status_code == 200
+    assert calls == [None]
+    # A valid pointer delivers its exact selected binding into the native
+    # consumer. Reusing the baseline as replacement then fails its real guard.
+    pointer.write_text(json.dumps(dict(schema_version='current-research-drafts-v1',action='no_order',
+        economic_comparisons={candidate['symbol']:dict(baseline_candidate_binding=binding,
+            replacement_candidate_binding=binding)})),encoding='utf-8')
+    response = client.get(url)
+    assert response.status_code == 409
+    assert calls == [None,binding]
+    pointer.write_text(json.dumps(dict(schema_version='WRONG',action='no_order',economic_comparisons={})),encoding='utf-8')
+    response = client.get(url)
+    assert response.status_code == 409
+    assert calls == [None,binding]
+    assert 'scenarios' not in response.json() and 'replacement_bear' not in response.json()
