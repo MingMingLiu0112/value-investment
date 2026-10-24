@@ -8,7 +8,7 @@ import json
 
 from ..research.value_economic_assessment import load_current_value_economic_assessment
 from ..research.value_research_analysis import _bound
-from .research_reviews import prepare_pending_review_response
+from .source_native_review_adapter_v2 import prepare_pending_review_response
 from .common import load_json_object, sha256_file
 from .neutral_valuation_proposal import JOINT_SCHEMA
 

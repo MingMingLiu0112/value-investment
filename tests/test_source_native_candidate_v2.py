@@ -141,13 +141,11 @@ def test_second_company_cold_replay_preserves_inputs_and_existing_packet(synthet
     assert (root/'runtime/native-v2/package.json').read_bytes() == before
     path = root/'runtime/native-v2/candidate.json'
     assert native.verify_source_native_candidate(root=root, path=path, expected_sha256=sha256_file(path)) == candidate
-    # Model only the exact dispatcher change requested of Root. No G3/Gate,
-    # model, signing or candidate verification is replaced by a permissive stub.
+    # The frozen verifier stays untouched; v2 has a separate unsigned adapter.
     from value_investment_agent.application.product import pending_research_candidate as frozen
-    from value_investment_agent.application.product.research_reviews import prepare_pending_review_intake
+    from value_investment_agent.application.product.source_native_review_adapter_v2 import prepare_pending_review_intake
     with pytest.raises(ValueError, match='pending candidate admission boundary mismatch'):
         frozen.verify_pending_research_candidate(root=root, path=path, expected_sha256=sha256_file(path))
-    monkeypatch.setattr(frozen, 'verify_pending_research_candidate', native.verify_review_candidate)
     intake = prepare_pending_review_intake(root=root, candidate_path=path, candidate_sha256=sha256_file(path))
     assert len(intake['groups']) == 5 and intake['valuation_artifact_sha256']
     assert intake['whole_model_decision'] is None and intake['research_admitted'] is False
@@ -307,7 +305,6 @@ def test_real_js2_native_candidate_cold_replay(tmp_path, monkeypatch):
     assert len(result['review_groups']) == 5
     from value_investment_agent.application.product import pending_research_candidate as frozen
     from value_investment_agent.application.product.research_review_wizard import preview_pending_review_response
-    monkeypatch.setattr(frozen, 'verify_pending_research_candidate', native.verify_review_candidate)
     path = tmp_path/'runtime/native-v2/candidate.json'
     preview = preview_pending_review_response(root=tmp_path, candidate_path=path, candidate_sha256=sha256_file(path))
     assert preview['status'] == 'READ_ONLY_PREVIEW_NOT_APPROVED'

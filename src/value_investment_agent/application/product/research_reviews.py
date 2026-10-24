@@ -262,7 +262,7 @@ def verify_human_approval_transport_provenance(root: Path, approval):
     )
     if signed_approval.as_policy() != unbound_approval.as_policy():
         raise ValueError('G3 receipt differs from its signed whole-model approval')
-    from .source_native_candidate_v2 import verify_review_candidate as verify_pending_research_candidate
+    from .pending_research_candidate import verify_pending_research_candidate
     candidate = verify_pending_research_candidate(
         root=root,
         path=root / candidate_binding['path'],
@@ -503,7 +503,7 @@ def consume_pending_review_response(*, root: Path, candidate_path: Path,
 def prepare_pending_review_intake(*, root: Path, candidate_path: Path,
                                   candidate_sha256: str) -> dict:
     """Expose stable response scopes without creating a human approval receipt."""
-    from .source_native_candidate_v2 import verify_review_candidate as verify_pending_research_candidate
+    from .pending_research_candidate import verify_pending_research_candidate
     from .decision_surface import verify_current_decision_workbench
     from ...research_run_contract import valuation_result_sha256
 
@@ -665,7 +665,7 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
                 records = list(directory.glob('*.json'))
                 if not records:
                     continue
-                from .source_native_candidate_v2 import verify_review_candidate as verify_pending_research_candidate
+                from .pending_research_candidate import verify_pending_research_candidate
                 relevant = set()
                 for record_path in records:
                     binding = _strict_review_json(record_path)['candidate_binding']
@@ -690,7 +690,7 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
             raise ValueError('authenticated review provenance cannot be stripped from a current packet')
         if packet.get('authenticated_response_binding') is not None:
             candidate_binding = packet['reviewed_candidate_binding']
-            from .source_native_candidate_v2 import verify_review_candidate as verify_pending_research_candidate
+            from .pending_research_candidate import verify_pending_research_candidate
             candidate = verify_pending_research_candidate(root=root, path=root / candidate_binding['path'],
                 expected_sha256=candidate_binding['sha256'])
             if candidate['model_context'] != build_research_review_model_context(descriptor=descriptor, spec=spec):

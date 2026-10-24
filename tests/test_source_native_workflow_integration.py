@@ -8,7 +8,7 @@ from test_source_native_candidate_v2 import synthetic_native, prepare
 from value_investment_agent.application.product.common import sha256_file
 from value_investment_agent.application.product.pending_research_candidate import verify_pending_research_candidate
 from value_investment_agent.application.product.pending_candidate_supplement import load_current_pending_candidate_supplement
-from value_investment_agent.application.product.research_reviews import prepare_pending_review_intake
+from value_investment_agent.application.product.source_native_review_adapter_v2 import prepare_pending_review_intake
 from value_investment_agent.application.product.research_review_wizard import (
     preview_pending_review_response, build_external_review_handoff,
 )
@@ -32,12 +32,16 @@ def test_native_intake_and_unsigned_preview_do_not_replace_frozen_verifier(synth
     before = path.read_bytes()
     with pytest.raises(ValueError):
         verify_pending_research_candidate(root=root, path=path, expected_sha256=binding['sha256'])
+    from value_investment_agent.application.product import research_reviews as frozen
+    with pytest.raises(ValueError):
+        frozen.prepare_pending_review_intake(root=root, candidate_path=path, candidate_sha256=binding['sha256'])
     intake = prepare_pending_review_intake(root=root, candidate_path=path, candidate_sha256=binding['sha256'])
     preview = preview_pending_review_response(root=root, candidate_path=path, candidate_sha256=binding['sha256'])
     assert len(intake['groups']) == len(preview['review_questions']) == 5
     assert intake['model_context'] == candidate['model_context']
     assert intake['whole_model_decision'] is None
     assert intake['research_admitted'] is False
+    assert intake['native_authenticated_consumption_supported'] is False
     assert preview['status'] == 'READ_ONLY_PREVIEW_NOT_APPROVED'
     assert preview['draft']['whole_model_approval'] is None
     assert preview['draft']['reviewer_id'] is None
@@ -54,6 +58,8 @@ def test_native_supplement_and_public_analysis_preserve_exact_cash_materials(syn
     native = analysis['source_native_cash_review']
     assert native['candidate_binding'] == binding
     assert native['model_context'] == candidate['model_context']
+    assert native['cash_branch'] == 'TIMING_DELAY'
+    assert native['authenticated_consumption_supported'] is False
     assert native['primary_registered'] is native['approval_changed'] is False
     assert native['valuation_timing'] is None
     assert native['valuation_timing_status'] == 'MISSING_EXPLICIT_MODEL_TIMING'
@@ -66,7 +72,9 @@ def test_native_supplement_and_public_analysis_preserve_exact_cash_materials(syn
 def test_native_handoff_keeps_five_groups_and_unsigned_economic_materials(synthetic_native):
     root, candidate, _, binding = register_native(synthetic_native)
     handoff = build_external_review_handoff(root=root, symbol=candidate['symbol'], now=datetime.now(timezone.utc))
-    assert handoff['status'] == 'EXTERNAL_SIGNATURE_REQUIRED'
+    assert handoff['status'] == 'NATIVE_REVIEW_PREVIEW_ONLY'
+    assert handoff['native_authenticated_consumption_supported'] is False
+    assert 'consume_signed_response' not in handoff['commands']
     assert handoff['candidate_binding'] == binding
     assert len(handoff['review_questions']) == 5
     assert handoff['unsigned_response']['whole_model_approval'] is None

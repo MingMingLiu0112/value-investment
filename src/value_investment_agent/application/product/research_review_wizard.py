@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Callable
 
 from .common import require_inside, sha256_file, write_new_json
-from .research_reviews import prepare_pending_review_intake, prepare_pending_review_response
+from .source_native_review_adapter_v2 import prepare_pending_review_intake, prepare_pending_review_response
 
 
 def _materiality_schedule_binding(*, root, candidate_binding, candidate):
@@ -402,6 +402,15 @@ def _build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=
             materiality_handoff['package_binding'], materiality_handoff['scan_binding']]}.values())
         if materiality_handoff.get('schedule_binding'):
             result['source_bindings'].append(materiality_handoff['schedule_binding'])
+    if supplement is not None:
+        from .source_native_candidate_v2 import SCHEMA as NATIVE_SCHEMA
+        if supplement['candidate']['schema_version'] == NATIVE_SCHEMA:
+            result['status'] = 'NATIVE_REVIEW_PREVIEW_ONLY'
+            result['native_authenticated_consumption_supported'] = False
+            result['commands'].pop('consume_signed_response', None)
+            result['steps'] = [step for step in result['steps'] if step['id'] not in {'SIGN', 'CONSUME'}]
+            result['steps'].append(dict(id='NATIVE_TRANSPORT_GAP',
+                action='Native candidate authenticated consumption is not implemented; preview only, no G3 grant.'))
     return result
 
 

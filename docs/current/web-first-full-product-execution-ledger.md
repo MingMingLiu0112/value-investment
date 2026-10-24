@@ -3459,3 +3459,38 @@ list page. No verified replacement official enumeration was found; no automatic
 redirect, access challenge bypass or third-party-as-official substitution was
 added. This environment/data gap retains the dated screening label and does not
 block native research, account or presentation engineering. action=no_order.
+
+### 2026-10-24 - Real legacy replay catches an additional frozen review module
+
+Actual two-company native-read preparation failed on600887 although synthetic
+review regressions passed. Its thirteen-file implementation receipt also freezes
+application/product/research_reviews.py, beyond the earlier nine-path index.
+The four dispatcher import edits in9f954c12 violated that real receipt. This was
+caught before publication; LIVE8001 staysb35 and its source reads were unaffected.
+No old receipt or candidate was rewritten to excuse the mismatch.
+
+The successor restores the exact original module SHA256
+bbed3042faac05efc49e2897f5840c5e7d813cc14256021d1ea27c4fffdf2d7c
+and records that existing freeze in the ONE architecture-frozen-paths registry.
+A versioned source_native_review_adapter_v2 delegates v1 preparation untouched
+and prepares only unsigned v2 intake using the existing schemas/model verifier.
+It contains no signature consumer and grants no approval. Native handoff is
+NATIVE_REVIEW_PREVIEW_ONLY, with authenticated consumption explicitly unsupported;
+SIGN/CONSUME steps and the consumption command are removed for that version.
+Native authenticated consumption remains an engineering CODE_GAP, not merely a
+request for user authorization. The complete Goal has not reached G3 closure.
+
+Author verifier-monkeypatch demonstrations are replaced by real versioned-adapter
+tests; the frozen intake itself must still reject native candidates. New/legacy
+review/architecture selection136 passed, no skips. Actual registered600519 native
+and legacy600887 research can now be read together with no manual ledger request,
+no eligibility and no authority/primary/current-public-pointer changes. Receipt
+runtime/source-native-workflow-verification/de9260306b004e03aaa8b189ac19761e/receipt.json
+SHA2565970d567a13dc91be91717addc596324244687706452c6bac4e3905155592922.
+Only the supplemental pending pointer changes; the old CC1 candidate is retained.
+
+The actual native economic bundle remains NO_SUPPORTED_BOUND_BRIDGE pending
+strict content-addressed lineage integration. The independently assigned bridge
+adapter must not convert historical arithmetic into future distribution approval.
+New UI, full exact-head regression and final sole-port8001 publication remain
+pending. Permanent no_order; no main merge or private/Excel/server changes.

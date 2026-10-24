@@ -9,8 +9,8 @@
   },
   "supplemental_review_candidates": {
     "600519": {
-      "path": "runtime/cc1-review-ready-20261023/6851224875844dd9beb207512f7ea28b/pending/candidate.json",
-      "sha256": "5ab18cbc1fab4aca44a65e2ad0dd7b0e9279ab4969bd880d7d42522ec7703af2"
+      "path": "runtime/source-native-pending/3bb7bfe05c3f4c7d9a52d34b07588087/candidate.json",
+      "sha256": "bfba1fb08f316cd4791e2f8d36490a86345e969d1f2c97663fb7a1e42aa912d8"
     }
   },
   "bound_draft_review_candidates": {

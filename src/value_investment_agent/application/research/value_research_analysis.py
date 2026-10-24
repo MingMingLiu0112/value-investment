@@ -205,7 +205,8 @@ def load_current_value_research_analysis(*, root: Path, symbol: str, now: dateti
                 analysis['valuation'][name + '_value'] for name in ('bear', 'base', 'bull'))):
             raise ValueError('Native cash materials differ from public consumed analysis')
         analysis['source_native_cash_review'] = dict(native,
-            candidate_binding=dict(bindings['candidate_binding']), model_context=candidate['model_context'])
+            candidate_binding=dict(bindings['candidate_binding']), model_context=candidate['model_context'],
+            cash_branch='TIMING_DELAY', authenticated_consumption_supported=False)
         closure = {ref['path']: ref['sha256'] for ref in analysis['source_bindings']}
         for ref in native['source_bindings']:
             if ref['path'] in closure and closure[ref['path']] != ref['sha256']:
