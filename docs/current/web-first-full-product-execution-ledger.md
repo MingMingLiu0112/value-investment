@@ -4153,3 +4153,98 @@ economic/valuation gaps. This is an unpublished source fix, not actual8001
 acceptance, main valuation approval or strategy validation. Next autonomous work
 is the already running real financial export/adoption package and sibling's
 execution/PIT validation; mobile polish and simulation expansion remain deferred.
+
+### 2026-10-24 - Real income facts reach registered issuer research and public API
+
+8906794512a8fd4bd56f0755f032f6937f73c31c was pushed to the existing PR branch.
+Exact GitHub Core40082907497 and Web40082907493 SUCCESS. Clean checkout154
+targeted tests passed, including explicit retained originals. No8001 release.
+
+4e6cfdb3 integrates author087ff743 after independent source replay: base50055
+observations preserved byte-for-value/order/assurance,8 actual annual inputs and
+4 derived growth values. The new application adapter invokes existing income
+correlation/reverification, annual adoption and enrichment; it does not promote
+saved result JSON, create a model or confer approval. Root targeted33 passed/
+1 optional-real skipped, and the real-income and real-STAR tests subsequently
+ran separately with explicit roots:2 passed. Do not count earlier skips as proof.
+
+Actual fresh scan runtime/daily-marketwide/real-financial-20261024T095433Z
+completed2026-10-24T09:55:32.495691Z: observed SSE/SZSE5224, BSE incomplete,
+50055 E1 observations, dividend evidence3385, quality channel0, each other cheap
+channel50. Market date2026-10-23 still provider-unverified in this research scan.
+The earlier095128Z attempt failed because the explicit --skip-dividend empty
+payload is rejected by the inherited parser. Its directory/error was retained;
+Root used the existing normal collection, not relaxed validation or fake rows.
+
+The new scan's base was adapted through the existing contracts at:
+runtime/retained-income-financial-input/9c9756f601f94001bcaa5d60a8d269cc.
+financial export SHA2562a6c5022d33d4835660160d8644053ca579a2fabef5ff88974ca3dc8dacff871;
+consumption-result.json SHA256d24def7f132a623f6a651da55273ada90a52844809862d1b305912e7efeda4da;
+research-priority-v2.json SHA256181e86c30067417804d5964bf5fe4be99c5a0b55a37868b9913c7b9afbdca8c6.
+Annual adoption8 accepted official inputs; no new approvals. Neither600519 nor
+600887 belongs to this cheap-screen pool; Root did NOT force them into the pool
+or change ranking/budget. The existing V2 queue therefore does not deep-research
+them. A local output-summary helper incorrectly queried old entries instead of
+V2's two queues after saving these real results; that wrapper failed and was
+corrected, not presented as a sealed successful run.
+
+Root instead used the EXISTING persist_verified_enrichment_adoption path, which
+explicitly supports registered issuer research outside a discovery queue.
+600519 succeeded first. 600887 exposed a real CODE_GAP: optional single-issuer
+dividend lookup loaded a failed unrelated000651 package and blocked its typed
+baseline. The minimal optional selector now isolates only a valid identified
+sibling, while own/unknown/invalid identity and own duplicates remain errors.
+Whole-package dividend_results_by_symbol remains AST-identical and strict.
+Independent review found padded/UNKNOWN identities wrongly classified as
+siblings; Root fixed the original probe with strict ASCII six-digit identities.
+Independent recheck closed that P2 and confirmed actual Yili context loads.
+The registered10 provenance-frozen paths are unchanged; the old D2 review Hash
+is explicitly a historical observation, not a frozen implementation manifest.
+
+Actual registered adoption receipt:
+runtime/retained-income-research-adoption/a26132256225470c97eec792b250fb71/receipt.json
+SHA256a2190b86136add6d15bc1abff6854dc9215f89667425a8055d39a71236ad7b2a.
+Both now VERIFIED_FACT_ADOPTION,2 derived research inputs each, coverage0->2/9,
+total quality score still null, economic/formal approval false. Original Moutai
+registration at10:01:47.867243Z was preserved while completing Yili10:09:23.870675Z.
+FY2025 reported operating-revenue/parent-profit growth:600519 -1.2060%/-4.5323%;
+600887 +0.2105%/+36.8196%. These are historical growth facts, NOT normalization,
+prospective growth or buy conditions. Other seven quality fields remain missing.
+
+Actual existing GET /api/v1/decisions/600519 and600887 through local TestClient
+returned HTTP200, RESEARCH_ONLY and2 financial_progress metrics each. Raw public
+responses are in the same folder/public-api-read.json,
+SHA256a5c711574d1155f48824616c62bead4b9d97f97cd3c36aab42ee56c22d879841.
+Public registry Hashes unchanged, private API never accessed; scope is actual
+public in-process HTTP over unpublished worktree, NOT live8001 or user acceptance.
+Own source/isolation/durable/API/architecture targeted73 passed. No new UI.
+
+### 2026-10-24 - STAR execution quantity gap narrowed without inventing fills
+
+14307067 integrates sibling4f524ef8, parent38cf01ce. Independent62 focused tests
+and15 retained source/implementation/result references match; official retained
+rule evidence supports the bounded STAR limit-order quantity interval. Main-board
+rules, entry thresholds, fees and protection levels were not retuned. The replay
+experiment uses an explicit STAR-specific version and full_tradability=false.
+Actual688825 moved from unsupported-board UNASSESSABLE to STRICT limited checks:
+200/201-share cases each1 signal/0 trades, MISSING_DATED_STOCK_STATUS. Synthetic
+T+1/fee/full-exit tests are separate from this actual result. The extra real
+source case was explicitly run, not inferred from skipped tests. Price cage,
+order book, investor permission and corporate-action odd balance remain gaps;
+strict PIT/OOS admission false, history3/7 and strategy NOT_PROVEN unchanged.
+Independent receipt in sw1/runtime/swing-star-quantity-review-20261024/
+1e06d262a4b14f31a507032b469c9324; author's report Hash
+b83e46372fbff4836a4d29516c85d9e6bba9b017aee1bc4fd111a9967ed964f3.
+
+Next core economic issue, not a new platform: retained600519 annual/interim
+review found interest-paying deposit/interbank liabilities18.038bn/25.426bn
+and leases including maturities0.234bn/0.244bn. Blank loan/bond rows stay unknown.
+The industrial nine-bucket completeness contract does not explicitly sum these
+financial deposits; they must not disappear into a nonnumeric scope-review row
+or be mislabeled VAT/current operating liabilities. No full-debt/ROIC/dividend
+capacity is established by consolidated cash. Existing RI is not automatically
+invalidated, and deposits must not be deducted twice from an equity model.
+Bounded source study in eb1/.tmp/600519-financing-scope-review-20261024.md is
+research only. Next work must address this exact economic scope and main-value
+assumptions, not broad collection or simulation peripherals. All later changes
+above are unpublished; sole8001 remainscecb43f5. action=no_order; Goal ACTIVE.

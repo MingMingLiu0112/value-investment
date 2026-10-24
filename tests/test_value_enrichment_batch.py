@@ -9,6 +9,40 @@ from test_value_research_priority_v2 import _inputs
 from value_investment_agent.application.research import value_enrichment_batch as batch
 
 
+def test_single_issuer_dividend_lookup_isolates_identified_sibling_failure(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from value_investment_agent import m1_distribution_package_builder as builder
+    (tmp_path / 'config' / builder.DISTRIBUTION_DIRECTORY).mkdir(parents=True)
+    result = SimpleNamespace(symbol='600887')  # TEST_ONLY selector result, not financial evidence.
+    good = builder.DividendPackageDescriptorAttempt('yili', '600887', result, None)
+    bad = builder.DividendPackageDescriptorAttempt('gree', '000651', None, 'missing own source')
+    monkeypatch.setattr(builder, 'load_dividend_package_attempts', lambda root: (bad, good))
+    assert builder.optional_dividend_result_for_symbol(tmp_path, '600887') is result
+    with pytest.raises(ValueError, match='gree'):
+        builder.dividend_results_by_symbol(tmp_path)
+    assert builder.optional_dividend_result_for_symbol(tmp_path, '600519') is None
+
+
+@pytest.mark.parametrize('identity', ['600887', None, ' 600887 ', 'UNKNOWN', '\uff16\uff10\uff10\uff18\uff18\uff17'])
+def test_single_issuer_dividend_lookup_keeps_own_or_unknown_failure(tmp_path, monkeypatch, identity):
+    from value_investment_agent import m1_distribution_package_builder as builder
+    (tmp_path / 'config' / builder.DISTRIBUTION_DIRECTORY).mkdir(parents=True)
+    bad = builder.DividendPackageDescriptorAttempt('broken', identity, None, 'source hash mismatch')
+    monkeypatch.setattr(builder, 'load_dividend_package_attempts', lambda root: (bad,))
+    with pytest.raises(ValueError, match='source hash mismatch|invalid security identity'):
+        builder.optional_dividend_result_for_symbol(tmp_path, '600887')
+
+
+def test_single_issuer_dividend_lookup_rejects_own_duplicate(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from value_investment_agent import m1_distribution_package_builder as builder
+    (tmp_path / 'config' / builder.DISTRIBUTION_DIRECTORY).mkdir(parents=True)
+    good = builder.DividendPackageDescriptorAttempt('yili', '600887', SimpleNamespace(symbol='600887'), None)
+    monkeypatch.setattr(builder, 'load_dividend_package_attempts', lambda root: (good, good))
+    with pytest.raises(ValueError, match='Duplicate'):
+        builder.optional_dividend_result_for_symbol(tmp_path, '600887')
+
+
 @pytest.fixture
 def flow(tmp_path, monkeypatch):
     args = _inputs(tmp_path, pending=True)
