@@ -258,7 +258,7 @@ def test_native_same_predecessor_two_contenders_only_one_commit(native_signed):
     assert len(list((f['root']/signed.NAMESPACE).glob('*/*.json'))) == 1
 
 
-@pytest.mark.parametrize('damage', ['completion', 'receipt', 'trust', 'implementation', 'response'])
+@pytest.mark.parametrize('damage', ['completion', 'receipt', 'trust', 'implementation', 'response', 'frozen_source_validator'])
 def test_native_cold_read_rejects_bound_component_drift(native_signed, damage):
     f = native_signed
     with _use_test_trust_registry(f['registry']):
@@ -269,6 +269,7 @@ def test_native_cold_read_rejects_bound_component_drift(native_signed, damage):
         else:
             paths = dict(receipt=f['root']/result['consumption_binding']['path'],
                 trust=f['root']/'TEST_ONLY-trust.json', response=f['root']/'TEST_ONLY-response.json',
+                frozen_source_validator=f['root']/'src/value_investment_agent/application/product/source_bound_inputs.py',
                 implementation=f['root']/'src/value_investment_agent'/signed.IMPLEMENTATIONS[0])
             path = paths[damage]
             path.write_bytes(path.read_bytes()+b'\nTEST_ONLY_DRIFT')
