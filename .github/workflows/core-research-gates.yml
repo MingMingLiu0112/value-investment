@@ -157,6 +157,7 @@ jobs:
           tests/test_source_native_candidate_v2.py
           tests/test_source_native_workflow_integration.py
           tests/test_source_native_signed_review_v2.py
+          tests/test_source_native_review_cli.py
           tests/test_content_addressed_economic_bridge.py
           tests/test_hotspot_cash_basis_v2.py
           tests/test_hotspot_cash_related_disclosures.py

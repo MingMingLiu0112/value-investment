@@ -4454,8 +4454,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
-      "line_count": 126,
-      "sha256": "b12d10268ded85c4355cfdc956622656463351cd7c0ce9a55486316bfb3411cc"
+      "line_count": 198,
+      "sha256": "8b08b9e4d58a9d447fa73f45e775658fcd319530bf13f9d7605595293fd861e0"
     },
     {
       "path": "scripts/current/review_research_validity.py",

@@ -3631,3 +3631,54 @@ repurchase-format original was not supplied and stays skipped. XML
 passed. The single test-file format issue is corrected; new exact-head CI and
 full clean regression remain required. No cancelled run is counted as success.
 The complete Goal remains ACTIVE, action=no_order.
+
+### 2026-10-24 - Exact7ce publication and real native review CLI preview
+
+7ce83487 GitHub Core40055740200/Web40055740065 succeeded. Its own clean verification
+passed5885 Core/110 skipped,805 frontend/15 skipped,282 API/2 skipped, plus
+typecheck/format/build. The raw two-file LF/CRLF index mismatch was repaired in
+Git itself; no old approval/source Hash was rewritten. Publication first verifies
+both real source cases before activation and preserves the authority pointer.
+
+Actual sole-port8001 now runs7ce83487bcd9aafbff44aaeb81b75603a5a4d8d8, backend,
+frontend, active/publication registries MATCHED. Actual SAFE_REFRESH wasPARTIAL
+exit3, pub-6bc70e4583a0f2d72f8a, packet SHA256
+d5a708bd6870a5a17959277a709d5f15ef35508376138208341503cae5a7c020.
+October24 filing queries were acquired/bound, but materiality is not approved.
+October23 latest complete-session quotes were reused, not recollected. M2 failed
+and5577 retained dated research entries remain COLLECTION_FAILED, not current
+fresh screening. Authority SHA50746cc7... remains unchanged. No private account,
+canonical Excel, server/PTA, production DB/job, order or strategy approval changed.
+Release receipt .tmp/release-7ce83487-20261024T0310082336164Z/release-receipt.json
+SHA256937a0f31c92ebad6d6cceba4e744a5f1e8bd3d3794c11c58ae90096c3cdf7cf3.
+The previous running version wasb35e8754; intermediate Git-only759 fast-forward
+was not a running release. Partial attempts and normalization backups are retained.
+
+Actual1440/390/320 daily/company browser checks passed, including opening the
+native Base/model-year cash path and honest LOW/June30/unsigned boundaries;
+all document widths matched viewports. Six-screen receipt
+.tmp/live-ui-7ce83487/6eb3fa0b-2561-439c-974e-a944d34ea542/receipt.json
+SHA256718aed631a86d719266c02cba7a033320f63650aa94109be24892ebe8dff898b.
+Separate nine-screen real-source/manual/history/sealed-swing checks passed,
+receipt .tmp/live-source-workflows/8b91b621-2f7d-47b7-890a-da6c2e4bf6a4/receipt.json
+SHA25672237c77c578671784cb3955361b42423bbf8cd528f4f803c94bee51ed8cc48a.
+Their three explicitly confirmed TEST_ONLY POSTs are still two-CORE-source
+temporary accounting, NOT the new shared CORE/HOTSPOT product acceptance.
+The new dual-sleeve UI remains in the next batch until exact-head release.
+
+CLI increment8e5c1efa/integrationc6c670e0 adds explicit--native-research-only to
+the existing entrypoint, no v1 fallback, no new signer/root and no automatic
+recovery. It writes an immutable native workbench/readback after typed service
+and actual disk provenance checks. A readback is publication-time evidence, not
+permanent authority. Current strategy, quote, primary and candidate registries
+are not changed by native consumption. Old v1 remains the default protocol.
+The ONE script inventory is updated for the existing entry, no parallel list.
+
+Root CLI/architecture/Core-list selection82 passed,including an explicit real
+JS2 unsigned preview; synthetic signed issuers remain TEST_ONLY. Direct real CLI
+command also passed without journal/authority/candidate changes, five unfilled
+groups, no reviewer/approval. Receipt
+.tmp/real-native-cli-preview/feb4f2819fde4e19bc8f40ab33d6375e/receipt.json
+SHA2563897285ccd8fd3e6c8e49357d51b40fa19962fa212bbd630ca2430f61a06398a.
+This proves a real source-bound preparation command, not economic admission.
+Full successor regression/CI and actual shared-account8001 acceptance remain.
