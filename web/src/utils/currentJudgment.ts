@@ -274,6 +274,30 @@ export function planConditionText(
       pieces.push(
         `已登记公式：${String(value.scenario ?? "情景")} ${String(value.scenario_value)} × ${String(value.value_fraction)}；规则 ${String(value.rule_version ?? "未提供")}`,
       );
+    const nested = value.thesis_review;
+    if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+      const thesis = nested as Record<string, unknown>;
+      const reasons = Array.isArray(thesis.reasons)
+        ? thesis.reasons.map(firstResearchText).filter(Boolean).join("；")
+        : firstResearchText(thesis.reasons);
+      if (thesis.kind === "THESIS_REVIEW" && reasons) {
+        const priceState =
+          value.triggered === true
+            ? "已触发"
+            : value.triggered === false
+              ? "未触发"
+              : "尚不能判断";
+        const thesisState =
+          thesis.triggered === true
+            ? "已触发复核"
+            : thesis.triggered === false
+              ? "未触发"
+              : "尚不能判断";
+        pieces.push(
+          `价格条件${priceState}；独立论点条件${thesisState}：${reasons}；仍需人工复核，不是卖出指令。`,
+        );
+      }
+    }
     return pieces.filter(Boolean).join("；") || undefined;
   }
   return undefined;

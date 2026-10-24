@@ -10,7 +10,7 @@ from typing import Any, Mapping
 from ...pre_decision_eligibility import PreDecisionEligibility, STATUS_ELIGIBLE
 
 SCHEMA_VERSION = "value-action-plan-v1"
-RULE_VERSION = "value-action-plan-projection-v3"
+RULE_VERSION = "value-action-plan-projection-v4"
 ACTIONS = ("entry", "add", "reduce", "exit")
 ACTION_INTENTS = ("OPEN", "ADD", "HOLD", "REDUCE", "EXIT")
 
@@ -257,7 +257,12 @@ def build_value_action_plan(*, explanation: Mapping[str, Any],
             formal_blockers.append("VALUE_HOLD_THESIS_CONDITION_REQUIRED")
     elif intent in {"REDUCE", "EXIT"}:
         selected = conditions[intent.lower()]
-        if not selected or selected.get("triggered") is not True:
+        thesis = ((selected.get("thesis_review") or {})
+                  if selected and selected.get("kind") == "POLICY_PRICE_REVIEW" else selected)
+        thesis_triggered = (isinstance(thesis, dict) and thesis.get("kind") == "THESIS_REVIEW"
+                            and thesis.get("triggered") is True)
+        # An independent thesis review must not wait for an overvaluation price.
+        if not selected or not (selected.get("triggered") is True or thesis_triggered):
             formal_blockers.append("VALUE_" + intent + "_THESIS_CONDITION_REQUIRED")
     else:
         formal_blockers.append("VALUE_ACTION_CANDIDATE_REQUIRED")

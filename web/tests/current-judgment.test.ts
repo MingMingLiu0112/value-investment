@@ -10,6 +10,7 @@ import {
   judgmentGroup,
   hotspotOpportunityQuality,
   publicationVersionsMatch,
+  planConditionText,
 } from "../src/utils/currentJudgment";
 
 const plan: CurrentPricePlan = {
@@ -38,6 +39,57 @@ const value: CurrentPriceCase = {
   levels: {},
   price_action_plan: plan,
 };
+
+describe("independent thesis and price conditions", () => {
+  it.each([false, null, true])(
+    "keeps price %s separate from a triggered thesis",
+    (triggered) => {
+      const text = planConditionText({
+        kind: "POLICY_PRICE_REVIEW",
+        price: "120",
+        comparison: "GTE",
+        triggered,
+        thesis_review: {
+          kind: "THESIS_REVIEW",
+          triggered: true,
+          reasons: ["核心论点已破坏", "现金回收假设失效"],
+        },
+      });
+      expect(text).toContain("不低于 120");
+      expect(text).toContain("独立论点条件已触发复核");
+      expect(text).toContain("核心论点已破坏");
+      expect(text).toContain("现金回收假设失效");
+      expect(text).toContain("不是卖出指令");
+      expect(text).toContain(
+        triggered === true
+          ? "价格条件已触发"
+          : triggered === false
+            ? "价格条件未触发"
+            : "价格条件尚不能判断",
+      );
+    },
+  );
+
+  it("does not invent a thesis trigger for an untriggered or malformed condition", () => {
+    const text = planConditionText({
+      price: "120",
+      triggered: true,
+      thesis_review: {
+        kind: "THESIS_REVIEW",
+        triggered: false,
+        reasons: ["原退出条件尚未发生"],
+      },
+    });
+    expect(text).toContain("独立论点条件未触发");
+    expect(text).not.toContain("论点条件已触发");
+    expect(
+      planConditionText({
+        price: "120",
+        thesis_review: { triggered: true, reasons: ["unbound"] },
+      }),
+    ).not.toContain("unbound");
+  });
+});
 
 describe("backend current judgment boundaries", () => {
   it.each([

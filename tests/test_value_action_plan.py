@@ -93,6 +93,66 @@ def test_policy_math_uses_only_explicit_thresholds_and_is_decimal_context_stable
     assert first["formal_eligibility"] is False
 
 
+@pytest.mark.parametrize("kind,action", [("TRIM_CANDIDATE", "reduce"), ("SELL_CANDIDATE", "exit")])
+def test_replayed_thesis_review_is_not_vetoed_by_untriggered_price_policy(kind, action):
+    # Complete TEST_ONLY repository replay, not an owned live account or approval.
+    restored = synthetic_restored(kind, include_price_context=True)
+    without = project_value_action_plan(restored, evidence_scope="SYNTHETIC_TEST")
+    explanation = project_value_decision_explanation(restored, evidence_scope="SYNTHETIC_TEST")
+    policy = replace(_policy(explanation, (action,)),
+        model_id=restored.recommendation.input_model_id)
+    with_price = project_value_action_plan(restored, evidence_scope="SYNTHETIC_TEST", policy=policy)
+    assert without["formal_eligibility"] is True
+    condition = with_price[action + "_condition"]
+    assert condition["kind"] == "POLICY_PRICE_REVIEW"
+    assert condition["triggered"] is False
+    assert condition["thesis_review"]["triggered"] is True
+    assert condition["thesis_review"]["entry_id"] == explanation["entry_id"]
+    assert with_price["formal_eligibility"] is True
+    assert with_price["formal_eligibility_blockers"] == []
+    assert with_price["position_guidance"] is None
+    assert with_price["portfolio_eligibility"] is None
+    assert with_price["action"] == "no_order"
+
+
+@pytest.mark.parametrize("kind,action", [("TRIM_CANDIDATE", "reduce"), ("SELL_CANDIDATE", "exit")])
+@pytest.mark.parametrize("price_state", ["uncomparable", "triggered"])
+def test_independent_thesis_retains_separate_price_state(kind, action, price_state):
+    explanation = project_value_decision_explanation(
+        synthetic_restored(kind, include_price_context=True), evidence_scope="SYNTHETIC_TEST")
+    policy = _policy(explanation, (action,))
+    if price_state == "uncomparable":
+        explanation["price_context"]["positive_price_review_eligible"] = False
+    else:
+        policy = replace(policy, rules=tuple(replace(rule, value_fraction=Decimal("0.01"))
+                                           for rule in policy.rules))
+    plan = build_value_action_plan(explanation=explanation, policy=policy,
+                                  repository_replayed=True).as_policy()
+    condition = plan[action + "_condition"]
+    assert condition["kind"] == "POLICY_PRICE_REVIEW"
+    assert condition["triggered"] is (None if price_state == "uncomparable" else True)
+    assert condition["thesis_review"]["triggered"] is True
+    assert plan["formal_eligibility"] is True
+    assert plan["position_guidance"] is None and plan["action"] == "no_order"
+
+
+@pytest.mark.parametrize("action", ["reduce", "exit"])
+def test_price_policy_does_not_invent_missing_thesis_or_repository_replay(action):
+    kind = "TRIM_CANDIDATE" if action == "reduce" else "SELL_CANDIDATE"
+    explanation = project_value_decision_explanation(
+        synthetic_restored(kind, include_price_context=True), evidence_scope="SYNTHETIC_TEST")
+    policy = _policy(explanation, (action,))
+    unreplayed = build_value_action_plan(explanation=explanation, policy=policy,
+                                        repository_replayed=False).as_policy()
+    assert unreplayed["formal_eligibility"] is False
+    assert "VALUE_FRESH_REPOSITORY_REPLAY_REQUIRED" in unreplayed["formal_eligibility_blockers"]
+    explanation["entry_thesis"]["reasons_to_" + action] = []
+    missing = build_value_action_plan(explanation=explanation, policy=policy,
+                                     repository_replayed=True).as_policy()
+    assert missing["formal_eligibility"] is False
+    assert "VALUE_" + action.upper() + "_THESIS_CONDITION_REQUIRED" in missing["formal_eligibility_blockers"]
+
+
 @pytest.mark.parametrize("kind,action", [("BUY_CANDIDATE", "entry"), ("ADD_CANDIDATE", "add")])
 def test_full_existing_admission_can_qualify_security_without_private_inputs(kind, action):
     restored = synthetic_restored(kind)

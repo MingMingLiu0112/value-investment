@@ -23,12 +23,12 @@ from value_investment_agent.valuation_assumptions import ValuationAssumptionSet
 from approval_transport_fixture import mint_fixture_approval
 
 
-def synthetic_restored(kind):
+def synthetic_restored(kind, *, include_price_context=False):
     state = {"ADD_CANDIDATE": "FULFILLED", "HOLD": "CONSISTENT",
              "TRIM_CANDIDATE": "WEAKENED", "SELL_CANDIDATE": "BROKEN"}.get(kind)
     entry = _entry() if state else None
     review = _consistency(state) if state else None
-    positive = kind in {"BUY_CANDIDATE", "ADD_CANDIDATE"}
+    positive = kind in {"BUY_CANDIDATE", "ADD_CANDIDATE"} or include_price_context
     repository, stored, values = _repository_dependencies(
         entry=entry, consistency=review, include_positive_gate=positive)
     facts_payload = artifact_payload(values["financial_facts"])[1]
