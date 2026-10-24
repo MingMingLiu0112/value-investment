@@ -4365,3 +4365,70 @@ diagnostic. No unrelated simulation/UI/framework work was resumed. Source and
 delivery completeness are distinct from real-assisted-use readiness. GoalACTIVE;
 action=no_order. This later documentation-only record does not change the
 published code/build identity95994e40 or assert CI for a different commit.
+
+### Current task list after the user's revised objective
+
+Controlling objective read from attachment87de000c-80a5-4659-97db-ad12fde84876/
+goal-objective.md. Previous turn was PROGRESS (source/business change, actual
+release, current API/browser evidence), not a verified wait or no-progress turn.
+Known running code remains95994e40; doc51e16d58 and inherited dirty work preserved.
+
+| Business gap | Kind | Current action / acceptance evidence |
+| --- | --- | --- |
+| Industrial-nine-bucket scope can omit actual finance-company funding | CODE_GAP | Pure page primitive plus existing enrichment gate; true600519 FY/H1 rows, old two-company growth IDs preserved; existing API/Web supplement under scoped validation before commit/release |
+|600519 primary assumptions/downside/terminal judgment,600887 applicability | RESEARCH_GAP | Existing native/operating inputs, explicit fact/derivation/assumption/unknown; author studies executable main-input choice, Root consumes; no new stress-only endpoint or automatic G3 |
+| Fresh screening candidate has not demonstrated common research entry | CODE_OR_RESEARCH_GAP | Read-only select from actual current queue using predeclared priority/source availability; then common research/rejection path, not manual Moutai/Ili selection |
+| Frozen swing rule chain and remaining real-case validation | CODE_OR_DATA_GAP | Sibling reads revised objective and chooses independent concrete gap; no repeat600030/688825 endpoint search; retain source/PIT/cost/zero-trade boundaries |
+| Historical stock state/OOS/Shadow, exact investment/user/production approvals | EXTERNAL_DATA_OR_HUMAN_INPUT | Existing minimal dated fields/export trigger; do not auto-buy data, run schedules, sign approvals or fabricate real time; no personal quantity without valid real portfolio |
+
+Scope package current working changes are not yet a delivery commit. Real
+primitive extracts consolidated deposit/interbank balances18,038,383,776.30 CNY
+atFY2025 page58 and25,426,316,668.17 atH12026 page27. Not parent cash, loan
+principal, full debt, industrialROIC or another equity-value deduction. The
+old extraction source and filing_extract bytes remain unchanged; no income
+fact-ID algorithm, historical registration, scorer or valuation kernel changed.
+Two continuation-column/currencyP2s were reproduced and fixed, then independently
+retested closed. Unknown single values/notes stay unknown; template blanks stay
+non-evidence, not zero or automatic applicability.
+
+App now retains explicit financial components and enforces source-backed
+classification when the industrial result would otherwise claim completeness.
+Existing already-incomplete debt returns keep their historical body and add a
+fresh adjacent risk observation, not a fabricated full-debt pass. Independent
+review exercised automatic/explicit paths and wrong amount/period/unit/second
+source/availability inputs. Actual old600519/600887 each2 growth facts reverify
+with original IDs and typed registrations. Current full debt remainsfalse.
+
+Root backend180 passed/2 optional skipped; the2 actual-source cases separately
+passed with their explicit correct source roots. Real existing publicAPI local
+TestClient600519/600887 both PASS; new financial risk and retained2 growth facts
+coexist. Source/registration/parser/config hashes unchanged. Local output:
+vv1/.tmp/funding-public-api-83cf968f88bb45e88e85533ce6bef8f6;
+600519JSON SHA25665ec008e0d8161737d82cf450f7511eeab1f6a1cef845fbe3563acb1a103b41c.
+Existing detail component consumed that exact HTTP JSON:10 passed, no skips;
+typecheck passed. This is not live8001 acceptance. Current uncommitted financial
+package has not changed the published build or granted any approval. User's
+revised cash-cancellation explanation is reflected in the existing economic
+component without changing financial calculations. GoalACTIVE; action=no_order.
+
+Independent consumer review closed two reproduced displayP2s before commit:
+classification requires its explicit validated status and required-field coverage,
+not only an empty unresolved array; source path/Hash must match a UNIQUE existing
+research evidence reference, not merely a64-character format. Real publicJSON
+still renders180.38 hundred-million CNY (18.038bn) atFY page58.
+The browser checks response/reference consistency, not rawPDF authenticity.
+Wrong valid-format Hash, pending/empty-gap contradiction and duplicate anchors
+are rejected. This introduces no new trust root or approval object. The raw
+Sina balance endpoint was checked against AKShare's own stock_finance_sina.py
+for possible later corroboration only; no new balance acquisition or admission
+is claimed in this package.
+
+Next selected work is not another stress report: author studies a versioned
+recurring operating-pressure bear while preserving exactJS2 base/bull and cash
+kernel. Fixed rawsource/annual-growth facts are not future predictions. The
+read-only new-candidate selection is000544 from the actual latest111 leads:
+predeclared priority then nonfinancial/source availability, not BUY outcome.
+Its official originals are not yet available in the retained inventory; a
+bounded public FY2025/H12026 acquisition and common ResearchCase path is now
+authorized, with profile applicability/rejection rather than forcing coal or
+Moutai economics. Shared API/current/portfolio/production authority unchanged.

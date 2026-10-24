@@ -217,8 +217,12 @@ def read_verified_enrichment_progress(root: Path, symbol: str, evaluation_at: da
                         unit=point['unit'], period_label=point['period_label'])
                    for point in result['adopted_points']
                    if point['field_name'] in {'debt_ratio', 'revenue_yoy', 'net_income_yoy'}]
+        funding = summary.get('source_financial_funding_scope')
+        supplement = ({'source_financial_funding_scope': funding}
+                      if funding and (funding.get('required_fields') or funding.get('observations')) else {})
         return dict({key: summary[key] for key in keys}, as_of=result['evaluation_at'],
-                    verified_at=evaluation_at.isoformat(), adopted_metrics=metrics)
+                    verified_at=evaluation_at.isoformat(), adopted_metrics=metrics,
+                    **supplement)
     except (ValueError, KeyError, TypeError, OSError):
         return None
 

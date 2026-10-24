@@ -26,6 +26,33 @@ STRUCTURED_SOURCES = {
     'AkShare / Sina detailed financial statements',
     'AkShare / Sina financial indicators',
 }
+FINANCIAL_FUNDING_FIELDS = frozenset({
+    'financial_deposits_and_interbank', 'central_bank_borrowings',
+    'interbank_borrowings', 'repurchase_financing',
+})
+
+
+def _source_financial_funding_scope(packet, source):
+    # Keep the legacy extraction bytes/cache identity and income IDs unchanged.
+    from ...infrastructure.filings.financial_funding_scope import extract_financial_funding_observations
+
+    observations = extract_financial_funding_observations(packet['page_texts'], source.period)
+    required = set()
+    for row in observations:
+        field = row.get('field_name')
+        # The single helper omits empty template rows. A returned unknown row
+        # requires scope resolution; it proves neither zero nor applicability.
+        if field in FINANCIAL_FUNDING_FIELDS:
+            required.add(field)
+    unknown = any(row.get('value') is None for row in observations)
+    return dict(status=('UNKNOWN_FINANCIAL_FUNDING_AMOUNT_OR_SCOPE' if unknown else
+                        'PENDING_EXPLICIT_FUNDING_CLASSIFICATION') if required else
+                    'NO_AMOUNT_EVIDENCE_OF_FINANCIAL_FUNDING_NOT_A_SCOPE_CLEARANCE',
+        symbol=source.symbol, period_label=source.period, observations=deepcopy(observations),
+        required_fields=sorted(required), unresolved_fields=sorted(required),
+        source_binding={key: getattr(source, key) for key in
+                        ('path', 'sha256', 'source_url', 'available_at')},
+        action='no_order', financial_fact_admitted=False)
 
 
 def _derive_balance_ratio(source, company, packet, evaluation_at):
@@ -142,7 +169,8 @@ def _derive_income_growth(source, company, packet):
 
 
 def validate_debt_scope(symbol: str, period: str, components: list[dict], *,
-                        evaluation_at: datetime) -> dict:
+                        evaluation_at: datetime,
+                        financial_funding_requirements: list[dict] | None = None) -> dict:
     """Validate existing verified classifications, never infer scope from blanks.
 
     Components are mutually exclusive financing buckets. Current maturities
@@ -153,15 +181,21 @@ def validate_debt_scope(symbol: str, period: str, components: list[dict], *,
     grouped = {}
     total = Decimal('0')
     fact_ids = []
+    requirements = financial_funding_requirements or []
+    required_financial = {row.get('field_name') for row in requirements
+                          if row.get('field_name') in FINANCIAL_FUNDING_FIELDS}
+    financial_fields = required_financial | {row.get('field_name') for row in components
+                                            if row.get('field_name') in FINANCIAL_FUNDING_FIELDS}
+    expected_fields = [*DEBT_LABELS, *sorted(financial_fields)]
     for row in components:
         field = row.get('field_name')
-        if field not in DEBT_LABELS:
+        if field not in expected_fields:
             issues.append(f'UNEXPECTED_COMPONENT:{field}')
             continue
         if field in grouped:
             issues.append(f'DUPLICATE_COMPONENT:{field}')
         grouped[field] = row
-    for field in DEBT_LABELS:
+    for field in expected_fields:
         row = grouped.get(field)
         if row is None:
             issues.append(f'MISSING_COMPONENT:{field}')
@@ -214,6 +248,30 @@ def validate_debt_scope(symbol: str, period: str, components: list[dict], *,
                     total += value
             except (InvalidOperation, ValueError):
                 issues.append(f'INVALID_AMOUNT:{field}')
+        if field in required_financial:
+            observed = [item for item in requirements if item.get('field_name') == field]
+            if len(observed) != 1:
+                issues.append(f'AMBIGUOUS_FINANCIAL_FUNDING_SOURCE:{field}')
+            else:
+                item = observed[0]
+                observed_period = item.get('period_label', item.get('period'))
+                observed_scope = item.get('statement_scope', item.get('scope'))
+                try:
+                    amount = Decimal(str(item.get('value')))
+                    if (not amount.is_finite() or amount < 0
+                            or amount != Decimal(str(row.get('value')))):
+                        raise InvalidOperation
+                except (InvalidOperation, ValueError):
+                    issues.append(f'FINANCIAL_FUNDING_AMOUNT_UNKNOWN_OR_MISMATCH:{field}')
+                if (observed_period != period or item.get('unit') != 'CNY'
+                        or item.get('currency') != 'CNY' or observed_scope != 'consolidated'):
+                    issues.append(f'FINANCIAL_FUNDING_SOURCE_SCOPE_MISMATCH:{field}')
+                if classification == 'not_applicable':
+                    try:
+                        if Decimal(str(item.get('value'))) != 0:
+                            raise InvalidOperation
+                    except (InvalidOperation, ValueError):
+                        issues.append(f'FINANCIAL_FUNDING_REQUIRES_AMOUNT_CLASSIFICATION:{field}')
         fact_ids.append(row.get('data_point_id'))
     if len(set(fact_ids)) != len(fact_ids):
         issues.append('REUSED_COMPONENT_FACT_ID')
@@ -238,6 +296,7 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
     original = deepcopy(points)
     packet = extract_retained_annual(root, source, evaluation_at=evaluation_at, cache_dir=cache_dir,
                                      verify_cache=True)
+    funding_scope = _source_financial_funding_scope(packet, source)
     company = [deepcopy(p) for p in points if p.get('symbol') == source.symbol
                and _point_available_at(p, evaluation_at) is not None
                and (p.get('metadata') or {}).get('derivation_formula') not in DERIVED_VERSIONS]
@@ -247,11 +306,22 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
                                         evaluation_date=evaluation_at.date())
     if components is None:
         # Existing numeric balances remain unclassified until note review.
-        components = [p for p in company if p.get('field_name') in DEBT_LABELS
+        components = [p for p in company if p.get('field_name') in {*DEBT_LABELS, *FINANCIAL_FUNDING_FIELDS}
                       and p.get('period_label') == source.period
                       and p.get('source_id') != (p.get('metadata') or {}).get('secondary_source_id')]
-    scope = validate_debt_scope(source.symbol, source.period, components,
-                                evaluation_at=evaluation_at)
+    industrial_components = [p for p in components if p.get('field_name') not in FINANCIAL_FUNDING_FIELDS]
+    scope = validate_debt_scope(source.symbol, source.period, industrial_components,
+                               evaluation_at=evaluation_at)
+    financial_components = [p for p in components if p.get('field_name') in FINANCIAL_FUNDING_FIELDS]
+    funding_scope['required_fields'] = sorted(set(funding_scope['required_fields']) |
+        {p['field_name'] for p in financial_components})
+    funding_scope['unresolved_fields'] = list(funding_scope['required_fields'])
+    enforce_funding = bool(financial_components) or scope['scope_contract_complete']
+    requirements = [row for row in funding_scope['observations']
+                    if row.get('field_name') in funding_scope['required_fields']]
+    if enforce_funding:
+        scope = validate_debt_scope(source.symbol, source.period, components,
+            evaluation_at=evaluation_at, financial_funding_requirements=requirements)
     binding_issues = []
     for component in components:
         meta = component.get('metadata') or {}
@@ -259,13 +329,20 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
         if len(retained) != 1 or retained[0] != component:
             binding_issues.append(f'CLASSIFIED_COMPONENT_NOT_RETAINED:{component.get("field_name")}')
         binding = meta.get('official_evidence') or {}
+        financial = component.get('field_name') in FINANCIAL_FUNDING_FIELDS
+        if financial:
+            observed = [row for row in requirements if row.get('field_name') == component.get('field_name')]
+            if (len(observed) != 1 or binding.get('page') != observed[0].get('page')
+                    or ''.join(str(observed[0].get('excerpt', '')).split()) not in
+                    ''.join(str(binding.get('excerpt', '')).split())):
+                binding_issues.append(f'FINANCIAL_FUNDING_NOT_BOUND_TO_OBSERVATION:{component.get("field_name")}')
         page = binding.get('page')
         excerpt = ''.join(str(binding.get('excerpt', '')).split())
         if (binding.get('sha256') != source.sha256 or binding.get('source_url') != source.source_url
                 or not isinstance(page, int) or not 1 <= page <= packet['page_count']
                 or not excerpt or excerpt not in ''.join(packet['page_texts'][page - 1].split())):
             binding_issues.append(f'ORIGINAL_BINDING_MISMATCH:{component.get("field_name")}')
-        elif ((component.get('metadata') or {}).get('debt_classification') == 'included'
+        elif ((financial or (component.get('metadata') or {}).get('debt_classification') == 'included')
               and str(component.get('value')).replace(',', '') not in excerpt.replace(',', '')):
             binding_issues.append(f'AMOUNT_NOT_BOUND_TO_EXCERPT:{component.get("field_name")}')
         secondary = [p for p in company if p.get('data_point_id') == meta.get('secondary_data_point_id')]
@@ -311,6 +388,12 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
                      issues=scope['issues'] + binding_issues)
     elif scope['scope_contract_complete']:
         scope.update(status='COMPLETE_SCOPE_VALIDATED', complete_debt_verified=True)
+    if enforce_funding and funding_scope['required_fields']:
+        unresolved = [field for field in funding_scope['required_fields']
+                      if any(field in issue for issue in scope['issues'])]
+        funding_scope['unresolved_fields'] = unresolved
+        funding_scope['status'] = ('SOURCE_BOUND_CLASSIFICATIONS_VALIDATED_NOT_NEW_FACT_ADMISSION'
+            if scope['complete_debt_verified'] else 'FINANCIAL_FUNDING_SCOPE_DATA_GAP')
     matches = []
     for candidate in packet['candidates'] + packet['debt_balance_candidates']:
         ids = [p['data_point_id'] for p in company
@@ -374,6 +457,7 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
                 company_name=name, sector=sector,
                 evaluation_at=evaluation_at.isoformat(), mode='RETAINED_SOURCE_REEVALUATION',
                 source_extraction=packet, candidate_matches=matches, debt_scope=scope,
+                source_financial_funding_scope=funding_scope,
                 before=asdict(before), after=asdict(after), adopted_debt_fact_ids=adopted,
                 adopted_points=adopted_points,
                 balance_ratio_adoption=ratio_adoption,
@@ -589,4 +673,5 @@ def verify_enrichment_adoption(*, root: Path, result_binding: dict,
         quality_coverage_before=str(checked['before']['coverage_ratio']),
         quality_coverage_after=str(checked['after']['coverage_ratio']),
         complete_debt_verified=checked['debt_scope']['complete_debt_verified'],
+        source_financial_funding_scope=checked['source_financial_funding_scope'],
         new_fact_approvals=0, formal_eligibility=False, action='no_order')

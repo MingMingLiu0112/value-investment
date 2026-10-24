@@ -1,4 +1,7 @@
 import React from "react";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { dirname, relative, resolve } from "node:path";
 import { expect, it, vi } from "vitest";
 const { renderToStaticMarkup } = require("react-dom/server");
 const state = vi.hoisted(() => ({ data: {} as any }));
@@ -35,6 +38,41 @@ vi.mock("../src/components/HotspotReplayReview", () => ({
 }));
 import DecisionDetail from "../src/pages/DecisionDetail";
 import DecisionHistory from "../src/pages/DecisionHistory";
+
+it.skipIf(!process.env.FUNDING_PUBLIC_API_JSON)(
+  "renders the real source-bound issuer financing supplement",
+  () => {
+    const file = resolve(process.env.FUNDING_PUBLIC_API_JSON!);
+    expect(relative(resolve(process.cwd(), "..", ".tmp"), file)).not.toMatch(
+      /^(?:\.\.|[A-Za-z]:|[\\/])/,
+    );
+    const receipt = JSON.parse(
+      readFileSync(resolve(dirname(file), "receipt.json"), "utf8"),
+    );
+    expect(receipt.status).toBe("PASS");
+    expect(receipt.scope).toBe("ACTUAL_PUBLIC_HTTP_TESTCLIENT_NOT_LIVE_8001");
+    const raw = readFileSync(file);
+    expect(createHash("sha256").update(raw).digest("hex")).toBe(
+      receipt.results["600519"].sha256,
+    );
+    state.data = JSON.parse(raw.toString("utf8"));
+    try {
+      const html = renderToStaticMarkup(<DecisionDetail />);
+      for (const text of [
+        "财务补证已回流研究",
+        "金融融资范围仍需核验",
+        "180.38",
+        "原件第58页",
+        "未采纳为完整债务",
+      ])
+        expect(html).toContain(text);
+      expect(state.data.financial_progress.adopted_fact_count).toBe(2);
+      expect(state.data.financial_progress.formal_eligibility).toBe(false);
+    } finally {
+      state.data = {};
+    }
+  },
+);
 
 it("links verified unchanged research replay to external review without admitting it", () => {
   state.data = {
@@ -162,6 +200,104 @@ it("shows verified financial input progress separately from economic approval", 
     );
     state.data.financial_progress = original;
   }
+});
+
+it("separates observed financial funding from admitted growth and complete debt", () => {
+  const observation = {
+    field_name: "financial_deposits_and_interbank",
+    value: "18038383776.30",
+    period_label: "2025-12-31",
+    unit: "CNY",
+    currency: "CNY",
+    statement_scope: "consolidated",
+    page: 58,
+    excerpt: "TEST_ONLY binding of deposit amount",
+  };
+  const funding = {
+    status: "FINANCIAL_FUNDING_REVIEW_REQUIRED",
+    symbol: "600519",
+    period_label: "2025-12-31",
+    action: "no_order",
+    financial_fact_admitted: false,
+    required_fields: [observation.field_name],
+    unresolved_fields: [observation.field_name],
+    observations: [observation],
+    source_binding: {
+      path: "runtime/TEST_ONLY/annual.pdf",
+      sha256: "a".repeat(64),
+      source_url:
+        "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      available_at: "2026-10-24T00:00:00+00:00",
+    },
+  };
+  state.data = {
+    decision: {
+      id: "600519",
+      symbol: "600519",
+      strategy: "CORE_VALUE",
+      research: {
+        symbol: "600519",
+        evidence_refs: [
+          {
+            id: "TEST_ONLY-official",
+            path: funding.source_binding.path,
+            sha256: funding.source_binding.sha256,
+          },
+        ],
+      },
+    },
+    financial_progress: {
+      status: "VERIFIED_FACT_ADOPTION",
+      action: "no_order",
+      symbol: "600519",
+      adopted_fact_count: 2,
+      research_inputs_updated: true,
+      formal_eligibility: false,
+      quality_coverage_before: "0",
+      quality_coverage_after: "0.2222",
+      source_financial_funding_scope: funding,
+    },
+  };
+  const html = renderToStaticMarkup(<DecisionDetail />);
+  for (const text of [
+    "金融融资范围仍需核验",
+    "吸收存款及同业存放",
+    "180.38",
+    "未采纳为完整债务",
+    "非本金拆分",
+    "空白项目不等于零",
+  ])
+    expect(html).toContain(text);
+  for (const fault of [
+    "company",
+    "amount",
+    "date",
+    "hash",
+    "validWrongHash",
+    "scope",
+  ]) {
+    const invalid = structuredClone(funding);
+    if (fault === "company") invalid.symbol = "600887";
+    else if (fault === "amount") invalid.observations[0].value = "NaN";
+    else if (fault === "date")
+      invalid.observations[0].period_label = "2026-06-30";
+    else if (fault === "hash") invalid.source_binding.sha256 = "invalid";
+    else if (fault === "validWrongHash")
+      invalid.source_binding.sha256 = "b".repeat(64);
+    else invalid.observations[0].statement_scope = "parent";
+    state.data.financial_progress.source_financial_funding_scope = invalid;
+    const rejected = renderToStaticMarkup(<DecisionDetail />);
+    expect(rejected).not.toContain("180.38");
+    expect(rejected).toContain("不能据此认定没有该项义务");
+  }
+  state.data.financial_progress.source_financial_funding_scope = {
+    ...funding,
+    unresolved_fields: [],
+  };
+  expect(renderToStaticMarkup(<DecisionDetail />)).not.toContain(
+    "金融融资范围已显式分类",
+  );
+  state.data = {};
 });
 
 it("keeps research collapsed and trade navigation ahead of the current chart without autofilling execution prices", () => {

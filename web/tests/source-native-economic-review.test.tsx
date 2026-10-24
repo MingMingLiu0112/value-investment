@@ -83,6 +83,8 @@ it("shows a computed joint counterexample without turning it into a forecast or 
     "第1年首次",
     "非实际已支付股息",
     "不计算新估值或入场价",
+    "现金下降来自项目付款及基金调用",
+    "不是盈利下降带来的额外现金冲击",
   ])
     expect(html).toContain(text);
 });

@@ -938,6 +938,55 @@ export default function DecisionDetail() {
         Number(value) <= 1,
     );
   const research = decision?.research ?? null;
+  const funding = progress?.source_financial_funding_scope;
+  const fundingLabels: Record<string, string> = {
+    financial_deposits_and_interbank: "吸收存款及同业存放",
+    central_bank_borrowings: "向中央银行借款",
+    interbank_borrowings: "拆入资金",
+    repurchase_financing: "卖出回购金融资产款",
+  };
+  const relevantFunding =
+    verifiedProgress &&
+    funding &&
+    Array.isArray(funding.required_fields) &&
+    funding.required_fields.length > 0;
+  const fundingBound =
+    relevantFunding &&
+    funding.action === "no_order" &&
+    funding.symbol === decision?.symbol &&
+    funding.financial_fact_admitted === false &&
+    /^\d{4}-(?:12-31|06-30)$/.test(funding.period_label) &&
+    /^[a-f0-9]{64}$/.test(funding.source_binding?.sha256 ?? "") &&
+    Array.isArray(research?.evidence_refs) &&
+    research.evidence_refs.filter(
+      (ref) =>
+        ref &&
+        ref.path === funding.source_binding?.path &&
+        ref.sha256 === funding.source_binding?.sha256,
+    ).length === 1 &&
+    /^https:\/\/static\.cninfo\.com\.cn\/finalpage\/\d{4}-\d{2}-\d{2}\/\d+\.PDF$/.test(
+      funding.source_binding?.source_url ?? "",
+    ) &&
+    Array.isArray(funding.observations);
+  const fundingRows = fundingBound
+    ? funding.observations.filter(
+        (row) =>
+          row !== null &&
+          typeof row === "object" &&
+          Object.prototype.hasOwnProperty.call(fundingLabels, row.field_name) &&
+          row.period_label === funding.period_label &&
+          row.unit === "CNY" &&
+          row.currency === "CNY" &&
+          row.statement_scope === "consolidated" &&
+          Number.isSafeInteger(row.page) &&
+          row.page > 0 &&
+          typeof row.excerpt === "string" &&
+          !!row.excerpt.trim() &&
+          typeof row.value === "string" &&
+          /^\d+(?:\.\d+)?$/.test(row.value) &&
+          Number.isFinite(Number(row.value)),
+      )
+    : [];
   const chain =
     packet.data?.publication_id &&
     packet.data.publication_id === data?.publication?.publication_id
@@ -1019,6 +1068,40 @@ export default function DecisionDetail() {
                         ：{Number(metric.value).toFixed(2)}%
                       </span>
                     ))}
+              </Typography.Paragraph>
+            )}
+            {relevantFunding && (
+              <Typography.Paragraph role="status">
+                {fundingBound &&
+                funding.status ===
+                  "SOURCE_BOUND_CLASSIFICATIONS_VALIDATED_NOT_NEW_FACT_ADMISSION" &&
+                Array.isArray(funding.unresolved_fields) &&
+                funding.unresolved_fields.length === 0 &&
+                new Set(funding.required_fields).size ===
+                  funding.required_fields.length &&
+                funding.required_fields.every(
+                  (field) =>
+                    fundingRows.filter((row) => row.field_name === field)
+                      .length === 1,
+                )
+                  ? "金融融资范围已显式分类；完整债务及投资资格仍单独核验。"
+                  : "金融融资范围仍需核验：不能只按工业借款与租赁判断完整有息负债。"}
+                以下仅为官方原件观察，未采纳为完整债务；不是母公司可分配现金，也不从权益估值重复扣除。
+                {fundingRows.map((row) => (
+                  <span
+                    key={`${row.field_name}-${row.page}`}
+                    style={{ display: "block" }}
+                  >
+                    {row.period_label} · {fundingLabels[row.field_name]}：
+                    {(Number(row.value) / 100000000).toLocaleString("zh-CN", {
+                      maximumFractionDigits: 2,
+                    })}
+                    亿元（合并账面余额，原件第{row.page}页，非本金拆分）。
+                  </span>
+                ))}
+                {fundingRows.length === 0 &&
+                  "当前融资金额或出处不能可靠展示，不能据此认定没有该项义务。"}
+                空白项目不等于零；利息口径、其他债务、独立核验及母公司资金可取性仍需分别评价。
               </Typography.Paragraph>
             )}
             {(replay?.status === "VERIFIED_EXACT_INPUT_REPLAY" ||

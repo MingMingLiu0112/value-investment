@@ -47,6 +47,50 @@ def test_complete_scope_counts_each_bucket_once_without_scope_review_amount():
     assert result['automatic_cross_source_verification_created'] is False
 
 
+def _funding_observation(value='10', prior='10'):
+    return dict(field_name='financial_deposits_and_interbank', value=value, prior_value=prior,
+        period_label='2025-12-31', prior_period_label='2024-12-31', unit='CNY', currency='CNY',
+        statement_scope='consolidated', page=1, excerpt='TEST_ONLY funding 10',
+        status='CANDIDATE_SOURCE_UNVERIFIED')
+
+
+def test_financial_requirements_cannot_be_replaced_by_other_scope_review():
+    result = validate_debt_scope('600887', '2025-12-31', components(), evaluation_at=NOW,
+        financial_funding_requirements=[_funding_observation()])
+    assert result['value'] is None and not result['scope_contract_complete']
+    assert 'MISSING_COMPONENT:financial_deposits_and_interbank' in result['issues']
+
+
+@pytest.mark.parametrize('damage', ['missing_amount', 'scope_review', 'future', 'no_secondary',
+    'unknown_current', 'wrong_amount', 'wrong_period', 'wrong_unit'])
+def test_financial_component_uses_existing_classification_time_and_correlation_gates(damage):
+    rows = components()
+    financial = deepcopy(rows[0])
+    financial.update(field_name='financial_deposits_and_interbank', data_point_id='financial')
+    observed = _funding_observation()
+    if damage == 'missing_amount': financial['value'] = None
+    elif damage == 'scope_review': financial['metadata']['debt_classification'] = 'scope_review'
+    elif damage == 'future': financial['metadata']['debt_scope_reviewed_at'] = '2027-01-01T00:00:00+00:00'
+    elif damage == 'no_secondary': financial['metadata'].pop('secondary_data_point_id')
+    elif damage == 'unknown_current': observed['value'] = None
+    elif damage == 'wrong_amount': financial['value'] = '9'
+    elif damage == 'wrong_period': observed['period_label'] = '2026-06-30'
+    elif damage == 'wrong_unit': observed['unit'] = 'CNY_10000'
+    result = validate_debt_scope('600887', '2025-12-31', rows+[financial], evaluation_at=NOW,
+        financial_funding_requirements=[observed])
+    assert result['value'] is None and result['complete_debt_verified'] is False
+    assert not result['scope_contract_complete']
+
+
+def test_explicit_financial_component_is_not_an_unexpected_or_ignored_field():
+    rows = components()
+    financial = deepcopy(rows[0])
+    financial.update(field_name='financial_deposits_and_interbank', data_point_id='financial')
+    result = validate_debt_scope('600887', '2025-12-31', rows+[financial], evaluation_at=NOW)
+    assert result['scope_contract_complete'] and result['value'] == '90'
+    assert not result['complete_debt_verified']  # Still requires actual original/secondary bytes.
+
+
 @pytest.mark.parametrize('mutation,issue', [
     (lambda r: r.pop(), 'MISSING_COMPONENT'),
     (lambda r: r.append(deepcopy(r[0])), 'DUPLICATE_COMPONENT'),
@@ -170,6 +214,163 @@ def _complete_points(tmp_path, source):
         points.append(second)
     points.extend(deepcopy(rows))
     return points, rows
+
+
+def _funding_pages(monkeypatch, current='10.00', prior='10.00'):
+    # TEST_ONLY original-decoder seam; real helper and all admission gates run.
+    page = ('股票代码: 600887; 2025年年度报告 TEST_ONLY amount 10\n'
+            '合并资产负债表\n单位：元 币种：人民币\n'
+            '项目 2025年12月31日 2024年12月31日\n'
+            f'吸收存款及同业存放 {current} {prior}\n')
+    monkeypatch.setattr(adapter, 'extract_pages', lambda path, limit: [page][:limit])
+    return page.splitlines()[-1]
+
+
+def _financial_points(tmp_path, source, excerpt):
+    points, rows = _complete_points(tmp_path, source)
+    field = 'financial_deposits_and_interbank'
+    primary = deepcopy(rows[0])
+    primary.update(field_name=field, data_point_id=field, value='10')
+    primary['metadata'].update(secondary_data_point_id='secondary-' + field,
+        official_evidence=dict(sha256=source.sha256, page=1, source_url=source.source_url, excerpt=excerpt))
+    second = deepcopy(primary)
+    backing = tmp_path / 'TEST_ONLY-financial-secondary.json'
+    backing.write_text('TEST_ONLY Sina structured funding 10', encoding='utf-8')
+    second.update(data_point_id='secondary-' + field, source_id='secondary',
+        source_url='https://vip.stock.finance.sina.com.cn/test',
+        source_name='AkShare / Sina detailed financial statements',
+        source_path=backing.relative_to(tmp_path).as_posix(), sha256=hashlib.sha256(backing.read_bytes()).hexdigest())
+    points.extend([deepcopy(primary), second])
+    for point in points:
+        if point['field_name'] == 'interest_bearing_debt':
+            point['value'] = '90'
+    return points, rows+[primary]
+
+
+@pytest.mark.parametrize('automatic', [True, False])
+def test_observed_financial_funding_blocks_false_complete_with_only_nine_buckets(tmp_path, source, monkeypatch, automatic):
+    _funding_pages(monkeypatch)
+    points, rows = _complete_points(tmp_path, source)
+    result = enrich_retained_company(tmp_path, source, points, evaluation_at=NOW,
+        cache_dir=tmp_path/'.tmp/funding', **({} if automatic else dict(components=rows)))
+    assert not result['debt_scope']['complete_debt_verified']
+    assert result['debt_scope']['value'] is None
+    assert 'MISSING_COMPONENT:financial_deposits_and_interbank' in result['debt_scope']['issues']
+    assert result['adopted_debt_fact_ids'] == [] and result['after']['total_score'] is None
+    diagnostic = result['source_financial_funding_scope']
+    assert diagnostic['symbol'] == source.symbol
+    assert diagnostic['required_fields'] == diagnostic['unresolved_fields'] == ['financial_deposits_and_interbank']
+    assert diagnostic['financial_fact_admitted'] is False
+
+
+@pytest.mark.parametrize('automatic', [True, False])
+def test_financial_funding_full_scope_requires_and_preserves_bound_independent_evidence(tmp_path, source, monkeypatch, automatic):
+    excerpt = _funding_pages(monkeypatch)
+    points, rows = _financial_points(tmp_path, source, excerpt)
+    before = deepcopy(points)
+    result = enrich_retained_company(tmp_path, source, points, evaluation_at=NOW,
+        cache_dir=tmp_path/'.tmp/funding-positive', **({} if automatic else dict(components=rows)))
+    assert result['debt_scope']['complete_debt_verified'], result['debt_scope']['issues']
+    assert result['debt_scope']['value'] == '90'
+    assert len(result['adopted_debt_fact_ids']) == 1
+    assert result['source_financial_funding_scope']['unresolved_fields'] == []
+    assert result['source_financial_funding_scope']['financial_fact_admitted'] is False
+    assert points == before
+
+
+@pytest.mark.parametrize('damage', ['secondary_hash', 'secondary_future', 'secondary_pending',
+    'primary_amount', 'primary_excluded_amount', 'source_unknown', 'no_source_observation'])
+def test_financial_funding_cannot_bypass_original_amount_independence_or_time(tmp_path, source, monkeypatch, damage):
+    excerpt = _funding_pages(monkeypatch)
+    points, rows = _financial_points(tmp_path, source, excerpt)
+    if damage.startswith('secondary'):
+        second = next(p for p in points if p['data_point_id'] == 'secondary-financial_deposits_and_interbank')
+        if damage == 'secondary_hash': second['sha256'] = 'f'*64
+        elif damage == 'secondary_future': second['available_at'] = '2027-01-01T00:00:00+00:00'
+        else: second['validation_status'] = 'pending'
+    elif damage in {'primary_amount', 'primary_excluded_amount'}:
+        for primary in [rows[-1], next(p for p in points if p['data_point_id'] == 'financial_deposits_and_interbank')]:
+            primary['value'] = '9'
+            if damage == 'primary_excluded_amount': primary['metadata']['debt_classification'] = 'excluded'
+    elif damage == 'source_unknown': _funding_pages(monkeypatch, current='--')
+    elif damage == 'no_source_observation':
+        monkeypatch.setattr(adapter, 'extract_pages', lambda path, limit: ['股票代码: 600887; 2025年年度报告 TEST_ONLY amount 10'])
+    result = enrich_retained_company(tmp_path, source, points, evaluation_at=NOW,
+        cache_dir=tmp_path/'.tmp/funding-negative', components=rows)
+    assert not result['debt_scope']['complete_debt_verified']
+    assert result['debt_scope']['value'] is None
+    assert result['adopted_debt_fact_ids'] == []
+
+
+@pytest.mark.parametrize('cell', ['10.00', '100', '28', '七(30)'])
+def test_unknown_single_column_is_required_but_blank_templates_are_not(tmp_path, source, monkeypatch, cell):
+    _funding_pages(monkeypatch, current=cell, prior='')
+    points, rows = _complete_points(tmp_path, source)
+    result = enrich_retained_company(tmp_path, source, points, evaluation_at=NOW,
+        cache_dir=tmp_path/'.tmp/one-column', components=rows)
+    assert result['source_financial_funding_scope']['required_fields'] == ['financial_deposits_and_interbank']
+    assert not result['debt_scope']['complete_debt_verified']
+    _funding_pages(monkeypatch, current='--', prior='--')
+    blank = enrich_retained_company(tmp_path, source, points, evaluation_at=NOW,
+        cache_dir=tmp_path/'.tmp/blank', components=rows)
+    assert blank['source_financial_funding_scope']['required_fields'] == []
+    assert blank['debt_scope']['complete_debt_verified']
+
+
+def test_existing_incomplete_industrial_scope_is_unchanged_with_adjacent_alert(tmp_path, source, monkeypatch):
+    baseline = enrich_retained_company(tmp_path, source, [], evaluation_at=NOW,
+        cache_dir=tmp_path/'.tmp/no-funding')
+    _funding_pages(monkeypatch)
+    result = enrich_retained_company(tmp_path, source, [], evaluation_at=NOW,
+        cache_dir=tmp_path/'.tmp/new-funding')
+    assert result['debt_scope'] == baseline['debt_scope']
+    assert result['adopted_points'] == baseline['adopted_points']
+    assert result['after'] == baseline['after']
+    assert result['source_financial_funding_scope']['required_fields'] == ['financial_deposits_and_interbank']
+
+
+@pytest.mark.parametrize('symbol,expected_hash', [
+    ('600519', 'e6dbb6a2f9080cf7a6cda9359540fe0d4b80ac7cdb113fa8f06648574137d9ce'),
+    ('600887', '28f641afd580e9dea2c01abfc9af105e47974cbc92aab0500e799b9d9cfccdaa'),
+])
+def test_real_registered_income_adoption_preserves_identity_and_reads_fresh_funding_scope(symbol, expected_hash):
+    import json
+    import os
+    from pathlib import Path
+    from value_investment_agent.application.research.value_evidence_enrichment_v1 import verify_enrichment_adoption
+
+    raw_root = os.environ.get('VALUE_ENRICHMENT_REAL_ROOT')
+    if not raw_root:
+        pytest.skip('Explicit retained public root; no network/private/registration discovery')
+    root = Path(raw_root).resolve()
+    relative = ('runtime/retained-income-research-adoption/a26132256225470c97eec792b250fb71/'
+                + symbol + '/' + symbol + '.json')
+    path = root/relative
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == expected_hash
+    saved = json.loads(path.read_bytes())
+    assert 'source_financial_funding_scope' not in saved  # Actual historical envelope.
+    export = root/'runtime/retained-income-financial-input/9c9756f601f94001bcaa5d60a8d269cc/adapted/financial-export.json'
+    export_hash = '2a6c5022d33d4835660160d8644053ca579a2fabef5ff88974ca3dc8dacff871'
+    assert hashlib.sha256(export.read_bytes()).hexdigest() == export_hash
+    result = verify_enrichment_adoption(root=root, result_binding=dict(path=relative, sha256=expected_hash),
+        financial_export_path=export, financial_export_sha256=export_hash,
+        evaluation_at=datetime.fromisoformat(saved['evaluation_at']))
+    assert result['status'] == 'VERIFIED_FACT_ADOPTION'
+    assert result['research_inputs_updated'] is True
+    assert result['adopted_fact_ids'] == [p['data_point_id'] for p in saved['adopted_points']]
+    assert result['adopted_fact_count'] == 2
+    assert not result['complete_debt_verified']
+    diagnostic = result['source_financial_funding_scope']
+    assert diagnostic['symbol'] == symbol and diagnostic['period_label'] == '2025-12-31'
+    assert diagnostic['source_binding']['sha256'] == saved['source_extraction']['identity']['source']['sha256']
+    assert diagnostic['financial_fact_admitted'] is False
+    if symbol == '600519':
+        assert 'financial_deposits_and_interbank' in diagnostic['required_fields']
+        observed = [r for r in diagnostic['observations'] if r['field_name'] == 'financial_deposits_and_interbank']
+        assert len(observed) == 1 and Decimal(observed[0]['value']) == Decimal('18038383776.30')
+        assert observed[0]['page'] == 58
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == expected_hash
+    assert hashlib.sha256(export.read_bytes()).hexdigest() == export_hash
 
 
 def test_isolated_complete_scope_reuses_assurance_and_scores_without_mutation(tmp_path, source):

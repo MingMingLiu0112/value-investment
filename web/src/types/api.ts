@@ -1035,6 +1035,31 @@ export interface DetailResponse {
     research_inputs_updated: boolean;
     quality_coverage_before: string;
     quality_coverage_after: string;
+    source_financial_funding_scope?: {
+      status: string;
+      symbol: string;
+      period_label: string;
+      action: "no_order";
+      financial_fact_admitted: false;
+      required_fields: string[];
+      unresolved_fields: string[];
+      source_binding: {
+        path: string;
+        sha256: string;
+        source_url: string;
+        available_at: string;
+      };
+      observations: {
+        field_name: string;
+        value: string | null;
+        period_label: string;
+        unit: string;
+        currency: string;
+        statement_scope: string;
+        page: number;
+        excerpt: string;
+      }[];
+    } | null;
     adopted_metrics?: {
       field_name: "debt_ratio" | "revenue_yoy" | "net_income_yoy";
       value: string;
