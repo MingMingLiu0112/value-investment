@@ -27,6 +27,11 @@ TAX_NOTE = (r"。【注:根据先进先出的原则,以投资者证券账户为�
     + r"元;持股超过1年的,不需补缴税款。】")
 
 
+def _exact_security_header(header, symbol):
+    fields = re.findall(r"证券代码:([^:]{1,32})证券简称:", header)
+    return header.count("证券代码:") == 1 and fields == [symbol]
+
+
 def _cash_statement_tail(value):
     """Consume the entire cash statement, including bounded tax-only notes."""
     depth = 1
@@ -56,7 +61,7 @@ def parse_cash_implementation_pages_v2(pages, *, symbol):
     header, text = _compact(content[0]), _compact("".join(content))
     title = re.findall(r"20\d{2}年度A股权益分派实施公告", header)
     number = re.findall(r"公告编号:(20\d{2}-\d+)", header)
-    if (f"证券代码:{symbol}" not in header or header.count("证券代码:") != 1
+    if (not _exact_security_header(header, symbol)
             or len(title) != 1 or len(number) != 1 or revision_warning(pages)):
         raise ValueError("Unique issuer, implementation identity and unrevised body required")
     period = title[0][:4]
@@ -146,8 +151,11 @@ def load_cash_implementation_v2(*, root: Path, symbol: str, record_date: date,
     if len(rows) != 1 or len(rows[0]["evidence"]) != 1:
         raise ValueError("One event and bound original required")
     event = rows[0]
-    original = dict(event["evidence"][0], available_at=available.isoformat())
-    pages, _ = _pdf(root, original, now)
+    original = dict(event["evidence"][0])
+    supplied_original_time = "available_at" in original
+    if not supplied_original_time:
+        original["available_at"] = available.isoformat()
+    pages, acquired = _pdf(root, original, now)
     terms = parse_cash_implementation_pages_v2(pages, symbol=symbol)
     basis = terms["cash_basis"]
     if (any(terms[key] != event[key] for key in ("record_date", "ex_date", "cash_payment_date"))
@@ -176,7 +184,7 @@ def load_cash_implementation_v2(*, root: Path, symbol: str, record_date: date,
     warnings = []
     for binding in related_disclosure_bindings:
         related, _ = _pdf(root, binding, now)
-        if f"证券代码:{symbol}" not in _compact(related[0]):
+        if not _exact_security_header(_compact(related[0]), symbol):
             raise ValueError("Related original issuer unresolved")
         if revision_warning(related):
             warnings.append(dict(binding=dict(binding), status="REVISION_OR_CANCELLATION_REQUIRES_LINKAGE"))
@@ -184,7 +192,12 @@ def load_cash_implementation_v2(*, root: Path, symbol: str, record_date: date,
     if any(sha256_file(require_inside(root, root / ref["path"], "cash v2 source")) != ref["sha256"] for ref in refs):
         raise ValueError("Cash v2 source changed during read")
     return dict(terms=terms, registry_correspondence=proof, evidence_bindings=refs,
-        body_evidence_binding=dict(path=original["path"], sha256=original["sha256"], url=original["url"]),
+        body_evidence_binding=dict(path=original["path"], sha256=original["sha256"], url=original["url"],
+            available_at=original["available_at"]),
+        source_time=dict(registry_available_at=available.isoformat(), original_available_at=acquired.isoformat(),
+            effective_source_available_at=max(available, acquired).isoformat(),
+            original_timestamp_assurance="EXPLICIT_ORIGINAL_METADATA_NOT_INDEPENDENT_HISTORICAL_ATTESTATION"
+                if supplied_original_time else "REGISTRY_FALLBACK_ORIGINAL_ACQUISITION_NOT_INDEPENDENTLY_SUPPLIED"),
         revision_status="PENDING_LINKAGE" if warnings else "ABSENCE_NOT_PROVEN", revision_warnings=warnings,
         complete_window_coverage=False, historical_availability_proven=False,
         price_mapping=None, original_protection_adjusted=False, formal_eligibility=False, action="no_order")

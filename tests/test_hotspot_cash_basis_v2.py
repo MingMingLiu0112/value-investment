@@ -161,10 +161,64 @@ def test_source_byte_changes_future_acquisition_and_amendment_require_review(tmp
     related_path.write_bytes(before)
     related.update(path=related_path.name)
     monkeypatch.setattr(legacy, "extract_pages", lambda path, limit:
-        ["证券代码：000001 更正 本次实施公告"] if path.name == related_path.name else PAGES)
+        ["证券代码：000001 证券简称：TEST_ONLY 更正 本次实施公告"] if path.name == related_path.name else PAGES)
     proof = _load(tmp_path, registry, related_disclosure_bindings=(related,))
     assert proof["revision_status"] == "PENDING_LINKAGE"
     assert proof["price_mapping"] is None
+
+
+@pytest.mark.parametrize("code", ["0000019", "000001A", "000001-OTHER"])
+def test_exact_issuer_field_rejects_prefix_in_parser_loader_and_window(tmp_path, monkeypatch, code):
+    registry, _ = _fixture(tmp_path, monkeypatch)
+    pages = [page.replace("证券代码：000001", "证券代码：" + code) for page in PAGES]
+    with pytest.raises(ValueError):
+        parse_cash_implementation_pages_v2(pages, symbol="000001")
+    monkeypatch.setattr(legacy, "extract_pages", lambda path, limit: pages)
+    with pytest.raises(ValueError):
+        _load(tmp_path, registry)
+    result = inspect_cash_action_window_v2(root=tmp_path, symbol="000001", record_date=date(2026, 4, 21),
+        registry_binding=_binding(registry, tmp_path), start=date(2026, 4, 15), end=date(2026, 4, 22), now=NOW)
+    assert result["body_terms_status"] == "NOT_ASSESSABLE"
+
+
+def test_explicit_future_original_time_is_not_overwritten_by_registry(tmp_path, monkeypatch):
+    registry, event = _fixture(tmp_path, monkeypatch)
+    event["evidence"][0]["available_at"] = (NOW + timedelta(days=1)).isoformat()
+    registry.write_text(json.dumps(dict(backtest_ready=False, events=[event])), encoding="utf-8")
+    with pytest.raises(ValueError):
+        _load(tmp_path, registry)
+    result = inspect_cash_action_window_v2(root=tmp_path, symbol="000001", record_date=date(2026, 4, 21),
+        registry_binding=_binding(registry, tmp_path), start=date(2026, 4, 15), end=date(2026, 4, 22), now=NOW)
+    assert result["body_terms_status"] == "NOT_ASSESSABLE"
+    assert result["implementation_proof"] is None
+
+
+def test_original_and_registry_times_are_separate_and_compatibility_is_explicit(tmp_path, monkeypatch):
+    registry, event = _fixture(tmp_path, monkeypatch)
+    fallback = _load(tmp_path, registry)
+    assert fallback["source_time"]["original_timestamp_assurance"].startswith("REGISTRY_FALLBACK")
+    original_at = NOW - timedelta(days=1)
+    registry_at = NOW - timedelta(days=2)
+    event["evidence"][0]["available_at"] = original_at.isoformat()
+    registry.write_text(json.dumps(dict(backtest_ready=False, events=[event])), encoding="utf-8")
+    binding = _binding(registry, tmp_path, registry_at)
+    proof = _load(tmp_path, registry, registry_binding=binding)
+    assert proof["body_evidence_binding"]["available_at"] == original_at.isoformat()
+    assert proof["source_time"]["registry_available_at"] == registry_at.isoformat()
+    assert proof["source_time"]["effective_source_available_at"] == original_at.isoformat()
+    with pytest.raises(ValueError):
+        _load(tmp_path, registry, registry_binding=binding, now=registry_at)
+
+
+def test_related_original_code_prefix_is_not_verified_as_same_issuer(tmp_path, monkeypatch):
+    registry, event = _fixture(tmp_path, monkeypatch)
+    path = tmp_path / "TEST_ONLY-prefix-related.pdf"
+    path.write_bytes((tmp_path / event["evidence"][0]["path"]).read_bytes())
+    ref = dict(event["evidence"][0], path=path.name, available_at=NOW.isoformat())
+    monkeypatch.setattr(legacy, "extract_pages", lambda original, limit:
+        ["证券代码：0000019 证券简称：TEST_ONLY"] if original.name == path.name else PAGES)
+    with pytest.raises(ValueError, match="issuer unresolved"):
+        _load(tmp_path, registry, related_disclosure_bindings=(ref,))
 
 
 @pytest.mark.skipif(not os.environ.get("HOTSPOT_CASH_BASIS_ROOT"), reason="Optional real sealed original/window")
