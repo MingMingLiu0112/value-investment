@@ -449,7 +449,8 @@ export default function DailyDecisions() {
                     {event.cutoff ?? "未提供有效日期"}
                     ；当前覆盖目标 {event.requiredThrough ?? "未提供"}
                     ；公告查询截至 {event.queryThrough ?? "未提供"}
-                    ；快照取得时间 {event.observedAt ?? "未提供"}；完整窗口截至{" "}
+                    ；快照取得时间 {event.observedAt ??
+                      "未提供"}；完整窗口截至{" "}
                     {event.coveredThrough ?? "未确认完整覆盖"}。
                     查询截止日不是全天覆盖证明，也不是实际复核时间；原研究基准与行情日期保持不变。
                   </li>
