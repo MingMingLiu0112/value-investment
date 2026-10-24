@@ -3876,3 +3876,51 @@ removed. Exact clean full verification, new GitHub CI and actual8001 publication
 browser acceptance are still pending at this source checkpoint. The running
 service remainsd289 until those gates pass. Private accounts, Canonical Excel,
 server/PTA, production DB/jobs, signer identities and broker remain untouched.
+
+### 2026-10-24 - User priority correction: actual strategy logic first
+
+The user explicitly suspends simulation-product peripheral expansion and
+nonessential completion work unless a concrete P0 safety defect is found.
+The authoritative Goal prompt now records this override. Existing evidence and
+the initialized simulated journal remain unchanged; no account reset, new
+simulation feature, browser retry or production action is authorized by this note.
+The Goal remains ACTIVE. Actual value screening/economic admission and swing
+candidate/entry/exit rules with independent validation take priority.
+
+The previous checkpoint's pending release observations are now superseded:
+ed46931da0d7fceb1e75985e56f3ccfc75bfa61c passed clean Core6197/118 skipped,
+frontend887/20 skipped, API330/2 skipped, typecheck/format/build. Exact receipt:
+gc1/.tmp/release-verification-ed46931d.json. GitHub Core40068591740 and
+Web40068591732 both SUCCESS, rechecked in this turn. The separate archived
+prospective suite remains NOT_PASS_MISSING_HISTORICAL_INPUTS_SEPARATE_FROM_CORE.
+The actual8001 release receipt is
+dual1/.tmp/release-ed46931d-20261024T0639192541355Z/release-receipt.json,
+SHA256 a06888a6a8791da23b158f8bd2cfb531d76353caeba15c7045b5c185cbd3e885.
+It reports matched source/runtime/registries, but SAFE_REFRESH remains PARTIAL
+and market collection failed; retained quotes/research are not current approval.
+
+The live persistent-simulation browser receipt606e136c-bf6a-4b33-a8ed-2e5588f91d24
+is FAIL: initialization succeeded once, then a form-locator timeout stopped the
+helper before the next write. It is not product acceptance. The journal remains
+preserved; diagnosis/extra simulated flows are deferred under the user override.
+No P0 defect has been established from that selector timeout.
+
+Root now changes only fresh M2 orchestration: the EXISTING financial input
+collection and immutable-directory save occur before official-list/quote calls.
+A BSE/list or quote failure can no longer skip this independent financial step.
+Exceptions still propagate, no successful screening receipt/manifest/current
+pointer is produced, original source times and E1/unverified status are retained.
+Historical reuse and financial admission rules are unchanged. Regression:
+test_m2_cli_versioned_integration.py + test_public_financial_snapshot.py +
+test_official_universe.py:102 passed/5 skipped. Independent reviewer reran the
+six list/Tencent/Sina x missing/public financial cases:6 passed, no required
+P1/P2. This proves offline failure isolation, not live network availability.
+
+Parallel actual-business work: the existing swing chat is validating the four
+uncovered historical requirements without relabeling replay as OOS; the data
+worker is implementing venue-isolated collection with explicit incomplete global
+coverage; the research worker is implementing a shared, source-bound two-company
+operating-profit bridge. Shared scope-aware screening/report consumers belong to
+Root. These ongoing packages are not yet committed/integrated/validated outcomes.
+Strategy effectiveness, economic primary admission and user approval remain
+unproven; action=no_order.

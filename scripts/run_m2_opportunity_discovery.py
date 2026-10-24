@@ -198,6 +198,12 @@ def run_once(
         financial_payload = json.loads(financial_path.read_text(encoding="utf-8"))
         financial_points = financial_payload.get("points") or []
     else:
+        # Financial evidence is independent of security-list and quote availability.
+        # Retain it even when a later market provider fails; do not publish a scan.
+        financial_payload = build_financial_input(root=root, output_dir=output_dir,
+                                                 collect_public=collect_public_financials)
+        financial_points = financial_payload['points']
+        financial_path = _write(output_dir, "retained-financial-points.json", _json_bytes(financial_payload))
         official_payload, official_ref = _collect_official(output_dir, root)
 
         tencent_raw, tencent_payload = fetch_tencent_board_rank()
@@ -245,11 +251,6 @@ def run_once(
                 source_url="internal://m2/dividend-skipped",
                 fetched_at=generated_at,
             )
-
-        financial_payload = build_financial_input(root=root, output_dir=output_dir,
-                                                 collect_public=collect_public_financials)
-        financial_points = financial_payload['points']
-        financial_path = _write(output_dir, "retained-financial-points.json", _json_bytes(financial_payload))
 
     verify_public_supplement(root=root, payload=financial_payload,
                              evaluation_at=generated_at if reuse_inputs else datetime.now(timezone.utc))

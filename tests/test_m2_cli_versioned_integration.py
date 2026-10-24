@@ -133,6 +133,75 @@ def test_existing_publication_cli_blocks_historical_m2_publication(monkeypatch):
     assert error.value.code == 2
 
 
+@pytest.mark.parametrize('failed_provider', ['official', 'tencent', 'sina'])
+@pytest.mark.parametrize('financial_mode', ['missing', 'public'])
+def test_market_failure_preserves_independent_financial_input(
+        tmp_path, monkeypatch, failed_provider, financial_mode):
+    from value_investment_agent.application.discovery import public_financial_input as service
+
+    root = tmp_path
+    output = root / 'runtime/new-scan'
+    calls = []
+    if financial_mode == 'public':
+        from test_public_financial_snapshot import collect, row
+        binding, _ = collect(root, monkeypatch, rows=[row('600001')])
+        monkeypatch.setattr(service, 'collect_public_annual_summary', lambda **_: binding)
+
+    def financial(**kwargs):
+        calls.append('financial')
+        return service.build_financial_input(**kwargs)
+
+    def provider(name, payload=None):
+        def fetch(*args, **kwargs):
+            calls.append(name)
+            saved = json.loads((output / 'retained-financial-points.json').read_bytes())
+            assert saved['status'] == (
+                'PROVIDER_OBSERVATIONS_ONLY' if financial_mode == 'public' else 'NOT_AVAILABLE')
+            if name == failed_provider:
+                raise RuntimeError('provider unavailable: ' + name)
+            if name == 'official':
+                path = RUN_M2._write(output, 'official-universe.json', RUN_M2._json_bytes(payload))
+                return payload, RUN_M2._reference('official', path, root=root,
+                    source_name='isolated fixture', source_url='https://example.test',
+                    fetched_at=RUN_M2._payload_fetched_at(payload, 'official'))
+            value = dict(payload, fetched_at='2026-09-23T08:00:00+00:00')
+            return RUN_M2._json_bytes(value), value
+        return fetch
+
+    monkeypatch.setattr(RUN_M2, 'build_financial_input', financial)
+    monkeypatch.setattr(RUN_M2, '_collect_official', provider('official', _official_payload()))
+    monkeypatch.setattr(RUN_M2, 'fetch_tencent_board_rank', provider('tencent', _tencent_payload()))
+    monkeypatch.setattr(RUN_M2, 'fetch_sina_industry_quotes', provider('sina', _sina_payload()))
+    monkeypatch.setattr(RUN_M2, 'fetch_eastmoney_dividends',
+                        lambda **_: pytest.fail('must stop after market failure'))
+    with pytest.raises(RuntimeError, match='provider unavailable: ' + failed_provider):
+        RUN_M2.run_once(root=root, output_dir=output, wps_dir=None, max_per_channel=50,
+            skip_dividend=False, reuse_inputs=False, skip_workbook=True,
+            collect_public_financials=financial_mode == 'public')
+    expected = ['financial', 'official', 'tencent', 'sina']
+    assert calls == expected[:expected.index(failed_provider) + 1]
+    saved = json.loads((output / 'retained-financial-points.json').read_bytes())
+    service.verify_public_supplement(root=root, payload=saved,
+        evaluation_at=RUN_M2.datetime.now(RUN_M2.timezone.utc))
+    if financial_mode == 'public':
+        assert saved['public_financial_input']['accepted_official_fact_count'] == 0
+        assert saved['points']
+        assert all(point['validation_status'] == 'unverified' for point in saved['points'])
+    else:
+        assert saved['points'] == []
+    original = (output / 'retained-financial-points.json').read_bytes()
+    with pytest.raises(ValueError, match='new input directory'):
+        RUN_M2.run_once(root=root, output_dir=output, wps_dir=None, max_per_channel=50,
+            skip_dividend=False, reuse_inputs=False, skip_workbook=True,
+            collect_public_financials=True)
+    assert (output / 'retained-financial-points.json').read_bytes() == original
+    assert calls == expected[:expected.index(failed_provider) + 1]
+    for name in ('receipt.json', 'manifest.json', 'value-discovery-report.json',
+                 'm2-opportunity-discovery.xlsx'):
+        assert not (output / name).exists()
+    assert not (root / 'config/current-daily-public-snapshot.json').exists()
+
+
 def test_daily_safe_refresh_calls_registered_m2_without_replay_or_publication():
     root = Path(__file__).resolve().parents[1]
     registry = json.loads((root / 'config/current-cli-entrypoints-v2.json').read_text(encoding='utf-8'))
