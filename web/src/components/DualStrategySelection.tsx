@@ -259,7 +259,7 @@ export function DualStrategySelection() {
           ? "来源无法核验，覆盖与候选数量未知，不能判断是否有候选。"
           : mode === "value"
             ? `覆盖 ${count.universe_count ?? 0} 家；财务观察 ${count.observation_count ?? 0} 项；研究队列 ${count.research_queue_count ?? 0} 家；正式事实准入 ${count.official_fact_admission_count ?? 0} 家。当前展示前 ${lane.items.length} 家。`
-            : `全市场 ${count.market_securities ?? 0} 家；候选池 ${count.candidate_pool ?? 0} 家；已评估 ${count.evaluated ?? 0} 家；入选 ${count.selected ?? 0} 家；排除 ${count.excluded ?? 0} 家；资料不足 ${count.unknown ?? 0} 家；待确认 ${count.pending_confirmation ?? 0} 家。`}
+            : `本次来源市场 ${count.market_securities ?? 0} 家（非官方全 A 覆盖认证）；候选池 ${count.candidate_pool ?? 0} 家；已评估 ${count.evaluated ?? 0} 家；入选 ${count.selected ?? 0} 家；排除 ${count.excluded ?? 0} 家；资料不足 ${count.unknown ?? 0} 家；待确认 ${count.pending_confirmation ?? 0} 家。`}
       </p>
       {unavailable && <Button onClick={result.retry}>重新核验选股来源</Button>}
       <Input.Search
@@ -312,7 +312,12 @@ export function DualStrategySelection() {
         ]}
         expandable={{
           expandedRowRender: (row) => (
-            <div>
+            <div
+              style={{
+                maxWidth: "min(100%, calc(100vw - 64px))",
+                overflowWrap: "anywhere",
+              }}
+            >
               {mode === "value" ? (
                 <>
                   <p>
