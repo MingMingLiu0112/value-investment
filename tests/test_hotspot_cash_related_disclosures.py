@@ -190,6 +190,40 @@ def test_one_native_pdf_runtime_failure_does_not_hide_remaining_documents(tmp_pa
     assert result["price_comparability"] == "UNKNOWN" and result["mapping"] is None
 
 
+@pytest.mark.parametrize("changed", ["registry", "independent_implementation"])
+def test_sources_changed_after_related_read_cannot_retain_ready(tmp_path, monkeypatch, changed):
+    from value_investment_agent.application.hotspot import cash_action_window_v3 as entry
+    args = _archive(tmp_path, monkeypatch)
+    registry = tmp_path / args["registry_binding"]["path"]
+    document = json.loads(registry.read_bytes())
+    original = document["events"][0]["evidence"][0]
+    original_path = tmp_path / original["path"]
+    copied = tmp_path / "runtime/independent-original.pdf"
+    copied.write_bytes((tmp_path / original["path"]).read_bytes())
+    original["path"] = copied.relative_to(tmp_path).as_posix()
+    registry.write_text(json.dumps(document), encoding="utf-8")
+    args["registry_binding"]["sha256"] = sha256(registry.read_bytes()).hexdigest()
+    # The synthetic extractor must recognize the independent path, not infer it from the index.
+    native_extract = legacy.extract_pages
+    monkeypatch.setattr(legacy, "extract_pages", lambda path, limit:
+        native_extract(original_path, limit) if path == copied else native_extract(path, limit))
+    native = entry.inspect_cash_related_disclosures
+
+    def change_after_read(**kwargs):
+        result = native(**kwargs)
+        assert result["reviewed_document_count"] == 3
+        target = registry if changed == "registry" else copied
+        target.write_bytes(target.read_bytes() + b"TEST_ONLY changed after read")
+        return result
+
+    monkeypatch.setattr(entry, "inspect_cash_related_disclosures", change_after_read)
+    result = entry.inspect_cash_action_window_v3(**args)
+    assert result["status"] == "SOURCE_CLOSURE_INVALID"
+    assert result["body_terms_status"] == "UNKNOWN" and result["legacy_v2_review"] is None
+    assert result["related_disclosure_review"] is None and result["mapping"] is None
+    assert result["formal_eligibility"] is False and result["action"] == "no_order"
+
+
 def test_native_extraction_failure_in_legacy_stage_is_explicitly_fail_closed(tmp_path, monkeypatch):
     from value_investment_agent.infrastructure.hotspot import cash_implementation as legacy
     args = _archive(tmp_path, monkeypatch)

@@ -113,7 +113,7 @@ def inspect_cash_related_disclosures(*, root, symbol, implementation_binding,
             implementation_original_available_at=implementation_binding["available_at"],
             source_available_at=max(datetime.fromisoformat(observation["acquired_at"]),
                 datetime.fromisoformat(implementation_binding["available_at"])).isoformat())
-        for ref in (observation_binding, archive["scan_binding"], *observation["source_bindings"]):
+        for ref in (implementation_binding, observation_binding, archive["scan_binding"], *observation["source_bindings"]):
             if sha256_file(require_inside(root, root / ref["path"], "related source")) != ref["sha256"]:
                 raise ValueError("Related source changed during review")
     except (OSError, ValueError, KeyError, TypeError, ArithmeticError, RuntimeError) as error:
