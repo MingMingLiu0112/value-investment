@@ -8,7 +8,8 @@ from ...domain.discovery.official_list_calendar import (
     NOTICE_SOURCES, aware, completed_list_session, validate_list_timing,
 )
 from ...infrastructure.screening.official_universe_v2 import (
-    collect_security_lists_v2, replay_official_documents, VERSION,
+    collect_security_lists_v2, collect_security_lists_with_coverage,
+    replay_official_documents, replay_official_venue_coverage, VERSION, PARTIAL_VERSION,
 )
 from ...official_universe import VERSION as LEGACY_VERSION
 from ...m2_opportunity_discovery import EvidenceReference
@@ -22,15 +23,23 @@ def verify_calendar_archives(root: Path):
             raise ValueError('Official calendar notice hash mismatch: ' + venue)
 
 
-def collect_official_m2_input(directory: Path, root: Path):
+def collect_official_m2_input(directory: Path, root: Path, *, allow_partial: bool = False):
     """Never guess a retained fallback or copy an old list into a fresh run."""
     verify_calendar_archives(root)
-    payload = collect_security_lists_v2(directory / 'official-raw')
+    if type(allow_partial) is not bool:
+        raise ValueError('Official partial acquisition requires an explicit boolean')
+    if allow_partial and not directory.resolve().is_relative_to(root.resolve()):
+        raise ValueError('Official partial acquisition must remain inside project root')
+    collector = collect_security_lists_with_coverage if allow_partial else collect_security_lists_v2
+    payload = collector(directory / 'official-raw')
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2).encode('utf-8')
     path = directory / 'official-universe.json'
     write_new_bytes(path, raw)
     reference = EvidenceReference(id='official', path=path.relative_to(root).as_posix(),
-        sha256=sha256(raw).hexdigest(), source_name='Official SSE/SZSE/BSE lists, session-date v2',
+        sha256=sha256(raw).hexdigest(), source_name=(
+            'Official lists, observed venues only; incomplete all-A coverage'
+            if payload['parser_version'] == PARTIAL_VERSION
+            else 'Official SSE/SZSE/BSE lists, session-date v2'),
         source_url='https://www.szse.cn | https://query.sse.com.cn | https://www.bse.cn',
         fetched_at=datetime.fromisoformat(payload['fetched_at']))
     return payload, reference
@@ -41,6 +50,14 @@ def official_input_version(payload: dict) -> str:
     v2_fields = {'collection_timing', 'available_at', 'effective_session'}
     if 'parser_version' in payload:
         version = payload['parser_version']
+        if version != PARTIAL_VERSION and {'required_venues', 'covered_venues', 'missing_venues',
+                'failed_venues', 'venue_coverage', 'request_failures'}.intersection(payload):
+            raise ValueError('Partial official coverage cannot be relabelled as a complete or legacy contract')
+        if version == PARTIAL_VERSION:
+            if (payload.get('complete') is not False or payload.get('action') != 'no_order'
+                    or payload.get('scope') != 'OBSERVED_VENUES_ONLY_NOT_ALL_A'):
+                raise ValueError('Invalid partial official list contract')
+            return PARTIAL_VERSION
         if version == VERSION:
             return VERSION
         if version == LEGACY_VERSION and not v2_fields.intersection(payload):
@@ -117,9 +134,13 @@ def verify_retained_official_input(payload: dict, *, root: Path) -> None:
             if not resolved.is_file() or resolved.stat().st_size > 8 * 1024**2:
                 raise ValueError('Invalid official raw document size or type')
             documents.append(dict(reference, raw=resolved.read_bytes()))
-        rebuilt = replay_official_documents(documents,
-            started_at=datetime.fromisoformat(payload['collection_timing']['collection_started_at']),
-            available_at=datetime.fromisoformat(payload['available_at']))
+        options = dict(started_at=datetime.fromisoformat(payload['collection_timing']['collection_started_at']),
+                       available_at=datetime.fromisoformat(payload['available_at']))
+        if official_input_version(payload) == PARTIAL_VERSION:
+            rebuilt = replay_official_venue_coverage(documents,
+                request_failures=payload['request_failures'], **options)
+        else:
+            rebuilt = replay_official_documents(documents, **options)
         if rebuilt != payload:
             raise ValueError('Retained official projection differs from raw replay')
     except (KeyError, TypeError, OSError) as exc:
@@ -130,10 +151,27 @@ def screening_quote_date(official_payload: dict, generated_at: datetime, *,
                          retained_quote_date: str | None = None) -> str:
     """Session label only. The existing M2 quote_date_verified=False remains."""
     generated_at = aware(generated_at)
-    if official_input_version(official_payload) == LEGACY_VERSION:
+    version = official_input_version(official_payload)
+    if version == LEGACY_VERSION:
         # Historical v1 semantics and test/legacy callers remain unchanged.
         return retained_quote_date if retained_quote_date is not None else generated_at.date().isoformat()
     timing = official_payload['collection_timing']
+    if version == PARTIAL_VERSION:
+        start = aware(datetime.fromisoformat(timing['collection_started_at']))
+        acquired = aware(datetime.fromisoformat(official_payload['available_at']))
+        session = completed_list_session(acquired).isoformat()
+        if (start > acquired or start.date() != acquired.date()
+                or acquired > generated_at or acquired.date() != generated_at.date()
+                or completed_list_session(start).isoformat() != session
+                or completed_list_session(generated_at).isoformat() != session
+                or official_payload['effective_session'] != session
+                or timing['effective_session'] != session
+                or timing['available_at'] != official_payload['available_at']
+                or official_payload['fetched_at'] != official_payload['available_at']):
+            raise ValueError('Partial M2 collection dates or session changed')
+        if retained_quote_date is not None and retained_quote_date != session:
+            raise ValueError('Retained partial quote session differs from its original acquisition')
+        return session
     verified = validate_list_timing(
         provider_dates=[row['as_of'] for row in official_payload['records'] if row['exchange'] == 'BSE'],
         fetched_at=[row['fetched_at'] for row in official_payload['sources']],
