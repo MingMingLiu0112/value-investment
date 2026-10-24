@@ -73,6 +73,7 @@ def native_signed(synthetic_native, request):
         valuation_model_version=ctx['model_version'], research_case_sha256=ctx['research_case_sha256'],
         facts_artifact_sha256=ctx['facts_sha256'], assumption_set_sha256=ctx['assumptions_sha256'],
         reviewed_at=reviewed, review_as_of=reviewed.date(), reviewer_id=response['reviewer_id'],
+        evidence_refs=tuple(json.loads((root/package_ref['path']).read_bytes())['facts']['evidence_refs']),
         **{field: restored.dependencies[role].artifact_id for role, field in (
             ('valuation', 'valuation_artifact_id'), ('research_case', 'research_case_id'),
             ('financial_facts', 'facts_artifact_id'), ('valuation_assumptions', 'assumption_set_id'))})
@@ -165,7 +166,8 @@ print('TEST_ONLY_COLD_PROCESS_PASS')
 
 @pytest.mark.parametrize('change', ['purpose', 'sequence_bool', 'unknown', 'group', 'price',
     'candidate', 'context', 'valuation', 'identity', 'scope', 'future', 'unbound', 'artifact_id',
-    'group_missing', 'group_reordered', 'extra', 'nested_transport', 'expired', 'wrong_symbol', 'bad_signature'])
+    'group_missing', 'group_reordered', 'extra', 'nested_transport', 'expired', 'wrong_symbol', 'bad_signature',
+    'fabricated_evidence', 'id_only_evidence'])
 def test_native_signed_rejects_invalid_contract_before_completion(native_signed, change):
     f = native_signed
     if change == 'sequence_bool': f['response']['sequence'] = True
@@ -186,6 +188,8 @@ def test_native_signed_rejects_invalid_contract_before_completion(native_signed,
     if change == 'expired': f['trust']['valid_until'] = (datetime.now(timezone.utc)-timedelta(seconds=1)).isoformat()
     if change == 'wrong_symbol': f['trust']['symbols'] = ['000001']
     if change == 'bad_signature': f['key'] = Ed25519PrivateKey.generate()
+    if change == 'fabricated_evidence': f['response']['whole_model_approval']['evidence_refs'][0]['id'] = 'fabricated'
+    if change == 'id_only_evidence': f['response']['whole_model_approval']['evidence_refs'] = [dict(id='approval-pdf')]
     if change in {'scope', 'expired', 'wrong_symbol'}:
         f['registry'].write_text(json.dumps(dict(schema_version='authorization-trust-root-registry-v1',
             pinned_trust_root_sha256=[trust_root_fingerprint(f['trust'])])), encoding='utf-8')

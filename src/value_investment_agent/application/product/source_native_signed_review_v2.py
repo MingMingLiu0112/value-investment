@@ -203,6 +203,14 @@ def _validate_response(root, response_ref, trust_ref, now, *, historical=False):
             or approval.review_as_of.isoformat() < payload['model_context']['research_as_of']
             or approval.decision not in {'APPROVED_RESEARCH_ONLY', 'APPROVED_CONDITIONAL_LOW_CONFIDENCE'}):
         raise ValueError('Native whole-model reviewer or research scope invalid')
+    package = _read(root, candidate['source_package_binding'])
+    for ref in approval.evidence_refs:
+        matches = [row for row in package['sources'] if row['id'] == ref.get('id')
+            and row.get('local_path') == ref.get('path') and row['sha256'] == ref.get('sha256')]
+        if len(matches) != 1:
+            raise ValueError('Native approval evidence must bind an existing package source')
+        if dict(path=ref['path'], sha256=ref['sha256']) not in template['source_bindings']:
+            raise ValueError('Native approval evidence is outside the consumed closure')
     for role, field in (('valuation', 'valuation_artifact_id'), ('research_case', 'research_case_id'),
                        ('financial_facts', 'facts_artifact_id'), ('valuation_assumptions', 'assumption_set_id')):
         if getattr(approval, field) != restored.dependencies[role].artifact_id:
