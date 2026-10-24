@@ -3745,3 +3745,54 @@ All completed source milestones are pushed to the existing PR branch;main is
 not merged. Complete Goal staysACTIVE, INITIAL_ASSISTED_USE=NOT_REACHED,
 action=no_order. No private account/Canonical Excel/server/PTA/production task
 was modified and no paid API, production signing identity or broker was used.
+
+### 2026-10-24 - Goal prompt progress audit; documentation only
+
+User requested a progress-based update of the existing Goal prompt. The same Goal
+ID and final admission criteria are retained; no business development, integration
+or publication was performed in this documentation work package. Goal tool state
+was PAUSED, despite historical ledger paragraphs saying ACTIVE. This audit does
+not resume it or mark it complete. The stored Goal already references the updated
+docs/current/dual-strategy-closure-goal-prompt-20261023.md.
+
+Read-only checks confirmed8001 source/backend/frontend/registries MATCHED at
+d28925124c5b68b816043a1d12cc4bfddaf6d853. Its Core40058460587/Web40058460653 both
+succeeded. At audit start the integrated/remote PR branch was353a43ed, a later
+documentation commit: Web40061689011 succeeded, Core40061688973 was cancelled,
+not passed. main remained3e6c5b410ed4acb5ea92806c0caa15d2be86dcee.
+
+Old pending-swing-merge instructions were removed: those packages are already
+integrated. Current temporary account acceptance, native research-only consumer
+and CLI, conditional economic review, cash-event adapter and their remaining
+consumer/admission gaps are recorded separately. Runtime weekday-only freshness
+does not prove exchange-calendar eligibility; current model validity is UNKNOWN.
+Public market collection is still partial, not a new full-market pass.
+
+eb1 delivered4f1a739dc7e4e338b4b82bd3f34bbc45dc2a53b4 and is clean. Source inspection
+confirms a persistent simulation service and an explicit rejection of confirmed
+fill correction. Author-reported221 passed/3 skipped and14 passed/1 skipped are
+handoff evidence, not Root acceptance, integration, CI or release. Review and
+Web/API wiring remain queued. No independent source review or large tests were
+claimed for that package during this prompt audit.
+
+Remaining work is organized into existing business paths: economic admission and
+explanation; persistent simulation/Entry and confirmed-fill correction; swing
+validation and consumers; current coverage and daily incremental review; integrated
+user acceptance. Cross-thread/subagent ownership and bounded research are explicit.
+The compatibility launcher now points to this Goal instead of the obsolete M2-M7
+prompt; the current-stage header reconciles the latest authorization. Earlier
+stage history and permanent methodology/evidence boundaries remain intact.
+
+User authorization to commit/push completed milestones is carried into the prompt:
+explicit public source/doc paths on the existing PR branch, no main merge or private
+data publication. Docs-only edits do not rerun large local suites or restart8001.
+Engineering, real-source coverage, economic/strategy admission, human confirmation
+and actual readiness retain separate acceptance. action=no_order.
+
+Documentation checks passed: root/integration launch and prompt content agree,
+all13 sections and required boundaries remain, local links/fences are valid and
+scoped diff whitespace checks pass. Retained d289 Core/frontend/API XML hashes
+match their clean verification receipt; no large suite was rerun. Independent
+read-only review found no required correction to scope, inherited completion,
+pending simulation status or admission criteria. This verifies the prompt update,
+not the pending code or investment effectiveness.
