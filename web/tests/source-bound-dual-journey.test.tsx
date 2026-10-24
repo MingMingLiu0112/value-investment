@@ -357,7 +357,8 @@ it.each(["1", "1000", "9007199254740993"])(
   "rejects an inconsistent consumed FIFO total %s without floating-point rounding",
   (quantity) => {
     const p = fifoPacket();
-    p.manual_rehearsal.fills[3].consumed_original_entries[0].quantity = quantity;
+    p.manual_rehearsal.fills[3].consumed_original_entries[0].quantity =
+      quantity;
     expect(verifiedDualJourney(p)).toBe(false);
   },
 );

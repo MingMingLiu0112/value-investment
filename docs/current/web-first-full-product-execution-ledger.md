@@ -3597,3 +3597,37 @@ was already strict. The successor uses exact BigInt integer equality, rejects
 Independent26 passed/1 optional-browser skipped with real-result validation and
 ES2020 typecheck closed this P2. Native unsigned review remains unapproved; this
 account slice is still pending exact-head full CI/clean release and actual8001 UI.
+
+### 2026-10-24 - Native authenticated research slice and single-event cash exposure
+
+Native signed transport821e67c3 is integrated through5146b945/1733d01a/c4ef0ca0.
+It uses a distinct native response purpose, the existing pinned identity/approval
+contracts and typed ResearchApplicationService, a versioned public transaction
+namespace and actual provenance DI cold reads. It does not modify the thirteen
+frozen implementations or enroll authority. Independent14 probes found no new
+confirmed P1/P2. All authenticated positive cases are TEST_ONLY synthetic issuers;
+real JS2 remains unsigned/unapproved. Current CLI/Wizard/native-public consumers
+are separate wiring work; the new callable is not current G3, primary registration
+or price admission. First slice deliberately rejects incomplete output rather
+than silently resuming it, and retains LOW/research-only/no-order semantics.
+
+Sibling98619c61/4b393512/aa77a3b5 is integrated as7ff38ce0/db9bea11/7dba5437.
+Independent review closed both supported-body/date-conflict and negated-date P2s;
+unknown/unsupported text is UNKNOWN rather than proof of no conflict. Actual
+600030 original12923c8b... remains unchanged, with34 source hashes verified.
+The six-hour lookback crosses the June9/10 ex-date boundary. Only zero-cost replay
+fills; normal/double-cost lanes do not. Record-close inventory is zero, no cash is
+credited and no protection/return is adjusted. Gross0.41 per eligible A-share is
+not evidence of receipt or full action history. PIT/OOS/comparability remain
+unproved. Existing read-model integration remains pending, not a new signal.
+Author receipt runtime/swing-execution-cash-exposure-20261024/dfa6310609e04f2397b3a8363d965934/receipt.json
+SHA256d067faaac156ae02bf6220a6e6daee0d5e93cf2eb4553079488c04cde075927d.
+
+Root integrated native/cash/architecture selection139 passed,1 skipped. The
+real600030 exposure opt-in was supplied and passed; the unrelated optional
+repurchase-format original was not supplied and stays skipped. XML
+.tmp/native-cash-root-r1.xml is not full Core or formal strategy proof.
+909981b0 Web CI failed formatting, and its Core run was cancelled rather than
+passed. The single test-file format issue is corrected; new exact-head CI and
+full clean regression remain required. No cancelled run is counted as success.
+The complete Goal remains ACTIVE, action=no_order.
