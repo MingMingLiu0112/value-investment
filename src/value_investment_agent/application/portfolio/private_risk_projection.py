@@ -86,7 +86,8 @@ def _policy_payload(replayed: ReplayedPortfolio) -> dict[str, Any]:
     payload["tax_regime"] = stored.get("tax_regime")
     payload["restrictions"] = list(stored.get("restrictions") or ["no_order"])
     payload["evidence_refs"] = [{"id": stored["_record_sha256"], "kind": "user_confirmation"}] if stored.get("_record_sha256") else [_evidence(replayed)]
-    payload["sensitivity"] = "PRIVATE_USER_CONFIRMED"
+    payload["sensitivity"] = ("SIMULATED_EXPLICIT_HYPOTHESIS" if state.baseline.namespace == "SIMULATED"
+                              else "PRIVATE_USER_CONFIRMED")
     payload["action"] = "no_order"
     return payload
 
@@ -110,7 +111,9 @@ def _snapshot_matches_state(snapshot: PortfolioSnapshot, replayed: ReplayedPortf
     for lot in replayed.state.lots:
         expected[lot.symbol] = expected.get(lot.symbol, Decimal(0)) + lot.quantity
     actual = {holding.symbol: holding.quantity for holding in snapshot.holdings}
-    return snapshot.cash_cny == replayed.state.cash_cny and actual == expected
+    return (snapshot.cash_cny == replayed.state.cash_cny and actual == expected
+            and snapshot.namespace == replayed.state.baseline.namespace
+            and snapshot.account_scope == replayed.state.baseline.account_scope)
 
 
 def _snapshot_payload(replayed: ReplayedPortfolio, prices=None) -> dict[str, Any]:
@@ -135,7 +138,7 @@ def _snapshot_payload(replayed: ReplayedPortfolio, prices=None) -> dict[str, Any
         as_of=state.last_trade_date,
         available_at=state.confirmed_at or state.baseline.available_at,
         account_scope=state.baseline.account_scope,
-        namespace=NAMESPACE_ACTUAL,
+        namespace=state.baseline.namespace,
         cash_cny=state.cash_cny,
         holdings=_holdings(replayed, evidence),
         reconciliation_status=RECONCILIATION_PENDING,

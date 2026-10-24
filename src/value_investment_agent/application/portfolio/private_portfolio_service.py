@@ -419,7 +419,44 @@ def _evidence_ref(identifier: str, kind: str) -> dict[str, str]:
     return {"id": identifier, "kind": kind}
 
 
-def _baseline_snapshot(body: Mapping[str, Any]) -> PortfolioSnapshot:
+@dataclass(frozen=True)
+class SimulatedAccountContext:
+    """Server-selected identity; never inferred from an account's display name."""
+
+    account_id: str
+    version: str = "persistent-simulated-portfolio-v1"
+
+    def __post_init__(self):
+        import re
+        if (not isinstance(self.account_id, str)
+                or re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}", self.account_id) is None
+                or self.version != "persistent-simulated-portfolio-v1"):
+            raise JournalValidationError("Invalid simulated account identity")
+
+    def as_dict(self):
+        return dict(namespace="SIMULATED", account_id=self.account_id, version=self.version)
+
+    @property
+    def account_scope(self):
+        return "SIMULATED:" + self.account_id
+
+
+def simulated_context_from_records(records):
+    """Decode only an explicitly versioned baseline, not legacy SIM display labels."""
+    if not records:
+        return None
+    value = records[0]["body"].get("account_context")
+    if value is None:
+        return None
+    if not isinstance(value, dict) or set(value) != {"namespace", "account_id", "version"}:
+        raise JournalValidationError("Invalid account context")
+    context = SimulatedAccountContext(value["account_id"], value["version"])
+    if value != context.as_dict() or records[0]["body"].get("account_scope") != context.account_scope:
+        raise JournalValidationError("Account identity mismatch")
+    return context
+
+
+def _baseline_snapshot(body: Mapping[str, Any], *, account_context=None) -> PortfolioSnapshot:
     evidence = _evidence_ref(f"private-intake-{body['snapshot_id']}", "user_confirmation")
     holdings = []
     for row in _sequence(body["holdings"], "holdings"):
@@ -442,7 +479,7 @@ def _baseline_snapshot(body: Mapping[str, Any]) -> PortfolioSnapshot:
         as_of=_date_value(body["as_of"], "as_of"),
         available_at=_aware_datetime(body["available_at"], "available_at"),
         account_scope=str(body["account_scope"]),
-        namespace=NAMESPACE_ACTUAL,
+        namespace="SIMULATED" if account_context is not None else NAMESPACE_ACTUAL,
         cash_cny=_decimal(body["cash_cny"], "cash_cny"),
         holdings=tuple(holdings),
         reconciliation_status=RECONCILIATION_RECONCILED,
@@ -503,9 +540,32 @@ class PrivatePortfolioService:
         journal: PrivateJournal,
         *,
         clock: Callable[[], datetime] | None = None,
+        account_context: SimulatedAccountContext | None = None,
     ) -> None:
         self.journal = journal
         self._clock = clock or (lambda: datetime.now(_SHANGHAI))
+        if account_context is not None and not isinstance(account_context, SimulatedAccountContext):
+            raise JournalValidationError("Trusted account context required")
+        self.account_context = account_context
+
+    def _validate_account_context(self, records):
+        context = simulated_context_from_records(records)
+        if records and context != self.account_context:
+            raise JournalValidationError("Journal namespace/account context mismatch")
+        if records and context is not None:
+            if (records[0]["kind"] != "BASELINE_CONFIRMED"
+                    or sum(r["kind"] == "BASELINE_CONFIRMED" for r in records) != 1):
+                raise JournalValidationError("Unique simulated baseline required")
+            for record in records:
+                body = record["body"]
+                if (record["kind"].startswith("PERSONAL_ENTRY_THESIS_")
+                        and body.get("account_scope") != context.account_scope):
+                    raise JournalValidationError("Cross-account Entry rejected")
+                if record["kind"] == "RECONCILED_CONFIRMED":
+                    snapshot = body.get("snapshot", {})
+                    if (snapshot.get("namespace") != "SIMULATED"
+                            or snapshot.get("account_scope") != context.account_scope):
+                        raise JournalValidationError("Cross-account reconciliation rejected")
 
     def _now(self) -> datetime:
         value = self._clock()
@@ -520,7 +580,9 @@ class PrivatePortfolioService:
             raise JournalValidationError(f"{field} must not be in the future")
 
     def records(self) -> list[dict[str, Any]]:
-        return self.journal.read()
+        records = self.journal.read()
+        self._validate_account_context(records)
+        return records
 
     def entry_thesis_candidates(self, *, repository_root: Path, authenticated_subject: str,
                                 repository=None) -> dict:
@@ -547,6 +609,7 @@ class PrivatePortfolioService:
         return None
 
     def _replay(self, records: Sequence[Mapping[str, Any]], *, _validate_theses=True) -> ReplayedPortfolio | None:
+        self._validate_account_context(records)
         if _validate_theses and any(record["kind"].startswith("PERSONAL_ENTRY_THESIS_") for record in records):
             from .personal_entry_thesis import resolve_personal_entry_thesis
             resolve_personal_entry_thesis(records=records,
@@ -565,7 +628,7 @@ class PrivatePortfolioService:
             kind = record["kind"]
             body = record["body"]
             if kind == "BASELINE_CONFIRMED":
-                state = initialize(_baseline_snapshot(body), _allocations(body))
+                state = initialize(_baseline_snapshot(body, account_context=self.account_context), _allocations(body))
                 policy = json.loads(canonical_bytes(dict(body["policy"])))
             elif kind == "FILL_PREPARED":
                 if state is None:
@@ -830,7 +893,7 @@ class PrivatePortfolioService:
                 _sleeve(sleeve): str(_whole_shares(quantity, "sleeve allocation"))
                 for sleeve, quantity in _mapping(sleeves, "sleeve_allocations entry").items()
             }
-        return {
+        result = {
             "snapshot_id": _text(request.get("snapshot_id", f"private-{as_of.isoformat()}"), "snapshot_id"),
             "account_scope": account_scope,
             "as_of": as_of.isoformat(),
@@ -845,6 +908,11 @@ class PrivatePortfolioService:
             },
             "evidence_ref": _evidence_ref(f"private-intake-{account_scope}", "user_confirmation"),
         }
+        if self.account_context is not None:
+            if account_scope != self.account_context.account_scope:
+                raise JournalValidationError("Simulated account scope mismatch")
+            result["account_context"] = self.account_context.as_dict()
+        return result
 
     @staticmethod
     def _fill_context(fill: Mapping[str, Any]) -> dict[str, Any]:
@@ -878,6 +946,7 @@ class PrivatePortfolioService:
         }
 
     def _existing(self, records, request) -> tuple[dict[str, Any], str] | None:
+        self._validate_account_context(records)
         key = _idempotency_key(request)
         digest = request_digest(request)
         record = self._find_idempotent(records, key, digest)
@@ -967,7 +1036,7 @@ class PrivatePortfolioService:
             raise JournalConflict("ALREADY_INITIALIZED", "私人组合已初始化，不能重复初始化")
         self._require_revision(records, request)
         body = self._initialize_body(request)
-        state = initialize(_baseline_snapshot(body), _allocations(body))
+        state = initialize(_baseline_snapshot(body, account_context=self.account_context), _allocations(body))
         replayed = ReplayedPortfolio(1, state, body["policy"], (), None, None, None)
         payload = self._portfolio_payload(replayed)
         payload["status"] = "BASELINE_CONFIRMED"

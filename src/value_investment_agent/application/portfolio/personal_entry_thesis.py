@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 from .private_portfolio_service import (
     PrivateJournal, PrivatePortfolioService, JournalConflict, JournalValidationError,
     _fill_from_body, request_digest, _idempotency_key,
+    simulated_context_from_records,
 )
 from ...domain.decision.advisory_dependency_admission import validate_advisory_dependencies
 from ...domain.decision.decision_recommendation import DECISION_RECOMMENDATION_V3_SCHEMA
@@ -228,7 +229,8 @@ def _sources(records):
     Baseline lots participate in consumption but never acquire invented BUY ids.
     Financial balances and actual sellability remain owned by _replay.
     """
-    service = PrivatePortfolioService(PrivateJournal(Path("unused-read-only")))
+    service = PrivatePortfolioService(PrivateJournal(Path("unused-read-only")),
+        account_context=simulated_context_from_records(records))
     service._replay(records, _validate_theses=False)
     initial = service._replay(records[:1], _validate_theses=False)
     lots = [dict(fill_hash=None, sleeve=lot.sleeve, symbol=lot.symbol, exchange=lot.exchange,
