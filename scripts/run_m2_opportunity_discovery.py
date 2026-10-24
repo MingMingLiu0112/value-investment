@@ -7,6 +7,7 @@ the existing Canonical WPS workbook remains the sole formal user workbook.
 from __future__ import annotations
 
 import argparse
+from functools import partial
 import hashlib
 import json
 from datetime import datetime, timedelta, timezone
@@ -48,6 +49,10 @@ from value_investment_agent.infrastructure.screening.financial_export_v2 import 
 )
 from value_investment_agent.application.discovery.public_financial_input import (
     build_financial_input, verify_public_supplement,
+)
+from value_investment_agent.application.discovery.scoped_screening import (
+    VERSION as SCOPED_SCREEN_VERSION, OFFICIAL_VERSION as PARTIAL_OFFICIAL_VERSION,
+    build_discovery_receipt as build_scoped_receipt, scoped_inputs,
 )
 
 
@@ -95,7 +100,7 @@ def _payload_fetched_at(payload: Mapping[str, object], name: str) -> datetime:
 
 
 def _collect_official(output_dir: Path, root: Path) -> tuple[dict, EvidenceReference]:
-    return collect_official_m2_input(output_dir, root)
+    return collect_official_m2_input(output_dir, root, allow_partial=True)
 
 
 def run_once(
@@ -132,6 +137,8 @@ def run_once(
         original = json.loads((output_dir / 'receipt.json').read_text(encoding='utf-8'))
         if original['rule_version'] == EVIDENCE_SCREEN_VERSION:
             receipt_builder = build_evidence_receipt
+        elif original['rule_version'] == SCOPED_SCREEN_VERSION:
+            receipt_builder = partial(build_scoped_receipt, root=root)
         elif original['rule_version'] == policy.rule_version:
             receipt_builder = build_discovery_receipt
         else:
@@ -266,6 +273,8 @@ def run_once(
 
     if not reuse_inputs:
         generated_at = datetime.now(timezone.utc)
+        if official_payload.get('parser_version') == PARTIAL_OFFICIAL_VERSION:
+            receipt_builder = partial(build_scoped_receipt, root=root)
     quote_date = screening_quote_date(official_payload, generated_at,
         retained_quote_date=quote_date if reuse_inputs else None)
     run_refs = {
@@ -372,6 +381,10 @@ def run_once(
             "raw_inputs_match": replay_matches_inputs,
         },
     }
+    if receipt.rule_version == SCOPED_SCREEN_VERSION:
+        _, _, summary['screening_scope'] = scoped_inputs(root=root,
+            official_payload=official_payload, tencent_payload=tencent_payload,
+            sina_payload=sina_payload)
     manifest = {
         "schema_version": "m2-run-manifest-v1",
         "summary": summary,

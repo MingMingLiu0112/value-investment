@@ -7,15 +7,19 @@ from value_investment_agent.application.product import daily_refresh as module
 
 
 def _scan_fixture(root):
-    from test_m2_opportunity_discovery import _receipt
+    from test_m2_opportunity_discovery import _receipt, _official_payload
     from value_investment_agent.application.product.value_discovery_surface import publish_value_discovery_report
     directory = root / 'runtime/daily-marketwide/run'
     directory.mkdir(parents=True)
     receipt = _receipt()
-    for reference in receipt.evidence_refs:
-        (root / reference.path).write_text(reference.id, encoding='utf-8')
+    payload = receipt.as_policy()
+    for reference in payload['evidence_refs']:
+        raw = (json.dumps(_official_payload()) if reference['id'] == 'official'
+               else reference['id']).encode('utf-8')
+        (root / reference['path']).write_bytes(raw)
+        reference['sha256'] = hashlib.sha256(raw).hexdigest()
     receipt_path = directory / 'receipt.json'
-    receipt_path.write_text(json.dumps(receipt.as_policy()), encoding='utf-8')
+    receipt_path.write_text(json.dumps(payload), encoding='utf-8')
     pin = lambda p: {'path': p.relative_to(root).as_posix(), 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()}
     report_path = directory / 'report.json'
     report = publish_value_discovery_report(root=root, receipt_path=receipt_path,

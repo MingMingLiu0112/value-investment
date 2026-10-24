@@ -216,3 +216,5 @@ def test_daily_safe_refresh_calls_registered_m2_without_replay_or_publication():
     assert '--reuse-inputs' not in call
     assert '--auto-marketwide' not in call
     assert 'receipt.marketwide_screen = $marketwideScreen' in text
+    assert "'m2-scoped-evidence-screen-v1'" in call
+    assert '$marketwideScreen.screening_scope = $marketwide.Json.screening_scope' in call

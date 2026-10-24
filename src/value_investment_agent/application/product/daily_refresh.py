@@ -293,7 +293,7 @@ def _screening_summary(root, binding):
         manifest = json.loads(raw)
         summary = manifest['summary']
         if (summary['action'] != 'no_order' or summary['input_mode'] != 'LIVE_COLLECTION'
-                or summary['rule_version'] != 'm2-evidence-screen-v3'):
+                or summary['rule_version'] not in {'m2-evidence-screen-v3', 'm2-scoped-evidence-screen-v1'}):
             return unavailable
         health = summary['data_health']
         counts = summary['channel_counts']

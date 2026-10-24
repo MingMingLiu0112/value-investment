@@ -366,13 +366,17 @@ if ($Mode -eq 'SAFE_REFRESH') {
     if ($marketwide.ExitCode -eq 0 -and $marketwide.Json -and
         $marketwide.Json.action -eq 'no_order' -and
         $marketwide.Json.input_mode -eq 'LIVE_COLLECTION' -and
-        $marketwide.Json.rule_version -eq 'm2-evidence-screen-v3') {
+        ($marketwide.Json.rule_version -in @('m2-evidence-screen-v3', 'm2-scoped-evidence-screen-v1'))) {
         $marketwideScreen.status = 'RESEARCH_ONLY'
         $marketwideScreen.rule_version = $marketwide.Json.rule_version
         $marketwideScreen.financial_input = $marketwide.Json.financial_input
         $marketwideScreen.data_health = $marketwide.Json.data_health
         $marketwideScreen.coverage_counts = $marketwide.Json.coverage_counts
         $marketwideScreen.receipt_path = $marketwide.Json.receipt_path
+        if ($marketwide.Json.rule_version -eq 'm2-scoped-evidence-screen-v1') {
+            $marketwideScreen.screening_scope = $marketwide.Json.screening_scope
+            $notes.Add('M2 仅覆盖已取得官方清单的市场；失败市场不代表没有机会，完整全市场覆盖未通过。')
+        }
         try {
             $marketwideScreen.manifest_sha256 = (Get-FileHash -LiteralPath (Join-Path $root $marketwideScreen.manifest_path) -Algorithm SHA256).Hash.ToLowerInvariant()
         } catch {

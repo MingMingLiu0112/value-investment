@@ -281,12 +281,16 @@ def test_live_fetch_date_and_retained_universe_cannot_claim_complete_coverage():
 
 def test_m2_product_projection_keeps_leads_non_admitted_and_hash_bound(tmp_path):
     receipt = _receipt()
+    payload = receipt.as_policy()
     runtime = tmp_path / "runtime"
     runtime.mkdir()
-    for reference in receipt.evidence_refs:
-        (runtime / f"{reference.id}.json").write_text(reference.id, encoding="utf-8")
+    for reference in payload['evidence_refs']:
+        raw = (json.dumps(_official_payload()) if reference['id'] == 'official'
+               else reference['id']).encode('utf-8')
+        (runtime / f"{reference['id']}.json").write_bytes(raw)
+        reference['sha256'] = hashlib.sha256(raw).hexdigest()
     receipt_path = runtime / "receipt.json"
-    receipt_path.write_text(json.dumps(receipt.as_policy(), ensure_ascii=False), encoding="utf-8")
+    receipt_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     output_path = runtime / "value-discovery-report.json"
     report = publish_value_discovery_report(
         root=tmp_path, receipt_path=receipt_path,

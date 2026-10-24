@@ -86,6 +86,35 @@ it("links only an existing published research identity", () => {
   );
   expect(html).toContain("/decisions/published-600001");
 });
+it("shows observed venues and failures without calling partial coverage all-market complete", () => {
+  const partial: Screening = {
+    ...scan,
+    universe_count: 5224,
+    screening_scope: {
+      all_a_complete: false,
+      covered_venues: ["SZSE", "SSE"],
+      failed_venues: ["BSE"],
+      observed_universe_count: 5224,
+      quote_coverage: { tencent: { excluded_row_count: 353 } },
+    },
+  };
+  const html = renderToStaticMarkup(
+    <CurrentScreening scan={partial} decisions={[]} />,
+  );
+  for (const text of [
+    "本次已覆盖市场初筛",
+    "深交所、上交所",
+    "北交所",
+    "采集失败",
+    "不视为退市",
+    "5224",
+    "353",
+    "按供应商，不是去重公司数",
+  ])
+    expect(html).toContain(text);
+  expect(html).not.toContain("本次全市场初筛（尚非交易机会）");
+  expect(html).toContain("测试公司");
+});
 it.each(["summary", "sources"])(
   "hides forged rows when %s is unverified",
   (kind) => {

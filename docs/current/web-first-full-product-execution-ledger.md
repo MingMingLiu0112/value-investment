@@ -3924,3 +3924,66 @@ operating-profit bridge. Shared scope-aware screening/report consumers belong to
 Root. These ongoing packages are not yet committed/integrated/validated outcomes.
 Strategy effectiveness, economic primary admission and user approval remain
 unproven; action=no_order.
+
+### 2026-10-24 - Actual scoped market discovery replaces the BSE global abort
+
+93e9ac97 (financial acquisition independence) was pushed to the existing PR
+branch; exact GitHub Core40072527301 and Web40072527297 are SUCCESS. Its clean
+checkout targeted discovery/financial/official/architecture selection132 passed,
+5 skipped. These results do not approve a strategy.
+
+ea48ec4b integrates authorc12a9b51, and5510f9a5 integrates authorb1aaae34.
+The explicit partial collector preserves independent complete venue results and
+failed raw HTTP/transport evidence. Full V2 default/replay remain unchanged;
+all10 frozen hashes match. Independent review found a partial-to-legacy dispatch
+P2; b1aa fixes it, and the reviewer independently confirmed the original bypass
+rejects while real historical V1 remains compatible (28 focused passed).
+
+Root's scoped consumer reuses V3 financial and selection thresholds, limits
+candidate inputs to the observed official security set, and records EVERY
+unmatched quote by provider without inferring venue, delisting or an absence of
+opportunities. The global universe remains incomplete and health PARTIAL. The
+registered CLI, replay, report projection, daily read model and existing screening
+component consume the new rule together. The daily runner accepts the explicit
+scoped rule only as RESEARCH_ONLY, not formal publication approval. Portfolio
+metadata adoption remains on its existing contract; this package does not extend
+simulation/portfolio behavior. New tests join the existing single Core CI list.
+
+Independent consumer review found a second P2: relabeling a scoped receipt V3
+could hide coverage. Product projection now cross-checks the bound official
+input contract and receipt universe scope against the declared rule. The original
+resealed downgrade probe is rejected; independent real retained V3 replay remains
+SOURCE_REVALIDATED. Old tests' non-JSON placeholder official evidence was replaced
+with valid official JSON and matching Hashes rather than weakening the check.
+
+An actual NEW public run completed via the existing registered CLI, WITHOUT
+mocked HTTP, real-account use, current selector registration or8001 publication:
+runtime/daily-marketwide/scoped-live-20261024-1519/manifest.json,
+SHA256 b869072fc7e81e839faef841065046b40b52389f5594ae01843179fe140ed4b5.
+as_of2026-10-24; collection completed2026-10-24T07:24:27.381846Z;
+quote session label2026-10-23 remains UNVERIFIED_PROVIDER_TRADE_DATE.
+SSE/SZSE observed5224 securities and5224 matched quotes; BSE failed (count null,
+not zero). Tencent and Sina each excluded353 unmatched rows separately. The
+unmodified channel rules produce111 deduplicated research leads: quality0,
+dividend50/value50/cyclical50 before cross-channel deduplication. Financial
+collection contains50055 E1/unverified observations across5579 provider rows;
+accepted_official_fact_count remains0. This is useful discovery evidence, not
+verified financial quality, all-A completion, primary valuation or a buy list.
+
+The live collection occurred in the integration working tree before this consumer
+commit; no exact clean-source claim is made for that network invocation. Its
+original inputs and receipt were then read-only rebuilt byte-for-value with the
+same fixed policy, including original-source Hash verification and financial
+supplement replay:6 scoped tests including the actual public run passed.
+The original runtime batch was not overwritten by historical replay. Separate
+full discovery-slice regression303 passed/5 skipped; front-end current-screening
+and daily SSR46 passed, updated count disclosure5 passed, typecheck and PS syntax
+passed. Full new-source Core/CI/release remain pending. Running8001 is still
+ed46931d; this package is not yet presented as live user acceptance.
+
+The two-company operating earnings author has delivered378667e4. Independent
+review confirms204 real PDF amounts and the H1/FY/TTM arithmetic, but found two
+P2 extraction-contract issues (blank comparative borrowing and annual/interim
+identity). Author fixes are in progress. It is NOT integrated or economic approval.
+No new simulation peripheral feature, account reset, Canonical Excel, server/PTA,
+production DB/task, production signing identity or broker change. action=no_order.

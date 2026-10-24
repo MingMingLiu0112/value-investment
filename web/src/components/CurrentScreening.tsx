@@ -14,14 +14,14 @@ const channels: Record<string, string> = {
   cyclical: "周期价值",
 };
 const fields: Record<string, string> = {
-  total_revenue: "营业收入",
+  total_revenue: "营业总收入",
   net_income: "归母净利润",
   roe_weighted: "加权 ROE",
   gross_margin: "毛利率",
   eps_reported: "每股收益",
   bvps: "每股净资产",
   operating_cash_flow_per_share: "每股经营现金流",
-  total_revenue_yoy: "收入同比",
+  total_revenue_yoy: "营业总收入同比",
   parent_net_income_yoy: "归母净利润同比",
 };
 
@@ -109,19 +109,60 @@ export function CurrentScreening({
     [scan.details, channel, query],
   );
   const financial = scan.details?.financial;
+  const scope = scan.screening_scope;
+  const venueNames: Record<string, string> = {
+    SSE: "上交所",
+    SZSE: "深交所",
+    BSE: "北交所",
+  };
   return (
     <section aria-label="本次全市场初筛" className="current-screening">
-      <h3>本次全市场初筛（尚非交易机会）</h3>
+      <h3>{scope ? "本次已覆盖市场初筛" : "本次全市场初筛"}（尚非交易机会）</h3>
       {scan.status !== "VERIFIED_RESEARCH_SCAN" ? (
         <p>本次初筛清单无法核验，不能据此判断市场没有机会。</p>
       ) : (
         <>
+          {scope && (
+            <>
+              <p role="status">
+                部分市场覆盖：已核验清单来自
+                {scope.covered_venues
+                  .map((venue) => venueNames[venue] ?? venue)
+                  .join("、")}
+                ；
+                {scope.failed_venues
+                  .map((venue) => venueNames[venue] ?? venue)
+                  .join("、")}
+                采集失败，不能判断该市场有无机会。未匹配已观察官方清单的报价已单独排除，
+                不视为退市，也不算作本范围内缺失行情。
+              </p>
+              <details>
+                <summary>未匹配报价数量（按供应商，不是去重公司数）</summary>
+                <ul>
+                  {Object.entries(scope.quote_coverage).map(
+                    ([provider, item]) => (
+                      <li key={provider}>
+                        {provider === "tencent"
+                          ? "腾讯"
+                          : provider === "sina"
+                            ? "新浪"
+                            : provider}
+                        ：{item.excluded_row_count} 条
+                      </li>
+                    ),
+                  )}
+                </ul>
+              </details>
+            </>
+          )}
           <p>
             {scan.as_of} · 覆盖 {scan.universe_count} 只，去重研究线索{" "}
             {scan.lead_count} 只，Quality 通过{" "}
             {scan.channel_counts?.quality ?? "未核验"} 只。
             {scan.quote_date_verification !== "VERIFIED" &&
-              " 全市场行情日期仍需独立核验。"}
+              (scope
+                ? " 已覆盖市场行情日期仍需独立核验。"
+                : " 全市场行情日期仍需独立核验。")}
           </p>
           <p>
             以下是待研究的初筛线索，不是买入名单。下方正式研究列表和投资建议仍使用各自已发布版本。

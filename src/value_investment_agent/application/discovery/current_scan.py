@@ -48,6 +48,10 @@ def current_scan_details(root: Path, manifest: dict) -> dict:
                           quote_date_verification=report['quote_date_verification'],
                           data_status=report['data_health']['status'], blockers=report['data_health']['blockers']),
                       formal_eligibility=False, action='no_order')
+        if 'screening_scope' in report:
+            if report['screening_scope'] != summary.get('screening_scope'):
+                raise ValueError('Scan scope differs from bound report')
+            result['summary']['screening_scope'] = report['screening_scope']
         # Financial collection is independently degradable: a damaged supplement
         # never becomes facts, and never discards the verified screening receipt.
         result['financial'] = _financial_details(root, files, receipt, result['leads'])

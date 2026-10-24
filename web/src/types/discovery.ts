@@ -26,6 +26,13 @@ export interface CurrentScreening {
   lead_count?: number;
   channel_counts?: Record<string, number>;
   quote_date_verification?: string;
+  screening_scope?: {
+    all_a_complete: false;
+    covered_venues: string[];
+    failed_venues: string[];
+    observed_universe_count: number;
+    quote_coverage: Record<string, { excluded_row_count: number }>;
+  };
   details?: {
     status: string;
     leads: ScanLead[];
