@@ -979,6 +979,27 @@ it.each([
   },
 );
 
+it("renders current economic mechanics without inventing a fade or approval", () => {
+  const decision = analysisDecision();
+  decision.price_action_plan!.research_analysis!.economic_assessment = {
+    schema_version: "value-economic-assessment-v1",
+    symbol: decision.symbol!,
+    action: "no_order",
+    primary_valuation_usable: false,
+    economic_assumptions_reviewed: false,
+    model_applicability: {
+      assessment: "CONTINUITY_ALTERNATIVE_REQUIRES_VALIDATION",
+      reasons: ["三情景共用权益成本", "终端仍假设超额回报持续"],
+    },
+    blockers: [],
+  };
+  const html = render(decision);
+  expect(html).toContain("三情景共用权益成本");
+  expect(html).toContain("终端仍假设超额回报持续");
+  expect(html).toContain("不等于获批主估值");
+  expect(html).not.toContain("仍需验证竞争优势与衰减");
+});
+
 it("keeps legacy analyses without the optional ledger unchanged", () => {
   const decision = jointDecision();
   delete decision.price_action_plan!.research_analysis!.joint_capital_review;

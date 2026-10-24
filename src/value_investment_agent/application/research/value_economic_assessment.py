@@ -45,6 +45,27 @@ def _ratio(numerator, denominator):
     return str(numerator / denominator) if denominator is not None and denominator > 0 else None
 
 
+def _mechanism_explanation(scenarios):
+    """Describe consumed scenario mechanics, not inherited proposal prose."""
+    if not scenarios:
+        raise ValueError('Scenario mechanisms require consumed inputs')
+    costs = {_number(row['cost_of_equity']) for row in scenarios}
+    spreads = [_number(row['terminal_excess_roe']) for row in scenarios]
+    reasons = [
+        ('三情景共用权益成本；情景价值差不是资本成本敏感性。' if len(costs) == 1
+         else '三情景权益成本不同；价值差还需结合盈利、留存与终端路径解释。')]
+    if all(value == 0 for value in spreads):
+        reasons.append('各情景终端ROE等于权益成本，永久超额回报归零，但企业价值不等于零。')
+        limitation = 'Zero terminal excess return does not prove a neutral valuation or that competitive advantage ends on schedule.'
+    elif all(value > 0 for value in spreads):
+        reasons.append('各情景终端仍假设超额回报持续；零增长不等于竞争优势消失或估值保守。')
+        limitation = 'Positive terminal excess returns require sustained economic advantages; zero growth does not validate that assumption.'
+    else:
+        reasons.append('终端超额回报并非全部归零，需逐情景核对其方向与持续依据。')
+        limitation = 'Terminal excess returns differ by scenario; no common zero-excess-return interpretation is supported.'
+    return reasons, limitation
+
+
 def _operating_review_fields(result):
     return {key: result[key] for key in (
         'schema_version', 'symbol', 'action', 'scope', 'breakdown_status',
@@ -303,6 +324,7 @@ def load_current_value_economic_assessment(*, root: Path, symbol: str, now: date
                 implied_expectation_scope="REGISTERED_SCENARIO_CONDITIONS_NOT_MARKET_IMPLIED",
                 cash_distribution_scope="SELF_FUNDED_MODEL_ASSUMPTION_NOT_SUSTAINABLE_ISSUER_DIVIDEND"))
     short_fade = summary.get("pending_model_choice") == "short-advantage"
+    mechanism_reasons, mechanism_limitation = _mechanism_explanation(scenario_rows)
     blockers = ["NORMALIZED_EARNINGS_NOT_ESTABLISHED", "SUSTAINABLE_DISTRIBUTABLE_CASH_NOT_ESTABLISHED",
         "ADVANTAGE_DURATION_AND_FADE_NOT_ECONOMICALLY_VALIDATED",
         "EQUITY_COST_INPUTS_REQUIRE_EXACT_VERSION_REVIEW", "CURRENT_MODEL_VALIDITY_REQUIRES_EVENT_REVIEW"]
@@ -351,9 +373,10 @@ def load_current_value_economic_assessment(*, root: Path, symbol: str, now: date
         strategy_admitted=False, action_admitted=False, approval_changed=False,
         model_applicability=dict(model=analysis["model_applicability"]["route"],
             assessment="STRESS_ONLY" if short_fade else "CONTINUITY_ALTERNATIVE_REQUIRES_VALIDATION",
-            reasons=summary.get("pending_model_limits", []),
+            reasons=mechanism_reasons,
+            historical_proposal_limits=summary.get("pending_model_limits", []),
             clean_surplus_bridge=summary.get("financial_equity_bridge"),
-            limitation="Zero terminal excess return does not prove a neutral valuation or that competitive advantage ends on schedule."),
+            limitation=mechanism_limitation),
         earnings=dict(historical_ex_nonrecurring_ttm_cny=str(historical) if historical is not None else None,
             normalized_parent_profit_candidate_cny=str(normalized) if normalized is not None else None,
             normalization_status="NOT_ESTABLISHED", historical_bridge=profit_bridge,

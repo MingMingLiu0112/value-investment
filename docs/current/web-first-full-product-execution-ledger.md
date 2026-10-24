@@ -4892,3 +4892,39 @@ Current shortest core queue, not a new roadmap:
 
 ENGINEERING_INPUT_RECOVERY=COMPLETE; ECONOMIC_PRIMARY_ADMISSION=NOT_COMPLETE;
 REAL_ASSISTED_USE_NOT_READY; action=no_order. This is not whole-Goal completion.
+
+### 2026-10-25 current economic mechanics, not inherited proposal claims
+
+Real600519 API still inherited a stale pending_model_limits explanation saying
+all scenarios change equity cost/fade and a generic zero-terminal-excess-return
+limitation. Actual JS2 inputs share Ke0.06757227028801867310; base terminal ROE
+0.276592769902106182525384815473537109605747573094, so terminal excess return
+is positive, not zero. This is a current economic explanation CODE_GAP, not an
+arithmetic or approval defect.
+
+Existing value_economic_assessment now describes consumed scenario cost and
+terminal-excess mechanics. Old prose remains historical_proposal_limits, not
+the current reasons. Existing ValueResearchAnalysis renders current reasons
+and no longer generically claims a fade for every continuity case. No model,
+financial input, scenario, source validator or admission field changed.
+Assessment content hashes legitimately change with the explanation.
+
+Targeted backend55 passed including actual600519/600887 read-only replay;
+final empty-input guard4 passed separately. One earlier4-test invocation failed
+at fixture setup because TEMP did not contain basetemp; corrected environment,
+not trust enforcement. Frontend111 passed/5 optional skipped plus direct panel
+119 passed/4 optional skipped; typecheck passed. Independent reviewer separately
+checked actual both-company assessments and6 backend/1 rendering tests, no
+explicitP1/P2. Empty inputs/nonfinite values rejected; mixed terminal signs do
+not acquire a common zero/positive explanation. Clean checkout, CI and8001
+publication of this patch remain pending at this entry.
+
+Economic review did not establish a new issuer fair-value center.600519 remains
+a LOW conditional center, terminal-dependent;600887 short/medium durations and
+80%-90% explicit distributions are assumptions, not company-certified bounds.
+The terminal zero-growth contract implies100% distribution, not perpetual
+80%-90%. Confirmed next autonomous gap: reuse the existing600887 parent cash
+facts and original gross borrowing/repayment rows in the existing economic
+consumer. Do not repeat the already completed FY/H1 balance bridge, infer gross
+flows from net, treat a mixed dividend/interest line as ordinary dividends, or
+turn missing maintenance/liquidity/maturity evidence into zeros.

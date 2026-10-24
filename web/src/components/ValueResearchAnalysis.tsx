@@ -162,8 +162,13 @@ export function ValueResearchAnalysis({
               {analysis.economic_assessment.model_applicability?.assessment ===
               "STRESS_ONLY"
                 ? "当前属于短优势期压力估值，不能充当中性主估值。"
-                : "延续经营情景仍需验证竞争优势与衰减，不等于获批主估值。"}
+                : "延续经营情景的盈利、资本成本与终端假设仍待复核，不等于获批主估值。"}
             </p>
+            {analysis.economic_assessment.model_applicability?.reasons?.map(
+              (reason) => (
+                <p key={reason}>{reason}</p>
+              ),
+            )}
             <p>
               历史扣非归母 TTM 利润：
               {readinessNumber(

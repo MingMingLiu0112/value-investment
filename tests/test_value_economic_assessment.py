@@ -15,6 +15,25 @@ from value_investment_agent.application.research import value_economic_assessmen
 NOW = datetime.now(timezone.utc) + timedelta(days=1)
 
 
+@pytest.mark.parametrize('costs,spreads,expected', [
+    (['.07'] * 3, ['.2', '.21', '.22'], '终端仍假设超额回报持续'),
+    (['.10', '.09', '.08'], ['0'] * 3, '永久超额回报归零'),
+    (['.07'] * 3, ['-.01', '0', '.01'], '并非全部归零'),
+])
+def test_mechanism_explanation_uses_current_numbers(costs, spreads, expected):
+    rows = [dict(cost_of_equity=cost, terminal_excess_roe=spread)
+            for cost, spread in zip(costs, spreads)]
+    reasons, limitation = economic._mechanism_explanation(rows)
+    assert expected in reasons[1]
+    assert ('共用权益成本' in reasons[0]) == (len(set(costs)) == 1)
+    assert limitation
+
+
+def test_mechanism_explanation_rejects_missing_inputs():
+    with pytest.raises(ValueError, match='consumed inputs'):
+        economic._mechanism_explanation([])
+
+
 def test_verified_scenario_cash_and_excess_returns_are_computed_without_admission(registered):
     root, symbol, _, _ = registered
     before = {p: sha256_file(p) for p in root.rglob('*') if p.is_file()}
@@ -235,11 +254,15 @@ def test_real_source_bound_readonly_replay(symbol):
         assert 'SUSTAINABLE_DISTRIBUTABLE_CASH_NOT_ESTABLISHED' in result['blockers']
         assert result['earnings']['historical_bridge']['computed_ttm_cny'] == '81367067677.44'
         assert result['model_applicability']['assessment'] == 'CONTINUITY_ALTERNATIVE_REQUIRES_VALIDATION'
+        assert '共用权益成本' in result['model_applicability']['reasons'][0]
+        assert '终端仍假设超额回报持续' in result['model_applicability']['reasons'][1]
+        assert 'Positive terminal excess returns' in result['model_applicability']['limitation']
     else:
         assert review['status'] == 'NO_SUPPORTED_BOUND_BRIDGE'
         assert review['coverage_status'] == 'NOT_COVERED_UNKNOWN_COMPLETENESS_NOT_ASSESSED'
         assert result['model_applicability']['clean_surplus_bridge'] is not None
         assert result['model_applicability']['assessment'] == 'STRESS_ONLY'
+        assert '永久超额回报归零' in result['model_applicability']['reasons'][1]
         assert result['historical_cash_observations']
         assert all(row['explicit_years'] == 4 for row in result['scenarios'])
         assert result['earnings']['historical_bridge']['computed_ttm_cny'] == '9647734710.01'

@@ -332,7 +332,7 @@ export interface ValueResearchAnalysis {
     input_descriptor_sha256?: string;
     review_binding?: ValueResearchAnalysis["review_binding"];
     accounting_bridge_review?: AccountingBridgeReview;
-    model_applicability?: { assessment: string };
+    model_applicability?: { assessment: string; reasons?: string[] };
     earnings?: {
       historical_ex_nonrecurring_ttm_cny: string | null;
       normalization_status: string;
