@@ -3,6 +3,9 @@ from __future__ import annotations
 
 from copy import deepcopy
 import re
+from datetime import datetime
+
+from .value_action_plan import CoreValuePublicReviews
 
 from ...domain.hotspot.independent_admission import GATES, RULE_VERSION
 
@@ -130,7 +133,8 @@ def project_strategy_decision(plan: dict, *, symbol: str | None = None) -> dict:
     }
 
 
-def project_actionable_evaluation(item: dict) -> dict:
+def project_actionable_evaluation(item: dict, *,
+        core_reviews: CoreValuePublicReviews | None = None, now: datetime | None = None) -> dict:
     """Explain a public plan's outcome, without promoting it to personal authority.
 
     A public quote/plan never proves account capacity or ownership. Personal
@@ -177,6 +181,16 @@ def project_actionable_evaluation(item: dict) -> dict:
     })
     state = plan.get("signal_state")
     if view["strategy"] == "CORE_VALUE":
+        intent = (core_reviews.action_for(plan, now=now)
+                  if isinstance(core_reviews, CoreValuePublicReviews) and now is not None else None)
+        if intent in {'OPEN', 'ADD', 'HOLD', 'REDUCE', 'EXIT'}:
+            labels = {'OPEN': '建仓', 'ADD': '加仓', 'HOLD': '持有', 'REDUCE': '减仓', 'EXIT': '退出'}
+            result.update(decision_action='CONDITIONAL_MANUAL_REVIEW',
+                evaluation_status='EVALUATED_CONDITIONAL_REVIEW', public_action_intent=intent,
+                decision_reason=f'原生证券研究与本次条件计划已重新核验，可进行{labels[intent]}条件的人工复核；'
+                    '这不是个人操作许可，不推断实际持仓；资金、数量和个人风险仍需独立核验。',
+                hold_condition=_condition(plan.get('hold_condition')))
+            return result
         formal_gaps = plan.get("formal_eligibility_blockers") or []
         if "VALUE_PREDECISION_G3_EVENT_MODEL_PRICE_GATE_NOT_PASSED" in formal_gaps:
             result["decision_reason"] = "研究经济假设、重大事件或估值审核未通过，不能形成可信建加仓结论。"
@@ -234,18 +248,21 @@ def project_actionable_evaluation(item: dict) -> dict:
     return result
 
 
-def summarize_actionable_evaluations(items: list[dict]) -> dict:
+def summarize_actionable_evaluations(items: list[dict], *,
+        core_reviews: CoreValuePublicReviews | None = None, now: datetime | None = None) -> dict:
     rows = []
     for item in items:
         try:
-            rows.append(project_actionable_evaluation(item))
+            rows.append(project_actionable_evaluation(item, core_reviews=core_reviews, now=now))
         except (ValueError, TypeError, KeyError, ArithmeticError):
             # A failed display contract cannot erase independent companies.
             rows.append(project_actionable_evaluation({key: item.get(key)
                 for key in ("symbol", "name", "strategy")}))
-    assessed = sum(row["evaluation_status"] == "EVALUATED_NO_TRADE" for row in rows)
+    conditional = sum(row['evaluation_status'] == 'EVALUATED_CONDITIONAL_REVIEW' for row in rows)
+    assessed = sum(row["evaluation_status"] in {'EVALUATED_NO_TRADE', 'EVALUATED_CONDITIONAL_REVIEW'} for row in rows)
     return {"action": "no_order", "items": rows, "scope": "PUBLISHED_COMPANIES_ONLY",
             "evaluated_count": assessed, "unassessable_count": len(rows) - assessed,
             "operation_eligible_count": 0,
+            "conditional_review_count": conditional,
             "conclusion": "INCOMPLETE_EVALUATION" if assessed != len(rows) or not rows
-                          else "NO_QUALIFIED_NEW_TRADE"}
+                          else 'PUBLIC_CONDITIONAL_REVIEWS_AVAILABLE' if conditional else "NO_QUALIFIED_NEW_TRADE"}

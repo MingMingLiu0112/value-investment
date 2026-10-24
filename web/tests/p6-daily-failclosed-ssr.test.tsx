@@ -70,6 +70,46 @@ vi.mock("../src/components/Workbench", () => ({
 import DailyDecisions from "../src/pages/DailyDecisions";
 import { HoldingsAttention } from "../src/components/HoldingsAttention";
 
+it.each(["OPEN", "ADD", "HOLD", "REDUCE", "EXIT"])(
+  "keeps a public %s review distinct from unknown companies and personal permission",
+  (intent) => {
+    state.daily.data.actionable_evaluation = {
+      action: "no_order",
+      scope: "PUBLISHED_COMPANIES_ONLY",
+      evaluated_count: 1,
+      unassessable_count: 1,
+      conditional_review_count: 1,
+      operation_eligible_count: 0,
+      conclusion: "INCOMPLETE_EVALUATION",
+      items: [
+        {
+          symbol: "600519",
+          strategy: "CORE_VALUE",
+          decision_action: "CONDITIONAL_MANUAL_REVIEW",
+          public_action_intent: intent,
+          decision_reason: "TEST_ONLY native security review",
+          eligibility: false,
+        },
+        {
+          symbol: "000544",
+          strategy: "CORE_VALUE",
+          decision_action: "UNASSESSABLE",
+          decision_reason: "TEST_ONLY model unavailable",
+          eligibility: false,
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(<DailyDecisions />);
+    expect(html).toContain("存在证券级条件复核");
+    expect(html).toContain("不代表个人可交易");
+    expect(html).toContain("TEST_ONLY native security review");
+    expect(html).toContain("无法评价");
+    expect(html).toContain("TEST_ONLY model unavailable");
+    expect(html).not.toContain("无符合全部条件的新交易机会");
+    expect(html).not.toContain("已评价后暂不新建仓");
+  },
+);
+
 beforeEach(() => {
   state.daily = {
     loading: false,

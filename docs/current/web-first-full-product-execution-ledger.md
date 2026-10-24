@@ -4621,3 +4621,100 @@ Clean full Web964 passed/25 optional skipped, typecheck/build passed. Web CI
 format correction changes no production code. Scoped formatting of all four
 affected Web files now passes. Final retry/build identity and live readback
 remain pending. Keep the prior remote failure; do not label it GREEN.
+
+### 2026-10-25 final local source/consumer release fact (post-commit record)
+
+Exact code707af5e82e651e7a5792349d6b99f5f1f25a0920 is pushed to existingPR1;
+Core40111245348 and Web40111245392 SUCCESS. Clean format/typecheck/build PASS;
+source is production-identical to ebac5887 (last delta is test formatting/docs).
+Cold scoped87/33 and full Web964/25 results retain the opt-in boundaries above.
+
+Sole8001 is707af5e8, runtime/public registries MATCHED. Existing publisher PASS:
+dual1/.tmp/release-joint-20261024T163935Z/receipt.json. Actual000544 research-only,
+600519 replacement-bear comparison and600887 independent historical earnings
+readbacks PASS. Old600887 valuation still refuses current-engine replay; no
+false revival, current valuation, G3 or price qualification. Authority/workflow,
+three public pointers and raw filing parser hashes preserved. Research-only
+pointer unchanged in this last release. No private, Excel or server/PTA access.
+
+Actual browser receipt:
+vv1/.tmp/live-ui-707af5e8/aab9b0f6-ec62-423a-a9bd-1303add24619/receipt.json.
+1440/390/320 widths PASS for existing daily screen, two-company earnings/fact
+adoption, funding disclosure, native ledger, replacement-bear comparison and
+real screened000544 source-only research. Empty profile, no owner authorization;
+private APIs and writes blocked. Prior failed receipts retained separately.
+Live checkout has only the three expected public runtime-pointer deltas; frozen
+architecture paths match. This dated ledger addition is a working post-release
+record, not another deployed code version.
+
+Current short business queue (no peripheral expansion):
+-Financial funding source observations and research-only entry CODE_GAP closed;
+  complete financing classification/independent financial evidence remain gaps.
+-600519 bounded primary-input/downside work is real LOW conditional research;
+  exact-version economic review, model/event validity and lawful approval are
+  still separate. Historical-share values are not current trading thresholds.
+-000544 now enters common research and is user-readable; PPP cash/capital,
+  restatements and model applicability remain UNASSESSABLE, not NO_TRADE.
+-Hotspot expiry CODE_GAP closed; historical coverage3/7, independent PIT/OOS/
+  Shadow/strategy validation remain NOT_PROVEN. No repeat exhausted source hunt.
+-No personally sized plan without valid authorized account/IPS; no inference
+  from the former screenshots in this package. Full dual-strategy assisted-use
+  acceptance NOT_REACHED. Goal remains active; action=no_order.
+
+### 2026-10-25 core decision convergence, working checkpoint
+
+- Previous turn made code/test progress, not a blocked wait. Independent native
+  replay reproduced a value REDUCE/EXIT defect: an untriggered price rule vetoed
+  an independently triggered Entry-thesis review. Fixed in 9d7c968f3bf0179d311882c102c01e7162cd455e,
+  pushed to existing PR1. Price state remains unchanged; BUY/ADD and personal
+  authority are not relaxed. Scoped Python69 and Web24 pass; type/format pass.
+  Independent review found no additional explicit P1/P2 in the five-file scope.
+  Positive Entry cases are TEST_ONLY, not actual holdings or approval.
+- Exact-commit GitHub Core40115527267 and Web40115527383 were observed running;
+  neither is yet recorded as passed. Sole8001 remains verified707af5e8, not9d7c968f.
+- Current CODE_GAP: distinguish natively reverified public conditional review
+  from missing personal capacity. Application/API work is in progress; Root
+  wires the existing daily conclusion only. Working SSR70/typecheck pass; this
+  is not a deployed positive company or whole-chain acceptance.
+- Current economic work: source-bound funding concentration and parent/group
+  cash separation for600519, using existing official filings and observation
+  consumer. Missing amounts remain unknown; no new valuation or approval.
+- Hotspot sibling confirmed clean09d67fc6 and no newly reproducible defect in
+  its bounded lifecycle audit. It did not run new tests. STRICT historical
+  execution remains dependent on source-qualified security state at decision
+  and execution dates; no fabricated history, OOS or Shadow. Do not restart
+  exhausted600030/688825 source searches without a concrete new lead.
+
+Only these core gaps are active. No account/Excel/server/production changes;
+action=no_order. Engineering and actual assisted-use acceptance remain separate.
+
+Bounded package verification update (working, not live):
+-9d7c968f Core40115527267 and Web40115527383 both SUCCESS.
+-Public review: existing native repository/policy replay now preserves a public
+  conditional-review verdict independently from unknown personal capacity.
+  Analysis-source drift found by independent review was fixed by separate
+  source/reload checks; the original counterexamples now reject. Native/API
+  targeted174 passed/2 pre-existing optional skipped, including15 new tests.
+  Real retained-public TestClient readback for600519/000544/600887 remains
+  UNASSESSABLE; no actual company was promoted by the TEST_ONLY positive.
+  Receipt .tmp/core-public-review-real-20261024T172923Z/result.json SHA
+  ff460e015120bc03cade97f64ba01c0a622dca4e731438dd97c5c6e71c542a21.
+-Funding/cash: real FY2025 and H12026 extraction and old-facts replay verified;
+  scoped153 passed. Existing consumer currently publishes FY2025 only, with
+  four source-bound balances and46.18% controlling-group deposit concentration.
+  H12026 is cold research verification, not silently mixed into annual output.
+  Prior2 growth fact identities, registrations and originals stay unchanged.
+  Actual progress sample .tmp/funding-cash-context-20261025-final/600519-progress.json
+  SHA ce1db6d7cbff6ff0ef2365876ed21a9dcbf6c82d35bbad1cfb5c7e0f4a44ea8f.
+-Existing Daily/Detail now consume three public outcomes, conditional actions,
+  and the single-period funding/cash observations without personal quantities.
+  Full working Web984 passed/25 optional skipped; typecheck passed. Independent
+  scoped review found no further explicitP1/P2 after the source-drift repair.
+  Source-native/real browser checks at the next clean release remain required.
+-Attempt to add the new test module to existing Core CI was denied by managed
+  review as a frozen workflow change. Workflow unchanged; do not bypass this
+  restriction. The new module is locally exercised, not claimed CI-covered;
+  explicit authorization for that file is needed before persisting CI inclusion.
+
+Next: clean-checkout verification, exact-commit CI, then existing authorized
+8001 release/readback. No main merge or production/private/Excel action.

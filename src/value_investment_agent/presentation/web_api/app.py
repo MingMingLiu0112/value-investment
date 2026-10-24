@@ -8,7 +8,7 @@ import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from ...application.product.daily_public_packet import (
@@ -45,6 +45,7 @@ from ...application.hotspot.independent_price_conditions import (
     project_independent_price_conditions,
 )
 from ...application.decision.current_value_plan import revalidate_current_value_plan
+from ...application.decision.value_action_plan import CoreValuePublicReviews
 from ...application.decision.strategy_readiness import attach_strategy_readiness
 from ...infrastructure.hotspot.sina_price_case import load_historical_case
 from ...infrastructure.hotspot.current_price_case import load_current_price_case
@@ -55,7 +56,7 @@ from ..read_models.dual_sleeve_surface import (
 )
 from ..read_models.research_history import build_research_history
 from ..read_models.value_decision_detail import project_value_decision_detail
-from ...application.decision.public_strategy_assessment import project_strategy_decision, summarize_actionable_evaluations
+from ...application.decision.public_strategy_assessment import project_strategy_decision, summarize_actionable_evaluations, project_actionable_evaluation
 from .local_auth import (
     BOOTSTRAP_ENV,
     SESSION_HEADER,
@@ -276,9 +277,15 @@ def create_app(
                     "explanation": "本次读取无法验证价格条件的新鲜度或原始证据；旧价位不作为当前条件。"}})
         return checked
 
-    def value_plan(symbol, packet):
+    def core_public_reviews():
+        with CoreValuePublicReviews(project, now=datetime.now(timezone.utc)) as reviews:
+            yield reviews
+
+    def value_plan(symbol, packet, public_reviews=None):
         frozen = (packet or {}).get("value_price_conditions", {}).get(symbol)
-        return revalidate_current_value_plan(project, frozen, now=datetime.now(timezone.utc)) if frozen else None
+        options = {'public_reviews': public_reviews} if public_reviews is not None else {}
+        now = public_reviews.now if public_reviews is not None else datetime.now(timezone.utc)
+        return revalidate_current_value_plan(project, frozen, now=now, **options) if frozen else None
 
     def pinned_publication(packet, current):
         if packet is None:
@@ -431,7 +438,7 @@ def create_app(
             "items": items, "blockers": gaps}
 
     @api.get("/api/v1/daily-decisions")
-    def daily_decisions():
+    def daily_decisions(core_reviews: CoreValuePublicReviews = Depends(core_public_reviews)):
         packet, _ = _load_snapshot(project)
         empty = {"action": "no_order", "status": "UNAVAILABLE", "as_of": None,
                  "market": {"status": "UNKNOWN", "reason": "PUBLICATION_UNAVAILABLE"},
@@ -528,7 +535,7 @@ def create_app(
                      and _ID.fullmatch(str(c.get("symbol", ""))) and c["symbol"] not in known)
         value = _attach_value_explanations(project, model, value)
         for item in value:
-            plan = value_plan(item["symbol"], packet)
+            plan = value_plan(item["symbol"], packet, core_reviews)
             if plan is not None:
                 item["price_action_plan"] = plan
         known = {c["symbol"] for c in value}
@@ -554,7 +561,8 @@ def create_app(
             and c.get("action") == "no_order" and _ID.fullmatch(str(c.get("symbol", "")))]
         return {"action": "no_order", "status": "RESEARCH_OBSERVATION",
                 "actionable_evaluation": attach_strategy_readiness(
-                    summarize_actionable_evaluations([*value, *hotspot_items]),
+                    summarize_actionable_evaluations([*value, *hotspot_items],
+                        core_reviews=core_reviews, now=core_reviews.now),
                     [*value, *hotspot_items], packet),
                 "as_of": as_of,
                 "market": _pick(market, "status", "reason"),
@@ -571,7 +579,8 @@ def create_app(
                 "blockers": ["NO_FORMAL_ADMISSION"]}
 
     @api.get("/api/v1/decisions/{decision_id}")
-    def decision(decision_id: str, independent_hotspot: bool = False):
+    def decision(decision_id: str, independent_hotspot: bool = False,
+                 core_reviews: CoreValuePublicReviews = Depends(core_public_reviews)):
         packet, _ = _load_snapshot(project)
         current = _public(project)
         if current is None or not chain_matches_packet(packet, current):
@@ -603,6 +612,9 @@ def create_app(
         published = model.get("snapshot") if isinstance(model.get("snapshot"), dict) else {}
 
         def with_research_draft(payload: dict) -> dict:
+            if isinstance(payload.get('decision'), dict):
+                payload['strategy_evaluation'] = project_actionable_evaluation(
+                    payload['decision'], core_reviews=core_reviews, now=core_reviews.now)
             draft = load_current_research_draft(project, decision_id)
             if draft is not None:
                 payload["research_draft"] = draft
@@ -687,7 +699,7 @@ def create_app(
                     price_bridge_execution=_quote_bridge_execution(project, decision_id),
                     binding_blockers=(["VALUE_EXPLANATION_BINDING_UNAVAILABLE"]
                                       if binding_status == "UNAVAILABLE" else []))
-                plan = value_plan(decision_id, packet)
+                plan = value_plan(decision_id, packet, core_reviews)
                 if plan is not None:
                     item["price_action_plan"] = plan
                 return with_research_draft({"action": "no_order", "status": status,

@@ -5,7 +5,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 import json
 
-from .value_action_plan import load_registered_value_action_plans
+from .value_action_plan import load_registered_value_action_plans, CoreValuePublicReviews
 from ...domain.decision.value_action_plan import build_value_action_plan
 from ..product.research_draft import load_current_research_analysis
 
@@ -60,9 +60,11 @@ def _pending_analysis_plan(analysis: dict, prior: dict | None, now: datetime) ->
 
 
 def load_current_value_action_plans(root: Path, *, now: datetime,
-        symbols: list[str] | tuple[str, ...] | None = None) -> dict:
+        symbols: list[str] | tuple[str, ...] | None = None,
+        public_reviews: CoreValuePublicReviews | None = None) -> dict:
     """Extend the byte-bound legacy loader with independently verified analysis."""
-    current = load_registered_value_action_plans(root, now=now, symbols=symbols)
+    options = {'public_reviews': public_reviews} if public_reviews is not None else {}
+    current = load_registered_value_action_plans(root, now=now, symbols=symbols, **options)
     items, blockers, bindings = current['items'], current['blockers'], current['source_bindings']
     analysis_symbols = set(symbols or [item['symbol'] for item in items])
     if symbols is None:
@@ -104,6 +106,9 @@ def load_current_value_action_plans(root: Path, *, now: datetime,
         if not analysis['arithmetic_complete']:
             blockers.extend(analysis['blockers'])
         bindings.extend(source for source in analysis['source_bindings'] if source not in bindings)
+    if public_reviews is not None:
+        for plan in items:
+            public_reviews.bind_plan(plan)
     return {**current, 'status': 'VALUE_RESEARCH_OBSERVATION' if items else 'BLOCKED'}
 
 
@@ -117,16 +122,23 @@ def _with_analysis(plan: dict, analysis: dict | None) -> dict:
     return result
 
 
-def revalidate_current_value_plan(root: Path, frozen: dict, *, now: datetime) -> dict:
+def revalidate_current_value_plan(root: Path, frozen: dict, *, now: datetime,
+        public_reviews: CoreValuePublicReviews | None = None) -> dict:
     if frozen.get("schema_version") != "value-action-plan-v1":
         return frozen
-    current = load_current_value_action_plans(root, now=now, symbols=[frozen["symbol"]])
+    options = {'public_reviews': public_reviews} if public_reviews is not None else {}
+    current = load_current_value_action_plans(root, now=now, symbols=[frozen["symbol"]], **options)
     rebuilt = next((row for row in current["items"] if row["symbol"] == frozen["symbol"]), None)
     analysis = (rebuilt.get('research_analysis') if rebuilt is not None else
         load_current_research_analysis(root, frozen['symbol'], now=now))
     if rebuilt is not None and all(frozen.get(key) == value for key, value in rebuilt.items()
             if key not in {'research_analysis', 'research_analysis_status'}):
-        return _with_analysis(frozen, analysis)
+        result = _with_analysis(frozen, analysis)
+        if public_reviews is not None:
+            public_reviews.bind_plan(result, inherited_from=rebuilt)
+        return result
+    if public_reviews is not None:
+        public_reviews.discard(frozen['symbol'])
     return _with_analysis(_invalidate_current_conditions(frozen, rebuilt, current['blockers']), analysis)
 
 

@@ -938,6 +938,22 @@ export default function DecisionDetail() {
         Number(value) <= 1,
     );
   const research = decision?.research ?? null;
+  const publicReview = data?.strategy_evaluation;
+  const publicReviewIntent = publicReview?.public_action_intent;
+  const showPublicReview =
+    data?.action === "no_order" &&
+    publicReview?.action === "no_order" &&
+    publicReview.symbol === decision?.symbol &&
+    publicReview.strategy === "CORE_VALUE" &&
+    ["value", "CORE_VALUE"].includes(String(decision?.strategy)) &&
+    publicReview.decision_action === "CONDITIONAL_MANUAL_REVIEW" &&
+    publicReview.evaluation_status === "EVALUATED_CONDITIONAL_REVIEW" &&
+    publicReview.eligibility === false &&
+    publicReview.review_quantity === null &&
+    publicReview.position_range === null &&
+    publicReview.available_cash_impact === null &&
+    publicReviewIntent &&
+    ["OPEN", "ADD", "HOLD", "REDUCE", "EXIT"].includes(publicReviewIntent);
   const funding = progress?.source_financial_funding_scope;
   const fundingLabels: Record<string, string> = {
     financial_deposits_and_interbank: "吸收存款及同业存放",
@@ -987,6 +1003,90 @@ export default function DecisionDetail() {
           Number.isFinite(Number(row.value)),
       )
     : [];
+  const cashContext = funding?.research_context;
+  const cashLabels: Record<string, { label: string; scope: string }> = {
+    controlling_group_deposits: {
+      label: "控股集团存款及应计利息",
+      scope: "financial_subsidiary_depositor",
+    },
+    financial_deposits_and_interbank: {
+      label: "吸收存款及同业存放",
+      scope: "consolidated",
+    },
+    consolidated_cash_and_equivalents: {
+      label: "合并现金及现金等价物",
+      scope: "consolidated",
+    },
+    issuer_parent_cash_and_equivalents: {
+      label: "上市公司母公司现金及现金等价物",
+      scope: "issuer_parent",
+    },
+  };
+  const cashContextBound =
+    fundingBound &&
+    cashContext &&
+    cashContext.schema_version === "funding-cash-research-observations-v1" &&
+    cashContext.symbol === decision?.symbol &&
+    cashContext.period_label === funding.period_label &&
+    cashContext.action === "no_order" &&
+    cashContext.financial_fact_admitted === false &&
+    cashContext.formal_eligibility === false &&
+    cashContext.source_binding?.path === funding.source_binding.path &&
+    cashContext.source_binding?.sha256 === funding.source_binding.sha256;
+  const cashRows =
+    cashContextBound && Array.isArray(cashContext.observations)
+      ? cashContext.observations.filter(
+          (row) =>
+            row &&
+            Object.prototype.hasOwnProperty.call(cashLabels, row.field_name) &&
+            row.statement_scope === cashLabels[row.field_name].scope &&
+            row.symbol === decision?.symbol &&
+            row.period_label === funding.period_label &&
+            row.unit === "CNY" &&
+            row.currency === "CNY" &&
+            typeof row.value === "string" &&
+            /^\d+(?:\.\d+)?$/.test(row.value) &&
+            Number.isFinite(Number(row.value)) &&
+            Number.isSafeInteger(row.page) &&
+            row.page > 0 &&
+            typeof row.excerpt === "string" &&
+            !!row.excerpt.trim() &&
+            row.source_binding?.path === funding.source_binding.path &&
+            row.source_binding?.sha256 === funding.source_binding.sha256 &&
+            cashContext.observations.filter(
+              (other) => other.field_name === row.field_name,
+            ).length === 1,
+        )
+      : [];
+  const concentration =
+    cashContextBound && Array.isArray(cashContext.derivations)
+      ? cashContext.derivations.find(
+          (row) =>
+            row.field_name === "controlling_group_deposit_concentration" &&
+            row.unit === "ratio" &&
+            row.symbol === decision?.symbol &&
+            row.period_label === funding.period_label &&
+            typeof row.value === "string" &&
+            row.value.trim() !== "" &&
+            Number.isFinite(Number(row.value)) &&
+            Number(row.value) >= 0 &&
+            Number(row.value) <= 1 &&
+            row.source_binding?.path === funding.source_binding.path &&
+            row.source_binding?.sha256 === funding.source_binding.sha256 &&
+            Array.isArray(row.input_observation_ids) &&
+            row.input_observation_ids.length === 2 &&
+            [
+              "controlling_group_deposits",
+              "financial_deposits_and_interbank",
+            ].every((field) =>
+              cashRows.some(
+                (input) =>
+                  input.field_name === field &&
+                  row.input_observation_ids.includes(input.observation_id),
+              ),
+            ),
+        )
+      : undefined;
   const chain =
     packet.data?.publication_id &&
     packet.data.publication_id === data?.publication?.publication_id
@@ -1009,6 +1109,22 @@ export default function DecisionDetail() {
               {String(decision.name || decision.symbol || decision.id)}{" "}
               {decision.name && decision.symbol}
             </Typography.Title>
+            {showPublicReview && publicReview && publicReviewIntent && (
+              <Typography.Paragraph role="status">
+                证券级条件性人工复核：
+                {
+                  {
+                    OPEN: "建仓",
+                    ADD: "加仓",
+                    HOLD: "持有",
+                    REDUCE: "减仓",
+                    EXIT: "退出",
+                  }[publicReviewIntent]
+                }
+                。{publicReview.decision_reason}
+                未核验个人资金与持仓，不提供个人可操作股数，也不是下单许可。
+              </Typography.Paragraph>
+            )}
             {readinessItem?.readiness && (
               <StrategyReadinessPanel
                 item={readinessItem}
@@ -1102,6 +1218,29 @@ export default function DecisionDetail() {
                 {fundingRows.length === 0 &&
                   "当前融资金额或出处不能可靠展示，不能据此认定没有该项义务。"}
                 空白项目不等于零；利息口径、其他债务、独立核验及母公司资金可取性仍需分别评价。
+                {cashRows.length > 0 && (
+                  <span style={{ display: "block" }}>
+                    同期资金与现金口径观察（{cashContext?.period_label}）：
+                    {cashRows.map((row) => (
+                      <span key={row.field_name} style={{ display: "block" }}>
+                        {cashLabels[row.field_name].label}：
+                        {Number(row.value).toLocaleString("zh-CN", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                        元；原件第{row.page}页。
+                      </span>
+                    ))}
+                    {concentration && (
+                      <>
+                        控股集团存款占比：
+                        {(Number(concentration.value) * 100).toFixed(2)}
+                        %（来源金额推导）。
+                      </>
+                    )}
+                    合并现金与母公司现金不可相加，均不等于已证明可全部分配的现金；存款来源集中不证明其稳定存续。单期观察不代表跨期变化。
+                  </span>
+                )}
               </Typography.Paragraph>
             )}
             {(replay?.status === "VERIFIED_EXACT_INPUT_REPLAY" ||

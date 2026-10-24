@@ -268,6 +268,80 @@ it("separates observed financial funding from admitted growth and complete debt"
     "空白项目不等于零",
   ])
     expect(html).toContain(text);
+  const cashContext = {
+    schema_version: "funding-cash-research-observations-v1",
+    symbol: "600519",
+    period_label: funding.period_label,
+    action: "no_order",
+    financial_fact_admitted: false,
+    formal_eligibility: false,
+    source_binding: funding.source_binding,
+    observations: [
+      ["financial_deposits_and_interbank", "18038383776.30", "consolidated"],
+      [
+        "controlling_group_deposits",
+        "8330698318.34",
+        "financial_subsidiary_depositor",
+      ],
+      ["consolidated_cash_and_equivalents", "126425609447.72", "consolidated"],
+      ["issuer_parent_cash_and_equivalents", "84730758118.65", "issuer_parent"],
+    ].map(([field_name, value, statement_scope]) => ({
+      ...observation,
+      field_name,
+      value,
+      statement_scope,
+      symbol: "600519",
+      observation_id: `TEST_ONLY:${field_name}`,
+      source_binding: funding.source_binding,
+    })),
+    derivations: [
+      {
+        field_name: "controlling_group_deposit_concentration",
+        value: "0.46183174",
+        unit: "ratio",
+        symbol: "600519",
+        period_label: funding.period_label,
+        input_observation_ids: [
+          "TEST_ONLY:controlling_group_deposits",
+          "TEST_ONLY:financial_deposits_and_interbank",
+        ],
+        source_binding: funding.source_binding,
+      },
+    ],
+  };
+  state.data.financial_progress.source_financial_funding_scope = {
+    ...funding,
+    research_context: cashContext,
+  };
+  const cashHtml = renderToStaticMarkup(<DecisionDetail />);
+  for (const text of [
+    "46.18%",
+    "上市公司母公司现金及现金等价物",
+    "84,730,758,118.65",
+    "126,425,609,447.72",
+    "不可相加",
+    "单期观察不代表跨期变化",
+  ])
+    expect(cashHtml).toContain(text);
+  for (const fault of ["hash", "period", "scope", "ratioInputs"]) {
+    const context = structuredClone(cashContext);
+    if (fault === "hash")
+      context.source_binding = {
+        ...context.source_binding,
+        sha256: "b".repeat(64),
+      };
+    else if (fault === "period") context.period_label = "2026-06-30";
+    else if (fault === "scope")
+      context.observations[3].statement_scope = "consolidated";
+    else context.derivations[0].input_observation_ids = ["forged", "forged"];
+    state.data.financial_progress.source_financial_funding_scope = {
+      ...funding,
+      research_context: context,
+    };
+    const rejected = renderToStaticMarkup(<DecisionDetail />);
+    if (fault === "scope") expect(rejected).not.toContain("84,730,758,118.65");
+    else expect(rejected).not.toContain("46.18%");
+  }
   for (const fault of [
     "company",
     "amount",

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from copy import deepcopy
 from decimal import Decimal
 import hashlib
 import json
@@ -23,6 +24,132 @@ from .restore_decision_recommendation import RestoredDecisionRecommendation
 from .value_model_identity import project_catalog_identity
 
 CHINA = ZoneInfo("Asia/Shanghai")
+
+
+def _review_fingerprint(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=True,
+        separators=(',', ':'), allow_nan=False).encode('utf-8')).hexdigest()
+
+
+class CoreValuePublicReviews:
+    """Request-local native replay inputs; never serialized approval or account authority.
+
+    This application adapter preserves Domain verdicts. It cannot create or
+    change G3, price-policy, personal-risk or order eligibility.
+    """
+
+    def __init__(self, root: Path, *, now: datetime):
+        if now.utcoffset() is None:
+            raise ValueError('Public review requires an aware request clock')
+        self.root, self.now = root.resolve(), now
+        self._active = False
+        self._native, self._plans = {}, {}
+
+    def __enter__(self):
+        if self._active:
+            raise ValueError('Public review request already active')
+        self._active = True
+        return self
+
+    def __exit__(self, *errors):
+        self._active = False
+        self._native.clear()
+        self._plans.clear()
+
+    def discard(self, symbol):
+        self._native.pop(symbol, None)
+        self._plans.pop(symbol, None)
+
+    def _capture(self, *, root, now, chain, restored, policy, published, explanation,
+                 quote, domain_plan, plan, sources):
+        symbol = plan['symbol']
+        self.discard(symbol)
+        if (not self._active or root.resolve() != self.root or now != self.now
+                or not isinstance(restored, RestoredDecisionRecommendation)
+                or domain_plan.get('formal_eligibility') is not True
+                or domain_plan.get('formal_eligibility_blockers')):
+            return
+        raw = (self.root/'config/current-trial-workbook.json').read_bytes()
+        if json.loads(raw) != chain['pointer']:
+            raise ValueError('Publication changed during native public replay')
+        self._native[symbol] = dict(owner=self, root=self.root, now=self.now, restored=restored, policy=policy,
+            recommendation=_review_fingerprint(restored.recommendation.as_policy()),
+            published=deepcopy(published), explanation=deepcopy(explanation), quote=deepcopy(quote),
+            domain_plan=deepcopy(domain_plan), base_plan=deepcopy(plan), sources=deepcopy(sources),
+            pointer_sha256=hashlib.sha256(raw).hexdigest())
+
+    def bind_plan(self, plan, *, inherited_from=None):
+        """Pin the API plan only if its already-verified native semantics are unchanged."""
+        symbol = plan.get('symbol')
+        record = self._native.get(symbol)
+        if not self._active or record is None:
+            return
+        basis = inherited_from or plan
+        analysis = plan.get('research_analysis')
+        if (any(basis.get(key) != value for key, value in record['base_plan'].items())
+                or any(plan.get(key) != value for key, value in basis.items()
+                       if key not in {'research_analysis', 'research_analysis_status'})
+                or analysis is not None and (not isinstance(analysis, dict)
+                    or analysis.get('status') == 'SOURCE_OR_REPLAY_UNAVAILABLE'
+                    or not isinstance(analysis.get('source_bindings'), list)
+                    or not analysis['source_bindings'])):
+            self.discard(symbol)
+            return
+        # Presentation analysis is separately consumed; it is not a Domain input.
+        record['analysis'] = deepcopy(analysis)
+        record['analysis_sources'] = deepcopy(analysis['source_bindings']) if analysis is not None else []
+        self._plans[symbol] = _review_fingerprint(plan)
+
+    def action_for(self, plan, *, now):
+        """Recheck existing native authority and bytes; return a review label, not eligibility."""
+        try:
+            symbol = plan['symbol']
+            record = self._native.get(symbol)
+            if (not self._active or now != self.now or record is None or record['owner'] is not self
+                    or record['root'] != self.root or record['now'] != self.now
+                    or self._plans.get(symbol) != _review_fingerprint(plan)
+                    or plan.get('decision_as_of') != now.astimezone(CHINA).date().isoformat()
+                    or plan.get('signal_state') in {'BLOCKED', 'STALE', 'EXPIRED'}):
+                return None
+            def verify_bytes():
+                if hashlib.sha256((self.root/'config/current-trial-workbook.json').read_bytes()).hexdigest() != record['pointer_sha256']:
+                    raise ValueError('Publication changed during public review')
+                for ref in [*record['sources'], *record['analysis_sources']]:
+                    relative = Path(ref['path'])
+                    path = (self.root/relative).resolve()
+                    if (relative.is_absolute() or '..' in relative.parts or not path.is_relative_to(self.root)
+                            or hashlib.sha256(path.read_bytes()).hexdigest() != ref['sha256']):
+                        raise ValueError('Native public review source changed')
+            verify_bytes()
+            if record['analysis'] is not None:
+                from ..product.research_draft import load_current_research_analysis
+                analysis = load_current_research_analysis(self.root, symbol, now=now)
+                if (not isinstance(analysis, dict)
+                        or analysis.get('status') == 'SOURCE_OR_REPLAY_UNAVAILABLE'
+                        or _review_fingerprint(analysis) != _review_fingerprint(record['analysis'])):
+                    return None
+            restored, _ = replay_published_value_decision(self.root, record['published'], now=now)
+            if (restored is None or not isinstance(record['restored'], RestoredDecisionRecommendation)
+                    or _review_fingerprint(restored.recommendation.as_policy()) != record['recommendation']
+                    or _review_fingerprint(record['restored'].recommendation.as_policy()) != record['recommendation']):
+                return None
+            policy = record['policy']
+            if policy is not None:
+                policy = load_value_action_policy(root=self.root, binding=dict(policy.source_binding),
+                    symbol=symbol, now=now)
+                if policy != record['policy']:
+                    return None
+            rebuilt = build_value_action_plan(explanation=record['explanation'], policy=policy,
+                reference_quote=record['quote'], source_bindings=tuple(record['sources']),
+                repository_replayed=True, verified_predecision=restored.dependency_objects.get('pre_decision'),
+                decision_as_of=now.astimezone(CHINA).date()).as_policy()
+            if (rebuilt != record['domain_plan'] or rebuilt.get('formal_eligibility') is not True
+                    or rebuilt.get('formal_eligibility_blockers')):
+                return None
+            verify_bytes()
+            return rebuilt.get('action_intent')
+        except (OSError, ValueError, KeyError, TypeError, ArithmeticError, AttributeError):
+            return None
 
 
 def replay_published_value_decision(root: Path, explanation: dict, *, now: datetime,
@@ -172,7 +299,8 @@ def _registered_quote_observation(root: Path, symbol: str, *, now: datetime) -> 
 
 
 def load_registered_value_action_plans(root: Path, *, now: datetime,
-                                       symbols: list[str] | tuple[str, ...] | None = None) -> dict:
+                                       symbols: list[str] | tuple[str, ...] | None = None,
+                                       public_reviews: CoreValuePublicReviews | None = None) -> dict:
     """Read-only current publication projection, never a new financial approval.
 
     Only an explicit hash-bound workbench replay can supply typed admission.
@@ -263,6 +391,7 @@ def load_registered_value_action_plans(root: Path, *, now: datetime,
                 repository_replayed=restored is not None,
                 verified_predecision=(None if restored is None else
                     restored.dependency_objects.get("pre_decision"))).as_policy()
+            domain_plan = deepcopy(plan)
             plan["quote_bridge_status"] = execution["status"]
             plan["historical_research_blockers"] = historical_blockers
             plan["resolved_historical_quote_blockers"] = resolved_quote_blockers
@@ -276,6 +405,10 @@ def load_registered_value_action_plans(root: Path, *, now: datetime,
                 plan["required_confirmations"].append(next_step)
             plan["verification_scope"] = ("REPOSITORY_REPLAYED_PUBLISHED_RESEARCH_NOT_NEW_APPROVAL"
                 if restored is not None else "HASH_BOUND_PUBLISHED_RESEARCH_NOT_NEW_APPROVAL")
+            if public_reviews is not None:
+                public_reviews._capture(root=root, now=now, chain=chain, restored=restored,
+                    policy=policy, published=bound_object(root, binding), explanation=explanation,
+                    quote=quote, domain_plan=domain_plan, plan=plan, sources=sources)
             items.append(plan)
             for source in sources:
                 if source not in bindings:

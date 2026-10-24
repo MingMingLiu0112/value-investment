@@ -123,3 +123,125 @@ def extract_financial_funding_observations(pages: list[str], period: str) -> lis
                 active = False
                 break
     return result
+
+
+def extract_funding_cash_context(pages: list[str], period: str) -> list[dict]:
+    """Adjacent research observations; no facts, debt clearance or cash access.
+
+    A controlling depositor needs both an explicit relationship and a dated
+    single-column deposit note. Cash inherits the exact statement header and
+    its period across continuation pages, never the generic monetary-funds row.
+    Source identity and original-byte authentication remain the caller's job.
+    """
+    funding = extract_financial_funding_observations(pages, period)
+    closing = date.fromisoformat(period)
+    result = []
+
+    def observation(field, value, scope, page, excerpt, unit_page, **extra):
+        return dict(field_name=field, value=value, period_label=period,
+                    unit='CNY', currency='CNY', statement_scope=scope,
+                    page=page, excerpt=excerpt, source_unit='\u5143',
+                    unit_evidence_page=unit_page,
+                    status='SOURCE_BOUND_RESEARCH_OBSERVATION_NOT_FACT_ADMISSION', **extra)
+
+    deposits = [row for row in funding if row['field_name'] == 'financial_deposits_and_interbank'
+                and row['value'] is not None]
+    if len(deposits) == 1:
+        result.append({**deposits[0], 'status': 'SOURCE_BOUND_RESEARCH_OBSERVATION_NOT_FACT_ADMISSION'})
+
+    # Only exact mother-company relationships, not siblings labelled mother's subsidiaries.
+    parties = []
+    for n, page in enumerate(pages, 1):
+        compact = ''.join(page.split())
+        if ('\u5b58\u6b3e\u4e1a\u52a1' not in compact or '\u5173\u8054\u5173\u7cfb' not in compact
+                or '\u671f\u672b\u4f59\u989d' not in compact or _UNIT.findall(compact) != ['\u5143']):
+            continue
+        for match in re.finditer(r'([^\s]+)\s+\u6bcd\u516c\u53f8\s+', page):
+            name = match[1]
+            tail = page[match.end():].split()
+            amounts = []
+            for token in tail:
+                amount = amount_from_fragments([token])
+                if amount is None:
+                    break
+                amounts.append(Decimal(amount))
+            if len(amounts) == 4 and amounts[0] + amounts[1] - amounts[2] == amounts[3]:
+                parties.append((name, n, match[0].strip(), amounts[3]))
+    party_names = {name.replace('(', '\uff08').replace(')', '\uff09') for name, _, _, _ in parties}
+    if len(parties) == 1 and len(party_names) == 1:
+        name, relationship_page, relationship_excerpt, flow_closing = parties[0]
+        normalized_name = next(iter(party_names))
+        candidates = []
+        for n, page in enumerate(pages, 1):
+            compact = ''.join(page.split())
+            if ('\u5176\u4ed6\u5173\u8054\u4ea4\u6613' not in compact
+                    or '\u5b58\u6b3e\u4f59\u989d\u53ca\u5e94\u8ba1\u5229\u606f' not in compact
+                    or set(_UNIT.findall(compact)) != {'\u5143'}
+                    or any(c.rstrip(')\uff09') != '\u4eba\u6c11\u5e01' for c in _CURRENCY.findall(page))):
+                continue
+            headers = list(re.finditer(r'(?m)^\s*\u5173\u8054\u65b9[ \t]*([0-9]{4}[ \t]*\u5e74[ \t]*[0-9]{1,2}[ \t]*\u6708[ \t]*[0-9]{1,2}[ \t]*\u65e5)[ \t]*\r?$', page))
+            if len(headers) != 1:
+                continue
+            header = headers[0]
+            groups = _DATE.fullmatch(''.join(header[1].split()))
+            try:
+                note_date = date(*map(int, groups.groups())) if groups else None
+            except ValueError:
+                note_date = None
+            if note_date != closing:
+                continue
+            for line in page[header.end():].splitlines():
+                cells = line.split()
+                if len(cells) != 2 or cells[0].replace('(', '\uff08').replace(')', '\uff09') != normalized_name:
+                    continue
+                amount = amount_from_fragments([cells[1]])
+                if amount is not None and Decimal(amount) == flow_closing:
+                    candidates.append(observation('controlling_group_deposits', amount,
+                        'financial_subsidiary_depositor', n, line.strip(), n,
+                        counterparty=name, relationship='CONTROLLING_GROUP_NOT_ISSUER_PARENT',
+                        relationship_evidence=dict(page=relationship_page, excerpt=relationship_excerpt),
+                        balance_basis='DEPOSITS_AND_ACCRUED_INTEREST_NOT_PRINCIPAL_ONLY'))
+        if len(candidates) == 1:
+            result.extend(candidates)
+
+    active = None
+    unit_page = header_page = None
+    cash = {'consolidated': [], 'issuer_parent': []}
+    for n, page in enumerate(pages, 1):
+        compact = ''.join(page.split())
+        lines = [line.strip() for line in page.splitlines() if line.strip()]
+        for i, line in enumerate(lines):
+            title = ''.join(line.split())
+            if _OTHER_STATEMENT.fullmatch(title):
+                active = None
+                scope = {'\u5408\u5e76\u73b0\u91d1\u6d41\u91cf\u8868': 'consolidated',
+                         '\u6bcd\u516c\u53f8\u73b0\u91d1\u6d41\u91cf\u8868': 'issuer_parent'}.get(title)
+                header = ''.join(''.join(v.split()) for v in lines[i+1:i+9])
+                expected = (f'{closing.year}\u5e74\u5ea6{closing.year-1}\u5e74\u5ea6'
+                            if closing.month == 12 else
+                            f'{closing.year}\u5e74\u534a\u5e74\u5ea6{closing.year-1}\u5e74\u534a\u5e74\u5ea6')
+                if (scope and _UNIT.findall(header) == ['\u5143']
+                        and '\u9879\u76ee' in header and expected in header
+                        and not any(k in header for k in ('\u8c03\u6574\u524d', '\u8c03\u6574\u540e'))):
+                    active, unit_page, header_page = scope, n, n
+            if active:
+                if (any(c != '\u4eba\u6c11\u5e01' for c in _CURRENCY.findall(page))
+                        or (re.search(r'\u5355\u4f4d[:\uff1a]', compact)
+                            and set(_UNIT.findall(compact)) != {'\u5143'})
+                        or any(k in compact for k in ('\u8c03\u6574\u524d', '\u8c03\u6574\u540e'))):
+                    active = None
+                    continue
+                match = re.fullmatch(r'\u516d\u3001\s*\u671f\u672b\u73b0\u91d1\u53ca\u73b0\u91d1\u7b49\u4ef7\u7269\u4f59\u989d\s+(\S+)\s+(\S+)', line)
+                if match:
+                    amounts = [amount_from_fragments([v]) for v in match.groups()]
+                    if all(v is not None for v in amounts):
+                        field = ('consolidated_cash_and_equivalents' if active == 'consolidated'
+                                 else 'issuer_parent_cash_and_equivalents')
+                        cash[active].append(observation(field, amounts[0], active, n, line,
+                            unit_page, statement_header_page=header_page,
+                            cash_access_status='NOT_ASSESSED_NOT_DISTRIBUTABLE_CASH'))
+                    active = None
+    for rows in cash.values():
+        if len(rows) == 1:
+            result.extend(rows)
+    return result

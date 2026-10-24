@@ -1,6 +1,6 @@
 from copy import deepcopy
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, localcontext
 import hashlib
 
 import pytest
@@ -329,6 +329,124 @@ def test_existing_incomplete_industrial_scope_is_unchanged_with_adjacent_alert(t
     assert result['source_financial_funding_scope']['required_fields'] == ['financial_deposits_and_interbank']
 
 
+def test_funding_cash_research_context_is_source_bound_and_does_not_adopt_facts(tmp_path, source, monkeypatch):
+    from test_financial_funding_scope import context_pages
+    baseline = enrich_retained_company(tmp_path, source, [], evaluation_at=NOW,
+        cache_dir=tmp_path/'.tmp/context-baseline')
+    pages = ['\u80a1\u7968\u4ee3\u7801: 600887; 2025\u5e74\u5e74\u5ea6\u62a5\u544a TEST_ONLY'] + context_pages()
+    monkeypatch.setattr(adapter, 'extract_pages', lambda path, limit: pages[:limit])
+    result = enrich_retained_company(tmp_path, source, [], evaluation_at=NOW,
+        cache_dir=tmp_path/'.tmp/context')
+    context = result['source_financial_funding_scope']['research_context']
+    assert context['status'] == 'SOURCE_BOUND_RESEARCH_OBSERVATIONS'
+    assert context['symbol'] == source.symbol and context['period_label'] == source.period
+    assert context['source_binding']['sha256'] == source.sha256
+    assert context['source_binding']['path'] == source.path
+    assert context['financial_fact_admitted'] is context['formal_eligibility'] is False
+    assert len(context['observations']) == 4
+    ids = {row['observation_id'] for row in context['observations']}
+    ratio, = context['derivations']
+    assert ratio['value'] == '0.4' and ratio['unit'] == 'ratio'
+    assert set(ratio['input_observation_ids']) <= ids
+    assert ratio['evidence_kind'] == 'DERIVED_RESEARCH_OBSERVATION'
+    for row in context['observations']:
+        assert row['source_binding'] == context['source_binding']
+        assert row['symbol'] == source.symbol and row['period_label'] == source.period
+        assert row['available_at'] == source.available_at and row['page'] > 0
+        assert row['excerpt'] in pages[row['page']-1]
+        assert row['financial_fact_admitted'] is False and row['action'] == 'no_order'
+    assert result['adopted_points'] == baseline['adopted_points']
+    assert result['after'] == baseline['after'] and result['debt_scope']['value'] is None
+    assert context['missing_fields'] == []
+
+
+@pytest.mark.parametrize('fault', ['hash', 'company', 'period', 'future'])
+def test_funding_cash_context_cannot_bypass_existing_original_identity_or_time(tmp_path, source, monkeypatch, fault):
+    from dataclasses import replace
+    from test_financial_funding_scope import context_pages
+    pages = ['\u80a1\u7968\u4ee3\u7801: 600887; 2025\u5e74\u5e74\u5ea6\u62a5\u544a TEST_ONLY'] + context_pages()
+    monkeypatch.setattr(adapter, 'extract_pages', lambda path, limit: pages[:limit])
+    changes = {'hash': dict(sha256='f'*64), 'company': dict(symbol='600519'),
+               'period': dict(period='2024-12-31'), 'future': dict(available_at='2027-01-01T00:00:00+00:00')}
+    with pytest.raises(ValueError):
+        enrich_retained_company(tmp_path, replace(source, **changes[fault]), [], evaluation_at=NOW,
+            cache_dir=tmp_path/'.tmp/context-negative')
+
+
+def test_funding_cash_partial_evidence_has_no_ratio_or_fabricated_cash(tmp_path, source, monkeypatch):
+    _funding_pages(monkeypatch)
+    result = enrich_retained_company(tmp_path, source, [], evaluation_at=NOW,
+        cache_dir=tmp_path/'.tmp/context-partial')
+    context = result['source_financial_funding_scope']['research_context']
+    assert context['status'] == 'PARTIAL' and context['derivations'] == []
+    assert {row['field_name'] for row in context['observations']} == {'financial_deposits_and_interbank'}
+    assert set(context['missing_fields']) == {'controlling_group_deposits',
+        'consolidated_cash_and_equivalents', 'issuer_parent_cash_and_equivalents'}
+
+
+def test_funding_cash_context_does_not_compute_concentration_above_total(tmp_path, source, monkeypatch):
+    from test_financial_funding_scope import context_pages
+    pages = ['\u80a1\u7968\u4ee3\u7801: 600887; 2025\u5e74\u5e74\u5ea6\u62a5\u544a TEST_ONLY'] + context_pages()
+    pages[1] = pages[1].replace('100.00 90.00', '10.00 9.00')
+    monkeypatch.setattr(adapter, 'extract_pages', lambda path, limit: pages[:limit])
+    result = enrich_retained_company(tmp_path, source, [], evaluation_at=NOW,
+        cache_dir=tmp_path/'.tmp/context-inconsistent')
+    context = result['source_financial_funding_scope']['research_context']
+    assert context['derivations'] == [] and context['status'] == 'PARTIAL'
+    assert context['blockers'] == ['CONCENTRATION_INPUTS_INCONSISTENT']
+
+
+@pytest.mark.parametrize('period,filing,expected_hash,numerator,denominator', [
+    ('2025-12-31', '1225114741', '474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288',
+     '8330698318.34', '18038383776.30'),
+    ('2026-06-30', '1225475868', '0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6',
+     '15158632454.02', '25426316668.17'),
+])
+def test_real_funding_cash_context_closure_not_h1_annual_admission(tmp_path, period, filing,
+        expected_hash, numerator, denominator):
+    import os
+    from pathlib import Path
+    from value_investment_agent.application.research.value_evidence_enrichment_v1 import _source_financial_funding_scope
+    from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
+    raw_root = os.environ.get('SOURCE_NATIVE_REAL_ROOT')
+    if not raw_root:
+        pytest.skip('Explicit retained public root; no network/source discovery')
+    root = Path(raw_root).resolve()
+    path = root/f'runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-{filing}.pdf'
+    before = path.read_bytes()
+    assert hashlib.sha256(before).hexdigest() == expected_hash
+    pages = extract_pages(path)
+    opening = ''.join(''.join(pages[:12]).split())
+    assert '600519' in opening
+    # This is a present-day raw-original research observation, not backdated acquisition/PIT.
+    observed_at = datetime.now(timezone.utc)
+    publication = '2026-04-17' if period.endswith('12-31') else '2026-08-15'
+    source = adapter.RetainedAnnualSource('600519', period, path.relative_to(root).as_posix(),
+        expected_hash, f'https://static.cninfo.com.cn/finalpage/{publication}/{filing}.PDF',
+        observed_at.isoformat())
+    scope = _source_financial_funding_scope({'page_texts': pages}, source)
+    context = scope['research_context']
+    assert context['status'] == 'SOURCE_BOUND_RESEARCH_OBSERVATIONS'
+    assert context['period_label'] == period and context['symbol'] == '600519'
+    assert len(context['observations']) == 4
+    ids = {row['observation_id'] for row in context['observations']}
+    ratio, = context['derivations']
+    with localcontext() as dc:
+        dc.prec = 48
+        assert Decimal(ratio['value']) == Decimal(numerator)/Decimal(denominator)
+    assert set(ratio['input_observation_ids']) <= ids
+    for row in context['observations']:
+        assert row['source_binding']['sha256'] == expected_hash
+        assert row['period_label'] == period
+        assert row['excerpt'] in pages[row['page']-1]
+        assert row['financial_fact_admitted'] is False
+    if period.endswith('06-30'):
+        with pytest.raises(ValueError, match='annual period'):
+            adapter.extract_retained_annual(root, source, evaluation_at=observed_at,
+                cache_dir=root/'.tmp/H1_NOT_AN_ANNUAL_INPUT')
+    assert path.read_bytes() == before
+
+
 @pytest.mark.parametrize('symbol,expected_hash', [
     ('600519', 'e6dbb6a2f9080cf7a6cda9359540fe0d4b80ac7cdb113fa8f06648574137d9ce'),
     ('600887', '28f641afd580e9dea2c01abfc9af105e47974cbc92aab0500e799b9d9cfccdaa'),
@@ -369,6 +487,16 @@ def test_real_registered_income_adoption_preserves_identity_and_reads_fresh_fund
         observed = [r for r in diagnostic['observations'] if r['field_name'] == 'financial_deposits_and_interbank']
         assert len(observed) == 1 and Decimal(observed[0]['value']) == Decimal('18038383776.30')
         assert observed[0]['page'] == 58
+        context = diagnostic['research_context']
+        assert context['status'] == 'SOURCE_BOUND_RESEARCH_OBSERVATIONS'
+        by_field = {row['field_name']: row for row in context['observations']}
+        assert by_field['controlling_group_deposits']['value'] == '8330698318.34'
+        assert by_field['consolidated_cash_and_equivalents']['value'] == '126425609447.72'
+        assert by_field['issuer_parent_cash_and_equivalents']['value'] == '84730758118.65'
+        ratio, = context['derivations']
+        with localcontext() as dc:
+            dc.prec = 48
+            assert Decimal(ratio['value']) == Decimal('8330698318.34') / Decimal('18038383776.30')
     assert hashlib.sha256(path.read_bytes()).hexdigest() == expected_hash
     assert hashlib.sha256(export.read_bytes()).hexdigest() == export_hash
 

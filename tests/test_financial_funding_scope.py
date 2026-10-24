@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from value_investment_agent.infrastructure.filings.financial_funding_scope import (
-    FUNDING_LABELS, extract_financial_funding_observations as extract,
+    FUNDING_LABELS, extract_financial_funding_observations as extract, extract_funding_cash_context,
 )
 from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
 
@@ -131,6 +131,78 @@ def test_invalid_period_fails_closed(period):
         extract([], period)
 
 
+def context_pages(period='2025-12-31'):
+    year = int(period[:4])
+    closing = f'{year}\u5e7412\u670831\u65e5' if period.endswith('12-31') else f'{year}\u5e746\u670830\u65e5'
+    columns = (f'{year}\u5e74\u5ea6 {year-1}\u5e74\u5ea6' if period.endswith('12-31') else
+               f'{year}\u5e74\u534a\u5e74\u5ea6 {year-1}\u5e74\u534a\u5e74\u5ea6')
+    unit = '\u5355\u4f4d\uff1a\u5143 \u5e01\u79cd\uff1a\u4eba\u6c11\u5e01'
+    party = 'TEST\u63a7\u80a1\u96c6\u56e2\u516c\u53f8'
+    return [table(FUNDING_LABELS['financial_deposits_and_interbank']+' 100.00 90.00', period),
+        f'\u5b58\u6b3e\u4e1a\u52a1\n{unit}\n\u5173\u8054\u65b9 \u5173\u8054\u5173\u7cfb \u671f\u672b\u4f59\u989d\n{party} \u6bcd\u516c\u53f8 30.00 20.00 10.00 40.00',
+        f'\u5176\u4ed6\u5173\u8054\u4ea4\u6613\n\u5b58\u6b3e\u4f59\u989d\u53ca\u5e94\u8ba1\u5229\u606f\n{unit}\n\u5173\u8054\u65b9 {closing}\n{party} 40.00',
+        f'\u5408\u5e76\u73b0\u91d1\u6d41\u91cf\u8868\n{unit}\n\u9879\u76ee {columns}\n\u516d\u3001\u671f\u672b\u73b0\u91d1\u53ca\u73b0\u91d1\u7b49\u4ef7\u7269\u4f59\u989d 1000.00 900.00',
+        f'\u6bcd\u516c\u53f8\u73b0\u91d1\u6d41\u91cf\u8868\n{unit}\n\u9879\u76ee {columns}\n\u516d\u3001\u671f\u672b\u73b0\u91d1\u53ca\u73b0\u91d1\u7b49\u4ef7\u7269\u4f59\u989d 300.00 250.00']
+
+
+@pytest.mark.parametrize('period', ['2025-12-31', '2026-06-30'])
+def test_context_separates_controlling_group_and_issuer_parent_cash(period):
+    pages = context_pages(period)
+    before = deepcopy(pages)
+    rows = extract_funding_cash_context(pages, period)
+    by_field = {r['field_name']: r for r in rows}
+    assert len(rows) == 4 and pages == before
+    assert by_field['controlling_group_deposits']['value'] == '40.00'
+    assert by_field['controlling_group_deposits']['relationship'] == 'CONTROLLING_GROUP_NOT_ISSUER_PARENT'
+    assert by_field['controlling_group_deposits']['relationship_evidence']['page'] == 2
+    assert by_field['consolidated_cash_and_equivalents']['value'] == '1000.00'
+    assert by_field['issuer_parent_cash_and_equivalents']['value'] == '300.00'
+    assert by_field['issuer_parent_cash_and_equivalents']['statement_scope'] == 'issuer_parent'
+    for row in rows:
+        assert row['period_label'] == period and row['page'] > 0
+        assert row['excerpt'] in pages[row['page']-1]
+
+
+@pytest.mark.parametrize('fault', ['role', 'date', 'invalid_date', 'two_dates', 'note_unit', 'note_currency', 'duplicate', 'flow', 'cross_table'])
+def test_context_ambiguous_or_unbound_controlling_depositor_is_not_guessed(fault):
+    pages = context_pages()
+    if fault == 'role': pages[1] = pages[1].replace('\u6bcd\u516c\u53f8 ', '\u6bcd\u516c\u53f8\u7684\u5168\u8d44\u5b50\u516c\u53f8 ')
+    elif fault == 'date': pages[2] = pages[2].replace('2025\u5e7412\u670831\u65e5', '2024\u5e7412\u670831\u65e5')
+    elif fault == 'invalid_date': pages[2] = pages[2].replace('2025\u5e7412\u670831\u65e5', '2025\u5e7413\u670831\u65e5')
+    elif fault == 'two_dates': pages[2] = pages[2].replace('2025\u5e7412\u670831\u65e5', '2025\u5e7412\u670831\u65e5 2024\u5e7412\u670831\u65e5')
+    elif fault == 'note_unit': pages[2] = pages[2].replace('\u5355\u4f4d\uff1a\u5143', '\u5355\u4f4d\uff1a\u4e07\u5143')
+    elif fault == 'note_currency': pages[2] = pages[2].replace('\u4eba\u6c11\u5e01', '\u7f8e\u5143')
+    elif fault == 'duplicate': pages.append(pages[2])
+    elif fault == 'cross_table': pages[2] = pages[2].replace('40.00', '41.00')
+    else: pages[1] = pages[1].replace('10.00 40.00', '11.00 40.00')
+    assert 'controlling_group_deposits' not in {r['field_name'] for r in extract_funding_cash_context(pages, '2025-12-31')}
+
+
+@pytest.mark.parametrize('fault', ['reversed', 'wrong_year', 'unit', 'currency', 'blank', 'duplicate', 'mixed_scope'])
+def test_cash_context_requires_explicit_statement_period_unit_and_unique_current_column(fault):
+    pages = context_pages()
+    if fault == 'reversed': pages[4] = pages[4].replace('2025\u5e74\u5ea6 2024\u5e74\u5ea6', '2024\u5e74\u5ea6 2025\u5e74\u5ea6')
+    elif fault == 'wrong_year': pages[4] = pages[4].replace('2025\u5e74\u5ea6 2024\u5e74\u5ea6', '2024\u5e74\u5ea6 2023\u5e74\u5ea6')
+    elif fault == 'unit': pages[4] = pages[4].replace('\u5355\u4f4d\uff1a\u5143', '\u5355\u4f4d\uff1a\u4e07\u5143')
+    elif fault == 'currency': pages[4] = pages[4].replace('\u4eba\u6c11\u5e01', '\u7f8e\u5143')
+    elif fault == 'blank': pages[4] = pages[4].replace('300.00 250.00', '-- 250.00')
+    elif fault == 'duplicate': pages.append(pages[4])
+    else: pages[4] = pages[4].replace('\u6bcd\u516c\u53f8\u73b0\u91d1\u6d41\u91cf\u8868', '\u5408\u5e76\u73b0\u91d1\u6d41\u91cf\u8868')
+    rows = extract_funding_cash_context(pages, '2025-12-31')
+    assert 'issuer_parent_cash_and_equivalents' not in {r['field_name'] for r in rows}
+
+
+def test_cash_context_continuation_preserves_header_not_business_unit_word():
+    pages = context_pages()
+    heading, balance = pages[4].rsplit('\n', 1)
+    pages[4:] = [heading, '\u5904\u7f6e\u5b50\u516c\u53f8\u53ca\u5176\u4ed6\u8425\u4e1a\u5355\u4f4d\n'+balance]
+    row = next(r for r in extract_funding_cash_context(pages, '2025-12-31')
+               if r['field_name'] == 'issuer_parent_cash_and_equivalents')
+    assert row['page'] == 6 and row['statement_header_page'] == row['unit_evidence_page'] == 5
+    pages[5] = '\u5355\u4f4d\uff1a\u4e07\u5143 \u5e01\u79cd\uff1a\u4eba\u6c11\u5e01\n'+balance
+    assert 'issuer_parent_cash_and_equivalents' not in {r['field_name'] for r in extract_funding_cash_context(pages, '2025-12-31')}
+
+
 def test_real_maotai_fy_h1_originals_and_unchanged_income_implementations():
     source = os.environ.get('SOURCE_NATIVE_REAL_ROOT')
     if not source:
@@ -171,6 +243,22 @@ def test_real_maotai_fy_h1_originals_and_unchanged_income_implementations():
         assert observation['field_name'] == 'financial_deposits_and_interbank'
         assert observation['value'] == expected and observation['prior_value'] == prior
         assert observation['page'] == (58 if period == '2025-12-31' else 27)
+        context = extract_funding_cash_context(pages, period)
+        by_field = {item['field_name']: item for item in context}
+        expected_context = ({
+            'controlling_group_deposits': ('8330698318.34', 131),
+            'consolidated_cash_and_equivalents': ('126425609447.72', 66),
+            'issuer_parent_cash_and_equivalents': ('84730758118.65', 67),
+        } if period == '2025-12-31' else {
+            'controlling_group_deposits': ('15158632454.02', 97),
+            'consolidated_cash_and_equivalents': ('184811095482.62', 35),
+            'issuer_parent_cash_and_equivalents': ('61255736577.13', 36),
+        })
+        assert len(context) == 4
+        for field, (value, page) in expected_context.items():
+            assert (by_field[field]['value'], by_field[field]['page']) == (value, page)
+            assert by_field[field]['excerpt'] in pages[page-1]
+            assert by_field[field]['period_label'] == period
         # Arch's two counterexamples on in-memory copies of the actual A58/H27.
         # No original bytes, amounts or source dates are modified on disk.
         for declaration in (
@@ -182,7 +270,7 @@ def test_real_maotai_fy_h1_originals_and_unchanged_income_implementations():
             altered[index] = declaration+'\n'+altered[index]
             assert extract(altered, period) == []
         reports.append(dict(source_id=source_id, source_url=row['location'], path=row['local_path'],
-            sha256=row['sha256'], observations=observations))
+            sha256=row['sha256'], observations=observations, research_observations=context))
     assert {name: hash_file(root/name) for name in before} == before
     assert {name: hash_file(code_root/name) for name in executing_before} == executing_before
     output = os.environ.get('FUNDING_SCOPE_RECEIPT_DIR')

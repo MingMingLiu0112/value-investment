@@ -518,14 +518,18 @@ export default function DailyDecisions() {
             aria-label="明确行动结论"
           >
             <h2>
-              {data.actionable_evaluation?.conclusion ===
-              "NO_QUALIFIED_NEW_TRADE"
-                ? "本次已评价范围内，无符合全部条件的新交易机会。"
-                : "本次未形成完整有效的选股决策，不能据此判断市场没有机会。"}
+              {(data.actionable_evaluation?.conditional_review_count ?? 0) > 0
+                ? "已发布范围内存在证券级条件复核；不代表个人可交易。"
+                : data.actionable_evaluation?.conclusion ===
+                    "NO_QUALIFIED_NEW_TRADE"
+                  ? "本次已评价范围内，无符合全部条件的新交易机会。"
+                  : "本次未形成完整有效的选股决策，不能据此判断市场没有机会。"}
             </h2>
             <p>
-              当前发布公司中已评价后暂不新建仓{" "}
-              {data.actionable_evaluation?.evaluated_count ?? 0} 家；
+              当前发布范围内已评价{" "}
+              {data.actionable_evaluation?.evaluated_count ?? 0} 项；
+              条件性人工复核{" "}
+              {data.actionable_evaluation?.conditional_review_count ?? 0} 项；
               证据或资格不足{" "}
               {data.actionable_evaluation?.unassessable_count ?? "未核验"} 家。
               公共计划不包含个人账户容量，不能计为个人可操作机会。
@@ -549,9 +553,11 @@ export default function DailyDecisions() {
                     >
                       {item.company_name || item.symbol} · {item.symbol}
                     </Link>
-                    {item.decision_action === "UNASSESSABLE"
-                      ? " · 无法评价 — "
-                      : " · 暂不新建仓 — "}
+                    {item.decision_action === "CONDITIONAL_MANUAL_REVIEW"
+                      ? ` · 条件性人工复核${item.public_action_intent ? `（${{ OPEN: "建仓", ADD: "加仓", HOLD: "持有", REDUCE: "减仓", EXIT: "退出" }[item.public_action_intent]}）` : ""} — `
+                      : item.decision_action === "NO_TRADE"
+                        ? " · 暂不新建仓 — "
+                        : " · 无法评价 — "}
                     {item.decision_reason}
                   </li>
                 ))}

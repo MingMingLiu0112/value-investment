@@ -787,7 +787,8 @@ export interface DailyEvaluationItem {
   symbol: string;
   company_name?: string;
   strategy: string;
-  decision_action: "NO_TRADE" | "UNASSESSABLE";
+  decision_action: "NO_TRADE" | "UNASSESSABLE" | "CONDITIONAL_MANUAL_REVIEW";
+  public_action_intent?: "OPEN" | "ADD" | "HOLD" | "REDUCE" | "EXIT";
   decision_reason: string;
   evaluation_status: string;
   eligibility: false;
@@ -801,7 +802,11 @@ export interface DailyResponse {
     evaluated_count: number;
     unassessable_count: number;
     operation_eligible_count: number;
-    conclusion: "INCOMPLETE_EVALUATION" | "NO_QUALIFIED_NEW_TRADE";
+    conditional_review_count?: number;
+    conclusion:
+      | "INCOMPLETE_EVALUATION"
+      | "NO_QUALIFIED_NEW_TRADE"
+      | "PUBLIC_CONDITIONAL_REVIEWS_AVAILABLE";
     items: DailyEvaluationItem[];
   };
   action: "no_order";
@@ -1104,6 +1109,12 @@ export interface HotspotLifecycleReview {
 
 export interface DetailResponse {
   hotspot_lifecycle_review?: HotspotLifecycleReview | null;
+  strategy_evaluation?: DailyEvaluationItem & {
+    action: "no_order";
+    review_quantity: null;
+    position_range: null;
+    available_cash_impact: null;
+  };
   action: "no_order";
   status: ApiStatus;
   decision: DecisionItem | null;
@@ -1159,6 +1170,38 @@ export interface DetailResponse {
         page: number;
         excerpt: string;
       }[];
+      research_context?: {
+        schema_version: "funding-cash-research-observations-v1";
+        symbol: string;
+        period_label: string;
+        status: string;
+        action: "no_order";
+        financial_fact_admitted: false;
+        formal_eligibility: false;
+        source_binding: { path: string; sha256: string };
+        observations: {
+          observation_id: string;
+          field_name: string;
+          value: string;
+          symbol: string;
+          period_label: string;
+          statement_scope: string;
+          unit: string;
+          currency: string;
+          page: number;
+          excerpt: string;
+          source_binding: { path: string; sha256: string };
+        }[];
+        derivations: {
+          field_name: string;
+          value: string;
+          unit: string;
+          symbol: string;
+          period_label: string;
+          input_observation_ids: string[];
+          source_binding: { path: string; sha256: string };
+        }[];
+      };
     } | null;
     adopted_metrics?: {
       field_name: "debt_ratio" | "revenue_yoy" | "net_income_yoy";

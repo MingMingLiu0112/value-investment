@@ -98,6 +98,57 @@ it("mounts readiness in the actual security page before its existing judgment", 
   expect(html).toContain("未获操作批准");
 });
 
+it.each(["OPEN", "ADD", "HOLD", "REDUCE", "EXIT"])(
+  "shows public %s review without personal shares",
+  (intent) => {
+    state.detail.data.strategy_evaluation = {
+      action: "no_order",
+      symbol: "600887",
+      strategy: "CORE_VALUE",
+      decision_action: "CONDITIONAL_MANUAL_REVIEW",
+      evaluation_status: "EVALUATED_CONDITIONAL_REVIEW",
+      public_action_intent: intent,
+      decision_reason: "TEST_ONLY native replay",
+      eligibility: false,
+      review_quantity: null,
+      position_range: null,
+      available_cash_impact: null,
+    };
+    const html = renderToStaticMarkup(<DecisionDetail />);
+    expect(html).toContain("证券级条件性人工复核");
+    expect(html).toContain("TEST_ONLY native replay");
+    expect(html).toContain("不提供个人可操作股数");
+    expect(html).toContain("不是下单许可");
+  },
+);
+
+it.each([
+  { symbol: "600519" },
+  { strategy: "HOTSPOT_SATELLITE" },
+  { eligibility: true },
+  { review_quantity: 100 },
+  { public_action_intent: "BUY_NOW" },
+  { evaluation_status: "NOT_ASSESSABLE" },
+])("does not present incompatible public review %j", (change) => {
+  state.detail.data.strategy_evaluation = {
+    action: "no_order",
+    symbol: "600887",
+    strategy: "CORE_VALUE",
+    decision_action: "CONDITIONAL_MANUAL_REVIEW",
+    evaluation_status: "EVALUATED_CONDITIONAL_REVIEW",
+    public_action_intent: "OPEN",
+    decision_reason: "TEST_ONLY incompatible review",
+    eligibility: false,
+    review_quantity: null,
+    position_range: null,
+    available_cash_impact: null,
+    ...change,
+  };
+  expect(renderToStaticMarkup(<DecisionDetail />)).not.toContain(
+    "证券级条件性人工复核",
+  );
+});
+
 it.each(["daily", "packet", "detail"] as const)(
   "suppresses retained readiness after %s fails, reloads or changes publication",
   (source) => {

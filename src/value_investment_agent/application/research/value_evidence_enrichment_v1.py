@@ -34,7 +34,9 @@ FINANCIAL_FUNDING_FIELDS = frozenset({
 
 def _source_financial_funding_scope(packet, source):
     # Keep the legacy extraction bytes/cache identity and income IDs unchanged.
-    from ...infrastructure.filings.financial_funding_scope import extract_financial_funding_observations
+    from ...infrastructure.filings.financial_funding_scope import (
+        extract_financial_funding_observations, extract_funding_cash_context,
+    )
 
     observations = extract_financial_funding_observations(packet['page_texts'], source.period)
     required = set()
@@ -45,7 +47,7 @@ def _source_financial_funding_scope(packet, source):
         if field in FINANCIAL_FUNDING_FIELDS:
             required.add(field)
     unknown = any(row.get('value') is None for row in observations)
-    return dict(status=('UNKNOWN_FINANCIAL_FUNDING_AMOUNT_OR_SCOPE' if unknown else
+    result = dict(status=('UNKNOWN_FINANCIAL_FUNDING_AMOUNT_OR_SCOPE' if unknown else
                         'PENDING_EXPLICIT_FUNDING_CLASSIFICATION') if required else
                     'NO_AMOUNT_EVIDENCE_OF_FINANCIAL_FUNDING_NOT_A_SCOPE_CLEARANCE',
         symbol=source.symbol, period_label=source.period, observations=deepcopy(observations),
@@ -53,6 +55,52 @@ def _source_financial_funding_scope(packet, source):
         source_binding={key: getattr(source, key) for key in
                         ('path', 'sha256', 'source_url', 'available_at')},
         action='no_order', financial_fact_admitted=False)
+    context_rows = extract_funding_cash_context(packet['page_texts'], source.period)
+    if context_rows:
+        binding = result['source_binding']
+        rows = []
+        for row in context_rows:
+            identity = dict(symbol=source.symbol, source_binding=binding, observation=row)
+            digest = hashlib.sha256(json.dumps(identity, sort_keys=True, ensure_ascii=True).encode()).hexdigest()
+            rows.append(dict(row, symbol=source.symbol, available_at=source.available_at,
+                source_binding=deepcopy(binding), observation_id='funding-context:' + digest,
+                evidence_kind='SOURCE_BOUND_OBSERVATION', financial_fact_admitted=False,
+                formal_eligibility=False, action='no_order'))
+        by_field = {row['field_name']: row for row in rows}
+        derivations, blockers = [], []
+        numerator = by_field.get('controlling_group_deposits')
+        denominator = by_field.get('financial_deposits_and_interbank')
+        if numerator and denominator:
+            with localcontext() as context:
+                context.prec = 48
+                top, bottom = Decimal(numerator['value']), Decimal(denominator['value'])
+                if 0 <= top <= bottom and bottom > 0:
+                    derivations.append(dict(field_name='controlling_group_deposit_concentration',
+                        value=str(top / bottom), unit='ratio', symbol=source.symbol,
+                        period_label=source.period, statement_scope='consolidated_funding',
+                        formula='controlling_group_deposits / financial_deposits_and_interbank',
+                        input_observation_ids=[numerator['observation_id'], denominator['observation_id']],
+                        available_at=source.available_at, source_binding=deepcopy(binding),
+                        evidence_kind='DERIVED_RESEARCH_OBSERVATION',
+                        financial_fact_admitted=False, formal_eligibility=False, action='no_order'))
+                else:
+                    blockers.append('CONCENTRATION_INPUTS_INCONSISTENT')
+        required = {'controlling_group_deposits', 'financial_deposits_and_interbank',
+                    'consolidated_cash_and_equivalents', 'issuer_parent_cash_and_equivalents'}
+        missing = sorted(required - by_field.keys())
+        result['research_context'] = dict(schema_version='funding-cash-research-observations-v1',
+            symbol=source.symbol, period_label=source.period, source_binding=deepcopy(binding),
+            status='PARTIAL' if missing or blockers else 'SOURCE_BOUND_RESEARCH_OBSERVATIONS',
+            observations=rows, derivations=derivations, missing_fields=missing, blockers=blockers,
+            parser_version='funding-cash-context-v1',
+            parser_sha256=hashlib.sha256(Path(extract_funding_cash_context.__code__.co_filename).read_bytes()).hexdigest(),
+            limitations=['SAME_PDF_NOT_INDEPENDENT_SECOND_SOURCE',
+                         'GROUP_CASH_NOT_ISSUER_PARENT_DISTRIBUTABLE_CASH',
+                         'CONTROLLING_GROUP_DEPOSITOR_NOT_ISSUER_PARENT_CASH',
+                         'CROSS_PERIOD_CHANGE_REQUIRES_BOTH_SOURCE_CLOSURES',
+                         'NO_DEBT_COMPLETENESS_OR_CASH_ACCESS_APPROVAL'],
+            financial_fact_admitted=False, formal_eligibility=False, action='no_order')
+    return result
 
 
 def _derive_balance_ratio(source, company, packet, evaluation_at):
