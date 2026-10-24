@@ -3367,3 +3367,49 @@ Hash-bound old compiler, or call this native-input-only result admitted primary.
 The next value input work must preserve the linked cash terms and coordinate in
 a versioned, generic successor using the existing research and review workflow.
 The full Goal remains ACTIVE; protected environments remain untouched. no_order.
+
+### 2026-10-24 - Actual 8001 source-read recovery and remote CI follow-up
+
+Clean candidate b35e87543ca3502a7d55d7d57176b9f39ee6efb2 passed the canonical
+offline Core (5779 passed,106 skipped), Web (769 passed,13 skipped), typecheck
+and build. Sole-port8001 was actually updated from614f4650 to this commit.
+Runtime/source/build/public-registry identities matched. Authority pointer
+50746cc7 stayed unchanged. Public source GET now returns200 for600519/600887;
+the former long-lived409 has recovered in the actual restarted service, not
+merely in a fresh TestClient. No research or strategy approval changed.
+
+SAFE_REFRESH completed PARTIAL/exit3 with publication pub-bf20bc677c2c973329b5,
+packet85d03001230f942db7e6b49a7585ffe3ff6e4ca29d7ff1cdeeff0377eb2c578f.
+Actual October24 filing queries and October23 completed-session quotes remain
+separate. Marketwide collection still failed;5577 retained securities are not
+claimed as a refreshed universe or evidence of no opportunities.
+
+Actual browser source/manual/history/swing acceptance passed1440/390/320 widths:
+only three explicitly confirmed TEST_ONLY simulation POSTs, read-only requests
+created no ledger, manual cash97990/fees10, temporary journals removed. The
+historical301061 correction is not cancellation; sealed300750 original protection
+218.450 is not replaced by216.510, and its action remains unassessable. These
+independent simulations still do not prove one source-bound dual-sleeve account.
+Source receipt .tmp/live-source-workflows/772cd385-532b-46ec-8729-8c271a23f960/receipt.json
+SHA256 bc75ffd7b151697f100b09888c5bfaaf55259d82342f9039d40adab89fa03db1.
+Daily/company six-screen receipt .tmp/live-ui-b35e8754/receipt.json SHA256
+d8dc365e1523766a3cb39f4ab3bf72204272648af1a9e74b6d67588c62425f80.
+Visual inspection found overly repeated internal reasons in the mobile source
+table despite no page overflow; presentation cleanup is delegated, not accepted.
+
+User authorized milestone GitHub pushes. b35 was pushed to the existing PR1
+branch without merging main. GitHub Core run40043892529 passed; Web run40043892525
+failed formatting in two files. Scoped formatting successor76022027 passed that
+gate and remote frontend/build, but Web run40044538583 failed an old API fixture
+before its tamper assertion. The fixture now uses native dated-quote parsing,
+nonfuture source dates, positive volume and explicit v3 candidate-pool membership;
+production checks are unchanged. Focused34 passed and complete local Web API284
+passed. The API module is added to the existing Core inventory. New remote CI
+has not yet passed; these local fixes are not a green GitHub claim.
+
+Do not integrate sibling007bf0b3 yet: independent probes confirmed original-time
+overwrite and issuer-prefix P2s, now returned to its owner. Source-native JS2
+compiler e7eaae42 also has a confirmed final original-Hash rebind P2 returned to
+its owner; outer rejection is not an excuse for contradictory replay provenance.
+Native intake/publication and the shared source-bound account remain unfinished.
+The full Goal stays ACTIVE, no_order; no private/Excel/server/production changes.

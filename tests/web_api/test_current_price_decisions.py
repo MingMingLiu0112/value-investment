@@ -84,6 +84,7 @@ def test_changed_daily_selection_blocks_frozen_action_conditions(tmp_path, monke
 def test_selection_original_tamper_suppresses_chart_with_valid_case(tmp_path, monkeypatch):
     from value_investment_agent.domain.hotspot.daily_selection import rank_daily_candidates
     from value_investment_agent.application.hotspot.daily_selection import verify_daily_selection
+    from value_investment_agent.infrastructure.hotspot.daily_market import parse_dated_market
     _fixture(tmp_path)
     case = capture(tmp_path)
     directory = tmp_path / "runtime/TEST_ONLY-selection"
@@ -94,7 +95,9 @@ def test_selection_original_tamper_suppresses_chart_with_valid_case(tmp_path, mo
     calendar = directory / "calendar.json"
     calendar.write_text("{}", encoding="utf-8")
     fields = [""] * 40
-    for index, value in {1: "Moutai", 2: "600519", 3: "10", 4: "10", 30: "20261014150000", 37: "50"}.items():
+    trade_date = case["market_trade_date"]
+    for index, value in {1: "Moutai", 2: "600519", 3: "10", 4: "10", 6: "100",
+            30: trade_date.replace("-", "") + "150000", 37: "50"}.items():
         fields[index] = value
     original = directory / "quotes.txt"
     original.write_bytes(('v_sh600519="' + '~'.join(fields) + '";').encode("gb18030"))
@@ -102,22 +105,25 @@ def test_selection_original_tamper_suppresses_chart_with_valid_case(tmp_path, mo
     def binding(path):
         return {"path": path.relative_to(tmp_path).as_posix(), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 
-    quote = {"symbol": "600519", "company_name": "Moutai", "industry": "TEST_ONLY", "close": "10",
-        "change_percent": "0", "amount_cny": "500000", "trade_date": "2026-10-14",
-        "status": "DATED_COMPLETED_QUOTE", "sha256": binding(original)["sha256"],
-        "available_at": NOW.isoformat(), "source_url": "https://qt.gtimg.cn/q=sh600519",
-        "classification_available_at": NOW.isoformat()}
-    ranking = rank_daily_candidates([quote], trade_date="2026-10-14")
-    report = {"schema_version": "hotspot-daily-selection-v1", "action": "no_order", "trade_date": "2026-10-14",
+    quotes, failures = parse_dated_market(original.read_bytes(), symbols=["600519"],
+        available_at=NOW, source_url="https://qt.gtimg.cn/q=sh600519")
+    assert not failures and len(quotes) == 1
+    quote = {**quotes[0], "industry": "TEST_ONLY", "classification_available_at": NOW.isoformat()}
+    ranking = rank_daily_candidates([quote], trade_date=trade_date)
+    report = {"schema_version": "hotspot-daily-selection-v1", "action": "no_order", "trade_date": trade_date,
         "limit": 5, "rows": [quote], "ranking": ranking, "observation_list": ranking["candidates"],
-        "hotspot_watch_queue": ranking["candidates"], "source_bindings": [binding(classification), binding(calendar),
+        "hotspot_watch_queue": ranking["candidate_pool"],
+        "candidate_pool": ranking["candidate_pool"],
+        "candidate_pool_limit": ranking["candidate_pool_limit"],
+        "candidate_pool_rule": ranking["candidate_pool_rule"],
+        "source_bindings": [binding(classification), binding(calendar),
             {**binding(original), "available_at": quote["available_at"], "source_url": quote["source_url"]}]}
     verify_daily_selection(tmp_path, report)
     report_path = directory / "report.json"
     report_path.write_text(json.dumps(report), encoding="utf-8")
     plan = project_current_price_action_plan(case)
     plan.update(decision_id="hotspot-600519", case_path=case["case_path"], case_sha256=case["case_sha256"],
-        daily_selection_binding=binding(report_path), daily_selection=ranking["candidates"][0])
+        daily_selection_binding=binding(report_path), daily_selection=ranking["candidate_pool"][0])
     packet = {"publication_id": "pub-current", "price_conditions": {"items": [
         {"symbol": "600519", "company_name": "Moutai", "price_action_plan": plan}]}}
     monkeypatch.setattr(module, "_load_snapshot", lambda root: (packet, None))
