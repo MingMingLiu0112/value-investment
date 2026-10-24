@@ -287,6 +287,8 @@ def reconciliation_state(replayed: ReplayedPortfolio) -> dict[str, Any]:
 class PrivateJournal:
     """Append-only JSONL journal with a per-record hash chain."""
 
+    _record_kinds = RECORD_KINDS
+
     def __init__(self, path: Path, *, lock_timeout_seconds: float = 10.0) -> None:
         self.path = path
         self.lock_timeout_seconds = lock_timeout_seconds
@@ -331,15 +333,15 @@ class PrivateJournal:
             records.append(record)
         return records
 
-    @staticmethod
-    def _validate_record(record: object, *, line_number: int, previous: str | None) -> None:
+    @classmethod
+    def _validate_record(cls, record: object, *, line_number: int, previous: str | None) -> None:
         if not isinstance(record, dict):
             raise JournalValidationError(f"私人流水第 {line_number} 行不是对象")
         if record.get("schema_version") != SCHEMA_VERSION:
             raise JournalValidationError(f"私人流水第 {line_number} 行 schema 无法识别")
         if record.get("action") != "no_order":
             raise JournalValidationError(f"私人流水第 {line_number} 行 action 被篡改")
-        if record.get("kind") not in RECORD_KINDS:
+        if record.get("kind") not in cls._record_kinds:
             raise JournalValidationError(f"私人流水第 {line_number} 行记录类型未知")
         if record.get("previous_record_sha256") != previous:
             raise JournalValidationError(f"私人流水第 {line_number} 行哈希链断裂")
@@ -361,7 +363,7 @@ class PrivateJournal:
         recorded_at: datetime,
         changes_holdings: bool,
     ) -> dict[str, Any]:
-        if kind not in RECORD_KINDS:
+        if kind not in self._record_kinds:
             raise JournalValidationError("未知的私人流水类型")
         if self._lock.held_by_current_thread():
             return self._append_locked(
@@ -608,8 +610,14 @@ class PrivatePortfolioService:
                 return record
         return None
 
-    def _replay(self, records: Sequence[Mapping[str, Any]], *, _validate_theses=True) -> ReplayedPortfolio | None:
+    def _replay(self, records: Sequence[Mapping[str, Any]], *, _validate_theses=True,
+                _apply_corrections=True, _revalidate_simulated_budgets=False) -> ReplayedPortfolio | None:
         self._validate_account_context(records)
+        if _apply_corrections and any(r["kind"] == "SIMULATED_FILL_CORRECTED_V1" for r in records):
+            if self.account_context is None:
+                raise JournalValidationError("ACTUAL cannot consume simulated corrections")
+            from .simulated_portfolio_service_v1 import replay_corrected_simulation
+            return replay_corrected_simulation(self, records, validate_theses=_validate_theses)
         if _validate_theses and any(record["kind"].startswith("PERSONAL_ENTRY_THESIS_") for record in records):
             from .personal_entry_thesis import resolve_personal_entry_thesis
             resolve_personal_entry_thesis(records=records,
@@ -706,6 +714,10 @@ class PrivatePortfolioService:
                 from .private_committed_risk import validate_committed_risk_event
                 validate_committed_risk_event(record, account_scope=state.baseline.account_scope,
                     ips_record_sha256=policy.get("_record_sha256"), lots=state.lots)
+            if _revalidate_simulated_budgets and state is not None:
+                from .simulated_portfolio_service_v1 import revalidate_simulated_budget
+                revalidate_simulated_budget(ReplayedPortfolio(len(records), state, policy,
+                    tuple(trades), snapshot, pending, draft))
         if state is None:
             return None
         return ReplayedPortfolio(len(records), state, policy, tuple(trades), snapshot, pending, draft,

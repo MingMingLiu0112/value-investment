@@ -61,8 +61,12 @@ def _journal(records: Sequence[dict], *, account_scope: str, expected_revision: 
              "Journal revision mismatch or empty journal")
     previous = None
     previous_at = None
+    validator = PrivateJournal
+    if simulated_context_from_records(records) is not None:
+        from .simulated_portfolio_service_v1 import SimulatedCorrectionJournal
+        validator = SimulatedCorrectionJournal
     for sequence, record in enumerate(records, 1):
-        PrivateJournal._validate_record(record, line_number=sequence, previous=previous)
+        validator._validate_record(record, line_number=sequence, previous=previous)
         _require(type(record.get("sequence")) is int and record["sequence"] == sequence,
                  "Journal sequence mismatch")
         recorded_at = _clock(record["recorded_at"])
@@ -223,7 +227,7 @@ def _subject(value):
     return value
 
 
-def _sources(records):
+def _sources(records, *, through_index=None):
     """Track fill lineage with the existing reconciliation's FIFO/sellability rule.
 
     Baseline lots participate in consumption but never acquire invented BUY ids.
@@ -232,11 +236,15 @@ def _sources(records):
     service = PrivatePortfolioService(PrivateJournal(Path("unused-read-only")),
         account_context=simulated_context_from_records(records))
     service._replay(records, _validate_theses=False)
+    source_records = records
+    if any(r["kind"] == "SIMULATED_FILL_CORRECTED_V1" for r in records):
+        from .simulated_portfolio_service_v1 import effective_simulated_records
+        source_records = effective_simulated_records(records)[0]
     initial = service._replay(records[:1], _validate_theses=False)
     lots = [dict(fill_hash=None, sleeve=lot.sleeve, symbol=lot.symbol, exchange=lot.exchange,
                  remaining=lot.quantity, sellable_on=lot.sellable_on) for lot in initial.state.lots]
     items = {}
-    for record in records:
+    for record in source_records if through_index is None else source_records[:through_index]:
         if record["kind"] != "FILL_CONFIRMED":
             continue
         fill = _fill_from_body(record["body"])

@@ -38,7 +38,10 @@ def fill(service, tx, *, side="BUY", symbol="600519", sleeve="CORE_VALUE", quant
         exchange="SSE" if symbol.startswith("6") else "SZSE", quantity=quantity,
         price_cny="10", fees_cny="5", trade_date=day)
     if side == "BUY":
-        payload.update(trading_unit="100", next_sell_session="2026-10-22" if day == "2026-10-21" else "2026-10-23")
+        from datetime import date
+        from value_investment_agent.domain.execution.exchange_calendar import next_exchange_session
+        payload.update(trading_unit="100", next_sell_session=next_exchange_session(
+            payload["exchange"], date.fromisoformat(day)).isoformat())
     _, digest = service.prepare_fill(dict(confirmed_hypothetical=True, idempotency_key=tx,
         expected_revision=service.read()["revision"], fill=payload))
     request = dict(confirmed_hypothetical=True, idempotency_key=tx + "-confirm",
@@ -165,7 +168,7 @@ def test_source_tamper_future_and_cross_security_refused(tmp_path):
         entry(factory(tmp_path, sources={"core": source(tmp_path, "300750")}), digest)
 
 
-def test_cancel_draft_t1_and_confirmed_correction_unsupported(tmp_path):
+def test_cancel_draft_t1_and_incomplete_correction_rejected(tmp_path):
     service = factory(tmp_path)
     initialize(service)
     fill(service, "A")
@@ -179,7 +182,7 @@ def test_cancel_draft_t1_and_confirmed_correction_unsupported(tmp_path):
     service.cancel_fill(dict(confirmed_hypothetical=True, idempotency_key="cancel",
         expected_revision=revision + 1, prepared_record_sha256=digest, cancelled_at=now(), reason="Hypothesis cancelled"))
     before = service.read()
-    with pytest.raises(JournalValidationError, match="CORRECTION_UNSUPPORTED"):
+    with pytest.raises(JournalValidationError):
         service.correct_confirmed_fill({})
     assert service.read() == before
     assert before["portfolio"]["cash_cny"] == "8995"

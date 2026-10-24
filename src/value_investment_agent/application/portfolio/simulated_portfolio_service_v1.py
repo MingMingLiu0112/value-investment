@@ -1,15 +1,129 @@
 """Persistent manual hypotheses over the existing journal, never an actual account."""
 from copy import deepcopy
+from dataclasses import replace
 from datetime import datetime
+from decimal import Decimal
 from hashlib import sha256
 import json
 from pathlib import Path
 
 from .private_portfolio_service import (
     PrivateJournal, PrivatePortfolioService, SimulatedAccountContext, JournalValidationError,
+    JournalConflict, RECORD_KINDS, _fill_from_body, request_digest, simulated_context_from_records,
 )
 from .personal_entry_thesis import resolve_personal_entry_thesis, _sources
 from .private_risk_projection import _snapshot_payload, _policy_payload
+from ...domain.portfolio.dual_sleeve_records import canonical_bytes
+
+CORRECTION_KIND = "SIMULATED_FILL_CORRECTED_V1"
+CORRECTION_SCHEMA = "simulated-confirmed-fill-correction-v1"
+CORRECTABLE_FIELDS = frozenset({"price_cny", "fees_cny", "quantity"})
+
+
+class SimulatedCorrectionJournal(PrivateJournal):
+    """Only the explicitly selected SIM adapter accepts this extra event kind."""
+
+    _record_kinds = RECORD_KINDS | {CORRECTION_KIND}
+
+
+def effective_simulated_records(records, *, cutoff=None):
+    """In-memory interpretation, NEVER rewritten journal bytes or new fill identities.
+
+    Original record hashes remain lineage identifiers, not hashes of these derived
+    bodies. Validate the original hash chain before projecting any correction.
+    """
+    context = simulated_context_from_records(records)
+    if context is None:
+        raise JournalValidationError("Versioned SIM context required for corrections")
+    effective = deepcopy(list(records))
+    fills, versions, lineage = {}, {}, {}
+    previous = None
+    previous_at = None
+    for index, record in enumerate(records):
+        SimulatedCorrectionJournal._validate_record(record, line_number=index + 1, previous=previous)
+        stamp = datetime.fromisoformat(record["recorded_at"])
+        if (stamp.utcoffset() is None or (cutoff is not None and stamp > cutoff)
+                or (previous_at is not None and stamp < previous_at)
+                or record.get("sequence") != index + 1):
+            raise JournalValidationError("Correction journal chronology/sequence invalid")
+        previous, previous_at = record["record_sha256"], stamp
+        if record["kind"] == "FILL_CONFIRMED":
+            fills[record["record_sha256"]] = index
+        if record["kind"] != CORRECTION_KIND:
+            continue
+        body = record["body"]
+        expected_fields = {"schema_version", "account_context", "target_fill_record_sha256",
+            "expected_original_version", "expected_revision", "changes", "confirmed_at", "reason",
+            "confirmed_hypothetical"}
+        if (set(body) != expected_fields or body["schema_version"] != CORRECTION_SCHEMA
+                or body["account_context"] != context.as_dict()
+                or body["confirmed_hypothetical"] is not True
+                or type(body["expected_revision"]) is not int or body["expected_revision"] != index
+                or not isinstance(body["reason"], str) or not body["reason"].strip()
+                or record.get("changes_holdings") is not True):
+            raise JournalValidationError("Invalid simulated correction contract")
+        target = body["target_fill_record_sha256"]
+        if target not in fills or body["expected_original_version"] != versions.get(target, target):
+            raise JournalValidationError("Correction original fill/version mismatch")
+        confirmed = datetime.fromisoformat(body["confirmed_at"])
+        if (confirmed.utcoffset() is None or not datetime.fromisoformat(records[index-1]["recorded_at"])
+                <= confirmed <= stamp):
+            raise JournalValidationError("Invalid correction confirmation time")
+        changes = body["changes"]
+        if not isinstance(changes, dict) or not changes or set(changes) - CORRECTABLE_FIELDS:
+            raise JournalValidationError("Only price, quantity and fees may be corrected")
+        original_index = fills[target]
+        fill = deepcopy(effective[original_index]["body"]["fill"])
+        if all(str(fill[key]) == str(value) for key, value in changes.items()):
+            raise JournalValidationError("Correction must change a value")
+        fill.update(changes)
+        _fill_from_body({"fill": fill})
+        prepared_hash = records[original_index]["body"]["prepared_record_sha256"]
+        prepared = [i for i, r in enumerate(records[:original_index])
+                    if r["record_sha256"] == prepared_hash and r["kind"] == "FILL_PREPARED"]
+        if len(prepared) != 1:
+            raise JournalValidationError("Correction lacks original prepared fill")
+        effective[original_index]["body"]["fill"] = fill
+        effective[prepared[0]]["body"]["fill"] = deepcopy(fill)
+        versions[target] = record["record_sha256"]
+        item = lineage.setdefault(target, dict(original_fill=deepcopy(records[original_index]["body"]["fill"]),
+            correction_record_sha256s=[]))
+        item.update(effective_fill=deepcopy(fill), effective_version_sha256=record["record_sha256"])
+        item["correction_record_sha256s"].append(record["record_sha256"])
+    return effective, lineage
+
+
+def revalidate_simulated_budget(replayed):
+    """Reuse the native sleeve projection at every historical state transition."""
+    from .private_risk_projection import _sleeve_policy
+    _, sleeves, reserve = _sleeve_policy(replayed)
+    if sleeves is None:
+        return "NOT_ASSESSABLE_NO_CONFIRMED_IPS"
+    floor = max(Decimal(reserve), Decimal(replayed.policy.get("minimum_cash_cny") or "0"))
+    if (replayed.state.cash_cny < floor
+            or any(Decimal(row["cash_cny"]) < 0 for row in sleeves.values())):
+        raise JournalValidationError("Correction violates historical sleeve/shared cash budget")
+    return "REVALIDATED_CONFIRMED_HYPOTHETICAL_IPS"
+
+
+def replay_corrected_simulation(service, records, *, validate_theses):
+    effective, lineage = effective_simulated_records(records, cutoff=service._now())
+    replayed = service._replay(effective, _validate_theses=False, _apply_corrections=False,
+        _revalidate_simulated_budgets=True)
+    if validate_theses:
+        resolve_personal_entry_thesis(records=records,
+            account_scope=service.account_context.account_scope, expected_revision=len(records), as_of=service._now())
+    latest = max(i for i, r in enumerate(records) if r["kind"] == CORRECTION_KIND)
+    last_snapshot = max((i for i, r in enumerate(records) if r["kind"] == "RECONCILED_CONFIRMED"), default=-1)
+    # Fills keep their original IDs/count. The new revision invalidates older
+    # reconciliations even when quantity happened not to change.
+    if last_snapshot < latest:
+        replayed = replace(replayed, snapshot=None, snapshot_version=None, snapshot_scope=None)
+    state = replace(replayed.state, confirmed_at=max(replayed.state.confirmed_at,
+        datetime.fromisoformat(records[latest]["body"]["confirmed_at"])))
+    trades = tuple(dict(trade, fill_correction=deepcopy(lineage[trade["record_sha256"]]))
+        if trade["record_sha256"] in lineage else trade for trade in replayed.trades)
+    return replace(replayed, state=state, trades=trades)
 
 
 def _safe_child(root, relative):
@@ -36,7 +150,7 @@ class SimulatedPortfolioServiceV1:
         self._clock = clock
         self._path = _safe_child(project,
             Path("runtime/simulated-portfolios-v1") / context.account_id / "journal.jsonl")
-        self._ledger = PrivatePortfolioService(PrivateJournal(self._path),
+        self._ledger = PrivatePortfolioService(SimulatedCorrectionJournal(self._path),
             account_context=context, clock=clock)
         self._check()
 
@@ -81,8 +195,54 @@ class SimulatedPortfolioServiceV1:
         return self._ledger.reconcile(self._request(request))
 
     def correct_confirmed_fill(self, request):
-        self._check()
-        raise JournalValidationError("CONFIRMED_FILL_CORRECTION_UNSUPPORTED")
+        payload = self._request(request)
+        fields = {"idempotency_key", "expected_revision", "target_fill_record_sha256",
+            "expected_original_version", "changes", "confirmed_at", "reason"}
+        if set(payload) != fields:
+            raise JournalValidationError("Exact correction fields required")
+        changes = payload["changes"]
+        if not isinstance(changes, dict) or not changes or set(changes) - CORRECTABLE_FIELDS:
+            raise JournalValidationError("Only price, quantity and fees may be corrected")
+        with self._ledger.journal.transaction() as records:
+            self._ledger._validate_account_context(records)
+            existing = self._ledger._existing(records, payload)
+            if existing is not None:
+                response, digest = existing
+                return dict(response, effective_version_sha256=digest), digest
+            revision = self._ledger._require_revision(records, payload)
+            current = self._ledger._replay(records)
+            if current is None or current.pending is not None or current.pending_policy is not None:
+                raise JournalValidationError("Correction requires confirmed state without drafts")
+            moment = self._ledger._now()
+            confirmed = datetime.fromisoformat(payload["confirmed_at"])
+            if (confirmed.utcoffset() is None or not datetime.fromisoformat(records[-1]["recorded_at"])
+                    <= confirmed <= moment):
+                raise JournalValidationError("Explicit current correction confirmation required")
+            body = dict(schema_version=CORRECTION_SCHEMA, account_context=self._context.as_dict(),
+                target_fill_record_sha256=payload["target_fill_record_sha256"],
+                expected_original_version=payload["expected_original_version"], expected_revision=revision,
+                changes=deepcopy(changes), confirmed_at=confirmed.isoformat(), reason=payload["reason"],
+                confirmed_hypothetical=True)
+            provisional = dict(schema_version="private-portfolio-journal-v1", sequence=revision + 1,
+                recorded_at=moment.isoformat(), kind=CORRECTION_KIND,
+                previous_record_sha256=records[-1]["record_sha256"], idempotency_key=payload["idempotency_key"],
+                request_sha256=request_digest(payload), action="no_order", changes_holdings=True,
+                body=body, response={})
+            provisional["record_sha256"] = sha256(canonical_bytes(provisional)).hexdigest()
+            try:
+                candidate = self._ledger._replay([*records, provisional])
+            except ValueError as error:
+                raise JournalValidationError("Corrected history rejected: " + str(error)) from error
+            response = dict(status=CORRECTION_KIND, namespace="SIMULATED", action="no_order",
+                revision=revision + 1, target_fill_record_sha256=payload["target_fill_record_sha256"],
+                previous_version_sha256=payload["expected_original_version"],
+                cash_cny=str(candidate.state.cash_cny), realized_pnl_cny=str(candidate.state.realized_pnl_cny),
+                snapshot_status="INVALIDATED_RECONCILIATION_REQUIRED", entry_review_required=True,
+                budget_revalidation=revalidate_simulated_budget(candidate), formal_eligibility=False)
+            record = self._ledger.journal.append(kind=CORRECTION_KIND, body=body, response=response,
+                idempotency_key=payload["idempotency_key"], request_sha256=request_digest(payload),
+                recorded_at=moment, changes_holdings=True)
+            return dict(response, effective_version_sha256=record["record_sha256"]), record["record_sha256"]
 
     def _source(self, source_id, symbol):
         return self._verify_source(deepcopy(self._research_sources.get(source_id)), symbol)
@@ -134,6 +294,7 @@ class SimulatedPortfolioServiceV1:
         self._check()
         records = self._ledger.records()
         replayed = self._ledger._replay(records)
+        corrections = effective_simulated_records(records)[1] if any(r["kind"] == CORRECTION_KIND for r in records) else {}
         entries = []
         if records:
             resolved = resolve_personal_entry_thesis(records=records,
@@ -147,6 +308,8 @@ class SimulatedPortfolioServiceV1:
                     sleeve=row["sleeve"], remaining_quantity=row["remaining_quantity"],
                     fill_record_sha256=row["fill_record_sha256"],
                     hypothesis=deepcopy(binding["reconstruction"]) if binding else None,
+                    fill_correction=deepcopy(corrections.get(row["fill_record_sha256"])),
+                    hypothesis_review_status="ACCOUNT_HISTORY_CORRECTED_REVIEW_REQUIRED" if corrections else "UNCHANGED",
                     entry_confirmation_sha256=binding["record_sha256"] if binding else None,
                     original_pit_proven=False, advisory_eligible=False))
         snapshot = _snapshot_payload(replayed) if replayed else None
@@ -164,7 +327,10 @@ class SimulatedPortfolioServiceV1:
             policy=dict(_policy_payload(replayed), sensitivity="SIMULATED_EXPLICIT_HYPOTHESIS") if replayed else None,
             entries=entries, formal_eligibility=False, actual_account_used=False,
             ownership_verified=False, position_guidance=None,
-            confirmed_fill_correction="UNSUPPORTED",
+            confirmed_fill_correction="PRICE_QUANTITY_FEES_ONLY_V1", fill_corrections=corrections,
+            correction_reconciliation_status=("INVALIDATED_RECONCILIATION_REQUIRED" if replayed.snapshot is None
+                or replayed.snapshot_version != replayed.state.version
+                else "RECONCILED_AFTER_CORRECTION") if corrections else "NOT_APPLICABLE",
             source_scope="HASH_BOUND_REFERENCE_NOT_STRATEGY_OR_MARKET_PRICE_ADMISSION")
 
     def entry_consumption(self, *, sell_fill_sha256):
@@ -176,8 +342,8 @@ class SimulatedPortfolioServiceV1:
         if len(matches) != 1:
             raise JournalValidationError("Confirmed sell must belong to this account")
         index = matches[0]
-        before = _sources(records[:index])[0]
-        after = _sources(records[:index + 1])[0]
+        before = _sources(records, through_index=index)[0]
+        after = _sources(records, through_index=index + 1)[0]
         # Existing FIFO reconciliation has already validated every transition.
         consumed = []
         for digest, original in before.items():
