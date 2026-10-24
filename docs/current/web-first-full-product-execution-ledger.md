@@ -4786,3 +4786,63 @@ finite-candidate APIs. No old builder, valuation model, approval or private data
 may change. Reuse known inventory/tax/nonrecurring counterevidence with exact
 original bindings; no impairment or tax addbacks. Runtime preparation is in
 progress, not counted as delivered. Root owns existing consumer pointer.
+
+### 2026-10-25 exact342eace7 publication and next actual gap
+
+342eace72c3ce742c9f700ef17de75184f9b112e Core40120026745/Web40120026697
+SUCCESS. Clean build passed. Sole8001 now exact342eace7/MATCHED; publisher
+dual1/.tmp/release-joint-20261024T183145Z/receipt.json PASS. Public packet was
+not rebuilt, observations not recomputed, all guarded public/authority/parser
+bytes and the research-only pointer unchanged.
+Actual three-width browser receipt:
+vv1/.tmp/live-ui-342eace7/fcac92b2-547c-461a-8821-12061a93347c/receipt.json.
+1440/390/320 PASS including the actual unsupported-terminal explanation, prior
+cash context, two-company facts/earnings and screened000544. No private APIs or
+writes; no newly approved securities.
+
+600887 actual rebuild identified a CODE_GAP, not missing company facts: v1
+accepts exact pinned recovery transport on the input, then drops publication_input
+when constructing the successor registry. Same script original locator and
+SHA were already mapped; v1's final inventory therefore fails again. Exact
+traceback locals and diagnostic-only positive control are in
+vv1/.tmp/yili-transport-traceback-diagnosis.json. Old results remain failed.
+Bounded source_reobservation_v2 + tests are in progress, reusing/pinning the
+unchanged v1 logic and forwarding DATA_ONLY recovery; never loosen daily_assets.
+New file byte protection and one existing-CI test entry are working changes.
+No real new candidate/public pointer is accepted yet; author must finish actual
+compilation, native replay, publication verification and Root integration.
+
+### 2026-10-25 600887 current-input recovery (working acceptance)
+
+Actual v2 source observation and native pending compilation succeeded without
+changing v1/daily_assets/pending producer or frozen cash files. Candidate:
+runtime/600887-current-engine-pending/9bf04c856f66418794341027d365f2c4/pending/candidate.json,
+53de686178c4ae4e2857758940b8022ebd0adad9dc9171488c0c6490ee380dea.
+Author verified-delivery413cb0b62e2434543f1e2893534de1974439d2627bdbf3663b95b3f6aa341279
+correctly remains PARTIAL at the later replay-publication attempt: a FRESH
+producer is not eligible for STALE-repair. Do not weaken that correct rejection.
+
+Root reused the EXISTING new-input supplement loader and API. It can now select
+an exact native binding via optional pending_candidates in the existing PUBLIC
+config/current-research-drafts.json. User workflow/trust and old replay pointer
+stay byte-identical; a bad explicit public binding raises, never falls back.
+No second publication/approval framework was added. Existing other draft and
+economic-comparison entries remain unchanged.
+
+Actual working-code TestClient acceptance:
+vv1/.tmp/yili-current-public-20261024T185105Z/result.json,
+a7d5d081e1f947abe8dffbed1d37c46a75168e2e54201cf2f518056ae0c4b867.
+Current-engine source-unavailable -> CONDITIONAL_ANALYSIS_VERIFIED, arithmetic
+true. Normalized profit remains null; assessment STRESS_ONLY, not a neutral main
+valuation. Source-anchored H1 inventory/tax/nonrecurring-overlap explanations,
+4 (not5) pending review groups and historical operating bridge are present.
+Three companies still UNASSESSABLE with no personal quantity/weight/cash impact.
+No private IO, signatures, current-price admission or approved decisions.
+
+Root regression185 passed/3 optional skipped; native public-input adapter35
+passed, plus author v2/legacy35 and independent review. The final one-test
+message assertion permits both Windows-root and POSIX-missing-asset v1 failures;
+production validation was not relaxed. v2 implementation remains
+ec7724e031776e6a004922dc817eb0e4bdb9762f77390db1c9a866b28067e67b.
+Clean-checkout/CI/data-staging/live-browser verification is still pending; do
+not count this working acceptance as an8001 release or investment approval.

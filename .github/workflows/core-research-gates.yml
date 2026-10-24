@@ -367,6 +367,7 @@ jobs:
           tests/test_research_review_wizard.py
           tests/test_pending_candidate_replay.py
           tests/test_source_reobservation.py
+          tests/test_source_reobservation_v2.py
           tests/test_research_market_date.py
           tests/test_pending_candidate_supplement.py
           tests/test_supplement_external_review_handoff.py

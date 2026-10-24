@@ -12,6 +12,7 @@ from .research_review_packet import project_research_review_packet
 
 
 WORKFLOW_PATH = 'config/user-research-workflow-v1.json'
+PUBLIC_INPUTS_PATH = 'config/current-research-drafts.json'
 MODE = 'REGISTERED_NEW_INPUT_CANDIDATE'
 SCOPE = 'UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY'
 GENERATOR = 'src/value_investment_agent/application/product/pending_research_candidate.py'
@@ -41,19 +42,27 @@ def load_current_pending_candidate_supplement(*, root: Path, symbol: str) -> dic
     """Absent returns None; invalid registration raises, with no other lookup."""
     root = root.resolve()
     symbol = normalize_symbol(symbol)
-    registry_path = root / WORKFLOW_PATH
-    if not registry_path.exists():
+    selected = None
+    # Public research input selection is data, never a change to reviewer authority.
+    for location, schema, field in (
+            (PUBLIC_INPUTS_PATH, 'current-research-drafts-v1', 'pending_candidates'),
+            (WORKFLOW_PATH, 'user-research-workflow-v1', 'supplemental_review_candidates')):
+        registry_path = root / location
+        if not registry_path.exists():
+            continue
+        registry_binding = dict(path=location, sha256=sha256_file(registry_path))
+        registry = load_json_object(_path(root, registry_binding), 'candidate input registry')
+        if registry.get('schema_version') != schema or registry.get('action') != 'no_order':
+            raise ValueError('Invalid candidate supplement registry')
+        entries = registry.get(field, {})
+        if not isinstance(entries, dict):
+            raise ValueError('Invalid supplemental review candidates')
+        if symbol in entries:
+            selected = entries[symbol], registry_binding
+            break
+    if selected is None:
         return None
-    registry_binding = dict(path=WORKFLOW_PATH, sha256=sha256_file(registry_path))
-    workflow = load_json_object(_path(root, registry_binding), 'user research workflow')
-    if workflow.get('schema_version') != 'user-research-workflow-v1' or workflow.get('action') != 'no_order':
-        raise ValueError('Invalid candidate supplement workflow registry')
-    entries = workflow.get('supplemental_review_candidates', {})
-    if not isinstance(entries, dict):
-        raise ValueError('Invalid supplemental review candidates')
-    if symbol not in entries:
-        return None
-    binding = entries[symbol]
+    binding, registry_binding = selected
     candidate_path = require_inside(root / 'runtime', _path(root, binding), 'supplement candidate')
     from .source_native_candidate_v2 import (
         verify_review_candidate, SCHEMA as NATIVE_SCHEMA, IMPLEMENTATIONS as NATIVE_IMPLEMENTATIONS,

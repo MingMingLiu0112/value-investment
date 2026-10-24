@@ -116,6 +116,57 @@ def test_joint_candidate_reaches_existing_web_and_unsigned_review_without_approv
     assert before == {p: p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
 
 
+def test_public_input_selects_native_candidate_without_changing_workflow(registered):
+    root, symbol, candidate, workflow = registered
+    original_workflow = workflow.read_bytes()
+    pointer = root / supplement.PUBLIC_INPUTS_PATH
+    write(pointer, dict(schema_version='current-research-drafts-v1', action='no_order',
+        drafts={}, pending_candidates={symbol: bind(root, candidate)}))
+    result = load(registered)
+    assert result['registry_binding'] == bind(root, pointer)
+    assert result['candidate_binding'] == bind(root, candidate)
+    assert result['mode'] == 'REGISTERED_NEW_INPUT_CANDIDATE'
+    assert result['approval_changed'] is result['research_admitted'] is result['price_admitted'] is False
+    assert result['position_guidance'] is None
+    assert workflow.read_bytes() == original_workflow
+    workflow.unlink()  # No reviewer configuration is required to read public research.
+    assert load(registered)['candidate_binding'] == result['candidate_binding']
+
+
+@pytest.mark.parametrize('fault', ['map', 'entry', 'hash', 'missing', 'outside', 'schema', 'action'])
+def test_invalid_public_input_never_falls_back_to_valid_workflow(registered, fault):
+    root, symbol, candidate, workflow = registered
+    original_workflow = workflow.read_bytes()
+    reference = bind(root, candidate)
+    pointer = dict(schema_version='current-research-drafts-v1', action='no_order',
+        drafts={}, pending_candidates={symbol: reference})
+    if fault == 'map':
+        pointer['pending_candidates'] = None
+    elif fault == 'entry':
+        pointer['pending_candidates'][symbol] = None
+    elif fault == 'hash':
+        reference['sha256'] = '0' * 64
+    elif fault == 'missing':
+        reference['path'] = 'runtime/missing-current-candidate.json'
+    elif fault == 'outside':
+        reference['path'] = '../outside-candidate.json'
+    elif fault == 'schema':
+        pointer['schema_version'] = 'unknown'
+    else:
+        pointer['action'] = 'order'
+    write(root / supplement.PUBLIC_INPUTS_PATH, pointer)
+    with pytest.raises((OSError, ValueError)):
+        load(registered)
+    assert workflow.read_bytes() == original_workflow
+
+
+def test_public_pointer_without_candidate_preserves_legacy_selection(registered):
+    root, _, _, workflow = registered
+    write(root / supplement.PUBLIC_INPUTS_PATH,
+        dict(schema_version='current-research-drafts-v1', action='no_order', drafts={}))
+    assert load(registered)['registry_binding'] == bind(root, workflow)
+
+
 @pytest.mark.parametrize('case', ['missing-file', 'missing-field', 'missing-symbol'])
 def test_absent_is_none_without_looking_up_old_candidates(tmp_path, case):
     if case != 'missing-file':
