@@ -115,6 +115,13 @@ def replay_source_native_inputs(*, root: Path, package_binding: dict, ledger_bin
             for k in ('path', 'sha256')) for ref in package['facts']['evidence_refs']):
         raise ValueError('Cash ledger is not bound to consumed facts')
     sources = verify_package_local_sources(root, package)
+    # Freeze expected identities before computation; never reseal changed bytes.
+    closure = {}
+    for ref in [package_binding, ledger_binding,
+                *[dict(path=path.relative_to(root).as_posix(), sha256=digest) for path, digest in sources]]:
+        if ref['path'] in closure and closure[ref['path']] != ref:
+            raise ValueError('Source-native consumed source identity conflict')
+        closure[ref['path']] = deepcopy(ref)
     scenarios = replay_timing_delay_inputs(plan=ledger['plan'],
         scenarios=ledger['cases']['TIMING_DELAY'], history=ledger['history'],
         opening_book=package['facts']['operating_inputs']['start_book_equity'])
@@ -148,13 +155,15 @@ def replay_source_native_inputs(*, root: Path, package_binding: dict, ledger_bin
                   'pre_decision_eligibility', 'decision_recommendation', 'artifact_bundle'):
         workbench[field] = native[field]
     verify_current_decision_workbench(workbench)
-    bindings = [_bound(root, package_path), ledger_binding,
-                *[dict(path=path.relative_to(root).as_posix(), sha256=digest) for path, digest in sources]]
-    for ref in bindings:
-        if sha256_file(require_inside(root, root/ref['path'], 'source-native source')) != ref['sha256']:
+    context = build_research_review_model_context(descriptor=descriptor, spec=spec)
+    read_bound_json(root, package_binding, 'source-native original package final read')
+    read_bound_json(root, ledger_binding, 'source-native cash ledger final read')
+    for ref in closure.values():
+        original = require_inside(root, root/ref['path'], 'source-native source')
+        if original.relative_to(root).as_posix() != ref['path'] or sha256_file(original) != ref['sha256']:
             raise ValueError('Source-native source changed during replay')
-    return dict(workbench=workbench, model_context=build_research_review_model_context(descriptor=descriptor, spec=spec),
-        scenario_inputs=scenarios, source_bindings=list({ref['path']: ref for ref in bindings}.values()))
+    return dict(workbench=workbench, model_context=context,
+        scenario_inputs=scenarios, source_bindings=list(closure.values()))
 
 
 def _economic_workbench(payload):

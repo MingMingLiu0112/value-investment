@@ -242,6 +242,38 @@ def test_cash_history_scope_cannot_be_silently_reinterpreted(synthetic_native, f
             history=ledger['history'], opening_book=package['facts']['operating_inputs']['start_book_equity'])
 
 
+@pytest.mark.parametrize('role', ['package', 'ledger', 'catalog_source'])
+@pytest.mark.parametrize('stage', ['serialize', 'model_context'])
+def test_direct_cold_replay_rejects_last_stage_source_drift(synthetic_native, monkeypatch, role, stage):
+    root, package_ref, ledger_ref = synthetic_native
+    package = json.loads((root/package_ref['path']).read_bytes())
+    path = root/(package_ref['path'] if role == 'package' else ledger_ref['path']
+        if role == 'ledger' else next(source['local_path'] for source in package['sources']
+            if source.get('local_path') and source['local_path'] != ledger_ref['path']))
+    function = '_serialize_outcome' if stage == 'serialize' else 'build_research_review_model_context'
+    original = getattr(native, function)
+    calls = []
+    def change_after_native_calculation(*args, **kwargs):
+        result = original(*args, **kwargs)
+        calls.append(True)
+        path.write_bytes(path.read_bytes()+b'\n')
+        return result
+    monkeypatch.setattr(native, function, change_after_native_calculation)
+    with pytest.raises(ValueError, match='hash mismatch|source changed during replay'):
+        native.replay_source_native_inputs(root=root, package_binding=package_ref,
+            ledger_binding=ledger_ref, now=datetime.now(timezone.utc))
+    assert calls == [True]
+
+
+def test_direct_cold_replay_returns_original_receipt_and_closure_identity(synthetic_native):
+    root, package_ref, ledger_ref = synthetic_native
+    replay = native.replay_source_native_inputs(root=root, package_binding=package_ref,
+        ledger_binding=ledger_ref, now=datetime.now(timezone.utc))
+    assert replay['workbench']['research_receipt']['input_sha256']['valuation_package'] == package_ref['sha256']
+    assert [ref for ref in replay['source_bindings'] if ref['path'] == package_ref['path']] == [package_ref]
+    assert [ref for ref in replay['source_bindings'] if ref['path'] == ledger_ref['path']] == [ledger_ref]
+
+
 def test_real_js2_native_candidate_cold_replay(tmp_path, monkeypatch):
     source_root = os.environ.get('SOURCE_NATIVE_REAL_ROOT')
     if not source_root:
