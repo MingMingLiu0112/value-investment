@@ -187,6 +187,7 @@ jobs:
           tests/test_private_ledger_candidate_fill.py
           tests/test_private_ips_policy.py
           tests/test_value_action_plan.py
+          tests/test_core_public_review.py
           tests/test_current_value_plan.py
           tests/test_research_profile.py
           tests/test_distribution.py

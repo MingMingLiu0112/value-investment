@@ -4718,3 +4718,29 @@ Bounded package verification update (working, not live):
 
 Next: clean-checkout verification, exact-commit CI, then existing authorized
 8001 release/readback. No main merge or production/private/Excel action.
+
+### 2026-10-25 exact92bd65a5 release checkpoint
+
+Code92bd65a5d42a6c3987138b56233fb3805a189ee3 is pushed; exact Core40116864996
+and Web40116864995 SUCCESS. Clean checkout backend317 passed/8 optional skipped;
+the explicit retained-public financial suite separately ran6 real tests PASS.
+Clean Web984 passed/25 optional skipped, complete format/type/build PASS.
+Skip lists are retained in gc1/.tmp/core-92bd65a5.xml; optional replay tests were
+not called successful. Existing read-only publisher produced pub-a37c261afbcd06730bf2,
+source-bound snapshot verified; no acquisition, approval or personal update.
+Existing8001 now92bd65a5 with public registries MATCHED. Publication receipt:
+dual1/.tmp/release-joint-20261024T174959Z/receipt.json. No hotspot observation
+recomputation; original research-only pointer and guarded authority/workflow/
+raw-parser bytes unchanged. Actual browser verification is still running;
+screenshots alone are not final browser acceptance.
+
+CI inclusion clarification: the managed review initially refused a one-line
+test addition as a frozen workflow. Subsequent read-only evidence showed that
+config/m6-backup-security-v1.json lists the workflow only as a backup input;
+the immutable manifest does not freeze it, and recent authorized commits already
+maintain it. The SAME apply_patch review accepted the identical one-line change
+after this evidence. No alternate write path or review bypass was used. The
+workflow now includes tests/test_core_public_review.py in its existing pytest
+list; no jobs, permissions, secrets, signing or deployment behavior changed.
+Exact-commit CI for this follow-up is pending; do not claim the new module was
+included in the earlier92bd65a5 CI run.
