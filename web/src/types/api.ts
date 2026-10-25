@@ -331,6 +331,7 @@ export interface ValueResearchAnalysis {
     economic_assumptions_reviewed: false;
     input_descriptor_sha256?: string;
     review_binding?: ValueResearchAnalysis["review_binding"];
+    source_bindings?: { path: string; sha256: string }[];
     accounting_bridge_review?: AccountingBridgeReview;
     model_applicability?: { assessment: string; reasons?: string[] };
     earnings?: {
@@ -339,6 +340,33 @@ export interface ValueResearchAnalysis {
       operating_quality_bridge?: OperatingEarningsReview;
     };
     sustainable_distribution_status?: string;
+    cash_conversion_diagnostic?: {
+      status: string;
+      scope: string;
+      symbol: string;
+      action: "no_order";
+      input_descriptor_sha256?: string;
+      candidate_binding?: { path: string; sha256: string };
+      source_bindings?: { path: string; sha256: string }[];
+      execution_bindings?: { path: string; sha256: string }[];
+      primary_valuation_usable: false;
+      g3_changed: false;
+      approval_changed: false;
+      price_admitted: false;
+      strategy_admitted: false;
+      historical_pit_admitted?: false;
+      normalized_parent_profit_cny: null;
+      rows: {
+        physical_page: number;
+        source_binding: { path: string; sha256: string };
+      }[];
+      calculation?: {
+        reported_cfo_change_cny: string;
+        identified_outflow_direction_contribution_cny: string;
+        contribution_fraction_of_reported_change: string | null;
+      };
+      counter_evidence?: string;
+    };
     historical_cash_observations?: {
       id: string;
       recomputed_value: string;
@@ -1218,6 +1246,15 @@ export interface DetailResponse {
       unit: string;
       period_label: string;
     }[];
+    source_original?: {
+      symbol: string;
+      period: string;
+      path: string;
+      sha256: string;
+      source_url: string;
+      available_at: string;
+    };
+    verification_methods?: string[];
     formal_eligibility: false;
   } | null;
   publication?: PublicPacketBlock;

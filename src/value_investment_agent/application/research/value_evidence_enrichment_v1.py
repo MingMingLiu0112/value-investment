@@ -21,7 +21,8 @@ VERSION = 'value-debt-scope-enrichment-v1'
 RATIO_VERSION = 'value-sourced-balance-ratio-v1'
 GROWTH_VERSION = 'value-sourced-income-growth-v1'
 PUBLIC_PROFIT_VERSION = 'value-official-public-parent-profit-v1'
-DERIVED_VERSIONS = {VERSION, RATIO_VERSION, GROWTH_VERSION, PUBLIC_PROFIT_VERSION}
+OFFICIAL_BALANCE_VERSION = 'OFFICIAL_BALANCE_RECONCILIATION_V1'
+DERIVED_VERSIONS = {VERSION, RATIO_VERSION, GROWTH_VERSION, PUBLIC_PROFIT_VERSION, OFFICIAL_BALANCE_VERSION}
 CORRELATION_METHOD = 'official_pdf_plus_independent_structured_source'
 STRUCTURED_SOURCES = {
     'AkShare / Sina detailed financial statements',
@@ -226,6 +227,100 @@ def _derive_balance_ratio(source, company, packet, evaluation_at):
             derivation_rule_pit_status='NOT_ADMITTED'))
     return [point], dict(version=RATIO_VERSION, status='FACT_ADMITTED', issues=[],
                          input_fact_ids=point['metadata']['input_fact_ids'], evidence_refs=refs)
+
+
+def _reconcile_official_balance_ratio(source, company, packet):
+    """Two printed balance identities, not independent-source or audit assurance."""
+    def rejected(reason, status='REJECTED_WITH_REASON'):
+        return [], dict(version=OFFICIAL_BALANCE_VERSION, status=status, issues=[reason])
+
+    fields = ('total_assets', 'total_liabilities', 'total_equity')
+    rows = packet.get('balance_reconciliation_candidates', [])
+    grouped = [[r for r in rows if r['field_name'] == field] for field in fields]
+    if any(len(group) != 1 for group in grouped):
+        return rejected('MISSING_OR_AMBIGUOUS_PRINTED_BALANCE_TOTALS')
+    rows = [group[0] for group in grouped]
+    identity_keys = ('issuer', 'statement_evidence_page', 'statement_title', 'period_label',
+                     'prior_period_label', 'unit', 'currency', 'unit_evidence_page', 'unit_evidence_excerpt',
+                     'currency_evidence_page', 'currency_evidence_excerpt',
+                     'period_evidence_page', 'period_evidence_excerpt', 'prior_period_basis',
+                     'owner_evidence', 'table_context_id')
+    if (any(not rows[0].get(key) for key in identity_keys)
+            or any(any(r.get(key) != rows[0][key] for key in identity_keys) for r in rows)
+            or any(r.get('statement_scope') != 'consolidated' or r.get('unit') != 'CNY'
+                   or r.get('currency') != 'CNY' or r.get('period_label') != source.period for r in rows)
+            or rows[0].get('prior_period_label') != str(int(source.period[:4])-1)+'-12-31'
+            or [r.get('source_label') for r in rows] != ['资产总计', '负债合计', '所有者权益合计']):
+        return rejected('BALANCE_IDENTITY_SCOPE_UNIT_OR_PERIOD_MISMATCH')
+    owner = rows[0]['owner_evidence']
+    if (owner.get('legal_name') != rows[0]['issuer'] or owner.get('compiler_name') != rows[0]['issuer']
+            or owner.get('security_code') != source.symbol
+            or any(not owner.get(key) for key in ('legal_name_page', 'legal_name_excerpt',
+                'security_code_page', 'security_code_excerpt', 'compiler_page', 'compiler_excerpt'))):
+        return rejected('ISSUER_LEGAL_NAME_TABLE_OWNER_MISMATCH')
+    try:
+        current = [Decimal(r['value']) for r in rows]
+        prior = [Decimal(r['prior_value']) for r in rows]
+        if any(not v.is_finite() for v in current + prior):
+            return rejected('NONFINITE_BALANCE_INPUT')
+        # Currency amounts are exact decimals; precision must not hide a residual.
+        with localcontext() as context:
+            context.prec = max(48, max(len(v.as_tuple().digits) for v in current + prior) + 8)
+            residuals = [str(a-l-e) for a,l,e in (current, prior)]
+            if any(a <= 0 or l < 0 or a != l+e for a,l,e in (current, prior)):
+                return rejected('TWO_PERIOD_BALANCE_IDENTITY_FAILED')
+        with localcontext() as context:
+            context.prec = 48
+            value = str(current[1] / current[0] * 100)
+    except (InvalidOperation, ValueError, TypeError, KeyError):
+        return rejected('INVALID_OR_MISSING_BALANCE_AMOUNT')
+    expected = dict(zip(fields, current), debt_ratio=Decimal(value))
+    for point in company:
+        field = point.get('field_name')
+        if field not in expected or point.get('period_label') != source.period or not _accepted(point):
+            continue
+        try:
+            agrees = (point.get('unit') == ('percent' if field == 'debt_ratio' else 'CNY')
+                and (point.get('metadata') or {}).get('statement_scope') == 'consolidated'
+                and Decimal(str(point['value'])).is_finite()
+                and Decimal(str(point['value'])) == expected[field])
+        except (InvalidOperation, ValueError, TypeError, KeyError):
+            agrees = False
+        if not agrees:
+            return rejected('EXISTING_ADMITTED_BALANCE_CONFLICT:' + field, 'SOURCE_CONFLICT')
+    source_binding = dict(asdict(source), issuer=rows[0]['issuer'])
+    refs, ids = [], []
+    for row in rows:
+        row_digest = hashlib.sha256(json.dumps(dict(source=source_binding, row=row), sort_keys=True).encode()).hexdigest()
+        input_id = 'official-reported-balance:' + row_digest
+        ids.append(input_id)
+        refs.append(dict(source_binding, **row, id=input_id))
+    proof = dict(status='TWO_PERIOD_EXACT_RECONCILIATION', current_residual=residuals[0],
+        prior_residual=residuals[1], equity_basis='TOTAL_EQUITY_INCLUDING_NCI_AND_OTHER_EQUITY',
+        balance_rows=rows, source_binding=source_binding, owner_evidence=owner,
+        table_context_id=rows[0]['table_context_id'],
+        accounting_identity_basis=dict(revision_year=2014, article=26,
+            url='https://www.mof.gov.cn/zcsjtsgb/gztsgb/201407/t20140723_3578373.htm'))
+    binding = dict(version=OFFICIAL_BALANCE_VERSION, source=source_binding, reconciliation=proof,
+        formula='total_liabilities / total_assets * 100', decimal_precision=48,
+        input_fact_ids=ids, parser=packet['identity']['implementation_sha256'], value=value)
+    digest = hashlib.sha256(json.dumps(binding, sort_keys=True).encode()).hexdigest()
+    point = dict(symbol=source.symbol, field_name='debt_ratio', period_label=source.period,
+        value=value, unit='percent', data_point_id='official-balance-ratio:' + digest,
+        source_id='official-balance-reconciliation:' + source.sha256,
+        source_name='Official reported consolidated balance reconciliation (single source)',
+        source_path=source.path, source_url=source.source_url, sha256=source.sha256,
+        created_at=source.available_at, available_at=source.available_at, fetched_at=source.available_at,
+        validation_status='verified', human_reviewed=False,
+        metadata=dict(verification_method=OFFICIAL_BALANCE_VERSION, derivation_formula=OFFICIAL_BALANCE_VERSION,
+            single_source_balance_verification=True, automatic_cross_source_verification=False,
+            assurance_basis='source_reported_only', statement_scope='consolidated', currency='CNY',
+            formula=binding['formula'], decimal_precision=48, input_fact_ids=ids, evidence_refs=refs,
+            balance_reconciliation=proof, derivation_rule_pit_status='NOT_ADMITTED',
+            economic_approval=False, complete_debt_verified=False))
+    return [point], dict(version=OFFICIAL_BALANCE_VERSION, status='FACT_ADMITTED', issues=[],
+        assurance_basis='source_reported_only', input_fact_ids=ids, evidence_refs=refs,
+        reconciliation=proof)
 
 
 def _derive_income_growth(source, company, packet):
@@ -581,7 +676,13 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
                     created_at=known_at, available_at=known_at)
                 adopted.append(derived['data_point_id'])
                 adopted_points.append(derived)
-    ratio_points, ratio_adoption = _derive_balance_ratio(source, company, packet, evaluation_at)
+    official_ratio, official_adoption = _reconcile_official_balance_ratio(source, company, packet)
+    if official_adoption['status'] == 'SOURCE_CONFLICT':
+        ratio_points, ratio_adoption = [], official_adoption
+    else:
+        ratio_points, ratio_adoption = _derive_balance_ratio(source, company, packet, evaluation_at)
+        if not ratio_points and official_ratio:
+            ratio_points, ratio_adoption = official_ratio, official_adoption
     adopted_points.extend(ratio_points)
     growth_points, growth_observations, growth_adoption = _derive_income_growth(
         source, company + profit_points, packet)
@@ -598,6 +699,7 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
                 before=asdict(before), after=asdict(after), adopted_debt_fact_ids=adopted,
                 adopted_points=adopted_points,
                 balance_ratio_adoption=ratio_adoption,
+                official_balance_reconciliation=official_adoption,
                 income_growth_adoption=growth_adoption,
                 public_summary_binding=public_summary_binding,
                 public_profit_adoption=profit_adoption,
@@ -618,6 +720,10 @@ def consume_retained_enrichment(root: Path, points: list[dict], sources: list[di
     """
     if not isinstance(sources, list) or len(sources) > 128:
         raise ValueError('retained enrichment sources require a bounded list of at most 128')
+    claimed_balances = [p for p in points if any([
+        (p.get('metadata') or {}).get('derivation_formula') == OFFICIAL_BALANCE_VERSION,
+        (p.get('metadata') or {}).get('verification_method') == OFFICIAL_BALANCE_VERSION,
+        (p.get('metadata') or {}).get('single_source_balance_verification') is True])]
     merged = [deepcopy(p) for p in points if (p.get('metadata') or {}).get('derivation_formula') not in DERIVED_VERSIONS]
     reports, seen = [], set()
     for declaration in sources:
@@ -642,9 +748,15 @@ def consume_retained_enrichment(root: Path, points: list[dict], sources: list[di
             'adopted_debt_fact_ids': result['adopted_debt_fact_ids'],
             'adopted_fact_ids': [p['data_point_id'] for p in result['adopted_points']],
             'balance_ratio_adoption': result['balance_ratio_adoption'],
+            'official_balance_reconciliation': result['official_balance_reconciliation'],
             'income_growth_adoption': result['income_growth_adoption'],
             'public_profit_adoption': result['public_profit_adoption'],
             'verification_created': False, 'formal_eligibility': False})
+    for claim in claimed_balances:
+        rebuilt = [p for p in merged if p.get('data_point_id') == claim.get('data_point_id')
+                   and (p.get('metadata') or {}).get('derivation_formula') == OFFICIAL_BALANCE_VERSION]
+        if len(rebuilt) != 1 or rebuilt[0] != claim:
+            raise ValueError('Official balance ratio does not match cold-revalidated original')
     return merged, reports
 
 

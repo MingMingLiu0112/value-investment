@@ -18,6 +18,7 @@ from ...infrastructure.filings.official_pdf import (
 from ...infrastructure.screening.financial_export_v2 import load_retained_financial_export
 from ...infrastructure.screening.value_evidence_enrichment_v1 import RetainedAnnualSource
 from ...infrastructure.screening.value_enrichment_progress import ValueEnrichmentProgress
+from ...infrastructure.screening import value_enrichment_progress
 from ...m2_discovery_engine import _point_available_at
 from ...infrastructure.screening.sina_income_original import collect_sina_income_original
 from ...infrastructure.filings.official_report_acquisition import acquire_official_report
@@ -152,7 +153,8 @@ def _new_public_candidate_context(result):
         evidence_refs=[dict(id='automatic-official-original', **source)],
         quote_date=None, financial_period=date.fromisoformat(source['period']),
         missing_date_reasons={'quote_date': 'No price admission from financial acquisition'})
-    # FinancialFacts is the existing shared fact codec; no FCFF model is invoked.
+    # The legacy carrier supports existing serialization only. Its FCFF fields
+    # do not select a model or become issuer-specific research requirements.
     return dict(case=case, facts=FinancialFacts(symbol, stamp.date(), False, [], blockers))
 
 
@@ -265,6 +267,10 @@ def read_verified_enrichment_progress(root: Path, symbol: str, evaluation_at: da
         funding = summary.get('source_financial_funding_scope')
         supplement = ({'source_financial_funding_scope': funding}
                       if funding and (funding.get('required_fields') or funding.get('observations')) else {})
+        if context['case'].financial_summary.get('context_origin') == 'AUTOMATIC_PUBLIC_FACTS_ONLY_V1':
+            supplement.update(source_original=result['source_extraction']['identity']['source'],
+                verification_methods=sorted({p['metadata']['verification_method']
+                    for p in result['adopted_points'] if p.get('metadata', {}).get('verification_method')}))
         return dict({key: summary[key] for key in keys}, as_of=result['evaluation_at'],
                     verified_at=evaluation_at.isoformat(), adopted_metrics=metrics,
                     **({'context_origin': context['case'].financial_summary['context_origin']}
@@ -548,6 +554,17 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
                 and row.get('queue_status') in {'SELECTED_FOR_RESEARCH', 'BUDGET_DEFERRED'}]
     if len({row['symbol'] for row in selected}) != len(selected):
         raise ValueError('Duplicate enrichment selection')
+    history = progress.scheduling_history(cutoff=now)
+    # Allocate acquisition resources fairly; this does not rank investments.
+    # A new exact work key still executes fresh validation, not a cached result.
+    def schedule(row):
+        count = len(row['evidence_completeness']['accepted_fields'])
+        completed = history.get((row['symbol'], row['timing']['financial_period']))
+        return (completed is not None,
+                completed or datetime.min.replace(tzinfo=timezone.utc), -count)
+    selected.sort(key=schedule)
+    implementation_sha256 = hashlib.sha256(Path(__file__).read_bytes() +
+        Path(value_enrichment_progress.__file__).read_bytes()).hexdigest()
     points, _ = load_retained_financial_export(export, evaluation_at=now)
     retained_sources = {(s['symbol'], s['period']): s for s in export_payload.get('value_enrichment_sources', [])}
     selected_symbols = {row['symbol'] for row in selected}
@@ -574,7 +591,10 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
             raise ValueError('Enrichment requires security identity')
         item = {'symbol': symbol, 'state': 'EVIDENCE_ENRICHING',
             'transitions': ['SCREENED', 'EVIDENCE_ENRICHING'], 'formal_eligibility': False,
-            'attempt': previous['attempt'] + 1 if previous else 1, 'retryable': False}
+            'attempt': previous['attempt'] + 1 if previous else 1, 'retryable': False,
+            'scheduling': dict(symbol=symbol, financial_period=period,
+                accepted_field_count=len(row['evidence_completeness']['accepted_fields']),
+                implementation_sha256=implementation_sha256)}
         adoption = None
         item_points, item_export, added_income = points, effective, []
         try:
@@ -665,6 +685,7 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
         progress.save({'key': _work_key(root, row, points, allow_network, retry_token,
                                        work_contexts.get(row['symbol'])),
             'attempt': item['attempt'], 'retryable': item['retryable'],
+            'scheduling': item['scheduling'],
             'completed_at': datetime.now(timezone.utc).isoformat(),
             'registered_adoption': adoption,
             'retry_after': (now + timedelta(seconds=60 * 2 ** (item['attempt'] - 1))).isoformat(),

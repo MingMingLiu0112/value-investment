@@ -467,8 +467,9 @@ export default function DailyDecisions() {
       )}
       {!loading && !packet.loading && !usable && (
         <div className="opportunity-stop" role="status">
-          <strong>当前结果不可核验，已停止展示候选。</strong>
+          <strong>正式发布不可核验，已停止展示正式结果。</strong>
           <p>{stopReason}</p>
+          <p>独立公开研究仍按各自来源核验，不代表正式复核或个人操作许可。</p>
           <Button
             onClick={() => {
               retry();
@@ -479,6 +480,7 @@ export default function DailyDecisions() {
           </Button>
         </div>
       )}
+      <DualStrategySelection key={selectionRevision} />
       {usable && data && (
         <>
           <div className="opportunity-strip">
@@ -573,7 +575,6 @@ export default function DailyDecisions() {
                 : undefined
             }
           />
-          <DualStrategySelection key={selectionRevision} />
           {update.data?.last_run?.screening && (
             <details>
               <summary>原始初筛与来源核验</summary>

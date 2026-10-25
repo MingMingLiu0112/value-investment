@@ -4536,7 +4536,7 @@
       "recommended_action": "KEEP_CURRENT",
       "risk": "HIGH",
       "line_count": 762,
-      "sha256": "68227ae0899b9f7a38e8733ced2e1f85118503509818d89c32fdfa87674525ff"
+      "sha256": "e8f923b9541176e525aa830b708eb358b21851a2936fb4af5cff2569f4d40e8e"
     },
     {
       "path": "scripts/current/run_update_and_publish.py",

@@ -144,6 +144,128 @@ function nativeDecision() {
   return decision;
 }
 
+/** TEST_ONLY cash attribution, not an admitted company forecast or dividend. */
+function cashDiagnosticDecision() {
+  const decision = nativeDecision();
+  const analysis = decision.price_action_plan!.research_analysis!;
+  const original = analysis.source_bindings[1];
+  const execution = {
+    path: "src/TEST_ONLY-cash-parser.py",
+    sha256: "e".repeat(64),
+  };
+  analysis.source_bindings.push(execution);
+  analysis.economic_assessment = {
+    schema_version: "value-economic-assessment-v1",
+    symbol: decision.symbol!,
+    action: "no_order",
+    primary_valuation_usable: false,
+    economic_assumptions_reviewed: false,
+    blockers: ["SUSTAINABLE_CASH_NOT_ESTABLISHED"],
+    source_bindings: [...analysis.source_bindings],
+    cash_conversion_diagnostic: {
+      status: "SOURCE_REPLAYED_HISTORICAL_COUNTEREVIDENCE",
+      scope:
+        "HISTORICAL_FINANCIAL_FLOW_DIAGNOSTIC_NOT_NORMALIZED_OR_DISTRIBUTABLE",
+      symbol: decision.symbol!,
+      action: "no_order",
+      input_descriptor_sha256: analysis.input_descriptor_sha256,
+      candidate_binding: analysis.review_binding!.candidate_binding,
+      source_bindings: [original],
+      execution_bindings: [execution],
+      primary_valuation_usable: false,
+      normalized_parent_profit_cny: null,
+      g3_changed: false,
+      approval_changed: false,
+      price_admitted: false,
+      strategy_admitted: false,
+      historical_pit_admitted: false,
+      rows: [1, 2].map((physical_page) => ({
+        physical_page,
+        source_binding: original,
+      })),
+      calculation: {
+        reported_cfo_change_cny: "100",
+        identified_outflow_direction_contribution_cny: "80",
+        contribution_fraction_of_reported_change: "0.8",
+      },
+      counter_evidence: "TEST_ONLY金融资金方向变化不能视为分红增长。",
+    },
+  };
+  return decision;
+}
+
+it("shows source-matched historical cash counterevidence without authorizing value or dividends", () => {
+  const html = render(cashDiagnosticDecision());
+  expect(html).toContain("现金流反证");
+  expect(html).toContain("占同比变动 80%");
+  expect(html).toContain("TEST_ONLY金融资金方向变化不能视为分红增长");
+  expect(html).toContain("不改变估值及交易资格");
+});
+
+it.skipIf(!process.env.PUBLIC_CASH_ANALYSIS)(
+  "renders actual source-replayed cash counterevidence from an explicitly hashed API analysis",
+  () => {
+    const bytes = readFileSync(process.env.PUBLIC_CASH_ANALYSIS!);
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe(
+      process.env.PUBLIC_CASH_ANALYSIS_SHA256,
+    );
+    const analysis = JSON.parse(bytes.toString("utf8"));
+    expect(analysis.symbol).toBe("600519");
+    const cash = analysis.economic_assessment.cash_conversion_diagnostic;
+    expect(cash.status).toBe("SOURCE_REPLAYED_HISTORICAL_COUNTEREVIDENCE");
+    expect(cash.calculation.reported_cfo_change_cny).toBe("57571689087.73");
+    expect(cash.calculation.identified_outflow_direction_contribution_cny).toBe(
+      "47306240453.43",
+    );
+    const decision = analysisDecision();
+    decision.symbol = analysis.symbol;
+    decision.price_action_plan!.research_analysis = analysis;
+    const html = render(decision);
+    expect(html).toContain("现金流反证");
+    expect(html).toContain("82.17%");
+    expect(html).toContain("不改变估值及交易资格");
+  },
+);
+
+it.each([
+  "symbol",
+  "descriptor",
+  "candidate",
+  "source",
+  "execution",
+  "permission",
+  "nonfinite",
+  "closure",
+  "rows",
+  "counter_object",
+  "bad_hash",
+])("does not show cash diagnostic with contradictory %s", (fault) => {
+  const decision = cashDiagnosticDecision();
+  const cash =
+    decision.price_action_plan!.research_analysis!.economic_assessment!
+      .cash_conversion_diagnostic!;
+  if (fault === "symbol") cash.symbol = "000001";
+  if (fault === "descriptor") cash.input_descriptor_sha256 = "0".repeat(64);
+  if (fault === "candidate")
+    cash.candidate_binding = { path: "OTHER", sha256: "0".repeat(64) };
+  if (fault === "source") cash.source_bindings = [];
+  if (fault === "execution") cash.execution_bindings = [];
+  if (fault === "permission") (cash as any).price_admitted = true;
+  if (fault === "nonfinite") cash.calculation!.reported_cfo_change_cny = "NaN";
+  if (fault === "closure")
+    (
+      decision.price_action_plan!.research_analysis!.economic_assessment as any
+    ).source_bindings = {};
+  if (fault === "rows") (cash as any).rows = [null, null];
+  if (fault === "counter_object")
+    (cash as any).counter_evidence = { text: "TEST_ONLY" };
+  if (fault === "bad_hash")
+    cash.execution_bindings![0] = { path: "OTHER", sha256: "invalid" };
+  expect(render(decision)).not.toContain(
+    "TEST_ONLY金融资金方向变化不能视为分红增长",
+  );
+});
+
 it("TEST_ONLY displays a dated low-confidence native path without calculating, fetching or approving it", () => {
   const decision = nativeDecision();
   const before = structuredClone(decision);

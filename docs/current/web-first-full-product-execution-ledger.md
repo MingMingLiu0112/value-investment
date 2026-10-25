@@ -5090,3 +5090,106 @@ and a TEST_ONLY PDF fixture missing the now-explicit decoder stub. Root repaired
 the compatibility output and only the synthetic boundary; the real declared-PDF
 integrity gate remains. Focused durable replay27 passed. Corrective exact-SHA CI
 must still pass before this increment can be released on8001.
+
+### 2026-10-25 exactf79745be CI and next public-financial increment
+
+Corrective source f79745bea1a04db4bd8220b697d92ee067cf6c2d passed GitHub
+Core40149436151/40149431876 and Web40149436153/40149431877. This closes the
+two earlier source/fixture failures, not financial or strategy admission.
+The full Windows selection reported6786 passed/225 skipped/nine failures:
+two now-fixed source/fixture failures, six environment-TEMP-scope failures
+(corrected scoped rerun26 passed), and one inherited optional native-workbook
+publication evidence mismatch. No workbook or retained publication was repaired
+or reissued to make the tests pass. Clean GitHub Core remains the source gate.
+
+Next working increment repairs actual000498 numbered consolidated-statement
+titles, explicit group-currency context, printed comparative columns and the
+parent-statement boundary within a page. It adds bounded Sina balance/cashflow
+original collection through the existing statement adapter; unknown provider
+amount units remain observations, not admitted CNY balances. Real originals are
+retained under runtime/sina-statement-originals/000498-20261025T010417957215Z.
+
+The existing detail shows the verified official filing URL/hash/acquisition time
+for automatic public-facts research. The daily page now mounts independently
+source-checked research outside the formal publication gate. Formal publication,
+private-account, model, strategy and order gates are unchanged. Root targeted
+Web77 passed/one optional skip; full Web1001 passed/25 skipped; typecheck passed.
+Backend public/batch/API/read-only selection149 passed/five optional skips,
+and financial layout/Sina/profit/durable selection131 passed/seven optional
+skips including an explicitly enabled actual000498 original replay.
+
+Single-official balance arithmetic is restricted to derived debt_ratio and is
+not double-source assurance, full interest-bearing debt, common equity or
+economic approval. Independent review exposed a real continuation-page mixed
+subsidiary table bug: a balanced identity alone did not prove group ownership.
+This finding blocks the new balance increment until corrected and independently
+retested. No latest balance publication or new8001 release is claimed here.
+The sole live8001 remains f911d952; no Canonical Excel, private data, server/PTA,
+database, scheduler, paid API or order mutation. Total P0-A..G remains incomplete;
+full official universe, complete economic research and independent strategy
+validation are not inferred from these engineering/source checks. action=no_order.
+
+### 2026-10-25 source-replayed financial and economic working closure
+
+Both continuation-page findings were independently reproduced and corrected:
+official balance totals and the cash-flow diagnostic now reject a subsidiary
+table or conflicting compiling entity, while valid same-issuer continuations
+remain usable. Strict report-presentation currency also recognizes the explicit
+issuer-level "本公司编制本财务报表" declaration; subsidiary functional currency
+and contradictory presentation currencies do not qualify.
+
+Final cross-process typed/API receipt:
+runtime/official-balance-final-cold/20261025T021034300205Z/final-receipt.json,
+3bd89a541636f3fa8ca9b2777e2913d9c7992c02b8f87dec2fb0802612a87aab.
+Actual000498 debt_ratio76.509590089% and parent profit2227194256.24 CNY;
+actual000151 debt_ratio73.790793813% and parent profit359573390.29 CNY.
+Both HTTP200/RESEARCH_ONLY, original source/method fields verified, coverage1/9,
+total quality score absent. Complete interest-bearing debt, applicable valuation
+inputs and economic approval remain unestablished. Old outputs were preserved.
+
+The existing economic assessment now cold-replays an identified consolidated
+H1 cash table, not a saved diagnostic. Actual600519 CFO change57571689087.73 CNY
+includes47306240453.43 CNY of identified central-bank/interbank outflow-direction
+change (82.17%). This is historical cash counterevidence, NOT recurring profit,
+free cash flow or sustainable dividends. Actual600887 blank target amounts are
+NOT_APPLICABLE, not zero. No security-code branch, hardcoded money or valuation
+gate waiver was introduced. Execution/source bindings join the assessment's own
+closure without rewriting the original model input closure. The existing Web
+economic paragraph consumes this diagnostic with candidate/descriptor/source
+checks. Actual final JSON -> SSR132 passed/four optional skips; artifact
+.tmp/cash-conversion-owner-p2-actual-20261025T021050429291Z/
+research-analysis-600519.json,
+112d3a3d3110794b1de10657cee48c0a44fbf1320366fdfc02fc39b2f6343dbb.
+
+Independent fixed-source analysis also confirmed a real enrichment starvation
+gap: fresh acquisition clocks changed exact work keys and repeatedly consumed
+the budget on the first companies. Same-count rotation alone failed after those
+companies gained one verified ratio. The authorized final scheduling rule is
+unattempted issuer/report first, then oldest verified completion, with accepted
+field count only an administrative tie-break. This changes acquisition-resource
+allocation, NOT candidate/economic ranking or screening thresholds. Exact
+_work_key bytes, source/PIT checks, fresh calculation, backoff and three-attempt
+limits are unchanged; legacy missing scheduling metadata is not guessed.
+Independent cross-period and six-round1-vs0 tests passed. Root batch/income/
+fairness/durable85 passed; economic final84 passed/two optional skips; consumer
+regression108 passed/20 optional skips; architecture33 passed. Full Web1013
+passed/26 optional skips; typecheck/format passed. New tests enter the existing
+Core workflow. Latest exact-SHA CI and8001 publication remain separate pending
+checks, not claimed by this working record. No production/private/Excel changes;
+formal economic/strategy qualification and the full P0-A..G objective remain
+incomplete. action=no_order.
+
+Actual working-source SAFE_REFRESH completed without an uploaded public file:
+runtime/daily-marketwide/20261025T0213145930681Z. All eleven existing nodes
+succeeded; overall receipt is PARTIAL/exit3 (the outer shell reports1), not PASS.
+The enrichment automatically adopted ratio and income-growth facts for000151
+and000498 through the existing typed registration. It still reports incomplete
+quality/debt. Existing verified2026-10-23 closes/structures were reused as such,
+not recollected or called new Shadow sessions. Incremental official event scans
+for600519/600887 were obtained without granting materiality/G3. Final public
+packetpub-d6d209166caf0cbc8cd1, SHA-256
+82843f9bf30cb1b3f35b81561a473f8afe4c6c488de60ae868ed69cbacb9e619,
+is VERIFIED/PARTIAL with zero formal admissions. No Web startup occurred.
+The CLI warning now distinguishes actually adopted facts from incomplete overall
+research; its existing inventory Hash was updated. This run preceded the final
+source commit and is not represented as clean-checkout or live8001 validation.

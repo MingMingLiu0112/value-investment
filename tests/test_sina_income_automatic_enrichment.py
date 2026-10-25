@@ -277,6 +277,12 @@ def test_default_context_reload_preserves_backoff_and_three_attempt_limit(automa
         outcome = run('reload-' + str(cycle))
         rows = [row for row in outcome['items'] if row['symbol'] == '600001']
         if cycle < 3:
+            # Unattempted companies have a fair acquisition turn before retry.
+            for peer in range(len(queue['evidence_enrichment_work_queue'])):
+                if rows:
+                    break
+                outcome = run(f'reload-{cycle}-peer-{peer}')
+                rows = [row for row in outcome['items'] if row['symbol'] == '600001']
             assert len(rows) == 1
             attempts.append(rows[0]['attempt'])
             assert rows[0]['retryable'] and len(rows[0]['adopted_fact_ids']) == 1

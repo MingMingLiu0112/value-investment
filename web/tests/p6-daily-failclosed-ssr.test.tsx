@@ -30,6 +30,12 @@ const state = vi.hoisted(() => ({
     error: undefined as string | undefined,
     retry: () => {},
   },
+  selection: {
+    data: undefined as any,
+    loading: false,
+    error: undefined as string | undefined,
+    retry: () => {},
+  },
 }));
 vi.mock("@umijs/max", () => ({
   Link: ({ to, children, ...props }: any) => (
@@ -48,12 +54,14 @@ vi.mock("../src/hooks/useApi", () => ({
           ? state.update
           : load === api.independentHotspot
             ? state.independentHotspot
-            : {
-                data: undefined,
-                loading: false,
-                error: undefined,
-                retry: () => {},
-              },
+            : load === api.strategySelection
+              ? state.selection
+              : {
+                  data: undefined,
+                  loading: false,
+                  error: undefined,
+                  retry: () => {},
+                },
 }));
 vi.mock("../src/hooks/usePrivateState", () => ({
   usePrivateState: () => ({
@@ -160,6 +168,12 @@ beforeEach(() => {
     data: undefined,
   };
   state.independentHotspot = {
+    loading: false,
+    error: undefined,
+    retry: () => {},
+    data: undefined,
+  };
+  state.selection = {
     loading: false,
     error: undefined,
     retry: () => {},
@@ -421,7 +435,7 @@ it.each(["daily", "packet", "both"] as const)(
     expect(state.packet.data).toBe(retainedPacket);
     expect(html).not.toContain("中文在线回归候选");
     expect(html).not.toContain("持仓今日复核");
-    expect(html).toContain("当前结果不可核验，已停止展示候选。");
+    expect(html).toContain("正式发布不可核验，已停止展示正式结果。");
     expect(html).toContain(
       failed === "packet" ? "packet refresh failed" : "daily refresh failed",
     );
@@ -434,7 +448,7 @@ it.each(["daily", "packet"] as const)(
     state[pending].loading = true;
     const html = renderToStaticMarkup(<DailyDecisions />);
     expect(html).not.toContain("中文在线回归候选");
-    expect(html).not.toContain("当前结果不可核验，已停止展示候选。");
+    expect(html).not.toContain("正式发布不可核验，已停止展示正式结果。");
   },
 );
 
@@ -449,7 +463,7 @@ it.each(["daily unavailable", "packet unavailable", "different publication"])(
       state.packet.data.publication_id = "pub-other";
     const html = renderToStaticMarkup(<DailyDecisions />);
     expect(html).not.toContain("中文在线回归候选");
-    expect(html).toContain("当前结果不可核验，已停止展示候选。");
+    expect(html).toContain("正式发布不可核验，已停止展示正式结果。");
   },
 );
 
@@ -475,7 +489,7 @@ it.each(["gate_code", "blockers", "reason"])(
     state.packet.data.chain_error = "PUBLICATION_CHAIN_UNAVAILABLE";
     const html = renderToStaticMarkup(<DailyDecisions />);
     expect(html).toContain("价值投资初筛的来源回执缺失或未通过核验");
-    expect(html).toContain("当前结果不可核验，已停止展示候选。");
+    expect(html).toContain("正式发布不可核验，已停止展示正式结果。");
     expect(html).not.toContain("判断与快照版本不一致");
     expect(html).not.toContain("发布链不可用（哈希或结构校验未通过）");
     expect(html).not.toContain("private-source-root");
@@ -707,4 +721,136 @@ it("unverified holdings decisions cannot become either an exit alert or a no-exi
     />,
   );
   expect(verified).toContain("已出现策略退出或减仓复核事项");
+});
+
+function independentSelectionFixture() {
+  return {
+    action: "no_order",
+    formal_eligibility: false,
+    portfolio_eligibility: false,
+    content_sha256: "a".repeat(64),
+    value: {
+      status: "RESEARCH_ONLY",
+      data_status: "PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS",
+      quote_date: "2026-10-23",
+      rule_version: "TEST_ONLY-independent-source",
+      coverage: {
+        universe_count: 10,
+        research_queue_count: 1,
+        observation_count: 4,
+        official_fact_admission_count: 0,
+      },
+      items: [
+        {
+          symbol: "000544",
+          company_name: "TEST_ONLY 独立来源研究候选",
+          profile_status: "GENERAL_RESEARCH",
+          action: "no_order",
+          formal_eligibility: false,
+          portfolio_eligibility: false,
+        },
+      ],
+    },
+    hotspot: { items: [], coverage: {} },
+  };
+}
+
+it.each([
+  "daily error",
+  "packet error",
+  "daily unavailable",
+  "packet unavailable",
+  "version mismatch",
+  "daily loading",
+  "packet loading",
+])(
+  "keeps independent source research visible during %s without exposing formal results",
+  (failure) => {
+    state.selection.data = independentSelectionFixture();
+    state.daily.data.actionable_evaluation = {
+      conditional_review_count: 1,
+      items: [{ decision_reason: "TEST_ONLY retained formal review" }],
+    };
+    if (failure === "daily error") state.daily.error = "TEST_ONLY daily failed";
+    if (failure === "packet error")
+      state.packet.error = "TEST_ONLY packet failed";
+    if (failure === "daily unavailable")
+      state.daily.data.publication.packet_status = "UNAVAILABLE";
+    if (failure === "packet unavailable")
+      state.packet.data.packet_status = "UNAVAILABLE";
+    if (failure === "version mismatch")
+      state.packet.data.publication_id = "TEST_ONLY other";
+    if (failure === "daily loading") state.daily.loading = true;
+    if (failure === "packet loading") state.packet.loading = true;
+    const transport = vi.spyOn(globalThis, "fetch").mockImplementation(() => {
+      throw new Error("SSR must not invoke network or order transports");
+    });
+    try {
+      const html = renderToStaticMarkup(<DailyDecisions />);
+      expect(html.match(/aria-label="双策略选股"/g)).toHaveLength(1);
+      expect(html).toContain("TEST_ONLY 独立来源研究候选");
+      expect(html).toContain("尚未成为官方核验事实");
+      expect(html).not.toContain("TEST_ONLY retained formal review");
+      expect(html).not.toContain('aria-label="明确行动结论"');
+      expect(html).not.toContain('aria-label="每日双策略流程"');
+      expect(html).not.toContain('aria-label="持仓今日复核"');
+      expect(html).not.toContain("中文在线回归候选");
+      expect(html).not.toContain("存在证券级条件复核");
+      expect(html).not.toContain("记录我的实际成交");
+      if (!failure.endsWith("loading")) {
+        expect(html).toContain("正式发布不可核验，已停止展示正式结果。");
+        expect(html.indexOf("正式发布不可核验")).toBeLessThan(
+          html.indexOf('aria-label="双策略选股"'),
+        );
+      } else {
+        expect(html.indexOf("ant-skeleton")).toBeLessThan(
+          html.indexOf('aria-label="双策略选股"'),
+        );
+      }
+      expect(transport).not.toHaveBeenCalled();
+    } finally {
+      transport.mockRestore();
+    }
+  },
+);
+
+it.each(["current", "unavailable"])(
+  "hides retained independent candidates after source failure with %s publication",
+  (publication) => {
+    state.selection.data = independentSelectionFixture();
+    state.selection.error = "TEST_ONLY independent source hash mismatch";
+    if (publication === "unavailable")
+      state.packet.error = "TEST_ONLY packet failed";
+    const html = renderToStaticMarkup(<DailyDecisions />);
+    expect(html.match(/aria-label="双策略选股"/g)).toHaveLength(1);
+    expect(html).toContain("选股来源暂不可核验，未生成新结论");
+    expect(html).not.toContain("TEST_ONLY 独立来源研究候选");
+    expect(html).not.toContain("存在证券级条件复核");
+  },
+);
+
+it("keeps an independently rejected source unknown rather than zero candidates", () => {
+  state.packet.error = "TEST_ONLY packet failed";
+  const selection = independentSelectionFixture();
+  selection.value.status = "SOURCE_OR_SELECTION_UNAVAILABLE";
+  selection.value.data_status = "SOURCE_REVALIDATION_FAILED";
+  selection.value.items = [];
+  selection.value.coverage = {} as typeof selection.value.coverage;
+  state.selection.data = selection;
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html).toContain("无法核验，不代表零候选");
+  expect(html).not.toContain("TEST_ONLY 独立来源研究候选");
+  expect(html).not.toContain("覆盖 0 家");
+  expect(html).not.toContain('aria-label="明确行动结论"');
+});
+
+it("mounts one independent selector before formal results when both sources are available", () => {
+  state.selection.data = independentSelectionFixture();
+  const html = renderToStaticMarkup(<DailyDecisions />);
+  expect(html.match(/aria-label="双策略选股"/g)).toHaveLength(1);
+  expect(html).toContain("TEST_ONLY 独立来源研究候选");
+  expect(html).toContain("中文在线回归候选");
+  expect(html.indexOf('aria-label="双策略选股"')).toBeLessThan(
+    html.indexOf('aria-label="明确行动结论"'),
+  );
 });

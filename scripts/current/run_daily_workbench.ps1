@@ -7,11 +7,11 @@ READ_ONLY (default)
   the existing 8001 entry; opening a browser remains a separate user action.
 
 SAFE_REFRESH
-  READ_ONLY plus the authorized dual-source quote collection, archiving and
-  close registration, bounded current price observation, then a packet rebuild:
-  re-running research, the human event review and the G3 valuation gate stay
-  explicit human/engineering steps and are listed as pending actions, never
-  signed here.
+  Authorized public settings drive bounded screening, financial enrichment,
+  dual-source quotes, close registration and current price observation before
+  a packet rebuild. Verified fact adoption stays separate from complete research.
+  Economic/G3, event materiality and independent strategy approval remain
+  substantive gates; this public-data refresh never signs those approvals.
 
 RESEARCH DISCOVERY (optional, Mock/TEST_ONLY only)
   -AutoDiscoverResearchContexts exports a bounded Mock batch from existing
@@ -477,7 +477,7 @@ if ($Mode -eq 'SAFE_REFRESH') {
             if ($queue.Json.enrichment_execution) {
                 $valueResearchPriority.execution = $queue.Json.enrichment_execution
                 if ($queue.Json.enrichment_execution.status -ne 'COMPLETED') {
-                    $notes.Add('财务补证已执行但仍有来源或口径缺口；未授予财务事实、估值或交易准入。')
+                    $notes.Add('财务补证已执行；具体已核验事实见逐证券回执，整体仍有来源或口径缺口，不代表财务完整、估值或交易准入。')
                 }
             }
         } catch {

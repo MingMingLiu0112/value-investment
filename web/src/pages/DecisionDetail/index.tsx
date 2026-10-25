@@ -920,6 +920,15 @@ export default function DecisionDetail() {
         )
       : undefined;
   const progress = data?.financial_progress;
+  const factSource = progress?.source_original;
+  const factSourceUsable =
+    factSource?.symbol === decision?.symbol &&
+    /^\d{4}-12-31$/.test(factSource?.period ?? "") &&
+    /^[a-f0-9]{64}$/.test(factSource?.sha256 ?? "") &&
+    /^https:\/\/static\.cninfo\.com\.cn\/finalpage\/\d{4}-\d{2}-\d{2}\/\d+\.PDF$/.test(
+      factSource?.source_url ?? "",
+    ) &&
+    Number.isFinite(Date.parse(factSource?.available_at ?? ""));
   const replay = data?.review_replay;
   const verifiedProgress =
     progress?.status === "VERIFIED_FACT_ADOPTION" &&
@@ -1190,6 +1199,30 @@ export default function DecisionDetail() {
                         {metric.field_name === "net_income" ? " 元" : "%"}
                       </span>
                     ))}
+                {factSourceUsable && factSource && (
+                  <span style={{ display: "block", overflowWrap: "anywhere" }}>
+                    <a
+                      href={factSource.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      原始财报
+                    </a>
+                    {" · "}
+                    <span title={factSource.sha256}>
+                      SHA-256 {shortDigest(factSource.sha256)}
+                    </span>
+                    {" · 取得时间（北京时间）"}
+                    {new Date(factSource.available_at).toLocaleString("zh-CN", {
+                      timeZone: "Asia/Shanghai",
+                      hour12: false,
+                    })}
+                    {progress.verification_methods?.includes(
+                      "OFFICIAL_BALANCE_RECONCILIATION_V1",
+                    ) &&
+                      " · 资产负债率：官方报表单一来源勾稽核验，非双源验证或审计鉴证。"}
+                  </span>
+                )}
               </Typography.Paragraph>
             )}
             {relevantFunding && (

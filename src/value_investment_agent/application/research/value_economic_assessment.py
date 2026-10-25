@@ -1,17 +1,19 @@
 """Source-bound economic diagnostics for pending equity research, without approval."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, localcontext
 from hashlib import sha256
 import json
 from pathlib import Path
+import re
 
 from ...valuation_models.residual_income import scenario_value
 from ..product.common import normalize_symbol
 from .value_research_analysis import _available, _bound, load_current_value_research_analysis
 from .economic_review_bundle import _build_economic_review_bundle
 from .operating_earnings_bridge import research_from_retained_sources
+from ...infrastructure.filings.pdf_text import extract_pages
 
 
 _OPERATING_EXECUTION_PATHS = (
@@ -23,6 +25,212 @@ _OPERATING_EXECUTION_PATHS = (
 _EXECUTED_OPERATING_BINDINGS = tuple(dict(path=name, sha256=sha256(
     (Path(__file__).resolve().parents[4] / name).read_bytes()).hexdigest())
     for name in _OPERATING_EXECUTION_PATHS)
+
+_CASH_EXECUTION_BINDINGS = tuple(ref for ref in _EXECUTED_OPERATING_BINDINGS
+    if ref['path'] != 'src/value_investment_agent/application/research/operating_earnings_bridge.py') + (
+        dict(path='src/value_investment_agent/application/research/value_research_analysis.py',
+             sha256=sha256((Path(__file__).resolve().parents[4] /
+                'src/value_investment_agent/application/research/value_research_analysis.py').read_bytes()).hexdigest()),)
+_CASH_SCOPE = 'HISTORICAL_FINANCIAL_FLOW_DIAGNOSTIC_NOT_NORMALIZED_OR_DISTRIBUTABLE'
+
+
+def _cash_flow_rows(pages, *, symbol, issuer, current_year):
+    """Read two printed columns inside one identified consolidated cash table."""
+    compact = lambda text: re.sub(r'\s+', '', text)
+    header = '\n'.join(pages[:8])
+    codes = set(re.findall(r'(?:公司|证券|股票)\s*代码\s*[:：]?\s*([0-9]{6})(?!\d)', header))
+    if codes != {symbol} or issuer not in compact(header):
+        raise ValueError('CASH_FLOW_ISSUER_MISMATCH')
+    if f'{current_year}年半年度报告' not in compact(header):
+        raise ValueError('CASH_FLOW_REPORT_PERIOD_MISMATCH')
+    lines = [(page, line.strip()) for page, text in enumerate(pages, 1)
+             for line in text.splitlines() if line.strip()]
+    starts = [i for i, (_, line) in enumerate(lines) if compact(line) == '合并现金流量表']
+    if len(starts) != 1:
+        raise ValueError('CASH_FLOW_CONSOLIDATED_TABLE_AMBIGUOUS')
+    start = starts[0]
+    ends = [i for i in range(start + 1, len(lines)) if compact(lines[i][1]) == '母公司现金流量表']
+    if not ends:
+        raise ValueError('CASH_FLOW_TABLE_END_MISSING')
+    selected = lines[start:ends[0]]
+    owners = {compact(issuer)}
+    for line in header.splitlines():
+        report_owner = re.fullmatch(r'(.+?)' + str(current_year) + r'年半年度报告', compact(line))
+        if report_owner and compact(issuer) in report_owner[1]:
+            owners.add(report_owner[1])
+    ownership = [dict(physical_page=lines[start][0], evidence_excerpt=lines[start][1],
+                      kind='CONSOLIDATED_TABLE_START')]
+    continuation_titles = {'合并现金流量表（续）', '合并现金流量表(续)',
+                           '合并现金流量表（续表）', '合并现金流量表(续表)'}
+    for index, (page_number, line) in enumerate(selected):
+        text = compact(line)
+        if '现金流量表' in text and index != 0:
+            if text not in continuation_titles:
+                raise ValueError('CASH_FLOW_STATEMENT_OWNERSHIP_CHANGED')
+            ownership.append(dict(physical_page=page_number, evidence_excerpt=line,
+                                  kind='CONSOLIDATED_CONTINUATION'))
+        if '编制单位' in text:
+            compiler = re.fullmatch(r'编制单位[:：](.+?)(?:单位[:：].*)?', text)
+            if not compiler or compiler[1] not in owners:
+                raise ValueError('CASH_FLOW_COMPILING_ENTITY_MISMATCH')
+            ownership.append(dict(physical_page=page_number, evidence_excerpt=line,
+                                  kind='MATCHED_COMPILING_ENTITY'))
+    table = '\n'.join(line for _, line in selected)
+    joined = compact(table)
+    period = joined.replace('—', '-').replace('－', '-').replace('–', '-')
+    if f'{current_year}年1-6月' not in period:
+        raise ValueError('CASH_FLOW_STATEMENT_PERIOD_MISMATCH')
+    expected = f'项目附注{current_year}年半年度{current_year-1}年半年度'
+    headers = [compact(line) for _, line in selected if compact(line).startswith('项目')]
+    if not headers or any(line != expected for line in headers):
+        raise ValueError('CASH_FLOW_TWO_COLUMN_ORDER_MISMATCH')
+    units = re.findall(r'(?<!编制)单位[:：]\s*([^\s:：]+)', table)
+    currencies = re.findall(r'币种[:：]\s*([^\s:：]+)', table)
+    if not units or not currencies or set(units) != {'元'} or set(currencies) != {'人民币'}:
+        raise ValueError('CASH_FLOW_UNIT_OR_CURRENCY_MISMATCH')
+    boundaries = ('经营活动现金流入小计', '经营活动现金流出小计', '二、投资活动产生的现金流量')
+    if any(joined.count(label) != 1 for label in boundaries):
+        raise ValueError('CASH_FLOW_OPERATING_SECTION_AMBIGUOUS')
+    inflow, outflow, investing = (joined.index(label) for label in boundaries)
+    if not inflow < outflow < investing:
+        raise ValueError('CASH_FLOW_OPERATING_SECTION_ORDER_INVALID')
+    money = r'-?(?:\d{1,3}(?:,\d{3})+|\d+)\.\d{2}'
+    rows = []
+    for label, section in (
+            ('经营活动产生的现金流量净额', 'OPERATING_NET_CASH'),
+            ('存放中央银行和同业款项净增加额', 'OPERATING_CASH_OUTFLOW')):
+        if joined.count(label) != 1:
+            raise ValueError('CASH_FLOW_ROW_MISSING_OR_AMBIGUOUS:' + label)
+        position = joined.index(label)
+        if not ((outflow < position < investing) if section == 'OPERATING_NET_CASH'
+                else (inflow < position < outflow)):
+            raise ValueError('CASH_FLOW_ROW_SECTION_MISMATCH:' + label)
+        pattern = (r'(?m)^' + r'\s*'.join(re.escape(char) for char in label)
+                   + r'\s+(' + money + r')\s+(' + money + r')[ \t]*(?=\n|$)')
+        matches = list(re.finditer(pattern, table))
+        if len(matches) != 1:
+            if section == 'OPERATING_CASH_OUTFLOW':
+                blank = re.search(r'(?m)^' + r'\s*'.join(re.escape(char) for char in label)
+                                  + r'[ \t]*\n(?=[^\d\s-])', table)
+                if blank:
+                    return None
+            raise ValueError('CASH_FLOW_ROW_REQUIRES_TWO_PRINTED_VALUES:' + label)
+        match = matches[0]
+        page = selected[table[:match.start()].count('\n')][0]
+        rows.append(dict(label=label, section=section, physical_page=page,
+            evidence_excerpt=match[0], unit='CNY', currency='CNY', statement_scope='consolidated',
+            statement_ownership_evidence=[dict(item) for item in ownership],
+            columns=[dict(period=f'H1{year}', value=str(Decimal(value.replace(',', ''))))
+                     for year, value in zip((current_year, current_year-1), match.groups())]))
+    return rows
+
+
+def _current_cash_conversion_diagnostic(root, analysis, now):
+    """Optional source-matched cash counterevidence, never a valuation fallback."""
+    unavailable = dict(status='UNAVAILABLE', scope=_CASH_SCOPE, symbol=analysis['symbol'],
+        action='no_order', rows=[], normalized_parent_profit_cny=None, primary_valuation_usable=False,
+        g3_changed=False, approval_changed=False, price_admitted=False, strategy_admitted=False,
+        input_descriptor_sha256=analysis.get('input_descriptor_sha256'),
+        candidate_binding=analysis.get('review_binding', {}).get('candidate_binding'),
+        formal_eligibility=False, action_admitted=False, source_bindings=[], execution_bindings=[],
+        source_spec_binding=None, calculation=None, counter_evidence=None, reason=None,
+        explanation='未完成当前绑定原件的适用性与来源核验，不提供现金反证金额。',
+        source_retrieved_at=None, source_available_at=None, knowledge_as_of=None,
+        historical_pit_admitted=False,
+        availability_scope='BOUND_PDF_TIMESTAMPS_NOT_CONTEMPORANEOUS_PIT_OR_HISTORICAL_DIAGNOSTIC')
+    try:
+        name = 'docs/current/two-company-earnings-bridge-20261024/sources.json'
+        raw = (root/name).read_bytes()
+        spec_ref = dict(path=name, sha256=sha256(raw).hexdigest())
+        spec = json.loads(raw)
+        if (spec['schema_version'] != 'two-company-earnings-source-spec-v1'
+                or spec['scope'] != 'RETAINED_PUBLIC_ORIGINALS_NOT_RESEARCH_ADMISSION'
+                or spec['action'] != 'no_order' or not isinstance(spec['companies'], dict)):
+            raise ValueError('CASH_FLOW_SOURCE_SPEC_UNSUPPORTED')
+        declared_sources = spec['companies'].get(analysis['symbol'])
+        if declared_sources is None:
+            return None
+        candidates = [row for row in declared_sources if len(row['periods']) == 2
+                      and all(re.fullmatch(r'H1[0-9]{4}', period) for period in row['periods'])]
+        if len(candidates) != 1:
+            raise ValueError('CASH_FLOW_H1_SOURCE_MISSING_OR_AMBIGUOUS')
+        declared = candidates[0]
+        current_year = int(declared['periods'][0][2:])
+        if declared['periods'][1] != f'H1{current_year-1}':
+            raise ValueError('CASH_FLOW_H1_PERIOD_ORDER_INVALID')
+        sources = [row for row in analysis['source_catalog'] if row['id'] == declared['source_id']]
+        if len(sources) != 1:
+            raise ValueError('CURRENT_CASH_FLOW_SOURCE_MISSING_OR_AMBIGUOUS')
+        source = sources[0]
+        if (declared['symbol'] != analysis['symbol'] or source['sha256'] != declared['sha256']
+                or source['kind'] != 'official_issuer_filing'
+                or source['location'] != declared['source_url']
+                or source['issuer_identity']['security_code'] != analysis['symbol']
+                or declared['issuer'] not in source['issuer_identity']['issuer_name']):
+            return dict(unavailable, status='SOURCES_DIFFER_FROM_CURRENT_RESEARCH',
+                        reason='CURRENT_CASH_FLOW_SOURCE_IDENTITY_MISMATCH')
+        ref = dict(path=source['local_path'], sha256=source['sha256'])
+        if ref not in analysis['source_bindings']:
+            raise ValueError('CURRENT_CASH_FLOW_SOURCE_NOT_IN_CONSUMED_CLOSURE')
+        for key in ('source_available_at', 'retrieved_at', 'published_at'):
+            if source.get(key):
+                _available(source[key], now)
+        if source.get('published_at'):
+            published = datetime.fromisoformat(source['published_at']).astimezone(timezone(timedelta(hours=8)))
+            if published.date().isoformat() != declared['published_date']:
+                raise ValueError('CASH_FLOW_DISCLOSURE_DATE_MISMATCH')
+        context = [analysis['review_binding'][key] for key in (
+            'candidate_binding', 'package_binding', 'workbench_binding', 'review_packet_binding')]
+        for binding in [spec_ref, ref, *context, *_CASH_EXECUTION_BINDINGS]:
+            _bound(root, binding)
+        rows = _cash_flow_rows(extract_pages(root/ref['path']), symbol=analysis['symbol'],
+            issuer=source['issuer_identity']['issuer_name'], current_year=current_year)
+        if rows is None:
+            for binding in [spec_ref, ref, *context, *_CASH_EXECUTION_BINDINGS]:
+                _bound(root, binding)
+            return dict(unavailable, status='NOT_APPLICABLE',
+                reason='TARGET_FINANCIAL_FLOW_ROW_HAS_NO_PRINTED_AMOUNTS_NOT_ASSUMED_ZERO',
+                explanation='该合并表的目标金融资金项目未列示金额；不按零推定，也不套用该项目的方向中和计算。',
+                source_spec_binding=spec_ref, source_bindings=[ref],
+                execution_bindings=[dict(binding) for binding in _CASH_EXECUTION_BINDINGS])
+        clocks = [datetime.fromisoformat(source[key]) for key in ('source_available_at', 'retrieved_at')]
+        period_end = datetime.fromisoformat(f'{current_year}-06-30T23:59:59+08:00')
+        if any(clock.utcoffset() is None or not period_end <= clock <= now for clock in clocks):
+            raise ValueError('CASH_FLOW_ACQUISITION_CLOCK_INVALID')
+        for row in rows:
+            row['source_id'] = declared['source_id']
+            row['source_binding'] = dict(ref)
+        current, previous = (Decimal(column['value']) for column in rows[0]['columns'])
+        flow_now, flow_before = (Decimal(column['value']) for column in rows[1]['columns'])
+        with localcontext() as context_decimal:
+            context_decimal.prec = 48
+            change, contribution = current-previous, flow_before-flow_now
+            neutral_now, neutral_before = current+flow_now, previous+flow_before
+            fraction = str(contribution/change) if change != 0 else None
+        result = dict(unavailable, status='SOURCE_REPLAYED_HISTORICAL_COUNTEREVIDENCE', rows=rows,
+            input_descriptor_sha256=analysis['input_descriptor_sha256'],
+            candidate_binding=dict(analysis['review_binding']['candidate_binding']),
+            source_spec_binding=spec_ref, source_bindings=[ref],
+            execution_bindings=[dict(binding) for binding in _CASH_EXECUTION_BINDINGS],
+            source_retrieved_at=source['retrieved_at'], source_available_at=source['source_available_at'],
+            knowledge_as_of=max(clocks).isoformat(), historical_pit_admitted=False,
+            calculation=dict(reported_cfo_change_cny=str(change),
+                identified_outflow_direction_contribution_cny=str(contribution),
+                contribution_fraction_of_reported_change=fraction,
+                current_after_identified_item_cny=str(neutral_now),
+                prior_after_identified_item_cny=str(neutral_before),
+                remaining_change_cny=str(neutral_now-neutral_before),
+                formula='direction_contribution=prior_outflow-current_outflow; neutral_CFO=CFO+printed_outflow'),
+            explanation='该项目列在经营现金流出项，负数会增加披露CFO；中和时加回原表有符号金额，不取绝对值。',
+            counter_evidence='合并CFO同比变化含金融资金配置方向变化，不能直接归为主营盈利增长、正常化现金或可持续分红。',
+            interpretation_limits=['仅中和这一已识别项目，未剔除其他金融、营运资本、税及少数股东影响。',
+                '这是合并现金流历史诊断，不是母公司可分配现金；空白金额不推定为零。',
+                '不修改正常化利润、原估值、主估值门禁、G3或任何交易权限。'])
+        for binding in [spec_ref, ref, *context, *_CASH_EXECUTION_BINDINGS]:
+            _bound(root, binding)
+        return result
+    except (OSError, ValueError, KeyError, TypeError, IndexError, ArithmeticError) as error:
+        return dict(unavailable, reason=type(error).__name__ + ':' + str(error))
 
 
 METHODOLOGY = [
@@ -430,6 +638,14 @@ def load_current_value_economic_assessment(*, root: Path, symbol: str, now: date
             for binding in [operating_bridge['source_spec_binding'], *(
                     dict(path=source['path'], sha256=source['sha256'])
                     for source in operating_bridge['source_bindings'])]:
+                if binding not in result['source_bindings']:
+                    result['source_bindings'].append(binding)
+    cash_conversion = _current_cash_conversion_diagnostic(root, analysis, now)
+    if cash_conversion is not None:
+        result['cash_conversion_diagnostic'] = cash_conversion
+        if cash_conversion['status'] in {'SOURCE_REPLAYED_HISTORICAL_COUNTEREVIDENCE', 'NOT_APPLICABLE'}:
+            for binding in [cash_conversion['source_spec_binding'], *cash_conversion['source_bindings'],
+                            *cash_conversion['execution_bindings']]:
                 if binding not in result['source_bindings']:
                     result['source_bindings'].append(binding)
     for binding in result["source_bindings"]:

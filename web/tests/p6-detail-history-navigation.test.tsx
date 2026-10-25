@@ -155,6 +155,16 @@ it("shows verified financial input progress separately from economic approval", 
       quality_coverage_before: "0.5556",
       quality_coverage_after: "0.6667",
       formal_eligibility: false,
+      source_original: {
+        symbol: "600887",
+        period: "2025-12-31",
+        path: "runtime/TEST_ONLY/original.pdf",
+        sha256: "a".repeat(64),
+        source_url:
+          "https://static.cninfo.com.cn/finalpage/2026-04-01/123456.PDF",
+        available_at: "2026-10-25T00:19:00+00:00",
+      },
+      verification_methods: ["OFFICIAL_BALANCE_RECONCILIATION_V1"],
       adopted_metrics: [
         {
           field_name: "revenue_yoy",
@@ -203,6 +213,17 @@ it("shows verified financial input progress separately from economic approval", 
   expect(html).toContain(" 元");
   expect(html).not.toContain("123456.78%");
   expect(html).not.toContain("87654321");
+  expect(html).toContain(
+    'href="https://static.cninfo.com.cn/finalpage/2026-04-01/123456.PDF"',
+  );
+  expect(html).toContain("非双源验证或审计鉴证");
+  const originalUrl = state.data.financial_progress.source_original.source_url;
+  state.data.financial_progress.source_original.source_url =
+    "javascript:TEST_ONLY";
+  expect(renderToStaticMarkup(<DecisionDetail />)).not.toContain(
+    'href="javascript:',
+  );
+  state.data.financial_progress.source_original.source_url = originalUrl;
   for (const mutation of [
     { symbol: "600519" },
     { formal_eligibility: true },

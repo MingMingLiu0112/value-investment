@@ -134,6 +134,75 @@ export function ValueResearchAnalysis({
     return rank(a.field_path) - rank(b.field_path);
   });
   const counter = normalizeEvidenceLines(analysis.counter_evidence);
+  const cash = analysis.economic_assessment?.cash_conversion_diagnostic;
+  const cashSources = analysis.economic_assessment?.source_bindings;
+  const candidate = analysis.review_binding?.candidate_binding;
+  const cashVerified =
+    cash?.status === "SOURCE_REPLAYED_HISTORICAL_COUNTEREVIDENCE" &&
+    cash.scope ===
+      "HISTORICAL_FINANCIAL_FLOW_DIAGNOSTIC_NOT_NORMALIZED_OR_DISTRIBUTABLE" &&
+    cash.symbol === decision.symbol &&
+    cash.action === "no_order" &&
+    /^[a-f0-9]{64}$/.test(analysis.input_descriptor_sha256 ?? "") &&
+    cash.input_descriptor_sha256 === analysis.input_descriptor_sha256 &&
+    !!candidate &&
+    cash.candidate_binding?.path === candidate.path &&
+    cash.candidate_binding?.sha256 === candidate.sha256 &&
+    cash.primary_valuation_usable === false &&
+    cash.normalized_parent_profit_cny === null &&
+    cash.g3_changed === false &&
+    cash.approval_changed === false &&
+    cash.price_admitted === false &&
+    cash.strategy_admitted === false &&
+    cash.historical_pit_admitted === false &&
+    Array.isArray(cashSources) &&
+    Array.isArray(cash.source_bindings) &&
+    Array.isArray(cash.execution_bindings) &&
+    !!cash.source_bindings?.length &&
+    !!cash.execution_bindings?.length &&
+    [...cash.source_bindings, ...cash.execution_bindings, candidate].every(
+      (ref) =>
+        !!ref &&
+        typeof ref.path === "string" &&
+        !!ref.path.trim() &&
+        /^[a-f0-9]{64}$/.test(ref.sha256) &&
+        cashSources.some(
+          (bound) => bound?.path === ref.path && bound?.sha256 === ref.sha256,
+        ),
+    ) &&
+    Array.isArray(cash.rows) &&
+    cash.rows?.length === 2 &&
+    cash.rows.every(
+      (row) =>
+        !!row &&
+        Number.isInteger(row.physical_page) &&
+        row.physical_page > 0 &&
+        cash.source_bindings?.some(
+          (ref) =>
+            ref.path === row.source_binding?.path &&
+            ref.sha256 === row.source_binding?.sha256,
+        ),
+    ) &&
+    !!cash.calculation &&
+    typeof cash.counter_evidence === "string" &&
+    !!cash.counter_evidence.trim() &&
+    [
+      cash.calculation.reported_cfo_change_cny,
+      cash.calculation.identified_outflow_direction_contribution_cny,
+    ].every(
+      (value) =>
+        typeof value === "string" &&
+        value.trim() !== "" &&
+        Number.isFinite(Number(value)),
+    ) &&
+    (cash.calculation.contribution_fraction_of_reported_change === null ||
+      (typeof cash.calculation.contribution_fraction_of_reported_change ===
+        "string" &&
+        cash.calculation.contribution_fraction_of_reported_change.trim() !==
+          "" &&
+        Number.isFinite(
+          Number(cash.calculation.contribution_fraction_of_reported_change),
+        )));
   return (
     <details
       className="value-research-analysis"
@@ -186,6 +255,26 @@ export function ValueResearchAnalysis({
               descriptor={analysis.input_descriptor_sha256}
             />
             <OperatingEarningsBridge analysis={analysis} />
+            {cashVerified && cash?.calculation && (
+              <p>
+                现金流反证：合并经营现金流同比变化{" "}
+                {readinessNumber(cash.calculation.reported_cfo_change_cny)} 元；
+                其中已识别的央行及同业资金流出项方向变化贡献{" "}
+                {readinessNumber(
+                  cash.calculation
+                    .identified_outflow_direction_contribution_cny,
+                )}{" "}
+                元
+                {cash.calculation.contribution_fraction_of_reported_change !==
+                  null &&
+                  `（占同比变动 ${new Intl.NumberFormat("zh-CN", { style: "percent", maximumFractionDigits: 2 }).format(Number(cash.calculation.contribution_fraction_of_reported_change))}）`}
+                。{cash.counter_evidence} 原件第{" "}
+                {Array.from(
+                  new Set(cash.rows.map((row) => row.physical_page)),
+                ).join("、")}{" "}
+                页。 这不是正常化现金或可持续分红结论，不改变估值及交易资格。
+              </p>
+            )}
             {!!analysis.economic_assessment.historical_cash_observations
               ?.length && (
               <details>

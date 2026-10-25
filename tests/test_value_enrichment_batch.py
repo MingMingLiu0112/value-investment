@@ -80,18 +80,27 @@ def run(flow, folder, **kwargs):
         output_dir=args['root'] / 'runtime' / folder, budget=1, **kwargs)
 
 
+def run_for_symbol(flow, folder, symbol='600001', **kwargs):
+    # Fair scheduling may serve unattempted peers before reopened work.
+    for index in range(len(flow[1]['evidence_enrichment_work_queue']) + 1):
+        result = run(flow, folder + '-' + str(index), **kwargs)
+        if any(item['symbol'] == symbol for item in result['items']):
+            return result
+    pytest.fail('eligible reopened company was not served within the queue bound')
+
+
 def test_explicit_network_and_reuse_do_not_grant_approval(flow):
     denied = run(flow, 'offline')
     assert denied['items'][0]['state'] == 'DATA_UNAVAILABLE'
     assert 'NETWORK_NOT_AUTHORIZED' in denied['items'][0]['reason']
     assert not flow[2]
-    first = run(flow, 'first', allow_network=True)
-    second = run(flow, 'second')
+    first = run_for_symbol(flow, 'first', allow_network=True)
+    second = run_for_symbol(flow, 'second')
     assert len(flow[2]) == 1
     assert not first['items'][0]['source_reused'] and second['items'][0]['source_reused']
     assert 'QUALITY_REEVALUATED' in first['items'][0]['transitions']
     assert first['new_fact_approvals'] == 0 and first['formal_eligibility'] is False
-    assert (flow[0]['root'] / 'runtime/first/execution.json').is_file()
+    assert list((flow[0]['root'] / 'runtime').glob('first-*/execution.json'))
 
 
 def test_tampered_financial_export_rejected_before_download(flow):
@@ -262,7 +271,7 @@ def test_corrupt_original_cache_is_not_silently_redownloaded(flow):
     run(flow, 'first', allow_network=True)
     cache = flow[0]['root'] / 'runtime/value-evidence-enrichment/originals'
     next(cache.glob('*.pdf')).write_bytes(b'corrupt')
-    second = run(flow, 'second', allow_network=True)
+    second = run_for_symbol(flow, 'second', allow_network=True)
     assert 'CACHE_HASH_MISMATCH' in second['items'][0]['reason']
     assert len(flow[2]) == 1
 
@@ -299,7 +308,7 @@ def test_unchanged_exhausted_queue_is_idempotent(flow):
 def test_explicit_reopen_preserves_previous_receipt(flow):
     first = run(flow, 'reopen-first')
     original = (flow[0]['root'] / 'runtime/reopen-first/execution.json').read_bytes()
-    reopened = run(flow, 'reopen-second', retry_token='official-source-review-corrected-v2')
+    reopened = run_for_symbol(flow, 'reopen-second', retry_token='official-source-review-corrected-v2')
     assert reopened['items'][0]['symbol'] == first['items'][0]['symbol']
     assert original == (flow[0]['root'] / 'runtime/reopen-first/execution.json').read_bytes()
 
@@ -319,7 +328,7 @@ def test_transient_failure_retries_with_backoff_and_stops_at_three(flow, monkeyp
     assert immediate['items'][0]['symbol'] != first['items'][0]['symbol']
     for attempt in (2, 3):
         clock += timedelta(minutes=10)
-        result = run(flow, 'retry-' + str(attempt))
+        result = run_for_symbol(flow, 'retry-' + str(attempt))
         assert result['items'][0]['symbol'] == first['items'][0]['symbol']
         assert result['items'][0]['attempt'] == attempt
     clock += timedelta(minutes=10)
@@ -348,7 +357,7 @@ def test_evidence_revision_reopens(flow):
     args['financial_export_sha256'] = sha256(args['financial_export_path'].read_bytes()).hexdigest()
     queue = batch.build_value_research_priority_v2(**args)
     revised = (args, queue, flow[2])
-    result = run(revised, 'revision-second')
+    result = run_for_symbol(revised, 'revision-second')
     assert result['items'][0]['symbol'] == first['items'][0]['symbol']
 
 
@@ -378,10 +387,10 @@ def test_progress_lock_rejects_concurrent_writer_and_releases(flow):
 
 def test_changed_original_reopens_previously_completed_evidence(flow):
     run(flow, 'cached-first', allow_network=True)
-    run(flow, 'cached-offline')
+    run_for_symbol(flow, 'cached-offline')
     cache = flow[0]['root'] / 'runtime/value-evidence-enrichment/originals'
     next(cache.glob('*.pdf')).write_bytes(b'changed original')
-    result = run(flow, 'cached-changed')
+    result = run_for_symbol(flow, 'cached-changed')
     assert 'CACHE_HASH_MISMATCH' in result['items'][0]['reason']
     assert len(flow[2]) == 1
 

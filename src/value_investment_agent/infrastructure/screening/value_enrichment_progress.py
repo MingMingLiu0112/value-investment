@@ -3,8 +3,9 @@ from contextlib import contextmanager
 import hashlib
 import json
 import os
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
+import re
 from uuid import uuid4
 
 
@@ -58,17 +59,74 @@ class ValueEnrichmentProgress:
             raise ValueError('enrichment progress integrity mismatch')
         binding = payload['execution_binding']
         execution = (self.root / binding['path']).resolve()
-        if (not execution.is_relative_to(self.root / 'runtime')
-                or hashlib.sha256(execution.read_bytes()).hexdigest() != binding['sha256']):
+        if not execution.is_relative_to(self.root / 'runtime'):
             raise ValueError('enrichment checkpoint execution binding mismatch')
-        outcome = json.loads(execution.read_bytes())
+        execution_raw = execution.read_bytes()
+        if hashlib.sha256(execution_raw).hexdigest() != binding['sha256']:
+            raise ValueError('enrichment checkpoint execution binding mismatch')
+        outcome = json.loads(execution_raw)
         result_binding = outcome.get('result_binding')
         if result_binding:
             result = (self.root / result_binding['path']).resolve()
-            if (not result.is_relative_to(self.root / 'runtime')
-                    or hashlib.sha256(result.read_bytes()).hexdigest() != result_binding['sha256']):
+            if not result.is_relative_to(self.root / 'runtime'):
                 raise ValueError('enrichment checkpoint result binding mismatch')
+            result_raw = result.read_bytes()
+            if hashlib.sha256(result_raw).hexdigest() != result_binding['sha256']:
+                raise ValueError('enrichment checkpoint result binding mismatch')
+        scheduling = payload.get('scheduling')
+        if scheduling is not None or outcome.get('scheduling') is not None:
+            if (not isinstance(scheduling, dict) or set(scheduling) != {
+                    'symbol', 'financial_period', 'accepted_field_count', 'implementation_sha256'}
+                    or scheduling != outcome.get('scheduling')
+                    or scheduling['symbol'] != outcome.get('symbol')
+                    or not isinstance(scheduling['symbol'], str)
+                    or not re.fullmatch(r'[0-9]{6}', scheduling['symbol'])
+                    or type(scheduling['accepted_field_count']) is not int
+                    or scheduling['accepted_field_count'] < 0
+                    or scheduling['financial_period'] is not None and not isinstance(scheduling['financial_period'], str)
+                    or not isinstance(scheduling['implementation_sha256'], str)
+                    or not re.fullmatch(r'[0-9a-f]{64}', scheduling['implementation_sha256'])):
+                raise ValueError('enrichment scheduling binding mismatch')
+            if scheduling['financial_period'] is not None:
+                period = date.fromisoformat(scheduling['financial_period'])
+                if period.isoformat() != scheduling['financial_period'] or (period.month, period.day) != (12, 31):
+                    raise ValueError('enrichment scheduling financial period invalid')
+            if result_binding:
+                result_payload = json.loads(result_raw)
+                if (result_payload.get('symbol', scheduling['symbol']) != scheduling['symbol']
+                        or result_payload.get('period', scheduling['financial_period']) != scheduling['financial_period']):
+                    raise ValueError('enrichment scheduling result identity mismatch')
         return {**payload, 'last_state': outcome.get('state'), 'next_action': outcome.get('next_action')}
+
+    def scheduling_history(self, *, cutoff: datetime):
+        """Verified history orders work only; never reuse facts across work keys."""
+        if cutoff.utcoffset() is None:
+            raise ValueError('scheduling cutoff must be timezone-aware')
+        paths = list(self.directory.glob('*.json'))
+        if len(paths) > 4096:
+            raise ValueError('enrichment progress exceeds bounded checkpoint read budget')
+        history = {}
+        for path in paths:
+            envelope = json.loads(path.read_bytes())
+            payload = envelope['payload']
+            if (type(payload.get('attempt')) is not int or not 1 <= payload['attempt'] <= 3
+                    or not isinstance(payload.get('key'), str)
+                    or not re.fullmatch(r'[0-9a-f]{64}', payload['key'])
+                    or path.name != f"{payload['key']}-{payload['attempt']}.json"):
+                raise ValueError('enrichment scheduling checkpoint identity mismatch')
+            checked = self._load_checkpoint(path, payload['key'])
+            scheduling = checked.get('scheduling')
+            if scheduling is None:
+                continue  # Legacy keys do not disclose a period or implementation.
+            stamp = datetime.fromisoformat(checked['completed_at'])
+            if stamp.utcoffset() is None:
+                raise ValueError('enrichment scheduling clock invalid')
+            if stamp > cutoff:
+                continue
+            identity = (scheduling['symbol'], scheduling['financial_period'])
+            if identity not in history or history[identity] < stamp:
+                history[identity] = stamp
+        return history
 
     def save(self, payload):
         self.staging.mkdir(parents=True, exist_ok=True)
