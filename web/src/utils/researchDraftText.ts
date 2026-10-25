@@ -172,3 +172,25 @@ export function researchSentence(value: string): string {
     .split("PriceBridge")
     .join("价格桥");
 }
+
+export function isObservedResearchTimestamp(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const parts =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.exec(
+      value,
+    );
+  if (!parts) return false;
+  const [, y, m, d, h, min, sec] = parts.map(Number);
+  const stamp = Date.parse(value);
+  return (
+    m >= 1 &&
+    m <= 12 &&
+    d >= 1 &&
+    d <= new Date(Date.UTC(y, m, 0)).getUTCDate() &&
+    h <= 23 &&
+    min <= 59 &&
+    sec <= 59 &&
+    Number.isFinite(stamp) &&
+    stamp <= Date.now()
+  );
+}

@@ -395,7 +395,63 @@ export interface ParentCashResearch {
   }[];
 }
 
+export interface FiscalEarningsResearch {
+  schema_version: "fiscal-earnings-research-v1";
+  symbol: string;
+  currency: "CNY";
+  scope: "consolidated";
+  status: string;
+  action: "no_order";
+  confidence: "LOW";
+  formal_eligibility: false;
+  economic_approval: false;
+  price_admitted: false;
+  strategy_admitted: false;
+  primary_valuation_usable: false;
+  dividend_capacity_cny: null;
+  normalized_parent_profit_cny: null;
+  input_available_at: string;
+  evaluated_at: string;
+  rationale: string;
+  stub_rationale: string;
+  accounting_comparability: { perimeter: string; limitations: string };
+  historical_h2_2025: { classification: string; lines: Record<string, string> };
+  source_bindings: { path: string; sha256: string }[];
+  official_sources: { path: string; sha256: string; source_url: string }[];
+  scenarios: Record<
+    "bear" | "base" | "bull",
+    {
+      stub: {
+        period_start: string;
+        period_end: string;
+        classification: string;
+        lines: Record<string, string>;
+      };
+      fy2026: {
+        period_start: string;
+        period_end: string;
+        classification: string;
+        lines: Record<string, string>;
+      };
+      rows: {
+        year: number;
+        currency: "CNY";
+        period_start: string;
+        period_end: string;
+        classification: string;
+        revenue_cny: string;
+        group_pbt_cny: string;
+        income_tax_cny: string;
+        signed_nci_cny: string;
+        parent_profit_cny: string;
+        bridge_residual_cny: string;
+      }[];
+    }
+  >;
+}
+
 export interface ValueResearchAnalysis {
+  fiscal_earnings_research?: FiscalEarningsResearch;
   parent_cash_research?: ParentCashResearch;
   industrial_earnings_research?: IndustrialEarningsResearch;
   historical_operating_review?: OperatingEarningsReview;

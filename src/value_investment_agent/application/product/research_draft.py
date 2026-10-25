@@ -386,6 +386,7 @@ def load_current_research_analysis(
     from ..research.value_economic_assessment import load_retained_operating_bridge
     from ..research.industrial_earnings_research import load_industrial_earnings_research
     from ..research.parent_cash_research import load_parent_cash_research
+    from ..research.fiscal_earnings_research import load_fiscal_earnings_research
 
     normalized = normalize_symbol(symbol)
     try:
@@ -421,4 +422,7 @@ def load_current_research_analysis(
         cash = load_parent_cash_research(root=root, symbol=normalized, now=evaluated_at)
         if cash is not None:
             result['parent_cash_research'] = cash
+        fiscal = load_fiscal_earnings_research(root=root, symbol=normalized, now=evaluated_at)
+        if fiscal is not None:
+            result['fiscal_earnings_research'] = fiscal
     return result

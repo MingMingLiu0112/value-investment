@@ -1,5 +1,6 @@
 import type { ParentCashResearch as Research } from "../types/api";
 import { readinessNumber } from "../utils/strategyReadiness";
+import { isObservedResearchTimestamp as observedTime } from "../utils/researchDraftText";
 
 const fields = [
   ["opening_cash_and_equivalents_cny", "期初现金等价物"],
@@ -16,28 +17,6 @@ const amount = (v: unknown) =>
 const hash = (v: unknown) => typeof v === "string" && /^[a-f0-9]{64}$/.test(v);
 const zero = (v: unknown) =>
   typeof v === "string" && /^-?0+(?:\.0+)?(?:[eE][+-]?\d+)?$/.test(v);
-function observedTime(value: unknown): boolean {
-  if (typeof value !== "string") return false;
-  const parts =
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.exec(
-      value,
-    );
-  if (!parts) return false;
-  const [, y, m, d, h, min, sec] = parts.map(Number);
-  const stamp = Date.parse(value);
-  return (
-    m >= 1 &&
-    m <= 12 &&
-    d >= 1 &&
-    d <= new Date(Date.UTC(y, m, 0)).getUTCDate() &&
-    h <= 23 &&
-    min <= 59 &&
-    sec <= 59 &&
-    Number.isFinite(stamp) &&
-    stamp <= Date.now()
-  );
-}
-
 function verified(r: Research, symbol: string): boolean {
   try {
     return (

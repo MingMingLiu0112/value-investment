@@ -2,8 +2,144 @@ import React from "react";
 import { expect, it } from "vitest";
 import { IndustrialEarningsResearch } from "../src/components/IndustrialEarningsResearch";
 import type { IndustrialEarningsResearch as Research } from "../src/types/api";
+import type { FiscalEarningsResearch as Fiscal } from "../src/types/api";
 
 const { renderToStaticMarkup } = require("react-dom/server");
+function fiscal(): Fiscal {
+  const rows = [2027, 2028, 2029, 2030, 2031].map((year) => ({
+    year,
+    currency: "CNY" as const,
+    period_start: `${year}-01-01`,
+    period_end: `${year}-12-31`,
+    classification: "RESEARCH_ASSUMPTION",
+    revenue_cny: "1000",
+    group_pbt_cny: "200",
+    income_tax_cny: "50",
+    signed_nci_cny: "-10",
+    parent_profit_cny: "160",
+    bridge_residual_cny: "0E-10",
+  }));
+  const lane = {
+    stub: {
+      period_start: "2026-07-01",
+      period_end: "2026-12-31",
+      classification: "RESEARCH_ASSUMPTION",
+      lines: { parent_profit: "80" },
+    },
+    fy2026: {
+      period_start: "2026-01-01",
+      period_end: "2026-12-31",
+      classification: "MIXED_ACTUAL_H1_AND_RESEARCH_H2",
+      lines: { parent_profit: "150" },
+    },
+    rows,
+  };
+  const official_sources = research().official_sources;
+  return {
+    schema_version: "fiscal-earnings-research-v1",
+    symbol: "600887",
+    currency: "CNY",
+    scope: "consolidated",
+    status: "SOURCE_BOUND_FISCAL_RESEARCH_NOT_APPROVED",
+    action: "no_order",
+    confidence: "LOW",
+    formal_eligibility: false,
+    economic_approval: false,
+    price_admitted: false,
+    strategy_admitted: false,
+    primary_valuation_usable: false,
+    dividend_capacity_cny: null,
+    normalized_parent_profit_cny: null,
+    input_available_at: "2026-10-25T08:00:00Z",
+    evaluated_at: "2026-10-25T08:01:00Z",
+    rationale: "TEST_ONLY财政年连接",
+    stub_rationale: "TEST_ONLY季节基准",
+    accounting_comparability: {
+      perimeter: "AS_REPORTED_NOT_CONSTANT_PERIMETER",
+      limitations: "不是固定范围有机增长",
+    },
+    historical_h2_2025: {
+      classification: "DERIVED_FY_MINUS_H1_FROM_SAME_BASIS",
+      lines: { parent_profit: "140" },
+    },
+    official_sources,
+    source_bindings: official_sources,
+    scenarios: {
+      bear: structuredClone(lane),
+      base: structuredClone(lane),
+      bull: structuredClone(lane),
+    },
+  };
+}
+
+it("shows actual-plus-assumed fiscal year separately from rolling years and dividends", () => {
+  const html = renderToStaticMarkup(
+    <IndustrialEarningsResearch
+      research={research()}
+      fiscal={fiscal()}
+      symbol="600887"
+    />,
+  );
+  expect(html).toContain("财政年度归母研究（元）");
+  expect(html).toContain("上半年事实＋下半年假设");
+  expect(html).toContain("不是已披露全年业绩，不是股利金额");
+  expect(html).toContain("2031");
+  expect(html).toContain("不是固定范围有机增长");
+});
+
+it.each([
+  "date",
+  "period",
+  "history",
+  "promotion",
+  "hash",
+  "residual",
+  "future",
+  "invalid-time",
+  "currency",
+  "missing-currency",
+  "top-currency",
+])(
+  "rejects bad fiscal appendix without losing existing research: %s",
+  (fault) => {
+    const f = fiscal();
+    if (fault === "date") f.scenarios.base.stub.period_start = "2026-01-01";
+    if (fault === "period") f.scenarios.base.rows[0].year = 2026;
+    if (fault === "history")
+      f.scenarios.base.fy2026.classification = "REPORTED_ACTUAL";
+    if (fault === "promotion") (f as any).dividend_capacity_cny = "150";
+    if (fault === "hash") f.source_bindings = [];
+    if (fault === "residual")
+      f.scenarios.base.rows[0].bridge_residual_cny = "1E-999";
+    if (fault === "future") f.evaluated_at = "2099-01-01T00:00:00Z";
+    if (fault === "invalid-time") f.evaluated_at = "2026-02-30T00:00:00Z";
+    if (fault === "currency")
+      (f.scenarios.base.rows[0] as any).currency = "USD";
+    if (fault === "missing-currency")
+      delete (f.scenarios.base.rows[0] as any).currency;
+    if (fault === "top-currency") (f as any).currency = "USD";
+    const html = renderToStaticMarkup(
+      <IndustrialEarningsResearch
+        research={research()}
+        fiscal={f}
+        symbol="600887"
+      />,
+    );
+    expect(html).not.toContain('aria-label="财政年度归母研究（元）"');
+    expect(html).toContain("财政年度研究未通过");
+    expect(html).toContain("未来利润依赖什么");
+  },
+);
+
+it("rejects tiny nonzero industrial reconciliation residuals", () => {
+  const r = research();
+  r.scenarios.base.rows[0].bridge_residual_cny = "1E-999";
+  expect(
+    renderToStaticMarkup(
+      <IndustrialEarningsResearch research={r} symbol="600887" />,
+    ),
+  ).not.toContain("<table");
+});
 function research(): Research {
   const row = (year: number) => ({
     year,

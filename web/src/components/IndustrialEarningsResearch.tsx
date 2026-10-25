@@ -1,5 +1,7 @@
 import { useState } from "react";
 import type { IndustrialEarningsResearch as Research } from "../types/api";
+import type { FiscalEarningsResearch } from "../types/api";
+import { isObservedResearchTimestamp } from "../utils/researchDraftText";
 import { readinessNumber } from "../utils/strategyReadiness";
 
 const names = { bear: "保守", base: "基准", bull: "乐观" };
@@ -27,6 +29,146 @@ const amount = (v: unknown) =>
   typeof v === "string" &&
   /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(v) &&
   Number.isFinite(Number(v));
+const zero = (v: unknown) =>
+  typeof v === "string" && /^-?0+(?:\.0+)?(?:[eE][+-]?\d+)?$/.test(v);
+
+function FiscalPeriodResearch({
+  fiscal,
+  symbol,
+  scenario,
+}: {
+  fiscal?: FiscalEarningsResearch;
+  symbol: string;
+  scenario: keyof typeof names;
+}) {
+  if (!fiscal) return null;
+  let valid = false;
+  try {
+    valid =
+      fiscal.schema_version === "fiscal-earnings-research-v1" &&
+      fiscal.symbol === symbol &&
+      fiscal.currency === "CNY" &&
+      fiscal.scope === "consolidated" &&
+      fiscal.status === "SOURCE_BOUND_FISCAL_RESEARCH_NOT_APPROVED" &&
+      fiscal.action === "no_order" &&
+      fiscal.confidence === "LOW" &&
+      [
+        fiscal.formal_eligibility,
+        fiscal.economic_approval,
+        fiscal.price_admitted,
+        fiscal.strategy_admitted,
+        fiscal.primary_valuation_usable,
+      ].every((v) => v === false) &&
+      fiscal.dividend_capacity_cny === null &&
+      fiscal.normalized_parent_profit_cny === null &&
+      isObservedResearchTimestamp(fiscal.input_available_at) &&
+      isObservedResearchTimestamp(fiscal.evaluated_at) &&
+      Date.parse(fiscal.input_available_at) <=
+        Date.parse(fiscal.evaluated_at) &&
+      fiscal.accounting_comparability.perimeter ===
+        "AS_REPORTED_NOT_CONSTANT_PERIMETER" &&
+      !!fiscal.accounting_comparability.limitations.trim() &&
+      fiscal.historical_h2_2025.classification ===
+        "DERIVED_FY_MINUS_H1_FROM_SAME_BASIS" &&
+      fiscal.source_bindings.length > 0 &&
+      fiscal.source_bindings.every(
+        (b) => typeof b.path === "string" && sha(b.sha256),
+      ) &&
+      fiscal.official_sources.length === 2 &&
+      fiscal.official_sources.every(
+        (b) =>
+          /^https:\/\/static\.cninfo\.com\.cn\/finalpage\//.test(
+            b.source_url,
+          ) &&
+          fiscal.source_bindings.some(
+            (r) => r.path === b.path && r.sha256 === b.sha256,
+          ),
+      ) &&
+      (Object.keys(names) as (keyof typeof names)[]).every((n) => {
+        const s = fiscal.scenarios[n];
+        return (
+          s.stub.period_start === "2026-07-01" &&
+          s.stub.period_end === "2026-12-31" &&
+          s.stub.classification === "RESEARCH_ASSUMPTION" &&
+          s.fy2026.period_start === "2026-01-01" &&
+          s.fy2026.period_end === "2026-12-31" &&
+          s.fy2026.classification === "MIXED_ACTUAL_H1_AND_RESEARCH_H2" &&
+          amount(s.stub.lines.parent_profit) &&
+          amount(s.fy2026.lines.parent_profit) &&
+          s.rows.length === 5 &&
+          s.rows.every(
+            (r, i) =>
+              r.year === i + 2027 &&
+              r.currency === "CNY" &&
+              r.period_start === `${r.year}-01-01` &&
+              r.period_end === `${r.year}-12-31` &&
+              r.classification === "RESEARCH_ASSUMPTION" &&
+              [
+                r.revenue_cny,
+                r.group_pbt_cny,
+                r.income_tax_cny,
+                r.signed_nci_cny,
+                r.parent_profit_cny,
+              ].every(amount) &&
+              zero(r.bridge_residual_cny),
+          )
+        );
+      });
+  } catch {
+    valid = false;
+  }
+  if (!valid)
+    return <p>财政年度研究未通过来源、日期或假设核验，暂不展示金额。</p>;
+  const current = fiscal.scenarios[scenario];
+  return (
+    <section aria-label="财政年度盈利口径">
+      <h5>从剩余半年连接财政年度</h5>
+      <p>{fiscal.rationale}</p>
+      <p>{fiscal.stub_rationale}</p>
+      <p>
+        当前{names[scenario]}情景：2026下半年归母假设{" "}
+        {readinessNumber(current.stub.lines.parent_profit)} 元；2026全年归母研究{" "}
+        {readinessNumber(current.fy2026.lines.parent_profit)}{" "}
+        元（上半年事实＋下半年假设）。不是已披露全年业绩，不是股利金额。
+      </p>
+      <div style={{ overflowX: "auto", maxWidth: "100%" }}>
+        <table aria-label="财政年度归母研究（元）">
+          <caption>完整财政年度条件研究（元人民币）</caption>
+          <thead>
+            <tr>
+              <th>财政年</th>
+              <th>收入</th>
+              <th>税前利润</th>
+              <th>所得税</th>
+              <th>少数股东损益</th>
+              <th>归母利润</th>
+            </tr>
+          </thead>
+          <tbody>
+            {current.rows.map((r) => (
+              <tr key={r.year}>
+                <th>{r.year}</th>
+                {[
+                  r.revenue_cny,
+                  r.group_pbt_cny,
+                  r.income_tax_cny,
+                  r.signed_nci_cny,
+                  r.parent_profit_cny,
+                ].map((v, i) => (
+                  <td key={i}>{readinessNumber(v)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>{fiscal.accounting_comparability.limitations}</p>
+      <p>
+        集团归母利润不等于母公司现金、可分配利润或买入资格；财政年度对齐不自动延长股东回报政策。
+      </p>
+    </section>
+  );
+}
 
 function verified(r: Research, symbol: string): boolean {
   try {
@@ -89,12 +231,12 @@ function verified(r: Research, symbol: string): boolean {
               row.year === i + 1 &&
               row.currency === "CNY" &&
               amount(row.bridge_residual_cny) &&
-              Number(row.bridge_residual_cny) === 0 &&
+              zero(row.bridge_residual_cny) &&
               amount(
                 row.change_from_historical_parent?.parent_profit_change_cny,
               ) &&
               amount(row.change_from_historical_parent?.residual_cny) &&
-              Number(row.change_from_historical_parent.residual_cny) === 0 &&
+              zero(row.change_from_historical_parent.residual_cny) &&
               changes.every(([field]) =>
                 amount(row.change_from_historical_parent[field]),
               ) &&
@@ -110,9 +252,11 @@ function verified(r: Research, symbol: string): boolean {
 
 export function IndustrialEarningsResearch({
   research,
+  fiscal,
   symbol,
 }: {
   research?: Research;
+  fiscal?: FiscalEarningsResearch;
   symbol: string;
 }) {
   const [scenario, setScenario] = useState<keyof typeof names>("base");
@@ -152,6 +296,11 @@ export function IndustrialEarningsResearch({
         </select>
       </label>
       <p>{current.rationale}</p>
+      <FiscalPeriodResearch
+        fiscal={fiscal}
+        symbol={symbol}
+        scenario={scenario}
+      />
       <p>
         商业小计为收入减营业成本、税金及销售、管理、研发费用；不是经常性归母利润或可分配现金。
       </p>

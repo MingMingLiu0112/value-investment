@@ -121,6 +121,7 @@ export function ValueResearchAnalysis({
               <OperatingEarningsBridge analysis={analysis} />
               <IndustrialEarningsResearch
                 research={analysis.industrial_earnings_research}
+                fiscal={analysis.fiscal_earnings_research}
                 symbol={decision.symbol}
               />
               <ParentCashResearch
@@ -234,6 +235,7 @@ export function ValueResearchAnalysis({
       <h3>三情景与实际模型输入</h3>
       <IndustrialEarningsResearch
         research={analysis.industrial_earnings_research}
+        fiscal={analysis.fiscal_earnings_research}
         symbol={decision.symbol ?? ""}
       />
       <ParentCashResearch

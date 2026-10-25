@@ -5603,3 +5603,61 @@ a valid nonfuture date.17 dedicated rendering tests passed. Final actual-API SSR
 and TypeScript also passed; no new P1/P2 found within this package's review scope.
 This is a historical cash constraint delivery, not completion of future cash,
 issuer payout-policy evidence, primary valuation or formal strategy readiness.
+
+### 2026-10-25 live parent cash and fiscal-year earnings connection
+
+Exact1b5669d411ea60079af409daef7f3a650fef6528 passed Core40178879571 and
+Web40178879551. Sole8001 runtime/backend/build/registry MATCHED after release;
+the three existing public pointers remained unchanged. Actual browser600887
+shows the standalone-parent FY2025/H12026 cash table and unknown distribution
+capacity. Screenshot yili-cash-1b5669d4.png is retained in the task visualization
+directory. Actual live cold API receipt:
+.tmp/dual1/.tmp/public-cold-20261025T091421617891Z/receipt.json (canonical-root relative).
+Clean checkout on that commit passed130 tests/1 optional original-data skip;
+actual originals had separately passed in the integrated source environment.
+
+The next decisive600887 gap was calendar identity, not more report counts:
+rolling Y1-Y5 earnings cannot be relabeled fiscal years to apply a dated dividend
+policy. The new versioned fiscal function preserves FY2025/H12025/H12026 inputs,
+derives H22025 by annual-minus-interim, researches each scenario's H22026 stub,
+then sums actual H12026 plus assumed H22026 into its own mixed FY2026 base.
+FY2027-2031 recurse from that scenario base using unchanged inherited annual
+driver arrays. Signed tax/NCI and H1 actuals are preserved; no H1 annualization.
+Cost-component partition is computational only, not five asserted cost forecasts.
+
+Original-source review found no disclosed retrospective adjustment affecting this
+bounded difference, but FY2025 has non-common-control acquisitions and H12026 a
+new subsidiary. Application rechecks the exact PDF hashes, issuer/period/CNY,
+and page excerpts for accounting-policy disclosures and perimeter changes.
+Basis is AS_REPORTED_NOT_CONSTANT_PERIMETER, not organic/constant-perimeter
+growth or three-original-report assurance. A new restatement reopens the basis.
+
+Actual source-bound Base mixed FY2026 parent profit is9487874147.8467674720 CNY;
+FY2027 hypothesis is10782465082.469105781160 CNY. They are not reported future
+results, normalized profit, standalone-parent cash, dividends or valuation.
+Final public API receipt, private data hard-blocked:
+runtime/fiscal-earnings-research/20261025T092945882958Z/receipt.json.
+Actual API static rendering passed; successor browser publication remains pending.
+Research date alignment does not extend the2025-2027 shareholder-return policy.
+
+Independent reviews closed two concrete P2s before sealing: parsing one byte
+version while hashing another, and accepting foreign/absent row currency under
+a CNY caption. Single-read parse/hash plus final recheck and strict top/row CNY
+checks now reject these cases. Domain and service48 tests passed including actual
+originals; architecture/existing API50 passed. Web analysis selection172 passed/
+5 optional skips before currency refinement; final affected components44 passed,
+including USD/missing currency, invalid/future dates, wrong fiscal periods and
+nonzero1E-999 residuals. TypeScript passed; old operating_product_paths.py hash
+887ff3c629704885018d09a6aff4bc24c9f4592d3f21bc588c52d3443a3f8b51 is unchanged.
+
+Separate600519 economic review accepts its first-five-year product path as a LOW
+business hypothesis, not a credible primary valuation center yet. Zero terminal
+growth still assumes perpetual terminal earnings and lawful full distribution;
+its terminal cash/maintenance/competitive-advantage transition remains decisive.
+Changing Ke or only terminal ROE cannot substitute for a coherent cash path.
+The required narrow successor must preserve old frozen contracts and reconcile
+actual year-by-year profit, cash, retained profit, payout and equity before RI.
+Hotspot lane continues shared-fill feedback and authorized runtime-only forward
+connection. No simulated result, historical diagnostic, code test or local
+initialization grants PIT/OOS/Shadow, economic/G3, strategy or personal eligibility.
+All formal admissions remain false; action=no_order; overall assisted use NOT_READY.
