@@ -1,5 +1,47 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### 2026-10-25 current prompt audit and three-lane business focus
+
+Read-only audit confirmed integration/remote/live business baseline
+fbaa010ea4f40212ee92b6dd058c420035bf0a4a. Exact Core40157336330/40157332977
+and Web40157336324 succeeded. Live8001 runtime/source/build/registry MATCHED;
+packetpub-e758c6db46c78ab8cec4 remains VERIFIED/PARTIAL. No new refresh, source
+collection, business-code deployment or formal admission was performed here.
+
+Actual selection API: official universe5224, observed companies5222,
+50055 observations, research queue4647, shortlist30. Its official admission
+count0 is the summary-observation scope; separate enrichment already adopted
+some000151/000498/000544/000568 facts. Hotspot5219 securities,10 cases evaluated,
+0 selected/5 excluded/5 pending. These counts do not establish economic quality,
+absence of market opportunity, strict PIT/OOS or a personal trade plan.
+
+Independent value/data audits and sibling hotspot review identified the next
+three lanes: V coherent operating/capital/cash economics into the existing
+valuation compiler and one new-candidate ResearchCase; D decisive debt/statement
+facts and bounded source recovery; H missing historical minutes/cross-source
+checks, then qualified dated-state consumer wiring and independent validation.
+Daily research remains useful without a private account or human approval;
+formal permissions remain unchanged.
+
+The existing goal prompt was rewritten rather than layered with another override:
+remove active simulation-product assignments and obsolete release/PAUSED claims;
+retain all final-use gates as separate evidence axes. AGENTS current-task
+navigation and the stage/launch entries now select the same three-lane queue.
+The earlier goal attachment is backed up locally before replacing its startup
+instructions with the current repository prompt. Goal tool status is BLOCKED;
+this document change does not resume it or mark the overall objective complete.
+
+AKShare/efinance fixed-source review confirms shared Eastmoney upstream and
+AKShare's same BSE endpoint; wrapper replacement alone is not recovery.
+BaoStock is a bounded real-history probe candidate, not a verified available
+replacement. The zxygithub downloader is third-party, not the official SDK.
+Source references, versions and limitations are in the existing borrowing review.
+No new source installation or live-data success is claimed by this audit.
+
+Only documentation is changed; no repeated full regression or8001 restart.
+Private records, Canonical Excel, server/PTA, production DB/tasks and strategy
+parameters are unchanged. Real assisted use NOT_READY; action=no_order.
+
 ### 2026-10-23 exact-version economic review handoff
 
 The preceding clean integration checkpoint de6937f0 completed the exact offline
