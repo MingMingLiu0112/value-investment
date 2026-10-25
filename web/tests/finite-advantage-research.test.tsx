@@ -100,6 +100,12 @@ it.skipIf(!process.env.FINITE_ADVANTAGE_API_JSON)(
       expect(html).toContain("945.9748");
       expect(html).toContain("915.1998");
       expect(html).toContain("55.0%");
+      if (research.product_continuation.sensitivity_cases?.length) {
+        expect(html).toContain("936.6761");
+        expect(html).toContain("819.2926");
+        expect(html).toContain("811.713");
+        expect(html).toContain("不是预测或买入价");
+      }
     }
   },
 );

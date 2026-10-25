@@ -1,7 +1,7 @@
 {
   "schema_version": "product-continuation-research-policy-v1",
   "symbol": "600519",
-  "generated_at": "2026-10-25T12:02:44+00:00",
+  "generated_at": "2026-10-25T14:36:17+00:00",
   "action": "no_order",
   "confidence": "LOW",
   "candidate_binding": {
@@ -12,6 +12,11 @@
   "center": "FLAT_YEAR5_PRODUCT_LEVELS_AND_COST_RATIOS",
   "challenge_moutai_realization_growth": "-0.01",
   "challenge_cost_ratio_increment": "0.005",
+  "economic_challenges": {
+    "financial_retained_fractions": ["0.9", "0.8", "0.7", "0.6", "0.5"],
+    "cost_of_equity_increment": "0.01",
+    "rationale": "Uncalibrated sensitivity, not an issuer forecast or loss bound: in years six to ten reduce the source-derived financial PBT contribution proxy to 90/80/70/60/50 percent of its TTM reference, then hold the year-ten components. Keep other and unallocated balances explicit. Separately increase the inherited required return by one percentage point, then combine both changes. Do not alter the first five years, incremental cash yield, tax/parent mapping or payouts to force a usable outcome."
+  },
   "rationale": "After the inherited first five product years, assume no further volume or realization growth and hold year-five cost/expense ratios. This tests continuation of existing brand earnings, rather than forcing all-owner ROE to Ke and an unexplained 70% profit collapse. It remains an unapproved center hypothesis, not proof of permanent brand economics.",
   "cash_return_rationale": "Retained funds earn only the inherited 1% incremental cash yield on changes from opening modeled cash. They do not automatically earn the incumbent franchise ROE. Historical other/financial pre-tax contributions remain a separate assumed balance, not pure operating profit.",
   "terminal_rationale": "Terminal product levels, expense ratios, tax, attribution and other pre-tax balance remain constant. Full payout must leave cash, equity and net investment stable, with no unpaid selected commitments or persistent upstream restriction. P/Ke includes the modeled retained-cash earnings; cash is not added again. This assumes ongoing franchise profit and is not a demonstrated perpetuity.",

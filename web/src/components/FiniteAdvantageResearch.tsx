@@ -156,6 +156,66 @@ function ProductContinuation({
       <p>
         终端仍依赖品牌盈利持续、维护与营运资金平衡、资金可得及合法分配，不能因延长显式期便视为低风险。现金收益只计期初资金相对最初资金的增量，终值不再另加一次现金。
       </p>
+      {Array.isArray(research.sensitivity_cases) &&
+        research.sensitivity_cases.length === 3 &&
+        research.sensitivity_cases.every(
+          (row) =>
+            row?.scenario === "base" &&
+            [
+              "FINANCIAL_CONTRIBUTION_FADE",
+              "COST_OF_EQUITY_PLUS_100BP",
+              "FINANCIAL_FADE_AND_HIGHER_REQUIRED_RETURN",
+            ].includes(row.branch) &&
+            row.result?.action === "no_order" &&
+            row.result.formal_eligibility === false &&
+            row.result.economic_approval === false &&
+            row.result.price_admission === false &&
+            row.result.primary_valuation_changed === false &&
+            (row.result.valuation?.usable === true
+              ? row.result.status ===
+                  "CONDITIONAL_PRODUCT_CONTINUATION_RESEARCH" &&
+                number(row.result.valuation.per_share_cny) &&
+                reconciled(row.result.valuation.ri_ddm_residual_cny) &&
+                Array.isArray(row.result.blockers) &&
+                row.result.blockers.length === 0
+              : row.result.status === "VALUATION_UNSUPPORTED" &&
+                row.result.valuation?.per_share_cny === null),
+        ) &&
+        new Set(research.sensitivity_cases.map((row) => row.branch)).size ===
+          3 && (
+          <>
+            <h4>基准估值依赖哪些假设</h4>
+            <p>
+              保持前五年不变；第六至十年将金融类报表税前贡献逐步降至历史参考的一半，另测要求回报提高1个百分点。金融贡献不是金融子公司净利润，也不代表母公司可分配现金；这些是未校准挑战，不是预测或买入价。
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>假设变化</th>
+                  <th>每股条件值（元）</th>
+                </tr>
+              </thead>
+              <tbody>
+                {research.sensitivity_cases.map((row) => (
+                  <tr key={row.branch}>
+                    <td>
+                      {row.branch === "FINANCIAL_CONTRIBUTION_FADE"
+                        ? "金融类贡献逐步减半"
+                        : row.branch === "COST_OF_EQUITY_PLUS_100BP"
+                          ? "要求回报提高1个百分点"
+                          : "两项同时发生"}
+                    </td>
+                    <td>
+                      {row.result.valuation.usable
+                        ? readinessNumber(row.result.valuation.per_share_cny)
+                        : "现金或终端条件不支持估值"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       <details>
         <summary>中心路径的盈利与资金来源</summary>
         {research.scenarios

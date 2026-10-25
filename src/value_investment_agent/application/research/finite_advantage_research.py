@@ -19,6 +19,7 @@ _IMPLEMENTATIONS = tuple(dict(path=name, sha256=sha256_file(_CODE_ROOT/name)) fo
     'src/value_investment_agent/domain/valuation/finite_advantage_cash_path_v1.py',
     'src/value_investment_agent/domain/valuation/product_continuation_cash_path_v1.py',
     'src/value_investment_agent/application/research/product_operating_research.py',
+    'src/value_investment_agent/application/research/operating_earnings_bridge.py',
     'src/value_investment_agent/infrastructure/filings/operating_erosion_sources.py',
     'src/value_investment_agent/domain/valuation/operating_product_paths.py',
 ))
@@ -53,7 +54,28 @@ def _opening_state(case, history, facts):
         selected_project_budget_cny=case['project_budget'])
 
 
-def build_product_continuation_research(*, policy, cash_policy, generated, ledger, facts):
+def _contribution_reference(*, root, package):
+    from .operating_earnings_bridge import REQUIRED, COSTS, GAINS, research_from_retained_sources
+    from ...infrastructure.filings.operating_erosion_sources import read_operating_erosion_sources
+    # Blank impairment rows are not asserted zero; the bridge retains any residual.
+    fields = (REQUIRED | set(COSTS) | set(GAINS)) - {'asset_impairment'}
+    inputs = read_operating_erosion_sources(root=root, symbol=package['symbol'], sources=package['sources'], fields=fields)
+    bridge = research_from_retained_sources(root=root, specs=inputs['specs'])
+    with localcontext() as context:
+        context.prec = 48
+        lines = {key: Decimal(value) for key, value in bridge['ttm']['lines_cny'].items()}
+        financial = lines['interest_income']-lines['interest_expense']-lines['commission_expense']-lines['finance']
+        other = sum(lines[key] for key in GAINS if key in lines)+lines['nonoperating_income']-lines['nonoperating_expense']
+        commercial = lines['operating_revenue']-sum(lines[key] for key in ('cost_of_sales','taxes_surcharges','selling','administration','research'))
+        total = lines['profit_before_tax']-commercial
+        reference = dict(financial_cny=str(financial), other_cny=str(other), unallocated_cny=str(total-financial-other),
+            basis='FY2025+H12026-H12025 reported consolidated PBT contribution attribution; not financial-subsidiary net profit or distributable parent cash.')
+    return dict(reference=reference, period=bridge['ttm']['period'],
+        original_statements=bridge['original_statements'], source_bindings=inputs['source_bindings'],
+        scope='SOURCE_DERIVED_PRETAX_ATTRIBUTION_NOT_NORMALIZED_OR_DISTRIBUTABLE_PROFIT')
+
+
+def build_product_continuation_research(*, policy, cash_policy, generated, ledger, facts, contribution_reference=None):
     """Extend verified product hypotheses, never infer profitability from book ROE."""
     if (policy.get('center') != 'FLAT_YEAR5_PRODUCT_LEVELS_AND_COST_RATIOS'
             or policy.get('continuation_years') != 5
@@ -68,6 +90,14 @@ def build_product_continuation_research(*, policy, cash_policy, generated, ledge
             or any(not isinstance(item,str) or not item.strip() for item in policy['counter_evidence'])):
         raise ValueError('Product continuation counterevidence required')
     outcomes=[]
+    sensitivities=[]
+    challenge_policy=policy.get('economic_challenges')
+    if challenge_policy is not None and (not isinstance(challenge_policy,dict)
+            or challenge_policy.get('financial_retained_fractions') != ['0.9','0.8','0.7','0.6','0.5']
+            or challenge_policy.get('cost_of_equity_increment') != '0.01'
+            or not isinstance(challenge_policy.get('rationale'),str) or not challenge_policy['rationale'].strip()
+            or contribution_reference is None):
+        raise ValueError('Explicit source-derived contribution and economic challenge policy required')
     if {row['scenario'] for row in generated['scenarios']} != {'bear','base','bull'} or len(generated['scenarios']) != 3:
         raise ValueError('Three verified original product paths required')
     with localcontext() as context:
@@ -99,16 +129,34 @@ def build_product_continuation_research(*, policy, cash_policy, generated, ledge
                     distribution_constraint_rationale=cash_policy['terminal_distribution_rationale'],
                     capital_cash_row=_capital(11,Decimal(0),Decimal(0),Decimal(0),cash_policy['maintenance_rationale']),
                     distribution_row=_distribution(11,cash_policy,persistent=False,terminal=True))
-                result=build_product_continuation_cash_path(opening_state=opening,first_five_product_rows=first,
+                arguments=dict(opening_state=opening,first_five_product_rows=first,
                     continuation_policy=continuation,capital_cash_rows=capital,distribution_rows=distribution,
                     cost_of_equity=ledger['plan']['ke'],incremental_cash_yield=ledger['plan']['incremental_parent_cash_yield'],
                     terminal_policy=terminal)
+                result=build_product_continuation_cash_path(**arguments)
                 outcomes.append(dict(scenario=scenario,branch=branch,result=result))
+                if scenario == 'base' and branch == 'FLAT_PRODUCT_CONTINUATION' and challenge_policy is not None:
+                    reference=contribution_reference['reference']
+                    other_policy=dict(reference=reference,
+                        rows=[dict(year=year, financial_cny=str(Decimal(reference['financial_cny'])*Decimal(fraction)),
+                            other_cny=reference['other_cny'],unallocated_cny=reference['unallocated_cny'])
+                            for year,fraction in enumerate(challenge_policy['financial_retained_fractions'],6)],
+                        terminal_mode='HOLD_Y10_COMPONENTS', rationale=challenge_policy['rationale'])
+                    for name,contributions,cost_increment in (
+                        ('FINANCIAL_CONTRIBUTION_FADE',other_policy,Decimal(0)),
+                        ('COST_OF_EQUITY_PLUS_100BP',None,Decimal(challenge_policy['cost_of_equity_increment'])),
+                        ('FINANCIAL_FADE_AND_HIGHER_REQUIRED_RETURN',other_policy,Decimal(challenge_policy['cost_of_equity_increment']))):
+                        sensitivities.append(dict(scenario='base',branch=name,
+                            result=build_product_continuation_cash_path(**{**arguments,
+                                'other_pre_tax_policy':contributions,
+                                'cost_of_equity':str(Decimal(arguments['cost_of_equity'])+cost_increment)})))
     return dict(status='SOURCE_BOUND_PRODUCT_CONTINUATION_NOT_APPROVED',action='no_order',confidence='LOW',
         formal_eligibility=False,economic_approval=False,price_admission=False,primary_valuation_changed=False,
         rationale=policy['rationale'],cash_return_rationale=policy['cash_return_rationale'],
         challenge_rationale=policy['challenge_rationale'],terminal_rationale=policy['terminal_rationale'],
-        counter_evidence=policy['counter_evidence'],scenarios=outcomes)
+        counter_evidence=policy['counter_evidence'],scenarios=outcomes,
+        sensitivity_cases=sensitivities,contribution_reference=contribution_reference,
+        economic_challenges=challenge_policy)
 
 
 def _load_product_continuation(*,root,symbol,now,candidate_binding,package,ledger,facts,cash_policy):
@@ -127,7 +175,9 @@ def _load_product_continuation(*,root,symbol,now,candidate_binding,package,ledge
             raise ValueError('Product continuation availability/identity changed')
         from .product_operating_research import build_product_operating_research
         generated=build_product_operating_research(root=root,package=package,ledger=ledger,facts=facts,evaluation_at=now)
-        result=build_product_continuation_research(policy=policy,cash_policy=cash_policy,generated=generated,ledger=ledger,facts=facts)
+        contribution = _contribution_reference(root=root,package=package) if policy.get('economic_challenges') is not None else None
+        result=build_product_continuation_research(policy=policy,cash_policy=cash_policy,generated=generated,ledger=ledger,facts=facts,
+            contribution_reference=contribution)
         refs=[dict(path=relative,sha256=sha256(raw).hexdigest()),*generated['source_bindings']]
         for ref in refs:
             if sha256_file(require_inside(root,root/ref['path'],'product continuation source')) != ref['sha256']:

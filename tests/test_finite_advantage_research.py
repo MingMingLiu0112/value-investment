@@ -130,6 +130,16 @@ def test_retained_original_research_is_not_strategy_admission():
     assert len(center['scenarios'])==6
     base=next(row for row in center['scenarios'] if row['scenario']=='base' and row['branch']=='FLAT_PRODUCT_CONTINUATION')
     assert base['result']['valuation']['per_share_cny'].startswith('945.974796')
+    reference=center['contribution_reference']['reference']
+    assert Decimal(reference['financial_cny'])==Decimal('3497304361.91')
+    assert Decimal(reference['other_cny'])==Decimal('140112864.65')
+    assert Decimal(reference['unallocated_cny'])==0
+    assert len(center['sensitivity_cases'])==3
+    ke=next(row['result'] for row in center['sensitivity_cases'] if row['branch']=='COST_OF_EQUITY_PLUS_100BP')
+    assert ke['cash_rows']==base['result']['cash_rows'] or all(
+        a['profit_cny']==b['profit_cny'] and a['closing_cash_cny']==b['closing_cash_cny']
+        for a,b in zip(ke['cash_rows'],base['result']['cash_rows']))
+    assert Decimal(ke['valuation']['per_share_cny'])<Decimal(base['result']['valuation']['per_share_cny'])
 
 
 def test_product_center_is_not_total_book_roe_fade(inputs,product_inputs):
@@ -139,14 +149,41 @@ def test_product_center_is_not_total_book_roe_fade(inputs,product_inputs):
         for row in case['annual_rows']: row['legacy_profit_before_new_cash_cost']='600.7'
     generated=dict(status='CONDITIONAL_OPERATING_RESEARCH_NOT_APPROVED',
         scenarios=[dict(scenario=name,operating_rows=product_inputs['first_five_product_rows']) for name in ('bear','base','bull')])
+    contribution=dict(reference=dict(financial_cny='15',other_cny='5',unallocated_cny='0',basis='TEST_ONLY contribution attribution'))
     result=research.build_product_continuation_research(policy=policy,cash_policy=cash_policy,
-        generated=generated,ledger=ledger,facts=facts)
+        generated=generated,ledger=ledger,facts=facts,contribution_reference=contribution)
     assert len(result['scenarios'])==6
     baseline=next(row for row in result['scenarios'] if row['scenario']=='base' and row['branch']=='FLAT_PRODUCT_CONTINUATION')['result']
     assert all(row['legacy_profit_cny']=='600.700000' or Decimal(row['legacy_profit_cny'])==Decimal('600.7') for row in baseline['cash_rows'])
     assert result['economic_approval'] is result['primary_valuation_changed'] is False
+    assert len(result['sensitivity_cases'])==3
+    for row in result['sensitivity_cases']:
+        assert row['result']['operating_rows'][:5]==baseline['operating_rows'][:5]
+        assert Decimal(row['result']['valuation']['per_share_cny'])<Decimal(baseline['valuation']['per_share_cny'])
+    with pytest.raises(ValueError,match='source-derived'):
+        research.build_product_continuation_research(policy=policy,cash_policy=cash_policy,
+            generated=generated,ledger=ledger,facts=facts)
     generated['scenarios'][0]['operating_rows']=deepcopy(generated['scenarios'][0]['operating_rows'])
     generated['scenarios'][0]['operating_rows'][0]['legacy_ex_parent']='601'
     with pytest.raises(ValueError,match='first five'):
         research.build_product_continuation_research(policy=policy,cash_policy=cash_policy,
-            generated=generated,ledger=ledger,facts=facts)
+            generated=generated,ledger=ledger,facts=facts,contribution_reference=contribution)
+
+
+@pytest.mark.parametrize('bad',[[], 'invalid', 1, True])
+def test_bad_optional_economic_policy_preserves_parent_research(source_root,monkeypatch,bad):
+    from value_investment_agent.application.research import product_operating_research
+    root,_,binding=source_root
+    policy=json.loads((Path(__file__).resolve().parents[1]/'config/research-assumptions/600519-product-continuation-v1.json').read_bytes())
+    policy.update(candidate_binding=binding,economic_challenges=bad)
+    path=root/'config/research-assumptions/600519-product-continuation-v1.json'
+    path.write_text(json.dumps(policy),encoding='utf-8')
+    monkeypatch.setattr(product_operating_research,'build_product_operating_research',
+        lambda **kw:dict(status='CONDITIONAL_OPERATING_RESEARCH_NOT_APPROVED',scenarios=[]))
+    monkeypatch.setattr(research,'_contribution_reference',lambda **kw:None)
+    result=research.load_finite_advantage_research(root=root,symbol='600519',now=datetime.now(timezone.utc))
+    assert result['status']=='SOURCE_BOUND_FINITE_RESEARCH_NOT_APPROVED'
+    assert len(result['branches'])==12
+    assert result['product_continuation']['status']=='PRODUCT_CONTINUATION_SOURCE_OR_ASSUMPTION_UNAVAILABLE'
+    assert result['product_continuation']['reason'].startswith('ValueError:')
+    assert result['product_continuation']['scenarios']==[]

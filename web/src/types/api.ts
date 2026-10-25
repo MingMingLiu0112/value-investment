@@ -637,6 +637,7 @@ export interface FiniteAdvantageResearch {
 }
 
 export interface ProductContinuationResearch {
+  sensitivity_cases?: ProductContinuationResearch["scenarios"];
   status: string;
   action: string;
   confidence?: string;

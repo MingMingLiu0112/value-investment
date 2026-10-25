@@ -5815,3 +5815,46 @@ and ambiguous-bar states remain observations, not personal BUY/EXIT permissions.
 No worker, network collection, timer, replacement freeze, private data, Excel or
 server action was started. Exact successor CI/clean checkout/browser publication
 remain separate pending gates. Overall REAL_ASSISTED_USE_NOT_READY; action=no_order.
+
+### 2026-10-25 strategy-only continuation after user review
+
+User explicitly requires strategy work, not peripheral simulation or platform
+expansion. H is now implementing a fixed-version daily-channel/ATR long-only
+research comparison. Reference is vnpy_ctastrategy c212d603e68a5f4dbbc160fe8f7f8b1e06be2494,
+MIT; A-share next-session execution, quantities and restrictions are adaptations,
+not an equivalent reproduction or validated strategy release. Existing492-bar
+derived-daily cases can support current rule calculations. Missing historical
+membership, corporate actions and executable states must remain explicit; no
+retrospective sector membership or STRICT fills are invented. H remains in progress.
+
+Completed86ceaef96e86719b4491c721dc2101f4a918a8fd passed exact Core40192928069
+and Web40192928026 (push duplicates also green). Clean checkout105 passed/3
+optional source skips; explicit actual originals and private-blocked API checks
+were separately run. Sole8001 is now86ceaef9, backend/build/registry MATCHED,
+with the three public pointers unchanged. Target cold API receipt is
+.tmp/dual1/runtime/finite-advantage-research/20261025T143259688806Z/receipt.json.
+This is runtime verification, not a new browser or human investment acceptance.
+
+V domain contribution delivery77453658 is integrated as9e757f4a after independent
+review. New actual original extraction derives TTM financial PBT contribution
+proxy3497304361.91, other listed contribution140112864.65 and residual0 CNY.
+This is consolidated pre-tax attribution, not financial-subsidiary net profit or
+distributable parent cash. Y6-10 financial90/80/70/60/50% and inherited Ke+100bp
+are explicit uncalibrated challenges, separately and jointly, without changing
+first-five product assumptions, q or payouts. Independent economic recomputation:
+center945.9748, financial challenge936.6761, Ke challenge819.2926, combined811.7130.
+Historical basis/ordinary shares apply; none is an approved current fair/buy price.
+Do not keep expanding this small contribution's source search. Main uncertainty
+remains required return and sustained operating/capital/distribution conditions.
+Root actual API receipt: runtime/finite-advantage-research/20261025T143849547684Z/receipt.json.
+
+Decisive next600519 code gap: the complete ten-year path is still only research
+output, while frozen source_native_candidate_v2/source_native_cash_v1 require
+five years and are hash-bound by the retained2e53 candidate. They cannot safely
+be edited or supplied hand-entered ROEs. A narrow source-recomputed ten-year
+candidate compiler will reuse build_descriptor, RunSpec, ResearchApplicationService
+and the existing review packet; only an explicit unfrozen consumer dispatch may
+connect it. It must preserve the five-year evidence, perform full P/B/C/D/terminal
+replay and never fabricate G3/approval. This is necessary valuation-to-research
+intake, not a new approval platform. Author and independent verifier remain separate.
+Overall REAL_ASSISTED_USE_NOT_READY; action=no_order.
