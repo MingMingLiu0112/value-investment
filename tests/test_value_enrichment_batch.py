@@ -7,6 +7,8 @@ import pytest
 
 from test_value_research_priority_v2 import _inputs
 from value_investment_agent.application.research import value_enrichment_batch as batch
+from test_value_evidence_public_profit import inputs as public_profit_inputs
+from test_value_evidence_enrichment_v1 import source  # noqa: F401
 
 
 def test_single_issuer_dividend_lookup_isolates_identified_sibling_failure(tmp_path, monkeypatch):
@@ -98,6 +100,153 @@ def test_tampered_financial_export_rejected_before_download(flow):
     with pytest.raises(ValueError, match='hash mismatch'):
         run(flow, 'bad', allow_network=True)
     assert not calls
+
+
+def test_missing_official_url_is_discovered_and_passed_to_existing_extraction(flow, monkeypatch):
+    from datetime import datetime, timezone
+    args, _, calls = flow
+    payload = json.loads(args['financial_export_path'].read_bytes())
+    for point in payload['annual_points']:
+        point['source_name'] = 'TEST_ONLY provider observation'
+    args['financial_export_path'].write_text(json.dumps(payload), encoding='utf-8')
+    args['financial_export_sha256'] = sha256(args['financial_export_path'].read_bytes()).hexdigest()
+    queue = batch.build_value_research_priority_v2(**args)
+    acquisitions = []
+    def acquire(**kwargs):
+        acquisitions.append(kwargs['symbol'])
+        folder = kwargs['output_dir']
+        folder.mkdir()
+        pdf = folder / 'original.pdf'
+        pdf.write_bytes(b'%PDF-TEST_ONLY-discovered-not-admitted')
+        result = dict(status='ORIGINAL_ACQUIRED_NOT_FACT_ADMITTED', action='no_order',
+            formal_eligibility=False, source=dict(symbol=kwargs['symbol'], period=kwargs['period'],
+                path=pdf.relative_to(args['root']).as_posix(), sha256=sha256(pdf.read_bytes()).hexdigest(),
+                source_url='https://static.cninfo.com.cn/finalpage/2026-03-31/123456.PDF',
+                available_at=datetime.now(timezone.utc).isoformat()))
+        (folder / 'receipt.json').write_text(json.dumps(result), encoding='utf-8')
+        return result
+    monkeypatch.setattr(batch, 'acquire_official_report', acquire)
+    result = run((args, queue, calls), 'auto-original', allow_network=True)
+    assert len(acquisitions) == 1 and not calls
+    item = result['items'][0]
+    assert 'ORIGINAL_HASH_VERIFIED' in item['transitions']
+    assert item['official_acquisition']['sha256'] == sha256(
+        (args['root'] / item['official_acquisition']['path']).read_bytes()).hexdigest()
+    assert item['adopted_fact_ids'] == []
+    assert item['research_registration_status'] == 'NOT_REQUESTED_NO_RESEARCH_CONTEXT'
+    assert result['new_fact_approvals'] == 0 and not result['formal_eligibility']
+
+
+@pytest.mark.parametrize('network', [False, True])
+def test_ambiguous_official_sources_never_trigger_discovery(tmp_path, monkeypatch, network):
+    from datetime import datetime, timezone
+    def forbidden(**kwargs):
+        pytest.fail('conflicting evidence must not be silently replaced')
+    monkeypatch.setattr(batch, 'acquire_official_report', forbidden)
+    row = dict(symbol='600001', timing=dict(financial_period='2025-12-31'))
+    points = [dict(symbol='600001', source_name='CNINFO statutory disclosure',
+        period_label='2025-12-31', sha256=digest * 64,
+        source_url='https://static.cninfo.com.cn/finalpage/2026-03-31/123456.PDF',
+        created_at='2026-04-01T00:00:00+00:00', fetched_at='2026-04-01T00:00:00+00:00')
+        for digest in ('a', 'b')]
+    with pytest.raises(ValueError, match='AMBIGUOUS'):
+        batch._annual_source_for_row(tmp_path, row, points, {}, allow_network=network,
+            output=tmp_path / 'runtime', now=datetime.now(timezone.utc))
+
+
+def test_missing_source_never_downloaded_without_permission(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    def forbidden(**kwargs):
+        pytest.fail('offline evaluation must not discover reports')
+    monkeypatch.setattr(batch, 'acquire_official_report', forbidden)
+    row = dict(symbol='600001', timing=dict(financial_period='2025-12-31'))
+    with pytest.raises(ValueError, match='MISSING'):
+        batch._annual_source_for_row(tmp_path, row, [], {}, allow_network=False,
+            output=tmp_path / 'runtime', now=datetime.now(timezone.utc))
+
+
+def test_damaged_declared_original_is_not_hidden_by_automatic_discovery(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    def forbidden(**kwargs):
+        pytest.fail('damaged declared evidence must fail before network discovery')
+    monkeypatch.setattr(batch, 'acquire_official_report', forbidden)
+    original = tmp_path / 'runtime/original.pdf'
+    original.parent.mkdir()
+    original.write_bytes(b'damaged')
+    declared = dict(symbol='600001', period='2025-12-31', path='runtime/original.pdf',
+        sha256='a' * 64, source_url='https://static.cninfo.com.cn/finalpage/2026-03-31/123456.PDF',
+        available_at='2026-04-01T00:00:00+00:00')
+    row = dict(symbol='600001', timing=dict(financial_period='2025-12-31'))
+    with pytest.raises(ValueError, match='Declared official original hash'):
+        batch._annual_source_for_row(tmp_path, row, [], {('600001', '2025-12-31'): declared},
+            allow_network=True, output=tmp_path / 'runtime', now=datetime.now(timezone.utc))
+
+
+def test_public_profit_input_binding_survives_lawful_consumption_export(flow, monkeypatch):
+    from dataclasses import asdict
+    from datetime import datetime, timezone
+    args, _, calls = flow
+    payload = json.loads(args['financial_export_path'].read_bytes())
+    binding = dict(path='runtime/TEST_ONLY-public-manifest.json', sha256='a' * 64)
+    payload['public_financial_input'] = dict(manifest=binding)
+    args['financial_export_path'].write_text(json.dumps(payload), encoding='utf-8')
+    args['financial_export_sha256'] = sha256(args['financial_export_path'].read_bytes()).hexdigest()
+    queue = batch.build_value_research_priority_v2(**args)
+    original_extract = batch.enrich_retained_company
+    def extract(root, source, points, **kwargs):
+        assert kwargs['public_summary_binding'] == binding
+        result = original_extract(root, source, points, **kwargs)
+        result.update(symbol=source.symbol, evaluation_at=datetime.now(timezone.utc).isoformat(),
+                      action='no_order', company_name='TEST_ONLY')
+        result['source_extraction']['identity'] = dict(source=asdict(source))
+        result['adopted_points'] = [dict(symbol=source.symbol, period_label=source.period,
+            field_name='net_income', data_point_id='TEST_ONLY:profit', value='1', unit='CNY',
+            metadata=dict(derivation_formula=batch.PUBLIC_PROFIT_VERSION, public_summary_binding=binding))]
+        return result
+    monkeypatch.setattr(batch, 'enrich_retained_company', extract)
+    # This test isolates export transport; typed registration has separate real-code tests.
+    monkeypatch.setattr(batch, 'register_enriched_research',
+        lambda *args, **kwargs: dict(status='REJECTED_WITH_REASON', formal_eligibility=False))
+    result = run((args, queue, calls), 'public-profit-transport', allow_network=True)
+    consumption = result['lawful_consumption_export']
+    saved = json.loads((args['root'] / consumption['path']).read_bytes())
+    retained = next(p for p in saved['annual_points'] if p['data_point_id'] == 'TEST_ONLY:profit')
+    assert retained['metadata']['public_summary_binding'] == binding
+    assert saved['value_enrichment_base_export']['sha256'] == queue['inputs']['financial_export_sha256']
+    assert consumption['requires_receipt_cutoff_after_source_acquisition_and_scope_review'] is True
+    assert result['new_fact_approvals'] == 0 and not result['formal_eligibility']
+
+
+def test_new_public_candidate_registers_and_cold_replays_without_a_preexisting_package(tmp_path, public_profit_inputs):
+    from datetime import datetime, timezone
+    from test_value_evidence_public_profit import enrich
+    source, binding, candidates, _ = public_profit_inputs
+    inputs = source, binding, candidates, datetime.now(timezone.utc)
+    result = enrich(tmp_path, inputs)
+    export = tmp_path / 'runtime/empty-registered-facts.json'
+    export.write_text(json.dumps(dict(points=[])), encoding='utf-8')
+    persisted = batch.persist_verified_enrichment_adoption(root=tmp_path, result=result,
+        financial_export_path=export, financial_export_sha256=sha256(export.read_bytes()).hexdigest(),
+        output_dir=tmp_path / 'runtime/auto-candidate')
+    summary = batch.read_verified_enrichment_progress(tmp_path, source.symbol, datetime.now(timezone.utc))
+    assert summary['research_inputs_updated'] is True
+    assert summary['adopted_fact_count'] == 1 and summary['formal_eligibility'] is False
+    assert summary['adopted_metrics'] == [dict(field_name='net_income', value='24', unit='CNY', period_label=source.period)]
+    baseline = batch._new_public_candidate_context(result)
+    assert baseline['case'].research_status == 'DATA_CHECK'
+    assert 'BUSINESS_THESIS_NOT_RESEARCHED' in baseline['case'].blockers
+    assert baseline['facts'].verified is False and baseline['facts'].scenario_inputs is None
+    # A local context is persisted via the existing evidence checkpoint, not a new authority registry.
+    assert not (tmp_path / 'config/current-agent-research.json').exists()
+    stored = json.loads((tmp_path / persisted['result_binding']['path']).read_bytes())
+    assert stored['research_registration']['economic_admission'] == 'NOT_PROVEN'
+    checkpoint = batch.ValueEnrichmentProgress(tmp_path).registered_adoption(
+        source.symbol, cutoff=datetime.now(timezone.utc))
+    assert checkpoint is not None
+    forged = deepcopy(checkpoint)
+    forged['symbol'] = '600519'
+    with pytest.raises(ValueError, match='security mismatch'):
+        batch._verified_registered_adoption(tmp_path, '600519', datetime.now(timezone.utc), binding=forged)
 
 
 def test_rehashed_forged_queue_cannot_change_selected_company(flow):

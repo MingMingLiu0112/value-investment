@@ -20,7 +20,8 @@ from ...m2_discovery_engine import _point_available_at
 VERSION = 'value-debt-scope-enrichment-v1'
 RATIO_VERSION = 'value-sourced-balance-ratio-v1'
 GROWTH_VERSION = 'value-sourced-income-growth-v1'
-DERIVED_VERSIONS = {VERSION, RATIO_VERSION, GROWTH_VERSION}
+PUBLIC_PROFIT_VERSION = 'value-official-public-parent-profit-v1'
+DERIVED_VERSIONS = {VERSION, RATIO_VERSION, GROWTH_VERSION, PUBLIC_PROFIT_VERSION}
 CORRELATION_METHOD = 'official_pdf_plus_independent_structured_source'
 STRUCTURED_SOURCES = {
     'AkShare / Sina detailed financial statements',
@@ -30,6 +31,74 @@ FINANCIAL_FUNDING_FIELDS = frozenset({
     'financial_deposits_and_interbank', 'central_bank_borrowings',
     'interbank_borrowings', 'repurchase_financing',
 })
+
+
+def _public_profit_binding(points, source, explicit=None):
+    bindings = [p['metadata'].get('public_summary_binding') for p in points
+        if p.get('symbol') == source.symbol and p.get('period_label') == source.period
+        and (p.get('metadata') or {}).get('derivation_formula') == PUBLIC_PROFIT_VERSION]
+    if explicit is not None:
+        bindings.append(explicit)
+    if not bindings:
+        return None
+    if (not isinstance(bindings[0], dict) or set(bindings[0]) != {'path', 'sha256'}
+            or any(binding != bindings[0] for binding in bindings)):
+        raise ValueError('Conflicting or missing public profit source binding')
+    return deepcopy(bindings[0])
+
+
+def _correlate_public_parent_profit(root, source, packet, binding, evaluation_at):
+    """Recheck provider bytes plus an official parent-profit row, not E1 flags."""
+    if binding is None:
+        return [], dict(status='NOT_REQUESTED', issues=[])
+    from ...infrastructure.screening.public_financial_snapshot import load_public_annual_summary
+
+    points, _ = load_public_annual_summary(root=root, binding=binding, evaluation_at=evaluation_at)
+    matches = [p for p in points if p['symbol'] == source.symbol
+        and p['period_label'] == source.period and p['field_name'] == 'net_income'
+        and p['unit'] == 'CNY' and p['currency'] == 'CNY']
+    candidates = [c for c in packet['candidates'] if c['field_name'] == 'net_income'
+        and c['unit'] == 'CNY' and c.get('source_label') in {
+            '\u5f52\u5c5e\u4e8e\u4e0a\u5e02\u516c\u53f8\u80a1\u4e1c\u7684\u51c0\u5229\u6da6',
+            '\u5f52\u5c5e\u4e8e\u6bcd\u516c\u53f8\u80a1\u4e1c\u7684\u51c0\u5229\u6da6'}]
+    amounts = {Decimal(c['value']) for c in candidates}
+    if (len(matches) != 1 or len(amounts) != 1
+            or not all(amount.is_finite() for amount in amounts)):
+        return [], dict(status='DATA_GAP', issues=['PARENT_PROFIT_MISSING_OR_AMBIGUOUS'])
+    secondary, amount = matches[0], next(iter(amounts))
+    if Decimal(secondary['value']) != amount:
+        return [], dict(status='SOURCE_CONFLICT', issues=['PARENT_PROFIT_EXACT_AMOUNT_CONFLICT'])
+    known_at = max(datetime.fromisoformat(source.available_at),
+                   datetime.fromisoformat(secondary['available_at'])).isoformat()
+    refs = [dict(id='official-parent-profit:' + str(c['page']), path=source.path,
+        sha256=source.sha256, source_url=source.source_url, page=c['page'],
+        excerpt=c['excerpt'], label=c['source_label']) for c in candidates]
+    secondary_binding = secondary['metadata']['source_binding']
+    refs.extend([dict(id=secondary['data_point_id'], path=secondary_binding['path'],
+        sha256=secondary_binding['sha256'], source_url=secondary['source_url'],
+        source_row=secondary['metadata']['source_row'], period_label=source.period),
+        dict(id='public-summary-manifest', **binding)])
+    identity = dict(version=PUBLIC_PROFIT_VERSION, source=asdict(source),
+        public_summary_binding=binding, secondary=secondary, official_rows=candidates,
+        parser=packet['identity']['implementation_sha256'])
+    digest = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+    point = dict(symbol=source.symbol, field_name='net_income', period_label=source.period,
+        value=str(amount), unit='CNY', source_id='official-parent-profit:' + source.sha256,
+        source_name='CNINFO statutory disclosure', source_url=source.source_url,
+        source_path=source.path, sha256=source.sha256, data_point_id='value-parent-profit:' + digest,
+        available_at=known_at, fetched_at=known_at, created_at=known_at,
+        validation_status='verified', human_reviewed=False,
+        metadata=dict(derivation_formula=PUBLIC_PROFIT_VERSION,
+            verification_method='official_pdf_plus_independent_structured_source',
+            automatic_cross_source_verification=True, statement_scope='consolidated',
+            profit_basis='attributable_to_parent', currency='CNY',
+            input_fact_ids=[secondary['data_point_id']], evidence_refs=refs,
+            public_summary_binding=deepcopy(binding),
+            secondary_source_binding=deepcopy(secondary_binding),
+            historical_pit_admission='NOT_ADMITTED', economic_approval=False,
+            assurance_basis='OFFICIAL_PARENT_PROFIT_EXACT_RETAINED_PROVIDER_REPLAY'))
+    return [point], dict(status='FACT_ADMITTED', field_name='net_income',
+        issues=[], input_fact_ids=[secondary['data_point_id']], evidence_refs=refs)
 
 
 def _source_financial_funding_scope(packet, source):
@@ -335,15 +404,19 @@ def validate_debt_scope(symbol: str, period: str, components: list[dict], *,
 def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: list[dict], *,
                             evaluation_at: datetime, cache_dir: Path,
                             name: str | None = None, sector: str | None = None,
-                            components: list[dict] | None = None) -> dict:
+                            components: list[dict] | None = None,
+                            public_summary_binding: dict | None = None) -> dict:
     """Extract, match existing facts, validate scope and re-run unchanged scoring.
 
     Candidate matches never change a fact's original validation flags. Only
     already admitted PIT facts enter re-evaluation. No database/pointer writes.
     """
     original = deepcopy(points)
+    public_summary_binding = _public_profit_binding(points, source, public_summary_binding)
     packet = extract_retained_annual(root, source, evaluation_at=evaluation_at, cache_dir=cache_dir,
                                      verify_cache=True)
+    profit_points, profit_adoption = _correlate_public_parent_profit(
+        root, source, packet, public_summary_binding, evaluation_at)
     funding_scope = _source_financial_funding_scope(packet, source)
     company = [deepcopy(p) for p in points if p.get('symbol') == source.symbol
                and _point_available_at(p, evaluation_at) is not None
@@ -352,6 +425,20 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
     reverify_income_inputs(root, source, company, evaluation_at=evaluation_at)
     before = evaluate_financial_quality(source.symbol, name, sector, company,
                                         evaluation_date=evaluation_at.date())
+    existing_profit = [p for p in company if p.get('field_name') == 'net_income'
+                       and p.get('period_label') == source.period and _accepted(p)]
+    if profit_points and existing_profit:
+        expected = Decimal(profit_points[0]['value'])
+        try:
+            agrees = all(p.get('unit') == 'CNY'
+                and (p.get('metadata') or {}).get('statement_scope') == 'consolidated'
+                and Decimal(str(p['value'])).is_finite()
+                and Decimal(str(p['value'])) == expected for p in existing_profit)
+        except (InvalidOperation, ValueError, TypeError):
+            agrees = False
+        profit_points = []
+        profit_adoption = dict(status='EXISTING_ADMITTED_INPUT_PRESENT' if agrees else 'SOURCE_CONFLICT',
+            field_name='net_income', issues=[] if agrees else ['EXISTING_ADMITTED_PARENT_PROFIT_CONFLICT'])
     if components is None:
         # Existing numeric balances remain unclassified until note review.
         components = [p for p in company if p.get('field_name') in {*DEBT_LABELS, *FINANCIAL_FUNDING_FIELDS}
@@ -496,8 +583,10 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
                 adopted_points.append(derived)
     ratio_points, ratio_adoption = _derive_balance_ratio(source, company, packet, evaluation_at)
     adopted_points.extend(ratio_points)
-    growth_points, growth_observations, growth_adoption = _derive_income_growth(source, company, packet)
+    growth_points, growth_observations, growth_adoption = _derive_income_growth(
+        source, company + profit_points, packet)
     adopted_points.extend(growth_points)
+    adopted_points.extend(profit_points)
     after = evaluate_financial_quality(source.symbol, name, sector, company + adopted_points,
                                        evaluation_date=evaluation_at.date())
     assert points == original
@@ -510,6 +599,8 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
                 adopted_points=adopted_points,
                 balance_ratio_adoption=ratio_adoption,
                 income_growth_adoption=growth_adoption,
+                public_summary_binding=public_summary_binding,
+                public_profit_adoption=profit_adoption,
                 sourced_arithmetic_points=growth_observations,
                 input_points_sha256=hashlib.sha256(json.dumps(points, sort_keys=True, default=str).encode()).hexdigest(),
                 state='QUALITY_EVALUATED' if after.total_score is not None else 'DATA_UNAVAILABLE',
@@ -536,7 +627,8 @@ def consume_retained_enrichment(root: Path, points: list[dict], sources: list[di
             raise ValueError('duplicate retained enrichment source identity')
         seen.add(identity)
         result = enrich_retained_company(root, source, merged, evaluation_at=evaluation_at,
-            cache_dir=root / '.tmp/value-enrichment-consumption')
+            cache_dir=root / '.tmp/value-enrichment-consumption',
+            public_summary_binding=_public_profit_binding(points, source))
         identities = {p['data_point_id']: p for p in merged if p.get('data_point_id')}
         for point in result['adopted_points']:
             if point['data_point_id'] in identities:
@@ -551,6 +643,7 @@ def consume_retained_enrichment(root: Path, points: list[dict], sources: list[di
             'adopted_fact_ids': [p['data_point_id'] for p in result['adopted_points']],
             'balance_ratio_adoption': result['balance_ratio_adoption'],
             'income_growth_adoption': result['income_growth_adoption'],
+            'public_profit_adoption': result['public_profit_adoption'],
             'verification_created': False, 'formal_eligibility': False})
     return merged, reports
 
@@ -575,7 +668,8 @@ def register_enriched_research(result: dict, *, root: Path, points: list[dict],
     source = RetainedAnnualSource(**result['source_extraction']['identity']['source'])
     checked = enrich_retained_company(root, source, points, evaluation_at=cutoff,
         cache_dir=root / '.tmp/value-enrichment-extraction',
-        name=result.get('company_name'), sector=result.get('sector'))
+        name=result.get('company_name'), sector=result.get('sector'),
+        public_summary_binding=result.get('public_summary_binding'))
     # JSON normalization allows persisted Decimal values to be revalidated.
     for field in ('adopted_points', 'sourced_arithmetic_points', 'after', 'input_points_sha256', 'debt_scope'):
         normalize = lambda value: json.loads(json.dumps(value, default=str))
@@ -668,7 +762,8 @@ def verify_enrichment_adoption(*, root: Path, result_binding: dict,
     source = RetainedAnnualSource(**result['source_extraction']['identity']['source'])
     checked = enrich_retained_company(root, source, points, evaluation_at=stamp,
         cache_dir=root / '.tmp/value-enrichment-extraction',
-        name=result.get('company_name'), sector=result.get('sector'))
+        name=result.get('company_name'), sector=result.get('sector'),
+        public_summary_binding=result.get('public_summary_binding'))
     for field in ('adopted_points', 'sourced_arithmetic_points', 'after', 'input_points_sha256', 'debt_scope'):
         if json.loads(json.dumps(checked[field], default=str)) != result[field]:
             raise ValueError('Enrichment result differs from revalidated source facts: ' + field)

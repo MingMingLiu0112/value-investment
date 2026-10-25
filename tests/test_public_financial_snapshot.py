@@ -129,7 +129,7 @@ def test_partial_or_invalid_source_never_produces_complete_manifest(tmp_path, mo
     elif kind == 'page_budget':
         first['result'].update(count=999999, pages=9999)
     with pytest.raises((ValueError, requests.Timeout)):
-        collect(tmp_path, monkeypatch, pages=[first, second])
+        collect(tmp_path, monkeypatch, pages=[first, second, second, second])
     manifest = json.loads((tmp_path / 'runtime/collection/manifest.json').read_bytes())
     assert manifest['status'] == 'FAILED' and manifest['formal_admission'] is False
     binding = dict(path='runtime/collection/manifest.json', sha256=hashlib.sha256(
@@ -144,6 +144,45 @@ def test_complete_two_page_collection(tmp_path, monkeypatch):
         page([row(), row('600887')], count=3, pages=2), page([row('000333')], count=3, pages=2)])
     points, info = load(tmp_path, binding)
     assert len(session.calls) == 2 and info['provider_rows'] == 3 and len(points) == 12
+
+
+def test_transient_transport_recovers_with_finite_backoff(tmp_path, monkeypatch):
+    sleeps = []
+    monkeypatch.setattr(adapter.time, 'sleep', sleeps.append)
+    session = Session([requests.Timeout('TEST_ONLY'), requests.ConnectionError('TEST_ONLY'), page([row()])])
+    binding = adapter.collect_public_annual_summary(root=tmp_path,
+        output_dir=tmp_path / 'runtime/recovered', period='2025-12-31',
+        allow_network=True, session=session)
+    points, info = load(tmp_path, binding)
+    assert len(session.calls) == 3 and sleeps == [1, 2]
+    assert info['provider_rows'] == 1 and all(not _accepted(p) for p in points)
+
+
+@pytest.mark.parametrize('status,expected_calls', [(403, 1), (404, 1), (429, 3), (503, 3)])
+def test_http_retry_is_bounded_and_never_retries_denied_access(tmp_path, monkeypatch, status, expected_calls):
+    sleeps = []
+    monkeypatch.setattr(adapter.time, 'sleep', sleeps.append)
+    response = requests.Response()
+    response.status_code = status
+    error = requests.HTTPError('TEST_ONLY', response=response)
+    session = Session([error, error, error])
+    with pytest.raises(requests.HTTPError):
+        adapter.collect_public_annual_summary(root=tmp_path,
+            output_dir=tmp_path / 'runtime/failed', period='2025-12-31',
+            allow_network=True, session=session)
+    assert len(session.calls) == expected_calls
+    assert sleeps == ([1, 2] if expected_calls == 3 else [])
+    manifest = json.loads((tmp_path / 'runtime/failed/manifest.json').read_bytes())
+    assert manifest['status'] == 'FAILED' and not manifest['formal_admission']
+
+
+def test_invalid_content_is_not_retried(tmp_path, monkeypatch):
+    session = Session([dict(success=False), page([row()])])
+    with pytest.raises(ValueError, match='success'):
+        adapter.collect_public_annual_summary(root=tmp_path,
+            output_dir=tmp_path / 'runtime/invalid', period='2025-12-31',
+            allow_network=True, session=session)
+    assert len(session.calls) == 1
 
 
 @pytest.mark.parametrize('invalid', [None, '--', 'NaN', 'Infinity', True])
@@ -197,3 +236,31 @@ def test_provider_failure_retains_existing_data_and_exposes_gap(tmp_path, monkey
     payload = service.build_financial_input(root=tmp_path, output_dir=tmp_path / 'runtime/new', collect_public=True)
     assert payload['points'] == [] and payload['status'] == 'NOT_AVAILABLE'
     assert payload['public_financial_input'] == dict(status='ACQUISITION_FAILED', error_type='Timeout', action='no_order')
+
+
+def test_missing_same_period_fields_are_collected_without_replacing_retained_fact(tmp_path, monkeypatch):
+    binding, _ = collect(tmp_path, monkeypatch)
+    monkeypatch.setattr(service, 'collect_public_annual_summary', lambda **_: binding)
+    retained = dict(symbol='600519', data_point_id='retained-official', field_name='net_income', value='999',
+                    period_label='2025-12-31', validation_status='verified')
+    (tmp_path / 'runtime/server-export-payload.json').write_text(json.dumps(dict(
+        generated_at='2026-04-01T00:00:00+00:00', points=[retained])))
+    payload = service.build_financial_input(root=tmp_path, output_dir=tmp_path / 'runtime/new', collect_public=True)
+    assert payload['points'][0] == retained
+    supplemental = payload['points'][1:]
+    assert {p['field_name'] for p in supplemental} == {'total_revenue', 'roe_weighted', 'operating_cash_flow_per_share'}
+    assert all(not _accepted(p) for p in supplemental)
+    assert {p['period_label'] for p in supplemental} == {'2025-12-31'}
+    service.verify_public_supplement(root=tmp_path, payload=payload, evaluation_at=datetime.now(timezone.utc))
+    changed = deepcopy(payload)
+    changed['public_financial_input']['supplement_policy'] = 'OVERWRITE_ALL'
+    with pytest.raises(ValueError, match='policy'):
+        service.verify_public_supplement(root=tmp_path, payload=changed, evaluation_at=datetime.now(timezone.utc))
+
+
+def test_legacy_symbol_exclusion_export_keeps_its_original_replay(tmp_path, monkeypatch):
+    binding, _ = collect(tmp_path, monkeypatch, rows=[row(), row('000333')])
+    monkeypatch.setattr(service, 'collect_public_annual_summary', lambda **_: binding)
+    payload = service.build_financial_input(root=tmp_path, output_dir=tmp_path / 'runtime/new', collect_public=True)
+    payload['public_financial_input'].pop('supplement_policy')
+    service.verify_public_supplement(root=tmp_path, payload=payload, evaluation_at=datetime.now(timezone.utc))

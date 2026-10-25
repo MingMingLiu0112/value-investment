@@ -8,6 +8,19 @@ from ...infrastructure.screening.public_financial_snapshot import (
 )
 
 
+SUPPLEMENT_POLICY = 'MISSING_FIELDS_SAME_RETAINED_PERIOD_V1'
+
+
+def _missing_observations(retained, public):
+    """Fill coverage gaps without replacing values or advancing an issuer's period."""
+    symbols = {p['symbol'] for p in retained}
+    periods = {(p['symbol'], p.get('period_label')) for p in retained}
+    fields = {(p['symbol'], p.get('period_label'), p.get('field_name')) for p in retained}
+    return [p for p in public if p['symbol'] not in symbols or (
+        (p['symbol'], p.get('period_label')) in periods
+        and (p['symbol'], p.get('period_label'), p.get('field_name')) not in fields)]
+
+
 def build_financial_input(*, root: Path, output_dir: Path, collect_public: bool = False) -> dict:
     now = datetime.now(timezone.utc)
     points, retained = load_retained_financial_export(
@@ -29,9 +42,10 @@ def build_financial_input(*, root: Path, output_dir: Path, collect_public: bool 
         payload['public_financial_input'] = dict(status='ACQUISITION_FAILED',
             error_type=type(error).__name__, action='no_order')
         return payload
-    # Supplemental observations must not win an existing company's period/value selection.
+    # Missing same-period observations remain E1; admitted facts always win.
     retained_symbols = {p['symbol'] for p in points}
-    supplements = [p for p in public_points if p['symbol'] not in retained_symbols]
+    supplements = _missing_observations(points, public_points)
+    info['supplement_policy'] = SUPPLEMENT_POLICY
     info['retained_symbols_preserved'] = sorted(retained_symbols)
     info['adopted_observation_count'] = len(supplements)
     payload.update(points=[*points, *supplements], public_financial_input=info)
@@ -51,8 +65,17 @@ def verify_public_supplement(*, root: Path, payload: dict, evaluation_at: dateti
             raise ValueError('public financial observations without complete source binding')
         return
     expected, recomputed = load_public_annual_summary(root=root, binding=info['manifest'], evaluation_at=evaluation_at)
-    retained = {p['symbol'] for p in payload['points'] if not str(p.get('data_point_id', '')).startswith('public-summary-')}
-    expected = [p for p in expected if p['symbol'] not in retained]
+    retained_points = [p for p in payload['points'] if not str(p.get('data_point_id', '')).startswith('public-summary-')]
+    retained = {p['symbol'] for p in retained_points}
+    policy = info.get('supplement_policy')
+    if policy == SUPPLEMENT_POLICY:
+        expected = _missing_observations(retained_points, expected)
+        recomputed['supplement_policy'] = policy
+    elif policy is None:
+        # Historical manifests retain their original symbol-level exclusion.
+        expected = [p for p in expected if p['symbol'] not in retained]
+    else:
+        raise ValueError('unsupported public financial supplement policy')
     recomputed.update(retained_symbols_preserved=sorted(retained), adopted_observation_count=len(expected))
     if recomputed != info or public != expected:
         raise ValueError('financial observations differ from retained originals')

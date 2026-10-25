@@ -230,6 +230,11 @@ def test_worker_income_failure_keeps_only_official_adoption(automatic, http, fai
 @pytest.mark.parametrize('budget', [1, 2, 3])
 def test_worker_total_network_collection_respects_three_candidate_budget(flow, http, monkeypatch, budget):
     original = batch.enrich_retained_company
+    discovery_calls = []
+    def unavailable_original(**kwargs):
+        discovery_calls.append(kwargs['symbol'])
+        raise ValueError('TEST_ONLY_OFFICIAL_DISCOVERY_UNAVAILABLE')
+    monkeypatch.setattr(batch, 'acquire_official_report', unavailable_original)
     def pending(*args, **kwargs):
         packet = original(*args, **kwargs)
         packet['sourced_arithmetic_points'] = [dict(field_name='revenue_yoy')]
@@ -240,10 +245,11 @@ def test_worker_total_network_collection_respects_three_candidate_budget(flow, h
         financial_export_path=args['financial_export_path'], financial_export_sha256=args['financial_export_sha256'],
         output_dir=args['root'] / 'runtime/bounded-three', allow_network=True, budget=budget)
     assert result['attempted_count'] == min(budget, len(queue['evidence_enrichment_work_queue']))
-    # Only the first existing candidate has a retained official annual source.
+    # Missing URLs now trigger explicit bounded discovery, never real CI IO.
     assert len(http['calls']) == 1 <= result['attempted_count'] <= 3
+    assert len(discovery_calls) + len(http['calls']) == result['attempted_count']
     assert result['items'][0]['income_collection']['status'] == 'UNAVAILABLE'
-    assert all('OFFICIAL_ANNUAL_SOURCE_MISSING_OR_AMBIGUOUS' in item['reason']
+    assert all('TEST_ONLY_OFFICIAL_DISCOVERY_UNAVAILABLE' in item['reason']
                for item in result['items'][1:])
 
 

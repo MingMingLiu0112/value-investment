@@ -581,9 +581,27 @@ def create_app(
     @api.get("/api/v1/decisions/{decision_id}")
     def decision(decision_id: str, independent_hotspot: bool = False,
                  core_reviews: CoreValuePublicReviews = Depends(core_public_reviews)):
+        def new_candidate_detail():
+            if not _ID.fullmatch(decision_id):
+                return None
+            from ...application.discovery.value_candidate_selection import load_current_public_candidate_research
+            detail = load_current_public_candidate_research(root=project, symbol=decision_id,
+                now=datetime.now(timezone.utc))
+            if detail is None:
+                return None
+            row = detail['candidate']
+            item = _queue_item(dict(row, gaps=row['blockers'], screening_reasons=[
+                '已自动取得官方原件并核验财务事实；企业质量、估值和投资资格仍待完成。']), detail['as_of'])
+            return dict(action='no_order', status='RESEARCH_ONLY', decision=item,
+                financial_progress=detail['financial_progress'], public_candidate_research=detail,
+                publication=publication_block_unavailable(), formal_eligibility=False)
+
         packet, _ = _load_snapshot(project)
         current = _public(project)
         if current is None or not chain_matches_packet(packet, current):
+            independent = new_candidate_detail()
+            if independent is not None:
+                return independent
             return {"action": "no_order", "status": "UNAVAILABLE", "decision": None,
                     "publication": publication_block_unavailable(),
                     "reason": "PUBLICATION_VERSION_MISMATCH"}
@@ -725,6 +743,9 @@ def create_app(
                         "action": "no_order", "status": "RESEARCH_ONLY",
                         "publication": _publication_block(project, current),
                         "decision": _queue_item(entry, queue.get("as_of"))})
+        independent = new_candidate_detail()
+        if independent is not None:
+            return independent
         return {"action": "no_order", "status": "NOT_FOUND", "decision": None,
                 "publication": _publication_block(project, current),
                 "reason": "UNKNOWN_DECISION"}

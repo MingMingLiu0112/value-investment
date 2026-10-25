@@ -70,7 +70,9 @@ def collect_security_lists_v2(directory: Path, *, clock=None):
     directory.mkdir(parents=True, exist_ok=True)
     documents = []
     with requests.Session() as session:
-        session.trust_env = False
+        # Respect the operator's existing proxy/CA environment; never force a
+        # separate direct route or follow a challenge/redirect to recover data.
+        session.trust_env = True
 
         def fetch(label, url, *, params=None, data=None, referer=None):
             headers = {'User-Agent': 'Mozilla/5.0'}
@@ -82,7 +84,7 @@ def collect_security_lists_v2(directory: Path, *, clock=None):
             if body:
                 headers['Content-Type'] = 'application/x-www-form-urlencoded'
             with session.request('POST' if body else 'GET', url, data=body, headers=headers,
-                                 timeout=(15, 30), stream=True, allow_redirects=False) as response:
+                                 timeout=(15, 30), stream=True, allow_redirects=False, verify=True) as response:
                 response.raise_for_status()
                 if response.status_code != 200:
                     raise ValueError('Official exchange response must be HTTP 200, no redirects: '
@@ -285,7 +287,7 @@ def collect_security_lists_with_coverage(directory: Path, *, clock=None):
     directory.mkdir(parents=True, exist_ok=False)
     documents, failures = [], []
     with requests.Session() as session:
-        session.trust_env = False
+        session.trust_env = True
 
         def fetch(label, url, *, params=None, data=None, referer=None):
             if params:

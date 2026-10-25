@@ -11,6 +11,27 @@ from value_investment_agent.application.product import pending_candidate_supplem
 import pytest
 
 
+def test_new_source_verified_candidate_can_be_read_without_formal_publication(tmp_path, monkeypatch):
+    from value_investment_agent.application.discovery import value_candidate_selection
+    payload = dict(candidate=dict(symbol='000498', company_name='TEST_ONLY',
+        channels=['quality'], blockers=['MODEL_NOT_SELECTED']),
+        financial_progress=dict(status='VERIFIED_FACT_ADOPTION', symbol='000498',
+            research_inputs_updated=True, adopted_fact_count=1, formal_eligibility=False, action='no_order'),
+        as_of='2026-10-25', scope='PUBLIC_FACTS_RESEARCH_NOT_DECISION',
+        source_bindings=[], action='no_order', formal_eligibility=False)
+    monkeypatch.setattr(value_candidate_selection, 'load_current_public_candidate_research',
+        lambda **kwargs: deepcopy(payload) if kwargs['symbol'] == '000498' else None)
+    with TestClient(create_app(tmp_path)) as client:
+        actual = client.get('/api/v1/decisions/000498').json()
+        assert actual['status'] == 'RESEARCH_ONLY'
+        assert actual['decision']['candidate_action'] == 'no_order'
+        assert actual['decision']['blockers'] == ['MODEL_NOT_SELECTED']
+        assert actual['formal_eligibility'] is False
+        assert actual['public_candidate_research']['scope'] == 'PUBLIC_FACTS_RESEARCH_NOT_DECISION'
+        assert actual['publication']['publication_id'] is None
+        assert client.get('/api/v1/decisions/600519').json()['decision'] is None
+
+
 def test_read_only_supplement_is_separate_from_published_decision(tmp_path, monkeypatch):
     _fixture(tmp_path)
     with TestClient(create_app(tmp_path)) as client:

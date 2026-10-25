@@ -1,9 +1,10 @@
-"""Real Windows CLI acceptance in an isolated project with retained public bytes."""
+"""Windows SAFE_REFRESH journeys with isolated transports, never live network."""
 import hashlib
 import json
 import os
 from pathlib import Path
 import shutil
+import socket
 import subprocess
 from datetime import datetime, timedelta, timezone
 
@@ -13,8 +14,68 @@ ROOT = Path(__file__).resolve().parents[1]
 PWSH = Path('C:/Users/we/AppData/Local/Programs/PowerShell/7/pwsh.exe')
 
 
+@pytest.fixture(autouse=True)
+def deny_test_process_network(monkeypatch):
+    def unavailable(*args, **kwargs):
+        raise AssertionError('E2E tests must never use the live network')
+    monkeypatch.setattr(socket.socket, 'connect', unavailable)
+    monkeypatch.setattr(socket.socket, 'connect_ex', unavailable)
+    monkeypatch.setattr(socket, 'create_connection', unavailable)
+    monkeypatch.setattr(socket, 'getaddrinfo', unavailable)
+
+
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_hotspot_refresh_is_explicitly_display_only_and_receipts_preserve_bindings():
+    text = (ROOT / 'scripts/current/run_daily_workbench.ps1').read_text(encoding='utf-8')
+    assert "$priceRefresh = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--observation-scope', 'LAST_COMPLETED_CLOSE_DISPLAY_ONLY')" in text
+    reuse_lines = [line for line in text.splitlines()
+                   if 'refresh_current_price_conditions.py' in line and "'--check-reuse'" in line]
+    assert reuse_lines and all('--observation-scope' not in line for line in reuse_lines)
+    receipts = [line for line in text.splitlines() if 'ConvertTo-Json' in line and 'receiptPath.pending' in line]
+    assert receipts and all('ConvertTo-Json -Depth 20' in line for line in receipts)
+    assert '最近完整收盘观察' in text
+
+
+def _deny_network(project):
+    source = project / 'src'
+    source.mkdir(parents=True, exist_ok=True)
+    (source / 'sitecustomize.py').write_text('''import socket, sys
+def unavailable(*args, **kwargs):
+    raise OSError('P6_ISOLATED_NETWORK_UNAVAILABLE')
+socket.socket.connect = unavailable
+socket.socket.connect_ex = unavailable
+socket.create_connection = unavailable
+socket.getaddrinfo = unavailable
+socket.gethostbyname = unavailable
+def guard(event, args):
+    if event.startswith(('socket.connect', 'socket.getaddrinfo', 'socket.gethostby', 'socket.sendto')):
+        unavailable()
+sys.addaudithook(guard)
+''', encoding='utf-8')
+
+
+def _isolated_refresh_transports(project):
+    """Stub every SAFE_REFRESH transport reached by the Mock/receipt journeys."""
+    responses = {
+        'scripts/run_m2_opportunity_discovery.py': dict(action='no_order', status='BLOCKED'),
+        'scripts/current/refresh_current_price_conditions.py': dict(action='no_order',
+            status='BLOCKED', publication_ready=False, prices_ready=False,
+            quotes_ready=False, continuity_ready=False, items=[], failures=[]),
+        'scripts/collect_quote_sessions.py': dict(action='no_order', status='BLOCKED', observations=[]),
+        'scripts/current/pin_current_quote_bridge.py': dict(action='no_order', status='BLOCKED'),
+        'scripts/current/collect_registered_validity_scan.py': dict(action='no_order', status='BLOCKED'),
+        'scripts/current/review_registered_research_validity.py': dict(action='no_order', status='BLOCKED'),
+    }
+    for name, response in responses.items():
+        (project / name).write_text(
+            'import json,sys\nfrom pathlib import Path\n'
+            'with Path(".tmp/transport-calls.jsonl").open("a",encoding="utf-8") as stream:\n'
+            f'    stream.write(json.dumps({{"command":{name!r},"args":sys.argv[1:]}})+"\\n")\n'
+            f'print(json.dumps({response!r}))\nraise SystemExit(2)\n', encoding='utf-8')
+    _deny_network(project)
 
 
 def test_daily_entry_busy_preserves_active_receipt(tmp_path):
@@ -26,6 +87,7 @@ def test_daily_entry_busy_preserves_active_receipt(tmp_path):
     scratch = project / '.tmp'
     scratch.mkdir()
     shutil.copy2(ROOT / 'scripts/current/run_daily_workbench.ps1', current)
+    _deny_network(project)
     receipt = scratch / 'daily-workbench-latest-run.json'
     receipt.write_bytes(b'{"status":"ACTIVE_SENTINEL"}')
     lock = (scratch / 'daily-workbench.lock').as_posix().replace("'", "''")
@@ -37,7 +99,7 @@ def test_daily_entry_busy_preserves_active_receipt(tmp_path):
     try:
         assert holder.stdout.readline().strip() == 'LOCKED'
         completed = subprocess.run([str(PWSH), '-NoProfile', '-File',
-            str(current / 'run_daily_workbench.ps1'), '-NoServer'], cwd=project,
+            str(current / 'run_daily_workbench.ps1'), '-Mode', 'SAFE_REFRESH', '-NoServer'], cwd=project,
             capture_output=True, text=True, encoding='utf-8', timeout=20)
         assert completed.returncode == 2
         assert 'BUSY' in completed.stdout
@@ -57,7 +119,8 @@ def test_read_only_cannot_start_value_priority_work(tmp_path):
         '-BuildValueResearchPriority', '-NoServer'], cwd=tmp_path,
         capture_output=True, text=True, encoding='utf-8', timeout=20)
     assert completed.returncode != 0
-    assert 'requires explicit SAFE_REFRESH' in completed.stderr
+    assert 'READ_ONLY rejects' in completed.stderr
+    assert 'SAFE_REFRESH' in completed.stderr
     assert not (tmp_path / '.tmp/daily-workbench-latest-run.json').exists()
 
 
@@ -70,20 +133,16 @@ def test_safe_refresh_failure_keeps_previous_snapshot_bytes(tmp_path):
         shutil.copytree(ROOT / directory, project / directory,
                         ignore=shutil.ignore_patterns('__pycache__', '*.pyc', 'node_modules'))
     (project / 'config').mkdir()
-    # No workbook/private data is copied or consulted. Missing active inputs
-    # and the unavailable network must never republish the retained snapshot.
-    for name in ('current-daily-public-snapshot.json', 'current-quote-bridge.json'):
-        shutil.copy2(ROOT / 'config' / name, project / 'config' / name)
+    # Synthetic public snapshot only: do not read changing live pointers while
+    # the user's actual refresh runs, or copy workbook/private data.
+    from test_daily_public_packet_read_only import seed_snapshot
+    seed_snapshot(project)
+    (project / 'config/current-quote-bridge.json').write_text(
+        json.dumps({'quotes': {'600887': {}}}), encoding='utf-8')
     pointer = project / 'config/current-daily-public-snapshot.json'
     old = json.loads(pointer.read_bytes())
-    if not (ROOT / old['packet_path']).is_file():
-        pytest.skip('Retained public snapshot original is absent from this source-only checkout')
     artifact = project / old['packet_path']
-    artifact.parent.mkdir(parents=True)
-    shutil.copy2(ROOT / old['packet_path'], artifact)
-    shutil.copy2(ROOT / 'tests/fixtures/p6_network_unavailable/sitecustomize.py',
-                 project / 'src/sitecustomize.py')
-    original_pointer_sha = digest(ROOT / 'config/current-daily-public-snapshot.json')
+    _deny_network(project)
     before, artifact_before = digest(pointer), digest(artifact)
     command = [str(PWSH), '-NoProfile', '-File',
                str(project / 'scripts/current/run_daily_workbench.ps1'),
@@ -101,7 +160,7 @@ def test_safe_refresh_failure_keeps_previous_snapshot_bytes(tmp_path):
         retained_publication_id=receipt['retained_publication_id'],
         finished_at=receipt['finished_at'], pointer_sha_before=before, pointer_sha_after=digest(pointer),
         packet_sha_before=artifact_before, packet_sha_after=digest(artifact),
-        original_pointer_unchanged=digest(ROOT / 'config/current-daily-public-snapshot.json') == original_pointer_sha,
+        original_pointer_unchanged=digest(pointer) == before,
         network_failure_observed=bool(failures) and all(
             'P6_ISOLATED_NETWORK_UNAVAILABLE' in failure.get('error', '') for failure in failures),
         network_failed_request_count=len(failures),
@@ -150,6 +209,7 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
     current.mkdir(parents=True)
     (project / 'src/value_investment_agent').mkdir(parents=True)
     (project / 'src/value_investment_agent/__init__.py').write_text('', encoding='utf-8')
+    _deny_network(project)
     (project / 'config').mkdir()
     pointer = project / 'config/current-daily-public-snapshot.json'
     pointer.write_text(json.dumps({'publication_id': 'retained'}), encoding='utf-8')
@@ -157,9 +217,14 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         json.dumps({'quotes': {'600887': {}}}), encoding='utf-8')
     shutil.copy2(ROOT / 'scripts/current/run_daily_workbench.ps1', current)
     packet = dict(action='no_order', publication_id='verified', source_bindings_verified=True)
+    nested_binding = dict(path='runtime/TEST_ONLY-official-source.json', sha256='d' * 64)
+    for _ in range(9):
+        nested_binding = dict(source=nested_binding)
+    financial_input = dict(input_adapter_version='financial-export-v2', source_binding=nested_binding)
     (project / 'scripts/run_m2_opportunity_discovery.py').write_text(
         'import json,sys\nfrom pathlib import Path\n'
         f'scenario={scenario!r}\n'
+        f'financial_input=json.loads({json.dumps(financial_input)!r})\n'
         'if scenario == "m2_crash":\n'
         '    raise RuntimeError("TEST_ONLY private diagnostic not for public receipt")\n'
         'out=Path(sys.argv[sys.argv.index("--output-dir")+1])\n'
@@ -168,7 +233,7 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         '    (out/"manifest.json").write_text(json.dumps({"action":"no_order","test_only":True}))\n'
         'print(json.dumps({"action":"no_order", "rule_version":"m2-evidence-screen-v3",'
         '"input_mode":"HISTORICAL_REPLAY" if scenario == "m2_historical" else "LIVE_COLLECTION",'
-        '"current_publication_eligible":False,"financial_input":{"input_adapter_version":"financial-export-v2"}}))\n'
+        '"current_publication_eligible":False,"financial_input":financial_input}))\n'
         'raise SystemExit(2 if scenario == "m2_unavailable" else 0)\n', encoding='utf-8')
     # Stub only child adapters in the isolated project; execute the real PS entry.
     build_exit = 4 if scenario == 'core_conflict' else 2 if scenario == 'core_unavailable' else 0
@@ -198,8 +263,12 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
     refresh = dict(status='WRITTEN', items=[], failures=[] if scenario in {'complete', 'incremental_unavailable', 'm2_unavailable', 'm2_historical', 'm2_manifest_missing', 'pre_unreadable', 'pre_and_post_unreadable', 'm2_crash'} else [
         dict(symbol='300001', reason='missing 15m')])
     (current / 'refresh_current_price_conditions.py').write_text(
-        'import json,sys\n'
+        'import json,sys\nfrom pathlib import Path\n'
         f'value=json.loads({json.dumps(readiness)!r}) if "--check-reuse" in sys.argv else json.loads({json.dumps(refresh)!r})\n'
+        'if "--check-reuse" not in sys.argv:\n'
+        '    assert sys.argv[1:]==["--observation-scope","LAST_COMPLETED_CLOSE_DISPLAY_ONLY"]\n'
+        '    value.update(action="no_order",formal_eligibility=False,price_admitted=False)\n'
+        '    Path(".tmp/hotspot-display-only.json").write_text(json.dumps(value))\n'
         'print(json.dumps(value))\n', encoding='utf-8')
     (project / 'scripts/collect_quote_sessions.py').write_text(
         'import json,sys\n'
@@ -228,7 +297,8 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
         encoding='utf-8')
     before = pointer.read_bytes()
     previous_screen = dict(status='RESEARCH_ONLY',
-        manifest_path='runtime/daily-marketwide/TEST_ONLY-retained/manifest.json', manifest_sha256='b' * 64)
+        manifest_path='runtime/daily-marketwide/TEST_ONLY-retained/manifest.json', manifest_sha256='b' * 64,
+        financial_input=financial_input)
     scratch = project / '.tmp'
     scratch.mkdir(exist_ok=True)
     (scratch / 'daily-workbench-latest-run.json').write_text(json.dumps(dict(
@@ -247,6 +317,12 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
     assert completed.returncode == expected_exit, completed.stdout + completed.stderr
     assert receipt['status'] == expected_status and receipt['published'] is published
     assert receipt['finished_at']
+    assert 'truncated' not in (completed.stdout + completed.stderr).lower()
+    if not readiness['prices_ready']:
+        display = json.loads((scratch / 'hotspot-display-only.json').read_text())
+        assert display['action'] == 'no_order'
+        assert display['formal_eligibility'] is False and display['price_admitted'] is False
+        assert '最近完整收盘观察' in completed.stdout
     assert receipt['research_validity_review'] == {"path": "runtime/TEST_ONLY-review.json", "sha256": "a" * 64}
     review_node = next(row for row in receipt['nodes']
                       if row['command'] == 'scripts/current/review_registered_research_validity.py')
@@ -269,6 +345,7 @@ def test_windows_entry_distinguishes_partial_from_core_failure(tmp_path, scenari
     assert receipt['marketwide_screen']['status'] == (
         'BLOCKED' if scenario in {'m2_unavailable', 'm2_historical', 'm2_manifest_missing', 'm2_crash'} else 'RESEARCH_ONLY')
     if receipt['marketwide_screen']['status'] == 'RESEARCH_ONLY':
+        assert receipt['marketwide_screen']['financial_input'] == financial_input
         assert receipt['marketwide_screen']['manifest_sha256'] == digest(
             project / receipt['marketwide_screen']['manifest_path'])
         assert receipt['retained_marketwide_screen'] == receipt['marketwide_screen']
@@ -330,6 +407,7 @@ def _research_discovery_project(tmp_path, *, discovery_status='READY'):
         json.dumps({'quotes': {}}), encoding='utf-8')
     (project / '.tmp').mkdir()
     shutil.copy2(ROOT / 'scripts/current/run_daily_workbench.ps1', current)
+    _isolated_refresh_transports(project)
 
     discovery = {
         'schema_version': 'agent-daily-discovery-v1', 'action': 'no_order', 'mode': 'MOCK',
@@ -364,7 +442,7 @@ def _research_discovery_project(tmp_path, *, discovery_status='READY'):
     return project
 
 
-def test_read_only_records_failed_prebuild_without_reaching_collectors(tmp_path):
+def test_safe_refresh_records_failed_prebuild_and_continues_isolated_collectors(tmp_path):
     if not PWSH.is_file():
         pytest.skip('Windows PowerShell 7 required')
     project = _research_discovery_project(tmp_path)
@@ -381,7 +459,7 @@ def test_read_only_records_failed_prebuild_without_reaching_collectors(tmp_path)
         'print("TEST_ONLY malformed build result")\n', encoding='utf-8')
     completed = subprocess.run([str(PWSH), '-NoProfile', '-File',
         str(project / 'scripts/current/run_daily_workbench.ps1'),
-        '-Mode', 'READ_ONLY', '-NoServer'], cwd=project,
+        '-Mode', 'SAFE_REFRESH', '-NoServer'], cwd=project,
         capture_output=True, text=True, encoding='utf-8', timeout=30)
     receipt = json.loads((project / '.tmp/daily-workbench-latest-run.json')
                         .read_text(encoding='utf-8-sig'))
@@ -389,10 +467,17 @@ def test_read_only_records_failed_prebuild_without_reaching_collectors(tmp_path)
     assert receipt['status'] == 'BLOCKED' and receipt['published'] is False
     assert pointer.read_bytes() == b'{"publication_id":"retained"}'
     assert (project / '.tmp/progress-observed').read_text() == 'RUNNING'
-    assert len(receipt['nodes']) == 1
-    assert receipt['nodes'][0]['command'] == 'scripts/current/build_daily_public_packet.py'
-    assert receipt['nodes'][0]['output_status'] == 'INVALID_JSON'
-    assert not (project / 'runtime').exists()
+    builds = [node for node in receipt['nodes']
+              if node['command'] == 'scripts/current/build_daily_public_packet.py']
+    assert len(builds) == 2
+    assert all(node['output_status'] == 'INVALID_JSON' and
+               node['execution_status'] == 'FAILED' for node in builds)
+    transports = [json.loads(line) for line in
+                  (project / '.tmp/transport-calls.jsonl').read_text(encoding='utf-8').splitlines()]
+    assert any(row['command'] == 'scripts/run_m2_opportunity_discovery.py' for row in transports)
+    assert any(row['command'] == 'scripts/current/refresh_current_price_conditions.py' for row in transports)
+    assert not any(row['command'] == 'scripts/collect_quote_sessions.py' for row in transports)
+    assert not any(row['command'].endswith('pin_current_quote_bridge.py') for row in transports)
 
 
 def _research_calls(project):
@@ -411,7 +496,7 @@ def test_daily_entry_auto_discovers_mock_plan_and_registers_only_discovered_batc
     project = _research_discovery_project(tmp_path)
     completed = subprocess.run([
         str(PWSH), '-NoProfile', '-File', str(project / 'scripts/current/run_daily_workbench.ps1'),
-        '-Mode', 'READ_ONLY', '-NoServer', '-AutoDiscoverResearchContexts', '-RegisterResearchDrafts'],
+        '-Mode', 'SAFE_REFRESH', '-NoServer', '-AutoDiscoverResearchContexts', '-RegisterResearchDrafts'],
         cwd=project, capture_output=True, text=True, encoding='utf-8', timeout=60)
     assert completed.returncode == 2, completed.stdout + completed.stderr
     calls = _research_calls(project)
@@ -436,7 +521,7 @@ def test_daily_entry_discovery_without_contexts_fails_closed_before_registration
     project = _research_discovery_project(tmp_path, discovery_status='BLOCKED')
     completed = subprocess.run([
         str(PWSH), '-NoProfile', '-File', str(project / 'scripts/current/run_daily_workbench.ps1'),
-        '-Mode', 'READ_ONLY', '-NoServer', '-AutoDiscoverResearchContexts', '-RegisterResearchDrafts'],
+        '-Mode', 'SAFE_REFRESH', '-NoServer', '-AutoDiscoverResearchContexts', '-RegisterResearchDrafts'],
         cwd=project, capture_output=True, text=True, encoding='utf-8', timeout=60)
     assert completed.returncode == 2, completed.stdout + completed.stderr
     calls = _research_calls(project)
@@ -456,7 +541,7 @@ def test_daily_entry_pinned_mock_plan_overrides_auto_discovery(tmp_path):
     project = _research_discovery_project(tmp_path)
     completed = subprocess.run([
         str(PWSH), '-NoProfile', '-File', str(project / 'scripts/current/run_daily_workbench.ps1'),
-        '-Mode', 'READ_ONLY', '-NoServer', '-AutoDiscoverResearchContexts',
+        '-Mode', 'SAFE_REFRESH', '-NoServer', '-AutoDiscoverResearchContexts',
         '-ResearchMockPlan', 'runtime/pinned.json',
         '-ResearchMockPlanSha256', 'c' * 64, '-RegisterResearchDrafts'],
         cwd=project, capture_output=True, text=True, encoding='utf-8', timeout=60)

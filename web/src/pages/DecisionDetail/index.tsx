@@ -1161,8 +1161,12 @@ export default function DecisionDetail() {
                           "debt_ratio",
                           "revenue_yoy",
                           "net_income_yoy",
+                          "net_income",
                         ].includes(metric.field_name) &&
-                        metric.unit === "percent" &&
+                        metric.unit ===
+                          (metric.field_name === "net_income"
+                            ? "CNY"
+                            : "percent") &&
                         typeof metric.value === "string" &&
                         metric.value.trim() !== "" &&
                         Number.isFinite(Number(metric.value)) &&
@@ -1179,9 +1183,11 @@ export default function DecisionDetail() {
                             debt_ratio: "资产负债率",
                             revenue_yoy: "营业收入同比",
                             net_income_yoy: "归母净利润同比",
+                            net_income: "归母净利润",
                           }[metric.field_name]
                         }
-                        ：{Number(metric.value).toFixed(2)}%
+                        ：{Number(metric.value).toFixed(2)}
+                        {metric.field_name === "net_income" ? " 元" : "%"}
                       </span>
                     ))}
               </Typography.Paragraph>

@@ -1212,7 +1212,8 @@ export interface DetailResponse {
       };
     } | null;
     adopted_metrics?: {
-      field_name: "debt_ratio" | "revenue_yoy" | "net_income_yoy";
+      field_name:
+        "debt_ratio" | "revenue_yoy" | "net_income_yoy" | "net_income";
       value: string;
       unit: string;
       period_label: string;

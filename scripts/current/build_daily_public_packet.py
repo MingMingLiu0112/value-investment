@@ -2,6 +2,8 @@
 
 TL9 MVP-1 composed the shared packet; TL10-RC makes the version identity
 sound and publishes the result as the one frozen snapshot the Web reads.
+With ``--read-only``, only verify the retained snapshot via public_snapshot;
+never build, repair, publish, inspect Excel or write artifacts.
 
 Exit codes:
 
@@ -23,6 +25,7 @@ from pathlib import Path
 import sys
 
 
+sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
@@ -32,6 +35,7 @@ from value_investment_agent.application.product.daily_public_packet import (  # 
     build_daily_public_packet,
 )
 from value_investment_agent.application.product.public_snapshot import (  # noqa: E402
+    load_current_packet,
     publish_snapshot,
 )
 
@@ -126,6 +130,8 @@ def _publish(packet: dict, target: Path, *, skip: bool) -> dict | None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser.add_argument("--read-only", action="store_true",
+                        help="Verify only the existing public snapshot; never build, publish or write.")
     parser.add_argument("--output-dir", type=Path,
                         default=Path("runtime/daily-public-packet"))
     parser.add_argument("--excel", type=Path, default=None,
@@ -135,6 +141,19 @@ def main() -> int:
     parser.add_argument("--no-publish", action="store_true",
                         help="Store the packet artifact only; do not repoint the current snapshot.")
     args = parser.parse_args()
+    if args.read_only:
+        if sys.argv[1:] != ["--read-only"]:
+            parser.error("--read-only cannot be combined with build, output, timestamp or Excel options")
+        packet, reason = load_current_packet(ROOT)
+        print(json.dumps({
+            "status": "VERIFIED_READ_ONLY" if packet is not None else "BLOCKED",
+            "action": "no_order", "read_only": True, "published": False,
+            "scope": "STORED_PUBLIC_SNAPSHOT_INTEGRITY_ONLY",
+            "publication_id": packet.get("publication_id") if packet is not None else None,
+            "reason": reason,
+            "web_url": "http://127.0.0.1:8001/daily",
+        }, ensure_ascii=False, indent=2))
+        return 0 if packet is not None else 2
     generated_at = datetime.fromisoformat(args.generated_at) if args.generated_at else None
     packet = build_daily_public_packet(
         ROOT, generated_at=generated_at, excel_path=args.excel)

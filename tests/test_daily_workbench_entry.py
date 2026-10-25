@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -73,57 +75,211 @@ def test_event_review_day_is_independent_from_quote_reuse_and_always_fresh():
     assert "incremental_validity_binding" not in review
 
 
-@pytest.mark.parametrize('retention', ['none', 'previous_success', 'previous_retained', 'explicit'])
-def test_daily_entry_runs_read_only_and_reports_plain_language(tmp_path, retention):
+def _tree(root):
+    return {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+            if p.is_file() else 'DIRECTORY' for p in root.rglob('*')}
+
+
+def _isolated_entry(tmp_path):
+    project = tmp_path / 'isolated-entry'
+    current = project / 'scripts/current'
+    current.mkdir(parents=True)
+    shutil.copy2(SCRIPT, current / SCRIPT.name)
+    shutil.copy2(ROOT / 'scripts/current/build_daily_public_packet.py', current)
+    shutil.copytree(ROOT / 'src', project / 'src', ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+    # Runs in the actual Python child. Reads/imports are allowed, writes,
+    # network and further process creation are forbidden, not just mocked APIs.
+    (project / 'src/sitecustomize.py').write_text('''import sys, os
+def guard(event, args):
+    if event.startswith(('socket.', 'subprocess.', 'os.spawn', 'os.exec')) or event == 'os.system':
+        raise RuntimeError('READ_ONLY forbidden network/process')
+    if event == 'open' and args[2] & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND):
+        raise RuntimeError('READ_ONLY forbidden file write')
+    if event in {'os.mkdir', 'os.remove', 'os.rename', 'os.rmdir', 'os.chmod', 'os.utime', 'os.link', 'os.symlink'}:
+        raise RuntimeError('READ_ONLY forbidden mutation')
+sys.addaudithook(guard)
+''', encoding='utf-8')
+    return project, current / SCRIPT.name
+
+
+def _run_entry(script, project, *args):
     pwsh = _pwsh()
     if pwsh is None:
         pytest.skip("PowerShell 7 is unavailable")
-    project = tmp_path / "isolated-entry"
-    current = project / "scripts/current"
-    current.mkdir(parents=True)
-    shutil.copy2(SCRIPT, current / SCRIPT.name)
-    shutil.copy2(ROOT / "scripts/current/build_daily_public_packet.py", current)
-    shutil.copytree(ROOT / "src", project / "src", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
-    import hashlib
-    screen = None
-    extra = []
-    if retention != 'none':
-        manifest = project / 'runtime/daily-marketwide/retained/manifest.json'
-        manifest.parent.mkdir(parents=True)
-        manifest.write_bytes(b'{}')
-        screen = dict(status='RESEARCH_ONLY', manifest_path=manifest.relative_to(project).as_posix(),
-                      manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest())
-        if retention == 'explicit':
-            extra = ['-RetainedMarketwideManifest', screen['manifest_path'],
-                     '-RetainedMarketwideManifestSha256', screen['manifest_sha256']]
-        else:
-            previous = dict(schema_version='daily-workbench-run-v1', mode='SAFE_REFRESH', action='no_order')
-            previous['marketwide_screen' if retention == 'previous_success' else 'retained_marketwide_screen'] = screen
-            scratch = project / '.tmp'
-            scratch.mkdir()
-            (scratch / 'daily-workbench-latest-run.json').write_text(json.dumps(previous), encoding='utf-8')
-    protected = [ROOT / "config/current-daily-public-snapshot.json",
-                 ROOT / ".tmp/daily-workbench-latest-run.json"]
-    before = {path: path.read_bytes() if path.exists() else None for path in protected}
-    completed = subprocess.run(
-        [pwsh, "-NoProfile", "-File", str(current / SCRIPT.name), "-Mode", "READ_ONLY", "-NoServer", "-Symbols", "600519", *extra],
-        cwd=project, capture_output=True, text=True, encoding="utf-8", timeout=60,
+    guards = '\n'.join(f"function {name} {{ throw 'READ_ONLY forbidden operation' }}" for name in (
+        'New-Item', 'Set-Content', 'Add-Content', 'Move-Item', 'Remove-Item',
+        'Start-Process', 'Invoke-WebRequest', 'Invoke-RestMethod', 'Get-NetTCPConnection'))
+    quoted = ' '.join(str(arg) if str(arg).startswith('-') else
+        "'" + str(arg).replace("'", "''") + "'" for arg in (script, *args))
+    return subprocess.run(
+        [pwsh, '-NoProfile', '-Command', "$ErrorActionPreference='Stop'\n" + guards + '\n& ' + quoted + '\nexit $LASTEXITCODE'],
+        env={**os.environ, 'PYTHONDONTWRITEBYTECODE': '1'},
+        cwd=project, capture_output=True, text=True, encoding='utf-8', timeout=60,
     )
+
+
+@pytest.mark.parametrize('pointer', ['missing', 'malformed', 'valid', 'tampered'])
+def test_daily_entry_runs_read_only_and_reports_plain_language(tmp_path, pointer):
+    project, script = _isolated_entry(tmp_path)
+    from test_daily_public_packet_read_only import seed_snapshot
+    seed_snapshot(project, pointer)
+    # READ_ONLY must not even parse invalid refresh settings.
+    config = project / 'config'
+    config.mkdir(exist_ok=True)
+    (config / 'public-research-refresh-v1.json').write_text('INVALID', encoding='utf-8')
+    before = _tree(project)
+    args = [] if pointer == 'valid' else ['-Mode', 'READ_ONLY', '-NoServer']
+    completed = _run_entry(script, project, *args)
     output = completed.stdout or ""
-    assert completed.returncode == 2, (completed.returncode, output, completed.stderr)
+    assert completed.returncode == (0 if pointer == 'valid' else 2), (output, completed.stderr)
     assert "运行结果" in output
     assert "action=no_order" in output
-    assert {path: path.read_bytes() if path.exists() else None for path in protected} == before
-    receipt = json.loads((project / ".tmp/daily-workbench-latest-run.json").read_text(encoding="utf-8-sig"))
-    assert receipt["status"] == "BLOCKED"
-    assert receipt["action"] == "no_order"
-    if screen:
-        assert receipt['retained_marketwide_screen'] == screen
-        assert 'marketwide_screen' not in receipt
-        # Binding propagation is not source admission; the dummy manifest fails application replay.
-        from value_investment_agent.application.discovery.value_candidate_selection import select_current_value_candidates
-        from datetime import datetime, timezone
-        assert select_current_value_candidates(root=project, now=datetime.now(timezone.utc))['data_status'] == 'SOURCE_REVALIDATION_FAILED'
+    assert 'http://127.0.0.1:8001/daily' in output
+    assert _tree(project) == before
+    assert not (project / '.tmp').exists()
+
+
+@pytest.mark.parametrize('extra', [
+    ['-Open'], ['-Reauthorize'], ['-Symbols', '600519'],
+    ['-AutoDiscoverResearchContexts'], ['-RegisterResearchDrafts'],
+    ['-BuildValueResearchPriority'], ['-ExecuteValueEnrichment'],
+    ['-ResearchMockPlan', 'dummy'], ['-ResearchMockPlanSha256', '0' * 64],
+    ['-ResearchTestOnlyRetrospective', 'dummy'],
+    ['-ResearchTestOnlyRetrospectiveSha256', '0' * 64],
+    ['-RetainedMarketwideManifest', 'dummy'],
+    ['-RetainedMarketwideManifestSha256', '0' * 64],
+])
+def test_read_only_rejects_mutating_parameters_before_io(tmp_path, extra):
+    project = tmp_path / 'rejected-entry'
+    current = project / 'scripts/current'
+    current.mkdir(parents=True)
+    script = current / SCRIPT.name
+    shutil.copy2(SCRIPT, script)
+    before = _tree(project)
+    result = _run_entry(script, project, '-Mode', 'READ_ONLY', *extra)
+    assert result.returncode != 0
+    assert 'READ_ONLY rejects' in result.stderr
+    assert _tree(project) == before
+
+
+@pytest.mark.parametrize('mutation', [None, {'enabled': False}, {'unknown': True},
+    {'execution_budget': 4}, {'priority_budget': 0}, {'enrichment_budget': 51},
+    {'execution_budget': True}, {'priority_budget': 10.0}, {'enabled': 'true'},
+    {'schema_version': 'unknown'}, {'action': 'order'}, {'action': ['no_order']},
+    {'schema_version': ['public-research-refresh-v1']},
+    {'build_value_research_priority': False}])
+def test_safe_refresh_settings_validate_and_apply_before_writes(tmp_path, mutation):
+    pwsh = _pwsh()
+    if pwsh is None:
+        pytest.skip('PowerShell 7 is unavailable')
+    project = tmp_path / 'settings'
+    config = project / 'config'
+    config.mkdir(parents=True)
+    settings = json.loads((ROOT / 'config/public-research-refresh-v1.json').read_text(encoding='utf-8'))
+    settings.update(mutation or {})
+    (config / 'public-research-refresh-v1.json').write_text(json.dumps(settings), encoding='utf-8')
+    text = SCRIPT.read_text(encoding='utf-8')
+    section = text[text.index('$priorityBudget = 10'):text.index("$env:TEMP = Join-Path")]
+    command = ("$ErrorActionPreference='Stop'; $Mode='SAFE_REFRESH'; "
+        "$BuildValueResearchPriority=$false; $ExecuteValueEnrichment=$false; "
+        "$root='" + str(project).replace("'", "''") + "';\n" + section +
+        '\n@{build=[bool]$BuildValueResearchPriority; execute=[bool]$ExecuteValueEnrichment; '
+        'priority=$priorityBudget; enrichment=$enrichmentBudget; execution=$executionBudget} | ConvertTo-Json -Compress')
+    before = _tree(project)
+    result = subprocess.run([pwsh, '-NoProfile', '-Command', command], capture_output=True,
+        encoding='utf-8', timeout=30)
+    assert _tree(project) == before
+    if mutation not in (None, {'enabled': False}):
+        assert result.returncode != 0
+    else:
+        assert result.returncode == 0, result.stderr
+        flags = mutation is None
+        assert json.loads(result.stdout) == dict(build=flags, execute=flags,
+            priority=10, enrichment=10, execution=2)
+
+
+@pytest.mark.parametrize('enabled,explicit,budgets', [
+    (True, False, (1, 50, 3)), (False, True, (10, 10, 2)),
+])
+def test_settings_feed_existing_queue_command_without_new_execution_path(tmp_path, enabled, explicit, budgets):
+    pwsh = _pwsh()
+    if pwsh is None:
+        pytest.skip('PowerShell 7 is unavailable')
+    config = tmp_path / 'config'
+    config.mkdir()
+    settings = json.loads((ROOT / 'config/public-research-refresh-v1.json').read_text(encoding='utf-8'))
+    settings.update(enabled=enabled, priority_budget=1, enrichment_budget=50, execution_budget=3)
+    (config / 'public-research-refresh-v1.json').write_text(json.dumps(settings), encoding='utf-8')
+    text = SCRIPT.read_text(encoding='utf-8')
+    section = text[text.index('$priorityBudget = 10'):text.index("$env:TEMP = Join-Path")]
+    queue = text[text.index('            $executionArgs = if ($ExecuteValueEnrichment)'):
+                 text.index('            if ($queue.ExitCode -ne 0')]
+    truth = '$true' if explicit else '$false'
+    command = ("$ErrorActionPreference='Stop'; $Mode='SAFE_REFRESH'; "
+        f'$BuildValueResearchPriority={truth}; $ExecuteValueEnrichment={truth}; '
+        "$root='" + str(tmp_path).replace("'", "''") + "';\n" + section + '''
+$scanManifest = @{files=@{lead_report=@{path='TEST_ONLY-report';sha256='test'};
+    receipt=@{path='TEST_ONLY-receipt';sha256='test'};financial=@{path='TEST_ONLY-export';sha256='test'}}}
+$queuePath='TEST_ONLY-queue'
+function Invoke-PythonJson { param([string[]]$PythonArgs) $script:captured=$PythonArgs }
+''' + queue + '\nConvertTo-Json -InputObject @($captured) -Compress')
+    before = _tree(tmp_path)
+    result = subprocess.run([pwsh, '-NoProfile', '-Command', command],
+        capture_output=True, encoding='utf-8', timeout=30)
+    assert result.returncode == 0, result.stderr
+    assert _tree(tmp_path) == before
+    args = json.loads(result.stdout)
+    assert args[0] == 'scripts/current/build_value_research_queue.py'
+    for key, expected in zip(('--budget', '--enrichment-budget', '--execution-budget'), budgets):
+        assert args[args.index(key) + 1] == str(expected)
+    assert '--execute-enrichment' in args
+    assert '--allow-public-evidence-downloads' in args
+    assert not any('mock' in arg.lower() or 'paid' in arg.lower() for arg in args)
+
+
+@pytest.mark.parametrize('mutation', [None, 'malformed', {'unexpected': True},
+    {'execution_budget': 4}, {'priority_budget': 0}, {'enrichment_budget': True}])
+def test_actual_safe_refresh_entry_validates_settings_before_first_write(tmp_path, mutation):
+    pwsh = _pwsh()
+    if pwsh is None:
+        pytest.skip('PowerShell 7 is unavailable')
+    project = tmp_path / 'safe-prefix'
+    current = project / 'scripts/current'
+    config = project / 'config'
+    current.mkdir(parents=True)
+    config.mkdir()
+    script = current / SCRIPT.name
+    shutil.copy2(SCRIPT, script)
+    settings = json.loads((ROOT / 'config/public-research-refresh-v1.json').read_text(encoding='utf-8'))
+    if isinstance(mutation, dict):
+        settings.update(mutation)
+    (config / 'public-research-refresh-v1.json').write_text(
+        '{bad' if mutation == 'malformed' else json.dumps(settings), encoding='utf-8')
+    # Stop at, not after, the first mutation in the actual entry. No Python,
+    # collection, service or receipt is permitted in this prefix acceptance.
+    command = '''$ErrorActionPreference='Stop'
+function New-Item {
+    [Console]::WriteLine((@{build=[bool]$BuildValueResearchPriority; execute=[bool]$ExecuteValueEnrichment;
+      priority=$priorityBudget; enrichment=$enrichmentBudget; execution=$executionBudget} | ConvertTo-Json -Compress))
+    throw 'TEST_ONLY_FIRST_WRITE_BOUNDARY'
+}
+function Start-Process { throw 'TEST_ONLY_FORBIDDEN_PROCESS' }
+function Invoke-WebRequest { throw 'TEST_ONLY_FORBIDDEN_NETWORK' }
+function Invoke-RestMethod { throw 'TEST_ONLY_FORBIDDEN_NETWORK' }
+& ''' + "'" + str(script).replace("'", "''") + "' -Mode SAFE_REFRESH -NoServer"
+    before = _tree(project)
+    result = subprocess.run([pwsh, '-NoProfile', '-Command', command],
+        capture_output=True, encoding='utf-8', timeout=30)
+    assert result.returncode != 0
+    assert _tree(project) == before
+    assert not (project / '.tmp').exists()
+    if mutation is None:
+        assert 'TEST_ONLY_FIRST_WRITE_BOUNDARY' in result.stderr
+        assert json.loads(result.stdout) == dict(build=True, execute=True,
+            priority=10, enrichment=10, execution=2)
+    else:
+        assert 'TEST_ONLY_FIRST_WRITE_BOUNDARY' not in result.stderr
+        assert result.stdout.strip() == ''
 
 
 def test_daily_entry_keeps_update_and_web_results_separate():

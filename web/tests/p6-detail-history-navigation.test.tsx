@@ -174,6 +174,18 @@ it("shows verified financial input progress separately from economic approval", 
           unit: "CNY",
           period_label: "2025-12-31",
         },
+        {
+          field_name: "net_income",
+          value: "123456.78",
+          unit: "CNY",
+          period_label: "2025-12-31",
+        },
+        {
+          field_name: "net_income",
+          value: "87654321",
+          unit: "percent",
+          period_label: "2025-12-31",
+        },
       ],
     },
   };
@@ -187,6 +199,10 @@ it("shows verified financial input progress separately from economic approval", 
   expect(html).toContain("归母净利润同比");
   expect(html).toContain("-4.53");
   expect(html).not.toContain("999.00");
+  expect(html).toContain("123456.78");
+  expect(html).toContain(" 元");
+  expect(html).not.toContain("123456.78%");
+  expect(html).not.toContain("87654321");
   for (const mutation of [
     { symbol: "600519" },
     { formal_eligibility: true },

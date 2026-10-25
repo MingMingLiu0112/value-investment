@@ -1,5 +1,16 @@
 # 当前总目标：价值投资建议与情绪卫星仓系统
 
+## 2026-10-25 用户最高优先纠偏：自动公开数据与双策略研究
+
+继续双策略主线，当前范围以用户本轮 P0-A 至 P0-G 为准：自动公开采集、
+四通道筛选、增量补证、经济/结构研究、条件性证券判断与既有 Web 消费。
+PUBLIC_DATA 和 AUTOMATED_RESEARCH 不转交用户手工上传或填写。
+PRIVATE_USER_INPUT 与 HUMAN_APPROVAL 保留各自边界；不代签 G3、策略或事件批准。
+READ_ONLY 必须零写入、零采集；明确 SAFE_REFRESH 才执行有界公开研究。
+唯一执行台账继续是 `current/web-first-full-product-execution-ledger.md`。
+本次源与事实接线不证明策略有效或真实投资可用，永久 `action=no_order`。
+暂停与实际选股、经济/结构判断、条件计划无关的模拟/框架/页面扩展。
+
 ## 2026-10-24 当前执行入口与剩余业务闭环
 
 当前唯一 Goal 为 `DUAL-STRATEGY-RESEARCH-TO-DECISION-CLOSURE-20261023`。

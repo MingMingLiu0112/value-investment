@@ -5024,3 +5024,58 @@ No new cash-gross-flow extraction/adapter was started merely because the PDF
 exists: source-byte verification is not row certification, and already completed
 cash research must not be counted again. Initial real assisted use remains
 NOT_READY; full Goal remains incomplete. action=no_order.
+
+### 2026-10-25 public-data automation correction: real candidate facts, not approval
+
+The latest user P0-A..G instruction reopens confirmed autonomous CODE_GAPs;
+the preceding no-additional-gap assessment is historical, not a reason to stop.
+Base delivery9100e6ba; this entry describes the uncommitted working increment.
+No production schedule, paid API, private account, canonical workbook or server
+was accessed or changed. Existing8001 has NOT been redeployed by this increment.
+
+Implemented in existing paths: transient public financial GET retry (three
+attempts); same-period missing-field E1 supplement without replacing retained
+values; exact FY/H1 official report discovery/download and bound zero-network
+reuse; source conflicts/damaged declarations never silently rediscover;
+candidate-to-existing typed DATA_CHECK research without a prebuilt company
+package; source-replayed new-candidate detail in the existing decision API.
+No model is selected or economic thesis invented by initial fact registration.
+READ_ONLY now verifies existing publication with zero filesystem/network work.
+Explicit SAFE_REFRESH uses one bounded public settings file, budgets10/10/2,
+and existing LAST_COMPLETED_CLOSE_DISPLAY_ONLY for nonformal hotspot research.
+Formal B1/PIT/strategy/human qualification remain unchanged.
+
+Actual raw provider run: runtime/public-financial-autonomous/
+20261025T000551148238Z/manifest.json,
+87d339034bb62ad2e786353fb6b883996a63267c35877535bd6f4d53118285f8:
+5579 provider rows/50055 E1 observations; NOT official fact admission.
+Official observed universe5224 SSE/SZSE, BSE incomplete; NOT full-market PASS.
+000544 FY2025 and H12026 originals downloaded automatically and cold-verified.
+000151 initially failed a six-page issuer search; actual company information
+is on page9. The bounded twelve-page correction preserves issuer/period/code
+rejection and the old failure bytes.
+
+Two actual daily runs: runtime/daily-marketwide/20261025T0017454129658Z
+and20261025T0033265033467Z. The second automatically discovered000151/000498
+originals, adopted one source-correlated parent-profit fact each, and registered
+typed research inputs.000498 FY2025 parent profit2227194256.24 CNY was separately
+cold-replayed and returned by the existing /api/v1/decisions/000498 API.
+Both retain DATA_UNAVAILABLE for incomplete quality/debt, not READY or no-trade.
+Five real hotspot observations were written after correcting the daily CLI
+scope; WATCH/trigger observation is not BUY. Historical STRICT/OOS/Shadow remain
+NOT_PROVEN. Latest local packetpub-2a85d6e7b02205a84ac9 is verified PARTIAL,
+with zero formal admissions. This is not a clean-source production-run claim.
+
+Independent review found and closed twoP2s: damaged declared-source fallback,
+and cross-security checkpoint identity confusion. Targeted source/registration/
+API tests pass; Web990 passed/25 skipped; typecheck passed. Initial full Core
+encountered Windows MAX_PATH, not investment-rule failures. A complete Core
+rerun uses the shorter project-local test root; exact-SHA CI is still pending.
+
+Current shortest queue: finish this increment's Core/CI and source-safe handoff;
+then repair the concrete000498 statement-layout extraction gap (balance/income
+comparatives currently empty), feed verified financial facts into real economic
+research and existing model/price/decision paths. Do not replace the missing
+research with another score, user-upload task or formal approval. Keep research
+assumptions, independent strategy validation and real assisted-use acceptance
+unproven until their actual evidence is delivered. action=no_order.

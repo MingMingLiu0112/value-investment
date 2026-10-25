@@ -4002,8 +4002,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
-      "line_count": 197,
-      "sha256": "c5b7b0d8b4da977e1de493f5326a0cd3d04eb24ca40af86171f0dd4cf55369a5"
+      "line_count": 216,
+      "sha256": "457bcaeaae77aa93797800c92009e668ef9f3539a8403ecff7f608383fdac3ed"
     },
     {
       "path": "scripts/current/build_daily_research_summary.py",
@@ -4535,8 +4535,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "HIGH",
-      "line_count": 674,
-      "sha256": "1057f437e3c1a8ae71894ddad75ee5c619e856af286d8cd9445327342eadf9f4"
+      "line_count": 762,
+      "sha256": "68227ae0899b9f7a38e8733ced2e1f85118503509818d89c32fdfa87674525ff"
     },
     {
       "path": "scripts/current/run_update_and_publish.py",

@@ -8,7 +8,9 @@ from urllib.parse import urlparse
 
 from .value_research_queue import _canonical_hash, _load_bound
 from .value_research_priority_v2 import build_value_research_priority_v2
-from .value_evidence_enrichment_v1 import enrich_retained_company, register_enriched_research
+from .value_evidence_enrichment_v1 import (
+    PUBLIC_PROFIT_VERSION, enrich_retained_company, register_enriched_research,
+)
 from ..product.common import require_inside, write_new_json
 from ...infrastructure.filings.official_pdf import (
     download_official_pdf, validate_pdf_original, is_transient_evidence_failure,
@@ -18,6 +20,7 @@ from ...infrastructure.screening.value_evidence_enrichment_v1 import RetainedAnn
 from ...infrastructure.screening.value_enrichment_progress import ValueEnrichmentProgress
 from ...m2_discovery_engine import _point_available_at
 from ...infrastructure.screening.sina_income_original import collect_sina_income_original
+from ...infrastructure.filings.official_report_acquisition import acquire_official_report
 
 
 def load_enrichment_research_contexts(*, root: Path, symbols, evaluation_at: datetime,
@@ -121,6 +124,38 @@ def _context_digest(context):
     return _canonical_hash(json.loads(json.dumps(payload, default=str)))
 
 
+def _new_public_candidate_context(result):
+    """A deterministic facts-only baseline, not an invented thesis or model choice."""
+    from datetime import date
+    from ...research_case import ResearchCase
+    from ...valuation_models.fcff import FinancialFacts
+
+    symbol = result['symbol']
+    stamp = datetime.fromisoformat(result['evaluation_at'])
+    source = result['source_extraction']['identity']['source']
+    if (not re.fullmatch(r'[0-9]{6}', symbol) or source['symbol'] != symbol
+            or stamp.utcoffset() is None or result.get('action') != 'no_order'
+            or not result.get('adopted_points')):
+        raise ValueError('Automatic candidate context requires source-verified adoption')
+    blockers = ['BUSINESS_THESIS_NOT_RESEARCHED', 'MODEL_NOT_SELECTED',
+        'ECONOMIC_ASSUMPTIONS_NOT_RESEARCHED', 'FINANCIAL_COMPLETENESS_NOT_PROVEN']
+    case = ResearchCase(symbol=symbol, name=result.get('company_name') or symbol,
+        as_of=stamp.date(), generated_at=stamp,
+        run_id='auto-public-facts:' + symbol + ':' + source['sha256'][:16],
+        research_version='auto-public-facts-v1', industry='UNASSESSED',
+        investment_path='UNASSESSED', thesis='Business thesis has not been researched.',
+        return_driver='UNASSESSED', mispricing_hypothesis='UNASSESSED',
+        financial_summary=dict(context_origin='AUTOMATIC_PUBLIC_FACTS_ONLY_V1'),
+        positives=[], counter_evidence=[], thesis_breakers=[], next_events=[],
+        evidence_status='PARTIAL', valuation_status='NOT_ASSESSED',
+        research_status='DATA_CHECK', blockers=blockers,
+        evidence_refs=[dict(id='automatic-official-original', **source)],
+        quote_date=None, financial_period=date.fromisoformat(source['period']),
+        missing_date_reasons={'quote_date': 'No price admission from financial acquisition'})
+    # FinancialFacts is the existing shared fact codec; no FCFF model is invoked.
+    return dict(case=case, facts=FinancialFacts(symbol, stamp.date(), False, [], blockers))
+
+
 def _retry_baseline_contexts(root, supplied, *, evaluation_at, identity_at):
     from dataclasses import replace
 
@@ -160,6 +195,8 @@ def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=Non
         binding = ValueEnrichmentProgress(root).registered_adoption(symbol, cutoff=evaluation_at)
     if binding is None:
         return None
+    if binding.get('symbol') != symbol:
+        raise ValueError('Registered adoption belongs to another security')
     export_binding = binding['financial_export']
     export = require_inside(root / 'runtime', root / export_binding['path'], 'financial export')
     summary = verify_enrichment_adoption(root=root, result_binding=binding['result_binding'],
@@ -168,10 +205,18 @@ def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=Non
     if not summary['research_inputs_updated'] or not summary['adopted_fact_count']:
         raise ValueError('No verified typed fact adoption')
     result = _load_bound(root / binding['result_binding']['path'], binding['result_binding']['sha256'])
+    if (summary['symbol'] != symbol or result['symbol'] != symbol
+            or result['source_extraction']['identity']['source']['symbol'] != symbol):
+        raise ValueError('Registered adoption result security mismatch')
     stamp = datetime.fromisoformat(result['evaluation_at'])
-    _, contexts, _ = load_enrichment_research_contexts(root=root, symbols=[symbol],
-        evaluation_at=stamp, _reuse=False)
-    baseline = contexts[symbol]
+    if binding.get('baseline_kind') == 'AUTOMATIC_PUBLIC_FACTS_ONLY_V1':
+        baseline = _new_public_candidate_context(result)
+    else:
+        _, contexts, _ = load_enrichment_research_contexts(root=root, symbols=[symbol],
+            evaluation_at=stamp, _reuse=False)
+        baseline = contexts[symbol]
+    if baseline['case'].symbol != symbol or baseline['facts'].symbol != symbol:
+        raise ValueError('Registered adoption baseline security mismatch')
     if _context_digest(baseline) != binding['baseline_sha256']:
         raise ValueError('Registered enrichment baseline changed')
     points, _ = load_retained_financial_export(export, evaluation_at=stamp)
@@ -210,18 +255,19 @@ def read_verified_enrichment_progress(root: Path, symbol: str, evaluation_at: da
         verified = _verified_registered_adoption(root, symbol, evaluation_at)
         if verified is None:
             return None
-        summary, _, result = verified
+        summary, context, result = verified
         keys = ('status', 'symbol', 'adopted_fact_count', 'research_inputs_updated',
                 'quality_coverage_before', 'quality_coverage_after', 'formal_eligibility', 'action')
         metrics = [dict(field_name=point['field_name'], value=point['value'],
                         unit=point['unit'], period_label=point['period_label'])
                    for point in result['adopted_points']
-                   if point['field_name'] in {'debt_ratio', 'revenue_yoy', 'net_income_yoy'}]
+                   if point['field_name'] in {'debt_ratio', 'revenue_yoy', 'net_income_yoy', 'net_income'}]
         funding = summary.get('source_financial_funding_scope')
         supplement = ({'source_financial_funding_scope': funding}
                       if funding and (funding.get('required_fields') or funding.get('observations')) else {})
         return dict({key: summary[key] for key in keys}, as_of=result['evaluation_at'],
                     verified_at=evaluation_at.isoformat(), adopted_metrics=metrics,
+                    context_origin=context['case'].financial_summary.get('context_origin'),
                     **supplement)
     except (ValueError, KeyError, TypeError, OSError):
         return None
@@ -243,7 +289,8 @@ def persist_verified_enrichment_adoption(*, root: Path, result: dict,
     _load_bound(export, financial_export_sha256)
     repository, contexts, _ = load_enrichment_research_contexts(root=root, symbols=[symbol],
         evaluation_at=stamp, _reuse=False)
-    baseline = contexts[symbol]
+    automatic_context = symbol not in contexts
+    baseline = _new_public_candidate_context(result) if automatic_context else contexts[symbol]
     points, _ = load_retained_financial_export(export, evaluation_at=stamp)
     packet = deepcopy(result)
     output = require_inside(root / 'runtime', output_dir, 'adoption output')
@@ -266,6 +313,8 @@ def persist_verified_enrichment_adoption(*, root: Path, result: dict,
             raise ValueError('No verified typed adoption to persist')
         adoption = dict(symbol=symbol, baseline_sha256=_context_digest(baseline),
             financial_export=dict(path=export.relative_to(root).as_posix(), sha256=financial_export_sha256))
+        if automatic_context:
+            adoption['baseline_kind'] = 'AUTOMATIC_PUBLIC_FACTS_ONLY_V1'
         attempt = output / (symbol + '-attempt.json')
         write_new_json(attempt, dict(symbol=symbol, state=packet['state'], result_binding=result_binding))
         progress.save(dict(key=_canonical_hash(dict(adoption=adoption, result_binding=result_binding)),
@@ -335,8 +384,9 @@ def _work_key(root, row, points, allow_network, retry_token, context=None):
     from ... import financial_quality, filing_extract
     from . import income_source_correlation
     from ...infrastructure.screening import sina_income_original
+    from ...infrastructure.filings import official_report_acquisition
     modules = [Path(__file__), Path(income_source_correlation.__file__), Path(value_evidence_enrichment_v1.__file__),
-        Path(sina_income_original.__file__),
+        Path(sina_income_original.__file__), Path(official_report_acquisition.__file__),
         Path(value_research_priority_v2.__file__), Path(extraction.__file__),
         Path(evidence_screen_v3.__file__), Path(financial_quality.__file__), Path(filing_extract.__file__)]
     company = [p for p in points if p.get('symbol') == row['symbol']]
@@ -361,6 +411,51 @@ def _work_key(root, row, points, allow_network, retry_token, context=None):
         points=company, originals=originals, network=allow_network, retry_token=retry_token,
         research_context=research_context,
         implementation=hashlib.sha256(b''.join(path.read_bytes() for path in modules)).hexdigest()))
+
+
+def _annual_source_for_row(root, row, points, retained_sources, *, allow_network, output, now):
+    """Discover missing public originals; conflicts and damaged caches never fall back."""
+    symbol, period = row['symbol'], row['timing']['financial_period']
+    candidates = [point for point in points if point.get('symbol') == symbol
+        and point.get('source_name') == 'CNINFO statutory disclosure'
+        and point.get('period_label') == period and _point_available_at(point, now) is not None]
+    sources = {(point.get('sha256'), point.get('source_url')): point for point in candidates}
+    retained = retained_sources.get((symbol, period))
+    if retained:
+        source = RetainedAnnualSource(**retained)
+        if source.symbol != symbol or source.period != period:
+            raise ValueError('Declared official source identity mismatch')
+        if len(sources) > 1 or any(point['sha256'] != source.sha256
+                or point['source_url'] != source.source_url for point in sources.values()):
+            raise ValueError('Declared official source conflicts with retained points')
+        path = require_inside(root, root / source.path, 'declared official original')
+        if (not path.is_file() or path.stat().st_size > 32 * 1024**2
+                or hashlib.sha256(path.read_bytes()).hexdigest() != source.sha256):
+            raise ValueError('Declared official original hash mismatch or unavailable')
+        acquired = datetime.fromisoformat(source.available_at)
+        if acquired.utcoffset() is None or acquired > now:
+            raise ValueError('Declared official original unavailable at cutoff')
+        validate_pdf_original(path)
+        return source, True, None
+    if not sources and allow_network:
+        acquisition = acquire_official_report(root=root, symbol=symbol,
+            issuer_name=row.get('company_name') or symbol, period=period,
+            output_dir=output / (symbol + '-official-original'), allow_network=True)
+        source = RetainedAnnualSource(**acquisition['source'])
+        if (source.symbol != symbol or source.period != period
+                or acquisition.get('action') != 'no_order'
+                or acquisition.get('formal_eligibility') is not False
+                or acquisition.get('status') != 'ORIGINAL_ACQUIRED_NOT_FACT_ADMITTED'):
+            raise ValueError('Discovered original identity or acquisition scope mismatch')
+        receipt = output / (symbol + '-official-original') / 'receipt.json'
+        return source, False, dict(path=receipt.relative_to(root).as_posix(),
+            sha256=hashlib.sha256(receipt.read_bytes()).hexdigest())
+    if len(sources) != 1:
+        raise ValueError('OFFICIAL_ANNUAL_SOURCE_MISSING_OR_AMBIGUOUS')
+    point = next(iter(sources.values()))
+    path, acquired, reused = _original(root, point, allow_network=allow_network)
+    return RetainedAnnualSource(symbol, period, path.relative_to(root).as_posix(),
+        point['sha256'], point['source_url'], acquired.isoformat()), reused, None
 
 
 def _collect_income_supplement(root, symbol, source, points, export_payload, export_binding, output):
@@ -459,7 +554,9 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
         {symbol: context for symbol, context in research_contexts.items() if symbol in selected_symbols},
         evaluation_at=now, identity_at=datetime.fromisoformat(queue['evaluation_at']))
     output.mkdir(parents=True)
-    items, skipped, lawful_sources, adopted_fact_ids, income_inputs = [], [], [], [], []
+    items, skipped, lawful_sources, adopted_fact_ids, income_inputs, public_profit_inputs = [], [], [], [], [], []
+    public_info = export_payload.get('public_financial_input') or {}
+    public_binding = public_info.get('manifest')
     for row in selected:
         key = _work_key(root, row, points, allow_network, retry_token, work_contexts.get(row['symbol']))
         previous = progress.load(key)
@@ -480,27 +577,13 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
         adoption = None
         item_points, item_export, added_income = points, effective, []
         try:
-            candidates = [point for point in points if point.get('symbol') == symbol
-                and point.get('source_name') == 'CNINFO statutory disclosure'
-                and point.get('period_label') == period and _point_available_at(point, now) is not None]
-            sources = {(point.get('sha256'), point.get('source_url')): point for point in candidates}
-            if len(sources) != 1:
-                raise ValueError('OFFICIAL_ANNUAL_SOURCE_MISSING_OR_AMBIGUOUS')
-            point = next(iter(sources.values()))
-            retained = retained_sources.get((symbol, period))
-            if retained and any((p.get('metadata') or {}).get('income_source_version')
-                                for p in points if p.get('symbol') == symbol):
-                source = RetainedAnnualSource(**retained)
-                if source.sha256 != point['sha256'] or source.source_url != point['source_url']:
-                    raise ValueError('Reused income official source binding mismatch')
-                reused = True
-            else:
-                path, acquired, reused = _original(root, point, allow_network=allow_network)
-                source = RetainedAnnualSource(symbol, period, path.relative_to(root).as_posix(),
-                    point['sha256'], point['source_url'], acquired.isoformat())
+            source, reused, acquisition_binding = _annual_source_for_row(root, row, points,
+                retained_sources, allow_network=allow_network, output=output, now=now)
+            if acquisition_binding:
+                item['official_acquisition'] = acquisition_binding
             result = enrich_retained_company(root, source, points,
                 evaluation_at=datetime.now(timezone.utc), cache_dir=root / '.tmp/value-enrichment-extraction',
-                name=row.get('company_name'))
+                name=row.get('company_name'), public_summary_binding=public_binding)
             if allow_network and any(p['field_name'] in {'revenue_yoy', 'net_income_yoy'}
                                      for p in result.get('sourced_arithmetic_points', [])):
                 try:
@@ -509,7 +592,8 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
                     if supplement_binding:
                         updated = enrich_retained_company(root, source, supplemented,
                             evaluation_at=datetime.now(timezone.utc),
-                            cache_dir=root / '.tmp/value-enrichment-extraction', name=row.get('company_name'))
+                            cache_dir=root / '.tmp/value-enrichment-extraction', name=row.get('company_name'),
+                            public_summary_binding=public_binding)
                         result, item_points, item_export, added_income = updated, supplemented, supplement_binding, added
                     item['income_collection'] = dict(status='SOURCE_REPLAYED', added_input_count=len(added))
                 except Exception as error:
@@ -517,10 +601,18 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
                     item['income_collection'] = dict(status='UNAVAILABLE',
                         reason=type(error).__name__ + ':' + str(error), added_input_count=0)
                     item['retryable'] = is_transient_evidence_failure(error)
-            if symbol in research_contexts:
-                context = research_contexts[symbol]
-                _, baselines, _ = load_enrichment_research_contexts(root=root, symbols=[symbol],
-                    evaluation_at=datetime.fromisoformat(result['evaluation_at']), _reuse=False)
+            automatic_context = symbol not in research_contexts and bool(result.get('adopted_points'))
+            if symbol in research_contexts or automatic_context:
+                if automatic_context:
+                    from ...research_artifact_repository import InMemoryResearchArtifactRepository
+                    context = _new_public_candidate_context(result)
+                    baselines = {symbol: context}
+                    if repository is None:
+                        repository = InMemoryResearchArtifactRepository()
+                else:
+                    context = research_contexts[symbol]
+                    _, baselines, _ = load_enrichment_research_contexts(root=root, symbols=[symbol],
+                        evaluation_at=datetime.fromisoformat(result['evaluation_at']), _reuse=False)
                 if symbol in baselines:
                     context = baselines[symbol]
                 result['research_registration'] = register_enriched_research(result,
@@ -530,6 +622,8 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
                 if (symbol in baselines and result['research_registration']['status'] == 'RESEARCH_INPUTS_UPDATED'):
                     adoption = dict(symbol=symbol, baseline_sha256=_context_digest(context),
                         financial_export=item_export)
+                    if automatic_context:
+                        adoption['baseline_kind'] = 'AUTOMATIC_PUBLIC_FACTS_ONLY_V1'
             # Page text remains in the extraction cache, not the small run receipt.
             result['source_extraction'].pop('page_texts', None)
             packet = json.loads(json.dumps(result, default=str, ensure_ascii=False, allow_nan=False))
@@ -539,6 +633,8 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
                 lawful_sources.append(packet['source_extraction']['identity']['source'])
                 adopted_fact_ids.extend(p['data_point_id'] for p in result['adopted_points'])
                 income_inputs.extend(added_income)
+                public_profit_inputs.extend(p for p in result['adopted_points']
+                    if (p.get('metadata') or {}).get('derivation_formula') == PUBLIC_PROFIT_VERSION)
             item.update(state=result['state'], source_url=source.source_url, source_sha256=source.sha256,
                 source_reused=reused, extracted_candidates=len(result['candidate_matches']),
                 matched_candidates=sum(bool(match['matching_retained_fact_ids']) for match in result['candidate_matches']),
@@ -576,8 +672,17 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
     consumption_export = None
     if lawful_sources:
         payload = json.loads(export.read_bytes())
-        if income_inputs:
-            payload.setdefault('annual_points', []).extend(income_inputs)
+        if income_inputs or public_profit_inputs:
+            annual = payload.setdefault('annual_points', [])
+            identities = {point['data_point_id']: point for point in annual}
+            for point in [*income_inputs, *public_profit_inputs]:
+                identity = point['data_point_id']
+                if identity in identities:
+                    if identities[identity] != point:
+                        raise ValueError('Conflicting supplemental annual fact identity')
+                    continue
+                annual.append(point)
+                identities[identity] = point
             payload['value_enrichment_base_export'] = payload.get('value_enrichment_base_export') or effective
         # Preserve all source facts and their original assurance. The next
         # receipt clock must admit acquisition/review times before consumption.

@@ -80,7 +80,7 @@ def _parse_page(raw):
     return count, pages, rows
 
 
-def _read_response(session, url):
+def _read_response_once(session, url):
     with session.get(url, timeout=(10, 25), stream=True, allow_redirects=False) as response:
         response.raise_for_status()
         if response.status_code != 200 or response.url != url:
@@ -91,6 +91,22 @@ def _read_response(session, url):
                 raise ValueError('financial response byte budget exceeded')
             raw.extend(chunk)
     return bytes(raw)
+
+
+def _read_response(session, url):
+    """Retry transient transport failures, never invalid content or denied access."""
+    for attempt in range(3):
+        try:
+            return _read_response_once(session, url)
+        except (requests.Timeout, requests.ConnectionError):
+            if attempt == 2:
+                raise
+        except requests.HTTPError as error:
+            status = getattr(error.response, 'status_code', None)
+            if status not in {429, 500, 502, 503, 504} or attempt == 2:
+                raise
+        time.sleep(2 ** attempt)
+    raise RuntimeError('financial transport retry budget exhausted')
 
 
 def collect_public_annual_summary(*, root: Path, output_dir: Path, period: str,

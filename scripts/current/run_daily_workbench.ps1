@@ -2,11 +2,9 @@
 TL9 MVP-2 / TL10-RC: one daily entry for the local investment workbench.
 
 READ_ONLY (default)
-  Compose the one daily public decision packet from the already registered
-  artifacts, publish it as the current verified snapshot (a display
-  publication only, never a research or trade approval), print the result in
-  plain language, then start the Web workbench. No network calls, no quote
-  registration, no private writes.
+  Verify the existing public snapshot without building or publishing anything.
+  No filesystem writes, network calls, receipts, locks or Web startup. Print
+  the existing 8001 entry; opening a browser remains a separate user action.
 
 SAFE_REFRESH
   READ_ONLY plus the authorized dual-source quote collection, archiving and
@@ -50,6 +48,12 @@ param(
     [string]$RetainedMarketwideManifestSha256 = ''
 )
 $ErrorActionPreference = 'Stop'
+if ($Mode -eq 'READ_ONLY') {
+    $forbidden = @($PSBoundParameters.Keys | Where-Object { $_ -notin @('Mode', 'Port', 'NoServer') })
+    if ($forbidden.Count -gt 0) {
+        throw 'READ_ONLY rejects refresh, research, Mock, authorization and browser-opening parameters; research work requires explicit SAFE_REFRESH.'
+    }
+}
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     & 'C:\Users\we\AppData\Local\Programs\PowerShell\7\pwsh.exe' -NoProfile -File $PSCommandPath `
         -Mode $Mode -Port $Port -Open:$Open -NoServer:$NoServer -Reauthorize:$Reauthorize -Symbols $Symbols `
@@ -79,6 +83,57 @@ $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 Set-Location -LiteralPath $root
 $env:PYTHONPATH = Join-Path $root 'src'
 $env:PYTHONIOENCODING = 'utf-8'
+if ($Mode -eq 'READ_ONLY') {
+    $command = Get-Command python -ErrorAction SilentlyContinue
+    $readOnlyPython = @($command.Source, 'D:\APP\Python313\python.exe') |
+        Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+    Write-Host '运行模式 : READ_ONLY（仅校验既有公开快照；action=no_order）'
+    Write-Host '既有 Web 入口 : http://127.0.0.1:8001/daily（不启动服务、不打开浏览器）'
+    if (-not $readOnlyPython) {
+        Write-Host '运行结果 : BLOCKED - 未找到 Python 解释器；未写入任何文件。'
+        exit 2
+    }
+    $PSNativeCommandUseErrorActionPreference = $false
+    & $readOnlyPython -X utf8 -B (Join-Path $PSScriptRoot 'build_daily_public_packet.py') --read-only
+    $readOnlyExit = $LASTEXITCODE
+    Write-Host "运行结果 : $(if ($readOnlyExit -eq 0) { 'VERIFIED_READ_ONLY' } else { 'BLOCKED' })；未构建、未发布、未写回执。"
+    exit $readOnlyExit
+}
+$priorityBudget = 10
+$enrichmentBudget = 10
+$executionBudget = 2
+$settingsPath = Join-Path $root 'config/public-research-refresh-v1.json'
+if ($Mode -eq 'SAFE_REFRESH' -and (Test-Path -LiteralPath $settingsPath)) {
+    $settings = Get-Content -LiteralPath $settingsPath -Raw -Encoding utf8 | ConvertFrom-Json -AsHashtable
+    $settingKeys = @('schema_version', 'action', 'enabled', 'build_value_research_priority',
+        'execute_value_enrichment', 'priority_budget', 'enrichment_budget', 'execution_budget')
+    if ($settings -isnot [hashtable] -or $settings.Count -ne $settingKeys.Count -or
+        @($settings.Keys | Where-Object { $_ -cnotin $settingKeys }).Count -gt 0 -or
+        $settings.schema_version -isnot [string] -or $settings.action -isnot [string] -or
+        $settings.schema_version -cne 'public-research-refresh-v1' -or $settings.action -cne 'no_order') {
+        throw 'Invalid public research refresh settings contract.'
+    }
+    foreach ($key in @('enabled', 'build_value_research_priority', 'execute_value_enrichment')) {
+        if ($settings[$key] -isnot [bool]) { throw 'Research settings flags must be JSON booleans.' }
+    }
+    foreach ($key in @('priority_budget', 'enrichment_budget', 'execution_budget')) {
+        $limit = if ($key -eq 'execution_budget') { 3 } else { 50 }
+        if (($settings[$key] -isnot [int] -and $settings[$key] -isnot [long]) -or
+            $settings[$key] -lt 1 -or $settings[$key] -gt $limit) {
+            throw 'Research settings budgets must be bounded JSON integers.'
+        }
+    }
+    if ($settings.execute_value_enrichment -and -not $settings.build_value_research_priority) {
+        throw 'Configured enrichment requires research priority.'
+    }
+    if ($settings.enabled) {
+        $BuildValueResearchPriority = $BuildValueResearchPriority -or $settings.build_value_research_priority
+        $ExecuteValueEnrichment = $ExecuteValueEnrichment -or $settings.execute_value_enrichment
+        $priorityBudget = $settings.priority_budget
+        $enrichmentBudget = $settings.enrichment_budget
+        $executionBudget = $settings.execution_budget
+    }
+}
 $env:TEMP = Join-Path $root '.tmp'
 $env:TMP = $env:TEMP
 New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
@@ -142,7 +197,7 @@ $priorPointer = Join-Path $root 'config/current-daily-public-snapshot.json'
 if (Test-Path -LiteralPath $priorPointer) {
     try { $initialReceipt.retained_publication_id = (Get-Content -LiteralPath $priorPointer -Raw -Encoding utf8 | ConvertFrom-Json).publication_id } catch { }
 }
-$initialReceipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
+$initialReceipt | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
 Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
 trap {
     if ($null -eq $dailyRunLock) {
@@ -158,7 +213,7 @@ trap {
         nodes = @($nodes.ToArray()); node_receipt_scope = 'COMMAND_EXECUTION_ONLY_NOT_DATA_ADMISSION'
     }
     if ($retainedMarketwideScreen) { $failedReceipt.retained_marketwide_screen = $retainedMarketwideScreen }
-    $failedReceipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
+    $failedReceipt | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
     Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
     Write-Host "运行结果 : BLOCKED - $($_.Exception.Message)"
     exit 2
@@ -191,7 +246,7 @@ function Invoke-PythonJson {
     }
     $nodes.Add($node)
     $initialReceipt.nodes = @($nodes.ToArray())
-    $initialReceipt | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
+    $initialReceipt | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
     Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
     $text = ''; $code = 2
     $parsed = $null
@@ -223,7 +278,7 @@ function Invoke-PythonJson {
     }
     $node.finished_at = [DateTimeOffset]::UtcNow.ToString('o')
     $initialReceipt.nodes = @($nodes.ToArray())
-    $initialReceipt | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
+    $initialReceipt | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
     Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
     [pscustomobject]@{ ExitCode = $code; Text = $text; Json = $parsed }
 }
@@ -407,13 +462,13 @@ if ($Mode -eq 'SAFE_REFRESH') {
         try {
             $scanManifest = Get-Content -LiteralPath (Join-Path $root $marketwideScreen.manifest_path) -Raw -Encoding utf8 | ConvertFrom-Json
             $queuePath = $marketwideDirectory + '/research-priority-v2.json'
-            $executionArgs = if ($ExecuteValueEnrichment) { @('--execute-enrichment', '--allow-public-evidence-downloads', '--execution-budget', '2') } else { @() }
+            $executionArgs = if ($ExecuteValueEnrichment) { @('--execute-enrichment', '--allow-public-evidence-downloads', '--execution-budget', [string]$executionBudget) } else { @() }
             $queue = Invoke-PythonJson (@('scripts/current/build_value_research_queue.py',
                 '--priority-version', 'v2', '--report', $scanManifest.files.lead_report.path,
                 '--report-sha256', $scanManifest.files.lead_report.sha256,
                 '--receipt', $scanManifest.files.receipt.path, '--receipt-sha256', $scanManifest.files.receipt.sha256,
                 '--financial-export', $scanManifest.files.financial.path, '--financial-export-sha256', $scanManifest.files.financial.sha256,
-                '--budget', '10', '--enrichment-budget', '10', '--output', $queuePath) + $executionArgs)
+                '--budget', [string]$priorityBudget, '--enrichment-budget', [string]$enrichmentBudget, '--output', $queuePath) + $executionArgs)
             if ($queue.ExitCode -ne 0 -or $queue.Json.action -ne 'no_order') { throw 'Research priority build failed' }
             $valueResearchPriority = @{ status = 'RESEARCH_QUEUE_ONLY'; path = $queuePath
                 sha256 = (Get-FileHash -LiteralPath (Join-Path $root $queuePath) -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -435,8 +490,8 @@ if ($Mode -eq 'SAFE_REFRESH') {
         Write-Host "  价格结构 : 复用已核验最近完成交易日 $($reuse.Json.market_trade_dates -join ',') 的完整已选候选；未重新采集。"
         $priceRefresh = [pscustomobject]@{ ExitCode = 0; Json = [pscustomobject]@{ status = 'UNCHANGED'; items = @(); failures = @() } }
     } else {
-    Write-Host '[SAFE_REFRESH] 按当日行业相对强度与成交额筛选五只真实观察候选，再核验价格结构...'
-    $priceRefresh = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py')
+    Write-Host '[SAFE_REFRESH] 按行业相对强度与成交额筛选候选，生成最近完整收盘观察（仅展示，不授予价格或策略准入）...'
+    $priceRefresh = Invoke-PythonJson @('scripts/current/refresh_current_price_conditions.py', '--observation-scope', 'LAST_COMPLETED_CLOSE_DISPLAY_ONLY')
     }
     if ($priceRefresh.Json) {
         Write-Host "  价格结构状态 : $($priceRefresh.Json.status)"
@@ -635,7 +690,7 @@ if (Test-Path -LiteralPath $snapshotPointer) {
     } catch { $receipt.retained_publication_id = $initialReceipt.retained_publication_id }
 }
 $receiptPath = Join-Path $env:TEMP 'daily-workbench-latest-run.json'
-$receipt | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
+$receipt | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath "$receiptPath.pending" -Encoding utf8
 Move-Item -LiteralPath "$receiptPath.pending" -Destination $receiptPath -Force
 
 Write-Host '---------------- 本次运行 ----------------'

@@ -83,6 +83,26 @@ def _unavailable(error):
         data_status='SOURCE_REVALIDATION_FAILED', formal_eligibility=False, action='no_order')
 
 
+def load_current_public_candidate_research(*, root: Path, symbol: str, now: datetime) -> dict | None:
+    """Independent facts-only detail for a newly discovered, source-replayed issuer."""
+    from ..research.value_enrichment_batch import read_verified_enrichment_progress
+
+    progress = read_verified_enrichment_progress(root=root, symbol=symbol, evaluation_at=now)
+    if not progress or progress.get('context_origin') != 'AUTOMATIC_PUBLIC_FACTS_ONLY_V1':
+        return None
+    selection = select_current_value_candidates(root=root, now=now)
+    if selection['data_status'] == 'SOURCE_REVALIDATION_FAILED':
+        return None
+    candidate = next((row for row in selection['items'] if row['symbol'] == symbol), None)
+    if candidate is None:
+        return None
+    return dict(candidate=candidate, financial_progress=progress,
+        as_of=selection['as_of'], snapshot_status=selection['snapshot_status'],
+        source_bindings=selection['source_bindings'],
+        scope='PUBLIC_FACTS_RESEARCH_NOT_DECISION',
+        formal_eligibility=False, action='no_order')
+
+
 def select_value_candidates(*, root: Path, manifest_binding: dict, now: datetime, limit: int = 30) -> dict:
     """Explicit bound-manifest input for replay/integration; invalid evidence raises."""
     if now.tzinfo is None:
