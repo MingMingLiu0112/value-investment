@@ -117,6 +117,9 @@ def load_baostock_history(*, root: Path, binding: dict, now: datetime) -> dict:
                                      f"daily={daily[key]} aggregate={actual[key]}")
             if abs(Decimal(actual['amount']) - Decimal(daily['amount'])) > Decimal('0.01'):
                 raise ValueError('Daily/minute amount conflict')
+    # Bind the returned calculation to the same bytes even during concurrent refresh.
+    for ref in (binding, *attempt['queries']):
+        read(ref)
     return dict(schema_version='baostock-historical-structure-input-v1', symbol=symbol,
         bars=bars, source_bindings=refs, attempt_binding=dict(binding),
         data_available_at=acquired.isoformat(), volume_unit='SHARES', amount_unit='CNY',

@@ -110,3 +110,26 @@ def test_actual_retained_baostock_sample_does_not_hide_daily_minute_conflict():
     binding = dict(path=path.relative_to(root).as_posix(), sha256=hashlib.sha256(path.read_bytes()).hexdigest())
     with pytest.raises(ValueError, match='conflict'):
         build_baostock_structure_observation(root=root, binding=binding, now=NOW)
+
+
+@pytest.mark.parametrize('target', ['attempt', 'd', '15', '60'])
+def test_source_changed_during_calculation_is_rejected(tmp_path, monkeypatch, target):
+    from value_investment_agent.infrastructure.hotspot import baostock_price_case as module
+
+    binding = snapshot(tmp_path)
+    path = tmp_path / ('runtime/sample/attempt.json' if target == 'attempt'
+                       else 'runtime/sample/' + target + '.json')
+    aggregate = module.aggregate_sessions
+    changed = False
+
+    def drift(rows):
+        nonlocal changed
+        result = aggregate(rows)
+        if not changed:
+            path.write_bytes(path.read_bytes() + b' ')
+            changed = True
+        return result
+
+    monkeypatch.setattr(module, 'aggregate_sessions', drift)
+    with pytest.raises(ValueError, match='hash mismatch'):
+        module.load_baostock_history(root=tmp_path, binding=binding, now=NOW)
