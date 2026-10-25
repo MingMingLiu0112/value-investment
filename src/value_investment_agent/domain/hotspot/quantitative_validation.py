@@ -314,7 +314,7 @@ def simulate_fold(protocol, inputs, fold, *, cost_multiplier=Decimal(1)):
 
 
 def compare_frozen_portfolio_accounts(protocol, strategy_inputs_by_cost, benchmark_orders_by_cost, fold,
-                                      *, benchmark_preflight_by_cost=None):
+                                      *, benchmark_preflight_by_cost=None, retain_inputs=False):
     """One shared cash account per lane; frozen intents are not adaptive signals."""
     initial = number(protocol['initial_cash_cny'])
     results = []
@@ -383,6 +383,9 @@ def compare_frozen_portfolio_accounts(protocol, strategy_inputs_by_cost, benchma
                 method='LEAVE_ONE_DAY_OUT_MEAN_PAIRED_EXCESS_SENSITIVITY_NOT_CONFIDENCE_INTERVAL',
                 lower=str(min(loo)) if loo else None, upper=str(max(loo)) if loo else None,
                 units='DAILY_RETURN_FRACTION', statistical_coverage_claim=False)))
+        if retain_inputs:
+            results[-1]['benchmark_compiled_inputs'] = dict(orders=benchmark_orders,
+                preflight_rejected=(benchmark_preflight_by_cost or {}).get(str(multiplier), []))
     return dict(fold=fold, scenarios=results,
         simultaneous_order_convention='TIMESTAMP_THEN_SYMBOL_ASCENDING_NOT_REAL_ORDER_PRIORITY',
         scope='SHARED_CASH_FROZEN_INTENT_DIAGNOSTIC_NOT_ADAPTIVE_STRATEGY_VALIDATION',

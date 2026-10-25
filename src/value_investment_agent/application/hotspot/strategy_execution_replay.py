@@ -30,7 +30,8 @@ def fingerprint(value):
 
 
 def build_retained_portfolio_benchmarks(*, root: Path, now: datetime,
-                                      initial_cash_cny=engine.DEFAULT_INITIAL_CASH_CNY) -> dict:
+                                      initial_cash_cny=engine.DEFAULT_INITIAL_CASH_CNY,
+                                      _retain_inputs=False) -> dict:
     """Paired post-hoc diagnostic from the retained five, never an OOS release."""
     from ...domain.hotspot.quantitative_validation import compare_frozen_portfolio_accounts
     from ...domain.execution.exchange_calendar import is_exchange_session
@@ -126,7 +127,8 @@ def build_retained_portfolio_benchmarks(*, root: Path, now: datetime,
         if {time[:10] for time in marks} != expected_days:
             raise ValueError('Missing complete same-pool exchange sessions')
         result = compare_frozen_portfolio_accounts(dict(initial_cash_cny=str(initial), costs=fee),
-            inputs_by_cost, benchmarks_by_cost, fold, benchmark_preflight_by_cost=benchmark_preflight)
+            inputs_by_cost, benchmarks_by_cost, fold, benchmark_preflight_by_cost=benchmark_preflight,
+            retain_inputs=_retain_inputs)
         folds.append(result)
     for ref in replay['source_bindings']:
         _bound_bytes(root, ref)
@@ -134,6 +136,7 @@ def build_retained_portfolio_benchmarks(*, root: Path, now: datetime,
         evaluated_at=now.isoformat(), source_bindings=replay['source_bindings'],
         implementation_bindings=replay['implementation_bindings'],
         retained_replay_content_sha256=replay['content_sha256'],
+        manifest_binding=replay['manifest_binding'], cost_basis=fee,
         cohort_symbols=sorted(cases), initial_cash_cny=str(initial), folds=folds,
         benchmark_plans=benchmark_plans,
         benchmark_scope='PRIOR_CLOSE_TARGET_EQUAL_CASH_BUY_HOLD_WITH_LOT_FEES_GAPS_AND_REJECTIONS',
@@ -141,6 +144,73 @@ def build_retained_portfolio_benchmarks(*, root: Path, now: datetime,
         economics_scope='DIFFERENT_EXPOSURES_REPORTED_NOT_RISK_MATCHED_OR_ADAPTIVE_STRATEGY',
         economics_policy_approved=False, strict_oos_admitted=False, strict_pit_admitted=False,
         strategy_validation='NOT_PROVEN', formal_eligibility=False, action='no_order')
+
+
+def build_shared_feedback_portfolio_benchmarks(*, root: Path, now: datetime,
+        initial_cash_cny=engine.DEFAULT_INITIAL_CASH_CNY) -> dict:
+    """Use shared fill feedback with the identical retained same-pool benchmark."""
+    from ...domain.hotspot.quantitative_validation import compare_frozen_portfolio_accounts
+    baseline = build_retained_portfolio_benchmarks(root=root, now=now,
+        initial_cash_cny=initial_cash_cny, _retain_inputs=True)
+    manifest = json.loads(_bound_bytes(root, baseline['manifest_binding']))
+    source_root = (root / baseline['manifest_binding']['path']).parent / 'sources'
+    spec = json.loads(_bound_bytes(source_root, manifest['historical_protocol_binding']))
+    cases = {item['symbol']: _verified_case(source_root, item, manifest['namespace'],
+             spec['end_date'], now)[0]['bars'] for item in spec['cases']}
+    shared = {key: engine.replay_shared_strategy_execution(bars_by_symbol=cases, spec=spec,
+        costs=baseline['cost_basis'], initial_cash=initial_cash_cny,
+        mode='ASSUMED_REGULAR_TRADING', cost_multiplier=key) for key in ('0', '1', '2')}
+    results = []
+    for previous in baseline['folds']:
+        fold = previous['fold']
+        inputs, benchmark_orders, preflight, expected = {}, {}, {}, {}
+        for scenario in previous['scenarios']:
+            key = scenario['cost_multiplier']
+            part = next(row for row in shared[key]['folds'] if row['fold'] == fold['id'])
+            inputs[key] = dict(part['simulator_inputs'], preflight_rejected=part['preflight_rejected'],
+                frozen_intention_count=len(part['generated_intentions']))
+            compiled = scenario['benchmark_compiled_inputs']
+            benchmark_orders[key], preflight[key] = compiled['orders'], compiled['preflight_rejected']
+            expected[key] = part
+        paired = compare_frozen_portfolio_accounts(dict(initial_cash_cny=str(initial_cash_cny),
+            costs=baseline['cost_basis']), inputs, benchmark_orders, fold,
+            benchmark_preflight_by_cost=preflight)
+        for scenario in paired['scenarios']:
+            key = scenario['cost_multiplier']
+            part = expected[key]
+            old = next(row for row in previous['scenarios'] if row['cost_multiplier'] == key)
+            for field in ('fills', 'ending_cash_cny', 'ending_equity_cny'):
+                if scenario['strategy'][field] != part[field]:
+                    raise ValueError('Replayed shared fills differ from feedback state computation')
+            scenario['strategy'].update(state_trace=part['state_trace'],
+                generated_intentions=part['generated_intentions'],
+                pending_intentions=part['pending_intentions'],
+                position_suppressed_signals=part['position_suppressed_signals'])
+            scenario['fixed_intent_comparison'] = dict(
+                previous_net_return=old['strategy_net_return'],
+                previous_rejection_counts=old['strategy']['rejection_counts'],
+                previous_intention_count=old['strategy']['frozen_intention_count'],
+                feedback_intention_count=scenario['strategy']['frozen_intention_count'],
+                feedback_changes_fills=[tuple(fill[field] for field in
+                    ('time', 'symbol', 'side', 'price', 'quantity', 'fees_cny', 'slippage_cny'))
+                    for fill in old['strategy']['fills']] != [tuple(fill[field] for field in
+                    ('time', 'symbol', 'side', 'price', 'quantity', 'fees_cny', 'slippage_cny'))
+                    for fill in scenario['strategy']['fills']])
+        paired['scope'] = 'SHARED_FILL_FEEDBACK_RESEARCH_WITH_ASSUMED_EXECUTION'
+        paired['assumptions'].remove('NO_FEEDBACK_REGENERATION_AFTER_SHARED_ACCOUNT_REJECTION')
+        results.append(paired)
+    for source in baseline['source_bindings']:
+        _bound_bytes(root, source)
+    return dict(schema_version='hotspot-shared-feedback-paired-diagnostic-v1',
+        evaluated_at=now.isoformat(), source_bindings=baseline['source_bindings'],
+        implementation_bindings=baseline['implementation_bindings'], cost_basis=baseline['cost_basis'],
+        cohort_symbols=baseline['cohort_symbols'], initial_cash_cny=str(initial_cash_cny),
+        benchmark_plans=baseline['benchmark_plans'], folds=results,
+        scope='RETROSPECTIVE_FIXED_FIVE_NOT_UNTOUCHED_OOS_OR_REAL_ACCOUNT',
+        state_feedback='SIMULATED_FILLS_NOT_INTENTIONS_DRIVE_POSITIONS',
+        dated_tradability_proven=False, corporate_action_comparability_proven=False,
+        strict_oos_admitted=False, strict_pit_admitted=False, strategy_validation='NOT_PROVEN',
+        formal_eligibility=False, action='no_order')
 
 
 def build_strategy_execution_replay(*, root: Path, now: datetime,
