@@ -5661,3 +5661,50 @@ Hotspot lane continues shared-fill feedback and authorized runtime-only forward
 connection. No simulated result, historical diagnostic, code test or local
 initialization grants PIT/OOS/Shadow, economic/G3, strategy or personal eligibility.
 All formal admissions remain false; action=no_order; overall assisted use NOT_READY.
+
+### 2026-10-25 focused H integration and new cold initialization
+
+Root integrated shared-cash paired benchmarks as b3a6aeed and fill-feedback
+state continuity as a5c4069f. Forward observation delivery a4134bf9 and its
+loaded-source repair40fee102 are integrated as10d27aa8 and45c9aa97.
+Independent Archimedes review closed the concrete loaded-old-default/new-disk
+P2: clean cold freeze succeeds, preloaded dependencies and post-load source
+changes fail closed. This does not claim arbitrary in-process tamper protection.
+
+Root integrated replay used actual retained public market sources and Root's
+existing configuration, not replacement sibling configuration. Receipt:
+runtime/hotspot-shared-integrated/20261025T095011506832Z/receipt.json,
+SHA2563dc951d3d10f6b0ce2f21d6c82e48e8fb2ec45c959699697d119c0089ee24b8a.
+Report SHA2564c28d2f3cd90bcd0e62d5e27278feda3579ed02bd29ad927731ea0fd96426afa.
+At1x costs, development strategy return -0.24672% versus pool +1.48647%;
+validation strategy +0.12112% versus pool +0.80037%. These are retrospective
+fixed-cohort hypothetical executions, not admitted OOS. All six fold/cost
+bootstrap cases remain INSUFFICIENT, with negative mean-excess lower bounds.
+No parameter was changed to force admission; formal eligibility stays false.
+
+Root's ACTUAL initialization at45c9aa975b37194bf0a18392e2466c2d033a3514 used
+dedicated `python -B -X pycache_prefix=<absolute checkout>/.tmp/forward-cold-<uuid>`
+and forward_research as the first project import. Fresh manifest:
+runtime/hotspot-forward/fe281b0790bd4c209f799aa6f767c635/manifest.json,
+SHA256c658c6814083cd87aa01a741dfc592464e05eb07d6dcc0381460a087f94dd6fc.
+Adjacent initialization-receipt.json records the source commit and unchanged
+three public pointers. Same-date observe is rejected before collection.
+Elapsed real Shadow sessions =0. Old sibling b20da manifest remains historical,
+not a new-rule freeze. No timers, private inputs, broker, server or Excel touched.
+
+Root focused forward/paired/shared-feedback plus architecture/workflow checks:
+56 passed,2 optional original-data tests skipped. Actual Root retained-original
+replay is separately evidenced above. Optional arch8.0.0 is made explicit in
+Core CI so statistics cannot silently become import-skipped there. Exact final
+SHA CI and clean-checkout checks remain pending, not inferred from local tests.
+
+Sole8001 checkout remains a388b1d506554b48df8336dbf9a922c0b1f29110, not this
+unpublished H integration. That value fiscal/cash release previously passed
+Core40181107088 and Web40181107096; actual company-detail Base/Bear browser
+switching passed, with yili-fiscal-a388b1d5.png retained in task visualizations.
+This corrects the preceding fiscal successor's pending-publication observation.
+
+Current two in-flight business packages remain V primary economic valuation and
+H independent strategy judgment/conditions, with D only as their necessary task.
+Initialization and source-integrity repairs do not count as strategy efficacy
+or product closure. Overall REAL_ASSISTED_USE_NOT_READY; action=no_order.

@@ -163,3 +163,34 @@
 回测拟合未来走势作为主决策依据。
 
 **本轮未做任何代码、合同、阈值或准入变更**；`action = no_order`。
+
+## 2026-10-25: adopted bounded paired-bootstrap statistics
+
+This dated addendum supersedes the preceding no-change statement only for this
+specific adoption. `arch==8.0.0` supplies `StationaryBootstrap` for paired daily
+strategy-minus-cash and strategy-minus-fixed-pool excess-return diagnostics.
+It is not a trading strategy, market-data provider or proof of profitability.
+
+- Reviewed upstream tag: https://github.com/bashtage/arch/tree/v8.0.0
+- Dependency metadata: https://raw.githubusercontent.com/bashtage/arch/v8.0.0/pyproject.toml
+- License: NCSA, https://raw.githubusercontent.com/bashtage/arch/v8.0.0/LICENSE.md
+- Python >=3.10; upstream requires numpy, pandas, scipy, statsmodels and packaging.
+  The project adds only an optional `strategy-validation` extra and the Core CI
+  installation/check; no server or global Python installation is changed.
+- Reviewed Windows cp313 wheel SHA256:
+  `bd73bd2d811bcf0551443b6e0a10bc25af002e9eb146aff164897c70aac35e85`.
+  Actual local runtime versions are retained in the integrated replay receipt.
+- Existing application/domain consumers use paired rows, frozen seed/block size,
+  2000 resamples and marginal one-sided mean-daily-excess bounds. Bounds are not
+  cumulative-return forecasts or joint confidence guarantees. Short dependent
+  histories remain INSUFFICIENT; two reset portfolios cannot be stitched into a
+  continuous validation window. These settings remain an unapproved research
+  policy, not an industry-standard admission rule or personal IPS.
+- Actual Root replay:
+  `runtime/hotspot-shared-integrated/20261025T095011506832Z/receipt.json`.
+  All six fold/cost cases remain INSUFFICIENT with negative excess lower bounds.
+  Real retained market observations plus hypothetical execution do not prove
+  strict historical PIT, prospective OOS or elapsed natural-time Shadow.
+
+No data redistribution permission, strategy approval or order authorization is
+inferred from the software license. `action=no_order`.

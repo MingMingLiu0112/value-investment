@@ -26,7 +26,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install core test dependencies
-        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev,web]"
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev,web,strategy-validation]"
+      - name: Verify reviewed strategy-statistics runtime
+        run: python -c "from importlib.metadata import version; from arch.bootstrap import StationaryBootstrap; assert version('arch') == '8.0.0'"
       - name: Verify fail-closed offline research gates
         run: >-
           mkdir -p .tmp && python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest --junitxml=.tmp/offline-core-results.xml
@@ -103,6 +105,9 @@ jobs:
           tests/test_daily_refresh_value_adoption_integration.py
           tests/test_hotspot_quantitative_validation.py
           tests/test_hotspot_economic_validation_draft.py
+          tests/test_hotspot_paired_portfolio_benchmark.py
+          tests/test_hotspot_shared_fill_feedback.py
+          tests/test_hotspot_forward_research.py
           tests/test_hotspot_review_handoff.py
           tests/test_value_evidence_enrichment_v1.py
           tests/test_financial_funding_scope.py
