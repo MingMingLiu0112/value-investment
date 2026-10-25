@@ -5079,3 +5079,14 @@ research and existing model/price/decision paths. Do not replace the missing
 research with another score, user-upload task or formal approval. Keep research
 assumptions, independent strategy validation and real assisted-use acceptance
 unproven until their actual evidence is delivered. action=no_order.
+
+### 2026-10-25 checkpoint88ce202f CI findings
+
+Development checkpoint88ce202f4855cc6943618e0d539d4b0663b6696c was pushed to the
+existing PR branch, not main. Web40148089867 succeeded and isolated PostgreSQL
+integration succeeded. Core40148089765 completed with6751 passed/267 skipped
+and two failures: an unwanted context_origin:null in the legacy public contract,
+and a TEST_ONLY PDF fixture missing the now-explicit decoder stub. Root repaired
+the compatibility output and only the synthetic boundary; the real declared-PDF
+integrity gate remains. Focused durable replay27 passed. Corrective exact-SHA CI
+must still pass before this increment can be released on8001.

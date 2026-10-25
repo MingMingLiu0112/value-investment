@@ -267,7 +267,8 @@ def read_verified_enrichment_progress(root: Path, symbol: str, evaluation_at: da
                       if funding and (funding.get('required_fields') or funding.get('observations')) else {})
         return dict({key: summary[key] for key in keys}, as_of=result['evaluation_at'],
                     verified_at=evaluation_at.isoformat(), adopted_metrics=metrics,
-                    context_origin=context['case'].financial_summary.get('context_origin'),
+                    **({'context_origin': context['case'].financial_summary['context_origin']}
+                       if context['case'].financial_summary.get('context_origin') else {}),
                     **supplement)
     except (ValueError, KeyError, TypeError, OSError):
         return None

@@ -1,4 +1,4 @@
-"""Real source replay in an isolated queue, never synthetic candidate insertion."""
+"""Source replay with synthetic PDF decoding, never live-data admission."""
 from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
@@ -42,6 +42,8 @@ def durable_income(queue_args, income_inputs, registered_context, tmp_path, monk
     official = replace(official, symbol='600001')
     pages[:] = [page.replace('600887', '600001') for page in pages]
     monkeypatch.setattr(adapter, 'extract_pages', lambda path, limit: pages[:limit])
+    # The shared source fixture has TEST_ONLY bytes; retain real hash/scope checks.
+    monkeypatch.setattr(batch, 'validate_pdf_original', lambda path: None)
     current = [dict(deepcopy(p), symbol='600001', source_name='CNINFO statutory disclosure')
                for p in points if p['period_label'] == official.period]
     base = tmp_path / 'runtime/current-base.json'
