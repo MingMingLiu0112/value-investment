@@ -1,13 +1,39 @@
 {
   "schema_version": "product-operating-research-policy-v1",
   "symbol": "600519",
-  "generated_at": "2026-10-25T06:21:16.283655+00:00",
+  "generated_at": "2026-10-25T07:12:59.680075+00:00",
   "identity_class": "RESEARCH_ASSUMPTIONS_NOT_OFFICIAL_FORECAST",
   "confidence": "LOW",
   "action": "no_order",
   "reference_period": "H12026",
   "allocation_basis": "H1 product revenue shares allocate TTM operating revenue as a research proxy, not observed TTM segment revenue.",
   "rationale": "Modest flagship volume absorption, continued series realization pressure and elevated production costs form alternative business hypotheses. No price uplift, instant margin recovery or new capacity monetization is assumed in Base.",
+  "research_case": {
+    "thesis": "以五年产品经营路径研究贵州茅台的盈利与股东现金回报。低置信度Base假设：茅台酒销量每年增长1%、单位实现收入不增长；系列酒销量不增长、单位实现收入首年再降5%后有条件稳定；营业成本率维持10%。这些是可证伪研究判断，不是官方预测。经营利润继续接受母公司现金、项目与基金承诺、分配能力及终端条件的联合检验；本候选尚未成为正式合理价。",
+    "return_driver": "核心产品需求与实现收入的持续性、成本约束下的归母盈利，以及满足资本用途和母公司现金约束后的股东分配，是主要回报机制。显式期90%分配、首年部分上划延迟及次年释放均为条件假设。终端零增长与全额分配仍依赖盈利持续、必要再投资得到满足且现金能够合法分配。",
+    "mispricing_hypothesis": "待检验的预期差是：市场可能把系列酒及渠道调整压力过度外推，而核心产品在不涨价、成本率不恢复旧水平的条件下仍能维持有限增长和现金回报。相反，模型也可能低估实现收入持续下降、金融收益变化和母公司现金受限。尚未确认市场错误或股票低估，当前价格判断仍须独立通过有效估值与价格桥接准入。",
+    "positives": [
+      {"kind": "fact", "text": "FY2025茅台酒收入同比增长0.39%、销量增长0.73%；核心产品未与系列酒同步出现收入下降，但不证明未来销量或单位实现收入增长。", "source_ids": ["cninfo:1225114741"]},
+      {"kind": "interpretation", "text": "H12026营业收入同比增长1.47%，营业成本增长21.81%；收入基础仍存在，盈利研究必须同时反映生产成本压力。", "source_ids": ["cninfo:1225475868"]},
+      {"kind": "hypothesis", "text": "Base依赖核心产品有限增量被需求吸收、系列酒首年调整后不继续恶化；没有预支提价、立即反弹或历史成本率恢复。", "source_ids": ["product-operating-policy"]}
+    ],
+    "counter_evidence": [
+      {"kind": "interpretation", "text": "FY2025系列酒收入下降9.76%、销量增长3.88%；收入与销量背离，不支持认定产品组合压力已经结束。H1渠道变化也不能单独证明终端需求恢复。", "source_ids": ["cninfo:1225114741", "cninfo:1225475868"]},
+      {"kind": "gap", "text": "H12026产品占比只用于分配TTM总收入的研究代理，实际TTM产品收入及未来组合未知；税率、归母归属和其他税前贡献保持参考口径也属于假设。", "source_ids": ["cninfo:1225475868", "product-operating-policy"]},
+      {"kind": "interpretation", "text": "金融业务收益、客户资金与母公司可动用现金口径不同。FY2025与H12026母公司投资收益收现存在明显时点差异，合并盈利不等于当期可上划、可分配现金。", "source_ids": ["cninfo:1225114741", "cninfo:1225475868"]},
+      {"kind": "hypothesis", "text": "基金未缴承诺与项目资金用途须进入现金账；首年延迟次年释放和终端全额分配尚属条件。现金重放没有证明长期维护投入、上划限制或永久盈利。", "source_ids": ["cninfo:1225475868", "product-operating-policy"]}
+    ],
+    "thesis_breakers": [
+      {"kind": "hypothesis", "text": "后续官方披露显示核心产品无法吸收Base销量增量，或单位实现收入持续走弱，应否决或下修Base，不用渠道切换掩盖需求变化。", "source_ids": ["product-operating-policy"]},
+      {"kind": "hypothesis", "text": "系列酒首年调整后继续承压，或成本、营运资金及项目需求超出所选路径，应重算盈利与现金，撤销旧价格结果的适用性。", "source_ids": ["product-operating-policy"]},
+      {"kind": "hypothesis", "text": "上划延迟未释放、母公司分配能力不足，或必要再投资使终端全额分配不可维持，相应现金或终端分支不成立。", "source_ids": ["product-operating-policy"]}
+    ],
+    "next_events": [
+      {"kind": "hypothesis", "text": "下一次官方经营披露后，核对产品、渠道收入、可取得的销量及实现收入代理、成本变化，逐项检验五年路径。", "source_ids": ["cninfo:1225114741", "cninfo:1225475868", "product-operating-policy"]},
+      {"kind": "hypothesis", "text": "下一次财报与分配披露后，核对母公司现金、投资收益收现、金融业务贡献、基金实缴与项目支出，重放资金节点和分配约束。", "source_ids": ["cninfo:1225114741", "cninfo:1225475868", "product-operating-policy"]},
+      {"kind": "hypothesis", "text": "新增资本开支、上划或资本配置证据出现时复审终端盈利和必要再投资；正式经济及事件审核完成前保持未批准研究身份。", "source_ids": ["product-operating-policy"]}
+    ]
+  },
   "source_pages": [
     {"source_id": "cninfo:1225114741", "physical_pages": [10, 11, 16, 17]},
     {"source_id": "cninfo:1225475868", "physical_pages": [7, 8]}

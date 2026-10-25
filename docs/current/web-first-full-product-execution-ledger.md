@@ -1,5 +1,24 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### 2026-10-25 align active ResearchCase with product economics
+
+Pre-publication semantic review found that the first product-path candidate
+still inherited ten-year pressure/75%-payout narrative from its predecessor.
+The producer now requires the current policy's seven ResearchCase fields,
+maps their source IDs explicitly, rejects missing countercases or unknown
+references, and freezes the prior explanation as superseded lineage. The
+business explanation and computed assumptions share the same exact policy
+bytes. Formal approval and registered investment economics remain unchanged.
+
+The actual successor is
+runtime/product-operating-research/20261025T071814444248Z/proposal/candidate/candidate.json,
+SHA256 2e53d50d988a737272d7a95b822c8e0e9998d3749c1432cac7f6c12d92fe8ed0.
+Result SHA256 e74b30406bdf6f3732a498fd8c23b768cf69ae5f6e9d206699fe74eca751b07e.
+All three numerical paths remain identical; this change corrects the investment
+logic presented with them. Real-source candidate and architecture tests:47 passed.
+Earlier candidate files and receipts are retained. The current unsigned pointer
+selects this successor; sole8001 publication still requires final exact-SHA CI.
+
 ### 2026-10-25 product economics, financing evidence and hotspot history
 
 The existing Goal is ACTIVE after the user's resume. The earlier BLOCKED entry

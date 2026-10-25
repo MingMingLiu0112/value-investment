@@ -4,6 +4,7 @@ from dataclasses import replace
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal, localcontext
 import json
+from hashlib import sha256
 from pathlib import Path
 
 from ...domain.valuation.operating_product_paths import build_product_operating_paths
@@ -22,6 +23,38 @@ from .operating_earnings_bridge import extract_statement
 POLICY_PATH = 'config/research-assumptions/600519-product-operating-v1.json'
 DRIVERS = frozenset({'moutai_volume_growth', 'moutai_realization_growth',
     'series_volume_growth', 'series_realization_growth', 'other_revenue_growth', 'cost_ratio'})
+CASE_TEXT_FIELDS = ('thesis', 'return_driver', 'mispricing_hypothesis')
+CASE_CLAIM_FIELDS = ('positives', 'counter_evidence', 'thesis_breakers', 'next_events')
+
+
+def _research_case_context(policy: dict, source_ids: set[str]) -> dict:
+    """Bind the current business explanation, not an inherited forecast story."""
+    context = policy.get('research_case')
+    if not isinstance(context, dict) or set(context) != set(CASE_TEXT_FIELDS+CASE_CLAIM_FIELDS):
+        raise ValueError('Product research requires a complete current case explanation')
+    result = {}
+    available_ids = source_ids | {'product-operating-policy'}
+    for field in CASE_TEXT_FIELDS:
+        if not isinstance(context[field], str) or not context[field].strip():
+            raise ValueError('Product research case text must explain '+field)
+        result[field] = context[field]
+    for field in CASE_CLAIM_FIELDS:
+        claims = context[field]
+        if not isinstance(claims, list) or not 1 <= len(claims) <= 32:
+            raise ValueError('Product research case requires '+field)
+        result[field] = []
+        for claim in claims:
+            if (not isinstance(claim, dict) or set(claim) != {'kind', 'text', 'source_ids'}
+                    or claim['kind'] not in {'fact', 'interpretation', 'hypothesis', 'gap'}
+                    or not isinstance(claim['text'], str) or not claim['text'].strip()
+                    or not isinstance(claim['source_ids'], list)
+                    or any(not isinstance(ident, str) or ident not in available_ids for ident in claim['source_ids'])
+                    or len(set(claim['source_ids'])) != len(claim['source_ids'])
+                    or (claim['kind'] == 'fact' and not set(claim['source_ids'])-{'product-operating-policy'})):
+                raise ValueError('Product research claim source/type mismatch: '+field)
+            result[field].append(dict(kind=claim['kind'], text=claim['text'],
+                evidence_refs=list(dict.fromkeys([*claim['source_ids'], 'product-operating-policy']))))
+    return result
 
 
 def build_product_operating_research(*, root: Path, package: dict, ledger: dict,
@@ -133,8 +166,15 @@ def prepare_product_operating_candidate(*, root: Path, candidate_binding: dict,
     _, package = read_bound_json(root, original['source_package_binding'], 'original product research package')
     _, old_ledger = read_bound_json(root, original['native_cash_ledger_binding'], 'original product research cash')
     descriptor = build_descriptor(package, root=root)
+    policy_path = require_inside(root, root/('config/research-assumptions/'+package['symbol']+'-product-operating-v1.json'),
+                                 'product research case policy')
+    policy_bytes = policy_path.read_bytes()
+    case_context = _research_case_context(json.loads(policy_bytes),
+        {source['id'] for source in package['sources']})
     research = build_product_operating_research(root=root, package=package, ledger=old_ledger,
         facts=descriptor.facts, evaluation_at=clock, _include_native_cases=True)
+    if research.get('policy_binding', {}).get('sha256') != sha256(policy_bytes).hexdigest():
+        raise ValueError('Product case explanation differs from the consumed policy version')
     if research['status'] != 'CONDITIONAL_OPERATING_RESEARCH_NOT_APPROVED':
         raise ValueError('Product research cannot create a candidate: '+research['status'])
     target = require_inside(root/'runtime', output_dir, 'product research candidate output')
@@ -155,8 +195,10 @@ def prepare_product_operating_candidate(*, root: Path, candidate_binding: dict,
             parser_version='product-operating-research-v1',
             availability_basis='ACTUAL_NEW_RESEARCH_NOT_HISTORICAL_PIT'))
         return dict(path=ref['path'], sha256=ref['sha256'])
-    policy = root/research['policy_binding']['path']
-    policy_saved_ref = save('assumptions.json', policy.read_bytes(), 'product-operating-policy', raw=True)
+    policy_saved_ref = save('assumptions.json', policy_bytes, 'product-operating-policy', raw=True)
+    previous_context_ref = save('previous-case-context.json',
+        {field:deepcopy(package['research_case'][field]) for field in CASE_TEXT_FIELDS+CASE_CLAIM_FIELDS},
+        'product-operating-previous-case-context')
     save('operating-research.json', {k:v for k,v in research.items() if k != 'native_cash_cases'},
          'product-operating-research')
     for name in ('application/research/product_operating_research.py',
@@ -175,6 +217,7 @@ def prepare_product_operating_candidate(*, root: Path, candidate_binding: dict,
     day = clock.astimezone(timezone(timedelta(hours=8))).date().isoformat()
     package['point_in_time'].update(available_at=clock.isoformat(), computed_at=clock.isoformat(), research_as_of=day)
     package['research_case']['as_of'] = day
+    package['research_case'].update(case_context)
     package['sources'] += new_sources
     package['source_contract']['cutoff_at'] = clock.isoformat()
     package['source_contract']['source_catalog_sha256'] = source_catalog_sha256(package['sources'])
@@ -187,6 +230,7 @@ def prepare_product_operating_candidate(*, root: Path, candidate_binding: dict,
         five_groups={key:'PENDING_FORMAL_REVIEW' for key in declaration['five_groups']})
     package['research_case']['financial_summary']['product_operating_research'] = dict(
         policy_binding=policy_saved_ref, assumption_scope=research['assumption_scope'],
+        superseded_case_narrative_binding=previous_context_ref,
         reference_allocation=research['reference_allocation'], counter_evidence=research['counter_evidence'],
         thesis_breakers=research['thesis_breakers'], normalized_parent_profit_cny=None)
     for assumption in package['assumptions']['assumptions']:

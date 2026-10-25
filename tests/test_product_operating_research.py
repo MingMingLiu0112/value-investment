@@ -148,9 +148,32 @@ def test_real_paths_can_enter_existing_unsigned_candidate_contract(public_js2):
     saved = package['research_case']['financial_summary']['product_operating_research']
     assert saved['policy_binding']['path'].endswith('/assumptions.json')
     assert saved['assumption_scope'] == 'RESEARCH_ASSUMPTIONS_NOT_OFFICIAL_FORECAST'
+    policy = json.loads((root/research.POLICY_PATH).read_bytes())
+    for field in research.CASE_TEXT_FIELDS:
+        assert package['research_case'][field] == policy['research_case'][field]
+    for field in research.CASE_CLAIM_FIELDS:
+        assert len(package['research_case'][field]) == len(policy['research_case'][field])
+        assert all('product-operating-policy' in row['evidence_refs'] for row in package['research_case'][field])
+    prior_ref = saved['superseded_case_narrative_binding']
+    assert research.sha256_file(root/prior_ref['path']) == prior_ref['sha256']
+    prior_case = json.loads((root/prior_ref['path']).read_bytes())
+    assert prior_case['thesis'] != package['research_case']['thesis']
     assert result['current_registry_changed'] is False
     assert result['formal_eligibility'] is False
     assert {key:research.sha256_file(root/key) for key in before} == before
     assert candidate['candidate_valuation']['base_value'] != json.loads((root/baseline['path']).read_bytes())['candidate_valuation']['base_value']
     with pytest.raises(FileExistsError):
         research.prepare_product_operating_candidate(root=root, candidate_binding=baseline, output_dir=target)
+
+
+@pytest.mark.parametrize('damage', ['missing_thesis', 'empty_counter', 'unknown_source', 'bad_kind'])
+def test_current_case_explanation_requires_real_sources_and_countercase(damage):
+    claims = [dict(kind='hypothesis', text='TEST_ONLY explicit research assumption', source_ids=['official-source'])]
+    context = {field:'TEST_ONLY substantive explanation' for field in research.CASE_TEXT_FIELDS}
+    context.update({field:deepcopy(claims) for field in research.CASE_CLAIM_FIELDS})
+    if damage == 'missing_thesis': context.pop('thesis')
+    if damage == 'empty_counter': context['counter_evidence'] = []
+    if damage == 'unknown_source': context['positives'][0]['source_ids'] = ['invented']
+    if damage == 'bad_kind': context['positives'][0]['kind'] = 'approved_fact'
+    with pytest.raises(ValueError):
+        research._research_case_context(dict(research_case=context), {'official-source'})

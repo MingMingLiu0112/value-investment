@@ -9,8 +9,8 @@
   },
   "supplemental_review_candidates": {
     "600519": {
-      "path": "runtime/product-operating-research/20261025T064115915611Z/proposal/candidate/candidate.json",
-      "sha256": "cf2ecab4205faca57ed0b8d8f7ba9fd561c5c0d520cc52837268f90cccf10502"
+      "path": "runtime/product-operating-research/20261025T071814444248Z/proposal/candidate/candidate.json",
+      "sha256": "2e53d50d988a737272d7a95b822c8e0e9998d3749c1432cac7f6c12d92fe8ed0"
     }
   },
   "bound_draft_review_candidates": {
