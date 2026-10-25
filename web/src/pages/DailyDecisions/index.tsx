@@ -480,7 +480,6 @@ export default function DailyDecisions() {
           </Button>
         </div>
       )}
-      <DualStrategySelection key={selectionRevision} />
       {usable && data && (
         <>
           <div className="opportunity-strip">
@@ -756,6 +755,7 @@ export default function DailyDecisions() {
           />
         </>
       )}
+      <DualStrategySelection key={selectionRevision} />
     </Workbench>
   );
 }

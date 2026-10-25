@@ -844,13 +844,13 @@ it("keeps an independently rejected source unknown rather than zero candidates",
   expect(html).not.toContain('aria-label="明确行动结论"');
 });
 
-it("mounts one independent selector before formal results when both sources are available", () => {
+it("keeps one independent selector after the action conclusion when both sources are available", () => {
   state.selection.data = independentSelectionFixture();
   const html = renderToStaticMarkup(<DailyDecisions />);
   expect(html.match(/aria-label="双策略选股"/g)).toHaveLength(1);
   expect(html).toContain("TEST_ONLY 独立来源研究候选");
   expect(html).toContain("中文在线回归候选");
-  expect(html.indexOf('aria-label="双策略选股"')).toBeLessThan(
+  expect(html.indexOf('aria-label="双策略选股"')).toBeGreaterThan(
     html.indexOf('aria-label="明确行动结论"'),
   );
 });

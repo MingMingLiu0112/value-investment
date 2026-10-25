@@ -5193,3 +5193,33 @@ is VERIFIED/PARTIAL with zero formal admissions. No Web startup occurred.
 The CLI warning now distinguishes actually adopted facts from incomplete overall
 research; its existing inventory Hash was updated. This run preceded the final
 source commit and is not represented as clean-checkout or live8001 validation.
+
+### 2026-10-25 exact7115c681 public research release and browser correction
+
+Source7115c68141c7b429d075d9f71ddfe82a162576f0 passed GitHub
+Core40154047627/40154045171 and Web40154047625/40154045032. Offline Core
+6927 passed/273 skipped; isolated PostgreSQL succeeded. Clean gc1 targeted
+265 passed/eight optional skips; clean build source_dirty=false passed.
+The sole8001 was updated with rollback assets and a fresh local public run;
+runtime/build/registry MATCHED. Release receipt:
+.tmp/dual1/.tmp/release-7115c681-20261025T0234403767986Z/receipt.json
+(path relative to the canonical repository). New live packet
+pub-e758c6db46c78ab8cec4, SHA-256
+88c6404750baf7561769491e640a29ce7462f6cb4bfea9e8e4fac08e451fdda8,
+remains VERIFIED/PARTIAL, no_order, with no formal admissions. Existing authority
+pointer unchanged; no canonical/private/server/database/scheduler changes.
+Actual8001 APIs returned verified financial progress for000151/000498 and the
+source-replayed600519 cash counterevidence. A separate committed-code real
+followup in vv1 advanced to000544/000568 and adopted parent-profit facts:
+runtime/daily-marketwide/20261025T0213145930681Z/
+research-priority-v2-fair-followup-enrichment/execution.json,
+908316123c8de4466c78cb2563bf7f51aa0ecb140fb6f1efbb2fa455b9d7d986.
+That followup is not represented as a second live publication.
+
+Actual browser verification exposed an ordering regression: the newly independent
+research table preceded the main actionable conclusion. The narrow successor
+keeps the research component outside formal admission, but after the main daily
+results; when formal publication is unavailable it still renders independently.
+No screening, valuation, risk, eligibility or data logic changes in this UI fix.
+Its exact successor CI/build/live verification is separate from7115c681's result.
+Real assisted-use and the full objective remain NOT_REACHED. action=no_order.
