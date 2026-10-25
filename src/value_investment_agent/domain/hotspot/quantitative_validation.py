@@ -9,7 +9,7 @@ from ..execution.exchange_calendar import is_exchange_session, next_exchange_ses
 CHINA = ZoneInfo("Asia/Shanghai")
 
 
-def evaluate_economic_validation_draft(protocol, blocks):
+def evaluate_economic_validation_draft(protocol, blocks, *, window_uncertainty=None):
     """Arithmetic/coverage review only; a draft never grants strategy admission."""
     if (protocol.get('schema_version') != 'hotspot-economic-validation-draft-v1'
             or protocol.get('status') != 'DRAFT' or protocol.get('action') != 'no_order'
@@ -20,6 +20,7 @@ def evaluate_economic_validation_draft(protocol, blocks):
             or protocol.get('cost_multipliers') != ['0', '1', '2']):
         raise ValueError('Unsupported economic draft contract')
     policy = protocol['economic_policy']
+    full_window_uncertainty = policy.get('uncertainty_application') == 'FULL_126_SESSION_WINDOW'
     checks = []
 
     def check(name, status, reason):
@@ -40,7 +41,7 @@ def evaluate_economic_validation_draft(protocol, blocks):
                 or policy['minimum_trades'] < 1 or not isinstance(policy['uncertainty_method'], str)
                 or not policy['uncertainty_method'].strip()
                 or not isinstance(policy['uncertainty_parameters'], dict)
-                or policy['cost_evaluation'] != 'BASE_NET_WITH_0X_2X_DISCLOSURE'):
+                or policy['cost_evaluation'] not in {'BASE_NET_WITH_0X_2X_DISCLOSURE', 'BASE_NET_WITH_2X_CASH_FLOOR'}):
             raise ValueError('Invalid explicit economic risk/sample policy')
         for key in ('minimum_excess_cash', 'minimum_excess_pool', 'minimum_excess_lower_bound'):
             number(policy[key])
@@ -84,7 +85,10 @@ def evaluate_economic_validation_draft(protocol, blocks):
             if type(value) is bool or not Decimal(str(value)).is_finite() or Decimal(str(value)) < -1:
                 raise ValueError('Invalid cost sensitivity return')
         metrics = {}
-        for key in ('strategy_net_return', 'cash_net_return', 'pool_net_return', 'excess_lower_bound'):
+        keys = ('strategy_net_return', 'cash_net_return', 'pool_net_return')
+        if not full_window_uncertainty:
+            keys += ('excess_lower_bound',)
+        for key in keys:
             if type(block[key]) is bool:
                 raise ValueError('Boolean is not an economic metric')
             value = Decimal(str(block[key]))
@@ -109,9 +113,30 @@ def evaluate_economic_validation_draft(protocol, blocks):
         passed = (metrics['strategy_net_return'] - metrics['cash_net_return'] > number(policy['minimum_excess_cash'])
             and metrics['strategy_net_return'] - metrics['pool_net_return'] > number(policy['minimum_excess_pool'])
             and drawdown <= number(policy['maximum_drawdown'])
-            and metrics['excess_lower_bound'] > number(policy['minimum_excess_lower_bound']))
+            and (full_window_uncertainty or
+                 metrics['excess_lower_bound'] > number(policy['minimum_excess_lower_bound'])))
+        if policy['cost_evaluation'] == 'BASE_NET_WITH_2X_CASH_FLOOR':
+            passed = passed and Decimal(str(sensitivity['2'])) >= metrics['cash_net_return']
         check(f'BLOCK_{index + 1}_ECONOMIC_COMPARISON', 'PASS' if passed else 'FAIL',
               'Net benchmark excess, risk cap and supplied uncertainty bound; not authenticity verification')
+    if full_window_uncertainty:
+        if window_uncertainty is None:
+            check('FULL_WINDOW_UNCERTAINTY', 'INSUFFICIENT_DATA',
+                  '126-day continuous paired series required; do not splice reset fold accounts')
+        else:
+            if (window_uncertainty['method'] != policy['uncertainty_method']
+                    or window_uncertainty['parameters'] != policy['uncertainty_parameters']
+                    or type(window_uncertainty['observed_days']) is not int
+                    or window_uncertainty['observed_days'] != 126):
+                raise ValueError('Full-window uncertainty contract mismatch')
+            enough = 126 >= policy['uncertainty_parameters']['block_length'] * policy['uncertainty_parameters']['minimum_effective_blocks']
+            bounds = [Decimal(str(window_uncertainty[key])) for key in
+                      ('cash_excess_lower_bound', 'pool_excess_lower_bound')]
+            if not all(value.is_finite() for value in bounds):
+                raise ValueError('Finite full-window bounds required')
+            check('FULL_WINDOW_UNCERTAINTY', 'INSUFFICIENT_DATA' if not enough else
+                  'PASS' if all(value > number(policy['minimum_excess_lower_bound']) for value in bounds) else 'FAIL',
+                  'Declared full-window paired bounds; no independent coverage or OOS attestation')
     verdict = ('FAIL' if any(c['status'] == 'FAIL' for c in checks) else
                'INSUFFICIENT_DATA' if any(c['status'] == 'INSUFFICIENT_DATA' for c in checks) else 'PASS')
     return dict(checks=checks, economic_evaluation=verdict, status='NOT_ADMITTED',
@@ -286,3 +311,85 @@ def simulate_fold(protocol, inputs, fold, *, cost_multiplier=Decimal(1)):
         right_censored_positions=len(positions),
         total_fees_cny=str(sum((Decimal(f["fees_cny"]) for f in fills), Decimal(0))),
         total_slippage_cny=str(sum((Decimal(f["slippage_cny"]) for f in fills), Decimal(0))))
+
+
+def compare_frozen_portfolio_accounts(protocol, strategy_inputs_by_cost, benchmark_orders_by_cost, fold,
+                                      *, benchmark_preflight_by_cost=None):
+    """One shared cash account per lane; frozen intents are not adaptive signals."""
+    initial = number(protocol['initial_cash_cny'])
+    results = []
+    for multiplier in (Decimal(0), Decimal(1), Decimal(2)):
+        strategy_inputs = strategy_inputs_by_cost[str(multiplier)]
+        benchmark_orders = benchmark_orders_by_cost[str(multiplier)]
+        strategy = simulate_fold(protocol, strategy_inputs, fold, cost_multiplier=multiplier)
+        benchmark = simulate_fold(protocol, dict(bars=strategy_inputs['bars'], orders=benchmark_orders),
+                                  fold, cost_multiplier=multiplier)
+        for lane, preflight, count in (
+            (strategy, strategy_inputs.get('preflight_rejected', []),
+             strategy_inputs.get('frozen_intention_count', len(strategy_inputs['orders']))),
+            (benchmark, (benchmark_preflight_by_cost or {}).get(str(multiplier), []), None),
+        ):
+            rejected = [*lane['rejected_orders'], *preflight]
+            identities = [row['order_id'] for row in rejected] + [row['order_id'] for row in lane['fills']]
+            if len(identities) != len(set(identities)) or (count is not None and count != len(identities)):
+                raise ValueError('Frozen intent outcomes must reconcile without duplicate or lost rejects')
+            lane.update(rejected_orders=rejected, rejection_counts=dict(Counter(row['reason'] for row in rejected)),
+                frozen_intention_count=len(identities), unfilled_count=len(rejected),
+                unfilled_rate=str(Decimal(len(rejected)) / len(identities)) if identities else None)
+        strategy_return = number(strategy['ending_equity_cny']) / initial - 1
+        benchmark_return = number(benchmark['ending_equity_cny']) / initial - 1
+        last_marks = {}
+        for bar in sorted(strategy_inputs['bars'], key=lambda row: stamp(row['time'])):
+            last_marks[bar['symbol']] = number(bar['close'])
+        for lane in (strategy, benchmark):
+            inventory = {}
+            for fill in lane['fills']:
+                inventory[fill['symbol']] = inventory.get(fill['symbol'], 0) + (
+                    fill['quantity'] if fill['side'] == 'BUY' else -fill['quantity'])
+            nav = number(lane['ending_equity_cny'])
+            lane['ending_weights'] = {symbol: str(quantity * last_marks[symbol] / nav)
+                for symbol, quantity in inventory.items() if quantity and nav}
+            lane['ending_cash_weight'] = str(number(lane['ending_cash_cny']) / nav) if nav else None
+        curves = []
+        for lane in (strategy, benchmark):
+            daily = {}
+            for point in lane['equity_curve']:
+                local = stamp(point['time']).astimezone(CHINA)
+                if local.time() == clock_time(15):
+                    daily[local.date().isoformat()] = number(point['equity_cny'])
+            curves.append(daily)
+        if set(curves[0]) != set(curves[1]):
+            raise ValueError('Paired portfolio mark dates differ')
+        paired, previous_strategy, previous_benchmark = [], initial, initial
+        for day in sorted(curves[0]):
+            current_strategy, current_benchmark = curves[0][day], curves[1][day]
+            if previous_strategy <= 0 or previous_benchmark <= 0:
+                raise ValueError('Positive prior NAV required for paired returns')
+            strategy_daily = current_strategy / previous_strategy - 1
+            benchmark_daily = current_benchmark / previous_benchmark - 1
+            excess = strategy_daily - benchmark_daily
+            paired.append(dict(date=day, daily_excess_return=str(excess),
+                strategy_daily_return=str(strategy_daily), benchmark_daily_return=str(benchmark_daily),
+                daily_excess_cash=str(strategy_daily), daily_excess_pool=str(excess)))
+            previous_strategy, previous_benchmark = current_strategy, current_benchmark
+        values = [Decimal(row['daily_excess_return']) for row in paired]
+        loo = [(sum(values) - value) / (len(values) - 1) for value in values] if len(values) > 1 else []
+        results.append(dict(cost_multiplier=str(multiplier), strategy=strategy, benchmark=benchmark,
+            initial_cash_cny=str(initial), strategy_net_return=str(strategy_return),
+            benchmark_net_return=str(benchmark_return), cash_net_return='0',
+            cash_assumption='ZERO_INTEREST_ZERO_FEES_CNY_CASH_NOT_ACCOUNT_YIELD',
+            excess_to_cash=str(strategy_return), excess_to_pool=str(strategy_return - benchmark_return),
+            paired_daily_excess=paired, uncertainty=dict(
+                method='LEAVE_ONE_DAY_OUT_MEAN_PAIRED_EXCESS_SENSITIVITY_NOT_CONFIDENCE_INTERVAL',
+                lower=str(min(loo)) if loo else None, upper=str(max(loo)) if loo else None,
+                units='DAILY_RETURN_FRACTION', statistical_coverage_claim=False)))
+    return dict(fold=fold, scenarios=results,
+        simultaneous_order_convention='TIMESTAMP_THEN_SYMBOL_ASCENDING_NOT_REAL_ORDER_PRIORITY',
+        scope='SHARED_CASH_FROZEN_INTENT_DIAGNOSTIC_NOT_ADAPTIVE_STRATEGY_VALIDATION',
+        assumptions=['RETROSPECTIVE_COHORT', 'ASSUMED_TRADABILITY_AND_COSTS',
+            'NO_FEEDBACK_REGENERATION_AFTER_SHARED_ACCOUNT_REJECTION',
+            'EX_POST_BAR_TURNOVER_LIQUIDITY_NOT_KNOWN_AT_ORDER',
+            'NO_FORCED_TERMINAL_LIQUIDATION_UNREALIZED_MARKS_RETAINED',
+            'NO_CORPORATE_ACTION_RECONCILIATION'],
+        strategy_validation='NOT_PROVEN', strict_pit_admitted=False, strict_oos_admitted=False,
+        formal_eligibility=False, performance_claim_allowed=False, action='no_order')

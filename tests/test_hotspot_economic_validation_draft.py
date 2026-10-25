@@ -44,12 +44,43 @@ def test_complete_synthetic_economic_comparison_never_grants_real_admission():
     assert before == (draft, blocks)
 
 
-def test_actual_draft_does_not_invent_economic_thresholds():
+def test_candidate_policy_is_explicit_reasoned_and_unapproved():
     draft = build_economic_validation_draft(now=datetime(2026, 10, 25, tzinfo=timezone.utc))
-    assert all(value is None for value in draft['economic_policy'].values())
+    assert draft['economic_policy']['maximum_drawdown'] == '0.20'
+    assert draft['economic_policy']['uncertainty_parameters']['block_length'] == 10
+    assert draft['policy_rationale'] and 'not an industry standard' in draft['policy_rationale']['drawdown']
     assert draft['registered_at'] is None and draft['approval_status'] == 'NOT_APPROVED'
     result = evaluate_economic_validation_draft(draft, [])
     assert result['economic_evaluation'] == 'INSUFFICIENT_DATA'
+
+
+def test_missing_policy_still_cannot_pass():
+    draft, blocks = fixture()
+    draft['economic_policy']['maximum_drawdown'] = None
+    assert evaluate_economic_validation_draft(draft, blocks)['economic_evaluation'] == 'INSUFFICIENT_DATA'
+
+
+def test_candidate_cost_stress_floor_is_executable():
+    draft, blocks = fixture()
+    draft['economic_policy']['cost_evaluation'] = 'BASE_NET_WITH_2X_CASH_FLOOR'
+    blocks[0]['cost_returns']['2'] = '-0.01'
+    assert evaluate_economic_validation_draft(draft, blocks)['economic_evaluation'] == 'FAIL'
+
+
+def test_candidate_uncertainty_requires_full_window_not_each_short_block():
+    draft, blocks = fixture()
+    draft['economic_policy'] = build_economic_validation_draft(
+        now=datetime(2026, 10, 25, tzinfo=timezone.utc))['economic_policy']
+    policy = draft['economic_policy']
+    for block in blocks:
+        block.update(trade_count=30, uncertainty_method=policy['uncertainty_method'],
+                     uncertainty_parameters=policy['uncertainty_parameters'])
+    assert evaluate_economic_validation_draft(draft, blocks)['economic_evaluation'] == 'INSUFFICIENT_DATA'
+    full = dict(method=policy['uncertainty_method'], parameters=policy['uncertainty_parameters'],
+        observed_days=126, cash_excess_lower_bound='0.001', pool_excess_lower_bound='0.001')
+    assert evaluate_economic_validation_draft(draft, blocks, window_uncertainty=full)['economic_evaluation'] == 'PASS'
+    full['pool_excess_lower_bound'] = '-0.001'
+    assert evaluate_economic_validation_draft(draft, blocks, window_uncertainty=full)['economic_evaluation'] == 'FAIL'
 
 
 @pytest.mark.parametrize('key,value', [('strategy_net_return', '0.04'),

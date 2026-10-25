@@ -19,14 +19,79 @@ def build_economic_validation_draft(*, now: datetime) -> dict:
         block_count=3, block_sessions=42, benchmarks=['CASH', 'SAME_POOL_EQUAL_WEIGHT'],
         block_acceptance='ALL_THREE_BLOCKS_MUST_MEET_EXPLICIT_POLICY',
         cost_multipliers=['0', '1', '2'],
-        economic_policy=dict(minimum_excess_cash=None, minimum_excess_pool=None,
-            maximum_drawdown=None, minimum_trades=None, uncertainty_method=None,
-            uncertainty_parameters=None, minimum_excess_lower_bound=None, cost_evaluation=None),
+        economic_policy=dict(minimum_excess_cash='0', minimum_excess_pool='0',
+            maximum_drawdown='0.20', minimum_trades=30,
+            uncertainty_method='STATIONARY_BOOTSTRAP_MEAN_PAIRED_DAILY_EXCESS_LOWER',
+            uncertainty_parameters=dict(block_length=10, resamples=2000, confidence='0.95',
+                seed=20261025, minimum_effective_blocks=12),
+            uncertainty_application='FULL_126_SESSION_WINDOW',
+            minimum_excess_lower_bound='0', cost_evaluation='BASE_NET_WITH_2X_CASH_FLOOR'),
+        policy_status='CANDIDATE_FOR_RESEARCH_REVIEW_NOT_AUTHORIZED_PERSONAL_RISK',
+        policy_rationale=dict(excess='Positive net excess to both declared benchmarks; no fitted margin',
+            drawdown='20 percent subjective pilot risk cap, not an industry standard or user IPS',
+            sample='30 closed trades per 42-session block is a demanding pilot guard, not statistical power proof',
+            blocks='10-day expected block spans twice the existing five-session exit experiment',
+            uncertainty='One-sided 95 percent paired stationary-bootstrap bound; assumptions unproven',
+            effective_blocks='12 expected blocks is a pilot guard, not independence proof',
+            stress='2x-cost return must not fall below the declared cash benchmark'),
         required_evidence=['CONTEMPORANEOUS_POOL_AND_CLASSIFICATION', 'ARCHIVED_SOURCE_PIT',
             'UNTOUCHED_PREDECLARED_WINDOWS', 'RULE_AND_COST_BINDINGS',
             'DATED_TRADABILITY_AND_CORPORATE_ACTIONS', 'PAIRED_PORTFOLIO_BENCHMARKS',
             'PREDECLARED_ECONOMIC_AND_UNCERTAINTY_POLICY'],
         parameters_changed=False, formal_eligibility=False, action='no_order')
+
+
+def compute_paired_stationary_uncertainty(rows: list, parameters: dict) -> dict:
+    """Optional mature-library time-series calculation, never an OOS attestation."""
+    import math
+    from hashlib import sha256
+    from importlib.metadata import version
+    import numpy as np
+    from arch.bootstrap import StationaryBootstrap
+    from ...domain.execution.exchange_calendar import is_exchange_session, next_exchange_session
+
+    if version('arch') != '8.0.0':
+        raise ValueError('Reviewed arch 8.0.0 research runtime required')
+    block, reps, seed = (parameters[k] for k in ('block_length', 'resamples', 'seed'))
+    minimum = parameters['minimum_effective_blocks']
+    confidence = float(parameters['confidence'])
+    if (type(block) is not int or not 2 <= block <= len(rows)
+            or type(reps) is not int or not 200 <= reps <= 10000 or type(seed) is not int
+            or type(minimum) is not int or minimum < 2 or not 0 < confidence < 1):
+        raise ValueError('Explicit bounded time-series bootstrap parameters required')
+    dates = [row['date'] for row in rows]
+    if dates != sorted(set(dates)):
+        raise ValueError('Unique ordered paired dates required')
+    previous = None
+    for text in dates:
+        day = datetime.fromisoformat(text).date()
+        if (day.isoformat() != text or not is_exchange_session('SSE', day)
+                or (previous and day != next_exchange_session('SSE', previous))):
+            raise ValueError('Complete consecutive paired exchange sessions required')
+        previous = day
+    if any(type(row[key]) is bool for row in rows for key in ('daily_excess_cash', 'daily_excess_pool')):
+        raise ValueError('Boolean is not a paired return')
+    data = np.array([[float(row['daily_excess_cash']), float(row['daily_excess_pool'])]
+                     for row in rows], dtype=float)
+    if not np.isfinite(data).all():
+        raise ValueError('Finite paired excess returns required')
+    bootstrap = StationaryBootstrap(block, data, seed=seed)
+    interval = bootstrap.conf_int(lambda sample: sample.mean(axis=0), reps=reps,
+        method='percentile', size=confidence, tail='lower')
+    lower = [float(value) for value in interval[0]]
+    if not all(math.isfinite(value) for value in lower):
+        raise ValueError('Nonfinite bootstrap bound')
+    return dict(method='STATIONARY_BOOTSTRAP_MEAN_PAIRED_DAILY_EXCESS_LOWER',
+        engine='arch==8.0.0', parameters=dict(parameters), observed_days=len(rows),
+        implementation_binding=dict(path='src/value_investment_agent/application/hotspot/quantitative_validation.py',
+            sha256=sha256(Path(__file__).read_bytes()).hexdigest()),
+        expected_block_count=str(len(rows) / block),
+        sample_status='INSUFFICIENT' if len(rows) < block * minimum else 'DIAGNOSTIC_ONLY',
+        cash_excess_lower_bound=str(lower[0]), pool_excess_lower_bound=str(lower[1]),
+        upper_bound=None, units='MEAN_DAILY_RETURN_FRACTION',
+        coverage_scope='MARGINAL_ONE_SIDED_BOUNDS_NOT_SIMULTANEOUS_CONFIDENCE_REGION',
+        interval_scope='CONDITIONAL_ON_STATIONARITY_AND_DEPENDENCE_ASSUMPTIONS_NOT_VERIFIED_OOS',
+        formal_eligibility=False, strict_oos_admitted=False, action='no_order')
 
 
 def diagnose_retained_economic_draft(*, root: Path, binding: 'ProtocolBinding',

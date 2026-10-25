@@ -29,6 +29,120 @@ def fingerprint(value):
                              ensure_ascii=False, allow_nan=False).encode("utf-8")).hexdigest()
 
 
+def build_retained_portfolio_benchmarks(*, root: Path, now: datetime,
+                                      initial_cash_cny=engine.DEFAULT_INITIAL_CASH_CNY) -> dict:
+    """Paired post-hoc diagnostic from the retained five, never an OOS release."""
+    from ...domain.hotspot.quantitative_validation import compare_frozen_portfolio_accounts
+    from ...domain.execution.exchange_calendar import is_exchange_session
+    from datetime import date, timedelta
+    from decimal import ROUND_FLOOR, ROUND_CEILING
+    replay = build_strategy_execution_replay(root=root, now=now, initial_cash_cny=initial_cash_cny)
+    root = root.resolve()
+    manifest = json.loads(_bound_bytes(root, replay['manifest_binding']))
+    source_root = (root / replay['manifest_binding']['path']).parent / 'sources'
+    spec = json.loads(_bound_bytes(source_root, manifest['historical_protocol_binding']))
+    cases = {item['symbol']: _verified_case(source_root, item, manifest['namespace'],
+             spec['end_date'], now)[0] for item in spec['cases']}
+    initial = Decimal(str(initial_cash_cny))
+    fee = replay['costs']
+    allocation = initial / len(cases)
+    folds, benchmark_plans = [], []
+    windows = [('development', spec['start_date'], spec['development_end']),
+               ('validation', spec['validation_start'], spec['end_date'])]
+    for name, start, end in windows:
+        fold = dict(id=name, test_start=start + 'T09:30:00+08:00', test_end=end + 'T15:00:00+08:00')
+        inputs_by_cost = {key: dict(orders=[], bars=[], preflight_rejected=[], frozen_intention_count=0)
+                          for key in ('0', '1', '2')}
+        benchmarks_by_cost = {key: [] for key in ('0', '1', '2')}
+        benchmark_preflight = {key: [] for key in ('0', '1', '2')}
+        marks = None
+        for row in replay['results']:
+            base = next(lane for lane in row['scenarios'] if lane['cost_multiplier'] == '1')
+            source = next(part for part in base['folds'] if part['fold'] == name)
+            local_bars = source['simulator_inputs']['bars']
+            times = [bar['time'] for bar in local_bars]
+            if not times or (marks is not None and marks != times):
+                raise ValueError('Full same-pool aligned bar coverage required; no intersection dropping')
+            marks = times
+            for scenario in row['scenarios']:
+                key = scenario['cost_multiplier']
+                part = next(p for p in scenario['folds'] if p['fold'] == name)
+                # Retain the original wrapper's scenario-specific gap, status,
+                # protection and observed high/low execution checks.
+                inputs_by_cost[key]['orders'].extend(part['simulator_inputs']['orders'])
+                inputs_by_cost[key]['bars'].extend(part['simulator_inputs']['bars'])
+                simulated_ids = {order['id'] for order in part['simulator_inputs']['orders']}
+                inputs_by_cost[key]['preflight_rejected'].extend(rejection for rejection in part['rejected_orders']
+                    if rejection['order_id'] not in simulated_ids)
+                inputs_by_cost[key]['frozen_intention_count'] += len(part['generated_intentions'])
+            symbol = row['symbol']
+            prior = [bar for bar in cases[symbol]['bars']['daily'] if bar['time'] < start]
+            if not prior:
+                raise ValueError('Prior completed close required for benchmark sizing')
+            reference = Decimal(prior[-1]['close'])
+            # Freeze quantities once using the declared 1x fee/slippage basis.
+            # The exact same quantities are replayed at 0x/1x/2x costs.
+            variable = Decimal(fee['commission_rate']) + Decimal(fee['transfer_fee_rate'])
+            reserve = Decimal(fee['minimum_commission_cny'])
+            budget = max(Decimal(0), allocation - reserve)
+            divisor = reference * (1 + Decimal(fee['slippage_bps']) / 10000) * (1 + variable)
+            quantity = int((budget / divisor / 100).to_integral_value(rounding=ROUND_FLOOR)) * 100
+            plan = dict(symbol=symbol, fold=name, prior_close=str(reference),
+                quantity=quantity, target_cash_cny=str(allocation), action='no_order',
+                status='HYPOTHETICAL_TARGET_NOT_ACTUAL_EXECUTION')
+            first_observation = source['execution_observations'][0]
+            if quantity and first_observation['rejection'] is None:
+                decision = fold['test_start']
+                benchmark_order = dict(id=f'benchmark-{name}-{symbol}', symbol=symbol,
+                    side='BUY', quantity=quantity, fold=name, decision_at=decision,
+                    available_at=decision, execute_at=local_bars[0]['time'],
+                    limit_price=local_bars[0]['limit_up'], liquidity_budget_cny=str(allocation),
+                    availability_scope='HYPOTHETICAL_PRIOR_CLOSE_NOT_ARCHIVAL_PIT')
+                actual_first = next(bar for bar in cases[symbol]['bars']['60m']
+                    if bar['time'] == first_observation['bar_label'])
+                for key in benchmarks_by_cost:
+                    slipped = (Decimal(actual_first['open']) *
+                        (1 + Decimal(fee['slippage_bps']) * Decimal(key) / 10000)).quantize(
+                            Decimal('0.01'), rounding=ROUND_CEILING)
+                    if Decimal(actual_first['low']) <= slipped <= Decimal(actual_first['high']):
+                        benchmarks_by_cost[key].append(dict(benchmark_order))
+                    else:
+                        benchmark_preflight[key].append(dict(order_id=benchmark_order['id'],
+                            reason='SLIPPAGE_OUTSIDE_OBSERVED_BAR'))
+                        benchmark_plans.append(dict(plan, cost_multiplier=key,
+                            status='SLIPPAGE_OUTSIDE_OBSERVED_BAR'))
+            else:
+                plan['status'] = 'NO_ROUND_LOT_CAPACITY' if not quantity else first_observation['rejection']
+                if quantity:
+                    for key in benchmark_preflight:
+                        benchmark_preflight[key].append(dict(order_id=f'benchmark-{name}-{symbol}',
+                            reason=first_observation['rejection']))
+            benchmark_plans.append(plan)
+        day, expected_days = date.fromisoformat(start), set()
+        while day <= date.fromisoformat(end):
+            if is_exchange_session('SSE', day):
+                expected_days.add(day.isoformat())
+            day += timedelta(days=1)
+        if {time[:10] for time in marks} != expected_days:
+            raise ValueError('Missing complete same-pool exchange sessions')
+        result = compare_frozen_portfolio_accounts(dict(initial_cash_cny=str(initial), costs=fee),
+            inputs_by_cost, benchmarks_by_cost, fold, benchmark_preflight_by_cost=benchmark_preflight)
+        folds.append(result)
+    for ref in replay['source_bindings']:
+        _bound_bytes(root, ref)
+    return dict(schema_version='hotspot-retained-paired-account-diagnostic-v1',
+        evaluated_at=now.isoformat(), source_bindings=replay['source_bindings'],
+        implementation_bindings=replay['implementation_bindings'],
+        retained_replay_content_sha256=replay['content_sha256'],
+        cohort_symbols=sorted(cases), initial_cash_cny=str(initial), folds=folds,
+        benchmark_plans=benchmark_plans,
+        benchmark_scope='PRIOR_CLOSE_TARGET_EQUAL_CASH_BUY_HOLD_WITH_LOT_FEES_GAPS_AND_REJECTIONS',
+        source_selection='RETROSPECTIVE_FIXED_FIVE_NOT_HISTORICAL_MARKET_POOL',
+        economics_scope='DIFFERENT_EXPOSURES_REPORTED_NOT_RISK_MATCHED_OR_ADAPTIVE_STRATEGY',
+        economics_policy_approved=False, strict_oos_admitted=False, strict_pit_admitted=False,
+        strategy_validation='NOT_PROVEN', formal_eligibility=False, action='no_order')
+
+
 def build_strategy_execution_replay(*, root: Path, now: datetime,
                                     manifest_binding: dict | None = None,
                                     commission_rate="0.0003", minimum_commission_cny="5",
