@@ -329,6 +329,35 @@ def test_projection_uses_existing_tier_without_reimplementing_rules(tmp_path, mo
     assert explanation['conditional_observations']['OPEN']['rule'] == module.INDEPENDENT_OPEN_RULE
 
 
+def test_entry_text_is_independent_copy_preserving_verified_native_values(tmp_path, monkeypatch):
+    _fixture(tmp_path)
+    originals = {path: path.read_bytes() for path in (tmp_path / 'runtime').rglob('*')
+                 if path.is_file()}
+    project = module.project_current_price_action_plan
+    captured = []
+
+    def retain(case):
+        plan = project(case)
+        captured.append((plan, deepcopy(plan)))
+        return plan
+
+    monkeypatch.setattr(module, 'project_current_price_action_plan', retain)
+    result = module.select_current_hotspot_candidates(root=tmp_path, now=NOW)
+    row = next(item for item in result['items'] if item['symbol'] == '600519')
+    plan, before = next(pair for pair in captured if pair[0]['symbol'] == '600519')
+    expected = deepcopy(before['entry_condition'])
+    expected['rule'] = module.INDEPENDENT_OPEN_RULE
+    assert row['entry_condition'] == expected
+    assert row['entry_condition'] is not plan['entry_condition']
+    assert '热点独立策略' in row['entry_condition']['rule']
+    assert '价值' not in row['entry_condition']['rule']
+    assert 'G3' not in row['entry_condition']['rule']
+    assert plan == before
+    assert all(path.read_bytes() == raw for path, raw in originals.items())
+    assert row['formal_eligibility'] is row['action_eligibility'] is False
+    assert row['action'] == 'no_order'
+
+
 @pytest.mark.parametrize('missing,reason', [
     ('trend', 'DAILY_TREND_NOT_ESTABLISHED'), ('space', 'UPPER_TRADE_SPACE_NOT_ESTABLISHED'),
     ('primary', 'PRIMARY_PRICE_OR_VOLUME_BREAKOUT_NOT_MET'),

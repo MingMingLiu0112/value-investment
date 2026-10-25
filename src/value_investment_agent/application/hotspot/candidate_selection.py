@@ -204,6 +204,8 @@ def select_current_hotspot_candidates(*, root: Path, now: datetime,
                     item.update(data_status="INVALID", reasons=["WATCH_CASE_DATE_MISMATCH"])
                 elif case and review["data_status"] == "CURRENT" and watch_status == "CURRENT":
                     plan = project_current_price_action_plan(case)
+                    entry_condition = deepcopy(plan["entry_condition"])
+                    entry_condition["rule"] = INDEPENDENT_OPEN_RULE
                     quality = plan["opportunity_quality"]
                     tier = quality["structure_tier"]
                     status = {"STRUCTURE_QUALIFIED_OBSERVATION": "SELECTED",
@@ -216,7 +218,7 @@ def select_current_hotspot_candidates(*, root: Path, now: datetime,
                         decision_explanation=_structure_wait_explanation(plan),
                         activity_rank=candidate.get("rank"),
                         structure_selection_evidence=structure_selection_evidence(plan),
-                        entry_condition=plan["entry_condition"],
+                        entry_condition=entry_condition,
                         invalidation_condition=plan["invalidation_condition"],
                         price_behavior=plan["price_behavior"],
                         source_available_at=plan["data_available_at"],

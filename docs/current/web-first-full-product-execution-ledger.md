@@ -5223,3 +5223,37 @@ results; when formal publication is unavailable it still renders independently.
 No screening, valuation, risk, eligibility or data logic changes in this UI fix.
 Its exact successor CI/build/live verification is separate from7115c681's result.
 Real assisted-use and the full objective remain NOT_REACHED. action=no_order.
+
+### 2026-10-25 browser-verified3371dc1c and independent hotspot wording
+
+Exact3371dc1c51046651e736d72475dddf743ccf45c3 passed both Core and Web
+push/PR runs (Core40155608568/40155605506, Web40155608564/40155605571).
+It was deployed only to8001; runtime/build/registry MATCHED, existing public
+pointer and actual refresh receipt byte-identical, no second collection claimed.
+Release receipt: .tmp/dual1/.tmp/release-3371dc1c-20261025T0300025745109Z/receipt.json.
+Actual browser navigation from the daily value observation to600519 and the
+expanded economic analysis displayed the original-page34 cash counterevidence
+(82.17% identified financial-flow contribution), unapproved scenario boundaries
+and locked private state. Public hotspot table also displayed current10-case
+structure evaluation with five exclusions/five pending and explicit conditions.
+
+The browser exposed one additional read-model gap: hotspot candidate entry text
+still copied the frozen legacy phrase requiring a value gate, although the
+independent strategy path already used INDEPENDENT_OPEN_RULE. Sibling delivery
+7d32d3b1323578d55e68b0d4df8cf98ca4c369f8 copies that existing independent
+rule into a separate entry-condition dictionary after case verification. Prices,
+source bytes, observed state, eligibility=false, rules/thresholds and frozen
+Domain remain unchanged. Root independent selection/open-wording/projection
+tests64 passed/one optional skip. No approval service or new observation gate is
+introduced. Its final integrated exact-SHA CI and release are separate checks.
+
+A proposed historical min/max operating-envelope experiment was independently
+rejected rather than counted as economic research progress: mixed revenue and
+realization proxies, seasonal/overlapping samples and independent extrema did
+not justify joint future earnings/cash scenarios. Its self-authored uncommitted
+patch was retained at .tmp/rejected-operating-envelope-20261025.patch and removed
+with scoped apply_patch; delivered cash diagnostics retained their exact Hash.
+No mechanical envelope, normal-profit claim, new price or approval reached users.
+Next economic work requires product/channel/volume and cost mechanisms, not more
+diagnostic objects. Public evidence collection is not delegated to user upload.
+The full objective is still incomplete; action=no_order.
