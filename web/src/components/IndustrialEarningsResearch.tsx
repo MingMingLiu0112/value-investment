@@ -25,7 +25,7 @@ const columns = [
 const sha = (s: unknown) => typeof s === "string" && /^[a-f0-9]{64}$/.test(s);
 const amount = (v: unknown) =>
   typeof v === "string" &&
-  /^-?\d+(?:\.\d+)?$/.test(v) &&
+  /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(v) &&
   Number.isFinite(Number(v));
 
 function verified(r: Research, symbol: string): boolean {

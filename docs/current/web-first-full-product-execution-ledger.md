@@ -5493,3 +5493,52 @@ separate from these local results. Existing8001 is still9501d029 until verified
 publication. No new Web page, simulation product, approval service or orders.
 600887 future cash, applicable valuation and formal economic review remain open.
 action=no_order.
+
+### 2026-10-25 live75ada911, actual UI defect and hotspot verification integration
+
+Exact75ada91192d7cf36ade6b59f3d91a0aa8a380782 passed Core40175416797
+and Web40175416766. Sole8001 was updated with runtime/backend/build/registry
+MATCHED. Existing three public pointers remained unchanged. Cold APIs for
+600519/600887/000498 passed in the actual live source, private access hard-blocked:
+.tmp/dual1/.tmp/public-cold-20261025T082043425235Z/receipt.json (canonical-root relative).
+
+Actual browser expansion exposed a real consumer defect despite the API and
+synthetic rendering tests passing: Python's valid Decimal zero0E-10 was rejected
+by the front-end decimal-string guard. Thus the new forward section failed
+closed and did not display its amounts. This is NOT recorded as successful
+Web product acceptance. A bounded successor accepts finite scientific Decimal
+strings, still rejects NaN/Infinity/overflow/malformed values, with14 targeted
+rendering tests passed. Its exact-SHA CI and real browser rerun remain separate.
+
+Sibling69a4ed4b was independently reviewed and integrated as de36a7a8, preserving
+old execution behavior and protocol. Root83 targeted/architecture tests passed.
+The new executable economic draft checks3x42 contiguous exchange sessions,
+paired net portfolio benchmarks,0/1/2 cost sensitivity and explicit economic
+and uncertainty policy. Caller-supplied statistical bounds are NOT statistical
+computation or proof. Synthetic arithmetic PASS never grants real admission.
+
+Real Root cold diagnostic:
+runtime/hotspot-economic-integrated/20261025T083012424633Z/receipt.json,
+SHA2567fb53912231859b801fdabc54152af976ab662df7e1e5d9a0e503edc73dc6b52.
+The current Root replay-review config contains additional existing historical
+observation/simulated lifecycle records. It was preserved rather than replaced
+with the sibling's earlier config; a fresh diagnosis with actual current source
+bindings was sealed. It is not claimed to be byte-identical to the sibling
+diagnosis. Economic evaluation remains INSUFFICIENT_DATA, real PIT/OOS unproven,
+formal_eligibility=false, action=no_order. Next hotspot work is actual paired
+portfolio/cash benchmarks and time-dependent uncertainty computation, not more
+placeholder draft objects or averaged isolated-security returns.
+
+000498 independent original-note research confirmed the22,396,415.18 CNY gap
+cannot be assigned to a specific financing item or interest/amortization from
+available disclosure. The rate-risk table says "mainly" and lacks a full mapping;
+its two summaries are not proven equal-scope balances. No parser correction,
+forced balancing or complete-debt admission is justified. Stop recombining the
+same amounts; maturity, lease deduplication and bond movement remain usable,
+while complete net debt/invested capital stay unknown.
+
+User requested closing complete validation evidence. Work continues on actual
+calculation/data gaps. Local public-only prospective Shadow authorization was
+requested separately; until granted, no Shadow, scheduling or production work
+is started. Historical replay cannot replace that natural-time evidence or
+formal approvals. Full dual-strategy assisted use remains NOT_READY.

@@ -84,6 +84,33 @@ it("shows explicit loss/tax/signed-NCI paths and independent countercase without
   expect(html).toContain("TEST_ONLY反证");
 });
 
+it("accepts finite Decimal exponent strings returned by the real Python API", () => {
+  const r = research();
+  for (const scenario of Object.values(r.scenarios)) {
+    for (const row of scenario.rows) {
+      row.bridge_residual_cny = "0E-10";
+      row.change_from_historical_parent.residual_cny = "0E-10";
+    }
+  }
+  const html = renderToStaticMarkup(
+    <IndustrialEarningsResearch research={r} symbol="600887" />,
+  );
+  expect(html).toContain("归母变化来源（元）");
+  expect(html).not.toContain("尚未通过来源或假设核验");
+});
+
+it.each(["1E999", "0E-10junk", "NaN", "Infinity"])(
+  "rejects invalid or nonfinite Decimal amount %s",
+  (value) => {
+    const r = research();
+    r.scenarios.base.rows[0].parent_profit_cny = value;
+    const html = renderToStaticMarkup(
+      <IndustrialEarningsResearch research={r} symbol="600887" />,
+    );
+    expect(html).not.toContain("<table");
+  },
+);
+
 it.each([
   "approval",
   "price",
