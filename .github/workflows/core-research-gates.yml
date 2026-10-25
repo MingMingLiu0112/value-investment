@@ -51,6 +51,7 @@ jobs:
           tests/test_hotspot_retained_originals.py
           tests/test_hotspot_retained_source_adapter.py
           tests/test_hotspot_structure_replay.py
+          tests/test_baostock_price_case.py
           tests/test_intraday_conditions.py
           tests/test_intraday_observation.py
           tests/test_intraday_bar_observation.py
@@ -104,6 +105,7 @@ jobs:
           tests/test_hotspot_review_handoff.py
           tests/test_value_evidence_enrichment_v1.py
           tests/test_financial_funding_scope.py
+          tests/test_financing_composition.py
           tests/test_value_enrichment_batch.py
           tests/test_value_enrichment_fair_scheduling.py
           tests/test_value_enrichment_durable_reuse.py
@@ -174,6 +176,8 @@ jobs:
           tests/test_source_native_signed_review_v2.py
           tests/test_source_native_review_cli.py
           tests/test_source_native_economic_review_v1.py
+          tests/test_operating_product_paths.py
+          tests/test_product_operating_research.py
           tests/test_operating_realization_erosion_v1.py
           tests/test_source_native_operating_erosion_v1.py
           tests/test_research_only_mode.py

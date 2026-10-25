@@ -8,6 +8,7 @@ import type {
 import {
   verifiedEconomicReview,
   verifiedReplacementBear,
+  verifiedProductOperatingResearch,
 } from "../services/sourceNativeEconomicReview";
 import { readinessNumber } from "../utils/strategyReadiness";
 
@@ -46,6 +47,93 @@ export function EconomicReviewResult({ value }: { value: EconomicReview }) {
           ))}
         </select>
       </label>
+      {verifiedProductOperatingResearch(
+        value.product_operating_research,
+        value,
+      ) &&
+        (() => {
+          const research = value.product_operating_research;
+          const path = research.scenarios.find((s) => s.scenario === scenario)!;
+          const first = research.annual_drivers[scenario][0];
+          const last = research.annual_drivers[scenario][4];
+          const hundredMillion = (amount: string) =>
+            (Number(amount) / 100000000).toFixed(2);
+          return (
+            <section aria-label="产品经营与现金联动研究">
+              <h5>产品经营路径：{labels[scenario]}情景，待经济复核</h5>
+              <p>
+                茅台酒年销量 {percent(first.moutai_volume_growth)}、单位实现额{" "}
+                {percent(first.moutai_realization_growth)}； 系列酒年销量{" "}
+                {percent(first.series_volume_growth)}、单位实现额首年{" "}
+                {percent(first.series_realization_growth)}、 第五年{" "}
+                {percent(last.series_realization_growth)}；营业成本率{" "}
+                {percent(first.cost_ratio)}。
+                单位实现额包含产品结构影响，不等于单品提价。
+              </p>
+              <p>
+                收入从产品需求假设推导，利润再进入完整现金账本。下列数值为低置信度研究情景，未成为正式估值或操作价格。
+              </p>
+              <dl className="value-analysis-grid">
+                <div>
+                  <dt>经营路径条件值（元/历史股）</dt>
+                  <dd>{readinessNumber(path.per_historical_share_cny)}</dd>
+                </div>
+                <div>
+                  <dt>资本成本提高2个百分点（元/历史股）</dt>
+                  <dd>
+                    {readinessNumber(
+                      path.ke_plus_200bp_per_historical_share_cny,
+                    )}
+                  </dd>
+                </div>
+              </dl>
+              <div className="table-scroll">
+                <table>
+                  <caption>逐年经营、现金及分配（亿元）</caption>
+                  <thead>
+                    <tr>
+                      <th>预测年</th>
+                      <th>营业收入</th>
+                      <th>归母利润假设</th>
+                      <th>母公司期末现金</th>
+                      <th>分红假设</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {path.operating_rows.map((operating, i) => {
+                      const cash = path.annual_cash_rows[i];
+                      return (
+                        <tr key={operating.year}>
+                          <td>{operating.year}</td>
+                          <td>{hundredMillion(operating.revenue)}</td>
+                          <td>{hundredMillion(cash.profit)}</td>
+                          <td>{hundredMillion(cash.cash_close)}</td>
+                          <td>{hundredMillion(cash.dividend_paid)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p>
+                使用2026半年度产品收入占比作为TTM收入分配参考，实际TTM产品收入仍未知；其他营业收入保留差额。
+                现金路径保留原项目、基金、上划时序与分红约束，终端盈利持续和全额分配仍需论证。
+              </p>
+              <p>
+                复核触发：主力产品需求未兑现、系列酒继续降实现额、成本超过假设，或资金未按期上划。
+                <a
+                  href={research.product_source.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {" "}
+                  产品原件第{research.product_source.physical_page}页
+                </a>
+                ；假设形成于 {research.input_available_at}。
+              </p>
+            </section>
+          );
+        })()}
       <dl className="value-analysis-grid">
         <div>
           <dt>原候选条件值（元/历史股，未批准）</dt>

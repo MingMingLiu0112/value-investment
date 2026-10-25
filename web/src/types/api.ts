@@ -1206,6 +1206,25 @@ export interface DetailResponse {
         page: number;
         excerpt: string;
       }[];
+      industrial_financing_composition?: {
+        version: "OFFICIAL_FINANCING_COMPOSITION_OBSERVATION_V1";
+        status: "SOURCE_BOUND_PARTIAL_COMPOSITION_NOT_COMPLETE_DEBT";
+        action: "no_order";
+        complete_debt_verified: false;
+        interest_bearing_debt: null;
+        economic_approval: false;
+        source_binding: {
+          symbol: string;
+          period: string;
+          path: string;
+          sha256: string;
+          source_url: string;
+        };
+        six_balance_buckets_cny: string | null;
+        six_buckets_plus_other_noncurrent_cny: string | null;
+        reported_interest_contracts_total_cny: string | null;
+        balance_subset_minus_reported_interest_contracts_cny: string | null;
+      };
       research_context?: {
         schema_version: "funding-cash-research-observations-v1";
         symbol: string;

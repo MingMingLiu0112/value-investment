@@ -297,6 +297,152 @@ def extract_income_comparatives(pages: list[str], period: str) -> list[dict]:
     return rows
 
 
+def extract_financing_note_candidates(pages: list[str], period: str) -> dict:
+    """Reported note observations, never scope approval or a verified debt fact."""
+    owner = _issuer_legal_owner(pages)
+    balances = extract_debt_balance_candidates(pages, period, balance_totals=True, include_equity=True)
+    identities = {r['table_context_id'] for r in balances}
+    if not owner or len(identities) != 1 or not balances:
+        return dict(rows=[], balance_rows=[], current_financial_liabilities=[], risk_totals=[], scope_notices=[], scope_clues=[])
+    anchor = balances[0]
+    debt_rows = [r for r in extract_debt_balance_candidates(pages, period, include_equity=True)
+                 if r['table_context_id'] == anchor['table_context_id']]
+    notes = {'短期借款', '长期借款', '应付债券', '一年内到期的非流动负债',
+             '租赁负债', '长期应付款', '其他流动负债', '其他非流动负债', '其他应付款', '应付票据'}
+    currency = _consolidated_currency_context(pages)
+    rows, financial, risks, notices, clues = [], [], [], [], []
+    inside, parent, foreign_context, note, note_page = False, False, False, None, None
+    multiplier, unit_evidence, unit_page, header, header_page = None, None, None, None, None
+    table_currency_conflict, table_period_conflict = False, False
+    date_pattern = r'\d{4}年\d{1,2}月\d{1,2}日'
+    current_date = f'{period[:4]}年12月31日'
+    prior_date = f'{int(period[:4])-1}年12月31日'
+    table_index = 0
+    number = r'-?\d[\d,]*\.\d{2}'
+    note_units = [(i, _raw_excerpt(p, '财务附注中报表的单位为：元'))
+                  for i, p in enumerate(pages, 1) if '财务附注中报表的单位为：元' in ''.join(p.split())]
+    for page_number, page in enumerate(pages, 1):
+        compact_page = ''.join(page.split())
+        compilers = [''.join(m[1].split()) for m in re.finditer(r'编制单位[：:]\s*([^\r\n]+)', page)]
+        if compilers and any(name != anchor['issuer'] for name in compilers):
+            inside, foreign_context, note, header = False, True, None, None
+            continue
+        if foreign_context:
+            if compilers != [anchor['issuer']]:
+                continue
+            foreign_context = False
+        for line in [s.strip() for s in page.splitlines() if s.strip()]:
+            compact = ''.join(line.split())
+            if re.fullmatch(r'[一二三四五六七八九十百]+、母公司财务报表主要项目注释', compact):
+                parent, inside, note = True, False, None
+            if parent:
+                continue
+            if re.fullmatch(r'[一二三四五六七八九十百]+、合并财务报表项目注释', compact):
+                inside = True
+                continue
+            if re.fullmatch(r'[一二三四五六七八九十百]+、(?:研发支出|合并范围的变更|在其他主体中的权益|与金融工具相关的风险|公允价值的披露|关联方及关联交易|股份支付|承诺及或有事项|资产负债表日后事项|其他重要事项)', compact):
+                inside, note, header = False, None, None
+            if inside:
+                title = re.fullmatch(r'\d+、(.+)', compact)
+                if title:
+                    note = title[1] if title[1] in notes else None
+                    note_page = page_number
+                    multiplier, header = None, None
+                    table_currency_conflict, table_period_conflict = False, False
+                elif note and re.match(r'^(?:[（(]\d+[）)]|\d+[）)])', compact):
+                    header = None
+                    if table_currency_conflict or table_period_conflict:
+                        multiplier, unit_evidence, unit_page = None, None, None
+                    table_currency_conflict, table_period_conflict = False, False
+                if note and '币种' in compact:
+                    currencies = re.findall(r'币种[：:]\s*([^，,。；;\s]+)', line)
+                    if not currencies or any(c != '人民币' for c in currencies):
+                        table_currency_conflict = True
+                if note and re.fullmatch(r'(?:截至|截止|报告期末[：:]?|日期[：:]?|项目)?'
+                        + date_pattern + r'(?:[、，,至—-]?' + date_pattern + r')*', compact):
+                    dates = re.findall(date_pattern, compact)
+                    if dates not in ([current_date], [current_date, prior_date]):
+                        table_period_conflict = True
+                if note and re.search(r'(?<!编制)单位[：:]', line):
+                    multiplier, unit_evidence = _statement_unit(line, page_number, currency)
+                    unit_page, header = page_number, None
+                if note and compact in {'项目期末余额期初余额', '种类期末余额期初余额'}:
+                    header, header_page = line, page_number
+                    table_index += 1
+                    continue
+                if note and ('期末余额' in compact or '期初余额' in compact):
+                    header = None
+                if note and ('其他说明' in compact or compact.startswith('本期末已到期')):
+                    header = None
+                if note == '其他应付款' and '保理' in compact:
+                    clues.append(dict(page=page_number, excerpt=line, note=note,
+                        meaning='COUNTERPARTY_LABEL_NOT_PROOF_OF_FINANCING_NATURE'))
+                # A repeated unit/header cannot rehabilitate a table whose
+                # explicit currency or date conflicts with the annual context.
+                if (not note or not header or multiplier is None
+                        or table_currency_conflict or table_period_conflict):
+                    continue
+                match = re.fullmatch(r'(.+?)\s+(' + number + r')\s+(' + number + ')', line)
+                single = re.fullmatch(r'(.+?)\s+(' + number + ')', line) if not match else None
+                label = match[1] if match else single[1] if single else None
+                if not label or re.search(number, label):
+                    continue
+                values = [str(Decimal(match[i].replace(',', '')) * multiplier) for i in (2, 3)] if match else None
+                rows.append(dict(note=note, note_evidence_page=note_page, source_label=label,
+                    value=values[0] if values else None, prior_value=values[1] if values else None,
+                    single_printed_amount=single[2] if single else None,
+                    column_status='ORDERED_TWO_COLUMNS' if values else 'UNKNOWN_SINGLE_COLUMN',
+                    page=page_number, excerpt=line, period_label=period,
+                    period_evidence_page=anchor['period_evidence_page'],
+                    period_evidence_excerpt=anchor['period_evidence_excerpt'],
+                    prior_period_label=str(int(period[:4])-1)+'-12-31',
+                    unit='CNY', currency='CNY', unit_evidence_page=unit_page,
+                    table_header_page=header_page, table_header_excerpt=header,
+                    note_table_id=f'{note_page}:{header_page}:{table_index}',
+                    owner_evidence=anchor['owner_evidence'], statement_scope='consolidated',
+                    **unit_evidence, status='SOURCE_REPORTED_NOT_ADMITTED'))
+        if parent:
+            continue
+        # This separately dated financial-liability table can locate a current
+        # amount whose two-period note row has an ambiguous single printed cell.
+        date_label = f'①{period[:4]}年12月31日'
+        if (len(note_units) == 1 and currency and all(c['currency'] == '人民币' for c in currency)
+                and date_label in compact_page and '金融负债项目' in compact_page
+                and '其他金融负债合计' in compact_page):
+            section = compact_page.split(date_label, 1)[1]
+            prior_marker = f'②{int(period[:4])-1}年12月31日'
+            if prior_marker in section:
+                section = section.split(prior_marker, 1)[0]
+            for label in ('其他流动负债', '其他非流动负债'):
+                pattern = re.escape(label) + '(' + number + ')(' + number + ')'
+                for match in re.finditer(pattern, section):
+                    if Decimal(match[1].replace(',', '')) != Decimal(match[2].replace(',', '')):
+                        continue
+                    financial.append(dict(field_name=label, value=str(Decimal(match[2].replace(',', ''))),
+                        period_label=period, page=page_number, excerpt=_raw_excerpt(page, match[0]),
+                        period_evidence_excerpt=_raw_excerpt(page, date_label),
+                        column_basis='DATED_FINANCIAL_LIABILITY_TABLE_TOTAL',
+                        unit='CNY', currency='CNY', owner_evidence=anchor['owner_evidence'],
+                        unit_evidence_page=note_units[0][0], unit_evidence_excerpt=note_units[0][1],
+                        currency_evidence_page=anchor['currency_evidence_page'],
+                        currency_evidence_excerpt=anchor['currency_evidence_excerpt'],
+                        status='SOURCE_REPORTED_NOT_ADMITTED'))
+        risk = re.search(r'本集团的带息债务主要为人民币浮动利率借款合同，金额合计为(' + number +
+            r')万元，及人民币计价的固定利率合同，金额合计为(' + number + r')万元。', compact_page)
+        if risk:
+            risks.append(dict(page=page_number, excerpt=_raw_excerpt(page, risk[0]), period_label=period,
+                floating_cny=str(Decimal(risk[1].replace(',', ''))*10000),
+                fixed_cny=str(Decimal(risk[2].replace(',', ''))*10000),
+                reported_rounding_unit='0.01万元', statement_scope='consolidated',
+                owner_evidence=anchor['owner_evidence'], status='SOURCE_REPORTED_NOT_ADMITTED'))
+        marker = '筹资活动产生的各项负债变动情况□适用不适用'
+        if marker in compact_page:
+            notices.append(dict(page=page_number, excerpt=_raw_excerpt(page, marker),
+                meaning='SCHEDULE_NOT_APPLICABLE_DOES_NOT_PROVE_FINANCING_SCOPE_EMPTY'))
+    return dict(rows=rows, balance_rows=debt_rows, current_financial_liabilities=financial,
+                risk_totals=risks, scope_notices=notices, scope_clues=clues)
+
+
 def extract_retained_annual(root: Path, source: RetainedAnnualSource, *,
                             evaluation_at: datetime, cache_dir: Path,
                             max_bytes: int = 30_000_000, max_pages: int = 600,
@@ -375,6 +521,7 @@ def extract_retained_annual(root: Path, source: RetainedAnnualSource, *,
                   balance_total_candidates=balance_candidates,
                   balance_reconciliation_candidates=reconciliation_candidates,
                   income_comparatives=extract_income_comparatives(pages, source.period),
+                  financing_note_candidates=extract_financing_note_candidates(pages, source.period),
                   debt_searches=searches, verification_created=False,
                   action='no_order', reused=False)
     if cached_packet is not None:

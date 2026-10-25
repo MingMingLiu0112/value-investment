@@ -28,6 +28,7 @@ STRUCTURED_SOURCES = {
     'AkShare / Sina detailed financial statements',
     'AkShare / Sina financial indicators',
 }
+FINANCING_COMPOSITION_VERSION = 'OFFICIAL_FINANCING_COMPOSITION_OBSERVATION_V1'
 FINANCIAL_FUNDING_FIELDS = frozenset({
     'financial_deposits_and_interbank', 'central_bank_borrowings',
     'interbank_borrowings', 'repurchase_financing',
@@ -496,6 +497,128 @@ def validate_debt_scope(symbol: str, period: str, components: list[dict], *,
                 automatic_cross_source_verification_created=False)
 
 
+def _financing_composition_observation(source, packet):
+    """Reconcile reported carrying amounts, not an exhaustive debt admission."""
+    notes = packet.get('financing_note_candidates') or {}
+    rows = notes.get('rows', [])
+    if not rows or any(r['owner_evidence']['security_code'] != source.symbol for r in rows):
+        return [], dict(version=FINANCING_COMPOSITION_VERSION, status='NOT_LOCATED_NOT_ZERO',
+                        complete_debt_verified=False, value=None)
+    groups = {}
+    for row in rows:
+        groups.setdefault(row['note_table_id'], []).append(row)
+    reconciliations = []
+    for table_id, items in groups.items():
+        totals = [r for r in items if r['source_label'] == '合计']
+        parts = [r for r in items if r['source_label'] != '合计']
+        residuals = {}
+        for column in ('value', 'prior_value'):
+            if (len(totals) == 1 and parts
+                    and all(r.get(column) is not None for r in items)):
+                residuals[column] = str(sum((Decimal(r[column]) for r in parts), Decimal(0))
+                                       - Decimal(totals[0][column]))
+            else:
+                residuals[column] = None
+        reconciliations.append(dict(note=items[0]['note'], note_table_id=table_id,
+            residuals=residuals, status='EXACT_PARSED_COMPONENT_SUM' if
+                all(v is not None and Decimal(v) == 0 for v in residuals.values()) else
+                'MISSING_OR_NONRECONCILING_COMPONENTS',
+            assurance='PARSED_ROWS_ONLY_NOT_SCOPE_COMPLETENESS'))
+    core_fields = ('short_term_borrowings', 'current_portion_long_term_debt',
+        'long_term_borrowings', 'bonds_payable', 'lease_liabilities_noncurrent',
+        'long_term_payables_noncurrent')
+    balances = notes.get('balance_rows', [])
+    core = []
+    issues = []
+    for field in core_fields:
+        matches = [r for r in balances if r['field_name'] == field]
+        if len(matches) != 1:
+            issues.append('BALANCE_COMPONENT_MISSING_OR_AMBIGUOUS:' + field)
+        else:
+            core.append(matches[0])
+    # Each balance bucket occurs exactly once. Note subcomponents, including
+    # current leases, explain buckets; they are never added to them again.
+    core_total = str(sum((Decimal(r['value']) for r in core), Decimal(0))) if len(core) == len(core_fields) else None
+    balance_comparisons = []
+    for row in core:
+        matching = [r for r in rows if r['note'] == DEBT_LABELS.get(
+            'financing_payables_noncurrent' if row['field_name'] == 'long_term_payables_noncurrent'
+            else row['field_name']) and r['source_label'] == '合计']
+        for total in matching:
+            residuals = {k: str(Decimal(total[k])-Decimal(row[k]))
+                if total.get(k) is not None and row.get(k) is not None else None
+                for k in ('value', 'prior_value')}
+            balance_comparisons.append(dict(field_name=row['field_name'],
+                note_table_id=total['note_table_id'], residuals=residuals))
+    current_leases = [r for r in rows if r['note'] == '一年内到期的非流动负债'
+        and r['source_label'] == '一年内到期的租赁负债']
+    deductions = [r for r in rows if r['note'] == '租赁负债'
+        and r['source_label'] == '减：一年以内到期的租赁负债']
+    lease_residuals = {k: str(Decimal(current_leases[0][k])+Decimal(deductions[0][k]))
+        if len(current_leases) == len(deductions) == 1
+        and current_leases[0].get(k) is not None and deductions[0].get(k) is not None else None
+        for k in ('value', 'prior_value')}
+    financial = notes.get('current_financial_liabilities', [])
+    other_current = [r for r in financial if r['field_name'] == '其他流动负债']
+    current_total = [r for r in rows if r['note'] == '其他流动负债' and r['source_label'] == '合计']
+    current_vat = [r for r in rows if r['note'] == '其他流动负债' and r['source_label'] == '待结转增值税']
+    non_vat = None
+    if (len(current_total) == len(current_vat) == 1
+            and current_total[0]['note_table_id'] == current_vat[0]['note_table_id']
+            and current_total[0]['value'] is not None and current_vat[0]['value'] is not None):
+        non_vat = str(Decimal(current_total[0]['value'])-Decimal(current_vat[0]['value']))
+    non_vat_residual = str(Decimal(non_vat)-Decimal(other_current[0]['value'])) if (
+        non_vat is not None and len(other_current) == 1) else None
+    other_noncurrent = [r for r in financial if r['field_name'] == '其他非流动负债']
+    subtotal = str(Decimal(core_total)+Decimal(other_noncurrent[0]['value'])) if (
+        core_total is not None and len(other_noncurrent) == 1) else None
+    risk = notes.get('risk_totals', [])
+    risk_total = str(Decimal(risk[0]['floating_cny'])+Decimal(risk[0]['fixed_cny'])) if len(risk) == 1 else None
+    risk_difference = str(Decimal(subtotal)-Decimal(risk_total)) if subtotal is not None and risk_total is not None else None
+    issues.extend(['OTHER_PAYABLES_AND_BILLS_FINANCING_NATURE_NOT_EXHAUSTIVELY_RESOLVED',
+        'SPECIAL_DEBT_AND_OTHER_LONG_TERM_MATURITIES_REQUIRE_CLASSIFICATION',
+        'EQUITY_CLASSIFIED_CLAIMS_NOT_AUTOMATICALLY_DEBT_OR_FREE_CASH',
+        'INDEPENDENT_SOURCE_AND_SCOPE_REVIEW_NOT_ESTABLISHED'])
+    if any(r['value'] is None or r['prior_value'] is None for r in rows):
+        issues.append('SINGLE_PRINTED_COLUMN_NOT_ASSIGNED_OR_FILLED_WITH_ZERO')
+    if risk_difference is not None and Decimal(risk_difference) != 0:
+        issues.append('REPORTED_INTEREST_CONTRACT_SCOPE_DIFFERS_FROM_BALANCE_SUBSET')
+    review = dict(version=FINANCING_COMPOSITION_VERSION,
+        status='SOURCE_BOUND_PARTIAL_COMPOSITION_NOT_COMPLETE_DEBT',
+        source_binding=asdict(source), parser_sha256=packet['identity']['implementation_sha256'],
+        rows=rows, balance_rows=core, note_reconciliations=reconciliations,
+        balance_comparisons=balance_comparisons, current_lease_dedup_residuals=lease_residuals,
+        deduplication_rule='SUM_SIX_BALANCE_BUCKETS_ONCE_CURRENT_LEASE_ALREADY_IN_CURRENT_MATURITIES',
+        six_balance_buckets_cny=core_total,
+        dated_financial_liabilities=financial, six_buckets_plus_other_noncurrent_cny=subtotal,
+        other_current_non_vat_cny=non_vat,
+        other_current_financial_table_residual_cny=non_vat_residual,
+        other_current_formula='OTHER_CURRENT_TOTAL_MINUS_REPORTED_VAT_MINUS_DATED_FINANCIAL_LIABILITY_TOTAL',
+        reported_interest_contracts=risk, reported_interest_contracts_total_cny=risk_total,
+        balance_subset_minus_reported_interest_contracts_cny=risk_difference,
+        scope_notices=notes.get('scope_notices', []), scope_clues=notes.get('scope_clues', []), issues=issues,
+        complete_debt_verified=False, interest_bearing_debt=None,
+        assurance_basis='SOURCE_REPORTED_ONLY_NOT_AUDIT_OR_ECONOMIC_APPROVAL',
+        automatic_cross_source_verification=False, economic_approval=False,
+        derivation_rule_pit_status='NOT_ADMITTED', action='no_order')
+    digest = hashlib.sha256(json.dumps(review, sort_keys=True).encode()).hexdigest()
+    # This existing ResearchCase observation path is cold-recomputed by
+    # verify_enrichment_adoption, and is deliberately not an admitted fact.
+    observation = dict(symbol=source.symbol, field_name='financing_liability_composition',
+        period_label=source.period, value=core_total, unit='CNY',
+        data_point_id='financing-composition:' + digest, source_id='official:' + source.sha256,
+        source_name='Official consolidated financing note observations', source_url=source.source_url,
+        source_path=source.path, sha256=source.sha256, available_at=source.available_at,
+        fetched_at=source.available_at, created_at=source.available_at,
+        validation_status='pending', human_reviewed=False,
+        metadata=dict(derivation_formula=FINANCING_COMPOSITION_VERSION,
+            statement_scope='consolidated', currency='CNY',
+            automatic_cross_source_verification=False, complete_debt_verified=False,
+            economic_approval=False, derivation_rule_pit_status='NOT_ADMITTED',
+            financing_composition_review=review))
+    return [observation], review
+
+
 def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: list[dict], *,
                             evaluation_at: datetime, cache_dir: Path,
                             name: str | None = None, sector: str | None = None,
@@ -513,6 +636,8 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
     profit_points, profit_adoption = _correlate_public_parent_profit(
         root, source, packet, public_summary_binding, evaluation_at)
     funding_scope = _source_financial_funding_scope(packet, source)
+    financing_observations, financing_review = _financing_composition_observation(source, packet)
+    funding_scope['industrial_financing_composition'] = financing_review
     company = [deepcopy(p) for p in points if p.get('symbol') == source.symbol
                and _point_available_at(p, evaluation_at) is not None
                and (p.get('metadata') or {}).get('derivation_formula') not in DERIVED_VERSIONS]
@@ -703,7 +828,7 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
                 income_growth_adoption=growth_adoption,
                 public_summary_binding=public_summary_binding,
                 public_profit_adoption=profit_adoption,
-                sourced_arithmetic_points=growth_observations,
+                sourced_arithmetic_points=growth_observations + financing_observations,
                 input_points_sha256=hashlib.sha256(json.dumps(points, sort_keys=True, default=str).encode()).hexdigest(),
                 state='QUALITY_EVALUATED' if after.total_score is not None else 'DATA_UNAVAILABLE',
                 next_action=('RETAIN_CURRENT_RESEARCH_GATES' if after.total_score is not None

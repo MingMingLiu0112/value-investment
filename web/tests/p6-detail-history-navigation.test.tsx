@@ -39,6 +39,76 @@ vi.mock("../src/components/HotspotReplayReview", () => ({
 import DecisionDetail from "../src/pages/DecisionDetail";
 import DecisionHistory from "../src/pages/DecisionHistory";
 
+it("shows industrial financing scope differences without a complete debt claim", () => {
+  const source = {
+    symbol: "000498",
+    period: "2025-12-31",
+    path: "runtime/TEST_ONLY/report.pdf",
+    sha256: "a".repeat(64),
+    source_url:
+      "https://static.cninfo.com.cn/finalpage/2026-04-18/1225123102.PDF",
+    available_at: "2026-10-25T00:34:46+00:00",
+  };
+  const composition = {
+    version: "OFFICIAL_FINANCING_COMPOSITION_OBSERVATION_V1",
+    status: "SOURCE_BOUND_PARTIAL_COMPOSITION_NOT_COMPLETE_DEBT",
+    action: "no_order",
+    complete_debt_verified: false,
+    interest_bearing_debt: null,
+    economic_approval: false,
+    source_binding: { ...source },
+    six_balance_buckets_cny: "35678798290.23",
+    six_buckets_plus_other_noncurrent_cny: "36852337415.18",
+    reported_interest_contracts_total_cny: "36829941000.00",
+    balance_subset_minus_reported_interest_contracts_cny: "22396415.18",
+  };
+  state.data = {
+    decision: { id: "000498", symbol: "000498", strategy: "CORE_VALUE" },
+    financial_progress: {
+      status: "VERIFIED_FACT_ADOPTION",
+      action: "no_order",
+      symbol: "000498",
+      adopted_fact_count: 2,
+      research_inputs_updated: true,
+      formal_eligibility: false,
+      quality_coverage_before: "0",
+      quality_coverage_after: "0.1111",
+      source_original: source,
+      source_financial_funding_scope: {
+        symbol: "000498",
+        action: "no_order",
+        financial_fact_admitted: false,
+        required_fields: [],
+        observations: [],
+        industrial_financing_composition: composition,
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<DecisionDetail />);
+  for (const text of [
+    "融资构成已补证",
+    "356.79",
+    "368.52",
+    "368.30",
+    "22,396,415.18",
+    "完整有息债仍未确认",
+  ])
+    expect(html).toContain(text);
+  for (const mutation of [
+    { complete_debt_verified: true },
+    { economic_approval: true },
+    { six_balance_buckets_cny: "NaN" },
+    { source_binding: { ...source, sha256: "b".repeat(64) } },
+  ]) {
+    state.data.financial_progress.source_financial_funding_scope.industrial_financing_composition =
+      { ...composition, ...mutation };
+    expect(renderToStaticMarkup(<DecisionDetail />)).not.toContain(
+      "融资构成已补证",
+    );
+  }
+  state.data = {};
+});
+
 it.skipIf(!process.env.FUNDING_PUBLIC_API_JSON)(
   "renders the real source-bound issuer financing supplement",
   () => {

@@ -1,8 +1,4 @@
-"""Read-only economic explanations from verified native inputs and existing kernels.
-
-No alternative candidate, signature, current registry, forecast engine or approval
-is created. Diagnostic ratios/first-year identities are not new financial models.
-"""
+"""Read-only economic research using bound facts and existing cash/RI kernels."""
 from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
@@ -16,6 +12,7 @@ from ...domain.valuation.source_native_cash_v1 import replay_timing_delay_inputs
 from ...domain.valuation.joint_adverse_cash_v1 import diagnose_joint_adverse_cash
 from ...domain.valuation.operating_realization_erosion_v1 import FIELDS, build_erosion_bear
 from ..research.operating_earnings_bridge import research_from_retained_sources, extract_statement
+from ..research.product_operating_research import build_product_operating_research, POLICY_PATH
 from ...infrastructure.filings.operating_erosion_sources import read_operating_erosion_sources
 from ...m1_valuation_package_builder import build_descriptor
 from ...valuation_models.residual_income import _shared_scenario_calculation
@@ -34,6 +31,9 @@ IMPLEMENTATIONS = (
     'src/value_investment_agent/infrastructure/filings/pdf_text.py',
     'src/value_investment_agent/infrastructure/filings/pdfium_runtime.py',
     'src/value_investment_agent/infrastructure/filings/operating_erosion_sources.py',
+    'src/value_investment_agent/application/research/product_operating_research.py',
+    'src/value_investment_agent/domain/valuation/operating_product_paths.py',
+    POLICY_PATH,
 )
 GROUP_NOTES = {
     'EARNINGS': ('\u76c8\u5229\u57fa\u7840',
@@ -421,6 +421,9 @@ def build_source_native_economic_review(*, root: Path, candidate_binding: dict,
                 first_year_boundary=_first_year_boundary(ledger['plan'], case)))
     summary = package['research_case']['financial_summary']
     joint_adverse_cash = _joint_adverse_review(root, package, ledger, clock, refs)
+    product_research = build_product_operating_research(root=root, package=package,
+        ledger=ledger, facts=facts, evaluation_at=clock)
+    refs = _closure(root, [*refs, *product_research.get('source_bindings', [])])
     groups = [dict(deepcopy(group), title=GROUP_NOTES[group['id']][0],
         interpretation=GROUP_NOTES[group['id']][1], approval_status='PENDING_NOT_APPROVED',
         evidence_bindings=deepcopy(refs)) for group in candidate['review_groups']]
@@ -445,6 +448,7 @@ def build_source_native_economic_review(*, root: Path, candidate_binding: dict,
         counter_evidence=deepcopy(package['research_case']['counter_evidence']),
         thesis_breakers=deepcopy(package['research_case']['thesis_breakers']),
         five_groups=groups, scenarios=scenarios, joint_adverse_cash=joint_adverse_cash,
+        product_operating_research=product_research,
         unsupported_challenges=[dict(id=name, status='UNSUPPORTED', reason=reason) for name, reason in (
             ('PERSISTENT_UPSTREAM_RESTRICTION',
              '持续资金暂留：降低分配可缓解有限期现金约束，但现金闭合不等于法定分配资格。'

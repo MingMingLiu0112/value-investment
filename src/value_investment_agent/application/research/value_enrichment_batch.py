@@ -266,7 +266,8 @@ def read_verified_enrichment_progress(root: Path, symbol: str, evaluation_at: da
                    if point['field_name'] in {'debt_ratio', 'revenue_yoy', 'net_income_yoy', 'net_income'}]
         funding = summary.get('source_financial_funding_scope')
         supplement = ({'source_financial_funding_scope': funding}
-                      if funding and (funding.get('required_fields') or funding.get('observations')) else {})
+                      if funding and (funding.get('required_fields') or funding.get('observations')
+                                      or funding.get('industrial_financing_composition')) else {})
         if context['case'].financial_summary.get('context_origin') == 'AUTOMATIC_PUBLIC_FACTS_ONLY_V1':
             supplement.update(source_original=result['source_extraction']['identity']['source'],
                 verification_methods=sorted({p['metadata']['verification_method']

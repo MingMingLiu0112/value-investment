@@ -1,4 +1,48 @@
 export type EconomicBinding = { path: string; sha256: string };
+export type ProductOperatingResearch = {
+  schema_version: "product-operating-research-v1";
+  status: "CONDITIONAL_OPERATING_RESEARCH_NOT_APPROVED";
+  symbol: "600519";
+  policy_binding: EconomicBinding;
+  input_available_at: string;
+  evaluated_at: string;
+  annual_drivers: Record<
+    "bear" | "base" | "bull",
+    {
+      moutai_volume_growth: string;
+      moutai_realization_growth: string;
+      series_volume_growth: string;
+      series_realization_growth: string;
+      other_revenue_growth: string;
+      cost_ratio: string;
+    }[]
+  >;
+  product_source: {
+    period: "H12026";
+    source_url: string;
+    physical_page: 8;
+    product_revenue_cny: { moutai: string; series: string; other: string };
+    source_binding: EconomicBinding;
+  };
+  scenarios: {
+    scenario: "bear" | "base" | "bull";
+    per_historical_share_cny: string;
+    ke_plus_200bp_per_historical_share_cny: string;
+    operating_rows: {
+      year: number;
+      revenue: string;
+      legacy_ex_parent: string;
+    }[];
+    annual_cash_rows: {
+      year: number;
+      profit: string;
+      cash_close: string;
+      dividend_paid: string;
+      book_close: string;
+    }[];
+    cash_replay_scope: "ALL_TRANSITIONS_VERIFIED_BY_EXISTING_NATIVE_KERNEL";
+  }[];
+};
 export type ReplacementBearComparison = {
   schema_version: "source-native-replacement-bear-comparison-v1";
   status: "VERIFIED_BOUND_RESEARCH_COMPARISON";
@@ -96,6 +140,7 @@ export type EconomicReview = {
   source_bindings: EconomicBinding[];
   joint_adverse_cash?: JointCashDiagnostic;
   replacement_bear?: ReplacementBearComparison;
+  product_operating_research?: unknown;
   unsupported_challenges?: {
     id: string;
     status: "UNSUPPORTED";
@@ -115,6 +160,110 @@ const binding = (v: any) =>
   !/^(?:[\\/]|[a-z]+:)/i.test(v.path) &&
   !v.path.split(/[\\/]/).includes("..") &&
   /^[a-f0-9]{64}$/.test(v.sha256);
+
+export function verifiedProductOperatingResearch(
+  v: any,
+  parent: any,
+): v is ProductOperatingResearch {
+  const names = ["bear", "base", "bull"];
+  const drivers = [
+    "moutai_volume_growth",
+    "moutai_realization_growth",
+    "series_volume_growth",
+    "series_realization_growth",
+    "other_revenue_growth",
+    "cost_ratio",
+  ];
+  return (
+    object(parent) &&
+    parent.symbol === "600519" &&
+    Array.isArray(parent.source_bindings) &&
+    object(v) &&
+    v.schema_version === "product-operating-research-v1" &&
+    v.status === "CONDITIONAL_OPERATING_RESEARCH_NOT_APPROVED" &&
+    v.symbol === "600519" &&
+    v.action === "no_order" &&
+    v.confidence === "LOW" &&
+    v.assumption_scope === "RESEARCH_ASSUMPTIONS_NOT_OFFICIAL_FORECAST" &&
+    v.formal_eligibility === false &&
+    v.research_admitted === false &&
+    v.price_admitted === false &&
+    v.normalized_parent_profit_cny === null &&
+    binding(v.policy_binding) &&
+    instant(v.input_available_at) !== undefined &&
+    instant(v.evaluated_at) !== undefined &&
+    instant(v.input_available_at)! <= instant(v.evaluated_at)! &&
+    instant(v.evaluated_at)! <= BigInt(Date.now()) * BigInt(1000) &&
+    Array.isArray(v.source_bindings) &&
+    v.source_bindings.every(binding) &&
+    v.source_bindings.every((ref: any) =>
+      parent.source_bindings.some(
+        (r: any) => r.path === ref.path && r.sha256 === ref.sha256,
+      ),
+    ) &&
+    [v.policy_binding, v.product_source?.source_binding].every(
+      (ref) =>
+        binding(ref) &&
+        v.source_bindings.some(
+          (r: any) => r.path === ref.path && r.sha256 === ref.sha256,
+        ),
+    ) &&
+    object(v.product_source) &&
+    v.product_source.period === "H12026" &&
+    v.product_source.physical_page === 8 &&
+    v.product_source.source_url ===
+      "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF" &&
+    ["moutai", "series", "other"].every((key) =>
+      number(v.product_source.product_revenue_cny?.[key]),
+    ) &&
+    object(v.annual_drivers) &&
+    names.every(
+      (name) =>
+        Array.isArray(v.annual_drivers[name]) &&
+        v.annual_drivers[name].length === 5 &&
+        v.annual_drivers[name].every(
+          (r: any) => object(r) && drivers.every((key) => number(r[key])),
+        ),
+    ) &&
+    Array.isArray(v.scenarios) &&
+    v.scenarios.length === 3 &&
+    names.every(
+      (name) =>
+        v.scenarios.filter((r: any) => r?.scenario === name).length === 1,
+    ) &&
+    v.scenarios.every(
+      (r: any) =>
+        object(r) &&
+        [
+          r.per_historical_share_cny,
+          r.ke_plus_200bp_per_historical_share_cny,
+        ].every(number) &&
+        r.cash_replay_scope ===
+          "ALL_TRANSITIONS_VERIFIED_BY_EXISTING_NATIVE_KERNEL" &&
+        Array.isArray(r.operating_rows) &&
+        r.operating_rows.length === 5 &&
+        r.operating_rows.every(
+          (row: any, i: number) =>
+            object(row) &&
+            row.year === i + 1 &&
+            [row.revenue, row.legacy_ex_parent].every(number),
+        ) &&
+        Array.isArray(r.annual_cash_rows) &&
+        r.annual_cash_rows.length === 5 &&
+        r.annual_cash_rows.every(
+          (row: any, i: number) =>
+            object(row) &&
+            row.year === i + 1 &&
+            [
+              row.profit,
+              row.cash_close,
+              row.dividend_paid,
+              row.book_close,
+            ].every(number),
+        ),
+    )
+  );
+}
 
 const calendarDay = (value: any): boolean => {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))

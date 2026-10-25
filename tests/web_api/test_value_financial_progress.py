@@ -1,5 +1,7 @@
 """Verified factual supplements never alter the published investment decision."""
 from copy import deepcopy
+from datetime import datetime, timezone
+from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
@@ -9,6 +11,24 @@ from value_investment_agent.application.research import value_enrichment_batch
 from value_investment_agent.application.product import pending_replay_publication
 from value_investment_agent.application.product import pending_candidate_supplement
 import pytest
+
+
+def test_industrial_composition_survives_empty_financial_subsidiary_observations(tmp_path, monkeypatch):
+    """Industrial notes are useful before complete debt or a finance subsidiary exists."""
+    composition = dict(status='TEST_ONLY_PARTIAL_SCOPE', six_balance_buckets_cny='100.00',
+                       complete_debt_verified=False, interest_bearing_debt=None)
+    funding = dict(required_fields=[], observations=[], industrial_financing_composition=composition)
+    summary = dict(status='VERIFIED_FACT_ADOPTION', symbol='000498', adopted_fact_count=0,
+        research_inputs_updated=True, quality_coverage_before='0', quality_coverage_after='0',
+        formal_eligibility=False, action='no_order', source_financial_funding_scope=funding)
+    context = dict(case=SimpleNamespace(financial_summary={}))
+    result = dict(adopted_points=[], evaluation_at='2026-10-25T00:00:00+00:00')
+    monkeypatch.setattr(value_enrichment_batch, '_verified_registered_adoption',
+        lambda *_a, **_kw: (deepcopy(summary), context, result))
+    progress = value_enrichment_batch.read_verified_enrichment_progress(tmp_path, '000498', datetime.now(timezone.utc))
+    assert progress['source_financial_funding_scope']['industrial_financing_composition'] == composition
+    assert progress['adopted_metrics'] == []
+    assert progress['formal_eligibility'] is False and progress['action'] == 'no_order'
 
 
 def test_new_source_verified_candidate_can_be_read_without_formal_publication(tmp_path, monkeypatch):

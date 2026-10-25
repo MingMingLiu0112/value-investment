@@ -964,6 +964,39 @@ export default function DecisionDetail() {
     publicReviewIntent &&
     ["OPEN", "ADD", "HOLD", "REDUCE", "EXIT"].includes(publicReviewIntent);
   const funding = progress?.source_financial_funding_scope;
+  const composition = funding?.industrial_financing_composition;
+  const compositionBound =
+    verifiedProgress &&
+    factSourceUsable &&
+    factSource &&
+    funding &&
+    funding.action === "no_order" &&
+    funding.financial_fact_admitted === false &&
+    funding.symbol === decision?.symbol &&
+    composition &&
+    composition.version === "OFFICIAL_FINANCING_COMPOSITION_OBSERVATION_V1" &&
+    composition.status ===
+      "SOURCE_BOUND_PARTIAL_COMPOSITION_NOT_COMPLETE_DEBT" &&
+    composition.action === "no_order" &&
+    composition.complete_debt_verified === false &&
+    composition.economic_approval === false &&
+    composition.interest_bearing_debt === null &&
+    composition.source_binding?.symbol === decision?.symbol &&
+    composition.source_binding?.period === factSource.period &&
+    composition.source_binding?.path === factSource.path &&
+    composition.source_binding?.sha256 === factSource.sha256 &&
+    composition.source_binding?.source_url === factSource.source_url &&
+    [
+      composition.six_balance_buckets_cny,
+      composition.six_buckets_plus_other_noncurrent_cny,
+      composition.reported_interest_contracts_total_cny,
+      composition.balance_subset_minus_reported_interest_contracts_cny,
+    ].every(
+      (v) =>
+        typeof v === "string" &&
+        /^-?\d+(?:\.\d+)?$/.test(v) &&
+        Number.isFinite(Number(v)),
+    );
   const fundingLabels: Record<string, string> = {
     financial_deposits_and_interbank: "吸收存款及同业存放",
     central_bank_borrowings: "向中央银行借款",
@@ -1223,6 +1256,31 @@ export default function DecisionDetail() {
                       " · 资产负债率：官方报表单一来源勾稽核验，非双源验证或审计鉴证。"}
                   </span>
                 )}
+              </Typography.Paragraph>
+            )}
+            {compositionBound && composition && (
+              <Typography.Paragraph role="status">
+                融资构成已补证（{composition.source_binding.period}
+                ，合并口径）：六类融资相关账面余额
+                {(
+                  Number(composition.six_balance_buckets_cny) / 100000000
+                ).toFixed(2)}
+                亿元； 加其他非流动负债后为
+                {(
+                  Number(composition.six_buckets_plus_other_noncurrent_cny) /
+                  100000000
+                ).toFixed(2)}
+                亿元； 报告另披露的带息合同合计
+                {(
+                  Number(composition.reported_interest_contracts_total_cny) /
+                  100000000
+                ).toFixed(2)}
+                亿元。 两个范围仍相差
+                {Number(
+                  composition.balance_subset_minus_reported_interest_contracts_cny,
+                ).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}
+                元。
+                当前与非当前租赁分别归类，不重复计入；其他融资性质与范围差额尚未核清，完整有息债仍未确认，不将这些合计直接用于净负债估值。
               </Typography.Paragraph>
             )}
             {relevantFunding && (

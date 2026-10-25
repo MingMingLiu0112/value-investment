@@ -1,0 +1,68 @@
+{
+  "schema_version": "product-operating-research-policy-v1",
+  "symbol": "600519",
+  "generated_at": "2026-10-25T06:21:16.283655+00:00",
+  "identity_class": "RESEARCH_ASSUMPTIONS_NOT_OFFICIAL_FORECAST",
+  "confidence": "LOW",
+  "action": "no_order",
+  "reference_period": "H12026",
+  "allocation_basis": "H1 product revenue shares allocate TTM operating revenue as a research proxy, not observed TTM segment revenue.",
+  "rationale": "Modest flagship volume absorption, continued series realization pressure and elevated production costs form alternative business hypotheses. No price uplift, instant margin recovery or new capacity monetization is assumed in Base.",
+  "source_pages": [
+    {"source_id": "cninfo:1225114741", "physical_pages": [10, 11, 16, 17]},
+    {"source_id": "cninfo:1225475868", "physical_pages": [7, 8]}
+  ],
+  "scenarios": {
+    "bear": {
+      "rationale": "Flagship volume and realization weaken repeatedly; series realization continues to erode while the cost burden persists.",
+      "moutai_volume_growth": "-0.01",
+      "moutai_realization_growth": "-0.02",
+      "series_volume_growth": "0",
+      "series_realization_growth": ["-0.05", "-0.05", "-0.05", "-0.05", "-0.05"],
+      "other_revenue_growth": "0",
+      "cost_ratio": "0.105"
+    },
+    "base": {
+      "rationale": "Flagship demand absorbs 1% annual volume without realization gains. Series realization falls another 5% once then stabilizes conditionally. Cost ratio remains 10%, with no return to older margins.",
+      "moutai_volume_growth": "0.01",
+      "moutai_realization_growth": "0",
+      "series_volume_growth": "0",
+      "series_realization_growth": ["-0.05", "0", "0", "0", "0"],
+      "other_revenue_growth": "0",
+      "cost_ratio": "0.10"
+    },
+    "bull": {
+      "rationale": "Both products absorb modest volume growth with realization stable at the current reference level. No simultaneous price rebound and margin normalization.",
+      "moutai_volume_growth": "0.02",
+      "moutai_realization_growth": "0",
+      "series_volume_growth": "0.02",
+      "series_realization_growth": ["0", "0", "0", "0", "0"],
+      "other_revenue_growth": "0",
+      "cost_ratio": "0.0975"
+    }
+  },
+  "inherited_cash_conditions": [
+    "Existing parent cash, project budget, fund commitments, reserve and distribution assumptions are retained and fully recomputed.",
+    "10% first-year remittance delay releases in year two; persistent restriction is not valued by this branch.",
+    "No incremental operating-asset return is added. The inherited cash yield applies only to changes in modeled parent cash.",
+    "Tax, parent attribution, nonrecurring amount and other pre-tax contributions stay at TTM reference assumptions.",
+    "Zero terminal growth and full payout still assume permanent continuation of terminal profit and lawful distribution."
+  ],
+  "counter_evidence": [
+    "H1 revenue increased 1.47% but cost increased 21.81%; volume growth does not guarantee profit growth.",
+    "Channel migration and dynamic prices do not establish final demand recovery or sustainable realization.",
+    "Current H1 product mix may differ from actual TTM and future mix; rounded observations do not identify forecast parameters.",
+    "Financial subsidiary income and parent remittance are different scopes; a fixed residual contribution and cash-yield response may fail."
+  ],
+  "thesis_breakers": [
+    "Flagship volume absorption fails or realization deteriorates beyond the selected path.",
+    "Series realization fails to stabilize after the assumed first-year reset.",
+    "Production costs exceed the selected ratio or working capital and project needs exceed the inherited budget.",
+    "Delayed remittance is not released, distribution capacity fails, or perpetual terminal profitability cannot be supported."
+  ],
+  "unknowns": [
+    "Actual TTM product revenue and forward product/channel volume-realization decomposition.",
+    "Maintenance versus expansion capex, future parent remittance restrictions and all payment-date cash needs.",
+    "Future tax, financial subsidiary contribution, parent attribution and terminal competitive advantage duration."
+  ]
+}

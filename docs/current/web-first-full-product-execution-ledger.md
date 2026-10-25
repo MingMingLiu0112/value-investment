@@ -1,5 +1,60 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### 2026-10-25 product economics, financing evidence and hotspot history
+
+The existing Goal is ACTIVE after the user's resume. The earlier BLOCKED entry
+below describes the prompt-audit observation, not the current tool state.
+
+600519 now has product-volume/realization/cost hypotheses using the official H1
+product table, with non-wine operating revenue kept as a reconciled difference.
+H1 weights allocate TTM total revenue as an explicit research reference; actual
+TTM product revenue is unknown. Base assumes modest flagship volume, another
+series realization reset and a persistent 10% cost ratio. It does not assume
+immediate margin recovery. All five-year profit, parent cash, fund/project,
+distribution and terminal states are rebuilt and checked by the existing native
+cash verifier, then valued by the existing RI model. Ke +200bp is separate
+sensitivity; inherited finance, remittance and perpetual terminal conditions
+remain economic uncertainties. Independent economic review accepts this as a
+non-stress LOW-confidence conditional candidate for further review, not G3.
+
+Actual result: runtime/product-operating-research/20261025T064115915611Z/result.json,
+SHA256 d2c03dde196526d621774410a1aa001794f14ff81f537433363d535fcec62a1e.
+Conditional values are 804.70591 / 963.06652 / 1021.86997 CNY per historical
+share; Ke +200bp gives 619.66565 / 737.27797 / 781.11878. These are assumption
+outputs, not approved fair prices or trade thresholds. The new immutable native
+candidate is proposal/candidate/candidate.json under that directory, SHA256
+cf2ecab4205faca57ed0b8d8f7ba9fd561c5c0d520cc52837268f90cccf10502.
+The current unsigned research entry selects it. Original candidates and the old
+bear comparison remain intact on disk; the old comparison is no longer applied
+to a different three-scenario baseline. No approval or price qualification changes.
+
+000498 official financing notes now expose 51 rows, six balance buckets totaling
+35,678,798,290.23 CNY and an unclassified scope difference of 22,396,415.18 CNY
+against the disclosed interest-contract total. Current/noncurrent lease amounts
+reconcile without double counting. Complete interest-bearing debt remains unknown.
+Independent review found separate-currency and local-period propagation bugs;
+both were fixed and independently closed before integration. Findings enter the
+existing ResearchCase arithmetic observations and financial-progress consumer,
+without fabricating secondary verification or filling blanks with zero.
+
+Hotspot source commits 6635a48e and 11a1870e are integrated locally. BaoStock's
+actual 000938 minute/daily conflict is rejected; source hashes are rechecked
+before returning. Existing Sina recovery obtained all seven missing Oct20
+windows. Nine daily /36 hourly /144 quarter-hour bars per limited window are
+complete, but that limited daily history gives UNKNOWN; the longer source
+history gives five DOWNTREND and two RANGE. Neither is a trade admission.
+Sibling report SHA256 9c6930fc5c67b5d04579b7ece01c185fab4b22e01f4e1fc15db546a9ccd58f5f;
+cold verification 69fb6c418ad7fe1f0793000cfffcee91e444a8f34a036d7cb963e8e07984e004.
+Historical pool evidence, strict PIT/OOS and real Shadow remain NOT_PROVEN;
+the original 3/7 report is unchanged.
+
+Focused source/product/cash/legacy regression: 99 passed. Candidate and
+architecture successor check after configuration-based issuer selection:
+43 passed. Web typecheck and focused UI: 62 passed, two optional skips.
+Full clean-Core, exact-SHA CI and sole8001 publication require subsequent
+receipts; they are not predeclared here. Private data, Canonical Excel,
+server/PTA, production DB/tasks and actual orders were untouched. action=no_order.
+
 ### 2026-10-25 current prompt audit and three-lane business focus
 
 Read-only audit confirmed integration/remote/live business baseline
