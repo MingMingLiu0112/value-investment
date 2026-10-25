@@ -15,7 +15,7 @@ import pytest
 
 def test_industrial_composition_survives_empty_financial_subsidiary_observations(tmp_path, monkeypatch):
     """Industrial notes are useful before complete debt or a finance subsidiary exists."""
-    composition = dict(status='TEST_ONLY_PARTIAL_SCOPE', six_balance_buckets_cny='100.00',
+    composition = dict(status='SOURCE_BOUND_PARTIAL_COMPOSITION_NOT_COMPLETE_DEBT', six_balance_buckets_cny='100.00',
                        complete_debt_verified=False, interest_bearing_debt=None)
     funding = dict(required_fields=[], observations=[], industrial_financing_composition=composition)
     summary = dict(status='VERIFIED_FACT_ADOPTION', symbol='000498', adopted_fact_count=0,

@@ -55,6 +55,23 @@ Full clean-Core, exact-SHA CI and sole8001 publication require subsequent
 receipts; they are not predeclared here. Private data, Canonical Excel,
 server/PTA, production DB/tasks and actual orders were untouched. action=no_order.
 
+The clean 430aad3b Core run exposed a compatibility regression in the progress
+projection: NOT_LOCATED_NOT_ZERO empty note placeholders were included as useful
+industrial financing supplements. The predicate now requires the source-bound
+partial-composition status. Its regression and related batch/restart/API checks
+passed: 112 passed,14 skipped. This is an actual fixed failure, not a passing
+full-Core claim for 430aad3b. The subsequent exact-SHA CI must establish final
+complete Core acceptance.
+
+Full Web validation of this package:1022 passed,26 optional skips; typecheck
+and production build passed. Actual fresh-process API receipt is
+runtime/financing-composition-adoption/20261025T064347842608Z/cold-receipt.json,
+SHA256 5ca988bb89a8f626909bb84c3e0df4270415d1c9b92f9014d1e8bb131f44155e.
+It proves 000498 financing visibility and600519 product research without private
+access or formal admission. Main-tree hotspot cold integration covers seven
+real source closures; receipt SHA256
+d0b9f6c86c61f18dde7edf88a2fa6058d934e49619e6a4d8cdfc5374a1129c9b.
+
 ### 2026-10-25 current prompt audit and three-lane business focus
 
 Read-only audit confirmed integration/remote/live business baseline
