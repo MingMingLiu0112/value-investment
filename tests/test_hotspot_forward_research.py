@@ -146,5 +146,53 @@ def test_resealed_simulated_sources_cannot_enter_actual_freeze(tmp_path, locatio
     path.write_text(json.dumps(report), encoding='utf-8')
     binding['sha256'] = hashlib.sha256(path.read_bytes()).hexdigest()
     with pytest.raises(ValueError, match='cannot enter ACTUAL'):
-        service.freeze_forward_research(root=tmp_path, candidate_binding=binding)
+        service._selection(tmp_path, binding, FREEZE, False)
     assert not list((tmp_path / 'runtime/hotspot-forward').glob('*/manifest.json'))
+
+
+@pytest.mark.parametrize('scenario', ['clean', 'drift', 'preloaded', 'warm'])
+def test_actual_execution_requires_cold_source_identity(tmp_path, scenario):
+    import shutil
+    import subprocess
+    import sys
+    source = tmp_path / 'src'
+    shutil.copytree(service.CODE_ROOT / 'src', source,
+                    ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+    prefix = tmp_path / '.tmp' / 'fresh-cache'
+    command = [sys.executable, '-B']
+    if scenario != 'warm':
+        command += ['-X', f'pycache_prefix={prefix}']
+    script = '''
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path('src').resolve()))
+scenario = sys.argv[1]
+target = Path('src/value_investment_agent/application/hotspot/strategy_execution_replay.py')
+if scenario == 'preloaded':
+    from value_investment_agent.application.hotspot import strategy_execution_replay
+    before = target.read_bytes()
+    target.write_bytes(before.replace(b'0.0003', b'0.1234'))
+    assert target.read_bytes() != before
+from value_investment_agent.application.hotspot import forward_research as service
+assert service._costs()['commission_rate'] == '0.0003'
+if scenario == 'drift':
+    before = target.read_bytes()
+    target.write_bytes(before.replace(b'0.0003', b'0.1234'))
+    assert target.read_bytes() != before
+if scenario == 'clean':
+    service._require_cold_execution(False)
+else:
+    for operation in (
+        lambda: service.freeze_forward_research(root=Path.cwd(), candidate_binding={}),
+        lambda: service._verify_freeze(Path.cwd(), {}, False, None),
+    ):
+        try:
+            operation()
+        except ValueError as exc:
+            assert 'cold process' in str(exc) or 'source changed' in str(exc), str(exc)
+        else:
+            raise AssertionError('Mixed execution version accepted')
+'''
+    result = subprocess.run(command + ['-c', script, scenario], cwd=tmp_path,
+                            capture_output=True, text=True, timeout=90)
+    assert result.returncode == 0, result.stdout + result.stderr

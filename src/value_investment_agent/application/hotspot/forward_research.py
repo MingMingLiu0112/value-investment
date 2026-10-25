@@ -5,19 +5,8 @@ from hashlib import sha256
 import json
 from pathlib import Path
 from uuid import uuid4
+import sys
 
-from .daily_selection import verify_daily_selection
-from .price_action_case import project_current_price_action_plan
-from .independent_price_conditions import INDEPENDENT_OPEN_RULE
-from .independent_admission import _contains_test_namespace
-from ...domain.hotspot.shadow_observation import make_shadow_baseline, compare_archived_baseline
-from ...domain.hotspot.strategy_execution_replay import DEFAULT_INITIAL_CASH_CNY, EXPERIMENT_VERSION
-from ...domain.execution.exchange_calendar import is_exchange_session
-from ...infrastructure.hotspot.current_price_case import (
-    collect_current_price_case, load_current_price_case,
-)
-from ...quote_session_collection import collect_session_bundle
-from ...quote_sessions import CHINA
 
 
 CODE_ROOT = Path(__file__).resolve().parents[4]
@@ -43,6 +32,45 @@ RULE_FILES = tuple("src/value_investment_agent/" + name for name in (
     "infrastructure/hotspot/daily_market.py",
     "m2_market_data.py", "quote_session_collection.py", "quote_sessions.py",
 ))
+
+# ACTUAL runs must start before project dependencies and bypass existing pyc files.
+_ANCESTORS = {__name__, 'value_investment_agent',
+              'value_investment_agent.application', 'value_investment_agent.application.hotspot'}
+_PRELOADED = tuple(name for name in sys.modules
+                   if name.startswith('value_investment_agent.') and name not in _ANCESTORS)
+_CACHE_PREFIX = Path(sys.pycache_prefix).resolve() if sys.pycache_prefix else None
+_COLD_CACHE = bool(sys.dont_write_bytecode and _CACHE_PREFIX
+                   and _CACHE_PREFIX.is_relative_to(CODE_ROOT / '.tmp')
+                   and (not _CACHE_PREFIX.exists() or not any(_CACHE_PREFIX.iterdir())))
+_LOADED_RULES = tuple((name, sha256((CODE_ROOT / name).read_bytes()).hexdigest())
+                      for name in RULE_FILES)
+
+from .daily_selection import verify_daily_selection
+from .price_action_case import project_current_price_action_plan
+from .independent_price_conditions import INDEPENDENT_OPEN_RULE
+from .independent_admission import _contains_test_namespace
+from ...domain.hotspot.shadow_observation import make_shadow_baseline, compare_archived_baseline
+from ...domain.hotspot.strategy_execution_replay import DEFAULT_INITIAL_CASH_CNY, EXPERIMENT_VERSION
+from ...domain.execution.exchange_calendar import is_exchange_session
+from ...infrastructure.hotspot.current_price_case import (
+    collect_current_price_case, load_current_price_case,
+)
+from ...quote_session_collection import collect_session_bundle
+from ...quote_sessions import CHINA
+
+
+def _require_cold_execution(test_only):
+    if test_only:
+        return
+    if (_PRELOADED or not _COLD_CACHE or not sys.dont_write_bytecode
+            or not sys.pycache_prefix or Path(sys.pycache_prefix).resolve() != _CACHE_PREFIX):
+        raise ValueError('ACTUAL requires a cold process: -B and fresh .tmp pycache_prefix')
+    if tuple((row['path'], row['sha256']) for row in _rules()) != _LOADED_RULES:
+        raise ValueError('Loaded execution source changed; restart a cold process')
+    for name in RULE_FILES:
+        module = sys.modules.get(name.removeprefix('src/').removesuffix('.py').replace('/', '.'))
+        if module is not None and Path(module.__file__).resolve() != (CODE_ROOT / name).resolve():
+            raise ValueError('Loaded execution comes from another source tree')
 
 
 def _stamp(value):
@@ -141,6 +169,7 @@ def freeze_forward_research(*, root: Path, candidate_binding: dict,
     """Freeze a verified public pool and real module hashes, without collecting."""
     root = Path(root).resolve()
     cutoff = _clock(test_only, now)
+    _require_cold_execution(test_only)
     report, symbols = _selection(root, candidate_binding, cutoff, test_only)
     rules = _rules()
     from .quantitative_validation import build_economic_validation_draft
@@ -164,6 +193,7 @@ def freeze_forward_research(*, root: Path, candidate_binding: dict,
         execution_status="UNASSESSABLE", hypothetical_fills=None,
         elapsed_real_shadow_sessions=0, strict_pit_admitted=False, strict_oos_admitted=False,
         strategy_validation="NOT_PROVEN", formal_eligibility=False)
+    _require_cold_execution(test_only)
     directory = root / "runtime" / "hotspot-forward" / uuid4().hex
     if not directory.resolve().is_relative_to(root / 'runtime'):
         raise ValueError('Forward manifest directory escapes runtime')
@@ -172,6 +202,7 @@ def freeze_forward_research(*, root: Path, candidate_binding: dict,
 
 
 def _verify_freeze(root, binding, test_only, cutoff):
+    _require_cold_execution(test_only)
     manifest = _read(root, binding)
     path = (root / binding["path"]).resolve()
     if (not path.is_relative_to(root / "runtime/hotspot-forward") or path.name != "manifest.json"
@@ -195,6 +226,7 @@ def _verify_freeze(root, binding, test_only, cutoff):
     if (symbols != manifest["symbols"]
             or report["source_bindings"] != manifest["candidate_source_bindings"]):
         raise ValueError("Frozen candidate sources changed")
+    _require_cold_execution(test_only)
     return manifest, path.parent
 
 
