@@ -45,13 +45,15 @@ def fresh_bundle(original, at=OBSERVE):
     return bundle
 
 
-def capture(**kwargs):
+def capture(_drop_15m=False, **kwargs):
     def fetch(url, params, timeout):
         response = Response(params['scale'])
         rows = decode_klines(response.content)
         latest = [row for row in rows if row['day'].startswith('2026-09-24')]
         for day in range(28, kwargs['as_of'].day + 1):
             rows.extend(dict(row, day=row['day'].replace('2026-09-24', f'2026-09-{day}')) for row in latest)
+        if _drop_15m and str(params['scale']) == '15':
+            rows.pop(-2)
         response.content = ('=(' + json.dumps(rows) + ');').encode()
         return response
     return collect_current_price_case(**kwargs, fetch=fetch)
@@ -70,6 +72,19 @@ def test_forward_native_case_is_append_only_not_shadow_credit_or_current_update(
     with pytest.raises(ValueError, match='Duplicate'):
         service.observe_forward_research(root=tmp_path, manifest_binding=binding, test_only=True,
             now=OBSERVE, bundle_collector=lambda symbols: pytest.fail('No duplicate collection'))
+
+
+def test_missing_15m_path_rejected_by_native_loader_before_observation(tmp_path):
+    binding, bundle, pointer, original = setup(tmp_path)
+    with pytest.raises(ValueError, match='Complete frozen pool'):
+        service.observe_forward_research(root=tmp_path, manifest_binding=binding, test_only=True,
+            now=OBSERVE, bundle_collector=lambda symbols: fresh_bundle(bundle),
+            case_collector=lambda **kwargs: capture(_drop_15m=True, **kwargs))
+    failures = list((tmp_path / 'runtime/hotspot-forward-data').rglob('failure.json'))
+    assert len(failures) == 1
+    assert 'Incomplete 15m session' in json.loads(failures[0].read_bytes())['failures'][0]['reason']
+    assert not list((tmp_path / 'runtime/hotspot-forward').rglob('receipt.json'))
+    assert pointer.read_bytes() == original
 
 
 def test_failure_retains_evidence_and_does_not_poison_retry_date(tmp_path):
@@ -118,7 +133,9 @@ def test_prior_day_sources_are_replayed_before_next_collection(tmp_path):
     assert second_result['elapsed_real_shadow_sessions'] == 0
     assert second_result['prior_observation_binding'] == first
     comparison = second_result['observations'][0]['prior_condition_comparison']
-    assert comparison['volume_confirmation'] == 'NOT_REASSESSED_FOR_PRIOR_FROZEN_WINDOW'
+    assert comparison['volume_confirmation'] == comparison['condition_path']['volume_confirmation']
+    assert comparison['condition_path']['original_condition'] == first_result['observations'][0]['baseline']['frozen_price_condition']
+    assert comparison['condition_path']['action'] == 'no_order'
     assert comparison['real_trade'] is False and comparison['profit'] is None
     case_path = tmp_path / first_result['session_root'] / first_result['cases']['600519']['path']
     case_path.write_bytes(case_path.read_bytes() + b' ')

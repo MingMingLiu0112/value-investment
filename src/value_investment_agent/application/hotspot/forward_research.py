@@ -49,7 +49,9 @@ from .daily_selection import verify_daily_selection
 from .price_action_case import project_current_price_action_plan
 from .independent_price_conditions import INDEPENDENT_OPEN_RULE
 from .independent_admission import _contains_test_namespace
-from ...domain.hotspot.shadow_observation import make_shadow_baseline, compare_archived_baseline
+from ...domain.hotspot.shadow_observation import (
+    make_shadow_baseline, compare_archived_baseline, evaluate_frozen_condition_path,
+)
 from ...domain.hotspot.strategy_execution_replay import DEFAULT_INITIAL_CASH_CNY, EXPERIMENT_VERSION
 from ...domain.execution.exchange_calendar import is_exchange_session
 from ...infrastructure.hotspot.current_price_case import (
@@ -257,10 +259,15 @@ def _verified_observations(session_root, cases, symbols, started, finished, prev
         baseline = make_shadow_baseline({**case, "data_available_at": plan["data_available_at"]},
                                        plan, observed_at=finished)
         previous = (previous_observations or {}).get(symbol)
+        comparison = compare_archived_baseline(previous['baseline'], baseline) if previous else None
+        if comparison is not None:
+            path_review = evaluate_frozen_condition_path(previous['baseline'], case, observed_at=finished)
+            comparison.update(condition_path=path_review,
+                              volume_confirmation=path_review['volume_confirmation'])
         conditions = deepcopy(plan['conditional_action_rules'])
         conditions['OPEN']['rule'] = INDEPENDENT_OPEN_RULE
         observations.append(dict(symbol=symbol, case_binding=binding, baseline=baseline,
-            prior_condition_comparison=compare_archived_baseline(previous['baseline'], baseline) if previous else None,
+            prior_condition_comparison=comparison,
             conditions=conditions, execution_status="UNASSESSABLE",
             hypothetical_fills=None, profit=None, action="no_order"))
     return observations
