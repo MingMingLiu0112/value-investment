@@ -5390,3 +5390,62 @@ No mechanical envelope, normal-profit claim, new price or approval reached users
 Next economic work requires product/channel/volume and cost mechanisms, not more
 diagnostic objects. Public evidence collection is not delegated to user upload.
 The full objective is still incomplete; action=no_order.
+
+### 2026-10-25 source-bound operating research published at9501d029
+
+Exact code9501d02900b5e35d55d259757a4f88a7e5cd0342 passed Core
+40172429639/40172425984 and Web40172429712/40172425987. Published only
+to the existing dual1 worktree and port8001; actual runtime/backend/build and
+four publication registries MATCHED. The three mutable public-market pointer
+hashes remained unchanged. No main merge or private/Excel/server/DB changes.
+
+600519 now consumes the sealed product-operating candidate2e53d50d988a7372
+72d7a95b822c8e0e9998d3749c1432cac7f6c12d92fe8ed0. Its seven current
+ResearchCase fields match the product policy; the superseded case is retained
+as lineage rather than presented as current economics. Actual Web navigation,
+conditional-research expansion and economic-review loading displayed product
+volume/realization, five-year earnings/cash/distribution, counterevidence and
+capital-cost sensitivity. The output remains LOW confidence, unapproved,
+historical-share-basis research; it supplies no approved entry price.
+
+000498 source-bound financing observations remain incomplete debt evidence,
+not a complete interest-bearing-debt fact. Live cold API validation required
+retaining the12 already hash-bound public-financial raw pages in addition to
+the staged manifest. Missing originals were not bypassed. Producer bytes were
+preserved across Windows checkout; normalized index identity was independently
+checked against HEAD, with no staged content changes. Actual live-source cold
+API receipt .tmp/dual1/.tmp/public-cold-20261025T073844698002Z/receipt.json
+(relative to canonical repo) SHA256
+8f118ec60a551aa50509731d81111c4b4a1014ec99c11a4b5f3b481914baae39;
+private access was hard-blocked, financing and economic endpoints passed.
+
+Parallel continuation: sibling hotspot thread owns real dated execution/source
+validation; Erdos independently confirmed600887 historical signed-NCI bridge
+and the forward attribution gap; Feynman is assigned a bounded forward
+PBT-tax-signedNCI calculation, without changing the existing Moutai contract
+or frozen cash engine. Maxwell independently reviewed this released candidate
+and financing evidence with no new P1/P2 in that scope. Assignments are not
+deliveries. Hotspot strict PIT/OOS/Shadow and formal economic/strategy approval
+remain unproven or pending. Full dual-strategy assisted use NOT_READY.
+action=no_order.
+
+The bounded signed-NCI arithmetic package subsequently passed independent review.
+It lives in domain/valuation/signed_parent_profit.py, not the already hash-bound
+product kernel. Original kernel SHA887ff3c629704885018d09a6aff4bc24c9f4592d3f
+21bc588c52d3443a3f8b51 and original tests are byte-identical to HEAD. Root ran
+31 new arithmetic tests and33 architecture checks; actual600519/000498 public
+API cold checks passed with private access blocked, receipt at
+.tmp/signed-nci-cold-20261025T0746408070076Z/cold-receipt.json. The new function
+is not yet consumed by the600887 application: forward economics, tax/NCI
+assumptions, cash applicability and valuation are still incomplete. No new
+valuation, approved price or personal quantity is claimed.
+
+Sibling continuation obtained000938 daily status markers and a dividend notice.
+Root independently rehashed its packet, original PDF and cold assessment:
+7f9d8b6573e71a5b37ab4c1ee43a58b9175f155d81d1920eff80a753a2d2dd8b,
+550fe45e0b18367d29c2047305ba471503d1fb581968e4e35be615e7a8550da0,
+e38fc0f7a384d99127886f976305f278c4ccd5a38fe4b53fcba141c4f3a0e85b.
+These are dated background evidence, not intraday execution state or complete
+corporate-action coverage. Existing Oct20 structure remains DOWNTREND/WATCH,
+with no observed confirmed breakout; no authorized BUY or real OOS/Shadow is
+claimed. action=no_order.
