@@ -14,7 +14,11 @@ from urllib.parse import urlsplit
 from .intraday_monitor import _atomic_write
 from .intraday_completed_plan import project_completed_plan
 from .intraday_observation import project_intraday_observation
-from .intraday_plan_observation import evaluate_quote_plan
+from .intraday_plan_observation import evaluate_quote_plan, _binding
+from .current_registry import load_price_conditions
+from .price_action_case import project_current_price_action_plan
+from ...domain.hotspot.shadow_observation import make_shadow_baseline, evaluate_frozen_condition_path
+from ...infrastructure.hotspot.current_price_case import load_current_price_case
 from .public_condition_notifications import project_notification_inbox, OPERATIONS
 from ..portfolio.private_journal_lock import InterProcessLock, LockTimeout
 from ...quote_session_collection import collect_session_bundle, resolve_session_reference
@@ -30,6 +34,64 @@ MAX_BYTES = 8_000_000
 AGE = timedelta(seconds=120)
 CONFIRMATION_FIELDS = {"confirmation_scope", "pending_confirmations",
                        "price_conditions_observed", "structure_confirmation"}
+
+
+def _sealed_condition_path(root, report, *, now):
+    """Read-only projection from a retained binding; never rewrite its audit result."""
+    result = dict(status='UNASSESSABLE', reason='NO_PERSISTED_PRIOR_PLAN_BINDING',
+        scope='SOURCE_BOUND_PLAN_RECONSTRUCTION', action='no_order',
+        eligibility=False, formal_eligibility=False, strict_pit_admitted=False,
+        strict_oos_admitted=False, actual_shadow_sessions=0, real_trade=False,
+        hypothetical_fills=None, profit=None, personal_sell_permission=False,
+        original_binding_sha256=None, bound_at=None)
+    if report.get('plan_binding') is None:
+        return result
+    phase = 'PRIOR_PLAN_BINDING_INVALID'
+    try:
+        checked = _stamp(now)
+        binding = _binding(report['plan_binding'], checked)
+        if binding['symbol'] != report['symbol']:
+            raise ValueError('Report and plan symbol mismatch')
+        plan, bound_at = binding['plan'], datetime.fromisoformat(binding['bound_at'])
+        result.update(original_binding_sha256=binding['binding_sha256'], bound_at=binding['bound_at'])
+        phase = 'PRIOR_PLAN_SOURCE_UNAVAILABLE_OR_INVALID_AT_BOUND_AT'
+        prior = load_current_price_case(root=root, symbol=binding['symbol'],
+            case_path=Path(plan['case_path']), expected_sha256=plan['case_sha256'], now=bound_at)
+        original = project_current_price_action_plan(prior)
+        phase = 'PRIOR_PLAN_RULE_OR_PRICE_DIFFERS_FROM_BOUND_SOURCE'
+        if any(plan[key] != original[key] for key in (
+                'symbol', 'market_trade_date', 'entry_trigger_price', 'invalidation_price',
+                'model_or_rule_version')):
+            raise ValueError('Bound plan does not reproduce original rule and prices')
+        phase = 'CURRENT_COMPLETE_CASE_NOT_UNIQUELY_AVAILABLE'
+        registry = load_price_conditions(root, now=checked, research_version=None,
+                                         retain_stale_observations=True)
+        matches = [item for item in registry.get('items', [])
+            if item['symbol'] == binding['symbol']
+            and item['price_action_plan'].get('candidate_lifecycle') != 'PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY']
+        if len(matches) != 1:
+            raise ValueError('One current registry source binding required')
+        current_plan = matches[0]['price_action_plan']
+        phase = 'CURRENT_COMPLETE_CASE_SOURCE_UNAVAILABLE_OR_INVALID'
+        current = load_current_price_case(root=root, symbol=binding['symbol'],
+            case_path=Path(current_plan['case_path']),
+            expected_sha256=current_plan['case_sha256'], now=checked)
+        # Source availability is not the time at which the plan was sealed.
+        if bound_at.astimezone(timezone(timedelta(hours=8))).date().isoformat() >= current['market_trade_date']:
+            result['reason'] = 'PLAN_NOT_BOUND_BEFORE_TARGET_SESSION'
+            return result
+        phase = 'SEALED_PATH_SOURCE_OR_RULE_MISMATCH'
+        baseline = make_shadow_baseline({**prior, 'data_available_at': original['data_available_at']},
+                                       original, observed_at=bound_at)
+        review = evaluate_frozen_condition_path(baseline, current, observed_at=checked)
+        return {**review, **{key: value for key, value in result.items()
+                            if key not in {'status', 'reason'}},
+            'status': 'UNASSESSABLE' if review['status'] == 'NOT_ASSESSABLE' else review['status'],
+            'prior_case_binding': dict(path=plan['case_path'], sha256=plan['case_sha256']),
+            'current_case_binding': dict(path=current_plan['case_path'], sha256=current_plan['case_sha256'])}
+    except (ValueError, OSError, KeyError, TypeError, AttributeError, ArithmeticError):
+        result['reason'] = phase
+        return result
 
 
 def _legacy_completed(expected, plan):
@@ -497,7 +559,8 @@ class PublicObservationSession:
                     if event["event_type"] == "STRUCTURE_CONFIRMED_OBSERVATION":
                         event.update(audit_event_type=event["event_type"],
                                      event_type="BAR_CONFIRMATION_PENDING", structure_confirmation=False)
-                return {**self._view(report), "notification_inbox": inbox}
+                return {**self._view(report), "notification_inbox": inbox,
+                        "sealed_condition_path": _sealed_condition_path(self.root, report, now=now)}
             except Exception:
                 return {"status": "CORRUPT", "monitor_running": self._thread is not None,
                         "detail": "RETAINED_EVIDENCE_VERIFICATION_FAILED", "samples": [],
