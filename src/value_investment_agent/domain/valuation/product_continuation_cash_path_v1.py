@@ -44,7 +44,31 @@ def _amounts(previous, drivers):
     return amounts
 
 
-def _operating_rows(first_five, continuation):
+def _other_pre_tax_rows(policy, reference_balance):
+    if policy is None:
+        return None
+    _keys(policy, 'reference rows terminal_mode rationale')
+    _keys(policy['reference'], 'financial_cny other_cny unallocated_cny basis')
+    _reason(policy['reference']['basis'])
+    _reason(policy['rationale'])
+    if policy['terminal_mode'] != 'HOLD_Y10_COMPONENTS':
+        raise ValueError('Explicit Y10 component continuation required; no Y5 restoration')
+    fields = ('financial_cny', 'other_cny', 'unallocated_cny')
+    reference = {key: _number(policy['reference'][key]) for key in fields}
+    if sum(reference.values()) != reference_balance:
+        raise ValueError('Other pre-tax reference components must equal the original Y5 balance')
+    if not isinstance(policy['rows'], list) or len(policy['rows']) != 5:
+        raise ValueError('Other pre-tax policy requires five explicit Y6-10 component rows')
+    rows = []
+    for year, raw in enumerate(policy['rows'], 6):
+        _keys(raw, 'year financial_cny other_cny unallocated_cny')
+        if type(raw['year']) is not int or raw['year'] != year:
+            raise ValueError('Other pre-tax component year mismatch')
+        rows.append({key: _number(raw[key]) for key in fields})
+    return rows
+
+
+def _operating_rows(first_five, continuation, other_pre_tax_policy=None):
     if (not isinstance(first_five, list) or len(first_five) != 5
             or not isinstance(continuation, list) or len(continuation) != 5):
         raise ValueError('Exactly five original and five continuation product years required')
@@ -91,22 +115,27 @@ def _operating_rows(first_five, continuation):
         rows.append(row)
         previous = row
     anchor = rows[-1]
+    other_rows = _other_pre_tax_rows(other_pre_tax_policy, anchor['other_pre_tax_balance'])
     for year, raw in enumerate(continuation, 6):
         drivers = _drivers(raw)
         amounts = _amounts(previous['product_revenue_cny'], drivers)
         revenue = sum(amounts.values())
         cost = revenue * drivers['cost_ratio']
         expenses = {key: value * (revenue / anchor['revenue']) for key, value in anchor['expenses'].items()}
-        pbt = revenue - cost - sum(expenses.values()) + anchor['other_pre_tax_balance']
+        components = None if other_rows is None else other_rows[year-6]
+        other_balance = anchor['other_pre_tax_balance'] if components is None else sum(components.values())
+        pbt = revenue - cost - sum(expenses.values()) + other_balance
         # Anchored delta preserves the supplied L5 exactly in the flat branch.
         profit = anchor['legacy_ex_parent'] + (pbt - anchor['legacy_pre_tax_profit']) * (
             1-anchor['effective_tax_rate']) * anchor['parent_share']
         row = dict(year=year, opening_product_reference_revenue_cny=dict(previous['product_revenue_cny']),
             product_revenue_cny=amounts, drivers=drivers, revenue=revenue, cost=cost,
-            expenses=expenses, other_pre_tax_balance=anchor['other_pre_tax_balance'],
+            expenses=expenses, other_pre_tax_balance=other_balance,
             legacy_pre_tax_profit=pbt, effective_tax_rate=anchor['effective_tax_rate'],
             parent_share=anchor['parent_share'], net_parent_nonrecurring_difference=anchor['net_parent_nonrecurring_difference'],
             legacy_ex_parent=profit)
+        if components is not None:
+            row['other_pre_tax_components'] = dict(components)
         rows.append(row)
         previous = row
     return rows
@@ -115,7 +144,8 @@ def _operating_rows(first_five, continuation):
 def build_product_continuation_cash_path(*, opening_state, first_five_product_rows,
                                        continuation_policy, capital_cash_rows,
                                        distribution_rows, cost_of_equity,
-                                       incremental_cash_yield, terminal_policy=None):
+                                       incremental_cash_yield, terminal_policy=None,
+                                       other_pre_tax_policy=None):
     """Pure LOW research, exactly ten annual steps; no calendar/PIT invention.
 
     opening_state/capital_cash_rows/distribution_rows use the finite cash v1
@@ -124,6 +154,11 @@ def build_product_continuation_cash_path(*, opening_state, first_five_product_ro
     distribution_constraint_rationale/capital_cash_row/distribution_row.
     method=STABLE_PRODUCT_PROFIT_ZERO_GROWTH_FULL_PAYOUT;
     operating_continuation=FINAL_PRODUCT_LEVELS_AND_EARNINGS_BRIDGE_CONSTANT.
+    Optional other_pre_tax_policy: reference has signed financial_cny/other_cny/
+    unallocated_cny plus nonempty basis; rows are five explicit year=6..10 dicts
+    with those three signed amounts. terminal_mode=HOLD_Y10_COMPONENTS and a
+    rationale are required. Classification is a caller research attribution,
+    not subsidiary net profit, verified financial facts or distributable cash.
     No growth, price, cash return, legal capacity or terminal support is defaulted.
     """
     _keys(opening_state, 'scope currency book_equity_cny cash_cny unremitted_assets_cny '
@@ -135,7 +170,7 @@ def build_product_continuation_cash_path(*, opening_state, first_five_product_ro
         raise ValueError('Exactly ten explicit cash/distribution years required')
     with localcontext() as context:
         context.prec = 48
-        operating = _operating_rows(first_five_product_rows, continuation_policy)
+        operating = _operating_rows(first_five_product_rows, continuation_policy, other_pre_tax_policy)
         capital = [_capital(row, year, SCOPE) for year, row in enumerate(capital_cash_rows, 1)]
         distribution = [_distribution(row, year) for year, row in enumerate(distribution_rows, 1)]
         ke, q = map(_number, (cost_of_equity, incremental_cash_yield))
@@ -220,6 +255,9 @@ def build_product_continuation_cash_path(*, opening_state, first_five_product_ro
                 terminal.update(checks=checks, policy=deepcopy(terminal_policy), legacy_profit_cny=lp,
                     incremental_cash_income_cny=income, next_profit_cny=p, next_distribution_cny=payout*p,
                     next_cash_cny=c+p*(1-held_fraction-payout)-n-fund, next_book_cny=b+p*(1-payout))
+                if other_pre_tax_policy is not None:
+                    terminal.update(other_pre_tax_balance_cny=operating[-1]['other_pre_tax_balance'],
+                        other_pre_tax_components=deepcopy(operating[-1]['other_pre_tax_components']))
                 terminal['reasons'] = [key for key, ok in checks.items() if not ok]
                 if all(checks.values()):
                     tv = p/ke
@@ -233,7 +271,7 @@ def build_product_continuation_cash_path(*, opening_state, first_five_product_ro
                         pv_terminal_ri_cny=tri/(1+ke)**10, ddm_equity_value_cny=ddm,
                         ri_ddm_residual_cny=value-ddm, terminal_value_pv_share=(tv/(1+ke)**10)/ddm)
             blockers.extend('TERMINAL_'+reason for reason in terminal['reasons'])
-        return _plain(dict(version=VERSION, status='CONDITIONAL_PRODUCT_CONTINUATION_RESEARCH' if valuation['usable'] else 'VALUATION_UNSUPPORTED',
+        result = dict(version=VERSION, status='CONDITIONAL_PRODUCT_CONTINUATION_RESEARCH' if valuation['usable'] else 'VALUATION_UNSUPPORTED',
             scope=SCOPE, confidence='LOW', action='no_order', formal_eligibility=False, economic_approval=False,
             price_admission=False, primary_valuation_changed=False, normalized_parent_profit_cny=None,
             operating_rows=operating, cash_rows=rows, terminal=terminal, valuation=valuation, blockers=blockers,
@@ -247,4 +285,10 @@ def build_product_continuation_cash_path(*, opening_state, first_five_product_ro
                 'Capital needs are deducted once here; WC excludes cash/customer funds; other noncash/net financing are explicit zero hypotheses.',
                 'Project/fund schedules and reserve/capacity mappings are research hypotheses, not verified payables or legal approval.',
                 'Flat terminal product levels, finance balance, tax and attribution require sustained economics; no competitive-advantage duration is proven.',
-                'Terminal DDM value includes retained cash earnings; do not add cash again. Research steps do not establish calendar periods or historical PIT.']))
+                'Terminal DDM value includes retained cash earnings; do not add cash again. Research steps do not establish calendar periods or historical PIT.'])
+        if other_pre_tax_policy is not None:
+            result['other_pre_tax_policy'] = deepcopy(other_pre_tax_policy)
+            result['limitations'].append(
+                'Financial/other/unallocated components are pre-tax research attributions, not subsidiary net profit or distributable cash. '
+                'Their common tax/parent mapping is conditional; q remains incremental cash yield, not a second return on those components.')
+        return _plain(result)

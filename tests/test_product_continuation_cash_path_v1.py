@@ -1,6 +1,7 @@
 """TEST_ONLY hypotheses plus opt-in retained-public-source cold calculation."""
 from copy import deepcopy
 from decimal import Decimal as D, localcontext
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
@@ -200,6 +201,160 @@ def test_caller_precision_does_not_change_any_result(inputs):
     with localcontext() as context:
         context.prec = 6
         actual = build_product_continuation_cash_path(**inputs)
+        assert context.prec == 6
+    assert actual == expected
+
+
+def other_policy(financial='15', other='3', unallocated='2'):
+    return dict(reference=dict(financial_cny='15', other_cny='3', unallocated_cny='2',
+        basis='TEST_ONLY synthetic pre-tax classification, not subsidiary profit or cash'),
+        rows=[dict(year=year, financial_cny=financial, other_cny=other, unallocated_cny=unallocated)
+              for year in range(6, 11)], terminal_mode='HOLD_Y10_COMPONENTS',
+        rationale='TEST_ONLY explicit contribution stress, common tax/parent mapping is a hypothesis')
+
+
+def test_no_other_policy_preserves_exact_delivered_output(inputs):
+    result = build_product_continuation_cash_path(**inputs)
+    digest = sha256(json.dumps(result, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    # Captured from commit 306db9a1 before the optional-policy implementation.
+    assert digest == '664b434324df36fb5778db2478a9240d2b0734441d98d4c1da5392e48e6636d8'
+    assert result == build_product_continuation_cash_path(**inputs, other_pre_tax_policy=None)
+
+
+def test_explicit_unchanged_components_preserve_all_calculations(inputs):
+    baseline = build_product_continuation_cash_path(**inputs)
+    result = build_product_continuation_cash_path(**inputs, other_pre_tax_policy=other_policy())
+    assert result['valuation'] == baseline['valuation']
+    assert result['cash_rows'] == baseline['cash_rows']
+    assert result['operating_rows'][:5] == baseline['operating_rows'][:5]
+    for current, original in zip(result['operating_rows'][5:], baseline['operating_rows'][5:]):
+        assert {key: value for key, value in current.items() if key != 'other_pre_tax_components'} == original
+
+
+@pytest.mark.parametrize('component', ['financial_cny', 'other_cny', 'unallocated_cny'])
+def test_component_change_flows_once_through_profit_and_cash(inputs, component):
+    policy = other_policy()
+    for row in policy['rows']:
+        row[component] = str(D(row[component])-1)
+    before = deepcopy((inputs, policy))
+    baseline = build_product_continuation_cash_path(**inputs)
+    result = build_product_continuation_cash_path(**inputs, other_pre_tax_policy=policy)
+    assert result['operating_rows'][:5] == baseline['operating_rows'][:5]
+    assert result['cash_rows'][:5] == baseline['cash_rows'][:5]
+    assert D(result['operating_rows'][5]['legacy_pre_tax_profit']) == 819
+    assert D(result['operating_rows'][5]['legacy_ex_parent']) == D('599.965')
+    assert result['cash_rows'][5]['incremental_cash_income_cny'] == baseline['cash_rows'][5]['incremental_cash_income_cny']
+    assert D(result['cash_rows'][6]['closing_cash_cny']) < D(baseline['cash_rows'][6]['closing_cash_cny'])
+    assert D(result['valuation']['equity_value_cny']) < D(baseline['valuation']['equity_value_cny'])
+    assert (inputs, policy) == before
+    assert not result['economic_approval'] and not result['price_admission']
+    json.dumps(result, allow_nan=False)
+
+
+def test_terminal_keeps_y10_components_not_reference_or_y6(inputs):
+    policy = other_policy()
+    for year, row in enumerate(policy['rows'], 6):
+        row['financial_cny'] = str(15-(year-5))
+    result = build_product_continuation_cash_path(**inputs, other_pre_tax_policy=policy)
+    assert result['valuation']['usable']
+    assert [D(row['other_pre_tax_balance']) for row in result['operating_rows'][5:]] == [19, 18, 17, 16, 15]
+    assert D(result['terminal']['other_pre_tax_balance_cny']) == 15
+    assert result['terminal']['other_pre_tax_components'] == result['operating_rows'][-1]['other_pre_tax_components']
+    assert D(result['terminal']['legacy_profit_cny']) == D('597.025')
+    with localcontext() as context:
+        context.prec = 48
+        expected = D('597.025') + D('.01')*(D(result['cash_rows'][-1]['closing_cash_cny'])-3000)
+        assert D(result['terminal']['next_profit_cny']) == expected
+    assert abs(D(result['valuation']['ri_ddm_residual_cny'])) < D('1e-24')
+
+
+def test_signed_reference_and_explicit_negative_component_are_not_clipped(inputs):
+    policy = other_policy(financial='-12', other='28')
+    policy['reference'].update(financial_cny='-10', other_cny='28')
+    result = build_product_continuation_cash_path(**inputs, other_pre_tax_policy=policy)
+    assert D(result['operating_rows'][5]['other_pre_tax_components']['financial_cny']) == -12
+    assert D(result['operating_rows'][5]['other_pre_tax_balance']) == 18
+    assert D(result['operating_rows'][5]['legacy_ex_parent']) == D('599.23')
+
+
+@pytest.mark.parametrize('change', [
+    'wrong_reference', 'missing_reference_component', 'missing_component', 'missing_year',
+    'duplicate_year', 'bool_year', 'short_rows', 'unknown_component', 'restore_y5', 'missing_basis', 'missing_rationale',
+])
+def test_other_policy_invalid_contracts_rejected(inputs, change):
+    policy = other_policy()
+    if change == 'wrong_reference':
+        policy['reference']['financial_cny'] = '16'
+    elif change == 'missing_reference_component':
+        del policy['reference']['unallocated_cny']
+    elif change == 'missing_component':
+        del policy['rows'][0]['unallocated_cny']
+    elif change == 'missing_year':
+        del policy['rows'][0]['year']
+    elif change == 'duplicate_year':
+        policy['rows'][1]['year'] = 6
+    elif change == 'bool_year':
+        policy['rows'][0]['year'] = True
+    elif change == 'short_rows':
+        policy['rows'].pop()
+    elif change == 'unknown_component':
+        policy['rows'][0]['subsidiary_net_profit'] = '15'
+    elif change == 'restore_y5':
+        policy['terminal_mode'] = 'RESTORE_Y5'
+    elif change == 'missing_basis':
+        policy['reference']['basis'] = ''
+    else:
+        policy['rationale'] = ''
+    with pytest.raises(ValueError):
+        build_product_continuation_cash_path(**inputs, other_pre_tax_policy=policy)
+
+
+@pytest.mark.parametrize('bad', [True, None, .1, 'NaN', '-Infinity'])
+def test_other_policy_non_decimal_and_nonfinite_rejected(inputs, bad):
+    policy = other_policy()
+    policy['rows'][2]['financial_cny'] = bad
+    with pytest.raises(ValueError):
+        build_product_continuation_cash_path(**inputs, other_pre_tax_policy=policy)
+
+
+def test_lower_component_exposes_cash_floor_failure_without_fixing_payout(inputs):
+    inputs['opening_state']['cash_floor_cny'] = '3000'
+    inputs['incremental_cash_yield'] = '0'
+    for row in inputs['distribution_rows'][:5]:
+        row.update(payout_ratio='1', reserve_transfer_fraction='0')
+    inputs['capital_cash_rows'][5]['net_maintenance_gap_cny'] = '60'
+    baseline = build_product_continuation_cash_path(**inputs)
+    assert baseline['valuation']['usable']
+    result = build_product_continuation_cash_path(**inputs, other_pre_tax_policy=other_policy(financial='5'))
+    assert result['cash_rows'][:5] == baseline['cash_rows'][:5]
+    assert len(result['cash_rows']) == 6
+    assert 'YEAR_6_CASH_FLOOR' in result['blockers']
+    assert D(result['cash_rows'][-1]['distribution_cny']) == D('534.015')
+    assert result['valuation']['equity_value_cny'] is None
+
+
+def test_ke_plus_100bp_uses_same_business_and_cash_inputs(inputs):
+    policy = other_policy(financial='5')
+    baseline = build_product_continuation_cash_path(**inputs, other_pre_tax_policy=policy)
+    inputs['cost_of_equity'] = '.09'
+    challenge = build_product_continuation_cash_path(**inputs, other_pre_tax_policy=policy)
+    assert baseline['operating_rows'] == challenge['operating_rows']
+    for before, after in zip(baseline['cash_rows'], challenge['cash_rows']):
+        changed = {'ri_cny', 'pv_ri_cny', 'pv_distribution_cny'}
+        assert {k: v for k, v in before.items() if k not in changed} == {k: v for k, v in after.items() if k not in changed}
+    assert baseline['terminal']['next_profit_cny'] == challenge['terminal']['next_profit_cny']
+    assert D(challenge['valuation']['equity_value_cny']) < D(baseline['valuation']['equity_value_cny'])
+    assert abs(D(challenge['valuation']['ri_ddm_residual_cny'])) < D('1e-24')
+
+
+def test_component_policy_fixed_precision(inputs):
+    policy = other_policy(financial='5.1234567890123456789')
+    with localcontext() as context:
+        context.prec = 28
+        expected = build_product_continuation_cash_path(**inputs, other_pre_tax_policy=policy)
+    with localcontext() as context:
+        context.prec = 6
+        actual = build_product_continuation_cash_path(**inputs, other_pre_tax_policy=policy)
         assert context.prec == 6
     assert actual == expected
 
