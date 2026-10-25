@@ -4,9 +4,120 @@ from datetime import datetime, time as clock_time
 from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP
 from zoneinfo import ZoneInfo
 
-from ..execution.exchange_calendar import is_exchange_session
+from ..execution.exchange_calendar import is_exchange_session, next_exchange_session
 
 CHINA = ZoneInfo("Asia/Shanghai")
+
+
+def evaluate_economic_validation_draft(protocol, blocks):
+    """Arithmetic/coverage review only; a draft never grants strategy admission."""
+    if (protocol.get('schema_version') != 'hotspot-economic-validation-draft-v1'
+            or protocol.get('status') != 'DRAFT' or protocol.get('action') != 'no_order'
+            or type(protocol.get('block_sessions')) is not int or protocol.get('block_sessions') != 42
+            or type(protocol.get('block_count')) is not int or protocol.get('block_count') != 3
+            or protocol.get('block_acceptance') != 'ALL_THREE_BLOCKS_MUST_MEET_EXPLICIT_POLICY'
+            or protocol.get('benchmarks') != ['CASH', 'SAME_POOL_EQUAL_WEIGHT']
+            or protocol.get('cost_multipliers') != ['0', '1', '2']):
+        raise ValueError('Unsupported economic draft contract')
+    policy = protocol['economic_policy']
+    checks = []
+
+    def check(name, status, reason):
+        checks.append(dict(check=name, status=status, reason=reason))
+
+    missing = [key for key in ('minimum_excess_cash', 'minimum_excess_pool',
+        'maximum_drawdown', 'minimum_trades', 'uncertainty_method', 'uncertainty_parameters',
+        'minimum_excess_lower_bound', 'cost_evaluation')
+        if policy.get(key) is None]
+    check('ECONOMIC_POLICY_COMPLETE', 'INSUFFICIENT_DATA' if missing else 'PASS',
+          'Missing: ' + ', '.join(missing) if missing else 'Explicit caller-supplied draft policy')
+    if missing:
+        policy_usable = False
+    else:
+        policy_usable = True
+        maximum = number(policy['maximum_drawdown'])
+        if (not 0 < maximum <= 1 or type(policy['minimum_trades']) is not int
+                or policy['minimum_trades'] < 1 or not isinstance(policy['uncertainty_method'], str)
+                or not policy['uncertainty_method'].strip()
+                or not isinstance(policy['uncertainty_parameters'], dict)
+                or policy['cost_evaluation'] != 'BASE_NET_WITH_0X_2X_DISCLOSURE'):
+            raise ValueError('Invalid explicit economic risk/sample policy')
+        for key in ('minimum_excess_cash', 'minimum_excess_pool', 'minimum_excess_lower_bound'):
+            number(policy[key])
+    if not isinstance(blocks, list) or len(blocks) > 3:
+        raise ValueError('Bounded three-block results required')
+    complete = len(blocks) == 3
+    check('THREE_BLOCK_COVERAGE', 'PASS' if complete else 'INSUFFICIENT_DATA',
+          'Require three non-overlapping complete 42-session blocks')
+    previous = None
+    for index, block in enumerate(blocks):
+        sessions = block['sessions']
+        if (not isinstance(sessions, list) or len(sessions) != 42
+                or sessions != sorted(set(sessions))):
+            raise ValueError('Exactly 42 distinct ordered sessions per block required')
+        days = [datetime.fromisoformat(day).date() for day in sessions]
+        if (any(day.isoformat() != text or not is_exchange_session('SSE', day)
+                for day, text in zip(days, sessions)) or (previous and days[0] <= previous)):
+            raise ValueError('Disjoint covered exchange session dates required')
+        if previous and days[0] != next_exchange_session('SSE', previous):
+            raise ValueError('Omitted exchange session between blocks')
+        # Prevent dropped losing days from masquerading as a complete block.
+        from datetime import timedelta
+        day, expected = days[0], []
+        while day <= days[-1]:
+            if is_exchange_session('SSE', day):
+                expected.append(day.isoformat())
+            day += timedelta(days=1)
+        if expected != sessions:
+            raise ValueError('Omitted exchange session inside block')
+        previous = days[-1]
+        if block.get('scope') != 'PAIRED_SAME_POOL_PORTFOLIO_NET_OF_COST':
+            check(f'BLOCK_{index + 1}_COMPARABILITY', 'INSUFFICIENT_DATA',
+                  'Isolated security returns or gross benchmarks are not paired portfolio returns')
+            continue
+        sensitivity = block.get('cost_returns')
+        if not isinstance(sensitivity, dict) or set(sensitivity) != {'0', '1', '2'}:
+            check(f'BLOCK_{index + 1}_COST_SENSITIVITY', 'INSUFFICIENT_DATA',
+                  'Net 0x/1x/2x cost results required')
+            continue
+        for value in sensitivity.values():
+            if type(value) is bool or not Decimal(str(value)).is_finite() or Decimal(str(value)) < -1:
+                raise ValueError('Invalid cost sensitivity return')
+        metrics = {}
+        for key in ('strategy_net_return', 'cash_net_return', 'pool_net_return', 'excess_lower_bound'):
+            if type(block[key]) is bool:
+                raise ValueError('Boolean is not an economic metric')
+            value = Decimal(str(block[key]))
+            if not value.is_finite() or (key != 'excess_lower_bound' and value < -1):
+                raise ValueError('Finite fractional economic returns required')
+            metrics[key] = value
+        if Decimal(str(sensitivity['1'])) != metrics['strategy_net_return']:
+            raise ValueError('Base cost result differs from strategy net return')
+        drawdown = number(block['maximum_drawdown'])
+        if drawdown > 1 or type(block['trade_count']) is not int or block['trade_count'] < 0:
+            raise ValueError('Invalid drawdown or trade count')
+        if drawdown < max(Decimal(0), -metrics['strategy_net_return']):
+            raise ValueError('Drawdown contradicts loss from initial equity')
+        if not policy_usable:
+            continue
+        if (block['uncertainty_method'] != policy['uncertainty_method']
+                or block.get('uncertainty_parameters') != policy['uncertainty_parameters']
+                or block['trade_count'] < policy['minimum_trades']):
+            check(f'BLOCK_{index + 1}_SAMPLE', 'INSUFFICIENT_DATA',
+                  'Predeclared uncertainty method and sample requirement not met')
+            continue
+        passed = (metrics['strategy_net_return'] - metrics['cash_net_return'] > number(policy['minimum_excess_cash'])
+            and metrics['strategy_net_return'] - metrics['pool_net_return'] > number(policy['minimum_excess_pool'])
+            and drawdown <= number(policy['maximum_drawdown'])
+            and metrics['excess_lower_bound'] > number(policy['minimum_excess_lower_bound']))
+        check(f'BLOCK_{index + 1}_ECONOMIC_COMPARISON', 'PASS' if passed else 'FAIL',
+              'Net benchmark excess, risk cap and supplied uncertainty bound; not authenticity verification')
+    verdict = ('FAIL' if any(c['status'] == 'FAIL' for c in checks) else
+               'INSUFFICIENT_DATA' if any(c['status'] == 'INSUFFICIENT_DATA' for c in checks) else 'PASS')
+    return dict(checks=checks, economic_evaluation=verdict, status='NOT_ADMITTED',
+        evaluation_scope='DRAFT_ARITHMETIC_NOT_VERIFIED_STRATEGY_OOS',
+        actual_sample_accepted=False, strict_oos_admitted=False, strict_pit_admitted=False,
+        strategy_validation='NOT_PROVEN', formal_eligibility=False, action='no_order')
 
 
 def number(value):

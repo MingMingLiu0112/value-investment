@@ -9,6 +9,68 @@ from .event_replay import _bound_bytes
 from ...domain.hotspot.quantitative_validation import simulate_fold, stamp
 
 
+def build_economic_validation_draft(*, now: datetime) -> dict:
+    """Executable proposed design, not a registration, signature or approved policy."""
+    if now.utcoffset() is None:
+        raise ValueError('Aware draft creation clock required')
+    return dict(schema_version='hotspot-economic-validation-draft-v1', status='DRAFT',
+        created_at=now.isoformat(), registered_at=None, approval_status='NOT_APPROVED',
+        design_source='docs/current/swing-strategy-specification-20261023.md#5',
+        block_count=3, block_sessions=42, benchmarks=['CASH', 'SAME_POOL_EQUAL_WEIGHT'],
+        block_acceptance='ALL_THREE_BLOCKS_MUST_MEET_EXPLICIT_POLICY',
+        cost_multipliers=['0', '1', '2'],
+        economic_policy=dict(minimum_excess_cash=None, minimum_excess_pool=None,
+            maximum_drawdown=None, minimum_trades=None, uncertainty_method=None,
+            uncertainty_parameters=None, minimum_excess_lower_bound=None, cost_evaluation=None),
+        required_evidence=['CONTEMPORANEOUS_POOL_AND_CLASSIFICATION', 'ARCHIVED_SOURCE_PIT',
+            'UNTOUCHED_PREDECLARED_WINDOWS', 'RULE_AND_COST_BINDINGS',
+            'DATED_TRADABILITY_AND_CORPORATE_ACTIONS', 'PAIRED_PORTFOLIO_BENCHMARKS',
+            'PREDECLARED_ECONOMIC_AND_UNCERTAINTY_POLICY'],
+        parameters_changed=False, formal_eligibility=False, action='no_order')
+
+
+def diagnose_retained_economic_draft(*, root: Path, binding: 'ProtocolBinding',
+                                     now: datetime) -> dict:
+    """Run verified existing real/fixture replay without fabricating portfolio blocks."""
+    from .independent_validation import _execution_evidence
+    from ...domain.hotspot.quantitative_validation import evaluate_economic_validation_draft
+    if now.utcoffset() is None:
+        raise ValueError('Aware diagnostic cutoff required')
+    ref = dict(path=binding.path, sha256=binding.sha256)
+    protocol = json.loads(_bound_bytes(root, ref))
+    if stamp(protocol['created_at']) > now:
+        raise ValueError('Draft unavailable at evaluation cutoff')
+    replay = _execution_evidence(root, now)
+    # Existing fixed-five independent accounts cannot become a pooled benchmark
+    # by averaging returns; absent paired results remain absent.
+    evaluation = evaluate_economic_validation_draft(protocol, [])
+    evaluation['checks'].extend([
+        dict(check='PREDECLARED_UNTOUCHED_OOS',
+            status='INSUFFICIENT_DATA' if replay['protocol']['registered_before_validation'] else 'FAIL',
+            reason='Declared registration is not independent proof; retrospective registration fails'),
+        dict(check='HISTORICAL_SOURCE_PIT',
+            status='FAIL' if replay['decision_availability']['source_acquired_after_decision'] else 'INSUFFICIENT_DATA',
+            reason='Use actual source acquisition versus generated historical decision clocks'),
+        dict(check='PAIRED_PORTFOLIO_BENCHMARKS', status='INSUFFICIENT_DATA',
+            reason='No comparable net cash/same-pool portfolio benchmark was supplied or fabricated'),
+    ])
+    evaluation.update(protocol_binding=ref, evaluated_at=now.isoformat(),
+        retained_replay_content_sha256=replay['replay_content_sha256'],
+        retained_summary=replay['summary'],
+        diagnostic_partitions=replay['costed_partitions'],
+        existing_protocol=replay['protocol'], decision_availability=replay['decision_availability'],
+        strict_rejection_counts=replay['strict_rejection_counts'],
+        evidence_gaps=['PAIRED_NET_CASH_AND_SAME_POOL_BENCHMARKS_MISSING',
+            'THREE_42_SESSION_BLOCK_RESULTS_MISSING', 'ECONOMIC_POLICY_NOT_PREDECLARED',
+            'DATED_TRADABILITY_AND_COMPANY_ACTIONS_NOT_PROVEN', 'UNTOUCHED_OOS_NOT_PROVEN',
+            'NATURAL_TIME_SHADOW_NOT_ASSESSED'],
+        source_bindings=replay['source_bindings'])
+    _bound_bytes(root, ref)
+    for source in replay['source_bindings']:
+        _bound_bytes(root, source)
+    return evaluation
+
+
 @dataclass(frozen=True)
 class ProtocolBinding:
     path: str
