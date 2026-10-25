@@ -385,6 +385,7 @@ def load_current_research_analysis(
     from ..research.value_economic_assessment import load_current_value_economic_assessment
     from ..research.value_economic_assessment import load_retained_operating_bridge
     from ..research.industrial_earnings_research import load_industrial_earnings_research
+    from ..research.parent_cash_research import load_parent_cash_research
 
     normalized = normalize_symbol(symbol)
     try:
@@ -417,4 +418,7 @@ def load_current_research_analysis(
         forward = load_industrial_earnings_research(root=root, symbol=normalized, now=evaluated_at)
         if forward is not None:
             result['industrial_earnings_research'] = forward
+        cash = load_parent_cash_research(root=root, symbol=normalized, now=evaluated_at)
+        if cash is not None:
+            result['parent_cash_research'] = cash
     return result

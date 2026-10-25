@@ -354,7 +354,49 @@ export interface IndustrialEarningsResearch {
   >;
 }
 
+export interface ParentCashResearch {
+  schema_version: "parent-cash-research-v1";
+  symbol: string;
+  status: string;
+  action: "no_order";
+  formal_eligibility: false;
+  economic_approval: false;
+  primary_valuation_usable: false;
+  price_admitted: false;
+  strategy_admitted: false;
+  distribution_capacity_status: "UNKNOWN";
+  future_distributable_cash_cny: null;
+  ordinary_dividends_paid_cny: null;
+  upstream_dividends_received_cny: null;
+  parent_restricted_cash_cny: null;
+  evaluated_at?: string;
+  continuity_status?: string;
+  historical_cash_reconciliation_status?: string;
+  source_bindings: { path: string; sha256: string }[];
+  limitations?: string[];
+  historical_statements: {
+    symbol: string;
+    periods: string[];
+    statement_scope: "listed_parent_only";
+    source_binding: { path: string; sha256: string; source_url: string };
+    balances: {
+      period: string;
+      opening_cash_and_equivalents_cny: string;
+      closing_cash_and_equivalents_cny: string;
+      cfo_cny: string;
+      cfi_cny: string;
+      cff_cny: string;
+      fx_cny: string;
+      reported_net_change_cny: string;
+      mixed_distribution_interest_paid_cny: string;
+      cash_residual_cny: string;
+      movement_residual_cny: string;
+    }[];
+  }[];
+}
+
 export interface ValueResearchAnalysis {
+  parent_cash_research?: ParentCashResearch;
   industrial_earnings_research?: IndustrialEarningsResearch;
   historical_operating_review?: OperatingEarningsReview;
   blockers?: string[];

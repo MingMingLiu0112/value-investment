@@ -14,6 +14,7 @@ import { PublicJointCapitalReview } from "./JointCapitalReview";
 import { SourceNativeCashReview } from "./SourceNativeCashReview";
 import { OperatingEarningsBridge } from "./OperatingEarningsBridge";
 import { IndustrialEarningsResearch } from "./IndustrialEarningsResearch";
+import { ParentCashResearch } from "./ParentCashResearch";
 
 const scenarios = { bear: "保守 Bear", base: "基准 Base", bull: "乐观 Bull" };
 
@@ -120,6 +121,10 @@ export function ValueResearchAnalysis({
               <OperatingEarningsBridge analysis={analysis} />
               <IndustrialEarningsResearch
                 research={analysis.industrial_earnings_research}
+                symbol={decision.symbol}
+              />
+              <ParentCashResearch
+                research={analysis.parent_cash_research}
                 symbol={decision.symbol}
               />
             </>
@@ -229,6 +234,10 @@ export function ValueResearchAnalysis({
       <h3>三情景与实际模型输入</h3>
       <IndustrialEarningsResearch
         research={analysis.industrial_earnings_research}
+        symbol={decision.symbol ?? ""}
+      />
+      <ParentCashResearch
+        research={analysis.parent_cash_research}
         symbol={decision.symbol ?? ""}
       />
       {analysis.economic_assessment?.schema_version ===

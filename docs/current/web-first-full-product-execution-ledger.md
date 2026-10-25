@@ -5542,3 +5542,64 @@ calculation/data gaps. Local public-only prospective Shadow authorization was
 requested separately; until granted, no Shadow, scheduling or production work
 is started. Historical replay cannot replace that natural-time evidence or
 formal approvals. Full dual-strategy assisted use remains NOT_READY.
+
+### 2026-10-25 public forward authorization, live display fix and parent cash
+
+User authorized local public-only prospective observation: frozen rules, future
+trading-day candidates/quotes and hypothetical execution. No private accounts,
+server operations, timers or orders. Existing network-first scanner retained
+runtime/local-forward-initialization/20261025T0839472768439Z/report.json,
+SHA256 e6d6c35728a4027778f71059f5cbf882b432ccda51b9489a4769cd5d11f3f679.
+Tencent market and Sina industry fetches succeeded without old-cache fallback.
+Dated quote subset is Oct23, not Oct25 trading activity. This is acquisition
+initialization only, NOT a frozen strategy registration or elapsed Shadow day.
+Elapsed new prospective sessions remain zero. Independent entrypoint audit
+identified the missing hotspot-only freeze-to-observation connection; the old
+value/CNINFO registration and current-pointer refresh cannot substitute for it.
+That bounded connection is assigned to the hotspot lane after shared-fill logic.
+
+Exact3c12f5285c919a23add00edfcf21a21a3443ed59 passed Core40176952458 and
+Web40176952477, then published to sole8001. Runtime/backend/build/registry MATCHED;
+three public pointers stayed unchanged. Actual browser600887 expansion and
+Base/Bear switching show forward amounts and attribution, including valid0E-10
+zeros. The75ada display defect is now closed, not just mocked. Actual screenshot
+is yili-forward-3c12f528.png in the task visualization directory. Live cold API
+receipt is .tmp/dual1/.tmp/public-cold-20261025T084449717052Z/receipt.json
+(canonical-root relative). This does not approve those LOW research hypotheses.
+
+New standalone-parent cash research re-reads the same annual/interim originals,
+checks issuer/report/table/period/columns/CNY and each printed comparative amount,
+and calls the separate cash domain for exact signed CFO/CFI/CFF/FX reconciliation.
+FY2025 closing cash13404587376.75 equals H12026 opening cash; H12026 closing cash
+14939427794.14. FX65113.83 and-22976.75 are explicit source amounts, not zero
+substitutes. H12026 CFO35551654301.69 is not annualized. Gross borrowing/repayment,
+investment-income receipts and mixed dividend/profit/interest payments retain
+their disclosed scope, not ordinary dividends or subsidiary upstream remittances.
+
+Actual Root public API, with private root/journal hard-blocked, and source hashes
+passed at runtime/parent-cash-research/20261025T085338756932Z/receipt.json.
+Its actual API payload also passed static rendering of the existing company
+detail cash appendix. Browser publication of this successor remains pending.
+Capacity, restricted cash, ordinary dividends and upstream remittances stay
+UNKNOWN/null; future operating earnings do not become parent distributable cash.
+The generic dated policy arithmetic rejects interim annualization, ownership
+mismatch and extension beyond an explicit policy window. It has NOT yet consumed
+an issuer-policy/share-denominator original and does not establish a five-year
+payout assumption or primary valuation.
+
+Root tests:98 new/affected backend tests including actual originals,33 architecture
+checks,17 existing research/decision API tests passed. Targeted Web24 passed;
+existing analysis plus cash141 passed/5 optional skips; TypeScript passed.
+Frozen operating_product_paths.py remains887ff3c629704885018d09a6aff4bc24c9f4592d3f21bc588c52d3443a3f8b51.
+Independent final source/consumer review and successor exact-SHA CI are separate
+checks, not inferred from these results. No formal investment or strategy
+admission, private quantities, production task or order is created. action=no_order.
+
+Independent cash/source/consumer review found three display P2s (nonzero Decimal
+underflow mistaken for zero, altered comparative period, invalid/future clock).
+All were reproduced, fixed and independently closed: residuals use exact lexical
+zero, full printed period pairs are required, and zoned timestamps must represent
+a valid nonfuture date.17 dedicated rendering tests passed. Final actual-API SSR
+and TypeScript also passed; no new P1/P2 found within this package's review scope.
+This is a historical cash constraint delivery, not completion of future cash,
+issuer payout-policy evidence, primary valuation or formal strategy readiness.
