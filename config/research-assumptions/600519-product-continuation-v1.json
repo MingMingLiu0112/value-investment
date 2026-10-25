@@ -1,0 +1,26 @@
+{
+  "schema_version": "product-continuation-research-policy-v1",
+  "symbol": "600519",
+  "generated_at": "2026-10-25T12:02:44+00:00",
+  "action": "no_order",
+  "confidence": "LOW",
+  "candidate_binding": {
+    "path": "runtime/product-operating-research/20261025T071814444248Z/proposal/candidate/candidate.json",
+    "sha256": "2e53d50d988a737272d7a95b822c8e0e9998d3749c1432cac7f6c12d92fe8ed0"
+  },
+  "continuation_years": 5,
+  "center": "FLAT_YEAR5_PRODUCT_LEVELS_AND_COST_RATIOS",
+  "challenge_moutai_realization_growth": "-0.01",
+  "challenge_cost_ratio_increment": "0.005",
+  "rationale": "After the inherited first five product years, assume no further volume or realization growth and hold year-five cost/expense ratios. This tests continuation of existing brand earnings, rather than forcing all-owner ROE to Ke and an unexplained 70% profit collapse. It remains an unapproved center hypothesis, not proof of permanent brand economics.",
+  "cash_return_rationale": "Retained funds earn only the inherited 1% incremental cash yield on changes from opening modeled cash. They do not automatically earn the incumbent franchise ROE. Historical other/financial pre-tax contributions remain a separate assumed balance, not pure operating profit.",
+  "terminal_rationale": "Terminal product levels, expense ratios, tax, attribution and other pre-tax balance remain constant. Full payout must leave cash, equity and net investment stable, with no unpaid selected commitments or persistent upstream restriction. P/Ke includes the modeled retained-cash earnings; cash is not added again. This assumes ongoing franchise profit and is not a demonstrated perpetuity.",
+  "challenge_rationale": "Only in years six to ten, reduce flagship realization 1% annually and raise cost ratio by 0.5 percentage points relative to year five. This is an explicit uncalibrated operating countercase, not an optimized threshold or statistical loss bound.",
+  "counter_evidence": [
+    "Brand and historical flagship revenue resilience do not prove flat realization or stable margins after year five.",
+    "Series realization weakness and interim cost pressure can persist or affect flagship demand earlier than modeled.",
+    "Historical financial/other income, tax and attribution may not repeat; L is not normalized or pure operating profit.",
+    "Maintenance balance, WC neutrality, project overlap, upstream access and lawful terminal full payout remain unproven joint assumptions.",
+    "More than half of the calculated value can remain dependent on post-year-ten cash flows; a ten-year explicit path does not eliminate terminal risk."
+  ]
+}

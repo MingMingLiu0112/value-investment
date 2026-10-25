@@ -96,6 +96,11 @@ it.skipIf(!process.env.FINITE_ADVANTAGE_API_JSON)(
     expect(html).toContain("559.5433");
     expect(html).toContain("现金低于研究储备底线");
     expect(html).not.toContain("暂不展示金额");
+    if (research.product_continuation) {
+      expect(html).toContain("945.9748");
+      expect(html).toContain("915.1998");
+      expect(html).toContain("55.0%");
+    }
   },
 );
 it("shows conditional values and cash rejection without approved price claims", () => {
@@ -104,6 +109,92 @@ it("shows conditional values and cash rejection without approved price claims", 
   expect(html).toContain("现金低于研究储备底线");
   expect(html).toContain("不是买入价");
 });
+
+function withCenter(): Research {
+  const r = input();
+  r.product_continuation = {
+    status: "SOURCE_BOUND_PRODUCT_CONTINUATION_NOT_APPROVED",
+    action: "no_order",
+    confidence: "LOW",
+    formal_eligibility: false,
+    economic_approval: false,
+    price_admission: false,
+    primary_valuation_changed: false,
+    input_available_at: "2026-10-25T12:02:44Z",
+    source_bindings: [{ path: "TEST_ONLY/center", sha256: "b".repeat(64) }],
+    scenarios: ["bear", "base", "bull"].flatMap((scenario) =>
+      ["FLAT_PRODUCT_CONTINUATION", "REALIZATION_AND_COST_CHALLENGE"].map(
+        (branch) => ({
+          scenario,
+          branch,
+          result: {
+            status: "CONDITIONAL_PRODUCT_CONTINUATION_RESEARCH",
+            action: "no_order",
+            formal_eligibility: false,
+            economic_approval: false,
+            price_admission: false,
+            primary_valuation_changed: false,
+            valuation: {
+              usable: true,
+              per_share_cny:
+                branch === "FLAT_PRODUCT_CONTINUATION"
+                  ? "945.9748"
+                  : "915.1998",
+              terminal_value_pv_share: "0.550087",
+              ri_ddm_residual_cny: "0E-35",
+            },
+            cash_rows: [
+              {
+                year: 1,
+                legacy_profit_cny: "100",
+                incremental_cash_income_cny: "0",
+                profit_cny: "100",
+                distribution_cny: "90",
+                closing_cash_cny: "10",
+              },
+            ],
+            blockers: [],
+          },
+        }),
+      ),
+    ),
+  };
+  return r;
+}
+it("keeps product-centered research separate from total-ROE fade challenges", () => {
+  const html = render(withCenter());
+  expect(html).toContain("经营延续中心假说");
+  expect(html).toContain("945.9748");
+  expect(html).toContain("55.0%");
+  expect(html).toContain("483.0198");
+});
+it.each([
+  "source",
+  "future",
+  "cash",
+  "duplicate",
+  "approval",
+  "constructor",
+  "toString",
+])(
+  "rejects bad center while preserving independent finite research: %s",
+  (damage) => {
+    const r = withCenter(),
+      center = r.product_continuation!;
+    if (damage === "source") center.source_bindings![0].sha256 = "x";
+    if (damage === "future") center.input_available_at = "2999-01-01T00:00:00Z";
+    if (damage === "cash")
+      center.scenarios[0].result.cash_rows[0].profit_cny = "NaN";
+    if (damage === "duplicate") center.scenarios[0] = center.scenarios[1];
+    if (damage === "approval") center.formal_eligibility = true;
+    if (["constructor", "toString"].includes(damage))
+      center.scenarios[0].scenario = damage;
+    const html = render(r);
+    expect(html).toContain("暂不展示新金额");
+    expect(html).not.toContain("945.9748");
+    expect(html).toContain("483.0198");
+  },
+);
 it.each([
   "symbol",
   "currency",

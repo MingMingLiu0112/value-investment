@@ -23,7 +23,9 @@ import { Workbench } from "../../components/Workbench";
 import { RemoteState } from "../../components/RemoteState";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
+import type { PublicObservationResponse } from "../../services/api";
 import { formatUnitPrice } from "../../utils/format";
+import { isObservedResearchTimestamp } from "../../utils/researchDraftText";
 
 function shanghaiTime(value: string) {
   const date = new Date(value);
@@ -95,6 +97,172 @@ function referenceNextStep(value?: string) {
   if (value === "RESTORE_VERIFIED_PLAN_AND_FRESH_QUOTE")
     return "先恢复可核验的有效计划和新鲜报价，当前暂停判断。";
   return "继续观察原参考价条件；不授予交易许可。";
+}
+
+function SealedConditionPath({
+  observation,
+}: {
+  observation: PublicObservationResponse;
+}) {
+  const path = observation.sealed_condition_path;
+  const labels: Record<string, string> = {
+    NOT_TRIGGERED: "原封存条件未触发",
+    TRIGGER_OBSERVED: "观察到原收线与量能条件，不是买入许可",
+    INVALIDATED_BEFORE_TRIGGER: "触发前原条件已失效，不因随后反弹恢复",
+    INVALIDATED_AFTER_TRIGGER: "原条件触发后已失效，需复核原逻辑",
+    UNASSESSABLE: "封存条件不可判断",
+  };
+  const reasons: Record<string, string> = {
+    NO_PERSISTED_PRIOR_PLAN_BINDING: "没有留存当时的计划绑定，不能事后补造",
+    PRIOR_PLAN_BINDING_INVALID: "原计划绑定未通过核验",
+    PRIOR_PLAN_SOURCE_UNAVAILABLE_OR_INVALID_AT_BOUND_AT:
+      "原件在计划绑定时尚不可得或无效",
+    PRIOR_PLAN_RULE_OR_PRICE_DIFFERS_FROM_BOUND_SOURCE:
+      "原计划价格或规则与来源不符",
+    CURRENT_COMPLETE_CASE_NOT_UNIQUELY_AVAILABLE:
+      "缺少唯一、完整的当日行情绑定",
+    CURRENT_COMPLETE_CASE_SOURCE_UNAVAILABLE_OR_INVALID:
+      "当日行情原件不完整或核验失败",
+    PLAN_NOT_BOUND_BEFORE_TARGET_SESSION: "计划不是在目标交易日前绑定",
+    COMPLETED_CLOSE_BELOW_ORIGINAL_PROTECTION: "完成收线跌破原保护位",
+    COMPLETED_CLOSE_AND_FROZEN_VOLUME_CONFIRMED:
+      "完成收线和原封存量能条件均满足",
+    PRICE_ABOVE_TRIGGER_VOLUME_INSUFFICIENT: "收线超过突破位，但成交量不足",
+    SAME_BAR_BOUNDS_ORDER_UNKNOWN: "同根K线跨越双界，无法确定先后顺序",
+    WITHIN_FROZEN_RANGE: "未满足突破及量能条件",
+  };
+  const positive = (value: unknown) =>
+    typeof value === "string" &&
+    /^\d+(?:\.\d+)?$/.test(value) &&
+    Number.isFinite(Number(value)) &&
+    Number(value) > 0;
+  const bound = path?.bound_at;
+  const original = path?.original_condition;
+  const eventTime = (value: unknown) =>
+    typeof value === "string" &&
+    isObservedResearchTimestamp(value) &&
+    !!bound &&
+    new Date(value).getTime() > new Date(bound).getTime();
+  const completePlan =
+    path &&
+    typeof path.original_binding_sha256 === "string" &&
+    /^[a-f0-9]{64}$/.test(path.original_binding_sha256) &&
+    typeof bound === "string" &&
+    isObservedResearchTimestamp(bound) &&
+    original &&
+    positive(original.entry_trigger_price) &&
+    positive(original.invalidation_price) &&
+    positive(original.mean_volume) &&
+    Number(original.invalidation_price) <
+      Number(original.entry_trigger_price) &&
+    typeof path.trade_date === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(path.trade_date) &&
+    isObservedResearchTimestamp(`${path.trade_date}T00:00:00+08:00`) &&
+    new Date(bound).getTime() <
+      new Date(`${path.trade_date}T00:00:00+08:00`).getTime();
+  const triggered = path?.first_valid_trigger;
+  const triggerValid =
+    triggered && eventTime(triggered.time) && positive(triggered.close);
+  const eventsValid =
+    path?.status === "NOT_TRIGGERED"
+      ? !triggered && !path.invalidation_at && !path.ambiguous_at
+      : path?.status === "TRIGGER_OBSERVED"
+        ? triggerValid && !path.invalidation_at && !path.ambiguous_at
+        : path?.status === "INVALIDATED_BEFORE_TRIGGER"
+          ? !triggered && eventTime(path.invalidation_at) && !path.ambiguous_at
+          : path?.status === "INVALIDATED_AFTER_TRIGGER"
+            ? triggerValid &&
+              eventTime(path.invalidation_at) &&
+              new Date(path.invalidation_at!).getTime() >
+                new Date(triggered!.time).getTime() &&
+              !path.ambiguous_at
+            : false;
+  const verified =
+    path &&
+    path.scope === "SOURCE_BOUND_PLAN_RECONSTRUCTION" &&
+    path.action === "no_order" &&
+    path.eligibility === false &&
+    path.formal_eligibility === false &&
+    path.strict_pit_admitted === false &&
+    path.strict_oos_admitted === false &&
+    path.actual_shadow_sessions === 0 &&
+    path.real_trade === false &&
+    path.hypothetical_fills === null &&
+    path.profit === null &&
+    path.personal_sell_permission === false &&
+    Object.prototype.hasOwnProperty.call(labels, path.status) &&
+    (path.status === "UNASSESSABLE" ||
+      (completePlan &&
+        eventsValid &&
+        path.reason !== "NO_PERSISTED_PRIOR_PLAN_BINDING"));
+  return (
+    <section aria-label="原封存条件逐K线复核" style={{ marginTop: 16 }}>
+      <Typography.Title level={4}>原封存条件逐K线复核</Typography.Title>
+      {!verified ? (
+        <p>无可核验的事前计划，当前不能判断原条件是否触发。</p>
+      ) : (
+        <>
+          <p>{labels[path.status]}</p>
+          <p>
+            来源绑定计划重建；不计入前瞻、样本外或真实
+            Shadow，不推定成交、收益或个人退出许可。
+          </p>
+          {path.bound_at && (
+            <p>
+              原绑定时间：{shanghaiTime(path.bound_at)}
+              （北京时间）；目标交易日：{path.trade_date ?? "待核验"}
+            </p>
+          )}
+          {path.original_condition && (
+            <p>
+              原突破参考{" "}
+              {formatUnitPrice(path.original_condition.entry_trigger_price)}{" "}
+              元；原失效参考{" "}
+              {formatUnitPrice(path.original_condition.invalidation_price)}{" "}
+              元。保护位不滚动。
+            </p>
+          )}
+          {path.first_valid_trigger && (
+            <p>
+              首次条件观察：{shanghaiTime(path.first_valid_trigger.time)}；收线{" "}
+              {formatUnitPrice(path.first_valid_trigger.close)} 元。
+            </p>
+          )}
+          {path.invalidation_at && (
+            <p>原条件失效时间：{shanghaiTime(path.invalidation_at)}。</p>
+          )}
+          {path.ambiguous_at && (
+            <p>
+              同根K线跨越双界，先后顺序未知：{shanghaiTime(path.ambiguous_at)}
+              ；不能猜测成交顺序。
+            </p>
+          )}
+          {path.reason && (
+            <p>
+              核验依据：
+              {reasons[path.reason] ?? "原条件或数据边界未通过，详见原始原因"}（
+              {path.reason}）
+            </p>
+          )}
+          {!!path.trace?.length && (
+            <details>
+              <summary>查看逐K线依据</summary>
+              <List
+                dataSource={path.trace}
+                renderItem={(row) => (
+                  <List.Item>
+                    {shanghaiTime(row.time)} · 收线 {row.close} · 成交量{" "}
+                    {row.volume} / 最低量 {row.minimum_volume} ·{" "}
+                    {reasons[row.reason] ?? row.reason}
+                  </List.Item>
+                )}
+              />
+            </details>
+          )}
+        </>
+      )}
+    </section>
+  );
 }
 
 export default function ConditionAlerts() {
@@ -307,6 +475,9 @@ export default function ConditionAlerts() {
                   </Button>
                   <Tag>{result.data.public_observation.status}</Tag>
                 </Space>
+                <SealedConditionPath
+                  observation={result.data.public_observation}
+                />
                 {result.data.public_observation.condition_observation && (
                   <section style={{ marginTop: 16 }}>
                     <Typography.Title level={4}>

@@ -111,6 +111,8 @@ jobs:
           tests/test_hotspot_frozen_condition_path.py
           tests/test_finite_advantage_cash_path_v1.py
           tests/test_finite_advantage_research.py
+          tests/test_product_continuation_cash_path_v1.py
+          tests/test_public_observation_sealed_path.py
           tests/test_hotspot_review_handoff.py
           tests/test_value_evidence_enrichment_v1.py
           tests/test_financial_funding_scope.py

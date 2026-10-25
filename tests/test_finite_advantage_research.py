@@ -1,6 +1,7 @@
 """Synthetic application contracts; retained-original validation is opt-in."""
 from copy import deepcopy
 from datetime import datetime, timezone
+from decimal import Decimal
 from hashlib import sha256
 import json
 import os
@@ -10,6 +11,7 @@ from types import SimpleNamespace
 import pytest
 
 from value_investment_agent.application.research import finite_advantage_research as research
+from test_product_continuation_cash_path_v1 import inputs as product_inputs
 
 
 @pytest.fixture
@@ -123,3 +125,28 @@ def test_retained_original_research_is_not_strategy_admission():
     persistent=[b for b in result['branches'] if b['branch']=='PERSISTENT_10_PERCENT_UNREMITTED']
     assert all('YEAR_5_CASH_FLOOR' in b['result']['blockers'] for b in persistent)
     assert result['formal_eligibility'] is False
+    center=result['product_continuation']
+    assert center['status']=='SOURCE_BOUND_PRODUCT_CONTINUATION_NOT_APPROVED'
+    assert len(center['scenarios'])==6
+    base=next(row for row in center['scenarios'] if row['scenario']=='base' and row['branch']=='FLAT_PRODUCT_CONTINUATION')
+    assert base['result']['valuation']['per_share_cny'].startswith('945.974796')
+
+
+def test_product_center_is_not_total_book_roe_fade(inputs,product_inputs):
+    cash_policy,_,ledger,facts=inputs
+    policy=json.loads((Path(__file__).resolve().parents[1]/'config/research-assumptions/600519-product-continuation-v1.json').read_bytes())
+    for case in ledger['cases']['TIMING_DELAY'].values():
+        for row in case['annual_rows']: row['legacy_profit_before_new_cash_cost']='600.7'
+    generated=dict(status='CONDITIONAL_OPERATING_RESEARCH_NOT_APPROVED',
+        scenarios=[dict(scenario=name,operating_rows=product_inputs['first_five_product_rows']) for name in ('bear','base','bull')])
+    result=research.build_product_continuation_research(policy=policy,cash_policy=cash_policy,
+        generated=generated,ledger=ledger,facts=facts)
+    assert len(result['scenarios'])==6
+    baseline=next(row for row in result['scenarios'] if row['scenario']=='base' and row['branch']=='FLAT_PRODUCT_CONTINUATION')['result']
+    assert all(row['legacy_profit_cny']=='600.700000' or Decimal(row['legacy_profit_cny'])==Decimal('600.7') for row in baseline['cash_rows'])
+    assert result['economic_approval'] is result['primary_valuation_changed'] is False
+    generated['scenarios'][0]['operating_rows']=deepcopy(generated['scenarios'][0]['operating_rows'])
+    generated['scenarios'][0]['operating_rows'][0]['legacy_ex_parent']='601'
+    with pytest.raises(ValueError,match='first five'):
+        research.build_product_continuation_research(policy=policy,cash_policy=cash_policy,
+            generated=generated,ledger=ledger,facts=facts)

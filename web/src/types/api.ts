@@ -589,6 +589,7 @@ export interface ValueResearchAnalysis {
 }
 
 export interface FiniteAdvantageResearch {
+  product_continuation?: ProductContinuationResearch;
   schema_version: string;
   symbol: string;
   status: string;
@@ -631,6 +632,45 @@ export interface FiniteAdvantageResearch {
         closing_cash_cny: string;
         closing_book_cny: string;
       }[];
+    };
+  }[];
+}
+
+export interface ProductContinuationResearch {
+  status: string;
+  action: string;
+  confidence?: string;
+  formal_eligibility: boolean;
+  economic_approval: boolean;
+  price_admission: boolean;
+  primary_valuation_changed?: boolean;
+  input_available_at?: string;
+  source_bindings?: { path: string; sha256: string }[];
+  scenarios: {
+    scenario: string;
+    branch: string;
+    result: {
+      status: string;
+      action: string;
+      formal_eligibility: boolean;
+      economic_approval: boolean;
+      price_admission: boolean;
+      primary_valuation_changed: boolean;
+      valuation: {
+        usable: boolean;
+        per_share_cny: string | null;
+        terminal_value_pv_share: string | null;
+        ri_ddm_residual_cny: string | null;
+      };
+      cash_rows: {
+        year: number;
+        legacy_profit_cny: string;
+        incremental_cash_income_cny: string;
+        profit_cny: string;
+        distribution_cny: string;
+        closing_cash_cny: string;
+      }[];
+      blockers: string[];
     };
   }[];
 }

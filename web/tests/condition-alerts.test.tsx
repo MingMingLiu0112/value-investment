@@ -22,6 +22,78 @@ vi.mock("@umijs/max", () => ({
 vi.mock("../src/hooks/useApi", () => ({ useApi: () => response }));
 import ConditionAlerts from "../src/pages/ConditionAlerts";
 
+it.each([
+  "missing",
+  "unassessable",
+  "not_triggered",
+  "permission",
+  "missing_binding",
+  "missing_trigger",
+  "missing_invalidation",
+])("explains sealed path without upgrading old observations: %s", (damage) => {
+  const path: any = {
+    status: damage === "unassessable" ? "UNASSESSABLE" : "NOT_TRIGGERED",
+    reason: "NO_PERSISTED_PRIOR_PLAN_BINDING",
+    scope: "SOURCE_BOUND_PLAN_RECONSTRUCTION",
+    action: "no_order",
+    eligibility: false,
+    formal_eligibility: false,
+    strict_pit_admitted: false,
+    strict_oos_admitted: false,
+    actual_shadow_sessions: 0,
+    real_trade: false,
+    hypothetical_fills: null,
+    profit: null,
+    personal_sell_permission: damage === "permission",
+    original_binding_sha256: null,
+    bound_at: null,
+  };
+  if (!["missing", "unassessable", "missing_binding"].includes(damage)) {
+    Object.assign(path, {
+      original_binding_sha256: "a".repeat(64),
+      bound_at: "2026-10-22T08:00:00Z",
+      trade_date: "2026-10-23",
+      reason: null,
+      original_condition: {
+        entry_trigger_price: "232.830",
+        invalidation_price: "218.450",
+        mean_volume: "24720622.2",
+      },
+    });
+  }
+  if (damage === "missing_trigger") path.status = "TRIGGER_OBSERVED";
+  if (damage === "missing_invalidation")
+    path.status = "INVALIDATED_BEFORE_TRIGGER";
+  response.data.public_observation = {
+    status: "NOT_STARTED",
+    monitor_running: false,
+    samples: [],
+    sealed_condition_path: damage === "missing" ? undefined : path,
+  };
+  try {
+    const html = renderToStaticMarkup(<ConditionAlerts />);
+    expect(html).toContain("原封存条件逐K线复核");
+    if (
+      [
+        "missing",
+        "permission",
+        "missing_binding",
+        "missing_trigger",
+        "missing_invalidation",
+      ].includes(damage)
+    )
+      expect(html).toContain("无可核验的事前计划");
+    else {
+      expect(html).toContain(
+        damage === "unassessable" ? "封存条件不可判断" : "原封存条件未触发",
+      );
+      expect(html).toContain("不推定成交、收益或个人退出许可");
+    }
+  } finally {
+    response.data.public_observation = undefined;
+  }
+});
+
 it("lets the user read a real-source observation notification without test mode", () => {
   const data = response.data as any;
   data.snapshot_sha256 = "a".repeat(64);

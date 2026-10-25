@@ -419,6 +419,39 @@ export type QuotePlanTransition = {
 };
 
 export type PublicObservationResponse = {
+  sealed_condition_path?: {
+    status: string;
+    reason?: string | null;
+    scope: string;
+    action: "no_order";
+    eligibility: false;
+    formal_eligibility: false;
+    strict_pit_admitted: false;
+    strict_oos_admitted: false;
+    actual_shadow_sessions: 0;
+    real_trade: false;
+    hypothetical_fills: null;
+    profit: null;
+    personal_sell_permission: false;
+    original_binding_sha256: string | null;
+    bound_at: string | null;
+    original_condition?: {
+      entry_trigger_price: string;
+      invalidation_price: string;
+      mean_volume: string;
+    } | null;
+    first_valid_trigger?: { time: string; close: string } | null;
+    invalidation_at?: string | null;
+    ambiguous_at?: string | null;
+    trade_date?: string;
+    trace?: {
+      time: string;
+      close: string;
+      volume: string;
+      minimum_volume: string;
+      reason: string;
+    }[];
+  };
   choices_status?: "UNAVAILABLE";
   choices_detail?: string;
   status: string;

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from ...domain.valuation.finite_advantage_cash_path_v1 import build_finite_advantage_cash_path, SCOPE
+from ...domain.valuation.product_continuation_cash_path_v1 import build_product_continuation_cash_path
 from ...m1_valuation_package_builder import build_descriptor
 from ..product.common import require_inside, sha256_file
 from ..product.incremental_validity import read_bound_json
@@ -16,6 +17,10 @@ _CODE_ROOT = Path(__file__).resolve().parents[4]
 _IMPLEMENTATIONS = tuple(dict(path=name, sha256=sha256_file(_CODE_ROOT/name)) for name in (
     'src/value_investment_agent/application/research/finite_advantage_research.py',
     'src/value_investment_agent/domain/valuation/finite_advantage_cash_path_v1.py',
+    'src/value_investment_agent/domain/valuation/product_continuation_cash_path_v1.py',
+    'src/value_investment_agent/application/research/product_operating_research.py',
+    'src/value_investment_agent/infrastructure/filings/operating_erosion_sources.py',
+    'src/value_investment_agent/domain/valuation/operating_product_paths.py',
 ))
 
 def _capital(year, project, fund, gap, rationale):
@@ -36,6 +41,102 @@ def _distribution(year, policy, *, persistent, terminal=False):
         reserve_policy_rationale=policy['terminal_distribution_rationale'] if terminal else policy['capacity_rationale'],
         capacity_mapping_rationale=policy['cash_mapping_rationale'])
 
+
+def _opening_state(case, history, facts):
+    return dict(scope=SCOPE, currency='CNY',
+        book_equity_cny=str(facts.operating_inputs['start_book_equity']),
+        ordinary_shares=str(facts.operating_inputs['ordinary_shares']),
+        cash_cny=history['ttm']['cash_end'], unremitted_assets_cny='0',
+        distribution_capacity_cny=history['ttm']['parent_retained_profit_end'],
+        cash_floor_cny=case['cash_floor'],
+        uncalled_fund_commitment_cny=history['known_uncalled_fund_commitment']['amount_cny'],
+        selected_project_budget_cny=case['project_budget'])
+
+
+def build_product_continuation_research(*, policy, cash_policy, generated, ledger, facts):
+    """Extend verified product hypotheses, never infer profitability from book ROE."""
+    if (policy.get('center') != 'FLAT_YEAR5_PRODUCT_LEVELS_AND_COST_RATIOS'
+            or policy.get('continuation_years') != 5
+            or policy.get('challenge_moutai_realization_growth') != '-0.01'
+            or policy.get('challenge_cost_ratio_increment') != '0.005'
+            or generated.get('status') != 'CONDITIONAL_OPERATING_RESEARCH_NOT_APPROVED'):
+        raise ValueError('Explicit product continuation and countercase required')
+    for key in ('rationale','cash_return_rationale','terminal_rationale','challenge_rationale'):
+        if not isinstance(policy.get(key),str) or not policy[key].strip():
+            raise ValueError('Product continuation explanation required')
+    if (not isinstance(policy.get('counter_evidence'),list) or not policy['counter_evidence']
+            or any(not isinstance(item,str) or not item.strip() for item in policy['counter_evidence'])):
+        raise ValueError('Product continuation counterevidence required')
+    outcomes=[]
+    if {row['scenario'] for row in generated['scenarios']} != {'bear','base','bull'} or len(generated['scenarios']) != 3:
+        raise ValueError('Three verified original product paths required')
+    with localcontext() as context:
+        context.prec=48
+        for source in generated['scenarios']:
+            scenario=source['scenario']
+            old=ledger['cases']['TIMING_DELAY'][scenario]
+            opening=_opening_state(old,ledger['history'],facts)
+            first=source['operating_rows']
+            if (len(first) != 5 or len(old['annual_rows']) != 5
+                    or any(abs(Decimal(row['legacy_ex_parent'])-Decimal(prior['legacy_profit_before_new_cash_cost'])) > Decimal('1e-24')
+                           for row,prior in zip(first,old['annual_rows']))):
+                raise ValueError('Continuation changed the source-bound first five product years')
+            for branch in ('FLAT_PRODUCT_CONTINUATION','REALIZATION_AND_COST_CHALLENGE'):
+                continuation=[dict(moutai_volume_growth='0',moutai_realization_growth='0',
+                    series_volume_growth='0',series_realization_growth='0',other_revenue_growth='0',
+                    cost_ratio=first[-1]['drivers']['cost_ratio']) for _ in range(5)]
+                if branch == 'REALIZATION_AND_COST_CHALLENGE':
+                    for row in continuation:
+                        row['moutai_realization_growth']=policy['challenge_moutai_realization_growth']
+                        row['cost_ratio']=str(Decimal(row['cost_ratio'])+Decimal(policy['challenge_cost_ratio_increment']))
+                capital=[_capital(y,Decimal(old['project_budget'])/5 if y<=5 else Decimal(0),
+                    Decimal(opening['uncalled_fund_commitment_cny']) if y==1 else Decimal(0),
+                    Decimal(0),cash_policy['maintenance_rationale']) for y in range(1,11)]
+                distribution=[_distribution(y,cash_policy,persistent=False) for y in range(1,11)]
+                terminal=dict(method='STABLE_PRODUCT_PROFIT_ZERO_GROWTH_FULL_PAYOUT',
+                    rationale=policy['terminal_rationale'],
+                    operating_continuation='FINAL_PRODUCT_LEVELS_AND_EARNINGS_BRIDGE_CONSTANT',
+                    distribution_constraint_rationale=cash_policy['terminal_distribution_rationale'],
+                    capital_cash_row=_capital(11,Decimal(0),Decimal(0),Decimal(0),cash_policy['maintenance_rationale']),
+                    distribution_row=_distribution(11,cash_policy,persistent=False,terminal=True))
+                result=build_product_continuation_cash_path(opening_state=opening,first_five_product_rows=first,
+                    continuation_policy=continuation,capital_cash_rows=capital,distribution_rows=distribution,
+                    cost_of_equity=ledger['plan']['ke'],incremental_cash_yield=ledger['plan']['incremental_parent_cash_yield'],
+                    terminal_policy=terminal)
+                outcomes.append(dict(scenario=scenario,branch=branch,result=result))
+    return dict(status='SOURCE_BOUND_PRODUCT_CONTINUATION_NOT_APPROVED',action='no_order',confidence='LOW',
+        formal_eligibility=False,economic_approval=False,price_admission=False,primary_valuation_changed=False,
+        rationale=policy['rationale'],cash_return_rationale=policy['cash_return_rationale'],
+        challenge_rationale=policy['challenge_rationale'],terminal_rationale=policy['terminal_rationale'],
+        counter_evidence=policy['counter_evidence'],scenarios=outcomes)
+
+
+def _load_product_continuation(*,root,symbol,now,candidate_binding,package,ledger,facts,cash_policy):
+    relative='config/research-assumptions/'+symbol+'-product-continuation-v1.json'
+    path=require_inside(root,root/relative,'product continuation policy')
+    if not path.is_file():
+        return None,[]
+    try:
+        raw=path.read_bytes()
+        policy=json.loads(raw)
+        available=datetime.fromisoformat(policy['generated_at'])
+        if (available.utcoffset() is None or available>now
+                or policy['schema_version'] != 'product-continuation-research-policy-v1'
+                or policy['candidate_binding'] != candidate_binding or policy['symbol'] != symbol
+                or policy['action'] != 'no_order' or policy['confidence'] != 'LOW'):
+            raise ValueError('Product continuation availability/identity changed')
+        from .product_operating_research import build_product_operating_research
+        generated=build_product_operating_research(root=root,package=package,ledger=ledger,facts=facts,evaluation_at=now)
+        result=build_product_continuation_research(policy=policy,cash_policy=cash_policy,generated=generated,ledger=ledger,facts=facts)
+        refs=[dict(path=relative,sha256=sha256(raw).hexdigest()),*generated['source_bindings']]
+        for ref in refs:
+            if sha256_file(require_inside(root,root/ref['path'],'product continuation source')) != ref['sha256']:
+                raise ValueError('Product continuation source changed during calculation')
+        return dict(result,input_available_at=available.isoformat(),source_bindings=refs),refs
+    except (OSError,ValueError,KeyError,TypeError,ArithmeticError) as error:
+        return dict(status='PRODUCT_CONTINUATION_SOURCE_OR_ASSUMPTION_UNAVAILABLE',action='no_order',
+            formal_eligibility=False,economic_approval=False,price_admission=False,
+            scenarios=[],reason=type(error).__name__+':'+str(error)),[]
 
 def build_finite_advantage_research(*, policy, package, ledger, facts):
     """Compute existing real-input hypotheses; caller authenticates all sources."""
@@ -63,14 +164,7 @@ def build_finite_advantage_research(*, policy, package, ledger, facts):
                       for row in case['annual_rows']]
             if len(legacy) != 5 or case['blockers']:
                 raise ValueError('Complete inherited operating hypothesis required')
-            opening = dict(scope=SCOPE, currency='CNY',
-                book_equity_cny=str(facts.operating_inputs['start_book_equity']),
-                ordinary_shares=str(facts.operating_inputs['ordinary_shares']),
-                cash_cny=history['ttm']['cash_end'], unremitted_assets_cny='0',
-                distribution_capacity_cny=history['ttm']['parent_retained_profit_end'],
-                cash_floor_cny=case['cash_floor'],
-                uncalled_fund_commitment_cny=history['known_uncalled_fund_commitment']['amount_cny'],
-                selected_project_budget_cny=case['project_budget'])
+            opening = _opening_state(case,history,facts)
             branches = [('BALANCED_NET_MAINTENANCE', Decimal(0), False)]
             if scenario == 'base':
                 branches += [('EXTRA_NET_MAINTENANCE_2_PERCENT', Decimal('.02'), False),
@@ -138,9 +232,13 @@ def load_finite_advantage_research(*, root: Path, symbol: str, now: datetime):
         _, ledger = read_bound_json(root, candidate['native_cash_ledger_binding'], 'finite research cash')
         facts = build_descriptor(package, root=root).facts
         computed = build_finite_advantage_research(policy=policy, package=package, ledger=ledger, facts=facts)
+        continuation,continuation_refs=_load_product_continuation(root=root,symbol=symbol,now=now,
+            candidate_binding=ref,package=package,ledger=ledger,facts=facts,cash_policy=policy)
+        if continuation is not None:
+            computed['product_continuation']=continuation
         refs = [dict(path=relative, sha256=sha256(raw).hexdigest()), dict(ref),
                 dict(candidate['source_package_binding']), dict(candidate['native_cash_ledger_binding']),
-                *candidate['source_bindings'], *[dict(row) for row in _IMPLEMENTATIONS]]
+                *candidate['source_bindings'], *[dict(row) for row in _IMPLEMENTATIONS], *continuation_refs]
         for binding in refs:
             if sha256_file(require_inside(root, root/binding['path'], 'finite research source')) != binding['sha256']:
                 raise ValueError('Finite research source changed during evaluation')

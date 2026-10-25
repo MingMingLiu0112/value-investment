@@ -5767,3 +5767,51 @@ Latest exact-SHA CI, clean-checkout and sole8001 publication are separate pendin
 checks. Do not claim either V primary economic admission or dual-strategy closure.
 Next work remains the same two packages' consumer/valuation acceptance, not
 further simulation, verification-platform or page expansion. action=no_order.
+
+### 2026-10-25 product-continuation center and H retained-plan consumer
+
+Sole8001 now runs0b7373269dea602081f05d2e7ba181568dbd6539, not the earlier
+a388b1d5 snapshot. Exact Core40189782652 and Web40189782639 succeeded;
+backend/build/release identity MATCHED. Actual600519 browser verification showed
+the finite-cash research, historical basis and original-source disclosure.
+The three public pointers and locked private session were preserved.
+
+Independent economic review found total-ROE fade forces an unsupported roughly
+70% decline in incumbent product earnings. Retain that calculation as a stress
+sensitivity, not the neutral primary candidate. The next product-continuation
+domain delivery306db9a1 is integrated as19fb4e81: first five product years are
+unchanged, years6-10 hold product volume/realization and cost/expense ratios,
+and retained funds earn only the inherited incremental cash yield. A separate
+flagship-realization/cost challenge is explicit and not fitted to market prices.
+
+Real source-bound historical2026-06-30 basis per-share conditional values:
+Bear790.746742 / challenge765.741328; Base945.974797 /915.199808;
+Bull1003.629781 /971.118893. Base terminal present value remains about55%.
+These LOW, unapproved research values are neither current fair values nor buy
+prices. L still contains historical other/financial PBT; maintenance/WC balance,
+upstream access, legal distribution, required return and terminal franchise
+continuation remain assumptions. Explicit other-PBT reduction and Ke challenges
+are the next economic task, not a request for the user to supply public research.
+No selected primary, current candidate pointer or economic/G3 approval changed.
+
+Root actual source/API receipt:
+runtime/finite-advantage-research/20261025T120832477150Z/receipt.json.
+Private access was hard-blocked. Domain/application44 tests and actual API static
+render18 tests passed. Independent review closed the concrete UI prototype-key
+crash with strict scenario membership; invalid child research preserves the
+independently verified finite-cash appendix. This successor is not yet8001.
+
+H consumerdb8147db is integrated as8b3bffa8. Independent review passed13 direct
+tests and3 additional probes, including zero-write/zero-network read interception.
+The actual persisted bound_at is required, prior/current native cases are
+reverified, and old completed result/hash/status/inbox are not rewritten.
+Root integration29 tests passed/1 opt-in skipped; separately enabled real300750
+source replay passed17 with no skip. That real replay still reconstructs sources
+retrospectively, not an actually sealed contemporaneous plan or Shadow session.
+
+The existing reminder page now consumes sealed_condition_path. Missing or bad
+qualification fields show no verifiable prior plan; NOT_TRIGGERED, invalidation
+and ambiguous-bar states remain observations, not personal BUY/EXIT permissions.
+No worker, network collection, timer, replacement freeze, private data, Excel or
+server action was started. Exact successor CI/clean checkout/browser publication
+remain separate pending gates. Overall REAL_ASSISTED_USE_NOT_READY; action=no_order.
