@@ -384,6 +384,7 @@ def load_current_research_analysis(
     from ..research.value_research_analysis import load_current_value_research_analysis
     from ..research.value_economic_assessment import load_current_value_economic_assessment
     from ..research.value_economic_assessment import load_retained_operating_bridge
+    from ..research.industrial_earnings_research import load_industrial_earnings_research
 
     normalized = normalize_symbol(symbol)
     try:
@@ -412,4 +413,8 @@ def load_current_research_analysis(
         appendix = load_retained_operating_bridge(root=root, symbol=normalized, now=evaluated_at)
         if appendix is not None:
             result['historical_operating_review'] = appendix
+    if result is not None:
+        forward = load_industrial_earnings_research(root=root, symbol=normalized, now=evaluated_at)
+        if forward is not None:
+            result['industrial_earnings_research'] = forward
     return result

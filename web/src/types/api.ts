@@ -293,7 +293,69 @@ export interface OperatingEarningsReview {
   commercial_subtotal?: { change_cny: string };
 }
 
+export interface IndustrialEarningsResearch {
+  schema_version: "industrial-earnings-research-v1";
+  symbol: string;
+  status: string;
+  action: "no_order";
+  confidence: "LOW";
+  context_scope: "INDEPENDENT_SOURCE_BOUND_RESEARCH_NOT_CURRENT_VALUATION";
+  formal_eligibility: false;
+  primary_valuation_usable: false;
+  price_admitted: false;
+  strategy_admitted: false;
+  economic_approval: false;
+  normalized_parent_profit_cny: null;
+  input_available_at: string;
+  evaluated_at: string;
+  financial_basis: string;
+  rationale: string;
+  tax_convention: string;
+  counter_evidence: string[];
+  thesis_breakers: string[];
+  unknowns: string[];
+  policy_binding: { path: string; sha256: string };
+  source_bindings: { path: string; sha256: string }[];
+  official_sources: {
+    source_id: string;
+    path: string;
+    sha256: string;
+    source_url: string;
+  }[];
+  scenarios: Record<
+    "bear" | "base" | "bull",
+    {
+      rationale: string;
+      rows: {
+        year: number;
+        currency: "CNY";
+        revenue_cny: string;
+        commercial_subtotal_cny: string;
+        inventory_impairment_cny: string;
+        goodwill_impairment_cny: string;
+        other_asset_impairment_cny: string;
+        other_pbt_cny: string;
+        group_pbt_cny: string;
+        income_tax_cny: string;
+        signed_nci_cny: string;
+        parent_profit_cny: string;
+        bridge_residual_cny: string;
+        change_from_historical_parent: {
+          commercial_subtotal_change_cny: string;
+          asset_impairment_change_cny: string;
+          other_pbt_change_cny: string;
+          income_tax_change_cny: string;
+          signed_nci_change_cny: string;
+          parent_profit_change_cny: string;
+          residual_cny: string;
+        };
+      }[];
+    }
+  >;
+}
+
 export interface ValueResearchAnalysis {
+  industrial_earnings_research?: IndustrialEarningsResearch;
   historical_operating_review?: OperatingEarningsReview;
   blockers?: string[];
   source_native_cash_review?:

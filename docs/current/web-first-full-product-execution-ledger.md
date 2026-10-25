@@ -5449,3 +5449,47 @@ These are dated background evidence, not intraday execution state or complete
 corporate-action coverage. Existing Oct20 structure remains DOWNTREND/WATCH,
 with no observed confirmed breakout; no authorized BUY or real OOS/Shadow is
 claimed. action=no_order.
+
+### 2026-10-25 actual600887 forward operating research, not valuation admission
+
+The signed-NCI function now has an application consumer through a separate
+industrial earnings calculation and source-bound research appendix. No existing
+Moutai/frozen cash implementation was modified. Actual annual/interim originals
+were reparsed: TTM revenue118190421114.75, commercial subtotal13020171795.37,
+signed asset impairment-2848808478.10, other PBT1862655193.37, PBT12034018510.64,
+tax2231858993.45, NCI-321157466.50, reported parent10123316983.69 CNY.
+
+The five-year bear/base/bull policies are explicit LOW research hypotheses,
+not certified normalized profits: separate sales/commercial margins, inventory
+losses, possible further goodwill losses, other PBT, tax and signed NCI. Tax is
+assumed on positive pre-goodwill PBT, without automatically granting a goodwill
+tax shield. Negative NCI benefits are not perpetuated in the Base policy;
+recovery in Bull eventually allocates part of group profits to minority owners.
+There is no historical impairment addback or restoration of written-off equity.
+
+Real fresh-process source and existing decision API validation, with private
+data hard-blocked, is recorded at
+runtime/industrial-earnings-research/20261025T080543364389Z/receipt.json,
+SHA2564ccd4f3ff6af5def2a20e855a735f23e93b93dc9ec8eac96be9bc875b8349aba.
+The earlier075815 receipt is retained as pre-decomposition lineage, not the
+latest execution proof. All15 actual scenario rows reach the decision research
+appendix. Normalized profit remains null and formal/price/strategy/economic
+admissions remain false. Existing investment recommendations are not replaced.
+
+Independent economic review found one P2: absolute future amounts alone could
+make users mistake reduced future impairment for core business growth. It was
+fixed in the same slice with five signed contributions versus historical
+reported parent profit, zero reconciliation residual and selected Y1/Y5 Web
+tables. Static independent re-review closed that P2. BaseY1 commercial change
+is about+0.241bn versus+1.564bn from asset-loss changes, before other PBT, tax
+and NCI offsets. This is not all sales growth and not a cash-return conclusion.
+
+Root validation:155 passed/6 optional skips across initial affected back-end
+contracts, consumers and architecture; after decomposition48 focused tests
+passed. Front-end full pre-decomposition run1031 passed/26 optional skips;
+final changed component/analysis selection140 passed/5 optional skips and
+TypeScript passed. Exact final-SHA CI/build/live8001/browser verification remains
+separate from these local results. Existing8001 is still9501d029 until verified
+publication. No new Web page, simulation product, approval service or orders.
+600887 future cash, applicable valuation and formal economic review remain open.
+action=no_order.

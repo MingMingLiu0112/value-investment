@@ -13,6 +13,7 @@ import { AccountingBridgeReview } from "./AccountingBridgeReview";
 import { PublicJointCapitalReview } from "./JointCapitalReview";
 import { SourceNativeCashReview } from "./SourceNativeCashReview";
 import { OperatingEarningsBridge } from "./OperatingEarningsBridge";
+import { IndustrialEarningsResearch } from "./IndustrialEarningsResearch";
 
 const scenarios = { bear: "保守 Bear", base: "基准 Base", bull: "乐观 Bull" };
 
@@ -115,7 +116,13 @@ export function ValueResearchAnalysis({
         {analysis.status === "SOURCE_OR_REPLAY_UNAVAILABLE" &&
           decision.price_action_plan?.action === "no_order" &&
           analysis.symbol === decision.symbol && (
-            <OperatingEarningsBridge analysis={analysis} />
+            <>
+              <OperatingEarningsBridge analysis={analysis} />
+              <IndustrialEarningsResearch
+                research={analysis.industrial_earnings_research}
+                symbol={decision.symbol}
+              />
+            </>
           )}
       </>
     );
@@ -220,6 +227,10 @@ export function ValueResearchAnalysis({
         {analysis.computed_at || "未提供"}
       </p>
       <h3>三情景与实际模型输入</h3>
+      <IndustrialEarningsResearch
+        research={analysis.industrial_earnings_research}
+        symbol={decision.symbol ?? ""}
+      />
       {analysis.economic_assessment?.schema_version ===
         "value-economic-assessment-v1" &&
         analysis.economic_assessment.symbol === decision.symbol &&
