@@ -9,6 +9,22 @@ from ...infrastructure.hotspot.current_price_case import load_current_price_case
 from .event_replay import _bound_bytes, _availability
 
 
+def build_baostock_structure_observation(*, root: Path, binding: dict, now: datetime) -> dict:
+    """Describe a separately verified historical provider without current-price admission."""
+    from ...infrastructure.hotspot.baostock_price_case import load_baostock_history
+    from ...domain.hotspot.structure_replay import describe_prefix
+    case = load_baostock_history(root=root, binding=binding, now=now)
+    description = describe_prefix(case['bars'])
+    return dict(schema_version='baostock-historical-structure-observation-v1',
+        symbol=case['symbol'], computed_at=now.isoformat(),
+        market_trade_date=case['bars']['daily'][-1]['time'],
+        data_available_at=case['data_available_at'], source_bindings=case['source_bindings'],
+        attempt_binding=case['attempt_binding'], description=description,
+        scope='RETROSPECTIVE_STRUCTURE_NOT_SELECTION_HISTORY_OR_EXECUTION',
+        current_pit=False, strict_pit_admitted=False, strict_oos_admitted=False,
+        strategy_validation='NOT_PROVEN', formal_eligibility=False, action='no_order')
+
+
 def build_structure_observation(*, root: Path, spec_path: Path, expected_sha256: str,
                                 now: datetime, progress=None) -> dict:
     root = root.resolve()
