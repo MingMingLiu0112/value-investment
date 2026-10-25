@@ -387,6 +387,7 @@ def load_current_research_analysis(
     from ..research.industrial_earnings_research import load_industrial_earnings_research
     from ..research.parent_cash_research import load_parent_cash_research
     from ..research.fiscal_earnings_research import load_fiscal_earnings_research
+    from ..research.finite_advantage_research import load_finite_advantage_research
 
     normalized = normalize_symbol(symbol)
     try:
@@ -425,4 +426,7 @@ def load_current_research_analysis(
         fiscal = load_fiscal_earnings_research(root=root, symbol=normalized, now=evaluated_at)
         if fiscal is not None:
             result['fiscal_earnings_research'] = fiscal
+        finite = load_finite_advantage_research(root=root, symbol=normalized, now=evaluated_at)
+        if finite is not None:
+            result['finite_advantage_research'] = finite
     return result

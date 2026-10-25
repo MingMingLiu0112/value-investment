@@ -108,6 +108,9 @@ jobs:
           tests/test_hotspot_paired_portfolio_benchmark.py
           tests/test_hotspot_shared_fill_feedback.py
           tests/test_hotspot_forward_research.py
+          tests/test_hotspot_frozen_condition_path.py
+          tests/test_finite_advantage_cash_path_v1.py
+          tests/test_finite_advantage_research.py
           tests/test_hotspot_review_handoff.py
           tests/test_value_evidence_enrichment_v1.py
           tests/test_financial_funding_scope.py

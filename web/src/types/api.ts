@@ -451,6 +451,7 @@ export interface FiscalEarningsResearch {
 }
 
 export interface ValueResearchAnalysis {
+  finite_advantage_research?: FiniteAdvantageResearch;
   fiscal_earnings_research?: FiscalEarningsResearch;
   parent_cash_research?: ParentCashResearch;
   industrial_earnings_research?: IndustrialEarningsResearch;
@@ -585,6 +586,53 @@ export interface ValueResearchAnalysis {
     route?: { profile_id: string; selected_model: string; model_type: string };
   };
   source_bindings: { path: string; sha256: string }[];
+}
+
+export interface FiniteAdvantageResearch {
+  schema_version: string;
+  symbol: string;
+  status: string;
+  action: string;
+  scope: string;
+  currency: string;
+  confidence: string;
+  formal_eligibility: boolean;
+  economic_approval: boolean;
+  price_admission: boolean;
+  input_available_at?: string;
+  research_as_of?: string;
+  basis_date?: string;
+  primary_valuation_changed?: boolean;
+  price_condition_cny?: string | null;
+  rationale?: string;
+  counter_evidence?: string[];
+  source_bindings?: { path: string; sha256: string }[];
+  branches: {
+    scenario: string;
+    branch: string;
+    fade_years: number;
+    net_maintenance_gap_cny: string;
+    result: {
+      status: string;
+      action: string;
+      formal_eligibility: boolean;
+      economic_approval: boolean;
+      price_admission: boolean;
+      blockers: string[];
+      valuation: {
+        usable: boolean;
+        per_share_cny: string | null;
+        ri_ddm_residual_cny: string | null;
+      };
+      rows: {
+        year: number;
+        profit_cny: string;
+        distribution_cny: string;
+        closing_cash_cny: string;
+        closing_book_cny: string;
+      }[];
+    };
+  }[];
 }
 
 export interface CurrentPriceCase {

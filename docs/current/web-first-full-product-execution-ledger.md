@@ -5708,3 +5708,62 @@ Current two in-flight business packages remain V primary economic valuation and
 H independent strategy judgment/conditions, with D only as their necessary task.
 Initialization and source-integrity repairs do not count as strategy efficacy
 or product closure. Overall REAL_ASSISTED_USE_NOT_READY; action=no_order.
+
+### 2026-10-25 real finite-advantage valuation and sealed H condition path
+
+Exact ba0c3966ebc97d56a9ac4c32fe0789c77a7c9d1d passed Core40188139358
+and Web40188139341 (duplicate trigger runs also green). Clean checkout passed
+56 focused tests/2 optional original-source skips. This does not publish8001.
+
+H delivery1d185113d380956d2b9861cfe30dbe317ed1641c is integrated as358c3763.
+Independent Root review passed17 targeted cases and5 probes, including native
+loader rejection of missing15m/60m bars. It freezes the prior-five mean volume,
+1.2 multiplier, original trigger/protection and next-session expiry. Completed
+bars are evaluated in order; same-bar crossing is ambiguous, first invalidation
+does not revive, and no observation invents holdings, fills or profit.
+Actual300750 Oct22/23 source reconstruction: trigger232.830, protection218.450,
+minimum volume29664746.64. Later closes exceed trigger but volumes28684153 and
+19865623 fail it: NOT_TRIGGERED. Morning low216.510 alone is not a completed-close
+invalidation. Author report SHA2560c92b92bd0891bebf9a3e2ab9edc68fa49b27ca0e3e218376ce078f8efd73c60
+was independently checked. This is RETROSPECTIVE real-source reconstruction,
+not an actually presealed plan, PIT/OOS or new Shadow session.
+
+The45c9 cold manifest above is now historical because H source files changed.
+Do not transplant/update its hashes or credit sessions. No replacement ACTUAL
+freeze was performed. Existing PublicObservationSession plan_binding and its
+real bound_at are the consumer boundary; an eight-bar sample alone does not
+prove a full four60m/sixteen15m session. Shared API/Web H connection remains
+unfinished; do not claim the new domain path is already visible in8001.
+
+V now computes annual owner-equivalent P/D/B/cash/unremitted-asset paths with
+capital funding and finite total-ROE excess-return fade, preserving the original
+source-native candidate and frozen operating kernel. Real600519 candidate2e53d50d
+and cash ledger fa827fd3 support the historical inputs; all future mappings,
+maintenance balance, reserve treatment, durations and book-priced terminal stay
+explicit LOW, unapproved hypotheses. No group DA is added to parent cash.
+No-growth terminal cannot offset maintenance cash by permanent WC releases.
+
+Historical2026-06-30 model-basis values per inherited ordinary share:
+Bear436.896150/fade5 and494.386863/fade10; Base483.019847/559.543283;
+Bull500.796546/584.453065. These are sensitivities, not a selected primary
+valuation, current fair value, safety margin or buy price. Net maintenance
+challenges2%/5% of first-year legacy profit as fixed nominal annual cash needs
+reject full-payout terminal. Persistent10% withholding fails the cash floor in
+year5. No Ke/payout/threshold was optimized to force a trade.
+
+Independent Maxwell review closed three P2s: terminal WC/maintenance separation,
+fixed Decimal precision for capital arithmetic, and new implementation hash
+closure. Final focused backend48 passed including actual retained originals;
+combined V/H/architecture111 passed/1 unrelated optional-source skip before the
+last additional source-drift test. Actual API with private access hard-blocked:
+runtime/finite-advantage-research/20261025T113506190278Z/receipt.json.
+Actual API -> Web static render passed,10 component tests including source,
+approval, malformed/future date and residual rejection; TypeScript passed.
+Existing value research rendering139 passed/5 optional skips in the earlier
+affected run. This is not browser publication or economic approval.
+
+The application and existing company detail consume the new research appendix.
+Latest exact-SHA CI, clean-checkout and sole8001 publication are separate pending
+checks. Do not claim either V primary economic admission or dual-strategy closure.
+Next work remains the same two packages' consumer/valuation acceptance, not
+further simulation, verification-platform or page expansion. action=no_order.

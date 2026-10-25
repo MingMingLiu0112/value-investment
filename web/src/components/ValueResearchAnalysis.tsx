@@ -15,6 +15,7 @@ import { SourceNativeCashReview } from "./SourceNativeCashReview";
 import { OperatingEarningsBridge } from "./OperatingEarningsBridge";
 import { IndustrialEarningsResearch } from "./IndustrialEarningsResearch";
 import { ParentCashResearch } from "./ParentCashResearch";
+import { FiniteAdvantageResearch } from "./FiniteAdvantageResearch";
 
 const scenarios = { bear: "保守 Bear", base: "基准 Base", bull: "乐观 Bull" };
 
@@ -119,6 +120,10 @@ export function ValueResearchAnalysis({
           analysis.symbol === decision.symbol && (
             <>
               <OperatingEarningsBridge analysis={analysis} />
+              <FiniteAdvantageResearch
+                research={analysis.finite_advantage_research}
+                symbol={decision.symbol}
+              />
               <IndustrialEarningsResearch
                 research={analysis.industrial_earnings_research}
                 fiscal={analysis.fiscal_earnings_research}
@@ -233,6 +238,10 @@ export function ValueResearchAnalysis({
         {analysis.computed_at || "未提供"}
       </p>
       <h3>三情景与实际模型输入</h3>
+      <FiniteAdvantageResearch
+        research={analysis.finite_advantage_research}
+        symbol={decision.symbol}
+      />
       <IndustrialEarningsResearch
         research={analysis.industrial_earnings_research}
         fiscal={analysis.fiscal_earnings_research}
