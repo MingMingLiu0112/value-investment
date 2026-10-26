@@ -6175,24 +6175,31 @@ through current source. Source tampering, a missing retained blob or a mismatche
 hash still fails closed. This is evidence retention only: retained Python is
 never imported or executed.
 
+The closure now also seals the predecessor research package and economic-policy
+inputs themselves. Their local `path`/`local_path` references are rebound to the
+same content-addressed closure while immutable public source URLs remain
+unchanged. A candidate therefore remains independently verifiable after the
+original package or policy file drifts; it does not weaken source identity or
+silently consume the newer bytes.
+
 Exact clean-checkout acceptance used detached commit
-`f8eb0d1fd3203180385807138a7841b8eec061a2`. Historical repository research
+`8975faa7495ad0a1a64a81551b798a9b394e89cf`. Historical repository research
 bytes were recovered from the fixed bound Git baseline and sealed by hash; no
 live-config overlay was needed. Both candidates then passed the existing
 current-value-plan consumer independently of the current config bytes:
 
 - 600519 candidate SHA-256
-  `56547f51655039f516d27571de621b9b5c2a7e333d7123e80c8daa222259a70d`;
+  `592c6aaa99742feda15cc21b5d6c42df333c5cd19a2ec71cf84ac2bbea1f1b31`;
   conditional bear/base/bull 675.1019318083 / 799.2027611908 /
   930.0062820281 CNY per share, valuation basis 2026-06-30.
 - 600887 candidate SHA-256
-  `2942c75c455ecbdf6cd2c1aa0fc4e44e0b77e824bac087246247efb0e47c3664`;
+  `8577b93a2ef3a8f2caea9b938106e50c3cd8bb4d5ddd9f160a31e8ceba7e6f37`;
   conditional bear/base/bull 13.0011250922 / 16.0892188495 /
   20.2405823121 CNY per share, valuation date 2026-10-21 on its retained basis.
 
 The clean consumer receipt is
-`runtime/joint-cash-v3-clean-acceptance4/acceptance-receipt.json`, SHA-256
-`64500331a6e1f96fbf6a4ef96e699e17bf30bec866cfb9f91275a6220e9e652a`.
+`runtime/joint-cash-v3-clean-acceptance5/acceptance-receipt.json`, SHA-256
+`f5d1014aea1b016780a0f999908b148672212f79f374696ab086cd06034bbdea`.
 Both rows expose `joint-capital-cash-review-v3`, LOW confidence,
 `formal_eligibility=false` and `action=no_order`.
 
@@ -6200,12 +6207,12 @@ The existing `/api/v1/decisions/{symbol}` route was exercised for both candidate
 through an isolated pinned-publication fixture. Both HTTP responses were 200 and
 returned `CONDITIONAL_PATH_NOT_APPROVED`, `formal_eligibility=false` and the same
 three scenario values. Receipt:
-`runtime/joint-cash-v3-clean-acceptance4/api-acceptance-receipt.json`, SHA-256
+`runtime/joint-cash-v3-clean-acceptance5/api-acceptance-receipt.json`, SHA-256
 `c93d72623a688400110dd609ec9cf1bd10135f3361399fe186bafe021ebaa652`.
 This proves the existing API route consumes the result; it is explicitly not a
 current deployment or 8001 publication.
 
-The final clean architecture/economic/source/candidate/API gate passed 127 tests,
+The final clean architecture/economic/source/candidate/API gate passed 128 tests,
 including the explicitly required two-real-company v3 replay. The v3 Web
 economic-review rendering contract passed 133 tests with 3 explicit skips and
 TypeScript typecheck passed. The detached acceptance checkout finished with no
