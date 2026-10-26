@@ -134,3 +134,8 @@ src/value_investment_agent/application/research/shareholder_cash_allocation.py -
 src/value_investment_agent/domain/valuation/cash_constrained_product_path_v2.py -text whitespace=cr-at-eol
 src/value_investment_agent/valuation_models/residual_income_path_v2.py -text whitespace=cr-at-eol
 config/research-assumptions/600519-product-cash-allocation-v2.json -text whitespace=cr-at-eol
+# Retained source-bound dependencies must preserve their actual reviewed bytes.
+src/value_investment_agent/application/research/finite_advantage_research.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/operating_earnings_bridge.py -text whitespace=cr-at-eol
+src/value_investment_agent/infrastructure/filings/pdf_text.py -text whitespace=cr-at-eol
+src/value_investment_agent/domain/valuation/operating_realization_erosion_v1.py -text whitespace=cr-at-eol
