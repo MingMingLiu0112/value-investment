@@ -21,7 +21,8 @@ def verify_or_restore_package_sources(
     Runtime originals stay at their evidence paths. Repository code/config/docs used
     by a newly generated v3 candidate are copied into its immutable closure, so a
     later checkout does not reinterpret old research through changed live files.
-    Historical ``src/`` bytes can additionally be recovered from the bound baseline.
+    Historical repository research bytes can additionally be recovered from the
+    fixed bound baseline commit.
     Retained blobs are evidence only and are never imported or executed.
     """
     root = root.resolve()
@@ -81,26 +82,26 @@ def verify_or_restore_package_sources(
                 resolved_by_identity[identity] = live
                 verified.append((live, expected))
             continue
-        if not relative.startswith("src/"):
-            raise ValueError("non-code source drift requires a retained candidate blob")
+        if not retain_by_hash:
+            raise ValueError("runtime evidence drift requires an existing retained candidate blob")
         process = subprocess.run(
             ["git", "-C", str(root), "cat-file", "blob",
              f"{HISTORICAL_IMPLEMENTATION_COMMIT}:{relative}"],
             check=False, capture_output=True,
         )
         if process.returncode or hashlib.sha256(process.stdout).hexdigest() != expected:
-            raise ValueError("historical implementation bytes are not recoverable from baseline commit")
+            raise ValueError("historical research bytes are not recoverable from baseline commit")
         restored = retained
         if create:
             restored.parent.mkdir(parents=True, exist_ok=True)
             if restored.exists():
                 if sha256_file(restored) != expected:
-                    raise ValueError("historical implementation restore drift")
+                    raise ValueError("historical research restore drift")
             else:
                 with restored.open("xb") as handle:
                     handle.write(process.stdout)
         if not restored.is_file() or sha256_file(restored) != expected:
-            raise ValueError("historical implementation restore is unavailable")
+            raise ValueError("historical research restore is unavailable")
         resolved_by_identity[identity] = restored
         verified.append((restored, expected))
     return tuple(verified)

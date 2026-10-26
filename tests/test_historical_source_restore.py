@@ -1,5 +1,6 @@
 """Content-addressed closure tests for historical v3 research dependencies."""
 from hashlib import sha256
+from types import SimpleNamespace
 
 import pytest
 
@@ -73,3 +74,36 @@ def test_duplicate_source_identity_reuses_one_content_addressed_blob(tmp_path):
     retained = restore_dir / f"{digest}.blob"
     assert verified == ((retained, digest), (retained, digest))
     assert list(restore_dir.iterdir()) == [retained]
+
+
+def test_drifted_config_can_be_recovered_from_fixed_baseline(tmp_path, monkeypatch):
+    source = tmp_path / "config" / "research-assumptions" / "case.json"
+    source.parent.mkdir(parents=True)
+    historical = b'{"assumption":"historical"}\n'
+    source.write_bytes(b'{"assumption":"current"}\n')
+    digest = sha256(historical).hexdigest()
+    restore_dir = tmp_path / "runtime" / "candidate" / "historical-source-code"
+    calls = []
+
+    def baseline(command, **kwargs):
+        calls.append(command)
+        return SimpleNamespace(returncode=0, stdout=historical)
+
+    monkeypatch.setattr(
+        "value_investment_agent.application.product.historical_source_restore.subprocess.run",
+        baseline,
+    )
+    verified = verify_or_restore_package_sources(
+        tmp_path,
+        {"sources": [{
+            "id": "historical-assumption",
+            "local_path": "config/research-assumptions/case.json",
+            "sha256": digest,
+        }]},
+        restore_dir=restore_dir,
+    )
+
+    retained = restore_dir / f"{digest}.blob"
+    assert verified == ((retained, digest),)
+    assert retained.read_bytes() == historical
+    assert calls[0][-1].endswith(":config/research-assumptions/case.json")
