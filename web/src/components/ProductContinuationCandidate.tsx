@@ -269,6 +269,36 @@ export function ProductContinuationCandidate({
   const e = value.economic_explanation,
     c = value.cash_conditions,
     r = value.research_case;
+  const cash = value.shareholder_cash_research;
+  const cashVerified =
+    cash?.status === "SOURCE_REPLAYED_PARTIAL_PARENT_CASH" &&
+    cash.action === "no_order" &&
+    cash.economic_approval === false &&
+    cash.primary_valuation_usable === false &&
+    cash.historical_cash_reconciliation_status === "INCOMPLETE" &&
+    Array.isArray(cash.cash_routes) &&
+    cash.cash_routes.length > 0 &&
+    cash.cash_routes.every(
+      (row) =>
+        object(row) &&
+        text(row.period) &&
+        row.scope === "listed_parent_only" &&
+        row.currency === "CNY" &&
+        [
+          row.printed_cfo_cny,
+          row.printed_gross_capex_cny,
+          row.printed_mixed_distribution_interest_paid_cny,
+          row.printed_cash_change_cny,
+        ].every(decimal) &&
+        [
+          row.printed_investment_income_cash_cny,
+          row.partial_cash_before_mixed_payments_cny,
+        ].every((v) => v === null || decimal(v)) &&
+        Array.isArray(row.unknown_fields) &&
+        row.unknown_fields.every(text) &&
+        row.future_distributable_cash_cny === null &&
+        row.ordinary_dividends_identified === false,
+    );
   return (
     <section
       aria-label="十年产品延续候选研究"
@@ -310,6 +340,64 @@ export function ProductContinuationCandidate({
         <dt>终值分配条件</dt>
         <dd>{c.terminal_distribution_rationale}</dd>
       </dl>
+      {cash &&
+        (cashVerified ? (
+          <>
+            <h4>母公司现金事实与当前判断</h4>
+            <p>
+              以下仅为已披露部分现金流，不是正常化股东现金，也未完成整表勾稽。投资收益收现不自动等于子公司分红；购建支出未拆为维护和增长。当前90%分配及终端全额分配仍不能作为已建立的主估值依据。资料不足不等于公司没有投资价值，也不能据此输出买入、加仓或持有。
+            </p>
+            <div style={{ overflowX: "auto", maxWidth: "100%" }}>
+              <table>
+                <caption>历史母公司现金路径，CNY元；空白不补零</caption>
+                <thead>
+                  <tr>
+                    {[
+                      "期间",
+                      "经营现金净流入",
+                      "购建长期资产现金",
+                      "投资收益收现",
+                      "混合分配/利润/利息支付",
+                      "现金净变化",
+                    ].map((label) => (
+                      <th key={label}>{label}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {cash.cash_routes.map((row) => (
+                    <tr key={row.period}>
+                      <th scope="row">{row.period}</th>
+                      <td>{formatted(row.printed_cfo_cny)}</td>
+                      <td>{formatted(row.printed_gross_capex_cny)}</td>
+                      <td>
+                        {row.printed_investment_income_cash_cny === null
+                          ? "未取得完整两列证据"
+                          : formatted(row.printed_investment_income_cash_cny)}
+                      </td>
+                      <td>
+                        {formatted(
+                          row.printed_mixed_distribution_interest_paid_cny,
+                        )}
+                      </td>
+                      <td>{formatted(row.printed_cash_change_cny)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p>
+              下一决定性证据：同范围维护/增长投入、必要营运资本、实际子公司分红上划和法定提留之间的桥接。缺失字段：
+              {[
+                ...new Set(
+                  cash.cash_routes.flatMap((row) => row.unknown_fields),
+                ),
+              ].join("、")}
+            </p>
+          </>
+        ) : (
+          <p role="status">母公司现金证据不可核验，已隐藏现金数值。</p>
+        ))}
       {e.strongest_counter_evidence && (
         <>
           <h4>最强反证（后端研究输入）</h4>

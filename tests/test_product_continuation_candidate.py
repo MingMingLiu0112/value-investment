@@ -6,6 +6,8 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
+import sys
 
 import pytest
 
@@ -13,6 +15,19 @@ import test_source_native_candidate_v2 as seed
 from test_product_continuation_cash_path_v1 import inputs as kernel_fixture
 from value_investment_agent.application.research import product_continuation_candidate as intake
 from value_investment_agent.application.product.common import sha256_file
+
+
+@pytest.mark.parametrize('flag', ['--pending-review-candidate-sha256','--signed-review-response-sha256',
+    '--review-trust-root-sha256','--previous-review-response-sha256'])
+def test_existing_cli_rejects_review_hashes_in_continuation_mode(flag, tmp_path):
+    code = Path(__file__).resolve().parents[1]
+    result = subprocess.run([sys.executable,'-B',str(code/'scripts/current/run_company_research.py'),
+        '--symbol','600519','--continuation-request','runtime/nonexistent.json',
+        '--continuation-request-sha256','0'*64,'--output',str(tmp_path/'unused'),flag,'1'*64],
+        capture_output=True,text=True)
+    assert result.returncode == 2
+    assert 'excludes market/approval modes' in result.stderr
+    assert not (tmp_path/'unused').exists()
 
 
 def store(root, path, value):
@@ -216,6 +231,34 @@ def test_explicit_parent_not_current_and_readonly_verify(case, monkeypatch):
     assert before == {p.relative_to(root).as_posix(): p.read_bytes() for p in root.rglob('*') if p.is_file()}
 
 
+def test_changed_research_input_recomputes_without_rewriting_old_candidate(case):
+    args = case[0]
+    old = prepare(case)
+    root, target = args['root'], args['output_dir']
+    prior = dict(path=(target/'candidate.json').relative_to(root).as_posix(), sha256=sha256_file(target/'candidate.json'))
+    before = {p.name:p.read_bytes() for p in target.iterdir()}
+    path = root/args['continuation_policy_binding']['path']
+    policy = json.loads(path.read_bytes())
+    policy['rationale'] += ' TEST_ONLY revised evidence interpretation.'
+    new_policy = store(root, args['continuation_policy_binding']['path'], policy)
+    with pytest.raises(ValueError):
+        verify(case, old)
+    request = dict(schema_version='product-continuation-refresh-request-v1', symbol=old['symbol'],
+        source_candidate_binding=args['source_candidate_binding'], cash_policy_binding=args['cash_policy_binding'],
+        continuation_policy_binding=new_policy, previous_candidate_binding=prior,
+        reason='TEST_ONLY real contract input change, not a new announcement', action='no_order')
+    ref = store(root, 'runtime/refresh-request.json', request)
+    result = intake.refresh_product_continuation_candidate(root=root, request_binding=ref, output_dir=root/'runtime/refreshed')
+    assert [r['dependency'] for r in result['changed_inputs']] == ['continuation_policy_binding']
+    assert result['previous_scope'] == 'HASH_BOUND_HISTORY_NOT_REVERIFIED_AS_CURRENT'
+    assert not result['approval_changed'] and not result['current_pointer_changed'] and not result['new_announcement_claimed']
+    assert before == {p.name:p.read_bytes() for p in target.iterdir()}
+    new = intake.verify_product_continuation_candidate(root=root, path=root/result['current_candidate_binding']['path'],
+        expected_sha256=result['current_candidate_binding']['sha256'])
+    assert new['model_context']['input_descriptor_sha256'] != old['model_context']['input_descriptor_sha256']
+    assert new['candidate_valuation']['base_value'] == old['candidate_valuation']['base_value']
+
+
 @pytest.mark.parametrize('change', ['symbol', 'future', 'wrong_parent', 'wrong_schema', 'no_economic_reason'])
 def test_policy_identity_and_time_fail_closed_before_candidate(case, change):
     args = case[0]
@@ -304,6 +347,16 @@ def test_actual_public_originals_in_isolated_project(tmp_path_factory):
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(real/relative, target)
         policies[kind] = dict(path=relative, sha256=sha256_file(target))
+    current_policy = json.loads((real/policies['product-continuation']['path']).read_bytes())
+    if current_policy.get('shareholder_cash_source_binding') is not None:
+        ref = current_policy['shareholder_cash_source_binding']
+        spec = json.loads((real/ref['path']).read_bytes())
+        refs_to_copy = [ref, *[dict(path=s['path'],sha256=s['sha256']) for s in spec['companies'][parent['symbol']]]]
+        for ref in refs_to_copy:
+            assert sha256_file(real/ref['path']) == ref['sha256']
+            target = tmp_path/ref['path']
+            target.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copyfile(real/ref['path'],target)
     candidate = intake.prepare_product_continuation_candidate(root=tmp_path,
         source_candidate_binding=dict(path=parent_path, sha256=parent_hash),
         cash_policy_binding=policies['finite-advantage-cash'], continuation_policy_binding=policies['product-continuation'],

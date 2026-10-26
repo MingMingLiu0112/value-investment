@@ -43,7 +43,20 @@ def _compact(text):
     return re.sub(r'\s+', '', text).replace('－', '-').replace('—', '-').replace('–', '-')
 
 
-def extract_parent_cash_statement(*, pages: list[str], spec: dict) -> dict:
+def _printed_cash_row(*, text: str, key: str, label: str):
+    # PDFium may put both amounts on the line after a wrapped label. Keep
+    # the two printed columns together; never cross a following row label.
+    pattern = (r'(?m)^[ \t]*(?:[一二三四五六]、|加[:：])?'
+               + r'[ \t\n]*'.join(map(re.escape, label))
+               + r'(?:[ \t]+|[ \t]*\n[ \t]*)'
+               + '('+_MONEY+r')[ \t]+('+_MONEY+r')[ \t]*\r?$')
+    matches = list(re.finditer(pattern, text))
+    if len(matches) != 1:
+        raise ValueError('PARENT_CASH_TWO_PRINTED_VALUES_REQUIRED:'+key)
+    return matches[0]
+
+
+def extract_parent_cash_statement(*, pages: list[str], spec: dict, observation_fields=None) -> dict:
     """Parse printed columns; the caller must separately authenticate PDF bytes."""
     periods = tuple(spec['periods'])
     if periods not in PERIODS:
@@ -113,7 +126,11 @@ def extract_parent_cash_statement(*, pages: list[str], spec: dict) -> dict:
     if positions != sorted(positions):
         raise ValueError('PARENT_CASH_SECTION_ORDER_INVALID')
     facts = {}
+    if observation_fields is not None and (not observation_fields or not set(observation_fields) <= set(LABELS)):
+        raise ValueError('Explicit supported partial cash fields required')
     for key, label in LABELS.items():
+        if observation_fields is not None and key not in observation_fields:
+            continue
         if joined.count(label) != 1:
             raise ValueError('PARENT_CASH_ROW_MISSING_OR_AMBIGUOUS:'+key)
         position = normalized.index(label)
@@ -128,18 +145,18 @@ def extract_parent_cash_statement(*, pages: list[str], spec: dict) -> dict:
             valid_section = position >= positions[3]
         if not valid_section:
             raise ValueError('PARENT_CASH_ROW_SECTION_MISMATCH:'+key)
-        pattern = (r'(?m)^[ \t]*(?:[一二三四五六]、|加[:：])?'
-                   + r'\s*'.join(map(re.escape, label)) + r'[ \t]+'
-                   + '('+_MONEY+r')[ \t]+('+_MONEY+r')[ \t]*\r?$')
-        matches = list(re.finditer(pattern, text))
-        if len(matches) != 1:
-            raise ValueError('PARENT_CASH_TWO_PRINTED_VALUES_REQUIRED:'+key)
-        match = matches[0]
+        match = _printed_cash_row(text=text, key=key, label=label)
         page = selected[text[:match.start()].count('\n')][0]
         facts[key] = dict(label=label, physical_page=page, statement_scope='listed_parent_only',
             unit='CNY', currency='CNY', evidence_excerpt=match[0].strip(),
             columns=[dict(period=period, value=str(Decimal(value.replace(',', ''))))
                      for period, value in zip(periods, match.groups())])
+    if observation_fields is not None:
+        return dict(symbol=spec['symbol'], issuer=owner, periods=list(periods),
+            statement_scope='listed_parent_only', rows=facts,
+            balances=[dict(period=period, **{key: row['columns'][index]['value'] for key,row in facts.items()})
+                for index, period in enumerate(periods)],
+            whole_statement_reconciled=False, unknown_fields=sorted(set(LABELS)-set(facts)))
     with localcontext() as ctx:
         ctx.prec = 48
         balances = []
@@ -164,7 +181,7 @@ def extract_parent_cash_statement(*, pages: list[str], spec: dict) -> dict:
                 statement_scope='listed_parent_only', rows=facts, balances=balances)
 
 
-def load_parent_cash_research(*, root: Path, symbol: str, now: datetime) -> dict | None:
+def load_parent_cash_research(*, root: Path, symbol: str, now: datetime, observations_only=False) -> dict | None:
     """Re-read two retained originals; no saved cash JSON, forecasts or writes."""
     if not isinstance(symbol, str) or re.fullmatch(r'[0-9]{6}', symbol) is None:
         raise ValueError('Parent cash requires a security code')
@@ -219,7 +236,15 @@ def load_parent_cash_research(*, root: Path, symbol: str, now: datetime) -> dict
             if sha256_file(original) != source['sha256'] or not original.read_bytes().startswith(b'%PDF-'):
                 raise ValueError('PARENT_CASH_ORIGINAL_HASH_OR_FORMAT_MISMATCH')
             ref = dict(path=relative.as_posix(), sha256=source['sha256'])
-            statement = extract_parent_cash_statement(pages=extract_pages(original), spec=source)
+            fields = None
+            if observations_only:
+                fields = {'cfo_cny','cfi_cny','cff_cny','reported_net_change_cny',
+                    'opening_cash_and_equivalents_cny','closing_cash_and_equivalents_cny',
+                    'gross_capex_cny','mixed_distribution_interest_paid_cny'}
+                if source['periods'][0].startswith('FY'):
+                    fields.add('investment_income_cash_cny')
+            statement = extract_parent_cash_statement(pages=extract_pages(original), spec=source,
+                observation_fields=fields)
             binding = dict(id=source['source_id'], **ref, source_url=source['source_url'],
                 published_date=source['published_date'], original_acquired_at=acquired,
                 date_only_available_at_conservative=boundary.isoformat(), revalidated_at=now.isoformat())
@@ -237,10 +262,32 @@ def load_parent_cash_research(*, root: Path, symbol: str, now: datetime) -> dict
         for ref in refs:
             if sha256_file(require_inside(root, root/ref['path'], 'parent cash final source check')) != ref['sha256']:
                 raise ValueError('PARENT_CASH_SOURCE_CHANGED_DURING_READ')
-        return dict(envelope, status='SOURCE_REPLAYED_HISTORICAL_PARENT_CASH',
+        cash_routes = []
+        if observations_only:
+            with localcontext() as context:
+                context.prec = 48
+                for statement in (annual, interim):
+                    for row in statement['balances']:
+                        income = row.get('investment_income_cash_cny')
+                        proxy = (Decimal(row['cfo_cny'])+Decimal(income)-Decimal(row['gross_capex_cny'])
+                            if income is not None else None)
+                        cash_routes.append(dict(period=row['period'], scope='listed_parent_only', currency='CNY',
+                            identity_class='DERIVED_FROM_PRINTED_HISTORICAL_CASH_NOT_NORMALIZED',
+                            printed_cfo_cny=row['cfo_cny'], printed_gross_capex_cny=row['gross_capex_cny'],
+                            printed_investment_income_cash_cny=income,
+                            partial_cash_before_mixed_payments_cny=str(proxy) if proxy is not None else None,
+                            formula='CFO + investment-income cash - gross long-term-asset cash',
+                            printed_mixed_distribution_interest_paid_cny=row['mixed_distribution_interest_paid_cny'],
+                            printed_cash_change_cny=row['reported_net_change_cny'],
+                            unknown_fields=statement['unknown_fields'],
+                            future_distributable_cash_cny=None, ordinary_dividends_identified=False,
+                            limitation='Partial historical funding route, not FCF, subsidiary-dividend attribution, legal capacity or a future payout ceiling.'))
+        return dict(envelope, status=('SOURCE_REPLAYED_PARTIAL_PARENT_CASH' if observations_only
+                else 'SOURCE_REPLAYED_HISTORICAL_PARENT_CASH'),
+            cash_routes=cash_routes,
             evaluated_at=now.isoformat(), historical_statements=[annual, interim], source_bindings=refs,
             availability_scope='RETAINED_ORIGINAL_RESEARCH_NOT_CONTEMPORANEOUS_PIT_PROOF',
-            continuity_status='PASS', historical_cash_reconciliation_status='PASS',
+            continuity_status='PASS', historical_cash_reconciliation_status='INCOMPLETE' if observations_only else 'PASS',
             limitations=['H1 is not annualized; historical net cash is not recurring cash capacity.',
                 'Mixed distribution/profit/interest payments are not identified ordinary dividends.',
                 'Investment income cash is not identified subsidiary dividend remittance.',

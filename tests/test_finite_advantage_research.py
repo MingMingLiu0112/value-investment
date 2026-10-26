@@ -72,15 +72,35 @@ def source_root(tmp_path, monkeypatch, inputs):
         return dict(path=name,sha256=sha256(p.read_bytes()).hexdigest())
     p_ref=write('runtime/TEST_ONLY-package.json',package)
     l_ref=write('runtime/TEST_ONLY-ledger.json',ledger)
-    candidate=dict(source_package_binding=p_ref,native_cash_ledger_binding=l_ref,source_bindings=[])
+    candidate=dict(schema_version='source-native-pending-research-candidate-v2',
+        source_package_binding=p_ref,native_cash_ledger_binding=l_ref,source_bindings=[])
     c_ref=write('runtime/TEST_ONLY-candidate.json',candidate)
     policy['candidate_binding']=c_ref
     policy_path='config/research-assumptions/600519-finite-advantage-cash-v1.json'
     write(policy_path,policy)
-    monkeypatch.setattr(research,'load_current_pending_candidate_supplement',lambda **kw:dict(candidate_binding=c_ref))
+    monkeypatch.setattr(research,'load_current_pending_candidate_supplement',
+        lambda **kw:dict(candidate_binding=c_ref,candidate=candidate))
     monkeypatch.setattr(research,'verify_source_native_candidate',lambda **kw:candidate)
     monkeypatch.setattr(research,'build_descriptor',lambda *a,**kw:SimpleNamespace(facts=facts))
     return tmp_path, policy_path, c_ref
+
+
+@pytest.mark.parametrize('kind', ['old', 'ten_year', 'damaged'])
+def test_explicit_current_candidate_contract_keeps_legacy_and_successor_separate(source_root, monkeypatch, kind):
+    root, _, parent_ref = source_root
+    parent = json.loads((root/parent_ref['path']).read_bytes())
+    if kind == 'old':
+        current = dict(candidate_binding=parent_ref, candidate=parent)
+    else:
+        current = dict(candidate_binding=dict(path='runtime/TEST_ONLY-ten-year.json', sha256='1'*64),
+            candidate=dict(schema_version='product-continuation-pending-research-candidate-v1',
+                source_candidate_binding=parent_ref if kind == 'ten_year' else {**parent_ref, 'sha256':'0'*64}))
+    monkeypatch.setattr(research, 'load_current_pending_candidate_supplement', lambda **kw:current)
+    result = research.load_finite_advantage_research(root=root, symbol='600519', now=datetime.now(timezone.utc))
+    assert result['status'] == ('SOURCE_OR_HYPOTHESIS_REVALIDATION_FAILED' if kind == 'damaged'
+        else 'SOURCE_BOUND_FINITE_RESEARCH_NOT_APPROVED')
+    if kind == 'damaged':
+        assert result['branches'] == []
 
 
 def test_current_source_read_recomputes_without_writes(source_root):

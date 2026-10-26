@@ -275,6 +275,43 @@ const render = (value: unknown, symbol = "600519") =>
     <ProductContinuationCandidate value={value} symbol={symbol} />,
   );
 
+it("shows only bounded partial parent cash and never treats missing values as zero", () => {
+  const value = fixture();
+  value.shareholder_cash_research = {
+    status: "SOURCE_REPLAYED_PARTIAL_PARENT_CASH",
+    action: "no_order",
+    economic_approval: false,
+    primary_valuation_usable: false,
+    historical_cash_reconciliation_status: "INCOMPLETE",
+    cash_routes: [
+      {
+        period: "H12026",
+        scope: "listed_parent_only",
+        currency: "CNY",
+        printed_cfo_cny: "15224606455.02",
+        printed_gross_capex_cny: "828735611.53",
+        printed_investment_income_cash_cny: null,
+        partial_cash_before_mixed_payments_cny: null,
+        printed_mixed_distribution_interest_paid_cny: "35032574305.20",
+        printed_cash_change_cny: "-23475021541.52",
+        unknown_fields: ["fx_cny", "investment_income_cash_cny"],
+        future_distributable_cash_cny: null,
+        ordinary_dividends_identified: false,
+      },
+    ],
+  };
+  expect(render(value)).toContain("母公司现金事实与当前判断");
+  expect(render(value)).toContain("未取得完整两列证据");
+  expect(render(value)).toContain("不是正常化股东现金");
+  expect(render(value)).toContain("23,475,021,541.52");
+  (
+    value.shareholder_cash_research.cash_routes[0] as any
+  ).future_distributable_cash_cny = "1";
+  const invalid = render(value);
+  expect(invalid).toContain("母公司现金证据不可核验");
+  expect(invalid).not.toContain("23,475,021,541.52");
+});
+
 it("direct SSR shows all three original values, ten-year rows, terminal and evidence without an account", () => {
   const value = fixture();
   expect(verifiedProductContinuationCandidate(value, "600519")).toBe(true);

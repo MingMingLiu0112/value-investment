@@ -233,3 +233,87 @@ def test_retained_actual_two_originals_readonly():
     assert all(hashes[ref['path']]==ref['sha256'] for ref in result['source_bindings'])
     assert service.load_parent_cash_research(root=root,symbol=SYMBOL,now=NOW)==result
     assert hashes=={name:sha256((root/name).read_bytes()).hexdigest() for name in hashes}
+
+
+@pytest.mark.parametrize('layout', ['same_line', 'next_line', 'wrapped_label'])
+def test_complete_two_columns_support_real_pdf_line_wrapping(layout):
+    spec, pages = statement(['FY2025', 'FY2024'])
+    if layout != 'same_line':
+        for label in service.LABELS.values():
+            rendered = label if layout == 'next_line' else label[:8]+'\n'+label[8:]
+            pages[1] = pages[1].replace(label+' ', rendered+'\n')
+    result = service.extract_parent_cash_statement(pages=pages, spec=spec)
+    assert result['rows']['cfo_cny']['columns'][0]['value'] == '10.00'
+    assert result['rows']['gross_capex_cny']['physical_page'] == 2
+    assert result['balances'][0]['cash_residual_cny'] == '0.00'
+
+
+@pytest.mark.parametrize('amounts', ['', ' 3.00', '\n3.00', '\n3.00\n3.00', '\n3.00 3.00 3.00'])
+def test_wrapped_row_rejects_blank_incomplete_or_extra_columns(amounts):
+    spec, pages = statement(['FY2025', 'FY2024'])
+    label = service.LABELS['investment_income_cash_cny']
+    pages[1] = pages[1].replace(label+' 3.00 3.00', label+amounts)
+    with pytest.raises(ValueError, match='TWO_PRINTED_VALUES_REQUIRED:investment_income_cash_cny'):
+        service.extract_parent_cash_statement(pages=pages, spec=spec)
+
+
+@pytest.mark.parametrize('source_id,rows', [
+    ('1225114741', {
+        'cfo_cny': (66, '32618216666.91', '36826593268.70'),
+        'cfi_cny': (67, '46417636870.56', '37359465215.19'),
+        'cff_cny': (67, '-70822236099.32', '-68816834968.42'),
+        'gross_capex_cny': (67, '3104346428.46', '4660307532.89'),
+        'investment_income_cash_cny': (67, '49653138761.40', '42023527068.33'),
+    }),
+    ('1225475868', {
+        'cfo_cny': (35, '15224606455.02', '8195990042.68'),
+        'cfi_cny': (35, '-784318271.33', '-1594040752.84'),
+        'cff_cny': (35, '-37915309725.21', '-39875924477.68'),
+        'gross_capex_cny': (35, '828735611.53', '1593022645.30'),
+    }),
+])
+def test_600519_retained_layout_rows_and_blank_rejection(source_id, rows):
+    location = os.environ.get('PARENT_CASH_REPLAY_ROOT')
+    if not location:
+        pytest.skip('Opt-in retained 600519 originals, no source acquisition')
+    root = Path(location)
+    spec = next(s for s in json.loads((root/service.SPEC).read_bytes())['companies']['600519']
+                if s['source_id'] == 'cninfo:'+source_id)
+    path = root/spec['path']
+    assert sha256(path.read_bytes()).hexdigest() == spec['sha256']
+    pages = service.extract_pages(path)
+    for key, (page, current, prior) in rows.items():
+        text = '\n'.join(line.strip() for line in pages[page-1].splitlines() if line.strip())
+        match = service._printed_cash_row(text=text, key=key, label=service.LABELS[key])
+        assert tuple(str(Decimal(v.replace(',', ''))) for v in match.groups()) == (current, prior)
+        assert match[0].strip()
+    # Real blanks stay unknown. Neither restoring identical bytes nor layout
+    # support licenses filling FX, borrowing or prior investment receipts with 0.
+    with pytest.raises(ValueError, match='TWO_PRINTED_VALUES_REQUIRED:fx_cny'):
+        service.extract_parent_cash_statement(pages=pages, spec=spec)
+
+
+def test_explicit_partial_cash_never_fills_blank_or_claims_full_reconciliation():
+    spec, pages = statement(['FY2025','FY2024'])
+    result = service.extract_parent_cash_statement(pages=pages, spec=spec,
+        observation_fields={'cfo_cny','gross_capex_cny'})
+    assert result['whole_statement_reconciled'] is False
+    assert 'fx_cny' in result['unknown_fields']
+    assert set(result['rows']) == {'cfo_cny','gross_capex_cny'}
+    assert 'fx_cny' not in result['balances'][0]
+
+
+def test_actual_partial_600519_preserves_known_rows_without_inventing_missing_columns():
+    location = os.environ.get('PARENT_CASH_REPLAY_ROOT')
+    if not location:
+        pytest.skip('Explicit actual original source root required')
+    result = service.load_parent_cash_research(root=Path(location),symbol='600519',
+        now=datetime.now(timezone.utc),observations_only=True)
+    assert result['status'] == 'SOURCE_REPLAYED_PARTIAL_PARENT_CASH'
+    assert result['historical_cash_reconciliation_status'] == 'INCOMPLETE'
+    routes = {row['period']:row for row in result['cash_routes']}
+    assert Decimal(routes['FY2025']['partial_cash_before_mixed_payments_cny']) == Decimal('32618216666.91')+Decimal('49653138761.40')-Decimal('3104346428.46')
+    assert routes['H12026']['partial_cash_before_mixed_payments_cny'] is None
+    assert 'investment_income_cash_cny' in routes['H12026']['unknown_fields']
+    assert routes['H12026']['printed_cash_change_cny'] == '-23475021541.52'
+    assert all(row['future_distributable_cash_cny'] is None for row in result['cash_routes'])

@@ -1,5 +1,60 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### 2026-10-26 reliable value decision and shareholder cash continuation
+
+User-selected value-only continuation, baseline db5398fe; retain all11 original
+dirty files and sole8001 release86ceaef9. Reproduce the two reported regressions,
+then repair exact test doubles to represent real legacy/successor contracts;
+never use missing-schema defaults or turn corrupt sources into valid research.
+Business focus is600519 profit-to-owner-cash economics and its existing
+candidate/API/Web/recalculation path. No hotspot, new company, new platform,
+production deployment or approval changes. Research remains separate from G3,
+private quantities and orders. action=no_order.
+
+Known regressions reproduced and repaired by full old/successor test contracts,
+not permissive defaults:28 passed/1 optional original skip. Added old, ten-year
+antecedent and corrupt-antecedent cases. Actual cash reader had a real wrapped
+label/two-values layout gap, repaired with old same-line and malformed-row tests.
+600519 originals also contain genuinely unprinted FX/borrowing/debt cells; full
+statement mode still rejects these. Explicit observation mode exposes only
+complete printed two-column rows and marks whole-statement reconciliation
+INCOMPLETE, never fills zero or infers standalone dividend cash. Both official
+original paths and content-addressed copies are retained, hash-verified and
+referenced through the existing official catalog location (not two reports).
+
+New reliable knowledge: FY2025 listed-parent CFO32618216666.91 and investment
+income cash49653138761.40, long-term-asset cash3104346428.46; H12026 cash change
+-23475021541.52. Amounts are historical parent cash, not normalized earnings,
+identified subsidiary dividends or future distribution capacity. Interim
+investment-receipt comparative ambiguity remains unknown, not filled zero.
+Full upstream identity, maintenance/growth split, recurring WC, legal reserves
+and terminal reinvestment remain decisive economic evidence gaps. This does not
+prove the company is bad or imply personal sell/hold instructions.
+
+The actual revised continuation policy binds this cash-source specification;
+the compiler replays it into the ledger/ResearchCase and existing review/API/
+company view. Existing run_company_research.py now supports an explicit bounded
+continuation request with old inputs/history and no approval/market modes.
+Independent review closed one concrete P2: all four review hash arguments now
+reject in continuation mode, covered by real CLI negative tests. Refresh does
+not overwrite old results or publish current pointers. Real input-version
+change replay passed via that CLI, not a simulated announcement. Numeric
+valuation remains conditional/LOW and unchanged; the evidence interpretation
+changes, not the market price. Conditions do not establish a primary or justify
+inventing an entry discount, so price_draft=null and quantities remain null.
+
+Public minimum manifest and exact commands:
+docs/current/600519-shareholder-cash-evidence-20261026.json.
+Actual receipt:runtime/product-ten-year-consumer/20261026T063521645211Z/receipt.json.
+Candidate/API/review/refresh hashes are pinned there. Current research selectors
+and private session remained unchanged; no network collection or8001 action.
+42 company-component tests passed with explicit actual API data, TypeScript
+passed;119 action/policy/architecture tests passed/2 optional-source skips.
+Overall reliable-decision chain remains PARTIAL, not closed: current economic
+cash assumptions are not sufficiently established for a primary valuation or
+current-price action. Final exact-SHA Core/Web and clean replay are separate
+closure checks, never substituted by this ledger. action=no_order.
+
 ### 2026-10-26 value-only ten-year candidate consumption
 
 Latest user scope supersedes parallel hotspot development. Preserve all H

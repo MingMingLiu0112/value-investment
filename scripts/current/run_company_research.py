@@ -39,10 +39,34 @@ def main() -> int:
     )
     parser.add_argument("--interrupted-run-id")
     parser.add_argument('--prepare-review-response', action='store_true')
+    parser.add_argument('--continuation-request', type=Path, help='Explicit unapproved ten-year research refresh request.')
+    parser.add_argument('--continuation-request-sha256')
     args = parser.parse_args()
     resolve = lambda value: None if value is None else (value if value.is_absolute() else ROOT / value)
     package = resolve(args.package)
     output = resolve(args.output)
+    if args.continuation_request is not None or args.continuation_request_sha256 is not None:
+        incompatible = (args.package, args.schedule_request, args.existing_manifest, args.existing_manifest_sha256,
+            args.arithmetic_input, args.arithmetic_input_sha256, args.quote, args.quote_sha256,
+            args.event, args.event_sha256, args.research_reviews, args.research_reviews_sha256,
+            args.pending_review_candidate, args.signed_review_response, args.review_trust_root,
+            args.previous_review_response, args.pending_review_candidate_sha256,
+            args.signed_review_response_sha256, args.review_trust_root_sha256,
+            args.previous_review_response_sha256, args.recommendation_schema_version, args.interrupted_run_id)
+        if (args.continuation_request is None or not args.continuation_request_sha256 or output is None
+                or any(value is not None for value in incompatible) or args.prepare_review_response
+                or args.resume_interrupted_after_consumption):
+            parser.error('continuation refresh requires request/hash/output and excludes market/approval modes')
+        from value_investment_agent.application.product.common import require_inside, load_json_object
+        from value_investment_agent.application.research.product_continuation_candidate import refresh_product_continuation_candidate
+        request_path = require_inside(ROOT, resolve(args.continuation_request), 'continuation request')
+        if load_json_object(request_path, 'continuation request')['symbol'] != args.symbol:
+            parser.error('continuation request differs from selected symbol')
+        result = refresh_product_continuation_candidate(root=ROOT,
+            request_binding=dict(path=request_path.relative_to(ROOT).as_posix(), sha256=args.continuation_request_sha256),
+            output_dir=output)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
     from value_investment_agent.application.product.research_reviews import run_pending_review_command
     review_result = run_pending_review_command(root=ROOT, args=args)
     if review_result is not None:

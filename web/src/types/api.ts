@@ -17,6 +17,27 @@ export interface ProductContinuationCandidateReview {
   valuation_date: string;
   research_as_of: string;
   financial_periods: string[];
+  shareholder_cash_research?: {
+    status: "SOURCE_REPLAYED_PARTIAL_PARENT_CASH";
+    action: "no_order";
+    economic_approval: false;
+    primary_valuation_usable: false;
+    historical_cash_reconciliation_status: "INCOMPLETE";
+    cash_routes: {
+      period: string;
+      scope: "listed_parent_only";
+      currency: "CNY";
+      printed_cfo_cny: string;
+      printed_gross_capex_cny: string;
+      printed_investment_income_cash_cny: string | null;
+      partial_cash_before_mixed_payments_cny: string | null;
+      printed_mixed_distribution_interest_paid_cny: string;
+      printed_cash_change_cny: string;
+      unknown_fields: string[];
+      future_distributable_cash_cny: null;
+      ordinary_dividends_identified: false;
+    }[];
+  } | null;
   economic_explanation: {
     rationale: string;
     cash_return_rationale: string;

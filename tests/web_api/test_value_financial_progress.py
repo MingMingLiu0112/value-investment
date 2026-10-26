@@ -111,7 +111,7 @@ def test_new_input_candidate_supersedes_only_review_materials_never_public_econo
             assert kwargs['symbol'] == '600519'
             if invalid:
                 raise ValueError('TEST_ONLY changed registered supplement')
-            return dict(candidate=dict(candidate_research_as_of='2026-10-21',
+            return dict(candidate=dict(schema_version='pending-research-candidate-v1', candidate_research_as_of='2026-10-21',
                 valuation_basis_date='2026-10-20', valuation_basis_scope='EX_POST_PRIOR_COMPLETED_SESSION',
                 generated_at='2026-10-21T15:00:00+00:00'),
                 candidate_binding=dict(path='runtime/TEST_ONLY/candidate.json', sha256='0' * 64),

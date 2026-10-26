@@ -1,10 +1,14 @@
 {
   "schema_version": "product-continuation-research-policy-v1",
   "symbol": "600519",
-  "generated_at": "2026-10-26T03:38:05+00:00",
+  "generated_at": "2026-10-26T06:23:13+00:00",
+  "shareholder_cash_source_binding": {
+    "path": "docs/current/two-company-earnings-bridge-20261024/sources.json",
+    "sha256": "ce88d63737e0ea520e870c932d304a702ce420f581f9f484974df16ab99bfcbc"
+  },
   "action": "no_order",
   "confidence": "LOW",
-  "strongest_counter_evidence": "如果维持终端盈利需要持续额外净现金投入，或部分利润持续无法上划，当前利润全额分配、现金和权益稳定的终值基础就不成立。现有零维持净缺口、零营运资本增加及母公司等价资金映射尚未排除这一反证；算术对账不能代替同范围现金证据。",
+  "strongest_counter_evidence": "母公司2025年经营现金净流入326.18亿元、投资收益收现496.53亿元；2026年上半年期末现金较期初下降234.75亿元。历史资金流入与支付存在时点差异，不支持把合并归母利润机械视为当期上划资金。这些事实不证明长期恶化，但维护/增长投入未拆、持续上划与法定分配能力未闭合，因此零净维护投入与终端全额分配仍不能共同确认为主估值依据。",
   "candidate_binding": {
     "path": "runtime/product-operating-research/20261025T071814444248Z/proposal/candidate/candidate.json",
     "sha256": "2e53d50d988a737272d7a95b822c8e0e9998d3749c1432cac7f6c12d92fe8ed0"

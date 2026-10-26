@@ -47,6 +47,7 @@ def project_product_continuation_review(*, root, supplement, now):
         economic_explanation=deepcopy(ledger['economic_explanation']),
         cash_conditions=deepcopy(ledger['cash_conditions']),
         research_case=deepcopy(package['research_case']), scenarios=scenarios,
+        shareholder_cash_research=deepcopy(ledger['shareholder_cash_research']),
         price_draft=None, price_draft_status='NOT_PREPARED_ECONOMIC_OR_PRICE_BASIS_INSUFFICIENT',
         blockers=['NORMALIZED_EARNINGS_NOT_ESTABLISHED', 'MAINTENANCE_AND_WORKING_CAPITAL_ASSUMPTIONS',
             'PARENT_FUNDS_AND_LAWFUL_DISTRIBUTION_NOT_PROVEN', 'REQUIRED_RETURN_AND_TERMINAL_REQUIRE_REVIEW',

@@ -41,6 +41,8 @@ IMPLEMENTATIONS = tuple('src/value_investment_agent/'+name for name in (
     'research_input.py', 'research_application.py', 'valuation_models/residual_income.py',
     'application/product/company_research.py', 'application/product/research_review_packet.py',
     'application/product/research_reviews.py', 'application/product/source_bound_inputs.py',
+    'application/research/parent_cash_research.py', 'domain/valuation/parent_cash_policy.py',
+    'infrastructure/filings/pdfium_runtime.py',
 ))
 _EXECUTION_HASHES = {name: sha256_file(CODE_ROOT/name) for name in IMPLEMENTATIONS}
 
@@ -140,11 +142,23 @@ def _cold_center(root, request, now):
                 terminal_roe=str(D(result['terminal']['next_profit_cny'])/D(result['cash_rows'][-1]['closing_book_cny'])))
     if set(centers) != {'bear', 'base', 'bull'}:
         raise ValueError('Exactly three center scenarios required')
-    refs = _closure(root, [*before, *generated['source_bindings']])
+    shareholder_cash = None
+    cash_ref = policy.get('shareholder_cash_source_binding')
+    if cash_ref is not None:
+        from .parent_cash_research import load_parent_cash_research, SPEC
+        if cash_ref['path'] != SPEC:
+            raise ValueError('Explicit existing parent-cash source specification required')
+        read_bound_json(root, cash_ref, 'shareholder cash sources')
+        shareholder_cash = load_parent_cash_research(root=root, symbol=parent['symbol'], now=clock, observations_only=True)
+        if shareholder_cash is None or shareholder_cash['status'] != 'SOURCE_REPLAYED_PARTIAL_PARENT_CASH':
+            raise ValueError('Shareholder cash originals cannot be replayed')
+    refs = _closure(root, [*before, *generated['source_bindings'],
+        *(shareholder_cash['source_bindings'] if shareholder_cash else [])])
     return source, dict(schema_version='source-bound-product-ten-year-ledger-v1', action='no_order',
         generated_at=clock.isoformat(), financial_basis=source['facts']['as_of'], centers=centers, scenario_inputs=inputs,
         economic_explanation={key: deepcopy(policy.get(key)) for key in
             ('rationale', 'cash_return_rationale', 'terminal_rationale', 'counter_evidence', 'strongest_counter_evidence')},
+        shareholder_cash_research=shareholder_cash,
         cash_conditions={key: deepcopy(cash_policy.get(key)) for key in
             ('maintenance_rationale', 'capacity_rationale', 'cash_mapping_rationale', 'terminal_distribution_rationale')}), refs
 
@@ -168,8 +182,16 @@ def _package(source, ledger, ledger_ref, refs, clock):
         ident = 'product-ten-year-source-'+str(index)
         if ident in catalog:
             raise ValueError('Continuation source ID collision')
-        extra.append(dict(id=ident, **ref))
-        package['sources'].append(dict(id=ident, kind='research_artifact', local_path=ref['path'], location=ref['path'],
+        # The same original may be retained at two hash-bound paths. Keep both
+        # in the candidate closure, but use its one official catalog location
+        # for package evidence. Do not create a second apparent report copy.
+        official = {row['local_path'] for row in catalog.values()
+            if row.get('kind') == 'official_issuer_filing' and row['sha256'] == ref['sha256']}
+        if len(official) > 1:
+            raise ValueError('Ambiguous official original locations')
+        package_ref = dict(path=next(iter(official)), sha256=ref['sha256']) if official else ref
+        extra.append(dict(id=ident, **package_ref))
+        package['sources'].append(dict(id=ident, kind='research_artifact', local_path=package_ref['path'], location=package_ref['path'],
             sha256=ref['sha256'], source_available_at=clock.isoformat(), availability_basis='CURRENT_RESEARCH_NOT_HISTORICAL_PIT'))
     package['facts'].update(confidence='低', confidence_evidence=None, scenario_inputs=ledger['scenario_inputs'])
     package['facts']['evidence_refs'] += extra
@@ -177,7 +199,8 @@ def _package(source, ledger, ledger_ref, refs, clock):
     explanation = ledger['economic_explanation']
     # Keep first-five company assumptions, but never inherit a five-year-only thesis.
     package['research_case']['financial_summary']['product_ten_year_research'].update(
-        economic_explanation=deepcopy(explanation), cash_conditions=deepcopy(ledger['cash_conditions']))
+        economic_explanation=deepcopy(explanation), cash_conditions=deepcopy(ledger['cash_conditions']),
+        shareholder_cash_research=deepcopy(ledger['shareholder_cash_research']))
     if explanation.get('rationale'):
         package['research_case']['thesis'] += '\nTen-year conditional extension: '+explanation['rationale']
     if explanation.get('cash_return_rationale'):
@@ -324,3 +347,48 @@ def verify_product_continuation_candidate(*, root: Path, path: Path, expected_sh
     if sha256_file(path) != expected_sha256:
         raise ValueError('Ten-year candidate changed during verification')
     return candidate
+
+
+def refresh_product_continuation_candidate(*, root: Path, request_binding: dict, output_dir: Path):
+    """Recompute explicit inputs; retain old bytes, never publish or approve."""
+    root = root.resolve()
+    _, request = read_bound_json(root, request_binding, 'continuation refresh request')
+    required = {'schema_version', 'symbol', 'source_candidate_binding', 'cash_policy_binding',
+                'continuation_policy_binding', 'previous_candidate_binding', 'reason', 'action'}
+    if (set(request) != required or request['schema_version'] != 'product-continuation-refresh-request-v1'
+            or request['action'] != 'no_order' or not isinstance(request['reason'], str) or not request['reason'].strip()):
+        raise ValueError('Explicit source-bound refresh and reason required')
+    old = previous = None
+    prior = request['previous_candidate_binding']
+    if prior is not None:
+        _, previous = read_bound_json(root, prior, 'previous immutable candidate')
+        if (previous['schema_version'] != SCHEMA or previous['symbol'] != request['symbol']
+                or previous['action'] != 'no_order' or previous['status'] != 'PENDING_REVIEW'
+                or _stamp(previous['generated_at']) > datetime.now(timezone.utc)):
+            raise ValueError('Previous candidate identity differs from refresh')
+        _, old = read_bound_json(root, previous['input_binding'], 'previous immutable inputs')
+    parent = verify_source_native_candidate(root=root, path=root/request['source_candidate_binding']['path'],
+        expected_sha256=request['source_candidate_binding']['sha256'])
+    if parent['symbol'] != request['symbol']:
+        raise ValueError('Refresh request issuer differs from parent')
+    changes = []
+    for key in ('source_candidate_binding', 'cash_policy_binding', 'continuation_policy_binding'):
+        if old is not None and old[key] != request[key]:
+            changes.append(dict(dependency=key, previous=deepcopy(old[key]), current=deepcopy(request[key])))
+    candidate = prepare_product_continuation_candidate(root=root,
+        source_candidate_binding=request['source_candidate_binding'], cash_policy_binding=request['cash_policy_binding'],
+        continuation_policy_binding=request['continuation_policy_binding'], output_dir=output_dir)
+    result = dict(schema_version='product-continuation-refresh-receipt-v1', symbol=request['symbol'],
+        action='no_order', status='RECOMPUTED_UNAPPROVED_RESEARCH',
+        generated_at=candidate['generated_at'], reason=request['reason'], request_binding=deepcopy(request_binding),
+        previous_candidate_binding=deepcopy(prior), changed_inputs=changes,
+        previous_scope='HASH_BOUND_HISTORY_NOT_REVERIFIED_AS_CURRENT' if prior else 'NO_PREVIOUS_CANDIDATE',
+        current_candidate_binding=_bound(root, output_dir/'candidate.json'),
+        affected_scope=['OPERATING_CASH_PATH', 'VALUATION', 'RESEARCH_CASE', 'UNSIGNED_REVIEW'],
+        current_primary_registered=False, approval_changed=False, current_pointer_changed=False,
+        new_announcement_claimed=False, position_guidance=None)
+    read_bound_json(root, request_binding, 'refresh request final check')
+    if prior is not None:
+        read_bound_json(root, prior, 'previous candidate final check')
+    write_new_json(output_dir/'refresh-receipt.json', result)
+    return result
