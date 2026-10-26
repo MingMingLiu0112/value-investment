@@ -6131,10 +6131,14 @@ Executed evidence: explicit retained-source two-company/API suite 16 passed with
 passed; broader kernel/legacy-model/current-plan/API suite 271 passed with two
 unrelated optional-source skips; full Web suite 1200 passed with 28 conditional
 skips; Web typecheck passed. The repository-wide Python gate cannot be treated as
-green in this dirty worktree: its first failure is the pre-existing modified
-600887 prospective artifact expecting the old model factory, outside this module.
-That unrelated user work remains untouched and must be validated from the final
-clean module commit separately.
+green: in the dirty worktree its first failure is a pre-existing modified 600887
+prospective artifact expecting the old model factory, outside this module. In a
+clean detached checkout of the module commit, the same legacy test instead stops
+on its untracked runtime prerequisite
+`runtime/prospective-baseline-20260927/snapshot-v13-midea-h1-verified.json`.
+The clean module-focused suite itself passed 271 with two optional-source skips.
+The unrelated user work and missing historical runtime prerequisite remain
+untouched; neither failure is represented as a module pass or fixed by this work.
 
 Engineering module status: ACCEPTED IN ISOLATION. Economic research status:
 CONDITIONAL, LOW confidence. Human approval and actual trading status: NOT
