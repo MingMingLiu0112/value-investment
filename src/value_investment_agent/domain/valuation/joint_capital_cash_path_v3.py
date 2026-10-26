@@ -224,12 +224,19 @@ def compile_joint_capital_cash_path(*, start_book, historical, drivers, terminal
     """
     _keys(historical, HISTORICAL_FIELDS)
     _keys(drivers, DRIVER_FIELDS)
-    optional_terminal = {'commitment_occurrences', 'restricted_cash_release_cny',
-        'restricted_cash_release_year', 'convergence_tolerance_cny', 'max_tail_years'}
+    economic_terminal = {'terminal_mechanism', 'terminal_start_year',
+        'first_distribution_timing', 'legacy_profit_dynamics',
+        'commitment_occurrences', 'restricted_cash_release_cny',
+        'restricted_cash_release_year', 'convergence_tolerance_cny',
+        'max_tail_years'}
     if (type(terminal_policy) is not dict
-            or not TERMINAL_FIELDS <= set(terminal_policy)
-            or set(terminal_policy) - TERMINAL_FIELDS - optional_terminal):
+            or set(terminal_policy) != TERMINAL_FIELDS | economic_terminal):
         raise ValueError('Exact joint cash terminal fields required')
+    if (terminal_policy['terminal_mechanism'] != 'recursive_capital_use_and_owner_distribution_v1'
+            or terminal_policy['terminal_start_year'] != 11
+            or terminal_policy['first_distribution_timing'] != 'end_of_terminal_year_1'
+            or terminal_policy['legacy_profit_dynamics'] != 'constant_after_profit_scale_transition'):
+        raise ValueError('Explicit supported terminal economic mechanism required')
     if historical['scope'] != SCOPE or historical['currency'] != 'CNY':
         raise ValueError('Explicit owner-equivalent CNY scope required')
     if type(terminal_policy['rationale']) is not str or not terminal_policy['rationale'].strip():
@@ -265,17 +272,17 @@ def compile_joint_capital_cash_path(*, start_book, historical, drivers, terminal
                 raise ValueError('Revenue growth must exceed -1')
             annual.append((growth, _rate(raw['cost_ratio']), _cash_policy(raw)))
         terminal_cash = _cash_policy(terminal_policy)
-        occurrences = terminal_policy.get('commitment_occurrences')
+        occurrences = terminal_policy['commitment_occurrences']
         if occurrences is not None and (type(occurrences) is not int or occurrences < 0):
             raise ValueError('commitment_occurrences must be a nonnegative integer or null')
-        release = _number(terminal_policy.get('restricted_cash_release_cny', '0'))
-        release_year = terminal_policy.get('restricted_cash_release_year')
+        release = _number(terminal_policy['restricted_cash_release_cny'])
+        release_year = terminal_policy['restricted_cash_release_year']
         if release < 0 or (release and (type(release_year) is not int or release_year < 1)):
             raise ValueError('Restricted release requires a positive terminal year')
         if not release and release_year is not None:
             raise ValueError('Restricted release year requires a positive release')
-        tolerance = _number(terminal_policy.get('convergence_tolerance_cny', '0.000001'))
-        max_tail_years = terminal_policy.get('max_tail_years', 2000)
+        tolerance = _number(terminal_policy['convergence_tolerance_cny'])
+        max_tail_years = terminal_policy['max_tail_years']
         if tolerance <= 0 or type(max_tail_years) is not int or max_tail_years < 1:
             raise ValueError('Positive convergence tolerance and max_tail_years required')
         scale = _number(terminal_policy['profit_scale'])
@@ -329,6 +336,10 @@ def compile_joint_capital_cash_path(*, start_book, historical, drivers, terminal
         terminal_retention = terminal['retention']
         return dict(version='joint-capital-cash-path-v3', action='no_order', scope=SCOPE,
             currency='CNY', status='CONDITIONAL_RESEARCH_NOT_APPROVED', rows=rows,
+            terminal_mechanism=terminal_policy['terminal_mechanism'],
+            terminal_start_year=terminal_policy['terminal_start_year'],
+            first_distribution_timing=terminal_policy['first_distribution_timing'],
+            legacy_profit_dynamics=terminal_policy['legacy_profit_dynamics'],
             historical_non_parent_profit=historical_non_parent_profit,
             parent_attribution_ratio=parent_attribution_ratio,
             forecast_roe=tuple(row['forecast_roe'] for row in rows),

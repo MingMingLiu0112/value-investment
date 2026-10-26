@@ -30,6 +30,12 @@ def stable_case():
         commitment_cash_cny='0', accessible_profit_ratio='0.95',
         target_payout_ratio='0.85', reserve_ratio='0.1', profit_scale='1',
         rationale='Legacy earnings remain flat; retained cash earns no return.',
+        terminal_mechanism='recursive_capital_use_and_owner_distribution_v1',
+        terminal_start_year=11,
+        first_distribution_timing='end_of_terminal_year_1',
+        legacy_profit_dynamics='constant_after_profit_scale_transition',
+        commitment_occurrences=0, restricted_cash_release_cny='0',
+        restricted_cash_release_year=None,
         convergence_tolerance_cny='0.0000000001', max_tail_years=2000)
     return dict(start_book='100', historical=historical, drivers=drivers,
         terminal_policy=terminal)
@@ -124,8 +130,7 @@ def test_restricted_cash_release_requires_explicit_single_use_assumption():
 
 def test_unfunded_and_nonconvergent_terminal_paths_fail_closed():
     unfunded = stable_case()
-    unfunded['terminal_policy'].update(
-        net_maintenance_cash_cny='100000', commitment_occurrences=1)
+    unfunded['terminal_policy'].update(net_maintenance_cash_cny='100000')
     with pytest.raises(ValueError, match='unfunded'):
         value_terminal_economic_contract(
             compile_joint_capital_cash_path(**unfunded)['terminal_economic_contract'],
