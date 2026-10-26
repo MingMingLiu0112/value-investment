@@ -19,7 +19,7 @@ from ...infrastructure.evidence.evidence_stop_schedule import (
     resolved_evidence_stop_ids,
     verified_official_package_source_ids,
 )
-from ...m1_valuation_package_builder import build_descriptor
+from ..research.v3_input_adapter import build_descriptor_for_package
 from ...research_application import ResearchApplicationService
 from ...research_artifact_repository import InMemoryResearchArtifactRepository
 from ...research_input import build_research_run_spec
@@ -202,6 +202,7 @@ def run_company_research_for_symbol(
     resume_interrupted_after_consumption: bool = False,
     interrupted_run_id: str | None = None,
     allow_unsigned_legacy_frozen_replay: bool = False,
+    valuation_router=None,
 ) -> dict[str, Any]:
     normalized = normalize_symbol(symbol)
     explicit_inputs = {}
@@ -261,7 +262,12 @@ def run_company_research_for_symbol(
     package = _package_for_symbol(root, normalized, package_path)
     package_sha256 = sha256_file(package)
     package_payload = load_json_object(package, "valuation package")
-    local_source_bindings = verify_package_local_sources(root, package_payload)
+    if (package_payload.get('dependencies') or {}).get('model_version') == 'residual-income-equity-path-v3':
+        from .historical_source_restore import verify_or_restore_package_sources
+        local_source_bindings = verify_or_restore_package_sources(
+            root, package_payload, restore_dir=package.parent / 'historical-source-code')
+    else:
+        local_source_bindings = verify_package_local_sources(root, package_payload)
     verified_ids = (
         _verified_source_ids(root, package_payload, request)
         if request is not None else frozenset()
@@ -297,7 +303,7 @@ def run_company_research_for_symbol(
         effective_package['model_validity_input'] = dict(validity,
             event_scan_ref=ref, event_scan_evidence_refs=[ref])
     try:
-        descriptor = build_descriptor(effective_package, root=root)
+        descriptor = build_descriptor_for_package(effective_package, root=root)
         spec = build_research_run_spec(descriptor)
         if reviews_path is not None:
             scan_ref = (effective_package.get('model_validity_input') or {}).get('event_scan_ref') or {}
@@ -367,7 +373,9 @@ def run_company_research_for_symbol(
                     schedule_request_sha256=schedule_request_sha256,
                     output_path=output_path,
                 )
-    outcome = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(
+    outcome = ResearchApplicationService(
+        InMemoryResearchArtifactRepository(), router=valuation_router,
+    ).run_company_research(
         spec
     )
     verify_consumed_inputs()

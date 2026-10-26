@@ -97,6 +97,11 @@ const names: Record<string, string> = {
   terminal_net_operating_investment: "终端新增经营投入",
   terminal_new_liquidity_investment: "终端新增流动投入",
   terminal_dividend: "终端条件分配",
+  explicit_distribution_pv_cny: "显式十年股东分配现值",
+  terminal_value_at_year_10_cny: "第10年末尾期经济价值",
+  terminal_distribution_value_cny: "尾期股东分配价值",
+  terminal_convergence_residual_cny: "尾期收敛残差",
+  ri_ddm_difference_cny: "RI／股东分配交叉检查差额",
   revenue_growth: "收入增速假设",
   cost_ratio: "成本率假设",
 };
@@ -363,6 +368,7 @@ function JointCapitalLedger({
 }
 
 function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
+  const v3 = review.schema_version === "joint-capital-cash-review-v3";
   const fields = (row: Record<string, unknown>, keys: readonly string[]) => (
     <dl
       style={{
@@ -408,6 +414,7 @@ function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
         const ledger = scenario.ledger;
         const terminal = ledger.terminal as Record<string, unknown>;
         const policy = ledger.terminal_policy as Record<string, unknown>;
+        const economics = scenario.terminal_economics;
         return (
           <details key={scenario.scenario} open>
             <summary>{names[scenario.scenario]} · 10年 · 未批准</summary>
@@ -451,13 +458,51 @@ function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
               </details>
             ))}
             <details>
-              <summary>持续终端：维护／WC／承诺与分配约束</summary>
+              <summary>
+                {v3
+                  ? "尾期经济合同：资本用途／维护／WC／承诺与股东分配"
+                  : "持续终端：维护／WC／承诺与分配约束"}
+              </summary>
               <p>
-                终端必要支出单独持续设定，不从第10年自动延续，也不把缺失需求当作零。终端
-                ROE 不是已验证 ROIC。
+                {v3
+                  ? "账面留存不会自动转化为终端增长；只有明确投入生产资本并具有边际回报，才会形成新增盈利。维护、营运资金、承诺支出和受限资金按声明机制递推。"
+                  : "终端必要支出单独持续设定，不从第10年自动延续，也不把缺失需求当作零。终端 ROE 不是已验证 ROIC。"}
               </p>
               {fields(policy, [...jointCashPolicyFields, "profit_scale"])}
               <p>终端持续依据：{String(policy.rationale)}</p>
+              {v3 && economics ? (
+                <>
+                  <h5>终端机制与关键前提</h5>
+                  <ul>
+                    <li>机制：{economics.mechanism}</li>
+                    <li>合同版本：{economics.terminal_contract_version}</li>
+                    <li>存量盈利：{String(policy.legacy_profit_dynamics)}</li>
+                    <li>
+                      首笔分配时点：{String(policy.first_distribution_timing)}
+                    </li>
+                    <li>承诺持续期：{String(policy.commitment_occurrences)}</li>
+                    <li>
+                      受限资金释放年份：
+                      {String(policy.restricted_cash_release_year)}
+                    </li>
+                    <li>尾期递推年数：{economics.terminal_years_evaluated}</li>
+                  </ul>
+                  <h5>显式期与尾期价值贡献</h5>
+                  {fields(economics as unknown as Record<string, unknown>, [
+                    "explicit_distribution_pv_cny",
+                    "terminal_value_at_year_10_cny",
+                    "terminal_distribution_value_cny",
+                    "terminal_convergence_residual_cny",
+                    "ri_ddm_difference_cny",
+                  ])}
+                  <h5>终端合同主要限制</h5>
+                  <ul>
+                    {economics.limitations.map((text, index) => (
+                      <li key={index}>{text}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
               {funding(terminal.funding_status)}
               {fields(terminal, jointCashRowFields)}
               {fields(ledger, jointCashTerminalFields)}

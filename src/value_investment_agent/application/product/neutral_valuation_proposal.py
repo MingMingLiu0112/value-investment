@@ -148,6 +148,15 @@ _JOINT_CASH_IMPLEMENTATIONS = (
 _JOINT_CASH_V3_IMPLEMENTATIONS = (
     'src/value_investment_agent/domain/valuation/joint_capital_cash_path_v3.py',
     'src/value_investment_agent/application/product/neutral_valuation_proposal.py',
+    'src/value_investment_agent/application/product/company_research.py',
+    'src/value_investment_agent/application/product/workbench.py',
+    'src/value_investment_agent/application/product/research_review_packet.py',
+    'src/value_investment_agent/application/product/economic_review_materials.py',
+    'src/value_investment_agent/application/product/historical_source_restore.py',
+    'src/value_investment_agent/application/research/v3_review_context.py',
+    'src/value_investment_agent/application/research/v3_valuation_router.py',
+    'src/value_investment_agent/research_artifact_codecs.py',
+    'src/value_investment_agent/application/research/v3_input_adapter.py',
     'src/value_investment_agent/valuation_models/residual_income_path_v3.py',
     'src/value_investment_agent/valuation_models/residual_income.py',
 )
@@ -314,8 +323,14 @@ def _build_joint_cash_proposal(*, root, package, policy, package_path, package_s
             raise ValueError('Joint cash economic limits must be explicit')
     for key in ('available_at', 'computed_at'):
         _cash_available(package['point_in_time'][key], generated)
+    if v3:
+        from .historical_source_restore import verify_or_restore_package_sources
+        predecessor_sources = verify_or_restore_package_sources(
+            root, package, restore_dir=output_path.parent / 'historical-source-code')
+    else:
+        predecessor_sources = verify_package_local_sources(root, package)
     sources = [(package_path, package_sha256), (policy_path, policy_sha256),
-        *verify_package_local_sources(root, package)]
+        *predecessor_sources]
     # Freeze implementation identities before compiling, then recheck with all
     # other inputs after arithmetic. Never seal code drift as the executed version.
     implementations = []
@@ -368,7 +383,11 @@ def _build_joint_cash_proposal(*, root, package, policy, package_path, package_s
     choices = policy['choices']
     if type(choices) is not list or not 1 <= len(choices) <= 3:
         raise ValueError('Joint cash requires one to three choices')
-    descriptor = build_descriptor(package, root=root)
+    if v3:
+        from ..research.v3_input_adapter import build_predecessor_descriptor
+        descriptor = build_predecessor_descriptor(package, root=root)
+    else:
+        descriptor = build_descriptor(package, root=root)
     facts, case = descriptor.facts, descriptor.research_case
     if not isinstance(facts, QualityCompounderFacts) or not facts.scenario_inputs:
         raise ValueError('Joint cash requires registered equity facts')
@@ -430,14 +449,17 @@ def _build_joint_cash_proposal(*, root, package, policy, package_path, package_s
                         for row in ledger['rows'])),
                     terminal_value_at_year_10_cny=(arithmetic.get('terminal_economic_value_cny') if v3 else None))
                 annuals[name] = arithmetic
+        if v3:
+            from ..research.v3_input_adapter import scenario_payload as serialize_scenario
+        else:
+            from ...research_input import _residual_scenario_payload as serialize_scenario
+        scenario_payloads = {}
+        for name, scenario in scenarios.items():
+            payload = serialize_scenario(scenario)
+            payload['forecast_roe'] = payload.pop('forecast_roes')
+            scenario_payloads[name] = payload
         actual_inputs = dict(start_book_equity=str(book), ordinary_shares=str(shares),
-            profit_anchor=str(anchor), scenarios={name:dict(cost_of_equity=str(s.cost_of_equity),
-                forecast_roe=list(map(str, s.forecast_roes)), forecast_retentions=list(map(str, s.forecast_retentions)),
-                retention_contract='annual-retention-v2', currency=s.currency,
-                terminal_roe=str(s.terminal_roe), terminal_growth=str(s.terminal_growth),
-                **({'terminal_contract_version': 'terminal-economic-contract-v1',
-                    'terminal_mechanism': 'recursive_capital_use_and_owner_distribution'} if v3 else {}))
-                for name,s in scenarios.items()})
+            profit_anchor=str(anchor), scenarios=scenario_payloads)
         rows.append(dict(**choice, status='NEUTRAL_VALUATION_PROPOSAL_PENDING_REVIEW',
             valuation=json.loads(valuation.to_json()), actual_calculation_inputs=actual_inputs,
             calculation_inputs_sha256=hashlib.sha256(encode_json_bytes(actual_inputs)).hexdigest(),

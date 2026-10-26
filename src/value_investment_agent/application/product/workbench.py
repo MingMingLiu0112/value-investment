@@ -62,6 +62,7 @@ def build_current_workbench_for_symbol(
     reviews_path: Path | None = None,
     reviews_sha256: str | None = None,
     recommendation_schema_version: str | None = None,
+    valuation_router=None,
 ) -> dict[str, Any]:
     normalized = normalize_symbol(symbol)
     target = require_inside(root, output_path, "current workbench output")
@@ -115,6 +116,7 @@ def build_current_workbench_for_symbol(
         reviews_path=reviews_path,
         reviews_sha256=reviews_sha256,
         recommendation_schema_version=recommendation_schema_version,
+        valuation_router=valuation_router,
     )
     outcome = research["result"]
     stopped = outcome["status"] == "BLOCKED_BY_RESEARCH_SCHEDULER"

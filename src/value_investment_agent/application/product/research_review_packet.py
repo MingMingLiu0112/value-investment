@@ -9,7 +9,7 @@ from .decision_surface import verify_current_decision_workbench
 from .research_reviews import verify_human_approval_transport_provenance
 from .source_bound_inputs import verify_package_local_sources
 from ...research_artifact_codecs import artifact_payload
-from ...m1_valuation_package_builder import build_descriptor
+from ..research.v3_input_adapter import build_descriptor_for_package
 
 
 def build_research_review_packet(*, root: Path, package_path: Path,
@@ -51,13 +51,18 @@ def project_research_review_packet(*, root: Path, package_path: Path,
             or receipt.get("action") != "no_order"
             or (receipt.get("input_sha256") or {}).get("valuation_package") != package_sha256):
         raise ValueError("review package differs from consumed package binding")
-    local_sources = verify_package_local_sources(root, package)
+    if (package.get('dependencies') or {}).get('model_version') == 'residual-income-equity-path-v3':
+        from .historical_source_restore import verify_or_restore_package_sources
+        local_sources = verify_or_restore_package_sources(
+            root, package, restore_dir=package_path.parent / 'historical-source-code', create=False)
+    else:
+        local_sources = verify_package_local_sources(root, package)
     effective_package = dict(package)
     effective_package["facts"] = dict(package["facts"])
     if "kind" not in effective_package["facts"]:
         effective_package["facts"]["kind"] = effective_package["facts"].get("facts_type")
     effective_package["recommendation_schema_version"] = verified.recommendation.schema_version
-    descriptor = build_descriptor(effective_package, root=root)
+    descriptor = build_descriptor_for_package(effective_package, root=root)
     if descriptor.input_sha256 != workbench.get("input_descriptor_sha256"):
         raise ValueError("review package differs from consumed source/input descriptor")
     for role, value in (("research_case", descriptor.research_case),

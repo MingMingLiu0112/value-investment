@@ -128,9 +128,21 @@ def project_joint_capital_review(*, root, binding, symbol, model_context, now):
             if cash_v3:
                 arithmetic = selected['annual_arithmetic'][row['scenario']]
                 crosscheck = arithmetic['cash_distribution_crosscheck']
+                terminal_contract = row['actual_calculation_inputs']['terminal_economic_contract']
                 row['terminal_economics'] = dict(
                     mechanism=arithmetic['terminal_mechanism'],
-                    terminal_contract_version=row['actual_calculation_inputs']['terminal_contract_version'],
+                    terminal_contract_version=terminal_contract['contract_version'],
+                    terminal_start_year=terminal_contract['terminal_start_year'],
+                    first_distribution_timing=terminal_contract['first_distribution_timing'],
+                    legacy_profit_dynamics=terminal_contract['legacy_profit_dynamics'],
+                    productive_marginal_return=terminal_contract['productive_marginal_return'],
+                    liquidity_return=terminal_contract['liquidity_return'],
+                    commitment_occurrences=terminal_contract['commitment_occurrences'],
+                    restricted_cash_release_cny=terminal_contract['restricted_cash_release_cny'],
+                    restricted_cash_release_year=terminal_contract['restricted_cash_release_year'],
+                    convergence_tolerance_cny=terminal_contract['convergence_tolerance_cny'],
+                    max_tail_years=terminal_contract['max_tail_years'],
+                    rationale=terminal_contract['rationale'],
                     explicit_distribution_pv_cny=crosscheck['explicit_distribution_pv_cny'],
                     terminal_value_at_year_10_cny=arithmetic['terminal_economic_value_cny'],
                     terminal_distribution_value_cny=arithmetic['terminal_distribution_value_cny'],

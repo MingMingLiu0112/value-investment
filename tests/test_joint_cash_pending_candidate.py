@@ -19,6 +19,9 @@ from value_investment_agent.application.product import neutral_valuation_proposa
 from value_investment_agent.application.product.common import sha256_file, encode_json_bytes
 from value_investment_agent.application.product.decision_surface import verify_current_decision_workbench
 from value_investment_agent.m1_valuation_package_builder import build_descriptor
+from value_investment_agent.application.research.v3_input_adapter import (
+    build_descriptor_for_package,
+)
 from value_investment_agent.research_artifact_codecs import artifact_payload
 
 ROOT = Path(pending.__file__).resolve().parents[4]
@@ -59,6 +62,54 @@ def prepared(case):
         package_path=package_path, package_sha256=sha256_file(package_path),
         policy_path=policy_path, policy_sha256=sha256_file(policy_path), choice_id='cash',
         output_dir=folder, schedule_request=request, schedule_request_sha256='a'*64)
+    return root, folder, result, policy
+
+
+@pytest.fixture
+def prepared_v3(case):
+    root, package_path, policy_path, observations_path = case
+    package = json.loads(package_path.read_bytes())
+    package['sources'][0]['issuer_identity'] = dict(venue='CNINFO',
+        security_code=package['symbol'], issuer_name=package['name'], organization_id='gssh0600887')
+    ref = package['facts']['evidence_refs'][0]
+    package['research_case']['evidence_refs'] = [ref]
+    for key in ('positives', 'counter_evidence', 'thesis_breakers', 'next_events'):
+        for item in package['research_case'].get(key, []):
+            item['evidence_refs'] = ['facts']
+    save(package_path, package)
+    policy = json.loads(policy_path.read_bytes())
+    policy['schema_version'] = neutral.JOINT_CASH_V3_SCHEMA
+    policy['source_package_sha256'] = sha256_file(package_path)
+    for terminal in policy['choices'][0]['terminal_policy'].values():
+        terminal.update(terminal_mechanism='recursive_capital_use_and_owner_distribution_v1',
+            terminal_start_year=11, first_distribution_timing='end_of_terminal_year_1',
+            legacy_profit_dynamics='constant_after_profit_scale_transition',
+            commitment_occurrences=None, restricted_cash_release_cny='0',
+            restricted_cash_release_year=None, convergence_tolerance_cny='0.000001',
+            max_tail_years=2000)
+    observations = json.loads(observations_path.read_bytes())
+    for name, terminal in policy['choices'][0]['terminal_policy'].items():
+        observations['scenarios'][name]['terminal_policy'] = terminal
+    save(observations_path, observations)
+    policy['rationale_bindings'][0]['sha256'] = sha256_file(observations_path)
+    save(policy_path, policy)
+    (root/'config').mkdir(exist_ok=True)
+    save(root/'config/research-evidence-stop-ledger-v1.json',
+         dict(schema_version='research-evidence-stop-ledger-v1', stops=[]))
+    for name in pending.JOINT_CASH_V3_IMPLEMENTATIONS:
+        target = root/name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT/name, target)
+    request = dict(schema_version='research-schedule-request-v1', symbol=package['symbol'],
+        source_id='CNINFO', period=package['point_in_time']['report_period'],
+        research_question_id='TEST_ONLY_joint_cash_v3', blocker_id='none',
+        reopen_condition_met=False, new_evidence_ids=[])
+    folder = root/'runtime/pending-v3'
+    result = pending.prepare_pending_research_candidate(root=root,
+        package_path=package_path, package_sha256=sha256_file(package_path),
+        policy_path=policy_path, policy_sha256=sha256_file(policy_path),
+        choice_id='cash', output_dir=folder, schedule_request=request,
+        schedule_request_sha256='b'*64)
     return root, folder, result, policy
 
 
@@ -116,6 +167,70 @@ def test_v2_candidate_is_consumed_by_registered_research_supplement(prepared):
     assert material['research_admitted'] is False
     assert material['price_admitted'] is False
     assert material['position_guidance'] is None
+
+
+def test_v3_candidate_is_consumed_by_registered_research_supplement(prepared_v3):
+    root, folder, receipt, _ = prepared_v3
+    pointer = root/'config/current-research-drafts.json'
+    save(pointer, dict(schema_version='current-research-drafts-v1', action='no_order',
+        pending_candidates={receipt['symbol']: dict(
+            path=(folder/'candidate.json').relative_to(root).as_posix(),
+            sha256=sha256_file(folder/'candidate.json'))}))
+
+    material = supplement.load_current_pending_candidate_supplement(
+        root=root, symbol=receipt['symbol'])
+
+    assert material is not None
+    assert material['candidate']['input_mode'] == pending.JOINT_CASH_V3_SCHEMA
+    assert material['candidate']['candidate_valuation'] == receipt['candidate_valuation']
+    assert material['candidate']['model_context_scope'] == 'ACTUALLY_CONSUMED'
+    assert material['candidate']['action'] == 'no_order'
+    assert material['candidate']['approval_changed'] is False
+    assert material['approval_changed'] is False
+    assert material['research_admitted'] is False
+    assert material['price_admitted'] is False
+    assert material['position_guidance'] is None
+
+
+def test_v3_terminal_contract_is_consumed_and_round_trips(prepared_v3):
+    root, folder, result, _ = prepared_v3
+    assert result['input_mode'] == pending.JOINT_CASH_V3_SCHEMA
+    assert result['model_context_scope'] == 'ACTUALLY_CONSUMED'
+    assert result['candidate_valuation']['model_version'] == 'residual-income-equity-path-v3'
+    assert result['action'] == 'no_order' and result['research_admitted'] is False
+    package = json.loads((folder/'package.json').read_bytes())
+    descriptor = build_descriptor_for_package(package, root=root)
+    assert descriptor.input_sha256 == result['model_context']['input_descriptor_sha256']
+    work = json.loads((folder/'workbench.json').read_bytes())
+    facts = artifact_payload(
+        verify_current_decision_workbench(work).dependency_objects['financial_facts'])[1]
+    for scenario in facts['scenario_inputs'].values():
+        terminal = scenario['terminal_economic_contract']
+        assert terminal['contract_version'] == 'terminal-economic-contract-v1'
+        assert terminal['terminal_mechanism'] == 'recursive_capital_use_and_owner_distribution'
+
+
+def test_v3_resealed_terminal_contract_must_match_exact_proposal(prepared_v3):
+    root, folder, _, _ = prepared_v3
+    package = json.loads((folder/'package.json').read_bytes())
+    original = build_descriptor_for_package(package, root=root)
+    package['facts']['scenario_inputs']['base']['terminal_economic_contract'][
+        'productive_marginal_return'] = '0.123456'
+    with pytest.raises(ValueError, match='exact proposal choice'):
+        build_descriptor_for_package(package, root=root)
+    assert build_descriptor_for_package(
+        json.loads((folder/'package.json').read_bytes()), root=root
+    ).input_sha256 == original.input_sha256
+
+
+def test_v3_proposal_source_identity_must_equal_content_hash(prepared_v3):
+    root, folder, _, _ = prepared_v3
+    package = json.loads((folder/'package.json').read_bytes())
+    source = next(row for row in package['sources']
+                  if row['id'].startswith('pending-joint-proposal-'))
+    source['id'] = 'pending-joint-proposal-' + '0'*64
+    with pytest.raises(ValueError, match='identity must equal'):
+        build_descriptor_for_package(package, root=root)
 
 
 @pytest.mark.parametrize('fault', ['roe', 'retention', 'ledger', 'proposal_ledger',

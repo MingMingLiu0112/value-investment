@@ -659,6 +659,7 @@ describe("read-only economic review materials", () => {
 
 import {
   JOINT_CASH_SCHEMA,
+  JOINT_CASH_V3_SCHEMA,
   jointCashPolicyFields,
   jointCashRowFields,
   jointCashOperatingFields,
@@ -742,6 +743,112 @@ function jointCashFixture(): Handoff {
   });
   return handoff;
 }
+
+function jointCashV3Fixture(): Handoff {
+  const handoff = jointCashFixture();
+  const review = handoff.economic_review_materials!
+    .joint_capital_review! as any;
+  review.schema_version = "joint-capital-cash-review-v3";
+  review.input_mode = JOINT_CASH_V3_SCHEMA;
+  review.explicit_years = 10;
+  review.distribution_scope =
+    "ANNUAL_CASH_AND_CAPACITY_CONSTRAINED_NOT_APPROVED";
+  review.terminal_scope =
+    "RECURSIVE_CAPITAL_USE_AND_OWNER_DISTRIBUTION_NOT_GROWTH_PERPETUITY";
+  review.scenarios.forEach((scenario: any) => {
+    const policy = scenario.ledger.terminal_policy;
+    Object.assign(policy, {
+      terminal_mechanism: "recursive_capital_use_and_owner_distribution_v1",
+      terminal_start_year: 11,
+      first_distribution_timing: "end_of_terminal_year_1",
+      legacy_profit_dynamics: "constant_after_profit_scale_transition",
+      commitment_occurrences: null,
+      restricted_cash_release_cny: "0",
+      restricted_cash_release_year: null,
+      convergence_tolerance_cny: "0.000001",
+      max_tail_years: 2000,
+    });
+    scenario.ledger.version = "joint-capital-cash-path-v3";
+    scenario.ledger.terminal_growth_status =
+      "NON_AUTHORITATIVE_ACCOUNTING_DIAGNOSTIC";
+    scenario.ledger.terminal_economic_contract = {
+      opening_book: "100",
+      opening_cash: "20",
+      opening_unremitted: "5",
+      opening_distribution_capacity: "100",
+      opening_operating_capital: "80",
+      opening_productive_capital: "10",
+      opening_cash_reference: "20",
+      cash_floor: "10",
+      legacy_profit: "20",
+      operating_allocation: ".5",
+      productive_marginal_return: ".1",
+      liquidity_return: ".01",
+      policy: jointCashPolicyFields.map((key) => [key, policy[key]]),
+      commitment_occurrences: null,
+      restricted_cash_release_cny: "0",
+      restricted_cash_release_year: null,
+      convergence_tolerance_cny: "0.000001",
+      max_tail_years: 2000,
+      rationale: policy.rationale,
+    };
+    scenario.actual_calculation_inputs = {
+      terminal_contract_version: "terminal-economic-contract-v1",
+      terminal_mechanism: "recursive_capital_use_and_owner_distribution",
+    };
+    scenario.terminal_economics = {
+      mechanism: "recursive_capital_use_and_owner_distribution",
+      terminal_contract_version: "terminal-economic-contract-v1",
+      explicit_distribution_pv_cny: "5000000000",
+      terminal_value_at_year_10_cny: "20000000000",
+      terminal_distribution_value_cny: "19999999999.99",
+      terminal_convergence_residual_cny: "0.01",
+      terminal_years_evaluated: 321,
+      ri_ddm_difference_cny: "0.01",
+      limitations: [
+        "Terminal value is conditional on the declared capital-use mechanism.",
+        "Restricted funds release only when explicitly declared and only once.",
+      ],
+    };
+  });
+  return handoff;
+}
+
+it("strictly renders v3 terminal mechanism and value contributions", () => {
+  const handoff = jointCashV3Fixture();
+  expect(jointCapitalReviewMatches(handoff, "600519")).toBe(true);
+  const html = render(handoff);
+  for (const text of [
+    "账面留存不会自动转化为终端增长",
+    "显式十年股东分配现值",
+    "第10年末尾期经济价值",
+    "尾期股东分配价值",
+    "RI／股东分配交叉检查差额",
+    "terminal-economic-contract-v1",
+    "主要限制",
+  ])
+    expect(html).toContain(text);
+});
+
+it.each([
+  (review: any) => {
+    review.scenarios[0].terminal_economics.mechanism = "unknown-v3";
+  },
+  (review: any) => {
+    delete review.scenarios[0].terminal_economics.terminal_value_at_year_10_cny;
+  },
+  (review: any) => {
+    review.scenarios[0].ledger.terminal_policy.terminal_mechanism = "unknown";
+  },
+  (review: any) => {
+    review.terminal_scope = "OLD_GROWTH_PERPETUITY";
+  },
+])("fails closed for unknown or incomplete v3 terminal contracts", (damage) => {
+  const handoff = jointCashV3Fixture();
+  damage(handoff.economic_review_materials!.joint_capital_review);
+  expect(jointCapitalReviewMatches(handoff, "600519")).toBe(false);
+  expect(render(handoff)).toContain("暂不可展示为核验账本");
+});
 
 function publicCashFixture(handoff = jointCashFixture()) {
   const analysis = analysisFixture();

@@ -19,6 +19,7 @@ from .financial_review_attachment import load_financial_review_attachment
 from .workbench import build_current_workbench_for_symbol
 from .research_review_packet import build_research_review_packet, project_research_review_packet
 from ...m1_valuation_package_builder import build_descriptor
+from ..research.v3_input_adapter import build_descriptor_for_package
 from ...research_input import build_research_run_spec
 from .research_reviews import build_research_review_model_context
 
@@ -46,7 +47,16 @@ JOINT_CASH_IMPLEMENTATIONS = frozenset({
 JOINT_CASH_V3_IMPLEMENTATIONS = frozenset({
     'src/value_investment_agent/application/product/pending_research_candidate.py',
     'src/value_investment_agent/application/product/neutral_valuation_proposal.py',
+    'src/value_investment_agent/application/product/company_research.py',
+    'src/value_investment_agent/application/product/workbench.py',
+    'src/value_investment_agent/application/product/research_review_packet.py',
+    'src/value_investment_agent/application/product/economic_review_materials.py',
+    'src/value_investment_agent/application/product/historical_source_restore.py',
+    'src/value_investment_agent/application/research/v3_review_context.py',
+    'src/value_investment_agent/application/research/v3_valuation_router.py',
     'src/value_investment_agent/domain/valuation/joint_capital_cash_path_v3.py',
+    'src/value_investment_agent/research_artifact_codecs.py',
+    'src/value_investment_agent/application/research/v3_input_adapter.py',
     'src/value_investment_agent/valuation_models/residual_income_path_v3.py',
     'src/value_investment_agent/valuation_models/residual_income.py',
 })
@@ -57,6 +67,16 @@ def _cash_entrypoint(name):
     if not callable(entrypoint):
         raise ValueError('joint cash v2 neutral entrypoint unavailable: ' + name)
     return entrypoint
+
+
+def _valuation_economics(payload):
+    """Compare model outputs while permitting the consumer to add provenance refs."""
+    value = deepcopy(payload)
+    value.pop('evidence_refs', None)
+    timing = (value.get('assumptions') or {}).get('valuation_timing')
+    if isinstance(timing, dict):
+        timing.pop('evidence_refs', None)
+    return value
 
 
 def _joint_cash_replay_inputs(policy, package, sources, root, mode=JOINT_CASH_SCHEMA):
@@ -121,6 +141,10 @@ def _joint_cash_replay_inputs(policy, package, sources, root, mode=JOINT_CASH_SC
 def _joint_scenario_inputs(scenarios, mode):
     expected = {}
     for name, row in scenarios.items():
+        if mode == JOINT_CASH_V3_SCHEMA:
+            from ..research.v3_input_adapter import scenario_payload
+            expected[name] = scenario_payload(row)
+            continue
         values = dict(cost_of_equity=str(row.cost_of_equity),
             forecast_roes=[str(value) for value in row.forecast_roes],
             terminal_roe=str(row.terminal_roe), terminal_growth=str(row.terminal_growth))
@@ -192,8 +216,15 @@ def _verify_joint_economic_inputs(*, root, path, data, policy, package, descript
     original = load_json_object(original_path, 'joint predecessor')
     validate_proposal_policy_identity(policy=policy, package=original,
         package_sha256=original_binding['sha256'], candidate_symbol=package['symbol'])
-    verify_package_local_sources(root, original)
-    old_descriptor = build_descriptor(original, root=root)
+    if data['input_mode'] == JOINT_CASH_V3_SCHEMA:
+        from .historical_source_restore import verify_or_restore_package_sources
+        from ..research.v3_input_adapter import build_predecessor_descriptor
+        verify_or_restore_package_sources(root, original,
+            restore_dir=path.parent / 'historical-source-code', create=False)
+        old_descriptor = build_predecessor_descriptor(original, root=root)
+    else:
+        verify_package_local_sources(root, original)
+        old_descriptor = build_descriptor(original, root=root)
     old_facts = old_descriptor.facts
     source_checks = []
     mode = data['input_mode']
@@ -264,10 +295,6 @@ def _verify_joint_economic_inputs(*, root, path, data, policy, package, descript
     proposed_choices = [row for row in proposal['choices'] if row['id'] == data['selected_choice']]
     proposal_inputs = {name: {('forecast_roe' if key == 'forecast_roes' else key): value
                              for key, value in row.items()} for name, row in expected.items()}
-    if mode == JOINT_CASH_V3_SCHEMA:
-        for values in proposal_inputs.values():
-            values.update(terminal_contract_version='terminal-economic-contract-v1',
-                terminal_mechanism='recursive_capital_use_and_owner_distribution')
     if (len(proposed_choices) != 1 or proposal.get('input_mode') != mode
             or proposed_choices[0].get('joint_capital_ledgers') != ledgers
             or proposed_choices[0]['actual_calculation_inputs']['scenarios'] != proposal_inputs
@@ -359,6 +386,9 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
         raise ValueError('candidate computation time requires timezone')
     source = load_json_object(package_path, 'candidate source package')
     policy = load_json_object(policy_path, 'candidate economic policy')
+    if (policy.get('schema_version') == JOINT_CASH_V3_SCHEMA
+            and valuation_basis_quote_binding is not None):
+        raise ValueError('V3_MATERIALITY_HANDOFF_NOT_VERSIONED')
     if choice_id not in {row['id'] for row in policy.get('choices', [])}:
         raise ValueError('candidate must select an existing finite choice')
     if schedule_request.get('symbol') != source['symbol']:
@@ -420,12 +450,18 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
                 raise ValueError('candidate issuer index conflicting identity')
             official_identities[url] = identity
 
+    mode = proposal.get('input_mode')
+
     def add_source(item):
         item = deepcopy(item)
         local = item.get('local_path', item['location'])
         path = require_inside(root, root / local, 'candidate source')
         if not path.is_file() or sha256_file(path) != item['sha256']:
-            raise ValueError('candidate requires original identical local bytes')
+            if mode != JOINT_CASH_V3_SCHEMA or not str(local).replace('\\', '/').startswith('src/'):
+                raise ValueError('candidate requires original identical local bytes')
+            restored = output_dir / 'historical-source-code' / f"{item['sha256'].lower()}.blob"
+            if not restored.is_file() or sha256_file(restored) != item['sha256'].lower():
+                raise ValueError('candidate historical implementation restore is unavailable')
         item['local_path'] = path.relative_to(root).as_posix()
         if not item.get('source_available_at'):
             published = item.get('published_at')
@@ -454,7 +490,6 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
             location=binding['path'], local_path=binding['path'], sha256=binding['sha256'],
             source_available_at=now.isoformat(), availability_basis='current_candidate_acquisition',
             source_url='https://www.cninfo.com.cn/new/hisAnnouncement/query'))
-    mode = proposal.get('input_mode')
     joint = mode in JOINT_MODES
     joint_label = ('本候选十年现金约束资本、分配及终端持续投入未获主模型批准'
                    if mode in (JOINT_CASH_SCHEMA, JOINT_CASH_V3_SCHEMA)
@@ -687,17 +722,33 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
     from .source_bound_inputs import source_catalog_sha256
     contract['source_catalog_sha256'] = source_catalog_sha256(candidate['sources'])
     candidate['recommendation_schema_version'] = 'advisory-decision-recommendation-v3'
-    verify_package_local_sources(root, candidate)
-    descriptor = build_descriptor(candidate, root=root)
-    context = build_research_review_model_context(descriptor=descriptor,
-                                                 spec=build_research_run_spec(descriptor))
+    if mode == JOINT_CASH_V3_SCHEMA:
+        from .historical_source_restore import verify_or_restore_package_sources
+        verify_or_restore_package_sources(root, candidate,
+            restore_dir=output_dir / 'historical-source-code')
+    else:
+        verify_package_local_sources(root, candidate)
+    descriptor = build_descriptor_for_package(candidate, root=root)
+    spec = build_research_run_spec(descriptor)
+    if mode == JOINT_CASH_V3_SCHEMA:
+        from ..research.v3_review_context import build_v3_research_review_model_context
+        context = build_v3_research_review_model_context(descriptor=descriptor, spec=spec)
+        from ..research.v3_valuation_router import build_v3_valuation_router
+        valuation_router = build_v3_valuation_router()
+    else:
+        context = build_research_review_model_context(descriptor=descriptor, spec=spec)
+        valuation_router = None
     package_output = output_dir / 'package.json'
     write_new_json(package_output, candidate)
     workbench_path = output_dir / 'workbench.json'
     workbench = build_current_workbench_for_symbol(root=root, symbol=source['symbol'],
         package_path=package_output, output_path=workbench_path, schedule_request=schedule_request,
         schedule_request_sha256=schedule_request_sha256,
-        recommendation_schema_version='advisory-decision-recommendation-v3')['result']
+        recommendation_schema_version='advisory-decision-recommendation-v3',
+        valuation_router=valuation_router)['result']
+    if (mode == JOINT_CASH_V3_SCHEMA
+            and _valuation_economics(workbench.get('valuation')) != _valuation_economics(choice['valuation'])):
+        raise ValueError('v3 proposal valuation differs from shared application consumption')
     if workbench.get('decision_recommendation'):
         build_research_review_packet(root=root, package_path=package_output,
             package_sha256=sha256_file(package_output), workbench_path=workbench_path,
@@ -720,8 +771,7 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
         prior_research_as_of=source['point_in_time']['research_as_of'],
         selected_choice=choice_id, choice_rationale=choice['rationale'], countercase=choice['countercase'],
         retained_date_valuation=choice['valuation'],
-        candidate_valuation=(choice['valuation'] if mode == JOINT_CASH_V3_SCHEMA
-            else workbench.get('valuation')),
+        candidate_valuation=workbench.get('valuation'),
         model_context=context, approval_changed=False, research_admitted=False,
         model_context_scope=('ACTUALLY_CONSUMED' if workbench.get('decision_recommendation')
                              else 'PREPARED_NOT_CONSUMED'),
@@ -769,7 +819,13 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
         if packet_path.is_file():
             all_sources[packet_path.relative_to(root).as_posix()] = dict(
                 path=packet_path.relative_to(root).as_posix(), sha256=sha256_file(packet_path))
-    for path, digest in verify_package_local_sources(root, candidate):
+    if mode == JOINT_CASH_V3_SCHEMA:
+        from .historical_source_restore import verify_or_restore_package_sources
+        verified_candidate_sources = verify_or_restore_package_sources(
+            root, candidate, restore_dir=output_dir / 'historical-source-code', create=False)
+    else:
+        verified_candidate_sources = verify_package_local_sources(root, candidate)
+    for path, digest in verified_candidate_sources:
         if sha256_file(path) != digest:
             raise ValueError('candidate source changed during shared application run')
         relative = path.relative_to(root).as_posix()
@@ -836,8 +892,13 @@ def verify_pending_research_candidate(*, root: Path, path: Path, expected_sha256
         _joint_implementations(data.get('implementation_bindings'), data.get('input_mode', JOINT_SCHEMA))
     if data.get('review_groups') != policy.get('human_review_groups', []):
         raise ValueError('candidate review questions differ from economic policy')
-    descriptor = build_descriptor(package, root=root)
-    context = build_research_review_model_context(descriptor=descriptor, spec=build_research_run_spec(descriptor))
+    descriptor = build_descriptor_for_package(package, root=root)
+    spec = build_research_run_spec(descriptor)
+    if data.get('input_mode') == JOINT_CASH_V3_SCHEMA:
+        from ..research.v3_review_context import build_v3_research_review_model_context
+        context = build_v3_research_review_model_context(descriptor=descriptor, spec=spec)
+    else:
+        context = build_research_review_model_context(descriptor=descriptor, spec=spec)
     if data.get('input_mode') in JOINT_MODES:
         _verify_joint_economic_inputs(root=root, path=path, data=data, policy=policy,
             package=package, descriptor=descriptor)
@@ -896,7 +957,10 @@ def verify_pending_research_candidate(*, root: Path, path: Path, expected_sha256
             if row['id'] == data['selected_choice']]
         if len(v3_choices) != 1:
             raise ValueError('v3 candidate must bind one exact proposal choice')
-        expected_candidate_valuation = v3_choices[0]['valuation']
+        if (_valuation_economics(workbench.get('valuation'))
+                != _valuation_economics(v3_choices[0]['valuation'])):
+            raise ValueError('v3 proposal valuation differs from consumed workbench valuation')
+        expected_candidate_valuation = workbench.get('valuation')
     else:
         expected_candidate_valuation = workbench.get('valuation')
     if (data['symbol'] != package['symbol'] or workbench['symbol'] != package['symbol']

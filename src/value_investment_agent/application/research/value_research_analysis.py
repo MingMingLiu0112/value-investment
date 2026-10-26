@@ -10,10 +10,12 @@ from ...m1_valuation_package_builder import build_descriptor
 from ...research_artifact_codecs import artifact_payload
 from ...valuation_models.residual_income import QualityCompounderFacts
 from ...valuation_router import route_profile
+from ...research_profile import PROFILES
 from ..product.common import load_json_object, normalize_symbol, require_inside, sha256_file
 from ..product.pending_candidate_supplement import load_current_pending_candidate_supplement
 from ..product.pending_replay_publication import load_current_pending_replay
 from ..product.research_review_packet import project_research_review_packet
+from .v3_input_adapter import RETENTION_CONTRACT as V3_RETENTION_CONTRACT
 
 
 SCHEMA = "value-research-analysis-v1"
@@ -112,10 +114,25 @@ def project_value_research_analysis(*, root: Path, package_binding: dict,
     effective = {**package, "facts": dict(package["facts"]),
         "recommendation_schema_version": workbench["decision_recommendation"]["schema_version"]}
     effective["facts"].setdefault("kind", effective["facts"].get("facts_type"))
-    descriptor = build_descriptor(effective, root=root)
+    scenario_inputs = effective["facts"].get("scenario_inputs", {})
+    contracts = {item.get("retention_contract") for item in scenario_inputs.values()
+                 if isinstance(item, dict)}
+    is_v3 = contracts == {V3_RETENTION_CONTRACT}
+    if V3_RETENTION_CONTRACT in contracts and not is_v3:
+        raise ValueError("Value analysis rejects mixed v3 scenario contracts")
+    if is_v3:
+        from .v3_input_adapter import build_descriptor_for_package
+        descriptor = build_descriptor_for_package(effective, root=root)
+    else:
+        descriptor = build_descriptor(effective, root=root)
     if descriptor.input_sha256 != packet["input_descriptor_sha256"]:
         raise ValueError("Value analysis descriptor differs from consumed inputs")
-    route = route_profile(descriptor.profile_id, descriptor.requested_model)
+    if is_v3:
+        from .v3_valuation_router import build_v3_valuation_router
+        route = build_v3_valuation_router().route(
+            PROFILES[descriptor.profile_id], descriptor.requested_model)
+    else:
+        route = route_profile(descriptor.profile_id, descriptor.requested_model)
     model = route.build_model()
     result = model.value(descriptor.facts, descriptor.research_case)
     valuation = artifact_payload(result)[1]

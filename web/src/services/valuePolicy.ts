@@ -3,7 +3,10 @@ import type { ValueResearchAnalysis } from "../types/api";
 type EvidenceBinding = { path: string; sha256: string };
 
 export type JointCapitalReview = {
-  schema_version: "joint-capital-review-v1" | "joint-capital-cash-review-v2";
+  schema_version:
+    | "joint-capital-review-v1"
+    | "joint-capital-cash-review-v2"
+    | "joint-capital-cash-review-v3";
   input_mode?: string;
   symbol: string;
   action: "no_order";
@@ -30,6 +33,17 @@ export type JointCapitalReview = {
       limitations: string[];
     };
     valuation_per_share: string;
+    terminal_economics?: {
+      mechanism: "recursive_capital_use_and_owner_distribution";
+      terminal_contract_version: "terminal-economic-contract-v1";
+      explicit_distribution_pv_cny: string;
+      terminal_value_at_year_10_cny: string;
+      terminal_distribution_value_cny: string;
+      terminal_convergence_residual_cny: string;
+      terminal_years_evaluated: number;
+      ri_ddm_difference_cny: string;
+      limitations: string[];
+    };
   }[];
 };
 
@@ -301,11 +315,16 @@ const driverFields = [
 ];
 
 export const JOINT_CASH_SCHEMA = "joint-capital-cash-path-proposal-v2";
+export const JOINT_CASH_V3_SCHEMA = "joint-capital-cash-path-proposal-v3";
 export function isJointCashReview(value: unknown): boolean {
   return (
     record(value) &&
-    (value.schema_version === "joint-capital-cash-review-v2" ||
-      value.input_mode === JOINT_CASH_SCHEMA)
+    (["joint-capital-cash-review-v2", "joint-capital-cash-review-v3"].includes(
+      String(value.schema_version),
+    ) ||
+      [JOINT_CASH_SCHEMA, JOINT_CASH_V3_SCHEMA].includes(
+        String(value.input_mode),
+      ))
   );
 }
 
@@ -418,8 +437,172 @@ function cashRow(
       decimalIdentity((value.cash_policy as Record<string, string>)[key]),
   );
 }
+
+const v3TerminalPolicyFields = [
+  ...jointCashPolicyFields,
+  "profit_scale",
+  "rationale",
+  "terminal_mechanism",
+  "terminal_start_year",
+  "first_distribution_timing",
+  "legacy_profit_dynamics",
+  "commitment_occurrences",
+  "restricted_cash_release_cny",
+  "restricted_cash_release_year",
+  "convergence_tolerance_cny",
+  "max_tail_years",
+] as const;
+const v3TerminalContractFields = [
+  "opening_book",
+  "opening_cash",
+  "opening_unremitted",
+  "opening_distribution_capacity",
+  "opening_operating_capital",
+  "opening_productive_capital",
+  "opening_cash_reference",
+  "cash_floor",
+  "legacy_profit",
+  "operating_allocation",
+  "productive_marginal_return",
+  "liquidity_return",
+  "policy",
+  "commitment_occurrences",
+  "restricted_cash_release_cny",
+  "restricted_cash_release_year",
+  "convergence_tolerance_cny",
+  "max_tail_years",
+  "rationale",
+] as const;
+const v3TerminalEconomicsFields = [
+  "mechanism",
+  "terminal_contract_version",
+  "explicit_distribution_pv_cny",
+  "terminal_value_at_year_10_cny",
+  "terminal_distribution_value_cny",
+  "terminal_convergence_residual_cny",
+  "terminal_years_evaluated",
+  "ri_ddm_difference_cny",
+  "limitations",
+] as const;
+
+function v3TerminalPolicy(value: unknown): boolean {
+  return (
+    record(value) &&
+    exactFields(value, v3TerminalPolicyFields) &&
+    cashPolicy(value) &&
+    finiteDecimal(value.profit_scale) &&
+    Number(value.profit_scale) > 0 &&
+    value.terminal_mechanism ===
+      "recursive_capital_use_and_owner_distribution_v1" &&
+    Number.isInteger(value.terminal_start_year) &&
+    Number(value.terminal_start_year) === 11 &&
+    value.first_distribution_timing === "end_of_terminal_year_1" &&
+    value.legacy_profit_dynamics === "constant_after_profit_scale_transition" &&
+    (value.commitment_occurrences === null ||
+      (Number.isInteger(value.commitment_occurrences) &&
+        Number(value.commitment_occurrences) >= 0)) &&
+    finiteDecimal(value.restricted_cash_release_cny) &&
+    Number(value.restricted_cash_release_cny) >= 0 &&
+    (value.restricted_cash_release_year === null ||
+      (Number.isInteger(value.restricted_cash_release_year) &&
+        Number(value.restricted_cash_release_year) >= 1)) &&
+    finiteDecimal(value.convergence_tolerance_cny) &&
+    Number(value.convergence_tolerance_cny) > 0 &&
+    Number.isInteger(value.max_tail_years) &&
+    Number(value.max_tail_years) >= 1 &&
+    typeof value.rationale === "string" &&
+    !!value.rationale.trim()
+  );
+}
+
+function v3TerminalContract(value: unknown): boolean {
+  if (!record(value) || !exactFields(value, v3TerminalContractFields))
+    return false;
+  const decimalFields = v3TerminalContractFields.filter(
+    (key) =>
+      ![
+        "policy",
+        "commitment_occurrences",
+        "restricted_cash_release_year",
+        "max_tail_years",
+        "rationale",
+      ].includes(key),
+  );
+  return (
+    decimalFields.every((key) => finiteDecimal(value[key])) &&
+    Array.isArray(value.policy) &&
+    value.policy.length === jointCashPolicyFields.length &&
+    value.policy.every(
+      (row) =>
+        Array.isArray(row) &&
+        row.length === 2 &&
+        jointCashPolicyFields.includes(row[0] as never) &&
+        finiteDecimal(row[1]),
+    ) &&
+    (value.commitment_occurrences === null ||
+      (Number.isInteger(value.commitment_occurrences) &&
+        Number(value.commitment_occurrences) >= 0)) &&
+    (value.restricted_cash_release_year === null ||
+      (Number.isInteger(value.restricted_cash_release_year) &&
+        Number(value.restricted_cash_release_year) >= 1)) &&
+    Number.isInteger(value.max_tail_years) &&
+    Number(value.max_tail_years) >= 1 &&
+    typeof value.rationale === "string" &&
+    !!value.rationale.trim()
+  );
+}
+
+function v3TerminalEconomics(value: unknown): boolean {
+  return (
+    record(value) &&
+    exactFields(value, v3TerminalEconomicsFields) &&
+    value.mechanism === "recursive_capital_use_and_owner_distribution" &&
+    value.terminal_contract_version === "terminal-economic-contract-v1" &&
+    [
+      "explicit_distribution_pv_cny",
+      "terminal_value_at_year_10_cny",
+      "terminal_distribution_value_cny",
+      "terminal_convergence_residual_cny",
+      "ri_ddm_difference_cny",
+    ].every((key) => finiteDecimal(value[key])) &&
+    Number(value.terminal_value_at_year_10_cny) > 0 &&
+    Number(value.terminal_distribution_value_cny) > 0 &&
+    Number(value.terminal_convergence_residual_cny) >= 0 &&
+    Number.isInteger(value.terminal_years_evaluated) &&
+    Number(value.terminal_years_evaluated) >= 1 &&
+    strings(value.limitations) &&
+    value.limitations.length > 0 &&
+    value.limitations.every((text) => !!text.trim())
+  );
+}
 /** Validate the v2 cash contract independently of the legacy five-year fields. */
 function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
+  const v3BySchema = review.schema_version === "joint-capital-cash-review-v3";
+  const v3ByInput = review.input_mode === JOINT_CASH_V3_SCHEMA;
+  const v3 = v3BySchema || v3ByInput;
+  if (
+    (v3 && v3BySchema !== v3ByInput) ||
+    (!v3 &&
+      !["joint-capital-review-v1", "joint-capital-cash-review-v2"].includes(
+        String(review.schema_version),
+      )) ||
+    (!v3 &&
+      review.input_mode !== undefined &&
+      review.input_mode !== JOINT_CASH_SCHEMA) ||
+    (!v3 &&
+      review.schema_version === "joint-capital-review-v1" &&
+      review.input_mode !== JOINT_CASH_SCHEMA)
+  )
+    return false;
+  if (
+    v3 &&
+    (review.explicit_years !== 10 ||
+      review.distribution_scope !==
+        "ANNUAL_CASH_AND_CAPACITY_CONSTRAINED_NOT_APPROVED" ||
+      review.terminal_scope !==
+        "RECURSIVE_CAPITAL_USE_AND_OWNER_DISTRIBUTION_NOT_GROWTH_PERPETUITY")
+  )
+    return false;
   if (
     ("explicit_years" in review && review.explicit_years !== 10) ||
     ("distribution_scope" in review &&
@@ -427,13 +610,9 @@ function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
         "ANNUAL_CASH_AND_CAPACITY_CONSTRAINED_NOT_APPROVED") ||
     ("terminal_scope" in review &&
       review.terminal_scope !==
-        "EXPLICIT_CONTINUING_CASH_NEEDS_NOT_DEFAULT_FULL_PAYOUT")
-  )
-    return false;
-
-  if (
-    review.input_mode !== undefined &&
-    review.input_mode !== JOINT_CASH_SCHEMA
+        (v3
+          ? "RECURSIVE_CAPITAL_USE_AND_OWNER_DISTRIBUTION_NOT_GROWTH_PERPETUITY"
+          : "EXPLICIT_CONTINUING_CASH_NEEDS_NOT_DEFAULT_FULL_PAYOUT"))
   )
     return false;
   for (const key of [
@@ -492,9 +671,11 @@ function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
     )
       return false;
     const ledger = item.ledger;
+    const terminalPolicy = record(ledger) ? ledger.terminal_policy : undefined;
     if (
       !record(ledger) ||
-      ledger.version !== "joint-capital-cash-path-v2" ||
+      ledger.version !==
+        (v3 ? "joint-capital-cash-path-v3" : "joint-capital-cash-path-v2") ||
       ledger.action !== "no_order" ||
       ledger.status !== "CONDITIONAL_RESEARCH_NOT_APPROVED" ||
       ledger.scope !== "ordinary_owner_equivalent_cash_mapping" ||
@@ -513,18 +694,35 @@ function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
       ledger.forecast_retentions.length !== 10 ||
       !ledger.forecast_retentions.every(cashRatio) ||
       !cashRow(ledger.terminal, 11) ||
-      !cashPolicy(ledger.terminal_policy) ||
-      !exactFields(ledger.terminal_policy, [
-        ...jointCashPolicyFields,
-        "profit_scale",
-        "rationale",
-      ]) ||
-      !finiteDecimal(ledger.terminal_policy.profit_scale) ||
-      Number(ledger.terminal_policy.profit_scale) <= 0 ||
-      typeof ledger.terminal_policy.rationale !== "string" ||
-      !ledger.terminal_policy.rationale.trim()
+      !record(terminalPolicy) ||
+      !(v3 ? v3TerminalPolicy(terminalPolicy) : cashPolicy(terminalPolicy)) ||
+      !(v3
+        ? true
+        : exactFields(terminalPolicy, [
+            ...jointCashPolicyFields,
+            "profit_scale",
+            "rationale",
+          ])) ||
+      !finiteDecimal(terminalPolicy.profit_scale) ||
+      Number(terminalPolicy.profit_scale) <= 0 ||
+      typeof terminalPolicy.rationale !== "string" ||
+      !terminalPolicy.rationale.trim()
     )
       return false;
+    if (
+      v3 &&
+      (ledger.terminal_growth_status !==
+        "NON_AUTHORITATIVE_ACCOUNTING_DIAGNOSTIC" ||
+        !v3TerminalContract(ledger.terminal_economic_contract) ||
+        !v3TerminalEconomics(item.terminal_economics) ||
+        !record(item.actual_calculation_inputs) ||
+        item.actual_calculation_inputs.terminal_contract_version !==
+          "terminal-economic-contract-v1" ||
+        item.actual_calculation_inputs.terminal_mechanism !==
+          "recursive_capital_use_and_owner_distribution")
+    )
+      return false;
+    if (!v3 && item.terminal_economics !== undefined) return false;
     const roes = ledger.forecast_roe,
       retentions = ledger.forecast_retentions,
       years = item.drivers.years;
@@ -596,9 +794,11 @@ function jointCapitalSourceMatches(
     const review = value;
     if (
       !review ||
-      !["joint-capital-review-v1", "joint-capital-cash-review-v2"].includes(
-        String(review.schema_version),
-      ) ||
+      ![
+        "joint-capital-review-v1",
+        "joint-capital-cash-review-v2",
+        "joint-capital-cash-review-v3",
+      ].includes(String(review.schema_version)) ||
       review.symbol !== symbol ||
       review.action !== "no_order" ||
       review.status !== "CONDITIONAL_PATH_NOT_APPROVED" ||

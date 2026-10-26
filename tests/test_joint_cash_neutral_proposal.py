@@ -202,8 +202,9 @@ def test_v3_uses_terminal_economic_value_and_binds_v3_implementations(case):
         inputs = choice['actual_calculation_inputs']['scenarios'][name]
         arithmetic = choice['annual_arithmetic'][name]
         ledger = choice['joint_capital_ledgers'][name]
-        assert inputs['terminal_contract_version'] == 'terminal-economic-contract-v1'
-        assert inputs['terminal_mechanism'] == 'recursive_capital_use_and_owner_distribution'
+        assert inputs['retention_contract'] == 'annual-retention-v3-economic-terminal'
+        assert inputs['terminal_economic_contract']['contract_version'] == (
+            'terminal-economic-contract-v1')
         assert arithmetic['terminal_economic_value_cny']
         assert arithmetic['cash_distribution_crosscheck']['terminal_value_at_year_10_cny'] == (
             arithmetic['terminal_economic_value_cny'])

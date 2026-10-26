@@ -876,9 +876,13 @@ class FinancialFactsCodec:
     def to_payload(self, value: Any) -> dict[str, Any]:
         # Lazy import avoids the input descriptor <-> codec import cycle.
         from .research_input import facts_to_payload
+        from .application.research.v3_input_adapter import facts_to_payload_v3
 
         try:
-            return facts_to_payload(value)
+            try:
+                return facts_to_payload_v3(value)
+            except TypeError:
+                return facts_to_payload(value)
         except TypeError as error:
             raise TypeError("financial_facts codec has the wrong input type") from error
 
@@ -886,7 +890,14 @@ class FinancialFactsCodec:
         self, payload: Mapping[str, Any], **_: Any
     ) -> Any:
         from .research_input import facts_from_payload
+        from .application.research.v3_input_adapter import facts_from_payload_v3
 
+        scenarios = payload.get("scenario_inputs")
+        if (isinstance(scenarios, Mapping) and scenarios
+                and all(isinstance(item, Mapping)
+                        and item.get("retention_contract") == "annual-retention-v3-economic-terminal"
+                        for item in scenarios.values())):
+            return facts_from_payload_v3(payload)
         return facts_from_payload(payload)
 
 
