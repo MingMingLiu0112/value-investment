@@ -139,3 +139,18 @@ src/value_investment_agent/application/research/finite_advantage_research.py -te
 src/value_investment_agent/application/research/operating_earnings_bridge.py -text whitespace=cr-at-eol
 src/value_investment_agent/infrastructure/filings/pdf_text.py -text whitespace=cr-at-eol
 src/value_investment_agent/domain/valuation/operating_realization_erosion_v1.py -text whitespace=cr-at-eol
+
+# V3 terminal-economic candidates bind these exact bytes and assumption files.
+src/value_investment_agent/application/product/neutral_valuation_proposal.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/product/economic_review_materials.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/product/historical_source_restore.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/v3_input_adapter.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/v3_review_context.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/v3_valuation_router.py -text whitespace=cr-at-eol
+src/value_investment_agent/domain/valuation/joint_capital_cash_path_v3.py -text whitespace=cr-at-eol
+src/value_investment_agent/research_artifact_codecs.py -text whitespace=cr-at-eol
+src/value_investment_agent/valuation_models/residual_income_path_v3.py -text whitespace=cr-at-eol
+config/research-assumptions/600519-joint-capital-cash-path-v3.json -text whitespace=cr-at-eol
+config/research-assumptions/600887-joint-capital-cash-path-v3.json -text whitespace=cr-at-eol
+config/research-proposals/600519-joint-capital-cash-path-v3.json -text whitespace=cr-at-eol
+config/research-proposals/600887-joint-capital-cash-path-v3.json -text whitespace=cr-at-eol
