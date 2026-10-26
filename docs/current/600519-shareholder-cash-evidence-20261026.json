@@ -45,6 +45,16 @@
   "economic_conclusion": "PARTIAL: zero net maintenance/WC, parent remittance and lawful terminal full payout are not jointly established. Historical partial receipts are not sustainable future distribution capacity.",
   "price_draft": null,
   "production_published": false,
+  "latest_economic_review_run": {
+    "directory": "runtime/product-cash-allocation-consumer/20261026T090212419386Z",
+    "candidate_sha256": "5ff0fbab48a97ed72d1ca06f08bf721b454f96c947edf2fcafa0faa15681ef32",
+    "api_sha256": "e4f3a441a6a0751f9633cb7e50bf656931c4d4b276f978a06fc91ebe1be2ae7a",
+    "review_handoff_sha256": "b4ef13b22688e46da8e8330ec7d26d65888904d6338911b68144a93a7d06b03a",
+    "economic_decision": "ACCEPT_CONDITIONAL_BRANCH_REJECT_AS_UNIQUE_PRIMARY: permanent excess earnings, rather than missing G3, is the decisive unsupported model selection; finite advantage and equity-cost alternatives remain material.",
+    "arithmetic_changed": false,
+    "action": "no_order",
+    "production_published": false
+  },
   "cash_allocation_v2_run": {
     "directory": "runtime/product-cash-allocation-consumer/20261026T084128520759Z",
     "candidate_sha256": "cd052a3354d3dc54b46e0a64dd25dd2a9d659c6b80b2416733196d80a4733d46",

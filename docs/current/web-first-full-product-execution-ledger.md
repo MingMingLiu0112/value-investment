@@ -29,6 +29,19 @@ Maintenance/WC, future remittance, equity cost and terminal payout remain
 explicit economic assumptions. No primary approval or current-price draft;
 no8001 release. Final clean commit/Core/Web CI still pending. action=no_order.
 
+Independent economic review now distinguishes defensible conditional inputs
+from an unsupported choice of a unique primary estimate. Historical remittance
+and the stated equity-cost formula support conditional research; neither the
+future nor G3 needs to be proved to calculate it. The decisive primary-selection
+issue is permanent terminal excess earnings, not merely missing maintenance
+detail. Updated policy rationale is consumed in the existing company page's
+terminal and strongest-counter-evidence sections. Latest actual rerun:
+runtime/product-cash-allocation-consumer/20261026T090212419386Z/receipt.json;
+CLI/API/review pass with unchanged economics and no admission. Prior runs remain
+historical. Clean checkout exposed EOL changes in four existing bound sources;
+694eea54 preserves their reviewed bytes without changing arithmetic or hashes.
+Exact final commit validation remains pending; no current-price draft is justified.
+
 ### 2026-10-26 thin-entrypoint correction and independent cash evidence
 
 Core run40282758146 on56552c09 had one failure: the refreshed company CLI
