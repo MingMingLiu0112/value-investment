@@ -6157,3 +6157,62 @@ source code, source-bound assumptions, proposal inputs and replay/API tests rema
 versioned. Production/current publication requires a separate verified artifact
 restore or deployment manifest and was not performed. This is not hidden as a
 successful 8001 publication and does not alter the module arithmetic acceptance.
+
+### 2026-10-26 v3 terminal economics and portable two-company closure
+
+The reusable owner-cash module now uses `joint-capital-cash-path-v3` and an
+explicit `terminal-economic-contract-v1`. Terminal value no longer converts all
+year-10 retained book into the operating franchise ROE. The contract separately
+states continuing operating profit, maintenance/WC cash needs, accessible cash,
+terminal distribution, low-return liquidity and residual convergence. Missing
+terminal economics is rejected; v2 remains available only for historical replay.
+
+New v3 candidates retain repository code/config/docs by content hash and rewrite
+their local evidence locators to the candidate's immutable closure. Repeated
+source identities are restored once. A later checkout or assumptions update can
+therefore verify the sealed research bytes without silently interpreting them
+through current source. Source tampering, a missing retained blob or a mismatched
+hash still fails closed. This is evidence retention only: retained Python is
+never imported or executed.
+
+Exact clean-checkout acceptance used detached commit
+`b216da57e36a73ae69ffd3999d04fc79ca3b204e`. Historical assumption bytes were
+used only while recomputing the source-bound candidate and the checkout's current
+configs were restored before consumer verification. Both candidates then passed
+the existing current-value-plan consumer independently of those live config bytes:
+
+- 600519 candidate SHA-256
+  `9cb5913a115fa54ef13418a3eae5d5b0a45b368a1b611e397f6e8e0d90a941fe`;
+  conditional bear/base/bull 675.1019318083 / 799.2027611908 /
+  930.0062820281 CNY per share, valuation basis 2026-06-30.
+- 600887 candidate SHA-256
+  `b4615d508876cd1f817c8efcf3b5e2e4e1985f946b9bfc6caea95074093c8711`;
+  conditional bear/base/bull 13.0011250922 / 16.0892188495 /
+  20.2405823121 CNY per share, valuation date 2026-10-21 on its retained basis.
+
+The clean consumer receipt is
+`runtime/joint-cash-v3-clean-acceptance3/acceptance-receipt.json`, SHA-256
+`2cbce3715cfeebb4fb9f226a8ef0f4bcd2b9163b324de03f60a252f1ddf0aa0c`.
+Both rows expose `joint-capital-cash-review-v3`, LOW confidence,
+`formal_eligibility=false` and `action=no_order`.
+
+The existing `/api/v1/decisions/{symbol}` route was exercised for both candidates
+through an isolated pinned-publication fixture. Both HTTP responses were 200 and
+returned `CONDITIONAL_PATH_NOT_APPROVED`, `formal_eligibility=false` and the same
+three scenario values. Receipt:
+`runtime/joint-cash-v3-clean-acceptance3/api-acceptance-receipt.json`, SHA-256
+`c93d72623a688400110dd609ec9cf1bd10135f3361399fe186bafe021ebaa652`.
+This proves the existing API route consumes the result; it is explicitly not a
+current deployment or 8001 publication.
+
+Focused backend candidate/source/API regression passed 77 tests. The v3 Web
+economic-review rendering contract passed 133 tests with 3 explicit skips and
+TypeScript typecheck passed. The detached acceptance checkout finished with no
+tracked changes. No current pointer, Canonical Excel, account, server, scheduler,
+G3 approval or order state changed.
+
+Engineering status for the reusable v3 module: ACCEPTED IN ISOLATION. Economic
+status: CONDITIONAL RESEARCH, LOW confidence. Current-price admission, event/model
+validity, G3 approval and personal quantity remain separate gates. No condition
+price draft is promoted from these historical/conditional values. Overall
+REAL_ASSISTED_USE_NOT_READY; action=no_order.
