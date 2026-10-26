@@ -168,6 +168,51 @@ def test_actual_annual_retention_and_cash_distributions_reach_dispatcher(case):
         run(case)
 
 
+def test_v3_uses_terminal_economic_value_and_binds_v3_implementations(case):
+    root, _, policy_path, _ = case
+    policy = json.loads(policy_path.read_bytes())
+    policy['schema_version'] = subject.JOINT_CASH_V3_SCHEMA
+    for terminal in policy['choices'][0]['terminal_policy'].values():
+        terminal.update(terminal_mechanism='recursive_capital_use_and_owner_distribution_v1',
+            terminal_start_year=11, first_distribution_timing='end_of_terminal_year_1',
+            legacy_profit_dynamics='constant_after_profit_scale_transition',
+            commitment_occurrences=None, restricted_cash_release_cny='0',
+            restricted_cash_release_year=None, convergence_tolerance_cny='0.000001',
+            max_tail_years=2000)
+    observations = json.loads(case[3].read_bytes())
+    for name, terminal in policy['choices'][0]['terminal_policy'].items():
+        observations['scenarios'][name]['terminal_policy'] = terminal
+    save(case[3], observations)
+    policy['rationale_bindings'][0]['sha256'] = sha256_file(case[3])
+    save(policy_path, policy)
+    for name in subject._JOINT_CASH_V3_IMPLEMENTATIONS:
+        target = root/name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT/name, target)
+
+    result = run(case, output='cash-v3-proposal')
+
+    assert result['schema_version'] == result['input_mode'] == subject.JOINT_CASH_V3_SCHEMA
+    assert result['action'] == 'no_order'
+    assert {b['path'] for b in result['implementation_bindings']} == set(
+        subject._JOINT_CASH_V3_IMPLEMENTATIONS)
+    choice = result['choices'][0]
+    assert choice['valuation']['model_version'] == 'residual-income-equity-path-v3'
+    for name in ('bear', 'base', 'bull'):
+        inputs = choice['actual_calculation_inputs']['scenarios'][name]
+        arithmetic = choice['annual_arithmetic'][name]
+        ledger = choice['joint_capital_ledgers'][name]
+        assert inputs['terminal_contract_version'] == 'terminal-economic-contract-v1'
+        assert inputs['terminal_mechanism'] == 'recursive_capital_use_and_owner_distribution'
+        assert arithmetic['terminal_economic_value_cny']
+        assert arithmetic['cash_distribution_crosscheck']['terminal_value_at_year_10_cny'] == (
+            arithmetic['terminal_economic_value_cny'])
+        assert arithmetic['cash_distribution_crosscheck']['scope'] == (
+            'CONDITIONAL_RECURSIVE_TERMINAL_ECONOMICS_NOT_LEGAL_CASH_PROOF')
+        assert ledger['terminal_growth_status'] == 'NON_AUTHORITATIVE_ACCOUNTING_DIAGNOSTIC'
+        assert abs(D(arithmetic['cash_distribution_crosscheck']['difference_cny'])) < D('.01')
+
+
 @pytest.mark.parametrize('fault', ['extra_policy', 'missing_history', 'extra_history', 'unit', 'scope',
     'value', 'unbound_history', 'unbound_scenario', 'driver_drift', 'terminal_drift', 'cost_drift',
     'missing_terminal', 'extra_driver', 'extra_year', 'nine_years', 'wrong_year', 'float', 'nan',

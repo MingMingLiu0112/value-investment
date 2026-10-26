@@ -1,7 +1,7 @@
 """Review finite alternative earnings paths through the existing valuation model."""
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import asdict, is_dataclass, replace
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation, localcontext
 import json
@@ -22,11 +22,13 @@ from ...domain.valuation.joint_capital_path import HISTORICAL_FIELDS, compile_jo
 
 JOINT_SCHEMA = 'joint-capital-path-proposal-v1'
 JOINT_CASH_SCHEMA = 'joint-capital-cash-path-proposal-v2'
+JOINT_CASH_V3_SCHEMA = 'joint-capital-cash-path-proposal-v3'
 
 
 def validate_proposal_policy_identity(*, policy, package, package_sha256, candidate_symbol=None):
     """Construction and readback must enforce the same no-order source identity."""
-    if (policy.get('schema_version') not in ('finite-earnings-path-proposal-v1', JOINT_SCHEMA, JOINT_CASH_SCHEMA)
+    if (policy.get('schema_version') not in ('finite-earnings-path-proposal-v1', JOINT_SCHEMA,
+            JOINT_CASH_SCHEMA, JOINT_CASH_V3_SCHEMA)
             or policy.get('action') != 'no_order' or policy.get('symbol') != package.get('symbol')
             or policy.get('source_package_sha256') != package_sha256
             or (candidate_symbol is not None and policy.get('symbol') != candidate_symbol)):
@@ -34,6 +36,8 @@ def validate_proposal_policy_identity(*, policy, package, package_sha256, candid
 
 
 def _json_numbers(value):
+    if is_dataclass(value):
+        return _json_numbers(asdict(value))
     if isinstance(value, Decimal):
         return str(value)
     if isinstance(value, dict):
@@ -141,6 +145,12 @@ _JOINT_CASH_IMPLEMENTATIONS = (
     'src/value_investment_agent/valuation_models/residual_income_path_v2.py',
     'src/value_investment_agent/valuation_models/residual_income.py',
 )
+_JOINT_CASH_V3_IMPLEMENTATIONS = (
+    'src/value_investment_agent/domain/valuation/joint_capital_cash_path_v3.py',
+    'src/value_investment_agent/application/product/neutral_valuation_proposal.py',
+    'src/value_investment_agent/valuation_models/residual_income_path_v3.py',
+    'src/value_investment_agent/valuation_models/residual_income.py',
+)
 
 
 def _cash_keys(value, fields, label):
@@ -214,6 +224,42 @@ def compile_joint_cash_choice(*, choice, historical, book):
     return scenarios, ledgers
 
 
+def compile_joint_cash_choice_v3(*, choice, historical, book):
+    """Compile the v3 terminal economic mechanism without a growth perpetuity."""
+    import re
+    from ...domain.valuation.joint_capital_cash_path_v3 import compile_joint_capital_cash_path
+    from ...valuation_models.residual_income_path_v3 import ResidualIncomePathScenarioInputs
+
+    _cash_keys(choice, 'id rationale countercase joint_drivers terminal_policy cost_of_equity scenario_bindings', 'choice')
+    for key in ('id', 'rationale', 'countercase'):
+        if type(choice[key]) is not str or not choice[key].strip():
+            raise ValueError('Joint cash v3 choice requires identity and economic explanation')
+    for key in ('joint_drivers', 'terminal_policy', 'cost_of_equity', 'scenario_bindings'):
+        _cash_keys(choice[key], 'bear base bull', key)
+    scenarios, ledgers = {}, {}
+    with localcontext() as context:
+        context.prec = 48
+        for name in ('bear', 'base', 'bull'):
+            ledger = compile_joint_capital_cash_path(start_book=str(book), historical=historical,
+                drivers=choice['joint_drivers'][name], terminal_policy=choice['terminal_policy'][name])
+            raw_cost = choice['cost_of_equity'][name]
+            if type(raw_cost) is not str or re.fullmatch(r'[0-9]+(?:\.[0-9]+)?', raw_cost) is None:
+                raise ValueError('Joint cash v3 cost requires a plain Decimal string')
+            cost = _profit_amount(raw_cost)
+            if not Decimal('0.01') <= cost <= Decimal('0.30'):
+                raise ValueError('Joint cash v3 cost must remain within research bounds')
+            if (ledger['funding_status'] != 'FUNDED' or any(
+                    row['funding_status'] != 'FUNDED' or row['funding_shortfall'] != 0
+                    for row in [*ledger['rows'], ledger['terminal']])):
+                raise ValueError('Joint cash v3 funding shortfall cannot be valued')
+            scenarios[name] = ResidualIncomePathScenarioInputs(cost_of_equity=cost,
+                forecast_roes=ledger['forecast_roe'], forecast_retentions=ledger['forecast_retentions'],
+                terminal_roe=ledger['terminal_roe'], terminal_growth=ledger['terminal_growth'],
+                terminal_economic_contract=ledger['terminal_economic_contract'])
+            ledgers[name] = ledger
+    return scenarios, ledgers
+
+
 def _joint_cash_profit_anchor(historical, case, field):
     """Return the v2 source-bound ex-nonrecurring parent-profit anchor."""
     if type(field) is not str or field not in _PROFIT_FIELDS:
@@ -246,8 +292,13 @@ def _build_joint_cash_proposal(*, root, package, policy, package_path, package_s
     {drivers, terminal_policy, cost_of_equity} research node, not a price or ROE
     table. Financial rebases and preferences are not implicitly inherited.
     """
-    from ...domain.valuation.joint_capital_cash_path_v2 import HISTORICAL_FIELDS as CASH_FIELDS, SCOPE
-    from ...valuation_models.residual_income_path_v2 import ResidualIncomeContractDispatcher, scenario_calculation
+    v3 = policy['schema_version'] == JOINT_CASH_V3_SCHEMA
+    if v3:
+        from ...domain.valuation.joint_capital_cash_path_v3 import HISTORICAL_FIELDS as CASH_FIELDS, SCOPE
+        from ...valuation_models.residual_income_path_v3 import ResidualIncomeContractDispatcher, scenario_calculation
+    else:
+        from ...domain.valuation.joint_capital_cash_path_v2 import HISTORICAL_FIELDS as CASH_FIELDS, SCOPE
+        from ...valuation_models.residual_income_path_v2 import ResidualIncomeContractDispatcher, scenario_calculation
 
     _cash_keys(policy, 'schema_version action symbol source_package_sha256 generated_at assumption_scope '
         'profit_anchor_field profit_basis rationale_bindings joint_historical choices economic_review_items assurance_limits', 'policy')
@@ -269,7 +320,8 @@ def _build_joint_cash_proposal(*, root, package, policy, package_path, package_s
     # other inputs after arithmetic. Never seal code drift as the executed version.
     implementations = []
     code_root = Path(__file__).resolve().parents[4]
-    for relative in _JOINT_CASH_IMPLEMENTATIONS:
+    implementations_expected = (_JOINT_CASH_V3_IMPLEMENTATIONS if v3 else _JOINT_CASH_IMPLEMENTATIONS)
+    for relative in implementations_expected:
         path = require_inside(root, root / relative, 'joint cash implementation')
         digest = sha256_file(path)
         if digest != sha256_file(code_root / relative):
@@ -328,7 +380,8 @@ def _build_joint_cash_proposal(*, root, package, policy, package_path, package_s
     book, shares = (facts.operating_inputs[k] for k in ('start_book_equity', 'ordinary_shares'))
     rows, ids = [], set()
     for choice in choices:
-        scenarios, ledgers = compile_joint_cash_choice(choice=choice, historical=historical, book=book)
+        compiler = compile_joint_cash_choice_v3 if v3 else compile_joint_cash_choice
+        scenarios, ledgers = compiler(choice=choice, historical=historical, book=book)
         if choice['id'] in ids:
             raise ValueError('Joint cash choice IDs must be distinct')
         ids.add(choice['id'])
@@ -360,23 +413,37 @@ def _build_joint_cash_proposal(*, root, package, policy, package_path, package_s
                     raise ValueError('Joint cash terminal RI and distribution differ')
                 origin = Decimal(arithmetic.get('basis_origin_equity_value_cny', arithmetic['conditional_equity_value_cny']))
                 ddm = sum(row['distribution'] / (1 + scenario.cost_of_equity) ** row['year'] for row in ledger['rows'])
-                ddm += ledger['terminal_distribution'] / (scenario.cost_of_equity - scenario.terminal_growth) / (1 + scenario.cost_of_equity) ** 10
+                if v3:
+                    ddm += Decimal(arithmetic['terminal_economic_value_cny']) / (
+                        1 + scenario.cost_of_equity) ** 10
+                else:
+                    ddm += ledger['terminal_distribution'] / (scenario.cost_of_equity - scenario.terminal_growth) / (1 + scenario.cost_of_equity) ** 10
                 if (abs(origin-ddm) > Decimal('0.01') or
                         Decimal(arithmetic['per_share_value']) != getattr(valuation, name + '_value')):
                     raise ValueError('Joint cash RI/distribution discounted values differ')
-                arithmetic['cash_distribution_crosscheck'] = dict(scope='CONDITIONAL_RI_TERMINAL_CONTINUATION_NOT_LEGAL_CASH_PROOF',
-                    basis_origin_ddm_cny=str(ddm), difference_cny=str(origin-ddm))
+                arithmetic['cash_distribution_crosscheck'] = dict(
+                    scope=('CONDITIONAL_RECURSIVE_TERMINAL_ECONOMICS_NOT_LEGAL_CASH_PROOF'
+                        if v3 else 'CONDITIONAL_RI_TERMINAL_CONTINUATION_NOT_LEGAL_CASH_PROOF'),
+                    basis_origin_ddm_cny=str(ddm), difference_cny=str(origin-ddm),
+                    explicit_distribution_pv_cny=str(sum(
+                        row['distribution'] / (1 + scenario.cost_of_equity) ** row['year']
+                        for row in ledger['rows'])),
+                    terminal_value_at_year_10_cny=(arithmetic.get('terminal_economic_value_cny') if v3 else None))
                 annuals[name] = arithmetic
         actual_inputs = dict(start_book_equity=str(book), ordinary_shares=str(shares),
             profit_anchor=str(anchor), scenarios={name:dict(cost_of_equity=str(s.cost_of_equity),
                 forecast_roe=list(map(str, s.forecast_roes)), forecast_retentions=list(map(str, s.forecast_retentions)),
                 retention_contract='annual-retention-v2', currency=s.currency,
-                terminal_roe=str(s.terminal_roe), terminal_growth=str(s.terminal_growth)) for name,s in scenarios.items()})
+                terminal_roe=str(s.terminal_roe), terminal_growth=str(s.terminal_growth),
+                **({'terminal_contract_version': 'terminal-economic-contract-v1',
+                    'terminal_mechanism': 'recursive_capital_use_and_owner_distribution'} if v3 else {}))
+                for name,s in scenarios.items()})
         rows.append(dict(**choice, status='NEUTRAL_VALUATION_PROPOSAL_PENDING_REVIEW',
             valuation=json.loads(valuation.to_json()), actual_calculation_inputs=actual_inputs,
             calculation_inputs_sha256=hashlib.sha256(encode_json_bytes(actual_inputs)).hexdigest(),
-            annual_arithmetic=annuals, joint_capital_ledgers=_json_numbers(ledgers), input_mode=JOINT_CASH_SCHEMA))
-    result = dict(schema_version=JOINT_CASH_SCHEMA, input_mode=JOINT_CASH_SCHEMA, symbol=case.symbol,
+            annual_arithmetic=annuals, joint_capital_ledgers=_json_numbers(ledgers),
+            input_mode=policy['schema_version']))
+    result = dict(schema_version=policy['schema_version'], input_mode=policy['schema_version'], symbol=case.symbol,
         status='NEUTRAL_VALUATION_PROPOSAL_PENDING_REVIEW', action='no_order',
         generated_at=datetime.now(timezone.utc).isoformat(), baseline_valuation=json.loads(baseline.to_json()),
         baseline_scope='PREDECESSOR_MODEL_COMPARISON_NOT_CURRENT_JOINT_PATH',
@@ -394,8 +461,9 @@ def _build_joint_cash_proposal(*, root, package, policy, package_path, package_s
     write_new_json(output_path, result)
     with report_path.open('x', encoding='utf-8') as report:
         report.write('# 十年联结资本现金路径候选待审\n\n'
-            '逐年留存与现金分配已消费；终端为条件RI延续，不证明法律分配能力。\n'
-            'action=no_order；G3、价格和投资准入均未改变。\n')
+            + ('逐年留存与现金分配已消费；终端采用递归资本用途与股东分配经济合同。\n'
+               if v3 else '逐年留存与现金分配已消费；终端为条件RI延续，不证明法律分配能力。\n')
+            + 'action=no_order；G3、价格和投资准入均未改变。\n')
     return result
 
 
@@ -468,7 +536,7 @@ def build_neutral_valuation_proposal(*, root: Path, package_path: Path,
         raise ValueError('proposal input hash mismatch')
     package = load_json_object(package_path, 'proposal package')
     policy = load_json_object(policy_path, 'proposal policy')
-    if policy.get('schema_version') == JOINT_CASH_SCHEMA:
+    if policy.get('schema_version') in (JOINT_CASH_SCHEMA, JOINT_CASH_V3_SCHEMA):
         return _build_joint_cash_proposal(root=root, package=package, policy=policy,
             package_path=package_path, package_sha256=package_sha256,
             policy_path=policy_path, policy_sha256=policy_sha256,
