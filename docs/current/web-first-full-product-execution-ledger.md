@@ -1,5 +1,34 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### 2026-10-26 thin-entrypoint correction and independent cash evidence
+
+Core run40282758146 on56552c09 had one failure: the refreshed company CLI
+was114 lines against the existing90-line thin-entry contract (7460 passed,
+292 skipped). Moved refresh request validation/dispatch into the existing
+company research application; retained all incompatibility and source checks.
+The architecture test and candidate regressions pass42/1 optional real-source
+skip. Explicit retained-source CLI/API/review replay separately passed at
+runtime/product-ten-year-consumer/20261026T072500729168Z/receipt.json.
+The changed implementation receives a new candidate; old hashes are not edited.
+No current selector, private account or8001 publication was changed.
+
+Independent value-only review is retained at
+../sw1/.tmp/value-600519-evidence-review/conclusion.md,
+SHA89bf8b0c4716f525f4f4dcf08cdd9c330e456dc32afcf7c321def88e3a712a7a.
+Historical annual investment cash matches cost-method income in both years;
+this supports an upstream channel, not automatic future payout. The95/5 sales
+subsidiary dividend allocation is conditional arithmetic, not verified receipts.
+H1 current investment cash101052220.78 is visually observed; its comparative
+is unknown and the current automated two-column reader deliberately leaves
+that row unadmitted. The difference73580603.15 from investment income is not
+classified. Fund unpaid commitments6bn and digital subsidiary planned/unpaid
+difference0.4bn are separate with unknown timing. Reserve appropriation limits
+distributable earnings but is not a second cash expense. This evidence does
+not establish zero net maintenance/WC or perpetual full payout. The scenario
+remains conditional, not rejected merely because future values are uncertain.
+These newly reviewed notes are not yet an automated admitted financial fact.
+Final exact-SHA Core/Web remains pending; no engineering completion claim.
+
 ### 2026-10-26 reliable value decision and shareholder cash continuation
 
 User-selected value-only continuation, baseline db5398fe; retain all11 original
