@@ -8,7 +8,9 @@ import json
 from pathlib import Path
 import re
 
-from ...valuation_models.residual_income import scenario_value
+from ...valuation_models.residual_income import QualityCompounderFacts, scenario_value
+from ...valuation_models.residual_income_path_v2 import scenario_calculation
+from ...research_input import _residual_scenario_from_payload
 from ..product.common import normalize_symbol
 from .value_research_analysis import _available, _bound, load_current_value_research_analysis
 from .economic_review_bundle import _build_economic_review_bundle
@@ -539,9 +541,19 @@ def load_current_value_economic_assessment(*, root: Path, symbol: str, now: date
             given = scenario["inputs"]
             cost = _number(given["cost_of_equity"])
             roes = [_number(value) for value in given["forecast_roes"]]
-            result = scenario_value(book, shares, cost, dict(
-                forecast_roe=roes, terminal_roe=given["terminal_roe"],
-                terminal_growth=given["terminal_growth"], retention=given["retention"]))
+            if given.get("retention_contract") == "annual-retention-v2":
+                typed = _residual_scenario_from_payload(given)
+                diagnostic_facts = QualityCompounderFacts(
+                    symbol=symbol, as_of=now.date(), verified=False,
+                    confidence="LOW", evidence_refs=[], blockers=[],
+                    operating_inputs=dict(start_book_equity=book, ordinary_shares=shares))
+                result = scenario_calculation(diagnostic_facts, typed)
+                first_retention = typed.forecast_retentions[0]
+            else:
+                result = scenario_value(book, shares, cost, dict(
+                    forecast_roe=roes, terminal_roe=given["terminal_roe"],
+                    terminal_growth=given["terminal_growth"], retention=given["retention"]))
+                first_retention = _number(given["retention"])
             years = result["forecast_years"]
             first, last = _number(years[0]["net_income_assumption_cny"]), _number(years[-1]["net_income_assumption_cny"])
             scenario_rows.append(dict(scenario=scenario["scenario"],
@@ -550,7 +562,7 @@ def load_current_value_economic_assessment(*, root: Path, symbol: str, now: date
                 first_year_profit_cny=str(first),
                 first_year_profit_to_historical_ttm=_ratio(first, historical),
                 first_year_dividend_assumption_cny=years[0]["dividend_assumption_cny"],
-                first_year_payout_ratio=str(1 - _number(given["retention"])),
+                first_year_payout_ratio=str(1 - first_retention),
                 explicit_years=len(roes), years_above_equity_cost=sum(roe > cost for roe in roes),
                 first_year_excess_roe=str(roes[0] - cost),
                 final_explicit_profit_cny=str(last),

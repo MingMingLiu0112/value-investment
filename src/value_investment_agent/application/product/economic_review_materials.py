@@ -54,6 +54,12 @@ def project_product_continuation_review(*, root, supplement, now):
             'EXACT_VERSION_G3_NOT_APPROVED', 'CURRENT_PRICE_SHARE_DISTRIBUTION_EVENT_ALIGNMENT_NOT_ADMITTED',
             'EXPLICIT_THRESHOLD_RATIONALE_AND_VALIDITY_NOT_SELECTED'],
         source_bindings=deepcopy(candidate['source_bindings']))
+    if ledger['schema_version'] == 'source-bound-product-ten-year-ledger-v2':
+        result['cash_allocation'] = dict(
+            schema_version='source-bound-cash-allocation-review-v2', action='no_order',
+            economic_approval=False, policy=deepcopy(ledger['allocation_policy']),
+            observations=deepcopy(ledger['allocation_evidence']['observations']),
+            interpretation='来源义务已进入年度现金账；缴款时点、维护净额和上划仍为显式假设，非已批准分红或交易。')
     for ref in [supplement['candidate_binding'], supplement['registry_binding'], *result['source_bindings']]:
         _bound(root, ref)
     return result

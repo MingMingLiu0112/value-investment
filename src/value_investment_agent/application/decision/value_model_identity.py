@@ -23,6 +23,7 @@ def resolve_value_model_identity(valuation, *, profile_id):
         return None
     module = importlib.import_module(registration.model_factory.__module__)
     versions = {getattr(module, name, None) for name in ("MODEL_VERSION", "DATED_MODEL_VERSION")}
+    versions.update(getattr(module, 'SUPPORTED_MODEL_VERSIONS', ()))
     version = valuation.get("model_version")
     if not version or version not in versions:
         return None

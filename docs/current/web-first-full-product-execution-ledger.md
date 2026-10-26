@@ -1,5 +1,34 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### 2026-10-26 value cash allocation continuation (in progress)
+
+Resume5059a0d8 (Core/Web green); preserve11 unrelated dirty files and8001.
+Decisive CODE_GAP: the ten-year intake rejects distributions other than90%
+even if actual cash/capacity constraints require a lower payment. Add only a
+versioned cash-allocation adapter and a versioned annual-retention RI adapter,
+reusing the existing product kernel, shared annual arithmetic, descriptor,
+application, review and company consumers. Keep old model/kernel bytes intact.
+Source-bound capital commitments and single-column interim facts remain
+separate from unknown timing, maintenance/WC assumptions and legal approval.
+Root owns cash allocation/integration; subagents own the bounded model adapter
+and independent-thread evidence verification/intake. No hotspot or platform
+work. New facts must affect an explicit input/recalculation, not only a report.
+Actual public-source run runtime/product-cash-allocation-consumer/20261026T084128520759Z
+passes CLI -> ten-year allocation -> annual-retention descriptor/shared model ->
+review handoff -> isolated /api/v1/decisions/600519. Current selectors unchanged;
+private access hard-blocked. Actual API Web component43 passed; TypeScript passed.
+Consumer/legacy targeted regression121 passed/3 optional-source skips; this is
+separate from the explicit real-source acceptance. Independent static review
+found no definite P1/P2 in the allocation and new diagnostic consumers.
+Evidence hashes are appended to600519-shareholder-cash-evidence-20261026.json.
+Conditional June30 values790.71/945.93/1003.59 are not current fair-price advice.
+Funds6bn and digital difference0.4bn now affect modeled cash once; H1 receipt
+101052220.78 is read with its blank comparison preserved unknown. The90% target
+is capped by cash/capacity; ten actual annual retentions reach the shared model.
+Maintenance/WC, future remittance, equity cost and terminal payout remain
+explicit economic assumptions. No primary approval or current-price draft;
+no8001 release. Final clean commit/Core/Web CI still pending. action=no_order.
+
 ### 2026-10-26 thin-entrypoint correction and independent cash evidence
 
 Core run40282758146 on56552c09 had one failure: the refreshed company CLI

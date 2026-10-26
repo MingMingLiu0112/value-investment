@@ -68,7 +68,7 @@ def load_current_pending_candidate_supplement(*, root: Path, symbol: str) -> dic
         SCHEMA as NATIVE_SCHEMA, IMPLEMENTATIONS as NATIVE_IMPLEMENTATIONS,
     )
     from .source_native_review_adapter_v2 import verify_versioned_review_candidate
-    from ..research.product_continuation_candidate import SCHEMA as TEN_YEAR, IMPLEMENTATIONS as TEN_YEAR_IMPLEMENTATIONS, INPUT_MODE
+    from ..research.product_continuation_candidate import SCHEMA as TEN_YEAR, IMPLEMENTATIONS as TEN_YEAR_IMPLEMENTATIONS, INPUT_MODE, PATH_INPUT_MODE
     candidate = verify_versioned_review_candidate(root=root, path=candidate_path,
         expected_sha256=binding['sha256'])
     if (candidate['symbol'] != symbol or candidate.get('model_context_scope') != 'ACTUALLY_CONSUMED'
@@ -76,7 +76,7 @@ def load_current_pending_candidate_supplement(*, root: Path, symbol: str) -> dic
         raise ValueError('Supplement requires a consumed standard new-input candidate for this issuer')
     implementations = candidate.get('implementation_bindings')
     if candidate['schema_version'] == TEN_YEAR:
-        if candidate.get('input_mode') != INPUT_MODE:
+        if candidate.get('input_mode') not in (INPUT_MODE, PATH_INPUT_MODE):
             raise ValueError('Unsupported ten-year supplement input mode')
         expected_implementations = set(TEN_YEAR_IMPLEMENTATIONS)
     elif candidate['schema_version'] == NATIVE_SCHEMA:

@@ -38,8 +38,14 @@ def _decimal(value: Any) -> Decimal:
 
 
 def _scenario_leaves(value: Any, prefix: str = '') -> dict[str, Any]:
+    from ...valuation_models.residual_income_path_v2 import ResidualIncomePathScenarioInputs
     if is_dataclass(value):
         values = {field.name: getattr(value, field.name) for field in fields(value)}
+        if isinstance(value, ResidualIncomePathScenarioInputs):
+            # The v2 constructor fixes/validates these compatibility labels.
+            # Every *consumed numeric* annual retention remains bound below.
+            values.pop('retention')
+            values.pop('currency')
     elif isinstance(value, Mapping):
         values = dict(value)
     elif isinstance(value, (list, tuple)):

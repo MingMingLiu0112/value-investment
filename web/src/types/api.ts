@@ -17,6 +17,22 @@ export interface ProductContinuationCandidateReview {
   valuation_date: string;
   research_as_of: string;
   financial_periods: string[];
+  cash_allocation?: {
+    schema_version: "source-bound-cash-allocation-review-v2";
+    action: "no_order";
+    economic_approval: false;
+    policy: { rationale: string; timing_identity: string };
+    interpretation: string;
+    observations: Record<
+      string,
+      {
+        value: string | null;
+        classification: string;
+        period: string;
+        currency: string;
+      }
+    >;
+  };
   shareholder_cash_research?: {
     status: "SOURCE_REPLAYED_PARTIAL_PARENT_CASH";
     action: "no_order";

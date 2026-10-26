@@ -224,15 +224,7 @@ def build_quality_facts(payload: Mapping[str, Any]) -> QualityCompounderFacts:
         if item is not None
     }
     scenario_objects = {
-        name: ResidualIncomeScenarioInputs(
-            cost_of_equity=_decimal(item["cost_of_equity"], "cost_of_equity"),
-            forecast_roes=tuple(
-                _decimal(value, "forecast_roes") for value in item["forecast_roes"]
-            ),
-            terminal_roe=_decimal(item["terminal_roe"], "terminal_roe"),
-            terminal_growth=_decimal(item["terminal_growth"], "terminal_growth"),
-            retention=_decimal(item.get("retention", "0.30"), "retention"),
-        )
+        name: _quality_scenario(item)
         for name, item in scenarios.items()
     }
     return QualityCompounderFacts(
@@ -252,6 +244,21 @@ def build_quality_facts(payload: Mapping[str, Any]) -> QualityCompounderFacts:
             ) if timing is not None else None
         ),
     )
+
+
+def _quality_scenario(item):
+    if 'forecast_retentions' in item or 'retention_contract' in item:
+        from .research_input import _residual_scenario_from_payload
+        return _residual_scenario_from_payload(item)
+    return ResidualIncomeScenarioInputs(
+            cost_of_equity=_decimal(item["cost_of_equity"], "cost_of_equity"),
+            forecast_roes=tuple(
+                _decimal(value, "forecast_roes") for value in item["forecast_roes"]
+            ),
+            terminal_roe=_decimal(item["terminal_roe"], "terminal_roe"),
+            terminal_growth=_decimal(item["terminal_growth"], "terminal_growth"),
+            retention=_decimal(item.get("retention", "0.30"), "retention"),
+        )
 
 
 def _forecast_row(item: Mapping[str, Any]) -> ForecastYear:

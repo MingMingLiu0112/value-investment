@@ -70,6 +70,42 @@ import DecisionDetail from "../src/pages/DecisionDetail";
 // Source-dependent verification is opt-in. Never check runtime financial data
 // into this fixture or silently substitute TEST_ONLY amounts for actual data.
 const actualApiPath = process.env.PRODUCT_CONTINUATION_API_FIXTURE;
+it("renders cash constraints distinctly from a dividend promise and rejects approved overlays", () => {
+  const value = fixture();
+  value.cash_allocation = {
+    schema_version: "source-bound-cash-allocation-review-v2",
+    action: "no_order",
+    economic_approval: false,
+    interpretation:
+      "TEST_ONLY: evidence amounts do not establish payment dates",
+    policy: {
+      rationale: "TEST_ONLY: reduce dividends when cash is insufficient",
+      timing_identity: "UNAPPROVED_CALL_SCHEDULE_NOT_DISCLOSED_DATES",
+    },
+    observations: Object.fromEntries(
+      [
+        ["fund_uncalled_total_cny", "60"],
+        ["digital_remaining_cny", "4"],
+        ["interim_investment_cash_current_cny", "10"],
+        ["interim_investment_cash_comparative_cny", null],
+      ].map(([key, value]) => [
+        key,
+        {
+          value,
+          currency: "CNY",
+          period: "H12026",
+          classification: "TEST_ONLY",
+        },
+      ]),
+    ),
+  } as any;
+  expect(render(value)).toContain("现金约束与股东分配");
+  expect(render(value)).toContain("未知，不能填零");
+  expect(render(value)).toContain("不强制维持90%");
+  (value.cash_allocation as any).economic_approval = true;
+  expect(render(value)).toContain("现金分配补充材料不可核验");
+  expect(render(value)).not.toContain("TEST_ONLY: evidence amounts");
+});
 it.skipIf(!actualApiPath)(
   "SSR verifies the explicitly selected actual API candidate and detail",
   () => {

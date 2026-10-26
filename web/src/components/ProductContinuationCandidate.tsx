@@ -270,6 +270,22 @@ export function ProductContinuationCandidate({
     c = value.cash_conditions,
     r = value.research_case;
   const cash = value.shareholder_cash_research;
+  const allocation = value.cash_allocation;
+  const allocationVerified =
+    allocation?.schema_version === "source-bound-cash-allocation-review-v2" &&
+    allocation.action === "no_order" &&
+    allocation.economic_approval === false &&
+    text(allocation.policy?.rationale) &&
+    text(allocation.interpretation) &&
+    object(allocation.observations) &&
+    Object.values(allocation.observations).every(
+      (r) =>
+        object(r) &&
+        r.currency === "CNY" &&
+        (r.value === null || decimal(r.value)) &&
+        text(r.classification) &&
+        text(r.period),
+    );
   const cashVerified =
     cash?.status === "SOURCE_REPLAYED_PARTIAL_PARENT_CASH" &&
     cash.action === "no_order" &&
@@ -305,6 +321,45 @@ export function ProductContinuationCandidate({
       style={{ minWidth: 0, maxWidth: "100%", overflowWrap: "anywhere" }}
     >
       <h3>{symbol} 十年产品延续候选研究</h3>
+      {allocation &&
+        (allocationVerified ? (
+          <section aria-label="现金约束与股东分配">
+            <h4>现金约束与股东分配</h4>
+            <p>{allocation.interpretation}</p>
+            <p>{allocation.policy.rationale}</p>
+            <dl>
+              {[
+                ["fund_uncalled_total_cny", "基金未缴承诺（元）"],
+                [
+                  "digital_remaining_cny",
+                  "新增子公司注册与已缴差额（元，非已知到期款）",
+                ],
+                [
+                  "interim_investment_cash_current_cny",
+                  "半年母公司投资收现（元，非正常化股息）",
+                ],
+                [
+                  "interim_investment_cash_comparative_cny",
+                  "半年投资收现比较列",
+                ],
+              ].map(([key, label]) => (
+                <div key={key}>
+                  <dt>{label}</dt>
+                  <dd>
+                    {allocation.observations[key]?.value == null
+                      ? "未知，不能填零"
+                      : formatted(allocation.observations[key].value)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p>
+              每年实际分配取目标分配、现金余量与分配能力约束中的可行金额；不强制维持90%。
+            </p>
+          </section>
+        ) : (
+          <p>现金分配补充材料不可核验，已隐藏。</p>
+        ))}
       <p>
         条件估值，待经济审核；不是批准主估值，也不代表当前便宜。置信度
         LOW（低）。
@@ -468,6 +523,59 @@ export function ProductContinuationCandidate({
                   </tbody>
                 </table>
               </div>
+              {allocationVerified && (
+                <div style={{ overflowX: "auto" }}>
+                  <h4>目标分配与资金约束后的实际分配（研究假设，元）</h4>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>年度</th>
+                        <th>目标分配</th>
+                        <th>可行分配</th>
+                        <th>约束</th>
+                        <th>未缴基金</th>
+                        <th>未付所选项目</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {s.cash_rows.map((row) => (
+                        <tr key={row.year}>
+                          <td>{row.year}</td>
+                          <td>
+                            {decimal(row.requested_distribution_cny)
+                              ? formatted(
+                                  row.requested_distribution_cny as string,
+                                )
+                              : "不可核验"}
+                          </td>
+                          <td>{formatted(row.distribution_cny)}</td>
+                          <td>
+                            {Array.isArray(row.distribution_limited_by)
+                              ? row.distribution_limited_by.length
+                                ? row.distribution_limited_by.join(" / ")
+                                : "目标分配可满足"
+                              : "不可核验"}
+                          </td>
+                          <td>
+                            {decimal(row.closing_uncalled_fund_commitment_cny)
+                              ? formatted(
+                                  row.closing_uncalled_fund_commitment_cny as string,
+                                )
+                              : "不可核验"}
+                          </td>
+                          <td>
+                            {decimal(row.closing_selected_project_budget_cny)
+                              ? formatted(
+                                  row.closing_selected_project_budget_cny as string,
+                                )
+                              : "不可核验"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
               <details>
                 <summary>
                   完整精度、经营行、现金行与终值字段（后端原文）

@@ -127,3 +127,10 @@ src/value_investment_agent/application/product/source_reobservation_v2.py -text 
 # The current cash-source specification and executing parser are hash-bound.
 src/value_investment_agent/application/research/parent_cash_research.py -text whitespace=cr-at-eol
 docs/current/two-company-earnings-bridge-20261024/sources.json -text whitespace=cr-at-eol
+
+# Versioned cash-allocation evidence is replayed against executing bytes.
+src/value_investment_agent/application/research/shareholder_cash_evidence.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/shareholder_cash_allocation.py -text whitespace=cr-at-eol
+src/value_investment_agent/domain/valuation/cash_constrained_product_path_v2.py -text whitespace=cr-at-eol
+src/value_investment_agent/valuation_models/residual_income_path_v2.py -text whitespace=cr-at-eol
+config/research-assumptions/600519-product-cash-allocation-v2.json -text whitespace=cr-at-eol

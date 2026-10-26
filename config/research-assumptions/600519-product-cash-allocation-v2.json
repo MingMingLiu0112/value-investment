@@ -1,0 +1,25 @@
+{
+  "schema_version": "product-continuation-research-policy-v1",
+  "symbol": "600519",
+  "generated_at": "2026-10-26T08:07:23+00:00",
+  "action": "no_order",
+  "confidence": "LOW",
+  "candidate_binding": {"path": "runtime/product-operating-research/20261025T071814444248Z/proposal/candidate/candidate.json", "sha256": "2e53d50d988a737272d7a95b822c8e0e9998d3749c1432cac7f6c12d92fe8ed0"},
+  "shareholder_cash_source_binding": {"path": "docs/current/two-company-earnings-bridge-20261024/sources.json", "sha256": "ce88d63737e0ea520e870c932d304a702ce420f581f9f484974df16ab99bfcbc"},
+  "center": "FLAT_YEAR5_PRODUCT_LEVELS_AND_COST_RATIOS",
+  "continuation_years": 5,
+  "rationale": "保留来源绑定的前五年销量、实现价格和成本假设，后五年只测试第五年产品水平不变。年度成本法收益与投资收现同额支持历史上划渠道，不证明未来即时上划。研究对象仍有价值，但这条路径不是已验证的正常化利润或永久品牌盈利。",
+  "cash_return_rationale": "从母公司现金起点出发，经营等价利润经明确上划时差、资本投入和公积分配能力约束后确定分配；目标90%是上限而非强制结果。留存现金仅按既有1%增量回报假设计息，不重复添加金融子公司税前收益或现金余额。",
+  "terminal_rationale": "终端仍为可质疑的稳定产品、零净维护与WC、无未缴所选承诺、无未上划资产和合法全额分配条件。若普通维护或资金限制持续存在，这个终端不适用；不能靠终值隐藏缺口。",
+  "strongest_counter_evidence": "历史上划存在，但半年收现与确认收益存在未分类差额。母公司维护及营运资本没有完整拆分，基金未缴与新增子公司出资差额付款日期未知，要求回报率仍为继承的历史代理。故本次接受其为可复算条件情景，拒绝直接作为当前买入定价依据。",
+  "counter_evidence": ["零净维护不是零维护支出；同口径非现金加回与维护的净抵尚缺细分。", "半年现金下降不自动代表永久损失；同时不能承诺下一年所有上划差额恢复。", "数字科技注册与已缴差额不是已到期付款；产业基金未缴余额不得与现金底线重复扣减。", "终端贡献、资金可达性与要求回报率误差足以改变价值判断；当前报价比较还需期间分配及事件对齐。"],
+  "cash_allocation": {
+    "schema_version": "source-bound-cash-allocation-policy-v2",
+    "rationale": "将原件重放的基金未缴余额与数字科技注册/已缴差额分别入账。沿用基金首年支付的保守研究假设；数字科技差额在前两年各支付一半仅为研究情景，不是已披露到期日。两者不重复纳入六个月经营现金底线。保留零净维护中心用于可比研究，绝不把它宣称为已核验事实。现金或分配能力不足时降低当年分红，不借融资、平均留存或终值掩盖。",
+    "timing_identity": "UNAPPROVED_CALL_SCHEDULE_NOT_DISCLOSED_DATES",
+    "fund_call_weights": ["1", "0", "0", "0", "0", "0", "0", "0", "0", "0"],
+    "digital_call_weights": ["0.5", "0.5", "0", "0", "0", "0", "0", "0", "0", "0"],
+    "net_maintenance_gap_fraction": "0",
+    "requested_payout_ratios": ["0.9", "0.9", "0.9", "0.9", "0.9", "0.9", "0.9", "0.9", "0.9", "0.9"]
+  }
+}

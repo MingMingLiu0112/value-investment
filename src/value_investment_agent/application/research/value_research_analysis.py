@@ -61,6 +61,10 @@ def _sensitivity(descriptor, model) -> dict:
                     forecasts = list(base.forecast_roes)
                     forecasts[int(field_path.split(".")[1])] = value
                     changed = replace(base, forecast_roes=tuple(forecasts))
+                elif field_path.startswith("forecast_retentions."):
+                    forecasts = list(base.forecast_retentions)
+                    forecasts[int(field_path.split(".")[1])] = value
+                    changed = replace(base, forecast_retentions=tuple(forecasts))
                 elif field_path in {"cost_of_equity", "terminal_roe", "terminal_growth", "retention"}:
                     changed = replace(base, **{field_path: value})
                 else:

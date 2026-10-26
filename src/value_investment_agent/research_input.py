@@ -177,6 +177,15 @@ def _confidence_from_payload(value: object) -> ConfidenceEvidence | None:
 
 
 def _residual_scenario_payload(value: ResidualIncomeScenarioInputs) -> dict[str, Any]:
+    from .valuation_models.residual_income_path_v2 import ResidualIncomePathScenarioInputs
+    if isinstance(value, ResidualIncomePathScenarioInputs):
+        return {
+            'retention_contract': 'annual-retention-v2', 'currency': value.currency,
+            'cost_of_equity': str(value.cost_of_equity),
+            'forecast_roes': [str(item) for item in value.forecast_roes],
+            'forecast_retentions': [str(item) for item in value.forecast_retentions],
+            'terminal_roe': str(value.terminal_roe), 'terminal_growth': str(value.terminal_growth),
+        }
     return {
         "cost_of_equity": str(value.cost_of_equity),
         "forecast_roes": [str(item) for item in value.forecast_roes],
@@ -189,6 +198,19 @@ def _residual_scenario_payload(value: ResidualIncomeScenarioInputs) -> dict[str,
 def _residual_scenario_from_payload(
     value: Mapping[str, Any],
 ) -> ResidualIncomeScenarioInputs:
+    if 'forecast_retentions' in value or 'retention_contract' in value:
+        from .valuation_models.residual_income_path_v2 import ResidualIncomePathScenarioInputs
+        if (value.get('retention_contract') != 'annual-retention-v2' or set(value) != {
+                'retention_contract', 'currency', 'cost_of_equity', 'forecast_roes',
+                'forecast_retentions', 'terminal_roe', 'terminal_growth'}):
+            raise ValueError('Exact annual-retention-v2 scenario required; no scalar retention')
+        return ResidualIncomePathScenarioInputs(
+            cost_of_equity=_decimal(value['cost_of_equity'], 'cost_of_equity'),
+            forecast_roes=tuple(_decimal(x, 'forecast_roes') for x in value['forecast_roes']),
+            forecast_retentions=tuple(_decimal(x, 'forecast_retentions') for x in value['forecast_retentions']),
+            terminal_roe=_decimal(value['terminal_roe'], 'terminal_roe'),
+            terminal_growth=_decimal(value['terminal_growth'], 'terminal_growth'), currency=value['currency'],
+        )
     return ResidualIncomeScenarioInputs(
         cost_of_equity=_decimal(value["cost_of_equity"], "cost_of_equity"),
         forecast_roes=tuple(

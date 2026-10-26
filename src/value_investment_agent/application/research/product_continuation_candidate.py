@@ -29,6 +29,7 @@ from ...research_application import ResearchApplicationService
 
 SCHEMA = 'product-continuation-pending-research-candidate-v1'
 INPUT_MODE = 'SOURCE_NATIVE_PRODUCT_TEN_YEAR_V1'
+PATH_INPUT_MODE = 'SOURCE_NATIVE_CASH_CONSTRAINED_TEN_YEAR_V2'
 CODE_ROOT = Path(__file__).resolve().parents[4]
 IMPLEMENTATIONS = tuple('src/value_investment_agent/'+name for name in (
     'application/research/product_continuation_candidate.py',
@@ -43,6 +44,10 @@ IMPLEMENTATIONS = tuple('src/value_investment_agent/'+name for name in (
     'application/product/research_reviews.py', 'application/product/source_bound_inputs.py',
     'application/research/parent_cash_research.py', 'domain/valuation/parent_cash_policy.py',
     'infrastructure/filings/pdfium_runtime.py',
+    'application/research/shareholder_cash_evidence.py',
+    'application/research/shareholder_cash_allocation.py',
+    'domain/valuation/cash_constrained_product_path_v2.py',
+    'valuation_models/residual_income_path_v2.py', 'valuation_router.py',
 ))
 _EXECUTION_HASHES = {name: sha256_file(CODE_ROOT/name) for name in IMPLEMENTATIONS}
 
@@ -106,6 +111,13 @@ def _cold_center(root, request, now):
     generated = build_product_operating_research(root=root, package=source, ledger=ledger, facts=facts, evaluation_at=clock)
     if generated['status'] != 'CONDITIONAL_OPERATING_RESEARCH_NOT_APPROVED':
         raise ValueError('Original product sources cannot be cold replayed')
+    allocation_policy = policy.get('cash_allocation')
+    allocation_evidence = None
+    if allocation_policy is not None:
+        from .shareholder_cash_evidence import load_shareholder_cash_evidence
+        allocation_evidence = load_shareholder_cash_evidence(root, parent['symbol'], clock)
+        if allocation_evidence['status'] != 'SOURCE_REPLAYED_PARTIAL_ECONOMIC_OBSERVATIONS':
+            raise ValueError('Capital allocation sources cannot be replayed: ' + str(allocation_evidence.get('reason')))
     centers, inputs = {}, {}
     with localcontext() as ctx:
         ctx.prec = 48
@@ -129,17 +141,36 @@ def _cold_center(root, request, now):
                 distribution_constraint_rationale=cash_policy['terminal_distribution_rationale'],
                 capital_cash_row=_capital(11, D(0), D(0), D(0), cash_policy['maintenance_rationale']),
                 distribution_row=_distribution(11, cash_policy, persistent=False, terminal=True))
-            result = build_product_continuation_cash_path(opening_state=opening, first_five_product_rows=original['operating_rows'],
+            allocation_context = None
+            if allocation_policy is not None:
+                from .shareholder_cash_allocation import allocate_inputs
+                opening, capital, distribution, allocation_context = allocate_inputs(
+                    policy=allocation_policy, evidence_amounts={k:v['value'] for k,v in allocation_evidence['observations'].items()},
+                    opening=opening, capital=capital, distribution=distribution,
+                    first_profit=original['operating_rows'][0]['legacy_ex_parent'])
+            arguments = dict(opening_state=opening, first_five_product_rows=original['operating_rows'],
                 continuation_policy=continuation, capital_cash_rows=capital, distribution_rows=distribution,
                 cost_of_equity=ledger['plan']['ke'], incremental_cash_yield=ledger['plan']['incremental_parent_cash_yield'], terminal_policy=terminal)
+            if allocation_policy is None:
+                result = build_product_continuation_cash_path(**arguments)
+            else:
+                from ...domain.valuation.cash_constrained_product_path_v2 import build_cash_constrained_product_path
+                result = build_cash_constrained_product_path(**arguments, allocation_policy=dict(
+                    schema_version='cash-constrained-product-path-v2', rationale=allocation_policy['rationale'],
+                    capacity_scope='CONDITIONAL_OWNER_EQUIVALENT_NOT_LEGAL_PARENT_CAPACITY'))
+                result['source_bound_allocation'] = allocation_context
             if not result['valuation']['usable'] or len(result['cash_rows']) != 10:
                 raise ValueError('Ten-year cash or terminal constraints failed')
-            if any(D(row['distribution_cny']) != D('.9')*D(row['profit_cny']) for row in result['cash_rows']):
+            if allocation_policy is None and any(D(row['distribution_cny']) != D('.9')*D(row['profit_cny']) for row in result['cash_rows']):
                 raise ValueError('Generic RI requires exact constant ten-percent retention')
             centers[name] = result
             inputs[name] = dict(cost_of_equity=str(D(ledger['plan']['ke'])), retention='0.1', terminal_growth='0',
                 forecast_roes=[str(D(row['profit_cny'])/D(row['opening_book_cny'])) for row in result['cash_rows']],
                 terminal_roe=str(D(result['terminal']['next_profit_cny'])/D(result['cash_rows'][-1]['closing_book_cny'])))
+            if allocation_policy is not None:
+                inputs[name].pop('retention')
+                inputs[name].update(retention_contract='annual-retention-v2', currency='CNY',
+                    forecast_retentions=[str(1-D(row['actual_payout_ratio'])) for row in result['cash_rows']])
     if set(centers) != {'bear', 'base', 'bull'}:
         raise ValueError('Exactly three center scenarios required')
     shareholder_cash = None
@@ -153,14 +184,19 @@ def _cold_center(root, request, now):
         if shareholder_cash is None or shareholder_cash['status'] != 'SOURCE_REPLAYED_PARTIAL_PARENT_CASH':
             raise ValueError('Shareholder cash originals cannot be replayed')
     refs = _closure(root, [*before, *generated['source_bindings'],
-        *(shareholder_cash['source_bindings'] if shareholder_cash else [])])
-    return source, dict(schema_version='source-bound-product-ten-year-ledger-v1', action='no_order',
+        *(shareholder_cash['source_bindings'] if shareholder_cash else []),
+        *(allocation_evidence['source_bindings'] if allocation_evidence else [])])
+    output = dict(schema_version='source-bound-product-ten-year-ledger-v1', action='no_order',
         generated_at=clock.isoformat(), financial_basis=source['facts']['as_of'], centers=centers, scenario_inputs=inputs,
         economic_explanation={key: deepcopy(policy.get(key)) for key in
             ('rationale', 'cash_return_rationale', 'terminal_rationale', 'counter_evidence', 'strongest_counter_evidence')},
         shareholder_cash_research=shareholder_cash,
         cash_conditions={key: deepcopy(cash_policy.get(key)) for key in
-            ('maintenance_rationale', 'capacity_rationale', 'cash_mapping_rationale', 'terminal_distribution_rationale')}), refs
+            ('maintenance_rationale', 'capacity_rationale', 'cash_mapping_rationale', 'terminal_distribution_rationale')})
+    if allocation_policy is not None:
+        output.update(schema_version='source-bound-product-ten-year-ledger-v2',
+            allocation_policy=deepcopy(allocation_policy), allocation_evidence=allocation_evidence)
+    return source, output, refs
 
 
 def _package(source, ledger, ledger_ref, refs, clock):
@@ -194,6 +230,10 @@ def _package(source, ledger, ledger_ref, refs, clock):
         package['sources'].append(dict(id=ident, kind='research_artifact', local_path=package_ref['path'], location=package_ref['path'],
             sha256=ref['sha256'], source_available_at=clock.isoformat(), availability_basis='CURRENT_RESEARCH_NOT_HISTORICAL_PIT'))
     package['facts'].update(confidence='低', confidence_evidence=None, scenario_inputs=ledger['scenario_inputs'])
+    path_mode = ledger['schema_version'] == 'source-bound-product-ten-year-ledger-v2'
+    if path_mode:
+        from ...valuation_models.residual_income_path_v2 import MODEL_VERSION
+        package['dependencies']['model_version'] = MODEL_VERSION
     package['facts']['evidence_refs'] += extra
     package['research_case']['evidence_refs'] += extra
     explanation = ledger['economic_explanation']
@@ -201,6 +241,9 @@ def _package(source, ledger, ledger_ref, refs, clock):
     package['research_case']['financial_summary']['product_ten_year_research'].update(
         economic_explanation=deepcopy(explanation), cash_conditions=deepcopy(ledger['cash_conditions']),
         shareholder_cash_research=deepcopy(ledger['shareholder_cash_research']))
+    if path_mode:
+        package['research_case']['financial_summary']['product_ten_year_research'].update(
+            allocation_policy=deepcopy(ledger['allocation_policy']), allocation_evidence=deepcopy(ledger['allocation_evidence']))
     if explanation.get('rationale'):
         package['research_case']['thesis'] += '\nTen-year conditional extension: '+explanation['rationale']
     if explanation.get('cash_return_rationale'):
@@ -209,13 +252,18 @@ def _package(source, ledger, ledger_ref, refs, clock):
         package['research_case']['counter_evidence'].append(dict(kind='hypothesis', text=text,
             evidence_refs=[row['id'] for row in extra]))
     assumptions, bindings = [], []
-    for field in ('cost_of_equity', 'retention', 'terminal_roe', 'terminal_growth', *[f'forecast_roes_{i}' for i in range(10)]):
-        path = field.replace('forecast_roes_', 'forecast_roes.')
-        values = {name: row['forecast_roes'][int(field.rsplit('_', 1)[1])] if field.startswith('forecast_roes_') else row[field]
+    fields = ['cost_of_equity', 'terminal_roe', 'terminal_growth', *[f'forecast_roes_{i}' for i in range(10)]]
+    fields = fields + [f'forecast_retentions_{i}' for i in range(10)] if path_mode else ['cost_of_equity', 'retention', *fields[1:]]
+    for field in fields:
+        path = field.replace('forecast_roes_', 'forecast_roes.').replace('forecast_retentions_', 'forecast_retentions.')
+        vector = next((key for key in ('forecast_roes', 'forecast_retentions') if field.startswith(key+'_')), None)
+        values = {name: row[vector][int(field.rsplit('_', 1)[1])] if vector else row[field]
                   for name, row in ledger['scenario_inputs'].items()}
         assumptions.append(dict(name=field, unit='ratio', **values, basis='SOURCE_NATIVE_TEN_YEAR_PRODUCT_CASH_RESEARCH',
             rationale='Cold product and cash calculation; flat continuation and lawful terminal payout remain LOW hypotheses.',
             confidence='low', sensitivity='high', evidence_refs=extra))
+        if path_mode and D(values['bear']) >= D(values['base']) >= D(values['bull']):
+            assumptions[-1]['ordering'] = 'descending'
         bindings.extend(dict(assumption_name=field, scenario=name, field_path=path, expected_value=value, evidence_refs=extra)
                         for name, value in values.items())
     package['assumptions'] = dict(assumptions=assumptions, evidence_refs=extra, blockers=deepcopy(source['assumptions'].get('blockers', [])))
@@ -233,10 +281,13 @@ def _run(root, package, package_ref, clock, centers):
             or native['decision_recommendation'].get('recommendation_type', native['decision_recommendation'].get('recommendation_action')) != 'NO_ACTION'):
         raise ValueError('Ten-year replay must remain LOW NO_ACTION')
     from ...valuation_models.residual_income import _shared_scenario_calculation
+    from ...valuation_models.residual_income_path_v2 import ResidualIncomePathScenarioInputs, scenario_calculation
     with localcontext() as ctx:
         ctx.prec = 48
         for name, center in centers.items():
-            calculation = _shared_scenario_calculation(descriptor.facts, descriptor.facts.scenario_inputs[name])
+            scenario = descriptor.facts.scenario_inputs[name]
+            calculation = (scenario_calculation if isinstance(scenario, ResidualIncomePathScenarioInputs)
+                           else _shared_scenario_calculation)(descriptor.facts, scenario)
             if len(calculation['forecast_years']) != 10:
                 raise ValueError('Typed RI did not consume all ten cash years')
             for projected, cash in zip(calculation['forecast_years'], center['cash_rows']):
@@ -285,7 +336,7 @@ def prepare_product_continuation_candidate(*, root: Path, source_candidate_bindi
     packet = project_research_review_packet(root=root, package_path=target/'package.json', package_sha256=sha256_file(target/'package.json'),
         workbench_path=target/'workbench.json', workbench_sha256=sha256_file(target/'workbench.json'))
     write_new_json(target/'consumed-review.json', packet)
-    candidate = dict(schema_version=SCHEMA, input_mode=INPUT_MODE, symbol=parent['symbol'], generated_at=clock.isoformat(),
+    candidate = dict(schema_version=SCHEMA, input_mode=PATH_INPUT_MODE if ledger['schema_version'].endswith('-v2') else INPUT_MODE, symbol=parent['symbol'], generated_at=clock.isoformat(),
         status='PENDING_REVIEW', action='no_order', source_candidate_binding=deepcopy(source_candidate_binding),
         input_binding=_bound(root, target/'input.json'), source_package_binding=_bound(root, target/'package.json'),
         native_cash_ledger_binding=_bound(root, target/'cash-ledger.json'), review_packet_binding=_bound(root, target/'consumed-review.json'),
@@ -311,7 +362,7 @@ def verify_product_continuation_candidate(*, root: Path, path: Path, expected_sh
         if candidate[field] != _bound(root, path.parent/filename):
             raise ValueError('Exact ten-year candidate file identity mismatch')
     _, request = read_bound_json(root, candidate['input_binding'], 'ten-year immutable inputs')
-    if (candidate.get('schema_version') != SCHEMA or candidate.get('input_mode') != INPUT_MODE
+    if (candidate.get('schema_version') != SCHEMA or candidate.get('input_mode') not in (INPUT_MODE, PATH_INPUT_MODE)
             or candidate.get('generated_at') != request['generated_at'] or candidate.get('source_candidate_binding') != request['source_candidate_binding']
             or candidate.get('implementation_bindings') != _implementations(root)):
         raise ValueError('Ten-year schema/input/implementation identity mismatch')
@@ -331,7 +382,8 @@ def verify_product_continuation_candidate(*, root: Path, path: Path, expected_sh
         raise ValueError('Ten-year workbench differs from actual typed replay')
     packet = project_research_review_packet(root=root, package_path=path.parent/'package.json', package_sha256=candidate['source_package_binding']['sha256'],
         workbench_path=path.parent/'workbench.json', workbench_sha256=sha256_file(path.parent/'workbench.json'))
-    expected = dict(candidate, symbol=package['symbol'], status='PENDING_REVIEW', action='no_order', model_context=context,
+    expected = dict(candidate, input_mode=PATH_INPUT_MODE if ledger['schema_version'].endswith('-v2') else INPUT_MODE,
+        symbol=package['symbol'], status='PENDING_REVIEW', action='no_order', model_context=context,
         model_context_scope='ACTUALLY_CONSUMED', candidate_valuation=work['valuation'], candidate_research_as_of=package['point_in_time']['research_as_of'],
         execution_status='NO_ACTION', research_blockers=work['research_blockers'], review_groups=_groups(),
         schedule_gate=None, schedule_consumed=False, approval_changed=False, research_admitted=False, price_admitted=False,

@@ -44,5 +44,27 @@
   "real_change": "Actual research-policy revision binds retained parent cash evidence; not a new announcement. Old candidate bytes remain historical; changed dependency is recorded by hash.",
   "economic_conclusion": "PARTIAL: zero net maintenance/WC, parent remittance and lawful terminal full payout are not jointly established. Historical partial receipts are not sustainable future distribution capacity.",
   "price_draft": null,
-  "production_published": false
+  "production_published": false,
+  "cash_allocation_v2_run": {
+    "directory": "runtime/product-cash-allocation-consumer/20261026T084128520759Z",
+    "candidate_sha256": "cd052a3354d3dc54b46e0a64dd25dd2a9d659c6b80b2416733196d80a4733d46",
+    "api_sha256": "c68762bd12505a2b3140d80918f8998b9f6eae71bffab3830bffa9fc2e3f223c",
+    "review_handoff_sha256": "7120502058ae015c5d1f7eb3a37aca7241fb144d5c62a3801fd5ebc2defb854e",
+    "policy": "config/research-assumptions/600519-product-cash-allocation-v2.json",
+    "valuation_date": "2026-06-30",
+    "model_version": "residual-income-equity-path-v2",
+    "conditional_values_cny": ["790.7053567337", "945.9334111404", "1003.5883956560"],
+    "scope": "UNAPPROVED_CONDITIONAL_RESEARCH_NOT_CURRENT_PRICE_COMPARISON",
+    "verified_observations": {
+      "fund_uncalled_cny": "6000000000",
+      "digital_registered_less_paid_cny": "400000000",
+      "interim_investment_cash_cny": "101052220.78",
+      "interim_investment_cash_comparative_cny": null
+    },
+    "allocation": "Target distributions capped annually by cash and conditional owner-equivalent capacity; uncalled funds and digital investment counted once. Timing remains a scenario, not a disclosed due date.",
+    "acceptance": "Actual originals, CLI, model, review and isolated API pass; actual API Web component 43 tests pass. Final commit CI pending.",
+    "economic_boundary": "Historical upstream channel supported; maintenance/WC, future remittance and terminal full payout remain conditional. No primary approval or current-price draft.",
+    "private_access": "HARD_BLOCKED",
+    "production_published": false
+  }
 }
