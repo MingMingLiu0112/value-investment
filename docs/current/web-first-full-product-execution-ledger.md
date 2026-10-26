@@ -61,6 +61,16 @@ and does not recompute financial conclusions. Clean-checkout evidence is recorde
 separately at closure. Sole8001 runtime remains
 86ceaef9; this module is not deployed or human-approved. action=no_order.
 
+Consumer commit6cf5e92d0e933acf2b2ec9f02b45076500941bfd is pushed to the existing
+codex/web-d1-investment-workbench branch, not merged to main. Clean existing gc1
+checkout of that exact commit passed31 candidate tests, including original public
+source replay into an isolated directory; no runtime dependency was bulk committed.
+TypeScript passed. New candidate tests are added to the existing explicit Core
+test list (one line), so future CI actually exercises the module. Latest GitHub
+checks remain distinct from local acceptance; do not label a running check green.
+Engineering chain is accepted in isolation; economic primary is NOT_ESTABLISHED,
+human approval NOT_GRANTED and current8001 NOT_UPDATED. No hotspot development.
+
 ### 2026-10-25 align active ResearchCase with product economics
 
 Pre-publication semantic review found that the first product-path candidate
