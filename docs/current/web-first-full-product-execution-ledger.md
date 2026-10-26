@@ -6055,3 +6055,90 @@ connect it. It must preserve the five-year evidence, perform full P/B/C/D/termin
 replay and never fabricate G3/approval. This is necessary valuation-to-research
 intake, not a new approval platform. Author and independent verifier remain separate.
 Overall REAL_ASSISTED_USE_NOT_READY; action=no_order.
+
+### 2026-10-26 reusable owner-cash valuation module scope
+
+Current implementation scope is deliberately limited to one reusable chain:
+operating facts and hypotheses -> owner-accessible cash and constrained
+distribution -> annual equity changes -> existing residual-income/distribution
+valuation -> existing research candidate, API and Web consumers. The frozen
+five-year joint-capital implementation and the existing 600519 product-specific
+ten-year evidence remain immutable historical inputs; neither will be renamed or
+rewritten as the new generic contract.
+
+The new versioned contract must contain no security, product, subsidiary or fund
+names. Company differences stay in source-bound inputs and low-confidence
+research assumptions. 600519 is the first economic case. 600887 is fixed as the
+second migration case because it already has FY2025/H1-2026 original filings,
+parent/consolidated cash facts, distributions and an existing supported quality
+compounder package. 000568 remains unsuitable for this acceptance because its
+current evidence set cannot yet produce a successful, recomputable second path;
+an UNKNOWN-only result would test fail-closed behavior, not reuse.
+
+Allowed code changes are the versioned ten-year owner-cash kernel, the existing
+neutral proposal and pending-candidate dispatch, the existing economic review
+projection, and the existing joint-capital Web component. Required inputs include
+explicit cash scope, cash floor, distribution capacity, accessible-profit ratio,
+maintenance cash, working-capital cash, commitments, reserves, target payout and
+non-silent terminal continuation. Actual distribution is constrained rather than
+forced. The existing residual-income path with annual retentions remains the only
+valuation consumer; no second valuation or price engine is authorized.
+
+Acceptance requires two real, source-bound companies through the same entry and
+shared formulas, different annual paths and conclusions, candidate replay, API/Web
+consumption, exact update invalidation and fail-closed scope rejection. No G3,
+current-price admission, personal quantity or order is implied.
+
+### 2026-10-26 reusable owner-cash valuation module acceptance
+
+The shared implementation is `joint_capital_cash_path_v2.py`. It contains no
+issuer symbol, brand, product, subsidiary or fund name. Both companies enter via
+the existing neutral proposal and pending-candidate pipeline; issuer differences
+are confined to source-bound input and proposal files. The calculation chain is:
+ten annual operating/cash drivers -> cash-constrained distribution and retention
+ledger -> annual equity path -> existing residual-income path-v2 -> candidate,
+review packet, current value plan, decision API and existing Web component.
+
+Retained real-source acceptance produced separate current candidates:
+
+- 600519 candidate SHA-256
+  `13e41c8ecbd3c4c1e26c4703369800cdbb6e371a98abb65ac2c8a504f9a196e7`,
+  valuation basis 2026-06-30, conditional bear/base/bull per share
+  860.7577015108 / 1125.7153445483 / 1481.9689728133 CNY.
+- 600887 candidate SHA-256
+  `6b230797e95b9758c3cc1dfbded69a3c68df12313ac0ac6ffa531b42be77b4d2`,
+  valuation date 2026-10-21 on its retained research basis, conditional
+  bear/base/bull 15.5639646285 / 21.0389648981 / 30.7859775628 CNY.
+
+Both have LOW confidence, `conditional_research_only`, `NO_ACTION` and
+`action=no_order`. They are not current fair-value claims. No unapproved safety
+margin was inserted and no conditional price draft was generated: the present
+candidate set does not supply an admitted comparable current quote, completed
+event/model-validity bridge or G3 approval. Public company research remains
+available without an account; quantity and position guidance remain null.
+
+The actual in-process decision API returned both symbols as RESEARCH_ONLY with
+`price_action_plan.research_analysis_status=CONDITIONAL_ANALYSIS_VERIFIED` and
+`joint_capital_review.schema_version=joint-capital-cash-review-v2`. The existing
+Web `ValueResearchAnalysis`/`JointCapitalReview` components consume that exact
+field. A changed source-bound assumption changes the input fingerprint, annual
+ledger and valuation for only the affected issuer; the other issuer remains
+byte/hash stable. Missing years, scope errors, source drift, unsupported cash,
+future dates and implementation drift fail closed.
+
+Executed evidence: explicit retained-source two-company/API suite 16 passed with
+`JOINT_CASH_TWO_COMPANY_REAL_REQUIRED=1`; focused supplement/assumption suite 56
+passed; broader kernel/legacy-model/current-plan/API suite 271 passed with two
+unrelated optional-source skips; full Web suite 1200 passed with 28 conditional
+skips; Web typecheck passed. The repository-wide Python gate cannot be treated as
+green in this dirty worktree: its first failure is the pre-existing modified
+600887 prospective artifact expecting the old model factory, outside this module.
+That unrelated user work remains untouched and must be validated from the final
+clean module commit separately.
+
+Engineering module status: ACCEPTED IN ISOLATION. Economic research status:
+CONDITIONAL, LOW confidence. Human approval and actual trading status: NOT
+GRANTED. First remaining business gap is source-backed review of the selected
+operating/cash assumptions plus a current quote/event/model-validity bridge before
+any condition-price policy can be proposed. Overall REAL_ASSISTED_USE_NOT_READY;
+action=no_order.

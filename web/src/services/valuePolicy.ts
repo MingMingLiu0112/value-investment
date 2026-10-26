@@ -3,7 +3,8 @@ import type { ValueResearchAnalysis } from "../types/api";
 type EvidenceBinding = { path: string; sha256: string };
 
 export type JointCapitalReview = {
-  schema_version: "joint-capital-review-v1";
+  schema_version: "joint-capital-review-v1" | "joint-capital-cash-review-v2";
+  input_mode?: string;
   symbol: string;
   action: "no_order";
   status: "CONDITIONAL_PATH_NOT_APPROVED";
@@ -24,7 +25,7 @@ export type JointCapitalReview = {
     ledger: Record<string, unknown> & {
       rows: (Record<string, unknown> & { year: number })[];
       forecast_roe: string[];
-      cash_funding_status: "PASS" | "FAIL";
+      cash_funding_status?: "PASS" | "FAIL";
       scope: string;
       limitations: string[];
     };
@@ -299,6 +300,289 @@ const driverFields = [
   "terminal_profit_scale",
 ];
 
+export const JOINT_CASH_SCHEMA = "joint-capital-cash-path-proposal-v2";
+export function isJointCashReview(value: unknown): boolean {
+  return (
+    record(value) &&
+    (value.schema_version === "joint-capital-cash-review-v2" ||
+      value.input_mode === JOINT_CASH_SCHEMA)
+  );
+}
+
+export const jointCashPolicyFields = [
+  "target_payout_ratio",
+  "accessible_profit_ratio",
+  "reserve_ratio",
+  "net_maintenance_cash_cny",
+  "operating_wc_cash_cny",
+  "commitment_cash_cny",
+] as const;
+export const jointCashRowFields = [
+  "profit",
+  "opening_book",
+  "opening_cash",
+  "opening_unremitted",
+  "opening_distribution_capacity",
+  "opening_operating_capital",
+  "opening_liquidity_capital",
+  "forecast_roe",
+  "target_distribution",
+  "accessible_profit",
+  "newly_unremitted",
+  "net_maintenance_cash_cny",
+  "operating_wc_cash_cny",
+  "commitment_cash_cny",
+  "mandatory_cash",
+  "cash_distribution_limit",
+  "capacity_distribution_limit",
+  "reserve_transfer",
+  "distribution",
+  "retained",
+  "retention",
+  "discretionary_operating_addition",
+  "closing_productive_operating_capital",
+  "closing_operating_capital",
+  "closing_liquidity_capital",
+  "closing_cash",
+  "closing_book",
+  "closing_unremitted",
+  "closing_distribution_capacity",
+  "funding_shortfall",
+  "clean_surplus_residual",
+  "capital_identity_residual",
+] as const;
+export const jointCashOperatingFields = [
+  "revenue",
+  "cost",
+  "pre_tax_profit",
+  "tax",
+  "legacy_parent_profit",
+  "new_operating_profit",
+  "new_liquidity_profit",
+  "historical_da_anchor",
+  "other_pre_tax_balance",
+] as const;
+export const jointCashTerminalFields = [
+  "terminal_roe",
+  "terminal_retention",
+  "terminal_growth",
+  "terminal_profit",
+  "terminal_distribution",
+  "terminal_book",
+] as const;
+
+const cashRatio = (value: unknown) =>
+  finiteDecimal(value) && Number(value) >= 0 && Number(value) <= 1;
+const exactFields = (
+  value: Record<string, unknown>,
+  fields: readonly string[],
+) =>
+  Object.keys(value).length === fields.length &&
+  fields.every((key) => key in value);
+function cashPolicy(value: unknown): value is Record<string, string> {
+  return (
+    record(value) &&
+    jointCashPolicyFields.every((key) => finiteDecimal(value[key])) &&
+    ["target_payout_ratio", "accessible_profit_ratio", "reserve_ratio"].every(
+      (key) => cashRatio(value[key]),
+    ) &&
+    Number(value.net_maintenance_cash_cny) >= 0 &&
+    Number(value.commitment_cash_cny) >= 0
+  );
+}
+function cashRow(
+  value: unknown,
+  year: number,
+): value is Record<string, unknown> {
+  if (
+    !record(value) ||
+    value.year !== year ||
+    !jointCashRowFields.every((key) => finiteDecimal(value[key])) ||
+    !cashPolicy(value.cash_policy) ||
+    !exactFields(value.cash_policy, jointCashPolicyFields) ||
+    !cashRatio(value.retention) ||
+    Number(value.profit) <= 0 ||
+    Number(value.opening_book) <= 0 ||
+    Number(value.funding_shortfall) < 0 ||
+    value.funding_status !==
+      (Number(value.funding_shortfall) > 0 ? "SHORTFALL" : "FUNDED")
+  )
+    return false;
+  return [
+    "net_maintenance_cash_cny",
+    "operating_wc_cash_cny",
+    "commitment_cash_cny",
+  ].every(
+    (key) =>
+      decimalIdentity(value[key]) ===
+      decimalIdentity((value.cash_policy as Record<string, string>)[key]),
+  );
+}
+/** Validate the v2 cash contract independently of the legacy five-year fields. */
+function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
+  if (
+    ("explicit_years" in review && review.explicit_years !== 10) ||
+    ("distribution_scope" in review &&
+      review.distribution_scope !==
+        "ANNUAL_CASH_AND_CAPACITY_CONSTRAINED_NOT_APPROVED") ||
+    ("terminal_scope" in review &&
+      review.terminal_scope !==
+        "EXPLICIT_CONTINUING_CASH_NEEDS_NOT_DEFAULT_FULL_PAYOUT")
+  )
+    return false;
+
+  if (
+    review.input_mode !== undefined &&
+    review.input_mode !== JOINT_CASH_SCHEMA
+  )
+    return false;
+  for (const key of [
+    "approval_changed",
+    "research_admitted",
+    "primary_registered",
+    "strategy_admitted",
+    "action_admitted",
+  ])
+    if (key in review && review[key] !== false) return false;
+  if (review.date_scope === "DATED_CONDITIONAL_MODEL") {
+    const basis = instant(review.basis_at),
+      at = instant(review.valuation_at);
+    if (basis === null || at === null || basis > at) return false;
+    const first = new Date(review.basis_at as string);
+    first.setUTCFullYear(first.getUTCFullYear() + 1);
+    if (at >= BigInt(first.getTime()) * BigInt(1000000)) return false;
+  }
+  return (review.scenarios as unknown[]).every((item, index) => {
+    if (
+      !record(item) ||
+      item.scenario !== ["bear", "base", "bull"][index] ||
+      !finiteDecimal(item.valuation_per_share) ||
+      Number(item.valuation_per_share) <= 0 ||
+      !record(item.drivers) ||
+      !exactFields(item.drivers, [
+        "years",
+        "operating_allocation",
+        "new_operating_return",
+        "new_liquidity_return",
+      ]) ||
+      ![
+        "operating_allocation",
+        "new_operating_return",
+        "new_liquidity_return",
+      ].every((key) =>
+        cashRatio((item.drivers as Record<string, unknown>)[key]),
+      ) ||
+      !Array.isArray(item.drivers.years) ||
+      item.drivers.years.length !== 10 ||
+      !item.drivers.years.every(
+        (row, i) =>
+          record(row) &&
+          exactFields(row, [
+            "year",
+            "revenue_growth",
+            "cost_ratio",
+            ...jointCashPolicyFields,
+          ]) &&
+          row.year === i + 1 &&
+          finiteDecimal(row.revenue_growth) &&
+          Number(row.revenue_growth) > -1 &&
+          cashRatio(row.cost_ratio) &&
+          cashPolicy(row),
+      )
+    )
+      return false;
+    const ledger = item.ledger;
+    if (
+      !record(ledger) ||
+      ledger.version !== "joint-capital-cash-path-v2" ||
+      ledger.action !== "no_order" ||
+      ledger.status !== "CONDITIONAL_RESEARCH_NOT_APPROVED" ||
+      ledger.scope !== "ordinary_owner_equivalent_cash_mapping" ||
+      ledger.currency !== "CNY" ||
+      !strings(ledger.limitations) ||
+      !ledger.limitations.length ||
+      ledger.limitations.some((text) => !text.trim()) ||
+      !jointCashTerminalFields.every((key) => finiteDecimal(ledger[key])) ||
+      !cashRatio(ledger.terminal_retention) ||
+      !Array.isArray(ledger.rows) ||
+      ledger.rows.length !== 10 ||
+      !Array.isArray(ledger.forecast_roe) ||
+      ledger.forecast_roe.length !== 10 ||
+      !ledger.forecast_roe.every(finiteDecimal) ||
+      !Array.isArray(ledger.forecast_retentions) ||
+      ledger.forecast_retentions.length !== 10 ||
+      !ledger.forecast_retentions.every(cashRatio) ||
+      !cashRow(ledger.terminal, 11) ||
+      !cashPolicy(ledger.terminal_policy) ||
+      !exactFields(ledger.terminal_policy, [
+        ...jointCashPolicyFields,
+        "profit_scale",
+        "rationale",
+      ]) ||
+      !finiteDecimal(ledger.terminal_policy.profit_scale) ||
+      Number(ledger.terminal_policy.profit_scale) <= 0 ||
+      typeof ledger.terminal_policy.rationale !== "string" ||
+      !ledger.terminal_policy.rationale.trim()
+    )
+      return false;
+    const roes = ledger.forecast_roe,
+      retentions = ledger.forecast_retentions,
+      years = item.drivers.years;
+    if (
+      !ledger.rows.every(
+        (row, i) =>
+          cashRow(row, i + 1) &&
+          jointCashOperatingFields.every((key) => finiteDecimal(row[key])) &&
+          record(row.expenses) &&
+          exactFields(row.expenses, [
+            "surcharges",
+            "selling",
+            "admin",
+            "research",
+          ]) &&
+          Object.values(row.expenses).every(finiteDecimal) &&
+          decimalIdentity(row.forecast_roe) === decimalIdentity(roes[i]) &&
+          decimalIdentity(row.retention) === decimalIdentity(retentions[i]) &&
+          jointCashPolicyFields.every(
+            (key) =>
+              decimalIdentity(
+                (row.cash_policy as Record<string, unknown>)[key],
+              ) === decimalIdentity(years[i][key]),
+          ),
+      )
+    )
+      return false;
+    const terminal = ledger.terminal;
+    return (
+      jointCashPolicyFields.every(
+        (key) =>
+          decimalIdentity(
+            (terminal.cash_policy as Record<string, unknown>)[key],
+          ) ===
+          decimalIdentity(
+            (ledger.terminal_policy as Record<string, unknown>)[key],
+          ),
+      ) &&
+      [
+        ["terminal_roe", "forecast_roe"],
+        ["terminal_retention", "retention"],
+        ["terminal_profit", "profit"],
+        ["terminal_distribution", "distribution"],
+        ["terminal_book", "opening_book"],
+      ].every(
+        ([a, b]) => decimalIdentity(ledger[a]) === decimalIdentity(terminal[b]),
+      ) &&
+      ledger.funding_status ===
+        ([...ledger.rows, terminal].some(
+          (row) =>
+            (row as Record<string, unknown>).funding_status === "SHORTFALL",
+        )
+          ? "SHORTFALL"
+          : "FUNDED")
+    );
+  });
+}
+
 /** Source-only presentation validation; never an approval or file-hash verifier. */
 function jointCapitalSourceMatches(
   value: unknown,
@@ -312,7 +596,9 @@ function jointCapitalSourceMatches(
     const review = value;
     if (
       !review ||
-      review.schema_version !== "joint-capital-review-v1" ||
+      !["joint-capital-review-v1", "joint-capital-cash-review-v2"].includes(
+        String(review.schema_version),
+      ) ||
       review.symbol !== symbol ||
       review.action !== "no_order" ||
       review.status !== "CONDITIONAL_PATH_NOT_APPROVED" ||
@@ -341,6 +627,18 @@ function jointCapitalSourceMatches(
       review.scenarios.length !== 3
     )
       return false;
+    if (isJointCashReview(review)) {
+      const closure = new Map<string, string>();
+      for (const ref of sources) {
+        if (
+          !binding(ref) ||
+          (closure.has(ref.path) && closure.get(ref.path) !== ref.sha256)
+        )
+          return false;
+        closure.set(ref.path, ref.sha256);
+      }
+      return jointCashScenariosMatch(review);
+    }
     return review.scenarios.every((item, index) => {
       if (
         !record(item) ||

@@ -6,8 +6,8 @@ from pathlib import Path
 import re
 
 from .common import load_json_object, normalize_symbol, require_inside, sha256_file
-from .pending_research_candidate import JOINT_IMPLEMENTATIONS
-from .neutral_valuation_proposal import JOINT_SCHEMA
+from .pending_research_candidate import JOINT_IMPLEMENTATIONS, JOINT_CASH_IMPLEMENTATIONS
+from .neutral_valuation_proposal import JOINT_SCHEMA, JOINT_CASH_SCHEMA
 from .research_review_packet import project_research_review_packet
 
 
@@ -84,9 +84,12 @@ def load_current_pending_candidate_supplement(*, root: Path, symbol: str) -> dic
             raise ValueError('Unsupported source-native supplement input mode')
         expected_implementations = set(NATIVE_IMPLEMENTATIONS)
     else:
-        if candidate.get('input_mode') not in (None, JOINT_SCHEMA):
+        if candidate.get('input_mode') == JOINT_CASH_SCHEMA:
+            expected_implementations = set(JOINT_CASH_IMPLEMENTATIONS)
+        elif candidate.get('input_mode') not in (None, JOINT_SCHEMA):
             raise ValueError('Unsupported candidate supplement input mode')
-        expected_implementations = JOINT_IMPLEMENTATIONS if candidate.get('input_mode') == JOINT_SCHEMA else {GENERATOR}
+        else:
+            expected_implementations = JOINT_IMPLEMENTATIONS if candidate.get('input_mode') == JOINT_SCHEMA else {GENERATOR}
     if (not isinstance(implementations, list) or len(implementations) != len(expected_implementations)
             or any(not isinstance(item, dict) or set(item) != {'path', 'sha256'} for item in implementations)
             or {item['path'] for item in implementations} != expected_implementations):

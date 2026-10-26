@@ -11,6 +11,7 @@ from ..research.value_research_analysis import _bound
 from .source_native_review_adapter_v2 import prepare_pending_review_response
 from .common import load_json_object, sha256_file
 from .neutral_valuation_proposal import JOINT_SCHEMA
+from .pending_research_candidate import JOINT_CASH_SCHEMA, JOINT_MODES
 
 
 SCHEMA = 'value-economic-review-materials-v1'
@@ -80,7 +81,7 @@ def project_joint_capital_review(*, root, binding, symbol, model_context, now):
     candidate = verify_versioned_review_candidate(root=root, path=root / binding['path'],
         expected_sha256=binding['sha256'])
     _available(candidate['generated_at'], now)
-    if candidate.get('input_mode') != JOINT_SCHEMA:
+    if candidate.get('input_mode') not in JOINT_MODES:
         return None
     if candidate['symbol'] != symbol or candidate['model_context'] != model_context:
         raise ValueError('Joint review differs from the exact selected candidate')
@@ -98,7 +99,8 @@ def project_joint_capital_review(*, root, binding, symbol, model_context, now):
     timing = candidate['candidate_valuation']['assumptions'].get('valuation_timing')
     # The candidate verifier already recompiles the ledger and model outputs.
     # Projection copies those consumed values, never recalculates a forecast.
-    result = dict(schema_version='joint-capital-review-v1', symbol=candidate['symbol'],
+    cash_v2 = candidate['input_mode'] == JOINT_CASH_SCHEMA
+    result = dict(schema_version='joint-capital-cash-review-v2' if cash_v2 else 'joint-capital-review-v1', symbol=candidate['symbol'],
         action='no_order', status='CONDITIONAL_PATH_NOT_APPROVED',
         scope='RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS',
         candidate_binding=deepcopy(binding), proposal_binding=proposal_binding,
@@ -112,6 +114,14 @@ def project_joint_capital_review(*, root, binding, symbol, model_context, now):
             ledger=deepcopy(selected['joint_capital_ledgers'][name]),
             valuation_per_share=candidate['candidate_valuation'][name + '_value'])
             for name in ('bear', 'base', 'bull')])
+    if cash_v2:
+        result.update(input_mode=JOINT_CASH_SCHEMA, explicit_years=10,
+            distribution_scope='ANNUAL_CASH_AND_CAPACITY_CONSTRAINED_NOT_APPROVED',
+            terminal_scope='EXPLICIT_CONTINUING_CASH_NEEDS_NOT_DEFAULT_FULL_PAYOUT')
+        for row in result['scenarios']:
+            row['terminal_policy'] = deepcopy(policy_choice['terminal_policy'][row['scenario']])
+            row['actual_calculation_inputs'] = deepcopy(
+                selected['actual_calculation_inputs']['scenarios'][row['scenario']])
     for source in (binding, *candidate['source_bindings'], *candidate['implementation_bindings']):
         _bound(root, source)
     return result

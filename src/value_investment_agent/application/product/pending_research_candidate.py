@@ -12,6 +12,7 @@ from .neutral_valuation_proposal import (
     build_neutral_valuation_proposal, JOINT_SCHEMA, _joint_inputs, _profit_anchor,
     compile_joint_choice, validate_proposal_policy_identity,
 )
+from . import neutral_valuation_proposal as _neutral
 from .financial_valuation_rebase import rebase_proposal_facts
 from .source_bound_inputs import verify_package_local_sources
 from .financial_review_attachment import load_financial_review_attachment
@@ -30,7 +31,100 @@ JOINT_IMPLEMENTATIONS = frozenset({
 })
 
 
-def _joint_narrative(source, choice, package_binding):
+# Compatibility import while the parallel neutral v2 entrypoint is being added.
+# A missing compiler is an error, never permission to reuse the v1 kernel.
+JOINT_CASH_SCHEMA = getattr(_neutral, 'JOINT_CASH_SCHEMA', 'joint-capital-cash-path-proposal-v2')
+JOINT_MODES = frozenset({JOINT_SCHEMA, JOINT_CASH_SCHEMA})
+JOINT_CASH_IMPLEMENTATIONS = frozenset({
+    'src/value_investment_agent/application/product/pending_research_candidate.py',
+    'src/value_investment_agent/application/product/neutral_valuation_proposal.py',
+    'src/value_investment_agent/domain/valuation/joint_capital_cash_path_v2.py',
+    'src/value_investment_agent/valuation_models/residual_income_path_v2.py',
+    'src/value_investment_agent/valuation_models/residual_income.py',
+})
+
+
+def _cash_entrypoint(name):
+    entrypoint = getattr(_neutral, name, None)
+    if not callable(entrypoint):
+        raise ValueError('joint cash v2 neutral entrypoint unavailable: ' + name)
+    return entrypoint
+
+
+def _joint_cash_replay_inputs(policy, package, sources, root):
+    """Revalidate the neutral v2 source contract without creating a proposal."""
+    from ...domain.valuation.joint_capital_cash_path_v2 import HISTORICAL_FIELDS, SCOPE
+
+    _neutral._cash_keys(policy, 'schema_version action symbol source_package_sha256 generated_at assumption_scope '
+        'profit_anchor_field profit_basis rationale_bindings joint_historical choices economic_review_items assurance_limits', 'policy')
+    generated = _neutral._cash_available(policy['generated_at'], datetime.now(timezone.utc))
+    if policy['assumption_scope'] != 'RESEARCH_ASSUMPTIONS_NOT_OFFICIAL_FORECAST':
+        raise ValueError('Joint cash inputs must remain research assumptions')
+    for key in ('available_at', 'computed_at'):
+        _neutral._cash_available(package['point_in_time'][key], generated)
+    catalog = {row['id']: row for row in package['sources']}
+    if len(catalog) != len(package['sources']) or not policy['rationale_bindings']:
+        raise ValueError('Joint cash source IDs or rationale bindings invalid')
+    for binding in policy['rationale_bindings']:
+        _neutral._cash_keys(binding, 'id path sha256 available_at', 'rationale binding')
+        _neutral._cash_available(binding['available_at'], generated)
+        if not isinstance(binding['id'], str) or not binding['id'].strip() or binding['id'] in catalog:
+            raise ValueError('Joint cash rationale source ID collision')
+        relative = Path(binding['path'])
+        path = require_inside(root, root/relative, 'joint cash rationale')
+        if (relative.is_absolute() or path.relative_to(root).as_posix() != binding['path']
+                or sha256_file(path) != binding['sha256']):
+            raise ValueError('Joint cash rationale path/hash mismatch')
+        sources.append((path, binding['sha256']))
+        catalog[binding['id']] = dict(local_path=binding['path'], sha256=binding['sha256'])
+    declared = policy['joint_historical']
+    if not isinstance(declared, dict) or set(declared) != HISTORICAL_FIELDS:
+        raise ValueError('Exact joint cash historical fields required')
+    if declared['scope'] != SCOPE or declared['currency'] != 'CNY':
+        raise ValueError('Joint cash historical ownership/currency mismatch')
+    historical = dict(scope=SCOPE, currency='CNY')
+    for field in sorted(HISTORICAL_FIELDS - {'scope', 'currency'}):
+        item = declared[field]
+        _neutral._cash_keys(item, 'value unit scope source_id field_path rationale', 'historical observation')
+        scope = ('consolidated_parent' if field in ('parent_profit', 'nonrecurring') else
+            SCOPE if field in ('opening_cash', 'opening_distribution_capacity', 'cash_floor') else 'consolidated')
+        if (item['unit'] != 'CNY' or item['scope'] != scope
+                or not isinstance(item['rationale'], str) or not item['rationale'].strip()):
+            raise ValueError('Joint cash historical unit/scope/rationale mismatch')
+        node = _neutral._cash_node({key: item[key] for key in ('source_id', 'field_path')},
+                                  catalog, root, sources)
+        if not isinstance(node, dict) or any(type(node.get(key)) is not str or node[key] != item[key]
+                                              for key in ('value', 'unit', 'scope')):
+            raise ValueError('Joint cash historical value/unit/scope differs from source')
+        historical[field] = item['value']
+    for choice in policy['choices']:
+        for name in ('bear', 'base', 'bull'):
+            node = _neutral._cash_node(choice['scenario_bindings'][name], catalog, root, sources)
+            if node != dict(drivers=choice['joint_drivers'][name],
+                            terminal_policy=choice['terminal_policy'][name],
+                            cost_of_equity=choice['cost_of_equity'][name]):
+                raise ValueError('Joint cash scenario differs from source-bound drivers/terminal/cost')
+    return historical
+
+
+def _joint_scenario_inputs(scenarios, mode):
+    expected = {}
+    for name, row in scenarios.items():
+        values = dict(cost_of_equity=str(row.cost_of_equity),
+            forecast_roes=[str(value) for value in row.forecast_roes],
+            terminal_roe=str(row.terminal_roe), terminal_growth=str(row.terminal_growth))
+        if mode == JOINT_CASH_SCHEMA:
+            if len(row.forecast_roes) != 10 or len(row.forecast_retentions) != 10:
+                raise ValueError('joint cash v2 requires ten ROEs and annual retentions')
+            values.update(forecast_retentions=[str(value) for value in row.forecast_retentions],
+                          retention_contract='annual-retention-v2', currency='CNY')
+        else:
+            values['retention'] = str(row.retention)
+        expected[name] = values
+    return expected
+
+
+def _joint_narrative(source, choice, package_binding, mode=JOINT_SCHEMA):
     """Project current hypotheses separately from immutable predecessor claims."""
     prior = source['research_case']
     version = source.get('package_version') or ('package-sha256:' + package_binding['sha256'])
@@ -44,7 +138,12 @@ def _joint_narrative(source, choice, package_binding):
                 item['text'] = historical + item['text']
         return result
 
-    return dict(thesis='本候选以历史归母盈利与权益为锚点，实际消费五年经营盈利、'
+    thesis = ('本候选以历史盈利、权益和现金为锚点，实际消费十年现金约束经营与资本路径、'
+        '逐年可达资金、持续投入及分配能力决定的留存与分配，并明确终端持续投入；'
+        '不是固定留存率或零投入全额分配的默认路径。'
+        '这是低置信、尚待经济审阅的研究假设，不是获准主估值。' + choice['rationale']
+        if mode == JOINT_CASH_SCHEMA else None)
+    return dict(thesis=thesis or '本候选以历史归母盈利与权益为锚点，实际消费五年经营盈利、'
         '新增资本回报、留存与分配联结路径及持续经营终端；不是全资本机械衰减路径。'
         '这是低置信、尚待经济审阅的研究假设，不是获准主估值。' + choice['rationale'],
         mispricing_hypothesis='待检验的是本候选经营、资本配置及终端效率假设与外部预期的差异；'
@@ -61,16 +160,17 @@ def _joint_narrative(source, choice, package_binding):
             assumption_blockers=deepcopy(source['assumptions'].get('blockers', []))))
 
 
-def _joint_implementations(bindings):
-    if (not isinstance(bindings, list) or len(bindings) != len(JOINT_IMPLEMENTATIONS)
+def _joint_implementations(bindings, mode=JOINT_SCHEMA):
+    expected = JOINT_CASH_IMPLEMENTATIONS if mode == JOINT_CASH_SCHEMA else JOINT_IMPLEMENTATIONS
+    if (not isinstance(bindings, list) or len(bindings) != len(expected)
             or any(not isinstance(row, dict) or set(row) != {'path', 'sha256'} for row in bindings)
-            or {row['path'] for row in bindings} != JOINT_IMPLEMENTATIONS):
+            or {row['path'] for row in bindings} != expected):
         raise ValueError('joint candidate requires exact generator/neutral/helper implementation bindings')
 
 
 def _verify_joint_economic_inputs(*, root, path, data, policy, package, descriptor):
     """Recompile the pinned hypotheses; no writes, signing or mutable selectors."""
-    _joint_implementations(data.get('implementation_bindings'))
+    _joint_implementations(data.get('implementation_bindings'), data.get('input_mode', JOINT_SCHEMA))
     original_binding = package['supersedes']
     original_path = require_inside(root, root / original_binding['path'], 'joint predecessor')
     if (original_binding['sha256'] != policy['source_package_sha256']
@@ -84,11 +184,16 @@ def _verify_joint_economic_inputs(*, root, path, data, policy, package, descript
     old_descriptor = build_descriptor(original, root=root)
     old_facts = old_descriptor.facts
     source_checks = []
-    historical = _joint_inputs(policy, original, source_checks, root)
+    mode = data['input_mode']
+    historical_loader = _joint_cash_replay_inputs if mode == JOINT_CASH_SCHEMA else _joint_inputs
+    historical = historical_loader(policy, original, source_checks, root)
     if policy.get('financial_rebase') is not None:
         old_facts, anchor, bindings, _ = rebase_proposal_facts(
             root=root, symbol=descriptor.symbol, facts=old_facts, policy=policy)
         source_checks.extend(bindings)
+    elif mode == JOINT_CASH_SCHEMA:
+        anchor = _neutral._joint_cash_profit_anchor(
+            historical, old_descriptor.research_case, policy['profit_anchor_field'])
     else:
         anchor = _profit_anchor(root, original, old_descriptor.research_case, policy['profit_anchor_field'])
     choices = [choice for choice in policy['choices'] if choice['id'] == data['selected_choice']]
@@ -96,13 +201,22 @@ def _verify_joint_economic_inputs(*, root, path, data, policy, package, descript
         raise ValueError('joint candidate must select one exact policy choice')
     book = old_facts.operating_inputs['start_book_equity']
     shares = old_facts.operating_inputs['ordinary_shares']
-    scenarios, ledgers = compile_joint_choice(choice=choices[0], historical=historical, book=book, anchor=anchor)
-    expected = {name: dict(cost_of_equity=str(row.cost_of_equity),
-        forecast_roes=[str(value) for value in row.forecast_roes], terminal_roe=str(row.terminal_roe),
-        terminal_growth=str(row.terminal_growth), retention=str(row.retention)) for name, row in scenarios.items()}
+    compiler = _cash_entrypoint('compile_joint_cash_choice') if mode == JOINT_CASH_SCHEMA else compile_joint_choice
+    if mode == JOINT_CASH_SCHEMA:
+        if Decimal(historical['parent_profit']) - Decimal(historical['nonrecurring']) != anchor:
+            raise ValueError('Joint cash history differs from the source-bound profit anchor')
+        scenarios, ledgers = compiler(choice=choices[0], historical=historical, book=book)
+        ledgers = _neutral._json_numbers(ledgers)
+        code_root = Path(__file__).resolve().parents[4]
+        for ref in data['implementation_bindings']:
+            if sha256_file(code_root/ref['path']) != ref['sha256']:
+                raise ValueError('joint cash candidate implementation differs from executing code')
+    else:
+        scenarios, ledgers = compiler(choice=choices[0], historical=historical, book=book, anchor=anchor)
+    expected = _joint_scenario_inputs(scenarios, mode)
     facts = package['facts']
     summary = package['research_case']['financial_summary']
-    expected_summary = dict(input_mode=JOINT_SCHEMA, scope='RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS',
+    expected_summary = dict(input_mode=mode, scope='RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS',
         ledgers=ledgers, policy_sha256=data['economic_policy_binding']['sha256'], normalized_profit=None)
     if (facts['scenario_inputs'] != expected
             or Decimal(facts['operating_inputs']['start_book_equity']) != book
@@ -112,7 +226,7 @@ def _verify_joint_economic_inputs(*, root, path, data, policy, package, descript
             or summary.get('normalized_parent_profit_cny') is not None):
         raise ValueError('joint candidate economic derivation differs from consumed inputs/ledger')
     narrative = _joint_narrative(original, choices[0], dict(
-        path=original_binding['path'], sha256=original_binding['sha256']))
+        path=original_binding['path'], sha256=original_binding['sha256']), mode)
     if (package['research_case']['thesis'] != narrative['thesis']
             or package['research_case']['mispricing_hypothesis'] != narrative['mispricing_hypothesis']
             or summary.get('predecessor_research_narrative') != narrative['predecessor_narrative']):
@@ -133,13 +247,17 @@ def _verify_joint_economic_inputs(*, root, path, data, policy, package, descript
     proposed_choices = [row for row in proposal['choices'] if row['id'] == data['selected_choice']]
     proposal_inputs = {name: {('forecast_roe' if key == 'forecast_roes' else key): value
                              for key, value in row.items()} for name, row in expected.items()}
-    if (len(proposed_choices) != 1 or proposal.get('input_mode') != JOINT_SCHEMA
+    if (len(proposed_choices) != 1 or proposal.get('input_mode') != mode
             or proposed_choices[0].get('joint_capital_ledgers') != ledgers
             or proposed_choices[0]['actual_calculation_inputs']['scenarios'] != proposal_inputs
             or proposed_choices[0]['actual_calculation_inputs']['start_book_equity'] != str(book)
             or proposed_choices[0]['actual_calculation_inputs']['profit_anchor'] != str(anchor)
             or proposal.get('source_descriptor_sha256') != old_descriptor.input_sha256):
         raise ValueError('joint proposal economic derivation differs from consumed policy')
+    if mode == JOINT_CASH_SCHEMA:
+        if (proposed_choices[0]['actual_calculation_inputs']['ordinary_shares'] != str(shares)
+                or package['dependencies']['model_version'] != 'residual-income-equity-path-v2'):
+            raise ValueError('joint cash shares or actual model version mismatch')
     generated = datetime.fromisoformat(data['generated_at'])
     pit = package['point_in_time']
     if (generated.utcoffset() is None or generated > datetime.now(timezone.utc)
@@ -238,6 +356,15 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
     choice = next(row for row in proposal['choices'] if row['id'] == choice_id)
     inputs = choice['actual_calculation_inputs']
     basis_day, basis_close = day, None
+    inherited_timing = source.get('facts', {}).get('valuation_timing')
+    if valuation_basis_quote_binding is None:
+        if inherited_timing:
+            inherited_at = datetime.fromisoformat(inherited_timing['valuation_at'])
+            if inherited_at.utcoffset() is None:
+                raise ValueError('inherited valuation time requires timezone')
+            basis_day = inherited_at.astimezone(ZoneInfo('Asia/Shanghai')).date().isoformat()
+        else:
+            basis_day = source['point_in_time']['report_period']
     if valuation_basis_quote_binding is not None:
         basis_day, basis_close = _basis_quote(root, valuation_basis_quote_binding, source['symbol'], now)
         if basis_day < source['point_in_time']['report_period']:
@@ -294,13 +421,20 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
         catalog[item['id']] = item
 
     for item in source['sources']:
+        # A predecessor quote remains bound through the immutable predecessor
+        # package, but is not a current basis source for an unquoted candidate.
+        if valuation_basis_quote_binding is None and item.get('id') == 'pending-valuation-basis':
+            continue
         add_source(item)
     for index, binding in enumerate(index_bindings):
         add_source(dict(id=f'candidate-official-index-{index}', kind='research_artifact',
             location=binding['path'], local_path=binding['path'], sha256=binding['sha256'],
             source_available_at=now.isoformat(), availability_basis='current_candidate_acquisition',
             source_url='https://www.cninfo.com.cn/new/hisAnnouncement/query'))
-    joint = proposal.get('input_mode') == JOINT_SCHEMA
+    mode = proposal.get('input_mode')
+    joint = mode in JOINT_MODES
+    joint_label = ('本候选十年现金约束资本、分配及终端持续投入未获主模型批准'
+                   if mode == JOINT_CASH_SCHEMA else '本候选五年联结资本及持续经营终端未获主模型批准')
     proposal_ref = dict(id=('pending-joint-proposal-' + sha256_file(proposal_path) if joint
                            else 'pending-economic-proposal'), path=proposal_path.relative_to(root).as_posix(),
                         sha256=sha256_file(proposal_path))
@@ -347,21 +481,22 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
     case['blockers'] = list(dict.fromkeys([*case.get('blockers', []),
         'pending_economic_model_review', 'pending_complete_event_materiality_review']))
     case['blockers'] = [
-        ('本候选五年联结资本及持续经营终端未获主模型批准' if joint
+        (joint_label if joint
          else '本候选优势期和全资本衰减未获主模型批准')
         if item == '现有强衰减压力情景不是中性主估值' else item
         for item in case['blockers']]
     if joint:
         case['blockers'] = list(dict.fromkeys(
-            '本候选五年联结资本及持续经营终端未获主模型批准'
+            joint_label
             if any(term in item for term in ('全资本', '强衰减', 'STRESS_ONLY', 'Strong-fade'))
             else item for item in case['blockers']))
     case['evidence_refs'].append(proposal_ref)
-    case['thesis'] += (' 本候选实际消费五年联结资本假设：' if proposal.get('input_mode') == JOINT_SCHEMA
+    case['thesis'] += (' 本候选实际消费十年现金约束及终端持续投入假设：' if mode == JOINT_CASH_SCHEMA
+                       else ' 本候选实际消费五年联结资本假设：' if joint
                        else ' 本候选实际消费既有有限方案：') + choice['rationale']
     if joint:
         narrative = _joint_narrative(source, choice, dict(
-            path=package_path.relative_to(root).as_posix(), sha256=package_sha256))
+            path=package_path.relative_to(root).as_posix(), sha256=package_sha256), mode)
         for key in ('thesis', 'mispricing_hypothesis', 'positives', 'counter_evidence',
                     'thesis_breakers', 'next_events'):
             case[key] = narrative[key]
@@ -369,11 +504,12 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
                                         evidence_refs=[proposal_ref['id']]))
     summary = case['financial_summary']
     summary.update(parent_equity_cny=inputs['start_book_equity'], ordinary_shares=inputs['ordinary_shares'])
-    summary[inputs['profit_anchor_field']] = inputs['profit_anchor']
+    anchor_field = policy['profit_anchor_field'] if mode == JOINT_CASH_SCHEMA else inputs['profit_anchor_field']
+    summary[anchor_field] = inputs['profit_anchor']
     summary['normalized_parent_profit_cny'] = None
     summary['pending_model_choice'] = choice_id
     summary['pending_model_limits'] = proposal['assurance_limits']
-    if proposal.get('input_mode') == JOINT_SCHEMA:
+    if proposal.get('input_mode') in JOINT_MODES:
         summary['predecessor_research_narrative'] = narrative['predecessor_narrative']
         diagnostics = summary.get('profit_adjustment_research')
         if isinstance(diagnostics, dict):
@@ -381,7 +517,7 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
                 predecessor_research_version=narrative['predecessor_narrative']['research_version'],
                 predecessor_package_sha256=package_sha256)
         summary['pending_joint_capital_research'] = dict(
-            input_mode=JOINT_SCHEMA, scope='RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS',
+            input_mode=mode, scope='RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS',
             ledgers=deepcopy(choice['joint_capital_ledgers']), policy_sha256=policy_sha256,
             normalized_profit=None)
         if proposal['cash_funding_status'] == 'FAIL':
@@ -397,15 +533,21 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
                                for name, values in inputs['scenarios'].items()}
     for values in facts['scenario_inputs'].values():
         values.pop('forecast_roe')
-    timing = inputs.get('valuation_timing')
+    timing = inputs.get('valuation_timing') or inherited_timing
     if timing:
         timing = deepcopy(timing)
-        timing['valuation_at'] = basis_close or now.isoformat()
+        if basis_close is not None:
+            timing['valuation_at'] = basis_close
+        elif (datetime.fromisoformat(timing['valuation_at'])
+              .astimezone(ZoneInfo('Asia/Shanghai')).date().isoformat() != basis_day):
+            raise ValueError('historical valuation basis differs from inherited timing')
         timing['evidence_refs'] = refs
         facts['valuation_timing'] = timing
         candidate['dependencies']['model_version'] = 'residual-income-equity-shared-dated-v2'
     elif basis_close is not None:
         raise ValueError('prior-session basis requires existing explicit dated capital timing')
+    if mode == JOINT_CASH_SCHEMA:
+        candidate['dependencies']['model_version'] = 'residual-income-equity-path-v2'
     facts['evidence_refs'] = list({ref['id']: ref for ref in [*facts['evidence_refs'], proposal_ref]}.values())
     if financial_review:
         consumed_financial_ids = {ref['id'] for ref in
@@ -421,14 +563,27 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
     names = ['cost_of_equity', 'terminal_roe', 'terminal_growth', 'retention']
     count = len(facts['scenario_inputs']['base']['forecast_roes'])
     names += [f'forecast_roes_{i}' for i in range(count)]
+    if mode == JOINT_CASH_SCHEMA:
+        if count != 10 or any(len(row.get('forecast_retentions', [])) != 10
+                              for row in facts['scenario_inputs'].values()):
+            raise ValueError('joint cash v2 requires ten ROEs and annual retentions')
+        names.remove('retention')
+        names += [f'forecast_retentions_{i}' for i in range(count)]
     assumptions, bindings = [], []
     for name in names:
-        index = int(name[len('forecast_roes_'):]) if name.startswith('forecast_roes_') else None
-        field = f'forecast_roes.{index}' if index is not None else name
-        values = {key: scenario[name] if index is None else scenario['forecast_roes'][index]
+        vector = next((key for key in ('forecast_roes', 'forecast_retentions')
+                       if name.startswith(key + '_')), None)
+        index = int(name[len(vector)+1:]) if vector else None
+        field = f'{vector}.{index}' if vector else name
+        values = {key: scenario[vector][index] if vector else scenario[name]
                   for key, scenario in facts['scenario_inputs'].items()}
         numbers = [Decimal(values[key]) for key in ('bear', 'base', 'bull')]
-        ordering = 'ascending' if numbers[0] <= numbers[1] <= numbers[2] else 'descending'
+        if numbers[0] <= numbers[1] <= numbers[2]:
+            ordering = 'ascending'
+        elif numbers[0] >= numbers[1] >= numbers[2]:
+            ordering = 'descending'
+        else:
+            ordering = 'non_monotonic'
         assumptions.append(dict(name=name, unit='ratio', **values,
             basis=('pending_joint_capital_path_not_official_forecast' if joint
                    else 'pending_finite_shared_model_choice_not_official_forecast'),
@@ -498,6 +653,11 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
         coverage = dict(observation_bindings=deepcopy(complete_coverage_windows),
             scan_binding=scan_binding, coverage_from=scan['scan_from'], review_cutoff=basis_day)
     candidate['sources'] = list(catalog.values())
+    # Sources may gain exact issuer identity and retained-filing metadata even
+    # when no quote/event coverage is requested. Bind the final catalog, not
+    # the predecessor catalog inherited before those source mutations.
+    from .source_bound_inputs import source_catalog_sha256
+    contract['source_catalog_sha256'] = source_catalog_sha256(candidate['sources'])
     candidate['recommendation_schema_version'] = 'advisory-decision-recommendation-v3'
     verify_package_local_sources(root, candidate)
     descriptor = build_descriptor(candidate, root=root)
@@ -585,8 +745,8 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
         relative = path.relative_to(root).as_posix()
         all_sources[relative] = dict(path=relative, sha256=digest)
     result['source_bindings'] = list(all_sources.values())
-    if proposal.get('input_mode') == JOINT_SCHEMA:
-        result['input_mode'] = JOINT_SCHEMA
+    if proposal.get('input_mode') in JOINT_MODES:
+        result['input_mode'] = mode
         result['implementation_bindings'] = list({item['path']: item for item in [
             *result['implementation_bindings'], *proposal['implementation_bindings']]}.values())
         packet_path = output_dir / 'consumed-review.json'
@@ -622,8 +782,8 @@ def verify_pending_research_candidate(*, root: Path, path: Path, expected_sha256
         original = require_inside(root, root / item['path'], 'pending candidate source')
         if sha256_file(original) != item['sha256']:
             raise ValueError('pending candidate source drift')
-    if data.get('input_mode') == JOINT_SCHEMA:
-        _joint_implementations(data.get('implementation_bindings'))
+    if data.get('input_mode') in JOINT_MODES:
+        _joint_implementations(data.get('implementation_bindings'), data.get('input_mode', JOINT_SCHEMA))
     for item in data.get('implementation_bindings', []):
         implementation = require_inside(root, root / item['path'], 'candidate implementation')
         if sha256_file(implementation) != item['sha256']:
@@ -639,15 +799,16 @@ def verify_pending_research_candidate(*, root: Path, path: Path, expected_sha256
     if policy_binding not in sources or sha256_file(policy_path) != policy_binding['sha256']:
         raise ValueError('candidate economic policy binding mismatch')
     policy = load_json_object(policy_path, 'candidate economic policy')
-    if (policy.get('schema_version') == JOINT_SCHEMA) != (data.get('input_mode') == JOINT_SCHEMA):
-        raise ValueError('joint candidate policy/input mode mismatch')
-    if data.get('input_mode') == JOINT_SCHEMA:
-        _joint_implementations(data.get('implementation_bindings'))
+    if (policy.get('schema_version') in JOINT_MODES or data.get('input_mode') in JOINT_MODES):
+        if policy.get('schema_version') != data.get('input_mode'):
+            raise ValueError('joint candidate policy/input mode mismatch')
+    if data.get('input_mode') in JOINT_MODES:
+        _joint_implementations(data.get('implementation_bindings'), data.get('input_mode', JOINT_SCHEMA))
     if data.get('review_groups') != policy.get('human_review_groups', []):
         raise ValueError('candidate review questions differ from economic policy')
     descriptor = build_descriptor(package, root=root)
     context = build_research_review_model_context(descriptor=descriptor, spec=build_research_run_spec(descriptor))
-    if data.get('input_mode') == JOINT_SCHEMA:
+    if data.get('input_mode') in JOINT_MODES:
         _verify_joint_economic_inputs(root=root, path=path, data=data, policy=policy,
             package=package, descriptor=descriptor)
     basis_keys = {'valuation_basis_date', 'valuation_basis_scope', 'basis_binding', 'coverage_binding'}
@@ -718,7 +879,7 @@ def verify_pending_research_candidate(*, root: Path, path: Path, expected_sha256
         )
         if workbench.get('input_descriptor_sha256') != descriptor.input_sha256:
             raise ValueError('pending candidate descriptor differs from actual consumption')
-        if data.get('input_mode') == JOINT_SCHEMA:
+        if data.get('input_mode') in JOINT_MODES:
             packet_path = path.parent / 'consumed-review.json'
             binding = dict(path=packet_path.relative_to(root).as_posix(), sha256=sha256_file(packet_path))
             if data.get('review_packet_binding') != binding or binding not in sources:
@@ -728,6 +889,10 @@ def verify_pending_research_candidate(*, root: Path, path: Path, expected_sha256
                 workbench_sha256=sha256_file(workbench_path))
             if load_json_object(packet_path, 'joint consumed review packet') != expected:
                 raise ValueError('joint candidate consumed review packet differs from exact inputs')
+    if data.get('input_mode') == JOINT_CASH_SCHEMA:
+        for ref in [*data['source_bindings'], *data['implementation_bindings']]:
+            if sha256_file(require_inside(root, root/ref['path'], 'joint cash final replay binding')) != ref['sha256']:
+                raise ValueError('joint cash source/implementation changed during replay')
     if sha256_file(path) != expected_sha256:
         raise ValueError('pending candidate changed during verification')
     return data

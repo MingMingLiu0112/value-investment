@@ -656,3 +656,378 @@ describe("read-only economic review materials", () => {
     expect(html).toContain("min-width:0");
   });
 });
+
+import {
+  JOINT_CASH_SCHEMA,
+  jointCashPolicyFields,
+  jointCashRowFields,
+  jointCashOperatingFields,
+  jointCashTerminalFields,
+  publicJointCapitalReviewMatches,
+} from "../src/services/valuePolicy";
+import { PublicJointCapitalReview } from "../src/components/JointCapitalReview";
+import { analysisFixture } from "./fixtures/value-research-analysis";
+
+function jointCashFixture(): Handoff {
+  const handoff = jointFixture();
+  const review = handoff.economic_review_materials!.joint_capital_review!;
+  review.schema_version = "joint-capital-cash-review-v2";
+  review.input_mode = JOINT_CASH_SCHEMA;
+  const policy = {
+    target_payout_ratio: ".9",
+    accessible_profit_ratio: ".8",
+    reserve_ratio: ".1",
+    net_maintenance_cash_cny: "12.34567890123456789",
+    operating_wc_cash_cny: "-2",
+    commitment_cash_cny: "3",
+  };
+  const row = (year: number) => ({
+    ...Object.fromEntries(jointCashRowFields.map((key) => [key, "100"])),
+    year,
+    forecast_roe: ".1",
+    retention: year % 2 ? ".2" : ".4",
+    funding_shortfall: "0",
+    funding_status: "FUNDED",
+    clean_surplus_residual: "0",
+    capital_identity_residual: "0",
+    net_maintenance_cash_cny: policy.net_maintenance_cash_cny,
+    operating_wc_cash_cny: policy.operating_wc_cash_cny,
+    commitment_cash_cny: policy.commitment_cash_cny,
+    cash_policy: { ...policy },
+  });
+  review.scenarios.forEach((scenario) => {
+    scenario.drivers = {
+      operating_allocation: ".5",
+      new_operating_return: ".1",
+      new_liquidity_return: ".01",
+      years: Array.from({ length: 10 }, (_, i) => ({
+        year: i + 1,
+        revenue_growth: ".01",
+        cost_ratio: ".2",
+        ...policy,
+      })),
+    };
+    scenario.ledger = {
+      version: "joint-capital-cash-path-v2",
+      action: "no_order",
+      status: "CONDITIONAL_RESEARCH_NOT_APPROVED",
+      scope: "ordinary_owner_equivalent_cash_mapping",
+      currency: "CNY",
+      limitations: ["TEST_ONLY 未上划不自动释放；维护需求仍可能低估"],
+      funding_status: "FUNDED",
+      forecast_roe: Array(10).fill(".1"),
+      forecast_retentions: Array.from({ length: 10 }, (_, i) =>
+        i % 2 ? ".4" : ".2",
+      ),
+      rows: Array.from({ length: 10 }, (_, i) => ({
+        ...row(i + 1),
+        ...Object.fromEntries(
+          jointCashOperatingFields.map((key) => [key, "123456789.123456789"]),
+        ),
+        expenses: { surcharges: "1", selling: "2", admin: "3", research: "4" },
+      })),
+      terminal: row(11),
+      terminal_policy: {
+        ...policy,
+        profit_scale: "1",
+        rationale: "TEST_ONLY 持续终端必要支出",
+      },
+      terminal_roe: ".1",
+      terminal_retention: ".2",
+      terminal_growth: ".02",
+      terminal_profit: "100",
+      terminal_distribution: "100",
+      terminal_book: "100",
+    };
+  });
+  return handoff;
+}
+
+function publicCashFixture(handoff = jointCashFixture()) {
+  const analysis = analysisFixture();
+  const material = handoff.economic_review_materials!;
+  const review = structuredClone(material.joint_capital_review!);
+  review.symbol = analysis.symbol;
+  analysis.approval_changed = false;
+  analysis.input_descriptor_sha256 = review.input_descriptor_sha256;
+  analysis.review_binding = {
+    candidate_binding: review.candidate_binding,
+    model_context: {
+      input_descriptor_sha256: review.input_descriptor_sha256,
+      model_id: "TEST_ONLY_RI",
+      model_version: "residual-income-equity-path-v2",
+      profile_id: "TEST_ONLY_PROFILE",
+      research_case_sha256: "1".repeat(64),
+      facts_sha256: "2".repeat(64),
+      assumptions_sha256: "3".repeat(64),
+      research_as_of: analysis.research_as_of,
+    },
+  };
+  analysis.source_bindings = [
+    review.candidate_binding,
+    review.proposal_binding,
+    review.policy_binding,
+  ];
+  analysis.joint_capital_review = review;
+  analysis.model_applicability!.route = {
+    selected_model: "TEST_ONLY_RI",
+    model_type: "TEST_ONLY_RI",
+    profile_id: "TEST_ONLY_PROFILE",
+  };
+  analysis.valuation = {
+    model_type: "TEST_ONLY_RI",
+    model_version: "residual-income-equity-path-v2",
+    valuation_date: analysis.valuation_date!,
+    bear_value: "123.456789",
+    base_value: "123.456789",
+    bull_value: "123.456789",
+    assumptions: {
+      valuation_timing: {
+        basis_at: review.basis_at!,
+        valuation_at: review.valuation_at!,
+      },
+    },
+  };
+  analysis.scenarios.forEach((row) => {
+    row.per_share_value = "123.456789";
+  });
+  delete analysis.economic_assessment;
+  return analysis;
+}
+
+describe("versioned ten-year joint cash review", () => {
+  it.each(["schema", "mode", "both"])(
+    "accepts explicit %s version with ten-year cash fields only",
+    (marker) => {
+      const handoff = jointCashFixture();
+      const review = handoff.economic_review_materials!.joint_capital_review!;
+      if (marker === "schema") delete review.input_mode;
+      if (marker === "mode") review.schema_version = "joint-capital-review-v1";
+      const before = structuredClone(handoff);
+      expect(jointCapitalReviewMatches(handoff, handoff.symbol)).toBe(true);
+      const html = render(handoff);
+      for (const text of [
+        "10年",
+        "第 10 年",
+        "经营",
+        "现金约束",
+        "条件分配",
+        "留存",
+        "资金演算",
+        "持续终端",
+        "净维护现金",
+        "营运资金 WC",
+        "承诺现金",
+        "条件估值",
+        "反证",
+        "未批准",
+        "action=no_order",
+        "12.34567890123456789",
+        "-2",
+        "TEST_ONLY 持续终端",
+      ])
+        expect(html).toContain(text);
+      expect(html).not.toContain("三情景五年");
+      expect(html).not.toContain("<button");
+      expect(handoff).toEqual(before);
+      const analysis = publicCashFixture(handoff);
+      expect(publicJointCapitalReviewMatches(analysis, analysis.symbol)).toBe(
+        true,
+      );
+      expect(
+        renderToStaticMarkup(
+          <PublicJointCapitalReview
+            analysis={analysis}
+            symbol={analysis.symbol}
+          />,
+        ),
+      ).toContain("第 10 年");
+    },
+  );
+
+  it("keeps shortfall and negative cash visible without approval", () => {
+    const handoff = jointCashFixture();
+    const ledger =
+      handoff.economic_review_materials!.joint_capital_review!.scenarios[0]
+        .ledger;
+    ledger.funding_status = ledger.rows[0].funding_status = "SHORTFALL";
+    ledger.rows[0].funding_shortfall = "100";
+    ledger.rows[0].closing_cash = "-123456789.123456789";
+    expect(jointCapitalReviewMatches(handoff, handoff.symbol)).toBe(true);
+    expect(render(handoff)).toContain("SHORTFALL：资金约束存在缺口");
+    expect(render(handoff)).toContain("-1.23 亿元");
+    expect(render(handoff)).toContain("-123456789.123456789");
+  });
+
+  it.each([
+    ...jointCashRowFields.map(
+      (key) =>
+        [
+          "missing row " + key,
+          (r: any) => {
+            delete r.scenarios[0].ledger.rows[0][key];
+          },
+        ] as const,
+    ),
+    ...jointCashPolicyFields.map(
+      (key) =>
+        [
+          "missing terminal " + key,
+          (r: any) => {
+            delete r.scenarios[0].ledger.terminal_policy[key];
+          },
+        ] as const,
+    ),
+    ...jointCashTerminalFields.map(
+      (key) =>
+        [
+          "missing terminal result " + key,
+          (r: any) => {
+            delete r.scenarios[0].ledger[key];
+          },
+        ] as const,
+    ),
+    ["nine rows", (r: any) => r.scenarios[0].ledger.rows.pop()],
+    [
+      "duplicate year",
+      (r: any) => {
+        r.scenarios[0].ledger.rows[9].year = 9;
+      },
+    ],
+    [
+      "five drivers",
+      (r: any) => {
+        r.scenarios[0].drivers.years.length = 5;
+      },
+    ],
+    [
+      "null",
+      (r: any) => {
+        r.scenarios[0].ledger.rows[0].distribution = null;
+      },
+    ],
+    [
+      "NaN",
+      (r: any) => {
+        r.scenarios[0].ledger.rows[0].retention = "NaN";
+      },
+    ],
+    [
+      "infinity",
+      (r: any) => {
+        r.scenarios[0].ledger.terminal.profit = "Infinity";
+      },
+    ],
+    [
+      "numeric not string",
+      (r: any) => {
+        r.scenarios[0].ledger.rows[0].profit = 100;
+      },
+    ],
+    [
+      "retention mismatch",
+      (r: any) => {
+        r.scenarios[0].ledger.forecast_retentions[9] = ".9";
+      },
+    ],
+    [
+      "retention missing",
+      (r: any) => {
+        r.scenarios[0].ledger.forecast_retentions.pop();
+      },
+    ],
+    [
+      "unknown funding",
+      (r: any) => {
+        r.scenarios[0].ledger.funding_status = "PASS";
+      },
+    ],
+    [
+      "terminal mismatch",
+      (r: any) => {
+        r.scenarios[0].ledger.terminal_policy.commitment_cash_cny = "0";
+      },
+    ],
+    [
+      "currency",
+      (r: any) => {
+        r.scenarios[0].ledger.currency = "USD";
+      },
+    ],
+    [
+      "no counterevidence",
+      (r: any) => {
+        r.scenarios[0].ledger.limitations = [];
+      },
+    ],
+    [
+      "unknown schema",
+      (r: any) => {
+        r.schema_version = "other";
+      },
+    ],
+    [
+      "wrong mode",
+      (r: any) => {
+        r.input_mode = "other";
+      },
+    ],
+    [
+      "approval",
+      (r: any) => {
+        r.approval_changed = true;
+      },
+    ],
+    [
+      "order",
+      (r: any) => {
+        r.action = "buy";
+      },
+    ],
+    [
+      "binding",
+      (r: any) => {
+        r.policy_binding.sha256 = "0".repeat(64);
+      },
+    ],
+    [
+      "first payment",
+      (r: any) => {
+        r.valuation_at = "2027-06-30T23:59:59+08:00";
+      },
+    ],
+  ] as [string, (r: any) => void][])(
+    "rejects %s without replacing missing data with zero",
+    (_name, mutate) => {
+      const handoff = jointCashFixture();
+      (mutate as (r: any) => void)(
+        handoff.economic_review_materials!.joint_capital_review,
+      );
+      expect(jointCapitalReviewMatches(handoff, handoff.symbol)).toBe(false);
+      const html = render(handoff);
+      expect(html).toContain("暂不可展示");
+      expect(html).not.toContain("第 10 年");
+      const analysis = publicCashFixture();
+      analysis.joint_capital_review = structuredClone(
+        handoff.economic_review_materials!.joint_capital_review!,
+      );
+      analysis.joint_capital_review.symbol = analysis.symbol;
+      expect(publicJointCapitalReviewMatches(analysis, analysis.symbol)).toBe(
+        false,
+      );
+    },
+  );
+
+  it("retains public model identity and precise valuation binding", () => {
+    const analysis = publicCashFixture();
+    analysis.valuation!.base_value = "123.45678900000000001";
+    expect(publicJointCapitalReviewMatches(analysis, analysis.symbol)).toBe(
+      false,
+    );
+    analysis.valuation!.base_value = "123.456789";
+    analysis.review_binding!.model_context.model_version = "legacy";
+    expect(publicJointCapitalReviewMatches(analysis, analysis.symbol)).toBe(
+      false,
+    );
+  });
+});
