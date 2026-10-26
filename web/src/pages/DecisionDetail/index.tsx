@@ -18,6 +18,7 @@ import {
 import { Workbench } from "../../components/Workbench";
 import { StrategyReadinessPanel } from "../../components/StrategyReadiness";
 import { ValueResearchAnalysis } from "../../components/ValueResearchAnalysis";
+import { ProductContinuationCandidate } from "../../components/ProductContinuationCandidate";
 import { HotspotLifecycleReview } from "../../components/HotspotLifecycleReview";
 import { readinessStrategy } from "../../utils/strategyReadiness";
 import { RemoteState } from "../../components/RemoteState";
@@ -1405,6 +1406,12 @@ export default function DecisionDetail() {
               data.publication?.packet_status === "CURRENT" && (
                 <ValueResearchAnalysis decision={decision} />
               )}
+            {!loading && !error && data?.action === "no_order" && (
+              <ProductContinuationCandidate
+                symbol={decision.symbol ?? ""}
+                value={data.product_continuation_candidate}
+              />
+            )}
             {data?.research_draft && (
               <ResearchDraftPanel draft={data.research_draft} />
             )}

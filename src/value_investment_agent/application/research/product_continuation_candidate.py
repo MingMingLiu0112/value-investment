@@ -90,6 +90,11 @@ def _cold_center(root, request, now):
             raise ValueError('Continuation policy identity/availability mismatch')
         policies.append(policy)
     cash_policy, policy = policies
+    if (any(not isinstance(policy.get(key), str) or not policy[key].strip() for key in
+            ('rationale', 'cash_return_rationale', 'terminal_rationale', 'strongest_counter_evidence'))
+            or not isinstance(policy.get('counter_evidence'), list) or not policy['counter_evidence']
+            or any(not isinstance(text, str) or not text.strip() for text in policy['counter_evidence'])):
+        raise ValueError('Explicit continuation economics and counter-evidence required')
     if request['symbol'] != parent['symbol'] or policy['center'] != 'FLAT_YEAR5_PRODUCT_LEVELS_AND_COST_RATIOS' or policy['continuation_years'] != 5:
         raise ValueError('Exact three-scenario flat ten-year product center required')
     facts = build_descriptor(source, root=root).facts
@@ -137,7 +142,11 @@ def _cold_center(root, request, now):
         raise ValueError('Exactly three center scenarios required')
     refs = _closure(root, [*before, *generated['source_bindings']])
     return source, dict(schema_version='source-bound-product-ten-year-ledger-v1', action='no_order',
-        generated_at=clock.isoformat(), financial_basis=source['facts']['as_of'], centers=centers, scenario_inputs=inputs), refs
+        generated_at=clock.isoformat(), financial_basis=source['facts']['as_of'], centers=centers, scenario_inputs=inputs,
+        economic_explanation={key: deepcopy(policy.get(key)) for key in
+            ('rationale', 'cash_return_rationale', 'terminal_rationale', 'counter_evidence', 'strongest_counter_evidence')},
+        cash_conditions={key: deepcopy(cash_policy.get(key)) for key in
+            ('maintenance_rationale', 'capacity_rationale', 'cash_mapping_rationale', 'terminal_distribution_rationale')}), refs
 
 
 def _package(source, ledger, ledger_ref, refs, clock):
@@ -165,6 +174,17 @@ def _package(source, ledger, ledger_ref, refs, clock):
     package['facts'].update(confidence='低', confidence_evidence=None, scenario_inputs=ledger['scenario_inputs'])
     package['facts']['evidence_refs'] += extra
     package['research_case']['evidence_refs'] += extra
+    explanation = ledger['economic_explanation']
+    # Keep first-five company assumptions, but never inherit a five-year-only thesis.
+    package['research_case']['financial_summary']['product_ten_year_research'].update(
+        economic_explanation=deepcopy(explanation), cash_conditions=deepcopy(ledger['cash_conditions']))
+    if explanation.get('rationale'):
+        package['research_case']['thesis'] += '\nTen-year conditional extension: '+explanation['rationale']
+    if explanation.get('cash_return_rationale'):
+        package['research_case']['return_driver'] += '\n'+explanation['cash_return_rationale']
+    for text in explanation.get('counter_evidence') or []:
+        package['research_case']['counter_evidence'].append(dict(kind='hypothesis', text=text,
+            evidence_refs=[row['id'] for row in extra]))
     assumptions, bindings = [], []
     for field in ('cost_of_equity', 'retention', 'terminal_roe', 'terminal_growth', *[f'forecast_roes_{i}' for i in range(10)]):
         path = field.replace('forecast_roes_', 'forecast_roes.')

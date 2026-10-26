@@ -71,7 +71,11 @@ def case(tmp_path, monkeypatch, synthetic_pending_candidate_clock):
         terminal_distribution_rationale='TEST_ONLY lawful cessation/availability assumption, not actual authorization')
     policy = dict(schema_version='product-continuation-research-policy-v1', generated_at=stamp, symbol=parent['symbol'],
         candidate_binding=parent_ref, confidence='LOW', action='no_order', center='FLAT_YEAR5_PRODUCT_LEVELS_AND_COST_RATIOS',
-        continuation_years=5, terminal_rationale='TEST_ONLY conditional stable product contribution')
+        continuation_years=5, terminal_rationale='TEST_ONLY conditional stable product contribution',
+        rationale='TEST_ONLY flat product extension, not evidence of permanent economics',
+        cash_return_rationale='TEST_ONLY retained cash earns explicit incremental yield',
+        strongest_counter_evidence='TEST_ONLY maintenance or remittance can defeat full payout',
+        counter_evidence=['TEST_ONLY operating continuation is uncertain'])
     return dict(root=root, source_candidate_binding=parent_ref,
         cash_policy_binding=store(root, 'runtime/TEST_ONLY-cash-policy.json', cash),
         continuation_policy_binding=store(root, 'runtime/TEST_ONLY-center-policy.json', policy),
@@ -108,6 +112,50 @@ def test_native_typed_ten_year_candidate_and_original_five_group_packet(case):
     packet = json.loads((args['output_dir']/'consumed-review.json').read_bytes())
     assert len(packet['assumptions']) == 14
     assert (args['root']/args['source_candidate_binding']['path']).read_bytes() == before
+
+
+def test_ten_year_candidate_consumed_by_existing_supplement_and_unsigned_materials(case):
+    from value_investment_agent.application.product import pending_candidate_supplement as supplement
+    from value_investment_agent.application.product.source_native_review_adapter_v2 import prepare_pending_review_intake
+    from value_investment_agent.application.product.economic_review_materials import project_product_continuation_review
+    from value_investment_agent.application.research.value_research_analysis import load_current_value_research_analysis
+    candidate = prepare(case)
+    root, target = case[0]['root'], case[0]['output_dir']
+    store(root, supplement.PUBLIC_INPUTS_PATH, dict(schema_version='current-research-drafts-v1', action='no_order',
+        pending_candidates={candidate['symbol']: dict(path=target.relative_to(root).as_posix()+'/candidate.json',
+            sha256=sha256_file(target/'candidate.json'))}))
+    loaded = supplement.load_current_pending_candidate_supplement(root=root, symbol=candidate['symbol'])
+    assert loaded['candidate'] == candidate and loaded['position_guidance'] is None
+    intake_result = prepare_pending_review_intake(root=root, candidate_path=target/'candidate.json',
+        candidate_sha256=loaded['candidate_binding']['sha256'])
+    assert intake_result['status'] == 'AWAITING_HUMAN_RESPONSES'
+    assert not intake_result['research_admitted'] and not intake_result['price_admitted']
+    assert all(group['response'] is None for group in intake_result['groups'])
+    now = datetime.now(timezone.utc)
+    analysis = load_current_value_research_analysis(root=root, symbol=candidate['symbol'], now=now)
+    assert analysis['arithmetic_complete'] and not analysis['action_admitted']
+    review = project_product_continuation_review(root=root, supplement=loaded, now=now)
+    assert review['primary_approved'] is False and review['price_draft'] is None
+    assert review['position_guidance'] is None
+    assert all(len(row['cash_rows']) == 10 for row in review['scenarios'])
+
+
+@pytest.mark.parametrize('change', ['missing_year', 'wrong_year', 'cash_shortfall', 'distribution', 'currency', 'shares', 'scope'])
+def test_cash_or_scope_failure_cannot_be_hidden_by_terminal(case, monkeypatch, change):
+    original = intake.build_product_continuation_cash_path
+    def changed(**kwargs):
+        if change == 'missing_year': kwargs['capital_cash_rows'].pop()
+        elif change == 'wrong_year': kwargs['capital_cash_rows'][7]['year'] = 9
+        elif change == 'currency': kwargs['opening_state']['currency'] = 'USD'
+        elif change == 'shares': kwargs['opening_state']['ordinary_shares'] = '0'
+        elif change == 'scope': kwargs['opening_state']['scope'] = 'CONSOLIDATED_CASH_IS_PARENT_CASH'
+        elif change == 'cash_shortfall': kwargs['opening_state']['cash_cny'] = '0'
+        else: kwargs['distribution_rows'][0]['payout_ratio'] = '2'
+        return original(**kwargs)
+    monkeypatch.setattr(intake, 'build_product_continuation_cash_path', changed)
+    with pytest.raises((ValueError, KeyError)):
+        prepare(case)
+    assert not (case[0]['output_dir']/'candidate.json').exists()
 
 
 @pytest.mark.parametrize('change', ['price_admitted', 'primary_registered', 'action', 'valuation', 'extra', 'parent', 'mode'])
@@ -168,7 +216,7 @@ def test_explicit_parent_not_current_and_readonly_verify(case, monkeypatch):
     assert before == {p.relative_to(root).as_posix(): p.read_bytes() for p in root.rglob('*') if p.is_file()}
 
 
-@pytest.mark.parametrize('change', ['symbol', 'future', 'wrong_parent', 'wrong_schema'])
+@pytest.mark.parametrize('change', ['symbol', 'future', 'wrong_parent', 'wrong_schema', 'no_economic_reason'])
 def test_policy_identity_and_time_fail_closed_before_candidate(case, change):
     args = case[0]
     root = args['root']
@@ -176,6 +224,7 @@ def test_policy_identity_and_time_fail_closed_before_candidate(case, change):
     if change == 'symbol': policy['symbol'] = '000544'
     elif change == 'future': policy['generated_at'] = '2099-01-01T00:00:00+00:00'
     elif change == 'wrong_parent': policy['candidate_binding']['sha256'] = '0'*64
+    elif change == 'no_economic_reason': policy['rationale'] = ''
     else: policy['schema_version'] = 'unknown-v99'
     args['continuation_policy_binding'] = store(root, args['continuation_policy_binding']['path'], policy)
     with pytest.raises(ValueError):

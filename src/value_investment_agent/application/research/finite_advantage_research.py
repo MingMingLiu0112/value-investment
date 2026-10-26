@@ -274,7 +274,11 @@ def load_finite_advantage_research(*, root: Path, symbol: str, now: datetime):
                 or policy['identity'] != 'UNAPPROVED_ECONOMIC_HYPOTHESES_NOT_DISCLOSED_FORECAST'):
             raise ValueError('Finite research identity or availability mismatch')
         current = load_current_pending_candidate_supplement(root=root, symbol=symbol)
-        if current is None or current['candidate_binding'] != policy['candidate_binding']:
+        from .product_continuation_candidate import SCHEMA as TEN_YEAR
+        antecedent = (current['candidate'].get('source_candidate_binding')
+            if current is not None and current['candidate']['schema_version'] == TEN_YEAR else None)
+        if current is None or (current['candidate_binding'] != policy['candidate_binding']
+                and antecedent != policy['candidate_binding']):
             raise ValueError('Finite research no longer matches current pending candidate')
         ref = policy['candidate_binding']
         candidate = verify_source_native_candidate(root=root, path=root/ref['path'], expected_sha256=ref['sha256'], now=now)

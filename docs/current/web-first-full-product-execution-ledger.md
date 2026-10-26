@@ -1,5 +1,66 @@
 # WEB-FIRST-FULL-PRODUCT-CLOSURE-V1 execution ledger
 
+### 2026-10-26 value-only ten-year candidate consumption
+
+Latest user scope supersedes parallel hotspot development. Preserve all H
+deliveries without new hotspot work. Baseline7dcb0a2d plus original11 unrelated
+dirty files is retained; sole8001 remains a separate runtime, no restart/deploy.
+Existing author53fca6f7 is integrated as4a283d18, not recreated. This package
+only connects the source-bound ten-year compiler to existing unsigned review,
+company API and company display, with explicit schema dispatch at unfrozen
+consumers. Frozen five-year cash/candidate implementations and historical
+candidate2e53 remain unchanged. Real public-original cold replay, annual
+P/B/C/D/terminal equivalence and independent economic/code review are required.
+No selected approved valuation, G3, current price comparison, personal quantity
+or formal action is granted. Unsupported price-policy prerequisites must remain
+explicit, not be filled by default thresholds. action=no_order.
+
+Implemented chain: retained2e53 parent/originals and explicit policies ->
+product_continuation_candidate (all ten product/cash years) -> build_descriptor
+-> build_research_run_spec -> ResearchApplicationService -> registered RI ->
+consumed review packet -> explicit unsigned adapter/supplement -> existing
+economic review materials -> /api/v1/decisions/600519 -> existing detail component.
+The RI verifier compares annual opening book/profit/distribution/closing book,
+terminal first distribution and common-basis equity value against the cash/DDM
+kernel (CNY0.01 arithmetic tolerance, not an economic tolerance). Nonconstant
+retention, failed cash or unsupported terminal conditions are rejected rather
+than averaged into the old contract. Existing source-native-v2/cash-v1/product
+path hashes remain77070f77/d79aa294/887ff3c6 respectively.
+
+Actual public-source isolated selection/API/handoff acceptance passed:
+runtime/product-ten-year-consumer/20261026T033931892517Z/receipt.json.
+This is NOT a current registry publication or server deployment. Both current
+research selection pointers were verified unchanged and private access was
+hard-blocked. Raw financial periods FY2025/H1_2025/H1_2026; valuation/financial
+basis2026-06-30; fresh research date2026-10-26. Conditional per-share Bear790.7467425,
+Base945.9747969, Bull1003.6297814; LOW/PENDING_REVIEW/NO_ACTION. TTM is not normalized
+earnings, owner-equivalent cash is not certified standalone distributable cash,
+and financial PBT is not subsidiary distributable net profit.
+
+Independent review found no definite P1/P2 in the compiler and consumer changes.
+Economic conclusion: ACCEPT AS CONDITIONAL RESEARCH, NOT ESTABLISHED AS ECONOMIC
+PRIMARY. Roughly55% terminal dependence, Ke0.06757227028801867310 and zero net
+maintenance/WC assumptions remain contestable. Decisive countercase: sustained
+maintenance funding or permanently inaccessible profits defeats the stable cash,
+equity and full-payout terminal. The strongest countercase is bound in issuer
+policy and the replayed ledger/ResearchCase. Next decisive economic evidence is
+a same-scope operating profit-to-parent-distributable-cash bridge, not another
+consolidated cash balance or more arbitrary sensitivity cases.
+
+No condition-price draft is prepared: economic/cash support and current share,
+distribution/event/quote alignment are insufficient; explicit threshold rationale
+and validity have not been selected. Missing G3 alone does not block unapproved
+public research. No default margin was invented, no price policy registered.
+Final compiler/consumer tests31 passed including explicit actual-original replay;
+affected legacy review/cash/materials/wizard/architecture regression217 passed,
+2 optional-source tests skipped (not claimed verified). Existing detail SSR and
+finite research rendering58 passed/1 separate optional finite-source skip;
+the new candidate suite's41 includes explicit final actual API rendering.
+Presentation rounds display only, with original precision in expandable records,
+and does not recompute financial conclusions. Clean-checkout evidence is recorded
+separately at closure. Sole8001 runtime remains
+86ceaef9; this module is not deployed or human-approved. action=no_order.
+
 ### 2026-10-25 align active ResearchCase with product economics
 
 Pre-publication semantic review found that the first product-path candidate

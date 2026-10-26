@@ -1,9 +1,10 @@
 {
   "schema_version": "product-continuation-research-policy-v1",
   "symbol": "600519",
-  "generated_at": "2026-10-25T14:36:17+00:00",
+  "generated_at": "2026-10-26T03:38:05+00:00",
   "action": "no_order",
   "confidence": "LOW",
+  "strongest_counter_evidence": "如果维持终端盈利需要持续额外净现金投入，或部分利润持续无法上划，当前利润全额分配、现金和权益稳定的终值基础就不成立。现有零维持净缺口、零营运资本增加及母公司等价资金映射尚未排除这一反证；算术对账不能代替同范围现金证据。",
   "candidate_binding": {
     "path": "runtime/product-operating-research/20261025T071814444248Z/proposal/candidate/candidate.json",
     "sha256": "2e53d50d988a737272d7a95b822c8e0e9998d3749c1432cac7f6c12d92fe8ed0"

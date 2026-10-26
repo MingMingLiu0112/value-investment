@@ -404,7 +404,8 @@ def _build_external_review_handoff(*, root: Path, symbol: str, now, bound_draft=
             result['source_bindings'].append(materiality_handoff['schedule_binding'])
     if supplement is not None:
         from .source_native_candidate_v2 import SCHEMA as NATIVE_SCHEMA
-        if supplement['candidate']['schema_version'] == NATIVE_SCHEMA:
+        from ..research.product_continuation_candidate import SCHEMA as TEN_YEAR
+        if supplement['candidate']['schema_version'] in {NATIVE_SCHEMA, TEN_YEAR}:
             result['status'] = 'NATIVE_REVIEW_PREVIEW_ONLY'
             result['native_authenticated_consumption_supported'] = False
             result['commands'].pop('consume_signed_response', None)

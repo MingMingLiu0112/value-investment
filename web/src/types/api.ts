@@ -1,5 +1,65 @@
 export type ApiStatus = string;
 
+/** Public consumed research only; never an approved price or position plan. */
+export interface ProductContinuationCandidateReview {
+  schema_version: "product-continuation-candidate-review-v1";
+  symbol: string;
+  action: "no_order";
+  status: "PENDING_ECONOMIC_REVIEW";
+  confidence: "LOW";
+  formal_eligibility: false;
+  approval_changed: false;
+  primary_approved: false;
+  position_guidance: null;
+  price_comparison_eligible: false;
+  candidate_binding: { path: string; sha256: string };
+  financial_basis: string;
+  valuation_date: string;
+  research_as_of: string;
+  financial_periods: string[];
+  economic_explanation: {
+    rationale: string;
+    cash_return_rationale: string;
+    terminal_rationale: string;
+    counter_evidence: string[];
+    strongest_counter_evidence?: string;
+  };
+  cash_conditions: {
+    maintenance_rationale: string;
+    capacity_rationale: string;
+    cash_mapping_rationale: string;
+    terminal_distribution_rationale: string;
+  };
+  research_case: {
+    thesis: string;
+    return_driver: string;
+    mispricing_hypothesis: string;
+    counter_evidence: { text: string }[];
+    thesis_breakers: { text: string }[];
+    next_events: { text: string }[];
+  };
+  scenarios: {
+    scenario: "bear" | "base" | "bull";
+    per_share_value: string;
+    cost_of_equity: string;
+    operating_rows: ({ year: number } & Record<string, unknown>)[];
+    cash_rows: ({
+      year: number;
+      profit_cny: string;
+      distribution_cny: string;
+      opening_book_cny: string;
+      closing_book_cny: string;
+      opening_cash_cny: string;
+      closing_cash_cny: string;
+    } & Record<string, unknown>)[];
+    terminal: Record<string, unknown>;
+  }[];
+  price_draft: null;
+  price_draft_status: "NOT_PREPARED_ECONOMIC_OR_PRICE_BASIS_INSUFFICIENT";
+  blockers: string[];
+  source_bindings: { path: string; sha256: string }[];
+}
+
 export type Eligibility = boolean | string | null;
 export type PlanCondition =
   | string
@@ -1393,6 +1453,7 @@ export interface HotspotLifecycleReview {
 }
 
 export interface DetailResponse {
+  product_continuation_candidate?: ProductContinuationCandidateReview | null;
   hotspot_lifecycle_review?: HotspotLifecycleReview | null;
   strategy_evaluation?: DailyEvaluationItem & {
     action: "no_order";

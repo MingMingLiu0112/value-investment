@@ -644,6 +644,11 @@ def create_app(
                 supplement = load_current_pending_candidate_supplement(root=project, symbol=decision_id)
                 if supplement is not None:
                     candidate = supplement["candidate"]
+                    from ...application.product.economic_review_materials import project_product_continuation_review
+                    continuation = project_product_continuation_review(
+                        root=project, supplement=supplement, now=datetime.now(timezone.utc))
+                    if continuation is not None:
+                        payload['product_continuation_candidate'] = continuation
                     payload["review_replay"] = dict(status="VERIFIED_NEW_INPUT_CANDIDATE",
                         symbol=decision_id, action="no_order", formal_eligibility=False,
                         approval_changed=False, research_admitted=False, price_admitted=False,

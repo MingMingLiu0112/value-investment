@@ -8,7 +8,19 @@ from pathlib import Path
 
 from .common import load_json_object, require_inside, sha256_file
 from . import research_reviews as frozen
-from .source_native_candidate_v2 import SCHEMA, verify_source_native_candidate
+from .source_native_candidate_v2 import SCHEMA
+
+
+def verify_versioned_review_candidate(*, root, path, expected_sha256):
+    """Explicit successor dispatch; never relax the immutable five-year verifier."""
+    from ..research.product_continuation_candidate import SCHEMA as TEN_YEAR, verify_product_continuation_candidate
+    from .source_native_candidate_v2 import verify_review_candidate
+    target = require_inside(root / 'runtime', path, 'versioned review candidate')
+    if sha256_file(target) != expected_sha256:
+        raise ValueError('Versioned review candidate hash mismatch')
+    schema = load_json_object(target, 'versioned review candidate').get('schema_version')
+    verifier = verify_product_continuation_candidate if schema == TEN_YEAR else verify_review_candidate
+    return verifier(root=root, path=target, expected_sha256=expected_sha256)
 
 
 def _native_or_legacy(*, root: Path, candidate_path: Path, candidate_sha256: str):
@@ -19,9 +31,10 @@ def _native_or_legacy(*, root: Path, candidate_path: Path, candidate_sha256: str
     schema = load_json_object(path, 'versioned unsigned candidate').get('schema_version')
     if schema == 'pending-research-candidate-v1':
         return None
-    if schema != SCHEMA:
+    from ..research.product_continuation_candidate import SCHEMA as TEN_YEAR
+    if schema not in {SCHEMA, TEN_YEAR}:
         raise ValueError('Unsupported unsigned review candidate schema')
-    return verify_source_native_candidate(root=root, path=path, expected_sha256=candidate_sha256)
+    return verify_versioned_review_candidate(root=root, path=path, expected_sha256=candidate_sha256)
 
 
 def prepare_pending_review_intake(*, root: Path, candidate_path: Path, candidate_sha256: str) -> dict:
@@ -52,7 +65,7 @@ def prepare_pending_review_intake(*, root: Path, candidate_path: Path, candidate
             'Separate complete model-bound announcement materiality review.'],
         native_authenticated_consumption_supported=False, approval_changed=False,
         research_admitted=False, price_admitted=False, position_guidance=None, canonical_written=False)
-    if verify_source_native_candidate(root=root, path=path, expected_sha256=candidate_sha256) != candidate:
+    if verify_versioned_review_candidate(root=root, path=path, expected_sha256=candidate_sha256) != candidate:
         raise ValueError('Native candidate changed during unsigned review preparation')
     return result
 

@@ -16,6 +16,48 @@ from .neutral_valuation_proposal import JOINT_SCHEMA
 SCHEMA = 'value-economic-review-materials-v1'
 
 
+def project_product_continuation_review(*, root, supplement, now):
+    """Project the consumed ten-year ledger; do not price, approve or infer cash."""
+    from ..research.product_continuation_candidate import SCHEMA as TEN_YEAR
+    from ..research.value_research_analysis import _available
+    candidate = supplement['candidate']
+    if candidate['schema_version'] != TEN_YEAR:
+        return None
+    _available(candidate['generated_at'], now)
+    ledger = load_json_object(_bound(root, candidate['native_cash_ledger_binding']), 'ten-year ledger')
+    package = load_json_object(_bound(root, supplement['package_binding']), 'ten-year package')
+    scenarios = []
+    for name in ('bear', 'base', 'bull'):
+        center = ledger['centers'][name]
+        scenarios.append(dict(scenario=name,
+            per_share_value=candidate['candidate_valuation'][name+'_value'],
+            cost_of_equity=ledger['scenario_inputs'][name]['cost_of_equity'],
+            operating_rows=deepcopy(center['operating_rows']),
+            cash_rows=deepcopy(center['cash_rows']), terminal=deepcopy(center['terminal'])))
+    periods = sorted({row['period'] for row in package['research_case']['financial_summary'].get(
+        'historical_profit_reconciliation', {}).get('source_rows', []) if 'period' in row})
+    result = dict(schema_version='product-continuation-candidate-review-v1',
+        symbol=candidate['symbol'], action='no_order', status='PENDING_ECONOMIC_REVIEW', confidence='LOW',
+        formal_eligibility=False, approval_changed=False, primary_approved=False,
+        position_guidance=None, price_comparison_eligible=False,
+        candidate_binding=deepcopy(supplement['candidate_binding']),
+        financial_basis=ledger['financial_basis'],
+        valuation_date=candidate['candidate_valuation']['valuation_date'],
+        research_as_of=candidate['candidate_research_as_of'], financial_periods=periods,
+        economic_explanation=deepcopy(ledger['economic_explanation']),
+        cash_conditions=deepcopy(ledger['cash_conditions']),
+        research_case=deepcopy(package['research_case']), scenarios=scenarios,
+        price_draft=None, price_draft_status='NOT_PREPARED_ECONOMIC_OR_PRICE_BASIS_INSUFFICIENT',
+        blockers=['NORMALIZED_EARNINGS_NOT_ESTABLISHED', 'MAINTENANCE_AND_WORKING_CAPITAL_ASSUMPTIONS',
+            'PARENT_FUNDS_AND_LAWFUL_DISTRIBUTION_NOT_PROVEN', 'REQUIRED_RETURN_AND_TERMINAL_REQUIRE_REVIEW',
+            'EXACT_VERSION_G3_NOT_APPROVED', 'CURRENT_PRICE_SHARE_DISTRIBUTION_EVENT_ALIGNMENT_NOT_ADMITTED',
+            'EXPLICIT_THRESHOLD_RATIONALE_AND_VALIDITY_NOT_SELECTED'],
+        source_bindings=deepcopy(candidate['source_bindings']))
+    for ref in [supplement['candidate_binding'], supplement['registry_binding'], *result['source_bindings']]:
+        _bound(root, ref)
+    return result
+
+
 def _joint_capital_review(*, root, handoff, now):
     return project_joint_capital_review(root=root, binding=handoff['candidate_binding'],
         symbol=handoff['symbol'], model_context=handoff['model_context'], now=now)
@@ -27,8 +69,8 @@ def project_joint_capital_review(*, root, binding, symbol, model_context, now):
 
     root = root.resolve()
     _bound(root, binding)
-    from .source_native_candidate_v2 import verify_review_candidate
-    candidate = verify_review_candidate(root=root, path=root / binding['path'],
+    from .source_native_review_adapter_v2 import verify_versioned_review_candidate
+    candidate = verify_versioned_review_candidate(root=root, path=root / binding['path'],
         expected_sha256=binding['sha256'])
     _available(candidate['generated_at'], now)
     if candidate.get('input_mode') != JOINT_SCHEMA:
