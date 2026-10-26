@@ -31,6 +31,7 @@ def verify_or_restore_package_sources(
         raise ValueError("source-bound package requires local sources")
     verified: list[tuple[Path, str]] = []
     seen: set[str] = set()
+    resolved_by_identity: dict[tuple[str, str], Path] = {}
     for source in sources:
         if (not isinstance(source, Mapping) or not isinstance(source.get("id"), str)
                 or not isinstance(source.get("local_path"), str)):
@@ -45,6 +46,11 @@ def verify_or_restore_package_sources(
         relative = source["local_path"].replace("\\", "/")
         if ".." in Path(relative).parts:
             raise ValueError("package source path cannot traverse outside the repository")
+        identity = (relative, expected)
+        previously_resolved = resolved_by_identity.get(identity)
+        if previously_resolved is not None:
+            verified.append((previously_resolved, expected))
+            continue
         live = require_inside(root, root / relative, "package source bytes")
         retained = restore_dir / f"{expected}.blob"
         retain_by_hash = relative.startswith(ARCHIVABLE_RESEARCH_PREFIXES)
@@ -52,10 +58,12 @@ def verify_or_restore_package_sources(
             if sha256_file(retained) != expected:
                 raise ValueError("historical implementation restore drift")
             if retain_by_hash:
+                resolved_by_identity[identity] = retained
                 verified.append((retained, expected))
                 continue
         live_matches = live.is_file() and sha256_file(live) == expected
         if live_matches and not retain_by_hash:
+            resolved_by_identity[identity] = live
             verified.append((live, expected))
             continue
         if live_matches and retain_by_hash:
@@ -65,10 +73,12 @@ def verify_or_restore_package_sources(
                     with retained.open("xb") as handle:
                         handle.write(live.read_bytes())
             if retained.is_file() and sha256_file(retained) == expected:
+                resolved_by_identity[identity] = retained
                 verified.append((retained, expected))
             else:
                 # Backward compatibility for candidates produced before repository
                 # dependencies were retained. Drift still fails closed below.
+                resolved_by_identity[identity] = live
                 verified.append((live, expected))
             continue
         if not relative.startswith("src/"):
@@ -91,5 +101,6 @@ def verify_or_restore_package_sources(
                     handle.write(process.stdout)
         if not restored.is_file() or sha256_file(restored) != expected:
             raise ValueError("historical implementation restore is unavailable")
+        resolved_by_identity[identity] = restored
         verified.append((restored, expected))
     return tuple(verified)

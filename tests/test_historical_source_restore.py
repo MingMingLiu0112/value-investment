@@ -50,3 +50,26 @@ def test_retained_repository_dependency_fails_closed_on_blob_drift(tmp_path):
             tmp_path, payload("docs/review.md", original),
             restore_dir=restore_dir, create=False,
         )
+
+
+def test_duplicate_source_identity_reuses_one_content_addressed_blob(tmp_path):
+    source = tmp_path / "config" / "research-assumptions" / "case.json"
+    source.parent.mkdir(parents=True)
+    original = b'{"assumption":"shared"}\n'
+    source.write_bytes(original)
+    digest = sha256(original).hexdigest()
+    package = {"sources": [
+        {"id": "assumption-a", "local_path": "config/research-assumptions/case.json",
+         "sha256": digest},
+        {"id": "assumption-b", "local_path": "config/research-assumptions/case.json",
+         "sha256": digest},
+    ]}
+    restore_dir = tmp_path / "runtime" / "candidate" / "historical-source-code"
+
+    verified = verify_or_restore_package_sources(
+        tmp_path, package, restore_dir=restore_dir,
+    )
+
+    retained = restore_dir / f"{digest}.blob"
+    assert verified == ((retained, digest), (retained, digest))
+    assert list(restore_dir.iterdir()) == [retained]

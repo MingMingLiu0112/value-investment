@@ -724,8 +724,45 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
     candidate['recommendation_schema_version'] = 'advisory-decision-recommendation-v3'
     if mode == JOINT_CASH_V3_SCHEMA:
         from .historical_source_restore import verify_or_restore_package_sources
-        verify_or_restore_package_sources(root, candidate,
+        retained_sources = verify_or_restore_package_sources(root, candidate,
             restore_dir=output_dir / 'historical-source-code')
+        # A newly sealed v3 package must remain readable after repository code or
+        # research configs move on. Rebind only its local byte locator to the
+        # content-addressed candidate closure; preserve source ids, URLs, dates and
+        # hashes, and keep the predecessor package itself separately bound below.
+        rebound = []
+        retained_locations = {}
+        for source_item, (verified_path, digest) in zip(
+                candidate['sources'], retained_sources, strict=True):
+            if digest != source_item['sha256'].lower():
+                raise ValueError('retained v3 source order or identity mismatch')
+            item = deepcopy(source_item)
+            old_path = item['local_path']
+            new_path = verified_path.relative_to(root).as_posix()
+            identity = (old_path, digest)
+            prior = retained_locations.get(identity)
+            if prior is not None and prior != new_path:
+                raise ValueError('v3 retained source path identity conflict')
+            retained_locations[identity] = new_path
+            item['local_path'] = new_path
+            rebound.append(item)
+        candidate['sources'] = rebound
+
+        def rebind_reference(value):
+            if isinstance(value, list):
+                return [rebind_reference(item) for item in value]
+            if not isinstance(value, dict):
+                return value
+            result = {key: rebind_reference(item) for key, item in value.items()}
+            location = result.get('path')
+            digest = result.get('sha256', '').lower()
+            retained = retained_locations.get((location, digest))
+            if retained is not None:
+                result['path'] = retained
+            return result
+
+        candidate = rebind_reference(candidate)
+        candidate['source_contract']['source_catalog_sha256'] = source_catalog_sha256(candidate['sources'])
     else:
         verify_package_local_sources(root, candidate)
     descriptor = build_descriptor_for_package(candidate, root=root)
