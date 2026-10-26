@@ -106,6 +106,7 @@ def test_constructor_failure_keeps_cause_and_releases_shared_lock(tmp_path, monk
 def test_new_native_pdfium_calls_require_shared_serialization():
     package = Path(__file__).resolve().parents[1] / "src/value_investment_agent"
     calls = []
+    sites = set()
     for path in package.rglob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8-sig"))
         for function in ast.walk(tree):
@@ -118,4 +119,11 @@ def test_new_native_pdfium_calls_require_shared_serialization():
             assert any(isinstance(item, ast.Name) and item.id == "serialized_pdfium"
                        for item in function.decorator_list), (path, function.name)
             calls.extend(native)
-    assert len(calls) == 3
+            sites.add((path.relative_to(package).as_posix(), function.name))
+    assert sites == {
+        ('infrastructure/filings/pdf_text.py', 'extract_pages'),
+        ('infrastructure/filings/official_pdf.py', 'validate_pdf_original'),
+        ('application/product/prospective_baseline.py', '_verify_shenhua_h1_column_geometry'),
+        ('application/research/shareholder_cash_evidence.py', '_verify_current_column'),
+    }
+    assert len(calls) == len(sites)
