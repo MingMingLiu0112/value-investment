@@ -192,6 +192,22 @@ def test_v3_candidate_is_consumed_by_registered_research_supplement(prepared_v3)
     assert material['position_guidance'] is None
 
 
+def test_v3_candidate_keeps_working_after_original_package_and_policy_drift(prepared_v3):
+    root, folder, result, _ = prepared_v3
+    data = json.loads((folder/'candidate.json').read_bytes())
+    assert data['economic_policy_binding']['path'].startswith(
+        'runtime/pending-v3/historical-source-code/')
+    assert json.loads((folder/'package.json').read_bytes())['supersedes']['path'].startswith(
+        'runtime/pending-v3/historical-source-code/')
+
+    (root/'runtime/package.json').write_text('{}', encoding='utf-8')
+    (root/'runtime/policy.json').write_text('{}', encoding='utf-8')
+
+    assert pending.verify_pending_research_candidate(
+        root=root, path=folder/'candidate.json',
+        expected_sha256=sha256_file(folder/'candidate.json')) == result
+
+
 def test_v3_terminal_contract_is_consumed_and_round_trips(prepared_v3):
     root, folder, result, _ = prepared_v3
     assert result['input_mode'] == pending.JOINT_CASH_V3_SCHEMA

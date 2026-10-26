@@ -695,6 +695,8 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
     candidate['source_contract'] = contract
     candidate['supersedes'] = dict(path=package_path.relative_to(root).as_posix(),
         sha256=package_sha256, reason='new pending finite research candidate, not approved/current admission')
+    sealed_package_path = package_path
+    sealed_policy_path = policy_path
     coverage = None
     if valuation_basis_quote_binding is not None:
         from .source_bound_inputs import source_catalog_sha256
@@ -756,17 +758,41 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
             rebound.append(item)
         candidate['sources'] = rebound
 
+        def retain_top_level_source(source_path, digest):
+            retained = output_dir / 'historical-source-code' / f'{digest.lower()}.blob'
+            if retained.exists():
+                if sha256_file(retained) != digest.lower():
+                    raise ValueError('top-level research source closure drift')
+            else:
+                retained.parent.mkdir(parents=True, exist_ok=True)
+                with retained.open('xb') as handle:
+                    handle.write(source_path.read_bytes())
+            if sha256_file(retained) != digest.lower():
+                raise ValueError('top-level research source closure is unavailable')
+            return retained
+
+        sealed_package_path = retain_top_level_source(package_path, package_sha256)
+        sealed_policy_path = retain_top_level_source(policy_path, policy_sha256)
+        retained_locations[(package_path.relative_to(root).as_posix(),
+                            package_sha256.lower())] = sealed_package_path.relative_to(root).as_posix()
+        retained_locations[(policy_path.relative_to(root).as_posix(),
+                            policy_sha256.lower())] = sealed_policy_path.relative_to(root).as_posix()
+        candidate['supersedes']['path'] = sealed_package_path.relative_to(root).as_posix()
+
         def rebind_reference(value):
             if isinstance(value, list):
                 return [rebind_reference(item) for item in value]
             if not isinstance(value, dict):
                 return value
             result = {key: rebind_reference(item) for key, item in value.items()}
-            location = result.get('path')
             digest = result.get('sha256', '').lower()
-            retained = retained_locations.get((location, digest))
-            if retained is not None:
-                result['path'] = retained
+            # ``location`` may be the immutable public URL and is part of the
+            # evidence identity.  Only repository-local locators are rebound.
+            for location_key in ('path', 'local_path'):
+                location = result.get(location_key)
+                retained = retained_locations.get((location, digest))
+                if retained is not None:
+                    result[location_key] = retained
             return result
 
         candidate = rebind_reference(candidate)
@@ -829,9 +855,11 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
         date_semantics='New unapproved research computed at actual time; old report basis and raw public dates retained; no historical PIT/current data admission.',
         model_limits=proposal['assurance_limits'], review_questions=proposal['economic_review_items'],
         review_groups=deepcopy(policy.get('human_review_groups', [])),
-        economic_policy_binding=dict(path=policy_path.relative_to(root).as_posix(), sha256=policy_sha256),
+        economic_policy_binding=dict(path=sealed_policy_path.relative_to(root).as_posix(),
+                                     sha256=policy_sha256),
         source_bindings=[dict(path=path.relative_to(root).as_posix(), sha256=sha256_file(path))
-            for path in (package_path, policy_path, proposal_path, package_output, workbench_path)],
+            for path in (sealed_package_path, sealed_policy_path, proposal_path,
+                          package_output, workbench_path)],
         implementation_bindings=[dict(path=name, sha256=sha256_file(root / name))
             for name in ('src/value_investment_agent/application/product/pending_research_candidate.py',)
             if (root / name).is_file()],
