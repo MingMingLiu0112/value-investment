@@ -10,7 +10,7 @@
   "rationale_bindings": [
     {
       "path": "config/research-assumptions/600519-joint-capital-cash-path-v3.json",
-      "sha256": "0a63403580943fa1d9250cdb0ea019edb72662214aa3123141f8585528197e3c",
+      "sha256": "a702cb3e17eaf480477ac038aef158f335fc3d4e9eca5d73ba078a6e35024145",
       "id": "600519-joint-cash-inputs",
       "available_at": "2026-10-26T18:43:53.560538+08:00"
     }
