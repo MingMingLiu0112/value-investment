@@ -123,3 +123,7 @@ docs/evidence/official-list-calendar-2026/*.raw -text -diff
 src/value_investment_agent/application/product/source_native_candidate_v2.py -text whitespace=cr-at-eol
 src/value_investment_agent/domain/valuation/source_native_cash_v1.py -text whitespace=cr-at-eol
 src/value_investment_agent/application/product/source_reobservation_v2.py -text whitespace=cr-at-eol
+
+# The current cash-source specification and executing parser are hash-bound.
+src/value_investment_agent/application/research/parent_cash_research.py -text whitespace=cr-at-eol
+docs/current/two-company-earnings-bridge-20261024/sources.json -text whitespace=cr-at-eol
