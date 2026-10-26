@@ -1,0 +1,1988 @@
+{
+  "schema_version": "m1-valuation-package-v2",
+  "package_version": "source-bound-d2-20261008.4",
+  "descriptor_version": "source-bound-dated-residual-income-v2",
+  "symbol": "600519",
+  "name": "贵州茅台",
+  "profile_id": "quality_compounder",
+  "requested_model": null,
+  "run_id": "600519-shared-source-bound-v2-model-window-20261008",
+  "point_in_time": {
+    "report_period": "2026-06-30",
+    "research_as_of": "2026-10-08",
+    "valuation_date": "2026-10-08",
+    "available_at": "2026-10-08T10:14:44.615158+00:00",
+    "computed_at": "2026-10-08T10:14:44.615165+00:00"
+  },
+  "dependencies": {
+    "rule_version": "m1-valuation-rules-v1",
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "parser_version": "explicit-source-package-v1",
+    "scan_watermark": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9"
+  },
+  "sources": [
+    {
+      "id": "cninfo:1225114741",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "local_path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "published_at": "2026-04-16T16:00:00+00:00",
+      "retrieved_at": "2026-09-09T03:34:45.548072+00:00",
+      "parser_version": "pypdf-source-anchor-check-20261008",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-04-17T16:00:00+00:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "cninfo:1225475868",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "local_path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "published_at": "2026-08-14T16:00:00+00:00",
+      "retrieved_at": "2026-09-09T03:34:45.548072+00:00",
+      "parser_version": "pypdf-source-anchor-check-20261008",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-08-15T16:00:00+00:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "current_model",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+      "local_path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+      "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a",
+      "retrieved_at": "2026-10-08T09:53:54.376542+00:00",
+      "parser_version": "explicit-source-package-v1",
+      "source_available_at": "2026-10-08T09:53:54.376542+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "timing_policy",
+      "kind": "research_artifact",
+      "location": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+      "local_path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+      "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88",
+      "retrieved_at": "2026-10-08T09:53:54.376542+00:00",
+      "parser_version": "explicit-source-package-v1",
+      "source_available_at": "2026-10-08T09:53:54.376542+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "scope_review",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+      "local_path": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+      "sha256": "cca8b43c6069ffda329e940a4be96d27d7af4c3387ec08f4d24a5c9f42da4069",
+      "retrieved_at": "2026-10-08T09:53:54.376542+00:00",
+      "parser_version": "explicit-source-package-v1",
+      "source_available_at": "2026-10-08T09:53:54.376542+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "assumption_diagnostic",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+      "local_path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+      "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688",
+      "retrieved_at": "2026-10-08T09:53:54.376542+00:00",
+      "parser_version": "explicit-source-package-v1",
+      "source_available_at": "2026-10-08T09:53:54.376542+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "source_index",
+      "kind": "research_artifact",
+      "location": "runtime\\historical-filing-index\\20260909T033444358365Z\\600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+      "local_path": "runtime\\historical-filing-index\\20260909T033444358365Z\\600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+      "sha256": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f",
+      "retrieved_at": "2026-10-08T09:53:54.376542+00:00",
+      "parser_version": "explicit-source-package-v1",
+      "source_available_at": "2026-10-08T09:53:54.376542+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "current_quote",
+      "kind": "research_artifact",
+      "location": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+      "local_path": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+      "sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5",
+      "retrieved_at": "2026-10-08T09:53:54.376542+00:00",
+      "parser_version": "explicit-source-package-v1",
+      "source_available_at": "2026-10-08T09:53:54.376542+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "cninfo:1225475864",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475864.PDF",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475864.pdf",
+      "sha256": "1a12378ed0e4a803eae00e73c74bc20eb2d73821fc960d746d52476dbf80df1d",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "retrieved_at": "2026-10-08T10:14:43.800305+00:00",
+      "parser_version": "cninfo-original-download-v1",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-08-16T00:00:00+08:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "cninfo:1225475863",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475863.PDF",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475863.pdf",
+      "sha256": "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "retrieved_at": "2026-10-08T10:14:43.957676+00:00",
+      "parser_version": "cninfo-original-download-v1",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-08-16T00:00:00+08:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "cninfo:1225475862",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475862.PDF",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475862.pdf",
+      "sha256": "c22571b28d92addc54fed9a75e56b0ffb5c2abbf834000d5c3ea77e02df129cd",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "retrieved_at": "2026-10-08T10:14:44.106517+00:00",
+      "parser_version": "cninfo-original-download-v1",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-08-16T00:00:00+08:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "cninfo:1225475860",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475860.PDF",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475860.pdf",
+      "sha256": "9ba031b34a7f05caec0e71a154257b8b449fb0b18a58badd7e346fe66bc90313",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "retrieved_at": "2026-10-08T10:14:44.272982+00:00",
+      "parser_version": "cninfo-original-download-v1",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-08-16T00:00:00+08:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "cninfo:1225475856",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475856.PDF",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475856.pdf",
+      "sha256": "fc78904a1a1babaea6e31838d5a8c3fc7933c6d1925fd3101942c130d21c66fc",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "retrieved_at": "2026-10-08T10:14:44.423693+00:00",
+      "parser_version": "cninfo-original-download-v1",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-08-16T00:00:00+08:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "cninfo:1225431263",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-07-18/1225431263.PDF",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225431263.pdf",
+      "sha256": "24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873",
+      "published_at": "2026-07-18T00:00:00+08:00",
+      "retrieved_at": "2026-10-08T10:14:44.603791+00:00",
+      "parser_version": "cninfo-original-download-v1",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-07-19T00:00:00+08:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "current_event_scan",
+      "kind": "research_artifact",
+      "location": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+      "local_path": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+      "sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9",
+      "retrieved_at": "2026-10-08T10:14:44.604408+00:00",
+      "parser_version": "cninfo-full-category-originals-v1",
+      "source_available_at": "2026-10-08T10:14:44.604408+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "full_window_index",
+      "kind": "official_issuer_index",
+      "location": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+      "local_path": "runtime/d2-source-bound-current-20261008/cninfo-full-window-index.json",
+      "sha256": "f97ae2b3b8d5991d58d6297ae6b090be37efd447a53552367c61de66e86b5e1a",
+      "retrieved_at": "2026-10-08T10:12:56.127674+00:00",
+      "parser_version": "cninfo-full-category-window-v1",
+      "source_available_at": "2026-10-08T10:12:56.127674+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    }
+  ],
+  "research_case": {
+    "symbol": "600519",
+    "name": "贵州茅台",
+    "as_of": "2026-10-08",
+    "run_id": "600519-shared-source-bound-v2-model-window-20261008",
+    "generated_at": "2026-10-08T10:14:44.615158+00:00",
+    "research_version": "bounded-d2-source-adaptation-v1",
+    "industry": "食品饮料-白酒",
+    "investment_path": "有界权益研究",
+    "thesis": "现有发行人财报支持持续盈利；竞争优势持续期和前瞻资本回报尚未获完整研究批准。",
+    "return_driver": "经营利润、留存资本回报和普通股现金分配；未来回报不是已披露事实。",
+    "mispricing_hypothesis": "尚未建立市场误定价论证；现有强衰减压力情景不作为中性主估值。",
+    "financial_summary": {
+      "period_end": "2026-06-30",
+      "parent_equity_cny": "251253594419.50",
+      "ordinary_shares": "1250081601",
+      "ttm_ex_nonrecurring_parent_profit_cny": "81367067677.44"
+    },
+    "positives": [
+      {
+        "kind": "fact",
+        "text": "半年报有归母权益、归母盈利和普通股分母原文；输入范围可追溯。",
+        "evidence_refs": [
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      }
+    ],
+    "counter_evidence": [
+      {
+        "kind": "interpretation",
+        "text": "现有假设诊断将路径限定为强衰减压力情景，不能代替中性主估值。",
+        "evidence_refs": [
+          "assumption_diagnostic"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "扣非TTM使用年报加本期半年报减上年同期；不是跨周期正常化盈利批准。",
+        "evidence_refs": [
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      }
+    ],
+    "thesis_breakers": [
+      {
+        "kind": "hypothesis",
+        "text": "盈利、普通股资本桥接或资金分配发生实质变化时，重新研究并撤销旧结果的适用性。",
+        "evidence_refs": [
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      }
+    ],
+    "next_events": [
+      {
+        "kind": "gap",
+        "text": "复核前瞻回报与优势衰减假设，并完成原文重大事件覆盖。",
+        "evidence_refs": [
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      }
+    ],
+    "evidence_status": "verified",
+    "valuation_status": "not_ready",
+    "research_status": "financial_scope_partial",
+    "blockers": [
+      "完整商业质量与财务研究尚未批准",
+      "现有强衰减压力情景不是中性主估值",
+      "当前重大事件与独立估值批准缺失"
+    ],
+    "evidence_refs": [
+      {
+        "id": "cninfo:1225114741",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+        "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+        "available_at": "2026-04-17T16:00:00+00:00",
+        "availability_basis": "date_only_conservative_next_day_bound",
+        "timestamp_precision": "date"
+      },
+      {
+        "id": "cninfo:1225475868",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+        "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+        "available_at": "2026-08-15T16:00:00+00:00",
+        "availability_basis": "date_only_conservative_next_day_bound",
+        "timestamp_precision": "date"
+      },
+      {
+        "id": "current_model",
+        "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+        "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+      },
+      {
+        "id": "timing_policy",
+        "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+        "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+      },
+      {
+        "id": "scope_review",
+        "path": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+        "sha256": "cca8b43c6069ffda329e940a4be96d27d7af4c3387ec08f4d24a5c9f42da4069"
+      },
+      {
+        "id": "assumption_diagnostic",
+        "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+        "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+      },
+      {
+        "id": "source_index",
+        "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+        "sha256": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f"
+      },
+      {
+        "id": "current_quote",
+        "path": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+        "sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5"
+      },
+      {
+        "id": "current_event_scan",
+        "path": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+        "sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9"
+      }
+    ],
+    "quote_date": "2026-10-08",
+    "financial_period": "2026-06-30",
+    "missing_date_reasons": {}
+  },
+  "facts": {
+    "kind": "quality_compounder",
+    "symbol": "600519",
+    "as_of": "2026-10-08",
+    "verified": true,
+    "confidence": "低",
+    "evidence_refs": [
+      {
+        "id": "cninfo:1225114741",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+        "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+        "available_at": "2026-04-17T16:00:00+00:00",
+        "availability_basis": "date_only_conservative_next_day_bound",
+        "timestamp_precision": "date"
+      },
+      {
+        "id": "cninfo:1225475868",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+        "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+        "available_at": "2026-08-15T16:00:00+00:00",
+        "availability_basis": "date_only_conservative_next_day_bound",
+        "timestamp_precision": "date"
+      },
+      {
+        "id": "current_model",
+        "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+        "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+      },
+      {
+        "id": "timing_policy",
+        "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+        "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+      },
+      {
+        "id": "scope_review",
+        "path": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+        "sha256": "cca8b43c6069ffda329e940a4be96d27d7af4c3387ec08f4d24a5c9f42da4069"
+      },
+      {
+        "id": "assumption_diagnostic",
+        "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+        "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+      },
+      {
+        "id": "source_index",
+        "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+        "sha256": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f"
+      },
+      {
+        "id": "current_quote",
+        "path": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+        "sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5"
+      },
+      {
+        "id": "current_event_scan",
+        "path": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+        "sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9"
+      }
+    ],
+    "blockers": [],
+    "operating_inputs": {
+      "start_book_equity": "251253594419.50",
+      "ordinary_shares": "1250081601"
+    },
+    "scenario_inputs": {
+      "bear": {
+        "cost_of_equity": "0.07700613218071982829471266996",
+        "forecast_roes": [
+          "0.307652172985465487242332653366309466255169981393",
+          "0.271395695473371140200250749861735507233491788845",
+          "0.241444182727378439399905802865105238423705224233",
+          "0.216314975474713254269584591714713888791381723284",
+          "0.194956238228232001556036748062286093659354816821",
+          "0.171366217018729566903771932441828874927483853457",
+          "0.147776195809227132251507116821371656195612890093",
+          "0.124186174599724697599242301200914437463741926728",
+          "0.100596153390222262946977485580457218731870963364",
+          "0.077006132180719828294712669960000000000000000000"
+        ],
+        "terminal_roe": "0.07700613218071982829471266996",
+        "terminal_growth": "0.02",
+        "retention": "0.25"
+      },
+      "base": {
+        "cost_of_equity": "0.06757227028801867310",
+        "forecast_roes": [
+          "0.323844392616279460255087003543483648689652611993",
+          "0.299589312852516525298074771746540924334739069346",
+          "0.278714352514526278047439805198707351473258953560",
+          "0.260558971272041736542941297472903138057926907752",
+          "0.244624212953211333565067864978881922762053748806",
+          "0.209213824420172801472054291983105538209642999045",
+          "0.173803435887134269379040718987329153657232249284",
+          "0.138393047354095737286027145991552769104821499522",
+          "0.102982658821057205193013572995776384552410749761",
+          "0.067572270288018673100000000000000000000000000000"
+        ],
+        "terminal_roe": "0.06757227028801867310",
+        "terminal_growth": "0.02",
+        "retention": "0.25"
+      },
+      "bull": {
+        "cost_of_equity": "0.05813840839531752869806524586",
+        "forecast_roes": [
+          "0.340036612247093433267841353720657831124135242592",
+          "0.329064913279234484147891597899726482386452250830",
+          "0.319254310909806868170251941340859141373639193498",
+          "0.310439721605266779358894819862096225541721633988",
+          "0.302485805382414687543605868143732147379528086421",
+          "0.253616325984995255774497743686985717903622469137",
+          "0.204746846587575824005389619230239288427716851853",
+          "0.155877367190156392236281494773492858951811234568",
+          "0.107007887792736960467173370316746429475905617284",
+          "0.058138408395317528698065245860000000000000000001"
+        ],
+        "terminal_roe": "0.05813840839531752869806524586",
+        "terminal_growth": "0.02",
+        "retention": "0.25"
+      }
+    },
+    "valuation_timing": {
+      "basis_at": "2026-06-30T23:59:59+08:00",
+      "valuation_at": "2026-10-08T17:05:06.590874+08:00",
+      "evidence_refs": [
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        }
+      ]
+    }
+  },
+  "assumptions": {
+    "assumptions": [
+      {
+        "name": "cost_of_equity",
+        "unit": "ratio",
+        "bear": "0.07700613218071982829471266996",
+        "base": "0.06757227028801867310",
+        "bull": "0.05813840839531752869806524586",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "descending"
+      },
+      {
+        "name": "terminal_roe",
+        "unit": "ratio",
+        "bear": "0.07700613218071982829471266996",
+        "base": "0.06757227028801867310",
+        "bull": "0.05813840839531752869806524586",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "descending"
+      },
+      {
+        "name": "terminal_growth",
+        "unit": "ratio",
+        "bear": "0.02",
+        "base": "0.02",
+        "bull": "0.02",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "retention",
+        "unit": "ratio",
+        "bear": "0.25",
+        "base": "0.25",
+        "bull": "0.25",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roes_0",
+        "unit": "ratio",
+        "bear": "0.307652172985465487242332653366309466255169981393",
+        "base": "0.323844392616279460255087003543483648689652611993",
+        "bull": "0.340036612247093433267841353720657831124135242592",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roes_1",
+        "unit": "ratio",
+        "bear": "0.271395695473371140200250749861735507233491788845",
+        "base": "0.299589312852516525298074771746540924334739069346",
+        "bull": "0.329064913279234484147891597899726482386452250830",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roes_2",
+        "unit": "ratio",
+        "bear": "0.241444182727378439399905802865105238423705224233",
+        "base": "0.278714352514526278047439805198707351473258953560",
+        "bull": "0.319254310909806868170251941340859141373639193498",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roes_3",
+        "unit": "ratio",
+        "bear": "0.216314975474713254269584591714713888791381723284",
+        "base": "0.260558971272041736542941297472903138057926907752",
+        "bull": "0.310439721605266779358894819862096225541721633988",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roes_4",
+        "unit": "ratio",
+        "bear": "0.194956238228232001556036748062286093659354816821",
+        "base": "0.244624212953211333565067864978881922762053748806",
+        "bull": "0.302485805382414687543605868143732147379528086421",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roes_5",
+        "unit": "ratio",
+        "bear": "0.171366217018729566903771932441828874927483853457",
+        "base": "0.209213824420172801472054291983105538209642999045",
+        "bull": "0.253616325984995255774497743686985717903622469137",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roes_6",
+        "unit": "ratio",
+        "bear": "0.147776195809227132251507116821371656195612890093",
+        "base": "0.173803435887134269379040718987329153657232249284",
+        "bull": "0.204746846587575824005389619230239288427716851853",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roes_7",
+        "unit": "ratio",
+        "bear": "0.124186174599724697599242301200914437463741926728",
+        "base": "0.138393047354095737286027145991552769104821499522",
+        "bull": "0.155877367190156392236281494773492858951811234568",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roes_8",
+        "unit": "ratio",
+        "bear": "0.100596153390222262946977485580457218731870963364",
+        "base": "0.102982658821057205193013572995776384552410749761",
+        "bull": "0.107007887792736960467173370316746429475905617284",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roes_9",
+        "unit": "ratio",
+        "bear": "0.077006132180719828294712669960000000000000000000",
+        "base": "0.067572270288018673100000000000000000000000000000",
+        "bull": "0.058138408395317528698065245860000000000000000001",
+        "basis": "conditional_strong_fade_stress_scenario_not_neutral_primary",
+        "rationale": "Reproduce the bound model assumption exactly; applicability and neutral-case research remain unapproved.",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "current_model",
+            "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "id": "assumption_diagnostic",
+            "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          }
+        ],
+        "blockers": [],
+        "ordering": "descending"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "current_model",
+        "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+        "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+      },
+      {
+        "id": "timing_policy",
+        "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+        "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+      },
+      {
+        "id": "assumption_diagnostic",
+        "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+        "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+      }
+    ],
+    "blockers": [
+      "Strong-fade stress assumptions are not admitted as the neutral main valuation."
+    ]
+  },
+  "assumption_bindings": [
+    {
+      "assumption_name": "cost_of_equity",
+      "scenario": "bear",
+      "field_path": "cost_of_equity",
+      "expected_value": "0.07700613218071982829471266996",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "cost_of_equity",
+      "scenario": "base",
+      "field_path": "cost_of_equity",
+      "expected_value": "0.06757227028801867310",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "cost_of_equity",
+      "scenario": "bull",
+      "field_path": "cost_of_equity",
+      "expected_value": "0.05813840839531752869806524586",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roe",
+      "scenario": "bear",
+      "field_path": "terminal_roe",
+      "expected_value": "0.07700613218071982829471266996",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roe",
+      "scenario": "base",
+      "field_path": "terminal_roe",
+      "expected_value": "0.06757227028801867310",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roe",
+      "scenario": "bull",
+      "field_path": "terminal_roe",
+      "expected_value": "0.05813840839531752869806524586",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "bear",
+      "field_path": "terminal_growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "base",
+      "field_path": "terminal_growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "bull",
+      "field_path": "terminal_growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "retention",
+      "scenario": "bear",
+      "field_path": "retention",
+      "expected_value": "0.25",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "retention",
+      "scenario": "base",
+      "field_path": "retention",
+      "expected_value": "0.25",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "retention",
+      "scenario": "bull",
+      "field_path": "retention",
+      "expected_value": "0.25",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_0",
+      "scenario": "bear",
+      "field_path": "forecast_roes.0",
+      "expected_value": "0.307652172985465487242332653366309466255169981393",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_0",
+      "scenario": "base",
+      "field_path": "forecast_roes.0",
+      "expected_value": "0.323844392616279460255087003543483648689652611993",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_0",
+      "scenario": "bull",
+      "field_path": "forecast_roes.0",
+      "expected_value": "0.340036612247093433267841353720657831124135242592",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_1",
+      "scenario": "bear",
+      "field_path": "forecast_roes.1",
+      "expected_value": "0.271395695473371140200250749861735507233491788845",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_1",
+      "scenario": "base",
+      "field_path": "forecast_roes.1",
+      "expected_value": "0.299589312852516525298074771746540924334739069346",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_1",
+      "scenario": "bull",
+      "field_path": "forecast_roes.1",
+      "expected_value": "0.329064913279234484147891597899726482386452250830",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_2",
+      "scenario": "bear",
+      "field_path": "forecast_roes.2",
+      "expected_value": "0.241444182727378439399905802865105238423705224233",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_2",
+      "scenario": "base",
+      "field_path": "forecast_roes.2",
+      "expected_value": "0.278714352514526278047439805198707351473258953560",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_2",
+      "scenario": "bull",
+      "field_path": "forecast_roes.2",
+      "expected_value": "0.319254310909806868170251941340859141373639193498",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_3",
+      "scenario": "bear",
+      "field_path": "forecast_roes.3",
+      "expected_value": "0.216314975474713254269584591714713888791381723284",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_3",
+      "scenario": "base",
+      "field_path": "forecast_roes.3",
+      "expected_value": "0.260558971272041736542941297472903138057926907752",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_3",
+      "scenario": "bull",
+      "field_path": "forecast_roes.3",
+      "expected_value": "0.310439721605266779358894819862096225541721633988",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_4",
+      "scenario": "bear",
+      "field_path": "forecast_roes.4",
+      "expected_value": "0.194956238228232001556036748062286093659354816821",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_4",
+      "scenario": "base",
+      "field_path": "forecast_roes.4",
+      "expected_value": "0.244624212953211333565067864978881922762053748806",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_4",
+      "scenario": "bull",
+      "field_path": "forecast_roes.4",
+      "expected_value": "0.302485805382414687543605868143732147379528086421",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_5",
+      "scenario": "bear",
+      "field_path": "forecast_roes.5",
+      "expected_value": "0.171366217018729566903771932441828874927483853457",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_5",
+      "scenario": "base",
+      "field_path": "forecast_roes.5",
+      "expected_value": "0.209213824420172801472054291983105538209642999045",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_5",
+      "scenario": "bull",
+      "field_path": "forecast_roes.5",
+      "expected_value": "0.253616325984995255774497743686985717903622469137",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_6",
+      "scenario": "bear",
+      "field_path": "forecast_roes.6",
+      "expected_value": "0.147776195809227132251507116821371656195612890093",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_6",
+      "scenario": "base",
+      "field_path": "forecast_roes.6",
+      "expected_value": "0.173803435887134269379040718987329153657232249284",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_6",
+      "scenario": "bull",
+      "field_path": "forecast_roes.6",
+      "expected_value": "0.204746846587575824005389619230239288427716851853",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_7",
+      "scenario": "bear",
+      "field_path": "forecast_roes.7",
+      "expected_value": "0.124186174599724697599242301200914437463741926728",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_7",
+      "scenario": "base",
+      "field_path": "forecast_roes.7",
+      "expected_value": "0.138393047354095737286027145991552769104821499522",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_7",
+      "scenario": "bull",
+      "field_path": "forecast_roes.7",
+      "expected_value": "0.155877367190156392236281494773492858951811234568",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_8",
+      "scenario": "bear",
+      "field_path": "forecast_roes.8",
+      "expected_value": "0.100596153390222262946977485580457218731870963364",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_8",
+      "scenario": "base",
+      "field_path": "forecast_roes.8",
+      "expected_value": "0.102982658821057205193013572995776384552410749761",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_8",
+      "scenario": "bull",
+      "field_path": "forecast_roes.8",
+      "expected_value": "0.107007887792736960467173370316746429475905617284",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_9",
+      "scenario": "bear",
+      "field_path": "forecast_roes.9",
+      "expected_value": "0.077006132180719828294712669960000000000000000000",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_9",
+      "scenario": "base",
+      "field_path": "forecast_roes.9",
+      "expected_value": "0.067572270288018673100000000000000000000000000000",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_9",
+      "scenario": "bull",
+      "field_path": "forecast_roes.9",
+      "expected_value": "0.058138408395317528698065245860000000000000000001",
+      "evidence_refs": [
+        {
+          "id": "current_model",
+          "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+          "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+        },
+        {
+          "id": "timing_policy",
+          "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+          "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+        },
+        {
+          "id": "assumption_diagnostic",
+          "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+          "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+        }
+      ]
+    }
+  ],
+  "quote": {
+    "kind": "quote_session",
+    "symbol": "600519",
+    "ref_id": "current_quote",
+    "bundle_path": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+    "bundle_sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5"
+  },
+  "model_validity_input": {
+    "model_id": "residual-income-equity-shared-dated-v2",
+    "valid_from": "2026-10-08",
+    "events": [],
+    "event_scan_ref": {
+      "symbol": "600519",
+      "id": "current_event_scan",
+      "path": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+      "sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9"
+    },
+    "blockers": []
+  },
+  "blockers": [],
+  "source_contract": {
+    "schema_version": "source-bound-research-inputs-v1",
+    "cutoff_at": "2026-10-08T10:14:44.615158+00:00",
+    "distribution_input_status": "NOT_ADMITTED",
+    "strict_contemporaneous_pit": "NOT_PROVEN",
+    "fact_semantics_scope": "source_anchored_parent_equity_and_share_count_not_full_financial_quality",
+    "fact_anchors": [
+      {
+        "field": "start_book_equity",
+        "source_id": "cninfo:1225475868",
+        "physical_page": 28,
+        "source_value": "251253594419.50",
+        "unit": "CNY",
+        "scope": "consolidated_parent_equity",
+        "period_end": "2026-06-30"
+      },
+      {
+        "field": "ordinary_shares",
+        "source_id": "cninfo:1225475868",
+        "physical_page": 22,
+        "source_value": "1250081601",
+        "unit": "shares",
+        "scope": "issued_ordinary_shares",
+        "period_end": "2026-06-30"
+      }
+    ]
+  },
+  "supersedes": {
+    "path": "package-v2.json",
+    "sha256": "cbecbc59f2c615e0e82d873ed0a174b212bce87678dca38072c067b2cc9f6c5b",
+    "reason": "register exact per-assumption ordering without changing values"
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "schema_version": "public-research-interpretation-correction-v1",
+  "action": "no_order",
+  "symbol": "000333",
+  "review_date": "2026-10-22",
+  "financial_period": "2026-06-30",
+  "scope": "EX_POST_REVIEW_OF_RETAINED_OFFICIAL_FACTS_NO_NEW_VALUATION_OR_APPROVAL",
+  "source": {
+    "url": "https://static.cninfo.com.cn/finalpage/2026-08-29/1225531404.PDF",
+    "original_path": "runtime/prospective-public-event-20260927/gapfill-000333-20260927T091704729284Z/1225531404.pdf",
+    "retained_path": "artifacts/current/dual-strategy-v5/retained-research-sources/public-evidence/objects/576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8.bin",
+    "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8",
+    "published_date": "2026-08-29",
+    "intraday_availability": "NOT_PROVEN",
+    "physical_pages": [7, 8, 55, 56, 98, 170, 173, 174, 175]
+  },
+  "facts": {
+    "h1_weighted_roe_pct": "11.33",
+    "prior_h1_weighted_roe_pct": "11.29",
+    "parent_profit_cny": "26446037000",
+    "adjusted_parent_profit_cny": "19595179000",
+    "parent_profit_yoy_pct": "1.66",
+    "adjusted_parent_profit_yoy_pct": "-25.31",
+    "fx_income_cny": "-5976109000",
+    "prior_h1_fx_income_cny": "2763131000",
+    "derivative_fair_value_gain_cny": "2311768000",
+    "prior_h1_derivative_fair_value_gain_cny": "-453629000",
+    "derivative_disposal_gain_cny": "1421269000",
+    "prior_h1_derivative_disposal_gain_cny": "-350111000",
+    "fx_contract_fair_value_gain_cny": "2171426000",
+    "cross_currency_swap_fair_value_gain_cny": "100373000",
+    "hedging_purpose_table_fair_value_total_cny": "2271799000",
+    "derivative_investment_actual_pnl_cny": "3569828000",
+    "consolidated_pretax_profit_cny": "31844556000",
+    "consolidated_income_tax_cny": "5261682000",
+    "consolidated_minority_profit_cny": "136837000",
+    "mixed_financial_instruments_gain_cny": "6745721000",
+    "noncurrent_asset_disposal_gain_cny": "564105000",
+    "other_nonrecurring_gain_cny": "743628000",
+    "all_nonrecurring_tax_effect_cny": "968009000",
+    "all_nonrecurring_minority_effect_after_tax_cny": "234587000",
+    "reported_nonrecurring_parent_net_cny": "6850858000"
+  },
+  "unit_and_scope_notes": [
+    "p55-56套保目的衍生品投资表为万元，转换为元乘10000；财务报表及p173-175附注为千元，转换为元乘1000。",
+    "p173汇兑损益不包含金融业务；p174衍生金融工具附注并未逐项证明与该汇兑损益经济配对。",
+    "p56表合计公允价值损益22.71799亿元与p174衍生工具23.11768亿元差0.39969亿元，尚缺范围桥。",
+    "p56衍生投资实际损益35.69828亿元与p174两项衍生工具损益37.33037亿元差1.63209亿元，不能自行抹平。",
+    "p170现金流量套期储备的OCI及重分类不得直接加进净利润，须先核验与损益、非金融资产成本的包含关系。"
+  ],
+  "verified_reconciliations": [
+    {
+      "expression": "-5976109000 + 2311768000 + 1421269000",
+      "value": "-2243072000",
+      "unit": "CNY_PRETAX_DISCLOSED_LINES_ONLY",
+      "meaning": "汇兑及衍生工具损益披露行合计，非精确外汇套保净损益，也非税后归母正常化调整。"
+    },
+    {
+      "expression": "2763131000 - 453629000 - 350111000",
+      "value": "1959391000",
+      "unit": "CNY_PRETAX_PRIOR_H1_DISCLOSED_LINES_ONLY",
+      "meaning": "上年同期相同行合计，本期较其减少42.02463亿元；不等于经营利润下降金额。"
+    },
+    {
+      "expression": "31844556000 - 5261682000 - 136837000",
+      "value": "26446037000",
+      "unit": "CNY",
+      "meaning": "合并税前利润至税后归母会计勾稽，不提供项目级套保税额。"
+    },
+    {
+      "expression": "11.33 - 11.29",
+      "value": "0.04",
+      "unit": "percentage_points",
+      "meaning": "同为半年加权ROE的同比变化，不能将半年与全年直接比较或机械乘二。"
+    },
+    {
+      "expression": "564105000 + 6745721000 + 743628000 - 968009000 - 234587000",
+      "value": "6850858000",
+      "unit": "CNY",
+      "meaning": "全部非经常性损益税后归母桥；不是单独套保收益。"
+    },
+    {
+      "expression": "26446037000 - 6850858000",
+      "value": "19595179000",
+      "unit": "CNY",
+      "meaning": "披露归母净利到扣非归母净利的会计勾稽，不是正常化盈利推算。"
+    }
+  ],
+  "current_interpretation": "半年加权ROE同比增加0.04个百分点。公司说明扣非下降主要涉及外币货币性项目汇兑损失计入经常性损益、风险管理衍生工具收益计入非经常性损益的分类不对称，因此不能直接将扣非下降25.31%认定为经营盈利下降同幅。",
+  "unresolved": [
+    "67.45721亿元工具收益涵盖多类资产及损益，并非全部为外汇套保收益。",
+    "披露的税和少数股东影响属于全部非经常性损益，不能按比例自动分配给汇兑或衍生工具。",
+    "汇兑与工具之间的经济匹配、税后归母影响及持续性尚未闭合，不能全额相抵或机械加回。",
+    "正常化盈利、ROE路径、优势期限、权益成本、可持续分配与事件材料性仍需分别核验。"
+  ],
+  "normalized_parent_profit_cny": null,
+  "new_valuation": null,
+  "economic_approval": false,
+  "g3_approval": false,
+  "formal_investment_eligibility": false,
+  "position_guidance": null,
+  "historical_packages_modified": false
+}

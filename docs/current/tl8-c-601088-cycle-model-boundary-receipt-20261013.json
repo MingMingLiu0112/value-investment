@@ -1,0 +1,82 @@
+{
+  "schema_version": "tl8-c-cycle-model-boundary-receipt-v1",
+  "work_package": "TL8-C",
+  "task": "bounded-verification-of-601088-cyclical-model-routing-boundary",
+  "as_of": "2026-10-13",
+  "outcome": "CYCLE_MODEL_ROUTE_VERIFIED_INPUTS_NOT_ADMITTED",
+  "route": {
+    "profile_id": "cyclical_cash_return",
+    "primary_route_status": "SUPPORTED",
+    "primary_model": "cyclical_normalized",
+    "facts_contract": "CyclicalFacts",
+    "unauthorized_requests": {
+      "residual_income_or_equity_value": {
+        "status": "UNSUPPORTED",
+        "blockers": ["model_not_authorized_for_profile:residual_income_or_equity_value"]
+      },
+      "fcff": {
+        "status": "UNSUPPORTED",
+        "blockers": ["model_not_authorized_for_profile:fcff"]
+      }
+    }
+  },
+  "required_inputs": {
+    "count": 13,
+    "admitted": 0,
+    "registered_inputs": {},
+    "candidate_derivations_registered": 0,
+    "cycle_audit_registered_inputs": [],
+    "profit_series_registered_inputs": []
+  },
+  "fail_closed_anchor": {
+    "path": "runtime/valuation-results/601088-cyclical-b3/evidence.json",
+    "sha256": "b03eaa05f7cbe117c676ddc5f6d9be6dc0c551a84fd3a457e18ee9886e5d1df6",
+    "result_status": "not_ready",
+    "price_bridge_status": "PENDING_EXTERNAL_DATA",
+    "missing_blockers": 13,
+    "scenario_values": null
+  },
+  "evidence_stops": [
+    {
+      "stop_id": "601088-acquisition-adjusted-through-cycle-profit",
+      "blocker_id": "current_perimeter_parent_earnings_bridge_incomplete"
+    }
+  ],
+  "artifact": {
+    "path": "runtime/company-research/shenhua-valuation-applicability-20261013-v1/evidence.json",
+    "sha256": "148e56a382dc850dd244d9b46176b69a10aaa993df75781769096d97c3c6ac59",
+    "pointer": "runtime/company-research/shenhua-valuation-applicability-latest.json",
+    "builder": "scripts/research_cases/shenhua/build_shenhua_valuation_applicability.py"
+  },
+  "sources": [
+    {"id": "shenhua_cyclical_scope", "sha256": "4c69cf09f81ae8c0cf7fd5537276a3147d1c25adf3eee80b92c455ee2a3134c0"},
+    {"id": "shenhua_cyclical_candidate_inputs", "sha256": "3fc7fd27c13787ff08162e26e9762fbe1912db47766369624a42d41e5eaefe71"},
+    {"id": "shenhua_parent_operating_profit_bridge", "sha256": "e8f177f2f0050cc3f2ae4996851b100b8a7eb2ebe8cbfbb47e89de9045504b6c"},
+    {"id": "shenhua_attributable_net_cash_bridge", "sha256": "ce5a021c134c97a5f821acd6c6a490404806d84e5e6fbffb97eae9f876905a31"},
+    {"id": "shenhua_2026_share_bridge", "sha256": "1d39ca52cb75540acf65a9afe3c8dea1052f42a45edab6ccfd72598940d6b0e0"},
+    {"id": "shenhua_ifrs_subsidiary_tax_review", "sha256": "ef9f3cca62cf29bfd6ffb5bd89f5585db7ff93887332796ce0d592e2ccf31e1f"},
+    {"id": "shenhua_attributable_profit_series", "sha256": "0eb6e930831f19d0e7ab8520dbfd4f67dd2e4afc7183e36233fd4a4ee0191e64"},
+    {"id": "shenhua_operational_cycle_audit", "sha256": "7d21b86914e87be98a95dace75356746ee501309f81be273bf6d1453648da015"},
+    {"id": "shenhua_2025_official_pdf", "sha256": "460ea07ee14d3aeb2b7518a25f87b47833ea5473715d911c378c15f7425698fc"}
+  ],
+  "verification": {
+    "tests": [
+      "tests/test_shenhua_valuation_applicability.py",
+      "tests/test_architecture_boundaries.py"
+    ],
+    "result": "34 passed (4 new + 30 architecture)",
+    "deterministic_rebuild": true
+  },
+  "boundaries": {
+    "valuation_run": false,
+    "formal_fair_value": null,
+    "valuation_approved": false,
+    "simulation_eligible": false,
+    "trade_approved": false,
+    "live_eligible": false,
+    "new_model_family_created": false,
+    "research_registration_performed": false,
+    "expected_product_state": "PENDING_RESEARCH",
+    "action": "no_order"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": "web-first-daily-batch-validation-v1",
+  "stage": "S6",
+  "action": "no_order",
+  "baseline_commit": "6b47fe9b44a1c2919586dd9d9b4cdf0cd38d6e12",
+  "patch_status": "UNCOMMITTED",
+  "mode": "MOCK",
+  "source_scope": "RETAINED_REAL_FILINGS_HISTORICAL_RESEARCH_CUTOFF_2026-10-08",
+  "actual_cli": {
+    "symbol": "600519",
+    "status": "PARTIAL",
+    "exit_code": 3,
+    "event": "DRAFT_READY",
+    "financial": "BLOCKED_INPUT",
+    "research_registered_or_published": false,
+    "approval_count": 0
+  },
+  "actual_daily_entry": {
+    "mode": "READ_ONLY",
+    "no_server": true,
+    "status": "PARTIAL",
+    "public_display_published": true,
+    "publication_id": "pub-9b49ff2e54323150a06d",
+    "formal_admission_count": 0,
+    "receipt": ".tmp/daily-workbench-latest-run.json"
+  },
+  "tests": {
+    "initial_related_regression_passed": 98,
+    "final_entry_cli_passed": 37,
+    "final_lock_and_failure_passed": 3,
+    "independent_review": "NO_CONFIRMED_NEW_P0_P1"
+  },
+  "browser_acceptance": "NOT_ACCEPTED_CONNECTION_REFUSED_IN_IAB",
+  "remote_ci_for_patch": "NOT_RUN_UNCOMMITTED",
+  "stage_status": "IN_PROGRESS",
+  "total_goal_complete": false
+}

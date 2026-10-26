@@ -1,5 +1,25 @@
 # 2026-10-09 开源项目代码借鉴审查
 
+## 2026-10-25 数据源专项复核
+
+本节是源码/接口文档审查，不表示新源已完成本机请求、质量验证或正式准入。
+既有AKShare依赖与官方原件链继续复用；不安装整套替代平台。
+
+| 对象与固定版本 | 实际核对的接口 | 本项目采用边界 |
+| --- | --- | --- |
+| [AKShare 2ea08ff44512a9b0c008cd4ff77463b940959c7e](https://github.com/akfamily/akshare/tree/2ea08ff44512a9b0c008cd4ff77463b940959c7e)，MIT | stock/stock_info.py::stock_info_bj_name_code；stock_fundamental/stock_finance_sina.py::stock_financial_report_sina；stock_feature/stock_hist_em.py::stock_zh_a_hist_min_em | 优先借鉴现有适配器缺项。北交所仍请求nqxxController/nqxxCnzq.do，不是当前307问题的独立备源。三表字段需本项目单位/来源/归属核验 |
+| [efinance c8fd370a3109b2d14a121e3a32a86e9c8354b01b](https://github.com/Micro-sheep/efinance/tree/c8fd370a3109b2d14a121e3a32a86e9c8354b01b)，仓库MIT | stock/getter.py::get_quote_history和common/getter.py::get_quote_history_single | 支持15/60等周期参数；与AKShare部分行情同用push2his.eastmoney.com，不能计独立双源。默认fqt=1前复权，执行研究必须显式核对口径，不直接引入整库 |
+| [BaoStock官方发行0.9.4](https://pypi.org/project/baostock/0.9.4/)，包元数据BSD | query_history_k_data_plus、query_trade_dates、query_all_stock为小样本验证候选；官方网页本次无法完整提取 | 包源发行Hash为54dd26ec53100da02dcd47a21fc487ed5b2e12a4124af7961143d8ca0bc682e9。先核对包源码/许可证及真实缺失区间返回，不预先承诺历史PIT或盘中交易状态完整 |
+| [zxygithub/baostock 98cb65162c2c7dba63d80292f40759a617630b4e](https://github.com/zxygithub/baostock/tree/98cb65162c2c7dba63d80292f40759a617630b4e)，仓库MIT | README及docs/pythonAPI.md | 这是第三方数据下载器，不是官方SDK；文档展示5/15/30/60分钟查询。仅作候选线索，不采用其SQLite/定时/网盘备份系统；仓库许可不能代替SDK与数据服务许可 |
+
+核对要点：实际日期/时区、已完成K线、量额单位、不复权/复权因子、停牌/特殊状态、
+源级独立性、known-at与真实采集时间。金融摘要和分钟历史能提高覆盖，不能证明
+正常化利润、可分配现金、当时候选全集、预先冻结策略、OOS或自然时间Shadow。
+同源换库失败不再重复搜索；有明确新接口/字段证据才重开。下一步只为既有D/H工作包
+做有界真实请求，采用或拒绝及原因写回现有台账，不新建Provider治理平台。
+
+以下保留2026-10-09多Agent框架审查，当前不派发相关平台扩展任务。
+
 审查方式：`--depth 1` 克隆到 `.tmp/oss/`，读源码而非读 README 结论。
 所有结论只作为**候选借鉴**，不改变任何现有合同、阈值或准入标准。
 
@@ -143,3 +163,34 @@
 回测拟合未来走势作为主决策依据。
 
 **本轮未做任何代码、合同、阈值或准入变更**；`action = no_order`。
+
+## 2026-10-25: adopted bounded paired-bootstrap statistics
+
+This dated addendum supersedes the preceding no-change statement only for this
+specific adoption. `arch==8.0.0` supplies `StationaryBootstrap` for paired daily
+strategy-minus-cash and strategy-minus-fixed-pool excess-return diagnostics.
+It is not a trading strategy, market-data provider or proof of profitability.
+
+- Reviewed upstream tag: https://github.com/bashtage/arch/tree/v8.0.0
+- Dependency metadata: https://raw.githubusercontent.com/bashtage/arch/v8.0.0/pyproject.toml
+- License: NCSA, https://raw.githubusercontent.com/bashtage/arch/v8.0.0/LICENSE.md
+- Python >=3.10; upstream requires numpy, pandas, scipy, statsmodels and packaging.
+  The project adds only an optional `strategy-validation` extra and the Core CI
+  installation/check; no server or global Python installation is changed.
+- Reviewed Windows cp313 wheel SHA256:
+  `bd73bd2d811bcf0551443b6e0a10bc25af002e9eb146aff164897c70aac35e85`.
+  Actual local runtime versions are retained in the integrated replay receipt.
+- Existing application/domain consumers use paired rows, frozen seed/block size,
+  2000 resamples and marginal one-sided mean-daily-excess bounds. Bounds are not
+  cumulative-return forecasts or joint confidence guarantees. Short dependent
+  histories remain INSUFFICIENT; two reset portfolios cannot be stitched into a
+  continuous validation window. These settings remain an unapproved research
+  policy, not an industry-standard admission rule or personal IPS.
+- Actual Root replay:
+  `runtime/hotspot-shared-integrated/20261025T095011506832Z/receipt.json`.
+  All six fold/cost cases remain INSUFFICIENT with negative excess lower bounds.
+  Real retained market observations plus hypothetical execution do not prove
+  strict historical PIT, prospective OOS or elapsed natural-time Shadow.
+
+No data redistribution permission, strategy approval or order authorization is
+inferred from the software license. `action=no_order`.

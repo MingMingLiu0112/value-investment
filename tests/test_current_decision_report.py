@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from approval_transport_fixture import mint_fixture_approval
 from test_current_decision_surface import decision_workbench, forged_candidate
 from value_investment_agent.domain.decision.decision_recommendation import LEGACY_DECISION_RECOMMENDATION_SCHEMA
 import value_investment_agent.presentation.read_models.existing_research_report as report_module
@@ -14,7 +15,9 @@ from value_investment_agent.presentation.read_models.existing_research_report im
 def test_current_report_renders_replayed_v2_without_private_position(confidence, expected):
     payload = decision_workbench(confidence=confidence)
     before = deepcopy(payload)
-    report = render_current_research_readiness(payload)
+    report = render_current_research_readiness(
+        payload, human_approval_provenance_verifier=mint_fixture_approval
+    )
     assert f"当前建议类型：{expected}" in report
     assert "非个性化" in report
     assert "BLOCKED_PRIVATE_INPUT" in report
@@ -56,7 +59,9 @@ def test_current_report_rejects_tampered_dependency():
 
 def test_current_report_accepts_legacy_v1_via_existing_decoder():
     payload = decision_workbench(schema_version=LEGACY_DECISION_RECOMMENDATION_SCHEMA)
-    assert "当前建议类型：BUY_CANDIDATE" in render_current_research_readiness(payload)
+    assert "当前建议类型：BUY_CANDIDATE" in render_current_research_readiness(
+        payload, human_approval_provenance_verifier=mint_fixture_approval
+    )
 
 
 def test_current_report_rejects_rehashed_candidate_without_approval():
@@ -119,7 +124,7 @@ def test_current_report_handles_no_quote_risk_reduction(monkeypatch):
     monkeypatch.setattr(
         report_module,
         "verify_current_decision_workbench",
-        lambda payload: restored,
+        lambda payload, **kwargs: restored,
     )
     payload = {
         "schema_version": "product-current-workbench-request-v1",

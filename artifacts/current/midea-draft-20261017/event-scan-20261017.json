@@ -1,0 +1,123 @@
+{
+  "schema_version": "m1-event-scan-v1",
+  "symbol": "000333",
+  "provider": "cninfo",
+  "scan_from": "2026-10-13",
+  "scan_to": "2026-10-17",
+  "validity_from": "2026-10-16",
+  "validity_to": "2026-10-17",
+  "status": "PENDING_HUMAN_REVIEW",
+  "coverage_status": "INCOMPLETE",
+  "pre_model_review_status": "PENDING_HUMAN_REVIEW",
+  "announcements": [
+    {
+      "announcement_id": "1225608903",
+      "published_at": "2026-10-17T00:00:00+08:00",
+      "title": "关于以集中竞价交易方式回购A股股份进展情况的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF",
+      "rule_kind": "buyback_progress",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo_1225608903",
+          "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+        }
+      ],
+      "notes": "Retained from the bounded CNINFO snapshot. Coverage is not a full-day completeness proof; strict contemporaneous PIT is not proven and human materiality review is pending."
+    },
+    {
+      "announcement_id": "1225603532",
+      "published_at": "2026-10-14T00:00:00+08:00",
+      "title": "2026年第一次临时股东会决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF",
+      "rule_kind": "egm_resolution",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "cninfo_1225603532",
+          "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+        }
+      ],
+      "notes": "Retained from the bounded CNINFO snapshot. Coverage is not a full-day completeness proof; strict contemporaneous PIT is not proven and human materiality review is pending."
+    },
+    {
+      "announcement_id": "1225603533",
+      "published_at": "2026-10-14T00:00:00+08:00",
+      "title": "北京市嘉源律师事务所关于美的集团2026年第一次临时股东会的法律意见书",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF",
+      "rule_kind": "legal_opinion",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "cninfo_1225603533",
+          "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+        }
+      ],
+      "notes": "Retained from the bounded CNINFO snapshot. Coverage is not a full-day completeness proof; strict contemporaneous PIT is not proven and human materiality review is pending."
+    },
+    {
+      "announcement_id": "1225603534",
+      "published_at": "2026-10-14T00:00:00+08:00",
+      "title": "关于回购注销部分限制性股票减资暨通知债权人的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF",
+      "rule_kind": "capital_reduction_notice",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "cninfo_1225603534",
+          "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+        }
+      ],
+      "notes": "Retained from the bounded CNINFO snapshot. Coverage is not a full-day completeness proof; strict contemporaneous PIT is not proven and human materiality review is pending."
+    }
+  ],
+  "blockers": [
+    "EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.",
+    "Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.",
+    "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff."
+  ],
+  "evidence_refs": [
+    {
+      "id": "cninfo_1225608903",
+      "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+      "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+    },
+    {
+      "id": "cninfo_1225603532",
+      "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+      "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+    },
+    {
+      "id": "cninfo_1225603533",
+      "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+      "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+    },
+    {
+      "id": "cninfo_1225603534",
+      "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+      "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+    }
+  ],
+  "retrieved_at": "2026-10-17T17:49:45.662894+08:00",
+  "parser_version": "midea-draft-event-scan-v2"
+}

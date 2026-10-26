@@ -25,6 +25,7 @@ from .research_application import ModelValidityEvaluationInput
 from .quote_snapshot import QuoteSnapshot
 from .quote_session_conversion import quote_snapshot_from_bundle_file
 from .research_case import ResearchCase
+from .domain.research.research_only_facts import ResearchOnlyFacts, RESEARCH_ONLY_MODE
 from .research_artifact_codecs import (
     ARTIFACT_ENTRY_THESIS_SNAPSHOT,
     ARTIFACT_INVESTMENT_CONSISTENCY_REVIEW,
@@ -32,6 +33,7 @@ from .research_artifact_codecs import (
 )
 from .research_input import (
     ResearchInputDescriptor,
+    ResearchSourceContract,
     finalize_input_descriptor,
 )
 from .research_run_contract import (
@@ -128,7 +130,7 @@ def _refs(value: object, field: str = "evidence_refs") -> list[dict[str, Any]]:
     return result
 
 
-def _source_descriptor(payload: Mapping[str, Any]) -> ResearchSourceDescriptor:
+def _source_descriptor(payload: Mapping[str, Any], *, include_local_binding: bool = False) -> ResearchSourceDescriptor:
     data = dict(payload)
     raw_identity = data.get("issuer_identity")
     if raw_identity is not None and not isinstance(raw_identity, Mapping):
@@ -169,6 +171,7 @@ def _source_descriptor(payload: Mapping[str, Any]) -> ResearchSourceDescriptor:
             if data.get("parser_version") else None
         ),
         issuer_identity=issuer_identity,
+        local_path=data.get('local_path') if include_local_binding else None,
     )
 
 
@@ -221,15 +224,7 @@ def build_quality_facts(payload: Mapping[str, Any]) -> QualityCompounderFacts:
         if item is not None
     }
     scenario_objects = {
-        name: ResidualIncomeScenarioInputs(
-            cost_of_equity=_decimal(item["cost_of_equity"], "cost_of_equity"),
-            forecast_roes=tuple(
-                _decimal(value, "forecast_roes") for value in item["forecast_roes"]
-            ),
-            terminal_roe=_decimal(item["terminal_roe"], "terminal_roe"),
-            terminal_growth=_decimal(item["terminal_growth"], "terminal_growth"),
-            retention=_decimal(item.get("retention", "0.30"), "retention"),
-        )
+        name: _quality_scenario(item)
         for name, item in scenarios.items()
     }
     return QualityCompounderFacts(
@@ -249,6 +244,21 @@ def build_quality_facts(payload: Mapping[str, Any]) -> QualityCompounderFacts:
             ) if timing is not None else None
         ),
     )
+
+
+def _quality_scenario(item):
+    if 'forecast_retentions' in item or 'retention_contract' in item:
+        from .research_input import _residual_scenario_from_payload
+        return _residual_scenario_from_payload(item)
+    return ResidualIncomeScenarioInputs(
+            cost_of_equity=_decimal(item["cost_of_equity"], "cost_of_equity"),
+            forecast_roes=tuple(
+                _decimal(value, "forecast_roes") for value in item["forecast_roes"]
+            ),
+            terminal_roe=_decimal(item["terminal_roe"], "terminal_roe"),
+            terminal_growth=_decimal(item["terminal_growth"], "terminal_growth"),
+            retention=_decimal(item.get("retention", "0.30"), "retention"),
+        )
 
 
 def _forecast_row(item: Mapping[str, Any]) -> ForecastYear:
@@ -484,7 +494,23 @@ def build_descriptor(
     research_case = build_research_case(data["research_case"])
     facts_payload = dict(data["facts"])
     facts_kind = _required_text(facts_payload.get("kind"), "facts.kind")
-    if facts_kind == "quality_compounder":
+    research_mode = data.get('research_mode', 'valuation')
+    if research_mode not in ('valuation', RESEARCH_ONLY_MODE):
+        raise ValueError('Unknown research mode')
+    research_only = research_mode == RESEARCH_ONLY_MODE
+    if research_only:
+        if data.get('schema_version') != 'm1-valuation-package-v2' or facts_kind != 'research_only':
+            raise ValueError('Explicit research-only mode requires a source-bound v2 research-only package')
+        if any(data.get(key) is not None for key in (
+                'assumptions', 'quote', 'model_validity_input', 'valuation_approval',
+                'distribution_result', 'entry_thesis', 'investment_consistency_review',
+                'human_research_approval', 'event_materiality_review', 'valuation',
+                'model_validity', 'price_bridge', 'decision_recommendation', 'position_guidance')) or data.get('assumption_bindings'):
+            raise ValueError('Research-only package forbids valuation/market/approval inputs')
+        facts = ResearchOnlyFacts.from_payload(dict(
+            {key:value for key,value in facts_payload.items() if key != 'kind'}, facts_type='research_only'))
+        model_type = 'unassigned'
+    elif facts_kind == "quality_compounder":
         facts = build_quality_facts(facts_payload)
         model_type = "residual_income_or_equity_value"
     elif facts_kind == "fcff":
@@ -514,6 +540,11 @@ def build_descriptor(
         if data.get("investment_consistency_review") is not None
         else None
     )
+    source_contract = (
+        ResearchSourceContract.from_payload(data.get("source_contract"))
+        if data.get("schema_version") == "m1-valuation-package-v2"
+        else None
+    )
     if distribution_result is not None and distribution_result.as_of > facts.as_of:
         blockers.append(
             "Distribution package as-of "
@@ -529,6 +560,7 @@ def build_descriptor(
         symbol=symbol,
         name=_required_text(data.get("name"), "package.name"),
         profile_id=profile_id,
+        research_mode=research_mode,
         requested_model=requested_model,
         run_id=_required_text(data.get("run_id"), "package.run_id"),
         point_in_time=ResearchPitFrame(
@@ -554,10 +586,10 @@ def build_descriptor(
                 if dependencies.get("scan_watermark") else None
             ),
         ),
-        sources=tuple(_source_descriptor(item) for item in data.get("sources") or []),
+        sources=tuple(_source_descriptor(item, include_local_binding=research_only) for item in data.get("sources") or []),
         research_case=research_case,
         facts=facts,
-        assumptions=build_assumptions(
+        assumptions=None if research_only else build_assumptions(
             data.get("assumptions") or {},
             symbol=symbol,
             profile_id=profile_id,
@@ -576,6 +608,7 @@ def build_descriptor(
         entry_thesis=entry_thesis,
         investment_consistency_review=investment_consistency_review,
         blockers=tuple(blockers),
+        source_contract=source_contract,
         input_sha256=None,
     )
     if data.get("schema_version") == "m1-valuation-package-v2":
@@ -583,7 +616,8 @@ def build_descriptor(
             validate_source_bound_descriptor, verify_package_local_sources,
         )
         verify_package_local_sources(root, data)
-        validate_source_bound_descriptor(data, descriptor)
+        if not research_only:
+            validate_source_bound_descriptor(data, descriptor)
     return finalize_input_descriptor(descriptor)
 
 

@@ -1,0 +1,36 @@
+{
+  "schema_version": "p8-browser-acceptance-v1",
+  "action": "no_order",
+  "date": "2026-10-16",
+  "method": "Actual Windows Codex in-app browser, viewport capability, DOM dimensions and screenshots",
+  "public_origin": "http://127.0.0.1:8001",
+  "publication_id": "pub-6167d094c68f6d8105c1",
+  "viewports": [
+    {"width": 1440, "height": 900, "document_width": 1425, "page": "/daily", "screenshot": "screenshots/final-daily1440.png"},
+    {"width": 1280, "height": 900, "document_width": 1265, "page": "/decisions/600887", "screenshot": "screenshots/final-value1280.png"},
+    {"width": 390, "height": 844, "document_width": 375, "page": "/daily", "screenshot": "screenshots/final-daily390.png"},
+    {"width": 390, "height": 844, "document_width": 375, "page": "/decisions/600887", "screenshot": "screenshots/final-value390.png"},
+    {"width": 430, "height": 844, "document_width": 415, "page": "/decisions/hotspot-600030", "screenshot": "screenshots/final-hotspot430.png"}
+  ],
+  "real_checks": [
+    "Daily shows zero formal candidates, no qualifying structural entry and explicit Oct15 quote versus Oct11 research dates",
+    "Yili source-bound conclusion above private controls; missing policy does not become a buy range",
+    "600030 OPEN ADD REDUCE EXIT observations remain conditional; daily DOWN and structural reward/risk 0.04 prohibit entry",
+    "15-minute control changes selected state and source-derived invalidation reference from 25.510 to 25.820",
+    "Locked portfolio does not read actual user account or imply empty holdings",
+    "System shows exact final publication and independent older canonical Excel dates"
+  ],
+  "isolated_browser_fills": {
+    "account_scope": "TEST_ONLY-P8-NO-REAL-MONEY",
+    "actual_ledger_touched": false,
+    "sell": {"symbol": "300364", "quantity": 100, "price": 21, "fee": 5, "cash_after": 10095, "realized_pnl": 95},
+    "buy": {"symbol": "300364", "quantity": 100, "price": 19, "fee": 5, "cash_after": 8190, "cost_basis": 1905, "sellable_same_day": 0},
+    "restart": {"revision": 7, "cash": 8190, "quantity": 100, "confirmed_fills": 2, "result": "PASS"},
+    "history": "Both fills displayed; manually unlinked fills remain unlinked, not assigned fabricated research",
+    "separate_fact_mark_case": {"cash": 8000, "market_value": 2526, "floating_pnl": 526, "formal_risk_price_admitted": false},
+    "server_stopped_after_acceptance": true
+  },
+  "signed_positive_engineering": "final-integration.log includes inherited signed research, policy, IPS, risk, BUY SELL and version history test on current code",
+  "not_proven": ["Actual user private account readiness", "Real G3 or materiality approval", "Investment edge", "Final user acceptance"],
+  "temporary_viewport_reset": true
+}

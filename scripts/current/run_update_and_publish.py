@@ -51,6 +51,8 @@ def main():
         parser.error('M2 replay manifest requires path and SHA-256')
     if args.marketwide_replay_manifest and not args.auto_marketwide:
         parser.error('M2 replay manifest requires automatic marketwide mode')
+    if args.marketwide_replay_manifest and not args.no_publish:
+        parser.error('historical M2 replay requires --no-publish; it cannot become a current publication')
     if (args.private_risk_config is None) != (args.private_risk_config_sha256 is None):
         parser.error('private risk config requires path and hash')
     workbook = get_settings().workbook_path.resolve()
@@ -89,7 +91,7 @@ def main():
             scan_dir = folder.parent/(folder.name+'-m2-discovery')
             run_once(root=ROOT, output_dir=scan_dir, wps_dir=None,
                      max_per_channel=50, skip_dividend=False, reuse_inputs=False,
-                     project_leads=True)
+                     project_leads=True, skip_workbook=True)
         prepared = prepare_marketwide_daily(root=ROOT, scan_dir=scan_dir,
                                             queue_path=folder.parent/(folder.name+'-value-research-queue.json'))
         from value_investment_agent.application.product.common import write_new_json

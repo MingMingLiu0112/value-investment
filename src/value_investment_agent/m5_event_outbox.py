@@ -32,6 +32,10 @@ ALERT_DELIVERED = "DELIVERED"
 ALERT_ACKNOWLEDGED = "ACKNOWLEDGED"
 ALERT_FAILED_RETRYABLE = "FAILED_RETRYABLE"
 ALERT_FAILED_TERMINAL = "FAILED_TERMINAL"
+ALERT_CANCELLED = "CANCELLED"
+ALERT_EXPIRED = "EXPIRED"
+OUTBOX_SCHEMA_V2 = "m5-event-outbox-v2"
+ALERT_LIFECYCLE_TERMINALS = frozenset({ALERT_CANCELLED, ALERT_EXPIRED})
 ALERT_STATUSES = frozenset(
     {
         ALERT_PENDING,
@@ -40,6 +44,8 @@ ALERT_STATUSES = frozenset(
         ALERT_ACKNOWLEDGED,
         ALERT_FAILED_RETRYABLE,
         ALERT_FAILED_TERMINAL,
+        ALERT_CANCELLED,
+        ALERT_EXPIRED,
     }
 )
 
@@ -203,6 +209,9 @@ class EventAlert:
                 raise ValueError("Terminal failure requires attempts and no retry time")
             if self.delivered_at is not None:
                 raise ValueError("Terminal failure cannot have delivered_at")
+        elif self.status in ALERT_LIFECYCLE_TERMINALS:
+            if self.next_attempt_at is not None:
+                raise ValueError("Terminated alert cannot have a retry time")
         if self.action != ACTION_NO_ORDER:
             raise ValueError("Event alert must remain no_order")
 
@@ -261,6 +270,8 @@ class OutboxLedger:
     """Deduplicated, retryable alert bookkeeping without network delivery."""
 
     def __init__(self, *, schema_version: str = M5_EVENT_SCHEMA) -> None:
+        if schema_version not in {M5_EVENT_SCHEMA, OUTBOX_SCHEMA_V2}:
+            raise ValueError("Unknown outbox ledger schema")
         self.schema_version = schema_version
         self._alerts: list[EventAlert] = []
         self._by_dedupe: dict[str, EventAlert] = {}
@@ -320,7 +331,10 @@ class OutboxLedger:
             return AlertEnqueueResult(
                 status=(
                     ALERT_TERMINAL_DUPLICATE
-                    if existing.status in {ALERT_ACKNOWLEDGED, ALERT_FAILED_TERMINAL}
+                    if existing.status in (
+                        {ALERT_ACKNOWLEDGED, ALERT_FAILED_TERMINAL}
+                        | ALERT_LIFECYCLE_TERMINALS
+                    )
                     else ALERT_DUPLICATE
                 ),
                 alert=None,
@@ -422,6 +436,24 @@ class OutboxLedger:
             last_error=error,
         )
         self._replace(alert, updated)
+        return updated
+
+    def mark_terminated(self, *, alert_id: str, now: datetime, status: str) -> EventAlert:
+        """Stop delivery only; immutable reason/deadline live in the transition log."""
+        alert = self._require(alert_id)
+        if status not in ALERT_LIFECYCLE_TERMINALS:
+            raise ValueError("Unknown lifecycle terminal")
+        if alert.status not in {
+            ALERT_PENDING, ALERT_SENT, ALERT_DELIVERED, ALERT_FAILED_RETRYABLE,
+        }:
+            raise ValueError("Only active alerts can be terminated")
+        now = _required_datetime(now, "now")
+        for timestamp in (alert.created_at, alert.sent_at, alert.delivered_at):
+            if timestamp is not None and now < timestamp:
+                raise ValueError("Termination cannot precede alert history")
+        updated = self._copy_with(alert, status=status, next_attempt_at=None)
+        self._replace(alert, updated)
+        self.schema_version = OUTBOX_SCHEMA_V2
         return updated
 
     def pending(self, now: datetime) -> tuple[EventAlert, ...]:
@@ -543,12 +575,14 @@ def outbox_ledger_from_payload(payload: Mapping[str, Any]) -> OutboxLedger:
     if not isinstance(payload, Mapping):
         raise ValueError("Outbox ledger must be an object")
     data = dict(payload)
-    if data.get("schema_version") != M5_EVENT_SCHEMA:
+    if data.get("schema_version") not in {M5_EVENT_SCHEMA, OUTBOX_SCHEMA_V2}:
         raise ValueError("Unknown outbox ledger schema")
     ledger = OutboxLedger(schema_version=str(data["schema_version"]))
     seen_alert_ids: set[str] = set()
     for raw in data.get("alerts") or ():
         alert = event_alert_from_payload(raw)
+        if alert.status in ALERT_LIFECYCLE_TERMINALS and ledger.schema_version != OUTBOX_SCHEMA_V2:
+            raise ValueError("Lifecycle terminals require outbox v2")
         if alert.alert_id in seen_alert_ids:
             raise ValueError("Outbox ledger contains a duplicate alert id")
         if alert.dedupe_key in ledger._by_dedupe:

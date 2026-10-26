@@ -10,6 +10,7 @@ from .common import load_json_object, require_inside, sha256_file, write_new_jso
 from .daily_assets import inspect_daily_case_assets
 from .workbench import build_current_workbench_for_symbol
 from .decision_surface import verify_current_decision_workbench
+from .research_reviews import verify_human_approval_transport_provenance
 from .research_publication_input import load_research_publication_input
 from .research_review_packet import build_research_review_packet
 from .neutral_valuation_proposal import build_neutral_valuation_proposal
@@ -20,10 +21,7 @@ from ..research.agent_review.supervisor import run_agent_research_pilot
 from ..research.agent_review.llm_pilot import run_llm_research_pilot
 from ..research.agent_review.source_context import ExcerptRequest
 from ...infrastructure.agent_runtime.provider import MockLLMProvider
-from ...quote_session_conversion import quote_snapshot_from_bundle_file
-from ...quote_snapshot import QUOTE_STATUS_VERIFIED_CLOSE
-from ...quote_session_collection import resolve_session_reference
-from ...quote_sessions import latest_sse_2026_session, latest_szse_session
+from .quote_bridge import admit_quote_for_research
 import json
 
 
@@ -40,57 +38,8 @@ def _pinned(root: Path, case: dict[str, Any], name: str) -> tuple[Path, str]:
 
 def _quote_for_case(root: Path, bundle: Path | None, symbol: str, research_day: str,
                     *, today: datetime) -> tuple[Path | None, str | None, dict[str, Any]]:
-    if bundle is None:
-        return None, None, {"status": "PENDING_EXTERNAL_DATA", "reason": "未提供本次双源收盘行情。"}
-    path = require_inside(root / "runtime", bundle, "quote bundle")
-    try:
-        digest = sha256_file(path)
-        raw = load_json_object(path, "quote bundle")
-        snapshot = quote_snapshot_from_bundle_file(
-            path, root, symbol=symbol, ref_id="daily-assistant-quote-" + digest,
-            expected_sha256=digest)
-        cutoff = datetime.fromisoformat(raw["finished_at"])
-        if cutoff.utcoffset() is None or cutoff > today:
-            raise ValueError("行情抓取时间无效或在未来")
-        if snapshot.status != QUOTE_STATUS_VERIFIED_CLOSE or snapshot.quote_date is None:
-            raise ValueError("双源收盘行情未通过准入：" + "; ".join(snapshot.blockers))
-        check = {"quote_date": snapshot.quote_date.isoformat(),
-                 "bundle_path": path.relative_to(root).as_posix(), "bundle_sha256": digest,
-                 "source_evidence": snapshot.evidence_refs,
-                 "collected_at": cutoff.isoformat(),
-                 "display_price": str(snapshot.current_price) if getattr(snapshot, "current_price", None) is not None else None,
-                 "price_admitted": False}
-        local_day = today.astimezone(CHINA).date()
-        historical = cutoff.astimezone(CHINA).date() != local_day or snapshot.quote_date != local_day
-        if historical:
-            try:
-                resolved = resolve_session_reference(raw["references"][symbol], raw["documents"])
-                venue = resolved["calendar_exchange"]
-                if venue == "SSE":
-                    latest, calendar_hashes = latest_sse_2026_session(resolved["calendar_documents"], today)
-                elif venue == "SZSE":
-                    latest, calendar_hashes = latest_szse_session(resolved["calendar_documents"], today.astimezone(CHINA))
-                else:
-                    raise ValueError("unsupported calendar")
-                if latest != snapshot.quote_date.isoformat():
-                    raise ValueError("归档报价不是最近一个已完成交易日")
-            except (ValueError, KeyError, TypeError) as error:
-                return None, None, {**check, "status": "NOT_ADMITTED",
-                    "display_scope": "VERIFIED_ARCHIVE_NOT_CURRENT_PRICE",
-                    "reason": "历史行情仅可回放；当前官方日历未证明最近收盘：" + str(error)}
-            check.update(display_scope="LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
-                         latest_completed_session=latest, calendar_hashes=calendar_hashes,
-                         is_historical_close=True)
-        if snapshot.quote_date.isoformat() > research_day:
-            return None, None, {**check, "status": "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
-                "reason": "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性"}
-        if historical:
-            return None, None, {**check, "status": "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY",
-                "reason": "最近已完成交易日历史收盘，仅作展示；未作为本次研究价格或真实交易会话准入。"}
-        return path, digest, {**check, "status": "QUOTE_VERIFIED_FOR_RESEARCH_INPUT"}
-    except (ValueError, KeyError, TypeError, OSError) as error:
-        return None, None, {"status": "NOT_ADMITTED", "reason": str(error),
-                            "bundle_path": path.relative_to(root).as_posix()}
+    """Compatibility alias; the admission rule lives in quote_bridge."""
+    return admit_quote_for_research(root, bundle, symbol, research_day, today=today)
 
 
 def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
@@ -155,7 +104,12 @@ def run_daily_trade_assistant(*, root: Path, symbol: str, case: dict[str, Any],
     if "previous_workbench" in case and not baseline_optional_blockers:
         prior_path, _ = _pinned(root, case, "previous_workbench")
         previous = load_json_object(prior_path, "previous workbench")
-        verify_current_decision_workbench(previous)
+        verify_current_decision_workbench(
+            previous,
+            human_approval_provenance_verifier=lambda approval: (
+                verify_human_approval_transport_provenance(root, approval)
+            ),
+        )
         if previous.get("symbol") != symbol:
             raise ValueError("previous workbench symbol mismatch")
     responses = None

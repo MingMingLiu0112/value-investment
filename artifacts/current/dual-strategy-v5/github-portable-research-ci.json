@@ -1,0 +1,79 @@
+{
+  "action": "no_order",
+  "observed_at": "2026-10-21T17:38:59.875789+00:00",
+  "code_sha": "7c55b92a7fafed625929c51957ee4ead1ee17b10",
+  "workflows": {
+    "Core Research Gates": {
+      "id": 39644565332,
+      "name": "Core Research Gates",
+      "head_sha": "7c55b92a7fafed625929c51957ee4ead1ee17b10",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39644565332",
+      "jobs": [
+        {
+          "id": 119376595928,
+          "name": "offline-core",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-21T17:31:36Z",
+          "active_steps": []
+        },
+        {
+          "id": 119376596442,
+          "name": "postgres-integration",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-21T17:31:36Z",
+          "active_steps": []
+        }
+      ]
+    },
+    "Web Workbench": {
+      "id": 39644565288,
+      "name": "Web Workbench",
+      "head_sha": "7c55b92a7fafed625929c51957ee4ead1ee17b10",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39644565288",
+      "jobs": [
+        {
+          "id": 119376595799,
+          "name": "web",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-10-21T17:31:35Z",
+          "active_steps": []
+        }
+      ]
+    }
+  },
+  "bindings": [
+    {
+      "path": "artifacts/current/dual-strategy-v5/full-source-checkout-verification.json",
+      "sha256": "c333ca4f48acc88f5cd1f86ff1cc3f88ea4c7d681b3bd0ffbf301628dd30e850"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/retained-research-sources/public-evidence/manifest.json",
+      "sha256": "9affdee3449d9d9180b9e5278d13e8d6e39b6ef28f54a0e6ce0828482e61def6"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/manifest.json",
+      "sha256": "535534b0526e47a8742051dd54b85a7902c0eb3af991d05655c967a0eba4fc49"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/prior-session-handoff-verification.json",
+      "sha256": "f0cb42c8d88e5048974d8b870039e7eab6ef3afc09d56541d9be3e02395e7407"
+    }
+  ],
+  "scoped_research_archive": "PASS_FULL_STAGED_WINDOWS_CHECKOUT",
+  "full_inherited_research_archive": false,
+  "whole_site_cold_start": "NOT_PROVEN",
+  "final_browser_acceptance": "PENDING_NOT_PASSED",
+  "real_signature_created": false,
+  "real_trade_created": false,
+  "private_data_uploaded": false,
+  "excel_modified": false,
+  "total_goal": "IN_PROGRESS",
+  "real_assisted_use": "NOT_PROVEN"
+}

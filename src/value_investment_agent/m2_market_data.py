@@ -8,9 +8,10 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
+import base64
+import hashlib
 import json
 import math
-import time
 from typing import Any, Iterable
 
 import requests
@@ -149,31 +150,50 @@ def parse_tencent_board(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def fetch_sina_industry_quotes() -> tuple[bytes, dict[str, Any]]:
-    """Fetch the Sina maintained Shenwan classification and same-session quotes."""
-    try:
-        from akshare.stock_feature.stock_classify_sina import stock_classify_sina
-    except ImportError as error:
-        raise RuntimeError("AkShare Sina classification adapter is unavailable") from error
-    last_error: Exception | None = None
-    frame = None
-    for attempt in range(3):
-        try:
-            frame = stock_classify_sina("申万行业")
-            break
-        except Exception as error:
-            last_error = error
-            if attempt < 2:
-                time.sleep(2 * (attempt + 1))
-    if frame is None:
-        raise RuntimeError("Sina industry quote adapter failed after retries") from last_error
-    if frame is None or getattr(frame, "empty", False):
-        raise RuntimeError("Sina industry quote response is empty")
-    rows = frame.to_dict("records")
+    """Use the existing Sina node protocol with bounded requests and pagination."""
+    from bs4 import BeautifulSoup
+    from .infrastructure.hotspot.daily_market import bounded_get
+
+    endpoint = "https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center."
+    rows, originals = [], []
+    with requests.Session() as session:
+        session.trust_env = False
+        def read(method, params=None):
+            response = bounded_get(session.get, endpoint + method, params=params, timeout=(10, 20))
+            if not response.content or len(response.content) > 5_000_000:
+                raise ValueError("Sina classification response empty or oversized")
+            value = response.json()
+            originals.append(dict(source_url=response.url,
+                                  raw_base64=base64.b64encode(response.content).decode('ascii'),
+                                  sha256=hashlib.sha256(response.content).hexdigest(),
+                                  fetched_at=datetime.now(timezone.utc).isoformat()))
+            return value
+        categories = read("getHQNodes")[1][0][1]
+        boards = next(item[1] for item in categories
+                      if BeautifulSoup(item[0], "html.parser").get_text() == "申万行业")
+        if not isinstance(boards, list) or not 1 <= len(boards) <= 100:
+            raise ValueError("Sina industry node count invalid")
+        for board in boards:
+            name, node = board[0], board[2]
+            count = int(read("getHQNodeStockCount", dict(node=node)))
+            if not 0 <= count <= 8000:
+                raise ValueError("Sina industry security count invalid")
+            for page in range(1, math.ceil(count / 80) + 1):
+                payload = read("getHQNodeData", dict(page=page, num="80", sort="symbol",
+                    asc="1", node=node, symbol="", _s_r_a="init"))
+                if not isinstance(payload, list) or not 1 <= len(payload) <= 80:
+                    raise ValueError("Sina industry page invalid")
+                rows.extend({**row, "class": name} for row in payload)
+                if len(rows) > 8000:
+                    raise ValueError("Sina classification universe exceeds bound")
+    if not rows:
+        raise ValueError("Sina industry quote response is empty")
     raw, payload = _raw_json(
         rows,
-        source_name="AkShare / Sina Shenwan level-1 industry and quote snapshot",
+        source_name="Sina Shenwan level-1 industry and quote snapshot",
         source_url=SINA_CLASSIFY_URL,
         classification="申万行业",
+        original_responses=originals,
     )
     return raw, payload
 

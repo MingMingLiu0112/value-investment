@@ -4,6 +4,21 @@
   "policy": "A shim forwards to its replacement and must not duplicate behavior or become a new business-logic home.",
   "shims": [
     {
+      "old_path": "src/value_investment_agent/operations/authorization/trust_root_registry.py",
+      "new_path": "src/value_investment_agent/infrastructure/evidence/trust_root_registry.py",
+      "introduced_at": "unknown (pre-existing)",
+      "registered_at": "2026-10-21",
+      "consumers_remaining": ["legacy operations imports"],
+      "removal_condition": "Historical operations callers migrate to the existing shared infrastructure registry; trust policy is unchanged."
+    },
+    {
+      "old_path": "src/value_investment_agent/presentation/read_models/strategy_decision.py",
+      "new_path": "src/value_investment_agent/application/decision/public_strategy_assessment.py",
+      "introduced_at": "2026-10-20",
+      "consumers_remaining": ["tests/test_strategy_decision_read_model.py", "legacy public read-model imports"],
+      "removal_condition": "External consumers migrate to the application result contract; never move admission authority into the display adapter."
+    },
+    {
       "old_path": "src/value_investment_agent/workbook_compat.py",
       "new_path": "src/value_investment_agent/presentation/excel/workbook_compat.py",
       "introduced_at": "2026-09-26",

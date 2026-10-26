@@ -4,13 +4,14 @@ from __future__ import annotations
 from datetime import date, datetime
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from .common import (
     ACTION_NO_ORDER, encode_json_bytes, normalize_symbol, receipt, require_inside,
     sha256_bytes, sha256_file,
 )
 from .decision_surface import verify_current_decision_workbench
+from .research_reviews import verify_human_approval_transport_provenance
 from .workbench import load_existing_workbench_for_presentation
 from ...research_artifact_codecs import artifact_payload
 
@@ -27,7 +28,10 @@ def _select(payload: dict[str, Any], keys: tuple[str, ...]) -> dict[str, Any] | 
     return selected or None
 
 
-def _read(*, root: Path, path: Path, digest: str, symbol: str) -> dict[str, Any]:
+def _read(
+    *, root: Path, path: Path, digest: str, symbol: str,
+    human_approval_provenance_verifier: Callable[[Any], Any] | None = None,
+) -> dict[str, Any]:
     target = require_inside(root, root / path, "monthly workbench input")
     raw = target.read_bytes()
     if sha256_bytes(raw) != digest:
@@ -50,7 +54,12 @@ def _read(*, root: Path, path: Path, digest: str, symbol: str) -> dict[str, Any]
         scope = "HISTORICAL_RESEARCH_ONLY_NOT_CURRENT_ADVICE"
         uncertainty = ["Historical source hashes do not prove strict PIT or current admission."]
     else:
-        restored = verify_current_decision_workbench(payload)
+        verifier = human_approval_provenance_verifier or (
+            lambda approval: verify_human_approval_transport_provenance(root, approval)
+        )
+        restored = verify_current_decision_workbench(
+            payload, human_approval_provenance_verifier=verifier,
+        )
         objects = restored.dependency_objects
         case = artifact_payload(objects["research_case"])[1]
         facts = artifact_payload(objects["financial_facts"])[1]
@@ -103,6 +112,7 @@ def build_monthly_research_review(
     *, root: Path, symbol: str, current_workbench_path: Path,
     current_workbench_sha256: str, previous_workbench_path: Path | None = None,
     previous_workbench_sha256: str | None = None, output_path: Path | None = None,
+    human_approval_provenance_verifier: Callable[[Any], Any] | None = None,
 ) -> dict[str, Any]:
     """Compare replayed semantics without running research or changing approval.
 
@@ -115,9 +125,11 @@ def build_monthly_research_review(
     if (previous_workbench_path is None) != (previous_workbench_sha256 is None):
         raise ValueError("previous workbench requires both path and SHA-256")
     current = _read(root=root, path=current_workbench_path,
-                    digest=current_workbench_sha256, symbol=symbol)
+                    digest=current_workbench_sha256, symbol=symbol,
+                    human_approval_provenance_verifier=human_approval_provenance_verifier)
     previous = None if previous_workbench_path is None else _read(
         root=root, path=previous_workbench_path, digest=previous_workbench_sha256, symbol=symbol,
+        human_approval_provenance_verifier=human_approval_provenance_verifier,
     )
     if previous is not None and (
         previous["generated"] > current["generated"] or

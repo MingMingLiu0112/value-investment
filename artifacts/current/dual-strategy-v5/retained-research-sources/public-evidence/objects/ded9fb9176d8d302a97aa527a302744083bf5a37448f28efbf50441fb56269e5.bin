@@ -1,0 +1,805 @@
+{
+  "schema_version": "prospective-baseline-snapshot-v2",
+  "built_at": "2026-09-27T09:22:55.630013+00:00",
+  "registration_receipt_sha256": "8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5",
+  "baseline_input_sha256": "e39386945fa67e653b2424f3c761c6c206f46a73cc522a0af35a8016b2453c6c",
+  "action": "no_order",
+  "registration_time_assurance": "PROCESS_CLOCK_ONLY_UNATTESTED",
+  "strict_pit_admissible": false,
+  "cards": [
+    {
+      "case_id": "prospective-000333-20260927-v2",
+      "symbol": "000333",
+      "company": "美的集团",
+      "profile": "mature_manufacturing",
+      "baseline_cutoff_at": "2026-09-27T08:45:00+08:00",
+      "model_applicability": "MODEL_NOT_READY: existing segment facts do not establish verified FCFF scope, share denominator, capex split or WACC.",
+      "business_quality": "PARTIAL: household and commercial/industrial segments are disclosed, but competitive durability remains unverified.",
+      "financial_quality": "PARTIAL: 2025 segment revenue, margin and R&D facts exist in the retained issuer report.",
+      "capital_allocation": "DATA_INCOMPLETE: no independently time-bound baseline package for dividends, buybacks and debt is registered.",
+      "return_drivers": "Segment margin, cash conversion and reinvestment efficiency.",
+      "mispricing_hypothesis": "NOT_ESTABLISHED.",
+      "dividend_sustainability": "DATA_INCOMPLETE.",
+      "strongest_counterevidence": "Segment margin declined while volumes and revenue grew; durable economics cannot be inferred.",
+      "thesis_breakers": [
+        "verified cash conversion deteriorates",
+        "capex or working capital invalidates FCFF scope"
+      ],
+      "known_facts": [
+        {
+          "fact_id": "midea-2025fy-revenue-summary",
+          "fact_type": "revenue",
+          "value": "456451731",
+          "unit": "CNY_THOUSAND",
+          "scope": "report_summary",
+          "scope_label": "主要会计数据和财务指标",
+          "source_label": "营业收入（千元）",
+          "physical_page": 9,
+          "printed_page": 8,
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225065145.PDF",
+          "source_document_id": "cninfo:1225065145",
+          "source_sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6",
+          "available_at": "2026-04-01T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "published_at": "2026-03-30T16:00:00+00:00",
+          "source_path": "runtime/midea-2025-official.pdf",
+          "retrieved_at": "2026-09-27T05:14:16.684068+00:00",
+          "report_period": "2025FY",
+          "scan_evidence_sha256": "2e755c9d85cff8e1caffc09086d4aca9d846651c6c3526acd6616a85968c93d8",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "fact_id": "midea-2025fy-parent-profit-summary",
+          "fact_type": "parent_attributable_profit",
+          "value": "43945411",
+          "unit": "CNY_THOUSAND",
+          "scope": "report_summary",
+          "scope_label": "主要会计数据和财务指标",
+          "source_label": "归属于上市公司股东的净利润（千元）",
+          "physical_page": 9,
+          "printed_page": 8,
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225065145.PDF",
+          "source_document_id": "cninfo:1225065145",
+          "source_sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6",
+          "available_at": "2026-04-01T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "published_at": "2026-03-30T16:00:00+00:00",
+          "source_path": "runtime/midea-2025-official.pdf",
+          "retrieved_at": "2026-09-27T05:14:16.684068+00:00",
+          "report_period": "2025FY",
+          "scan_evidence_sha256": "2e755c9d85cff8e1caffc09086d4aca9d846651c6c3526acd6616a85968c93d8",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "fact_id": "midea-2025fy-operating-cash-flow-summary",
+          "fact_type": "operating_cash_flow",
+          "value": "53345930",
+          "unit": "CNY_THOUSAND",
+          "scope": "report_summary",
+          "scope_label": "主要会计数据和财务指标",
+          "source_label": "经营活动产生的现金流量净额（千元）",
+          "physical_page": 9,
+          "printed_page": 8,
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225065145.PDF",
+          "source_document_id": "cninfo:1225065145",
+          "source_sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6",
+          "available_at": "2026-04-01T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "published_at": "2026-03-30T16:00:00+00:00",
+          "source_path": "runtime/midea-2025-official.pdf",
+          "retrieved_at": "2026-09-27T05:14:16.684068+00:00",
+          "report_period": "2025FY",
+          "scan_evidence_sha256": "2e755c9d85cff8e1caffc09086d4aca9d846651c6c3526acd6616a85968c93d8",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "scope": "report_summary",
+          "unit": "CNY_THOUSAND",
+          "fact_id": "midea-2026h1-revenue",
+          "source_document_id": "cninfo:1225531404",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-29/1225531404.PDF",
+          "source_assurance": "INTERIM_UNAUDITED",
+          "physical_page": 7,
+          "source_label": "营业收入（千元）",
+          "value": "260042490",
+          "available_at": "2026-08-30T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "fact_type": "revenue",
+          "source_sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8",
+          "scope_label": "主要会计数据和财务指标",
+          "printed_page": 7,
+          "published_at": "2026-08-28T16:00:00+00:00",
+          "source_path": "runtime/prospective-public-event-20260927/gapfill-000333-20260927T091704729284Z/1225531404.pdf",
+          "retrieved_at": "2026-09-27T09:17:04.912077+00:00",
+          "report_period": "2026H1",
+          "scan_evidence_sha256": "e2fc1fe643dee6969aaf651af6dda69c6c7c6e951b0efb6ab4a62d61207d0a50",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "scope": "report_summary",
+          "unit": "CNY_THOUSAND",
+          "fact_id": "midea-2026h1-parent-attributable-profit",
+          "source_document_id": "cninfo:1225531404",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-29/1225531404.PDF",
+          "source_assurance": "INTERIM_UNAUDITED",
+          "physical_page": 7,
+          "source_label": "归属于上市公司股东的净利润（千元）",
+          "value": "26446037",
+          "available_at": "2026-08-30T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "fact_type": "parent_attributable_profit",
+          "source_sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8",
+          "scope_label": "主要会计数据和财务指标",
+          "printed_page": 7,
+          "published_at": "2026-08-28T16:00:00+00:00",
+          "source_path": "runtime/prospective-public-event-20260927/gapfill-000333-20260927T091704729284Z/1225531404.pdf",
+          "retrieved_at": "2026-09-27T09:17:04.912077+00:00",
+          "report_period": "2026H1",
+          "scan_evidence_sha256": "e2fc1fe643dee6969aaf651af6dda69c6c7c6e951b0efb6ab4a62d61207d0a50",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "scope": "report_summary",
+          "unit": "CNY_THOUSAND",
+          "fact_id": "midea-2026h1-operating-cash-flow",
+          "source_document_id": "cninfo:1225531404",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-29/1225531404.PDF",
+          "source_assurance": "INTERIM_UNAUDITED",
+          "physical_page": 7,
+          "source_label": "经营活动产生的现金流量净额（千元）",
+          "value": "37552090",
+          "available_at": "2026-08-30T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "fact_type": "operating_cash_flow",
+          "source_sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8",
+          "scope_label": "主要会计数据和财务指标",
+          "printed_page": 7,
+          "published_at": "2026-08-28T16:00:00+00:00",
+          "source_path": "runtime/prospective-public-event-20260927/gapfill-000333-20260927T091704729284Z/1225531404.pdf",
+          "retrieved_at": "2026-09-27T09:17:04.912077+00:00",
+          "report_period": "2026H1",
+          "scan_evidence_sha256": "e2fc1fe643dee6969aaf651af6dda69c6c7c6e951b0efb6ab4a62d61207d0a50",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        }
+      ],
+      "unknowns": [
+        "independent available_at for retained PDF",
+        "maintenance versus growth capex",
+        "ordinary-share denominator",
+        "WACC"
+      ],
+      "next_evidence_trigger": "next official financial filing with cash-flow, capital-allocation and share disclosures",
+      "research_status": "BASELINE_PARTIAL",
+      "valuation_status": "VALUATION_NOT_READY",
+      "unadmitted_fact_ids": [],
+      "action": "no_order"
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "symbol": "600887",
+      "company": "伊利股份",
+      "profile": "quality_compounder",
+      "baseline_cutoff_at": "2026-09-27T08:45:00+08:00",
+      "model_applicability": "MODEL_NOT_READY: residual-income inputs and ordinary-share scope remain unverified.",
+      "business_quality": "PARTIAL: issuer describes brand, channel and supply-chain advantages; independent moat evidence is absent.",
+      "financial_quality": "PARTIAL: 2026H1 revenue grew while profit declined; cash flow improved with stated timing factors.",
+      "capital_allocation": "PARTIAL: no interim distribution; buyback cash is disclosed, but sustainable distribution capacity is unresolved.",
+      "return_drivers": "Product mix, margins, channel cash quality and reinvestment returns.",
+      "mispricing_hypothesis": "NOT_ESTABLISHED.",
+      "dividend_sustainability": "DATA_INCOMPLETE: current yield is not used as a conclusion.",
+      "strongest_counterevidence": "Profit decline, impairment, contract-liability fall and short-term borrowing rise.",
+      "thesis_breakers": [
+        "cash flow reverses while leverage rises",
+        "further impairment or margin erosion"
+      ],
+      "known_facts": [
+        {
+          "fact_id": "yili-2026h1-revenue",
+          "fact_type": "revenue",
+          "value": "64330936547.38",
+          "unit": "CNY",
+          "scope": "consolidated",
+          "scope_label": "合并利润表",
+          "source_label": "营业收入",
+          "physical_page": 52,
+          "printed_page": 49,
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+          "source_document_id": "cninfo:1225511409",
+          "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+          "available_at": "2026-08-28T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "published_at": "2026-08-26T16:00:00+00:00",
+          "source_path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511409.pdf",
+          "retrieved_at": "2026-09-27T05:14:18.299620+00:00",
+          "report_period": "2026H1",
+          "scan_evidence_sha256": "a7b72370af76aa4dfb0f018359b7fc272359310a06f2ca164034a941613e533e",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "fact_id": "yili-2026h1-parent-attributable-profit",
+          "fact_type": "parent_attributable_profit",
+          "value": "5758628097.79",
+          "unit": "CNY",
+          "scope": "consolidated",
+          "scope_label": "合并利润表",
+          "source_label": "归属于母公司股东的净利润",
+          "physical_page": 53,
+          "printed_page": 50,
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+          "source_document_id": "cninfo:1225511409",
+          "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+          "available_at": "2026-08-28T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "published_at": "2026-08-26T16:00:00+00:00",
+          "source_path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511409.pdf",
+          "retrieved_at": "2026-09-27T05:14:18.299620+00:00",
+          "report_period": "2026H1",
+          "scan_evidence_sha256": "a7b72370af76aa4dfb0f018359b7fc272359310a06f2ca164034a941613e533e",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "fact_id": "yili-2026h1-operating-cash-flow",
+          "fact_type": "operating_cash_flow",
+          "value": "9759147483.18",
+          "unit": "CNY",
+          "scope": "consolidated",
+          "scope_label": "合并现金流量表",
+          "source_label": "经营活动产生的现金流量净额",
+          "physical_page": 55,
+          "printed_page": 52,
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+          "source_document_id": "cninfo:1225511409",
+          "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+          "available_at": "2026-08-28T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "published_at": "2026-08-26T16:00:00+00:00",
+          "source_path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511409.pdf",
+          "retrieved_at": "2026-09-27T05:14:18.299620+00:00",
+          "report_period": "2026H1",
+          "scan_evidence_sha256": "a7b72370af76aa4dfb0f018359b7fc272359310a06f2ca164034a941613e533e",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "fact_id": "yili-2026h1-asset-impairment-loss",
+          "fact_type": "asset_impairment_loss",
+          "value": "-2455875173.02",
+          "unit": "CNY",
+          "scope": "consolidated",
+          "scope_label": "合并利润表",
+          "source_label": "资产减值损失",
+          "physical_page": 52,
+          "printed_page": 49,
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+          "source_document_id": "cninfo:1225511409",
+          "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+          "available_at": "2026-08-28T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "published_at": "2026-08-26T16:00:00+00:00",
+          "source_path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511409.pdf",
+          "retrieved_at": "2026-09-27T05:14:18.299620+00:00",
+          "report_period": "2026H1",
+          "scan_evidence_sha256": "a7b72370af76aa4dfb0f018359b7fc272359310a06f2ca164034a941613e533e",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "fact_id": "yili-2026h1-short-term-borrowing",
+          "fact_type": "short_term_borrowing",
+          "value": "64677193034.15",
+          "unit": "CNY",
+          "scope": "consolidated",
+          "scope_label": "合并资产负债表",
+          "source_label": "短期借款",
+          "physical_page": 49,
+          "printed_page": 46,
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+          "source_document_id": "cninfo:1225511409",
+          "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+          "available_at": "2026-08-28T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality",
+            "capital_allocation"
+          ],
+          "published_at": "2026-08-26T16:00:00+00:00",
+          "source_path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511409.pdf",
+          "retrieved_at": "2026-09-27T05:14:18.299620+00:00",
+          "report_period": "2026H1",
+          "scan_evidence_sha256": "a7b72370af76aa4dfb0f018359b7fc272359310a06f2ca164034a941613e533e",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "fact_id": "yili-2026h1-contract-liabilities",
+          "fact_type": "contract_liabilities",
+          "value": "4948856599.18",
+          "unit": "CNY",
+          "scope": "consolidated",
+          "scope_label": "合并资产负债表",
+          "source_label": "合同负债",
+          "physical_page": 49,
+          "printed_page": 46,
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+          "source_document_id": "cninfo:1225511409",
+          "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+          "available_at": "2026-08-28T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "published_at": "2026-08-26T16:00:00+00:00",
+          "source_path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511409.pdf",
+          "retrieved_at": "2026-09-27T05:14:18.299620+00:00",
+          "report_period": "2026H1",
+          "scan_evidence_sha256": "a7b72370af76aa4dfb0f018359b7fc272359310a06f2ca164034a941613e533e",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        }
+      ],
+      "unknowns": [
+        "ROIC and incremental ROIC",
+        "ordinary-share denominator",
+        "sustainable distributable cash"
+      ],
+      "next_evidence_trigger": "next statutory financial report or material dividend/buyback filing",
+      "research_status": "BASELINE_PARTIAL",
+      "valuation_status": "VALUATION_NOT_READY",
+      "unadmitted_fact_ids": [
+        "yili-2026h1-financial-quality"
+      ],
+      "action": "no_order"
+    },
+    {
+      "case_id": "prospective-601088-20260927-v2",
+      "symbol": "601088",
+      "company": "中国神华",
+      "profile": "cyclical_cash_return",
+      "baseline_cutoff_at": "2026-09-27T08:45:00+08:00",
+      "model_applicability": "CYCLICAL_MODEL_NOT_READY: reported cycle profit does not establish normalized earnings, unit cost or maintenance capex.",
+      "business_quality": "PARTIAL: integrated coal, power and transport operations are disclosed; durable advantage is not independently proven.",
+      "financial_quality": "PARTIAL: 2025 revenue, operating profit, cash flow, coal volume and average price changes are available.",
+      "capital_allocation": "PARTIAL: capex is reported but maintenance versus growth and sustainable distribution capacity remain unresolved.",
+      "return_drivers": "Normalized coal price/cost, power and transport contribution, capex discipline and distribution capacity.",
+      "mispricing_hypothesis": "NOT_ESTABLISHED.",
+      "dividend_sustainability": "DATA_INCOMPLETE: ordinary and special distributions are not normalized.",
+      "strongest_counterevidence": "Revenue, operating profit, operating cash flow and coal price all declined in reported 2025 figures.",
+      "thesis_breakers": [
+        "cycle-normalized margin deteriorates",
+        "capital needs exceed sustainable cash distribution"
+      ],
+      "known_facts": [
+        {
+          "unit": "CNY_MILLION",
+          "scope": "report_summary",
+          "scope_label": "近三年主要会计数据和财务指标",
+          "physical_page": 8,
+          "printed_page": 8,
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225064293.PDF",
+          "source_document_id": "cninfo:1225064293",
+          "source_sha256": "7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2",
+          "published_at": "2026-03-30T16:00:00+00:00",
+          "available_at": "2026-04-01T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "fact_id": "shenhua-2025fy-revenue-summary",
+          "fact_type": "revenue",
+          "value": "294916",
+          "source_label": "营业收入",
+          "source_path": "runtime/prospective-baseline-20260927/shenhua-index-20260927T044701251789Z/shenhua-2025-annual.pdf",
+          "retrieved_at": "2026-09-27T05:14:19.440939+00:00",
+          "report_period": "2025FY",
+          "scan_evidence_sha256": "1849e0c2824294d5a1d1b8c5f99ae20e1faff88a165c593a34df2a83998f217e",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "unit": "CNY_MILLION",
+          "scope": "report_summary",
+          "scope_label": "近三年主要会计数据和财务指标",
+          "physical_page": 8,
+          "printed_page": 8,
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225064293.PDF",
+          "source_document_id": "cninfo:1225064293",
+          "source_sha256": "7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2",
+          "published_at": "2026-03-30T16:00:00+00:00",
+          "available_at": "2026-04-01T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "fact_id": "shenhua-2025fy-parent-profit-summary",
+          "fact_type": "parent_attributable_profit",
+          "value": "52849",
+          "source_label": "归属于本公司股东的净利润",
+          "source_path": "runtime/prospective-baseline-20260927/shenhua-index-20260927T044701251789Z/shenhua-2025-annual.pdf",
+          "retrieved_at": "2026-09-27T05:14:19.440939+00:00",
+          "report_period": "2025FY",
+          "scan_evidence_sha256": "1849e0c2824294d5a1d1b8c5f99ae20e1faff88a165c593a34df2a83998f217e",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "unit": "CNY_MILLION",
+          "scope": "report_summary",
+          "scope_label": "近三年主要会计数据和财务指标",
+          "physical_page": 8,
+          "printed_page": 8,
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225064293.PDF",
+          "source_document_id": "cninfo:1225064293",
+          "source_sha256": "7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2",
+          "published_at": "2026-03-30T16:00:00+00:00",
+          "available_at": "2026-04-01T00:00:00+08:00",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "fact_id": "shenhua-2025fy-operating-cash-flow-summary",
+          "fact_type": "operating_cash_flow",
+          "value": "75059",
+          "source_label": "经营活动产生的现金流量净额",
+          "source_path": "runtime/prospective-baseline-20260927/shenhua-index-20260927T044701251789Z/shenhua-2025-annual.pdf",
+          "retrieved_at": "2026-09-27T05:14:19.440939+00:00",
+          "report_period": "2025FY",
+          "scan_evidence_sha256": "1849e0c2824294d5a1d1b8c5f99ae20e1faff88a165c593a34df2a83998f217e",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "source_label": "营业收入",
+          "fact_id": "shenhua-2026h1-revenue",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "source_sha256": "ff4a670c7aa9e0309dc610a0e225d490970731dcc14eda234d73bb8c9b9b54f4",
+          "fact_type": "revenue",
+          "unit": "CNY_MILLION",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-29/1225531759.PDF",
+          "scope_label": "主要会计数据",
+          "printed_page": 6,
+          "source_document_id": "cninfo:1225531759",
+          "value": "189338",
+          "physical_page": 6,
+          "available_at": "2026-08-30T00:00:00+08:00",
+          "source_assurance": "INTERIM_UNAUDITED_LIMITED_REVIEW",
+          "published_at": "2026-08-28T16:00:00+00:00",
+          "scope": "report_summary",
+          "source_path": "runtime/prospective-public-event-20260927/gapfill-601088-20260927T070618883648Z/1225531759.pdf",
+          "retrieved_at": "2026-09-27T07:06:20.930086+00:00",
+          "report_period": "2026H1",
+          "scan_evidence_sha256": "43dd8c7115e28669db47413d4b783a428bb03c58ff6c0171c7d95ae94ac78b88",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "source_label": "归属于上市公司股东的净利润",
+          "fact_id": "shenhua-2026h1-parent-profit",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "source_sha256": "ff4a670c7aa9e0309dc610a0e225d490970731dcc14eda234d73bb8c9b9b54f4",
+          "fact_type": "parent_attributable_profit",
+          "unit": "CNY_MILLION",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-29/1225531759.PDF",
+          "scope_label": "主要会计数据",
+          "printed_page": 6,
+          "source_document_id": "cninfo:1225531759",
+          "value": "28715",
+          "physical_page": 6,
+          "available_at": "2026-08-30T00:00:00+08:00",
+          "source_assurance": "INTERIM_UNAUDITED_LIMITED_REVIEW",
+          "published_at": "2026-08-28T16:00:00+00:00",
+          "scope": "report_summary",
+          "source_path": "runtime/prospective-public-event-20260927/gapfill-601088-20260927T070618883648Z/1225531759.pdf",
+          "retrieved_at": "2026-09-27T07:06:20.930086+00:00",
+          "report_period": "2026H1",
+          "scan_evidence_sha256": "43dd8c7115e28669db47413d4b783a428bb03c58ff6c0171c7d95ae94ac78b88",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        },
+        {
+          "source_label": "经营活动产生的现金流量净额",
+          "fact_id": "shenhua-2026h1-operating-cash-flow",
+          "dependency_nodes": [
+            "financial_quality"
+          ],
+          "source_sha256": "ff4a670c7aa9e0309dc610a0e225d490970731dcc14eda234d73bb8c9b9b54f4",
+          "fact_type": "operating_cash_flow",
+          "unit": "CNY_MILLION",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-29/1225531759.PDF",
+          "scope_label": "主要会计数据",
+          "printed_page": 6,
+          "source_document_id": "cninfo:1225531759",
+          "value": "54664",
+          "physical_page": 6,
+          "available_at": "2026-08-30T00:00:00+08:00",
+          "source_assurance": "INTERIM_UNAUDITED_LIMITED_REVIEW",
+          "published_at": "2026-08-28T16:00:00+00:00",
+          "scope": "report_summary",
+          "source_path": "runtime/prospective-public-event-20260927/gapfill-601088-20260927T070618883648Z/1225531759.pdf",
+          "retrieved_at": "2026-09-27T07:06:20.930086+00:00",
+          "report_period": "2026H1",
+          "scan_evidence_sha256": "43dd8c7115e28669db47413d4b783a428bb03c58ff6c0171c7d95ae94ac78b88",
+          "availability_precision": "DATE_ONLY_CONSERVATIVE_NEXT_DAY"
+        }
+      ],
+      "unknowns": [
+        "normalized commodity price range",
+        "unit-cost reconciliation",
+        "maintenance capex",
+        "ordinary versus special dividend"
+      ],
+      "next_evidence_trigger": "next official financial report or material coal/power/capital-allocation filing",
+      "research_status": "BASELINE_PARTIAL",
+      "valuation_status": "VALUATION_NOT_READY",
+      "unadmitted_fact_ids": [
+        "shenhua-2025-operating-facts"
+      ],
+      "action": "no_order"
+    }
+  ],
+  "observation_ledger": [
+    {
+      "case_id": "prospective-000333-20260927-v2",
+      "symbol": "000333",
+      "observation_id": "baseline:midea-2025fy-revenue-summary",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-04-01T00:00:00+08:00",
+      "source_document_id": "cninfo:1225065145",
+      "source_sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6",
+      "fact_type": "revenue",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-000333-20260927-v2",
+      "symbol": "000333",
+      "observation_id": "baseline:midea-2025fy-parent-profit-summary",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-04-01T00:00:00+08:00",
+      "source_document_id": "cninfo:1225065145",
+      "source_sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6",
+      "fact_type": "parent_attributable_profit",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-000333-20260927-v2",
+      "symbol": "000333",
+      "observation_id": "baseline:midea-2025fy-operating-cash-flow-summary",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-04-01T00:00:00+08:00",
+      "source_document_id": "cninfo:1225065145",
+      "source_sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6",
+      "fact_type": "operating_cash_flow",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-000333-20260927-v2",
+      "symbol": "000333",
+      "observation_id": "baseline:midea-2026h1-revenue",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-08-30T00:00:00+08:00",
+      "source_document_id": "cninfo:1225531404",
+      "source_sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8",
+      "fact_type": "revenue",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-000333-20260927-v2",
+      "symbol": "000333",
+      "observation_id": "baseline:midea-2026h1-parent-attributable-profit",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-08-30T00:00:00+08:00",
+      "source_document_id": "cninfo:1225531404",
+      "source_sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8",
+      "fact_type": "parent_attributable_profit",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-000333-20260927-v2",
+      "symbol": "000333",
+      "observation_id": "baseline:midea-2026h1-operating-cash-flow",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-08-30T00:00:00+08:00",
+      "source_document_id": "cninfo:1225531404",
+      "source_sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8",
+      "fact_type": "operating_cash_flow",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "symbol": "600887",
+      "observation_id": "baseline:yili-2026h1-revenue",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-08-28T00:00:00+08:00",
+      "source_document_id": "cninfo:1225511409",
+      "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "fact_type": "revenue",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "symbol": "600887",
+      "observation_id": "baseline:yili-2026h1-parent-attributable-profit",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-08-28T00:00:00+08:00",
+      "source_document_id": "cninfo:1225511409",
+      "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "fact_type": "parent_attributable_profit",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "symbol": "600887",
+      "observation_id": "baseline:yili-2026h1-operating-cash-flow",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-08-28T00:00:00+08:00",
+      "source_document_id": "cninfo:1225511409",
+      "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "fact_type": "operating_cash_flow",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "symbol": "600887",
+      "observation_id": "baseline:yili-2026h1-asset-impairment-loss",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-08-28T00:00:00+08:00",
+      "source_document_id": "cninfo:1225511409",
+      "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "fact_type": "asset_impairment_loss",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "symbol": "600887",
+      "observation_id": "baseline:yili-2026h1-short-term-borrowing",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-08-28T00:00:00+08:00",
+      "source_document_id": "cninfo:1225511409",
+      "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "fact_type": "short_term_borrowing",
+      "dependency_nodes": [
+        "financial_quality",
+        "capital_allocation"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-600887-20260927-v2",
+      "symbol": "600887",
+      "observation_id": "baseline:yili-2026h1-contract-liabilities",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-08-28T00:00:00+08:00",
+      "source_document_id": "cninfo:1225511409",
+      "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "fact_type": "contract_liabilities",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-601088-20260927-v2",
+      "symbol": "601088",
+      "observation_id": "baseline:shenhua-2025fy-revenue-summary",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-04-01T00:00:00+08:00",
+      "source_document_id": "cninfo:1225064293",
+      "source_sha256": "7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2",
+      "fact_type": "revenue",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-601088-20260927-v2",
+      "symbol": "601088",
+      "observation_id": "baseline:shenhua-2025fy-parent-profit-summary",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-04-01T00:00:00+08:00",
+      "source_document_id": "cninfo:1225064293",
+      "source_sha256": "7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2",
+      "fact_type": "parent_attributable_profit",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-601088-20260927-v2",
+      "symbol": "601088",
+      "observation_id": "baseline:shenhua-2025fy-operating-cash-flow-summary",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-04-01T00:00:00+08:00",
+      "source_document_id": "cninfo:1225064293",
+      "source_sha256": "7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2",
+      "fact_type": "operating_cash_flow",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-601088-20260927-v2",
+      "symbol": "601088",
+      "observation_id": "baseline:shenhua-2026h1-revenue",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-08-30T00:00:00+08:00",
+      "source_document_id": "cninfo:1225531759",
+      "source_sha256": "ff4a670c7aa9e0309dc610a0e225d490970731dcc14eda234d73bb8c9b9b54f4",
+      "fact_type": "revenue",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-601088-20260927-v2",
+      "symbol": "601088",
+      "observation_id": "baseline:shenhua-2026h1-parent-profit",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-08-30T00:00:00+08:00",
+      "source_document_id": "cninfo:1225531759",
+      "source_sha256": "ff4a670c7aa9e0309dc610a0e225d490970731dcc14eda234d73bb8c9b9b54f4",
+      "fact_type": "parent_attributable_profit",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    },
+    {
+      "case_id": "prospective-601088-20260927-v2",
+      "symbol": "601088",
+      "observation_id": "baseline:shenhua-2026h1-operating-cash-flow",
+      "observed_at": "2026-09-27T09:22:55.630013+00:00",
+      "source_available_at": "2026-08-30T00:00:00+08:00",
+      "source_document_id": "cninfo:1225531759",
+      "source_sha256": "ff4a670c7aa9e0309dc610a0e225d490970731dcc14eda234d73bb8c9b9b54f4",
+      "fact_type": "operating_cash_flow",
+      "dependency_nodes": [
+        "financial_quality"
+      ],
+      "classification": "BASELINE_FACT"
+    }
+  ],
+  "supplemental_facts_sha256": "0bbc21f26fd5be480745f2e1624496930863945bd29cea4da8791f27532a5628"
+}

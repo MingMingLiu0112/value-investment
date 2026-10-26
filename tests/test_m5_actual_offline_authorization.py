@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from m5_actual_authorization_fixture import synthetic_actual_receipt
+from m5_actual_authorization_fixture import synthetic_actual_receipt, synthetic_actual_use_clock
 from test_m5_run_request import REVIEWED_AT, RUN_ID
 from value_investment_agent.m5_actual_offline_authorization import (
     M5ActualOfflineAuthorization,
@@ -46,7 +46,7 @@ def test_actual_capability_cannot_be_constructed_from_plausible_hex():
         )
 
 
-def test_signed_actual_receipt_issues_sealed_no_order_capability():
+def test_signed_actual_receipt_issues_sealed_no_order_capability(synthetic_actual_use_clock):
     fixture, capability = _verified()
     assert capability.as_policy()["action"] == "no_order"
     assert capability.as_policy()["scheduler_enabled"] is False
@@ -65,7 +65,7 @@ def test_signed_actual_receipt_issues_sealed_no_order_capability():
     assert restored.as_policy() == capability.as_policy()
 
 
-def test_actual_state_round_trips_only_with_embedded_signed_capability():
+def test_actual_state_round_trips_only_with_embedded_signed_capability(synthetic_actual_use_clock):
     _, capability = _verified()
     state = M5EventRunState.empty(
         state_key="actual-offline-600887",
@@ -238,7 +238,7 @@ def test_actual_receipt_rejects_duplicate_approval_under_new_authorization_id():
         verify_m5_actual_approval_receipt(bundle, trust)
 
 
-def test_actual_capability_cannot_be_repurposed_to_another_event_or_run():
+def test_actual_capability_cannot_be_repurposed_to_another_event_or_run(synthetic_actual_use_clock):
     fixture, capability = _verified()
     with pytest.raises(ValueError, match="run_id"):
         capability.verify(run_id="different-run")
@@ -363,7 +363,7 @@ def test_actual_receipt_rejects_tampered_valid_until():
         )
 
 
-def test_actual_capability_cannot_be_replayed_after_expiry():
+def test_actual_capability_cannot_be_replayed_after_expiry(synthetic_actual_use_clock):
     fixture, capability = _verified()
     valid_until = datetime.fromisoformat(
         fixture["bundle"]["receipt_chain"][0]["payload"]["valid_until"]
@@ -377,3 +377,31 @@ def test_actual_capability_cannot_be_replayed_after_expiry():
             capability.as_policy(),
             at=after_expiry,
         )
+
+
+@pytest.mark.parametrize("boundary", ["before", "after"])
+def test_implicit_use_clock_still_enforces_signed_window(synthetic_actual_use_clock, boundary):
+    fixture, capability = _verified()
+    receipt = fixture["bundle"]["receipt_chain"][0]["payload"]
+    if boundary == "before":
+        instant = datetime.fromisoformat(receipt["authorized_at"]) - timedelta(microseconds=1)
+        message = "before its approval"
+    else:
+        instant = datetime.fromisoformat(receipt["valid_until"]) + timedelta(microseconds=1)
+        message = "expired"
+    synthetic_actual_use_clock["now"] = instant
+
+    with pytest.raises(ValueError, match=message):
+        verify_m5_actual_approval_receipt(fixture["bundle"], fixture["trust_root"])
+    with pytest.raises(ValueError, match=message):
+        capability.verify()
+    with pytest.raises(ValueError, match=message):
+        actual_offline_authorization_from_payload(capability.as_policy())
+    # An explicit in-window time still takes precedence over the test default.
+    capability.verify(at=REVIEWED_AT)
+
+
+def test_synthetic_use_clock_patch_does_not_leak():
+    from value_investment_agent.operations.authorization import m5_actual_approval_receipt
+
+    assert m5_actual_approval_receipt._use_time.__module__ == m5_actual_approval_receipt.__name__

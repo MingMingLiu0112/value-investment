@@ -1,0 +1,10 @@
+{
+  "schema_version": "public-research-refresh-v1",
+  "action": "no_order",
+  "enabled": true,
+  "build_value_research_priority": true,
+  "execute_value_enrichment": true,
+  "priority_budget": 10,
+  "enrichment_budget": 10,
+  "execution_budget": 2
+}

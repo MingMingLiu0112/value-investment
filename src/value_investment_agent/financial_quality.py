@@ -37,6 +37,28 @@ def _accepted(point: dict | None) -> bool:
     if not point or point.get("validation_status") != "verified":
         return False
     metadata = point.get("metadata") or {}
+    method = 'OFFICIAL_BALANCE_RECONCILIATION_V1'
+    if (metadata.get('verification_method') == method or metadata.get('derivation_formula') == method
+            or metadata.get('single_source_balance_verification') is True):
+        proof = metadata.get('balance_reconciliation') or {}
+        owner = proof.get('owner_evidence') or {}
+        # Only the derived ratio is eligible. Original balances are not released
+        # to valuation; public consumption must rebuild this proof from bytes.
+        return (point.get('field_name') == 'debt_ratio' and point.get('unit') == 'percent'
+            and metadata.get('verification_method') == method
+            and metadata.get('derivation_formula') == method
+            and metadata.get('single_source_balance_verification') is True
+            and metadata.get('automatic_cross_source_verification') is False
+            and metadata.get('assurance_basis') == 'source_reported_only'
+            and metadata.get('statement_scope') == 'consolidated' and metadata.get('currency') == 'CNY'
+            and (metadata.get('balance_reconciliation') or {}).get('status') == 'TWO_PERIOD_EXACT_RECONCILIATION'
+            and bool(owner.get('legal_name'))
+            and owner.get('legal_name') == owner.get('compiler_name') == (proof.get('source_binding') or {}).get('issuer')
+            and owner.get('security_code') == point.get('symbol')
+            and all(owner.get(key) for key in ('legal_name_page', 'legal_name_excerpt',
+                'security_code_page', 'security_code_excerpt', 'compiler_page', 'compiler_excerpt'))
+            and bool(proof.get('table_context_id'))
+            and not metadata.get('evidence_quarantine'))
     if (point.get('field_name') == 'interest_bearing_debt'
             and metadata.get('complete_debt_verified') is not True):
         return False

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import product
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from ...domain.decision.decision_recommendation import (
     DECISION_RECOMMENDATION_V3_SCHEMA,
@@ -239,9 +239,22 @@ def _verify_predecision(
             else {}
         ),
         price_attractiveness=objects["price_attractiveness"],
+        require_authenticated_approval_provenance=True,
     )
-    if rebuilt.as_policy() != stored_predecision.as_policy():
-        raise ValueError("Stored PreDecisionEligibility does not reproduce")
+    rebuilt_policy = rebuilt.as_policy()
+    stored_policy = stored_predecision.as_policy()
+    if rebuilt_policy != stored_policy:
+        changed = sorted(
+            key for key in set(rebuilt_policy) | set(stored_policy)
+            if rebuilt_policy.get(key) != stored_policy.get(key)
+        )
+        raise ValueError(
+            "Stored PreDecisionEligibility does not reproduce: "
+            + "; ".join(
+                f"{key}={rebuilt_policy.get(key)!r} stored={stored_policy.get(key)!r}"
+                for key in changed
+            )
+        )
 
 
 def _restore_optional_payload_inputs(
@@ -295,6 +308,7 @@ def verify_decision_recommendation_payload(
     *,
     payload: Mapping[str, Any],
     recommendation_artifact: StoredResearchArtifact | None = None,
+    human_approval_provenance_verifier: Callable[[Any], Any] | None = None,
 ) -> RestoredDecisionRecommendation:
     """Rebuild one recommendation solely from repository-resolved dependencies."""
     data = dict(payload)
@@ -329,6 +343,10 @@ def verify_decision_recommendation_payload(
             + ", ".join(sorted(missing))
         )
     objects = _decode_dependencies(by_role)
+    if human_approval_provenance_verifier is not None and objects.get('human_approval') is not None:
+        objects['human_approval'] = human_approval_provenance_verifier(
+            objects['human_approval']
+        )
     _verify_predecision(recommendation, by_role, objects)
 
     research_case = objects["research_case"]
@@ -411,6 +429,7 @@ def restore_decision_recommendation(
     repository: ResearchArtifactRepository,
     *,
     artifact_id: str,
+    human_approval_provenance_verifier: Callable[[Any], Any] | None = None,
 ) -> RestoredDecisionRecommendation:
     """Restore one recommendation exclusively from immutable repository rows."""
     stored = repository.load_by_id(artifact_id)
@@ -422,6 +441,7 @@ def restore_decision_recommendation(
         repository,
         payload=stored.envelope.payload_object(),
         recommendation_artifact=stored,
+        human_approval_provenance_verifier=human_approval_provenance_verifier,
     )
 
 

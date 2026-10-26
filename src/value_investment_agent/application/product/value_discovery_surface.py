@@ -10,6 +10,15 @@ from .common import load_json_object, require_inside, sha256_file, write_new_jso
 
 def publish_value_discovery_report(*, root: Path, receipt_path: Path,
                                    receipt_sha256: str, output_path: Path) -> dict:
+    report = project_value_discovery_report(root=root, receipt_path=receipt_path,
+                                            receipt_sha256=receipt_sha256)
+    write_new_json(output_path, report)
+    return report
+
+
+def project_value_discovery_report(*, root: Path, receipt_path: Path,
+                                   receipt_sha256: str) -> dict:
+    """Revalidate sources without writing or granting research admission."""
     receipt_path = require_inside(root / "runtime", receipt_path, "M2 receipt")
     if sha256_file(receipt_path) != receipt_sha256:
         raise ValueError("M2 receipt hash mismatch")
@@ -59,5 +68,26 @@ def publish_value_discovery_report(*, root: Path, receipt_path: Path,
             "lead_symbols": [lead["symbol"] for lead in leads],
         },
     }
-    write_new_json(output_path, report)
+    from ..discovery.scoped_screening import VERSION, OFFICIAL_VERSION, scoped_inputs
+    references = {reference.id: reference for reference in receipt.evidence_refs}
+    official_input = (load_json_object(root / references['official'].path, 'official scan input')
+                      if 'official' in references else {})
+    partial_source = (official_input.get('parser_version') == OFFICIAL_VERSION
+        or official_input.get('scope') == 'OBSERVED_VENUES_ONLY_NOT_ALL_A'
+        or receipt.universe.scope == 'OBSERVED_VENUES_ONLY_NOT_ALL_A')
+    if partial_source and receipt.rule_version != VERSION:
+        raise ValueError('Partial official input requires the scoped screening rule')
+    if receipt.rule_version == VERSION:
+        inputs = {key: load_json_object(root / references[key].path, 'scoped scan ' + key)
+                  for key in ('official', 'tencent', 'sina')}
+        _, _, scope = scoped_inputs(root=root, official_payload=inputs['official'],
+            tencent_payload=inputs['tencent'], sina_payload=inputs['sina'])
+        if (receipt.universe.complete or receipt.universe.scope != scope['scope']
+                or receipt.data_health.universe_count != scope['observed_universe_count']
+                or receipt.data_health.status != 'PARTIAL'
+                or {row.symbol for row in receipt.universe.records}
+                    != {row['symbol'] for row in inputs['official']['records']}):
+            raise ValueError('Scoped receipt disagrees with official coverage')
+        report['screening_scope'] = scope
+        report['semantic_content']['screening_scope'] = scope
     return report

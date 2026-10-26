@@ -1,0 +1,31 @@
+{
+  "stage": "S2",
+  "status": "PARTIAL",
+  "action": "no_order",
+  "source_commit": "44996c8e7e30c73889aa626f20a87851d055d8b5",
+  "source_version": "5c589e830cf691e47b212a1dc48d029df3bffffd2b7bda86a44b123090013d1e",
+  "data_version": "61525b2918dc33f9f3cc761649b89dc1ba9c13443e4dcfb80381b8be9702facf",
+  "input_sha256": "574a7a1b649d27ac330860e63b20b587f4aec9da984be4f8a57b884f657cb5c6",
+  "computed_at": "2026-10-18T09:24:36.822583+00:00",
+  "available_at": "2026-10-18T09:24:36.822583+00:00",
+  "historical_cutoff_at": "2026-10-17T10:58:56.051146+00:00",
+  "strict_contemporaneous_pit": "NOT_PROVEN",
+  "supersedes": {
+    "path": "artifacts/current/web-first-acceptance/s2/midea-consumed-v3/package.json",
+    "sha256": "6bda32f09430b361ffc87ea5914e5d9b1a4b6e179f38b5cdd7a7d558c0595fdf",
+    "reason": "COPIED_OUTPUT_TIMESTAMPS_INVALID_FOR_NEW_REPLAY_DO_NOT_ADMIT"
+  },
+  "original_candidate_unchanged": true,
+  "valuation_unchanged": true,
+  "valuation": {
+    "bear": "36.0121866604528720800629631840921914063801838080",
+    "base": "45.7417037044192281574936570926129861357849631511",
+    "bull": "58.1686744055803340295467634666441075299523416697"
+  },
+  "current_pointer_changed": false,
+  "human_approved": false,
+  "formal_eligibility": false,
+  "price_admitted": false,
+  "position_guidance": null,
+  "actual_browser_evidence": "NOT_VERIFIED"
+}

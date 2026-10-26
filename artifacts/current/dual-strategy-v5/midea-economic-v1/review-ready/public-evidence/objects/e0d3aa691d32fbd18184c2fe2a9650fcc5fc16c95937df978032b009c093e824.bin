@@ -1,0 +1,10 @@
+{
+  "schema_version": "research-schedule-request-v1",
+  "symbol": "000333",
+  "source_id": "LOCAL_VERIFIED_RESEARCH",
+  "period": "2026-06-30",
+  "research_question_id": "midea_economic_assumption_evidence_closure",
+  "blocker_id": "economic_rationale_not_bound_to_research_case",
+  "reopen_condition_met": false,
+  "new_evidence_ids": []
+}

@@ -1,0 +1,98 @@
+{
+  "symbol": "600519",
+  "review_version": "moutai-current-assumption-diagnostic-v1",
+  "reviewed_as_of": "2026-10-08T17:05:06.590874+08:00",
+  "generated_at": "2026-10-08T09:05:08.198782+00:00",
+  "inputs": {
+    "model": {
+      "path": "runtime\\company-research\\600519-consolidated-parent-equity-residual-income-current-20261008T090506Z\\evidence.json",
+      "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+    },
+    "quote": {
+      "path": "runtime\\quote-sessions\\20261008T090505876967Z\\report.json",
+      "sha256": "79ec8b0bb78cf749b5c81aab4470cf3c41c4a59edd68b8e704bbdfe4d412024a"
+    }
+  },
+  "quote_price_cny": "1255.79",
+  "provider_trade_times": {
+    "tencent": "2026-10-08T16:14:57+08:00",
+    "sina": "2026-10-08T15:34:59+08:00"
+  },
+  "arithmetic_reproduced": true,
+  "profit_paths": [
+    {
+      "scenario": "bear",
+      "value_cny": "404.823132132816367214176193740640474114918106347",
+      "profit_at_explicit_end_cny": "62960285909.0754708000000000000000000000000000002",
+      "profit_at_fade_end_cny": "29809949481.3128899841529711361441783508503595281",
+      "fade_profit_change": "-0.5265277301255725996584477772",
+      "terminal_dividend_value_share": "0.378907607709580349200572130907515550704735737180"
+    },
+    {
+      "scenario": "base",
+      "value_cny": "479.879911433847652558589785173641417018371446840",
+      "profit_at_explicit_end_cny": "81367067677.4400000000000000000000000000000000000",
+      "profit_at_fade_end_cny": "27792103744.8426837459959449040444745856849624457",
+      "fade_profit_change": "-0.6584354759468814013973087973",
+      "terminal_dividend_value_share": "0.369098331224119503418209520012634570768390696260"
+    },
+    {
+      "scenario": "bull",
+      "value_cny": "572.738699601067929287663493493359619190129799284",
+      "profit_at_explicit_end_cny": "103847288271.406369200000000000000000000000000000",
+      "profit_at_fade_end_cny": "25601134852.0634390388896958274901404053966522369",
+      "fade_profit_change": "-0.7534732463581089578162005440",
+      "terminal_dividend_value_share": "0.360120511029886141879608314527932006171639952989"
+    }
+  ],
+  "reverse_valuation": [
+    {
+      "fade_years": 0,
+      "growth_bounds": [
+        "-0.05",
+        "0.05"
+      ],
+      "value_bounds_cny": [
+        "376.387583111390516154615047065839734304508758309",
+        "453.341780491434836236866378389120568916987275162"
+      ],
+      "target_price_cny": "1255.79",
+      "implied_growth": null,
+      "status": "above_registered_envelope"
+    },
+    {
+      "fade_years": 5,
+      "growth_bounds": [
+        "-0.05",
+        "0.05"
+      ],
+      "value_bounds_cny": [
+        "422.609683719828343441244367527720405571375558915",
+        "547.930504533659847244000560778753982079897523680"
+      ],
+      "target_price_cny": "1255.79",
+      "implied_growth": null,
+      "status": "above_registered_envelope"
+    },
+    {
+      "fade_years": 10,
+      "growth_bounds": [
+        "-0.05",
+        "0.05"
+      ],
+      "value_bounds_cny": [
+        "476.187934886092714918100335613163645751826723600",
+        "663.847042899633947775972840364592342301272780713"
+      ],
+      "target_price_cny": "1255.79",
+      "implied_growth": null,
+      "status": "above_registered_envelope"
+    }
+  ],
+  "conclusion": "strong_fade_stress_scope_only_not_neutral_primary",
+  "next_model_decision": "Review economically supported franchise-duration and terminal-profit assumptions; do not fit the independent model to the quote.",
+  "interpretation": "A bounded inverse calculation on the archived session, not an identified market forecast. No solution means outside this conditional envelope, not proof of overvaluation. Reproduction validates arithmetic, not economic forecasts.",
+  "valuation_approved": false,
+  "simulation_eligible": false,
+  "trade_approved": false
+}

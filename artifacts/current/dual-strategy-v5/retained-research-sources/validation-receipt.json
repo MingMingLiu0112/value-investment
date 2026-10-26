@@ -1,0 +1,91 @@
+{
+  "action": "no_order",
+  "archive_records_checked": 217,
+  "exact_source_byte_bindings": [
+    {
+      "path": "src/value_investment_agent/application/product/company_research.py",
+      "sha256": "557286fea4191dc742128d2083c765545049a6cd5ab7185ed3acca7a2f85e0f3"
+    },
+    {
+      "path": "src/value_investment_agent/m1_valuation_package_builder.py",
+      "sha256": "64d55b666cc90514696410d926c49344f70afd350912ce342758319daa100c87"
+    },
+    {
+      "path": "src/value_investment_agent/research_application.py",
+      "sha256": "7a1f33c572dffb9ed0a8c0ef8e8d3bebc4853b1eee52d29d7a71a93e707ed962"
+    },
+    {
+      "path": "src/value_investment_agent/research_input.py",
+      "sha256": "b597fe37bee9019ea87df4c00b2ed1f8b33c844cdbf205082fb9394c74281c98"
+    }
+  ],
+  "execution_source_scope": "A169_GIT_BLOBS_PLUS_FOUR_EXACT_RETAINED_SOURCE_BYTES",
+  "isolated_verification": {
+    "all_current_context_hashes_match": true,
+    "all_runtime_hashes_match": true,
+    "historical_producer_not_installed": true,
+    "restore": {
+      "action": "no_order",
+      "full_inherited_research_restored": false,
+      "private_data": false,
+      "restored_files": 180,
+      "status": "PUBLIC_ARCHIVE_RESTORED_AND_VERIFIED"
+    },
+    "verifier_modules": [
+      "src/value_investment_agent/application/product/pending_research_candidate.py",
+      "src/value_investment_agent/application/product/pending_replay_publication.py",
+      "src/value_investment_agent/infrastructure/public_evidence_archive.py"
+    ],
+    "verifier_results": [
+      {
+        "action": "no_order",
+        "input_sha256": "1088eab6d48cf0c8f33a59cb7fa90d445eb72e0faf884f00530446bbd1b10303",
+        "price_admitted": false,
+        "research_admitted": false,
+        "status": "PASS",
+        "symbol": "600887"
+      },
+      {
+        "action": "no_order",
+        "input_sha256": "fdd213de83cc1b37e5d6a5aa929d67524cdc044155e62e8ebf2deaf4d6b9ae7d",
+        "price_admitted": false,
+        "research_admitted": false,
+        "status": "PASS",
+        "symbol": "600519"
+      }
+    ]
+  },
+  "manifests": {
+    "public_manifest": {
+      "path": "artifacts/current/dual-strategy-v5/retained-research-sources/public-evidence/manifest.json",
+      "sha256": "9affdee3449d9d9180b9e5278d13e8d6e39b6ef28f54a0e6ce0828482e61def6"
+    },
+    "source_context_manifest": {
+      "path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/manifest.json",
+      "sha256": "535534b0526e47a8742051dd54b85a7902c0eb3af991d05655c967a0eba4fc49"
+    }
+  },
+  "prior_review": {
+    "all_raw_objects_byte_identical_to_reviewed_objects": true,
+    "new_manifest_scope": "ARCHIVE_PATH_RELOCATION_AND_EXPLICIT_EXECUTION_BASE_METADATA",
+    "result": "PASS_REPORTED_BY_ROOT",
+    "reviewed_public_manifest_sha256": "c44e23a2d831ebad98221f3cf86082f9590cafd8ac844aef76204e5ac1bf2a4d",
+    "reviewed_source_context_manifest_sha256": "46b6e8b148c12b4560ed0d3498ff870b5256f84a72a94d4bc77b6aba47e29706",
+    "reviewer": "Euler"
+  },
+  "privacy_signed_by_builder": false,
+  "raw_byte_conversion": "NONE",
+  "release_approved": false,
+  "runtime_bytes": 54879786,
+  "runtime_files": 180,
+  "schema_version": "retained-research-source-validation-receipt-v1",
+  "shared_checkout_modified": false,
+  "source_checkpoint": "a1692f3fe5ef997ca83e64d3072e91ce2186932c",
+  "source_clone_verified": false,
+  "source_context_bytes": 737535,
+  "source_context_records": 37,
+  "status": "ISOLATED_EXISTING_VERIFIERS_PASS_PENDING_ROOT_DELIVERY",
+  "unique_public_objects": 157,
+  "unique_source_context_objects": 37,
+  "uploaded": false
+}

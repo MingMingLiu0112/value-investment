@@ -1,0 +1,23 @@
+{
+  "schema_version": "incremental-validity-binding-v1",
+  "symbol": "600887",
+  "action": "no_order",
+  "package_ref": {
+    "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
+    "sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5"
+  },
+  "research_as_of": "2026-10-11",
+  "review_cutoff": "2026-10-15",
+  "model_id": "residual-income-equity-shared-dated-v2",
+  "observation_ref": {
+    "path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/observation.json",
+    "sha256": "77927d6c76a9ab4f4e4467c8e07eb018840d6b99f9dcdbd703eaa9bd7641edcf"
+  },
+  "scan_ref": {
+    "path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/event-scan.json",
+    "sha256": "40c118d90584a9b89f86aafc3eab43b6aaa25d3685a2799accb44e751c106c4f"
+  },
+  "materiality_approved": false,
+  "g3_approval_granted": false,
+  "research_cutoff_changed": false
+}

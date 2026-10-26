@@ -1,0 +1,37 @@
+{
+  "legacy_tasks_modified": false,
+  "starting_head": "d56ae6517b8121ed5677fa566263faf8db295f67",
+  "research_version": "canonical-reviewed-research-20261012T113935Z-362d7928",
+  "branch": "codex/web-d1-investment-workbench",
+  "stage": "S0",
+  "action": "no_order",
+  "excel_development": "FROZEN",
+  "production_modified": false,
+  "publication_id": "pub-cb73f09b88c4150ecf0d",
+  "private_inputs_read": false,
+  "pointers": [
+    {
+      "path": "config/current-daily-public-snapshot.json",
+      "sha256": "93d46a5fa27513841056e408472cae00d4a5c3d9dadc7fae99d25d891acf0dba"
+    },
+    {
+      "path": "config/current-quote-bridge.json",
+      "sha256": "37bb13aa8a6323c9b107bd28c22d0276c993d221ca9f9764f00351421cc4ad6c"
+    },
+    {
+      "path": "config/current-research-drafts.json",
+      "sha256": "61b5457efb10d383c4ff1fc6773ae951fe71ea50f41ec48ea6bf5b88cfc879de"
+    },
+    {
+      "path": "config/current-hotspot-structure-validation.json",
+      "sha256": "6376b292f82ebae5dd79089f192ee638bb7843aa85f93a5ea962fa6488c2a890"
+    },
+    {
+      "path": "config/current-trial-workbook.json",
+      "sha256": "31d075936779f84bb3ad6be5b25288505aac34c3f254eeecfee86435d094cfba"
+    }
+  ],
+  "packet_sha256": "f0efba54ff69ccc774eba6a9ce4ec43deea2b541488af934cce11606c31b6dff",
+  "source_format_change_only": true,
+  "captured_at": "2026-10-18T16:19:59.2531762+08:00"
+}
