@@ -457,11 +457,15 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
         local = item.get('local_path', item['location'])
         path = require_inside(root, root / local, 'candidate source')
         if not path.is_file() or sha256_file(path) != item['sha256']:
-            if mode != JOINT_CASH_V3_SCHEMA or not str(local).replace('\\', '/').startswith('src/'):
+            from .historical_source_restore import ARCHIVABLE_RESEARCH_PREFIXES
+            relative = str(local).replace('\\', '/')
+            if (mode != JOINT_CASH_V3_SCHEMA
+                    or not relative.startswith(ARCHIVABLE_RESEARCH_PREFIXES)):
                 raise ValueError('candidate requires original identical local bytes')
             restored = output_dir / 'historical-source-code' / f"{item['sha256'].lower()}.blob"
             if not restored.is_file() or sha256_file(restored) != item['sha256'].lower():
-                raise ValueError('candidate historical implementation restore is unavailable')
+                raise ValueError('candidate historical research restore is unavailable')
+            path = restored
         item['local_path'] = path.relative_to(root).as_posix()
         if not item.get('source_available_at'):
             published = item.get('published_at')
@@ -739,11 +743,15 @@ def prepare_pending_research_candidate(*, root: Path, package_path: Path,
             item = deepcopy(source_item)
             old_path = item['local_path']
             new_path = verified_path.relative_to(root).as_posix()
-            identity = (old_path, digest)
-            prior = retained_locations.get(identity)
-            if prior is not None and prior != new_path:
-                raise ValueError('v3 retained source path identity conflict')
-            retained_locations[identity] = new_path
+            aliases = {old_path, item.get('location')}
+            for alias in aliases:
+                if not isinstance(alias, str):
+                    continue
+                identity = (alias, digest)
+                prior = retained_locations.get(identity)
+                if prior is not None and prior != new_path:
+                    raise ValueError('v3 retained source path identity conflict')
+                retained_locations[identity] = new_path
             item['local_path'] = new_path
             rebound.append(item)
         candidate['sources'] = rebound
