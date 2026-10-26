@@ -6146,3 +6146,14 @@ GRANTED. First remaining business gap is source-backed review of the selected
 operating/cash assumptions plus a current quote/event/model-validity bridge before
 any condition-price policy can be proposed. Overall REAL_ASSISTED_USE_NOT_READY;
 action=no_order.
+
+Independent review found no new P1 and one publication P2: the locally verified
+current pointers refer to content-addressed files under ignored `runtime/`, so a
+Git-only checkout cannot reproduce the two current API views without the retained
+artifact package. The Git commit therefore restores `config/current-research-drafts.json`
+to its prior pointer state rather than publishing a broken new current pointer.
+The local workspace keeps the exact candidate paths/hashes as deployment state;
+source code, source-bound assumptions, proposal inputs and replay/API tests remain
+versioned. Production/current publication requires a separate verified artifact
+restore or deployment manifest and was not performed. This is not hidden as a
+successful 8001 publication and does not alter the module arithmetic acceptance.
