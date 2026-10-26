@@ -161,3 +161,14 @@ def test_v3_ri_consumes_terminal_equity_minus_closing_book():
     assert calculation['model_version'] == 'residual-income-equity-path-v3'
     assert calculation['terminal_mechanism'] == 'recursive_capital_use_and_owner_distribution'
     assert abs(D(calculation['dividend_crosscheck_difference_cny'])) < D('0.01')
+
+
+def test_v3_scenario_cannot_fall_back_to_legacy_terminal_growth():
+    result = compile_joint_capital_cash_path(**stable_case())
+    with pytest.raises(ValueError, match='require a terminal economic contract'):
+        ResidualIncomePathScenarioInputs(
+            cost_of_equity=D('0.08'), forecast_roes=result['forecast_roe'],
+            forecast_retentions=result['forecast_retentions'],
+            terminal_roe=result['terminal_roe'], terminal_growth=result['terminal_growth'],
+            terminal_economic_contract=None,
+        )

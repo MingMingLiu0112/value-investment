@@ -532,6 +532,8 @@ function v3TerminalContract(value: unknown): boolean {
     decimalFields.every((key) => finiteDecimal(value[key])) &&
     Array.isArray(value.policy) &&
     value.policy.length === jointCashPolicyFields.length &&
+    new Set(value.policy.map((row) => (Array.isArray(row) ? row[0] : null)))
+      .size === jointCashPolicyFields.length &&
     value.policy.every(
       (row) =>
         Array.isArray(row) &&

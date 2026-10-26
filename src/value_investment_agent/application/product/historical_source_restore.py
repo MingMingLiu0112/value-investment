@@ -10,15 +10,19 @@ from .common import require_inside, sha256_file
 
 
 HISTORICAL_IMPLEMENTATION_COMMIT = "72a52874f5cad5b5b74b9ae8790cce3b22c581c0"
+ARCHIVABLE_RESEARCH_PREFIXES = ("src/", "config/", "docs/", "scripts/")
 
 
 def verify_or_restore_package_sources(
     root: Path, payload: Mapping[str, Any], *, restore_dir: Path, create: bool = True,
 ) -> tuple[tuple[Path, str], ...]:
-    """Verify live evidence; restore only drifted ``src/`` bytes from the bound baseline.
+    """Verify evidence and retain small repository research dependencies by hash.
 
-    The restored blob is evidence of the predecessor implementation, not executing
-    code. Current v3 implementation identities are bound separately.
+    Runtime originals stay at their evidence paths. Repository code/config/docs used
+    by a newly generated v3 candidate are copied into its immutable closure, so a
+    later checkout does not reinterpret old research through changed live files.
+    Historical ``src/`` bytes can additionally be recovered from the bound baseline.
+    Retained blobs are evidence only and are never imported or executed.
     """
     root = root.resolve()
     restore_dir = require_inside(root, restore_dir, "historical source restore")
@@ -38,13 +42,37 @@ def verify_or_restore_package_sources(
         if not isinstance(expected, str) or len(expected) != 64:
             raise ValueError("source-bound package source hash is invalid")
         expected = expected.lower()
-        live = require_inside(root, root / source["local_path"], "package source bytes")
-        if live.is_file() and sha256_file(live) == expected:
+        relative = source["local_path"].replace("\\", "/")
+        if ".." in Path(relative).parts:
+            raise ValueError("package source path cannot traverse outside the repository")
+        live = require_inside(root, root / relative, "package source bytes")
+        retained = restore_dir / f"{expected}.blob"
+        retain_by_hash = relative.startswith(ARCHIVABLE_RESEARCH_PREFIXES)
+        if retained.is_file():
+            if sha256_file(retained) != expected:
+                raise ValueError("historical implementation restore drift")
+            if retain_by_hash:
+                verified.append((retained, expected))
+                continue
+        live_matches = live.is_file() and sha256_file(live) == expected
+        if live_matches and not retain_by_hash:
             verified.append((live, expected))
             continue
-        relative = source["local_path"].replace("\\", "/")
-        if not relative.startswith("src/") or ".." in Path(relative).parts:
-            raise ValueError("non-code source drift cannot use historical restoration")
+        if live_matches and retain_by_hash:
+            if create:
+                retained.parent.mkdir(parents=True, exist_ok=True)
+                if not retained.exists():
+                    with retained.open("xb") as handle:
+                        handle.write(live.read_bytes())
+            if retained.is_file() and sha256_file(retained) == expected:
+                verified.append((retained, expected))
+            else:
+                # Backward compatibility for candidates produced before repository
+                # dependencies were retained. Drift still fails closed below.
+                verified.append((live, expected))
+            continue
+        if not relative.startswith("src/"):
+            raise ValueError("non-code source drift requires a retained candidate blob")
         process = subprocess.run(
             ["git", "-C", str(root), "cat-file", "blob",
              f"{HISTORICAL_IMPLEMENTATION_COMMIT}:{relative}"],
@@ -52,7 +80,7 @@ def verify_or_restore_package_sources(
         )
         if process.returncode or hashlib.sha256(process.stdout).hexdigest() != expected:
             raise ValueError("historical implementation bytes are not recoverable from baseline commit")
-        restored = restore_dir / f"{expected}.blob"
+        restored = retained
         if create:
             restored.parent.mkdir(parents=True, exist_ok=True)
             if restored.exists():

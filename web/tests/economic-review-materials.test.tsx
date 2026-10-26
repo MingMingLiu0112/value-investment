@@ -843,6 +843,10 @@ it.each([
   (review: any) => {
     review.terminal_scope = "OLD_GROWTH_PERPETUITY";
   },
+  (review: any) => {
+    const policy = review.scenarios[0].ledger.terminal_economic_contract.policy;
+    policy[policy.length - 1] = [...policy[0]];
+  },
 ])("fails closed for unknown or incomplete v3 terminal contracts", (damage) => {
   const handoff = jointCashV3Fixture();
   damage(handoff.economic_review_materials!.joint_capital_review);

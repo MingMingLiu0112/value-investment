@@ -30,9 +30,7 @@ MODEL_VERSION = "residual-income-equity-path-v3"
 class ResidualIncomePathScenarioInputs(ResidualIncomeScenarioInputs):
     forecast_retentions: tuple[Decimal, ...] = field(kw_only=True)
     currency: str = field(default="CNY", kw_only=True)
-    terminal_economic_contract: TerminalEconomicContract | None = field(
-        default=None, kw_only=True,
-    )
+    terminal_economic_contract: TerminalEconomicContract = field(kw_only=True)
 
     def __post_init__(self) -> None:
         if self.currency != "CNY":
@@ -49,6 +47,8 @@ class ResidualIncomePathScenarioInputs(ResidualIncomeScenarioInputs):
             raise ValueError("Scalar retention must remain default; use forecast_retentions")
         if any(not 0 <= v <= 1 for v in self.forecast_retentions):
             raise ValueError("Forecast retentions must be within [0, 1]")
+        if not isinstance(self.terminal_economic_contract, TerminalEconomicContract):
+            raise ValueError("V3 annual retention scenarios require a terminal economic contract")
         # Delegate the original ROE/cost/terminal contract, including zero growth.
         scenario_value(Decimal(1), Decimal(1), self.cost_of_equity, {
             "forecast_roe": self.forecast_roes,
@@ -92,24 +92,15 @@ def scenario_calculation(
             dividend_pv += Decimal(row["dividend_assumption_cny"]) / discount
             book = Decimal(row["closing_book_equity_cny"])
         # The last single-year calculation supplies terminal amounts at B_N.
-        terminal_economics = None
-        if scenario.terminal_economic_contract is not None:
-            contract = scenario.terminal_economic_contract
-            if abs(contract.opening_book - book) > Decimal("1e-24"):
-                raise ValueError("Terminal contract does not continue explicit closing book")
-            terminal_economics = value_terminal_economic_contract(
-                contract, scenario.cost_of_equity,
-            )
-            terminal_equity = terminal_economics["equity_value"]
-            terminal_pv = (terminal_equity - book) / discount
-            terminal_dividend_value = terminal_equity / discount
-        else:
-            terminal_pv = Decimal(step["terminal_residual_income_cny"]) / (
-                scenario.cost_of_equity - scenario.terminal_growth
-            ) / discount
-            terminal_dividend_value = Decimal(step["terminal_first_dividend_cny"]) / (
-                scenario.cost_of_equity - scenario.terminal_growth
-            ) / discount
+        contract = scenario.terminal_economic_contract
+        if abs(contract.opening_book - book) > Decimal("1e-24"):
+            raise ValueError("Terminal contract does not continue explicit closing book")
+        terminal_economics = value_terminal_economic_contract(
+            contract, scenario.cost_of_equity,
+        )
+        terminal_equity = terminal_economics["equity_value"]
+        terminal_pv = (terminal_equity - book) / discount
+        terminal_dividend_value = terminal_equity / discount
         equity = start_book + residual_pv + terminal_pv
         ddm = dividend_pv + terminal_dividend_value
         difference = equity - ddm
@@ -166,16 +157,9 @@ def _apply_timing(
             / (1 + cost) ** (Decimal(row["year"]) - elapsed)
             for row in calculation["forecast_years"]
         )
-        if scenario.terminal_economic_contract is not None:
-            dividend += Decimal(calculation["terminal_economic_value_cny"]) / (
-                (1 + cost) ** (Decimal(len(scenario.forecast_roes)) - elapsed)
-            )
-        else:
-            dividend += (
-                Decimal(calculation["terminal_first_dividend_cny"])
-                / (cost - scenario.terminal_growth)
-                / (1 + cost) ** (Decimal(len(scenario.forecast_roes)) - elapsed)
-            )
+        dividend += Decimal(calculation["terminal_economic_value_cny"]) / (
+            (1 + cost) ** (Decimal(len(scenario.forecast_roes)) - elapsed)
+        )
         if abs(current - dividend) > Decimal("0.01"):
             raise ValueError("Dated residual-income and dividend paths do not reconcile")
         calculation.update({
