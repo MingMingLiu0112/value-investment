@@ -888,7 +888,7 @@ function jointCashV4Fixture() {
       forecast_roe: scenario.ledger.forecast_roe,
     };
     Object.assign(scenario.terminal_economics, {
-      mechanism: "recursive_capital_use_and_owner_distribution_v2",
+      mechanism: "recursive_capital_use_and_owner_distribution",
       terminal_contract_version: "terminal-economic-contract-v2",
       terminal_start_year: policy.terminal_start_year,
       first_distribution_timing: policy.first_distribution_timing,

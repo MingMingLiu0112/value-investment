@@ -744,7 +744,7 @@ function v4TerminalEconomics(value: unknown): boolean {
       mechanism: "recursive_capital_use_and_owner_distribution",
       terminal_contract_version: "terminal-economic-contract-v1",
     }) &&
-    value.mechanism === "recursive_capital_use_and_owner_distribution_v2" &&
+    value.mechanism === "recursive_capital_use_and_owner_distribution" &&
     value.terminal_contract_version === "terminal-economic-contract-v2" &&
     Number.isInteger(value.terminal_start_year) &&
     Number(value.terminal_start_year) === 11 &&
