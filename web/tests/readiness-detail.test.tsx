@@ -200,6 +200,21 @@ it("mounts verified conditional analysis in the existing detail page", () => {
   );
 });
 
+it("mounts verified standalone research while the formal publication is unavailable", () => {
+  const nested = analysisDecision();
+  state.detail.data.publication = { packet_status: "UNAVAILABLE" };
+  state.detail.data.decision = {
+    ...nested,
+    action: "no_order",
+    price_action_plan: null,
+    research_analysis: nested.price_action_plan?.research_analysis,
+  };
+  const html = renderToStaticMarkup(<DecisionDetail />);
+  expect(html).toContain('aria-label="条件研究分析"');
+  expect(html).toContain("10.0988");
+  expect(html).toContain("未获操作准入");
+});
+
 it("reads lifecycle from the top-level detail payload in the existing hotspot card", () => {
   state.detail.data.decision = {
     id: "hotspot-600519",

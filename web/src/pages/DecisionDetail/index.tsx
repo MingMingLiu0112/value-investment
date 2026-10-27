@@ -1403,7 +1403,8 @@ export default function DecisionDetail() {
             {!loading &&
               !error &&
               data?.action === "no_order" &&
-              data.publication?.packet_status === "CURRENT" && (
+              (data.publication?.packet_status === "CURRENT" ||
+                decision.research_analysis != null) && (
                 <ValueResearchAnalysis decision={decision} />
               )}
             {!loading && !error && data?.action === "no_order" && (
