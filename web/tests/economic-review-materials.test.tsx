@@ -866,6 +866,8 @@ function jointCashV4Fixture() {
     scenario.ledger.version = "joint-capital-cash-path-v4";
     scenario.ledger.terminal_policy.terminal_mechanism =
       "recursive_capital_use_and_owner_distribution_v2";
+    const policy = scenario.ledger.terminal_policy;
+    const contract = scenario.ledger.terminal_economic_contract;
     scenario.actual_calculation_inputs.terminal_contract_version =
       "terminal-economic-contract-v2";
     scenario.actual_calculation_inputs.terminal_mechanism =
@@ -873,6 +875,17 @@ function jointCashV4Fixture() {
     Object.assign(scenario.terminal_economics, {
       mechanism: "recursive_capital_use_and_owner_distribution_v2",
       terminal_contract_version: "terminal-economic-contract-v2",
+      terminal_start_year: policy.terminal_start_year,
+      first_distribution_timing: policy.first_distribution_timing,
+      legacy_profit_dynamics: policy.legacy_profit_dynamics,
+      productive_marginal_return: contract.productive_marginal_return,
+      liquidity_return: contract.liquidity_return,
+      commitment_occurrences: contract.commitment_occurrences,
+      restricted_cash_release_cny: contract.restricted_cash_release_cny,
+      restricted_cash_release_year: contract.restricted_cash_release_year,
+      convergence_tolerance_cny: contract.convergence_tolerance_cny,
+      max_tail_years: contract.max_tail_years,
+      rationale: contract.rationale,
       terminal_value_error_bound_cny: "0",
       terminal_value_method: "exact_affine_target_payout_perpetuity",
       terminal_last_scheduled_event_year: 11,

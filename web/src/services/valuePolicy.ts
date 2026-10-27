@@ -601,6 +601,17 @@ function v3TerminalEconomics(value: unknown): boolean {
 
 const v4TerminalEconomicsFields = [
   ...v3TerminalEconomicsFields,
+  "terminal_start_year",
+  "first_distribution_timing",
+  "legacy_profit_dynamics",
+  "productive_marginal_return",
+  "liquidity_return",
+  "commitment_occurrences",
+  "restricted_cash_release_cny",
+  "restricted_cash_release_year",
+  "convergence_tolerance_cny",
+  "max_tail_years",
+  "rationale",
   "terminal_value_error_bound_cny",
   "terminal_value_method",
   "terminal_last_scheduled_event_year",
@@ -620,6 +631,27 @@ function v4TerminalEconomics(value: unknown): boolean {
     }) &&
     value.mechanism === "recursive_capital_use_and_owner_distribution_v2" &&
     value.terminal_contract_version === "terminal-economic-contract-v2" &&
+    Number.isInteger(value.terminal_start_year) &&
+    Number(value.terminal_start_year) === 11 &&
+    value.first_distribution_timing === "end_of_terminal_year_1" &&
+    value.legacy_profit_dynamics ===
+      "constant_after_profit_scale_transition" &&
+    cashRatio(value.productive_marginal_return) &&
+    cashRatio(value.liquidity_return) &&
+    (value.commitment_occurrences === null ||
+      (Number.isInteger(value.commitment_occurrences) &&
+        Number(value.commitment_occurrences) >= 0)) &&
+    finiteDecimal(value.restricted_cash_release_cny) &&
+    Number(value.restricted_cash_release_cny) >= 0 &&
+    (value.restricted_cash_release_year === null ||
+      (Number.isInteger(value.restricted_cash_release_year) &&
+        Number(value.restricted_cash_release_year) >= 1)) &&
+    finiteDecimal(value.convergence_tolerance_cny) &&
+    Number(value.convergence_tolerance_cny) > 0 &&
+    Number.isInteger(value.max_tail_years) &&
+    Number(value.max_tail_years) >= 1 &&
+    typeof value.rationale === "string" &&
+    !!value.rationale.trim() &&
     finiteDecimal(value.terminal_value_error_bound_cny) &&
     Number(value.terminal_value_error_bound_cny) === 0 &&
     [
