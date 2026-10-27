@@ -11,6 +11,7 @@ import pytest
 from test_pending_research_candidate import candidate_inputs, run as finite_seed
 from value_investment_agent.application.product import source_native_candidate_v2 as native
 from value_investment_agent.application.product.common import sha256_file
+from value_investment_agent.application.product.source_bound_inputs import source_catalog_sha256
 from value_investment_agent.domain.valuation.source_native_cash_v1 import replay_timing_delay_inputs
 
 
@@ -100,6 +101,7 @@ def synthetic_native(tmp_path, synthetic_pending_candidate_clock):
         local_path=ledger_ref['path'], location=ledger_ref['path'], sha256=ledger_ref['sha256'],
         source_available_at=package['point_in_time']['available_at'],
         availability_basis='TEST_ONLY_FIXED_CLOCK_NOT_HISTORICAL_PIT'))
+    package['source_contract']['source_catalog_sha256'] = source_catalog_sha256(package['sources'])
     package['facts']['evidence_refs'].append(source_ref)
     package['research_case']['evidence_refs'].append(source_ref)
     package['research_case']['financial_summary']['TEST_ONLY_native_economic_review'] = dict(
