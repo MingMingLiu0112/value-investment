@@ -584,6 +584,71 @@ def create_app(
         def new_candidate_detail():
             if not _ID.fullmatch(decision_id):
                 return None
+            from ...application.research.value_research_analysis import (
+                load_current_value_research_analysis,
+            )
+            try:
+                analysis = load_current_value_research_analysis(
+                    root=project, symbol=decision_id, now=datetime.now(timezone.utc)
+                )
+            except (ValueError, OSError, KeyError, TypeError, ArithmeticError):
+                # An explicitly registered but broken candidate must not fall
+                # through to an older discovery card and appear usable.
+                pointer = project / "config/current-research-drafts.json"
+                try:
+                    registered = decision_id in (
+                        json.loads(pointer.read_text(encoding="utf-8")).get(
+                            "pending_candidates", {}
+                        )
+                        if pointer.is_file()
+                        else {}
+                    )
+                except (OSError, UnicodeDecodeError, json.JSONDecodeError, AttributeError):
+                    registered = True
+                if registered:
+                    return {
+                        "action": "no_order",
+                        "status": "UNAVAILABLE",
+                        "decision": None,
+                        "publication": publication_block_unavailable(),
+                        "reason": "CURRENT_RESEARCH_CANDIDATE_UNAVAILABLE",
+                        "formal_eligibility": False,
+                    }
+                analysis = None
+            if analysis is not None:
+                decision = {
+                    "id": decision_id,
+                    "symbol": decision_id,
+                    "name": analysis.get("company_name") or decision_id,
+                    "company_name": analysis.get("company_name") or decision_id,
+                    "strategy": "CORE_VALUE",
+                    "status": "RESEARCH_ONLY",
+                    "action": "no_order",
+                    "as_of": analysis.get("research_as_of"),
+                    "reason": analysis.get("thesis") or "已形成未批准的条件研究估值。",
+                    "blockers": analysis.get("blockers", []),
+                    "research_analysis": analysis,
+                }
+                return {
+                    "action": "no_order",
+                    "status": "RESEARCH_ONLY",
+                    "decision": decision,
+                    "review_replay": {
+                        "status": "VERIFIED_NEW_INPUT_CANDIDATE",
+                        "symbol": decision_id,
+                        "action": "no_order",
+                        "formal_eligibility": False,
+                        "approval_changed": False,
+                        "research_admitted": False,
+                        "price_admitted": False,
+                        "research_as_of": analysis.get("research_as_of"),
+                        "prepared_at": analysis.get("computed_at"),
+                        "scope": "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY",
+                        "next_url": "#conditional-research-analysis",
+                    },
+                    "publication": publication_block_unavailable(),
+                    "formal_eligibility": False,
+                }
             from ...application.discovery.value_candidate_selection import load_current_public_candidate_research
             detail = load_current_public_candidate_research(root=project, symbol=decision_id,
                 now=datetime.now(timezone.utc))

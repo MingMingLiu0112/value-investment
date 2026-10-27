@@ -15,6 +15,20 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 const { renderToStaticMarkup } = require("react-dom/server");
 
+it("renders verified research-only analysis without a price action plan", () => {
+  const decision = analysisDecision();
+  decision.research_analysis = decision.price_action_plan!.research_analysis;
+  decision.price_action_plan = null;
+  decision.action = "no_order";
+
+  const html = renderToStaticMarkup(
+    <ValueResearchAnalysis decision={decision} />,
+  );
+
+  expect(html).toContain("条件研究分析");
+  expect(html).toContain("未获操作准入");
+});
+
 /** TEST_ONLY source-shaped contract, not a coherent financial model or approval. */
 function nativeDecision() {
   const decision = analysisDecision();

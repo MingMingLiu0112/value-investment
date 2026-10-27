@@ -19,7 +19,7 @@ from ...infrastructure.evidence.evidence_stop_schedule import (
     resolved_evidence_stop_ids,
     verified_official_package_source_ids,
 )
-from ..research.v3_input_adapter import build_descriptor_for_package
+from ..research.v4_input_adapter import build_descriptor_for_package
 from ...research_application import ResearchApplicationService
 from ...research_artifact_repository import InMemoryResearchArtifactRepository
 from ...research_input import build_research_run_spec
@@ -262,7 +262,8 @@ def run_company_research_for_symbol(
     package = _package_for_symbol(root, normalized, package_path)
     package_sha256 = sha256_file(package)
     package_payload = load_json_object(package, "valuation package")
-    if (package_payload.get('dependencies') or {}).get('model_version') == 'residual-income-equity-path-v3':
+    if (package_payload.get('dependencies') or {}).get('model_version') in {
+            'residual-income-equity-path-v3', 'residual-income-equity-path-v4'}:
         from .historical_source_restore import verify_or_restore_package_sources
         local_source_bindings = verify_or_restore_package_sources(
             root, package_payload, restore_dir=package.parent / 'historical-source-code')

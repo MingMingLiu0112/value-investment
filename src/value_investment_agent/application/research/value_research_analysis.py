@@ -16,6 +16,7 @@ from ..product.pending_candidate_supplement import load_current_pending_candidat
 from ..product.pending_replay_publication import load_current_pending_replay
 from ..product.research_review_packet import project_research_review_packet
 from .v3_input_adapter import RETENTION_CONTRACT as V3_RETENTION_CONTRACT
+from .v4_input_adapter import RETENTION_CONTRACT as V4_RETENTION_CONTRACT
 
 
 SCHEMA = "value-research-analysis-v1"
@@ -117,17 +118,26 @@ def project_value_research_analysis(*, root: Path, package_binding: dict,
     scenario_inputs = effective["facts"].get("scenario_inputs", {})
     contracts = {item.get("retention_contract") for item in scenario_inputs.values()
                  if isinstance(item, dict)}
+    is_v4 = contracts == {V4_RETENTION_CONTRACT}
     is_v3 = contracts == {V3_RETENTION_CONTRACT}
-    if V3_RETENTION_CONTRACT in contracts and not is_v3:
-        raise ValueError("Value analysis rejects mixed v3 scenario contracts")
-    if is_v3:
+    if ({V3_RETENTION_CONTRACT, V4_RETENTION_CONTRACT}.intersection(contracts)
+            and not (is_v3 or is_v4)):
+        raise ValueError("Value analysis rejects mixed economic-terminal scenario contracts")
+    if is_v4:
+        from .v4_input_adapter import build_descriptor_for_package
+        descriptor = build_descriptor_for_package(effective, root=root)
+    elif is_v3:
         from .v3_input_adapter import build_descriptor_for_package
         descriptor = build_descriptor_for_package(effective, root=root)
     else:
         descriptor = build_descriptor(effective, root=root)
     if descriptor.input_sha256 != packet["input_descriptor_sha256"]:
         raise ValueError("Value analysis descriptor differs from consumed inputs")
-    if is_v3:
+    if is_v4:
+        from .v4_valuation_router import build_v4_valuation_router
+        route = build_v4_valuation_router().route(
+            PROFILES[descriptor.profile_id], descriptor.requested_model)
+    elif is_v3:
         from .v3_valuation_router import build_v3_valuation_router
         route = build_v3_valuation_router().route(
             PROFILES[descriptor.profile_id], descriptor.requested_model)

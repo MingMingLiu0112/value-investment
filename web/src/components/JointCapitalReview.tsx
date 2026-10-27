@@ -368,7 +368,9 @@ function JointCapitalLedger({
 }
 
 function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
+  const v4 = review.schema_version === "joint-capital-cash-review-v4";
   const v3 = review.schema_version === "joint-capital-cash-review-v3";
+  const economicTerminal = v3 || v4;
   const fields = (row: Record<string, unknown>, keys: readonly string[]) => (
     <dl
       style={{
@@ -459,18 +461,18 @@ function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
             ))}
             <details>
               <summary>
-                {v3
+                {economicTerminal
                   ? "尾期经济合同：资本用途／维护／WC／承诺与股东分配"
                   : "持续终端：维护／WC／承诺与分配约束"}
               </summary>
               <p>
-                {v3
+                {economicTerminal
                   ? "账面留存不会自动转化为终端增长；只有明确投入生产资本并具有边际回报，才会形成新增盈利。维护、营运资金、承诺支出和受限资金按声明机制递推。"
                   : "终端必要支出单独持续设定，不从第10年自动延续，也不把缺失需求当作零。终端 ROE 不是已验证 ROIC。"}
               </p>
               {fields(policy, [...jointCashPolicyFields, "profit_scale"])}
               <p>终端持续依据：{String(policy.rationale)}</p>
-              {v3 && economics ? (
+              {economicTerminal && economics ? (
                 <>
                   <h5>终端机制与关键前提</h5>
                   <ul>
@@ -486,6 +488,19 @@ function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
                       {String(policy.restricted_cash_release_year)}
                     </li>
                     <li>尾期递推年数：{economics.terminal_years_evaluated}</li>
+                    {v4 ? (
+                      <>
+                        <li>尾期解析方法：{economics.terminal_value_method}</li>
+                        <li>
+                          尾期价值误差上限：
+                          {economics.terminal_value_error_bound_cny} CNY
+                        </li>
+                        <li>
+                          最后计划事件年：
+                          {economics.terminal_last_scheduled_event_year}
+                        </li>
+                      </>
+                    ) : null}
                   </ul>
                   <h5>显式期与尾期价值贡献</h5>
                   {fields(economics as unknown as Record<string, unknown>, [

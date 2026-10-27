@@ -11,7 +11,9 @@ from ..research.value_research_analysis import _bound
 from .source_native_review_adapter_v2 import prepare_pending_review_response
 from .common import load_json_object, sha256_file
 from .neutral_valuation_proposal import JOINT_SCHEMA
-from .pending_research_candidate import JOINT_CASH_SCHEMA, JOINT_CASH_V3_SCHEMA, JOINT_MODES
+from .pending_research_candidate import (
+    JOINT_CASH_SCHEMA, JOINT_CASH_V3_SCHEMA, JOINT_CASH_V4_SCHEMA, JOINT_MODES,
+)
 
 
 SCHEMA = 'value-economic-review-materials-v1'
@@ -99,9 +101,11 @@ def project_joint_capital_review(*, root, binding, symbol, model_context, now):
     timing = candidate['candidate_valuation']['assumptions'].get('valuation_timing')
     # The candidate verifier already recompiles the ledger and model outputs.
     # Projection copies those consumed values, never recalculates a forecast.
+    cash_v4 = candidate['input_mode'] == JOINT_CASH_V4_SCHEMA
     cash_v3 = candidate['input_mode'] == JOINT_CASH_V3_SCHEMA
-    cash_path = candidate['input_mode'] in (JOINT_CASH_SCHEMA, JOINT_CASH_V3_SCHEMA)
-    result = dict(schema_version=('joint-capital-cash-review-v3' if cash_v3
+    cash_path = candidate['input_mode'] in (JOINT_CASH_SCHEMA, JOINT_CASH_V3_SCHEMA, JOINT_CASH_V4_SCHEMA)
+    result = dict(schema_version=('joint-capital-cash-review-v4' if cash_v4
+        else 'joint-capital-cash-review-v3' if cash_v3
         else 'joint-capital-cash-review-v2' if cash_path else 'joint-capital-review-v1'), symbol=candidate['symbol'],
         action='no_order', status='CONDITIONAL_PATH_NOT_APPROVED',
         scope='RESEARCH_ASSUMPTIONS_NOT_NORMALIZED_FACTS',
@@ -119,13 +123,14 @@ def project_joint_capital_review(*, root, binding, symbol, model_context, now):
     if cash_path:
         result.update(input_mode=candidate['input_mode'], explicit_years=10,
             distribution_scope='ANNUAL_CASH_AND_CAPACITY_CONSTRAINED_NOT_APPROVED',
-            terminal_scope=('RECURSIVE_CAPITAL_USE_AND_OWNER_DISTRIBUTION_NOT_GROWTH_PERPETUITY'
+            terminal_scope=('EXACT_SUPPORTED_ECONOMIC_TAIL_WITH_ZERO_NUMERIC_ERROR_BOUND'
+                if cash_v4 else 'RECURSIVE_CAPITAL_USE_AND_OWNER_DISTRIBUTION_NOT_GROWTH_PERPETUITY'
                 if cash_v3 else 'EXPLICIT_CONTINUING_CASH_NEEDS_NOT_DEFAULT_FULL_PAYOUT'))
         for row in result['scenarios']:
             row['terminal_policy'] = deepcopy(policy_choice['terminal_policy'][row['scenario']])
             row['actual_calculation_inputs'] = deepcopy(
                 selected['actual_calculation_inputs']['scenarios'][row['scenario']])
-            if cash_v3:
+            if cash_v3 or cash_v4:
                 arithmetic = selected['annual_arithmetic'][row['scenario']]
                 crosscheck = arithmetic['cash_distribution_crosscheck']
                 terminal_contract = row['actual_calculation_inputs']['terminal_economic_contract']
@@ -147,6 +152,9 @@ def project_joint_capital_review(*, root, binding, symbol, model_context, now):
                     terminal_value_at_year_10_cny=arithmetic['terminal_economic_value_cny'],
                     terminal_distribution_value_cny=arithmetic['terminal_distribution_value_cny'],
                     terminal_convergence_residual_cny=arithmetic['terminal_convergence_residual_cny'],
+                    terminal_value_error_bound_cny=arithmetic.get('terminal_value_error_bound_cny'),
+                    terminal_value_method=arithmetic.get('terminal_value_method'),
+                    terminal_last_scheduled_event_year=arithmetic.get('terminal_last_scheduled_event_year'),
                     terminal_years_evaluated=arithmetic['terminal_years_evaluated'],
                     ri_ddm_difference_cny=crosscheck['difference_cny'],
                     limitations=[

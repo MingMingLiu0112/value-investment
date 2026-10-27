@@ -8,6 +8,7 @@ import {
   jointCapitalReviewMatches,
   jointRowFields,
   jointTerminalFields,
+  JOINT_CASH_V4_SCHEMA,
 } from "../src/services/valuePolicy";
 import type { PolicyHandoff } from "../src/services/valuePolicy";
 const { renderToStaticMarkup } = require("react-dom/server");
@@ -852,6 +853,53 @@ it.each([
   damage(handoff.economic_review_materials!.joint_capital_review);
   expect(jointCapitalReviewMatches(handoff, "600519")).toBe(false);
   expect(render(handoff)).toContain("暂不可展示为核验账本");
+});
+
+function jointCashV4Fixture() {
+  const handoff = jointCashV3Fixture();
+  const review: any = handoff.economic_review_materials!.joint_capital_review!;
+  review.schema_version = "joint-capital-cash-review-v4";
+  review.input_mode = JOINT_CASH_V4_SCHEMA;
+  review.terminal_scope =
+    "EXACT_SUPPORTED_ECONOMIC_TAIL_WITH_ZERO_NUMERIC_ERROR_BOUND";
+  review.scenarios.forEach((scenario: any) => {
+    scenario.ledger.version = "joint-capital-cash-path-v4";
+    scenario.ledger.terminal_policy.terminal_mechanism =
+      "recursive_capital_use_and_owner_distribution_v2";
+    scenario.actual_calculation_inputs.terminal_contract_version =
+      "terminal-economic-contract-v2";
+    scenario.actual_calculation_inputs.terminal_mechanism =
+      "recursive_capital_use_and_owner_distribution_v2";
+    Object.assign(scenario.terminal_economics, {
+      mechanism: "recursive_capital_use_and_owner_distribution_v2",
+      terminal_contract_version: "terminal-economic-contract-v2",
+      terminal_value_error_bound_cny: "0",
+      terminal_value_method: "exact_affine_target_payout_perpetuity",
+      terminal_last_scheduled_event_year: 11,
+    });
+  });
+  return handoff;
+}
+
+it("strictly renders v4 exact-tail method and zero error bound", () => {
+  const handoff = jointCashV4Fixture();
+  expect(jointCapitalReviewMatches(handoff, "600519")).toBe(true);
+  const html = render(handoff);
+  for (const text of [
+    "terminal-economic-contract-v2",
+    "尾期解析方法",
+    "exact_affine_target_payout_perpetuity",
+    "尾期价值误差上限",
+    "最后计划事件年",
+  ])
+    expect(html).toContain(text);
+});
+
+it("fails closed when v4 has no proved exact-tail method", () => {
+  const handoff = jointCashV4Fixture();
+  const review: any = handoff.economic_review_materials!.joint_capital_review!;
+  review.scenarios[0].terminal_economics.terminal_value_method = "estimated";
+  expect(jointCapitalReviewMatches(handoff, "600519")).toBe(false);
 });
 
 function publicCashFixture(handoff = jointCashFixture()) {

@@ -59,3 +59,30 @@ def test_registered_v3_candidate_reaches_decision_api(prepared_v3, monkeypatch):
         analysis['valuation']['base_value'],
         analysis['valuation']['bull_value'],
     ]
+
+
+def test_registered_candidate_remains_readable_without_a_current_publication(
+        prepared_v3, monkeypatch):
+    root, folder, receipt, _ = prepared_v3
+    symbol = receipt['symbol']
+    save(root/'config/current-research-drafts.json', dict(
+        schema_version='current-research-drafts-v1', action='no_order',
+        pending_candidates={symbol: dict(
+            path=(folder/'candidate.json').relative_to(root).as_posix(),
+            sha256=sha256_file(folder/'candidate.json'))}))
+    client = _fixture(root)
+    monkeypatch.setattr(api_module, '_public', lambda ignored: None)
+
+    response = client.get('/api/v1/decisions/' + symbol)
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload['status'] == 'RESEARCH_ONLY'
+    assert payload['action'] == 'no_order'
+    assert payload['formal_eligibility'] is False
+    assert payload['review_replay']['status'] == 'VERIFIED_NEW_INPUT_CANDIDATE'
+    assert payload['publication']['packet_status'] == 'UNAVAILABLE'
+    analysis = payload['decision']['research_analysis']
+    assert analysis['status'] == 'CONDITIONAL_ANALYSIS_VERIFIED'
+    assert analysis['input_descriptor_sha256'] == receipt['model_context']['input_descriptor_sha256']
+    assert analysis['joint_capital_review']['status'] == 'CONDITIONAL_PATH_NOT_APPROVED'

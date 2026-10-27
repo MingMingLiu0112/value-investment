@@ -130,6 +130,7 @@ export interface DecisionItem {
   price_context?: unknown;
   next_events?: unknown;
   research?: ResearchDetail | null;
+  research_analysis?: ValueResearchAnalysis | null;
   price_action_plan?: CurrentPricePlan | null;
   [key: string]: unknown;
 }

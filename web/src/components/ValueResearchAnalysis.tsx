@@ -82,11 +82,13 @@ export function ValueResearchAnalysis({
 }: {
   decision: DecisionItem;
 }) {
-  const analysis = decision.price_action_plan?.research_analysis;
+  const analysis =
+    decision.research_analysis ?? decision.price_action_plan?.research_analysis;
   if (!analysis || readinessStrategy(decision.strategy) !== "CORE_VALUE")
     return null;
   const verified =
-    decision.price_action_plan?.action === "no_order" &&
+    (decision.price_action_plan?.action === "no_order" ||
+      (!decision.price_action_plan && decision.action === "no_order")) &&
     analysis.schema_version === "value-research-analysis-v1" &&
     analysis.symbol === decision.symbol &&
     analysis.action === "no_order" &&

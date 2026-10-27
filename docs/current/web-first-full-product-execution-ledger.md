@@ -6224,3 +6224,54 @@ status: CONDITIONAL RESEARCH, LOW confidence. Current-price admission, event/mod
 validity, G3 approval and personal quantity remain separate gates. No condition
 price draft is promoted from these historical/conditional values. Overall
 REAL_ASSISTED_USE_NOT_READY; action=no_order.
+
+### 2026-10-27 - F1/E1/G1 v4 economic-terminal first batch
+
+Scope is limited to valuation-kernel correctness, existing 600519/600887
+candidate generation/replay/consumption, and the existing API/Web display. No
+Agent, hotspot, third-company, approval, account, scheduler or order work is part
+of this batch.
+
+F1 adds `joint-capital-cash-path-v4` and
+`residual-income-equity-path-v4` without changing the historical v1/v2/v3
+implementations. The v4 model calculates annual clean-surplus residual income
+directly and no longer calls the legacy terminal-growth helper. Terminal value is
+accepted only for an explicitly supported exact economic tail after all declared
+finite events. It reports the analytical method, last scheduled event and a zero
+numeric error bound; unsupported or non-convergent tails fail closed. T01-T07
+cover low-payout diagnostic growth above cost, an independent full-distribution
+perpetuity, a 16% stable distribution benchmark, scheduled-event ordering,
+unsupported tails, legacy byte stability and invalid/future inputs.
+
+E1 reuses the existing neutral proposal, descriptor, RunSpec,
+ResearchApplicationService, review packet and pending-candidate consumer. A
+single current command now builds and verifies both retained-source candidates;
+it can publish them to the existing research-only pointer but cannot approve
+research, admit price, calculate quantity or place an order. Explicit real-source
+replay with `JOINT_CASH_V4_REAL_REQUIRED=1` passed for both issuers. Conditional
+per-share values are:
+
+- 600519: bear/base/bull 675.1019318083 / 799.2027611908 /
+  930.0062820281 CNY, retained valuation basis 2026-06-30.
+- 600887: bear/base/bull 13.0011250922 / 16.0892188495 /
+  20.2405823121 CNY, retained valuation date 2026-10-21.
+
+Both are LOW-confidence `conditional_research_only` results, with
+`research_admitted=false`, `price_admitted=false`, `position_guidance=null` and
+`action=no_order`. They are not current fair-value or buy claims.
+
+G1 fixes an actual product break: a valid registered research candidate was
+hidden when the separate pinned public publication chain was unavailable. The
+existing decision-detail endpoint now exposes a verified candidate independently
+as `RESEARCH_ONLY`; a broken explicitly registered candidate still fails closed.
+The existing company page accepts the standalone `research_analysis` field and
+renders the same v4 joint-capital review without inventing a price plan. The Web
+validator now recognizes terminal-contract-v2 and no longer rejects v4 as a
+legacy-only shape.
+
+Focused evidence at this checkpoint: Python kernel/candidate/API gate 79 passed;
+explicit retained-source v4 replay 2 passed with no skip; Web v4 review and
+research-only rendering 267 passed with eight pre-existing conditional skips;
+TypeScript typecheck and production Web build passed. Current publication,
+exact-commit remote CI and browser acceptance are recorded separately after they
+actually occur. Overall approval remains NOT_GRANTED and action=no_order.
