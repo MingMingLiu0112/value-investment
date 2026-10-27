@@ -877,8 +877,7 @@ function jointCashV4Fixture() {
       terminal_growth: scenario.ledger.terminal_growth,
       terminal_economic_contract: {
         contract_version: "terminal-economic-contract-v2",
-        terminal_mechanism:
-          "recursive_capital_use_and_owner_distribution_v2",
+        terminal_mechanism: "recursive_capital_use_and_owner_distribution_v2",
         terminal_start_year: policy.terminal_start_year,
         first_distribution_timing: policy.first_distribution_timing,
         legacy_profit_dynamics: policy.legacy_profit_dynamics,

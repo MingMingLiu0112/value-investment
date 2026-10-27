@@ -39,8 +39,7 @@ export type JointCapitalReview = {
         | "recursive_capital_use_and_owner_distribution"
         | "recursive_capital_use_and_owner_distribution_v2";
       terminal_contract_version:
-        | "terminal-economic-contract-v1"
-        | "terminal-economic-contract-v2";
+        "terminal-economic-contract-v1" | "terminal-economic-contract-v2";
       explicit_distribution_pv_cny: string;
       terminal_value_at_year_10_cny: string;
       terminal_distribution_value_cny: string;
@@ -328,9 +327,11 @@ export const JOINT_CASH_V4_SCHEMA = "joint-capital-cash-path-proposal-v4";
 export function isJointCashReview(value: unknown): boolean {
   return (
     record(value) &&
-    (["joint-capital-cash-review-v2", "joint-capital-cash-review-v3", "joint-capital-cash-review-v4"].includes(
-      String(value.schema_version),
-    ) ||
+    ([
+      "joint-capital-cash-review-v2",
+      "joint-capital-cash-review-v3",
+      "joint-capital-cash-review-v4",
+    ].includes(String(value.schema_version)) ||
       [JOINT_CASH_SCHEMA, JOINT_CASH_V3_SCHEMA, JOINT_CASH_V4_SCHEMA].includes(
         String(value.input_mode),
       ))
@@ -749,8 +750,7 @@ function v4TerminalEconomics(value: unknown): boolean {
     Number.isInteger(value.terminal_start_year) &&
     Number(value.terminal_start_year) === 11 &&
     value.first_distribution_timing === "end_of_terminal_year_1" &&
-    value.legacy_profit_dynamics ===
-      "constant_after_profit_scale_transition" &&
+    value.legacy_profit_dynamics === "constant_after_profit_scale_transition" &&
     cashRatio(value.productive_marginal_return) &&
     cashRatio(value.liquidity_return) &&
     (value.commitment_occurrences === null ||
@@ -789,14 +789,17 @@ function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
     (v4 && v4BySchema !== v4ByInput) ||
     (v3 && v3BySchema !== v3ByInput) ||
     (v4 && v3) ||
-    (!v3 && !v4 &&
+    (!v3 &&
+      !v4 &&
       !["joint-capital-review-v1", "joint-capital-cash-review-v2"].includes(
         String(review.schema_version),
       )) ||
-    (!v3 && !v4 &&
+    (!v3 &&
+      !v4 &&
       review.input_mode !== undefined &&
       review.input_mode !== JOINT_CASH_SCHEMA) ||
-    (!v3 && !v4 &&
+    (!v3 &&
+      !v4 &&
       review.schema_version === "joint-capital-review-v1" &&
       review.input_mode !== JOINT_CASH_SCHEMA)
   )
@@ -829,8 +832,8 @@ function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
         (v4
           ? "EXACT_SUPPORTED_ECONOMIC_TAIL_WITH_ZERO_NUMERIC_ERROR_BOUND"
           : v3
-          ? "RECURSIVE_CAPITAL_USE_AND_OWNER_DISTRIBUTION_NOT_GROWTH_PERPETUITY"
-          : "EXPLICIT_CONTINUING_CASH_NEEDS_NOT_DEFAULT_FULL_PAYOUT"))
+            ? "RECURSIVE_CAPITAL_USE_AND_OWNER_DISTRIBUTION_NOT_GROWTH_PERPETUITY"
+            : "EXPLICIT_CONTINUING_CASH_NEEDS_NOT_DEFAULT_FULL_PAYOUT"))
   )
     return false;
   for (const key of [
@@ -893,7 +896,11 @@ function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
     if (
       !record(ledger) ||
       ledger.version !==
-        (v4 ? "joint-capital-cash-path-v4" : v3 ? "joint-capital-cash-path-v3" : "joint-capital-cash-path-v2") ||
+        (v4
+          ? "joint-capital-cash-path-v4"
+          : v3
+            ? "joint-capital-cash-path-v3"
+            : "joint-capital-cash-path-v2") ||
       ledger.action !== "no_order" ||
       ledger.status !== "CONDITIONAL_RESEARCH_NOT_APPROVED" ||
       ledger.scope !== "ordinary_owner_equivalent_cash_mapping" ||
@@ -913,7 +920,11 @@ function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
       !ledger.forecast_retentions.every(cashRatio) ||
       !cashRow(ledger.terminal, 11) ||
       !record(terminalPolicy) ||
-      !(v4 ? v4TerminalPolicy(terminalPolicy) : v3 ? v3TerminalPolicy(terminalPolicy) : cashPolicy(terminalPolicy)) ||
+      !(v4
+        ? v4TerminalPolicy(terminalPolicy)
+        : v3
+          ? v3TerminalPolicy(terminalPolicy)
+          : cashPolicy(terminalPolicy)) ||
       !(v3 || v4
         ? true
         : exactFields(terminalPolicy, [
@@ -932,7 +943,9 @@ function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
       (ledger.terminal_growth_status !==
         "NON_AUTHORITATIVE_ACCOUNTING_DIAGNOSTIC" ||
         !v3TerminalContract(ledger.terminal_economic_contract) ||
-        !(v4 ? v4TerminalEconomics(item.terminal_economics) : v3TerminalEconomics(item.terminal_economics)) ||
+        !(v4
+          ? v4TerminalEconomics(item.terminal_economics)
+          : v3TerminalEconomics(item.terminal_economics)) ||
         !(v4
           ? v4ActualCalculationInputs(item.actual_calculation_inputs, ledger)
           : record(item.actual_calculation_inputs) &&
