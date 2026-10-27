@@ -868,10 +868,25 @@ function jointCashV4Fixture() {
       "recursive_capital_use_and_owner_distribution_v2";
     const policy = scenario.ledger.terminal_policy;
     const contract = scenario.ledger.terminal_economic_contract;
-    scenario.actual_calculation_inputs.terminal_contract_version =
-      "terminal-economic-contract-v2";
-    scenario.actual_calculation_inputs.terminal_mechanism =
-      "recursive_capital_use_and_owner_distribution_v2";
+    scenario.actual_calculation_inputs = {
+      retention_contract: "annual-retention-v4-economic-terminal",
+      currency: "CNY",
+      cost_of_equity: ".08",
+      forecast_retentions: scenario.ledger.forecast_retentions,
+      terminal_roe: scenario.ledger.terminal_roe,
+      terminal_growth: scenario.ledger.terminal_growth,
+      terminal_economic_contract: {
+        contract_version: "terminal-economic-contract-v2",
+        terminal_mechanism:
+          "recursive_capital_use_and_owner_distribution_v2",
+        terminal_start_year: policy.terminal_start_year,
+        first_distribution_timing: policy.first_distribution_timing,
+        legacy_profit_dynamics: policy.legacy_profit_dynamics,
+        ...contract,
+        policy: Object.fromEntries(contract.policy),
+      },
+      forecast_roe: scenario.ledger.forecast_roe,
+    };
     Object.assign(scenario.terminal_economics, {
       mechanism: "recursive_capital_use_and_owner_distribution_v2",
       terminal_contract_version: "terminal-economic-contract-v2",

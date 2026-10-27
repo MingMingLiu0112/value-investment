@@ -575,6 +575,121 @@ function v3TerminalContract(value: unknown): boolean {
   );
 }
 
+const v4ActualCalculationFields = [
+  "retention_contract",
+  "currency",
+  "cost_of_equity",
+  "forecast_retentions",
+  "terminal_roe",
+  "terminal_growth",
+  "terminal_economic_contract",
+  "forecast_roe",
+] as const;
+const v4ActualTerminalContractFields = [
+  "contract_version",
+  "terminal_mechanism",
+  "terminal_start_year",
+  "first_distribution_timing",
+  "legacy_profit_dynamics",
+  "opening_book",
+  "opening_cash",
+  "opening_unremitted",
+  "opening_distribution_capacity",
+  "opening_operating_capital",
+  "opening_productive_capital",
+  "opening_cash_reference",
+  "cash_floor",
+  "legacy_profit",
+  "operating_allocation",
+  "productive_marginal_return",
+  "liquidity_return",
+  "policy",
+  "commitment_occurrences",
+  "restricted_cash_release_cny",
+  "restricted_cash_release_year",
+  "convergence_tolerance_cny",
+  "max_tail_years",
+  "rationale",
+] as const;
+
+function v4ActualCalculationInputs(
+  value: unknown,
+  ledger: Record<string, unknown>,
+): boolean {
+  if (!record(value) || !exactFields(value, v4ActualCalculationFields))
+    return false;
+  const contract = value.terminal_economic_contract;
+  const ledgerContract = ledger.terminal_economic_contract;
+  if (
+    value.retention_contract !== "annual-retention-v4-economic-terminal" ||
+    value.currency !== "CNY" ||
+    !finiteDecimal(value.cost_of_equity) ||
+    Number(value.cost_of_equity) <= 0 ||
+    !finiteDecimal(value.terminal_roe) ||
+    !finiteDecimal(value.terminal_growth) ||
+    !Array.isArray(value.forecast_retentions) ||
+    !Array.isArray(value.forecast_roe) ||
+    value.forecast_retentions.length !== 10 ||
+    value.forecast_roe.length !== 10 ||
+    !value.forecast_retentions.every(cashRatio) ||
+    !value.forecast_roe.every(finiteDecimal) ||
+    !record(contract) ||
+    !exactFields(contract, v4ActualTerminalContractFields) ||
+    !record(ledgerContract) ||
+    contract.contract_version !== "terminal-economic-contract-v2" ||
+    contract.terminal_mechanism !==
+      "recursive_capital_use_and_owner_distribution_v2" ||
+    contract.terminal_start_year !== 11 ||
+    contract.first_distribution_timing !== "end_of_terminal_year_1" ||
+    contract.legacy_profit_dynamics !==
+      "constant_after_profit_scale_transition" ||
+    !cashRatio(contract.operating_allocation) ||
+    !cashRatio(contract.productive_marginal_return) ||
+    !cashRatio(contract.liquidity_return) ||
+    !cashPolicy(contract.policy) ||
+    typeof contract.rationale !== "string" ||
+    !contract.rationale.trim()
+  )
+    return false;
+  const scalarFields = v3TerminalContractFields.filter(
+    (key) => !["policy", "rationale"].includes(key),
+  );
+  const ledgerPolicy = new Map(
+    (ledgerContract.policy as unknown[]).map((row) =>
+      Array.isArray(row) ? [row[0], row[1]] : [null, null],
+    ),
+  );
+  return (
+    scalarFields.every((key) => {
+      const actual = contract[key];
+      const expected = ledgerContract[key];
+      return typeof actual === "string" && typeof expected === "string"
+        ? decimalIdentity(actual) === decimalIdentity(expected)
+        : actual === expected;
+    }) &&
+    contract.rationale === ledgerContract.rationale &&
+    jointCashPolicyFields.every(
+      (key) =>
+        decimalIdentity((contract.policy as Record<string, unknown>)[key]) ===
+        decimalIdentity(ledgerPolicy.get(key)),
+    ) &&
+    value.forecast_retentions.every(
+      (item, index) =>
+        decimalIdentity(item) ===
+        decimalIdentity((ledger.forecast_retentions as unknown[])[index]),
+    ) &&
+    value.forecast_roe.every(
+      (item, index) =>
+        decimalIdentity(item) ===
+        decimalIdentity((ledger.forecast_roe as unknown[])[index]),
+    ) &&
+    decimalIdentity(value.terminal_roe) ===
+      decimalIdentity(ledger.terminal_roe) &&
+    decimalIdentity(value.terminal_growth) ===
+      decimalIdentity(ledger.terminal_growth)
+  );
+}
+
 function v3TerminalEconomics(value: unknown): boolean {
   return (
     record(value) &&
@@ -818,15 +933,13 @@ function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
         "NON_AUTHORITATIVE_ACCOUNTING_DIAGNOSTIC" ||
         !v3TerminalContract(ledger.terminal_economic_contract) ||
         !(v4 ? v4TerminalEconomics(item.terminal_economics) : v3TerminalEconomics(item.terminal_economics)) ||
-        !record(item.actual_calculation_inputs) ||
-        item.actual_calculation_inputs.terminal_contract_version !==
-          (v4
-            ? "terminal-economic-contract-v2"
-            : "terminal-economic-contract-v1") ||
-        item.actual_calculation_inputs.terminal_mechanism !==
-          (v4
-            ? "recursive_capital_use_and_owner_distribution_v2"
-            : "recursive_capital_use_and_owner_distribution"))
+        !(v4
+          ? v4ActualCalculationInputs(item.actual_calculation_inputs, ledger)
+          : record(item.actual_calculation_inputs) &&
+            item.actual_calculation_inputs.terminal_contract_version ===
+              "terminal-economic-contract-v1" &&
+            item.actual_calculation_inputs.terminal_mechanism ===
+              "recursive_capital_use_and_owner_distribution"))
     )
       return false;
     if (!v3 && !v4 && item.terminal_economics !== undefined) return false;
