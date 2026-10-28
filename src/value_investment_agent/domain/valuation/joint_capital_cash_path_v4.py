@@ -271,6 +271,11 @@ def value_terminal_economic_contract(contract, required_return):
                 convergence_residual=_ZERO,
                 absolute_error_bound_cny=_ZERO,
                 relative_error_bound=_ZERO,
+                analytical_tail_truncation_error_bound_cny=_ZERO,
+                analytical_tail_truncation_error_scope='TOTAL_EQUITY_AT_YEAR_10_END',
+                clean_surplus_bridge_arithmetic_tolerance_cny=arithmetic_tolerance,
+                economic_assumption_uncertainty_status=(
+                    'NOT_QUANTIFIED_BY_NUMERIC_ERROR_BOUND'),
                 requested_absolute_error_tolerance_cny=contract.convergence_tolerance_cny,
                 last_scheduled_event_year=last_scheduled_event_year,
                 restricted_cash_release_consumed_cny=restricted_release_consumed,

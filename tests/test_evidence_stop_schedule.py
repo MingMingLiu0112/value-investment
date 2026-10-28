@@ -485,7 +485,7 @@ def test_fresh_case_reaches_research_application_without_consuming_a_stop(
     called = {}
 
     class RecordingResearchService:
-        def __init__(self, repository):
+        def __init__(self, repository, *, router=None):
             pass
 
         def run_company_research(self, spec):
@@ -496,7 +496,7 @@ def test_fresh_case_reaches_research_application_without_consuming_a_stop(
         company_research, "_package_for_symbol", lambda *_args: package
     )
     monkeypatch.setattr(
-        company_research, "build_descriptor", lambda _payload, *, root: {}
+        company_research, "build_descriptor_for_package", lambda _payload, *, root: {}
     )
     monkeypatch.setattr(
         company_research, "build_research_run_spec", lambda descriptor:
@@ -573,7 +573,7 @@ def test_explicit_daily_inputs_reach_descriptor_before_one_shot_consumption(
         if descriptor_rejected:
             raise ValueError('Quote date cannot follow research as-of')
         return payload
-    monkeypatch.setattr(company_research, 'build_descriptor', descriptor)
+    monkeypatch.setattr(company_research, 'build_descriptor_for_package', descriptor)
     monkeypatch.setattr(company_research, 'build_research_run_spec', lambda payload:
         SimpleNamespace(input_descriptor_sha256='a' * 64, research_mode='valuation'))
     def claim(**kwargs):
@@ -581,7 +581,7 @@ def test_explicit_daily_inputs_reach_descriptor_before_one_shot_consumption(
         return dict(created=True)
     monkeypatch.setattr(company_research, 'claim_research_schedule_once', claim)
     class Service:
-        def __init__(self, repository):
+        def __init__(self, repository, *, router=None):
             pass
         def run_company_research(self, spec):
             calls.append('calculate')
@@ -634,7 +634,7 @@ def test_recommendation_v3_opt_in_reaches_product_descriptor(tmp_path, monkeypat
         )
         return SimpleNamespace(input_sha256='a' * 64)
 
-    monkeypatch.setattr(company_research, 'build_descriptor', descriptor)
+    monkeypatch.setattr(company_research, 'build_descriptor_for_package', descriptor)
     monkeypatch.setattr(
         company_research,
         'build_research_run_spec',
@@ -642,7 +642,7 @@ def test_recommendation_v3_opt_in_reaches_product_descriptor(tmp_path, monkeypat
     )
 
     class Service:
-        def __init__(self, repository):
+        def __init__(self, repository, *, router=None):
             pass
 
         def run_company_research(self, spec):

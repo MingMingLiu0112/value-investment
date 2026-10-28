@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 0,
     "CURRENT_PRODUCT_CLI": 26,
-    "CURRENT_RESEARCH_CLI": 225,
+    "CURRENT_RESEARCH_CLI": 226,
     "HISTORICAL_VALIDATION_TOOL": 57,
     "COMPANY_RESEARCH_CASE_TOOL": 218,
     "MIGRATION_TOOL": 13,
@@ -3977,6 +3977,19 @@
       "risk": "MEDIUM",
       "line_count": 48,
       "sha256": "bdd065c503432b4e4c45f0107f84032d41e6ab18cb30e26713e32ec8b502b60e"
+    },
+    {
+      "path": "scripts/current/build_joint_cash_v4_candidates.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json"
+      ],
+      "imports_business_logic": true,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "MEDIUM",
+      "line_count": 168,
+      "sha256": "21dd6803fe80d05a16fba03176b349b0fe2f44b079c35f0deede29a70904216b"
     },
     {
       "path": "scripts/current/build_current_workbench.py",

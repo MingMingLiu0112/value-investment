@@ -145,6 +145,13 @@ def scenario_calculation(
             "dividend_crosscheck_difference_cny": str(difference),
             "terminal_residual_contribution_ratio": str(terminal_pv / equity),
             **({
+                "terminal_value_error_kind": "ANALYTICAL_TAIL_TRUNCATION_ONLY",
+                "terminal_value_error_scope": terminal_economics[
+                    "analytical_tail_truncation_error_scope"
+                ],
+                "terminal_economic_uncertainty_status": terminal_economics[
+                    "economic_assumption_uncertainty_status"
+                ],
                 "terminal_mechanism": terminal_economics["mechanism"],
                 "terminal_economic_value_cny": str(terminal_economics["equity_value"]),
                 "terminal_distribution_value_cny": str(terminal_economics["distribution_value"]),
@@ -152,6 +159,30 @@ def scenario_calculation(
                 "terminal_clean_surplus_bridge_residual_cny": str(terminal_economics["clean_surplus_bridge_residual"]),
                 "terminal_value_error_bound_cny": str(terminal_economics["absolute_error_bound_cny"]),
                 "terminal_value_relative_error_bound": str(terminal_economics["relative_error_bound"]),
+                "terminal_bridge_arithmetic_tolerance_cny": str(
+                    terminal_economics[
+                        "clean_surplus_bridge_arithmetic_tolerance_cny"
+                    ]
+                ),
+                "terminal_value_error_bound_basis_cny": str(
+                    terminal_economics["absolute_error_bound_cny"] / discount
+                ),
+                "terminal_value_error_bound_basis_per_share": str(
+                    terminal_economics["absolute_error_bound_cny"]
+                    / discount
+                    / shares
+                ),
+                # Without a separate timing bridge the model basis is also the
+                # valuation date.  A dated run overwrites these two fields in
+                # _apply_timing using the same declared time factor.
+                "terminal_value_error_bound_valuation_date_cny": str(
+                    terminal_economics["absolute_error_bound_cny"] / discount
+                ),
+                "terminal_value_error_bound_valuation_date_per_share": str(
+                    terminal_economics["absolute_error_bound_cny"]
+                    / discount
+                    / shares
+                ),
                 "terminal_value_method": terminal_economics["valuation_method"],
                 "terminal_last_scheduled_event_year": terminal_economics["last_scheduled_event_year"],
                 "terminal_years_evaluated": terminal_economics["years_evaluated"],
@@ -191,6 +222,20 @@ def _apply_timing(
         )
         if abs(current - dividend) > Decimal("0.01"):
             raise ValueError("Dated residual-income and dividend paths do not reconcile")
+        error_timing = {}
+        if "terminal_value_error_bound_basis_cny" in calculation:
+            basis_error = Decimal(
+                calculation["terminal_value_error_bound_basis_cny"]
+            )
+            current_error = basis_error * factor
+            error_timing = {
+                "terminal_value_error_bound_valuation_date_cny": str(
+                    current_error
+                ),
+                "terminal_value_error_bound_valuation_date_per_share": str(
+                    current_error / shares
+                ),
+            }
         calculation.update({
             "basis_origin_equity_value_cny": str(origin),
             "basis_to_valuation_factor": str(factor),
@@ -199,6 +244,7 @@ def _apply_timing(
             "dividend_crosscheck_equity_value_cny": str(dividend),
             "dividend_crosscheck_difference_cny": str(current - dividend),
             "valuation_timing": timing.as_policy(),
+            **error_timing,
         })
     return calculation
 

@@ -14,6 +14,7 @@ import pytest
 from test_neutral_valuation_proposal import proposal_inputs, run
 from test_pending_research_candidate import candidate_inputs, run as run_pending
 from value_investment_agent.application.product.common import sha256_file
+from value_investment_agent.application.product.source_bound_inputs import source_catalog_sha256
 from value_investment_agent.application.product.neutral_valuation_proposal import JOINT_SCHEMA
 from value_investment_agent.application.product.pending_research_candidate import verify_pending_research_candidate
 from value_investment_agent.application.product.decision_surface import verify_current_decision_workbench
@@ -372,6 +373,7 @@ def test_recomputed_package_workbench_and_receipt_cannot_divorce_joint_policy(
                         refresh_proposal_refs(nested)
             refresh_proposal_refs(package)
             assert all(sha256_file(tmp_path / b['path']) == b['sha256'] for b in proposal['source_bindings'])
+    package['source_contract']['source_catalog_sha256'] = source_catalog_sha256(package['sources'])
     package_path.write_text(json.dumps(package), encoding='utf-8')
     work_path = folder / 'workbench.json'
     rebuilt = build_current_workbench_for_symbol(root=tmp_path, symbol=package['symbol'],

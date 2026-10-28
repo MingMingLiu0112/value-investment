@@ -43,6 +43,7 @@
     "scripts/current/review_materiality.py",
     "scripts/current/build_value_research_queue.py",
     "scripts/current/open_m2_pending_research.py",
+    "scripts/current/build_joint_cash_v4_candidates.py",
     "scripts/current/run_agent_research_pilot.py",
     "scripts/current/build_historical_company_closure.py",
     "scripts/current/build_historical_execution_replay.py",
@@ -126,8 +127,8 @@
   ],
   "counts": {
     "product": 26,
-    "engineering": 64,
+    "engineering": 65,
     "internal_helpers": 19,
-    "total": 109
+    "total": 110
   }
 }

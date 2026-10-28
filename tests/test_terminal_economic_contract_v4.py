@@ -71,6 +71,18 @@ def test_t01_low_payout_diagnostic_growth_above_cost_reaches_candidate_consumpti
     assert calculated["model_version"] == "residual-income-equity-path-v4"
     assert D(calculated["terminal_economic_value_cny"]) == D("100")
     assert D(calculated["terminal_value_error_bound_cny"]) == 0
+    assert calculated["terminal_value_error_kind"] == (
+        "ANALYTICAL_TAIL_TRUNCATION_ONLY"
+    )
+    assert calculated["terminal_value_error_scope"] == (
+        "TOTAL_EQUITY_AT_YEAR_10_END"
+    )
+    assert D(calculated["terminal_value_error_bound_basis_cny"]) == 0
+    assert D(calculated["terminal_value_error_bound_basis_per_share"]) == 0
+    assert D(calculated["terminal_bridge_arithmetic_tolerance_cny"]) > 0
+    assert calculated["terminal_economic_uncertainty_status"] == (
+        "NOT_QUANTIFIED_BY_NUMERIC_ERROR_BOUND"
+    )
     assert abs(D(calculated["dividend_crosscheck_difference_cny"])) < D("0.01")
 
 

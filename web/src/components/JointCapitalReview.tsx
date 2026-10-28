@@ -123,7 +123,15 @@ const ratios = new Set([
   "cost_ratio",
 ]);
 
-function Value({ name, value }: { name: string; value: unknown }) {
+function Value({
+  name,
+  value,
+  label,
+}: {
+  name: string;
+  value: unknown;
+  label?: string;
+}) {
   if (
     typeof value !== "string" ||
     !value.trim() ||
@@ -131,7 +139,7 @@ function Value({ name, value }: { name: string; value: unknown }) {
   )
     return (
       <div>
-        <dt>{names[name] ?? name}</dt>
+        <dt>{label ?? names[name] ?? name}</dt>
         <dd>缺失或无效，不能按零展示</dd>
       </div>
     );
@@ -144,7 +152,7 @@ function Value({ name, value }: { name: string; value: unknown }) {
         : `${(number / 1e8).toFixed(2)} 亿元`;
   return (
     <div style={{ minWidth: 0 }}>
-      <dt>{names[name] ?? name}</dt>
+      <dt>{label ?? names[name] ?? name}</dt>
       <dd style={{ marginLeft: 0 }}>
         {display}
         <details>
@@ -380,7 +388,16 @@ function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
       }}
     >
       {keys.map((key) => (
-        <Value key={key} name={key} value={row[key]} />
+        <Value
+          key={key}
+          name={key}
+          value={row[key]}
+          label={
+            v4 && key === "terminal_growth"
+              ? "账面留存诊断比例（不参与 v4 尾值定价）"
+              : undefined
+          }
+        />
       ))}
     </dl>
   );
@@ -417,6 +434,11 @@ function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
         const terminal = ledger.terminal as Record<string, unknown>;
         const policy = ledger.terminal_policy as Record<string, unknown>;
         const economics = scenario.terminal_economics;
+        const v4Economics =
+          economics?.terminal_contract_version ===
+          "terminal-economic-contract-v2"
+            ? economics
+            : undefined;
         return (
           <details key={scenario.scenario} open>
             <summary>{names[scenario.scenario]} · 10年 · 未批准</summary>
@@ -488,16 +510,35 @@ function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
                       {String(policy.restricted_cash_release_year)}
                     </li>
                     <li>尾期递推年数：{economics.terminal_years_evaluated}</li>
-                    {v4 ? (
+                    {v4 && v4Economics ? (
                       <>
-                        <li>尾期解析方法：{economics.terminal_value_method}</li>
                         <li>
-                          尾期价值误差上限：
-                          {economics.terminal_value_error_bound_cny} CNY
+                          尾期解析方法：{v4Economics.terminal_value_method}
+                        </li>
+                        <li>
+                          第10年末总权益解析尾项截断误差上限：
+                          {v4Economics.terminal_value_error_bound_cny} CNY
+                        </li>
+                        <li>
+                          估值日每股解析尾项截断误差上限：
+                          {
+                            v4Economics.terminal_value_error_bound_valuation_date_per_share
+                          }{" "}
+                          元／股
+                        </li>
+                        <li>
+                          净盈余桥有限精度校验容差：
+                          {v4Economics.terminal_bridge_arithmetic_tolerance_cny} CNY
+                        </li>
+                        <li>
+                          经济假设不确定性：未包含在上述数值误差上限中
+                        </li>
+                        <li>
+                          终端增长字段状态：账面留存诊断，不参与 v4 尾值定价
                         </li>
                         <li>
                           最后计划事件年：
-                          {economics.terminal_last_scheduled_event_year}
+                          {v4Economics.terminal_last_scheduled_event_year}
                         </li>
                       </>
                     ) : null}

@@ -1,5 +1,6 @@
 """Opt-in real-source v4 reuse and cross-company isolation acceptance."""
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
 import os
@@ -12,9 +13,15 @@ from value_investment_agent.application.product.common import sha256_file
 from value_investment_agent.application.product.neutral_valuation_proposal import (
     build_neutral_valuation_proposal,
 )
+from value_investment_agent.application.product.economic_review_materials import (
+    project_joint_capital_review,
+)
 from value_investment_agent.application.product.pending_research_candidate import (
     prepare_pending_research_candidate,
     verify_pending_research_candidate,
+)
+from value_investment_agent.application.research.value_research_analysis import (
+    project_value_research_analysis,
 )
 
 
@@ -121,6 +128,61 @@ def test_two_real_companies_use_one_v4_shared_consumption_path():
         assert result["research_admitted"] is False and result["position_guidance"] is None
     assert results["600519"]["model_context"] != results["600887"]["model_context"]
     assert results["600519"]["candidate_valuation"] != results["600887"]["candidate_valuation"]
+
+
+@pytest.mark.parametrize("symbol", CASES)
+def test_v4_public_analysis_excludes_diagnostic_growth_and_scopes_numeric_error(symbol):
+    with TemporaryDirectory(prefix="joint-v4-analysis-", dir=ROOT / "runtime") as directory:
+        folder = Path(directory) / symbol
+        result = candidate(symbol, folder)
+        package_path = folder / "package.json"
+        workbench_path = folder / "workbench.json"
+        analysis = project_value_research_analysis(
+            root=ROOT,
+            package_binding={
+                "path": package_path.relative_to(ROOT).as_posix(),
+                "sha256": sha256_file(package_path),
+            },
+            workbench_binding={
+                "path": workbench_path.relative_to(ROOT).as_posix(),
+                "sha256": sha256_file(workbench_path),
+            },
+            now=datetime.now(timezone.utc) + timedelta(days=1),
+        )
+        candidate_path = folder / "candidate.json"
+        review = project_joint_capital_review(
+            root=ROOT,
+            binding={
+                "path": candidate_path.relative_to(ROOT).as_posix(),
+                "sha256": sha256_file(candidate_path),
+            },
+            symbol=symbol,
+            model_context=result["model_context"],
+            now=datetime.now(timezone.utc) + timedelta(days=1),
+        )
+    assert all(
+        row["field_path"] != "terminal_growth"
+        for row in analysis["sensitivity"]["rows"]
+    )
+    assert any(
+        "excluded from valuation sensitivity" in text
+        for text in analysis["model_applicability"]["limitations"]
+    )
+    assert review["schema_version"] == "joint-capital-cash-review-v4"
+    for scenario in review["scenarios"]:
+        economics = scenario["terminal_economics"]
+        assert economics["terminal_growth_status"] == (
+            "NON_AUTHORITATIVE_ACCOUNTING_DIAGNOSTIC"
+        )
+        assert economics["terminal_value_error_kind"] == (
+            "ANALYTICAL_TAIL_TRUNCATION_ONLY"
+        )
+        assert economics["terminal_value_error_scope"] == (
+            "TOTAL_EQUITY_AT_YEAR_10_END"
+        )
+        assert economics["terminal_economic_uncertainty_status"] == (
+            "NOT_QUANTIFIED_BY_NUMERIC_ERROR_BOUND"
+        )
 
 
 def test_600519_legal_input_revision_does_not_change_600887():

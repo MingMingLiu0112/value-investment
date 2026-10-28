@@ -2,6 +2,50 @@ import type { ValueResearchAnalysis } from "../types/api";
 
 type EvidenceBinding = { path: string; sha256: string };
 
+type JointTerminalEconomicsV3 = {
+  mechanism: "recursive_capital_use_and_owner_distribution";
+  terminal_contract_version: "terminal-economic-contract-v1";
+  explicit_distribution_pv_cny: string;
+  terminal_value_at_year_10_cny: string;
+  terminal_distribution_value_cny: string;
+  terminal_convergence_residual_cny: string;
+  terminal_years_evaluated: number;
+  ri_ddm_difference_cny: string;
+  limitations: string[];
+};
+
+type JointTerminalEconomicsV4 = Omit<
+  JointTerminalEconomicsV3,
+  "terminal_contract_version"
+> & {
+  terminal_contract_version: "terminal-economic-contract-v2";
+  terminal_start_year: 11;
+  first_distribution_timing: "end_of_terminal_year_1";
+  legacy_profit_dynamics: "constant_after_profit_scale_transition";
+  productive_marginal_return: string;
+  liquidity_return: string;
+  commitment_occurrences: number | null;
+  restricted_cash_release_cny: string;
+  restricted_cash_release_year: number | null;
+  convergence_tolerance_cny: string;
+  max_tail_years: number;
+  rationale: string;
+  terminal_value_error_bound_cny: string;
+  terminal_value_error_kind: "ANALYTICAL_TAIL_TRUNCATION_ONLY";
+  terminal_value_error_scope: "TOTAL_EQUITY_AT_YEAR_10_END";
+  terminal_value_error_bound_basis_cny: string;
+  terminal_value_error_bound_basis_per_share: string;
+  terminal_value_error_bound_valuation_date_cny: string;
+  terminal_value_error_bound_valuation_date_per_share: string;
+  terminal_bridge_arithmetic_tolerance_cny: string;
+  terminal_economic_uncertainty_status: "NOT_QUANTIFIED_BY_NUMERIC_ERROR_BOUND";
+  terminal_growth_status: "NON_AUTHORITATIVE_ACCOUNTING_DIAGNOSTIC";
+  terminal_value_method:
+    | "exact_static_owner_distribution_perpetuity"
+    | "exact_affine_target_payout_perpetuity";
+  terminal_last_scheduled_event_year: number;
+};
+
 export type JointCapitalReview = {
   schema_version:
     | "joint-capital-review-v1"
@@ -34,23 +78,9 @@ export type JointCapitalReview = {
       limitations: string[];
     };
     valuation_per_share: string;
-    terminal_economics?: {
-      mechanism:
-        | "recursive_capital_use_and_owner_distribution"
-        | "recursive_capital_use_and_owner_distribution_v2";
-      terminal_contract_version:
-        "terminal-economic-contract-v1" | "terminal-economic-contract-v2";
-      explicit_distribution_pv_cny: string;
-      terminal_value_at_year_10_cny: string;
-      terminal_distribution_value_cny: string;
-      terminal_convergence_residual_cny: string;
-      terminal_years_evaluated: number;
-      ri_ddm_difference_cny: string;
-      terminal_value_error_bound_cny?: string;
-      terminal_value_method?: string;
-      terminal_last_scheduled_event_year?: number;
-      limitations: string[];
-    };
+    terminal_economics?:
+      | JointTerminalEconomicsV3
+      | JointTerminalEconomicsV4;
   }[];
 };
 
@@ -729,6 +759,15 @@ const v4TerminalEconomicsFields = [
   "max_tail_years",
   "rationale",
   "terminal_value_error_bound_cny",
+  "terminal_value_error_kind",
+  "terminal_value_error_scope",
+  "terminal_value_error_bound_basis_cny",
+  "terminal_value_error_bound_basis_per_share",
+  "terminal_value_error_bound_valuation_date_cny",
+  "terminal_value_error_bound_valuation_date_per_share",
+  "terminal_bridge_arithmetic_tolerance_cny",
+  "terminal_economic_uncertainty_status",
+  "terminal_growth_status",
   "terminal_value_method",
   "terminal_last_scheduled_event_year",
 ] as const;
@@ -769,6 +808,22 @@ function v4TerminalEconomics(value: unknown): boolean {
     !!value.rationale.trim() &&
     finiteDecimal(value.terminal_value_error_bound_cny) &&
     Number(value.terminal_value_error_bound_cny) === 0 &&
+    value.terminal_value_error_kind === "ANALYTICAL_TAIL_TRUNCATION_ONLY" &&
+    value.terminal_value_error_scope === "TOTAL_EQUITY_AT_YEAR_10_END" &&
+    finiteDecimal(value.terminal_value_error_bound_basis_cny) &&
+    Number(value.terminal_value_error_bound_basis_cny) === 0 &&
+    finiteDecimal(value.terminal_value_error_bound_basis_per_share) &&
+    Number(value.terminal_value_error_bound_basis_per_share) === 0 &&
+    finiteDecimal(value.terminal_value_error_bound_valuation_date_cny) &&
+    Number(value.terminal_value_error_bound_valuation_date_cny) === 0 &&
+    finiteDecimal(value.terminal_value_error_bound_valuation_date_per_share) &&
+    Number(value.terminal_value_error_bound_valuation_date_per_share) === 0 &&
+    finiteDecimal(value.terminal_bridge_arithmetic_tolerance_cny) &&
+    Number(value.terminal_bridge_arithmetic_tolerance_cny) > 0 &&
+    value.terminal_economic_uncertainty_status ===
+      "NOT_QUANTIFIED_BY_NUMERIC_ERROR_BOUND" &&
+    value.terminal_growth_status ===
+      "NON_AUTHORITATIVE_ACCOUNTING_DIAGNOSTIC" &&
     [
       "exact_static_owner_distribution_perpetuity",
       "exact_affine_target_payout_perpetuity",
@@ -810,7 +865,7 @@ function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
       review.distribution_scope !==
         "ANNUAL_CASH_AND_CAPACITY_CONSTRAINED_NOT_APPROVED" ||
       review.terminal_scope !==
-        "EXACT_SUPPORTED_ECONOMIC_TAIL_WITH_ZERO_NUMERIC_ERROR_BOUND")
+        "EXACT_SUPPORTED_ECONOMIC_TAIL_WITH_ZERO_ANALYTICAL_TRUNCATION_ERROR_ONLY")
   )
     return false;
   if (
@@ -830,7 +885,7 @@ function jointCashScenariosMatch(review: Record<string, unknown>): boolean {
     ("terminal_scope" in review &&
       review.terminal_scope !==
         (v4
-          ? "EXACT_SUPPORTED_ECONOMIC_TAIL_WITH_ZERO_NUMERIC_ERROR_BOUND"
+          ? "EXACT_SUPPORTED_ECONOMIC_TAIL_WITH_ZERO_ANALYTICAL_TRUNCATION_ERROR_ONLY"
           : v3
             ? "RECURSIVE_CAPITAL_USE_AND_OWNER_DISTRIBUTION_NOT_GROWTH_PERPETUITY"
             : "EXPLICIT_CONTINUING_CASH_NEEDS_NOT_DEFAULT_FULL_PAYOUT"))

@@ -19,9 +19,11 @@ import { FiniteAdvantageResearch } from "./FiniteAdvantageResearch";
 
 const scenarios = { bear: "保守 Bear", base: "基准 Base", bull: "乐观 Bull" };
 
-function inputLabel(key: string): string {
+function inputLabel(key: string, v4 = false): string {
   return key === "forecast_roes"
     ? "预测 ROE 路径（各模型期）"
+    : v4 && key === "terminal_growth"
+      ? "账面留存诊断比例（不参与 v4 尾值定价）"
     : researchAssumptionName(key);
 }
 
@@ -142,6 +144,8 @@ export function ValueResearchAnalysis({
   const sensitivity = Array.isArray(analysis.sensitivity?.rows)
     ? analysis.sensitivity.rows
     : [];
+  const v4 =
+    analysis.valuation?.model_version === "residual-income-equity-path-v4";
   const priority = [
     "cost_of_equity",
     "terminal_roe",
@@ -372,7 +376,7 @@ export function ValueResearchAnalysis({
                     Object.entries(scenario.inputs).map(([name, value]) => (
                       <div key={name}>
                         <dt>
-                          {inputLabel(name)}{" "}
+                          {inputLabel(name, v4)}{" "}
                           <span className="value-analysis-muted">({name})</span>
                         </dt>
                         <dd>{inputValue(value)}</dd>

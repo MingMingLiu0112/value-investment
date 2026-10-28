@@ -150,6 +150,34 @@ def test_read_time_invalidated_plan_discards_frozen_analysis(monkeypatch, tmp_pa
     assert result['formal_eligibility'] is False
 
 
+def test_new_descriptor_invalidates_nonreplaceable_old_price_conditions(
+        registered, monkeypatch):
+    from value_investment_agent.application.decision import current_value_plan
+    root, symbol, _, _ = registered
+    frozen = dict(
+        schema_version='value-action-plan-v1', symbol=symbol,
+        verification_scope='FORMAL_HISTORICAL_PLAN', candidate_action='WATCH',
+        action_intent='MANUAL_REVIEW', security_review_eligible=True,
+        formal_eligibility=True, scenario_validity={'status': 'ready'},
+        valuation_input_version='0' * 64, research_version='OLD', blockers=[],
+        source_bindings=[],
+    )
+    monkeypatch.setattr(
+        current_value_plan, 'load_registered_value_action_plans',
+        lambda *args, **kwargs: dict(
+            items=[dict(frozen)], blockers=[], source_bindings=[]))
+
+    result = current_value_plan.load_current_value_action_plans(
+        root, now=NOW, symbols=[symbol])['items'][0]
+
+    assert result['signal_state'] == 'STALE'
+    assert result['formal_eligibility'] is False
+    assert result['action_intent'] is None
+    assert 'CURRENT_RESEARCH_DESCRIPTOR_CHANGED' in result['blockers']
+    assert result['research_analysis']['input_descriptor_sha256'] != (
+        frozen['valuation_input_version'])
+
+
 def test_projector_rejects_binding_outside_repository(registered):
     root, _, _, _ = registered
     with pytest.raises(ValueError, match='relative'):
@@ -161,8 +189,8 @@ def test_source_drift_during_sensitivity_discards_all_results(registered, monkey
     from value_investment_agent.application.research import value_research_analysis
     root, symbol, _, _ = registered
     original = value_research_analysis._sensitivity
-    def mutate_after_calculation(descriptor, model):
-        result = original(descriptor, model)
+    def mutate_after_calculation(descriptor, model, **kwargs):
+        result = original(descriptor, model, **kwargs)
         (root / 'runtime/original.md').write_bytes(b'CHANGED_DURING_CALCULATION')
         return result
     monkeypatch.setattr(value_research_analysis, '_sensitivity', mutate_after_calculation)

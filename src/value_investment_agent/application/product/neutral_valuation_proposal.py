@@ -511,6 +511,12 @@ def _build_joint_cash_proposal(*, root, package, policy, package_path, package_s
                         for row in ledger['rows'])),
                     terminal_value_at_year_10_cny=(arithmetic.get('terminal_economic_value_cny') if exact_terminal else None),
                     terminal_value_error_bound_cny=arithmetic.get('terminal_value_error_bound_cny'),
+                    terminal_value_error_kind=arithmetic.get('terminal_value_error_kind'),
+                    terminal_value_error_scope=arithmetic.get('terminal_value_error_scope'),
+                    terminal_bridge_arithmetic_tolerance_cny=arithmetic.get(
+                        'terminal_bridge_arithmetic_tolerance_cny'),
+                    terminal_economic_uncertainty_status=arithmetic.get(
+                        'terminal_economic_uncertainty_status'),
                     terminal_value_method=arithmetic.get('terminal_value_method'))
                 annuals[name] = arithmetic
         if v4:

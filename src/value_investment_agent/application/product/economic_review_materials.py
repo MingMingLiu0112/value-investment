@@ -123,7 +123,7 @@ def project_joint_capital_review(*, root, binding, symbol, model_context, now):
     if cash_path:
         result.update(input_mode=candidate['input_mode'], explicit_years=10,
             distribution_scope='ANNUAL_CASH_AND_CAPACITY_CONSTRAINED_NOT_APPROVED',
-            terminal_scope=('EXACT_SUPPORTED_ECONOMIC_TAIL_WITH_ZERO_NUMERIC_ERROR_BOUND'
+            terminal_scope=('EXACT_SUPPORTED_ECONOMIC_TAIL_WITH_ZERO_ANALYTICAL_TRUNCATION_ERROR_ONLY'
                 if cash_v4 else 'RECURSIVE_CAPITAL_USE_AND_OWNER_DISTRIBUTION_NOT_GROWTH_PERPETUITY'
                 if cash_v3 else 'EXPLICIT_CONTINUING_CASH_NEEDS_NOT_DEFAULT_FULL_PAYOUT'))
         for row in result['scenarios']:
@@ -157,8 +157,28 @@ def project_joint_capital_review(*, root, binding, symbol, model_context, now):
                     terminal_last_scheduled_event_year=arithmetic.get('terminal_last_scheduled_event_year'),
                     terminal_years_evaluated=arithmetic['terminal_years_evaluated'],
                     ri_ddm_difference_cny=crosscheck['difference_cny'],
+                    **({
+                        'terminal_value_error_kind': arithmetic.get('terminal_value_error_kind'),
+                        'terminal_value_error_scope': arithmetic.get('terminal_value_error_scope'),
+                        'terminal_value_error_bound_basis_cny': arithmetic.get(
+                            'terminal_value_error_bound_basis_cny'),
+                        'terminal_value_error_bound_basis_per_share': arithmetic.get(
+                            'terminal_value_error_bound_basis_per_share'),
+                        'terminal_value_error_bound_valuation_date_cny': arithmetic.get(
+                            'terminal_value_error_bound_valuation_date_cny'),
+                        'terminal_value_error_bound_valuation_date_per_share': arithmetic.get(
+                            'terminal_value_error_bound_valuation_date_per_share'),
+                        'terminal_bridge_arithmetic_tolerance_cny': arithmetic.get(
+                            'terminal_bridge_arithmetic_tolerance_cny'),
+                        'terminal_economic_uncertainty_status': arithmetic.get(
+                            'terminal_economic_uncertainty_status'),
+                        'terminal_growth_status': arithmetic.get('terminal_growth_status'),
+                    } if cash_v4 else {}),
                     limitations=[
                         'Terminal value is conditional on the declared capital-use mechanism.',
+                        *([('A zero bound covers only analytical-tail truncation; finite-precision '
+                            'arithmetic is checked separately and economic-assumption uncertainty '
+                            'is not quantified by this numeric bound.')] if cash_v4 else []),
                         'Restricted funds release only when explicitly declared and only once.',
                         'This is research arithmetic, not legal distribution capacity or approval.',
                     ])
@@ -208,10 +228,18 @@ def _group_material(group, assessment, materiality):
         questions.append('\u5b50\u516c\u53f8\u4e0a\u5212\u3001\u5fc5\u9700\u6d41\u52a8\u6027\u3001\u8d44\u672c\u5f00\u652f\u3001\u507f\u503a\u4e0e\u6cd5\u5b9a\u9650\u5236\u540e\uff0c\u80a1\u4e1c\u53ef\u5f97\u73b0\u91d1\u662f\u5426\u8db3\u4ee5\u652f\u6301\u5047\u8bbe\uff1f\u5386\u53f2\u5bf9\u5e73\u4e0d\u80fd\u4ee3\u66ff\u672a\u6765\u5206\u914d\u5224\u65ad\u3002')
     elif name == 'COST_TERMINAL':
         title = '\u6743\u76ca\u6210\u672c\u4e0e\u7ec8\u503c'
-        observations.append('\u8d44\u672c\u6210\u672c\u4e0e\u7ec8\u503c\u654f\u611f\u6027\u6765\u81ea\u7ed1\u5b9a\u60c5\u666f\u590d\u7b97\uff0c\u4e0d\u4ee3\u8868\u5e02\u573a\u5df2\u9690\u542b\u8fd9\u4e9b\u9884\u671f\u3002')
-        assumptions = [f"{s['scenario']}: \u6743\u76ca\u6210\u672c {_display(s['cost_of_equity'], percent=True)}\uff0c\u7ec8\u503c\u589e\u957f {_display(s['terminal_growth'], percent=True)}\uff0c\u6298\u73b0\u4e0e\u589e\u957f\u5dee {_display(s['terminal_spread'], percent=True)}"
-            for s in scenarios]
-        questions.append('\u65e0\u98ce\u9669\u5229\u7387\u3001ERP\u3001beta\u7684\u65e5\u671f\u3001\u5e01\u79cd\u548c\u4ee3\u7406\u9002\u7528\u6027\u662f\u5426\u5408\u7406\uff1f\u7ec8\u503c\u589e\u957f\u4e0e\u518d\u6295\u8d44\u3001\u7ade\u4e89\u8870\u51cf\u662f\u5426\u4e00\u81f4\uff1f')
+        v4 = bool(scenarios) and all(s.get('terminal_growth_status') ==
+            'NON_AUTHORITATIVE_ACCOUNTING_DIAGNOSTIC' for s in scenarios)
+        if v4:
+            observations.append('\u8d44\u672c\u6210\u672c\u4e0e\u660e\u793a\u80a1\u4e1c\u73b0\u91d1\u5c3e\u671f\u5408\u540c\u6765\u81ea\u7ed1\u5b9a\u60c5\u666f\u590d\u7b97\uff1b\u8d26\u9762\u7559\u5b58\u8bca\u65ad\u589e\u957f\u4e0d\u53c2\u4e0e v4 \u5c3e\u503c\u5b9a\u4ef7\u3002')
+            assumptions = [f"{s['scenario']}: \u6743\u76ca\u6210\u672c {_display(s['cost_of_equity'], percent=True)}\uff0c\u8d26\u9762\u7559\u5b58\u8bca\u65ad\u589e\u957f {_display(s['terminal_growth'], percent=True)}\uff0c\u5c3e\u503c\u65b9\u6cd5 {s['terminal_value_method']}"
+                for s in scenarios]
+            questions.append('\u65e0\u98ce\u9669\u5229\u7387\u3001ERP\u3001beta \u7684\u65e5\u671f\u3001\u5e01\u79cd\u548c\u4ee3\u7406\u9002\u7528\u6027\u662f\u5426\u5408\u7406\uff1f\u7ef4\u6301\u6295\u5165\u3001\u8425\u8fd0\u8d44\u91d1\u3001\u627f\u8bfa\u652f\u51fa\u548c\u53ef\u5206\u914d\u73b0\u91d1\u662f\u5426\u652f\u6301\u660e\u793a\u5c3e\u671f\u5408\u540c\uff1f')
+        else:
+            observations.append('\u8d44\u672c\u6210\u672c\u4e0e\u7ec8\u503c\u654f\u611f\u6027\u6765\u81ea\u7ed1\u5b9a\u60c5\u666f\u590d\u7b97\uff0c\u4e0d\u4ee3\u8868\u5e02\u573a\u5df2\u9690\u542b\u8fd9\u4e9b\u9884\u671f\u3002')
+            assumptions = [f"{s['scenario']}: \u6743\u76ca\u6210\u672c {_display(s['cost_of_equity'], percent=True)}\uff0c\u7ec8\u503c\u589e\u957f {_display(s['terminal_growth'], percent=True)}\uff0c\u6298\u73b0\u4e0e\u589e\u957f\u5dee {_display(s['terminal_spread'], percent=True)}"
+                for s in scenarios]
+            questions.append('\u65e0\u98ce\u9669\u5229\u7387\u3001ERP\u3001beta\u7684\u65e5\u671f\u3001\u5e01\u79cd\u548c\u4ee3\u7406\u9002\u7528\u6027\u662f\u5426\u5408\u7406\uff1f\u7ec8\u503c\u589e\u957f\u4e0e\u518d\u6295\u8d44\u3001\u7ade\u4e89\u8870\u51cf\u662f\u5426\u4e00\u81f4\uff1f')
     elif name == 'EVENT_MODEL':
         title = '\u4e8b\u4ef6\u4e0e\u6a21\u578b\u6709\u6548\u6027'
         observations.append('\u672c\u7248\u72ec\u7acb\u4e8b\u4ef6\u5ba1\u6838\u4ea4\u63a5\u72b6\u6001\uff1a' + materiality['status'])

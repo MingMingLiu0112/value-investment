@@ -6238,7 +6238,9 @@ implementations. The v4 model calculates annual clean-surplus residual income
 directly and no longer calls the legacy terminal-growth helper. Terminal value is
 accepted only for an explicitly supported exact economic tail after all declared
 finite events. It reports the analytical method, last scheduled event and a zero
-numeric error bound; unsupported or non-convergent tails fail closed. T01-T07
+analytical-tail truncation bound. Finite-precision bridge tolerance is reported
+separately, while economic-assumption uncertainty is explicitly not quantified by
+that bound; unsupported or non-convergent tails fail closed. T01-T07
 cover low-payout diagnostic growth above cost, an independent full-distribution
 perpetuity, a 16% stable distribution benchmark, scheduled-event ordering,
 unsupported tails, legacy byte stability and invalid/future inputs.
@@ -6260,14 +6262,25 @@ Both are LOW-confidence `conditional_research_only` results, with
 `research_admitted=false`, `price_admitted=false`, `position_guidance=null` and
 `action=no_order`. They are not current fair-value or buy claims.
 
-G1 fixes an actual product break: a valid registered research candidate was
-hidden when the separate pinned public publication chain was unavailable. The
-existing decision-detail endpoint now exposes a verified candidate independently
-as `RESEARCH_ONLY`; a broken explicitly registered candidate still fails closed.
-The existing company page accepts the standalone `research_analysis` field and
-renders the same v4 joint-capital review without inventing a price plan. The Web
-validator now recognizes terminal-contract-v2 and no longer rejects v4 as a
-legacy-only shape.
+G1 fixes two actual product breaks: a valid registered research candidate was
+hidden when the separate pinned public publication chain was unavailable, and an
+older company/opportunity row could continue to expose a price plan bound to a
+superseded research descriptor. The decision-detail endpoint now preflights the
+registered candidate first. A valid latest candidate is the displayed research
+analysis; a stale price plan is withheld, while a broken explicitly registered
+candidate fails closed instead of falling through to old numbers. The existing
+company page accepts the standalone `research_analysis` field and renders the same
+v4 joint-capital review without inventing a price plan. The Web validator now
+recognizes terminal-contract-v2, distinguishes analytical truncation from economic
+uncertainty, and labels `terminal_growth` as a non-authoritative accounting
+diagnostic rather than a v4 valuation sensitivity.
+
+The existing economic-assessment and review-material path now dispatches the v4
+retention contract through the v4 input adapter and v4 valuation arithmetic. It
+no longer diagnoses a v4 candidate through the legacy Gordon-growth helper, and
+its cost/terminal review group describes the explicit owner-cash tail contract
+rather than presenting diagnostic book-retention growth as an authoritative
+terminal-growth assumption.
 
 Focused evidence at this checkpoint: Python kernel/candidate/API gate 79 passed;
 explicit retained-source v4 replay 2 passed with no skip; Web v4 review and
@@ -6275,3 +6288,28 @@ research-only rendering 267 passed with eight pre-existing conditional skips;
 TypeScript typecheck and production Web build passed. Current publication,
 exact-commit remote CI and browser acceptance are recorded separately after they
 actually occur. Overall approval remains NOT_GRANTED and action=no_order.
+
+The completed local implementation verification on 2026-10-28 ran the focused
+backend chain with 149 passed and three existing conditional skips, then passed
+the current-plan compatibility/API selection set with 44 passed and one skip.
+The Web economic-review suite passed 135 tests with three conditional skips;
+TypeScript and the production build both passed. The full 445-file Windows Core
+command reached 7,553 passed and 264 skipped. Its remaining failures were split
+between Windows test-environment constraints and pre-existing baseline failures:
+the short-temp hotspot archive rerun passed, the required project-local backup
+scratch rerun passed 15 tests, and a detached clean `cfab7006` worktree reproduced
+the representative source-catalog, legacy workbench and legacy PIT failures.
+Those unrelated baseline defects are not relabelled as F1/E1/G1 regressions.
+
+The actual current v4 candidates were regenerated from retained real sources at
+`runtime/joint-cash-v4-current/20261028T044953763337Z/`. Candidate SHA-256 is
+`97a83c496feab701fe3f4718d8c09535ce18226729210bc2deac5f625f930086`
+for 600519 and
+`96e5894b08dd1342139c6a8dd88867619334f77807f7bf6fc28af64067fd6f42`
+for 600887. Their conditional bear/base/bull values are respectively
+675.1019318083 / 799.2027611908 / 930.0062820281 and
+13.0011250922 / 16.0892188495 / 20.2405823121 CNY per share. The existing
+read-only decision API returned HTTP 200, `RESEARCH_ONLY`,
+`VERIFIED_NEW_INPUT_CANDIDATE`, `formal_eligibility=false`, no price action plan,
+and `action=no_order` for both companies. These are current conditional research
+candidates, not G3 approval, current-price qualification or an investment order.

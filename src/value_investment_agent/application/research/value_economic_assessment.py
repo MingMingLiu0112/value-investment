@@ -14,9 +14,16 @@ from ...research_input import _residual_scenario_from_payload
 from ...valuation_models.residual_income_path_v3 import (
     scenario_calculation as scenario_calculation_v3,
 )
+from ...valuation_models.residual_income_path_v4 import (
+    scenario_calculation as scenario_calculation_v4,
+)
 from .v3_input_adapter import (
     RETENTION_CONTRACT as V3_RETENTION_CONTRACT,
     scenario_from_payload as scenario_from_payload_v3,
+)
+from .v4_input_adapter import (
+    RETENTION_CONTRACT as V4_RETENTION_CONTRACT,
+    scenario_from_payload as scenario_from_payload_v4,
 )
 from ..product.common import normalize_symbol
 from .value_research_analysis import _available, _bound, load_current_value_research_analysis
@@ -548,7 +555,15 @@ def load_current_value_economic_assessment(*, root: Path, symbol: str, now: date
             given = scenario["inputs"]
             cost = _number(given["cost_of_equity"])
             roes = [_number(value) for value in given["forecast_roes"]]
-            if given.get("retention_contract") == V3_RETENTION_CONTRACT:
+            if given.get("retention_contract") == V4_RETENTION_CONTRACT:
+                typed = scenario_from_payload_v4(given)
+                diagnostic_facts = QualityCompounderFacts(
+                    symbol=symbol, as_of=now.date(), verified=False,
+                    confidence="LOW", evidence_refs=[], blockers=[],
+                    operating_inputs=dict(start_book_equity=book, ordinary_shares=shares))
+                result = scenario_calculation_v4(diagnostic_facts, typed)
+                first_retention = typed.forecast_retentions[0]
+            elif given.get("retention_contract") == V3_RETENTION_CONTRACT:
                 typed = scenario_from_payload_v3(given)
                 diagnostic_facts = QualityCompounderFacts(
                     symbol=symbol, as_of=now.date(), verified=False,
@@ -586,6 +601,11 @@ def load_current_value_economic_assessment(*, root: Path, symbol: str, now: date
                 terminal_excess_roe=str(_number(given["terminal_roe"]) - cost),
                 cost_of_equity=str(cost), terminal_growth=given["terminal_growth"],
                 terminal_spread=str(cost - _number(given["terminal_growth"])),
+                terminal_growth_status=result.get("terminal_growth_status"),
+                terminal_value_method=result.get("terminal_value_method"),
+                terminal_value_error_kind=result.get("terminal_value_error_kind"),
+                terminal_economic_uncertainty_status=result.get(
+                    "terminal_economic_uncertainty_status"),
                 terminal_residual_contribution_ratio=result["terminal_residual_contribution_ratio"],
                 dividend_ri_reconciliation_cny=result["dividend_crosscheck_difference_cny"],
                 implied_expectation_scope="REGISTERED_SCENARIO_CONDITIONS_NOT_MARKET_IMPLIED",

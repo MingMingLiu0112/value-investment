@@ -41,7 +41,7 @@ def _available(value: str, now: datetime) -> None:
         raise ValueError("Value analysis input is not available at requested cutoff")
 
 
-def _sensitivity(descriptor, model) -> dict:
+def _sensitivity(descriptor, model, *, v4_terminal_contract: bool = False) -> dict:
     """Use only registered endpoints; a one-factor stress is not a joint forecast."""
     facts = descriptor.facts
     if not isinstance(facts, QualityCompounderFacts) or not facts.scenario_inputs:
@@ -56,6 +56,11 @@ def _sensitivity(descriptor, model) -> dict:
         if len(paths) != 1 or {item.scenario for item in mappings} != set(SCENARIOS):
             raise ValueError("Sensitivity requires exact scenario consumption bindings")
         field_path = next(iter(paths))
+        if v4_terminal_contract and field_path == "terminal_growth":
+            # V4 values the explicit owner-cash terminal contract.  This
+            # compatibility scalar remains an accounting diagnostic and must
+            # not be presented as a Gordon-growth valuation sensitivity.
+            continue
         points = []
         for name in SCENARIOS:
             value = getattr(assumption, name)
@@ -176,11 +181,15 @@ def project_value_research_analysis(*, root: Path, package_binding: dict,
         valuation=valuation,
         scenarios=[dict(scenario=name, per_share_value=str(getattr(result, name + "_value")),
                         inputs=package["facts"]["scenario_inputs"][name]) for name in SCENARIOS],
-        sensitivity=_sensitivity(descriptor, model), assumptions=packet["assumptions"],
+        sensitivity=_sensitivity(
+            descriptor, model, v4_terminal_contract=is_v4
+        ), assumptions=packet["assumptions"],
         model_applicability=dict(route=route.as_policy(), status="CONDITIONAL_NOT_ECONOMICALLY_APPROVED",
             scope=result.assumptions.get("scope"), formula=result.assumptions.get("formula"),
             financial_scope_review=packet["limited_financial_acceptance"],
-            limitations=case.get("financial_summary", {}).get("pending_model_limits", []),
+            limitations=(case.get("financial_summary", {}).get("pending_model_limits", []) +
+                (["V4 terminal_growth is an accounting diagnostic and is excluded from valuation sensitivity."]
+                 if is_v4 else [])),
             blockers=blockers), model_validity=packet["model_validity"],
         thesis=case.get("thesis"), return_driver=case.get("return_driver"),
         supporting_evidence=case.get("positives", []),

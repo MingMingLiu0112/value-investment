@@ -861,7 +861,7 @@ function jointCashV4Fixture() {
   review.schema_version = "joint-capital-cash-review-v4";
   review.input_mode = JOINT_CASH_V4_SCHEMA;
   review.terminal_scope =
-    "EXACT_SUPPORTED_ECONOMIC_TAIL_WITH_ZERO_NUMERIC_ERROR_BOUND";
+    "EXACT_SUPPORTED_ECONOMIC_TAIL_WITH_ZERO_ANALYTICAL_TRUNCATION_ERROR_ONLY";
   review.scenarios.forEach((scenario: any) => {
     scenario.ledger.version = "joint-capital-cash-path-v4";
     scenario.ledger.terminal_policy.terminal_mechanism =
@@ -901,6 +901,16 @@ function jointCashV4Fixture() {
       max_tail_years: contract.max_tail_years,
       rationale: contract.rationale,
       terminal_value_error_bound_cny: "0",
+      terminal_value_error_kind: "ANALYTICAL_TAIL_TRUNCATION_ONLY",
+      terminal_value_error_scope: "TOTAL_EQUITY_AT_YEAR_10_END",
+      terminal_value_error_bound_basis_cny: "0",
+      terminal_value_error_bound_basis_per_share: "0",
+      terminal_value_error_bound_valuation_date_cny: "0",
+      terminal_value_error_bound_valuation_date_per_share: "0",
+      terminal_bridge_arithmetic_tolerance_cny: "0.000000000000000001",
+      terminal_economic_uncertainty_status:
+        "NOT_QUANTIFIED_BY_NUMERIC_ERROR_BOUND",
+      terminal_growth_status: "NON_AUTHORITATIVE_ACCOUNTING_DIAGNOSTIC",
       terminal_value_method: "exact_affine_target_payout_perpetuity",
       terminal_last_scheduled_event_year: 11,
     });
@@ -916,7 +926,11 @@ it("strictly renders v4 exact-tail method and zero error bound", () => {
     "terminal-economic-contract-v2",
     "尾期解析方法",
     "exact_affine_target_payout_perpetuity",
-    "尾期价值误差上限",
+    "第10年末总权益解析尾项截断误差上限",
+    "估值日每股解析尾项截断误差上限",
+    "净盈余桥有限精度校验容差",
+    "经济假设不确定性：未包含在上述数值误差上限中",
+    "账面留存诊断比例（不参与 v4 尾值定价）",
     "最后计划事件年",
   ])
     expect(html).toContain(text);

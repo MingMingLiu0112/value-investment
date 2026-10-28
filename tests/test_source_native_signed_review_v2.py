@@ -17,6 +17,7 @@ from test_source_native_candidate_v2 import synthetic_native, store, prepare
 from test_human_research_approval import _receipt
 from value_investment_agent.application.product import source_native_signed_review_v2 as signed
 from value_investment_agent.application.product.common import sha256_file, write_new_json
+from value_investment_agent.application.product.source_bound_inputs import source_catalog_sha256
 from value_investment_agent.application.product.decision_surface import verify_current_decision_workbench, current_recommendation_type
 from value_investment_agent.application.product.source_native_candidate_v2 import prepare_source_native_candidate
 from value_investment_agent.human_research_approval import resolve_human_research_approval
@@ -47,6 +48,7 @@ def native_signed(synthetic_native, request):
             if source.get('kind') == 'official_issuer_filing':
                 source['issuer_identity'] = dict(venue='CNINFO', security_code=request.param,
                     issuer_name=registered['issuer_names'][0], organization_id=registered['organization_id'])
+        package['source_contract']['source_catalog_sha256'] = source_catalog_sha256(package['sources'])
         package_ref = store(root, 'runtime/TEST_ONLY-native-package-second.json', package)
     for name in signed.IMPLEMENTATIONS:
         target = root/'src/value_investment_agent'/name

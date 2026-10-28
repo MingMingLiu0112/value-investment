@@ -95,9 +95,19 @@ def load_current_value_action_plans(root: Path, *, now: datetime,
             else:
                 items[items.index(plan)] = replacement
             plan = replacement
-        elif plan is not None and _pending_plan_can_replace(plan) and not analysis['arithmetic_complete']:
+        elif plan is not None and not analysis['arithmetic_complete']:
             replacement = _invalidate_current_conditions(plan, plan, analysis['blockers'])
             replacement['signal_state'] = 'BLOCKED'
+            items[items.index(plan)] = replacement
+            plan = replacement
+        elif (plan is not None and analysis['arithmetic_complete']
+                and ((analysis.get('input_descriptor_sha256') is not None
+                      and plan.get('valuation_input_version') !=
+                      analysis['input_descriptor_sha256'])
+                or (analysis.get('research_version') is not None
+                    and plan.get('research_version') != analysis['research_version']))):
+            replacement = _invalidate_current_conditions(
+                plan, plan, ['CURRENT_RESEARCH_DESCRIPTOR_CHANGED'])
             items[items.index(plan)] = replacement
             plan = replacement
         if plan is not None:

@@ -466,6 +466,8 @@ jobs:
           tests/test_hotspot_lifecycle_explanation_text.py
           tests/test_hotspot_entry_reason.py
           tests/test_joint_capital_path.py
+          tests/test_terminal_economic_contract_v4.py
+          tests/test_joint_cash_v4_two_company_real_replay.py
           tests/test_hotspot_price_comparability.py
           tests/test_hotspot_official_action_coverage.py
           tests/test_hotspot_action_coverage_lifecycle.py

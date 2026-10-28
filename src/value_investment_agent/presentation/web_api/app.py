@@ -287,6 +287,17 @@ def create_app(
         now = public_reviews.now if public_reviews is not None else datetime.now(timezone.utc)
         return revalidate_current_value_plan(project, frozen, now=now, **options) if frozen else None
 
+    def value_plan_matches_research(plan, analysis=None):
+        """A displayed price plan must bind its own current research version."""
+        current_analysis = analysis if isinstance(analysis, dict) else plan.get(
+            "research_analysis")
+        if not isinstance(current_analysis, dict):
+            return True
+        return (plan.get("valuation_input_version") ==
+                    current_analysis.get("input_descriptor_sha256")
+                and plan.get("research_version") ==
+                    current_analysis.get("research_version"))
+
     def pinned_publication(packet, current):
         if packet is None:
             return _publication_block(project, current)
@@ -536,8 +547,11 @@ def create_app(
         value = _attach_value_explanations(project, model, value)
         for item in value:
             plan = value_plan(item["symbol"], packet, core_reviews)
-            if plan is not None:
+            if plan is not None and value_plan_matches_research(plan):
                 item["price_action_plan"] = plan
+            elif plan is not None:
+                item["blockers"] = [*(item.get("blockers") or []),
+                    "CURRENT_VALUE_PLAN_NOT_BOUND_TO_LATEST_RESEARCH"]
         known = {c["symbol"] for c in value}
         value.extend(_queue_item(c, as_of) for c in queue.get("entries", [])
                      if isinstance(c, dict) and c.get("queue_status") == "SELECTED_FOR_DATA_CHECK"
@@ -592,29 +606,19 @@ def create_app(
                     root=project, symbol=decision_id, now=datetime.now(timezone.utc)
                 )
             except (ValueError, OSError, KeyError, TypeError, ArithmeticError):
-                # An explicitly registered but broken candidate must not fall
-                # through to an older discovery card and appear usable.
-                pointer = project / "config/current-research-drafts.json"
-                try:
-                    registered = decision_id in (
-                        json.loads(pointer.read_text(encoding="utf-8")).get(
-                            "pending_candidates", {}
-                        )
-                        if pointer.is_file()
-                        else {}
-                    )
-                except (OSError, UnicodeDecodeError, json.JSONDecodeError, AttributeError):
-                    registered = True
-                if registered:
-                    return {
-                        "action": "no_order",
-                        "status": "UNAVAILABLE",
-                        "decision": None,
-                        "publication": publication_block_unavailable(),
-                        "reason": "CURRENT_RESEARCH_CANDIDATE_UNAVAILABLE",
-                        "formal_eligibility": False,
-                    }
-                analysis = None
+                # The loader returns None when no candidate/replay registration
+                # exists.  Any exception therefore means one of its supported
+                # current registries or bound artifacts is invalid.  Never
+                # reimplement only one registry here or fall through to an old
+                # publication after a workflow/replay registration breaks.
+                return {
+                    "action": "no_order",
+                    "status": "UNAVAILABLE",
+                    "decision": None,
+                    "publication": publication_block_unavailable(),
+                    "reason": "CURRENT_RESEARCH_CANDIDATE_UNAVAILABLE",
+                    "formal_eligibility": False,
+                }
             if analysis is not None:
                 decision = {
                     "id": decision_id,
@@ -747,6 +751,19 @@ def create_app(
                     action="no_order", formal_eligibility=False)
             return payload
 
+        current_candidate = new_candidate_detail()
+        if (current_candidate is not None
+                and current_candidate.get("status") == "UNAVAILABLE"):
+            # A registered current candidate is authoritative for the current
+            # research slot.  Corruption must not fall through to an older
+            # published card or frozen price plan.
+            return current_candidate
+        current_analysis = None
+        if (current_candidate is not None
+                and current_candidate.get("review_replay", {}).get("status")
+                    == "VERIFIED_NEW_INPUT_CANDIDATE"):
+            current_analysis = current_candidate["decision"]["research_analysis"]
+
         for company in published.get("companies", []):
             if isinstance(company, dict) and company.get("symbol") == decision_id and company.get("action") == "no_order":
                 pending = any(isinstance(c, dict) and c.get("symbol") == decision_id
@@ -789,10 +806,30 @@ def create_app(
                                       if binding_status == "UNAVAILABLE" else []))
                 plan = value_plan(decision_id, packet, core_reviews)
                 if plan is not None:
-                    item["price_action_plan"] = plan
-                return with_research_draft({"action": "no_order", "status": status,
-                                            "publication": pinned_publication(packet, current),
-                                            "decision": item})
+                    if value_plan_matches_research(plan, current_analysis):
+                        item["price_action_plan"] = plan
+                    else:
+                        item["blockers"] = [*(item.get("blockers") or []),
+                            "CURRENT_VALUE_PLAN_NOT_BOUND_TO_LATEST_RESEARCH"]
+                if current_analysis is not None:
+                    item["research_analysis"] = current_analysis
+                response = with_research_draft({"action": "no_order", "status": status,
+                                                "publication": pinned_publication(packet, current),
+                                                "decision": item})
+                if current_analysis is not None:
+                    response["review_replay"] = current_candidate["review_replay"]
+                    response["formal_eligibility"] = False
+                return response
+        if current_analysis is not None:
+            # A verified current research candidate also outranks an older
+            # opportunity/queue row when the symbol has not yet been promoted
+            # into the published company list.  Keep the live publication
+            # identity, but do not inherit any older price action plan.
+            response = with_research_draft(current_candidate)
+            response["publication"] = pinned_publication(packet, current)
+            response["review_replay"] = current_candidate["review_replay"]
+            response["formal_eligibility"] = False
+            return response
         for opportunity in published.get("opportunities", []):
             if isinstance(opportunity, dict) and opportunity.get("symbol") == decision_id and opportunity.get("action") == "no_order":
                 return with_research_draft({
