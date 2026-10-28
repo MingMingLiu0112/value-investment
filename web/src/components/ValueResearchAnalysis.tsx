@@ -24,7 +24,7 @@ function inputLabel(key: string, v4 = false): string {
     ? "预测 ROE 路径（各模型期）"
     : v4 && key === "terminal_growth"
       ? "账面留存诊断比例（不参与 v4 尾值定价）"
-    : researchAssumptionName(key);
+      : researchAssumptionName(key);
 }
 
 function inputValue(value: unknown): string {

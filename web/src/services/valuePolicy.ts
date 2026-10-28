@@ -78,9 +78,7 @@ export type JointCapitalReview = {
       limitations: string[];
     };
     valuation_per_share: string;
-    terminal_economics?:
-      | JointTerminalEconomicsV3
-      | JointTerminalEconomicsV4;
+    terminal_economics?: JointTerminalEconomicsV3 | JointTerminalEconomicsV4;
   }[];
 };
 

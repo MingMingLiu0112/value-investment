@@ -528,11 +528,12 @@ function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
                         </li>
                         <li>
                           净盈余桥有限精度校验容差：
-                          {v4Economics.terminal_bridge_arithmetic_tolerance_cny} CNY
+                          {
+                            v4Economics.terminal_bridge_arithmetic_tolerance_cny
+                          }{" "}
+                          CNY
                         </li>
-                        <li>
-                          经济假设不确定性：未包含在上述数值误差上限中
-                        </li>
+                        <li>经济假设不确定性：未包含在上述数值误差上限中</li>
                         <li>
                           终端增长字段状态：账面留存诊断，不参与 v4 尾值定价
                         </li>
