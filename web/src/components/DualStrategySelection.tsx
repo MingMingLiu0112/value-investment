@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Alert, Button, Input, Radio, Table, Tag } from "antd";
+import { useCallback, useState } from "react";
+import { Alert, Button, Input, Table, Tag } from "antd";
 import { useApi } from "../hooks/useApi";
 import { api } from "../services/api";
 import type { SelectionCondition, SelectionRow } from "../types/selection";
@@ -30,6 +30,13 @@ const reasons: Record<string, string> = {
 };
 const explain = (code: string) =>
   reasons[code] || blockerText(describeCode(code));
+const researchAmount = (value: unknown) =>
+  value !== null &&
+  value !== undefined &&
+  value !== "" &&
+  Number.isFinite(Number(value))
+    ? Number(value).toFixed(2)
+    : "未提供";
 
 const fields: Record<string, string> = {
   roe_weighted: "加权 ROE",
@@ -46,6 +53,9 @@ const states: Record<string, string> = {
   GENERAL_RESEARCH: "一般企业研究",
 };
 const dataStates: Record<string, string> = {
+  STALE: "历史快照已过期，不能作为当前结构结论",
+  CURRENT: "来源已核验",
+  PARTIAL: "部分来源或周期尚未就绪",
   PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS: "供应商财务观察，非正式核验事实",
   SOURCE_REVALIDATION_FAILED: "来源重新核验失败",
 };
@@ -171,18 +181,43 @@ export function SwingWaitExplanation({ row }: { row: SelectionRow }) {
   );
 }
 export function DualStrategySelection() {
-  const result = useApi(api.strategySelection);
-  const [mode, setMode] = useState<"value" | "hotspot">("value");
+  return (
+    <section
+      aria-label="双策略选股"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
+        gap: 24,
+      }}
+    >
+      <SelectionPool mode="value" />
+      <SelectionPool mode="hotspot" />
+    </section>
+  );
+}
+function SelectionPool({ mode }: { mode: "value" | "hotspot" }) {
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const load = useCallback(
+    (signal: AbortSignal) =>
+      api.strategySelectionPage(mode, (page - 1) * 10, query, signal),
+    [mode, page, query],
+  );
+  const result = useApi(
+    page === 1 && query === "" ? api.strategySelection : load,
+  );
+  const title = mode === "value" ? "价值投资候选池" : "热点波段候选池";
   if (result.loading)
     return (
-      <section aria-label="双策略选股">
+      <section aria-label={title}>
+        <h2>{title}</h2>
         <p>正在核验双策略选股来源…</p>
       </section>
     );
   if (result.error || !result.data)
     return (
-      <section aria-label="双策略选股">
+      <section aria-label={title}>
+        <h2>{title}</h2>
         <Alert type="warning" message="选股来源暂不可核验，未生成新结论" />
         <Button onClick={result.retry}>重试</Button>
       </section>
@@ -203,19 +238,10 @@ export function DualStrategySelection() {
   const count = lane.coverage || {};
   return (
     <section
-      aria-label="双策略选股"
+      aria-label={title}
       style={{ marginBlock: 24, minWidth: 0, overflowWrap: "anywhere" }}
     >
-      <h2>双策略选股</h2>
-      <Radio.Group
-        value={mode}
-        onChange={(event) => setMode(event.target.value)}
-        optionType="button"
-        options={[
-          { label: "价值研究队列", value: "value" },
-          { label: "热点结构候选", value: "hotspot" },
-        ]}
-      />
+      <h2>{title}</h2>
       <p>
         {mode === "value"
           ? "全市场 → 来源核验 → 多通道初筛 → 财务观察 → 研究优先队列 → 公司研究与适用估值 → 人工复核"
@@ -254,19 +280,28 @@ export function DualStrategySelection() {
           description={`原筛选生成时间：${lane.available_at || "未提供"}；最近运行：${lane.latest_attempt?.finished_at || lane.latest_attempt?.started_at || "未完成"}。只用于安排研究，不提供买入或仓位资格。`}
         />
       )}
+      {lane.data_status === "STALE" && (
+        <Alert
+          type="warning"
+          message="历史参考：本池不是今日刷新结果，原结构条件须重新核验，不提供当前入场资格。"
+        />
+      )}
       <p>
         {unavailable
           ? "来源无法核验，覆盖与候选数量未知，不能判断是否有候选。"
           : mode === "value"
-            ? `覆盖 ${count.universe_count ?? 0} 家；财务观察 ${count.observation_count ?? 0} 项；研究队列 ${count.research_queue_count ?? 0} 家；正式事实准入 ${count.official_fact_admission_count ?? 0} 家。当前展示前 ${lane.items.length} 家。`
+            ? `覆盖 ${count.universe_count ?? 0} 家；财务观察 ${count.observation_count ?? 0} 项；研究队列 ${count.research_queue_count ?? 0} 家；正式事实准入 ${count.official_fact_admission_count ?? 0} 家。本页展示 ${lane.items.length} 家，筛选范围共 ${lane.pagination?.total ?? lane.items.length} 家。`
             : `本次来源市场 ${count.market_securities ?? 0} 家（非官方全 A 覆盖认证）；候选池 ${count.candidate_pool ?? 0} 家；已评估 ${count.evaluated ?? 0} 家；入选 ${count.selected ?? 0} 家；排除 ${count.excluded ?? 0} 家；资料不足 ${count.unknown ?? 0} 家；待确认 ${count.pending_confirmation ?? 0} 家。`}
       </p>
       {unavailable && <Button onClick={result.retry}>重新核验选股来源</Button>}
       <Input.Search
-        aria-label="搜索选股结果"
+        aria-label={`搜索${title}`}
         placeholder="代码、公司或行业"
         value={query}
-        onChange={(event) => setQuery(event.target.value)}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setPage(1);
+        }}
         style={{ maxWidth: 360, marginBlock: 12 }}
         allowClear
       />
@@ -274,8 +309,16 @@ export function DualStrategySelection() {
         rowKey="symbol"
         dataSource={rows}
         size="small"
-        pagination={{ pageSize: 10 }}
-        scroll={{ x: 700 }}
+        pagination={{
+          pageSize: 10,
+          current: page,
+          total: lane.pagination?.total ?? rows.length,
+          showSizeChanger: false,
+          onChange: setPage,
+          showTotal: (total, range) =>
+            `展示 ${range[0]}–${range[1]} / ${total} 家`,
+        }}
+        scroll={{ x: 1000, y: 480 }}
         locale={{
           emptyText: unavailable
             ? "无法核验，不代表零候选"
@@ -286,19 +329,109 @@ export function DualStrategySelection() {
             title: "公司",
             render: (_, row) => (
               <>
-                {row.company_name || row.name || row.symbol}
+                <a
+                  href={`/decisions/${encodeURIComponent(row.symbol)}?strategy=${mode}`}
+                >
+                  {row.company_name || row.name || row.symbol}
+                </a>
                 <br />
                 <code>{row.symbol}</code>
               </>
             ),
           },
-          { title: "行业", dataIndex: "industry" },
+          {
+            title: "行业",
+            render: (_, row) => row.industry || "未提供行业/主题",
+          },
+          {
+            title: "入池依据 / 主要缺口",
+            render: (_, row) => (
+              <>
+                <div>
+                  {mode === "value"
+                    ? row.channel_evaluations
+                        ?.filter((item) =>
+                          ["PASS", "BUDGET_EXCLUDED"].includes(item.status),
+                        )
+                        .map(
+                          (item) => `${item.channel}：${explain(item.reason)}`,
+                        )
+                        .join("；") || "财务观察进入研究优先队列，尚待深度研究"
+                    : row.reasons?.map(explain).join("；") ||
+                      "行业活跃度初筛，结构待核验"}
+                </div>
+                <div>{row.blockers?.slice(0, 2).map(explain).join("；")}</div>
+              </>
+            ),
+          },
+          {
+            title: "条件研究",
+            render: (_, row) =>
+              mode === "value" ? (
+                row.research_summary?.status === "CONDITIONAL_RESEARCH" ? (
+                  <>
+                    <div>
+                      未批准条件估值（元/股）：
+                      {researchAmount(
+                        row.research_summary.valuation?.bear_value,
+                      )}{" "}
+                      /{" "}
+                      {researchAmount(
+                        row.research_summary.valuation?.base_value,
+                      )}{" "}
+                      /{" "}
+                      {researchAmount(
+                        row.research_summary.valuation?.bull_value,
+                      )}
+                    </div>
+                    <div>
+                      估值基准：
+                      {row.research_summary.valuation_date || "未提供"}
+                      ；非当前低估结论
+                    </div>
+                  </>
+                ) : row.research_summary?.status ===
+                  "RESEARCH_SOURCE_UNAVAILABLE" ? (
+                  "研究来源核验失败，条件估值不可展示"
+                ) : (
+                  "尚未形成可核验条件估值；当前为初筛观察"
+                )
+              ) : (
+                <>
+                  {selectionPriceCondition(row.entry_condition)}
+                  <br />
+                  失效：
+                  {selectionPriceCondition(row.invalidation_condition, true)}
+                </>
+              ),
+          },
+          {
+            title: "资料日期",
+            render: () => lane.quote_date || lane.trade_date || "未提供",
+          },
+          {
+            title: "详情",
+            render: (_, row) => (
+              <a
+                href={`/decisions/${encodeURIComponent(row.symbol)}?strategy=${mode}`}
+              >
+                {mode === "value" ? "查看研究" : "查看跟踪"}
+              </a>
+            ),
+          },
           {
             title: "研究判断",
             render: (_, row) =>
               mode === "value" ? (
                 <>
                   {states[row.profile_status || ""] || row.profile_status}
+                  <br />
+                  {row.research_summary?.status === "CONDITIONAL_RESEARCH"
+                    ? "已有条件研究，经济假设待复核"
+                    : row.research_summary?.status ===
+                        "RESEARCH_SOURCE_UNAVAILABLE"
+                      ? "研究资料待恢复核验"
+                      : "初筛研究队列，待深度研究"}
                   <br />
                   {row.observation_summary &&
                     `观察条件满足 ${row.observation_summary.favorable}；不满足 ${row.observation_summary.unfavorable}；缺失 ${row.observation_summary.missing}；冲突 ${row.observation_summary.conflicting}`}

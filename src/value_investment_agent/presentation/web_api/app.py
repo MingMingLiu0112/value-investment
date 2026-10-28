@@ -8,7 +8,8 @@ import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, Query
+from typing import Literal
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from ...application.product.daily_public_packet import (
@@ -594,6 +595,7 @@ def create_app(
 
     @api.get("/api/v1/decisions/{decision_id}")
     def decision(decision_id: str, independent_hotspot: bool = False,
+                 strategy: Literal['value', 'hotspot'] | None = None,
                  core_reviews: CoreValuePublicReviews = Depends(core_public_reviews)):
         def new_candidate_detail():
             if not _ID.fullmatch(decision_id):
@@ -664,6 +666,44 @@ def create_app(
             return dict(action='no_order', status='RESEARCH_ONLY', decision=item,
                 financial_progress=detail['financial_progress'], public_candidate_research=detail,
                 publication=publication_block_unavailable(), formal_eligibility=False)
+
+        if strategy is not None:
+            if strategy == 'value':
+                researched = new_candidate_detail()
+                if researched is not None:
+                    return researched
+                draft = load_current_research_draft(project, decision_id)
+                if draft is not None:
+                    return dict(action='no_order', status='RESEARCH_ONLY',
+                        decision=dict(id=decision_id, symbol=decision_id,
+                            name=draft.get('company_name') or decision_id, strategy='CORE_VALUE',
+                            status='RESEARCH_ONLY', action='no_order'), research_draft=draft,
+                        publication=publication_block_unavailable(), formal_eligibility=False)
+            from ...application.discovery.dual_strategy_selection import build_dual_strategy_selection
+            lanes = build_dual_strategy_selection(root=project, now=datetime.now(timezone.utc),
+                limit=50, q_value=decision_id if strategy == 'value' else '',
+                q_hotspot=decision_id if strategy == 'hotspot' else '',
+                **({'value_selector': lambda **kw: dict(action='no_order', items=[])}
+                   if strategy == 'hotspot' else
+                   {'hotspot_selector': lambda **kw: dict(action='no_order', items=[])}))
+            lane = lanes[strategy]
+            row = next((r for r in lane['items'] if r.get('symbol') == decision_id), None)
+            if row is None:
+                return dict(action='no_order', status='UNAVAILABLE', decision=None,
+                    reason='SELECTION_CANDIDATE_UNAVAILABLE', formal_eligibility=False)
+            candidate = dict(row)
+            for key in ('quote_date', 'trade_date'):
+                candidate.setdefault(key, lane.get(key))
+            item = dict(id=decision_id, symbol=decision_id,
+                name=row.get('name') or row.get('company_name') or decision_id,
+                strategy='CORE_VALUE' if strategy == 'value' else 'HOTSPOT_SATELLITE',
+                status='RESEARCH_ONLY', action='no_order',
+                as_of=candidate.get('quote_date') or candidate.get('trade_date'),
+                blockers=row.get('blockers', []), selection_candidate=candidate,
+                formal_eligibility=False, trade_eligible=False)
+            return dict(action='no_order', status='RESEARCH_ONLY', decision=item,
+                selection_candidate=candidate, formal_eligibility=False, trade_eligible=False,
+                publication=publication_block_unavailable())
 
         packet, _ = _load_snapshot(project)
         current = _public(project)
@@ -891,10 +931,15 @@ def create_app(
         return {"action": "no_order", "status": "RECORDED" if result else "NOT_RECORDED", "last_run": result}
 
     @api.get("/api/v1/strategy-selection")
-    def strategy_selection():
+    def strategy_selection(value_offset: int = Query(0, ge=0),
+                           hotspot_offset: int = Query(0, ge=0),
+                           limit: int = Query(30, ge=1, le=50),
+                           q_value: str = '', q_hotspot: str = ''):
         from ...application.discovery.dual_strategy_selection import build_dual_strategy_selection
         return JSONResponse(build_dual_strategy_selection(root=project,
-            now=datetime.now(timezone.utc)), headers={"Cache-Control": "no-store"})
+            now=datetime.now(timezone.utc), limit=limit, value_offset=value_offset,
+            hotspot_offset=hotspot_offset, q_value=q_value, q_hotspot=q_hotspot),
+            headers={"Cache-Control": "no-store"})
 
     @api.get("/api/v1/hotspot-replay-review")
     def hotspot_replay_review():

@@ -302,6 +302,7 @@ export default function DailyDecisions() {
           <Link to="/system">数据状态</Link>
         </div>
       </header>
+      <DualStrategySelection key={selectionRevision} />
       <nav className="daily-navigation" aria-label="今日工作入口">
         {usable && (
           <>
@@ -773,7 +774,6 @@ export default function DailyDecisions() {
           />
         </>
       )}
-      <DualStrategySelection key={selectionRevision} />
     </Workbench>
   );
 }

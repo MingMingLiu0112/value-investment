@@ -229,6 +229,7 @@ export function ValueResearchAnalysis({
         )));
   return (
     <details
+      open
       className="value-research-analysis"
       aria-label="条件研究分析"
       id="conditional-research-analysis"

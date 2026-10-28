@@ -18,6 +18,11 @@ import {
 import { Workbench } from "../../components/Workbench";
 import { StrategyReadinessPanel } from "../../components/StrategyReadiness";
 import { ValueResearchAnalysis } from "../../components/ValueResearchAnalysis";
+import { blockerText } from "../../utils/packet";
+import {
+  selectionPriceCondition,
+  SwingWaitExplanation,
+} from "../../components/DualStrategySelection";
 import { ProductContinuationCandidate } from "../../components/ProductContinuationCandidate";
 import { HotspotLifecycleReview } from "../../components/HotspotLifecycleReview";
 import { readinessStrategy } from "../../utils/strategyReadiness";
@@ -884,9 +889,17 @@ function ResearchDecision({
 
 export default function DecisionDetail() {
   const { id = "" } = useParams<{ id: string }>();
+  const requestedStrategy =
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get("strategy");
+  const strategy =
+    requestedStrategy === "value" || requestedStrategy === "hotspot"
+      ? requestedStrategy
+      : undefined;
   const load = useCallback(
-    (signal: AbortSignal) => api.detail(id, signal),
-    [id],
+    (signal: AbortSignal) => api.detail(id, signal, strategy),
+    [id, strategy],
   );
   const { data, loading, error, retry } = useApi(load);
   const packet = useApi(api.packet);
@@ -1137,7 +1150,9 @@ export default function DecisionDetail() {
       : undefined;
   return (
     <Workbench>
-      <Typography.Title level={2}>股票操作计划</Typography.Title>
+      <Typography.Title level={2}>
+        {strategy === "hotspot" ? "热点波段跟踪" : "公司研究与条件判断"}
+      </Typography.Title>
       <RemoteState loading={loading} error={error} retry={retry}>
         {!decision ? (
           <Alert
@@ -1152,6 +1167,72 @@ export default function DecisionDetail() {
               {String(decision.name || decision.symbol || decision.id)}{" "}
               {decision.name && decision.symbol}
             </Typography.Title>
+            {data?.action === "no_order" && data.research_draft && (
+              <ResearchDraftPanel draft={data.research_draft} />
+            )}
+            {data?.action === "no_order" && data.selection_candidate && (
+              <section aria-label="公开候选依据">
+                <h3>
+                  {strategy === "hotspot" ? "热点结构观察" : "价值初筛研究依据"}
+                </h3>
+                <p>
+                  资料日期：
+                  {data.selection_candidate.quote_date ||
+                    data.selection_candidate.trade_date ||
+                    "未提供"}
+                  ；行业：{data.selection_candidate.industry || "未提供"}
+                  。初筛候选不是已批准操作计划。
+                </p>
+                <ul>
+                  {data.selection_candidate.channel_evaluations?.map((item) => (
+                    <li key={item.channel}>
+                      {item.channel} · {item.status} · {item.reason}
+                    </li>
+                  ))}
+                </ul>
+                <ul>
+                  {data.selection_candidate.reasons?.map((reason) => (
+                    <li key={reason}>{blockerText(reason)}</li>
+                  ))}
+                </ul>
+                {strategy === "hotspot" ? (
+                  <>
+                    <p>
+                      确认条件：
+                      {selectionPriceCondition(
+                        data.selection_candidate.entry_condition,
+                      )}
+                    </p>
+                    <p>
+                      失效条件：
+                      {selectionPriceCondition(
+                        data.selection_candidate.invalidation_condition,
+                        true,
+                      )}
+                    </p>
+                    <SwingWaitExplanation row={data.selection_candidate} />
+                  </>
+                ) : (
+                  <p>
+                    当前为公开筛选依据；尚未形成深度经营研究及条件估值，不据此判断低估。
+                  </p>
+                )}
+                <ul>
+                  {data.selection_candidate.blockers?.map((reason) => (
+                    <li key={reason}>{blockerText(reason)}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {!loading &&
+              !error &&
+              data?.action === "no_order" &&
+              (data.publication?.packet_status === "CURRENT" ||
+                decision.research_analysis != null) &&
+              decision.strategy !== "hotspot" &&
+              decision.strategy !== "HOTSPOT_SATELLITE" && (
+                <ValueResearchAnalysis decision={decision} />
+              )}
             {showPublicReview && publicReview && publicReviewIntent && (
               <Typography.Paragraph role="status">
                 证券级条件性人工复核：
@@ -1400,21 +1481,11 @@ export default function DecisionDetail() {
                 }
               />
             )}
-            {!loading &&
-              !error &&
-              data?.action === "no_order" &&
-              (data.publication?.packet_status === "CURRENT" ||
-                decision.research_analysis != null) && (
-                <ValueResearchAnalysis decision={decision} />
-              )}
             {!loading && !error && data?.action === "no_order" && (
               <ProductContinuationCandidate
                 symbol={decision.symbol ?? ""}
                 value={data.product_continuation_candidate}
               />
-            )}
-            {data?.research_draft && (
-              <ResearchDraftPanel draft={data.research_draft} />
             )}
             <Space wrap style={{ margin: "12px 0" }}>
               {decision.symbol && /^\d{6}$/.test(decision.symbol) && (

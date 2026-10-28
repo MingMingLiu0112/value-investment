@@ -539,7 +539,17 @@ export type ConditionAlertsResponse = {
 
 export const api = {
   strategySelection: (signal?: AbortSignal) =>
-    get<DualStrategySelection>("strategy-selection", signal),
+    get<DualStrategySelection>("strategy-selection?limit=10", signal),
+  strategySelectionPage: (
+    strategy: "value" | "hotspot",
+    offset: number,
+    query: string,
+    signal?: AbortSignal,
+  ) =>
+    get<DualStrategySelection>(
+      `strategy-selection?limit=10&${strategy}_offset=${offset}&q_${strategy}=${encodeURIComponent(query)}`,
+      signal,
+    ),
   privateRetrospective: (reviewDate: string, signal?: AbortSignal) =>
     getPrivate<PrivateRetrospective>(
       `private/portfolio/retrospective?review_date=${encodeURIComponent(reviewDate)}`,
@@ -657,9 +667,9 @@ export const api = {
     get<RuntimeIdentity>("runtime-identity", signal),
   researchFunnel: (signal?: AbortSignal) =>
     get<ResearchFunnelStatus>("research-funnel-status", signal),
-  detail: (id: string, signal?: AbortSignal) =>
+  detail: (id: string, signal?: AbortSignal, strategy?: "value" | "hotspot") =>
     get<DetailResponse>(
-      `decisions/${encodeURIComponent(id)}${id.startsWith("hotspot-") ? "?independent_hotspot=true" : ""}`,
+      `decisions/${encodeURIComponent(id)}${strategy ? `?strategy=${strategy}` : id.startsWith("hotspot-") ? "?independent_hotspot=true" : ""}`,
       signal,
     ),
   portfolio: (signal?: AbortSignal) =>

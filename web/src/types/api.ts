@@ -1491,6 +1491,10 @@ export interface HotspotLifecycleReview {
 }
 
 export interface DetailResponse {
+  selection_candidate?: import("./selection").SelectionRow & {
+    quote_date?: string;
+    trade_date?: string;
+  };
   product_continuation_candidate?: ProductContinuationCandidateReview | null;
   hotspot_lifecycle_review?: HotspotLifecycleReview | null;
   strategy_evaluation?: DailyEvaluationItem & {

@@ -799,11 +799,11 @@ it.each([
       expect(html).not.toContain("记录我的实际成交");
       if (!failure.endsWith("loading")) {
         expect(html).toContain("正式发布不可核验，已停止展示正式结果。");
-        expect(html.indexOf("正式发布不可核验")).toBeLessThan(
+        expect(html.indexOf("正式发布不可核验")).toBeGreaterThan(
           html.indexOf('aria-label="双策略选股"'),
         );
       } else {
-        expect(html.indexOf("ant-skeleton")).toBeLessThan(
+        expect(html.indexOf("ant-skeleton")).toBeGreaterThan(
           html.indexOf('aria-label="双策略选股"'),
         );
       }
@@ -844,13 +844,13 @@ it("keeps an independently rejected source unknown rather than zero candidates",
   expect(html).not.toContain('aria-label="明确行动结论"');
 });
 
-it("keeps one independent selector after the action conclusion when both sources are available", () => {
+it("keeps independent discovery before the action conclusion when both sources are available", () => {
   state.selection.data = independentSelectionFixture();
   const html = renderToStaticMarkup(<DailyDecisions />);
   expect(html.match(/aria-label="双策略选股"/g)).toHaveLength(1);
   expect(html).toContain("TEST_ONLY 独立来源研究候选");
   expect(html).toContain("中文在线回归候选");
-  expect(html.indexOf('aria-label="双策略选股"')).toBeGreaterThan(
+  expect(html.indexOf('aria-label="双策略选股"')).toBeLessThan(
     html.indexOf('aria-label="明确行动结论"'),
   );
 });

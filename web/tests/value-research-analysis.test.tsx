@@ -27,6 +27,9 @@ it("renders verified research-only analysis without a price action plan", () => 
 
   expect(html).toContain("条件研究分析");
   expect(html).toContain("未获操作准入");
+  expect(html).toMatch(
+    /<details[^>]*open=""[^>]*id="conditional-research-analysis"/,
+  );
 });
 
 /** TEST_ONLY source-shaped contract, not a coherent financial model or approval. */
@@ -313,7 +316,7 @@ it("TEST_ONLY displays a dated low-confidence native path without calculating, f
     expect(html).toContain(text);
   expect(html).not.toContain("NO_SUPPORTED_BOUND_BRIDGE");
   expect(html).not.toContain("<table");
-  expect(html).not.toMatch(/<details[^>]*\bopen/);
+  expect(html).toMatch(/<details[^>]*\bopen/);
   expect(fetcher).not.toHaveBeenCalled();
   fetcher.mockRestore();
   expect(decision).toEqual(before);
@@ -562,14 +565,13 @@ it.skipIf(!process.env.PUBLIC_NATIVE_ANALYSIS)(
   },
 );
 
-it("shows a collapsed source-bound analysis with actual dates, inputs, counterevidence and bounded precision", () => {
+it("shows an open source-bound analysis with actual dates, inputs, counterevidence and bounded precision", () => {
   const decision = analysisDecision();
   const original = structuredClone(decision);
   const html = renderToStaticMarkup(
     <ValueResearchAnalysis decision={decision} />,
   );
-  expect(html).toContain('<details class="value-research-analysis"');
-  expect(html).not.toContain('<details open=""');
+  expect(html).toContain('<details open="" class="value-research-analysis"');
   for (const text of [
     "2026-10-11",
     "2026-10-21",

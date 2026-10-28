@@ -21,9 +21,9 @@ def _no_new_authority(value):
             _no_new_authority(item)
 
 
-def _lane(selector, *, root, now, limit):
+def _lane(selector, *, root, now, limit, offset=0, query='', strategy='value'):
     try:
-        value = selector(root=root, now=now, limit=limit)
+        value = selector(root=root, now=now, limit=30)
         if not isinstance(value, dict) or value.get('action') != 'no_order':
             raise ValueError('Invalid selection envelope')
         _no_new_authority(value)
@@ -31,9 +31,14 @@ def _lane(selector, *, root, now, limit):
         json.dumps(value, allow_nan=False)
         # Keep full-universe coverage, but never ship thousands of evidence rows.
         projected = dict(value)
-        rows = value.get('shortlist') if 'observation_count' in value.get('coverage', {}) else value.get('items')
-        projected['items'] = deepcopy(list(rows or [])[:limit])
-        projected['shortlist'] = deepcopy(list(value.get('shortlist') or [])[:limit])
+        rows = list(value.get('items') or [])
+        rows = [r for r in rows if r.get('research_priority_eligible') is True] if strategy == 'value' else [r for r in rows if r.get('selection_status') != 'EXCLUDED']
+        needle = query.strip().casefold()
+        rows = [r for r in rows if not needle or any(needle in str(r.get(k, '')).casefold() for k in ('symbol', 'name', 'company_name', 'industry'))]
+        unavailable = value.get('status') in {'UNASSESSABLE', 'UNAVAILABLE', 'SOURCE_OR_SELECTION_UNAVAILABLE'} or value.get('data_status') == 'SOURCE_REVALIDATION_FAILED'
+        projected['pagination'] = dict(offset=offset, limit=limit, total=None if unavailable else len(rows))
+        projected['items'] = deepcopy(rows[offset:offset + limit])
+        projected['shortlist'] = deepcopy(projected['items'])
         projected['presentation_scope'] = 'BOUNDED_RESEARCH_ROWS_FULL_COVERAGE_COUNTS'
         projected.pop('diagnostic', None)
         for row in projected['items'] + projected['shortlist']:
@@ -44,21 +49,52 @@ def _lane(selector, *, root, now, limit):
     except (ValueError, OSError, KeyError, TypeError, ArithmeticError):
         return dict(status='SOURCE_OR_SELECTION_UNAVAILABLE', items=[], shortlist=[],
             blockers=['SELECTION_SOURCE_OR_CONTRACT_NOT_VERIFIED'], action='no_order',
-            formal_eligibility=False, trade_eligible=False)
+            formal_eligibility=False, trade_eligible=False,
+            pagination=dict(offset=offset, limit=limit, total=None))
+
+
+def _research_summaries(lane, *, root, now):
+    """Project only revalidated existing research, never generate or approve it."""
+    from ..research.value_research_analysis import load_current_value_research_analysis
+    for row in lane['items']:
+        summary = dict(status='SCREENING_ONLY', valuation=None, action='no_order')
+        try:
+            analysis = load_current_value_research_analysis(root=root, symbol=row['symbol'], now=now)
+            if analysis is not None:
+                if analysis.get('action') != 'no_order' or analysis['symbol'] != row['symbol']:
+                    raise ValueError('Research summary identity mismatch')
+                valuation = analysis['valuation']
+                summary.update(status='CONDITIONAL_RESEARCH', valuation={
+                    key: valuation[key] for key in ('bear_value', 'base_value', 'bull_value', 'confidence')},
+                    valuation_date=analysis.get('valuation_date'), research_as_of=analysis.get('research_as_of'),
+                    counter_evidence=analysis.get('counter_evidence', [])[:2], blockers=analysis.get('blockers', [])[:3])
+                _no_new_authority(summary)
+                if len(json.dumps(summary, allow_nan=False).encode('utf-8')) > 100_000:
+                    raise ValueError('Research summary exceeds row budget')
+        except (ValueError, OSError, KeyError, TypeError, ArithmeticError):
+            summary = dict(status='RESEARCH_SOURCE_UNAVAILABLE', valuation=None, action='no_order')
+        row['research_summary'] = summary
+    lane['shortlist'] = deepcopy(lane['items'])
 
 
 def build_dual_strategy_selection(*, root: Path, now: datetime, limit: int = 30,
-                                  value_selector=None, hotspot_selector=None):
+                                  value_selector=None, hotspot_selector=None,
+                                  value_offset=0, hotspot_offset=0, q_value='', q_hotspot=''):
+    if any(type(n) is not int or n < 0 for n in (value_offset, hotspot_offset)):
+        raise ValueError('Nonnegative offsets required')
     if now.utcoffset() is None or type(limit) is not int or not 1 <= limit <= 50:
         raise ValueError('Aware evaluation time and bounded research limit required')
+    production_value = value_selector is None
     if value_selector is None:
         from .value_candidate_selection import select_current_value_candidates
         value_selector = select_current_value_candidates
     if hotspot_selector is None:
         from ..hotspot.candidate_selection import select_current_hotspot_candidates
         hotspot_selector = select_current_hotspot_candidates
-    value = _lane(value_selector, root=Path(root), now=now, limit=limit)
-    hotspot = _lane(hotspot_selector, root=Path(root), now=now, limit=limit)
+    value = _lane(value_selector, root=Path(root), now=now, limit=limit, offset=value_offset, query=q_value)
+    hotspot = _lane(hotspot_selector, root=Path(root), now=now, limit=limit, offset=hotspot_offset, query=q_hotspot, strategy='hotspot')
+    if production_value and value['items']:
+        _research_summaries(value, root=Path(root), now=now)
     result = dict(schema_version='dual-strategy-selection-v1', action='no_order',
         scope='NONPERSONAL_RESEARCH_SELECTION_NOT_TRADE_RECOMMENDATION',
         evaluated_at=now.isoformat(), value=value, hotspot=hotspot,

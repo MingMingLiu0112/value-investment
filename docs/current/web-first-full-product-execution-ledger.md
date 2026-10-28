@@ -6323,3 +6323,28 @@ skips); the additional strict-catalog downgrade rejection passed separately.
 E1 mandatory real-source replay with JOINT_CASH_V4_REAL_REQUIRED=1 passed all
 four tests without skips. Final full Core/Web and 8001 browser acceptance remain
 pending until their actual receipts are available. action=no_order.
+
+2026-10-28 G1 discovery-to-research correction (after 1e3f6af1): both independent
+candidate pools are placed immediately below the daily page header. Existing
+eligible value research rows and non-excluded hotspot pool members are paginated
+and searched before projection; full-universe counts are not candidate counts.
+Explicit strategy detail reads remain available without publication or private
+account access. Existing source-verified conditional analysis is open by default
+before private/action controls; preliminary details show their actual selection
+basis, not a fabricated valuation. No screening or valuation formula changed.
+
+Public source recovery reused dual1 historical originals with 82 verified file
+bindings (.tmp/g1-source-restoration.json). The value official-list metadata had
+absolute paths into dual1; a NEW location-only raw replay and receipt projection
+was created at runtime/daily-marketwide/g1-restored-20261028-v4/manifest.json
+(SHA c0b25d950bef78b880891b0fb3e74c4bf367b1fca38ef98f23d7246d0f79c633).
+Original source bytes, acquisition times and old receipts are retained; the new
+projection checks identical leads and semantic content except local locations.
+This is historical restoration, not a new market collection or approval.
+Actual isolated API acceptance is saved under .tmp/g1-real-api/: 4,647 existing
+value-priority rows dated 2026-10-23 and 10 hotspot observations dated 2026-10-22.
+Hotspot is STALE/UNKNOWN, not a current BUY. Page 2 is disjoint from page 1,
+company search and strategy-specific details pass; 600519 consumes real v4
+conditional research. Focused backend checks: 127 passed, one existing optional
+source skip. Deployment/browser and final build are recorded only after execution.
+The pre-existing config/current-research-drafts.json edits are preserved locally.

@@ -48,12 +48,12 @@ def test_identity_is_stable_and_inputs_are_bounded(tmp_path):
 
 def test_full_universe_is_not_sent_to_web_but_coverage_is_preserved(tmp_path):
     source = lane()
-    source.update(items=[{'symbol': str(i)} for i in range(5577)],
+    source.update(items=[{'symbol': '600519', 'research_priority_eligible': True}] + [{'symbol': str(i)} for i in range(5576)],
                   shortlist=[{'symbol': '600519'}],
                   coverage={'observation_count': 50063, 'universe_count': 5577})
     result = build_dual_strategy_selection(root=tmp_path, now=NOW,
         value_selector=lambda **kw: source, hotspot_selector=lane)
-    assert result['value']['items'] == [{'symbol': '600519'}]
+    assert result['value']['items'] == [{'symbol': '600519', 'research_priority_eligible': True}]
     assert result['value']['coverage']['universe_count'] == 5577
     assert len(source['items']) == 5577
 

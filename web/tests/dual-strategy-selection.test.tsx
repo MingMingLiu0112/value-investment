@@ -9,7 +9,65 @@ import {
   SwingWaitExplanation,
 } from "../src/components/DualStrategySelection";
 import type { SelectionRow } from "../src/types/selection";
+import { readFileSync } from "node:fs";
 const { renderToStaticMarkup } = require("react-dom/server");
+it("shows both independent pools and keeps a dual-listed security in its strategy context", () => {
+  state.value = {
+    data: {
+      value: {
+        items: [{ symbol: "000001", company_name: "TEST_ONLY价值" }],
+        coverage: { research_queue_count: 21 },
+        pagination: { offset: 0, limit: 10, total: 21 },
+      },
+      hotspot: {
+        items: [
+          {
+            symbol: "000001",
+            name: "TEST_ONLY热点",
+            selection_status: "PENDING_CONFIRMATION",
+          },
+        ],
+        coverage: { candidate_pool: 1 },
+        pagination: { offset: 0, limit: 10, total: 1 },
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<DualStrategySelection />);
+  expect(html).toContain("价值投资候选池");
+  expect(html).toContain("热点波段候选池");
+  expect(html).toContain("/decisions/000001?strategy=value");
+  expect(html).toContain("/decisions/000001?strategy=hotspot");
+  expect(html).toContain("21 家");
+  expect(html).not.toContain("ant-radio-group");
+});
+it("a failed value lane does not hide a verified empty hotspot lane", () => {
+  state.value = {
+    data: {
+      value: { items: [], status: "SOURCE_OR_SELECTION_UNAVAILABLE" },
+      hotspot: {
+        items: [],
+        coverage: { candidate_pool: 0, evaluated: 0 },
+        pagination: { total: 0, limit: 10, offset: 0 },
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<DualStrategySelection />);
+  expect(html).toContain("数量未知");
+  expect(html).toContain("候选池 0 家");
+  expect(html).toContain("暂无符合条件且来源可核验的研究候选");
+});
+it("places discovery before private controls and opens research before action template", () => {
+  const daily = readFileSync("src/pages/DailyDecisions/index.tsx", "utf8");
+  expect(daily.indexOf("<DualStrategySelection")).toBeLessThan(
+    daily.indexOf('<nav className="daily-navigation"'),
+  );
+  const detail = readFileSync("src/pages/DecisionDetail/index.tsx", "utf8");
+  expect(
+    detail.indexOf("<ValueResearchAnalysis decision={decision}"),
+  ).toBeLessThan(
+    detail.indexOf("<JudgmentSummary\n              decision={decision}"),
+  );
+});
 function waitRow(): SelectionRow {
   return {
     symbol: "TEST_ONLY",
@@ -159,14 +217,14 @@ it("distinguishes full coverage, bounded queue, observed facts and trade permiss
   };
   const html = renderToStaticMarkup(<DualStrategySelection />);
   expect(html).toContain("5577");
-  expect(html).toContain("当前展示前 1 家");
+  expect(html).toContain("本页展示 1 家");
   expect(html).toContain("贵州茅台");
   expect(html).toContain("尚未成为官方核验事实");
   expect(html).toContain("适用估值");
   expect(html).toContain("供应商财务观察，非正式核验事实");
   expect(html).toContain("overflow-wrap:anywhere");
   expect(html).not.toContain("PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS");
-  expect(html).not.toContain("/decisions/600519");
+  expect(html).toContain("/decisions/600519?strategy=value");
 });
 
 it.each([
@@ -195,5 +253,5 @@ it.each([
   expect(html).toContain("2026-10-23T12:30:22+00:00");
   expect(html).toContain("贵州茅台");
   expect(html).toContain("不提供买入或仓位资格");
-  expect(html).not.toContain("无法核验，不代表零候选");
+  expect(html).toContain("热点波段候选池");
 });

@@ -15,6 +15,18 @@ export interface SelectionCondition {
   }[];
 }
 export interface SelectionRow {
+  research_summary?: {
+    status: string;
+    valuation?: {
+      bear_value?: string | number;
+      base_value?: string | number;
+      bull_value?: string | number;
+      confidence?: string;
+    } | null;
+    valuation_date?: string;
+    research_as_of?: string;
+    blockers?: string[];
+  };
   valid_from_session?: string;
   expires_after_session?: string;
   source_available_at?: string;
@@ -58,6 +70,7 @@ export interface SelectionRow {
   };
 }
 export interface SelectionLane {
+  pagination?: { offset: number; limit: number; total: number | null };
   items: SelectionRow[];
   shortlist: SelectionRow[];
   coverage?: Record<string, number>;
