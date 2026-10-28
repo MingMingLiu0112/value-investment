@@ -287,6 +287,8 @@ def test_legacy_availability_conflict_is_not_repaired_by_rewriting_dates(stale):
     source['retrieved_at'] = '2026-09-21T00:00:00+08:00'
     source['source_available_at'] = '2026-10-11T00:00:00+08:00'
     source['availability_basis'] = 'current_candidate_acquisition'
+    from value_investment_agent.application.product.source_bound_inputs import source_catalog_sha256
+    package['source_contract']['source_catalog_sha256'] = source_catalog_sha256(package['sources'])
     write(package_path, package)
     for item in candidate['source_bindings']:
         if item['path'] == package_path.relative_to(root).as_posix():

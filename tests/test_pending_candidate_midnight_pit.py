@@ -26,12 +26,14 @@ def test_legacy_candidate_actual_behavior_at_shanghai_boundary(tmp_path, monkeyp
 
     monkeypatch.setattr(candidate, 'datetime', BoundaryClock)
     package, policy, request = candidate_inputs(tmp_path)
+    original_valuation_date = json.loads(package.read_text(encoding='utf-8'))['point_in_time']['valuation_date']
     local = fixed.astimezone(ZoneInfo('Asia/Shanghai'))
     result = run(tmp_path, package, policy, request)
     pit = json.loads((tmp_path / 'runtime/pending/package.json').read_text(encoding='utf-8'))['point_in_time']
     available = datetime.fromisoformat(pit['available_at'])
     computed = datetime.fromisoformat(pit['computed_at'])
-    assert pit['research_as_of'] == pit['valuation_date'] == local.date().isoformat()
+    assert pit['research_as_of'] == local.date().isoformat()
+    assert pit['valuation_date'] == original_valuation_date
     assert available == computed == fixed
     assert available.utcoffset() == timedelta(0)
     assert available.astimezone(ZoneInfo('Asia/Shanghai')).date() == local.date()

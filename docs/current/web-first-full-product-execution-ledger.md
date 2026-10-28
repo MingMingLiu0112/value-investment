@@ -6313,3 +6313,13 @@ read-only decision API returned HTTP 200, `RESEARCH_ONLY`,
 `VERIFIED_NEW_INPUT_CANDIDATE`, `formal_eligibility=false`, no price action plan,
 and `action=no_order` for both companies. These are current conditional research
 candidates, not G3 approval, current-price qualification or an investment order.
+
+2026-10-28 F1/E1/G1 regression closure: the previously reported 22 failures
+are included in this delivery scope. The actual descriptor injection point,
+retained valuation-date assertion, synthetic source catalog hashes and explicit
+legacy v1 reobservation fixture are corrected without weakening production
+validation. Seven associated files passed 157 tests (19 existing optional-source
+skips); the additional strict-catalog downgrade rejection passed separately.
+E1 mandatory real-source replay with JOINT_CASH_V4_REAL_REQUIRED=1 passed all
+four tests without skips. Final full Core/Web and 8001 browser acceptance remain
+pending until their actual receipts are available. action=no_order.

@@ -505,7 +505,7 @@ def test_current_workbench_explains_stopped_cases_without_rerunning_research(tmp
     (config / source.name).write_bytes(source.read_bytes())
     def forbidden(*args, **kwargs):
         raise AssertionError("stopped research must not rebuild a descriptor")
-    monkeypatch.setattr(company_research, "build_descriptor", forbidden)
+    monkeypatch.setattr(company_research, "build_descriptor_for_package", forbidden)
     result = build_current_workbench_for_symbol(root=tmp_path, symbol=symbol,
                                                 output_path=tmp_path / "runtime/result.json")
     payload = result["result"]

@@ -162,7 +162,10 @@ def test_saved_report_prices_are_not_copied(synthetic_native):
         if isinstance(value, dict): return {k:replace_sha(v) for k,v in value.items()}
         if isinstance(value, list): return [replace_sha(v) for v in value]
         return ledger_ref['sha256'] if value == old_sha else value
-    package_ref = store(root, package_ref['path'], replace_sha(package))
+    package = replace_sha(package)
+    from value_investment_agent.application.product.source_bound_inputs import source_catalog_sha256
+    package['source_contract']['source_catalog_sha256'] = source_catalog_sha256(package['sources'])
+    package_ref = store(root, package_ref['path'], package)
     implementations(root)
     candidate = prepare((root, package_ref, ledger_ref))
     result = review.build_source_native_economic_review(root=root,

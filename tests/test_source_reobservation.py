@@ -20,6 +20,16 @@ def repair_inputs(stale, monkeypatch):
     monkeypatch.setattr(candidate_module, 'datetime', datetime)
     package_path = candidate_path.parent / 'package.json'
     package = json.loads(package_path.read_bytes())
+    # Independent TEST_ONLY v1 input: this suite exercises the historical
+    # metadata producer, not migration of a strict catalog-bound package.
+    # Construct its original contract explicitly; production never downgrades.
+    package['source_contract'] = dict(
+        schema_version='source-bound-research-inputs-v1',
+        cutoff_at=package['point_in_time']['computed_at'],
+        distribution_input_status='NOT_ADMITTED',
+        strict_contemporaneous_pit='NOT_PROVEN',
+        fact_semantics_scope='source_anchored_capital_and_historical_profit_not_normalized_forecast',
+        fact_anchors=package['source_contract']['fact_anchors'])
     reference = root / 'runtime/reference/evidence.json'
     write(reference, dict(symbol='000001', research_approved=False, scope='synthetic unrelated issuer'))
     upstream = root / 'runtime/reference/upstream.json'
@@ -56,6 +66,26 @@ def repair_inputs(stale, monkeypatch):
 def _verify(kwargs):
     return revision.verify_source_reobservation(root=kwargs['root'],
         binding=binding(kwargs['root'], kwargs['output_dir'] / 'manifest.json'))
+
+
+def test_strict_catalog_contract_is_never_downgraded(repair_inputs):
+    from value_investment_agent.application.product.source_bound_inputs import source_catalog_sha256
+    kwargs, package, _ = repair_inputs
+    root = kwargs['root']
+    registry_path = root / kwargs['case_registry_binding']['path']
+    registry = json.loads(registry_path.read_bytes())
+    case = registry['cases'][kwargs['symbol']]
+    package_path = root / case['package']
+    package['source_contract']['source_catalog_sha256'] = source_catalog_sha256(package['sources'])
+    write(package_path, package)
+    case['package_sha256'] = sha256_file(package_path)
+    write(registry_path, registry)
+    kwargs['case_registry_binding'] = binding(root, registry_path)
+    before = package_path.read_bytes()
+    with pytest.raises(ValueError, match='cannot rebind a stricter source catalog'):
+        revision.prepare_source_reobservation(**kwargs)
+    assert package_path.read_bytes() == before
+    assert not kwargs['output_dir'].exists()
 
 
 def test_new_metadata_version_is_reproducible_and_enters_real_unsigned_review(repair_inputs):
