@@ -1,6 +1,6 @@
 import { Link } from "@umijs/max";
 import { useState } from "react";
-import { Button, Empty, Skeleton, Typography } from "antd";
+import { Button, Empty, Input, Skeleton, Typography } from "antd";
 import { DecisionCard } from "../../components/DecisionCard";
 import { HoldingsAttention } from "../../components/HoldingsAttention";
 import { ConfirmationTasks } from "../../components/ConfirmationTasks";
@@ -197,6 +197,7 @@ function StrategySection({
 }
 
 export default function DailyDecisions() {
+  const [researchSymbol, setResearchSymbol] = useState("");
   const [selectionRevision, setSelectionRevision] = useState(0);
   const { data, loading, error, retry } = useApi(api.daily);
   const packet = useApi(api.packet);
@@ -462,6 +463,23 @@ export default function DailyDecisions() {
           </details>
         </section>
       )}
+      <section aria-label="公司公开研究查询">
+        <Typography.Title level={3}>查看公司公开研究</Typography.Title>
+        <p>
+          输入六位证券代码，查看已有来源绑定的条件研究。正式操作资格在公司详情中单独核验。
+        </p>
+        <Input
+          aria-label="研究证券代码"
+          placeholder="六位证券代码"
+          maxLength={6}
+          value={researchSymbol}
+          onChange={(event) => setResearchSymbol(event.target.value.trim())}
+          style={{ maxWidth: 240 }}
+        />
+        {/^[0-9]{6}$/.test(researchSymbol) && (
+          <Link to={`/decisions/${researchSymbol}`}>查看该公司研究</Link>
+        )}
+      </section>
       {(loading || packet.loading) && (
         <Skeleton active paragraph={{ rows: 8 }} />
       )}
