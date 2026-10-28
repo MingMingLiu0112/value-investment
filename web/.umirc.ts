@@ -22,6 +22,7 @@ export default defineConfig({
     { path: "/portfolio", component: "./Portfolio" },
     { path: "/history", component: "./DecisionHistory" },
     { path: "/alerts", component: "./ConditionAlerts" },
+    { path: "/project", component: "./ProjectControl" },
     { path: "/system", component: "./SystemStatus" },
   ],
   proxy: { "/api": { target: "http://127.0.0.1:8001", changeOrigin: true } },
