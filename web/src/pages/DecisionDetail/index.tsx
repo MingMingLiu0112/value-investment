@@ -2,7 +2,7 @@ import { useParams, Link } from "@umijs/max";
 import { CurrentHolding } from "./CurrentHolding";
 import { ResearchDraftPanel } from "./ResearchDraftPanel";
 import { AgentResearchPanel } from "./AgentResearchPanel";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { PropsWithChildren } from "react";
 import {
   Alert,
@@ -887,6 +887,18 @@ function ResearchDecision({
   );
 }
 
+export function OnDemandSection({
+  label,
+  children,
+}: PropsWithChildren<{ label: string }>) {
+  const [requested, setRequested] = useState(false);
+  return requested ? (
+    <>{children}</>
+  ) : (
+    <Button onClick={() => setRequested(true)}>{label}</Button>
+  );
+}
+
 export default function DecisionDetail() {
   const { id = "" } = useParams<{ id: string }>();
   const requestedStrategy =
@@ -1463,7 +1475,9 @@ export default function DecisionDetail() {
               }
               personalContext={
                 decision.symbol && /^\d{6}$/.test(decision.symbol) ? (
-                  <CurrentHolding key={decision.symbol} decision={decision} />
+                  <OnDemandSection key={decision.symbol} label="查看私人持仓">
+                    <CurrentHolding decision={decision} />
+                  </OnDemandSection>
                 ) : undefined
               }
             />
@@ -1501,10 +1515,9 @@ export default function DecisionDetail() {
               </Link>
             </Space>
             {decision.symbol && /^\d{6}$/.test(decision.symbol) && (
-              <AgentResearchPanel
-                key={decision.symbol}
-                symbol={decision.symbol}
-              />
+              <OnDemandSection key={decision.symbol} label="加载 AI 研究材料">
+                <AgentResearchPanel symbol={decision.symbol} />
+              </OnDemandSection>
             )}
             {!!chain?.gaps.length && (
               <details>

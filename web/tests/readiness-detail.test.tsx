@@ -5,6 +5,7 @@ import { evaluationFixture } from "./fixtures/strategy-readiness";
 import { analysisDecision } from "./fixtures/value-research-analysis";
 import { lifecycleFixture, lifecyclePlan } from "./fixtures/hotspot-lifecycle";
 const { renderToStaticMarkup } = require("react-dom/server");
+const mounts = vi.hoisted(() => ({ holding: vi.fn(), agent: vi.fn() }));
 const state = vi.hoisted(() => ({
   daily: {
     data: {} as any,
@@ -45,18 +46,30 @@ vi.mock("../src/components/RemoteState", () => ({
   RemoteState: ({ children }: any) => children,
 }));
 vi.mock("../src/components/CurrentJudgment", () => ({
-  JudgmentSummary: () => <p>原始操作判断</p>,
+  JudgmentSummary: ({ personalContext }: any) => (
+    <>
+      <p>原始操作判断</p>
+      {personalContext}
+    </>
+  ),
   CurrentJudgmentChart: () => null,
 }));
 vi.mock("../src/pages/DecisionDetail/CurrentHolding", () => ({
-  CurrentHolding: () => null,
+  CurrentHolding: () => {
+    mounts.holding();
+    return <p>holding mounted</p>;
+  },
 }));
 vi.mock("../src/pages/DecisionDetail/AgentResearchPanel", () => ({
-  AgentResearchPanel: () => null,
+  AgentResearchPanel: () => {
+    mounts.agent();
+    return <p>agent mounted</p>;
+  },
 }));
-import DecisionDetail from "../src/pages/DecisionDetail";
+import DecisionDetail, { OnDemandSection } from "../src/pages/DecisionDetail";
 
 beforeEach(() => {
+  vi.clearAllMocks();
   const publication = {
     packet_status: "CURRENT",
     publication_id: "same-publication",
@@ -90,6 +103,63 @@ beforeEach(() => {
     error: undefined,
   };
 });
+
+it("defers both optional readers while keeping public research visible", () => {
+  const html = renderToStaticMarkup(<DecisionDetail />);
+  expect(html).toContain("查看私人持仓");
+  expect(html).toContain("加载 AI 研究材料");
+  expect(html).toContain("测试证券");
+  expect(html).toContain("原始操作判断");
+  expect(html).toContain('aria-label="策略就绪阶段"');
+  expect(mounts.holding).not.toHaveBeenCalled();
+  expect(mounts.agent).not.toHaveBeenCalled();
+});
+
+it.each(["查看私人持仓", "加载 AI 研究材料"])(
+  "mounts a reader only after the explicit %s click",
+  (label) => {
+    let requested = false;
+    const read = vi.fn();
+    const Reader = () => {
+      read();
+      return <p>requested reader</p>;
+    };
+    // SSR does not execute effects. Assert the mount boundary and drive the
+    // actual button callback with controlled hook state, without a DOM library.
+    const dispatcher = (React as any)
+      .__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED
+      .ReactCurrentDispatcher;
+    const renderGate = () => {
+      const previous = dispatcher.current;
+      dispatcher.current = {
+        useState: () => [
+          requested,
+          (value: boolean) => {
+            requested = value;
+          },
+        ],
+      };
+      try {
+        return OnDemandSection({ label, children: <Reader /> });
+      } finally {
+        dispatcher.current = previous;
+      }
+    };
+    const initial = renderGate();
+    expect(renderToStaticMarkup(initial)).toContain(label);
+    expect(read).not.toHaveBeenCalled();
+    expect(renderToStaticMarkup(renderGate())).not.toContain(
+      "requested reader",
+    );
+    expect(read).not.toHaveBeenCalled();
+    initial.props.onClick();
+    expect(requested).toBe(true);
+    const expanded = renderToStaticMarkup(renderGate());
+    expect(expanded).toContain("requested reader");
+    expect(expanded).not.toContain(label);
+    expect(read).toHaveBeenCalledTimes(1);
+  },
+);
 
 it("mounts readiness in the actual security page before its existing judgment", () => {
   const html = renderToStaticMarkup(<DecisionDetail />);
