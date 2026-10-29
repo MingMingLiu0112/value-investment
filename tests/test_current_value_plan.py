@@ -32,7 +32,18 @@ def test_read_clock_does_not_create_new_economic_research_version(registered):
     root, symbol, _, _ = registered
     first = current_value_plan.load_current_value_action_plans(root, now=NOW)['items'][0]
     later = current_value_plan.load_current_value_action_plans(root, now=NOW + timedelta(minutes=1))['items'][0]
-    assert first['research_analysis'] == later['research_analysis']
+    first_analysis = deepcopy(first['research_analysis'])
+    later_analysis = deepcopy(later['research_analysis'])
+    # Current qualification is evaluated at the requested read clock; the
+    # source-bound economic research and every other alignment field stay fixed.
+    first_alignment = first_analysis['current_alignment']
+    later_alignment = later_analysis['current_alignment']
+    assert first_alignment.pop('evaluated_at') == NOW.isoformat()
+    assert later_alignment.pop('evaluated_at') == (NOW + timedelta(minutes=1)).isoformat()
+    assert first_alignment['action'] == later_alignment['action'] == 'no_order'
+    assert first_alignment['currentpricecomparison'] is False
+    assert later_alignment['currentpricecomparison'] is False
+    assert first_analysis == later_analysis
     assert first['research_version'] == later['research_version']
     assessment = first['research_analysis']['economic_assessment']
     assert assessment is None or 'assessed_at' not in assessment
