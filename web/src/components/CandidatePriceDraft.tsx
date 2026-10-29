@@ -87,6 +87,11 @@ export function CandidatePriceDraft({ review }: { review: Review }) {
           ? "条件价格草案：未批准的研究复核参考"
           : "条件价格：当前不能给出可靠操作价"}
       </h5>
+      {price.alignment && (
+        <p>
+          以下为草案形成时的说明；最新行情与口径核验结果见下方“当前对齐检查”。
+        </p>
+      )}
       <p>
         {typeof price.explanation === "string"
           ? price.explanation
