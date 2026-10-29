@@ -154,3 +154,11 @@ config/research-assumptions/600519-joint-capital-cash-path-v3.json -text whitesp
 config/research-assumptions/600887-joint-capital-cash-path-v3.json -text whitespace=cr-at-eol
 config/research-proposals/600519-joint-capital-cash-path-v3.json -text whitespace=cr-at-eol
 config/research-proposals/600887-joint-capital-cash-path-v3.json -text whitespace=cr-at-eol
+
+# V4 real candidates also bind exact implementation bytes. Do not convert LF
+# to CRLF in a fresh Windows checkout; no candidate or implementation is resigned.
+src/value_investment_agent/domain/valuation/joint_capital_cash_path_v4.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/v4_review_context.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/v4_valuation_router.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/v4_input_adapter.py -text whitespace=cr-at-eol
+src/value_investment_agent/valuation_models/residual_income_path_v4.py -text whitespace=cr-at-eol

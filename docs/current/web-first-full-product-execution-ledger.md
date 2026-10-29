@@ -6552,3 +6552,11 @@ Commands/results: .tmp/value-alignment-backend-final.log,
 .tmp/value-alignment-acceptance/{600519-api,real-replay,event-replay}.json.
 Commit/build/runtime and live-browser receipts are recorded alongside these
 local public-research receipts; GitHub checks must be read for the actual commit.
+
+Clean-checkout replay exposed a pre-existing v4 distribution issue: five v4
+implementation files were LF in the source-bound candidate but Git autocrlf
+expanded them to CRLF in a fresh Windows checkout. The native implementation
+hash gate correctly rejected them. Added exact-path `-text` attributes for those
+five files, matching the existing frozen v3 convention. No implementation byte,
+candidate hash or financial result is changed or resigned. Clean Git checkout
+replay, not ZIP export alone, is required for this fix's acceptance.
