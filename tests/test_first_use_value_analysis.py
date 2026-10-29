@@ -227,11 +227,33 @@ def test_public_joint_review_matches_handoff_without_calling_signing_or_private_
     monkeypatch.setattr(wizard, 'build_external_review_handoff', forbidden)
     first = load_current_value_research_analysis(root=root, symbol=symbol, now=NOW)
     second = load_current_value_research_analysis(root=root, symbol=symbol, now=NOW + timedelta(minutes=1))
-    assert first['joint_capital_review'] == second['joint_capital_review'] == expected
+    assert first['joint_capital_review'] == second['joint_capital_review']
     joint = first['joint_capital_review']
+    # Only the read-time price projection is absent from the frozen handoff.
+    assert {key: value for key, value in joint.items() if key != 'conditional_price'} == expected
+    price = joint['conditional_price']
+    assert price['schema_version'] == 'pending-candidate-conditional-price-v1'
+    assert price['status'] == 'rejected'
+    assert price['reason_codes'] == price['reasons'] == ['NO_EXPLICIT_CANDIDATE_PRICE_PROPOSAL']
+    assert price['action'] == 'no_order'
+    assert price['unit'] == 'CNY/share'
+    assert price['formal_eligibility'] is price['user_approved'] is False
+    assert price['formally_prepared'] is price['registered'] is False
+    assert price['value'] is price['quantities'] is None
+    assert price['draft'] is price['draft_prices'] is price['sourcebindings'] is None
+    assert price['currentpricecomparison'] is False
+    assert price['price_comparison']['status'] == 'not_performed'
+    assert price['price_comparison']['currentpricecomparison'] is False
+    assert price['currentqualification']['status'] == 'not_established'
+    assert price['proposal_validity'] == {
+        'status': 'rejected', 'current_valid': False,
+        'available_at': None, 'expires_at': None,
+        'reasons': ['NO_EXPLICIT_CANDIDATE_PRICE_PROPOSAL'],
+    }
+    assert price['reopenconditions'] == []
     assert set(joint) == {'schema_version', 'symbol', 'action', 'status', 'scope', 'candidate_binding',
         'proposal_binding', 'policy_binding', 'input_descriptor_sha256', 'selected_choice', 'date_scope',
-        'basis_at', 'valuation_at', 'scenarios'}
+        'basis_at', 'valuation_at', 'scenarios', 'conditional_price'}
     assert first['approval_changed'] is first['economic_assumptions_reviewed'] is False
     assert first['strategy_admitted'] is first['action_admitted'] is False
     assert joint['scenarios'][0]['ledger']['cash_funding_status'] == 'FAIL'
