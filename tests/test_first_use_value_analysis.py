@@ -227,11 +227,45 @@ def test_public_joint_review_matches_handoff_without_calling_signing_or_private_
     monkeypatch.setattr(wizard, 'build_external_review_handoff', forbidden)
     first = load_current_value_research_analysis(root=root, symbol=symbol, now=NOW)
     second = load_current_value_research_analysis(root=root, symbol=symbol, now=NOW + timedelta(minutes=1))
-    assert first['joint_capital_review'] == second['joint_capital_review']
     joint = first['joint_capital_review']
-    # Only the read-time price projection is absent from the frozen handoff.
-    assert {key: value for key, value in joint.items() if key != 'conditional_price'} == expected
+    second_joint = second['joint_capital_review']
+    # Economic fields remain identical to each other and the frozen handoff.
+    assert {key: value for key, value in joint.items() if key != 'conditional_price'} == {
+        key: value for key, value in second_joint.items() if key != 'conditional_price'
+    } == expected
     price = joint['conditional_price']
+    second_price = second_joint['conditional_price']
+    assert {key: value for key, value in price.items() if key != 'alignment'} == {
+        key: value for key, value in second_price.items() if key != 'alignment'
+    }
+    alignment, second_alignment = price['alignment'], second_price['alignment']
+    assert alignment == first['current_alignment']
+    assert second_alignment == second['current_alignment']
+    assert alignment['evaluated_at'] == NOW.isoformat()
+    assert second_alignment['evaluated_at'] == (NOW + timedelta(minutes=1)).isoformat()
+    assert {key: value for key, value in alignment.items() if key != 'evaluated_at'} == {
+        key: value for key, value in second_alignment.items() if key != 'evaluated_at'
+    }
+    assert alignment['schema_version'] == 'pending-candidate-alignment-v1'
+    assert alignment['status'] == 'BLOCKED'
+    assert alignment['action'] == 'no_order'
+    assert alignment['formal_eligibility'] is alignment['currentpricecomparison'] is False
+    assert alignment['candidate_binding'] == joint['candidate_binding']
+    assert alignment['input_descriptor_sha256'] == joint['input_descriptor_sha256']
+    assert alignment['valuation_date'] == first['valuation_date']
+    assert alignment['quote_date'] is alignment['model_validity'] is alignment['price_bridge'] is None
+    assert alignment['quote']['status'] == 'MISSING'
+    assert alignment['quote']['current_price'] is None
+    assert alignment['reason_codes'] == ['EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING']
+    assert alignment['evidence_bindings'] == []
+    assert [check['id'] for check in alignment['checks']] == [
+        'quote', 'capital_structure', 'distributions', 'material_events', 'financial_updates',
+    ]
+    for check in alignment['checks']:
+        assert check['status'] == 'MISSING'
+        assert check['reason_codes'] == [check['id'].upper() + '_EVIDENCE_MISSING']
+        assert check['evidence_bindings'] == []
+        assert check['details'] == {}
     assert price['schema_version'] == 'pending-candidate-conditional-price-v1'
     assert price['status'] == 'rejected'
     assert price['reason_codes'] == price['reasons'] == ['NO_EXPLICIT_CANDIDATE_PRICE_PROPOSAL']

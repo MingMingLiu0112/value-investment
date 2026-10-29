@@ -46,6 +46,76 @@ type JointTerminalEconomicsV4 = Omit<
   terminal_last_scheduled_event_year: number;
 };
 
+export type CandidateBasisReconciliation = {
+  status?: string;
+  opening_shares?: string | null;
+  calculated_closing_shares?: string | null;
+  closing_shares?: string | null;
+  period_cash_per_share?: string | null;
+  distributions?: {
+    id?: string;
+    record_date?: string;
+    ex_date?: string;
+    cash_payment_date?: string;
+    amount_basis?: string;
+    verified_cash_per_share?: string | null;
+    price_deduction_applied?: string | null;
+    period_treatment?: string;
+    model_inclusion?: string;
+    evidence?: { binding?: EvidenceBinding; [key: string]: unknown }[];
+  }[];
+  [key: string]: unknown;
+};
+
+export type CandidateAlignmentCheck = {
+  id: string;
+  status?: string;
+  reason_codes?: string[];
+  explanation?: string;
+  evidence_bindings?: EvidenceBinding[];
+  details?:
+    | (Record<string, unknown> & {
+        reconciliation?: CandidateBasisReconciliation | null;
+      })
+    | null;
+};
+export type CandidatePriceAlignment = {
+  schema_version?: string;
+  status?: string;
+  action?: "no_order";
+  formal_eligibility?: false;
+  currentpricecomparison?: boolean;
+  valuation_date?: string;
+  quote_date?: string | null;
+  evaluated_at?: string;
+  candidate_binding?: EvidenceBinding;
+  input_descriptor_sha256?: string;
+  quote?: {
+    status?: string;
+    current_price?: string | null;
+    quote_date?: string | null;
+    latest_completed_session?: string | null;
+    native_status?: string | null;
+    bundle_binding?: EvidenceBinding | null;
+    reason_codes?: string[];
+    explanation?: string;
+  } | null;
+  checks?: CandidateAlignmentCheck[];
+  model_validity?: {
+    status?: string;
+    blockers?: string[];
+    [key: string]: unknown;
+  } | null;
+  price_bridge?: {
+    bridge_status?: string;
+    blockers?: string[];
+    [key: string]: unknown;
+  } | null;
+  reason_codes?: string[];
+  evidence_bindings?: EvidenceBinding[];
+  explanation?: string;
+};
+
 export type JointCapitalReview = {
   schema_version:
     | "joint-capital-review-v1"
@@ -70,6 +140,8 @@ export type JointCapitalReview = {
     available_at?: string;
   })[];
   conditional_price?: {
+    alignment?: CandidatePriceAlignment | null;
+    currentpricecomparison?: boolean;
     schema_version?: "pending-candidate-conditional-price-v1";
     status: "insufficient_evidence" | "researcher_proposal" | "rejected";
     value: null;
@@ -90,7 +162,9 @@ export type JointCapitalReview = {
     };
     price_comparison?: {
       status: string;
-      currentpricecomparison: false;
+      currentpricecomparison: boolean;
+      alignment_status?: string;
+      price_bridge?: CandidatePriceAlignment["price_bridge"];
       reasons: string[];
     };
     currentqualification?: { status: string; reasons: string[] };

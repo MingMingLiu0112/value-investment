@@ -189,26 +189,27 @@ export const catalog: Record<
         modules: [
           "src/value_investment_agent/price_bridge.py",
           "src/value_investment_agent/application/research/pending_candidate_price_proposal.py",
+          "src/value_investment_agent/application/research/pending_candidate_alignment.py",
         ],
         implementation:
-          "本次交付已实现候选精确绑定的未批准价格提案；当前价格对齐与G3仍待完成。",
+          "候选绑定的未批准提案已接入逐项对齐展示：独立行情、股本、期间分配、重大事件、新财报及模型/价格桥接；当前价格对齐与G3仍待完成。",
         milestone:
           "候选绑定的未批准价格提案已实现（交付说明）；当前价格对齐与G3待完成。",
         evidence:
-          "模型有效性、报价日期及依据、适用股息口径；个人风险与授权另审。",
+          "合格报价独立展示；跨日股本与已内含分配、当前候选事件重大性、新财报及模型有效性仍需证据。扫描分页完整不等于全天或重大性通过。",
         boundary:
           "未批准提案不是当前买价，不代表currentbuy ready，不产生仓位或订单。",
         ruleWhy: "估值日的条件数字不能直接当作当前操作价。",
         existingEvidence:
-          "2026-10-29真实600519来源经API重算：悲观情景研究复核线675.10元、乐观情景估值风险复核线930.01元。采用既有政策算术，估值基础为2026-06-30；非当前买价。",
+          "2026-10-29真实API：双源收盘1354.00元已核验；6/30模型股本1,250,081,601股；6/26每股分红28.02423元不重复扣减。675.10/930.01元仍为6/30条件研究参考线，当前可比性未通过。",
         nextStep:
-          "下一模块：当前股本、期间分配、重大事件与合格报价对齐；经济/G3复核独立推进，缺批准不阻断公开草案。",
+          "接通跨日股本/分配实施链的原生语义消费并补齐证据；绑定当前候选复核调价、会计政策和平台划转；不重复扣6/26分红。经济/G3复核独立推进，缺批准不阻断公开草案。",
         evidenceSource:
-          "本轮独立API验收：.tmp/price-map-acceptance/600519-api.json；102项价格政策及关联后端检查通过。此为记录，不是页面实时验证。",
+          "真实来源及逐项对账：.tmp/value-alignment-acceptance/600519-api.json、real-replay.json、event-replay.json；已封存双源报价、7条公告原件及分配原件。此为验收记录，不是实时状态。",
         dependencies: ["value_valuation"],
         engineeringStatus: "部分接通",
         evidenceStatus: "真实算术已核",
-        shortStatus: "未批准提案 · 当前价格对齐/G3待完成",
+        shortStatus: "已核行情和历史分配 · 跨日消费未完成 · G3待复核",
       },
       {
         id: "shared_rule_approval",

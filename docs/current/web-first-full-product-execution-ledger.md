@@ -6466,3 +6466,89 @@ Targeted backend/policy/architecture/pagination: 102 passed. Full Web tests:
 Type and format checks passed. Independent scoped review found no remaining
 blocking P1/P2; malformed display fields were fixed with direct negative tests.
 Final commit/build/live-browser receipts are retained in .tmp/price-map-acceptance.
+
+### Current work package: dated value candidate / current basis alignment (2026-10-29)
+
+Baseline cf8a4ec2; preserve the pre-existing local current-research-drafts pointer.
+Scope is value-only: reuse native quote, event and valuation contracts to expose
+and enforce share-basis, intervening-distribution, material-event and quote
+alignment for the existing 600519 candidate. Historical scenarios remain dated;
+no discount-date rollforward, approval or private position input is inferred.
+Core at this baseline failed one public/handoff projection equality regression;
+Web and PostgreSQL passed. Repair that additive-contract regression while
+retaining source, no-network, no-private-read and economic equality assertions.
+Fresh public quote and bounded CNINFO index collection are permitted local
+research inputs, not approvals. Final evidence and remaining economic gaps are
+recorded after actual API/Web acceptance. action=no_order.
+
+Real source acquisition in this work package: 600519 2026-10-29 Tencent/Sina
+close 1354.00, both archived with official exchange calendar in
+runtime/quote-sessions/20261029T144148137314Z/bundle.json (SHA256
+f184e8d27c6d62119e896a4d0f788a1fdef5425419b249ab4ee77e0947997c93).
+Native B1 acquisition and latest completed session verification passed. This
+does not qualify the June-30 valuation for a current price comparison.
+
+The native daily-event collector retained the June-30 to October-29 CNINFO
+window, received HTTP bodies/metadata and seven announcement originals under
+runtime/value-alignment-event-observation/20261029T144556566582Z. Snapshot replay
+verified source integrity; the current calendar day has not elapsed and event
+materiality is not approved. Full pagination must not be relabelled full-day
+or cross-channel coverage. The H1 financial report is already a candidate input;
+other disclosures require their own exact-candidate impact assessment.
+
+The public reconciliation input binds H1 physical pages 4/22 to the model's
+1,250,081,601 ordinary shares. The independently retained implemented dividend
+original 1225379934 (SHA256
+6b082b6a00db748f23b6dea166b0296cd69d8c10542d352e23d2e2c344ea516e)
+states 28.02423 gross CNY/share, record June-25, ex/payment June-26. It precedes
+the June-30 valuation and is not deducted again. Closing share count and opening
+pending-action completeness remain unknown; empty action arrays are not
+certification that no action or distribution occurred. No candidate formula,
+historical source byte, formal approval or private account was changed.
+
+Extended the native source window to June-22 through October-29 to bind the
+dividend to the received official index, rather than trusting a URL label on
+a local PDF. Eight originals were reused without rewriting them. Latest binding:
+runtime/value-alignment-event-observation/20261029T151049397794Z/observation.json,
+SHA256 82d7cbcc9b33e551d5d6b1a97adb85aec85aed1fd6cdd168e54401fd5869df1b.
+Native snapshot replay remains PARTIAL_INTRADAY_SNAPSHOT, not complete effective
+action coverage or approved materiality. .tmp/value-alignment-acceptance/event-replay.json
+records the distinction. The earlier observation remains immutable history.
+
+The initial regression-only commit b4e463e7 has green GitHub Core, Web and
+PostgreSQL checks. Core raw log: 7626 passed, 306 existing skips (run40895089753);
+this is baseline evidence, not final evidence for the uncommitted alignment work.
+
+Implementation acceptance for this increment: the read-only candidate loader now
+consumes native quote admission, received CNINFO index/PDF closure, source-bound
+capital facts and an exact cash-scheme parser, then calls existing ModelValidity
+and PriceBridge. A supplemental pre-valuation window is only an original identity
+anchor; it never extends the effective event window or grants materiality.
+The existing signed materiality consumer is reused; an invalid supplied review
+cannot fall back to an easier clean scan. Missing scan prerequisites are not
+misreported as a missing model adapter or missing user authorization.
+
+Real 600519 API replay passed with qualified 1354.00 close, original June-30
+valuation, native opening capital and the 28.02423 gross dividend terms. The
+announcement schedule is not proof of a personal cash receipt. Historical
+reference thresholds remain unchanged. No current discount conclusion or formal
+action is admitted. Same-basis reconciliation has a supported component success
+path; cross-date effective-action/closing-capital semantic consumption remains an
+explicit engineering gap, in addition to incomplete source coverage and missing
+exact-candidate materiality approval. This increment is PARTIAL, not completion
+of current-price alignment or of the value strategy. Do not hide that code gap
+behind HUMAN_APPROVAL_PENDING.
+
+Final scoped local validation: 153 passed / 1 existing optional skip, with
+VALUE_ALIGNMENT_REAL_ROOT explicitly set so all six real-source tests execute;
+the source tests fail rather than skip when an explicitly provided root is
+incomplete. Full Web: 1242 passed / 28 existing optional skips. Type/format checks
+passed. Independent review of backend SHA256
+9cf85a6b6504d05edd7c2722cd1ba7708afe594b99fbe1d271b6f64213f5a123
+found no remaining blocking P1/P2 in this bounded increment. Synthetic same-date
+mechanisms are not real current-price or whole-bridge positive acceptance.
+Commands/results: .tmp/value-alignment-backend-final.log,
+.tmp/value-alignment-final.xml, .tmp/value-alignment-web-final.log and
+.tmp/value-alignment-acceptance/{600519-api,real-replay,event-replay}.json.
+Commit/build/runtime and live-browser receipts are recorded alongside these
+local public-research receipts; GitHub checks must be read for the actual commit.

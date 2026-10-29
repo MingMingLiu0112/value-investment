@@ -267,4 +267,6 @@ def load_current_value_research_analysis(*, root: Path, symbol: str, now: dateti
         from .pending_candidate_price_proposal import load_pending_candidate_price_proposal
         analysis["joint_capital_review"]["conditional_price"] = load_pending_candidate_price_proposal(
             root=root, analysis=analysis, now=now)
+    from .pending_candidate_alignment import attach_pending_candidate_alignment
+    attach_pending_candidate_alignment(root=root, analysis=analysis, now=now)
     return analysis

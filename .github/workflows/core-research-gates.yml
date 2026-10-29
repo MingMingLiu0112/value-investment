@@ -460,6 +460,7 @@ jobs:
           tests/test_economic_review_materials.py
           tests/test_economic_path_projection.py
           tests/test_pending_candidate_price_proposal.py
+          tests/test_pending_candidate_alignment.py
           tests/test_hotspot_audit_cli.py
           tests/test_hotspot_independent_validation.py
           tests/test_hotspot_lifecycle_review.py
