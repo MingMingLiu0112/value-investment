@@ -3,6 +3,7 @@ import type {
   JointCapitalReview as JointReview,
 } from "../services/valuePolicy";
 import type { ValueResearchAnalysis } from "../types/api";
+import { CandidatePriceDraft } from "./CandidatePriceDraft";
 import {
   jointCapitalReviewMatches,
   publicJointCapitalReviewMatches,
@@ -586,19 +587,7 @@ function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
             ))}
         </details>
       )}
-      {review.conditional_price && (
-        <section aria-label="本候选条件价格状态">
-          <h5>条件价格：当前不能给出可靠操作价</h5>
-          <p>
-            {typeof review.conditional_price.explanation === "string"
-              ? review.conditional_price.explanation
-              : "条件价格依据缺失"}
-          </p>
-          <p>
-            下面三情景是未批准估值，不是已批准买入价；个人数量不由公开研究推定。
-          </p>
-        </section>
-      )}
+      <CandidatePriceDraft review={review} />
       {path && !pathMatches && (
         <p role="alert">经济路径投影与已消费年度账不一致，暂不展示该投影。</p>
       )}

@@ -70,13 +70,65 @@ export type JointCapitalReview = {
     available_at?: string;
   })[];
   conditional_price?: {
-    status: "insufficient_evidence";
+    schema_version?: "pending-candidate-conditional-price-v1";
+    status: "insufficient_evidence" | "researcher_proposal" | "rejected";
     value: null;
     unit: "CNY/share";
     action: "no_order";
     formal_eligibility: false;
     reason_codes: string[];
     explanation: string;
+    user_approved?: false;
+    formally_prepared?: false;
+    quantities?: null;
+    proposal_validity?: {
+      status: string;
+      available_at: string;
+      expires_at: string;
+      current_valid: boolean;
+      reasons: string[];
+    };
+    price_comparison?: {
+      status: string;
+      currentpricecomparison: false;
+      reasons: string[];
+    };
+    currentqualification?: { status: string; reasons: string[] };
+    draft_prices?: {
+      entry: string | null;
+      add: null;
+      reduce: string | null;
+      exit: null;
+    } | null;
+    draft?: {
+      policy_id: string;
+      rule_version: string;
+      effective_from: string;
+      effective_through: string;
+      rationale: string;
+      dividend_coverage_risk: string;
+      basis: {
+        symbol: string;
+        valuation_date: string;
+        bear: string;
+        base: string;
+        bull: string;
+      };
+      rules: {
+        action: string;
+        scenario: string;
+        value_fraction: string;
+        comparison: string;
+        rationale: string;
+      }[];
+    } | null;
+    sourcebindings?: {
+      candidate_sha256: string;
+      policy_artifact_sha256: string;
+      research_version: string;
+      model_version: string;
+    } | null;
+    reopenconditions?: string[];
   };
   economic_path?: {
     status: "CONDITIONAL_RESEARCH";

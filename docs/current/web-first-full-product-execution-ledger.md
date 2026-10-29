@@ -6351,6 +6351,28 @@ The pre-existing config/current-research-drafts.json edits are preserved locally
 
 ## 2026-10-29 Batch 2 V2/H2 scoped delivery
 
+## 2026-10-29 Follow-up: candidate price draft and transparent strategy maps
+
+User-authorized scope: continue the same worktree/PR; bind the verified pending
+value candidate to the existing unapproved price-policy arithmetic, and add two
+strategy workflow pages exposing rationale, inputs/outputs, implementation and
+evidence gaps. Baseline 1cf73655 Core, Web and PostgreSQL CI all verified success.
+Preserve the pre-existing local current-research-drafts pointer without committing
+it. No change to valuation formulas, approved policy preparation/registration,
+candidate frozen evidence, hotspot rules, accounts or production scheduling.
+
+The UI pattern is an accessible clickable flow with a module detail panel and
+separate engineering/evidence statuses. References inspected: xyflow/xyflow
+(https://github.com/xyflow/xyflow), React Flow interaction examples
+(https://reactflow.dev/examples), and mermaid-js/mermaid
+(https://github.com/mermaid-js/mermaid). These support presentation choices, not
+investment validity. Use native React/CSS for this bounded fixed flow; no workflow
+editor or additional graph dependency. Catalog progress is explicitly a reviewed,
+versioned snapshot, not automatically inferred completion or a strategy approval.
+Each future module change must update its evidence/gaps in the same delivery.
+
+Implementation/acceptance results are recorded after actual execution. action=no_order.
+
 Baseline b18be315, same PR #2 branch. The user-supplied dated stage/checklist/audit
 filenames were absent from this checkout; the actual current-stage-goal.md and
 this ledger remain authoritative repository navigation. The local candidate
@@ -6408,3 +6430,39 @@ and approved state were never altered. New tests are included in current Core
 and existing Web test collection. Git push, build and live8001 acceptance are
 recorded in the local final delivery receipt; neither test counts nor the product
 projection constitute investment admission.
+
+### Follow-up acceptance: candidate policy and strategy maps
+
+The pending-candidate adapter now calls the existing domain draft/preview policy
+arithmetic after real candidate/source/model replay. It verifies exact candidate,
+descriptor, model, source closure, share basis and scenario identity. No approved
+policy preparation, confirmation, registry or price-eligibility gates changed.
+The 600519-only input artifact proposes bear x 1 as a research-review threshold
+and bull x 1 as a valuation-risk-review threshold, with economic reasons and an
+explicit seven-day administrative expiry (never renewed by GET). These are not
+claims that LOW-confidence bear value provides enough safety margin, nor current
+buy/sell prices. Add/exit and personal quantity remain null. Changed basis,
+malformed input or source drift refuses the proposal; expired proposals are dated
+historical material, not currently valid plans.
+
+Actual source/API replay: .tmp/price-map-acceptance/600519-api.json. Existing
+2026-06-30 scenario values produce 675.1019318083 and 930.0062820281 CNY/share;
+formal_eligibility=false, action_admitted=false, currentpricecomparison=false.
+Policy artifact hash d58a18c39ef6bb25bcb19b94b146d7d1697455b006f75b3d32134a8c44d32183.
+Next decisive value module is current share/distribution/event/quote alignment;
+economic/G3 approval is independent and not waived by this draft.
+
+Two existing-Web routes /strategy/value and /strategy/hotspot expose clickable
+dependencies, why each step exists, input/output, engineering/evidence statuses,
+existing evidence, missing evidence and next action. Catalog statuses are dated
+reviewed records, explicitly not real-time telemetry or strategy certification.
+Unapproved value draft branches directly from valuation; G3 gates formal use,
+not public draft computation. Hotspot validation is independent of value G3.
+Future module deliveries must update the corresponding stable node and evidence
+in this versioned catalog together with this ledger.
+
+Targeted backend/policy/architecture/pagination: 102 passed. Full Web tests:
+1232 passed, 28 existing optional skips (not counted as real-source acceptance).
+Type and format checks passed. Independent scoped review found no remaining
+blocking P1/P2; malformed display fields were fixed with direct negative tests.
+Final commit/build/live-browser receipts are retained in .tmp/price-map-acceptance.

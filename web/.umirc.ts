@@ -23,6 +23,8 @@ export default defineConfig({
     { path: "/history", component: "./DecisionHistory" },
     { path: "/alerts", component: "./ConditionAlerts" },
     { path: "/system", component: "./SystemStatus" },
+    { path: "/strategy/value", component: "./StrategyArchitecture/Value" },
+    { path: "/strategy/hotspot", component: "./StrategyArchitecture/Hotspot" },
   ],
   proxy: { "/api": { target: "http://127.0.0.1:8001", changeOrigin: true } },
   title: "双策略投资助手",

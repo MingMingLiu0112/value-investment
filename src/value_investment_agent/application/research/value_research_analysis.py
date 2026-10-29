@@ -263,4 +263,8 @@ def load_current_value_research_analysis(*, root: Path, symbol: str, now: dateti
                 analysis["source_bindings"].append(binding)
     for binding in analysis["source_bindings"]:
         _bound(root, binding)
+    if analysis["joint_capital_review"] is not None:
+        from .pending_candidate_price_proposal import load_pending_candidate_price_proposal
+        analysis["joint_capital_review"]["conditional_price"] = load_pending_candidate_price_proposal(
+            root=root, analysis=analysis, now=now)
     return analysis
