@@ -160,6 +160,8 @@ def test_v4_public_analysis_excludes_diagnostic_growth_and_scopes_numeric_error(
             model_context=result["model_context"],
             now=datetime.now(timezone.utc) + timedelta(days=1),
         )
+        from value_investment_agent.application.product.consumed_economic_path import attach_consumed_economic_path
+        review = attach_consumed_economic_path(root=ROOT, review=review)
     assert all(
         row["field_path"] != "terminal_growth"
         for row in analysis["sensitivity"]["rows"]
@@ -169,6 +171,21 @@ def test_v4_public_analysis_excludes_diagnostic_growth_and_scopes_numeric_error(
         for text in analysis["model_applicability"]["limitations"]
     )
     assert review["schema_version"] == "joint-capital-cash-review-v4"
+    assert review['selection_reason']
+    assert review['selection_countercase']
+    assert review['historical_input_mapping']['revenue']['source_id']
+    assert review['conditional_price']['value'] is None
+    assert review['conditional_price']['formal_eligibility'] is False
+    path = review['economic_path']
+    assert path['period_basis'] == 'MODEL_YEAR_NOT_DISCLOSED_FISCAL_YEAR'
+    for projected, consumed in zip(path['scenarios'], review['scenarios'], strict=True):
+        assert len(projected['years']) == 10
+        for year, row in zip(projected['years'], consumed['ledger']['rows'], strict=True):
+            assert year['model_year'] == row['year']
+            for step in year['steps']:
+                assert step['classification'] == 'CONDITIONAL_CALCULATION'
+                assert step['status'] == 'available'
+                assert all(value == row[field] for field, value in step['values'].items())
     for scenario in review["scenarios"]:
         economics = scenario["terminal_economics"]
         assert economics["terminal_growth_status"] == (

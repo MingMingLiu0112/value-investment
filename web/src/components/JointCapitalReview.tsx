@@ -375,7 +375,111 @@ function JointCapitalLedger({
   );
 }
 
+export const economicPathFields: Record<string, string[]> = {
+  revenue: ["revenue", "cost"],
+  earnings: [
+    "pre_tax_profit",
+    "tax",
+    "legacy_parent_profit",
+    "new_operating_profit",
+    "new_liquidity_profit",
+    "profit",
+  ],
+  capital: [
+    "net_maintenance_cash_cny",
+    "operating_wc_cash_cny",
+    "commitment_cash_cny",
+    "mandatory_cash",
+  ],
+  access: [
+    "opening_cash",
+    "accessible_profit",
+    "newly_unremitted",
+    "closing_unremitted",
+  ],
+  distribution: [
+    "target_distribution",
+    "cash_distribution_limit",
+    "capacity_distribution_limit",
+    "distribution",
+  ],
+  retention: [
+    "opening_book",
+    "retained",
+    "closing_book",
+    "closing_cash",
+    "funding_shortfall",
+  ],
+};
+const stageNames: Record<string, string> = {
+  revenue: "营业收入与成本",
+  earnings: "税后归母利润",
+  capital: "必要投入与承诺",
+  access: "可达现金与未上划资金",
+  distribution: "受现金及容量约束的分配",
+  retention: "留存与期末资本",
+};
+export function economicPathMatches(review: Readonly<JointReview>): boolean {
+  const path = review.economic_path;
+  if (!path) return true;
+  try {
+    return (
+      path.action === "no_order" &&
+      path.currency === "CNY" &&
+      path.status === "CONDITIONAL_RESEARCH" &&
+      path.period_basis === "MODEL_YEAR_NOT_DISCLOSED_FISCAL_YEAR" &&
+      path.candidate_binding.path === review.candidate_binding.path &&
+      path.candidate_binding.sha256 === review.candidate_binding.sha256 &&
+      path.assumption_binding.path === review.policy_binding.path &&
+      path.assumption_binding.sha256 === review.policy_binding.sha256 &&
+      Array.isArray(path.scenarios) &&
+      path.scenarios.length === review.scenarios.length &&
+      path.scenarios.every((scenario, index) => {
+        const consumed = review.scenarios[index];
+        return (
+          scenario.scenario === consumed.scenario &&
+          Array.isArray(scenario.years) &&
+          scenario.years.length === consumed.ledger.rows.length &&
+          scenario.years.every((year, rowIndex) => {
+            const row = consumed.ledger.rows[rowIndex];
+            return (
+              year.model_year === row.year &&
+              Array.isArray(year.steps) &&
+              year.steps.length === Object.keys(economicPathFields).length &&
+              year.steps.every((step, stepIndex) => {
+                const id = Object.keys(economicPathFields)[stepIndex];
+                const fields = economicPathFields[id];
+                const missing = fields.filter((field) => row[field] == null);
+                return (
+                  step.id === id &&
+                  step.unit === "CNY" &&
+                  step.classification === "CONDITIONAL_CALCULATION" &&
+                  step.status === (missing.length ? "missing" : "available") &&
+                  JSON.stringify(step.missing_fields) ===
+                    JSON.stringify(missing) &&
+                  Object.keys(step.values).length === fields.length &&
+                  fields.every(
+                    (field) =>
+                      Object.prototype.hasOwnProperty.call(
+                        step.values,
+                        field,
+                      ) && step.values[field] === (row[field] ?? null),
+                  )
+                );
+              })
+            );
+          })
+        );
+      })
+    );
+  } catch {
+    return false;
+  }
+}
+
 function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
+  const path = review.economic_path;
+  const pathMatches = economicPathMatches(review);
   const v4 = review.schema_version === "joint-capital-cash-review-v4";
   const v3 = review.schema_version === "joint-capital-cash-review-v3";
   const economicTerminal = v3 || v4;
@@ -415,6 +519,140 @@ function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
       style={{ minWidth: 0, maxWidth: "100%", overflowWrap: "anywhere" }}
     >
       <h4>联合资本路径：三情景 10年现金约束条件演算</h4>
+      <p>
+        候选选择依据：
+        {typeof review.selection_reason === "string"
+          ? review.selection_reason
+          : "本候选未提供独立选择理由"}
+      </p>
+      <p>
+        决定性反证：
+        {typeof review.selection_countercase === "string"
+          ? review.selection_countercase
+          : "本候选未提供独立反证，请查看研究限制"}
+      </p>
+      {review.historical_input_mapping && (
+        <details>
+          <summary>历史输入与研究口径映射（不全部等同财报事实）</summary>
+          <p>
+            历史金额、期间桥接及资金映射可能具有不同性质，以每项口径说明为准。来源编号对应下列已绑定研究输入；原件出处见本页证据。
+          </p>
+          {Object.entries(review.historical_input_mapping)
+            .filter(([, item]) => item != null && typeof item === "object")
+            .map(([field, item]) => {
+              const input = item as Record<string, unknown>;
+              return (
+                <div key={field}>
+                  <strong>{names[field] || field}</strong>
+                  <p>
+                    {String(input.value ?? "缺失")}{" "}
+                    {String(input.unit ?? "单位未提供")} ·{" "}
+                    {String(input.scope ?? "口径未提供")}
+                  </p>
+                  <p>
+                    {String(
+                      input.rationale ?? "性质及推导依据未提供，不能认定为事实",
+                    )}
+                  </p>
+                  <p>
+                    来源 {String(input.source_id ?? "未提供")} · 字段{" "}
+                    {Array.isArray(input.field_path)
+                      ? input.field_path.join(".")
+                      : "未提供"}
+                  </p>
+                </div>
+              );
+            })}
+          {(Array.isArray(review.research_input_bindings)
+            ? review.research_input_bindings
+            : []
+          )
+            .filter(
+              (binding) =>
+                binding &&
+                typeof binding.path === "string" &&
+                typeof binding.sha256 === "string",
+            )
+            .map((binding) => (
+              <p key={binding.path}>
+                来源{" "}
+                {typeof binding.id === "string" ? binding.id : "未提供编号"} ·
+                可用时间{" "}
+                {typeof binding.available_at === "string"
+                  ? binding.available_at
+                  : "未提供"}{" "}
+                · {binding.path} · SHA256 {binding.sha256}
+              </p>
+            ))}
+        </details>
+      )}
+      {review.conditional_price && (
+        <section aria-label="本候选条件价格状态">
+          <h5>条件价格：当前不能给出可靠操作价</h5>
+          <p>
+            {typeof review.conditional_price.explanation === "string"
+              ? review.conditional_price.explanation
+              : "条件价格依据缺失"}
+          </p>
+          <p>
+            下面三情景是未批准估值，不是已批准买入价；个人数量不由公开研究推定。
+          </p>
+        </section>
+      )}
+      {path && !pathMatches && (
+        <p role="alert">经济路径投影与已消费年度账不一致，暂不展示该投影。</p>
+      )}
+      {path && pathMatches && (
+        <section aria-label="经营到股东现金的可审阅路径">
+          <h5>经营到股东现金：逐步查看计算结果</h5>
+          <p>
+            以下为已消费账本的条件计算，金额单位人民币元；第几年是模型期间，不是实际财报年度。
+          </p>
+          {review.economic_path.scenarios.map((scenario) => (
+            <details
+              key={scenario.scenario}
+              open={scenario.scenario === "base"}
+            >
+              <summary>
+                {names[scenario.scenario] || scenario.scenario} · 经济路径
+              </summary>
+              {scenario.years.map((year) => (
+                <details key={year.model_year} open={year.model_year === 1}>
+                  <summary>模型第 {year.model_year} 年</summary>
+                  <ol>
+                    {year.steps.map((step) => (
+                      <li key={step.id}>
+                        <strong>{stageNames[step.id]}</strong>
+                        <p>已消费账本的条件计算，非披露事实或分红承诺。</p>
+                        {step.status === "missing" && (
+                          <p role="status">
+                            缺少：{step.missing_fields.join("、")}
+                          </p>
+                        )}
+                        <dl>
+                          {Object.entries(step.values).map(([field, value]) => (
+                            <div key={field}>
+                              <dt>{names[field] || field}</dt>
+                              <dd>
+                                {value == null
+                                  ? "缺失，未补零"
+                                  : Number(value).toLocaleString("zh-CN", {
+                                      maximumFractionDigits: 2,
+                                    })}{" "}
+                                {value == null ? "" : "元"}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              ))}
+            </details>
+          ))}
+        </section>
+      )}
       <p>
         未批准 · 经营 → 现金 → 分配 →
         留存。全部前瞻数据均为研究假设，不是正常化事实或母公司法定可分配现金。

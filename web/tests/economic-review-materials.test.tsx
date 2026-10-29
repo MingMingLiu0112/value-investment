@@ -667,7 +667,10 @@ import {
   jointCashTerminalFields,
   publicJointCapitalReviewMatches,
 } from "../src/services/valuePolicy";
-import { PublicJointCapitalReview } from "../src/components/JointCapitalReview";
+import {
+  PublicJointCapitalReview,
+  economicPathFields,
+} from "../src/components/JointCapitalReview";
 import { analysisFixture } from "./fixtures/value-research-analysis";
 
 function jointCashFixture(): Handoff {
@@ -917,6 +920,75 @@ function jointCashV4Fixture() {
   });
   return handoff;
 }
+
+it("shows consumed economic steps and refuses a mismatched projected amount", () => {
+  const handoff = jointCashV4Fixture();
+  const review = handoff.economic_review_materials!.joint_capital_review!;
+  review.selection_reason = "TEST_ONLY 已绑定的经营延续理由";
+  review.economic_path = {
+    status: "CONDITIONAL_RESEARCH",
+    action: "no_order",
+    currency: "CNY",
+    scope: "ordinary_owner_equivalent_cash_mapping",
+    period_basis: "MODEL_YEAR_NOT_DISCLOSED_FISCAL_YEAR",
+    candidate_binding: review.candidate_binding,
+    assumption_binding: review.policy_binding,
+    scenarios: review.scenarios.map((scenario) => ({
+      scenario: scenario.scenario,
+      years: scenario.ledger.rows.map((row) => ({
+        model_year: row.year,
+        steps: Object.entries(economicPathFields).map(([id, fields]) => ({
+          id,
+          title: "TEST_ONLY 非可信标题",
+          relation: "TEST_ONLY 非可信语义",
+          status: fields.some((field) => row[field] == null)
+            ? "missing"
+            : "available",
+          missing_fields: fields.filter((field) => row[field] == null),
+          unit: "CNY",
+          classification: "CONDITIONAL_CALCULATION",
+          values: Object.fromEntries(
+            fields.map((field) => [
+              field,
+              row[field] == null ? null : String(row[field]),
+            ]),
+          ),
+        })),
+      })),
+    })),
+  };
+  expect(render(handoff)).toContain("经营到股东现金：逐步查看计算结果");
+  expect(render(handoff)).not.toContain("TEST_ONLY 非可信标题");
+  expect(render(handoff)).toContain("已绑定的经营延续理由");
+  review.economic_path.scenarios[0].years[0].steps[0].values.revenue =
+    "999999999";
+  expect(render(handoff)).toContain("经济路径投影与已消费年度账不一致");
+  expect(render(handoff)).not.toContain("经营到股东现金：逐步查看计算结果");
+  for (const malformed of [
+    { action: "no_order", currency: "CNY" },
+    { ...review.economic_path, scenarios: [null] },
+  ]) {
+    review.economic_path = malformed as any;
+    expect(() => render(handoff)).not.toThrow();
+    expect(render(handoff)).toContain("经济路径投影与已消费年度账不一致");
+  }
+  review.historical_input_mapping = {};
+  review.research_input_bindings = [null] as any;
+  expect(() => render(handoff)).not.toThrow();
+  review.selection_reason = {} as any;
+  review.selection_countercase = {} as any;
+  review.research_input_bindings = [
+    {
+      path: "TEST_ONLY/source",
+      sha256: "a".repeat(64),
+      id: {},
+      available_at: {},
+    },
+  ] as any;
+  review.conditional_price = { explanation: {} } as any;
+  expect(() => render(handoff)).not.toThrow();
+  expect(render(handoff)).toContain("本候选未提供独立选择理由");
+});
 
 it("strictly renders v4 exact-tail method and zero error bound", () => {
   const handoff = jointCashV4Fixture();

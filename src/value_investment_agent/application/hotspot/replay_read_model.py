@@ -124,3 +124,172 @@ def load_replay_summary(*, root: Path, manifest_sha256: str,
         "formal_eligibility": False, "portfolio_eligibility": None,
         "elapsed_real_shadow_sessions": 0, "action": "no_order",
     }
+
+
+def _symbol_replay_failure(error: Exception) -> tuple[str, str]:
+    """Classify known verifier failures; never publish exception text or paths."""
+    message = str(error)
+    if isinstance(error, FileNotFoundError):
+        return "MISSING_SOURCE", "绑定的留存来源缺失"
+    if isinstance(error, OSError):
+        return "SOURCE_READ_FAILED", "绑定的留存来源无法读取"
+    if message.startswith("Replay source hash mismatch:"):
+        return "HASH_MISMATCH", "留存来源哈希与绑定不一致"
+    if message == "Running rule differs from historical protocol":
+        return "RULE_MISMATCH", "当前规则与冻结协议不一致"
+    if message == "Replay pointer changed":
+        return "BINDING_CHANGED", "读取期间样本绑定发生变化"
+    if message in {
+        "Retained replay requires a timezone-aware clock",
+        "Historical protocol is not yet available", "Retained evidence is not yet available",
+        "Retained source not yet available", "Invalid export clock",
+        "Acquisition follows retention", "Dependency availability requires timezone",
+    }:
+        return "CLOCK_INVALID", "证据时间缺少时区、尚不可得或先后顺序不成立"
+    if message == "TEST_ONLY evidence cannot enter ACTUAL retained replay":
+        return "NON_ACTUAL_EVIDENCE", "测试或模拟证据不能作为真实样本"
+    return "PROTOCOL_INVALID", "留存协议、输入结构或证据契约未通过核验"
+
+
+def load_symbol_retained_replay(*, root: Path, symbol: str, now: datetime) -> dict:
+    """Read only this symbol's bound originals; never replay the five-case batch.
+
+    No cache: each request rechecks bytes and running frozen rules. A corrupt
+    other symbol is irrelevant; manifest/protocol integrity is always required.
+    """
+    from . import retained_source_replay as retained
+    from ...domain.hotspot.event_replay import replay_v1
+
+    result = dict(schema_version="hotspot-symbol-retained-replay-v1", symbol=symbol,
+        status="UNAVAILABLE", action="no_order", formal_eligibility=False,
+        strategy_validation="NOT_PROVEN", trade_count=None, events=[],
+        strict_pit_admitted=False, strict_oos_admitted=False,
+        performance_claim_allowed=False, portfolio_eligibility=None,
+        elapsed_real_shadow_sessions=0,
+        reference_scope="HISTORICAL_SAMPLE_NOT_CURRENT_JUDGMENT",
+        limitations=[
+            "历史选股与同时点可得性未证明；下载日期不等于历史可得日期。",
+            "触发随访可能重叠，不是独立交易或策略收益。",
+            "未建立成交、历史费用、可交易性及公司行动可比性；无法评估真实退出。",
+        ])
+    try:
+        root = Path(root).resolve()
+        retained._clock(now)
+        pointer = root / REVIEW_POINTER
+        pointer_raw = pointer.read_bytes()
+        pins = retained._document(pointer_raw, "ACTUAL")
+        if pins.get("action") != "no_order":
+            raise ValueError("Invalid replay pointer")
+        binding = pins["retained_manifest_binding"]
+        directory = retained._manifest_directory(root, binding)
+        manifest = retained._document(retained._read(root, binding), "ACTUAL")
+        if (manifest.get("schema_version") != retained.MANIFEST_SCHEMA
+                or manifest.get("namespace") != "ACTUAL"
+                or manifest.get("scope") != "DESCRIPTIVE"
+                or manifest.get("action") != "no_order"
+                or manifest.get("formal_eligibility") is not False
+                or manifest.get("historical_selection_status") != "NOT_REVALIDATED_RETAINED_CASES_ONLY"):
+            raise ValueError("ACTUAL descriptive manifest required")
+        try:
+            retained_at = datetime.fromisoformat(manifest["retained_at"])
+        except (ValueError, TypeError):
+            raise ValueError("Retained source not yet available") from None
+        if retained_at.utcoffset() is None or retained_at > now:
+            raise ValueError("Retained source not yet available")
+        if directory.parent == (root / retained.PUBLIC_FOLDER).resolve():
+            original = manifest["original_manifest_binding"]
+            retained._manifest_directory(root, original, folders=(retained.FOLDER,))
+            digest = original["sha256"]
+            if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
+                raise ValueError("Invalid original manifest digest")
+            try:
+                exported = datetime.fromisoformat(manifest["exported_at"])
+            except (ValueError, TypeError):
+                raise ValueError("Invalid export clock") from None
+            if exported.utcoffset() is None or not retained_at <= exported <= now:
+                raise ValueError("Invalid export clock")
+        source_root = directory / "sources"
+        mappings = {}
+        used = []
+        for row in manifest["files"]:
+            original, copy = row["original_binding"], row["retained_binding"]
+            expected = (source_root / original["path"]).relative_to(root).as_posix()
+            if (copy != dict(path=expected, sha256=original["sha256"])
+                    or original["path"] in mappings):
+                raise ValueError("Invalid retained mapping")
+            mappings[original["path"]] = row
+
+        def required(ref):
+            row = mappings[ref["path"]]
+            if row["original_binding"] != dict(path=ref["path"], sha256=ref["sha256"]):
+                raise ValueError("Dependency binding mismatch")
+            raw = retained._read(root, row["retained_binding"])
+            used.append(row["retained_binding"])
+            return raw
+
+        historical = manifest["historical_protocol_binding"]
+        spec = retained._spec(required(historical), "ACTUAL", now, source_root=source_root)
+        for rule in spec["rule_bindings"]:
+            required(rule)
+        item = next((row for row in spec["cases"] if row["symbol"] == symbol), None)
+        if item is None:
+            if pointer.read_bytes() != pointer_raw:
+                raise ValueError("Replay pointer changed")
+            for ref in [binding, *used]:
+                retained._read(root, ref)
+            return dict(result, status="NOT_COVERED",
+                reason="此证券不在已绑定的真实留存样本中；不借用其他证券结果。")
+        case_ref = dict(path=item["case_path"], sha256=item["case_sha256"])
+        original_case = retained._document(required(case_ref), "ACTUAL")
+        for ref in original_case["source_bindings"].values():
+            required(ref)
+        quote = original_case["current_reference_close"]
+        quote_ref = dict(path=quote["bundle_path"], sha256=quote["bundle_sha256"])
+        retained._document(required(quote_ref), "ACTUAL")
+        case, available = retained._verified_case(source_root, item, "ACTUAL", spec["end_date"], now)
+        if datetime.fromisoformat(available) > retained_at:
+            raise ValueError("Acquisition follows retention")
+        replay = replay_v1(case["bars"], spec)
+        if spec["rule_version"] != "hotspot-prior-five-completed-bars-v1":
+            raise ValueError("Unsupported rule definition")
+        rule_definition = dict(
+            source_functions=[
+                "domain/hotspot/price_action_plan.py:calculate_price_levels",
+                "domain/hotspot/current_price.py:current_signal",
+                "domain/hotspot/event_replay.py:replay_v1/_outcome"],
+            entry="以每根已完成的60分钟bar为观察点：收盘价严格高于此前5根已完成bar的最高价，且该bar成交量不低于此前5根平均成交量的1.2倍，才记为触发。价格突破但量不足仅为待确认，不是入场成交。",
+            invalidation="触发时冻结此前5根bar的最低价为失效参考；之后已完成60分钟bar收盘价严格低于该价，记录首次跌破时间。等于参考价不算跌破；该线不是保证可执行的止损单。",
+            context="日线与15分钟数据仅展示截至触发时已经完成的周期背景，不替代60分钟触发条件，也不据此声称多周期趋势确认。",
+            followup="从触发之后的bar随访，最多观察后续5个交易日；开发段不得使用验证段数据，随访止于所属分段末日。只有第五个后续交易日15:00收盘可用才算五日完整。下一交易日收盘前任一后续完整60分钟收盘价小于或等于冻结触发价，记为假突破代理。",
+            censoring="随访未完整为右删失：已观察窗口内没有记录跌破，不代表后续不会失效，也不能计作成功；五日失效及第五日价格变化仍不可评。",
+            exit="本规则没有真实成交、退出执行或止盈目标模型。观察到跌破只要求研究复核；历史可交易性、涨跌停、T+1、数量现金、费用滑点和公司行动未核验，实际EXIT及净收益不可评。")
+        if pointer.read_bytes() != pointer_raw:
+            raise ValueError("Replay pointer changed")
+        for ref in [binding, *used]:
+            retained._read(root, ref)
+        # Recheck rule identity after computation as well as before it.
+        retained._spec(required(historical), "ACTUAL", now, source_root=source_root)
+        return dict(result, status="COVERED", namespace="ACTUAL",
+            source_integrity="VERIFIED", evaluated_at=now.isoformat(),
+            data_available_at=available, retained_at=manifest["retained_at"],
+            market_trade_date=case["market_trade_date"],
+            manifest_binding=binding, protocol_binding=historical,
+            case_binding=case_ref, quote_binding=quote_ref,
+            rule_version=spec["rule_version"], rule_bindings=spec["rule_bindings"],
+            rule_definition=rule_definition,
+            source_bindings=original_case["source_bindings"],
+            retained_bindings=used,
+            partitions={k: spec[k] for k in
+                ("start_date", "development_end", "validation_start", "end_date")},
+            rule_inputs=dict(primary_period=spec["primary_period"],
+                forward_sessions=spec["forward_sessions"],
+                false_breakout_proxy=spec["false_breakout_proxy"],
+                failure_proxy=spec["failure_proxy"], outcome_boundary=spec["outcome_boundary"]),
+            execution_unassessable_reasons=spec["execution"]["required"],
+            segments=replay["segments"],
+            events=[dict(event, segment=segment)
+                for segment, events in replay["events"].items() for event in events])
+    except (ValueError, OSError, KeyError, TypeError, ArithmeticError, AttributeError) as error:
+        code, explanation = _symbol_replay_failure(error)
+        return dict(result, reason_code=code,
+            reason=explanation + "；原候选观察仍可查看。")

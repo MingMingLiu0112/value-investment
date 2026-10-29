@@ -1,3 +1,4 @@
+import { HotspotSampleLookup } from "./HotspotSampleReview";
 import { Alert, Table } from "antd";
 import { useApi } from "../hooks/useApi";
 import { DetailSection } from "./DetailSection";
@@ -74,6 +75,7 @@ export function HotspotReplayReview() {
   const result = useApi(load);
   return (
     <section aria-label="历史信号质量复核">
+      <HotspotSampleLookup />
       <details>
         <summary>查看热点历史信号检验（非实际成交）</summary>
         <Alert

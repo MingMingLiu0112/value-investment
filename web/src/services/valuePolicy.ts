@@ -62,6 +62,47 @@ export type JointCapitalReview = {
   policy_binding: EvidenceBinding;
   input_descriptor_sha256: string;
   selected_choice: string;
+  selection_reason?: string | null;
+  selection_countercase?: string | null;
+  historical_input_mapping?: Record<string, unknown>;
+  research_input_bindings?: (EvidenceBinding & {
+    id?: string;
+    available_at?: string;
+  })[];
+  conditional_price?: {
+    status: "insufficient_evidence";
+    value: null;
+    unit: "CNY/share";
+    action: "no_order";
+    formal_eligibility: false;
+    reason_codes: string[];
+    explanation: string;
+  };
+  economic_path?: {
+    status: "CONDITIONAL_RESEARCH";
+    action: "no_order";
+    currency: "CNY";
+    scope: string;
+    period_basis: "MODEL_YEAR_NOT_DISCLOSED_FISCAL_YEAR";
+    candidate_binding: EvidenceBinding;
+    assumption_binding: EvidenceBinding;
+    scenarios: {
+      scenario: string;
+      years: {
+        model_year: number;
+        steps: {
+          id: string;
+          title: string;
+          relation: string;
+          status: "missing" | "available";
+          missing_fields: string[];
+          values: Record<string, string | null>;
+          unit: "CNY";
+          classification: "CONDITIONAL_CALCULATION";
+        }[];
+      }[];
+    }[];
+  };
   date_scope: "DATED_CONDITIONAL_MODEL" | "UNDATED_CONDITIONAL_MODEL";
   basis_at: string | null;
   valuation_at: string | null;

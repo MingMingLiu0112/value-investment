@@ -1,3 +1,4 @@
+import { HotspotSampleReview } from "../../components/HotspotSampleReview";
 import { useParams, Link } from "@umijs/max";
 import { CurrentHolding } from "./CurrentHolding";
 import { ResearchDraftPanel } from "./ResearchDraftPanel";
@@ -1223,6 +1224,10 @@ export default function DecisionDetail() {
                       )}
                     </p>
                     <SwingWaitExplanation row={data.selection_candidate} />
+                    <HotspotSampleReview
+                      sample={data.hotspot_sample_review}
+                      symbol={String(decision.symbol ?? decision.id)}
+                    />
                   </>
                 ) : (
                   <p>

@@ -52,6 +52,7 @@ jobs:
           tests/test_hotspot_event_replay.py
           tests/test_hotspot_retained_originals.py
           tests/test_hotspot_retained_source_adapter.py
+          tests/test_hotspot_symbol_replay.py
           tests/test_hotspot_structure_replay.py
           tests/test_baostock_price_case.py
           tests/test_intraday_conditions.py
@@ -457,6 +458,7 @@ jobs:
           tests/test_economic_review_cli.py
           tests/test_economic_review_bundle.py
           tests/test_economic_review_materials.py
+          tests/test_economic_path_projection.py
           tests/test_hotspot_audit_cli.py
           tests/test_hotspot_independent_validation.py
           tests/test_hotspot_lifecycle_review.py

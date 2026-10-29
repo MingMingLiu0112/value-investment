@@ -236,7 +236,8 @@ def load_current_value_research_analysis(*, root: Path, symbol: str, now: dateti
                 or any(row["valuation_per_share"] != analysis["valuation"][row["scenario"] + "_value"]
                        for row in joint["scenarios"])):
             raise ValueError("Joint review differs from public consumed analysis")
-        analysis["joint_capital_review"] = joint
+        from ..product.consumed_economic_path import attach_consumed_economic_path
+        analysis["joint_capital_review"] = attach_consumed_economic_path(root=root, review=joint)
     from ..product.source_native_candidate_v2 import SCHEMA as NATIVE_SCHEMA, project_source_native_review_materials
     if candidate['schema_version'] == NATIVE_SCHEMA:
         native = project_source_native_review_materials(root=root,

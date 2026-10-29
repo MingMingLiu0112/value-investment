@@ -701,9 +701,14 @@ def create_app(
                 as_of=candidate.get('quote_date') or candidate.get('trade_date'),
                 blockers=row.get('blockers', []), selection_candidate=candidate,
                 formal_eligibility=False, trade_eligible=False)
+            sample = {}
+            if strategy == 'hotspot':
+                from ...application.hotspot.replay_read_model import load_symbol_retained_replay
+                sample['hotspot_sample_review'] = load_symbol_retained_replay(
+                    root=project, symbol=decision_id, now=datetime.now(timezone.utc))
             return dict(action='no_order', status='RESEARCH_ONLY', decision=item,
                 selection_candidate=candidate, formal_eligibility=False, trade_eligible=False,
-                publication=publication_block_unavailable())
+                publication=publication_block_unavailable(), **sample)
 
         packet, _ = _load_snapshot(project)
         current = _public(project)
@@ -942,7 +947,15 @@ def create_app(
             headers={"Cache-Control": "no-store"})
 
     @api.get("/api/v1/hotspot-replay-review")
-    def hotspot_replay_review():
+    def hotspot_replay_review(symbol: str | None = None):
+        if symbol is not None:
+            if not re.fullmatch(r"[0-9]{6}", symbol):
+                return JSONResponse(status_code=422, content={
+                    "action": "no_order", "status": "INVALID_SYMBOL"})
+            from ...application.hotspot.replay_read_model import load_symbol_retained_replay
+            return JSONResponse(content=load_symbol_retained_replay(
+                root=project, symbol=symbol, now=datetime.now(timezone.utc)),
+                headers={"Cache-Control": "no-store"})
         from ...application.hotspot.replay_read_model import load_replay_summary
         try:
             pins = json.loads((project / "config/hotspot-replay-review-v1.json").read_bytes())

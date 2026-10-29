@@ -6348,3 +6348,63 @@ company search and strategy-specific details pass; 600519 consumes real v4
 conditional research. Focused backend checks: 127 passed, one existing optional
 source skip. Deployment/browser and final build are recorded only after execution.
 The pre-existing config/current-research-drafts.json edits are preserved locally.
+
+## 2026-10-29 Batch 2 V2/H2 scoped delivery
+
+Baseline b18be315, same PR #2 branch. The user-supplied dated stage/checklist/audit
+filenames were absent from this checkout; the actual current-stage-goal.md and
+this ledger remain authoritative repository navigation. The local candidate
+pointer is preserved and excluded from this batch's commit.
+
+V2 adds a read-only consumed-economic-path projection after the exact candidate
+verification, outside every frozen v4 implementation. It exposes the selected
+economic rationale/countercase, source-bound historical input mapping, and six
+annual steps from revenue to owner cash, constrained distribution and retained
+capital. Missing amounts remain null, never zero. Displayed paths are compared
+with the consumed ledger; malformed or incomplete projections are locally refused.
+No valuation arithmetic, forecast, policy threshold or candidate evidence changed.
+
+600519 actual retained-source recomputation and API consumption pass. The dated
+conditional interval remains 675.1019318083 / 799.2027611908 / 930.0062820281 CNY
+per share, valuation date 2026-06-30, LOW confidence, not an approved primary
+valuation or current buying price. Its continuity rationale rests on brand,
+products and channels with modest first-five-year growth, followed by nominal
+sales stability; sales/pricing pressure, maintenance/working capital and permanent
+profit assumptions remain decisive countercases. Source-bound parent cash mapping
+and access ratios are not legal distribution facts. The candidate does not carry
+an action-price policy or current share/dividend/event alignment, so this projection
+returns an explicit insufficient-evidence price result, no invented discount.
+
+New real API receipt: .tmp/batch2-real-api/600519.json. The 600519 real-source and
+missing-input projection checks passed (2, no skip); existing economic material
+tests passed (24). Actual source-revalidated Web consumption passed using the API
+analysis receipt. Broader F1/E1 history is inherited, not rerun without impact.
+H2 and final delivery receipts are recorded below after integration. action=no_order.
+
+H2 reuses the frozen prior-five-completed-bars rule and retained ACTUAL sources.
+The existing replay endpoint now accepts a symbol; only that company's originals
+are verified/replayed, with no market scan, network, or new trading rule. Current
+hotspot detail gets an independent historical-sample context; a sample failure
+does not erase the selection candidate. The existing replay review page provides
+an explicit on-demand reader, because 300059 is NOT in the current candidate pool.
+It is not inserted into that pool merely to make a demonstration work.
+
+The actual 300059 endpoint returned COVERED / ACTUAL with 34 historical triggers,
+32 complete five-session followups and two right-censored observations. Rules,
+frozen trigger/invalidation levels, completed-period inputs, subsequent price
+observations, source locations/hashes and precise unavailable reasons are exposed.
+Actual fills, EXIT execution and net returns remain unassessable: historical
+tradability, limits, known-at liquidity, quantity/cash, costs and corporate actions
+are unproven. Historical pool selection/PIT/OOS and real Shadow are not established;
+strategy_validation=NOT_PROVEN, trade_count=null, formal_eligibility=false.
+
+H2 receipt: .tmp/h2-final/300059-api-receipt.json (in-process actual ASGI, no
+fixture/candidate injection). H2 focused Python 24 passed and Web 5 passed;
+V2 final component suite 136 passed with three inherited optional tests skipped.
+The actual V2 analysis receipt explicitly enabled the existing real-source Web
+test (133 passed, four other optional checks skipped). Typecheck passed; the
+14-test projection/pagination/layering integration set passed. Source snapshots
+and approved state were never altered. New tests are included in current Core
+and existing Web test collection. Git push, build and live8001 acceptance are
+recorded in the local final delivery receipt; neither test counts nor the product
+projection constitute investment admission.

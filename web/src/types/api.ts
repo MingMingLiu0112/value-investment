@@ -1490,7 +1490,96 @@ export interface HotspotLifecycleReview {
   };
 }
 
+export interface HotspotSampleReview {
+  schema_version: "hotspot-symbol-retained-replay-v1";
+  symbol: string;
+  status: "COVERED" | "NOT_COVERED" | "UNAVAILABLE";
+  action: "no_order";
+  formal_eligibility: false;
+  strategy_validation: "NOT_PROVEN";
+  trade_count: null;
+  namespace?: "ACTUAL";
+  source_integrity?: "VERIFIED";
+  reason_code?:
+    | "MISSING_SOURCE"
+    | "SOURCE_READ_FAILED"
+    | "HASH_MISMATCH"
+    | "RULE_MISMATCH"
+    | "BINDING_CHANGED"
+    | "CLOCK_INVALID"
+    | "NON_ACTUAL_EVIDENCE"
+    | "PROTOCOL_INVALID";
+  reason?: string;
+  evaluated_at?: string;
+  data_available_at?: string;
+  retained_at?: string;
+  market_trade_date?: string;
+  rule_definition?: {
+    source_functions: string[];
+    entry: string;
+    invalidation: string;
+    context: string;
+    followup: string;
+    censoring: string;
+    exit: string;
+  };
+  rule_version?: string;
+  rule_bindings?: { path: string; sha256: string }[];
+  manifest_binding?: { path: string; sha256: string };
+  protocol_binding?: { path: string; sha256: string };
+  case_binding?: { path: string; sha256: string };
+  quote_binding?: { path: string; sha256: string };
+  retained_bindings?: { path: string; sha256: string }[];
+  source_bindings?: Record<
+    string,
+    {
+      path: string;
+      sha256: string;
+      source_url?: string;
+      fetched_at?: string;
+      adjustment?: string;
+      scope?: string;
+    }
+  >;
+  partitions?: {
+    start_date: string;
+    development_end: string;
+    validation_start: string;
+    end_date: string;
+  };
+  rule_inputs?: {
+    primary_period: string;
+    forward_sessions: number;
+    false_breakout_proxy: string;
+    failure_proxy: string;
+    outcome_boundary: string;
+  };
+  execution_unassessable_reasons?: string[];
+  limitations: string[];
+  events: {
+    segment: string;
+    cutoff: string;
+    signal_state: string;
+    levels: Record<string, unknown>;
+    completed_context: Record<string, unknown>;
+    outcome: {
+      horizon_complete: boolean;
+      observed_followup_sessions: number;
+      last_observed_bar: string | null;
+      right_censored: boolean;
+      first_invalidation_observed_at: string | null;
+      failed_within_five_sessions: boolean | null;
+      false_breakout_next_session_proxy: boolean | null;
+      next_session_close_change_pct: string | null;
+      fifth_session_close_change_pct: string | null;
+      adverse_excursion_from_signal_close_pct: string | null;
+      execution: Record<string, unknown>;
+    };
+  }[];
+}
+
 export interface DetailResponse {
+  hotspot_sample_review?: HotspotSampleReview;
   selection_candidate?: import("./selection").SelectionRow & {
     quote_date?: string;
     trade_date?: string;
