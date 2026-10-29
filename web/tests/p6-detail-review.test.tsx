@@ -18,6 +18,9 @@ vi.mock("../src/components/DetailSection", () => ({
   ),
 }));
 vi.mock("antd", () => ({
+  Button: ({ children, onClick }: any) => (
+    <button onClick={onClick}>{children}</button>
+  ),
   Alert: ({ message, description }: any) => (
     <div>
       {message}
@@ -63,7 +66,7 @@ describe("detail operation plan boundaries", () => {
         personalContext={<section>当前个人持仓摘要</section>}
       />,
     );
-    expect(html.indexOf("本人当前价格政策")).toBeLessThan(
+    expect(html.indexOf("读取本人价格政策（需要授权）")).toBeLessThan(
       html.indexOf("查看待确认价格政策"),
     );
     const visible = html.split("<details>")[0];
@@ -76,10 +79,11 @@ describe("detail operation plan boundaries", () => {
       html.indexOf("当前个人持仓摘要"),
     );
     expect(html.indexOf("当前个人持仓摘要")).toBeLessThan(
-      html.indexOf("本人当前价格政策"),
+      html.indexOf("读取本人价格政策（需要授权）"),
     );
     expect(html).toContain("外部估值审核交接");
     expect(html).not.toContain("本人政策已登记");
+    expect(html).not.toContain("本人当前价格政策");
     expect(html).toContain("<details><summary>公共研究计划与资格");
   });
   it("renders four hotspot actions with observation and holding restrictions", () => {

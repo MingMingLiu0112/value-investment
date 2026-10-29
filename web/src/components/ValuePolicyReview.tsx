@@ -1,4 +1,4 @@
-import { Alert } from "antd";
+import { Alert, Button } from "antd";
 import { useCallback, useState } from "react";
 import { PrivateValueDecision } from "./PrivateValueDecision";
 import { api } from "../services/api";
@@ -299,7 +299,7 @@ export function ValuePolicyReview({
   return (
     <section aria-label="估值与动作政策复核">
       {transport && (
-        <PrivateValueDecision
+        <RequestedPrivatePolicy
           key={symbol}
           symbol={symbol}
           transport={transport}
@@ -411,5 +411,18 @@ export function ValuePolicyReview({
         )}
       </details>
     </section>
+  );
+}
+
+export function RequestedPrivatePolicy(
+  props: React.ComponentProps<typeof PrivateValueDecision>,
+) {
+  const [requested, setRequested] = useState(false);
+  return requested ? (
+    <PrivateValueDecision {...props} />
+  ) : (
+    <Button onClick={() => setRequested(true)}>
+      读取本人价格政策（需要授权）
+    </Button>
   );
 }

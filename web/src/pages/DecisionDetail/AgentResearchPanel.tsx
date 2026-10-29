@@ -46,7 +46,10 @@ export function AgentResearchPanel({ symbol }: { symbol: string }) {
   };
 
   return (
-    <details style={{ marginTop: 12, minWidth: 0, overflowWrap: "anywhere" }}>
+    <details
+      open
+      style={{ marginTop: 12, minWidth: 0, overflowWrap: "anywhere" }}
+    >
       <summary>
         AI 研究材料、反证与来源
         {queueItems.length ? ` · 待复核 ${queueItems.length}` : ""}
