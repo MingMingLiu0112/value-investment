@@ -137,19 +137,23 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
         type="warning"
         showIcon
         message="静态复核快照 · 非实时进度 · 非策略认证"
-        description={review.disclaimer}
       />
-      <p className="architecture-source">
-        {review.version} · reviewed baseline <code>{review.baseline}</code>
-        <br />
-        复核日期：{review.reviewedAt} · 里程碑来源：<code>{review.ledger}</code>
-        。最近交付说明单独标注，不代表当前运行结果。
-      </p>
-      <Space wrap>
-        <Tag>人工整理 / {review.mode}</Tag>
-        <Tag>运行证据 / {review.runtimeEvidence}</Tag>
-        <Tag>action=no_order</Tag>
-      </Space>
+      <details className="architecture-source">
+        <summary>复核日期 {review.reviewedAt} · 查看版本与证据边界</summary>
+        <p>{review.disclaimer}</p>
+        <p>
+          {review.version} · reviewed baseline <code>{review.baseline}</code>
+          <br />
+          复核日期：{review.reviewedAt} · 里程碑来源：
+          <code>{review.ledger}</code>
+          。最近交付说明单独标注，不代表当前运行结果。
+        </p>
+        <Space wrap>
+          <Tag>人工整理 / {review.mode}</Tag>
+          <Tag>运行证据 / {review.runtimeEvidence}</Tag>
+          <Tag>action=no_order</Tag>
+        </Space>
+      </details>
       <nav aria-label="策略及现有工作入口" className="architecture-links">
         <Link to="/strategy/value">价值策略</Link>
         <Link to="/strategy/hotspot">热点策略</Link>
@@ -163,6 +167,34 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
         节点徽标是人工整理的工程与证据状态；“真实算术已核”仅指台账记载的历史样本，不代表策略有效。点击节点查看实现、证据和下一步；键盘
         Tab 移动，Enter / 空格选择。箭头表示依赖，不表示已通过。
       </p>
+      <nav aria-label="完整策略阶段总览" className="architecture-overview">
+        {flow.stages.map((item, index) => (
+          <button
+            key={item.id}
+            type="button"
+            aria-pressed={stage.id === item.id}
+            onClick={() => setSelected(item.id)}
+            aria-controls="architecture-detail"
+          >
+            <strong>
+              {index + 1}. {item.title}
+            </strong>
+            <span>
+              {item.engineeringStatus} · {item.evidenceStatus}
+            </span>
+            <small>
+              {item.dependencies.length
+                ? "依赖：" +
+                  item.dependencies
+                    .map(
+                      (id) => flow.stages.find((s) => s.id === id)?.title || id,
+                    )
+                    .join("、")
+                : "流程起点"}
+            </small>
+          </button>
+        ))}
+      </nav>
       <div className="architecture-layout">
         <section aria-label="策略流程图">
           <ol className="architecture-flow">

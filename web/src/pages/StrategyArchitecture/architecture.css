@@ -16,6 +16,37 @@
   margin: 16px 0;
   align-items: start;
 }
+.architecture-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0 24px;
+}
+.architecture-overview button {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #b7c5d5;
+  border-left: 4px solid #6384a6;
+  border-radius: 7px;
+  padding: 12px;
+  font: inherit;
+  color: #233347;
+  cursor: pointer;
+}
+.architecture-overview button[aria-pressed="true"] {
+  background: #eaf3ff;
+  border-color: #245cb0;
+}
+.architecture-overview span,
+.architecture-overview small {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.architecture-overview button:focus-visible {
+  outline: 3px solid #ad6600;
+}
 .architecture-flow {
   list-style: none;
   margin: 0;
@@ -85,6 +116,9 @@
   margin-top: 16px;
 }
 @media (max-width: 760px) {
+  .architecture-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .architecture-layout {
     grid-template-columns: 1fr;
   }
