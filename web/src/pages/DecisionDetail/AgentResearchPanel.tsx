@@ -45,6 +45,10 @@ export function AgentResearchPanel({ symbol }: { symbol: string }) {
     setWorkflow(item.workflow);
   };
 
+  if (error && queue.error === error) {
+    return <Alert type="info" message={error} />;
+  }
+
   return (
     <details
       open
