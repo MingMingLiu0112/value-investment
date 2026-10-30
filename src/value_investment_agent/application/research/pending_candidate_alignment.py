@@ -366,20 +366,25 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
                     or any(parsed[k] != row[k] for k in ("record_date", "ex_date", "cash_payment_date"))
                     or any('/finalpage/' + parsed["published_date"] + '/' not in e["source_url"] for e in row["evidence"])):
                 raise ValueError("CASH_LEDGER_DIFFERS_FROM_NATIVE_IMPLEMENTATION_FIELDS")
+        # Ex-date entitlement and payment timing are independent. Pending
+        # payment must not hide an entitlement inside (valuation, comparison].
+        ex_in_period = start < ex <= end
+        if ex_in_period:
+            with localcontext() as context:
+                context.prec = 80
+                period_cash += amount
         if payment > end:
             treatment = "PENDING_PAYMENT_REQUIRES_REVIEW"
             gaps.append("PENDING_DISTRIBUTION_PAYMENT")
         elif ex <= start and payment <= start:
             treatment = "BEFORE_VALUATION_DATE_ALREADY_OUTSIDE_INTERVAL"
-        elif start < ex <= end:
+        elif ex_in_period:
             treatment = "IN_PERIOD_MODEL_INCLUSION_REQUIRES_RECOMPUTATION"
-            with localcontext() as context:
-                context.prec = 80
-                period_cash += amount
         else:
             treatment = "OPENING_EX_ENTITLEMENT_PAID_IN_PERIOD_REQUIRES_REVIEW"
             gaps.append("OPENING_DISTRIBUTION_ENTITLEMENT_UNRECONCILED")
         cash_rows.append(dict(**deepcopy(row), period_treatment=treatment,
+            ex_entitlement_in_period=ex_in_period, payment_pending_at_comparison=payment > end,
             arithmetic_cash_per_share=str(amount), verified_cash_per_share=str(amount) if parsed else None,
             field_semantics_status="NATIVE_IMPLEMENTATION_FIELDS_VERIFIED" if parsed else "PUBLIC_RESEARCH_ARITHMETIC_NOT_NATIVE_FIELD_VERIFIED",
             native_terms=parsed, field_semantics_reason=parse_error,
@@ -458,10 +463,24 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         and bool(windows) and all(w.get("source_integrity_verified") is True
             and w["full_calendar_window_elapsed"] for w in windows)
         and any(_day(w["scan_from"]) <= start <= _day(w["scan_to"]) for w in windows))
-    compatible = same_basis
     if same_basis:
-        closing_value = opening_value
-        gaps = []
+        # Only the absent intervening interval is exempt. Explicit unresolved
+        # reviews, pending schemes, amount conflicts and missing action rows
+        # remain blockers even when the quote and valuation dates coincide.
+        empty_interval_gaps = {
+            "CLOSING_SHARE_COUNT_UNVERIFIED",
+            "OPENING_PENDING_ACTION_STATE_UNVERIFIED",
+            "OPENING_NO_PENDING_ACTION_STATEMENT_NOT_PROVEN",
+            "EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING",
+            "NATIVE_CLOSING_SHARES_OPENING_CONTINUITY_UNVERIFIED",
+            "OPENING_PENDING_SCHEMES_AND_EFFECTIVE_ACTION_CHAIN_INCOMPLETE",
+            "PERIOD_DISTRIBUTION_COVERAGE_AND_MODEL_INCLUSION_UNVERIFIED",
+        }
+        gaps = [gap for gap in gaps if gap not in empty_interval_gaps]
+        same_basis = not gaps
+        if same_basis:
+            closing_value = opening_value
+    compatible = same_basis
     if actions:
         gaps.append("EFFECTIVE_SHARE_ACTION_REQUIRES_CANDIDATE_RECOMPUTATION")
     if period_cash:

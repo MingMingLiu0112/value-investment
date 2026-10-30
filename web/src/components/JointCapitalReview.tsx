@@ -6,6 +6,9 @@ import type { ValueResearchAnalysis } from "../types/api";
 import { CandidatePriceDraft } from "./CandidatePriceDraft";
 import {
   jointCapitalReviewMatches,
+  distributionDiagnosticsMatch,
+  distributionRawFields,
+  distributionDerivedFields,
   publicJointCapitalReviewMatches,
   jointRowFields,
   jointTerminalFields,
@@ -478,6 +481,200 @@ export function economicPathMatches(review: Readonly<JointReview>): boolean {
   }
 }
 
+const diagnosticNames: Record<string, string> = {
+  first_year_distribution: "首年条件分配",
+  cumulative_distribution: "十年累计条件分配",
+  cumulative_profit: "十年累计归母盈利",
+  cumulative_distribution_support_from_opening_resources:
+    "各模型年分配期初资源支持下限的十年合计",
+  net_period_resources: "当期净可达资源",
+  target_reduction: "目标分配削减",
+  distribution_support_from_opening_resources: "当年分配的期初资源支持下限",
+  operating_resource_deficit: "经营资源缺口",
+};
+const constraintNames = {
+  TARGET_POLICY: "目标政策",
+  CASH_LIMIT: "现金上限",
+  DISTRIBUTABLE_CAPACITY: "可分配容量",
+};
+const diagnosticStatuses = {
+  FUNDING_SHORTFALL: "存在资金缺口",
+  TARGET_CONSTRAINED: "目标分配受约束",
+  TARGET_MET: "条件目标达到（非批准）",
+};
+function DiagnosticCoverage({ value }: { value: string | null }) {
+  return value === null ? (
+    <>不适用（条件分配为零，未按零覆盖率展示）</>
+  ) : (
+    <>
+      {Number(value).toFixed(4)} 倍
+      <details>
+        <summary>覆盖倍数完整值</summary>
+        <code>{value}</code>
+      </details>
+    </>
+  );
+}
+function DistributionDiagnosticsPanel({
+  review,
+}: {
+  review: Readonly<JointReview>;
+}) {
+  if (!review.distribution_diagnostics) return null;
+  if (!distributionDiagnosticsMatch(review))
+    return (
+      <section aria-label="股东分配能力诊断">
+        <h5>股东分配能力诊断</h5>
+        <p role="alert">
+          诊断不可评估、版本不支持或来源／年度账字段不匹配，已隐藏诊断数值；原研究继续保留。
+        </p>
+      </section>
+    );
+  const data = review.distribution_diagnostics;
+  const amounts = (row: Record<string, unknown>, fields: readonly string[]) => (
+    <dl>
+      {fields.map((key) => (
+        <Value
+          key={key}
+          name={key}
+          label={diagnosticNames[key] ?? names[key]}
+          value={row[key]}
+        />
+      ))}
+    </dl>
+  );
+  return (
+    <section aria-label="股东分配能力诊断">
+      <h5>股东分配能力诊断：三情景条件摘要</h5>
+      <p>
+        未批准的研究假设，非实际现金流或分红承诺。金额以亿元展示（1亿元＝100000000元），完整元值可展开；模型年不是实际财报年度。action=no_order。
+      </p>
+      <p>
+        覆盖率＝（可达盈利－强制投入）／条件分配，以倍数表示，不是实际自由现金流覆盖率，也不是市场股息率；零分配时不适用。期初资金依赖是诊断，不等于亏损或实际出金。十年路径不代表永久可持续。
+      </p>
+      <p>
+        期初资源支持是各模型年用于分配的支持下限，经营资源缺口另列；累计值不是模型起始日所需初始现金，也不是总资金需求。例如当期净资源为-20、条件分配为20（同一金额单位）时，分配支持下限为20，经营缺口另为20，不能称总资金需求为20。
+      </p>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,280px),1fr))",
+          gap: 16,
+          alignItems: "start",
+        }}
+      >
+        {data.scenarios.map((scenario) => (
+          <section
+            key={scenario.scenario}
+            aria-label={names[scenario.scenario] + "分配诊断"}
+            style={{
+              minWidth: 0,
+              padding: 16,
+              border: "1px solid #d9d9d9",
+              borderRadius: 8,
+              overflowWrap: "anywhere",
+            }}
+          >
+            <h6>{names[scenario.scenario]} · 已核验条件账本，非实际现金流</h6>
+            <p>
+              {scenario.summary.opening_resources_used_years.length
+                ? "本情景部分模型年的分配需要期初资源支持；该支持下限不包含另列的经营资源缺口，仍须核对现金底线、资金可达性及持续投入。"
+                : "本情景未列出分配的期初资源支持，仅在当前假设下成立；现金可达性和持续投入仍需复核。"}
+              {scenario.summary.minimum_distribution_coverage_ratio !== null &&
+              Number(scenario.summary.minimum_distribution_coverage_ratio) < 1
+                ? "最低覆盖倍数低于1，说明至少一个模型年的当期净可达资源不足以独立覆盖条件分配。"
+                : "覆盖倍数不能替代对真实现金流和法定分配能力的核验。"}
+              目标未削减或未列资金缺口均不等于安全，也不证明永久可持续。
+            </p>
+            {amounts(scenario.summary, [
+              "first_year_distribution",
+              "cumulative_distribution",
+              "cumulative_profit",
+              "cumulative_distribution_support_from_opening_resources",
+              "closing_unremitted",
+            ])}
+            <dl>
+              <dt>最低当期资源覆盖倍数</dt>
+              <dd>
+                <DiagnosticCoverage
+                  value={scenario.summary.minimum_distribution_coverage_ratio}
+                />
+              </dd>
+              <dt>目标分配削减的模型年</dt>
+              <dd>
+                {scenario.summary.target_reduced_years.join("、") ||
+                  "无（仅本组假设）"}
+              </dd>
+              <dt>分配依赖期初资源的模型年</dt>
+              <dd>
+                {scenario.summary.opening_resources_used_years.join("、") ||
+                  "无（仅本组假设）"}
+              </dd>
+              <dt>资金缺口的模型年</dt>
+              <dd>
+                {scenario.summary.funding_shortfall_years.join("、") ||
+                  "无（仅本组假设）"}
+              </dd>
+            </dl>
+            <details>
+              <summary>{names[scenario.scenario]} · 展开十年分配诊断表</summary>
+              <div style={{ overflowX: "auto" }}>
+                <table>
+                  <caption>模型年度诊断；金额为亿元，覆盖率为倍数</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">模型年</th>
+                      <th scope="col">状态与约束</th>
+                      <th scope="col">条件分配与资源</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scenario.years.map((year) => (
+                      <tr key={year.model_year}>
+                        <th scope="row">第 {year.model_year} 年</th>
+                        <td>
+                          {diagnosticStatuses[year.status]}
+                          <p>
+                            约束：
+                            {year.binding_constraints
+                              .map((key) => constraintNames[key])
+                              .join("、") || "未列出"}
+                          </p>
+                        </td>
+                        <td>
+                          {amounts(year, [
+                            ...distributionRawFields,
+                            ...distributionDerivedFields,
+                          ])}
+                          <dl>
+                            <dt>当期资源覆盖倍数</dt>
+                            <dd>
+                              <DiagnosticCoverage
+                                value={year.distribution_coverage_ratio}
+                              />
+                            </dd>
+                          </dl>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </section>
+        ))}
+      </div>
+      <h6>诊断限制</h6>
+      <ul>
+        {data.limitations.map((item, index) => (
+          <li key={index}>{item}</li>
+        ))}
+      </ul>
+      <p>诊断不改变正式资格、股数、买价或估值，仍为未批准条件研究。</p>
+    </section>
+  );
+}
+
 function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
   const path = review.economic_path;
   const pathMatches = economicPathMatches(review);
@@ -588,6 +785,7 @@ function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
         </details>
       )}
       <CandidatePriceDraft review={review} />
+      <DistributionDiagnosticsPanel review={review} />
       {path && !pathMatches && (
         <p role="alert">经济路径投影与已消费年度账不一致，暂不展示该投影。</p>
       )}

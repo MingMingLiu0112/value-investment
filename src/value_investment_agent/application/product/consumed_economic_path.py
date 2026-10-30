@@ -13,12 +13,44 @@ def attach_consumed_economic_path(*, root, review):
         historical_input_mapping=deepcopy(policy.get("joint_historical", {})),
         research_input_bindings=deepcopy(policy.get("rationale_bindings", [])))
     result["economic_path"] = _economic_path(result)
+    if result['schema_version'] == 'joint-capital-cash-review-v4':
+        result['distribution_diagnostics'] = _distribution_diagnostics(result)
     result["conditional_price"] = dict(status="insufficient_evidence", value=None,
         unit="CNY/share", action="no_order", formal_eligibility=False,
         reason_codes=["CANDIDATE_HAS_NO_BOUND_ACTION_PRICE_POLICY"],
         explanation="本研究候选仅包含条件估值，未携带已绑定的操作阈值、有效期及当前股本/分配/事件对齐结论。不能将估值数字直接解释为买入价；独立价格政策须另行验证。")
     _bound(root, review["policy_binding"])
     return result
+
+def _distribution_diagnostics(review):
+    from ...domain.valuation.distribution_capacity_review import explain_distribution_capacity
+    result = dict(schema_version='distribution-capacity-review-v1',
+        status='UNASSESSABLE', action='no_order', formal_eligibility=False,
+        candidate_binding=deepcopy(review['candidate_binding']),
+        assumption_binding=deepcopy(review['policy_binding']),
+        input_descriptor_sha256=review['input_descriptor_sha256'],
+        valuation_at=review['valuation_at'],
+        period_basis='MODEL_YEAR_NOT_DISCLOSED_FISCAL_YEAR', scenarios=[], reason_codes=[],
+        limitations=[
+            '这是已核验条件账本的解释，不是实际现金流、分红承诺或可持续股息认证。',
+            '覆盖率为当期可达盈利减强制投入再除以条件分配；不是实际自由现金流覆盖率或市场股息率。',
+            '依赖期初资金不自动意味着亏损；仍须考虑现金底线、持续投入和资金可达性假设。',
+            '期初资源支持是各模型年用于分配的下限，经营资源缺口另列；逐年下限之和不是模型起始日所需初始现金。',
+            '累计值未折现，只覆盖显式模型年份；终端和正式经济批准另行核验。'])
+    try:
+        scenarios = review['scenarios']
+        if len(scenarios) != 3 or {s['scenario'] for s in scenarios} != {'bear', 'base', 'bull'}:
+            raise ValueError('EXACT_THREE_SCENARIOS_REQUIRED')
+        computed = []
+        for scenario in scenarios:
+            diagnostic = explain_distribution_capacity(scenario['ledger']['rows'])
+            computed.append(dict(scenario=scenario['scenario'],
+                basis='VERIFIED_CONDITIONAL_LEDGER_NOT_ACTUAL_CASHFLOW', **diagnostic))
+        result.update(status='CONDITIONAL_DIAGNOSTICS', scenarios=computed)
+    except (ValueError, TypeError, KeyError, ArithmeticError) as error:
+        result['reason_codes'] = ['DISTRIBUTION_DIAGNOSTIC_REJECTED: ' + str(error)]
+    return result
+
 
 def _economic_path(review):
     """Readable projection of verified consumed ledgers; no forecast or pricing here.

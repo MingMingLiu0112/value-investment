@@ -581,3 +581,72 @@ def test_real_interim_dividend_current_rmb_yuan_column(real_candidate):
     assert result["term_pages"]["declared_dividend"] == [73]
     assert result["period_end"] == "2026-06-30"
     assert result["parser_version"] == "interim-capital-distribution-fields-v2"
+
+
+@pytest.mark.parametrize("record,ex,expected", [
+    ("2020-01-01", "2020-01-02", "2"),
+    ("2020-01-02", "2020-01-03", "0"),
+    ("2019-12-31", "2020-01-01", "0"),
+])
+def test_pending_payment_keeps_ex_entitlement_in_exact_interval(reconciliation, monkeypatch, record, ex, expected):
+    from value_investment_agent.infrastructure.filings import pdf_text
+    case = reconciliation
+    row = cash(case, in_period=True)
+    row.update(record_date=record, ex_date=ex, cash_payment_date="2020-01-03")
+    # TEST_ONLY extraction seam; the real ledger/source/date validators run.
+    text = case["anchor"]["excerpt"] + " " + " ".join((record, ex, row["cash_payment_date"]))
+    case["anchor"]["excerpt"] = text
+    monkeypatch.setattr(pdf_text, "extract_pages", lambda path: [text])
+    case["ledger"]["distributions"] = [row]
+    result = reconcile(case)
+    observed = result["distributions"][0]
+    assert result["period_cash_per_share"] == expected
+    assert observed["ex_entitlement_in_period"] is (expected == "2")
+    assert observed["payment_pending_at_comparison"] is True
+    assert observed["period_treatment"] == "PENDING_PAYMENT_REQUIRES_REVIEW"
+    assert "PENDING_DISTRIBUTION_PAYMENT" in result["reason_codes"]
+    inclusion_gap = "IN_PERIOD_CASH_FLOW_INCLUSION_REQUIRES_CANDIDATE_RECOMPUTATION"
+    assert (inclusion_gap in result["reason_codes"]) is (expected == "2")
+    assert observed["model_inclusion"] == "NOT_NATIVE_VERIFIED"
+    assert observed["price_deduction_applied"] == "0"
+    assert not result["current_price_basis_compatible"]
+    assert case["analysis"]["valuation"]["bear_value"] == "10"
+
+
+@pytest.mark.parametrize("issue,reason", [
+    ("pending", "OPENING_PENDING_ACTION_CHAIN_REQUIRES_REVIEW"),
+    ("unresolved", "PUBLIC_ACTION_REVIEW_UNRESOLVED: 123"),
+    ("missing_action", "REVIEWED_ACTION_MISSING_LEDGER_ROW: 123"),
+    ("unreviewed", "PUBLIC_ACTION_REVIEW_DOES_NOT_COVER_ALL_ANNOUNCEMENTS"),
+    ("none", None),
+])
+def test_same_day_exempts_only_empty_interval_gaps(reconciliation, issue, reason):
+    case = reconciliation
+    case["ledger"].update(comparison_date="2020-01-01", closing_shares=None, opening_pending_actions=None)
+    window = case["windows"][0]
+    window.update(scan_to="2020-01-01", source_integrity_verified=True)
+    if issue == "pending":
+        case["ledger"]["opening_pending_actions"] = dict(as_of="2020-01-01",
+            pending_action_ids=["TEST_ONLY_PENDING"], rationale="Explicit pending action",
+            evidence=[case["anchor"]])
+    elif issue != "none":
+        window["acquired_at"] = case["anchor"]["available_at"]
+        window["announcements"] = [dict(announcement_id="123", evidence_refs=[dict(
+            **case["anchor"]["binding"], source_url=case["anchor"]["source_url"])])]
+        if issue != "unreviewed":
+            case["ledger"]["reviewed_documents"] = [dict(announcement_id="123",
+                disposition="UNRESOLVED" if issue == "unresolved" else "SHARE_ACTION",
+                rationale="Explicit review requiring resolution", evidence=[case["anchor"]])]
+    ref = write(case["root"], "runtime/same-day.json", case["ledger"])
+    result = service._reconcile(case["root"], case["analysis"], ref, date(2020,1,1),
+        case["windows"], case["now"], lambda binding: _bound(case["root"], binding))
+    assert result["native_basis_semantics_verified"] is (reason is None)
+    assert result["current_price_basis_compatible"] is (reason is None)
+    assert result["period_cash_coverage_complete"] is (reason is None)
+    if reason:
+        assert reason in result["reason_codes"]
+        assert result["status"] == "PARTIAL"
+    else:
+        assert result["reason_codes"] == []
+        assert result["status"] == "RECONCILED"
+        assert result["closing_shares"] == "100"

@@ -166,7 +166,182 @@ export type CandidatePriceAlignment = {
   explanation?: string;
 };
 
+export const distributionRawFields = [
+  "profit",
+  "target_distribution",
+  "distribution",
+  "accessible_profit",
+  "mandatory_cash",
+  "cash_distribution_limit",
+  "capacity_distribution_limit",
+  "closing_cash",
+  "closing_unremitted",
+  "funding_shortfall",
+] as const;
+export const distributionDerivedFields = [
+  "net_period_resources",
+  "target_reduction",
+  "distribution_support_from_opening_resources",
+  "operating_resource_deficit",
+] as const;
+export type DistributionDiagnosticYear = Record<
+  | (typeof distributionRawFields)[number]
+  | (typeof distributionDerivedFields)[number],
+  string
+> & {
+  model_year: number;
+  distribution_coverage_ratio: string | null;
+  binding_constraints: (
+    "TARGET_POLICY" | "CASH_LIMIT" | "DISTRIBUTABLE_CAPACITY"
+  )[];
+  status: "FUNDING_SHORTFALL" | "TARGET_CONSTRAINED" | "TARGET_MET";
+};
+export type DistributionDiagnostics = {
+  schema_version: "distribution-capacity-review-v1";
+  status: "CONDITIONAL_DIAGNOSTICS" | "UNASSESSABLE";
+  action: "no_order";
+  formal_eligibility: false;
+  candidate_binding: EvidenceBinding;
+  assumption_binding: EvidenceBinding;
+  input_descriptor_sha256: string;
+  valuation_at: string | null;
+  period_basis: "MODEL_YEAR_NOT_DISCLOSED_FISCAL_YEAR";
+  scenarios: {
+    scenario: string;
+    basis: "VERIFIED_CONDITIONAL_LEDGER_NOT_ACTUAL_CASHFLOW";
+    years: DistributionDiagnosticYear[];
+    summary: {
+      first_year_distribution: string;
+      cumulative_distribution: string;
+      cumulative_profit: string;
+      cumulative_distribution_support_from_opening_resources: string;
+      minimum_distribution_coverage_ratio: string | null;
+      target_reduced_years: number[];
+      opening_resources_used_years: number[];
+      funding_shortfall_years: number[];
+      closing_unremitted: string;
+    };
+  }[];
+  limitations: string[];
+  reason_codes: string[];
+};
+
+/** Validate projection identity and copied ledger fields, never recalculate diagnostics. */
+export function distributionDiagnosticsMatch(
+  review: Readonly<JointCapitalReview>,
+): boolean {
+  try {
+    const data = review.distribution_diagnostics;
+    if (
+      !data ||
+      review.schema_version !== "joint-capital-cash-review-v4" ||
+      data.schema_version !== "distribution-capacity-review-v1" ||
+      data.status !== "CONDITIONAL_DIAGNOSTICS" ||
+      data.action !== "no_order" ||
+      data.formal_eligibility !== false ||
+      data.period_basis !== "MODEL_YEAR_NOT_DISCLOSED_FISCAL_YEAR" ||
+      !binding(data.candidate_binding) ||
+      !same(data.candidate_binding, review.candidate_binding) ||
+      !binding(data.assumption_binding) ||
+      !same(data.assumption_binding, review.policy_binding) ||
+      !digest(data.input_descriptor_sha256) ||
+      data.input_descriptor_sha256 !== review.input_descriptor_sha256 ||
+      data.valuation_at !== review.valuation_at ||
+      !strings(data.limitations) ||
+      !Array.isArray(data.reason_codes) ||
+      data.reason_codes.length !== 0 ||
+      !Array.isArray(data.scenarios) ||
+      data.scenarios.length !== 3 ||
+      !Array.isArray(review.scenarios) ||
+      review.scenarios.length !== 3
+    )
+      return false;
+    return data.scenarios.every((scenario, index) => {
+      const raw = review.scenarios[index];
+      if (
+        !record(scenario) ||
+        scenario.scenario !== ["bear", "base", "bull"][index] ||
+        scenario.scenario !== raw.scenario ||
+        scenario.basis !== "VERIFIED_CONDITIONAL_LEDGER_NOT_ACTUAL_CASHFLOW" ||
+        !Array.isArray(scenario.years) ||
+        scenario.years.length !== 10 ||
+        raw.ledger.rows.length !== scenario.years.length ||
+        !scenario.years.every((year, i) => {
+          const row = raw.ledger.rows[i];
+          return (
+            record(year) &&
+            year.model_year === i + 1 &&
+            year.model_year === row.year &&
+            distributionRawFields.every(
+              (key) => finiteDecimal(year[key]) && year[key] === row[key],
+            ) &&
+            distributionDerivedFields.every((key) =>
+              finiteDecimal(year[key]),
+            ) &&
+            (decimalIdentity(year.distribution) === "0"
+              ? year.distribution_coverage_ratio === null
+              : finiteDecimal(year.distribution_coverage_ratio)) &&
+            ["FUNDING_SHORTFALL", "TARGET_CONSTRAINED", "TARGET_MET"].includes(
+              year.status,
+            ) &&
+            Array.isArray(year.binding_constraints) &&
+            new Set(year.binding_constraints).size ===
+              year.binding_constraints.length &&
+            year.binding_constraints.every((key) =>
+              [
+                "TARGET_POLICY",
+                "CASH_LIMIT",
+                "DISTRIBUTABLE_CAPACITY",
+              ].includes(key),
+            )
+          );
+        }) ||
+        !record(scenario.summary)
+      )
+        return false;
+      const summary = scenario.summary;
+      return (
+        (
+          [
+            "first_year_distribution",
+            "cumulative_distribution",
+            "cumulative_profit",
+            "cumulative_distribution_support_from_opening_resources",
+            "closing_unremitted",
+          ] as const
+        ).every((key) => finiteDecimal(summary[key])) &&
+        summary.first_year_distribution === scenario.years[0].distribution &&
+        summary.closing_unremitted === scenario.years[9].closing_unremitted &&
+        (scenario.years.every(
+          (year) => year.distribution_coverage_ratio === null,
+        )
+          ? summary.minimum_distribution_coverage_ratio === null
+          : finiteDecimal(summary.minimum_distribution_coverage_ratio)) &&
+        (
+          [
+            "target_reduced_years",
+            "opening_resources_used_years",
+            "funding_shortfall_years",
+          ] as const
+        ).every((key) => {
+          const years = summary[key];
+          return (
+            Array.isArray(years) &&
+            new Set(years).size === years.length &&
+            years.every(
+              (year) => Number.isInteger(year) && year >= 1 && year <= 10,
+            )
+          );
+        })
+      );
+    });
+  } catch {
+    return false;
+  }
+}
+
 export type JointCapitalReview = {
+  distribution_diagnostics?: DistributionDiagnostics;
   schema_version:
     | "joint-capital-review-v1"
     | "joint-capital-cash-review-v2"

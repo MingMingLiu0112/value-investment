@@ -1,10 +1,13 @@
 import React from "react";
-import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { readFileSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { EconomicReviewMaterials } from "../src/components/EconomicReviewMaterials";
 import {
   economicMaterialsMatch,
+  distributionDiagnosticsMatch,
+  distributionRawFields,
   jointCapitalReviewMatches,
   jointRowFields,
   jointTerminalFields,
@@ -1303,3 +1306,378 @@ describe("versioned ten-year joint cash review", () => {
     );
   });
 });
+
+function distributionFixture() {
+  const handoff = jointCashV4Fixture();
+  const review = handoff.economic_review_materials!.joint_capital_review!;
+  review.distribution_diagnostics = {
+    schema_version: "distribution-capacity-review-v1",
+    status: "CONDITIONAL_DIAGNOSTICS",
+    action: "no_order",
+    formal_eligibility: false,
+    candidate_binding: { ...review.candidate_binding },
+    assumption_binding: { ...review.policy_binding },
+    input_descriptor_sha256: review.input_descriptor_sha256,
+    valuation_at: review.valuation_at,
+    period_basis: "MODEL_YEAR_NOT_DISCLOSED_FISCAL_YEAR",
+    scenarios: review.scenarios.map((scenario) => ({
+      scenario: scenario.scenario,
+      basis: "VERIFIED_CONDITIONAL_LEDGER_NOT_ACTUAL_CASHFLOW",
+      years: scenario.ledger.rows.map((row) => ({
+        profit: String(row.profit),
+        target_distribution: String(row.target_distribution),
+        distribution: String(row.distribution),
+        accessible_profit: String(row.accessible_profit),
+        mandatory_cash: String(row.mandatory_cash),
+        cash_distribution_limit: String(row.cash_distribution_limit),
+        capacity_distribution_limit: String(row.capacity_distribution_limit),
+        closing_cash: String(row.closing_cash),
+        closing_unremitted: String(row.closing_unremitted),
+        funding_shortfall: String(row.funding_shortfall),
+        model_year: row.year,
+        net_period_resources: "0",
+        distribution_coverage_ratio: "0",
+        target_reduction: "0",
+        distribution_support_from_opening_resources: String(row.distribution),
+        operating_resource_deficit: "0",
+        binding_constraints: ["TARGET_POLICY", "CASH_LIMIT"],
+        status: "TARGET_MET",
+      })),
+      summary: {
+        first_year_distribution: String(scenario.ledger.rows[0].distribution),
+        cumulative_distribution: "12345000000",
+        cumulative_profit: "23456000000",
+        cumulative_distribution_support_from_opening_resources: "3456700000",
+        minimum_distribution_coverage_ratio: "0",
+        target_reduced_years: [],
+        opening_resources_used_years: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        funding_shortfall_years: [],
+        closing_unremitted: String(scenario.ledger.rows[9].closing_unremitted),
+      },
+    })),
+    limitations: ["TEST_ONLY 十年条件路径不是永久可持续证明"],
+    reason_codes: [],
+  };
+  return handoff;
+}
+describe("shareholder distribution diagnostics", () => {
+  it("shows three scenario summaries in hundred-million CNY before cash paths and keeps annual tables collapsed", () => {
+    const handoff = distributionFixture();
+    const before = structuredClone(handoff);
+    const review = handoff.economic_review_materials!.joint_capital_review!;
+    expect(distributionDiagnosticsMatch(review)).toBe(true);
+    expect(jointCapitalReviewMatches(handoff, handoff.symbol)).toBe(true);
+    const html = render(handoff);
+    for (const label of [
+      "谨慎情景分配诊断",
+      "中性条件情景分配诊断",
+      "乐观情景分配诊断",
+      "123.45 亿元",
+      "234.56 亿元",
+      "34.57 亿元",
+      "不是实际自由现金流覆盖率，也不是市场股息率",
+      "累计值不是模型起始日所需初始现金",
+      "经营资源缺口另列",
+      "不能称总资金需求为20",
+      "不等于亏损或实际出金",
+      "十年路径不代表永久可持续",
+      "action=no_order",
+      "模型年度诊断",
+      "目标政策",
+      "现金上限",
+    ])
+      expect(html).toContain(label);
+    expect(html).toContain(
+      "<details><summary>谨慎情景 · 展开十年分配诊断表</summary>",
+    );
+    expect(html.indexOf("股东分配能力诊断")).toBeLessThan(
+      html.indexOf("未批准 · 经营"),
+    );
+    expect(handoff).toEqual(before);
+    const analysis = publicCashFixture(handoff);
+    expect(
+      renderToStaticMarkup(
+        <PublicJointCapitalReview
+          analysis={analysis}
+          symbol={analysis.symbol}
+        />,
+      ),
+    ).toContain("123.45 亿元");
+  });
+  it.each([
+    [
+      "candidate",
+      (d: any) => {
+        d.candidate_binding.sha256 = "f".repeat(64);
+      },
+    ],
+    [
+      "candidate path",
+      (d: any) => {
+        d.candidate_binding.path = "TEST_ONLY/other";
+      },
+    ],
+    [
+      "assumption",
+      (d: any) => {
+        d.assumption_binding.sha256 = "f".repeat(64);
+      },
+    ],
+    [
+      "descriptor",
+      (d: any) => {
+        d.input_descriptor_sha256 = "f".repeat(64);
+      },
+    ],
+    [
+      "valuation",
+      (d: any) => {
+        d.valuation_at = "2026-10-30T00:00:00+08:00";
+      },
+    ],
+    [
+      "approval",
+      (d: any) => {
+        d.formal_eligibility = true;
+      },
+    ],
+    [
+      "action",
+      (d: any) => {
+        d.action = "buy";
+      },
+    ],
+    [
+      "period",
+      (d: any) => {
+        d.period_basis = "ACTUAL";
+      },
+    ],
+    [
+      "unassessable",
+      (d: any) => {
+        d.status = "UNASSESSABLE";
+      },
+    ],
+    [
+      "reason",
+      (d: any) => {
+        d.reason_codes = ["MISSING"];
+      },
+    ],
+    [
+      "scenario order",
+      (d: any) => {
+        d.scenarios.reverse();
+      },
+    ],
+    [
+      "year",
+      (d: any) => {
+        d.scenarios[0].years[0].model_year = 2;
+      },
+    ],
+    [
+      "missing year",
+      (d: any) => {
+        d.scenarios[0].years.pop();
+      },
+    ],
+    [
+      "derived invalid",
+      (d: any) => {
+        d.scenarios[0].years[0].net_period_resources = "NaN";
+      },
+    ],
+    [
+      "missing nonzero coverage",
+      (d: any) => {
+        d.scenarios[0].years[0].distribution_coverage_ratio = null;
+      },
+    ],
+    [
+      "constraint",
+      (d: any) => {
+        d.scenarios[0].years[0].binding_constraints = ["APPROVED"];
+      },
+    ],
+    [
+      "summary malformed",
+      (d: any) => {
+        d.scenarios[0].summary.cumulative_profit = null;
+      },
+    ],
+    [
+      "summary years",
+      (d: any) => {
+        d.scenarios[0].summary.funding_shortfall_years = [11];
+      },
+    ],
+    [
+      "malformed",
+      (d: any) => {
+        d.scenarios = [null];
+      },
+    ],
+    ...distributionRawFields.map(
+      (key) =>
+        [
+          key,
+          (d: any) => {
+            d.scenarios[0].years[0][key] = "999999999";
+          },
+        ] as const,
+    ),
+  ] as [string, (diagnostic: any) => void][])(
+    "hides diagnostic amounts on %s failure without hiding original research",
+    (_, damage) => {
+      const handoff = distributionFixture();
+      const review = handoff.economic_review_materials!.joint_capital_review!;
+      damage(review.distribution_diagnostics);
+      expect(distributionDiagnosticsMatch(review)).toBe(false);
+      expect(jointCapitalReviewMatches(handoff, handoff.symbol)).toBe(true);
+      const html = render(handoff);
+      expect(html).toContain("已隐藏诊断数值；原研究继续保留");
+      expect(html).not.toContain("123.45 亿元");
+      expect(html).toContain("条件估值");
+      expect(html).toContain("第 10 年");
+    },
+  );
+  it("keeps null coverage for zero distributions, not zero or infinity, and preserves negative resource diagnostics", () => {
+    const handoff = distributionFixture();
+    const review = handoff.economic_review_materials!.joint_capital_review!;
+    review.scenarios.forEach((scenario) =>
+      scenario.ledger.rows.forEach((row) => {
+        row.distribution = "0";
+      }),
+    );
+    review.distribution_diagnostics!.scenarios.forEach((scenario) => {
+      scenario.years.forEach((year) => {
+        year.distribution = "0";
+        year.distribution_coverage_ratio = null;
+        year.net_period_resources = "-100000000";
+        year.status = "FUNDING_SHORTFALL";
+      });
+      scenario.summary.first_year_distribution = "0";
+      scenario.summary.minimum_distribution_coverage_ratio = null;
+    });
+    expect(distributionDiagnosticsMatch(review)).toBe(true);
+    const html = render(handoff);
+    expect(html).toContain("不适用（条件分配为零，未按零覆盖率展示）");
+    expect(html).toContain("-1.00 亿元");
+    expect(html).toContain("存在资金缺口");
+    expect(html).not.toContain("Infinity");
+    review.distribution_diagnostics!.scenarios[0].years[0].distribution_coverage_ratio =
+      "0";
+    expect(distributionDiagnosticsMatch(review)).toBe(false);
+  });
+  it("is optional, supports only v4, and rejects outer source mismatches", () => {
+    const handoff = distributionFixture();
+    const review = handoff.economic_review_materials!.joint_capital_review!;
+    const older = jointCashV3Fixture();
+    older.economic_review_materials!.joint_capital_review!.distribution_diagnostics =
+      review.distribution_diagnostics;
+    expect(render(older)).toContain("已隐藏诊断数值");
+    expect(render(older)).toContain("条件估值");
+    const mismatch = structuredClone(handoff);
+    mismatch.economic_review_materials!.joint_capital_review!.policy_binding.sha256 =
+      "f".repeat(64);
+    expect(render(mismatch)).not.toContain("123.45 亿元");
+    delete review.distribution_diagnostics;
+    expect(render(handoff)).not.toContain("股东分配能力诊断");
+    expect(render(handoff)).toContain("条件估值");
+  });
+});
+
+const distributionSnapshot = resolve(
+  process.cwd(),
+  "../.tmp/value-next-module/live-company-api.json",
+);
+it.skipIf(!existsSync(distributionSnapshot))(
+  "renders Root's real distribution output with visible summaries, precise coverage and resource boundaries",
+  () => {
+    const output = execFileSync(
+      "python",
+      [
+        "-c",
+        [
+          "import json,sys",
+          "from pathlib import Path",
+          "from value_investment_agent.application.product.consumed_economic_path import _distribution_diagnostics",
+          "a=json.loads(Path(sys.argv[1]).read_text(encoding='utf-8-sig'))['decision']['research_analysis']",
+          "r=a['joint_capital_review']",
+          "r['distribution_diagnostics']=_distribution_diagnostics(r)",
+          "print(json.dumps(a,ensure_ascii=True))",
+        ].join("\n"),
+        distributionSnapshot,
+      ],
+      {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          PYTHONPATH: resolve(process.cwd(), "../src"),
+          PYTHONDONTWRITEBYTECODE: "1",
+        },
+        maxBuffer: 16 * 1024 * 1024,
+      },
+    );
+    const analysis = JSON.parse(output);
+    expect(publicJointCapitalReviewMatches(analysis, analysis.symbol)).toBe(
+      true,
+    );
+    expect(distributionDiagnosticsMatch(analysis.joint_capital_review)).toBe(
+      true,
+    );
+    const html = renderToStaticMarkup(
+      <PublicJointCapitalReview analysis={analysis} symbol={analysis.symbol} />,
+    );
+    for (const value of [
+      "693.59 亿元",
+      "699.03 亿元",
+      "704.48 亿元",
+      "0.9831 倍",
+      "1.0075 倍",
+      "1.0319 倍",
+      "最低覆盖倍数低于1",
+      "分配需要期初资源支持",
+      "不等于安全",
+      "十年路径不代表永久可持续",
+      "不是实际自由现金流覆盖率，也不是市场股息率",
+      "累计值不是模型起始日所需初始现金",
+      "经营资源缺口另列",
+    ])
+      expect(html).toContain(value);
+    expect(html.indexOf("股东分配能力诊断")).toBeLessThan(
+      html.indexOf("经营到股东现金的可审阅路径"),
+    );
+    expect(html).toContain(
+      "<details><summary>谨慎情景 · 展开十年分配诊断表</summary>",
+    );
+    // Remove nested collapsed sections, retaining only default-visible content.
+    const tokens = html.split(/(<\/?details\b[^>]*>)/);
+    let depth = 0;
+    const visible = tokens
+      .filter((token: string) => {
+        if (token.startsWith("<details")) {
+          depth++;
+          return false;
+        }
+        if (token.startsWith("</details")) {
+          depth--;
+          return false;
+        }
+        return depth === 0;
+      })
+      .join("");
+    for (const value of [
+      "股东分配能力诊断",
+      "693.59 亿元",
+      "699.03 亿元",
+      "704.48 亿元",
+      "1.0075 倍",
+    ])
+      expect(visible).toContain(value);
+    expect(visible).not.toContain("模型年度诊断；金额为亿元");
+  },
+  20000,
+);

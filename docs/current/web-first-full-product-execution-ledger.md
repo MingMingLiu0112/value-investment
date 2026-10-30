@@ -6604,3 +6604,56 @@ real-source/transport suite 141 passed; header-fix direct suite 52 passed.
 Clean-checkout, final CI, runtime version and browser receipts are recorded under
 the same local receipt directory after the release commit; no skip counts as real
 source acceptance and no HTTP status alone counts as browser acceptance.
+
+### 2026-10-30 shareholder distribution capacity module
+
+Baseline 51f584ca. Preserve existing current-research-drafts.json changes.
+The retained interim facts do not establish comparison-date capital continuity;
+do not infer no actions from an empty ledger or complete announcement index.
+Proceed with an independent value-business calculation using the already
+source-replayed v4 annual cash ledger, rather than weakening the price bridge.
+
+Scope: shared distribution-capacity diagnostic -> existing economic projection
+-> existing company API/page and value strategy map. No valuation-engine,
+assumption, approval, private-account or hotspot changes. Each model year compares
+the consumed dividend with target/cash/capacity limits, measures accessible profit
+after mandatory outflows, and separately explains dividend dependence on opening
+resources and operating resource deficits. Zero dividend has no coverage ratio.
+Missing/nonfinite/inconsistent inputs produce an explicit unavailable diagnostic;
+no replacement dividend is chosen. Cumulative amounts are undiscounted and cover
+only explicit model years; they are not perpetual sustainability or market yield.
+
+Initial actual 600519 calculation: all three scenarios attain their assumed
+distribution targets without a funding shortfall. Bear year 1 nevertheless needs
+1,172,072,088.3041 CNY of opening resources for the distribution. Base's minimum
+annual resource coverage is 1.0074939383; this thin headroom depends on the current
+cash-access and investment assumptions, not a statement of actual future results.
+The June 30 valuation, candidate, source bytes and no_order/approval status remain
+unchanged. The next decisive price-basis gaps remain separately visible.
+Receipts and final runtime/CI identity: .tmp/value-distribution-acceptance/.
+
+The same calculation was also consumed by existing 600887 research without a
+company branch or new assumption: base years 1-2 require about 0.87177 billion
+CNY of distribution support from each year's opening resources in aggregate;
+minimum coverage is about 0.90657. These are model-year support lower bounds,
+not initial cash required at inception; operating resource deficits are separate.
+Both real API replays preserve original candidate/source identity and approvals.
+
+Independent source review confirms the retained seven announcements cannot close
+the June 30-to-October 29 capital continuity chain. July 18 pricing changes and
+the August board's internal asset-transfer decision are business events, not
+issuer share changes or shareholder cash payments; no such substitution is made.
+Independent code review also identified two concrete reconciliation defects:
+an in-period ex-entitlement with future payment was omitted from listed interval
+amounts, and same-date reconciliation erased explicit unresolved items. Fixed
+both within the existing consumer: entitlement/payment are now independent;
+same-date exemptions only cover enumerated empty-interval gaps. No automatic
+price adjustment, event approval or current comparison qualification is added.
+The Web labels this total as ex-entitlement, not received cash.
+
+Targeted business/replay/price regression: 151 passed before date fixes;
+date-fix direct and related tests: 119 passed. API regression: 346 passed,
+2 optional skips. Required real-source/API diagnostics completed for both
+existing companies; CI-only skips are not counted as real-source acceptance.
+Final clean-checkout and Core/Web run identities are stored with the release
+receipt in .tmp/value-distribution-acceptance/, alongside live page screenshots.

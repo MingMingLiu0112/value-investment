@@ -22,7 +22,7 @@ export interface Stage {
 }
 export const review = {
   version: "strategy-architecture-v1",
-  reviewedAt: "2026-10-29",
+  reviewedAt: "2026-10-30",
   baseline: "1cf73655457094fe924001497393f2be6d22fcec",
   mode: "MANUAL_SOURCE_REVIEW",
   runtimeEvidence: "NOT_CONNECTED",
@@ -114,22 +114,24 @@ export const catalog: Record<
         modules: [
           "src/value_investment_agent/application/product/consumed_economic_path.py",
           "src/value_investment_agent/domain/valuation/joint_capital_cash_path_v4.py",
+          "src/value_investment_agent/domain/valuation/distribution_capacity_review.py",
         ],
         implementation:
-          "已复核已消费账本的六步投影；缺失金额保留null，不重算估值。",
+          "已消费账本六步投影及分配能力诊断：分别解释目标派息、现金上限和分配容量；识别目标缩减、期初资金依赖和资金缺口。不重算估值或批准分红。",
         milestone: "经济研究仍需实质证据；历史现金诊断不是正常化可分配现金。",
         evidence: "原文页码及口径、经营机制、再投资假设、反证与敏感性。",
         boundary: "分配能力不依赖股价；股息率依赖报价，股息不能重复计入估值。",
         ruleWhy: "归母利润不是可分配现金；未上划资金和法定容量不能忽略。",
         existingEvidence:
-          "基线台账：600519实际API已消费三情景，估值日2026-06-30；股东现金映射为条件假设。",
-        nextStep: "复核现金可达比例及法定分配约束，并绑定有效研究批准。",
+          "2026-10-30真实候选重放：600519悲观路径第1年约11.72亿元分配依赖期初资金；中性最低当期资源覆盖率约1.0075倍。三情景10年均达到假设目标，但不构成永久分红持续性证明。估值基准日仍为2026-06-30。",
+        nextStep:
+          "用经营、投入和资金上划证据复核覆盖率余量；保持条件诊断与真实现金流、法定分配及正式批准分离。",
         evidenceSource:
-          "基线台账记录：.tmp/batch2-real-api/600519.json（本页未加载原始收据）",
+          "来源绑定候选及实际API：.tmp/value-distribution-acceptance/；逐年诊断与已消费账本同版本。本页为人工维护的证据记录，不是动态进度。",
         dependencies: ["value_operating"],
         engineeringStatus: "已实现",
         evidenceStatus: "真实算术已核",
-        shortStatus: "600519 · 三情景 · 2026-06-30",
+        shortStatus: "三情景分配能力 · 现金约束与期初资金依赖已计算",
       },
       {
         id: "value_valuation",
