@@ -239,7 +239,7 @@ export function ValuePlanOverview() {
         </details>
         <p>
           后续顺序：B 队列正确性 → F2/S4 当前口径 → C/D2/E2 新公司研究 → S1–S4
-          持仓与现金闭环。该顺序是对标建议，本轮仅交付可视化。
+          持仓与现金闭环。该顺序是对标建议；A已接通本轮受限来源闭环，其余模块尚不代表完成。
         </p>
         <Space wrap>
           <Link to="/decisions/600519?strategy=value">

@@ -9,6 +9,16 @@ const statuses: Record<string, string> = {
   SOURCE_UNAVAILABLE: "来源不可用",
   UNAVAILABLE: "来源不可用",
 };
+const evidenceLabels: Record<string, string> = {
+  RETAINED_ORIGINAL_NOT_LATEST_REPORT_ASSERTION:
+    "复用留存原件，不据此断言是最新报告",
+  SCOPED_FACTS_VERIFIED: "已采用限定字段，非完整财务核验",
+  OBSERVATIONS_ONLY: "仅保留原文观察，未采用为财务事实",
+  debt_ratio: "debt_ratio（资产负债率，非完整有息负债）",
+  MISSING_OR_AMBIGUOUS_PRINTED_BALANCE_TOTALS:
+    "MISSING_OR_AMBIGUOUS_PRINTED_BALANCE_TOTALS（未取得唯一且口径完整的报表合计）",
+};
+const explain = (value: string) => evidenceLabels[value] || value;
 const exchangeNames = { SSE: "上交所", SZSE: "深交所", BSE: "北交所" } as const;
 const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
@@ -187,7 +197,9 @@ export function PublicEvidencePanel({
                               ? "复用已存原件（保留原取得时间）"
                               : "未标记复用"}
                           </div>
-                          {item.reason && <div>原因：{item.reason}</div>}
+                          {item.reason && (
+                            <div>原因：{explain(item.reason)}</div>
+                          )}
                         </td>
                         <td style={{ verticalAlign: "top", padding: 8 }}>
                           披露：{item.published_date || "未提供"}
@@ -197,7 +209,7 @@ export function PublicEvidencePanel({
                           </div>
                         </td>
                         <td style={{ verticalAlign: "top", padding: 8 }}>
-                          事实状态：{item.fact_status}
+                          事实状态：{explain(item.fact_status)}
                           <div>
                             已采用 {item.adopted_fact_count}{" "}
                             项事实；不代表事实完整
@@ -206,7 +218,7 @@ export function PublicEvidencePanel({
                             <div>
                               仅已核验字段：
                               {item.adopted_fields.length
-                                ? item.adopted_fields.join("、")
+                                ? item.adopted_fields.map(explain).join("、")
                                 : "未列出已采纳字段"}
                             </div>
                           )}
@@ -216,7 +228,7 @@ export function PublicEvidencePanel({
                               {item.fact_issues.length ? (
                                 <ul>
                                   {item.fact_issues.map((issue, i) => (
-                                    <li key={i}>{issue}</li>
+                                    <li key={i}>{explain(issue)}</li>
                                   ))}
                                 </ul>
                               ) : (
