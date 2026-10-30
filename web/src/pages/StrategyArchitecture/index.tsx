@@ -143,6 +143,10 @@ export function StageDetail({ stage }: { stage: Stage }) {
                   <Link to="/system">
                     查看A模块公开来源实测状态（只读；按请求范围）
                   </Link>
+                ) : stage.id === "B" ? (
+                  <Link to="/daily">
+                    查看B模块真实候选与覆盖范围（只读；保留资料日期）
+                  </Link>
                 ) : (
                   "未接入 / NOT_CONNECTED；静态快照不推定当前运行结果。"
                 ),
