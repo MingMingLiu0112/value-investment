@@ -55,25 +55,32 @@ export const catalog: Record<
         output: "带原件、哈希、时间和覆盖范围的事实",
         modules: [
           "src/value_investment_agent/infrastructure/filings/official_report_acquisition.py",
+          "src/value_investment_agent/application/research/public_evidence.py",
+          "scripts/current/collect_public_evidence.py",
         ],
-        engineeringStatus: "部分接通",
-        evidenceStatus: "真实样本部分验证",
-        shortStatus: "全市场恢复覆盖、修订版与失败恢复仍需逐项验收",
-        implementation: "已有两公司真实原件；来源重观察与官方公告采集已消费",
-        milestone: "部分接通；不代表正式研究准入或实盘资格。",
-        existingEvidence: "已有两公司真实原件；来源重观察与官方公告采集已消费",
+        engineeringStatus: "受限采集与消费已接通",
+        evidenceStatus: "三公司真实原件已重放",
+        shortStatus: "仅核验请求报告；BSE、半年报事实解析与全市场覆盖未完成",
+        implementation:
+          "三份FY2025官方年报自动取得；茅台、伊利各一项资产负债率由两期报表勾稽后进入既有财务消费者；中原环保币种证据不足，未采纳",
+        milestone:
+          "公开原件→来源包→限定事实→既有队列/财务消费者→只读系统页；不代表完整财务准入。",
+        existingEvidence:
+          "三份FY2025官方年报自动取得；茅台、伊利各一项资产负债率由两期报表勾稽后进入既有财务消费者；中原环保币种证据不足，未采纳",
         evidenceSource:
-          "d01923cd；docs/current/web-first-full-product-execution-ledger.md；.tmp/value-followup-acceptance/real-business-receipt.json（本机留存，不公开私人文件）",
-        evidence: "全市场恢复覆盖、修订版与失败恢复仍需逐项验收",
-        nextStep: "先补决定性官方资料并记录未覆盖区间",
+          "2026-10-30；runtime/public-evidence/20261030T110724-accepted/acceptance.json；原件恢复重放、旧Hash与取得时间保持；/system读取当前公开来源状态",
+        evidence: "仅核验请求报告；BSE、半年报事实解析与全市场覆盖未完成",
+        nextStep:
+          "保持未覆盖范围显式：北交所来源、半年报事实、修订版冲突需复核；本轮不扩大其他策略",
         ruleWhy: "可靠事实是后续计算前提；今天下载不自动证明历史可得。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
-          consumer: "已有消费者／部分链路",
-          realData: "真实样本部分验证（见证据）",
+          consumer:
+            "现有v2研究队列校验来源包；consume_retained_enrichment实际消费两项限定事实",
+          realData: "三家FY2025真实来源及空目录恢复已验；非全市场覆盖",
           economic: "不适用或由下游独立准入",
-          deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
+          deployment: "源码与只读API已接通；实际运行状态请打开系统页核对",
           acceptance: "用户尚未确认此版本",
         },
       },

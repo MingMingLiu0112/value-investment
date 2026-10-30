@@ -6762,3 +6762,30 @@ Display implementation, downstream consumption, real-source scope, economic
 approval, deployment verification and user acceptance separately. No overall
 completion percentage, no strategy alpha claims. Financial/regulatory references
 in user proposal are not newly certified by this UI task. action=no_order.
+
+### 2026-10-30 module A public evidence closure (in progress)
+
+User now prioritizes module A only. Baseline 1c06e2e4, preserve local research
+pointer and all prior originals. Reuse exact official report acquisition and
+retained verification, existing financial extraction/adoption and export contract.
+Bounded request bundles expose requested-report coverage, not all-market success;
+keep source acquisition, scoped fact verification and economic admission separate.
+Close rate-limit Retry-After handling, explicit retained replay/failure recovery,
+three-company original acceptance, downstream financial-export consumption and
+read-only /system coverage. No paid services, private accounts, server, schedule
+or changes to screening/valuation formulas. action=no_order.
+
+### A public evidence: actual replay 2026-10-30
+
+- Actual CNINFO download: 600519, 600887, 000544 FY2025. Raw index/PDF/receipt hashes and acquisition clocks retained in runtime/public-evidence/20261030-a-first.
+- New bundle: runtime/public-evidence/20261030T105922-accepted/bundle.json, SHA256 23d1f1ee1093e5b9bcd5416c4625274b14f60e2464f24a49fff7ea7a7f258a3b.
+- Actual acceptance: same folder/acceptance.json. Offline source replay, empty-directory evidence restoration and existing consume_retained_enrichment produce identical two debt_ratio points (600519, 600887); 000544 remains observations only because reported currency is not established.
+- Ratio assurance is source_reported_only / single-source two-period exact accounting reconciliation, NOT independent cross-source verification, complete interest-bearing debt, strict historical PIT, economic approval or a trade.
+- Parser v2 corrects same-original cross-page labelled identity and total-equity aliases/wrapping; ambiguous parent-only equity remains rejected. It creates new cache/fact identities. Historical receipts/points are not rewritten/re-signed; old implementation-bound claims cannot be represented as validated by this new parser.
+- Sources feed the existing v2 queue with optional exact bundle/export binding; partial acquisition may pass healthy originals while damaged registered originals fail closed. GET /api/v1/public-evidence reads only; /system shows requested-exchange coverage independent of private unlock/formal publication.
+- Scope remaining: no BSE discovery acceptance, no H1 fact parser, no all-market completeness or latest-report assertion. 429/retry/corruption cases use explicit synthetic transports; actual originals are not corrupted.
+- Permanent action=no_order. Private current-research-drafts.json is excluded from this work package.
+
+- Final parser acceptance supersedes the preceding intermediate A run: runtime/public-evidence/20261030T110724-accepted/acceptance.json; bundle SHA256 ab4d528f7f30144ac451a33d2326e9d143d7496f4d376a22a8a12800f877034a. Added cross-page parent-equity rejection; real derived amounts unchanged. Minimal public receipt: artifacts/current/public-evidence-a-20261030.json. Earlier bundle retained as history.
+
+- Validation: related backend/API regression 652 passed/10 skipped (optional unrelated retained originals); final direct parser 52 passed including all 3 actual PDFs; final module/architecture group 218 passed/4 optional skips before last cross-blank-page narrow correction; that correction independently rechecked 6 cases. Web baseline full 1320 passed/28 optional skips, final affected UI 45 passed; type/format pass. Final SHA Core/Web CI and local deployment receipt are recorded separately after build.

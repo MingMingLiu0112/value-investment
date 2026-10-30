@@ -5,7 +5,7 @@
   "current_entrypoint_count": 43,
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 0,
-    "CURRENT_PRODUCT_CLI": 26,
+    "CURRENT_PRODUCT_CLI": 27,
     "CURRENT_RESEARCH_CLI": 226,
     "HISTORICAL_VALIDATION_TOOL": 57,
     "COMPANY_RESEARCH_CASE_TOOL": 218,
@@ -4145,8 +4145,8 @@
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
       "risk": "MEDIUM",
-      "line_count": 42,
-      "sha256": "6ac5f6737a731320fdd801a6c331aeea5b04173b64523db0f5e38c1d83be725a"
+      "line_count": 98,
+      "sha256": "aa212752624d2447878358ffbc8d964e39b0bfd5f708bb38d34837eb99de2eaf"
     },
     {
       "path": "scripts/current/collect_registered_validity_scan.py",
@@ -7901,6 +7901,19 @@
       "risk": "MEDIUM",
       "line_count": 25,
       "sha256": "f10cdc0f7315717c952f667e27a3e869213ba7606520350f3db3f8c56d890872"
+    },
+    {
+      "path": "scripts/current/collect_public_evidence.py",
+      "category": "CURRENT_PRODUCT_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "LOW",
+      "line_count": 37,
+      "sha256": "e0cf21ac57500f905c1381e79de1da720c1e48711846d42793e7c22dbc230bd1"
     }
   ]
 }

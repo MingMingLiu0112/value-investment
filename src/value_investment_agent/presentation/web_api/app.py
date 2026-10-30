@@ -1100,6 +1100,11 @@ def create_app(
         """Serve only the hash-verified, read-only W6 audit projection."""
         return research_funnel_status(project)
 
+    @api.get("/api/v1/public-evidence")
+    def public_evidence_coverage():
+        from ...application.research.public_evidence import public_evidence_status
+        return public_evidence_status(project)
+
     @api.get("/api/v1/system/status")
     def system_status(request: Request):
         try:

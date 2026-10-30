@@ -1,3 +1,4 @@
+import { PublicEvidencePanel } from "../../components/PublicEvidencePanel";
 import { Link } from "@umijs/max";
 import { Button, Descriptions, Skeleton, Typography } from "antd";
 import { ResearchFunnelAuditPanel } from "../../components/ResearchFunnelAuditPanel";
@@ -19,6 +20,7 @@ export default function SystemStatus() {
   const snapshot = useApi(api.snapshot);
   const runtime = useApi(api.runtimeIdentity);
   const funnel = useApi(api.researchFunnel);
+  const evidence = useApi(api.publicEvidence);
   const clientBuild = __WEB_BUILD_IDENTITY__;
   const servedBuild = runtime.data?.web_build;
   const clientMatchesServed = Boolean(
@@ -32,6 +34,12 @@ export default function SystemStatus() {
       <Typography.Paragraph type="secondary">
         研究依据与发布时间在这里核对，不等于买卖准入。
       </Typography.Paragraph>
+      <PublicEvidencePanel
+        evidence={evidence.data}
+        loading={evidence.loading}
+        error={evidence.error}
+        retry={evidence.retry}
+      />
       {loading && <Skeleton active />}
       {error && (
         <p role="alert">

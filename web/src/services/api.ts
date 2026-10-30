@@ -20,6 +20,37 @@ import type {
 import type { CurrentScreening } from "../types/discovery";
 import type { DualStrategySelection } from "../types/selection";
 
+export interface PublicEvidenceStatus {
+  schema_version: "public-evidence-status-v1";
+  action: "no_order";
+  status: "VERIFIED" | "PARTIAL" | "MISSING" | "CONFLICT";
+  scope: "REQUESTED_REPORTS_ONLY";
+  generated_at: string | null;
+  reason: string | null;
+  items: {
+    symbol: string;
+    issuer_name: string;
+    period: string;
+    status: string;
+    source_url: string | null;
+    sha256: string | null;
+    published_date: string | null;
+    fetched_at: string | null;
+    reused: boolean;
+    reason: string | null;
+    fact_status: string;
+    adopted_fact_count: number;
+    fact_issues?: string[];
+    adopted_fields?: string[];
+  }[];
+  exchanges: Record<
+    "SSE" | "SZSE" | "BSE",
+    { requested: number; verified: number }
+  >;
+  formal_eligibility: false;
+  strict_historical_pit: false;
+}
+
 export interface HeldSellReviewRequest {
   schema_version: "private-held-sell-review-request-v1";
   action: "no_order";
@@ -665,6 +696,8 @@ export const api = {
     get<DailyPublicSnapshot>("daily-public-snapshot", signal),
   runtimeIdentity: (signal?: AbortSignal) =>
     get<RuntimeIdentity>("runtime-identity", signal),
+  publicEvidence: (signal?: AbortSignal) =>
+    get<PublicEvidenceStatus>("public-evidence", signal),
   researchFunnel: (signal?: AbortSignal) =>
     get<ResearchFunnelStatus>("research-funnel-status", signal),
   detail: (id: string, signal?: AbortSignal, strategy?: "value" | "hotspot") =>

@@ -37,6 +37,10 @@ jobs:
           tests/test_first_use_value_analysis.py
           tests/test_public_financial_snapshot.py
           tests/test_official_report_acquisition.py
+          tests/test_public_evidence.py
+          tests/test_public_evidence_consumer.py
+          tests/test_public_evidence_status_fields.py
+          tests/test_value_balance_source_parser_v2.py
           tests/test_official_balance_reconciliation.py
           tests/test_retained_statement_layout.py
           tests/test_sina_statement_original.py

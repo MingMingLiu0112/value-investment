@@ -3,6 +3,7 @@
 Acquisition is not financial admission or a reconstruction of historical PIT.
 """
 from datetime import date, datetime, timedelta, timezone
+from email.utils import format_datetime, parsedate_to_datetime
 import hashlib
 import json
 from pathlib import Path
@@ -21,6 +22,7 @@ VERSION = "official-report-acquisition-v1"
 CHINA = timezone(timedelta(hours=8))
 # Company-information tables can follow several pages of contents (e.g. p9).
 IDENTITY_PAGE_LIMIT = 12
+RETRY_WAIT_BUDGET_SECONDS = 5.0
 
 
 def _hash(path):
@@ -32,10 +34,47 @@ def _write(path, payload):
         json.dump(payload, handle, ensure_ascii=True, indent=2, allow_nan=False)
 
 
-def _retryable(error):
-    return isinstance(error, (requests.Timeout, requests.ConnectionError)) or (
-        isinstance(error, requests.HTTPError) and error.response is not None
-        and 500 <= error.response.status_code <= 599)
+def _retry_plan(error, *, attempt, remaining, captured=False):
+    """Retry-After is a lower bound; never shorten it to fit the wait budget."""
+    now = datetime.now(timezone.utc)
+    response = error.response if isinstance(error, requests.HTTPError) else None
+    status = response.status_code if response is not None else None
+    retryable = isinstance(error, (requests.Timeout, requests.ConnectionError)) or (
+        status is not None and (status == 429 or 500 <= status <= 599))
+    result = dict(http_status=status, retry_after=None, retry_after_seconds=None,
+                  reopen_at=None, wait_seconds=0.0, retry_status="NOT_RETRYABLE")
+    if not retryable:
+        return result
+    raw = response.headers.get("Retry-After") if response is not None else None
+    delay = 1.0
+    if raw is not None:
+        # Do not persist unbounded or control-character-bearing server input.
+        if (not isinstance(raw, str) or len(raw) > 128
+                or any(ord(char) < 32 or ord(char) > 126 for char in raw)):
+            result["retry_status"] = "INVALID_RETRY_AFTER"
+            return result
+        result["retry_after"] = raw
+        try:
+            if re.fullmatch(r"[0-9]{1,10}", raw):
+                delay = float(int(raw))
+            else:
+                stamp = parsedate_to_datetime(raw)
+                if stamp.utcoffset() != timedelta(0) or format_datetime(stamp, usegmt=True) != raw:
+                    raise ValueError("Noncanonical HTTP date")
+                delay = max(0.0, (stamp - now).total_seconds())
+        except (TypeError, ValueError, OverflowError):
+            result["retry_status"] = "INVALID_RETRY_AFTER"
+            return result
+    result.update(retry_after_seconds=delay, reopen_at=(now + timedelta(seconds=delay)).isoformat())
+    if captured:
+        result["retry_status"] = "RAW_RESPONSE_ALREADY_CAPTURED"
+    elif attempt >= 2:
+        result["retry_status"] = "ATTEMPTS_EXHAUSTED"
+    elif delay > remaining:
+        result["retry_status"] = "WAIT_BUDGET_EXCEEDED"
+    else:
+        result.update(retry_status="RETRY_SCHEDULED", wait_seconds=delay)
+    return result
 
 
 def _discover(query, *, symbol, issuer_name, period, kind, today):
@@ -134,6 +173,18 @@ def acquire_official_report(*, root: Path, symbol: str, issuer_name: str,
     output.mkdir(parents=True)
     bindings = []
     attempts = []
+    remaining_wait = RETRY_WAIT_BUDGET_SECONDS
+
+    def retry(error, *, kind, attempt, captured=False):
+        nonlocal remaining_wait
+        plan = _retry_plan(error, attempt=attempt, remaining=remaining_wait, captured=captured)
+        attempts.append(dict(kind=kind, attempt=attempt, status="FAILED",
+                             error_type=type(error).__name__, **plan))
+        if plan["retry_status"] != "RETRY_SCHEDULED":
+            return False
+        remaining_wait -= plan["wait_seconds"]
+        time.sleep(plan["wait_seconds"])
+        return True
 
     def query(parameters):
         captured = []
@@ -161,11 +212,8 @@ def acquire_official_report(*, root: Path, symbol: str, issuer_name: str,
                 attempts.append(dict(kind="INDEX", attempt=attempt, status="RECEIVED"))
                 break
             except Exception as error:
-                attempts.append(dict(kind="INDEX", attempt=attempt, status="FAILED",
-                                     error_type=type(error).__name__))
-                if attempt == 2 or captured or not _retryable(error):
+                if not retry(error, kind="INDEX", attempt=attempt, captured=bool(captured)):
                     raise
-                time.sleep(1)
         if len(captured) != 1 or json.loads(captured[0]) != payload:
             raise ValueError("Official index missing raw response")
         return payload
@@ -183,11 +231,8 @@ def acquire_official_report(*, root: Path, symbol: str, issuer_name: str,
                 attempts.append(dict(kind="PDF", attempt=attempt, status="RECEIVED"))
                 break
             except Exception as error:
-                attempts.append(dict(kind="PDF", attempt=attempt, status="FAILED",
-                                     error_type=type(error).__name__))
-                if attempt == 2 or not _retryable(error):
+                if not retry(error, kind="PDF", attempt=attempt):
                     raise
-                time.sleep(1)
         acquired = datetime.now(timezone.utc)
         _verify_cover(extract_pages(pdf, limit=IDENTITY_PAGE_LIMIT), symbol=symbol,
                       issuer_name=issuer_name, period=period, kind=kind)

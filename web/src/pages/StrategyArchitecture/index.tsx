@@ -138,7 +138,14 @@ export function StageDetail({ stage }: { stage: Stage }) {
             {
               key: "runtime",
               label: "运行证据状态",
-              children: "未接入 / NOT_CONNECTED；静态快照不推定当前运行结果。",
+              children:
+                stage.id === "A" ? (
+                  <Link to="/system">
+                    查看A模块公开来源实测状态（只读；按请求范围）
+                  </Link>
+                ) : (
+                  "未接入 / NOT_CONNECTED；静态快照不推定当前运行结果。"
+                ),
             },
             { key: "next", label: "下一步", children: stage.nextStep },
             { key: "boundary", label: "停止边界", children: stage.boundary },

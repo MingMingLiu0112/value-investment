@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 from ...filing_extract import ANNUAL_BACKFILL_PARSER_VERSION, extract_candidates_from_pages
 from ..filings.pdf_text import extract_pages
 
-VERSION = 'value-retained-enrichment-v1'
+VERSION = 'value-retained-enrichment-v2'
 DEBT_LABELS = {
     'short_term_borrowings': '\u77ed\u671f\u501f\u6b3e',
     'current_portion_long_term_debt': '\u4e00\u5e74\u5185\u5230\u671f\u7684\u975e\u6d41\u52a8\u8d1f\u503a',
@@ -95,22 +95,95 @@ def _statement_unit(page: str, number: int, context: list[dict]) -> tuple:
 
 
 def _issuer_legal_owner(pages: list[str]) -> dict | None:
-    """A labelled legal name plus security code, never a market short name."""
-    evidence = []
+    """Unique labelled identity within the same original's first twelve pages."""
+    names, codes = [], []
     for number, page in enumerate(pages[:12], 1):
-        codes = list(re.finditer(r'(?:股票|证券|公司)代码[：:]?(\d{6})(?!\d)', ''.join(page.split())))
-        if len({match[1] for match in codes}) != 1:
-            continue
+        for match in re.finditer(r'(?:股票|证券|公司)代码[：:]?(\d{6})(?!\d)', ''.join(page.split())):
+            codes.append(dict(page=number, excerpt=_raw_excerpt(page, match[0]), value=match[1]))
         for match in re.finditer(r'(?m)^[ \t]*(?:公司的中文名称|公司中文名称|公司中文全称)[：: \t]+([^\r\n]+)', page):
             name = ''.join(match[1].split())
             if not re.fullmatch(r'[\u4e00-\u9fffA-Za-z（）()·]+有限公司', name):
                 continue
-            evidence.append(dict(legal_name=name, security_code=codes[0][1],
-                legal_name_page=number, legal_name_excerpt=match[0].strip(),
-                security_code_page=number, security_code_excerpt=_raw_excerpt(page, codes[0][0])))
-    if not evidence or len({(e['legal_name'], e['security_code']) for e in evidence}) != 1:
+            names.append(dict(page=number, excerpt=match[0].strip(), value=name))
+    if len({e['value'] for e in names}) != 1 or len({e['value'] for e in codes}) != 1:
         return None
-    return evidence[0]
+    # Keep the established same-page row/context contract byte-for-byte shaped
+    # as before. The extraction implementation hash still changes separately.
+    for name in names:
+        for code in codes:
+            if name['page'] == code['page']:
+                return dict(legal_name=name['value'], security_code=code['value'],
+                    legal_name_page=name['page'], legal_name_excerpt=name['excerpt'],
+                    security_code_page=code['page'], security_code_excerpt=code['excerpt'])
+    name, code = names[0], codes[0]
+    return dict(legal_name=name['value'], security_code=code['value'],
+        legal_name_page=name['page'], legal_name_excerpt=name['excerpt'],
+        security_code_page=code['page'], security_code_excerpt=code['excerpt'],
+        identity_binding_mode='SAME_ORIGINAL_CROSS_PAGE_LABELS_V2',
+        identity_page_scope=[1, min(12, len(pages))],
+        legal_name_evidence=names, security_code_evidence=codes)
+
+
+def _balance_rows(lines: list[str], page: str, amount):
+    """Rejoin only an exact total-equity row, within already bounded table lines.
+
+    Never join across pages, skip intervening text, or accept parent-only equity.
+    Keep the original printed label/excerpt beside the canonical semantic label.
+    """
+    aliases = ('所有者权益合计', '所有者权益（或股东权益）合计', '所有者权益(或股东权益)合计')
+    label = '|'.join(r'\s*'.join(re.escape(char) for char in alias) for alias in aliases)
+    pattern = re.compile(r'(?P<label>' + label + r')\s+(?P<current>' + amount.pattern
+                         + r')\s+(?P<prior>' + amount.pattern + r')')
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if line.startswith('所有者权益'):
+            previous = ''.join(lines[index - 1].split()) if index else ''
+            # The six-character parent prefix may itself occupy several lines.
+            # Inspect adjacent fragments, without crossing a page/table boundary.
+            prefix = ''.join(''.join(lines[max(0, index - 6):index]).split())
+            if (prefix.endswith('归属于母公司') or previous == '母公司'
+                    or (previous and any(('归属于母公司' + alias).startswith(previous) for alias in aliases))):
+                # A wrapped parent-only label cannot become a group total.
+                index += 1
+                continue
+            for end in range(index + 1, min(index + 3, len(lines)) + 1):
+                text = '\n'.join(lines[index:end])
+                match = pattern.fullmatch(text)
+                if match:
+                    if end == index + 1 and match['label'] == '所有者权益合计':
+                        yield line, line, None
+                    else:
+                        yield ('所有者权益合计 ' + match['current'] + ' ' + match['prior'],
+                               _raw_excerpt(page, ''.join(text.split())), match['label'])
+                    index = end
+                    break
+            else:
+                yield line, line, None
+                index += 1
+        else:
+            yield line, line, None
+            index += 1
+
+
+def _balance_content_lines(lines: list[str]) -> list[str]:
+    """Ignore only the supported annual-report headers and page numbers."""
+    content = [''.join(line.split()) for line in lines]
+    return [raw for raw, line in zip(lines, content) if line and not (
+        re.fullmatch(r'(?:第)?\d+(?:/\d+|页(?:共\d+页)?)?', line)
+        or re.fullmatch(r'.*20\d{2}年年度报告(?:全文)?', line))]
+
+
+def _unfinished_parent_equity(lines: list[str]) -> bool:
+    """Recognize a bounded unfinished parent label, ignoring report furniture."""
+    content = [''.join(line.split()) for line in _balance_content_lines(lines)]
+    labels = ('归属于母公司所有者权益合计', '归属于母公司所有者权益（或股东权益）合计',
+              '归属于母公司所有者权益(或股东权益)合计')
+    for count in range(1, min(6, len(content)) + 1):
+        tail = ''.join(content[-count:])
+        if tail.startswith('归属于') and any(label.startswith(tail) for label in labels):
+            return True
+    return False
 
 
 def extract_debt_balance_candidates(pages: list[str], period: str, *, balance_totals: bool = False,
@@ -124,6 +197,7 @@ def extract_debt_balance_candidates(pages: list[str], period: str, *, balance_to
     evidence = {}
     period_evidence = {}
     table_identity = {}
+    pending_parent_equity = False
     legal_owner = _issuer_legal_owner(pages) if include_equity else None
     labels = dict(DEBT_LABELS)
     labels.pop('other_financing_scope')
@@ -136,11 +210,14 @@ def extract_debt_balance_candidates(pages: list[str], period: str, *, balance_to
             labels['total_equity'] = '所有者权益合计'
     amount = re.compile(r'(?<![\d.])-?(?:\d{1,3}(?:,\d{3})+|\d+)\.\d{2}(?!\d)')
     for number, page in enumerate(pages, 1):
+        reject_equity_page = pending_parent_equity
+        pending_parent_equity = False
         lines = _statement_lines(page)
         closes = False
         if '\u5408\u5e76\u8d44\u4ea7\u8d1f\u503a\u8868' in lines:
             lines = lines[lines.index('合并资产负债表') + 1:]
             active = True
+            reject_equity_page = False
         stops = [i for i, line in enumerate(lines) if line in _STATEMENT_TITLES]
         if include_equity:
             stops.extend(i for i, line in enumerate(lines) if '资产负债表' in line
@@ -211,8 +288,14 @@ def extract_debt_balance_candidates(pages: list[str], period: str, *, balance_to
             if closes:
                 active = False
             continue
-        for line in lines:
+        row_lines = (_balance_rows(lines, page, amount) if include_equity
+                     else ((line, line, None) for line in lines))
+        for line, raw_excerpt, printed_label in row_lines:
             for field, label in labels.items():
+                if field == 'total_equity' and reject_equity_page:
+                    # An unfinished parent row on the preceding page makes this
+                    # continuation ambiguous. Do not reconstruct across pages.
+                    continue
                 if not line.startswith(label):
                     continue
                 values = amount.findall(line[len(label):])
@@ -227,7 +310,8 @@ def extract_debt_balance_candidates(pages: list[str], period: str, *, balance_to
                                    prior_value=str(Decimal(values[1].replace(',', '')) * multiplier),
                                    unit='CNY', currency='CNY', period_label=period,
                                    prior_period_label=str(int(period[:4])-1)+'-12-31',
-                                   statement_scope='consolidated', page=number, excerpt=line,
+                                   statement_scope='consolidated', page=number, excerpt=raw_excerpt,
+                                   **({'printed_source_label': printed_label} if printed_label else {}),
                                    comparative_basis='as_printed_may_be_restated',
                                    unit_evidence_page=unit_page,
                                    **evidence, **period_evidence,
@@ -235,6 +319,13 @@ def extract_debt_balance_candidates(pages: list[str], period: str, *, balance_to
                                    status='candidate_source_unverified' if balance_totals else 'candidate_debt_scope_unverified'))
         if closes or re.search(r'\u8d1f\u503a(?:\u548c|\u53ca)\u6240\u6709\u8005\u6743\u76ca.*\u603b\u8ba1', compact):
             active = False
+        if include_equity and active:
+            # Empty/furniture-only continuation pages cannot discharge an
+            # unresolved parent label. Unknown text alone is not a complete row.
+            complete_row = any(re.fullmatch(r'.+\s+' + amount.pattern + r'\s+' + amount.pattern, line)
+                               for line in _balance_content_lines(lines))
+            pending_parent_equity = (_unfinished_parent_equity(lines)
+                                     or (reject_equity_page and not complete_row))
     return result
 
 

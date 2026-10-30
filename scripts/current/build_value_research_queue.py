@@ -26,11 +26,18 @@ def main() -> int:
     parser.add_argument("--priority-version", choices=("v1", "v2"), default="v1")
     parser.add_argument("--financial-export", type=Path)
     parser.add_argument("--financial-export-sha256")
+    parser.add_argument("--public-evidence-bundle", type=Path,
+                        help="Optional v2 public-evidence bundle; PARTIAL gaps allowed, at least one verified original required; read-only")
+    parser.add_argument("--public-evidence-sha256")
     parser.add_argument("--enrichment-budget", type=int, default=10)
     parser.add_argument("--execute-enrichment", action="store_true")
     parser.add_argument("--allow-public-evidence-downloads", action="store_true")
     parser.add_argument("--execution-budget", type=int, default=2)
     args = parser.parse_args()
+    if (args.public_evidence_bundle is None) != (args.public_evidence_sha256 is None):
+        parser.error("public evidence bundle requires path and hash")
+    if args.public_evidence_bundle is not None and args.priority_version != "v2":
+        parser.error("public evidence bundle requires --priority-version v2")
     if args.execute_enrichment and args.priority_version != 'v2':
         parser.error('enrichment execution requires v2')
     if args.allow_public_evidence_downloads and not args.execute_enrichment:
@@ -49,6 +56,13 @@ def main() -> int:
         builder = build_value_research_priority_v2
         options = dict(financial_export_path=ROOT / args.financial_export,
             financial_export_sha256=args.financial_export_sha256, enrichment_budget=args.enrichment_budget)
+        if args.public_evidence_bundle is not None:
+            from value_investment_agent.application.research.public_evidence import validate_queue_public_evidence
+            validate_queue_public_evidence(root=ROOT,
+                bundle_path=ROOT / args.public_evidence_bundle,
+                bundle_sha256=args.public_evidence_sha256,
+                financial_export_path=ROOT / args.financial_export,
+                financial_export_sha256=args.financial_export_sha256)
     queue = builder(root=ROOT, report_path=ROOT / args.report,
         report_sha256=args.report_sha256, receipt_path=ROOT / args.receipt,
         receipt_sha256=args.receipt_sha256, budget=args.budget,

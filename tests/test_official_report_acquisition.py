@@ -1,5 +1,6 @@
 """TEST_ONLY transport; actual originals are validated by an opt-in live run."""
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from email.utils import format_datetime
 import hashlib
 import json
 import os
@@ -345,7 +346,7 @@ def test_pdf_connection_failure_keeps_partial_then_retries_once(tmp_path, transp
     assert packet['source']['path'].endswith('original-retry-2.pdf')
 
 
-@pytest.mark.parametrize('status,expected', [(403, 1), (429, 1), (503, 2)])
+@pytest.mark.parametrize('status,expected', [(403, 1), (429, 2), (503, 2)])
 def test_http_retry_budget_and_access_denial(tmp_path, transport, monkeypatch, status, expected):
     calls = []
 
@@ -360,6 +361,168 @@ def test_http_retry_budget_and_access_denial(tmp_path, transport, monkeypatch, s
         acquire(tmp_path)
     assert len(calls) == expected
     assert json.loads((tmp_path / 'runtime/new/failure.json').read_bytes())['status'] == 'FAILED'
+
+
+def http_failure(status, retry_after=None):
+    response = requests.Response()
+    response.status_code = status
+    if retry_after is not None:
+        response.headers['Retry-After'] = retry_after
+    return requests.HTTPError('TEST_ONLY', response=response)
+
+
+@pytest.mark.parametrize('kind', ['INDEX', 'PDF'])
+@pytest.mark.parametrize('status', [429, 500, 503, 599])
+def test_retry_after_waits_before_second_request_and_keeps_receipt(tmp_path, transport, monkeypatch, kind, status):
+    owner, name = ((adapter.disclosures, '_request_json') if kind == 'INDEX'
+                   else (adapter, 'download_official_pdf'))
+    native = getattr(owner, name)
+    calls, sleeps = [], []
+    monkeypatch.setattr(adapter.time, 'sleep', sleeps.append)
+
+    def request(*args, **kwargs):
+        calls.append(1)
+        if len(calls) == 1:
+            raise http_failure(status, '2')
+        assert sleeps == [2.0]  # Must wait before making another request.
+        return native(*args, **kwargs)
+
+    monkeypatch.setattr(owner, name, request)
+    packet = acquire(tmp_path)
+    assert len(calls) == (3 if kind == 'INDEX' else 2)  # Two distinct index queries.
+    failed = [row for row in packet['request_attempts'] if row['status'] == 'FAILED']
+    assert len(failed) == 1
+    assert failed[0]['retry_after'] == '2' and failed[0]['retry_status'] == 'RETRY_SCHEDULED'
+    assert packet['action'] == 'no_order' and packet['strict_historical_pit'] is False
+    assert packet['historical_available_at'] is None and packet['formal_eligibility'] is False
+    assert packet['source']['available_at'] == packet['fetched_at']
+    if kind == 'PDF':
+        assert packet['source']['path'].endswith('original-retry-2.pdf')
+    monkeypatch.setattr(adapter, 'validate_pdf_original', lambda _: None)
+    monkeypatch.setattr(adapter.disclosures, '_request_json', lambda *a, **k: pytest.fail('cache did HTTP'))
+    assert retained(tmp_path, receipt_binding(tmp_path)) == packet
+
+
+@pytest.mark.parametrize('kind', ['INDEX', 'PDF'])
+@pytest.mark.parametrize('header', ['6', '3600', '-1', '1.5', 'NaN', 'inf', '',
+                                    '1, 2', '9' * 200, '2\r\nX-Test: bad'])
+def test_retry_after_overbudget_or_invalid_fails_without_sleep(tmp_path, transport, monkeypatch, kind, header):
+    calls, sleeps = [], []
+    owner, name = ((adapter.disclosures, '_request_json') if kind == 'INDEX'
+                   else (adapter, 'download_official_pdf'))
+
+    def fail(*args, **kwargs):
+        calls.append(1)
+        raise http_failure(429, header)
+
+    monkeypatch.setattr(owner, name, fail)
+    monkeypatch.setattr(adapter.time, 'sleep', sleeps.append)
+    before = datetime.now(timezone.utc)
+    with pytest.raises(requests.HTTPError):
+        acquire(tmp_path)
+    assert calls == [1] and sleeps == []
+    failure = json.loads((tmp_path / 'runtime/new/failure.json').read_bytes())
+    row = failure['request_attempts'][-1]
+    assert row['http_status'] == 429 and row['wait_seconds'] == 0
+    if header in {'6', '3600'}:
+        assert row['retry_status'] == 'WAIT_BUDGET_EXCEEDED'
+        assert row['retry_after'] == header
+        assert datetime.fromisoformat(row['reopen_at']) >= before + timedelta(seconds=int(header))
+    else:
+        assert row['retry_status'] == 'INVALID_RETRY_AFTER'
+        assert row['reopen_at'] is None
+    assert not (tmp_path / 'runtime/new/receipt.json').exists()
+
+
+@pytest.mark.parametrize('seconds', [-10, 0, 2, 5, 6, 3600])
+def test_http_date_retry_after_lower_bound(monkeypatch, seconds):
+    now = datetime(2026, 10, 30, 12, 0, 0, 250000, tzinfo=timezone.utc)
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return now
+
+    monkeypatch.setattr(adapter, 'datetime', Clock)
+    stamp = now.replace(microsecond=0) + timedelta(seconds=seconds)
+    header = format_datetime(stamp, usegmt=True)
+    plan = adapter._retry_plan(http_failure(503, header), attempt=1, remaining=5)
+    delay = max(0, (stamp - now).total_seconds())
+    assert plan['retry_after_seconds'] == delay
+    assert datetime.fromisoformat(plan['reopen_at']) >= stamp
+    assert plan['retry_status'] == ('WAIT_BUDGET_EXCEEDED' if delay > 5 else 'RETRY_SCHEDULED')
+    assert plan['wait_seconds'] == (0 if delay > 5 else delay)
+
+
+@pytest.mark.parametrize('header', ['Fri, 30 Oct 2026 12:00:00',
+    'Fri, 30 Oct 2026 12:00:00 +0800', 'Sat, 30 Oct 2026 12:00:00 GMT',
+    'Fri, 32 Oct 2026 12:00:00 GMT', ' 2', '２'])
+def test_ambiguous_retry_after_date_or_number_never_retries(header):
+    plan = adapter._retry_plan(http_failure(503, header), attempt=1, remaining=5)
+    assert plan['retry_status'] == 'INVALID_RETRY_AFTER' and plan['wait_seconds'] == 0
+
+
+@pytest.mark.parametrize('kind', ['INDEX', 'PDF'])
+def test_second_http_failure_never_makes_third_attempt(tmp_path, transport, monkeypatch, kind):
+    calls, sleeps = [], []
+    owner, name = ((adapter.disclosures, '_request_json') if kind == 'INDEX'
+                   else (adapter, 'download_official_pdf'))
+
+    def fail(*args, **kwargs):
+        calls.append(1)
+        raise http_failure(503, '2')
+
+    monkeypatch.setattr(owner, name, fail)
+    monkeypatch.setattr(adapter.time, 'sleep', sleeps.append)
+    with pytest.raises(requests.HTTPError):
+        acquire(tmp_path)
+    assert len(calls) == 2 and sleeps == [2.0]
+    failure = json.loads((tmp_path / 'runtime/new/failure.json').read_bytes())
+    row = failure['request_attempts'][-1]
+    assert row['retry_status'] == 'ATTEMPTS_EXHAUSTED' and row['reopen_at']
+
+
+def test_index_and_pdf_share_total_wait_budget(tmp_path, transport, monkeypatch):
+    native = adapter.disclosures._request_json
+    calls, pdf_calls, sleeps = [], [], []
+
+    def query(*args, **kwargs):
+        calls.append(1)
+        if len(calls) == 1:
+            raise http_failure(429, '4')
+        return native(*args, **kwargs)
+
+    def download(*args, **kwargs):
+        pdf_calls.append(1)
+        raise http_failure(503, '2')
+
+    monkeypatch.setattr(adapter.disclosures, '_request_json', query)
+    monkeypatch.setattr(adapter, 'download_official_pdf', download)
+    monkeypatch.setattr(adapter.time, 'sleep', sleeps.append)
+    with pytest.raises(requests.HTTPError):
+        acquire(tmp_path)
+    assert len(calls) == 3 and pdf_calls == [1] and sleeps == [4.0]
+    row = json.loads((tmp_path / 'runtime/new/failure.json').read_bytes())['request_attempts'][-1]
+    assert row['retry_status'] == 'WAIT_BUDGET_EXCEEDED' and row['retry_after'] == '2'
+
+
+def test_captured_index_failure_never_retries(tmp_path, transport, monkeypatch):
+    native = adapter.disclosures._request_json
+    calls, sleeps = [], []
+
+    def query(*args, **kwargs):
+        calls.append(1)
+        native(*args, **kwargs)
+        raise http_failure(503, '1')
+
+    monkeypatch.setattr(adapter.disclosures, '_request_json', query)
+    monkeypatch.setattr(adapter.time, 'sleep', sleeps.append)
+    with pytest.raises(requests.HTTPError):
+        acquire(tmp_path)
+    assert calls == [1] and sleeps == []
+    failure = json.loads((tmp_path / 'runtime/new/failure.json').read_bytes())
+    assert failure['request_attempts'][-1]['retry_status'] == 'RAW_RESPONSE_ALREADY_CAPTURED'
+    assert len(failure['index_bindings']) == 1
 
 
 @pytest.mark.parametrize('kind,period,digest', [

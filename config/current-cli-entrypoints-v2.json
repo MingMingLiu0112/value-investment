@@ -35,7 +35,8 @@
     "scripts/current/register_prospective_research.py",
     "scripts/current/build_prospective_baselines.py",
     "scripts/build_company_valuation_result.py",
-    "scripts/build_m5_disclosure_review_briefing.py"
+    "scripts/build_m5_disclosure_review_briefing.py",
+    "scripts/current/collect_public_evidence.py"
   ],
   "SUPPORTED_ENGINEERING_CLI": [
     "scripts/current/accept_p10_assisted_use.ps1",
@@ -126,9 +127,9 @@
     "scripts/current/verify_m7_product_ux_trial_wps.ps1"
   ],
   "counts": {
-    "product": 26,
+    "product": 27,
     "engineering": 65,
     "internal_helpers": 19,
-    "total": 110
+    "total": 111
   }
 }
