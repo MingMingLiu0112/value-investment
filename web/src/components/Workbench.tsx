@@ -14,6 +14,7 @@ const items = [
   { key: "/portfolio", label: <Link to="/portfolio">我的持仓</Link> },
   { key: "/history", label: <Link to="/history">交易复盘</Link> },
   { key: "/alerts", label: <Link to="/alerts">提醒与待办</Link> },
+  { key: "/project", label: <Link to="/project">架构与进度</Link> },
   {
     key: "/confirmations",
     label: <Link to="/daily#confirmations">需要我确认</Link>,

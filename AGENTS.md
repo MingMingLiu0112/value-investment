@@ -4,6 +4,28 @@ This repository builds an evidence-driven A-share investment research and monito
 
 ## Authority
 
+### User-requested architecture and progress page (2026-10-28)
+
+The latest user task authorizes the existing Web's `/project` page to explain
+both strategy flows and evidence-backed module progress. This is a bounded
+product visibility task, not a new strategy, approval platform, or production
+deployment. The current business plan remains scoped by the user's latest
+instructions; hotspot development is paused while its existing capabilities
+and independent admission path remain visible.
+
+For subsequent module work, use
+`docs/current/project-control-board.md` and the structured page projection in
+`web/src/data/projectControl.ts`. Choose a bounded module deliverable, preserve
+inputs/outputs and exclusions, and update that module's outcomes, gaps,
+acceptance criteria, evidence references and reviewed baseline in the same
+delivery. Keep the existing execution ledger as the execution/evidence history;
+do not introduce a competing roadmap or infer progress from test counts.
+Implementation, business verification, deployment and user acceptance require
+separate evidence. User acceptance needs an explicit attributable confirmation;
+CI and browser-local review notes never grant it. Routine independent engineering
+continues without a new per-module approval ritual. Financial rules, account
+authority, and permanent `action=no_order` boundaries remain unchanged.
+
 Current task selection (2026-10-25): the only active business Goal is
 `DUAL-STRATEGY-RESEARCH-TO-DECISION-CLOSURE-20261023`, selected by
 `docs/current-stage-goal.md` and its linked current execution prompt.
@@ -113,3 +135,4 @@ PostgreSQL is the long-term structured store; runtime JSON is currently an evide
 Protect the server's `web_app_integrated.py` / `web-app-pta` service. Respect memory/concurrency limits and the existing disk reserve; no extra services or duplicate scheduled workers without task scope.
 Keep secrets, raw database dumps, personal accounts and unencrypted backups out of Git. Restores use an isolated database; never overwrite production.
 On Windows use PowerShell 7 at `C:/Users/we/AppData/Local/Programs/PowerShell/7/pwsh.exe`, UTF-8 text and explicit execution paths as needed. Preserve unrelated working-tree changes.
+

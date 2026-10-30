@@ -22,6 +22,7 @@ export default defineConfig({
     { path: "/portfolio", component: "./Portfolio" },
     { path: "/history", component: "./DecisionHistory" },
     { path: "/alerts", component: "./ConditionAlerts" },
+    { path: "/project", component: "./ProjectControl" },
     { path: "/system", component: "./SystemStatus" },
     { path: "/strategy/value", component: "./StrategyArchitecture/Value" },
     { path: "/strategy/hotspot", component: "./StrategyArchitecture/Hotspot" },
