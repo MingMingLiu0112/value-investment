@@ -650,3 +650,111 @@ def test_same_day_exempts_only_empty_interval_gaps(reconciliation, issue, reason
         assert result["reason_codes"] == []
         assert result["status"] == "RECONCILED"
         assert result["closing_shares"] == "100"
+
+
+def test_operating_event_terms_are_research_not_materiality(reconciliation, monkeypatch):
+    from value_investment_agent.infrastructure.filings import operating_event_terms
+    case = reconciliation
+    anchor = case["anchor"]
+    monkeypatch.setattr(operating_event_terms, "parse_operating_event_terms",
+        lambda pages, symbol: dict(published_date="2020-01-01",
+            effective_date="2020-01-02", event_type="TEST_ONLY_OPERATING_PRICE",
+            summary="TEST_ONLY source terms", action="no_order"))
+    window = dict(acquired_at="2020-01-03T00:00:00+00:00",
+        announcements=[dict(announcement_id="123", title="TEST_ONLY",
+            published_at="2020-01-01T00:00:00+08:00",
+            source_url=anchor["source_url"],
+            evidence_refs=[dict(anchor["binding"], source_url=anchor["source_url"])])])
+    rows = service._operating_events(case["analysis"], [window], case["now"],
+        lambda ref: _bound(case["root"], ref))
+    assert rows[0]["status"] == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
+    assert rows[0]["candidate_binding"] == case["analysis"]["review_binding"]["candidate_binding"]
+    assert rows[0]["materiality_approved"] is False
+    assert rows[0]["model_inputs_changed"] is False
+    assert rows[0]["facts"][0]["terms"]["effective_date"] == "2020-01-02"
+    window["announcements"][0]["announcement_id"] = "999"
+    rows = service._operating_events(case["analysis"], [window], case["now"],
+        lambda ref: _bound(case["root"], ref))
+    assert rows[0]["facts"] == []
+    assert "IDENTITY_MISMATCH" in rows[0]["unresolved"][0]["reason"]
+    window["acquired_at"] = "2099-01-01T00:00:00+00:00"
+    with pytest.raises(ValueError, match="ACQUISITION_UNAVAILABLE"):
+        service._operating_events(case["analysis"], [window], case["now"],
+            lambda ref: _bound(case["root"], ref))
+
+
+def test_operating_event_parser_failure_is_not_no_effect(reconciliation, monkeypatch):
+    from value_investment_agent.infrastructure.filings import operating_event_terms
+    case = reconciliation
+    anchor = case["anchor"]
+    def reject(*args, **kwargs):
+        raise ValueError("UNSUPPORTED_LAYOUT")
+    monkeypatch.setattr(operating_event_terms, "parse_operating_event_terms", reject)
+    window = dict(acquired_at="2020-01-03T00:00:00+00:00",
+        announcements=[dict(announcement_id="123", title="TEST_ONLY",
+            published_at="2020-01-01T00:00:00+08:00", source_url=anchor["source_url"],
+            evidence_refs=[dict(anchor["binding"], source_url=anchor["source_url"])])])
+    rows = service._operating_events(case["analysis"], [window], case["now"],
+        lambda ref: _bound(case["root"], ref))
+    assert rows[0]["status"] == "UNSUPPORTED_OR_UNRESOLVED"
+    assert rows[0]["unresolved"][0]["reason"] == "UNSUPPORTED_LAYOUT"
+    assert rows[0]["materiality_approved"] is False
+
+
+def test_operating_event_duplicate_id_conflict_is_not_silently_deduplicated(reconciliation, monkeypatch):
+    from value_investment_agent.infrastructure.filings import operating_event_terms
+    case = reconciliation
+    anchor = case["anchor"]
+    monkeypatch.setattr(operating_event_terms, "parse_operating_event_terms",
+        lambda pages, symbol: dict(published_date="2020-01-01", action="no_order"))
+    event = dict(announcement_id="123", title="TEST_ONLY",
+        published_at="2020-01-01T00:00:00+08:00", source_url=anchor["source_url"],
+        evidence_refs=[dict(anchor["binding"], source_url=anchor["source_url"])])
+    window = dict(acquired_at="2020-01-03T00:00:00+00:00", announcements=[event])
+    read = lambda ref: _bound(case["root"], ref)
+    assert len(service._operating_events(case["analysis"], [window, deepcopy(window)], case["now"], read)) == 1
+    other = deepcopy(window)
+    other["announcements"][0]["evidence_refs"][0]["sha256"] = "f" * 64
+    with pytest.raises(ValueError, match="CONFLICTING_OPERATING_EVENT_IDENTITY"):
+        service._operating_events(case["analysis"], [window, other], case["now"], read)
+
+
+def test_operating_event_available_local_day_is_not_rejected_by_utc_date(reconciliation, monkeypatch):
+    from value_investment_agent.infrastructure.filings import operating_event_terms
+    case = reconciliation
+    anchor = case["anchor"]
+    monkeypatch.setattr(operating_event_terms, "parse_operating_event_terms",
+        lambda pages, symbol: dict(published_date="2020-01-01", action="no_order"))
+    window = dict(acquired_at="2019-12-31T17:00:00+00:00",
+        announcements=[dict(announcement_id="123", title="TEST_ONLY",
+            published_at="2020-01-01T00:00:00+08:00", source_url=anchor["source_url"],
+            evidence_refs=[dict(anchor["binding"], source_url=anchor["source_url"])])])
+    rows=service._operating_events(case["analysis"], [window],
+        datetime.fromisoformat("2019-12-31T18:00:00+00:00"), lambda ref: _bound(case["root"], ref))
+    assert rows[0]["status"] == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
+
+
+@pytest.mark.parametrize("kind", ["standard", "excluded", "unknown"])
+def test_opening_chain_maps_only_supported_distribution_object_contracts(kind):
+    analysis = dict(valuation_date="2020-06-30", consumed_operating_inputs=dict(ordinary_shares="100"),
+        review_binding=dict(candidate_binding=dict(path="TEST_ONLY", sha256="a"*64)))
+    terms = dict(currency="CNY", annual_cash_per_share="2", annual_total_cash_cny="200",
+        eligible_distribution_shares="100")
+    rows=[dict(facts=[dict(binding=dict(path="TEST_ONLY",sha256="b"*64),
+        terms=dict(published_date="2020-06-01",event_type="TEST_ONLY_ADJUSTMENT",terms=terms))])]
+    native=dict(currency="CNY",cash_per_share="2",total_gross_cash="200",
+        published_date="2020-06-10",ex_date="2020-06-20",cash_payment_date="2020-06-20")
+    if kind=="standard":
+        native.update(parser_version="sse-explicit-cash-implementation-body-v1",
+            event_kind="EXPLICIT_NONDIFFERENTIAL_CASH_ONLY_IMPLEMENTATION", total_shares="100")
+    else:
+        native.update(parser_version="sse-repurchase-excluded-gross-cash-scheme-v1" if kind=="excluded" else "UNKNOWN",
+            eligible_distribution_shares="100")
+    reconciliation=dict(distributions=[dict(id="TEST_ONLY_CASH",native_terms=native)])
+    result=service._opening_chain_research(analysis,rows,reconciliation)
+    assert result["distribution_links"][0]["status"] == (
+        "TERMS_NOT_MATCHED" if kind=="unknown" else "MATCHED_PREVALUATION_IMPLEMENTATION_TERMS")
+    assert not result["comparison_date_capital_proven"]
+    native["total_gross_cash"]="201"
+    changed=service._opening_chain_research(analysis,rows,reconciliation)
+    assert changed["distribution_links"][0]["status"]=="TERMS_NOT_MATCHED"

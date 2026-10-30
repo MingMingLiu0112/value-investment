@@ -721,3 +721,80 @@ it("does not present unverified report terms as verified facts or link unsafe or
   expect(visible).not.toContain("半年度预案不分配、不转增");
   expect(visible).not.toContain('href="javascript:');
 });
+
+it("renders source operating terms without admitting current comparison or replacing the draft", () => {
+  const review = alignmentFixture();
+  const check = review.conditional_price!.alignment!.checks!.find(
+    (x) => x.id === "material_events",
+  )!;
+  check.details = {
+    operating_event_research: [
+      {
+        title: "TEST_ONLY 正文调价",
+        published_at: "2026-07-18",
+        status: "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW",
+        facts: [
+          {
+            binding: { path: "TEST_ONLY/price.pdf", sha256: "e".repeat(64) },
+            source_available_at: "2026-10-30",
+            terms: {
+              summary: "零售价与合同价分别披露",
+              implication: "不能替代综合实现价格",
+              effective_date: "2026-07-18",
+              affected_model_fields: ["revenue"],
+              limitations: ["TEST_ONLY 非批准"],
+            },
+          },
+        ],
+        materiality_approved: false,
+        model_inputs_changed: false,
+      },
+    ],
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("零售价与合同价分别披露");
+  expect(html).toContain("不能替代综合实现价格");
+  expect(html).toContain("候选输入未自动改写");
+  expect(html).toContain("100.00");
+  expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
+});
+
+it("shows an unresolved event as unknown rather than no impact", () => {
+  const review = alignmentFixture();
+  review.conditional_price!.alignment!.checks![3].details = {
+    operating_event_research: [
+      {
+        title: "TEST_ONLY unknown",
+        status: "UNSUPPORTED_OR_UNRESOLVED",
+        facts: [],
+      },
+    ],
+  };
+  expect(
+    renderToStaticMarkup(<CandidatePriceDraft review={review} />),
+  ).toContain("不能仅凭标题认定无影响");
+});
+
+it("separates opening authorization from executed distribution", () => {
+  const review = alignmentFixture();
+  review.conditional_price!.alignment!.checks![1].details = {
+    opening_action_research: [
+      {
+        title: "TEST_ONLY opening",
+        status: "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW",
+        facts: [
+          {
+            terms: {
+              summary: "中期分配授权，不是确定方案",
+              implication: "后续事项须跟踪",
+            },
+          },
+        ],
+      },
+    ],
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("期初行动与分配授权");
+  expect(html).toContain("中期分配授权，不是确定方案");
+  expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
+});

@@ -574,6 +574,121 @@ def _event_windows(root, analysis, refs, now, read):
     return windows, scans
 
 
+
+def _operating_events(analysis, windows, now, read, *, parser=None):
+    """Read official originals into research facts, never grant materiality."""
+    from ...infrastructure.filings.pdf_text import extract_pages
+    from ...infrastructure.filings.official_pdf import validate_pdf_original
+    from ...infrastructure.filings.operating_event_terms import parse_operating_event_terms
+    from ...quote_sessions import CHINA
+    parser = parser or parse_operating_event_terms
+    rows = []
+    seen = {}
+    for window in windows:
+        acquired = datetime.fromisoformat(window["acquired_at"])
+        if acquired.utcoffset() is None or acquired > now:
+            raise ValueError("OPERATING_EVENT_ACQUISITION_UNAVAILABLE")
+        for event in window["announcements"]:
+            identity = event["announcement_id"]
+            fingerprint = (event["published_at"], event["title"],
+                tuple(sorted((ref["sha256"], ref["source_url"]) for ref in event["evidence_refs"])))
+            if identity in seen:
+                if seen[identity] != fingerprint:
+                    raise ValueError("CONFLICTING_OPERATING_EVENT_IDENTITY")
+                continue
+            seen[identity] = fingerprint
+            facts, unresolved = [], []
+            for source in event["evidence_refs"]:
+                binding = dict(path=source["path"], sha256=source["sha256"])
+                try:
+                    url = urlparse(source["source_url"])
+                    if (url.scheme != "https" or url.hostname != "static.cninfo.com.cn"
+                            or not re.fullmatch(r"/finalpage/\d{4}-\d{2}-\d{2}/\d+\.PDF", url.path, re.I)
+                            or url.path.rsplit("/", 1)[1].split(".")[0] != identity):
+                        raise ValueError("OPERATING_EVENT_OFFICIAL_IDENTITY_MISMATCH")
+                    published = _day(url.path.split("/")[2])
+                    if (published > now.astimezone(CHINA).date() or published > acquired.astimezone(CHINA).date()
+                            or published != datetime.fromisoformat(event["published_at"]).date()):
+                        raise ValueError("OPERATING_EVENT_PUBLICATION_MISMATCH")
+                    original = read(binding)
+                    validate_pdf_original(original)
+                    terms = parser(extract_pages(original), symbol=analysis["symbol"])
+                    if terms["published_date"] != published.isoformat():
+                        raise ValueError("OPERATING_EVENT_DOCUMENT_DATE_MISMATCH")
+                    facts.append(dict(binding=binding, source_url=source["source_url"],
+                        source_available_at=window["acquired_at"], terms=terms))
+                except (ValueError, KeyError, TypeError, OSError, ArithmeticError) as error:
+                    unresolved.append(dict(binding=binding, reason=str(error)))
+            rows.append(dict(announcement_id=identity, title=event["title"],
+                published_at=event["published_at"], source_url=event["source_url"],
+                status="SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW" if facts else "UNSUPPORTED_OR_UNRESOLVED",
+                facts=facts, unresolved=unresolved,
+                candidate_binding=deepcopy(analysis["review_binding"]["candidate_binding"]),
+                input_descriptor_sha256=analysis["input_descriptor_sha256"],
+                model_inputs_changed=False, materiality_approved=False, action="no_order"))
+    return rows
+
+
+
+def _opening_chain_research(analysis, rows, reconciliation):
+    """Reconcile named observed actions only; never certify an empty universe."""
+    start = _day(analysis["valuation_date"])
+    shares = Decimal(analysis["consumed_operating_inputs"]["ordinary_shares"])
+    confirmations, authorizations, annual = [], [], []
+    for row in rows:
+        for fact in row["facts"]:
+            parsed = fact["terms"]
+            terms = parsed["terms"]
+            if _day(parsed["published_date"]) > start:
+                continue
+            if "confirmed_cancellation_date" in terms:
+                confirmations.append(dict(evidence_binding=fact["binding"],
+                    effective_date=terms["confirmed_cancellation_date"],
+                    capital_as_of=terms["capital_as_of"], cancelled_shares=terms["cancelled_shares"],
+                    issued_shares=terms["issued_shares"], treasury_shares=terms["treasury_shares"],
+                    matches_consumed_opening_shares=Decimal(terms["issued_shares"]) == shares,
+                    completed_before_valuation=_day(terms["confirmed_cancellation_date"]) <= start))
+            if terms.get("authorization_status") == "CONDITIONAL_AUTHORIZATION_REQUIRES_FOLLOW_UP":
+                authorizations.append(dict(evidence_binding=fact["binding"],
+                    authorization_text=terms["authorization_text"],
+                    amount_cap_text=terms["amount_cap_text"],
+                    scheme_determined=False, cash_obligation_established=False,
+                    follow_up_status="SUBSEQUENT_SCHEME_IMPLEMENTATION_OR_REVOCATION_NOT_RECONCILED"))
+            if "annual_cash_per_share" in terms:
+                for cash in (reconciliation or {}).get("distributions", []):
+                    implementation = cash.get("native_terms")
+                    if implementation is None:
+                        continue
+                    if implementation.get("parser_version") == "sse-repurchase-excluded-gross-cash-scheme-v1":
+                        eligible_shares = implementation["eligible_distribution_shares"]
+                    elif (implementation.get("parser_version") == "sse-explicit-cash-implementation-body-v1"
+                            and implementation.get("event_kind") == "EXPLICIT_NONDIFFERENTIAL_CASH_ONLY_IMPLEMENTATION"):
+                        eligible_shares = implementation["total_shares"]
+                    else:
+                        eligible_shares = None
+                    matches = (eligible_shares is not None
+                        and terms["currency"] == implementation["currency"] == "CNY"
+                        and Decimal(terms["annual_cash_per_share"]) == Decimal(implementation["cash_per_share"])
+                        and Decimal(terms["annual_total_cash_cny"]) == Decimal(implementation["total_gross_cash"])
+                        and Decimal(terms["eligible_distribution_shares"]) == Decimal(eligible_shares)
+                        and _day(parsed["published_date"]) <= _day(implementation["published_date"])
+                        and _day(implementation["ex_date"]) <= start
+                        and _day(implementation["cash_payment_date"]) <= start)
+                    annual.append(dict(source_binding=fact["binding"],
+                        event_type=parsed["event_type"], implementation_id=cash["id"],
+                        annual_cash_per_share=terms["annual_cash_per_share"],
+                        annual_total_cash_cny=terms["annual_total_cash_cny"],
+                        status="MATCHED_PREVALUATION_IMPLEMENTATION_TERMS" if matches else "TERMS_NOT_MATCHED",
+                        price_deduction_applied="0", payment_receipt_proven=False,
+                        accounting_one_cent_difference_resolved=False))
+    return dict(status="KNOWN_ACTIONS_PARTIALLY_RECONCILED" if confirmations or annual or authorizations else "NO_SUPPORTED_OPENING_ACTION",
+        candidate_binding=deepcopy(analysis["review_binding"]["candidate_binding"]),
+        valuation_date=start.isoformat(), confirmations=confirmations,
+        distribution_links=annual, outstanding_authorizations=authorizations,
+        complete_opening_action_coverage=False, comparison_date_capital_proven=False,
+        formal_eligibility=False, action="no_order")
+
+
 def _materiality(root, analysis, ref, windows, scans, now, read):
     """Consume the existing signed packet; never create an approval or transport."""
     from ...event_materiality import event_materiality_review_from_payload
@@ -807,6 +922,27 @@ def load_pending_candidate_alignment(*, root, analysis, now):
         if event_error:
             checks[3]["reason_codes"].append(event_error)
             ready = False
+        # Official event terms are a separate research result. A parser success
+        # neither changes frozen assumptions nor signs the materiality review.
+        operating_events = _operating_events(analysis, windows, now, read)
+        checks[3]["details"]["operating_event_research"] = operating_events
+        from ...infrastructure.filings.opening_action_terms import parse_opening_action_terms
+        opening_actions = _operating_events(analysis, source_windows, now, read,
+            parser=parse_opening_action_terms)
+        opening_chain = _opening_chain_research(analysis, opening_actions, reconciliation)
+        for index in (1, 2):
+            checks[index]["details"]["opening_action_research"] = opening_actions
+            checks[index]["details"]["opening_action_chain"] = opening_chain
+            if opening_chain["outstanding_authorizations"]:
+                checks[index]["reason_codes"].append("INTERIM_DISTRIBUTION_AUTHORIZATION_FOLLOWUP_NOT_RECONCILED")
+                checks[index]["status"] = "BLOCKED"
+                ready = False
+        if opening_chain["outstanding_authorizations"]:
+            followup_blockers = list(dict.fromkeys([*validity.blockers,
+                "INTERIM_DISTRIBUTION_AUTHORIZATION_FOLLOWUP_NOT_RECONCILED"]))
+            validity = replace(validity, status="UNKNOWN" if validity.status == "VALID" else validity.status,
+                blockers=followup_blockers)
+            bridge = bridge_with_quote(valuation, validity, quote, blockers=followup_blockers)
         result.update(checks=checks, model_validity=json.loads(validity.to_json()),
             price_bridge=json.loads(bridge.to_json()), currentpricecomparison=ready,
             status="ALIGNED_FOR_RESEARCH_COMPARISON" if ready else "BLOCKED",
@@ -816,6 +952,11 @@ def load_pending_candidate_alignment(*, root, analysis, now):
             _, again = _qualified_quote(root, analysis, config["quote_bundle_binding"], now, read)
             if again != result["quote"]:
                 raise ValueError("QUOTE_CHANGED_DURING_ALIGNMENT")
+        if opening_actions != _operating_events(analysis, source_windows, now, read,
+                parser=parse_opening_action_terms):
+            raise ValueError("OPENING_ACTION_TERMS_CHANGED_DURING_READ")
+        if operating_events != _operating_events(analysis, windows, now, read):
+            raise ValueError("OPERATING_EVENT_TERMS_CHANGED_DURING_READ")
         if scans:
             again, _ = _event_windows(root, analysis, config["event_observation_bindings"], now, read)
             if again != windows:

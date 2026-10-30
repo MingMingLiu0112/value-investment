@@ -345,7 +345,21 @@ function CandidateAlignment({ review }: { review: Review }) {
             )[text(check.status)] || "状态待核"}
             <p>{text(check.explanation, "未提供检查说明。")}</p>
             <CheckReconciliation id={check.id} details={check.details} />
+            {check.id === "distributions" && object(check.details) && (
+              <OpeningActionChain value={check.details.opening_action_chain} />
+            )}
+            {check.id === "capital_structure" && object(check.details) && (
+              <OperatingEventResearch
+                value={check.details.opening_action_research}
+                opening
+              />
+            )}
             <CheckInputSources id={check.id} details={check.details} />
+            {check.id === "material_events" && object(check.details) && (
+              <OperatingEventResearch
+                value={check.details.operating_event_research}
+              />
+            )}
             <details>
               <summary>检查原因代码</summary>
               <Reasons value={check.reason_codes} />
@@ -851,6 +865,137 @@ function CheckReconciliation({
       <p>
         此合计按除息日期计算，包含尚待支付的权益，不代表现金已到账，也不证明全期间完整覆盖；即使为0，也不能据此认定实际期间无分红。
       </p>
+    </section>
+  );
+}
+
+function OperatingEventResearch({
+  value,
+  opening = false,
+}: {
+  value: unknown;
+  opening?: boolean;
+}) {
+  const rows = Array.isArray(value) ? value.filter(object) : [];
+  if (!rows.length) return null;
+  return (
+    <section
+      aria-label={opening ? "期初行动与分配授权" : "公告对经营假设的影响"}
+    >
+      <h6>
+        {opening
+          ? "期初行动与分配授权 · 已完成与待跟踪分开"
+          : "公告对经营假设的影响 · 原件事实与研究结论分开"}
+      </h6>
+      <p>
+        下列金额、日期和事项从公告正文重新提取。已读出事实不等于当前候选已吸收影响，
+        不自动修改预测、不代签材料性复核，也不把历史条件参考价升级为当前买价。
+      </p>
+      {rows.map((row, index) => {
+        const facts = Array.isArray(row.facts) ? row.facts.filter(object) : [];
+        return (
+          <article key={index}>
+            <h6>
+              {text(row.title)} · {text(row.published_at)}
+            </h6>
+            {row.status === "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW" &&
+            facts.length ? (
+              facts.map((fact, i) => {
+                const terms = object(fact.terms) ? fact.terms : {};
+                return (
+                  <div key={i}>
+                    <p>
+                      原件事实：{text(terms.summary, "原件字段见下方明细。")}
+                    </p>
+                    <p>
+                      候选影响待核：
+                      {text(
+                        terms.implication,
+                        "须复核本候选经营假设及现金路径，尚未认定已吸收。",
+                      )}
+                    </p>
+                    <p>
+                      生效日期：
+                      {text(
+                        terms.effective_date,
+                        "未披露明确生效日；不以公告日期代替。",
+                      )}
+                      ；取得时间：{text(fact.source_available_at)}。
+                    </p>
+                    <Reasons value={terms.affected_model_fields} />
+                    <Reasons value={terms.limitations} />
+                    <details>
+                      <summary>原件字段、页码与摘录</summary>
+                      <pre
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {JSON.stringify(terms, null, 2)}
+                      </pre>
+                    </details>
+                    <AlignmentEvidence value={[fact.binding]} />
+                  </div>
+                );
+              })
+            ) : (
+              <p>尚未匹配可核验的正文语义消费者，不能仅凭标题认定无影响。</p>
+            )}
+            <p>候选输入未自动改写；材料性未获批准。action=no_order。</p>
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
+function OpeningActionChain({ value }: { value: unknown }) {
+  if (!object(value)) return null;
+  const confirmations = Array.isArray(value.confirmations)
+    ? value.confirmations.filter(object)
+    : [];
+  const links = Array.isArray(value.distribution_links)
+    ? value.distribution_links.filter(object)
+    : [];
+  const pending = Array.isArray(value.outstanding_authorizations)
+    ? value.outstanding_authorizations.filter(object)
+    : [];
+  return (
+    <section aria-label="已知期初行动对账">
+      <h6>已知期初行动对账 · 不等于当前完整股本链</h6>
+      {confirmations.map((row, i) => (
+        <p key={i}>
+          原件确认注销日期：{text(row.effective_date)}； 注销{" "}
+          {text(row.cancelled_shares)} 股，公告时总股数{" "}
+          {text(row.issued_shares)} 股；
+          {row.matches_consumed_opening_shares === true
+            ? "与估值已消费期初股数一致"
+            : "与已消费期初股数未核对一致"}
+          。 这不是当前股本证明。
+        </p>
+      ))}
+      {links.map((row, i) => (
+        <p key={i}>
+          年度分配每股 {text(row.annual_cash_per_share)} 元、总额{" "}
+          {text(row.annual_total_cash_cny)} 元：
+          {row.status === "MATCHED_PREVALUATION_IMPLEMENTATION_TERMS"
+            ? "与估值前实施公告金额及对象股数一致"
+            : "尚未匹配实施条款"}
+          ； 不重复扣减，不证明个人到账，也未消除中报一分钱差异。
+        </p>
+      ))}
+      {pending.map((row, i) => (
+        <div key={i}>
+          <p>{text(row.authorization_text)}</p>
+          <p>
+            仍待后续方案、实施或撤销核验；授权不是已定分红，也不是确定现金义务。
+          </p>
+        </div>
+      ))}
+      {!confirmations.length && !links.length && !pending.length && (
+        <p>尚无受支持原件可以完成该项对账。</p>
+      )}
     </section>
   );
 }

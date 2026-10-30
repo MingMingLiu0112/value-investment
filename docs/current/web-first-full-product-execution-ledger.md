@@ -6657,3 +6657,40 @@ date-fix direct and related tests: 119 passed. API regression: 346 passed,
 existing companies; CI-only skips are not counted as real-source acceptance.
 Final clean-checkout and Core/Web run identities are stored with the release
 receipt in .tmp/value-distribution-acceptance/, alongside live page screenshots.
+
+### 2026-10-30 current basis and operating-event continuation
+
+Baseline f544e24a; preserve the user's current research pointer. Scope: native
+capital/distribution evidence recovery, bounded official operating-event terms,
+exact-candidate impact follow-up, and existing unapproved price policy consumption.
+Do not weaken the cross-date, materiality or quote gates. Official event terms
+are source facts, not automatic revisions of frozen economic assumptions.
+Existing draft thresholds remain tied to their original basis and fixed expiry.
+Source acquisition, real replay, browser and CI receipts are retained under
+.tmp/value-basis-oct30/. No private data or formal approvals are changed.
+
+Real opening acquisition: runtime/value-opening-action-observation/20261030T055129707003Z/
+observation.json, acquired 2026-10-30T05:51:33Z, nine announcements in May27-Jun12.
+Native June3 terms confirm May28 cancellation of 2,188,614 shares and issued
+1,250,081,601 shares, matching the consumed opening anchor. Annual adjustment
+and June11 approval both reconcile with the retained June22 implementation's
+28.02423 CNY/share, 1,250,081,601 eligible shares and 35,032,574,305.19 CNY.
+This does not resolve the interim-report 0.01 CNY discrepancy or prove receipt.
+The shareholder resolution also contains conditional interim distribution
+authority: no fixed scheme/payment amount, no expiry asserted, follow-up remains
+unresolved. Empty opening-action state is not claimed.
+
+Three original operating announcements now replay body terms: July18 distinct
+retail/contract price changes; August13 internal asset-transfer resolution, not
+completion; accounting-policy effects as issuer statements, not independent
+materiality approval. These are tied to the exact candidate and model follow-up,
+not automatically inserted into its frozen economic assumptions.
+Independent review defects (contradictory votes and standard distribution share
+field mapping) are fixed with direct negative tests. Unknown layouts stay unknown.
+
+Existing unapproved dated price proposal remains 675.1019318 / 930.0062820 CNY,
+June30 basis; no current low-valuation conclusion or formal action is produced.
+Still missing: comparison-date capital/continuous actions, interim-authority
+follow-up, complete period distribution inclusion and exact materiality review.
+Source terms, known-action reconciliation, API and Web are delivered; full
+current-price alignment is NOT COMPLETE. Receipt directory .tmp/value-basis-oct30/.

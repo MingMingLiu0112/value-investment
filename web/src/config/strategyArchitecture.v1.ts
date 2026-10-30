@@ -194,7 +194,7 @@ export const catalog: Record<
           "src/value_investment_agent/application/research/pending_candidate_alignment.py",
         ],
         implementation:
-          "候选绑定的未批准提案已接入逐项对齐展示：独立行情、股本、期间分配、重大事件、新财报及模型/价格桥接；当前价格对齐与G3仍待完成。",
+          "候选绑定的未批准提案与五项对齐检查分开；新增原件正文消费者区分实际注销、分配授权、销售合同调价及内部划转决议，不能把原件事实自动升级为当前模型有效或交易资格。",
         milestone:
           "候选绑定的未批准价格提案已实现（交付说明）；当前价格对齐与G3待完成。",
         evidence:
@@ -203,7 +203,7 @@ export const catalog: Record<
           "未批准提案不是当前买价，不代表currentbuy ready，不产生仓位或订单。",
         ruleWhy: "估值日的条件数字不能直接当作当前操作价。",
         existingEvidence:
-          "2026-10-30原件重放：中报股本1,250,081,601股、回购注销2,188,614股及半年度不分配预案已进入消费链；分红总额与实施公告相差0.01元，保留对账缺口。10/29双源收盘1354.00元独立核验，675.10/930.01元仍是6/30条件研究参考线。",
+          "2026-10-30补证：6/3原件确认5/28注销，6/11股东会含中期分配授权（不是实施）。经营调价与平台划转按正文提取、逐项列出候选待核影响。0.01元差异不抹平；675.10/930.01元仍为6/30未批准研究参考线，不是当前买卖价。",
         nextStep:
           "补齐比较日期股本锚及行动连续性、期间分配内含关系；v4已能生成当前候选未签署事件复核材料，调价、会计政策和平台划转仍待实质复核。不重复扣6/26分红，不以完整扫描代替重大性批准。",
         evidenceSource:
@@ -211,7 +211,7 @@ export const catalog: Record<
         dependencies: ["value_valuation"],
         engineeringStatus: "部分接通",
         evidenceStatus: "真实算术已核",
-        shortStatus: "中报字段已消费 · v4事件复核已接通 · 跨日连续性待补",
+        shortStatus: "期初注销与分配授权 · 公告经营影响已消费 · 当前口径待核",
       },
       {
         id: "shared_rule_approval",

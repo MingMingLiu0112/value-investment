@@ -24,6 +24,10 @@
     {
       "path": "runtime/value-alignment-event-observation/20261029T151049397794Z/observation.json",
       "sha256": "82d7cbcc9b33e551d5d6b1a97adb85aec85aed1fd6cdd168e54401fd5869df1b"
+    },
+    {
+      "path": "runtime/value-opening-action-observation/20261030T055129707003Z/observation.json",
+      "sha256": "992c79dd192073b58d8d17a5e851c3fc032ce25771da2ef31580bde4dbc0e7fc"
     }
   ]
 }
