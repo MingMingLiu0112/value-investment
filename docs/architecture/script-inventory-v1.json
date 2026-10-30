@@ -5,8 +5,8 @@
   "current_entrypoint_count": 43,
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 0,
-    "CURRENT_PRODUCT_CLI": 27,
-    "CURRENT_RESEARCH_CLI": 226,
+    "CURRENT_PRODUCT_CLI": 26,
+    "CURRENT_RESEARCH_CLI": 227,
     "HISTORICAL_VALIDATION_TOOL": 57,
     "COMPANY_RESEARCH_CASE_TOOL": 218,
     "MIGRATION_TOOL": 13,
@@ -7904,7 +7904,7 @@
     },
     {
       "path": "scripts/current/collect_public_evidence.py",
-      "category": "CURRENT_PRODUCT_CLI",
+      "category": "CURRENT_RESEARCH_CLI",
       "current_consumers": [
         "config/current-cli-entrypoints-v2.json"
       ],
