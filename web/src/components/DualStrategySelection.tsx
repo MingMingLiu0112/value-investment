@@ -52,6 +52,16 @@ const states: Record<string, string> = {
   SPECIALIZED_RESEARCH_REQUIRED: "需行业专用研究",
   GENERAL_RESEARCH: "一般企业研究",
 };
+export const valueChannelName = (channel: string): string =>
+  (
+    ({
+      quality: "质量",
+      dividend_cash_return: "现金回报",
+      value: "价值",
+      cyclical: "周期",
+    }) as Record<string, string>
+  )[channel] || channel;
+
 const dataStates: Record<string, string> = {
   STALE: "历史快照已过期，不能作为当前结构结论",
   CURRENT: "来源已核验",
@@ -244,7 +254,7 @@ function SelectionPool({ mode }: { mode: "value" | "hotspot" }) {
       <h2>{title}</h2>
       <p>
         {mode === "value"
-          ? "全市场 → 来源核验 → 多通道初筛 → 财务观察 → 研究优先队列 → 公司研究与适用估值 → 人工复核"
+          ? "已覆盖市场 → 来源核验 → 多通道初筛 → 财务观察 → 研究优先队列 → 公司研究与适用估值 → 人工复核"
           : "完整交易日 → 行业活跃度与流动性 → 跨行业候选池 → 已完成多周期结构 → 策略验证与账户风控 → 人工复核"}
       </p>
       {mode === "value" && (
@@ -293,6 +303,20 @@ function SelectionPool({ mode }: { mode: "value" | "hotspot" }) {
             ? `覆盖 ${count.universe_count ?? 0} 家；财务观察 ${count.observation_count ?? 0} 项；研究队列 ${count.research_queue_count ?? 0} 家；正式事实准入 ${count.official_fact_admission_count ?? 0} 家。本页展示 ${lane.items.length} 家，筛选范围共 ${lane.pagination?.total ?? lane.items.length} 家。`
             : `本次来源市场 ${count.market_securities ?? 0} 家（非官方全 A 覆盖认证）；候选池 ${count.candidate_pool ?? 0} 家；已评估 ${count.evaluated ?? 0} 家；入选 ${count.selected ?? 0} 家；排除 ${count.excluded ?? 0} 家；资料不足 ${count.unknown ?? 0} 家；待确认 ${count.pending_confirmation ?? 0} 家。`}
       </p>
+      {mode === "value" && (
+        <p>
+          {lane.screening_scope
+            ? lane.screening_scope.all_a_complete
+              ? "官方全 A 覆盖已核验"
+              : "部分市场覆盖（非全 A）：已覆盖 " +
+                lane.screening_scope.covered_venues.join("、") +
+                "；缺失 " +
+                (lane.screening_scope.failed_venues.join("、") || "未提供") +
+                "。"
+            : "市场覆盖范围未核验，不能宣称全 A 覆盖。"}
+          四通道仅为初筛线索与研究排序；ROIC、正常化盈利和分红持续性尚需独立研究。
+        </p>
+      )}
       {unavailable && <Button onClick={result.retry}>重新核验选股来源</Button>}
       <Input.Search
         aria-label={`搜索${title}`}
@@ -354,7 +378,8 @@ function SelectionPool({ mode }: { mode: "value" | "hotspot" }) {
                           ["PASS", "BUDGET_EXCLUDED"].includes(item.status),
                         )
                         .map(
-                          (item) => `${item.channel}：${explain(item.reason)}`,
+                          (item) =>
+                            `${valueChannelName(item.channel)}：${explain(item.reason)}`,
                         )
                         .join("；") || "财务观察进入研究优先队列，尚待深度研究"
                     : row.reasons?.map(explain).join("；") ||
@@ -462,7 +487,7 @@ function SelectionPool({ mode }: { mode: "value" | "hotspot" }) {
                     <ul>
                       {row.channel_evaluations?.map((item) => (
                         <li key={item.channel}>
-                          {item.channel} · {item.status} ·{" "}
+                          {valueChannelName(item.channel)} · {item.status} ·{" "}
                           {explain(item.reason)}
                         </li>
                       ))}

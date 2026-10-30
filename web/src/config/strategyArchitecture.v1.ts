@@ -94,29 +94,33 @@ export const catalog: Record<
         modules: [
           "src/value_investment_agent/application/discovery/value_candidate_selection.py",
         ],
-        engineeringStatus: "正确性缺陷待修",
-        evidenceStatus: "源码定位／业务待验",
+        engineeringStatus: "初筛、调度与限定事实消费已验证",
+        evidenceStatus: "真实来源重放、公开获取与接口验收已完成",
         shortStatus:
-          "已确认：预算截断可能覆盖报价CONFLICT，下游可误入研究队列；不是自动获得交易资格",
+          "四通道初筛与排序已验；两条离线调度失败、新增事实0；公开获取后重试成功消费2项资产负债率事实",
         implementation:
-          "四通道与研究优先级入口存在；已定位预算/冲突状态混写缺陷",
-        milestone: "部分接通；不代表正式研究准入或实盘资格。",
+          "保留日期原件重放→四通道初筛→排序→预算队列→官方获取→限定事实冷读消费；现有接口透传已核验市场范围",
+        milestone: "初筛与限定事实消费已验证；经济研究与正式资格未完成。",
         existingEvidence:
-          "四通道与研究优先级入口存在；已定位预算/冲突状态混写缺陷",
+          "5224家沪深观察范围；质量0／现金回报50／价值50／周期50；补证111条、预算2；000151/000498各消费1项资产负债率，深度研究0",
         evidenceSource:
-          "d01923cd: m2_discovery_engine.py:734/866；application/discovery/value_candidate_selection.py:157/173；domain/discovery/value_candidate_selection.py:91；独立只读复核，未声称真实触发数量",
+          "runtime/b-real-acceptance-20261030/receipt.json；runtime/b-real-acceptance-20261030-public-retry/consumer-acceptance.json（限定事实冷读消费）；现有接口验收",
         evidence:
-          "已确认：预算截断可能覆盖报价CONFLICT，下游可误入研究队列；不是自动获得交易资格",
-        nextStep: "关闭队列准入状态混写并核验真实入池理由",
+          "行情2026-10-23（供应商交易日未独立核验），筛选2026-10-25；历史保留研究，非当前刷新；北交所缺失、非全A；报价CONFLICT按原始来源保留并阻断入队",
+        nextStep:
+          "继续核验各通道经营与经济证据；新增资产负债率不代表完整债务、企业质量或估值准入",
         ruleWhy: "不同企业的价值线索不同；低PE和高股息都可能是陷阱。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
-          consumer: "已有消费者／部分链路",
-          realData: "本轮未验真实业务",
-          economic: "不适用或由下游独立准入",
-          deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
-          acceptance: "用户尚未确认此版本",
+          consumer:
+            "初筛、排序及预算调度已验；两条离线任务失败；官方获取后限定事实消费2项成功",
+          realData:
+            "历史初筛5224家、非全A；离线失败新增事实0；公开获取后新增2项限定事实，保留实际获取时间",
+          economic:
+            "初筛线索不证明ROIC、正常化盈利或分红持续性；资产负债率仅按窄方法核验",
+          deployment: "发布身份与浏览器验收单独记录；历史数据日期不随发布滚动",
+          acceptance: "用户尚未确认最终验收；action=no_order",
         },
         channels: [
           {

@@ -70,6 +70,13 @@ export interface SelectionRow {
   };
 }
 export interface SelectionLane {
+  screening_scope?: {
+    all_a_complete: boolean;
+    covered_venues: string[];
+    failed_venues: string[];
+    scope: string;
+    status: string;
+  };
   pagination?: { offset: number; limit: number; total: number | null };
   items: SelectionRow[];
   shortlist: SelectionRow[];

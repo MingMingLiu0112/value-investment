@@ -6789,3 +6789,114 @@ or changes to screening/valuation formulas. action=no_order.
 - Final parser acceptance supersedes the preceding intermediate A run: runtime/public-evidence/20261030T110724-accepted/acceptance.json; bundle SHA256 ab4d528f7f30144ac451a33d2326e9d143d7496f4d376a22a8a12800f877034a. Added cross-page parent-equity rejection; real derived amounts unchanged. Minimal public receipt: artifacts/current/public-evidence-a-20261030.json. Earlier bundle retained as history.
 
 - Validation: related backend/API regression 652 passed/10 skipped (optional unrelated retained originals); final direct parser 52 passed including all 3 actual PDFs; final module/architecture group 218 passed/4 optional skips before last cross-blank-page narrow correction; that correction independently rechecked 6 cases. Web baseline full 1320 passed/28 optional skips, final affected UI 45 passed; type/format pass. Final SHA Core/Web CI and local deployment receipt are recorded separately after build.
+
+### 2026-10-30 B actual-source screening, budget queue and Web scope acceptance
+
+User scope: B four-channel cheap screening -> observation sorting -> bounded
+research queue -> actual existing enrichment consumer; existing Web only.
+P2 scope loss repaired by a result-only screening_scope passthrough from
+current_scan's verified summary in application/discovery/value_candidate_selection.py.
+This is the sole B change in that shared file; Volta owns raw conflict P1 and
+M2 budget/CONFLICT work. No thresholds, engine, private pointer, hotspot,
+collection expansion, submission or deployment. action=no_order.
+
+Actual retained pointer manifest:
+runtime/daily-marketwide/g1-restored-20261028-v4/manifest.json,
+SHA256 c0b25d950bef78b880891b0fb3e74c4bf367b1fca38ef98f23d7246d0f79c633.
+All manifest-bound files were hash checked; rebuilding the scoped receipt
+from retained actual source inputs equalled the recorded receipt.
+Original generated_at 2026-10-25T02:35:49.427839Z, as_of 2026-10-25,
+quote_date 2026-10-23 (provider date still unverified); public financial period
+2025-12-31. This is RETAINED_DATED_RESEARCH / NOT_ATTEMPTED refresh,
+not current market data or strict historical PIT.
+
+Actual coverage: 5224 official SSE/SZSE securities; BSE failed, non-all-A.
+Financial observations 50055 across 5222 companies; observation research
+attention list 4647, specialized 119, official fact admission 0.
+Per channel (all evaluated coverage counts 5224):
+- quality: PASS 0, DATA_GAP 5105, UNSUPPORTED 119.
+- cash return: PASS 50, REJECTED 2869, NOT_EVALUATED 1839,
+  BUDGET_EXCLUDED 362, UNSUPPORTED 104.
+- value: PASS 50, REJECTED 3257, DATA_GAP 1420,
+  BUDGET_EXCLUDED 378, UNSUPPORTED 119.
+- cyclical: PASS 50, REJECTED 51, DATA_GAP 672, NOT_EVALUATED 2871,
+  BUDGET_EXCLUDED 1461, UNSUPPORTED 119.
+Exclusions retain absent accepted annual quality fields, unsupported financial
+profiles, missing PE/PB, dividend/yield and cap predicates, sector applicability,
+and channel presentation-budget deferrals; no excluded reason is a trade signal.
+Detailed original reasons remain receipt-bound; current real snapshot contains
+no recorded CONFLICT, so it does not prove P1's conflict counterexample fixed.
+
+Actual v2 queue: 111 evidence-enrichment rows, 0 deep-research rows;
+research budget 10 / enrichment budget 2. Existing executor consumed 000151
+and 000498, both SCREENED -> EVIDENCE_ENRICHING -> DATA_UNAVAILABLE:
+OFFICIAL_ANNUAL_SOURCE_MISSING_OR_AMBIGUOUS. allow_network=false;
+COMPLETED_WITH_GAPS, attempted 2, unprocessed 109, new approvals 0,
+no lawful consumption export. The queue consumption path worked; successful
+official enrichment or economic research is NOT claimed.
+
+Current-worktree FastAPI TestClient (not port 8001) returned 200/no-store,
+4647 observation attention rows, preserved source dates and false formal
+eligibility. After P2 it explicitly returns screening_scope covered SZSE/SSE,
+failed BSE, all_a_complete=false. Pointer bytes remained unchanged.
+Web value pool now names quality/cash return/value/cyclical in Chinese,
+explains partial/unknown scope and preserves complete-scope display;
+hotspot behavior is unchanged. Cheap leads and sorting do not establish
+ROIC, normalized earnings or dividend sustainability.
+
+Evidence (local only; no bulk staging):
+runtime/b-real-acceptance-20261030/receipt.json
+SHA256 1da70fc326c071b0c415d6d37b6109e9bb5f99bae5124a285e8f4095b00a50fe;
+priority.json and consumption/execution.json in same folder.
+Direct backend selection/API/queue/enrichment suite: 60 passed.
+Direct Web component suite: 18 passed. Tests use synthetic fixtures for
+scope corruption/partial/complete/unknown cases; actual-source API results
+are recorded separately above. Initial test setup rejected a non-temp registry
+path; rerun set process TEMP/TMP inside repository .tmp and passed.
+No current-data freshness, all-A completeness, successful fact enrichment,
+economic approval, strategy validity, final user acceptance or deployment claimed.
+
+### 2026-10-30 B bounded public-source retry and successful scoped fact consumption
+
+This supersedes ONLY the earlier missing-original outcome as the final current
+result; original offline failures remain immutable history: scheduling/failed
+receipts passed, two DATA_UNAVAILABLE, zero new facts. They never proved
+successful evidence enrichment or public-source unavailability.
+
+Explicit user authorization: actual selected v2 queue symbols 000151 and 000498,
+FY2025 only, reuse A official acquisition and existing consumers, no fabricated
+ranking or expansion into company economic research. Both rows remain
+SELECTED_FOR_RESEARCH in the original priority.json with enrichment budget 2.
+No queue row, ordering, historical cutoff or private/current pointer changed.
+Requests use those exact rows; no substitute positive company or forged rank.
+
+New immutable output:
+runtime/b-real-acceptance-20261030-public-retry/b-queue-retry.json binds the exact
+original queue and two selected rows to A run_public_evidence's actual requests.
+bundle.json SHA256 220b8a018de574b1a3c6f170de73953748a79546a10e49bd76672e9e8d172761.
+Both official CNINFO FY2025 originals downloaded, index/receipt/original hashes
+retained. 000151 original 1225113085, SHA256
+b4db315e7d836f5608a8ee9979adf779a44bb960da130014acc106be8a5d25b4;
+000498's exact original identity and hash remain in 1/acquisition/receipt.json.
+Both scoped parsers returned SCOPED_FACTS_VERIFIED, one debt_ratio each.
+Then existing consume_retained_enrichment cold-read the same originals,
+recomputed both facts and exactly matched the financial export.
+
+Final successful consumer receipt:
+runtime/b-real-acceptance-20261030-public-retry/consumer-acceptance.json,
+SHA256 b02ec793c3852890214d69cf6170a6c7718a1a87562a454f8a379cf6a828423c.
+000151 debt_ratio 73.7907938132582383464097750150662807557096585873 percent;
+000498 debt_ratio 76.5095900889927492525002155747617888056233894877 percent.
+New scoped facts 2, consumer replay equal true, formal_eligibility false.
+Facts acquired 2026-10-30 around 15:23 UTC, not backfilled into the
+2026-10-25 historical queue cutoff. Debt ratio single-source exact reported
+balance reconciliation is not complete interest-bearing debt or independent
+cross-source verification. Deep-research count remains 0; no ROIC,
+normalized earnings, dividend sustainability or valuation admission claimed.
+
+B page now uses Chinese initial-screen/interface-acceptance language, removes
+internal agent/tool terminology and obsolete conflict-repair next action.
+Root reported combined conflict regression passed; this B receipt does not
+substitute for that separate regression. Production deployment status remains
+pending Root publication and post-release verification. No submission or
+deployment by this worker. action=no_order.

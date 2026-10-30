@@ -10,7 +10,8 @@ from ...domain.discovery.value_candidate_selection import (
     CRITERIA, VERSION, fingerprint, observation_conditions, rank_research_candidates,
 )
 from ...financial_institutions import provisional_financial_type
-from ...m2_discovery_engine import CYCLICAL_SECTORS, M2ScreeningPolicy
+from ...m2_discovery_engine import CYCLICAL_SECTORS, M2ScreeningPolicy, merge_market_snapshots
+from ...m2_market_data import parse_sina_industry, parse_tencent_board
 from ...m2_opportunity_discovery import discovery_receipt_from_payload
 from .current_scan import _bound_json, current_scan_details
 from .public_financial_input import verify_public_supplement
@@ -133,6 +134,21 @@ def select_value_candidates(*, root: Path, manifest_binding: dict, now: datetime
     # Replay the recorded policy, not whatever future defaults happen to be.
     if policy != M2ScreeningPolicy().as_policy():
         raise ValueError('unrecognized M2 policy; explicit adapter required')
+    # Conflict is a source-level fact even when every channel rejects the issuer.
+    # Replay only the exact quote originals consumed by this receipt, using its policy.
+    quote_payloads = {}
+    references = {ref.id: ref for ref in receipt.evidence_refs}
+    for source in ('tencent', 'sina'):
+        reference = references[source]
+        if (reference.sha256 != files[source]['sha256']
+                or (root / reference.path).resolve() != (root / files[source]['path']).resolve()):
+            raise ValueError(source + ' input not consumed by M2 receipt')
+        quote_payloads[source] = _bound_json(root, files[source], base, 150_000_000)
+    _, quote_conflicts = merge_market_snapshots(
+        parse_tencent_board(quote_payloads['tencent']), parse_sina_industry(quote_payloads['sina']),
+        {record.symbol: record for record in receipt.universe.records},
+        quote_date=receipt.quote_date, price_tolerance=M2ScreeningPolicy().price_tolerance)
+    quote_conflicts = set(quote_conflicts)
     points = {}
     for point in financial.get('points', []):
         points.setdefault(point['symbol'], []).append(point)
@@ -170,7 +186,7 @@ def select_value_candidates(*, root: Path, manifest_binding: dict, now: datetime
             profile_status='SPECIALIZED_RESEARCH_REQUIRED' if specialized else 'GENERAL_RESEARCH',
             cycle_status='NORMALIZATION_REQUIRED' if cyclical else 'NOT_CLASSIFIED_CYCLICAL',
             risk_warning='ST' in security.name.upper(),
-            price_conflict=any(entry['status'] == 'CONFLICT' for entry in evaluation.values()),
+            price_conflict=security.symbol in quote_conflicts,
             channels=channels, channel_evaluations=[dict(channel=channel, status=entry['status'],
                 reason=entry['reason'], policy_version=entry.get('policy_version'))
                 for channel, entry in sorted(evaluation.items())],
@@ -198,5 +214,7 @@ def select_value_candidates(*, root: Path, manifest_binding: dict, now: datetime
         blockers=['RESEARCH_PRIORITY_NOT_BUY_SIGNAL', 'PROVIDER_OBSERVATIONS_NOT_SOURCE_VERIFIED',
                   *scan['summary']['blockers']], formal_eligibility=False, buy_eligible=False,
         strategy_validation_status='NOT_GRANTED', action='no_order')
+    if 'screening_scope' in scan['summary']:
+        result['screening_scope'] = scan['summary']['screening_scope']
     result['selection_sha256'] = fingerprint(result)
     return result

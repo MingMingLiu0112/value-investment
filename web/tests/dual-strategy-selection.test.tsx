@@ -5,6 +5,7 @@ vi.mock("../src/hooks/useApi", () => ({ useApi: () => state.value }));
 vi.mock("../src/services/api", () => ({ api: { strategySelection: vi.fn() } }));
 import {
   DualStrategySelection,
+  valueChannelName,
   selectionPriceCondition,
   SwingWaitExplanation,
 } from "../src/components/DualStrategySelection";
@@ -255,3 +256,46 @@ it.each([
   expect(html).toContain("不提供买入或仓位资格");
   expect(html).toContain("热点波段候选池");
 });
+
+it("names value channels and keeps unknown identifiers visible", () => {
+  expect(
+    ["quality", "dividend_cash_return", "value", "cyclical"].map(
+      valueChannelName,
+    ),
+  ).toEqual(["质量", "现金回报", "价值", "周期"]);
+  expect(valueChannelName("future_channel")).toBe("future_channel");
+});
+it.each([false, true, undefined])(
+  "does not present partial or unknown scope as all A: %s",
+  (complete) => {
+    state.value = {
+      data: {
+        value: {
+          items: [],
+          coverage: { universe_count: 5224 },
+          ...(complete === undefined
+            ? {}
+            : {
+                screening_scope: {
+                  status: complete ? "COMPLETE" : "PARTIAL",
+                  scope: "TEST_ONLY",
+                  all_a_complete: complete,
+                  covered_venues: ["SSE", "SZSE"],
+                  failed_venues: complete ? [] : ["BSE"],
+                },
+              }),
+        },
+        hotspot: { items: [], coverage: { candidate_pool: 0 } },
+      },
+    };
+    const html = renderToStaticMarkup(<DualStrategySelection />);
+    if (complete === false) {
+      expect(html).toContain("部分市场覆盖（非全 A）");
+      expect(html).toContain("SSE、SZSE");
+      expect(html).toContain("BSE");
+    } else if (complete) expect(html).toContain("官方全 A 覆盖已核验");
+    else expect(html).toContain("市场覆盖范围未核验");
+    expect(html.includes("官方全 A 覆盖已核验")).toBe(complete === true);
+    expect(html).toContain("ROIC、正常化盈利和分红持续性尚需独立研究");
+  },
+);

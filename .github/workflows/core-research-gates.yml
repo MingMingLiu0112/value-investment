@@ -458,6 +458,8 @@ jobs:
           tests/test_dual_strategy_selection.py
           tests/test_selection_pagination_contract.py
           tests/test_value_candidate_selection.py
+          tests/test_value_research_queue.py
+          tests/test_b_selection_scope_api.py
           tests/test_hotspot_candidate_selection.py
           tests/test_economic_review_cli.py
           tests/test_economic_review_bundle.py

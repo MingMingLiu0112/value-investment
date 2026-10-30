@@ -329,7 +329,7 @@ def test_naive_cutoff_rejected():
 
 
 @pytest.fixture
-def source_package(tmp_path):
+def source_package(tmp_path, request):
     from test_m2_opportunity_discovery import (
         _official_payload, _tencent_payload, _sina_payload, _dividend_payload,
     )
@@ -346,6 +346,26 @@ def source_package(tmp_path):
         return dict(path=path.relative_to(tmp_path).as_posix(), sha256=hashlib.sha256(raw).hexdigest())
     payloads = dict(official=_official_payload(), tencent=_tencent_payload(),
                     sina=_sina_payload(), dividend=_dividend_payload(), financial=dict(points=[]))
+    if hasattr(request, 'param') and isinstance(request.param, dict):
+        from value_investment_agent.infrastructure.screening.evidence_screen_v3 import build_discovery_receipt
+        options = request.param
+        symbols = [str(600001 + index) for index in range(options['count'])]
+        target = symbols[0] if len(symbols) == 4 else symbols[-1]
+        payloads['official']['records'] = [dict(payloads['official']['records'][0], symbol=s) for s in symbols]
+        payloads['tencent']['rows'] = [dict(payloads['tencent']['rows'][0], code='sh' + s,
+            pe_ttm='30' if s == target and not options['pass_channel'] else '10') for s in symbols]
+        payloads['sina']['rows'] = [dict(payloads['sina']['rows'][0], code=s,
+            per='30' if s == target and not options['pass_channel'] else '10',
+            trade='30' if options['conflict'] and s == target else '20') for s in symbols]
+        payloads['financial']['points'] = [dict(point, symbol=target) for point in
+            _points(available_at='2026-09-22T08:00:00+00:00')]
+    elif hasattr(request, 'param'):
+        # Exercise the default policy's real 50-row budget without changing thresholds.
+        symbols = [str(600001 + index) for index in range(51)]
+        payloads['official']['records'] = [dict(payloads['official']['records'][0], symbol=s) for s in symbols]
+        payloads['tencent']['rows'] = [dict(payloads['tencent']['rows'][0], code='sh' + s) for s in symbols]
+        payloads['sina']['rows'] = [dict(payloads['sina']['rows'][0], code=s,
+            trade='30' if request.param and s == symbols[-1] else '20') for s in symbols]
     files = {key: write(key + '.json', value) for key, value in payloads.items()}
     clock = datetime(2026, 9, 23, 8, tzinfo=timezone.utc)
     refs = {key: EvidenceReference(id=key, path=value['path'], sha256=value['sha256'],
@@ -354,7 +374,7 @@ def source_package(tmp_path):
     receipt = build_discovery_receipt(run_id='test', generated_at=clock,
         official_payload=payloads['official'], tencent_payload=payloads['tencent'],
         sina_payload=payloads['sina'], dividend_payload=payloads['dividend'],
-        financial_points=[], quote_date='2026-09-23', run_refs=refs)
+        financial_points=payloads['financial']['points'], quote_date='2026-09-23', run_refs=refs)
     files['receipt'] = write('receipt.json', receipt.as_policy())
     files['policy'] = write('policy.json', M2ScreeningPolicy().as_policy())
     report = project_value_discovery_report(root=tmp_path,
@@ -399,4 +419,86 @@ def test_unknown_policy_cannot_silently_change_queue(source_package):
     manifest['files']['policy'] = write('new-policy.json', dict(value_max_pe='1000'))
     binding = write('manifest.json', manifest)
     with pytest.raises(ValueError, match='unrecognized M2 policy'):
+        app.select_value_candidates(root=root, manifest_binding=binding, now=NOW)
+
+
+@pytest.mark.parametrize('source_package', [False, True], indirect=True)
+def test_budget_quote_conflict_through_source_replay_and_research_queue(source_package):
+    root, binding, manifest, _ = source_package
+    receipt = json.loads((root / manifest['files']['receipt']['path']).read_text(encoding='utf-8'))
+    evaluation = next(row for row in receipt['channel_results']['value']['evaluations']
+                      if row['symbol'] == '600051')
+    conflict = evaluation['status'] == 'CONFLICT'
+    # The bound raw source, rather than the status being tested, owns this expectation.
+    source = json.loads((root / manifest['files']['sina']['path']).read_text(encoding='utf-8'))
+    expected_conflict = source['rows'][-1]['trade'] == '30'
+    assert conflict == expected_conflict
+    assert evaluation['status'] == ('CONFLICT' if expected_conflict else 'BUDGET_EXCLUDED')
+    result = app.select_value_candidates(root=root, manifest_binding=binding, now=NOW, limit=200)
+    row = next(row for row in result['items'] if row['symbol'] == '600051')
+    assert row['price_conflict'] == expected_conflict
+    assert row['research_priority_eligible'] == (not expected_conflict)
+    assert ('600051' in {item['symbol'] for item in result['shortlist']}) == (not expected_conflict)
+    assert result['coverage']['research_queue_count'] == (50 if expected_conflict else 51)
+    assert row['action'] == result['action'] == 'no_order'
+    assert not row['formal_eligibility'] and not row['buy_eligible']
+
+
+@pytest.mark.parametrize('source_package', [
+    dict(count=count, pass_channel=passed, conflict=conflict)
+    for count in (4, 51) for passed in (False, True) for conflict in (False, True)
+], indirect=True)
+def test_raw_quote_conflict_survives_nonpassing_channels_through_selector_and_api(source_package, monkeypatch):
+    from fastapi.testclient import TestClient
+    from value_investment_agent.presentation.web_api.app import create_app
+    from value_investment_agent.application.hotspot import candidate_selection as hotspot
+
+    root, binding, manifest, _ = source_package
+    raw = json.loads((root / manifest['files']['sina']['path']).read_bytes())
+    target = '600001' if len(raw['rows']) == 4 else '600051'
+    original = next(row for row in raw['rows'] if row['code'] == target)
+    conflict, passed = original['trade'] == '30', original['per'] == '10'
+    receipt = json.loads((root / manifest['files']['receipt']['path']).read_bytes())
+    assert receipt['rule_version'] == 'm2-evidence-screen-v3'
+    assert receipt['data_health']['price_conflict_count'] == int(conflict)
+    statuses = {channel: next(row['status'] for row in data['evaluations'] if row['symbol'] == target)
+                for channel, data in receipt['channel_results'].items()}
+    if not passed:
+        assert statuses == dict(quality='DATA_GAP', dividend_cash_return='NOT_EVALUATED',
+                                value='REJECTED', cyclical='NOT_EVALUATED')
+    result = app.select_value_candidates(root=root, manifest_binding=binding, now=NOW, limit=200)
+    row = next(row for row in result['items'] if row['symbol'] == target)
+    assert row['observation_summary']['favorable'] == 4
+    assert all(not other['price_conflict'] and other['research_priority_eligible']
+               for other in result['items'] if other['symbol'] != target)
+    assert result['coverage']['research_queue_count'] == len(raw['rows']) - int(conflict)
+    assert row['price_conflict'] is conflict
+    assert row['research_priority_eligible'] is (not conflict)
+    assert (target in {item['symbol'] for item in result['shortlist']}) is (not conflict)
+    assert not row['formal_eligibility'] and not row['buy_eligible']
+    _run_pointer(root, binding)
+    # Only the unrelated hotspot lane is stubbed; value sources, selector and route are real.
+    monkeypatch.setattr(hotspot, 'select_current_hotspot_candidates',
+        lambda **kwargs: dict(action='no_order', items=[], shortlist=[]))
+    response = TestClient(create_app(root)).get('/api/v1/strategy-selection', params={'q_value': target})
+    assert response.status_code == 200
+    assert response.headers['cache-control'] == 'no-store'
+    payload = response.json()
+    value = payload['value']
+    assert value['data_status'] == 'PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS'
+    assert value['coverage']['universe_count'] == len(raw['rows'])
+    assert value['pagination']['total'] == int(not conflict)
+    assert [item['symbol'] for item in value['items']] == ([] if conflict else [target])
+    assert [item['symbol'] for item in value['shortlist']] == ([] if conflict else [target])
+    assert payload['action'] == value['action'] == 'no_order'
+    assert not payload['formal_eligibility'] and not payload['trade_eligible']
+
+
+@pytest.mark.parametrize('source', ['tencent', 'sina'])
+def test_quote_replay_rejects_manifest_source_not_consumed_by_receipt(source_package, source):
+    root, _, manifest, write = source_package
+    payload = json.loads((root / manifest['files'][source]['path']).read_bytes())
+    manifest['files'][source] = write('rebound-' + source + '.json', payload)
+    binding = write('manifest.json', manifest)
+    with pytest.raises(ValueError, match='not consumed by M2 receipt'):
         app.select_value_candidates(root=root, manifest_binding=binding, now=NOW)

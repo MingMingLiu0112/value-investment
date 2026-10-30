@@ -152,8 +152,8 @@ def _financial_points() -> list[dict]:
     ]
 
 
-def _receipt():
-    run_refs = {key: _reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
+def _receipt(run_refs=None):
+    run_refs = run_refs if run_refs is not None else {key: _reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
     return build_discovery_receipt(
         run_id="m2-fixture-run",
         generated_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
@@ -700,3 +700,37 @@ def test_reuse_inputs_preserves_original_clock_instead_of_relabeling_today(tmp_p
     assert summary["replay_of_run_id"] == original.run_id
     assert summary["replay"]["receipt_bytes_match"] is True
     assert summary["replay"]["raw_inputs_match"] is True
+
+
+@pytest.mark.parametrize('conflict', [False, True])
+def test_budget_preserves_quote_conflict_across_all_four_channels(conflict):
+    official, tencent, sina = _official_payload(), _tencent_payload(), _sina_payload()
+    # Two otherwise identical issuers pass every channel; only the second exceeds budget.
+    official['records'] = [dict(official['records'][0], symbol=symbol) for symbol in ('600001', '600005')]
+    tencent['rows'] = [dict(tencent['rows'][0], code='sh' + symbol) for symbol in ('600001', '600005')]
+    sina['rows'] = [dict(sina['rows'][0], code=symbol, **{'class': '煤炭'},
+                         trade='30' if conflict and symbol == '600005' else '20')
+                    for symbol in ('600001', '600005')]
+    dividend = _dividend_payload()
+    template = dividend['rows'][0]
+    dividend['rows'] = []
+    for symbol in ('600001', '600005'):
+        row = list(template)
+        row[0] = symbol
+        dividend['rows'].append(row)
+    points = [dict(point, symbol=symbol) for symbol in ('600001', '600005')
+              for point in _financial_points()]
+    receipt = build_discovery_receipt(
+        run_id='budget-conflict', generated_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
+        official_payload=official, tencent_payload=tencent, sina_payload=sina,
+        dividend_payload=dividend, financial_points=points, quote_date='2026-09-23',
+        run_refs={key: _reference(key) for key in ('official', 'tencent', 'sina', 'dividend', 'financial')},
+        policy=M2ScreeningPolicy(max_per_channel=1))
+    restored = discovery_receipt_from_payload(receipt.as_policy())
+    for channel in (CHANNEL_QUALITY, CHANNEL_DIVIDEND, CHANNEL_VALUE, CHANNEL_CYCLICAL):
+        result = restored.channel_results[channel]
+        row = next(row for row in result.evaluations if row.symbol == '600005')
+        assert row.status == ('CONFLICT' if conflict else 'BUDGET_EXCLUDED')
+        assert row.raw_rank_before_budget == 2
+        assert len(result.candidates) == 1
+    assert restored.action == 'no_order'

@@ -1,0 +1,47 @@
+{
+  "action": "no_order",
+  "scope": "ACTUAL_SELECTED_QUEUE_OFFICIAL_ACQUISITION_AND_COLD_FACT_CONSUMPTION",
+  "queue_binding": {
+    "path": "runtime/b-real-acceptance-20261030/priority.json",
+    "sha256": "6fa1cbeba47963840ae63251407f61721043244c801a3602a2f7d92bc872d614",
+    "content_sha256": "7aff84aec68a1ae2696d6e0512a7ab244624f3b648c725fa318420ac43994965"
+  },
+  "bundle": {
+    "path": "runtime/b-real-acceptance-20261030-public-retry/bundle.json",
+    "sha256": "220b8a018de574b1a3c6f170de73953748a79546a10e49bd76672e9e8d172761"
+  },
+  "financial_export": {
+    "path": "runtime/b-real-acceptance-20261030-public-retry/financial-export.json",
+    "sha256": "8b93b0e0c7fe257452d33c7fe50edcbed4c3c8b185b3bb07f9713609bdfec3c5"
+  },
+  "evaluated_at": "2026-10-30T15:23:50.876814+00:00",
+  "consumer": "consume_retained_enrichment",
+  "cold_replay_equal": true,
+  "consumed_facts": [
+    {
+      "symbol": "000151",
+      "field_name": "debt_ratio",
+      "value": "73.7907938132582383464097750150662807557096585873",
+      "available_at": "2026-10-30T15:23:13.413507+00:00",
+      "data_point_id": "official-balance-ratio:f3941838d81c1f34d0af0071060acff662d12d91699ef43c04477f711960134b"
+    },
+    {
+      "symbol": "000498",
+      "field_name": "debt_ratio",
+      "value": "76.5095900889927492525002155747617888056233894877",
+      "available_at": "2026-10-30T15:23:17.145422+00:00",
+      "data_point_id": "official-balance-ratio:7c61eb50860ca28fa011d0c8fbbea2faed7f7b0b622e8b73e9df12a3dbfc03c5"
+    }
+  ],
+  "new_scoped_fact_count": 2,
+  "formal_eligibility": false,
+  "assurance": "source_reported_only; single-source exact balance reconciliation, not independent cross-source verification",
+  "historical_queue_unchanged": true,
+  "historical_cutoff_not_backfilled": true,
+  "original_offline_attempt": "2 failed dispatches; zero new facts; preserved as history",
+  "limitations": [
+    "Debt ratio only, not complete interest-bearing debt",
+    "No ROIC, normalized earnings, dividend sustainability or valuation admission",
+    "SSE/SZSE historical screening only; BSE missing"
+  ]
+}
