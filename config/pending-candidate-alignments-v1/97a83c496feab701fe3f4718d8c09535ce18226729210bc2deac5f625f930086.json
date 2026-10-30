@@ -12,8 +12,8 @@
   },
   "event_observation_bindings": [
     {
-      "sha256": "109fc1a5db26bb6a058400c4b74afc8270b5b27a4031dc696618f8a9f7c51845",
-      "path": "runtime/value-alignment-event-observation/20261029T144556566582Z/observation.json"
+      "path": "runtime/value-alignment-event-observation/20261030T034906348838Z/observation.json",
+      "sha256": "49dae6f40d11c496bf5cd7555f12bc68f2636627fd07852bed31f547ceec859a"
     }
   ],
   "reconciliation_binding": {

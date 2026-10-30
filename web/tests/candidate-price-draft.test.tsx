@@ -8,7 +8,10 @@ import {
   candidatePriceMatches,
   candidateResearchComparisonMatches,
 } from "../src/components/CandidatePriceDraft";
-import type { JointCapitalReview } from "../src/services/valuePolicy";
+import type {
+  CandidateNativeSourceConsumption,
+  JointCapitalReview,
+} from "../src/services/valuePolicy";
 
 function fixture(): JointCapitalReview {
   return {
@@ -487,4 +490,234 @@ it("keeps the legacy price projection unchanged while independently accepting va
     expect(rejected).not.toContain("当前研究比较口径已核验");
     expect(rejected).toContain("100.00");
   }
+});
+
+it.each(["material_events", "financial_updates"])(
+  "shows %s source facts outside collapsed JSON without approving events",
+  (id) => {
+    const review = alignmentFixture();
+    const check = review.conditional_price!.alignment!.checks!.find(
+      (item) => item.id === id,
+    )!;
+    check.details = {
+      matched_input_sources: [
+        {
+          title: "TEST_ONLY 半年度报告",
+          published_at: "2026-08-29T00:00:00+08:00",
+          source_url: "https://example.org/TEST_ONLY-report.pdf",
+          status: "EXACT_FACT_SOURCE_ALREADY_CONSUMED_NOT_EVENT_APPROVAL",
+          consumed_fact_fields: ["ordinary_shares", "parent_net_profit"],
+          evidence_refs: [
+            { path: "TEST_ONLY/report.pdf", sha256: "a".repeat(64) },
+          ],
+        },
+      ],
+      unresolved_sources: [
+        {
+          title: "TEST_ONLY 会计政策公告",
+          published_at: "2026-10-29T00:00:00+08:00",
+          status: "NOT_BOUND_TO_CURRENT_CANDIDATE_REVIEW",
+          original_bytes_in_source_closure: true,
+          source_url: "javascript:alert(1)",
+        },
+      ],
+    };
+    const before = JSON.stringify(review);
+    const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+    const visible = html.replace(/<details[\s\S]*?<\/details>/g, "");
+    expect(visible).toContain("TEST_ONLY 半年度报告");
+    expect(visible).toContain("2026-08-29T00:00:00+08:00");
+    expect(visible).toContain("ordinary_shares");
+    expect(visible).toContain("parent_net_profit");
+    expect(visible).toContain(
+      'href="https://example.org/TEST_ONLY-report.pdf"',
+    );
+    expect(visible).toContain("TEST_ONLY 会计政策公告");
+    expect(visible).toContain("尚未绑定当前候选的复核");
+    expect(visible).toContain("不代表事实已消费或事件获准");
+    expect(visible).toContain("事实已消费不代表重大性复核通过");
+    expect(visible).toContain("口径待核，不能进行当前价值比较");
+    expect(visible).not.toContain('href="javascript:');
+    expect(visible).not.toContain('href="TEST_ONLY/');
+    expect(visible).not.toContain("TEST_ONLY/report.pdf");
+    expect(visible).not.toContain("a".repeat(64));
+    expect(html).toContain("TEST_ONLY/report.pdf");
+    expect(candidateResearchComparisonMatches(review)).toBe(false);
+    expect(JSON.stringify(review)).toBe(before);
+  },
+);
+
+it.each([
+  undefined,
+  {},
+  { matched_input_sources: [], unresolved_sources: [] },
+  {
+    matched_input_sources: [
+      null,
+      {},
+      { status: "UNKNOWN", consumed_fact_fields: [null] },
+    ],
+    unresolved_sources: "invalid",
+  },
+])(
+  "handles missing and malformed source details without inferring approval: %j",
+  (details) => {
+    const review = alignmentFixture();
+    review.conditional_price!.alignment!.checks!.find(
+      (item) => item.id === "material_events",
+    )!.details = details as any;
+    const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+    const visible = html.replace(/<details[\s\S]*?<\/details>/g, "");
+    expect(visible).toContain("事实已消费不代表重大性复核通过");
+    expect(visible).toContain("口径待核，不能进行当前价值比较");
+    expect(visible).not.toContain("原件事实已匹配当前输入");
+    expect(candidateResearchComparisonMatches(review)).toBe(false);
+  },
+);
+
+function nativeFixture(): CandidateNativeSourceConsumption {
+  const binding = {
+    path: "TEST_ONLY/native-report.pdf",
+    sha256: "f".repeat(64),
+  };
+  return {
+    status: "NATIVE_FIELDS_VERIFIED_CHAIN_INCOMPLETE",
+    reports: [
+      {
+        status: "NATIVE_REPORT_FIELDS_VERIFIED",
+        binding,
+        source_url: "https://example.org/TEST_ONLY-native.pdf",
+        source_available_at: "2026-10-30T09:00:00+08:00",
+        published_date: "2026-08-29",
+        consumed_opening_fact: true,
+        terms: {
+          period_end: "2026-06-30",
+          ordinary_shares: "100000",
+          cancelled_shares: "123",
+          cancellation_state: "DISCLOSED_BUYBACK_COMPLETED_BY_REPORT_END",
+          interim_proposal_state:
+            "NO_INTERIM_DISTRIBUTION_OR_CAPITALIZATION_PROPOSED",
+          declared_ordinary_dividend_cny: "100.01",
+        },
+      },
+    ],
+    distribution_inclusion: {
+      status: "SOURCE_AMOUNTS_COMPARED_INCLUSION_UNVERIFIED",
+      comparisons: [
+        {
+          reported_dividend_cny: "100.01",
+          implementation_total_cny: "100.00",
+          difference_cny: "0.01",
+          status: "AMOUNT_DIFFERENCE_REQUIRES_RECONCILIATION",
+          price_deduction_applied: "0",
+          report_binding: binding,
+          implementation_evidence: [
+            {
+              binding: {
+                path: "TEST_ONLY/implementation.pdf",
+                sha256: "e".repeat(64),
+              },
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+function renderNative(
+  value: CandidateNativeSourceConsumption | null | undefined,
+) {
+  const review = alignmentFixture();
+  for (const check of review.conditional_price!.alignment!.checks!) {
+    if (["capital_structure", "distributions"].includes(check.id))
+      check.details = {
+        reconciliation: {
+          ...reconciliationExample,
+          native_source_consumption: value,
+        },
+      };
+  }
+  const before = JSON.stringify(review);
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(JSON.stringify(review)).toBe(before);
+  expect(candidateResearchComparisonMatches(review)).toBe(false);
+  return { html, visible: html.replace(/<details[\s\S]*?<\/details>/g, "") };
+}
+it("shows verified H1 facts and backend dividend difference with historical scope and folded provenance", () => {
+  const { html, visible } = renderNative(nativeFixture());
+  for (const value of [
+    "中报原件字段已核验",
+    "100000 股",
+    "123 股",
+    "截至报告期末已完成回购注销",
+    "半年度预案不分配、不转增",
+    "100.01 元",
+    "100.00 元",
+    "<dd>0.01 元</dd>",
+    "存在金额差异，仍需对账",
+    "非截至当前完整证明",
+    "2026-08-29",
+    "2026-10-30T09:00:00+08:00",
+    "不证明后续股本连续性",
+    "不代表重大性批准或当前比较获准",
+    'href="https://example.org/TEST_ONLY-native.pdf"',
+  ])
+    expect(visible).toContain(value);
+  for (const value of [
+    "TEST_ONLY/native-report.pdf",
+    "TEST_ONLY/implementation.pdf",
+    "f".repeat(64),
+  ]) {
+    expect(visible).not.toContain(value);
+    expect(html).toContain(value);
+  }
+});
+it("renders supplied zero and changed differences without computing or hardcoding 0.01", () => {
+  for (const difference of ["0", "-2.35"]) {
+    const native = nativeFixture();
+    native.distribution_inclusion!.comparisons![0].difference_cny = difference;
+    native.distribution_inclusion!.comparisons![0].status =
+      difference === "0"
+        ? "AMOUNT_MATCH_NOT_MODEL_INCLUSION_PROOF"
+        : "AMOUNT_DIFFERENCE_REQUIRES_RECONCILIATION";
+    const { visible } = renderNative(native);
+    expect(visible).toContain("<dd>" + difference + " 元</dd>");
+    expect(visible).not.toContain("<dd>0.01 元</dd>");
+    if (difference === "0")
+      expect(visible).toContain("金额一致，仍不证明模型已内含");
+  }
+});
+it("does not invent absent native facts or a dividend difference", () => {
+  const native = nativeFixture();
+  native.reports![0].terms = {};
+  native.distribution_inclusion!.comparisons![0] = {};
+  const { visible } = renderNative(native);
+  expect(visible).toContain("未提供可识别的预案结果");
+  expect(visible).not.toContain("半年度预案不分配、不转增");
+  expect(visible).not.toContain("<dd>0.01 元</dd>");
+  expect(visible).not.toContain("100000 股");
+  expect(visible).toContain("未提供可识别的核对结论");
+});
+it.each([
+  undefined,
+  null,
+  {},
+  { reports: [null], distribution_inclusion: { comparisons: "invalid" } },
+])("handles absent or malformed native consumption %j", (native) => {
+  const { visible } = renderNative(
+    native as CandidateNativeSourceConsumption | null | undefined,
+  );
+  expect(visible).not.toContain("<dd>0.01 元</dd>");
+  expect(visible).not.toContain("中报原件字段已核验");
+  expect(visible).toContain("口径待核，不能进行当前价值比较");
+});
+it("does not present unverified report terms as verified facts or link unsafe originals", () => {
+  const native = nativeFixture();
+  native.reports![0].status = "UNKNOWN";
+  native.reports![0].source_url = "javascript:alert(1)";
+  const { visible } = renderNative(native);
+  expect(visible).toContain("尚未确认字段核验通过");
+  expect(visible).not.toContain("100000 股");
+  expect(visible).not.toContain("半年度预案不分配、不转增");
+  expect(visible).not.toContain('href="javascript:');
 });

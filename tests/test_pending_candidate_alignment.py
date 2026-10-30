@@ -275,7 +275,7 @@ def test_cooccurring_amount_and_date_do_not_make_native_field_semantics(reconcil
     result = reconcile(case)
     assert result["arithmetic_status"] == "RECONCILED"
     assert not result["native_basis_semantics_verified"]
-    assert "NATIVE_CLOSING_CAPITAL_SEMANTICS_NOT_VERIFIED" in result["reason_codes"]
+    assert "EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING" in result["reason_codes"]
 
 
 def test_failed_explicit_review_hard_blocks_even_clean_empty_scan(reconciliation):
@@ -452,3 +452,132 @@ def test_supplemental_window_only_binds_original_not_effective_coverage(reconcil
     with pytest.raises(ValueError, match="ANCHOR_NOT_BOUND_TO_NATIVE_OFFICIAL_SOURCE"):
         service._reconcile(case["root"], case["analysis"], ref, date(2020,1,2), [], case["now"],
             lambda binding: _bound(case["root"], binding), [supplemental])
+
+
+def test_real_cross_date_fields_are_consumed_without_promoting_bridge(real_candidate):
+    _, analysis, _, _ = real_candidate
+    result = analysis["current_alignment"]["checks"][1]["details"]["reconciliation"]
+    native = result["native_source_consumption"]
+    assert native["status"] == "NATIVE_FIELDS_VERIFIED_CHAIN_INCOMPLETE"
+    report = next(r for r in native["reports"] if r["consumed_opening_fact"])
+    assert report["terms"]["ordinary_shares"] == "1250081601"
+    completed = native["opening_pending_actions"]["known_completed_actions"]
+    assert completed[0]["shares"] == "2188614"
+    assert completed[0]["completed_by"] == "2026-06-30"
+    assert native["closing_capital"]["ordinary_shares"] is None
+    comparison = native["distribution_inclusion"]["comparisons"][0]
+    assert comparison["difference_cny"] == "0.01"
+    assert comparison["status"] == "AMOUNT_DIFFERENCE_REQUIRES_RECONCILIATION"
+    assert "REPORT_AND_IMPLEMENTATION_DIVIDEND_AMOUNT_DIFFER" in result["reason_codes"]
+    assert not native["complete_action_coverage"]
+    assert not native["historical_availability_proven"]
+    assert not result["native_basis_semantics_verified"]
+    assert not result["current_price_basis_compatible"]
+
+
+@pytest.mark.parametrize("old,new", [
+    ("公司代码：600519", "公司代码：600518"),
+    ("单位：股", "单位：元"),
+    ("办理完成注销", "尚未完成注销"),
+    ("是否分配或转增 否", "是否分配或转增 是"),
+    ("1,250,081,601 100", "1,250,081,602 100"),
+    ("应付普通股股利", "应付优先股股利"),
+])
+def test_real_interim_semantic_mutations_fail_closed(real_candidate, old, new):
+    from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
+    from value_investment_agent.infrastructure.filings.interim_capital_distribution import parse_interim_capital_distribution
+    root, _, ledger, _ = real_candidate
+    pages = extract_pages(_bound(root, ledger["opening_shares"]["evidence"][0]["binding"]))
+    assert any(old in p for p in pages)
+    with pytest.raises(ValueError):
+        parse_interim_capital_distribution([p.replace(old, new) for p in pages], symbol="600519")
+
+
+def test_real_native_report_cutoffs_and_exact_closing_date(real_candidate):
+    root, analysis, ledger, now = real_candidate
+    source = next(s for s in analysis["source_catalog"]
+                  if s.get("sha256") == ledger["opening_shares"]["evidence"][0]["binding"]["sha256"])
+    key = (source["local_path"], source["sha256"], source["location"])
+    read = lambda ref: _bound(root, ref)
+    # Exact report date is a dated fact, not continuity through a later quote.
+    native = service._native_basis_fields(analysis, date(2026,6,30), date(2026,10,29), now,
+        {key: source["source_available_at"]}, read, {}, [])
+    assert native["reports"][0]["consumed_opening_fact"]
+    assert native["closing_capital"]["status"] == "EXACT_CLOSING_REPORT_ANCHOR_MISSING"
+    early = service._native_basis_fields(analysis, date(2026,6,30), date(2026,8,14), now,
+        {key: source["source_available_at"]}, read, {}, [])
+    assert not early["reports"]
+    assert early["unresolved_sources"][0]["reason"] == "NATIVE_FIELD_PUBLICATION_AFTER_CUTOFF"
+    future = service._native_basis_fields(analysis, date(2026,6,30), date(2026,10,29), now,
+        {key: "2099-01-01T00:00:00+00:00"}, read, {}, [])
+    assert not future["reports"]
+    assert future["unresolved_sources"][0]["reason"] == "NATIVE_FIELD_SOURCE_UNAVAILABLE"
+    wrong = deepcopy(analysis)
+    wrong["official_fact_anchors"] = []
+    unmatched = service._native_basis_fields(wrong, date(2026,6,30), date(2026,10,29), now,
+        {key: source["source_available_at"]}, read, {}, [])
+    assert not unmatched["reports"]
+    assert unmatched["unresolved_sources"][0]["reason"] == "NATIVE_REPORT_NOT_MATCHED_TO_CONSUMED_OPENING_FACT"
+
+
+def test_real_new_complete_window_does_not_grant_semantics_or_materiality(real_candidate):
+    root, analysis, ledger, now = real_candidate
+    path = root / "runtime/value-alignment-event-observation/20261030T034906348838Z/observation.json"
+    assert path.is_file(), "Explicit real run requires Root supplied complete window"
+    ref = dict(path=path.relative_to(root).as_posix(), sha256=sha256_file(path))
+    windows, scans = service._event_windows(root, analysis, [ref], now, lambda r: _bound(root, r))
+    assert len(scans[0].announcements) == 7
+    assert windows[0]["full_calendar_window_elapsed"]
+    assert not windows[0]["materiality_approved"]
+    config = json.loads((root / service.CONFIG_DIRECTORY /
+        (analysis["review_binding"]["candidate_binding"]["sha256"] + ".json")).read_bytes())
+    sources, _ = service._event_windows(root, analysis, config["source_observation_bindings"], now,
+        lambda r: _bound(root, r))
+    result = service._reconcile(root, analysis, config["reconciliation_binding"], date(2026,10,29),
+        windows, now, lambda r: _bound(root, r), sources)
+    assert result["native_source_consumption"]["status"] == "NATIVE_FIELDS_VERIFIED_CHAIN_INCOMPLETE"
+    assert not result["native_basis_semantics_verified"]
+    # Acquisition on Oct 30 must never become an Oct 29 historical proof.
+    with pytest.raises(ValueError):
+        service._event_windows(root, analysis, [ref], datetime(2026,10,29,15,tzinfo=timezone.utc),
+            lambda r: _bound(root, r))
+    quote, _ = service._qualified_quote(root, analysis, config["quote_bundle_binding"], now, lambda r: _bound(root, r))
+    checks, _, _, ready = service._assess(analysis, ValuationResultCodec().from_payload(analysis["valuation"]),
+        quote, dict(status="QUALIFIED", reason_codes=[], explanation="TEST", bundle_binding=None,
+                    native_status="TEST"), windows, scans, result)
+    assert not ready and checks[3]["status"] == "BLOCKED"
+    rows = checks[3]["details"]["matched_input_sources"] + checks[3]["details"]["unresolved_sources"]
+    assert len(rows) == 7 and all(r["source_url"].startswith("https://static.cninfo.com.cn/") for r in rows)
+
+
+@pytest.mark.parametrize("old,new", [
+    ("单位：元", "单位：万元"),
+    ("币种：人民币", "币种：美元"),
+    ("项目 本期 上年度", "项目 上年度 本期"),
+])
+def test_real_interim_dividend_own_table_header_required(real_candidate, old, new):
+    from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
+    from value_investment_agent.infrastructure.filings.interim_capital_distribution import parse_interim_capital_distribution
+    root, _, ledger, _ = real_candidate
+    pages = extract_pages(_bound(root, ledger["opening_shares"]["evidence"][0]["binding"]))
+    # Change only the retained-earnings table on physical page 73. The other
+    # RMB/yuan tables on that same page must not rescue this invalid table.
+    before, separator, remainder = pages[72].partition("42、 未分配利润")
+    table, boundary, after = remainder.partition("43、 营业收入和营业成本")
+    assert separator and boundary and table.count(old) == 1
+    pages[72] = before + separator + table.replace(old, new) + boundary + after
+    with pytest.raises(ValueError, match="INTERIM_DIVIDEND_TABLE_UNIT_CURRENCY_OR_PERIOD_UNSUPPORTED"):
+        parse_interim_capital_distribution(pages, symbol="600519")
+
+
+def test_real_interim_dividend_current_rmb_yuan_column(real_candidate):
+    from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
+    from value_investment_agent.infrastructure.filings.interim_capital_distribution import parse_interim_capital_distribution
+    root, _, ledger, _ = real_candidate
+    pages = extract_pages(_bound(root, ledger["opening_shares"]["evidence"][0]["binding"]))
+    result = parse_interim_capital_distribution(pages, symbol="600519")
+    assert result["declared_ordinary_dividend_cny"] == "35032574305.20"
+    assert result["declared_ordinary_dividend_cny"] != "64671799277.95"
+    assert result["term_pages"]["declared_dividend"] == [73]
+    assert result["period_end"] == "2026-06-30"
+    assert result["parser_version"] == "interim-capital-distribution-fields-v2"

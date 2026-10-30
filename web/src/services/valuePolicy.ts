@@ -46,7 +46,44 @@ type JointTerminalEconomicsV4 = Omit<
   terminal_last_scheduled_event_year: number;
 };
 
+export type CandidateNativeSourceConsumption = {
+  status?: string;
+  reports?: {
+    status?: string;
+    binding?: EvidenceBinding;
+    source_url?: string;
+    source_available_at?: string;
+    published_date?: string;
+    consumed_opening_fact?: boolean;
+    terms?: {
+      period_end?: string;
+      ordinary_shares?: string | null;
+      cancelled_shares?: string | null;
+      cancellation_state?: string;
+      interim_proposal_state?: string;
+      declared_ordinary_dividend_cny?: string | null;
+    };
+  }[];
+  distribution_inclusion?: {
+    status?: string;
+    comparisons?: {
+      distribution_id?: string;
+      reported_dividend_cny?: string | null;
+      implementation_total_cny?: string | null;
+      difference_cny?: string | null;
+      status?: string;
+      price_deduction_applied?: string | null;
+      report_binding?: EvidenceBinding;
+      implementation_evidence?: {
+        binding?: EvidenceBinding;
+        [key: string]: unknown;
+      }[];
+    }[];
+  };
+};
+
 export type CandidateBasisReconciliation = {
+  native_source_consumption?: CandidateNativeSourceConsumption | null;
   status?: string;
   opening_shares?: string | null;
   calculated_closing_shares?: string | null;
@@ -67,6 +104,17 @@ export type CandidateBasisReconciliation = {
   [key: string]: unknown;
 };
 
+export type CandidateAlignmentInputSource = {
+  announcement_id?: string;
+  source_url?: string;
+  title?: string;
+  published_at?: string;
+  status?: string;
+  consumed_fact_fields?: string[];
+  original_bytes_in_source_closure?: boolean;
+  evidence_refs?: (EvidenceBinding & { id?: string; source_url?: string })[];
+};
+
 export type CandidateAlignmentCheck = {
   id: string;
   status?: string;
@@ -76,6 +124,8 @@ export type CandidateAlignmentCheck = {
   details?:
     | (Record<string, unknown> & {
         reconciliation?: CandidateBasisReconciliation | null;
+        matched_input_sources?: CandidateAlignmentInputSource[];
+        unresolved_sources?: CandidateAlignmentInputSource[];
       })
     | null;
 };

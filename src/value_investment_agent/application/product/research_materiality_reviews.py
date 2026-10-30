@@ -50,7 +50,17 @@ def build_materiality_review_descriptor(*, root, package_binding, scan_binding):
     package = _load(root, package_binding)
     _load(root, scan_binding)
     verify_package_local_sources(root, package)
-    original = build_descriptor(package, root=root)
+    contracts = {row.get('retention_contract') for row in
+                 package.get('facts', {}).get('scenario_inputs', {}).values()
+                 if isinstance(row, dict)}
+    from ..research.v4_input_adapter import RETENTION_CONTRACT
+    if RETENTION_CONTRACT in contracts:
+        if contracts != {RETENTION_CONTRACT}:
+            raise ValueError('materiality rejects mixed terminal scenario contracts')
+        from ..research.v4_input_adapter import build_descriptor_for_package
+        original = build_descriptor_for_package(package, root=root)
+    else:
+        original = build_descriptor(package, root=root)
     validity = package.get('model_validity_input')
     if not isinstance(validity, dict) or validity.get('events'):
         raise ValueError('materiality handoff needs non-conflicting validity inputs')
@@ -102,7 +112,11 @@ def prepare_materiality_review_handoff(*, root, package_path, package_sha256,
             source_url=item.source_url, evidence_refs=sources))
     if not announcements:
         raise ValueError('materiality handoff requires acquired announcements')
-    context = build_research_review_model_context(descriptor=descriptor, spec=spec)
+    if spec.model_version == 'residual-income-equity-path-v4':
+        from ..research.v4_review_context import build_v4_research_review_model_context
+        context = build_v4_research_review_model_context(descriptor=descriptor, spec=spec)
+    else:
+        context = build_research_review_model_context(descriptor=descriptor, spec=spec)
     fixed = dict(schema_version='materiality-review-handoff-v1', action='no_order',
         symbol=symbol, package_binding=package_ref, scan_binding=scan_ref,
         model_context=context,

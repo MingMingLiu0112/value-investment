@@ -6560,3 +6560,47 @@ hash gate correctly rejected them. Added exact-path `-text` attributes for those
 five files, matching the existing frozen v3 convention. No implementation byte,
 candidate hash or financial result is changed or resigned. Clean Git checkout
 replay, not ZIP export alone, is required for this fix's acceptance.
+
+### 2026-10-30 value alignment continuation
+
+Baseline d72f2604; preserve pre-existing current-research-drafts.json changes.
+Scope: source-semantic capital/distribution consumption, v4 materiality handoff,
+and readable company-page announcement status. No valuation formula or approval
+change. Acquisition at 2026-10-30T03:49:08Z retained seven announcements for
+2026-06-30 through 2026-10-29; native coverage replay is COMPLETE. This is
+retrospective acquisition, not contemporary PIT or materiality approval.
+Evidence: runtime/value-alignment-event-observation/20261030T034906348838Z.
+The existing materiality descriptor dispatches exact v4 inputs and its full
+review context instead of the old annual-retention-v2 parser. Real unsigned
+handoff: runtime/value-current-materiality-review/20261030T035120535474Z.
+Facts and assumptions retain their cutoff; only typed validity is supplemented.
+Formal materiality, G3 and orders remain absent. Final verification and runtime
+evidence must be recorded before acceptance.
+
+Implemented a bounded interim-report source consumer, including report identity,
+period, issued-share unit, cancellation reconciliation and dividend table currency,
+unit and column period. Real 600519 report: 1,250,081,601 ordinary shares;
+2,188,614 repurchased shares cancelled by June 30; no interim distribution proposal.
+Retained-earnings dividend is 35,032,574,305.20 CNY versus implementation total
+35,032,574,305.19 CNY. The 0.01 difference remains explicit, not rounded away or
+used to deduct the pre-valuation dividend again. Independent review caught missing
+dividend table-header binding; v2 parser now rejects altered currency, units and
+column order. This source consumer is intentionally not a certificate of all
+opening pending actions or continuity through the quote date.
+
+Existing company page consumes these facts and seven announcement titles, dates,
+official links and input-match statuses; technical paths/hashes are expandable.
+Existing value strategy map records the same bounded progress. Current price
+comparison remains false, personal quantities null, and action=no_order. Missing:
+comparison-date share anchor/continuity, complete effective-action chain and
+distribution inclusion, exact-candidate materiality/financial-update review.
+No valuation formulas, frozen sources, private records or user candidate pointer
+were changed. The real review handoff is unsigned, not a new approval.
+
+Verification receipts: .tmp/value-next-module/ (backend-tests.log, api-tests.log,
+web-tests.log, web-type.log, web-format.log, completed-window-verification.json),
+and .tmp/value-alignment-acceptance/{600519-api,real-replay}.json. Initial combined
+real-source/transport suite 141 passed; header-fix direct suite 52 passed.
+Clean-checkout, final CI, runtime version and browser receipts are recorded under
+the same local receipt directory after the release commit; no skip counts as real
+source acceptance and no HTTP status alone counts as browser acceptance.

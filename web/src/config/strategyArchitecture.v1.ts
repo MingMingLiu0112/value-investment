@@ -201,15 +201,15 @@ export const catalog: Record<
           "未批准提案不是当前买价，不代表currentbuy ready，不产生仓位或订单。",
         ruleWhy: "估值日的条件数字不能直接当作当前操作价。",
         existingEvidence:
-          "2026-10-29真实API：双源收盘1354.00元已核验；6/30模型股本1,250,081,601股；6/26每股分红28.02423元不重复扣减。675.10/930.01元仍为6/30条件研究参考线，当前可比性未通过。",
+          "2026-10-30原件重放：中报股本1,250,081,601股、回购注销2,188,614股及半年度不分配预案已进入消费链；分红总额与实施公告相差0.01元，保留对账缺口。10/29双源收盘1354.00元独立核验，675.10/930.01元仍是6/30条件研究参考线。",
         nextStep:
-          "接通跨日股本/分配实施链的原生语义消费并补齐证据；绑定当前候选复核调价、会计政策和平台划转；不重复扣6/26分红。经济/G3复核独立推进，缺批准不阻断公开草案。",
+          "补齐比较日期股本锚及行动连续性、期间分配内含关系；v4已能生成当前候选未签署事件复核材料，调价、会计政策和平台划转仍待实质复核。不重复扣6/26分红，不以完整扫描代替重大性批准。",
         evidenceSource:
-          "真实来源及逐项对账：.tmp/value-alignment-acceptance/600519-api.json、real-replay.json、event-replay.json；已封存双源报价、7条公告原件及分配原件。此为验收记录，不是实时状态。",
+          "真实原件/API：.tmp/value-alignment-acceptance/600519-api.json、real-replay.json；完整公告窗口：runtime/value-alignment-event-observation/20261030T034906348838Z；未签署复核：runtime/value-current-materiality-review/20261030T035120535474Z。10/30采集不作为10/29事前证据；此为验收记录。",
         dependencies: ["value_valuation"],
         engineeringStatus: "部分接通",
         evidenceStatus: "真实算术已核",
-        shortStatus: "已核行情和历史分配 · 跨日消费未完成 · G3待复核",
+        shortStatus: "中报字段已消费 · v4事件复核已接通 · 跨日连续性待补",
       },
       {
         id: "shared_rule_approval",

@@ -114,6 +114,108 @@ def _cash_terms(pages, symbol):
         action="no_order")
 
 
+
+def _native_basis_fields(analysis, start, end, now, native_sources, read, cache, cash_rows):
+    """Consume full native originals; never promote manual excerpts/empty lists.
+
+    Reporting date, publication date and actual source availability are separate.
+    Unsupported originals remain explicit. These facts do not certify absence of
+    other opening pending schemes, amendments or intervening effective actions.
+    """
+    from ...infrastructure.filings.pdf_text import extract_pages
+    from ...infrastructure.filings.official_pdf import validate_pdf_original
+    from ...infrastructure.filings.interim_capital_distribution import parse_interim_capital_distribution
+    from ...quote_sessions import CHINA
+
+    result = dict(status="NO_SUPPORTED_SOURCE_FIELDS", reports=[], unresolved_sources=[],
+        opening_pending_actions=dict(status="UNVERIFIED", known_completed_actions=[]),
+        closing_capital=dict(status="EXACT_CLOSING_REPORT_ANCHOR_MISSING", as_of=end.isoformat(),
+            ordinary_shares=None),
+        distribution_inclusion=dict(status="NOT_VERIFIED", comparisons=[]),
+        historical_availability_proven=False, complete_action_coverage=False,
+        materiality_approved=False, formal_eligibility=False, action="no_order")
+    seen = set()
+    for (path, sha, url), available in sorted(native_sources.items()):
+        identity = (sha, url)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        binding = dict(path=path, sha256=sha)
+        source = dict(binding=binding, source_url=url, source_available_at=available)
+        try:
+            stamp = datetime.fromisoformat(available)
+            parsed_url = urlparse(url)
+            if (stamp.utcoffset() is None or stamp > now or parsed_url.scheme != "https"
+                    or parsed_url.hostname != "static.cninfo.com.cn"
+                    or not re.fullmatch(r"/finalpage/\d{4}-\d{2}-\d{2}/\d+\.PDF", parsed_url.path, re.I)):
+                raise ValueError("NATIVE_FIELD_SOURCE_UNAVAILABLE")
+            published = _day(parsed_url.path.split("/")[2])
+            if published > end or published > stamp.astimezone(CHINA).date():
+                raise ValueError("NATIVE_FIELD_PUBLICATION_AFTER_CUTOFF")
+            original = read(binding)
+            if sha not in cache:
+                validate_pdf_original(original)
+                cache[sha] = extract_pages(original)
+            terms = parse_interim_capital_distribution(cache[sha], symbol=analysis["symbol"])
+            report_end = _day(terms["period_end"])
+            if report_end > published:
+                raise ValueError("NATIVE_REPORT_PERIOD_AFTER_PUBLICATION")
+            fact_id = "cninfo:" + parsed_url.path.rsplit("/", 1)[1].split(".")[0]
+            consumed = any(a.get("source_id") == fact_id and a.get("field") == "ordinary_shares"
+                and a.get("period_end") == terms["period_end"] and a.get("unit") == "shares"
+                and a.get("source_value") == terms["ordinary_shares"]
+                for a in analysis.get("official_fact_anchors", [])) and any(
+                    b["sha256"] == sha for b in analysis["source_bindings"])
+            if report_end == start and (not consumed or Decimal(terms["ordinary_shares"])
+                    != Decimal(analysis["consumed_operating_inputs"]["ordinary_shares"])):
+                raise ValueError("NATIVE_REPORT_NOT_MATCHED_TO_CONSUMED_OPENING_FACT")
+            report = dict(**source, terms=terms, published_date=published.isoformat(),
+                consumed_opening_fact=consumed and report_end == start,
+                status="NATIVE_REPORT_FIELDS_VERIFIED")
+            result["reports"].append(report)
+            if report_end == end:
+                result["closing_capital"].update(status="EXACT_REPORT_DATE_SHARES_VERIFIED",
+                    ordinary_shares=terms["ordinary_shares"], evidence_binding=binding,
+                    continuity_to_opening_verified=False)
+            if report["consumed_opening_fact"]:
+                pending = result["opening_pending_actions"]
+                pending["status"] = "KNOWN_BUYBACK_COMPLETED_OTHER_PENDING_SCHEMES_UNVERIFIED"
+                pending["known_completed_actions"].append(dict(kind="BUYBACK_CANCELLATION",
+                    shares=terms["cancelled_shares"], completed_by=terms["period_end"],
+                    evidence_binding=binding, physical_pages=terms["term_pages"]["cancellation"]))
+                for row in cash_rows:
+                    cash_terms = row.get("native_terms")
+                    if (cash_terms is None or _day(row["ex_date"]) > start
+                            or _day(row["cash_payment_date"]) > start):
+                        continue
+                    with localcontext() as context:
+                        context.prec = 80
+                        difference = (Decimal(terms["declared_ordinary_dividend_cny"])
+                                      - Decimal(cash_terms["total_gross_cash"]))
+                    result["distribution_inclusion"]["comparisons"].append(dict(
+                        distribution_id=row["id"], report_binding=binding,
+                        implementation_evidence=deepcopy(row["evidence"]),
+                        reported_dividend_cny=terms["declared_ordinary_dividend_cny"],
+                        implementation_total_cny=cash_terms["total_gross_cash"],
+                        difference_cny=str(difference),
+                        status="AMOUNT_DIFFERENCE_REQUIRES_RECONCILIATION" if difference
+                            else "AMOUNT_MATCH_NOT_MODEL_INCLUSION_PROOF",
+                        price_deduction_applied="0"))
+        except (OSError, ValueError, KeyError, TypeError, ArithmeticError) as error:
+            # A successfully consumed cash implementation is not an unsupported
+            # interim report, but still does not prove complete period coverage.
+            if any(r.get("native_terms") is not None and any(
+                    e["binding"]["sha256"] == sha and e["source_url"] == url
+                    for e in r["evidence"]) for r in cash_rows):
+                continue
+            result["unresolved_sources"].append(dict(**source, reason=str(error)))
+    if result["reports"]:
+        result["status"] = "NATIVE_FIELDS_VERIFIED_CHAIN_INCOMPLETE"
+    if result["distribution_inclusion"]["comparisons"]:
+        result["distribution_inclusion"]["status"] = "SOURCE_AMOUNTS_COMPARED_INCLUSION_UNVERIFIED"
+    return result
+
+
 def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     """Replay source-anchored public research arithmetic, never approve materiality.
 
@@ -331,9 +433,20 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     # Exact excerpts/number/date co-occurrence and researcher classifications
     # are not a sealed semantic consumer. No caller-provided review/NO_EFFECT or
     # empty pending list may establish effective-action coverage or price basis.
-    gaps.extend(["NATIVE_CLOSING_CAPITAL_SEMANTICS_NOT_VERIFIED",
-                 "NATIVE_EFFECTIVE_ACTION_AND_OPENING_PENDING_CHAIN_NOT_VERIFIED",
-                 "NATIVE_PERIOD_DISTRIBUTION_COVERAGE_AND_INCLUSION_NOT_VERIFIED"])
+    native_fields = _native_basis_fields(analysis, start, end, now, native_sources, read, cache, cash_rows)
+    for report in native_fields["reports"]:
+        if report["binding"] not in evidence:
+            evidence.append(deepcopy(report["binding"]))
+    closing_status = native_fields["closing_capital"]["status"]
+    if closing_status == "EXACT_CLOSING_REPORT_ANCHOR_MISSING":
+        gaps.append("EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING")
+    else:
+        gaps.append("NATIVE_CLOSING_SHARES_OPENING_CONTINUITY_UNVERIFIED")
+    gaps.extend(["OPENING_PENDING_SCHEMES_AND_EFFECTIVE_ACTION_CHAIN_INCOMPLETE",
+                 "PERIOD_DISTRIBUTION_COVERAGE_AND_MODEL_INCLUSION_UNVERIFIED"])
+    if any(c["status"] == "AMOUNT_DIFFERENCE_REQUIRES_RECONCILIATION"
+           for c in native_fields["distribution_inclusion"]["comparisons"]):
+        gaps.append("REPORT_AND_IMPLEMENTATION_DIVIDEND_AMOUNT_DIFFER")
     if not native_opening:
         gaps.append("OPENING_SHARES_NOT_MATCHED_TO_NATIVE_FACT_ANCHOR")
     # At the identical valuation/close date there is no intervening interval.
@@ -361,7 +474,10 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         share_actions=action_rows, distributions=cash_rows, period_cash_per_share=str(period_cash),
         period_cash_coverage_complete=same_basis,
         native_basis_semantics_verified=same_basis,
-        engineering_gap=None if same_basis else "跨日尚无已接入的原生语义消费者证明截至日股本、期初待实施行动完整链及期间分配内含关系；手工摘录及公开研究分类不能替代。",
+        native_source_consumption=native_fields,
+        engineering_gap=None if same_basis else (
+            "已接入正式中报股本、回购注销及分配字段；尚缺其他公告类型的有效行动语义消费者。"
+            if native_fields["reports"] else "绑定原件尚未匹配已支持的正式中报股本及分配字段。"),
         current_price_basis_compatible=compatible, formal_eligibility=False,
         reason_codes=list(dict.fromkeys(gaps)), evidence_bindings=[deepcopy(ref), *evidence])
 
@@ -566,7 +682,8 @@ def _assess(analysis, valuation, quote, quote_result, windows, scans, reconcilia
     for scan in scans:
         for item in scan.announcements:
             row = dict(announcement_id=item.announcement_id, title=item.title,
-                published_at=item.published_at.isoformat(), evidence_refs=list(item.evidence_refs))
+                published_at=item.published_at.isoformat(), source_url=item.source_url,
+                evidence_refs=list(item.evidence_refs))
             if item.evidence_refs and all(source["sha256"] in consumed_hashes
                     and source.get("id") in fact_source_ids for source in item.evidence_refs):
                 matched.append(dict(row, status="EXACT_FACT_SOURCE_ALREADY_CONSUMED_NOT_EVENT_APPROVAL",

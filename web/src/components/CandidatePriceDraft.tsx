@@ -345,6 +345,7 @@ function CandidateAlignment({ review }: { review: Review }) {
             )[text(check.status)] || "状态待核"}
             <p>{text(check.explanation, "未提供检查说明。")}</p>
             <CheckReconciliation id={check.id} details={check.details} />
+            <CheckInputSources id={check.id} details={check.details} />
             <details>
               <summary>检查原因代码</summary>
               <Reasons value={check.reason_codes} />
@@ -447,6 +448,305 @@ export function candidateResearchComparisonMatches(review: Review): boolean {
   );
 }
 
+function CheckInputSources({ id, details }: { id: string; details: unknown }) {
+  if (!["material_events", "financial_updates"].includes(id)) return null;
+  const data = object(details) ? details : {};
+  return (
+    <section
+      aria-label={`${alignmentChecks[id as keyof typeof alignmentChecks]}公告来源`}
+    >
+      <p>
+        原件来源与事件准入分开：事实已消费不代表重大性复核通过，也不授予模型有效或当前比较资格。
+      </p>
+      {(
+        [
+          ["matched_input_sources", "已匹配输入的公告"],
+          ["unresolved_sources", "尚未绑定复核的公告"],
+        ] as const
+      ).map(([key, label]) => {
+        const value = data[key];
+        const rows = Array.isArray(value) ? value.filter(object) : [];
+        return (
+          <section key={key} aria-label={label}>
+            <h6>{label}</h6>
+            {rows.length ? (
+              <ul>
+                {rows.map((row, index) => {
+                  const consumed =
+                    key === "matched_input_sources" &&
+                    row.status ===
+                      "EXACT_FACT_SOURCE_ALREADY_CONSUMED_NOT_EVENT_APPROVAL";
+                  const refs = Array.isArray(row.evidence_refs)
+                    ? row.evidence_refs.filter(object)
+                    : [];
+                  const sourceUrl = text(row.source_url, "");
+                  let safeSourceUrl = false;
+                  try {
+                    safeSourceUrl = ["https:", "http:"].includes(
+                      new URL(sourceUrl).protocol,
+                    );
+                  } catch {}
+                  const fields = strings(row.consumed_fact_fields).filter(
+                    (field) => field.trim(),
+                  );
+                  return (
+                    <li key={index}>
+                      <strong>{text(row.title, "公告标题未提供")}</strong>
+                      <p>
+                        披露日期：{text(row.published_at, "未提供披露日期")}
+                      </p>
+                      {consumed ? (
+                        <>
+                          <p>
+                            原件事实已匹配当前输入（非事件批准）。已消费事实字段：
+                          </p>
+                          {fields.length ? (
+                            <ul>
+                              {fields.map((field, i) => (
+                                <li key={i}>{field}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>未提供已消费事实字段。</p>
+                          )}
+                        </>
+                      ) : (
+                        <p>
+                          未复核原因：
+                          {row.status ===
+                          "NOT_BOUND_TO_CURRENT_CANDIDATE_REVIEW"
+                            ? "尚未绑定当前候选的复核，不能据此认定重大性已获批准。"
+                            : "未提供可识别的复核结论，仍需核对。"}
+                          {typeof row.status === "string" && (
+                            <>（{row.status}）</>
+                          )}
+                        </p>
+                      )}
+                      {typeof row.original_bytes_in_source_closure ===
+                        "boolean" && (
+                        <p>
+                          原件字节在来源闭包中：
+                          {row.original_bytes_in_source_closure
+                            ? "是；不代表事实已消费或事件获准。"
+                            : "否；尚未纳入当前来源闭包。"}
+                        </p>
+                      )}
+                      <p>
+                        原件来源（不代表事件准入）：
+                        {safeSourceUrl ? (
+                          <a
+                            href={sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            查看公告原件
+                          </a>
+                        ) : (
+                          "未提供可用公告原件链接"
+                        )}
+                      </p>
+                      <AlignmentEvidence value={refs} />
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p>
+                {Array.isArray(value) && value.length === 0
+                  ? "未列出公告；不代表无重大事件或已通过复核。"
+                  : "公告来源明细缺失或格式异常，未推定通过。"}
+              </p>
+            )}
+          </section>
+        );
+      })}
+    </section>
+  );
+}
+
+const nativeAmount = (value: unknown, unit: string) =>
+  typeof value === "string" && /^-?\d+(?:\.\d+)?$/.test(value)
+    ? `${value} ${unit}`
+    : "未提供";
+
+function NativeSourceConsumption({
+  id,
+  value,
+}: {
+  id: string;
+  value: unknown;
+}) {
+  if (!object(value)) return <p>未提供中报原件字段核验结果。</p>;
+  const reports = Array.isArray(value.reports)
+    ? value.reports.filter(object)
+    : [];
+  const inclusion = object(value.distribution_inclusion)
+    ? value.distribution_inclusion
+    : {};
+  const comparisons = Array.isArray(inclusion.comparisons)
+    ? inclusion.comparisons.filter(object)
+    : [];
+  return (
+    <section
+      aria-label={
+        id === "capital_structure"
+          ? "中报原件股本与注销核验"
+          : "中报原件分配与金额核对"
+      }
+    >
+      <h6>
+        {id === "capital_structure"
+          ? "中报原件股本与回购注销"
+          : "中报分配预案与分红金额核对"}
+      </h6>
+      <p>
+        核验状态：
+        {value.status === "NATIVE_FIELDS_VERIFIED_CHAIN_INCOMPLETE"
+          ? "原件字段已核验，行动链仍不完整"
+          : value.status === "NO_SUPPORTED_SOURCE_FIELDS"
+            ? "尚无已支持的原件字段"
+            : "未提供可识别的核验状态"}
+        。
+      </p>
+      <p>
+        以下仅为已列中报披露范围内的事实，非截至当前完整证明；不证明其他待生效方案、后续行动或修订已全部覆盖，不代表重大性批准或当前比较获准。
+      </p>
+      {reports.length ? (
+        <ul>
+          {reports.map((report, index) => {
+            const terms = object(report.terms) ? report.terms : {};
+            const verified = report.status === "NATIVE_REPORT_FIELDS_VERIFIED";
+            const url = text(report.source_url, "");
+            let safe = false;
+            try {
+              safe = ["http:", "https:"].includes(new URL(url).protocol);
+            } catch {}
+            return (
+              <li key={index}>
+                <p>
+                  H1 报告期末：{text(terms.period_end)}；披露日期：
+                  {text(report.published_date)}；原件取得时间：
+                  {text(report.source_available_at)}。
+                </p>
+                <p>
+                  字段状态：
+                  {verified ? "中报原件字段已核验" : "尚未确认字段核验通过"}。
+                </p>
+                {verified ? (
+                  id === "capital_structure" ? (
+                    <dl>
+                      <dt>H1 期末普通股股数</dt>
+                      <dd>
+                        {nativeAmount(terms.ordinary_shares, "股")}
+                        ；不代表当前股本。
+                      </dd>
+                      <dt>回购注销股数</dt>
+                      <dd>{nativeAmount(terms.cancelled_shares, "股")}</dd>
+                      <dt>注销状态</dt>
+                      <dd>
+                        {terms.cancellation_state ===
+                        "DISCLOSED_BUYBACK_COMPLETED_BY_REPORT_END"
+                          ? "中报披露截至报告期末已完成回购注销"
+                          : "未提供可识别的注销状态"}
+                      </dd>
+                      <dt>与估值期初已消费事实的匹配</dt>
+                      <dd>
+                        {report.consumed_opening_fact === true
+                          ? "已匹配；不证明后续股本连续性"
+                          : report.consumed_opening_fact === false
+                            ? "未匹配期初事实"
+                            : "未提供匹配结果"}
+                      </dd>
+                    </dl>
+                  ) : (
+                    <dl>
+                      <dt>半年度利润分配及公积金转增预案</dt>
+                      <dd>
+                        {terms.interim_proposal_state ===
+                        "NO_INTERIM_DISTRIBUTION_OR_CAPITALIZATION_PROPOSED"
+                          ? "半年度预案不分配、不转增；不代表截至当前无分配"
+                          : "未提供可识别的预案结果"}
+                      </dd>
+                      <dt>中报披露普通股股利金额</dt>
+                      <dd>
+                        {nativeAmount(
+                          terms.declared_ordinary_dividend_cny,
+                          "元",
+                        )}
+                        ；不代表个人到账或模型已内含。
+                      </dd>
+                    </dl>
+                  )
+                ) : (
+                  <p>未将未核验字段作为已核验事实展示。</p>
+                )}
+                {safe && (
+                  <p>
+                    <a href={url} target="_blank" rel="noopener noreferrer">
+                      查看中报原件
+                    </a>
+                  </p>
+                )}
+                <AlignmentEvidence value={[report.binding]} />
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p>未列出可展示的中报字段；不推定无回购注销或无分配。</p>
+      )}
+      {id === "distributions" && (
+        <>
+          <h6>中报与分红实施公告金额差异</h6>
+          {comparisons.length ? (
+            <ul>
+              {comparisons.map((row, index) => (
+                <li key={index}>
+                  <dl>
+                    <dt>中报股利金额</dt>
+                    <dd>{nativeAmount(row.reported_dividend_cny, "元")}</dd>
+                    <dt>实施公告含税总额</dt>
+                    <dd>{nativeAmount(row.implementation_total_cny, "元")}</dd>
+                    <dt>分红金额差异（中报减实施公告，后端结果）</dt>
+                    <dd>{nativeAmount(row.difference_cny, "元")}</dd>
+                    <dt>核对结论</dt>
+                    <dd>
+                      {row.status ===
+                      "AMOUNT_DIFFERENCE_REQUIRES_RECONCILIATION"
+                        ? "存在金额差异，仍需对账；不能认定模型已内含"
+                        : row.status ===
+                            "AMOUNT_MATCH_NOT_MODEL_INCLUSION_PROOF"
+                          ? "金额一致，仍不证明模型已内含"
+                          : "未提供可识别的核对结论"}
+                    </dd>
+                    <dt>本次价格扣减</dt>
+                    <dd>
+                      {nativeAmount(row.price_deduction_applied, "元/股")}
+                      （后端结果；前端不调整价格）
+                    </dd>
+                  </dl>
+                  <AlignmentEvidence
+                    value={[
+                      row.report_binding,
+                      ...(Array.isArray(row.implementation_evidence)
+                        ? row.implementation_evidence
+                            .filter(object)
+                            .map((ref) => ref.binding)
+                        : []),
+                    ]}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>未提供分红金额比较，不推定差异为零。</p>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
 function CheckReconciliation({
   id,
   details,
@@ -459,6 +759,10 @@ function CheckReconciliation({
   if (id === "capital_structure")
     return (
       <section aria-label="已核验股本与当前缺口">
+        <NativeSourceConsumption
+          id={id}
+          value={ledger.native_source_consumption}
+        />
         <dl>
           <dt>估值日股本（已消费口径）</dt>
           <dd>{text(ledger.opening_shares)} 股</dd>
@@ -494,6 +798,10 @@ function CheckReconciliation({
   };
   return (
     <section aria-label="已核验公告分配条款与期间覆盖边界">
+      <NativeSourceConsumption
+        id={id}
+        value={ledger.native_source_consumption}
+      />
       <h6>已列公告分配条款</h6>
       {rows.length ? (
         <ul>
