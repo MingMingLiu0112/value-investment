@@ -11,11 +11,11 @@ import { catalog, review } from "../../config/strategyArchitecture.v1";
 import { ArchitectureView, StageButton, StageDetail } from "./index";
 describe("versioned strategy architecture", () => {
   it("pins review separately from disconnected runtime evidence", () => {
-    expect(review.baseline).toBe("1cf73655457094fe924001497393f2be6d22fcec");
+    expect(review.baseline).toBe("d01923cd72c3e638bb3df490f9e148abccd82219");
     expect(review.runtimeEvidence).toBe("NOT_CONNECTED");
-    expect(
-      catalog.value.stages.find((s) => s.id === "value_price")?.milestone,
-    ).toContain("当前价格对齐与G3待完成");
+    expect(catalog.value.stages.find((s) => s.id === "F2")?.evidence).toContain(
+      "跨日股本",
+    );
   });
   it.each(["value", "hotspot"] as const)(
     "renders %s with stopping branches and existing destinations",
@@ -37,12 +37,11 @@ describe("versioned strategy architecture", () => {
       expect(html).not.toMatch(/\d+%|ant-progress|ant-tag-success/);
       expect(html).toContain("工程：");
       expect(html).toContain("证据：");
-      expect(catalog[key].stages.length).toBeLessThanOrEqual(9);
+      expect(catalog[key].stages.length).toBe(key === "value" ? 16 : 8);
       const ids = catalog[key].stages.map((s) => s.id);
       expect(new Set(ids).size).toBe(ids.length);
       for (const [index, stage] of catalog[key].stages.entries()) {
-        for (const dep of stage.dependencies)
-          expect(ids.slice(0, index)).toContain(dep);
+        for (const dep of stage.dependencies) expect(ids).toContain(dep);
         for (const path of stage.modules)
           expect(existsSync(resolve("..", path)), path).toBe(true);
         const detail = renderToStaticMarkup(<StageDetail stage={stage} />);
@@ -81,7 +80,57 @@ describe("versioned strategy architecture", () => {
     ).toBe(false);
     expect(JSON.stringify(catalog.value)).toContain("2026-06-30");
     expect(JSON.stringify(catalog.value)).toContain("非当前买价");
-    expect(catalog.value.stages[0].channels).toHaveLength(4);
+    expect(
+      catalog.value.stages.find((s) => s.id === "B")?.channels,
+    ).toHaveLength(4);
+  });
+  it("maps all proposal modules with distinct progress axes and no fake first-company completion", () => {
+    expect(catalog.value.stages.map((s) => s.id)).toEqual([
+      "A",
+      "B",
+      "C",
+      "D1",
+      "D2",
+      "E1",
+      "E2",
+      "F1",
+      "F2",
+      "G1",
+      "G2",
+      "S1",
+      "S2",
+      "S3",
+      "S4",
+      "W1",
+    ]);
+    for (const stage of catalog.value.stages) {
+      expect(stage.progress?.acceptance).toContain("尚未确认");
+      expect(stage.progress?.realData).toBeTruthy();
+      expect(stage.progress?.consumer).toBeTruthy();
+      expect(stage.progress?.economic).toBeTruthy();
+      expect(stage.progress?.deployment).toBeTruthy();
+    }
+    expect(
+      catalog.value.stages.find((s) => s.id === "E2")?.dependencies,
+    ).not.toContain("E1");
+    expect(
+      catalog.value.stages.find((s) => s.id === "E2")?.engineeringStatus,
+    ).toBe("未闭环");
+    expect(catalog.value.stages.find((s) => s.id === "B")?.evidence).toContain(
+      "CONFLICT",
+    );
+    const html = renderToStaticMarkup(<ArchitectureView strategy="value" />);
+    expect(html).toContain("H1–H4");
+    expect(html).toContain("无旧估值");
+    expect(html).toContain("用户确认");
+    expect(html).toContain("目标输出（不代表已实现）");
+    expect(html).toContain("不代表共同前置");
+    expect(html).toContain("不阻塞公开研究");
+    expect(
+      catalog.value.stages.find((s) => s.id === "F1")?.dependencies,
+    ).not.toContain("E2");
+    expect(html).toContain("/decisions/600887?strategy=value");
+    expect(html).not.toContain('href="/project"');
   });
   it("registers both routes and menu entries without transports", () => {
     const routes = readFileSync(".umirc.ts", "utf8"),

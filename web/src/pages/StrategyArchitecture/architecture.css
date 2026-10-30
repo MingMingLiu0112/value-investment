@@ -126,3 +126,34 @@
     position: static;
   }
 }
+
+.value-plan {
+  margin: 18px 0;
+}
+.value-plan-lanes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.value-plan-lanes > div {
+  background: #f3f6fa;
+  border-left: 4px solid #6384a6;
+  padding: 14px;
+  border-radius: 6px;
+}
+.value-plan details {
+  margin: 16px 0;
+}
+.value-plan summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+#architecture-detail {
+  scroll-margin-top: 16px;
+}
+@media (max-width: 760px) {
+  .value-plan-lanes {
+    grid-template-columns: 1fr;
+  }
+}

@@ -6732,3 +6732,33 @@ Actual source/API receipt: .tmp/value-followup-acceptance/real-business-receipt.
 At today's close the archived Oct29 quote correctly became stale. The native
 PDF fixture now verifies that rejection explicitly rather than requiring a
 perpetually qualified old quote. Production quote gates are unchanged.
+
+### 2026-10-30 value strategy module-map replacement
+
+User scope: compare supplied modular proposal with actual architecture and
+replace /strategy/value; no investment formula, selection rule, approval,
+hotspot, account or evidence mutation. Reviewed code d01923cd72c3e638bb3df490f9e148abccd82219.
+Preserve config/current-research-drafts.json local pointer.
+Proposal SHA256 edeed505fd66590bbd02056a9b730365538d7cbf053c9e7dc8f1ad1466b83fee.
+
+The existing strategyArchitecture.v1.ts remains the single catalog. Replace
+nine coarse value stages with A/B/C/D1/D2/E1/E2/F1/F2/G1/G2/S1/S2/S3/S4/W1.
+Keep hotspot catalog unchanged; H1-H4 are paused lane references, not new work.
+Current checkout has no projectControl.ts or /project route; do not count
+an unmerged branch as deployed or create a second progress source.
+
+Independent read-only audits locate B budget status overwriting CONFLICT
+before downstream selection; mark correctness defect, not automatic trading.
+D1 provider execution exists, but G2 GET package state is not resumable tasks.
+E2 fact-only context is not first valuation compilation. F1/E1/G1 two-company
+conditional calculations do not prove generic new-company research.
+S1 risk and S2 manual-fill services are connected; no private account inspected.
+S2 external reconciliation remains manual reference/confirmation.
+S3 FIFO tax and no-external-flow metrics are not consumed by private ledger.
+S4 held-continuity adapters exist; missing real entry/evidence is not automatically
+missing code. F2 cross-date economic/event/capital qualification remains open.
+
+Display implementation, downstream consumption, real-source scope, economic
+approval, deployment verification and user acceptance separately. No overall
+completion percentage, no strategy alpha claims. Financial/regulatory references
+in user proposal are not newly certified by this UI task. action=no_order.
