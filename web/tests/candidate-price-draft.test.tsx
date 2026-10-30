@@ -798,3 +798,65 @@ it("separates opening authorization from executed distribution", () => {
   expect(html).toContain("中期分配授权，不是确定方案");
   expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
 });
+
+it("shows an explicit unproven interval without revoking interim authority", () => {
+  const review = alignmentFixture();
+  review.conditional_price!.alignment!.checks![2].details = {
+    basis_followup: {
+      schema_version: "candidate-basis-followup-v1",
+      action: "no_order",
+      current_comparison_granted: false,
+      latest_capital_checkpoint: {
+        ordinary_shares: "100",
+        as_of: "2026-06-30",
+        published_date: "2026-08-15",
+      },
+      uncovered_capital_interval: {
+        after: "2026-06-30",
+        through: "2026-10-29",
+      },
+      interim_report_followups: [
+        { published_date: "2026-08-15", conclusion: "未提出预案不撤销授权" },
+      ],
+      authorization_followup_required: true,
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("未提出预案不撤销授权");
+  expect(html).toContain("不能把期初股数沿用为当前股数");
+  expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
+});
+it("shows consumed model fields and never turns event price change into profit forecast", () => {
+  const review = alignmentFixture();
+  review.conditional_price!.alignment!.checks![3].details = {
+    candidate_event_impact: {
+      schema_version: "candidate-event-impact-draft-v1",
+      action: "no_order",
+      materiality_approved: false,
+      items: [
+        {
+          title: "TEST_ONLY",
+          rationale: "渠道与税基未核",
+          derived_price_changes: [
+            {
+              field: "retail_price",
+              before: "100",
+              after: "110",
+              relative_change: "0.1",
+              unit: "CNY/bottle",
+            },
+          ],
+          consumed_model_values: [
+            { field: "revenue", value: "100", model_year: 1 },
+          ],
+          unresolved_inputs: ["实际销量未知"],
+        },
+      ],
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("10.00%");
+  expect(html).toContain("不是整体收入或利润增幅");
+  expect(html).toContain("实际销量未知");
+  expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
+});

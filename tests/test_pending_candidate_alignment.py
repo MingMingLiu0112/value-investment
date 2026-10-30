@@ -338,7 +338,17 @@ def real_candidate():
     analysis = load_current_value_research_analysis(root=root, symbol="600519", now=now)
     assert analysis["status"] == "CONDITIONAL_ANALYSIS_VERIFIED", analysis
     alignment = analysis["current_alignment"]
-    assert alignment["quote"]["status"] == "QUALIFIED", alignment
+    quote = alignment["quote"]
+    # Real retained sources outlive a trading session. The same archived quote
+    # must turn stale after a newer official close, not make native PDF tests
+    # depend on running before 15:00 or silently retain a current price.
+    if quote["latest_completed_session"] == quote["quote_date"]:
+        assert quote["status"] == "QUALIFIED", alignment
+    else:
+        assert quote["latest_completed_session"] > quote["quote_date"], alignment
+        assert quote["status"] == "BLOCKED" and quote["current_price"] is None
+        assert quote["native_status"] == "NOT_ADMITTED"
+        assert "QUOTE_NOT_LATEST_QUALIFIED_CLOSE" in quote["reason_codes"]
     assert alignment["checks"][1]["details"].get("reconciliation") is not None, alignment
     for ref in [*analysis["source_bindings"], *alignment["evidence_bindings"]]:
         _bound(root, ref)
@@ -356,7 +366,8 @@ def test_real_native_original_and_cash_semantics_end_to_end(real_candidate):
     assert row["native_terms"]["total_gross_cash"] == "35032574305.19"
     assert row["period_treatment"] == "BEFORE_VALUATION_DATE_ALREADY_OUTSIDE_INTERVAL"
     assert row["price_deduction_applied"] == "0"
-    assert alignment["quote"]["current_price"] == "1354.00"
+    assert alignment["quote"]["current_price"] == (
+        "1354.00" if alignment["quote"]["status"] == "QUALIFIED" else None)
     assert not alignment["currentpricecomparison"]
 
 
@@ -758,3 +769,96 @@ def test_opening_chain_maps_only_supported_distribution_object_contracts(kind):
     native["total_gross_cash"]="201"
     changed=service._opening_chain_research(analysis,rows,reconciliation)
     assert changed["distribution_links"][0]["status"]=="TERMS_NOT_MATCHED"
+
+
+def test_basis_followup_keeps_no_proposal_distinct_from_revocation(reconciliation):
+    case = reconciliation
+    report = dict(status="NATIVE_REPORT_FIELDS_VERIFIED", binding=case["anchor"]["binding"],
+        source_url=case["anchor"]["source_url"], source_available_at=case["anchor"]["available_at"],
+        published_date="2020-01-02", consumed_opening_fact=True,
+        terms=dict(symbol="600519",period_end="2020-01-01",ordinary_shares="100",
+            interim_proposal_state="NO_INTERIM_DISTRIBUTION_OR_CAPITALIZATION_PROPOSED",
+            subsequent_capital_state="REPORT_SUBSEQUENT_PER_SHARE_IMPACT_SECTION_NOT_APPLICABLE",
+            term_pages=dict(proposal=[1])))
+    rec=dict(native_source_consumption=dict(reports=[report]))
+    opening=dict(outstanding_authorizations=[dict(id="TEST_ONLY")])
+    result=service._basis_followup(case["analysis"],rec,opening,[],date(2020,1,3))
+    assert result["latest_capital_checkpoint"]["as_of"]=="2020-01-01"
+    assert result["uncovered_capital_interval"]==dict(after="2020-01-01",through="2020-01-03")
+    assert result["authorization_followup_required"] is True
+    assert result["interim_report_followups"][0]["authorization_resolved"] is False
+    assert not result["current_comparison_granted"]
+    assert not result["complete_effective_action_coverage"]
+    assert result["candidate_binding"]==case["analysis"]["review_binding"]["candidate_binding"]
+    report["published_date"]="2020-01-04"
+    assert service._basis_followup(case["analysis"],rec,opening,[],date(2020,1,3))["capital_checkpoints"]==[]
+    report["published_date"]="2020-01-02"
+    report["terms"]["symbol"]="000001"
+    assert service._basis_followup(case["analysis"],rec,opening,[],date(2020,1,3))["capital_checkpoints"]==[]
+
+
+def test_basis_empty_retrieval_cannot_prove_capital_or_zero_dividend(reconciliation):
+    case=reconciliation
+    window=dict(source_integrity_verified=True, scan_from="2020-01-01",scan_to="2020-01-02",
+        acquired_at="2020-01-03T00:00:00+00:00",announcement_count=0,
+        coverage_status="COMPLETE",observation_binding=case["anchor"]["binding"])
+    result=service._basis_followup(case["analysis"],None,dict(outstanding_authorizations=[]),
+        [window],date(2020,1,2))
+    assert result["status"]=="NO_SUPPORTED_CHECKPOINT"
+    assert result["latest_capital_checkpoint"] is None
+    assert not result["complete_effective_action_coverage"]
+    assert not result["current_comparison_granted"]
+
+
+def test_event_impact_binds_consumed_years_not_profit_uplift(reconciliation):
+    from value_investment_agent.application.research.candidate_event_impact import build_candidate_event_impact
+    a=reconciliation["analysis"]
+    candidate=a["review_binding"]["candidate_binding"]
+    a["joint_capital_review"]["economic_path"].update(candidate_binding=candidate,
+        scenarios=[dict(scenario="base",years=[dict(model_year=1,steps=[
+            dict(id="revenue",status="available",unit="CNY",classification="CONDITIONAL_CALCULATION",
+                values=dict(revenue="100",cost="20"))])])])
+    fact=dict(binding=reconciliation["anchor"]["binding"],source_url=reconciliation["anchor"]["source_url"],
+        source_available_at=reconciliation["anchor"]["available_at"],
+        terms=dict(event_type="OPERATING_PRICE_CHANGE",affected_model_fields=["revenue","profit"],
+            terms=dict(retail_price=dict(before="100",after="110",unit="CNY/bottle"),
+                sales_contract_price=dict(before="80",after="90",unit="CNY/bottle"))))
+    event=dict(status="SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW",
+        candidate_binding=candidate,input_descriptor_sha256=a["input_descriptor_sha256"],
+        announcement_id="TEST_ONLY",title="TEST_ONLY price",published_at="2020-01-02",facts=[fact])
+    before=deepcopy(a)
+    result=build_candidate_event_impact(a,[event])
+    row=result["items"][0]
+    assert [x["relative_change"] for x in row["derived_price_changes"]]==["0.1","0.125"]
+    assert row["consumed_model_values"][0]["value"]=="100"
+    assert row["unmapped_model_fields"]==["profit"]
+    assert row["quantified_profit_effect"] is None
+    assert row["model_inputs_changed"] is False
+    assert not result["materiality_approved"]
+    assert a==before
+    event["input_descriptor_sha256"]="f"*64
+    assert build_candidate_event_impact(a,[event])["items"]==[]
+    event["input_descriptor_sha256"]=a["input_descriptor_sha256"]
+    fact["terms"]["terms"]["retail_price"]["before"]="NaN"
+    with pytest.raises(ValueError,match="NONPOSITIVE_OR_NONFINITE"):
+        build_candidate_event_impact(a,[event])
+
+
+def test_issuer_statement_and_transfer_do_not_approve_materiality(reconciliation):
+    from value_investment_agent.application.research.candidate_event_impact import build_candidate_event_impact
+    a=reconciliation["analysis"]
+    candidate=a["review_binding"]["candidate_binding"]
+    a["joint_capital_review"]["economic_path"].update(candidate_binding=candidate,scenarios=[])
+    for kind,status in [
+        ("ACCOUNTING_POLICY_IMPACT_STATEMENT","ISSUER_NO_MATERIAL_IMPACT_REQUIRES_REVIEW"),
+        ("INTERNAL_ASSET_TRANSFER_RESOLUTION","CASH_ACCESS_AND_CAPITAL_REVIEW_REQUIRED")]:
+        event=dict(status="SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW",
+            candidate_binding=candidate,input_descriptor_sha256=a["input_descriptor_sha256"],
+            announcement_id="TEST_ONLY",title="TEST_ONLY",published_at="2020-01-02",
+            facts=[dict(binding=reconciliation["anchor"]["binding"],source_url=reconciliation["anchor"]["source_url"],
+                source_available_at=reconciliation["anchor"]["available_at"],terms=dict(event_type=kind,
+                affected_model_fields=["profit"],terms={}))])
+        result=build_candidate_event_impact(a,[event])
+        assert result["items"][0]["status"]==status
+        assert result["items"][0]["quantified_profit_effect"] is None
+        assert not result["materiality_approved"]

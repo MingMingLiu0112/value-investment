@@ -354,10 +354,18 @@ function CandidateAlignment({ review }: { review: Review }) {
                 opening
               />
             )}
+            {check.id === "distributions" && object(check.details) && (
+              <BasisFollowup value={check.details.basis_followup} />
+            )}
             <CheckInputSources id={check.id} details={check.details} />
             {check.id === "material_events" && object(check.details) && (
               <OperatingEventResearch
                 value={check.details.operating_event_research}
+              />
+            )}
+            {check.id === "material_events" && object(check.details) && (
+              <CandidateEventImpact
+                value={check.details.candidate_event_impact}
               />
             )}
             <details>
@@ -996,6 +1004,122 @@ function OpeningActionChain({ value }: { value: unknown }) {
       {!confirmations.length && !links.length && !pending.length && (
         <p>尚无受支持原件可以完成该项对账。</p>
       )}
+    </section>
+  );
+}
+
+function BasisFollowup({ value }: { value: unknown }) {
+  if (
+    !object(value) ||
+    value.schema_version !== "candidate-basis-followup-v1" ||
+    value.action !== "no_order" ||
+    value.current_comparison_granted !== false
+  )
+    return null;
+  const checkpoint = object(value.latest_capital_checkpoint)
+    ? value.latest_capital_checkpoint
+    : null;
+  const interval = object(value.uncovered_capital_interval)
+    ? value.uncovered_capital_interval
+    : null;
+  const reports = Array.isArray(value.interim_report_followups)
+    ? value.interim_report_followups.filter(object)
+    : [];
+  return (
+    <section aria-label="股本与中期分配后续核验">
+      <h6>已证实到哪一天，后续还缺什么</h6>
+      {checkpoint ? (
+        <p>
+          已核验普通股股数：{text(checkpoint.ordinary_shares)} 股，事实时点{" "}
+          {text(checkpoint.as_of)}， 披露日期 {text(checkpoint.published_date)}
+          。{text(checkpoint.limitation)}
+        </p>
+      ) : (
+        <p>尚无可消费的原件股本时点。</p>
+      )}
+      {interval && (
+        <p>
+          尚未证明连续性的区间：{text(interval.after)} 之后至{" "}
+          {text(interval.through)}。 不能把期初股数沿用为当前股数。
+        </p>
+      )}
+      {reports.map((row, i) => (
+        <div key={i}>
+          <p>
+            {text(row.published_date)} 中报后续核验：{text(row.conclusion)}
+          </p>
+          <AlignmentEvidence value={[row.evidence_binding]} />
+        </div>
+      ))}
+      {value.authorization_followup_required === true && (
+        <p>
+          中期分红授权仍需跟踪：未确认后续方案、实施或撤销，不填零分红，不认定已经支付。
+        </p>
+      )}
+      <Reasons value={value.next_required_evidence} />
+      <p>
+        公告检索完成只证明本次取得范围，不证明没有遗漏的有效行动；当前价格比较与人工批准保持原门禁。
+      </p>
+    </section>
+  );
+}
+
+function CandidateEventImpact({ value }: { value: unknown }) {
+  if (
+    !object(value) ||
+    value.schema_version !== "candidate-event-impact-draft-v1" ||
+    value.materiality_approved !== false ||
+    value.action !== "no_order"
+  )
+    return null;
+  const items = Array.isArray(value.items) ? value.items.filter(object) : [];
+  if (!items.length) return null;
+  return (
+    <section aria-label="当前候选事件复核草案">
+      <h6>这些公告具体影响本候选的哪些计算？</h6>
+      <p>
+        未批准复核草案。以下是已消费的条件计算，不是新盈利预测；模型年份不等同公告所属会计年度。
+      </p>
+      {items.map((item, i) => {
+        const changes = Array.isArray(item.derived_price_changes)
+          ? item.derived_price_changes.filter(object)
+          : [];
+        const values = Array.isArray(item.consumed_model_values)
+          ? item.consumed_model_values.filter(object)
+          : [];
+        return (
+          <article key={i}>
+            <strong>{text(item.title)}</strong>
+            <p>{text(item.rationale)}</p>
+            {changes.map((change, k) => (
+              <p key={k}>
+                {change.field === "retail_price"
+                  ? "公告平台零售价"
+                  : "公告销售合同价"}
+                ：{text(change.before)} → {text(change.after)}{" "}
+                {text(change.unit)}； 公告价变化{" "}
+                {numberText(change.relative_change)
+                  ? (Number(change.relative_change) * 100).toFixed(2) + "%"
+                  : text(change.relative_change)}
+                。 不是整体收入或利润增幅。
+              </p>
+            ))}
+            <p>
+              已定位 {values.length}{" "}
+              项模型年度字段；未量化盈利影响，不改写原估值。
+            </p>
+            <Reasons value={item.unresolved_inputs} />
+            <details>
+              <summary>查看被影响的现有计算与证据</summary>
+              <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                {JSON.stringify(values, null, 2)}
+              </pre>
+              <Reasons value={item.unmapped_model_fields} />
+              <AlignmentEvidence value={[item.evidence_binding]} />
+            </details>
+          </article>
+        );
+      })}
     </section>
   );
 }

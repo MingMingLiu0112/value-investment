@@ -495,7 +495,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         native_basis_semantics_verified=same_basis,
         native_source_consumption=native_fields,
         engineering_gap=None if same_basis else (
-            "已接入正式中报股本、回购注销及分配字段；尚缺其他公告类型的有效行动语义消费者。"
+            "已消费期初原件；跨日期股本连续性仍缺原生有效行动链消费者，不能仅补同日报告或人工无变动标志放行。"
             if native_fields["reports"] else "绑定原件尚未匹配已支持的正式中报股本及分配字段。"),
         current_price_basis_compatible=compatible, formal_eligibility=False,
         reason_codes=list(dict.fromkeys(gaps)), evidence_bindings=[deepcopy(ref), *evidence])
@@ -687,6 +687,58 @@ def _opening_chain_research(analysis, rows, reconciliation):
         distribution_links=annual, outstanding_authorizations=authorizations,
         complete_opening_action_coverage=False, comparison_date_capital_proven=False,
         formal_eligibility=False, action="no_order")
+
+
+def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison_date):
+    """Explain the exact latest proven checkpoint, never extend it by silence."""
+    reports = ((reconciliation or {}).get("native_source_consumption") or {}).get("reports", [])
+    checkpoints, followups = [], []
+    for report in reports:
+        terms = report.get("terms") or {}
+        if (report.get("status") != "NATIVE_REPORT_FIELDS_VERIFIED"
+                or terms.get("symbol") != analysis["symbol"]):
+            continue
+        period, published = _day(terms["period_end"]), _day(report["published_date"])
+        if comparison_date is not None and (period > comparison_date or published > comparison_date):
+            continue
+        checkpoints.append(dict(as_of=period.isoformat(), published_date=published.isoformat(),
+            ordinary_shares=terms["ordinary_shares"], evidence_binding=deepcopy(report["binding"]),
+            source_url=report["source_url"], available_at=report["source_available_at"],
+            matches_consumed_opening=report.get("consumed_opening_fact") is True,
+            continuity_after_period_end=False,
+            subsequent_capital_statement=terms.get("subsequent_capital_state"),
+            limitation="每股指标影响栏不适用，不是报告期后总股本无任何变动的声明。"))
+        if terms.get("interim_proposal_state") == "NO_INTERIM_DISTRIBUTION_OR_CAPITALIZATION_PROPOSED":
+            followups.append(dict(report_period_end=period.isoformat(),
+                published_date=published.isoformat(), evidence_binding=deepcopy(report["binding"]),
+                source_url=report["source_url"], physical_pages=(terms.get("term_pages") or {}).get("proposal", []),
+                status="REPORT_NO_INTERIM_PROPOSAL_NOT_AUTHORIZATION_REVOCATION",
+                conclusion="该中报的半年度分配预案为不分配、不转增；不能据此认定此前中期分红授权已撤销，或此后全年不再分红。",
+                subsequent_distribution_statement=terms.get("subsequent_distribution_state"),
+                authorization_resolved=False, zero_future_dividend_proven=False))
+    checkpoints.sort(key=lambda row: (row["as_of"], row["published_date"]))
+    latest = checkpoints[-1] if checkpoints else None
+    observed = [dict(scan_from=w["scan_from"], scan_to=w["scan_to"],
+        acquired_at=w["acquired_at"], announcement_count=w["announcement_count"],
+        coverage_status=w["coverage_status"], observation_binding=deepcopy(w["observation_binding"]))
+        for w in windows if w.get("source_integrity_verified") is True]
+    return dict(schema_version="candidate-basis-followup-v1",
+        candidate_binding=deepcopy(analysis["review_binding"]["candidate_binding"]),
+        input_descriptor_sha256=analysis["input_descriptor_sha256"],
+        status="SOURCE_CHECKPOINTS_PARTIAL" if latest or followups else "NO_SUPPORTED_CHECKPOINT",
+        comparison_date=comparison_date.isoformat() if comparison_date else None,
+        capital_checkpoints=checkpoints, latest_capital_checkpoint=latest,
+        uncovered_capital_interval=dict(after=latest["as_of"], through=comparison_date.isoformat())
+            if latest and comparison_date and _day(latest["as_of"]) < comparison_date else None,
+        interim_report_followups=followups,
+        authorization_followup_required=bool(opening_chain["outstanding_authorizations"]),
+        observed_windows=observed,
+        next_required_evidence=[
+            "具有明确时点及单位的当前普通股股数，以及连接期初的有效股本行动原件。",
+            "中期授权后实际方案、实施或撤销的原件；中报无预案不代替后续核验。",
+            "当前候选的经营事件影响与重大性复核，不能由公告数量或检索完成代替。"],
+        complete_effective_action_coverage=False, current_comparison_granted=False,
+        human_approval_granted=False, action="no_order")
 
 
 def _materiality(root, analysis, ref, windows, scans, now, read):
@@ -926,13 +978,17 @@ def load_pending_candidate_alignment(*, root, analysis, now):
         # neither changes frozen assumptions nor signs the materiality review.
         operating_events = _operating_events(analysis, windows, now, read)
         checks[3]["details"]["operating_event_research"] = operating_events
+        from .candidate_event_impact import build_candidate_event_impact
+        checks[3]["details"]["candidate_event_impact"] = build_candidate_event_impact(analysis, operating_events)
         from ...infrastructure.filings.opening_action_terms import parse_opening_action_terms
         opening_actions = _operating_events(analysis, source_windows, now, read,
             parser=parse_opening_action_terms)
         opening_chain = _opening_chain_research(analysis, opening_actions, reconciliation)
+        basis_followup = _basis_followup(analysis, reconciliation, opening_chain, windows, quote.quote_date)
         for index in (1, 2):
             checks[index]["details"]["opening_action_research"] = opening_actions
             checks[index]["details"]["opening_action_chain"] = opening_chain
+            checks[index]["details"]["basis_followup"] = basis_followup
             if opening_chain["outstanding_authorizations"]:
                 checks[index]["reason_codes"].append("INTERIM_DISTRIBUTION_AUTHORIZATION_FOLLOWUP_NOT_RECONCILED")
                 checks[index]["status"] = "BLOCKED"

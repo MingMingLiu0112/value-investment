@@ -6694,3 +6694,41 @@ Still missing: comparison-date capital/continuous actions, interim-authority
 follow-up, complete period distribution inclusion and exact materiality review.
 Source terms, known-action reconciliation, API and Web are delivered; full
 current-price alignment is NOT COMPLETE. Receipt directory .tmp/value-basis-oct30/.
+
+### 2026-10-30 current-basis follow-up and candidate impact review
+
+Baseline 8897a821. Preserve current research pointer and frozen evidence.
+Scope: official current capital/interim-distribution follow-up, exact-candidate
+operating impact draft, existing API/Web consumption. No approval, no_order.
+Explicitly separate source checkpoints from unproven intervening continuity;
+a no-proposal interim report does not revoke shareholder distribution authority.
+No new hotspot, model formula, account or approval infrastructure.
+
+Actual follow-up evidence acquired 2026-10-30 15:11-15:23 China time:
+official issuer financial/announcement indices and CNINFO subsequent query
+yielded no new current-capital or interim implementation original. Source
+attempts and raw responses: .tmp/value-current-basis-followup/20261030T071105181709Z/.
+The refreshed native Jun30-Oct29 scan retains seven originals under
+runtime/value-alignment-event-observation/20261030T072301995261Z/.
+Acquisition completion is NOT absence-of-actions proof.
+
+The consumer now reports the latest June30 share checkpoint, explicit unproven
+interval to Oct29, and interim no-proposal report without revoking the earlier
+authorization. Exact-candidate event draft locates 60 consumed annual revenue/
+profit fields for the price event, computes distinct announced retail/contract
+price changes, and retains unknown tax/volume/channel/realization effects.
+Asset-transfer and accounting-policy statements remain independently reviewable,
+not zero-effect approvals. No candidate valuation or price threshold changed.
+
+Independent review confirms a remaining CODE_GAP: native capital reconciliation
+has no successful cross-date complete-action semantic chain. Do not label that
+as solely missing user approval or solve it with arbitrary no-change flags.
+Current official evidence also cannot establish that chain. Current-price
+alignment therefore remains NOT_COMPLETE; formal assisted use is not granted.
+
+Verification: 214 related tests passed with real-source opt-ins; API 346 passed
+and 2 existing optional skips; Web 1294 passed and 28 existing optional skips.
+Actual source/API receipt: .tmp/value-followup-acceptance/real-business-receipt.json.
+At today's close the archived Oct29 quote correctly became stale. The native
+PDF fixture now verifies that rejection explicitly rather than requiring a
+perpetually qualified old quote. Production quote gates are unchanged.

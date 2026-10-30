@@ -211,7 +211,8 @@ export const catalog: Record<
         dependencies: ["value_valuation"],
         engineeringStatus: "部分接通",
         evidenceStatus: "真实算术已核",
-        shortStatus: "期初注销与分配授权 · 公告经营影响已消费 · 当前口径待核",
+        shortStatus:
+          "期初对账与中报后续已核 · 事件已定位模型年度字段 · 跨日连续性仍缺证",
       },
       {
         id: "shared_rule_approval",
