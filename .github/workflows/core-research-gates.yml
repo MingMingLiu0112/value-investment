@@ -551,7 +551,12 @@ jobs:
       - name: Install core test dependencies
         run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
       - name: Install PostgreSQL client for isolated restore drill
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+          /usr/lib/postgresql/16/bin/pg_dump --version
+          /usr/lib/postgresql/16/bin/pg_restore --version
       - name: Verify disposable PostgreSQL research repository
         run: python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest --junitxml=.tmp/postgres-integration-results.xml tests/test_postgres_research_artifacts.py tests/test_m6_restore_integration.py
       - name: Retain synthetic isolated restore evidence
