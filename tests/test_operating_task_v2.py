@@ -288,20 +288,47 @@ def test_authorization_revoked_during_first_response_stops_later_calls(env):
 
 @pytest.mark.parametrize('bad', ['invalid_json', 'invented_evidence'])
 def test_invalid_output_rejected_but_actual_usage_settled(env, bad):
+    returned = []
     def response(request):
         payload = reply(request.role)
         payload['business_drivers'][0]['evidence_ids'] = ['TEST_ONLY_NONEXISTENT_EVIDENCE']
         text = 'not JSON' if bad == 'invalid_json' else json.dumps(payload)
-        return LLMResponse(text, 100, 50, 'TEST_ONLY_MODEL')
+        answer = LLMResponse(text, 100, 50, 'TEST_ONLY_MODEL')
+        returned.append(answer)
+        return answer
     provider = TestOnlyProvider(response)
     service = env.service(provider)
-    result = service.run(create(service))
+    task = create(service)
+    result = service.run(task)
     assert result['status'] == 'FAILED' and result['roles'] == {}
     assert provider.calls == ['FUNDAMENTAL']
     assert result['usage'] == dict(prompt_tokens=100, completion_tokens=50)
     assert Decimal(result['reserved_cost']) == 0
     assert Decimal(result['settled_cost']) == Decimal('0.0002')
     assert {r['status'] for r in daily_records(service).values()} == {'SETTLED'}
+    pin = result['rejected_response']
+    assert result['returned_responses'] == [pin]
+    raw = (env.root / pin['path']).read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == pin['sha256']
+    packet = json.loads(raw)
+    assert packet['response'] == returned[0].__dict__
+    assert packet['role'] == 'FUNDAMENTAL' and packet['action'] == 'no_order'
+    assert packet['context_fingerprint'] == result['context_fingerprint']
+    assert packet['request_sha256'] == mod._hash(mod._bytes(provider.requests[0].__dict__))
+    context = mod.research_context(env.loader(root=env.root, symbol='123456', now=NOW))
+    with pytest.raises(ValueError) as rejected:
+        draft.validate_response(returned[0], role='FUNDAMENTAL', context=context, generated_at=NOW)
+    assert result['validation_error'] == str(rejected.value)[:300]
+    assert result['validation_error']
+    before = snapshot(env.root)
+    cold_provider = TestOnlyProvider()
+    cold = env.service(cold_provider).read(task)
+    assert cold['status'] == 'FAILED' and cold['roles'] == {} and cold['research_draft'] == {}
+    for key in ('returned_responses', 'rejected_response', 'validation_error', 'usage',
+                'reserved_cost', 'settled_cost'):
+        assert cold[key] == result[key]
+    assert cold_provider.calls == [] and provider.calls == ['FUNDAMENTAL']
+    assert snapshot(env.root) == before
 
 
 def test_create_and_run_idempotent_and_read_get_path_has_zero_calls(env):

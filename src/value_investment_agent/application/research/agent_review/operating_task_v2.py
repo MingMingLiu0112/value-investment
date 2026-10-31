@@ -24,7 +24,8 @@ def model_configuration(root):
     required={"endpoint","model_id","api_key_env","timeout_seconds","max_completion_tokens_cap",
               "max_run_cost","input_cost_per_million","output_cost_per_million","authorized",
               "authorization_reference","currency","daily_cost_limit"}
-    if set(value)!=required or value["authorized"] is not True:
+    optional={"response_format_mode","thinking_mode"}
+    if not required<=set(value) or set(value)-required-optional or value["authorized"] is not True:
         raise PermissionError("MODEL_AUTHORIZATION_REQUIRED")
     if (not isinstance(value["authorization_reference"],str)
             or not 1<=len(value["authorization_reference"])<=300):
@@ -40,7 +41,8 @@ def model_configuration(root):
         raise ValueError("TASK_LIMIT_EXCEEDS_DAILY_LIMIT")
     if type(value["max_completion_tokens_cap"]) is not int or not 512<=value["max_completion_tokens_cap"]<=4096:
         raise ValueError("MODEL_COMPLETION_CAP_INVALID")
-    OpenAICompatibleChatProvider(**{k:value[k] for k in ("endpoint","model_id","api_key_env","timeout_seconds","max_completion_tokens_cap")})
+    OpenAICompatibleChatProvider(**{k:value[k] for k in ("endpoint","model_id","api_key_env","timeout_seconds","max_completion_tokens_cap",
+        "response_format_mode","thinking_mode") if k in value})
     return value
 
 def model_status(root):
@@ -244,7 +246,8 @@ class LiveOperatingTaskService(ResearchTaskService):
         if self.test_provider is not None:return self.test_provider
         cfg=spec["config"]
         if not os.environ.get(cfg["api_key_env"]):raise PermissionError("MODEL_CREDENTIAL_REQUIRED")
-        return OpenAICompatibleChatProvider(**{k:cfg[k] for k in ("endpoint","model_id","api_key_env","timeout_seconds","max_completion_tokens_cap")})
+        return OpenAICompatibleChatProvider(**{k:cfg[k] for k in ("endpoint","model_id","api_key_env","timeout_seconds","max_completion_tokens_cap",
+        "response_format_mode","thinking_mode") if k in cfg})
 
     def _drive(self,task_id,now,*,resume):
         from .operating_draft_v1 import build_request, validate_response
@@ -312,16 +315,30 @@ class LiveOperatingTaskService(ResearchTaskService):
                             reserved_cost=str(Decimal(state["reserved_cost"])-reserve),
                             settled_cost=str(Decimal(state["settled_cost"])+actual))
                     generated=_now()
-                    validate_response(response,role=role,context=context,generated_at=generated)
+                    # Retain every returned answer BEFORE semantic/structure admission.
+                    # A rejected answer is audit evidence, never a role checkpoint or fact.
+                    packet=dict(role=role,request_sha256=_hash(_bytes(req.__dict__)),response=response.__dict__,
+                        generated_at=generated.isoformat(),context_fingerprint=spec["context_fingerprint"],
+                        action="no_order")
+                    with self._lock(directory):
+                        spec,state,pin=self._load(task_id)
+                        path=directory/("response-"+reservation+".json");write_new_bytes(path,_bytes(packet))
+                        response_pin=self._binding(path)
+                        returned=list(state.get("returned_responses",[]))+[response_pin]
+                        state,pin=self._save(spec,state,pin,_now(),returned_responses=returned)
+                    try:
+                        validate_response(response,role=role,context=context,generated_at=generated)
+                    except ValueError as validation:
+                        with self._lock(directory):
+                            spec,state,pin=self._load(task_id)
+                            state,pin=self._save(spec,state,pin,_now(),
+                                validation_error=str(validation)[:300],rejected_response=response_pin)
+                        raise
                     with self._lock(directory):
                         spec,state,pin=self._load(task_id)
                         if state["status"]=="CANCELLED":return self._view(spec,state,pin,_now())
                         self._context(spec)
-                        packet=dict(role=role,request_sha256=_hash(_bytes(req.__dict__)),response=response.__dict__,
-                            generated_at=generated.isoformat(),context_fingerprint=spec["context_fingerprint"],
-                            action="no_order")
-                        path=directory/("response-"+reservation+".json");write_new_bytes(path,_bytes(packet))
-                        roles=deepcopy(state["roles"]);roles[role]=self._binding(path)
+                        roles=deepcopy(state["roles"]);roles[role]=response_pin
                         state,pin=self._save(spec,state,pin,_now(),roles=roles)
                 with self._lock(directory):
                     spec,state,pin=self._load(task_id);self._context(spec);self._result(spec,state,context)

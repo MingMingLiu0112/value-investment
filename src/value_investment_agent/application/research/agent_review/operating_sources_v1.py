@@ -18,6 +18,7 @@ def build_operating_source_context(*,root,symbol,now,binding=None):
     root=Path(root)
     if now.utcoffset() is None or re.fullmatch(r"[0-9]{6}",symbol or "") is None:
         raise ValueError("Invalid research source identity/cutoff")
+    registry=None
     if binding is None:
         registry=_json(_raw(root/REGISTRY,65536))
         if (registry.get("schema_version")!="current-operating-research-sources-v1"
@@ -29,6 +30,15 @@ def build_operating_source_context(*,root,symbol,now,binding=None):
         raise ValueError("OPERATING_SOURCE_ISSUER_MISMATCH")
     manifest=_json(_raw(_binding(root,binding,runtime_only=False),MAX_JSON))
     source_map={s["id"]:s for s in manifest["sources"]}
+    config_path=root/REGISTRY
+    if registry is None and config_path.exists():
+        registry=_json(_raw(config_path,65536))
+    entry=(registry or {}).get("cases",{}).get(symbol,{})
+    extras=entry.get("cash_excerpts",[])
+    if extras and entry.get("native_facts")!=binding:
+        raise ValueError("SUPPLEMENT_SOURCE_BINDING_MISMATCH")
+    if not isinstance(extras,list) or len(extras)>4:
+        raise ValueError("SUPPLEMENT_EXCERPT_LIMIT")
     evidence=[]
     for row in manifest["facts"]:
         source=source_map[row["source_id"]]
@@ -61,6 +71,39 @@ def build_operating_source_context(*,root,symbol,now,binding=None):
             if count==4:break
         if hashlib.sha256(_raw(path,64*1024*1024)).hexdigest()!=before:
             raise ValueError("OPERATING_ORIGINAL_CHANGED_DURING_EXTRACTION")
+    for extra in extras:
+        if (not isinstance(extra,dict) or set(extra)!={"source_id","physical_page","scope"}
+                or type(extra["physical_page"]) is not int or not 1<=extra["physical_page"]<=300
+                or extra["scope"] not in {"CONSOLIDATED_CASH_FLOW","PARENT_CASH_FLOW"}
+                or extra["source_id"] not in source_map):
+            raise ValueError("SUPPLEMENT_EXCERPT_CONTRACT_INVALID")
+        source=source_map[extra["source_id"]];page_number=extra["physical_page"]
+        path=_binding(root,{"path":source["path"],"sha256":source["sha256"]},runtime_only=False)
+        if hashlib.sha256(_raw(path,64*1024*1024)).hexdigest()!=source["sha256"]:
+            raise ValueError("SUPPLEMENT_ORIGINAL_CHANGED")
+        pages=extract_pages(path,limit=page_number)
+        if len(pages)<page_number:raise ValueError("SUPPLEMENT_PAGE_MISSING")
+        text=pages[page_number-1]
+        anchor=text.find("购建固定资产")
+        if anchor<0:raise ValueError("SUPPLEMENT_CAPEX_ROW_MISSING")
+        # A following parent-company table header must not relabel an earlier group row.
+        nearby="\n".join(pages[max(0,page_number-3):page_number-1])+text[:anchor]
+        headers=list(re.finditer(r"(合并|母公司)现金流量表",nearby))
+        wanted="合并" if extra["scope"]=="CONSOLIDATED_CASH_FLOW" else "母公司"
+        if not headers or headers[-1].group(1)!=wanted:
+            raise ValueError("SUPPLEMENT_CASH_FLOW_SCOPE_NOT_PROVEN")
+        header=nearby[headers[-1].start():headers[-1].start()+240]
+        text=pages[page_number-1];flat=re.sub(r"\s+"," ",text)
+        match=re.search(r"购建固定资产.*?支付的现金\s+[-\d,.]+\s+[-\d,.]+",flat)
+        if match is None:raise ValueError("SUPPLEMENT_CAPEX_ROW_MISSING")
+        excerpt=header+"\n"+match.group(0)
+        evidence.append(dict(id=source["id"]+":cashflow-capex-"+str(page_number),
+            source_id=source["id"],pdf_sha256=source["sha256"],available_at=source["available_at"],
+            period=source["report_period"],scope=extra["scope"],unit="TEXT",text=excerpt,
+            physical_page=page_number,text_sha256=hashlib.sha256(excerpt.encode()).hexdigest(),
+            excerpt_truncated=True,kind="OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM"))
+        if hashlib.sha256(_raw(path,64*1024*1024)).hexdigest()!=source["sha256"]:
+            raise ValueError("SUPPLEMENT_ORIGINAL_CHANGED_DURING_EXTRACTION")
     if not selected:raise ValueError("OPERATING_BUSINESS_EXCERPTS_MISSING")
     value=dict(schema_version="operating-source-context-v1",symbol=symbol,
         issuer_name=manifest["issuer_name"],as_of=now.isoformat(),

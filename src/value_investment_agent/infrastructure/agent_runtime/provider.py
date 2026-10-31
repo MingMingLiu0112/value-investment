@@ -62,7 +62,8 @@ class OpenAICompatibleChatProvider:
 
     def __init__(self, *, endpoint: str, model_id: str, api_key_env: str,
                  timeout_seconds: int = 20, max_completion_tokens_cap: int = 512,
-                 response_size_cap: int = 65536) -> None:
+                 response_size_cap: int = 65536, response_format_mode: str = "json_schema",
+                 thinking_mode: str | None = None) -> None:
         parsed = urlsplit(endpoint)
         if (parsed.scheme != "https" or not parsed.hostname or parsed.username
                 or parsed.password or parsed.query or parsed.fragment
@@ -76,6 +77,12 @@ class OpenAICompatibleChatProvider:
             raise ValueError("LLM completion cap must be an integer within 1..8192")
         if type(response_size_cap) is not int or not 1 <= response_size_cap <= 262144:
             raise ValueError("LLM response size cap must be an integer within 1..262144")
+        if response_format_mode not in ("json_schema", "json_object"):
+            raise ValueError("LLM response format mode must be json_schema or json_object")
+        if thinking_mode not in (None, "disabled"):
+            raise ValueError("LLM thinking mode must be None or disabled")
+        self.response_format_mode = response_format_mode
+        self.thinking_mode = thinking_mode
         self.max_completion_tokens_cap = max_completion_tokens_cap
         self.response_size_cap = response_size_cap
         self.endpoint = endpoint
@@ -90,7 +97,7 @@ class OpenAICompatibleChatProvider:
         if (type(request.max_completion_tokens) is not int
                 or not 1 <= request.max_completion_tokens <= self.max_completion_tokens_cap):
             raise ValueError("LLM completion budget exceeded")
-        body = json.dumps({
+        payload = {
             "model": self.model_id,
             "messages": [{"role": "system", "content": request.system},
                          {"role": "user", "content": request.user}],
@@ -100,7 +107,19 @@ class OpenAICompatibleChatProvider:
             }},
             "max_completion_tokens": request.max_completion_tokens,
             "store": False,
-        }, ensure_ascii=False).encode("utf-8")
+        }
+        if self.response_format_mode == "json_object":
+            payload["response_format"] = {"type": "json_object"}
+            payload["max_tokens"] = payload.pop("max_completion_tokens")
+            # JSON mode transports no schema contract. Carry the same trusted
+            # request schema in the prompt; local validators remain mandatory.
+            payload["messages"][1]["content"] += (
+                "\n\nTRUSTED OUTPUT SCHEMA: Return only one JSON object strictly conforming "
+                "to this JSON Schema. Do not add keys or surrounding prose.\n"
+                + json.dumps(request.output_schema, ensure_ascii=False))
+        if self.thinking_mode is not None:
+            payload["thinking"] = {"type": self.thinking_mode}
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         http_request = Request(self.endpoint, data=body, method="POST", headers={
             "Authorization": "Bearer " + key,
             "Content-Type": "application/json",

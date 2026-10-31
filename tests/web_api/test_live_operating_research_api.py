@@ -213,3 +213,125 @@ def test_latest_task_never_falls_back_to_older_live_success(api,status,scope,err
     assert 'research_draft' not in body and 'valuation' not in body
     assert 'TEST_ONLY_OLD_MUST_NOT_ESCAPE' not in response.text
     assert not data.provider_calls and state(root)==before
+
+
+@pytest.mark.parametrize('status',['FAILED','WAITING_EVIDENCE','RUNNING','CANCELLED'])
+def test_latest_live_verified_partial_exposes_completed_roles_without_call_or_old_fallback(api,status):
+    client,_,data,root=api
+    latest=result(status=status)
+    latest['task_id']='TEST_ONLY-latest-partial'
+    latest['error_code']='DAILY_BUDGET_EXHAUSTED_BEFORE_CALL'
+    latest['new_llm_calls']=2
+    latest['research_draft']={
+        'FUNDAMENTAL':{'draft':{'label':'TEST_ONLY verified fundamental'}},
+        'COUNTER_EVIDENCE':{'draft':{'label':'TEST_ONLY verified countercase'}}}
+    old=result()
+    old['research_draft']={'label':'TEST_ONLY_OLD_MUST_NOT_ESCAPE'}
+    data.rows=[latest,old]
+    before=state(root)
+    response=client.get(BASE+'/companies/600519')
+    body=response.json()
+    assert response.status_code==200 and response.headers['cache-control']=='no-store'
+    assert body['status']=='PARTIAL' and body['execution_status']==status
+    assert body['task_id']=='TEST_ONLY-latest-partial'
+    assert body['reason']==body['error_code']=='DAILY_BUDGET_EXHAUSTED_BEFORE_CALL'
+    assert body['completed_roles']==['FUNDAMENTAL','COUNTER_EVIDENCE']
+    assert body['pending_roles']==['EVENT']
+    for key in ('scope','source_binding','model_id','new_llm_calls','research_draft',
+                'research_completeness','context_fingerprint','research_as_of'):
+        assert body[key]==latest[key]
+    assert body['action']=='no_order' and body['formal_eligibility'] is False
+    assert body['formal_fact_count']==0 and body['approval_changed'] is False
+    assert body['main_range_adopted'] is False and body['condition_price'] is None
+    assert body['personal_quantity'] is None
+    assert 'TEST_ONLY_OLD_MUST_NOT_ESCAPE' not in response.text
+    assert not data.provider_calls and state(root)==before
+
+
+@pytest.mark.parametrize('damage',['missing_draft','empty_draft','source_invalid',
+    'checkpoint_invalid','test_only','unknown_role'])
+def test_partial_requires_verified_live_draft_and_never_uses_old_success(api,damage):
+    client,_,data,root=api
+    latest=result(status='FAILED')
+    latest['task_id']='TEST_ONLY-latest-invalid'
+    latest['research_draft']={'FUNDAMENTAL':{'draft':{'label':'TEST_ONLY'}}}
+    if damage=='missing_draft':latest.pop('research_draft')
+    if damage=='empty_draft':latest['research_draft']={}
+    if damage=='source_invalid':
+        latest['error_code']='SOURCE_OR_IMPLEMENTATION_CHANGED'
+        latest.pop('research_draft')  # _view does not return a draft on failed source replay.
+    if damage=='checkpoint_invalid':latest['error_code']='LIVE_CHECKPOINT_INVALID'
+    if damage=='test_only':latest['scope']='TEST_ONLY_LIVE_CONTRACT_NOT_REAL_RESEARCH'
+    if damage=='unknown_role':latest['research_draft']={'TEST_ONLY_UNKNOWN':{}}
+    data.rows=[latest,result()]
+    before=state(root)
+    response=client.get(BASE+'/companies/600519')
+    body=response.json()
+    assert response.status_code==200 and body['status']=='UNASSESSABLE'
+    assert body['latest_task_status']=='FAILED' and body['task_id']==latest['task_id']
+    assert 'research_draft' not in body and 'completed_roles' not in body
+    assert body['action']=='no_order' and body['formal_eligibility'] is False
+    assert not data.provider_calls and state(root)==before
+
+
+def reviewed_result(status='SUCCEEDED'):
+    value=result(status=status)
+    value['roles']={role:{'path':'runtime/TEST_ONLY-'+role+'.json','sha256':letter*64}
+        for role,letter in [('FUNDAMENTAL','a'),('COUNTER_EVIDENCE','b')]}
+    value['research_draft']={role:{'draft':{'label':'TEST_ONLY'}} for role in value['roles']}
+    value['independent_review']=dict(source_context_fingerprint=value['context_fingerprint'],
+        reviewed_role_responses=deepcopy(value['roles']),status='REVIEW_REQUIRED_NOT_APPROVAL',
+        findings=[dict(priority='P2',role='COUNTER_EVIDENCE',claim_index=5,
+            reason='TEST_ONLY: 原草案已区分库存口径，反证未准确引用。')])
+    return value
+
+
+@pytest.mark.parametrize('status',['SUCCEEDED','FAILED'])
+def test_independent_review_requires_exact_source_and_role_pins_without_approval(api,status):
+    client,_,data,root=api
+    value=reviewed_result(status)
+    data.rows=[value]
+    before=state(root)
+    response=client.get(BASE+'/companies/600519')
+    body=response.json()
+    assert body['status']==('SUCCEEDED' if status=='SUCCEEDED' else 'PARTIAL')
+    assert body['independent_review']==value['independent_review']
+    assert body['independent_review_status']=='REVIEW_REQUIRED_NOT_APPROVAL'
+    assert body['research_draft']==value['research_draft']
+    assert body['formal_eligibility'] is False and body['formal_fact_count']==0
+    assert body['approval_changed'] is False and body['main_range_adopted'] is False
+    assert body['action']=='no_order'
+    assert data.rows==[value] and state(root)==before and not data.provider_calls
+
+
+@pytest.mark.parametrize('damage',['fingerprint','role_hash','missing_pin','extra_pin',
+    'missing_roles','approval','malformed'])
+def test_misbound_review_hidden_without_hiding_verified_draft_or_approving(api,damage):
+    client,_,data,root=api
+    value=reviewed_result('FAILED')
+    review=value['independent_review']
+    if damage=='fingerprint':review['source_context_fingerprint']='TEST_ONLY-other-source'
+    if damage=='role_hash':review['reviewed_role_responses']['FUNDAMENTAL']['sha256']='c'*64
+    if damage=='missing_pin':review['reviewed_role_responses'].pop('COUNTER_EVIDENCE')
+    if damage=='extra_pin':review['reviewed_role_responses']['EVENT']={'path':'runtime/TEST_ONLY','sha256':'d'*64}
+    if damage=='missing_roles':value.pop('roles')
+    if damage=='approval':review['status']='APPROVED'
+    if damage=='malformed':value['independent_review']=None
+    data.rows=[value]
+    before=state(root)
+    body=client.get(BASE+'/companies/600519').json()
+    assert body['status']=='PARTIAL' and body['execution_status']=='FAILED'
+    assert body['independent_review_status']=='REVIEW_BINDING_INVALID'
+    assert 'independent_review' not in body
+    assert body['research_draft']==value['research_draft']
+    assert body['formal_eligibility'] is False and body['approval_changed'] is False
+    assert body['main_range_adopted'] is False and body['action']=='no_order'
+    assert state(root)==before and not data.provider_calls
+
+
+def test_absent_review_remains_optional(api):
+    client,_,data,_=api
+    data.rows=[result()]
+    body=client.get(BASE+'/companies/600519').json()
+    assert body['status']=='SUCCEEDED'
+    assert 'independent_review' not in body and 'independent_review_status' not in body

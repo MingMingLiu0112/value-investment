@@ -4,7 +4,7 @@ import json,re
 from fastapi import FastAPI,Request,BackgroundTasks
 from fastapi.responses import JSONResponse
 from .local_auth import authorize,LocalAuthorizationError,AUTHORIZATION_REQUIRED
-from ...application.research.agent_review.operating_task_v2 import LiveOperatingTaskService,model_status
+from ...application.research.agent_review.operating_task_v2 import LiveOperatingTaskService,model_status,ROLES
 
 def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     service=LiveOperatingTaskService(project)
@@ -79,7 +79,11 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             if not tasks:return reply(dict(action="no_order",symbol=symbol,status="NOT_STARTED",
                 reason="NO_VERIFIED_LIVE_RESEARCH_RESULT",formal_eligibility=False))
             value=tasks[0]
-            if value["status"]!="SUCCEEDED" or value["scope"]!="LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED":
+            draft=value.get("research_draft")
+            verified_partial=(isinstance(draft,dict) and bool(draft) and set(draft)<=set(ROLES)
+                and value.get("error_code") not in {"SOURCE_OR_IMPLEMENTATION_CHANGED","LIVE_CHECKPOINT_INVALID"})
+            if (value["scope"]!="LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED"
+                    or (value["status"]!="SUCCEEDED" and not verified_partial)):
                 return reply(dict(action="no_order",symbol=symbol,status="UNASSESSABLE",
                     reason=value.get("error_code") or "LATEST_TASK_NOT_VERIFIED_LIVE_RESEARCH",
                     task_id=value["task_id"],latest_task_status=value["status"],formal_eligibility=False))
@@ -87,7 +91,28 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             keys=("symbol","status","task_id","scope","model_id","new_llm_calls","research_draft",
                   "context_fingerprint","source_binding","research_as_of","formal_fact_count",
                   "approval_changed","main_range_adopted","condition_price","personal_quantity","research_completeness")
-            return reply(dict(action="no_order",formal_eligibility=False,**{k:value[k] for k in keys}))
+            public={k:value[k] for k in keys}
+            if value["status"]!="SUCCEEDED":
+                public.update(status="PARTIAL",execution_status=value["status"],
+                    reason=value.get("error_code") or "LATEST_TASK_INCOMPLETE_VERIFIED_PARTIAL_RESEARCH",
+                    error_code=value.get("error_code"),
+                    completed_roles=[role for role in ROLES if role in draft],
+                    pending_roles=[role for role in ROLES if role not in draft])
+            if "independent_review" in value:
+                review=value["independent_review"]
+                roles=value.get("roles")
+                valid=(isinstance(review,dict) and isinstance(roles,dict) and bool(roles)
+                    and isinstance(value.get("context_fingerprint"),str) and bool(value["context_fingerprint"])
+                    and review.get("source_context_fingerprint")==value["context_fingerprint"]
+                    and review.get("reviewed_role_responses")==roles
+                    and review.get("status")=="REVIEW_REQUIRED_NOT_APPROVAL"
+                    and isinstance(review.get("findings"),list))
+                public["independent_review_status"]=("REVIEW_REQUIRED_NOT_APPROVAL" if valid
+                    else "REVIEW_BINDING_INVALID")
+                if valid:
+                    public["independent_review"]={key:review[key] for key in
+                        ("source_context_fingerprint","reviewed_role_responses","status","findings")}
+            return reply(dict(action="no_order",formal_eligibility=False,**public))
         except (ValueError,OSError,KeyError,RuntimeError,TypeError):
             return reply(dict(action="no_order",symbol=symbol,status="UNASSESSABLE",
                 reason="LIVE_SOURCE_OR_CHECKPOINT_NOT_VERIFIED",formal_eligibility=False))

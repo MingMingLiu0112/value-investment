@@ -741,8 +741,18 @@ export type OperatingResearchCompleteness = {
   status: "REVIEW_REQUIRED" | "INSUFFICIENT_FOR_NUMERIC_SCENARIOS";
   economic_validation: "NOT_APPROVED";
 };
+export type OperatingResearchIndependentReview = {
+  status: "REVIEW_REQUIRED_NOT_APPROVAL";
+  findings: {
+    priority: string;
+    role: "FUNDAMENTAL" | "COUNTER_EVIDENCE" | "EVENT";
+    claim_index: number;
+    reason: string;
+  }[];
+};
 export type LiveOperatingResearchTask = {
   research_completeness?: OperatingResearchCompleteness;
+  independent_review?: OperatingResearchIndependentReview;
   task_id: string;
   symbol: string;
   status: string;
@@ -778,6 +788,7 @@ export type LiveOperatingResearchRole = {
 };
 export type PublicOperatingResearchSuccess = Pick<
   LiveOperatingResearchTask,
+  | "independent_review"
   | "research_completeness"
   | "task_id"
   | "symbol"
@@ -802,7 +813,23 @@ export type PublicOperatingResearchSuccess = Pick<
     LiveOperatingResearchRole
   >;
 };
+export type OperatingResearchRoleKey =
+  "FUNDAMENTAL" | "COUNTER_EVIDENCE" | "EVENT";
+export type PublicOperatingResearchPartial = Omit<
+  PublicOperatingResearchSuccess,
+  "status" | "research_draft"
+> & {
+  status: "PARTIAL";
+  execution_status: "FAILED";
+  reason: string;
+  completed_roles: OperatingResearchRoleKey[];
+  pending_roles: OperatingResearchRoleKey[];
+  research_draft: Partial<
+    Record<OperatingResearchRoleKey, LiveOperatingResearchRole>
+  >;
+};
 export type PublicOperatingResearchResult =
+  | PublicOperatingResearchPartial
   | PublicOperatingResearchSuccess
   | {
       action: "no_order";

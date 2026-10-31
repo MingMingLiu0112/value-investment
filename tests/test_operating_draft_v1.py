@@ -160,3 +160,109 @@ def test_foreign_or_admitted_or_malformed_proposal_rejected(context, damage):
     elif damage == 'thesis': proposal['thesis'] = 'old thesis'
     else: role = 'FUNDAMENTAL'
     with pytest.raises(ValueError): mod.build_request(role, context, fundamental_draft=proposal)
+
+
+@pytest.mark.parametrize('role', ['COUNTER_EVIDENCE', 'EVENT'])
+def test_91_source_40k_context_proposal_fits_without_duplicate_catalog_but_checks_hash(context, role):
+    """TEST_ONLY near-production size; all provenance remains checked, not resent."""
+    template = deepcopy(context['evidence'][0])
+    context['evidence'] = [dict(template,
+        id='row:1' if index == 0 else f'native-fact-{index}-' + 'f' * 40,
+        source_id=f'official-source-{index}-' + 's' * 25)
+        for index in range(91)]
+    # Use canonical character length, matching the production prompt guard.
+    # Padding is synthetic source text, not additional forecast parameters.
+    remaining = 41000 - len(mod._canonical(context))
+    assert remaining > 0
+    for row in context['evidence']:
+        padding = min(remaining, 1900)
+        row['text'] += '据' * padding
+        remaining -= padding
+        if remaining == 0:
+            break
+    assert remaining == 0 and len(mod._canonical(context)) == 41000
+    before = deepcopy(context)
+    proposal = mod.validate_response(json.dumps(output('FUNDAMENTAL')), 'FUNDAMENTAL', context, NOW)
+    assert len(proposal['source_bindings']) == 91
+    request = mod.build_request(role, context, fundamental_draft=proposal)
+    assert 41000 < len(request.user) < 64000
+    assert 'UNTRUSTED_NEW_PROPOSAL' in request.user
+    assert '"source_bindings"' not in request.user
+    # This size would exceed the old bound if the full catalog were resent.
+    redundant = len('"source_bindings":') + len(mod._canonical(proposal['source_bindings'])) + 1
+    assert len(request.user) + redundant > 64000
+    assert request == mod.build_request(role, context, fundamental_draft=proposal)
+    assert context == before
+    corrupted = deepcopy(proposal)
+    corrupted['source_bindings'][-1]['pdf_sha256'] = 'c' * 64
+    with pytest.raises(ValueError, match='issuer/source/status mismatch'):
+        mod.build_request(role, context, fundamental_draft=corrupted)
+
+
+def test_prompt_context_91_rows_is_lossless_scope_aware_and_smaller(context):
+    template = deepcopy(context['evidence'][0])
+    rows = []
+    for index in range(91):
+        source = index % 2
+        row = dict(template, id='row:1' if index == 0 else f'fact-or-excerpt:{index}',
+                   source_id=f'official:{source}', pdf_sha256=('b' if source == 0 else 'c') * 64,
+                   scope='parent' if index % 3 == 0 else 'consolidated',
+                   text='仅为合成规模测试，保留原文和数值，不作经济事实。' * 4)
+        if index >= 84:
+            row.pop('value')
+            row.update(scope='ISSUER_REPORTED_NARRATIVE', unit='TEXT')
+        rows.append(row)
+    context['evidence'] = rows
+    remaining = 41000 - len(mod._canonical(context))
+    assert remaining > 0
+    for row in rows:
+        padding = min(remaining, 1600)
+        row['text'] += '据' * padding
+        remaining -= padding
+        if remaining == 0:
+            break
+    assert remaining == 0
+    original = deepcopy(context)
+    view = mod._prompt_context(context)
+    assert len(view['evidence']) == 91 and len(view['source_catalog']) == 2
+    assert len(mod._canonical(view)) < len(mod._canonical(context)) - 8000
+    for old, projected in zip(rows, view['evidence']):
+        metadata = view['source_catalog'][projected['source_ref']]
+        assert metadata['source_id'] == projected['source_id'] == old['source_id']
+        restored = {key: value for key, value in projected.items() if key != 'source_ref'}
+        restored.update(metadata)
+        assert restored == old
+    assert context == original
+    for role in mod.ROLES:
+        request = mod.build_request(role, context)
+        assert 'Parent-only CapEx is not a group project budget' in request.system
+        assert 'investment must be UNKNOWN' in request.system
+        assert 'inventory is not dealer/channel' in request.system
+        assert 'comparison baseline' in request.system
+        assert mod._canonical(view) in request.user
+    proposal = mod.validate_response(json.dumps(output('FUNDAMENTAL')), 'FUNDAMENTAL', context, NOW)
+    assert proposal['prompt_version'] == mod.PROMPT_VERSION
+    assert len(proposal['source_bindings']) == 91
+    assert proposal['context_sha256'] == mod._sha(context)
+    for role in ('COUNTER_EVIDENCE', 'EVENT'):
+        request = mod.build_request(role, context, fundamental_draft=proposal)
+        assert len(request.user) < 64000
+        corrupt = deepcopy(proposal)
+        corrupt['source_bindings'][-1]['pdf_sha256'] = 'd' * 64
+        with pytest.raises(ValueError): mod.build_request(role, context, fundamental_draft=corrupt)
+    corrupt = deepcopy(proposal)
+    corrupt['prompt_version'] = 'old-prompt'
+    with pytest.raises(ValueError): mod.build_request('COUNTER_EVIDENCE', context, fundamental_draft=corrupt)
+    del corrupt['prompt_version']
+    with pytest.raises(ValueError): mod.build_request('EVENT', context, fundamental_draft=corrupt)
+
+
+def test_prompt_catalog_disambiguates_same_source_id_hash_and_time(context):
+    first = context['evidence'][0]
+    context['evidence'] += [dict(first, id='row:2', pdf_sha256='c' * 64),
+                            dict(first, id='row:3', available_at='2026-10-29T00:00:00+00:00')]
+    view = mod._prompt_context(context)
+    assert len(view['source_catalog']) == 3
+    assert len({row['source_ref'] for row in view['evidence']}) == 3
+    context['evidence'][-1]['available_at'] = '2027-01-01T00:00:00+00:00'
+    with pytest.raises(ValueError): mod.build_request('EVENT', context)

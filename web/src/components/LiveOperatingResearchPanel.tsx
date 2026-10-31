@@ -7,6 +7,8 @@ import {
   type OperatingResearchModelStatus,
   type PublicOperatingResearchResult,
   type PublicOperatingResearchSuccess,
+  type PublicOperatingResearchPartial,
+  type OperatingResearchRoleKey,
 } from "../services/api";
 
 const LABELS: Record<string, string> = {
@@ -37,6 +39,10 @@ const LABELS: Record<string, string> = {
   ratio: "比率",
   not_quantified: "未量化",
   CNY: "人民币元",
+  FUNDAMENTAL: "经营基本面",
+  COUNTER_EVIDENCE: "反证与失效",
+  EVENT: "事件研究",
+  PARTIAL: "部分研究可读，任务未全部完成",
   QUEUED: "已排队",
   RUNNING: "研究中",
   SUCCEEDED: "任务完成",
@@ -107,7 +113,10 @@ export function validLiveTask(
 export function LiveOperatingResearchDraft({
   task,
 }: {
-  task: LiveOperatingResearchTask | PublicOperatingResearchSuccess;
+  task:
+    | LiveOperatingResearchTask
+    | PublicOperatingResearchSuccess
+    | PublicOperatingResearchPartial;
 }) {
   return (
     <section aria-label="新Agent经营研究结果">
@@ -134,7 +143,47 @@ export function LiveOperatingResearchDraft({
         研究截止：{task.research_as_of || "未提供"} ·
         经济主区间未采用；审批未改变，正式事实新增 0。
       </p>
-      <p>任务完成仅表示流程完成，不代表经营或估值研究充分。</p>
+      {task.status === "PARTIAL" && "completed_roles" in task ? (
+        <Alert
+          type="warning"
+          message="仅部分角色研究可读，三角色未全部完成，执行状态为失败"
+          description={
+            <>
+              <p>
+                已完成：
+                {task.completed_roles.map((role) => LABELS[role]).join("、")}
+                ；待完成：
+                {task.pending_roles.map((role) => LABELS[role]).join("、")}。
+              </p>
+              <p>
+                {task.reason === "DAILY_BUDGET_EXHAUSTED_BEFORE_CALL"
+                  ? "事件研究待预算：调用前预算预留被拒，未完成事件模型研究；本轮已停止于每日预算预留，事件待继续。"
+                  : "最新执行未完成，待完成角色不能视为已有研究结果。"}
+              </p>
+              <p>部分草案不代表经营或估值研究充分，经济主区间仍未采用。</p>
+            </>
+          }
+        />
+      ) : (
+        <p>任务完成仅表示流程完成，不代表经营或估值研究充分。</p>
+      )}
+      <p>任务成功不等于研究可信；反证本身也可能存在误述，需逐条核验。</p>
+      {task.independent_review && (
+        <Alert
+          type="warning"
+          message="独立复核待处理，不代表批准；反证也可能有误述"
+          description={
+            <ul>
+              {task.independent_review.findings.map((finding, index) => (
+                <li key={index}>
+                  {finding.priority} · {LABELS[finding.role] || finding.role} ·
+                  原始条目索引 {finding.claim_index}：{finding.reason}
+                </li>
+              ))}
+            </ul>
+          }
+        />
+      )}
       {task.research_completeness ? (
         <section aria-label="研究完整度">
           <p>
@@ -166,20 +215,26 @@ export function LiveOperatingResearchDraft({
             ["COUNTER_EVIDENCE", "反证与失效草案"],
             ["EVENT", "事件与后续核验草案"],
           ] as const
-        ).map(([key, title]) => (
-          <section key={key}>
-            <h4>{title}</h4>
-            <Readable
-              value={
-                task.research_draft?.[key] &&
-                typeof task.research_draft[key] === "object" &&
-                "draft" in task.research_draft[key]
-                  ? (task.research_draft[key] as { draft: unknown }).draft
-                  : task.research_draft?.[key]
-              }
-            />
-          </section>
-        ))
+        )
+          .filter(
+            ([key]) =>
+              task.status !== "PARTIAL" ||
+              ("completed_roles" in task && task.completed_roles.includes(key)),
+          )
+          .map(([key, title]) => (
+            <section key={key}>
+              <h4>{title}</h4>
+              <Readable
+                value={
+                  task.research_draft?.[key] &&
+                  typeof task.research_draft[key] === "object" &&
+                  "draft" in task.research_draft[key]
+                    ? (task.research_draft[key] as { draft: unknown }).draft
+                    : task.research_draft?.[key]
+                }
+              />
+            </section>
+          ))
       ) : (
         <p>尚无可读研究草案，不据此补成研究结论。</p>
       )}
@@ -220,8 +275,45 @@ export function PublicOperatingResearchView({
         description={value.reason}
       />
     );
+  if (value.status !== "SUCCEEDED" && value.status !== "PARTIAL")
+    return <Alert type="warning" message="公开经营研究状态不符，停止展示" />;
+  const allRoles: OperatingResearchRoleKey[] = [
+    "FUNDAMENTAL",
+    "COUNTER_EVIDENCE",
+    "EVENT",
+  ];
+  const partial = value.status === "PARTIAL";
+  const completed = partial ? value.completed_roles : allRoles;
+  const rolePartitionValid =
+    !partial ||
+    (value.execution_status === "FAILED" &&
+      Array.isArray(value.completed_roles) &&
+      value.completed_roles.length > 0 &&
+      value.completed_roles.length < allRoles.length &&
+      Array.isArray(value.pending_roles) &&
+      value.pending_roles.length > 0 &&
+      [...value.completed_roles, ...value.pending_roles].length ===
+        allRoles.length &&
+      new Set([...value.completed_roles, ...value.pending_roles]).size ===
+        allRoles.length &&
+      [...value.completed_roles, ...value.pending_roles].every((role) =>
+        allRoles.includes(role),
+      ) &&
+      typeof value.reason === "string" &&
+      !!value.reason &&
+      Object.keys(value.research_draft || {}).length ===
+        value.completed_roles.length &&
+      Object.keys(value.research_draft || {}).every((role) =>
+        value.completed_roles.includes(role as OperatingResearchRoleKey),
+      ));
+  const source = value.source_binding as { sha256?: unknown } | null;
+  const hash = (item: unknown) =>
+    typeof item === "string" && /^[a-f0-9]{64}$/.test(item);
   if (
-    value.status !== "SUCCEEDED" ||
+    (value.status !== "SUCCEEDED" && value.status !== "PARTIAL") ||
+    !rolePartitionValid ||
+    (value.research_completeness != null &&
+      value.research_completeness.economic_validation !== "NOT_APPROVED") ||
     value.scope !== "LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED" ||
     value.main_range_adopted !== false ||
     value.approval_changed !== false ||
@@ -229,11 +321,11 @@ export function PublicOperatingResearchView({
     value.condition_price !== null ||
     value.personal_quantity !== null ||
     !value.task_id ||
-    !value.context_fingerprint ||
-    !value.source_binding ||
+    !hash(value.context_fingerprint) ||
+    !hash(source?.sha256) ||
     !Number.isInteger(value.new_llm_calls) ||
     value.new_llm_calls < 1 ||
-    (["FUNDAMENTAL", "COUNTER_EVIDENCE", "EVENT"] as const).some((role) => {
+    (Array.isArray(completed) ? completed : allRoles).some((role) => {
       const row = value.research_draft?.[role];
       return (
         !row ||
@@ -241,6 +333,12 @@ export function PublicOperatingResearchView({
         !row.generated_at ||
         !Array.isArray(row.source_bindings) ||
         !row.source_bindings.length ||
+        row.source_bindings.some(
+          (ref) =>
+            !ref ||
+            typeof ref !== "object" ||
+            !hash((ref as { pdf_sha256?: unknown }).pdf_sha256),
+        ) ||
         !row.draft ||
         typeof row.draft !== "object" ||
         Array.isArray(row.draft)

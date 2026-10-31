@@ -198,9 +198,10 @@ export const catalog: Record<
           "src/value_investment_agent/infrastructure/agent_runtime/provider.py",
           "src/value_investment_agent/application/research/agent_review/operating_task_v2.py",
         ],
-        engineeringStatus: "真实Provider执行已接／真实调用待验",
-        evidenceStatus: "000568真实事实与原文请求已验；外部模型尚未调用",
-        shortStatus: "真实三角色工作流已接；模型接口及名称待指定",
+        engineeringStatus: "真实调用、逐角色恢复与日预算拦截已验证",
+        evidenceStatus:
+          "000568真实调用7次；最新基本面与反证通过结构引用校验，事件预算前置拦截",
+        shortStatus: "真实执行已有产出；最新事件未完成，不宣称三角色完整验收",
         implementation:
           "复用D1追加状态和锁，接真实Provider、逐角色检查点、调用前CNY预留、跨任务日限额和显式取消恢复",
         milestone:
@@ -210,9 +211,9 @@ export const catalog: Record<
         evidenceSource:
           "artifacts/current/live-operating-research-d1-d2-20261031.json；.tmp/live-operating-integrated.xml",
         evidence:
-          "已授权每日人民币10元；服务商/API与模型尚未指定，未发送凭证、零真实调用",
+          "每日上限10元；按配置保守费率估算7.33345元，非网关账单；下一请求预留不足，未发出",
         nextStep:
-          "指定凭证所属API与模型并核验费率后，执行真实公司三角色研究；不猜测接口",
+          "保持本轮不再付费；事件待后续预算及显式继续，复核反证误述，不提高预算或降低预留",
         ruleWhy: "执行可靠性与投资判断不同；Mock只能证明工程路径。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
@@ -220,7 +221,7 @@ export const catalog: Record<
           consumer:
             "现有公司AI区域显式操作 → 任务API → 持久执行器；不在首屏后台调用",
           realData:
-            "000568真实来源请求通过；模拟Provider只计工程验证，不计真实模型验收",
+            "84项财务事实与9段官方原文；真实响应、拒绝原文、用量、恢复与预算回执均保留",
           economic: "不适用或由下游独立准入",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",
@@ -237,22 +238,23 @@ export const catalog: Record<
           "src/value_investment_agent/application/research/product_operating_research.py",
           "src/value_investment_agent/application/research/agent_review/operating_draft_v1.py",
         ],
-        engineeringStatus: "新Agent草案生成已接／真实输出待验",
-        evidenceStatus: "既有研究保留；新经营假设、反证与情景合同已接",
+        engineeringStatus: "真实经营草案与反证部分交付／事件待完成",
+        evidenceStatus:
+          "最新真实三情景：9项预测区间、6项UNKNOWN；不是批准主估值",
         shortStatus:
           "新经营假设 → 针对本次假设的反证 → 已见事件与未覆盖事项；不复制旧结论",
         implementation:
           "真实Provider读取核验事实与经营原文；经营五维区间、反证、失效与事件输出经独立结构和引用校验；GET不调用模型",
         milestone:
-          "真实生成链工程已接；模型尚未实际调用，不用模拟输出或已有研究包冒充新研究。",
+          "真实基本面修正了母/合并资本投入与公司/渠道库存混淆；新反证存在两项误述，独审标为待复核，不采纳为事实。",
         existingEvidence:
           "历史D2两公司草案保留；新合同覆盖三情景、增长/盈利/投入/资金可达/终端区间或明确UNKNOWN",
         evidenceSource:
-          "artifacts/current/live-operating-research-d1-d2-20261031.json；真实调用回执尚未形成",
+          "artifacts/current/live-operating-research-d1-d2-20261031.json；runtime/live-operating-research-20261031/actual/",
         evidence:
           "新草案不写事实、估值或批准；任务成功与数值假设充分性分别显示",
         nextStep:
-          "真实调用后复核经营假设及反证的经济质量，再考虑是否可供E2编译；不自动取得主估值",
+          "完成最新事件分析和反证误述处理后，再评估假设能否进入E2；不将未知投入/资金可达性补成数字",
         ruleWhy: "价格上涨不直接等于净利上涨；预测必须明确为假设。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
@@ -260,7 +262,7 @@ export const catalog: Record<
           consumer:
             "公开假设API → 现有价值公司详情；研究期、反证、失效默认可读",
           realData:
-            "000568真实事实与7段官方原文已备；真实模型生成待接口/模型配置",
+            "000568真实来源生成新情景；基本面与反证可读，最新事件缺失，旧成功结果不冒充当前完成",
           economic: "条件研究／未批准",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",

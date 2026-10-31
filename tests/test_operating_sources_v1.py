@@ -229,7 +229,7 @@ def test_original_changed_during_narrative_extraction_rejected(source_case, monk
                                                   symbol="000001", now=NOW, binding=binding)
 
 
-def test_real_000568_84_native_facts_and_7_official_excerpts():
+def test_real_000568_84_native_facts_and_9_official_excerpts():
     configured = os.environ.get("OPERATING_SOURCES_REAL_ROOT")
     if not configured:
         pytest.skip("REAL SOURCE NOT VALIDATED: set OPERATING_SOURCES_REAL_ROOT explicitly")
@@ -239,4 +239,94 @@ def test_real_000568_84_native_facts_and_7_official_excerpts():
     assert result["issuer_name"] == "泸州老窖股份有限公司"
     assert result["action"] == "no_order"
     assert sum(r["kind"] == "VERIFIED_REPORTED_FACT" for r in result["evidence"]) == 84
-    assert sum(r["kind"] == "OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM" for r in result["evidence"]) == 7
+    assert sum(r["kind"] == "OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM" for r in result["evidence"]) == 9
+    business = [r for r in result["evidence"] if r["scope"] == "ISSUER_REPORTED_NARRATIVE"]
+    cash = [r for r in result["evidence"] if ":cashflow-capex-" in r["id"]]
+    assert len(business) == 7 and len(cash) == 2
+    expected = {"cninfo:1225240660": (83, "1,932,762,969.97", "652,780,256.66"),
+                "cninfo:1225501255": (45, "713,743,846.14", "413,591,845.80")}
+    for row in cash:
+        page, group_amount, parent_amount = expected[row["source_id"]]
+        assert row["physical_page"] == page
+        assert row["scope"] == "CONSOLIDATED_CASH_FLOW"
+        assert "合并现金流量表" in row["text"]
+        assert group_amount in row["text"] and parent_amount not in row["text"]
+        assert row["kind"] == "OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM"
+        assert row["text_sha256"] == digest(row["text"].encode())
+
+
+
+
+def configure_cash_excerpt(case, *, scope="CONSOLIDATED_CASH_FLOW", page=5):
+    """TEST_ONLY main CF and comparative capex rows in the same bound original."""
+    case["pages"].extend([
+        "合并现金流量表\n单位：元 币种：人民币\n项目 2025年度 2024年度",
+        "购建固定资产、无形资产和其他长期资产支付的现金 900.00 700.00",
+    ])
+    binding = case["seal"]()
+    registry = dict(schema_version="current-operating-research-sources-v1", action="no_order",
+                    cases={"000001": {"native_facts": binding, "cash_excerpts": [
+                        {"source_id": "TEST_ONLY-source", "physical_page": page, "scope": scope}]}})
+    path = case["root"] / operating.REGISTRY
+    path.parent.mkdir(exist_ok=True)
+    path.write_bytes(operating.encode(registry))
+    return binding
+
+
+def test_consolidated_capex_has_group_scope_and_source_binding(source_case):
+    result = build(source_case, configure_cash_excerpt(source_case))
+    row = next(r for r in result["evidence"] if ":cashflow-capex-" in r["id"])
+    assert row["scope"] == "CONSOLIDATED_CASH_FLOW"
+    assert row["physical_page"] == 5
+    assert "900.00 700.00" in row["text"]
+    assert "合并现金流量表" in row["text"]
+    assert row["pdf_sha256"] == digest(RAW)
+    assert row["kind"] == "OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM"
+    assert row["text_sha256"] == digest(row["text"].encode())
+
+
+@pytest.mark.parametrize("fault,error", [
+    ("wrong_scope", "SUPPLEMENT_CASH_FLOW_SCOPE_NOT_PROVEN"),
+    ("wrong_page", "SUPPLEMENT_CAPEX_ROW_MISSING"),
+    ("missing_page", "SUPPLEMENT_PAGE_MISSING"),
+    ("unknown_source", "SUPPLEMENT_EXCERPT_CONTRACT_INVALID"),
+    ("wrong_hash", "hash/size mismatch"),
+    ("registry_binding", "SUPPLEMENT_SOURCE_BINDING_MISMATCH"),
+])
+def test_cash_excerpt_rejects_wrong_scope_page_or_hash(source_case, fault, error):
+    binding = configure_cash_excerpt(source_case,
+                                     scope="PARENT_CASH_FLOW" if fault == "wrong_scope"
+                                     else "CONSOLIDATED_CASH_FLOW",
+                                     page=4 if fault == "wrong_page" else 99 if fault == "missing_page" else 5)
+    path = source_case["root"] / operating.REGISTRY
+    registry = json.loads(path.read_text(encoding="utf-8"))
+    if fault == "unknown_source":
+        registry["cases"]["000001"]["cash_excerpts"][0]["source_id"] = "UNKNOWN"
+    elif fault == "wrong_hash":
+        source_case["original"].write_bytes(RAW + b"tampered")
+    elif fault == "registry_binding":
+        registry["cases"]["000001"]["native_facts"]["sha256"] = "0" * 64
+    path.write_bytes(operating.encode(registry))
+    with pytest.raises(ValueError, match=error):
+        build(source_case, binding)
+
+
+def test_group_capex_before_later_parent_heading_on_same_page(source_case):
+    binding = configure_cash_excerpt(source_case)
+    source_case["pages"][4] += (
+        "\n母公司现金流量表\n单位：元 币种：人民币\n项目 2025年度 2024年度"
+        "\n经营活动产生的现金流量净额 30.00 20.00")
+    result = build(source_case, binding)
+    row = next(r for r in result["evidence"] if ":cashflow-capex-" in r["id"])
+    assert row["scope"] == "CONSOLIDATED_CASH_FLOW"
+    assert "900.00 700.00" in row["text"]
+    assert "母公司现金流量表" not in row["text"]
+
+
+def test_parent_capex_cannot_be_relabelled_as_group(source_case):
+    binding = configure_cash_excerpt(source_case)
+    source_case["pages"][4] = (
+        "母公司现金流量表\n单位：元 币种：人民币\n项目 2025年度 2024年度\n"
+        "购建固定资产、无形资产和其他长期资产支付的现金 90.00 70.00")
+    with pytest.raises(ValueError, match="SUPPLEMENT_CASH_FLOW_SCOPE_NOT_PROVEN"):
+        build(source_case, binding)

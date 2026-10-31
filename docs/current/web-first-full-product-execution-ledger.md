@@ -7416,3 +7416,31 @@ an explicit new-Agent entry, separate from old saved-response controls and old
 research packages. /project separates engineering from real model/research
 acceptance. No hotspot, C expansion, model redesign or production/server work.
 action=no_order.
+
+### 2026-10-31 D1/D2 genuine model continuation (supersedes configuration-pending observation)
+
+User supplied explicit gateway/model and CNY10 daily authorization. Credential is
+User environment only; ignored local configuration contains no secret. Seven actual
+requests used deepseek-flash. Conservative configured-rate accounting is CNY7.33345,
+NOT verified gateway billing. Remaining2.66655 cannot cover next Event reservation
+3.5167: preflight refused before network. No further paid calls this round.
+
+Latest rt-f55b4f35d02d6936dd7300e7150205af retains verified Fundamental and
+Counter-Evidence checkpoints after explicit recovery from malformed Counter JSON.
+Returned bodies are now sealed before semantic validation, including rejected answers.
+Three scenarios contain9 numeric forecast ranges and6 UNKNOWN investment/funding
+dimensions. Input is84 native financial facts plus9 official excerpts, no old forecast.
+Latest Event is NOT executed. Earlier rt-c0c0a316d3e6ab1d959ac738d2bf287d completed
+three real roles but had two scope errors; it is historical, not current acceptance.
+
+Independent source/economic review confirms the latest Fundamental separates parent/
+group CapEx and issuer/dealer inventory. Two new Counter claims misdescribe that
+Fundamental; retain raw response and bind explicit REVIEW_REQUIRED_NOT_APPROVAL
+warnings to exact role-response and source fingerprints. They are not adopted facts.
+Neither task success nor schema/source validation proves economic adequacy.
+
+Public API exposes verified PARTIAL research with Event/budget reason and independent
+review, without promotion to formal eligibility, valuation, condition price or quantity.
+Current evidence index: artifacts/current/live-operating-research-d1-d2-20261031.json.
+Actual raw/history and budget receipts: runtime/live-operating-research-20261031/actual/.
+No hotspot, C expansion, account, Excel, server or scheduler changes. action=no_order.

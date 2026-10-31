@@ -505,3 +505,156 @@ it("keeps legacy responses without completeness compatible and never assumes suf
   expect(html).toContain("尚未提供研究完整度统计，不推定研究充分");
   expect(html).not.toContain("情景数：");
 });
+
+function publicPartial() {
+  const success = publicSuccess();
+  const { EVENT, ...draft } = success.research_draft;
+  return {
+    ...success,
+    status: "PARTIAL" as const,
+    execution_status: "FAILED" as const,
+    reason: "DAILY_BUDGET_EXHAUSTED_BEFORE_CALL",
+    completed_roles: ["FUNDAMENTAL", "COUNTER_EVIDENCE"] as (
+      "FUNDAMENTAL" | "COUNTER_EVIDENCE" | "EVENT"
+    )[],
+    pending_roles: ["EVENT"] as (
+      "FUNDAMENTAL" | "COUNTER_EVIDENCE" | "EVENT"
+    )[],
+    research_draft: draft,
+  };
+}
+it("shows current source-bound partial F/C only with explicit Event budget gap and failed execution", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const html = renderToStaticMarkup(
+    <PublicOperatingResearchView value={publicPartial()} symbol="600519" />,
+  );
+  for (const text of [
+    "TEST_ONLY_PUBLIC_BUSINESS",
+    "TEST_ONLY_PUBLIC_COUNTER",
+    "三角色未全部完成",
+    "执行状态为失败",
+    "事件研究待预算",
+    "调用前预算预留被拒",
+    "本轮已停止于每日预算预留，事件待继续",
+    "正式事实新增 0",
+    "经济主区间未采用",
+    "不发起新调用",
+  ])
+    expect(html).toContain(text);
+  expect(html).not.toContain("TEST_ONLY_PUBLIC_GAP");
+  expect(html).not.toContain("事件与后续核验草案");
+  expect(html).not.toContain("任务完成仅表示流程完成");
+});
+it("keeps current public partial visible without model configuration or private history permission and never calls model", async () => {
+  calls.status.mockResolvedValue({
+    status: "MODEL_AUTHORIZATION_REQUIRED",
+    model_id: null,
+  });
+  calls.publicRead.mockResolvedValue(publicPartial());
+  await click("新Agent经营研究");
+  expect(shown()).toContain("TEST_ONLY_PUBLIC_BUSINESS");
+  expect(shown()).toContain("PARTIAL");
+  expect(button("启动新研究").props.disabled).toBe(true);
+  expect(calls.start).not.toHaveBeenCalled();
+  expect(calls.history).not.toHaveBeenCalled();
+  calls.history.mockRejectedValue(
+    new ApiError(401, "AUTH_REQUIRED", "TEST_ONLY"),
+  );
+  await click("读取已有经营研究任务");
+  expect(shown()).toContain("TEST_ONLY_PUBLIC_COUNTER");
+  expect(calls.resume).not.toHaveBeenCalled();
+});
+it.each([
+  { execution_status: "SUCCEEDED" },
+  {
+    completed_roles: ["FUNDAMENTAL", "COUNTER_EVIDENCE", "EVENT"],
+    pending_roles: [],
+  },
+  { completed_roles: ["FUNDAMENTAL", "FUNDAMENTAL"], pending_roles: ["EVENT"] },
+  { completed_roles: ["FUNDAMENTAL"], pending_roles: ["EVENT"] },
+  { scope: "TEST_ONLY_LIVE_CONTRACT_NOT_REAL_RESEARCH" },
+  { action: "order" },
+  { formal_eligibility: true },
+  { approval_changed: true },
+  { main_range_adopted: true },
+  { formal_fact_count: 1 },
+  { condition_price: "1" },
+  { personal_quantity: 1 },
+  { source_binding: { sha256: "broken" } },
+  { context_fingerprint: "broken" },
+  {
+    research_draft: {
+      ...publicPartial().research_draft,
+      EVENT: publicSuccess().research_draft.EVENT,
+    },
+  },
+  {
+    research_draft: {
+      ...publicPartial().research_draft,
+      FUNDAMENTAL: {
+        ...publicPartial().research_draft.FUNDAMENTAL,
+        source_bindings: [{ pdf_sha256: "broken" }],
+      },
+    },
+  },
+])("stops partial with invalid role/source/no-order boundary %j", (change) => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = { ...publicPartial(), ...change };
+  const html = renderToStaticMarkup(
+    <PublicOperatingResearchView value={value as any} symbol="600519" />,
+  );
+  expect(html).toContain("停止展示");
+  expect(html).not.toContain("TEST_ONLY_PUBLIC_BUSINESS");
+});
+it("replaces an earlier public success with the latest partial without reusing old Event", async () => {
+  calls.publicRead.mockResolvedValue(publicSuccess());
+  await click("新Agent经营研究");
+  expect(shown()).toContain("TEST_ONLY_PUBLIC_GAP");
+  calls.publicRead.mockResolvedValue(publicPartial());
+  await click("刷新模型状态");
+  expect(shown()).toContain("TEST_ONLY_PUBLIC_BUSINESS");
+  expect(shown()).not.toContain("TEST_ONLY_PUBLIC_GAP");
+});
+
+it("shows optional independent-review warning without changing role draft or adopting a disputed counterclaim", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const review = {
+    status: "REVIEW_REQUIRED_NOT_APPROVAL" as const,
+    findings: [
+      {
+        priority: "P2",
+        role: "COUNTER_EVIDENCE" as const,
+        claim_index: 5,
+        reason: "称F混用公司/渠道库存，但F已明确区分；这条反证不能直接采用",
+      },
+    ],
+  };
+  for (const input of [publicSuccess(), publicPartial()]) {
+    const value = { ...input, independent_review: review };
+    const before = JSON.stringify(value);
+    const html = renderToStaticMarkup(
+      <PublicOperatingResearchView value={value} symbol="600519" />,
+    );
+    for (const text of [
+      "独立复核待处理，不代表批准",
+      "反证也可能有误述",
+      "任务成功不等于研究可信",
+      "P2",
+      "原始条目索引 5",
+      review.findings[0].reason,
+      "TEST_ONLY_PUBLIC_BUSINESS",
+      "TEST_ONLY_PUBLIC_COUNTER",
+    ])
+      expect(html).toContain(text);
+    expect(JSON.stringify(value)).toBe(before);
+  }
+});
+it("keeps old results without independent review compatible and scopes the partial budget message to this run", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const html = renderToStaticMarkup(
+    <PublicOperatingResearchView value={publicPartial()} symbol="600519" />,
+  );
+  expect(html).not.toContain("独立复核待处理");
+  expect(html).toContain("本轮已停止于每日预算预留，事件待继续");
+  expect(html).not.toContain("今日不再发起付费调用");
+});
