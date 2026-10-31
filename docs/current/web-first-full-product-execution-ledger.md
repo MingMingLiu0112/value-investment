@@ -6900,3 +6900,177 @@ Root reported combined conflict regression passed; this B receipt does not
 substitute for that separate regression. Production deployment status remains
 pending Root publication and post-release verification. No submission or
 deployment by this worker. action=no_order.
+
+### 2026-10-31 C minimal source/profile/API acceptance scope (in progress)
+
+User scope and Root coordination: baseline HEAD b8173980bdd8fafc334f3b2f385bd2901c44d9f8.
+Preserve config/current-research-drafts.json exactly (Root supplied hash prefix
+2aba22); this worker does not read or mutate its contents. Volta owns
+application/research/company_profile.py, Root owns API/Web. This worker owns
+read-only real-source/profile checks, runtime-only receipts, the C catalog
+section after actual implementation verification, and this sole ledger.
+Expected route GET /api/v1/research-profiles/{symbol}; current-worktree
+TestClient real positives at least 600519/600887. Financial/unknown/mixed
+business refusals are synthetic contract tests, not actual issuer research.
+000333/601088 are cross-type route evidence checks only, no third-company deep
+research. Official supplementation only if necessary for model applicability.
+No new framework, formulas, quality claims, private-pointer mutation or
+production deployment. Preserve source clocks; action=no_order.
+
+Initial source handoff:
+runtime/c-profile-source-handoff-20261031/source-audit.json binds retained
+600519/600887 packages and official FY2025/H12026 originals, research-case
+hypotheses/counterevidence, live profile routes and missing cross-type evidence.
+Real retained sources are hash-verified separately from package/valuation
+admission. Implementation/API acceptance and catalog graduation remain pending.
+
+### 2026-10-31 C actual-source handoff and current-worktree API acceptance
+
+Scope remains the preceding minimum package; no company research expansion,
+new official collection, private pointer change, model/formula change or
+deployment by this source/acceptance worker. Only C catalog section changed.
+Implementation belongs to Volta/Root; existing public sources and runtime-only
+acceptance records were consumed without changing original bytes or dates.
+
+Actual public sources (hash-verified in retained packages):
+600519 FY2025 cninfo:1225114741 / 474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288;
+H12026 cninfo:1225475868 / 0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6.
+600887 FY2025 cninfo:1225259562 / d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac;
+H12026 cninfo:1225511409 / 423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2.
+Minimal fields/excerpts and exact paths:
+runtime/c-profile-source-handoff-20261031/business-differentiation.json.
+Moutai existing product parser checks H1 physical p8 product/channel/geography
+table: Moutai wine CNY 77724437900, series CNY 12934186500; p7 records revenue
++1.47% and cost +21.81%, not proof of recovery. Parent distributable cash differs
+from group finance cash/deposits; inventory and fund/project commitments matter.
+Yili H1 physical p8 records six product groups, raw-milk procurement, production/
+logistics and dealer-led channels; p10/11/12 records liquid milk CNY 36.590bn,
+milk powder/dairy CNY 16.845bn and cold drinks CNY 9.073bn. P18 short-term
+borrowing CNY 64.67719303415bn and deposit/working-capital changes prevent a
+simple cash/high-quality claim. Management descriptions retain their assurance.
+
+Versioned packages at runtime/joint-cash-v4-current/20261028T044953763337Z/
+600519/package.json and 600887/package.json have no missing/hash-drifted
+declared retained sources. Generic legacy builder is not their version adapter:
+its annual-retention-v2 error is not a v4 package validity failure.
+Existing v4 build_descriptor_for_package succeeds for BOTH, recorded separately
+in versioned-package-check.json. Neither typed reconstruction nor source checks
+grants valuation/economic approval.
+
+Actual route GET /api/v1/research-profiles/{symbol}, current-worktree FastAPI
+TestClient, not the running 8001 service:
+- 600519: 200/no-store, SOURCE_BOUND_PROFILE, consumer_products,
+  supported registered route, source-page refs and existing economic evidence.
+- 600887: same actual positive; report_period is 2026-06-30 while facts.as_of
+  is 2026-10-21. Initial implementation confused these dates and returned 500;
+  original package was not rewritten. Initial failure receipts are retained.
+- 000333/601088: 200 UNASSESSABLE; no current-source company positive claimed.
+- invalid symbol: 422.
+Formal eligibility remains false; moat/normalized returns not proven.
+api-acceptance-v4.json is the succeeding receipt; earlier api-baseline and
+v1-v3 receipts record actual implementation failures/races, not accepted states.
+Private pointer hash before/after remains
+2aba22a9e043d20076c7c40916808aee1bae9ba48f13951b8d0735e6fa077686.
+
+Cross-type evidence: Midea retained H1 original hash 576dd80e... verified;
+manufacturing alternative equity route is registered, but old applicability
+runtime and quote-session dependency are absent. Shenhua historical cycle
+receipt and live router reproduce cyclical_normalized supported versus RI/FCFF
+unsupported, but cited annual original/applicability runtime are missing in
+this checkout. These are scoped routing examples, not current full-company
+economic or source acceptance. No third-company deep research was opened.
+
+TEST_ONLY unknown-business/mixed-business/financial-institution refusal checks
+all rejected as expected, recorded in synthetic-refusal-checks.json. They
+patch decoded business text/industry in memory, not issuer evidence or originals.
+Existing API/research-profile pytest selection: 3 passed. These are distinct
+from the two actual-source API positives above. C catalog states the actual
+scope and pending generality/economic/deployment/user-acceptance limits.
+No quality, ROIC, normalized earnings, dividend sustainability or formal fair
+value admission claimed. action=no_order.
+
+Final Root exception-handling route recheck: api-acceptance-v5.json supersedes
+v4 for the latest endpoint code. Both 600519 and 600887 are actual 200/no-store
+SOURCE_BOUND_PROFILE with economic_evidence, supported route and false formal
+eligibility; neither is SOURCE_OR_PROFILE_UNAVAILABLE. Cross-type current
+UNASSESSABLE and invalid-symbol 422 remain. Minimal final artifact index:
+runtime/c-profile-source-handoff-20261031/final-receipt.json. C catalog points
+to v5. Private pointer SHA256 remains exactly 2aba22a9e043d20076c7c40916808aee1bae9ba48f13951b8d0735e6fa077686.
+
+Final post-P1 current-implementation acceptance supersedes intermediate v4/v5
+implementation snapshots for C graduation evidence:
+runtime/c-profile-source-handoff-20261031/final-current-implementation-acceptance.json.
+Two actual TestClient requests preserve the real validators and real existing
+analysis, adding transparent call tracing only. Both 600519 and 600887 execute
+PROFILE_VALIDATION_PASSED before EXISTING_ANALYSIS_START, then
+EXISTING_ANALYSIS_REPLAYED; both return SOURCE_BOUND_PROFILE and
+C_PROFILE_VALIDATED_AND_EXISTING_ANALYSIS_REPLAYED.
+reported_business_family=consumer_products,
+profile_validation=REPORTED_BUSINESS_TEMPLATE_CANDIDATE,
+route_qualification.economic_quality_proven=false, approved=false.
+A separate TEST_ONLY rejected-source check returns
+SOURCE_OR_PROFILE_UNAVAILABLE, route=null, analysis call count zero.
+Implementation file hashes before/after this acceptance match; exact final
+hashes are bound inside that receipt, not taken from an intermediate run.
+Private pointer hash remains unchanged at the previously recorded exact value.
+
+Final backend selection: 24 passed, including 2 opt-in actual-source company
+consumption tests plus raw issuer-cover mismatch, invalid current binding,
+business-family negatives and API source-failure refusal contracts.
+Final C Web component selection: 6 passed. Catalog restores the compatibility
+wording 用户尚未确认此版本 and remains C-only; Prettier passed.
+Business-family/template matching is not economic quality, moat, normalized
+profit or investment approval. Final actual model/analysis consumption ordering
+is verified rather than inferred from a list or static profile mapping.
+No commit or deployment by this worker. action=no_order.
+
+### 2026-10-31 C frozen-source final closeout for integration
+
+User/Root declared final source freeze after unknown-main-business and
+customer-bank-reference fixes. This worker re-ran current-worktree actual API
+acceptance on that frozen code; no new collection or source download occurred.
+The FINAL company_profile.py SHA256 is
+99d5296f34ed04fa69a0d36de276b26abb121d1e223e63b2c5940a1420acd97e.
+Exact app/analysis/adapter hashes are in the frozen receipt and public summary;
+all implementation hashes matched before/after acceptance and again before
+artifact creation. Intermediate v1-v5 and pre-final-issue snapshots remain
+history and must not be cited as final acceptance.
+
+Both actual GET /api/v1/research-profiles/600519 and /600887 return
+200/no-store, SOURCE_BOUND_PROFILE, REPORTED_BUSINESS_TEMPLATE_CANDIDATE,
+reported_business_family=consumer_products, and
+C_PROFILE_VALIDATED_AND_EXISTING_ANALYSIS_REPLAYED.
+Transparent tracing preserved real source validation and real existing analysis:
+PROFILE_VALIDATION_PASSED preceded EXISTING_ANALYSIS_START for both companies,
+then EXISTING_ANALYSIS_REPLAYED. Source-page refs, existing economic evidence
+and counterevidence are present; economic_quality_proven=false, approved=false,
+formal_eligibility=false. No quality or economic graduation is inferred.
+
+Explicit VALUE_COMPANY_PROFILE_REAL_ROOT pointed to this worktree:
+tests/test_company_profile.py, tests/test_company_profile_api.py and
+tests/test_research_profile.py: 34 passed, 0 skipped, including both actual
+retained-source tests. Financial/unknown/mixed and customer-bank-reference,
+unknown-main-business/raw issuer mismatch counterexamples are synthetic
+contract tests, not actual-company research positives.
+
+Final runtime evidence:
+runtime/c-profile-source-handoff-20261031/frozen-source-api-acceptance.json
+SHA256 fa9349dc2640e7a14cfd9db70df442a0b4b46a94541296164085960ad7892897.
+Mutable final-receipt.json now indexes that frozen receipt and the sole allowed
+public artifact artifacts/current/company-profile-c-20261031.json.
+Public summary contains bounded result/status counts and final implementation
+hashes only: no raw excerpts, original bytes, private account data or private
+pointer content/hash. C catalog references it and retains 用户尚未确认此版本.
+Cross-type current-data gaps, economic/valuation approval, production deployment
+and final user acceptance remain separate. No commit/deploy by this worker.
+Private pointer remains unchanged. action=no_order.
+
+Final public artifact formatting/hash closeout: artifacts/current/company-profile-c-20261031.json
+SHA256 68ec3552d2b1c26eb59b15928a71c80e72ecaeae1756844ceabc9f01f04b6e16.
+final-receipt.json updated after Prettier to bind these exact final artifact bytes.
+Frozen company_profile implementation still matches 99d5296f34ed04fa69a0d36de276b26abb121d1e223e63b2c5940a1420acd97e.
+Root reports 75 integrated backend tests passed/0 skipped and independent P1/P2
+closure; marked as Root-reported, separate from this worker's actual two API
+positives and 34 backend/6 component checks. Public artifact and C catalog
+Prettier checks pass. Root-owned C deployment wording retained without overwrite.
+Private pointer remains unchanged. No further collection, commit or deployment.

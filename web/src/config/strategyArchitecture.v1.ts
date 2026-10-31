@@ -150,30 +150,42 @@ export const catalog: Record<
         title: "C · 企业画像与模型适用性",
         question: "企业靠什么赚钱，适合什么模型？",
         dependencies: ["A", "B"],
-        input: "业务、财务口径、资本结构",
-        output: "证据绑定画像、模型路由或明确不适用",
+        input: "业务原文、产品收入、财务口径与资本结构",
+        output: "来源绑定的经营分类、既有资本证据、路由、反证与适用限制",
         modules: [
+          "src/value_investment_agent/application/research/company_profile.py",
           "src/value_investment_agent/domain/research/research_profile.py",
           "src/value_investment_agent/valuation_router.py",
         ],
-        engineeringStatus: "部分接通",
-        evidenceStatus: "源码定位／业务待验",
-        shortStatus: "自动生成可证伪画像及更多经济类型尚未闭环",
-        implementation: "已有画像与估值路由合同",
-        milestone: "部分接通；不代表正式研究准入或实盘资格。",
-        existingEvidence: "已有画像与估值路由合同",
-        evidenceSource: "d01923cd源码职责复核；本轮未运行该模块真实业务验收",
-        evidence: "自动生成可证伪画像及更多经济类型尚未闭环",
-        nextStep: "用来源解释模型选择，拒绝不支持行业",
-        ruleWhy: "行业与资本结构决定模型；不能所有公司套茅台或FCFF。",
+        engineeringStatus: "两公司真实接口已验／跨类型仍有缺口",
+        evidenceStatus: "原件哈希、经营页码及现有接口已验",
+        shortStatus:
+          "600519、600887已有来源经营判别与资本证据消费；经营分类不等于企业质量证明",
+        implementation:
+          "复用原件经营段落、既有研究与资本输入，核对分类及模型路由；金融、未知和混合业务拒绝另有合成测试",
+        milestone:
+          "两公司来源绑定画像接口已验证；通用新公司研究与经济准入未完成。",
+        existingEvidence:
+          "茅台产品／渠道收入及母公司与财务公司资金范围；伊利乳品分部、采购渠道及借款／存款结构",
+        evidenceSource:
+          "artifacts/current/company-profile-c-20261031.json（最终冻结源码复验）；runtime/c-profile-source-handoff-20261031/final-receipt.json；business-differentiation.json",
+        evidence:
+          "两公司现有接口均可读取来源绑定画像及反证；000333、601088当前接口不可评估，旧路由例证不升级为当前验收",
+        nextStep:
+          "补足跨类型缺失原件或依赖后再核验；ROIC、正常化盈利、竞争优势及分红持续性须独立研究",
+        ruleWhy:
+          "行业、经营收入机制与资本结构共同约束模型；不能以行业标签或品牌名称证明质量。",
         boundary:
-          "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
+          "经营分类与既有模型路由不授予经济、估值或交易资格；保留来源日期、未知与反证。action=no_order。",
         progress: {
-          consumer: "端到端尚未证明",
-          realData: "本轮未验真实业务",
-          economic: "不适用或由下游独立准入",
-          deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
-          acceptance: "用户尚未确认此版本",
+          consumer:
+            "两公司先校验画像再重放既有分析及接口已验；页面消费由集成方另行核验",
+          realData:
+            "600519/600887两家公司官方原件及既有经营／资本证据；未开展第三家深研",
+          economic:
+            "业务族仅约束模板候选，不证明经济质量；正常化盈利、资本回报和持续分配仍有缺口",
+          deployment: "运行版本及页面验收另存回执；画像状态不代替正式投资资格",
+          acceptance: "用户尚未确认此版本；拒绝场景的合成测试不冒充真实取证",
         },
       },
       {

@@ -935,6 +935,21 @@ def create_app(
         result = read_latest_run(project)
         return {"action": "no_order", "status": "RECORDED" if result else "NOT_RECORDED", "last_run": result}
 
+    @api.get("/api/v1/research-profiles/{symbol}")
+    def company_research_profile(symbol: str):
+        if not re.fullmatch(r"[0-9]{6}", symbol):
+            return JSONResponse(status_code=422, content={
+                "status": "INVALID_SYMBOL", "action": "no_order"})
+        from ...application.research.company_profile import load_company_profile
+        try:
+            result = load_company_profile(root=project, symbol=symbol, now=datetime.now(timezone.utc))
+        except (ValueError, OSError, KeyError, TypeError) as error:
+            result = dict(schema_version="company-research-profile-v1", symbol=symbol,
+                status="SOURCE_OR_PROFILE_UNAVAILABLE", action="no_order", formal_eligibility=False,
+                profile=None, route=None, business_model=None, evidence_refs=[],
+                blockers=["SOURCE_OR_PROFILE_VALIDATION_FAILED"], error_type=type(error).__name__)
+        return JSONResponse(result, headers={"Cache-Control": "no-store"})
+
     @api.get("/api/v1/strategy-selection")
     def strategy_selection(value_offset: int = Query(0, ge=0),
                            hotspot_offset: int = Query(0, ge=0),

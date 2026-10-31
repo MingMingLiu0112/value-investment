@@ -1,3 +1,4 @@
+import type { CompanyProfile } from "../components/CompanyProfilePanel";
 import type {
   PrivateAccountObservations,
   DailyResponse,
@@ -569,6 +570,11 @@ export type ConditionAlertsResponse = {
 };
 
 export const api = {
+  companyProfile: (symbol: string, signal?: AbortSignal) =>
+    get<CompanyProfile>(
+      "research-profiles/" + encodeURIComponent(symbol),
+      signal,
+    ),
   strategySelection: (signal?: AbortSignal) =>
     get<DualStrategySelection>("strategy-selection?limit=10", signal),
   strategySelectionPage: (
