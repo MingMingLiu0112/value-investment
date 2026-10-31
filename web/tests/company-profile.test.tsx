@@ -128,3 +128,18 @@ it("keeps verified financial refusal evidence visible without a generic model", 
   expect(html).toContain("https://example.org/official.pdf");
   expect(html).not.toContain("停止展示");
 });
+
+it("keeps long official business text expandable without hiding the model contract", () => {
+  const data = {
+    ...example(),
+    business_model: "主营原文".repeat(100) + "TEST_ONLY_END",
+  };
+  const html = renderToStaticMarkup(
+    <CompanyProfileView data={data} symbol="600519" />,
+  );
+  expect(html).toContain("完整主营原文");
+  expect(html).toContain("原文节选");
+  expect(html).toContain("TEST_ONLY_END");
+  expect(html).toContain("white-space:nowrap");
+  expect(html).toContain("剩余收益／股东权益价值");
+});

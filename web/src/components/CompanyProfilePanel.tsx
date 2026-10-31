@@ -115,6 +115,11 @@ export function CompanyProfileView({
         column={1}
         bordered
         size="small"
+        styles={{
+          label: { width: 160, minWidth: 140, whiteSpace: "nowrap" },
+          content: { overflowWrap: "anywhere", wordBreak: "break-word" },
+        }}
+
         items={[
           {
             key: "date",
@@ -134,7 +139,22 @@ export function CompanyProfileView({
           {
             key: "business",
             label: "企业如何赚钱",
-            children: display(data.business_model),
+            children:
+              display(data.business_model).length > 240 ? (
+                <>
+                  <span>
+                    {display(data.business_model).slice(0, 240)}…（原文节选）
+                  </span>
+                  <details>
+                    <summary>完整主营原文</summary>
+                    <p style={{ overflowWrap: "anywhere" }}>
+                      {display(data.business_model)}
+                    </p>
+                  </details>
+                </>
+              ) : (
+                display(data.business_model)
+              ),
           },
           {
             key: "profile",
