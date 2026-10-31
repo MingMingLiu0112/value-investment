@@ -133,9 +133,9 @@ it("shows three conditional operating scenarios and annual profit/distribution w
     "TEST_ONLY渠道压力可能持续",
     "TEST_ONLY经营与资本假设失效须重审",
     "TEST_ONLY下一期官方披露再核验",
-    "10000000.00",
-    "6000000.00",
-    "4000000.00",
+    "10,000,000.00",
+    "6,000,000.00",
+    "4,000,000.00",
     "REJECTED",
     "不比较当前报价",
     "不新增C第六家验收",
@@ -292,4 +292,32 @@ it("keeps actual terminal reasoning visible when the backend only provides a sha
     expect(html).toContain(reason);
   expect(html).toContain("共用研究理由");
   expect(html).toContain("终端条件理由（假设）");
+});
+
+it("rounds grouped amounts for display while preserving exact raw ledger values and integer years", () => {
+  const data = example();
+  const rows = data.annual_ledgers!.bear.rows10!;
+  rows[0].profit = "1234567.126789012345678901234567890123456789";
+  rows[0].distribution = "-1234.56789";
+  rows[0].retained = "not-a-number";
+  rows[1].profit = "";
+  rows[1].distribution = "Infinity";
+  rows[1].retained = 0;
+  const before = JSON.stringify(data);
+  const html = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol="000568" />,
+  );
+  const visible = visibleHtml(html);
+  expect(visible).toContain("1,234,567.13");
+  expect(visible).toContain("-1,234.57");
+  expect(visible).toContain("0.00");
+  expect(visible).toContain("未提供");
+  expect(visible).not.toContain("not-a-number");
+  expect(visible).not.toContain("Infinity");
+  expect(visible).not.toContain("1234567.126789");
+  expect(visible).not.toContain("2,026.00");
+  expect(visible).toContain("展示四舍五入至两位小数");
+  expect(visible).toContain("原值见完整年度账本");
+  expect(html).toContain("1234567.126789012345678901234567890123456789");
+  expect(JSON.stringify(data)).toBe(before);
 });

@@ -276,7 +276,7 @@ export function ValuePlanOverview() {
         </details>
         <p>
           C职责冻结，后续顺序为D1受限执行 → D2经营假设与反证 →
-          E2首次编译。D1／D2／E2仍按各自未完成状态展示输入与目标输出，不因C完成而推定已闭环。
+          E2首次编译。D1保存响应执行、D2既有两公司假设草案、E2新公司首输入分别展示实际输入、输出和证据；工程完成不等于真实模型验收、主估值采用或用户批准。
         </p>
         <Space wrap>
           <Link to="/decisions/600519?strategy=value">

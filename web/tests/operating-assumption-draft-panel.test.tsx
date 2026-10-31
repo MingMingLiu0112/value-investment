@@ -312,3 +312,61 @@ it("keeps the backend's actual ten-year operating capital output in closed annua
   expect(html).not.toContain("<details open");
   expect(JSON.stringify(data)).toBe(before);
 });
+
+it.each(["MISSING_SOURCE", "UNASSESSABLE"] as const)(
+  "limits %s to existing packages without falling back to first compilation",
+  (status) => {
+    const data = {
+      ...example(),
+      symbol: "000568",
+      status,
+      missing_sources: [{ path: "TEST_ONLY-broken-source", sha256: null }],
+    };
+    const html = renderToStaticMarkup(
+      <OperatingAssumptionDraftView data={data} symbol="000568" />,
+    );
+    expect(html).toContain("既有研究包");
+    expect(html).toContain("TEST_ONLY-broken-source");
+    expect(html).not.toContain("尚无可显示的来源绑定草案");
+    if (status === "MISSING_SOURCE") {
+      expect(html).toContain("请查看独立的首次条件压力研究区");
+      expect(html).toContain("不以首编结果替代");
+    } else {
+      expect(html).toContain("来源异常须核验修复");
+      expect(html).toContain("不以独立首编区结果替代");
+      expect(html).not.toContain("请查看");
+    }
+    expect(html).not.toContain("TEST_ONLY经济理由");
+  },
+);
+
+it("deduplicates only full JSON unknown items and preserves different fields, reasons and raw normalization items", () => {
+  const data = example();
+  const original = {
+    field: "TEST_ONLY_FIELD_A",
+    reason: "TEST_ONLY_SAME_REASON",
+    status: "NOT_ESTABLISHED",
+  };
+  data.unknowns = [
+    ...Array.from({ length: 100 }, () => ({ ...original })),
+    { ...original, field: "TEST_ONLY_FIELD_B" },
+    { ...original, reason: "TEST_ONLY_DIFFERENT_REASON" },
+    { ...original, status: "UNKNOWN_NOT_ZERO" },
+  ];
+  data.normalization_open_items = data.unknowns;
+  const before = JSON.stringify(data);
+  const html = renderToStaticMarkup(
+    <OperatingAssumptionDraftView data={data} symbol="600519" />,
+  );
+  const unknownSection = html
+    .split("<h4>未知与待补证</h4>")[1]
+    .split("<h4>失效与重审条件</h4>")[0];
+  expect(unknownSection).toContain("原 103 条，展示 4 条");
+  expect(unknownSection).toContain("合并相同项99 条");
+  expect((unknownSection.match(/<li>/g) || []).length).toBe(4);
+  expect(unknownSection).toContain("TEST_ONLY_FIELD_A");
+  expect(unknownSection).toContain("TEST_ONLY_FIELD_B");
+  expect(unknownSection).toContain("TEST_ONLY_DIFFERENT_REASON");
+  expect(html).toContain("正常化待解决事项");
+  expect(JSON.stringify(data)).toBe(before);
+});

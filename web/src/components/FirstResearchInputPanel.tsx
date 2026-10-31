@@ -30,9 +30,18 @@ function text(value: unknown): string | undefined {
   return undefined;
 }
 function amount(value: unknown): string {
-  return (typeof value === "string" && value.trim()) ||
-    (typeof value === "number" && Number.isFinite(value))
-    ? String(value)
+  const numeric =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" &&
+          /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(value.trim())
+        ? Number(value)
+        : NaN;
+  return Number.isFinite(numeric)
+    ? numeric.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
     : "未提供";
 }
 function annualRows(ledger?: FirstResearchAnnualLedger) {
@@ -194,7 +203,7 @@ export function FirstResearchInputView({
             <div style={{ overflowX: "auto" }}>
               <table>
                 <caption>
-                  年度利润、分配与留存摘要（元；均为条件假设，非分红承诺）
+                  年度利润、分配与留存摘要（元；展示四舍五入至两位小数，原值见完整年度账本；均为条件假设，非分红承诺）
                 </caption>
                 <thead>
                   <tr>
@@ -207,7 +216,7 @@ export function FirstResearchInputView({
                 <tbody>
                   {rows.map((row, index) => (
                     <tr key={index}>
-                      <td>{amount(row.year)}</td>
+                      <td>{String(row.year)}</td>
                       <td>{amount(row.profit)}</td>
                       <td>{amount(row.distribution)}</td>
                       <td>{amount(row.retained)}</td>

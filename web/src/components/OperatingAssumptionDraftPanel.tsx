@@ -65,6 +65,31 @@ function UnknownItem({ value }: { value: unknown }) {
   return <>未知项尚未提供可读说明</>;
 }
 
+function UnknownItems({ items }: { items: unknown[] }) {
+  const seen = new Set<string | undefined>();
+  const unique = items.filter((item) => {
+    const key = JSON.stringify(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return (
+    <>
+      <p>
+        原 {items.length} 条，展示 {unique.length} 条；按完整条目合并相同项
+        {items.length - unique.length} 条，不合并不同字段或理由。
+      </p>
+      <ul>
+        {unique.map((item, index) => (
+          <li key={index}>
+            <UnknownItem value={item} />
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
 export function OperatingAssumptionDraftView({
   data,
   symbol,
@@ -101,7 +126,11 @@ export function OperatingAssumptionDraftView({
               ? "经营假设草案来源缺失"
               : "经营假设草案暂不可评估"
           }
-          description="尚无可显示的来源绑定草案。来源补齐并核验后再读取；此处不生成新研究、不估值、不审批。"
+          description={
+            data.status === "MISSING_SOURCE"
+              ? "既有研究包的来源绑定草案尚不可显示；新公司如已完成首次编译，请查看独立的首次条件压力研究区。此提示不代表整家公司没有研究；缺失来源仍须补齐并核验，不以首编结果替代。"
+              : "既有研究包的来源绑定草案暂不可核验。来源异常须核验修复，不以独立首编区结果替代；此处不生成新研究、不估值、不审批。"
+          }
         />
         {data.missing_sources?.length ? (
           <details>
@@ -214,13 +243,7 @@ export function OperatingAssumptionDraftView({
       ))}
       <h4>未知与待补证</h4>
       {data.unknowns?.length ? (
-        <ul>
-          {data.unknowns.map((item, index) => (
-            <li key={index}>
-              <UnknownItem value={item} />
-            </li>
-          ))}
-        </ul>
+        <UnknownItems items={data.unknowns} />
       ) : (
         <p>尚未列出可核验未知项，不推定已解决。</p>
       )}
