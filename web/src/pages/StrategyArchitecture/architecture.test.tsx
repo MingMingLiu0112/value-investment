@@ -115,7 +115,7 @@ describe("versioned strategy architecture", () => {
     ).not.toContain("E1");
     expect(
       catalog.value.stages.find((s) => s.id === "E2")?.engineeringStatus,
-    ).toBe("未闭环");
+    ).toBe("开发中／无旧包正向首编待验");
     expect(catalog.value.stages.find((s) => s.id === "B")?.evidence).toContain(
       "CONFLICT",
     );

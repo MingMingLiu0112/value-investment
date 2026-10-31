@@ -29,7 +29,7 @@ export interface Stage {
 }
 export const review = {
   version: "strategy-architecture-v2-module-map",
-  reviewedAt: "2026-10-30",
+  reviewedAt: "2026-10-31",
   baseline: "d01923cd72c3e638bb3df490f9e148abccd82219",
   mode: "MANUAL_SOURCE_REVIEW",
   runtimeEvidence: "NOT_CONNECTED",
@@ -235,21 +235,29 @@ export const catalog: Record<
           "src/value_investment_agent/application/research/product_operating_research.py",
           "src/value_investment_agent/application/research/agent_review/supervisor.py",
         ],
-        engineeringStatus: "部分接通",
-        evidenceStatus: "源码定位／业务待验",
-        shortStatus: "Agent发现尚不能自动编译完整合法经济输入",
-        implementation: "两公司已有条件经营研究；三角色产生待复核发现",
-        milestone: "部分接通；不代表正式研究准入或实盘资格。",
-        existingEvidence: "两公司已有条件经营研究；三角色产生待复核发现",
-        evidenceSource: "d01923cd源码职责复核；本轮未运行该模块真实业务验收",
-        evidence: "Agent发现尚不能自动编译完整合法经济输入",
-        nextStep: "把事实锚点、资本需求和反证编入可消费草案",
+        engineeringStatus: "既有两公司假设草案闭环／未批准",
+        evidenceStatus: "双公司原件与十年资本路径重算通过",
+        shortStatus:
+          "原件重算、三分支三情景、反证与失效条件已接API；不是新公司首编",
+        implementation:
+          "复用既有原件利润桥与v4资本路径，逐项核验实际消费的历史字段和完整场景输入；GET不写、不联网、不调用LLM",
+        milestone:
+          "来源绑定经营假设草案已验；正常化、合法分配、经济批准及新公司首编仍分别待验。",
+        existingEvidence:
+          "600519/600887各3分支、每分支3情景和10年路径；52/50历史锚点；删映射重签和未来来源反例拒绝",
+        evidenceSource:
+          "runtime/d2-assumption-acceptance/1efced4b306e/receipt.json；.tmp/d2-closure.xml",
+        evidence:
+          "API实际消费草案及重算资本路径；未重算估值，不把未来现金假设当事实",
+        nextStep:
+          "独立进入E2无旧包首编译；保留未批准、无当前价格和无私人数量边界",
         ruleWhy: "价格上涨不直接等于净利上涨；预测必须明确为假设。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
-          consumer: "端到端尚未证明",
-          realData: "本轮未验真实业务",
+          consumer:
+            "公开假设API → 现有价值公司详情；研究期、反证、失效默认可读",
+          realData: "600519/600887真实原件重放及实际API验证通过；非新LLM研究",
           economic: "条件研究／未批准",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",
@@ -297,7 +305,7 @@ export const catalog: Record<
         modules: [
           "src/value_investment_agent/application/research/value_enrichment_batch.py",
         ],
-        engineeringStatus: "未闭环",
+        engineeringStatus: "开发中／无旧包正向首编待验",
         evidenceStatus: "源码定位／业务待验",
         shortStatus: "事实壳不等于首版经营—现金—估值成功",
         implementation: "可建立新公司的公开事实上下文",
@@ -305,7 +313,8 @@ export const catalog: Record<
         existingEvidence: "可建立新公司的公开事实上下文",
         evidenceSource: "d01923cd源码职责复核；本轮未运行该模块真实业务验收",
         evidence: "事实壳不等于首版经营—现金—估值成功",
-        nextStep: "锁定无旧估值留出样本，完成同入口正向编译",
+        nextStep:
+          "000568独立首编译样本：冷核自身原件、经营假设与现金约束；不增加第六个C验收样本",
         ruleWhy: "E2不以E1旧候选为前提；禁止换名字复制茅台假设。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",

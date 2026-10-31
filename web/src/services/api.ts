@@ -326,6 +326,55 @@ export type QuotePlanObservation = {
   transitions: QuotePlanTransition[];
 };
 
+export type OperatingAssumptionScenario = {
+  drivers: unknown;
+  operating_capital_path?: unknown;
+  terminal_policy: unknown;
+  cost_of_equity: string | number;
+  classification: string;
+  evidence_ref: { path: string; sha256: string; field_path?: string[] };
+};
+
+export type OperatingAssumptionDraftResponse = {
+  schema_version?: string;
+  symbol: string;
+  status: "SOURCE_BOUND_D2_DRAFT" | "MISSING_SOURCE" | "UNASSESSABLE";
+  company_name?: string;
+  as_of?: string;
+  available_at?: string;
+  branches: {
+    branch_id: string;
+    title: string;
+    economic_rationale: string;
+    proposal_rationale: string;
+    counter_evidence: string[];
+    scenarios: Record<"bear" | "base" | "bull", OperatingAssumptionScenario>;
+    classification?: string;
+    confidence?: string;
+  }[];
+  historical_observations: unknown[];
+  unknowns: unknown[];
+  invalidation_conditions: string[];
+  limitations?: string[];
+  source_bindings: { path: string; sha256: string }[];
+  input_fingerprint?: string;
+  missing_sources?: { path: string; sha256?: string | null }[];
+  blockers?: string[];
+  parameter_basis?: unknown;
+  historical_statement_replay?: unknown;
+  fact_anchors?: unknown[];
+  normalization_open_items?: unknown;
+  economic_review_items?: unknown;
+  assurance_limits?: unknown;
+  action: "no_order";
+  formal_eligibility: false;
+  valuation_computed: false;
+  assumptions_approved?: false;
+  research_admitted?: false;
+  approval_changed?: false;
+  e2_new_company_compilation?: false;
+};
+
 export type ResearchTaskCreateRequest = {
   symbol: string;
   workflow: "legacy";
@@ -609,6 +658,11 @@ export type ConditionAlertsResponse = {
 };
 
 export const api = {
+  researchAssumptionDraft: (symbol: string, signal?: AbortSignal) =>
+    get<OperatingAssumptionDraftResponse>(
+      "research-assumption-drafts/" + encodeURIComponent(symbol),
+      signal,
+    ),
   companyProfile: (symbol: string, signal?: AbortSignal) =>
     get<CompanyProfile>(
       "research-profiles/" + encodeURIComponent(symbol),

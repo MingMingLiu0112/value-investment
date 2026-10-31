@@ -7326,3 +7326,30 @@ changed. Real model acceptance remains pending separate authorization.
 C /project actual browser screenshot saved as c-frozen-project-20261031.png.
 D1 CI/current deployment/browser evidence must be recorded separately.
 After D1 closeout only D2 may advance; E2 follows D2. action=no_order.
+
+### 2026-10-31 D1 CI and D2 source-bound assumptions independently accepted
+D1 commit 7a242c51f0ee90d4de434387ac6020e6efc10a52 Core run41188317156 and Web
+run41188317109 succeeded. Core raw job124499680478 explicitly executed both new
+D1 files (8022 passed/388 inherited optional skips); no skipped item is claimed
+as real-source acceptance. Real8001 code/config and built SHA matched; existing
+PUBLICATION_REGISTRY_UNAVAILABLE remains, no formal publication waiver.
+Actual browser exposed a shared AI-read error early return hiding task controls;
+dbbff9c8 fixes it, with19 focused frontend tests passed. Latest-source final CI
+and deployment must use the successor commit, not reuse the earlier green badge.
+
+D2 adapter replays original statements and checks fixed historical-consumption
+mappings before existing v4 capital compilation. Revenue mapping deletion plus
+coherent JSON rehash cannot substitute invented historic revenue; future source
+metadata is rejected. Both independent findings were closed without changing
+prior policies or original files. Actual API outputs:600519/600887 each3
+branches,3 scenarios per branch,10 ordered capital rows per scenario and52/50
+reported original anchors. Source/PIT, normalization, forecast, legal distribution,
+economic approval and first-time compilation remain separate. No LLM/valuation
+execution in public GET. New company E2 is not proved by these existing packages.
+Evidence runtime/d2-assumption-acceptance/1efced4b306e/receipt.json;
+public index artifacts/current/operating-assumption-d2-20261031.json.
+Next E2 first input is 000568, not an expansion of C's frozen five or rules.
+Its H1 original was fetched by existing A acquisition in2 queries/1 download;
+FY retained original remains unchanged. First input still must be cold-verified,
+economically explained and actually consumed before claiming E2 success.
+action=no_order.

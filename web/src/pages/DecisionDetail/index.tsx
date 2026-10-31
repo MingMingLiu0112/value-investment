@@ -1,4 +1,5 @@
 import { CompanyProfilePanel } from "../../components/CompanyProfilePanel";
+import { OperatingAssumptionDraftPanel } from "../../components/OperatingAssumptionDraftPanel";
 import { HotspotSampleReview } from "../../components/HotspotSampleReview";
 import { useParams, Link } from "@umijs/max";
 import { CurrentHolding } from "./CurrentHolding";
@@ -1168,7 +1169,10 @@ export default function DecisionDetail() {
         {strategy === "hotspot" ? "热点波段跟踪" : "公司研究与条件判断"}
       </Typography.Title>
       {strategy !== "hotspot" && /^[0-9]{6}$/.test(id) && (
-        <CompanyProfilePanel symbol={id} />
+        <>
+          <CompanyProfilePanel symbol={id} />
+          <OperatingAssumptionDraftPanel key={id} symbol={id} />
+        </>
       )}
       <RemoteState loading={loading} error={error} retry={retry}>
         {!decision ? (
