@@ -130,7 +130,55 @@ describe("versioned strategy architecture", () => {
       catalog.value.stages.find((s) => s.id === "F1")?.dependencies,
     ).not.toContain("E2");
     expect(html).toContain("/decisions/600887?strategy=value");
-    expect(html).not.toContain('href="/project"');
+    expect(html).toContain('href="/project"');
+  });
+  it("shows C's four independent frozen states in overview and details without graduating downstream inputs", () => {
+    const c = catalog.value.stages.find((stage) => stage.id === "C")!;
+    for (const html of [
+      renderToStaticMarkup(<ArchitectureView strategy="value" />),
+      renderToStaticMarkup(<StageDetail stage={c} />),
+      renderToStaticMarkup(
+        <StageButton stage={c} selected={true} onSelect={() => {}} />,
+      ),
+    ]) {
+      expect(html).toContain("C模块四轴状态");
+      for (const text of [
+        "工程闭环完成",
+        "固定五家验收通过",
+        "部署待验收",
+        "用户尚未确认",
+      ])
+        expect(html).toContain(text);
+    }
+    expect(c.boundary).toContain("不授予经济、估值或交易资格");
+    const detail = renderToStaticMarkup(<StageDetail stage={c} />);
+    expect(detail).toContain("已验输入（固定五家范围）");
+    expect(detail).toContain("已验输出（固定五家范围）");
+    expect(detail).toContain(c.input);
+    expect(detail).toContain(c.output);
+    for (const id of ["D1", "D2", "E2"]) {
+      const stage = catalog.value.stages.find((item) => item.id === id)!;
+      expect(stage.engineeringStatus).not.toBe("工程闭环完成");
+      const html = renderToStaticMarkup(<StageDetail stage={stage} />);
+      expect(html).toContain(stage.input);
+      expect(html).toContain(stage.output);
+      expect(html).toContain("目标输出（不代表已实现）");
+    }
+  });
+  it("aliases project to the exact existing Value component and replaces the obsolete disconnected-route claim", () => {
+    const routes = readFileSync(".umirc.ts", "utf8");
+    const component = (path: string) => {
+      const declaration = routes
+        .split("\n")
+        .find((line) => line.includes('path: "' + path + '"'));
+      return declaration?.match(/component: "([^"]+)"/)?.[1];
+    };
+    expect(component("/project")).toBe("./StrategyArchitecture/Value");
+    expect(component("/project")).toBe(component("/strategy/value"));
+    const html = renderToStaticMarkup(<ArchitectureView strategy="value" />);
+    expect(html).toContain("/project与/strategy/value复用同一Value组件");
+    expect(html).not.toContain("当前工作树没有已接入的/project");
+    expect(html).toContain("不因C完成而推定已闭环");
   });
   it("registers both routes and menu entries without transports", () => {
     const routes = readFileSync(".umirc.ts", "utf8"),

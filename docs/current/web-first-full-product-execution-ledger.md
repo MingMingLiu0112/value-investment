@@ -7288,3 +7288,22 @@ Next sequence only D1受限执行 → D2假设 → E2编译; this package starts
 Catalog and new public closeout summary passed Prettier. No further collection,
 business/source/config implementation edits, commit or deployment by this worker.
 Ready for Root's single-batch submission/CI. action=no_order.
+
+### 2026-10-31 User-directed C freeze and sequential D1/D2/E2 execution
+
+Baseline d1d55d2e73f5ef0ea8d451d69db686e8c7047a24; only pre-existing
+config/current-research-drafts.json is dirty and protected. C implementation,
+fixed five, source hashes, first-stage artifact and historical fingerprints are
+frozen. Its four independent labels are engineering complete, fixed-five
+accepted, deployment pending current integration acceptance, user unconfirmed.
+No general classifier, economic-quality or investment admission is asserted.
+
+Current work is D1 durable bounded execution using the existing pilot/provider,
+existing locking and source verifier. Root owns task API/product integration;
+Volta owns the task service and direct tests; Nash only updates the existing
+module catalog and /project alias; Euclid reads D2/E2 reuse gaps. No paid call,
+hotspot work, new C sample/rule/model, account, production DB or server change.
+D2 and E2 may start only after their predecessor has its own recorded evidence.
+The actual checkout has /strategy/value but no /project route: add /project as
+an alias of the exact same component/catalog, never a parallel progress store.
+All outputs remain unapproved and action=no_order.

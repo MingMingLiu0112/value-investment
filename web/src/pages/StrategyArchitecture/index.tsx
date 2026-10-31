@@ -10,6 +10,18 @@ import {
 } from "../../config/strategyArchitecture.v1";
 import "./architecture.css";
 
+export function CStatusAxes({ stage }: { stage: Stage }) {
+  if (stage.id !== "C" || !stage.progress) return null;
+  return (
+    <span aria-label="C模块四轴状态">
+      <Tag color="blue">{stage.engineeringStatus}</Tag>
+      <Tag color="blue">{stage.evidenceStatus}</Tag>
+      <Tag color="gold">{stage.progress.deployment}</Tag>
+      <Tag>{stage.progress.acceptance}</Tag>
+    </span>
+  );
+}
+
 export function StageButton({
   stage,
   selected,
@@ -32,8 +44,14 @@ export function StageButton({
       <span>{stage.question}</span>
       <small>规则理由：{stage.ruleWhy}</small>
       <span className="architecture-node-status">
-        <Tag color="blue">工程：{stage.engineeringStatus}</Tag>
-        <Tag color="gold">证据：{stage.evidenceStatus}</Tag>
+        {stage.id === "C" ? (
+          <CStatusAxes stage={stage} />
+        ) : (
+          <>
+            <Tag color="blue">工程：{stage.engineeringStatus}</Tag>
+            <Tag color="gold">证据：{stage.evidenceStatus}</Tag>
+          </>
+        )}
       </span>
       <span>{stage.shortStatus}</span>
     </button>
@@ -47,6 +65,7 @@ export function StageDetail({ stage }: { stage: Stage }) {
       aria-live="polite"
     >
       <Card title={stage.title}>
+        <CStatusAxes stage={stage} />
         <Descriptions
           column={1}
           size="small"
@@ -88,12 +107,22 @@ export function StageDetail({ stage }: { stage: Stage }) {
               : []),
             {
               key: "input",
-              label: stage.progress ? "目标输入" : "输入",
+              label:
+                stage.id === "C"
+                  ? "已验输入（固定五家范围）"
+                  : stage.progress
+                    ? "目标输入"
+                    : "输入",
               children: stage.input,
             },
             {
               key: "output",
-              label: stage.progress ? "目标输出（不代表已实现）" : "输出",
+              label:
+                stage.id === "C"
+                  ? "已验输出（固定五家范围）"
+                  : stage.progress
+                    ? "目标输出（不代表已实现）"
+                    : "输出",
               children: stage.output,
             },
             ...(stage.channels
@@ -213,13 +242,13 @@ export function ValuePlanOverview() {
         </div>
         <Alert
           type="info"
-          message="目前能看到两家公司条件研究，不等于自动研究所有新公司，也不等于已形成当前买卖资格。"
+          message="C工程闭环完成、固定五家验收通过并冻结职责；部署待验收，用户尚未确认。两家既有条件研究与两家输入待补路由、银行拒绝均不等于自动研究所有新公司或取得买卖资格。"
         />
         <details>
           <summary>方案与当前实现的关键差异、验收依据</summary>
           <ul>
             <li>
-              A/B/C：已有来源、筛选和路由，仍需核实冲突传播、覆盖率和画像证据。候选不是买入名单。
+              A/B：来源、筛选与覆盖范围按各自证据核验，候选不是买入名单。C仅完成固定五家的有限官方完整段落审核与合同验收，不是通用自动分类器，也不是经济质量批准。
             </li>
             <li>
               D1/D2/E2/G2：已有模型接口、研究发现和事实上下文；从零自动编译首版研究与持久任务生命周期仍是缺口。
@@ -234,7 +263,7 @@ export function ValuePlanOverview() {
               S1/S2/S3：有风险、账本和计算合同；真实账户、外部对账及实际税后分红闭环需独立验收，本页不访问私人资料。
             </li>
             <li>
-              W1：本页使用同一模块目录；当前工作树没有已接入的/project目录，未合入分支不计部署。
+              W1：/project与/strategy/value复用同一Value组件和模块目录；路由接通不代表生产部署验收，也不代替用户确认。
             </li>
           </ul>
           <p>
@@ -246,8 +275,8 @@ export function ValuePlanOverview() {
           </p>
         </details>
         <p>
-          后续顺序：B 队列正确性 → F2/S4 当前口径 → C/D2/E2 新公司研究 → S1–S4
-          持仓与现金闭环。该顺序是对标建议；A已接通本轮受限来源闭环，其余模块尚不代表完成。
+          C职责冻结，后续顺序为D1受限执行 → D2经营假设与反证 →
+          E2首次编译。D1／D2／E2仍按各自未完成状态展示输入与目标输出，不因C完成而推定已闭环。
         </p>
         <Space wrap>
           <Link to="/decisions/600519?strategy=value">
@@ -305,6 +334,9 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
       </details>
       <nav aria-label="策略及现有工作入口" className="architecture-links">
         <Link to="/strategy/value">价值策略</Link>
+        {strategy === "value" && (
+          <Link to="/project">项目进度（同一模块目录）</Link>
+        )}
         <Link to="/strategy/hotspot">热点策略</Link>
         <Link to="/daily">今日决策</Link>
         <Link to="/daily">选取真实条目 → 决策详情</Link>
@@ -331,7 +363,13 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
               {index + 1}. {item.title}
             </strong>
             <span>
-              {item.engineeringStatus} · {item.evidenceStatus}
+              {item.id === "C" ? (
+                <CStatusAxes stage={item} />
+              ) : (
+                <>
+                  {item.engineeringStatus} · {item.evidenceStatus}
+                </>
+              )}
             </span>
             <small>
               {item.dependencies.length

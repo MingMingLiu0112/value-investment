@@ -157,8 +157,8 @@ export const catalog: Record<
           "src/value_investment_agent/domain/research/research_profile.py",
           "src/value_investment_agent/valuation_router.py",
         ],
-        engineeringStatus: "固定五家及合同已验／C职责冻结",
-        evidenceStatus: "原件哈希、经营页码及现有接口已验",
+        engineeringStatus: "工程闭环完成",
+        evidenceStatus: "固定五家验收通过",
         shortStatus:
           "固定五家：旧两家消费不变；制造与周期仅条件路由、输入待补；金融有据拒绝",
         implementation:
@@ -183,9 +183,8 @@ export const catalog: Record<
           realData: "固定五家已验；新三家有限官方完整段落审核，未新增公司深研",
           economic:
             "业务族仅约束模板候选，不证明经济质量；正常化盈利、资本回报和持续分配仍有缺口",
-          deployment: "运行版本及页面验收另存回执；画像状态不代替正式投资资格",
-          acceptance:
-            "用户尚未确认此版本；固定范围接口验收不代表经济或最终使用批准",
+          deployment: "部署待验收；部署后仅按独立运行回执更新",
+          acceptance: "用户尚未确认此版本；部署通过不代替用户确认",
         },
       },
       {
