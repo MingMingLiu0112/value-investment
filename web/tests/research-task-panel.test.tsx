@@ -82,9 +82,9 @@ function task(
     ...changes,
   };
 }
-function render(symbol = "600519") {
+function render(symbol = "600519", initialReadError?: string) {
   hooks.cursor = 0;
-  return ResearchTaskPanel({ symbol });
+  return ResearchTaskPanel({ symbol, initialReadError });
 }
 function nodes(value: any): any[] {
   if (Array.isArray(value)) return value.flatMap(nodes);
@@ -347,5 +347,33 @@ it("history 401 stays local and a wrong company envelope never supplies selectab
   await click("读取已有任务");
   expect(shown()).toContain("响应无法核验");
   expect(button(render(), "手动刷新").props.disabled).toBe(true);
+  expect(calls.refresh).not.toHaveBeenCalled();
+});
+
+it("keeps controls after an initial read failure and replaces that hint with one local operation error", async () => {
+  const initialReadError = "TEST_ONLY 初始研究读取失败";
+  const initial = render("600519", initialReadError);
+  const initialAlerts = nodes(initial).filter(
+    (node) => typeof node.props.message === "string",
+  );
+  expect(initialAlerts).toHaveLength(1);
+  expect(initialAlerts[0].props.message).toBe(initialReadError);
+  expect(button(initial, "新增任务").props.disabled).toBe(false);
+  expect(button(initial, "读取已有任务").props.disabled).toBe(false);
+  for (const call of Object.values(calls)) expect(call).not.toHaveBeenCalled();
+  calls.start.mockRejectedValue(
+    new ApiError(401, "LOCAL_SESSION_LOCKED", "TEST_ONLY"),
+  );
+  await button(initial, "新增任务").props.onClick();
+  const next = render("600519", initialReadError);
+  const nextAlerts = nodes(next).filter(
+    (node) => typeof node.props.message === "string",
+  );
+  expect(nextAlerts).toHaveLength(1);
+  expect(nextAlerts[0].props.message).toContain("公开研究仍可查看");
+  expect(nextAlerts[0].props.message).not.toContain(initialReadError);
+  expect(button(next, "新增任务").props.disabled).toBe(false);
+  expect(button(next, "读取已有任务").props.disabled).toBe(false);
+  expect(calls.history).not.toHaveBeenCalled();
   expect(calls.refresh).not.toHaveBeenCalled();
 });

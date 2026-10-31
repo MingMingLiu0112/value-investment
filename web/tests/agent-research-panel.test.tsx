@@ -4,7 +4,7 @@ const { renderToStaticMarkup } = require("react-dom/server");
 const harness = vi.hoisted(() => ({ calls: 0 }));
 const response = vi.hoisted(() => ({
   loading: false,
-  error: undefined,
+  error: undefined as string | undefined,
   retry: () => {},
   data: {
     status: "NOT_CONNECTED",
@@ -15,7 +15,7 @@ const response = vi.hoisted(() => ({
 }));
 const queue = vi.hoisted(() => ({
   loading: false,
-  error: undefined,
+  error: undefined as string | undefined,
   retry: () => {},
   data: {
     action: "no_order",
@@ -32,6 +32,8 @@ import { AgentResearchPanel } from "../src/pages/DecisionDetail/AgentResearchPan
 
 beforeEach(() => {
   harness.calls = 0;
+  response.error = undefined;
+  queue.error = undefined;
   queue.data = {
     action: "no_order",
     status: "NOT_CONNECTED",
@@ -199,4 +201,29 @@ it("shows cross-company scope labels without treating mock research as formal ev
   expect(html).toContain("config/current-agent-research.json");
   expect(html).toContain("打开该研究草稿");
   expect(html).not.toContain("代理审批");
+});
+
+it("retains all D1 controls and exactly one hint when both initial research reads fail identically", () => {
+  const sharedError = "TEST_ONLY 初始研究读取需要本机授权";
+  response.error = sharedError;
+  queue.error = sharedError;
+  const fetcher = vi.spyOn(globalThis, "fetch");
+  try {
+    const html = renderToStaticMarkup(<AgentResearchPanel symbol="600519" />);
+    for (const label of [
+      "读取已有任务",
+      "新增任务",
+      "手动刷新",
+      "取消任务",
+      "恢复任务",
+    ])
+      expect(html).toContain(label);
+    expect(html.split(sharedError)).toHaveLength(2);
+    expect(html).toContain("SAVED_RESPONSE");
+    expect(html).toContain("不审批");
+    expect(html).not.toContain("待人工复核队列");
+    expect(fetcher).not.toHaveBeenCalled();
+  } finally {
+    fetcher.mockRestore();
+  }
 });

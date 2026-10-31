@@ -65,7 +65,13 @@ function isTaskForSymbol(
   );
 }
 
-export function ResearchTaskPanel({ symbol }: { symbol: string }) {
+export function ResearchTaskPanel({
+  symbol,
+  initialReadError,
+}: {
+  symbol: string;
+  initialReadError?: string;
+}) {
   const [saved, setSaved] = useState<ResearchTaskResponse>();
   const [operation, setOperation] = useState<Operation>();
   const [error, setError] = useState<string>();
@@ -187,8 +193,13 @@ export function ResearchTaskPanel({ symbol }: { symbol: string }) {
           恢复任务
         </Button>
       </Space>
-      {error && (
-        <Alert style={{ marginTop: 8 }} type="info" showIcon message={error} />
+      {(error || initialReadError) && (
+        <Alert
+          style={{ marginTop: 8 }}
+          type="info"
+          showIcon
+          message={error || initialReadError}
+        />
       )}
       {history && (
         <section aria-label="当前公司已有研究任务" style={{ marginTop: 8 }}>

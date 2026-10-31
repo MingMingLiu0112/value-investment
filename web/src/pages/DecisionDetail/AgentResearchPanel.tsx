@@ -47,7 +47,13 @@ export function AgentResearchPanel({ symbol }: { symbol: string }) {
   };
 
   if (error && queue.error === error) {
-    return <Alert type="info" message={error} />;
+    return (
+      <ResearchTaskPanel
+        key={activeSymbol}
+        symbol={activeSymbol}
+        initialReadError={error}
+      />
+    );
   }
 
   return (
