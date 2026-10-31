@@ -196,29 +196,31 @@ export const catalog: Record<
         output: "受控模型响应、成本、错误与任务轨迹",
         modules: [
           "src/value_investment_agent/infrastructure/agent_runtime/provider.py",
-          "src/value_investment_agent/application/research/agent_review/llm_pilot.py",
+          "src/value_investment_agent/application/research/agent_review/operating_task_v2.py",
         ],
-        engineeringStatus: "保存响应任务闭环／真实模型待验",
-        evidenceStatus: "真实600519来源重放及恢复合同已验",
-        shortStatus: "完整持久恢复、真实模型验收未据此证明",
+        engineeringStatus: "真实Provider执行已接／真实调用待验",
+        evidenceStatus: "000568真实事实与原文请求已验；外部模型尚未调用",
+        shortStatus: "真实三角色工作流已接；模型接口及名称待指定",
         implementation:
-          "复用Provider与三角色执行器；追加Hash状态、调用前预算预留、显式取消恢复与只读历史发现",
+          "复用D1追加状态和锁，接真实Provider、逐角色检查点、调用前CNY预留、跨任务日限额和显式取消恢复",
         milestone:
-          "SAVED_RESPONSE工程链已验；真实模型、用户确认及研究批准分别待验。",
+          "旧保存响应保留；真实执行工程与模拟Provider合同已验，真实模型及研究充分性不据此通过。",
         existingEvidence:
-          "600519官方原件重新核验后执行成功，重建服务可读取验证；崩溃预算漏账反例已修",
+          "000568自身84项财务事实和7段经营原文构成新请求；不读取旧预测、旧估值或保存响应",
         evidenceSource:
-          "runtime/research-task-execution-v1/acceptance-2b9bfea72d4b.json；.tmp/d1-integrated-final.xml",
+          "artifacts/current/live-operating-research-d1-d2-20261031.json；.tmp/live-operating-integrated.xml",
         evidence:
-          "来源变化拒绝；幂等、取消、预算中断恢复及任务发现已验；600887无登记入口不计成功",
-        nextStep: "独立完成D2来源绑定假设与反证；真实付费调用仍需单独授权",
+          "已授权每日人民币10元；服务商/API与模型尚未指定，未发送凭证、零真实调用",
+        nextStep:
+          "指定凭证所属API与模型并核验费率后，执行真实公司三角色研究；不猜测接口",
         ruleWhy: "执行可靠性与投资判断不同；Mock只能证明工程路径。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer:
             "现有公司AI区域显式操作 → 任务API → 持久执行器；不在首屏后台调用",
-          realData: "600519真实来源＋保存响应重放通过；不是新模型或当日研究",
+          realData:
+            "000568真实来源请求通过；模拟Provider只计工程验证，不计真实模型验收",
           economic: "不适用或由下游独立准入",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",
@@ -233,31 +235,32 @@ export const catalog: Record<
         output: "分情景经营假设、理由、反证、未知项",
         modules: [
           "src/value_investment_agent/application/research/product_operating_research.py",
-          "src/value_investment_agent/application/research/agent_review/supervisor.py",
+          "src/value_investment_agent/application/research/agent_review/operating_draft_v1.py",
         ],
-        engineeringStatus: "既有两公司假设草案闭环／未批准",
-        evidenceStatus: "双公司原件与十年资本路径重算通过",
+        engineeringStatus: "新Agent草案生成已接／真实输出待验",
+        evidenceStatus: "既有研究保留；新经营假设、反证与情景合同已接",
         shortStatus:
-          "原件重算、三分支三情景、反证与失效条件已接API；不是新公司首编",
+          "新经营假设 → 针对本次假设的反证 → 已见事件与未覆盖事项；不复制旧结论",
         implementation:
-          "复用既有原件利润桥与v4资本路径，逐项核验实际消费的历史字段和完整场景输入；GET不写、不联网、不调用LLM",
+          "真实Provider读取核验事实与经营原文；经营五维区间、反证、失效与事件输出经独立结构和引用校验；GET不调用模型",
         milestone:
-          "来源绑定经营假设草案已验；正常化、合法分配、经济批准及新公司首编仍分别待验。",
+          "真实生成链工程已接；模型尚未实际调用，不用模拟输出或已有研究包冒充新研究。",
         existingEvidence:
-          "600519/600887各3分支、每分支3情景和10年路径；52/50历史锚点；删映射重签和未来来源反例拒绝",
+          "历史D2两公司草案保留；新合同覆盖三情景、增长/盈利/投入/资金可达/终端区间或明确UNKNOWN",
         evidenceSource:
-          "runtime/d2-assumption-acceptance/1efced4b306e/receipt.json；.tmp/d2-closure.xml",
+          "artifacts/current/live-operating-research-d1-d2-20261031.json；真实调用回执尚未形成",
         evidence:
-          "API实际消费草案及重算资本路径；未重算估值，不把未来现金假设当事实",
+          "新草案不写事实、估值或批准；任务成功与数值假设充分性分别显示",
         nextStep:
-          "独立进入E2无旧包首编译；保留未批准、无当前价格和无私人数量边界",
+          "真实调用后复核经营假设及反证的经济质量，再考虑是否可供E2编译；不自动取得主估值",
         ruleWhy: "价格上涨不直接等于净利上涨；预测必须明确为假设。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer:
             "公开假设API → 现有价值公司详情；研究期、反证、失效默认可读",
-          realData: "600519/600887真实原件重放及实际API验证通过；非新LLM研究",
+          realData:
+            "000568真实事实与7段官方原文已备；真实模型生成待接口/模型配置",
           economic: "条件研究／未批准",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",

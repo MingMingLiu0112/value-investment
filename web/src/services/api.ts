@@ -726,7 +726,136 @@ export type ConditionAlertsResponse = {
   }[];
 };
 
+export type OperatingResearchModelStatus = {
+  status:
+    "READY" | "MODEL_AUTHORIZATION_REQUIRED" | "MODEL_CREDENTIAL_REQUIRED";
+  model_id: string | null;
+  currency?: "CNY";
+  max_run_cost?: string | number | null;
+  daily_cost_limit?: string | number | null;
+};
+export type OperatingResearchCompleteness = {
+  scenario_count: number;
+  numeric_assumption_count: number;
+  unknown_assumption_count: number;
+  status: "REVIEW_REQUIRED" | "INSUFFICIENT_FOR_NUMERIC_SCENARIOS";
+  economic_validation: "NOT_APPROVED";
+};
+export type LiveOperatingResearchTask = {
+  research_completeness?: OperatingResearchCompleteness;
+  task_id: string;
+  symbol: string;
+  status: string;
+  scope:
+    | "LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED"
+    | "TEST_ONLY_LIVE_CONTRACT_NOT_REAL_RESEARCH";
+  model_id: string;
+  new_llm_calls: number;
+  usage: Record<string, unknown>;
+  currency: "CNY";
+  reserved_cost: string | number;
+  settled_cost: string | number;
+  error_code?: string | null;
+  research_draft?: {
+    FUNDAMENTAL?: unknown;
+    COUNTER_EVIDENCE?: unknown;
+    EVENT?: unknown;
+  } | null;
+  source_binding: unknown;
+  context_fingerprint: string;
+  research_as_of: string | null;
+  main_range_adopted: false;
+  approval_changed: false;
+  formal_fact_count: 0;
+  condition_price: null;
+  personal_quantity: null;
+};
+export type LiveOperatingResearchRole = {
+  model_id: string;
+  generated_at: string;
+  source_bindings: unknown[];
+  draft: Record<string, unknown>;
+};
+export type PublicOperatingResearchSuccess = Pick<
+  LiveOperatingResearchTask,
+  | "research_completeness"
+  | "task_id"
+  | "symbol"
+  | "scope"
+  | "model_id"
+  | "new_llm_calls"
+  | "source_binding"
+  | "context_fingerprint"
+  | "research_as_of"
+  | "main_range_adopted"
+  | "approval_changed"
+  | "formal_fact_count"
+  | "condition_price"
+  | "personal_quantity"
+> & {
+  action: "no_order";
+  formal_eligibility: false;
+  status: "SUCCEEDED";
+  scope: "LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED";
+  research_draft: Record<
+    "FUNDAMENTAL" | "COUNTER_EVIDENCE" | "EVENT",
+    LiveOperatingResearchRole
+  >;
+};
+export type PublicOperatingResearchResult =
+  | PublicOperatingResearchSuccess
+  | {
+      action: "no_order";
+      formal_eligibility: false;
+      symbol: string;
+      status: "NOT_STARTED" | "UNASSESSABLE";
+      reason?: string;
+      task_id?: string;
+      latest_task_status?: string;
+    };
+
+export type LiveOperatingResearchHistory = {
+  symbol?: string;
+  items: LiveOperatingResearchTask[];
+};
+
 export const api = {
+  operatingResearchCompany: (symbol: string, signal?: AbortSignal) =>
+    get<PublicOperatingResearchResult>(
+      "operating-research/companies/" + encodeURIComponent(symbol),
+      signal,
+    ),
+
+  operatingResearchModelStatus: (signal?: AbortSignal) =>
+    get<OperatingResearchModelStatus>(
+      "operating-research/model-status",
+      signal,
+    ),
+  createOperatingResearchTask: (body: {
+    symbol: string;
+    request_key: string;
+  }) => post<LiveOperatingResearchTask>("operating-research/tasks", body),
+  operatingResearchTasks: (symbol: string, signal?: AbortSignal) =>
+    getPrivate<LiveOperatingResearchHistory>(
+      "operating-research/tasks?symbol=" + encodeURIComponent(symbol),
+      signal,
+    ),
+  operatingResearchTask: (id: string, signal?: AbortSignal) =>
+    getPrivate<LiveOperatingResearchTask>(
+      "operating-research/tasks/" + encodeURIComponent(id),
+      signal,
+    ),
+  cancelOperatingResearchTask: (id: string) =>
+    post<LiveOperatingResearchTask>(
+      "operating-research/tasks/" + encodeURIComponent(id) + "/cancel",
+      {},
+    ),
+  resumeOperatingResearchTask: (id: string) =>
+    post<LiveOperatingResearchTask>(
+      "operating-research/tasks/" + encodeURIComponent(id) + "/resume",
+      {},
+    ),
+
   firstResearchInput: (symbol: string, signal?: AbortSignal) =>
     get<FirstResearchInputResponse>(
       "first-research-inputs/" + encodeURIComponent(symbol),

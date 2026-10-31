@@ -1,3 +1,4 @@
+import { LiveOperatingResearchPanel } from "../../components/LiveOperatingResearchPanel";
 import { CompanyProfilePanel } from "../../components/CompanyProfilePanel";
 import { OperatingAssumptionDraftPanel } from "../../components/OperatingAssumptionDraftPanel";
 import { FirstResearchInputPanel } from "../../components/FirstResearchInputPanel";
@@ -1174,6 +1175,7 @@ export default function DecisionDetail() {
           <CompanyProfilePanel symbol={id} />
           <OperatingAssumptionDraftPanel key={id} symbol={id} />
           <FirstResearchInputPanel key={"first-" + id} symbol={id} />
+          <LiveOperatingResearchPanel key={"live-" + id} symbol={id} />
         </>
       )}
       <RemoteState loading={loading} error={error} retry={retry}>

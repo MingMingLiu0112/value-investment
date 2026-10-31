@@ -1,0 +1,25 @@
+{
+  "action": "no_order",
+  "engineering_status": "IMPLEMENTED_TARGETED_VALIDATION_PASSED",
+  "real_model_acceptance": "PENDING_SERVICE_ENDPOINT_AND_MODEL",
+  "daily_budget_authorized_cny": "10",
+  "real_calls": 0,
+  "source_readiness_receipt": "runtime/live-operating-research-20261031/source-readiness.json",
+  "test_receipt": ".tmp/live-operating-integrated.xml",
+  "targeted_passed": 190,
+  "targeted_skipped": 0,
+  "c_scope": "FIXED_FIVE_UNCHANGED",
+  "semantic_research_approval": false,
+  "sealed_targeted_receipt": ".tmp/live-operating-sealed.xml",
+  "sealed_targeted_passed": 224,
+  "sealed_targeted_skipped": 0,
+  "falsey_test_provider_regression": "PASS;1 passed/21 deselected; no real-call promotion",
+  "web_full": {
+    "passed": 1432,
+    "skipped": 28,
+    "receipt": ".tmp/live-operating-web-full.log"
+  },
+  "typecheck": "PASS",
+  "format": "PASS",
+  "independent_review": "Two confirmed P2 closed; no new confirmed P1/P2 in bounded review"
+}

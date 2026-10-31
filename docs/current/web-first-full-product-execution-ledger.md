@@ -7386,3 +7386,33 @@ network/source acquisition or output write. Source index and acceptance
 command: artifacts/current/first-research-input-e2-20261031.json. Final
 source commit, CI and8001 browser acceptance are recorded separately below;
 not inferred from earlier green CI. action=no_order.
+
+### 2026-10-31 D1/D2 actual-provider operating research continuation
+
+User requests genuine new model research, not saved-response/old-package replay.
+Reuse existing LLMProvider and D1 immutable append/lock/head primitives. New
+operating workflow reads only verified native facts plus official operating
+paragraphs. 000568 real source:84 financial facts+7 excerpts. No previous
+forecast, thesis, final valuation or model response is supplied.
+Fundamental drafts three economic scenarios across five dimensions; Counter
+reviews THIS run's verified Fundamental proposal, Event reviews seen sources and
+uncovered information. Exact references/schema are verified; no financial fact,
+valuation, gate, approval, price or private account mutation is permitted.
+Published role checkpoints support explicit recovery. Ambiguous calls retain
+durable reservations; configuration/source checks occur before each new request.
+
+User grants daily CNY10 budget. Cross-task daily reservation/settlement is durable
+and separately locked; actual API billing is not inferred from configured-rate
+estimates. Credential supplied in chat is NOT copied into code, files or output.
+Service/API and model name are still unspecified; no credential is sent to a
+guessed endpoint, no real provider call has occurred. Model pricing must be
+verified before local authorized configuration is installed. Only synthetic
+providers exercise execution tests. Actual source request construction is not
+real-model acceptance. No closed real-agent research claim until this is run.
+
+Read-only public model status/company result do not execute models. Starting,
+resuming/cancelling use existing local operator authorization. Company Web gets
+an explicit new-Agent entry, separate from old saved-response controls and old
+research packages. /project separates engineering from real model/research
+acceptance. No hotspot, C expansion, model redesign or production/server work.
+action=no_order.

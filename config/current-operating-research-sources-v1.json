@@ -1,0 +1,12 @@
+{
+  "schema_version": "current-operating-research-sources-v1",
+  "action": "no_order",
+  "cases": {
+    "000568": {
+      "native_facts": {
+        "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+        "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+      }
+    }
+  }
+}

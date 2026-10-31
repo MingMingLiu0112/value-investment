@@ -44,3 +44,5 @@ deploy/server/*-副本*.timer
 # Local-only portable PostgreSQL environment
 .m1-postgres-venv/
 .m1-postgres-binary*/
+
+/config/agent-research-provider.local.json

@@ -1160,6 +1160,8 @@ def create_app(
     register_research_task_routes(api, project=project, sessions=sessions, port=bound_port)
     register_operating_assumption_routes(api, project=project)
     register_first_research_input_routes(api, project=project)
+    from .live_operating_research_routes import register_live_operating_routes
+    register_live_operating_routes(api, project=project, sessions=sessions, port=bound_port)
     register_simulated_journey_routes(api, project=project)
     register_dual_simulated_journey_routes(api, project=project)
     register_simulated_portfolio_routes(api, project=project, port=bound_port)
