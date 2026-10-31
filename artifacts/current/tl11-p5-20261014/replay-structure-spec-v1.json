@@ -1,0 +1,21 @@
+{
+  "schema_version": "hotspot-structure-prefix-spec-v1",
+  "registered_at": "2026-10-14T21:08:36.837852+08:00",
+  "action": "no_order",
+  "parent_spec_binding": {
+    "path": "artifacts/current/tl11-p5-20261014/replay-spec-v1.json",
+    "sha256": "750220bcb8639c8c78f7b337a67f006ae8b076fcdc362e79336e58e2bca252f2"
+  },
+  "rule_bindings": [
+    {"path": "src/value_investment_agent/domain/hotspot/confirmed_price_structure.py", "sha256": "bd544db9e79a9646d84867f47f78bfd0adbe541b923d7abae5683ae86810e676"},
+    {"path": "config/hotspot-confirmed-structure-v1.json", "sha256": "86d10acc7373b22765c3d6afd8bf1782ff0d441a16fc0f0616752d244b0283eb"}
+  ],
+  "rule_version": "hotspot-confirmed-structure-v1",
+  "scope": "RETROSPECTIVE_PREFIX_DESCRIPTION_NOT_PROSPECTIVE_OOS",
+  "cutoff": "Every completed primary 60m close in the parent protocol, daily known only at 15:00 Shanghai",
+  "parameters_changed": false,
+  "comparisons": ["PRIMARY_V1_SIGNAL", "V1_TRIGGER_AND_PROTECTION_EQUALITY", "DAILY_TREND_TRANSITIONS", "NEXT_BAR_CONFIRMATION", "PULLBACK_RECOVERY", "STRUCTURAL_SPACE_AVAILABILITY", "MISSING_RAW_WINDOW_VS_MISSING_CONFIRMED_SWINGS"],
+  "formal_eligibility": false,
+  "portfolio_eligibility": null,
+  "prospective_oos_admitted": false
+}

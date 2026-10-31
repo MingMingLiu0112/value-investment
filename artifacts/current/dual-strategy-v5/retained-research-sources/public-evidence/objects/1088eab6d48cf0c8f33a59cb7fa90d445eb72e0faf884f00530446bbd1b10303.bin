@@ -1,0 +1,785 @@
+{
+  "schema_version": "pending-research-candidate-v1",
+  "symbol": "600887",
+  "status": "PENDING_REVIEW",
+  "action": "no_order",
+  "generated_at": "2026-10-21T16:39:10.949988+00:00",
+  "candidate_research_as_of": "2026-10-22",
+  "financial_period": "2026-06-30",
+  "prior_research_as_of": "2026-10-21",
+  "selected_choice": "short-advantage",
+  "choice_rationale": "盈利条件保留一年，再用三年全资本ROE衰减至权益成本；不假定永久超额回报。",
+  "countercase": "盈利下降、减值及融资约束可能使短期持续性也无法成立。",
+  "retained_date_valuation": {
+    "symbol": "600887",
+    "model_type": "residual_income_or_equity_value",
+    "valuation_date": "2026-10-11",
+    "bear_value": "9.79760313158508810610306691015669399815319759012",
+    "base_value": "10.0751019719232477001932761460800975269447691544",
+    "bull_value": "10.3006601964623125311634347711269965134683907573",
+    "confidence": "低",
+    "assumptions": {
+      "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+      "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+      "status": "conditional_research_only",
+      "disclaimer": "No market price, margin of safety, position or order is produced here.",
+      "valuation_timing": {
+        "basis_at": "2026-06-30T23:59:59+08:00",
+        "valuation_at": "2026-10-11T16:00:00+08:00",
+        "evidence_refs": [
+          {
+            "id": "cninfo:1225259562",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+          },
+          {
+            "id": "cninfo:1225511409",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          }
+        ],
+        "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+      }
+    },
+    "sensitivities": [
+      {
+        "scenario": "bear",
+        "cost_of_equity": "0.10",
+        "ordinary_equity_value": "61973373479.4043416700738620815743750226732066768",
+        "per_share_value": "9.79760313158508810610306691015669399815319759012",
+        "terminal_residual_contribution_ratio": "0E+8",
+        "dividend_crosscheck_difference": "-3E-37",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02717129753430943325500358829553416306287175620"
+      },
+      {
+        "scenario": "base",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "63728653729.2174493457007572322843951284604154904",
+        "per_share_value": "10.0751019719232477001932761460800975269447691544",
+        "terminal_residual_contribution_ratio": "0E+8",
+        "dividend_crosscheck_difference": "2E-37",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02453611478688680503318301490123470325152656712"
+      },
+      {
+        "scenario": "bull",
+        "cost_of_equity": "0.08",
+        "ordinary_equity_value": "65155390850.8352042324824020499068510081390946441",
+        "per_share_value": "10.3006601964623125311634347711269965134683907573",
+        "terminal_residual_contribution_ratio": "0E+8",
+        "dividend_crosscheck_difference": "0E-37",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02188349849272138812477739040776506408238156915"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "prior-3ec6e2c95534-pending-economic-proposal",
+        "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+        "sha256": "76ab1d93a88c8d5955ecded565b7fb79fcbcc731a48efac8928f503c37ec04c1"
+      },
+      {
+        "id": "cninfo:1225259562",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+        "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+      },
+      {
+        "id": "cninfo:1225511409",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+        "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+      },
+      {
+        "id": "yili_fy2025_annual",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+        "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+      },
+      {
+        "id": "yili_2026h1",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+        "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+      },
+      {
+        "id": "china_cost_equity_20260914",
+        "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+        "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+      }
+    ],
+    "blockers": [],
+    "status": "conditional_research_only",
+    "model_version": "residual-income-equity-shared-dated-v2"
+  },
+  "candidate_valuation": {
+    "symbol": "600887",
+    "model_type": "residual_income_or_equity_value",
+    "valuation_date": "2026-10-21",
+    "bear_value": "9.82311355753512637821227145569788295685682866355",
+    "base_value": "10.0988183727036325528099511989682320838773505617",
+    "bull_value": "10.3223115883813946287380034955011848506557986876",
+    "confidence": "低",
+    "assumptions": {
+      "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+      "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+      "status": "conditional_research_only",
+      "disclaimer": "No market price, margin of safety, position or order is produced here.",
+      "valuation_timing": {
+        "basis_at": "2026-06-30T23:59:59+08:00",
+        "valuation_at": "2026-10-21T15:00:00+08:00",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+            "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+          }
+        ],
+        "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+      }
+    },
+    "sensitivities": [
+      {
+        "scenario": "bear",
+        "cost_of_equity": "0.10",
+        "ordinary_equity_value": "62134736124.3071298636180676425982218904718419788",
+        "per_share_value": "9.82311355753512637821227145569788295685682866355",
+        "terminal_residual_contribution_ratio": "0E+8",
+        "dividend_crosscheck_difference": "1E-37",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02984578607725518435669952040991336422989606731"
+      },
+      {
+        "scenario": "base",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "63878668517.8765037975648656401431462058852380954",
+        "per_share_value": "10.0988183727036325528099511989682320838773505617",
+        "terminal_residual_contribution_ratio": "0E+8",
+        "dividend_crosscheck_difference": "-1E-37",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02694783321712973539201451578138646888250902275"
+      },
+      {
+        "scenario": "bull",
+        "cost_of_equity": "0.08",
+        "ordinary_equity_value": "65292343713.6659677792244351585517061062344581737",
+        "per_share_value": "10.3223115883813946287380034955011848506557986876",
+        "terminal_residual_contribution_ratio": "0E+8",
+        "dividend_crosscheck_difference": "-2E-37",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02403143849846076696012604732128692102964690571"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "pending-economic-proposal",
+        "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+        "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+      },
+      {
+        "id": "cninfo:1225259562",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+        "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+      },
+      {
+        "id": "cninfo:1225511409",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+        "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+      },
+      {
+        "id": "yili_fy2025_annual",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+        "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+      },
+      {
+        "id": "yili_2026h1",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+        "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+      },
+      {
+        "id": "china_cost_equity_20260914",
+        "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+        "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+      },
+      {
+        "id": "prior-3ec6e2c95534-pending-economic-proposal",
+        "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+        "sha256": "76ab1d93a88c8d5955ecded565b7fb79fcbcc731a48efac8928f503c37ec04c1"
+      }
+    ],
+    "blockers": [],
+    "status": "conditional_research_only",
+    "model_version": "residual-income-equity-shared-dated-v2"
+  },
+  "model_context": {
+    "input_descriptor_sha256": "d431e3b6aa4162f95b6ecb8a1ecdbabd3f8187315f01acc6654ad1b439b66c18",
+    "research_case_sha256": "9d10cb31215181fccd8d85ba9fc70ec7482e205283fe830097a9ad02c9c512ff",
+    "facts_sha256": "fc07327fe76e26c93731685fe0bb4d3c6ea2cb5a1d131fbb2073377c5d1cf00a",
+    "assumptions_sha256": "ec8dbcd55fde80531afe3eb01f5836db0d25d1f44eb29bd9d51fc9a84a317e62",
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "profile_id": "quality_compounder",
+    "research_as_of": "2026-10-22"
+  },
+  "approval_changed": false,
+  "research_admitted": false,
+  "model_context_scope": "ACTUALLY_CONSUMED",
+  "execution_status": "NO_ACTION",
+  "schedule_gate": {
+    "allowed": true,
+    "status": "ALLOW_NORMAL_RESEARCH",
+    "matched_stop_ids": [],
+    "scope_key": {
+      "source_id": "CNINFO",
+      "period": "2026-06-30",
+      "research_question_id": "daily-assistant-existing-research-case",
+      "blocker_id": "no-active-evidence-stop"
+    },
+    "active_stop_ids": [
+      "600887-dividend-type-classification",
+      "600887-scp010-011-quote-day-liquidity"
+    ],
+    "reason": "No Evidence Stop matches this research case scope."
+  },
+  "research_blockers": [
+    "formal G3 human valuation approval not present",
+    "issuer-specific beta evidence missing; generic beta=1 assumption used",
+    "ROIC and incremental ROIC remain unverified",
+    "H1 2026 interim report is unaudited",
+    "pending_economic_model_review",
+    "pending_complete_event_materiality_review",
+    "G3_估值门",
+    "等待已验证收盘行情",
+    "price_bridge_pending_external_data"
+  ],
+  "price_admitted": false,
+  "position_guidance": null,
+  "canonical_written": false,
+  "registered_current_case_changed": false,
+  "strict_contemporaneous_pit": "NOT_PROVEN",
+  "event_coverage": "COMPLETE_PENDING_MATERIALITY_REVIEW",
+  "date_semantics": "Ex-post computation on retained prior-session basis; actual research, availability and computation times retained; not historical PIT or current validity.",
+  "model_limits": [
+    "Conditional mathematical alternatives only; not approved fair value or entry prices.",
+    "Self-funded model does not enforce the issuer DPS floor or financing-funded distributions.",
+    "No G3, materiality, strict PIT, current price or private portfolio approval."
+  ],
+  "review_questions": [
+    "Validate earnings normalization and forward operating mechanism without impairment addbacks.",
+    "Validate issuer-specific equity cost, share denominator and finite advantage duration.",
+    "Historical H1 consolidated ownership equity now reconciles; separately validate future OCI/capital changes and sustainable distribution."
+  ],
+  "review_groups": [
+    {
+      "id": "EARNINGS_IMPAIRMENT",
+      "question": "盈利恢复与减值的经济影响如何判断？",
+      "support": "已核扣非TTM及H1数据进入新候选；商誉和存货减值保持实际经济损失。",
+      "countercase": "H1扣非同比下降20.25%；减值非现金不等于无资本损失，正常化仍未知。",
+      "impact": "不加回损失；否定盈利代理时须暂停或重审未来路径，不能承诺恢复。",
+      "field_paths": [
+        "research_case.financial_summary",
+        "facts.scenario_inputs"
+      ]
+    },
+    {
+      "id": "CASH_FINANCING",
+      "question": "现金流恢复能否支撑分配？",
+      "support": "CFO和权益桥已核，集团/母公司及内部票据分别解释。",
+      "countercase": "付款基数影响恢复，内部抵销不免除外部银行债务，母公司CFO不等于集团创造现金。",
+      "impact": "80%至90%假定分配不证明1.22元底线或可持续现金；融资约束要求重审分配。",
+      "field_paths": [
+        "facts.scenario_inputs",
+        "source_contract.distribution_input_status"
+      ]
+    },
+    {
+      "id": "CAPITAL_DURATION",
+      "question": "成本与优势期限是否有足够公司依据？",
+      "support": "复用短期1+3与中期3+5有限方案及共享模型，历史归母资本与股数已核。",
+      "countercase": "8%至10%成本仍为临时条件，公司专属论证未完成；ROE衰减不识别两个资本池。",
+      "impact": "短方案不是正式公平价值；中方案需恢复机制，不能按较高值选；无新阈值。",
+      "field_paths": [
+        "facts.operating_inputs",
+        "facts.scenario_inputs",
+        "assumption_bindings"
+      ]
+    },
+    {
+      "id": "EVENT_MODEL",
+      "question": "新财务事实和公告是否支持正式模型审查？",
+      "support": "精确FY/H1官方身份、原件Hash和新版本实际消费可核验。",
+      "countercase": "公告材料性、G3及当前价格未准入，生成日不等于完整当前数据。",
+      "impact": "仅待审研究；逐项公告审阅后依既有合同重算，不生成订单或私人仓位。",
+      "field_paths": [
+        "source_contract",
+        "model_validity_input"
+      ]
+    }
+  ],
+  "economic_policy_binding": {
+    "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/policy.json",
+    "sha256": "215d53e30e3ffc5c19fe26d6f631cb41506d8e24ef7b32bf11d4ba55645ef96f"
+  },
+  "source_bindings": [
+    {
+      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/package.json",
+      "sha256": "3cdc95e1c08dfa09ed19a8ae056cc4331cb020483aa841a381539df4148b7e98"
+    },
+    {
+      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/policy.json",
+      "sha256": "215d53e30e3ffc5c19fe26d6f631cb41506d8e24ef7b32bf11d4ba55645ef96f"
+    },
+    {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+      "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+    },
+    {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/package.json",
+      "sha256": "32ae408776c9efd2ab7a492926db035af85a3ce86d93229ea1a0e2c93479a91c"
+    },
+    {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/workbench.json",
+      "sha256": "8f833e5c130db25facee6b8256ba6a50f6a6b1e77c071f554d2bf1ae1224ed72"
+    },
+    {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/materiality-handoff.json",
+      "sha256": "13b6fca26826a7afcd42ee7afe5f1329be8f14278d911e292f1cf0152b385f06"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/observation.json",
+      "sha256": "32db89adaff1b03bb011aa4fcb172754a639ae58f059c33c9d92b16014714934"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/event-scan.json",
+      "sha256": "f810744bdde7c50534985d05115f6b1d1f7734fc882751d50e0941a7604ba414"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/cninfo-index.json",
+      "sha256": "db0d8d2c0c63fc6a225fbad9562831308ba55b387c3046dd1aad7962a1b03dcb"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index-manifest.json",
+      "sha256": "2378d8dac7ef431ab416944b850a2565382f41170cce86fd2153a3ed99c0bd3f"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index/response-0001.bin",
+      "sha256": "de82e377b97557bcc4a872647f24c2177daabb113761906dc5fe97f225722e74"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index/response-0001.json",
+      "sha256": "f5d10481ed220c9654cb3b6608c6b76f7e770442a7297437cab17399423ddb6d"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index/response-0002.bin",
+      "sha256": "4e24e0ad3a1ed1e3060d485c10964d41a3c7cf493b47bbf554e280a5ab8c9107"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index/response-0002.json",
+      "sha256": "080ca9c8f547748eaab07a372c505124f4d5d639bc0699a97202d926cc568acb"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index/response-0003.bin",
+      "sha256": "6cbd8ca839cc89daff1231605c5b121769ae3897dfb1133e75c99090d0cb3efc"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index/response-0003.json",
+      "sha256": "3613496f57eca22a8d424aef966b753eb9eb46dd5534ce7cc6d7b7c73f987ed4"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225598746.pdf",
+      "sha256": "bf56246ba820acaa7e523c884da7f5a09f4da62e3d8235c4ee109e4fc208c2f1"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225598739.pdf",
+      "sha256": "06d7cda0a54663d851fba04762dd72b3cbd197398ce2f24feb4853188a316901"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225591152.pdf",
+      "sha256": "f59267675689f0d77cc142d91e910e2e839adfc0282a260483e0858cc82a1ba3"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225591147.pdf",
+      "sha256": "62815ec8a6fed035e1ead0d11f73ae8ce8d5f783a2c40a1b090259cbf6f4fe19"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225584526.pdf",
+      "sha256": "4ef69c200e7b3d0cde3e1b667bcbb4304d15dd6aa406585ca796aa2c3ab4a270"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-raw-events-v1/600887-1225578520.pdf",
+      "sha256": "7c669db8bb3b5a362ecad92c6a96745a3b5039a3288f5e13b498e9e72971111c"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225568026.pdf",
+      "sha256": "9d3b29c5d2664c07b7bf5074970f0f971806c55f6dbf1fb45bb339787775c0ed"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225568025.pdf",
+      "sha256": "4a836cfeca6078c7db7397e00d949a30a00237e6041b738da3b6aff9a382f9ae"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225568022.pdf",
+      "sha256": "5e5baa57776faf72d1993606f9044cb634298615c6841a3aedb30dbc52b67583"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225568017.pdf",
+      "sha256": "65e4ed5f54c235e887f34b6c98f14f993d283b1b810cd059a2c1b7c958ea1ed3"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225559652.pdf",
+      "sha256": "2b0109b9633f77a0eaba8e86769fb3a7f48736584c87dbfb4a6151017bfc9e44"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225559649.pdf",
+      "sha256": "fed832b763bcd241a09dcad4a1e6a250ad24d2892dabcc00a4098feedfc513a1"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225552949.pdf",
+      "sha256": "9881a0bac7b205736c0a5be5932145164f1c86e46d6f5c7ab2cee49bdbad55e2"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225547701.pdf",
+      "sha256": "382ce62c80197a2c343d5288db0445ffa62681e68e0e6e64f5488562f8c2b56e"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225547678.pdf",
+      "sha256": "b5ef55521fda3a39edc95d72e23eafc5318010e19214db0096684a3967382ba1"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225536213.pdf",
+      "sha256": "6286c438ecc425f204c1e9a4fb7a0a037f330558c084d45c68eedb2b1af1a05b"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511505.pdf",
+      "sha256": "4bfeb24fa8d2974576eacfa7e9785561d296d789754344445a990306b812edaf"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511493.pdf",
+      "sha256": "bf3a21d0c92b4f05c8c484720e3480396d4b00b78df3e94fce3e1476acc85d2d"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511485.pdf",
+      "sha256": "77b0025534be78d6cd5d8efeae8d0b43b77d03921a214820280bbe8a02d0d63d"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511474.pdf",
+      "sha256": "0a086e25a805acc62c4b5cfcc1cc80aa75d6d20713c9f960f771d8199aeabed9"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511473.pdf",
+      "sha256": "afdd5cf950e7b1910470e57ef63ac09d65ba88c14e115566425eb4715817956e"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511470.pdf",
+      "sha256": "c84f92a52e3018c17c8b20d49ca6a96d5e9d4b6e514f4b4bfdfb2aaf6a4f20e1"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511468.pdf",
+      "sha256": "af7947f63ab18f89ae8e9af1bbdee98346d3401b4ac48678cbfa4746bdae45da"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511466.pdf",
+      "sha256": "154e9f61da262b53a84d6d3123c8439f81ad1ab7ffcbe66249c3cd280745235e"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225511409.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225496541.pdf",
+      "sha256": "67e97a323a9cde855100237a15e8847252371b6e056fd59332d2e399397102af"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225481292.pdf",
+      "sha256": "720d4cc94202ff6eb76159e175542f47c63dfc0b721cfb299ec8fc9b21281518"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225476619.pdf",
+      "sha256": "fbfa10a1588378429b747fd70a3c19eefb55838e49f309a943b986979ffb1c1b"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225436626.pdf",
+      "sha256": "aeb07c1aa8461ac93021cb9638b75d85e213760a2d5fe3359f53d8d4a3651a1c"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225436623.pdf",
+      "sha256": "9e646e92a90809b9163523d08768c0ab82d53f525b514d184c304a908f6d34d9"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225422777.pdf",
+      "sha256": "816bf7a70547c76f31c8c0d09fdfc70c0f1a1d9184a778d2239e37954ea162b2"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225418978.pdf",
+      "sha256": "81d781db799d3ac8c6e1d17c48ef72c18505c0ab6ba74f198ad2743b1b562073"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/600887-1225412264.pdf",
+      "sha256": "f8c529139b7f49d73f355ecd41c8dea44e68ff35765379538dd090ccba5f6a2d"
+    },
+    {
+      "path": "runtime/web-first-event-coverage/600887-20261018/observation.json",
+      "sha256": "560c1dd6bd42c461985e1fe1880fb50de0f2ed82d628baa9e1a0c255ff5d9f58"
+    },
+    {
+      "path": "runtime/web-first-event-coverage/600887-20261018/event-scan.json",
+      "sha256": "90e2367ad9170b2d8aa8590ba0ea723005740a7fcfce5adcf48c8323d439baae"
+    },
+    {
+      "path": "runtime/web-first-event-coverage/600887-20261018/cninfo-index.json",
+      "sha256": "83a352d542cf2d37560c117ae76c4ed65761298be30edf151428c72dee1317fe"
+    },
+    {
+      "path": "runtime/web-first-event-coverage/600887-20261018/raw-index-manifest.json",
+      "sha256": "b6183d2868684040373aed44bc0dc6f4cd5dd796cd95cecd7d305a2a495c441d"
+    },
+    {
+      "path": "runtime/web-first-event-coverage/600887-20261018/raw-index/response-0001.bin",
+      "sha256": "2499c82f90fbc5f2279677bf2298466ae748f3afe3f4ae010241ee1e5e348039"
+    },
+    {
+      "path": "runtime/web-first-event-coverage/600887-20261018/raw-index/response-0001.json",
+      "sha256": "5b8bd2742c595f909c4c7e5ee55b68e0747fc54a446b20b5e4f53cc2728db704"
+    },
+    {
+      "path": "runtime/web-first-event-coverage/600887-20261018/raw-index/response-0002.bin",
+      "sha256": "aa05e1c3daa1d1f2a0af4ebc5ef74a4c5f5ddc83d978ded8fe05e6dda76e87ab"
+    },
+    {
+      "path": "runtime/web-first-event-coverage/600887-20261018/raw-index/response-0002.json",
+      "sha256": "172fafba3c8a0c2acb71f0e8987e5e3a001a9cc361438aaeee7e3279c4e9e5ae"
+    },
+    {
+      "path": "runtime/web-first-event-coverage/600887-20261018/600887-1225603138.pdf",
+      "sha256": "bb98b2d13f492eed41c090e96156af41c41bdb1ef2a4d4d5a07ae197d5281d19"
+    },
+    {
+      "path": "runtime/web-first-event-coverage/600887-20261018/600887-1225600810.pdf",
+      "sha256": "1ba54ca786f66efbaebe67f6e6c17cb50f52284251bd46c3b7ae7f226be6a3e2"
+    },
+    {
+      "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/observation.json",
+      "sha256": "ba7968662d59f59c4a9f35000e05d75e7c8a07524697c1743ae5a316f2df42d5"
+    },
+    {
+      "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/event-scan.json",
+      "sha256": "49485863fe05c1327d045c587fda58450030cd098f5e5d0758c91b3d24cc7804"
+    },
+    {
+      "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/cninfo-index.json",
+      "sha256": "6d75a9e91c1da2634242c11571aca7a14cc5c748e3b14bab7db7192305c23874"
+    },
+    {
+      "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/raw-index-manifest.json",
+      "sha256": "666bb7187264cc88569d09ea06f3f86fdcb48fd6aa06f9f51e54855c5a330951"
+    },
+    {
+      "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/raw-index/response-0001.bin",
+      "sha256": "2378fb78081c08e249173c8fcb375b826440e455a114ce628321b547bcc37d9d"
+    },
+    {
+      "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/raw-index/response-0001.json",
+      "sha256": "84e62d2a23fb0bfe455ca7a800aabbeccc54825056cddb38755c987706b2e533"
+    },
+    {
+      "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/raw-index/response-0002.bin",
+      "sha256": "efd3995b109eba3b5db01f95dd4fd7202d28b475bed6945080aad411136a6799"
+    },
+    {
+      "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/raw-index/response-0002.json",
+      "sha256": "78730672c8943c2b4f03963832c163b64feb5659f160110b90b790a35bc02c22"
+    },
+    {
+      "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/600887-1225608261.pdf",
+      "sha256": "59d39ce2e5792bf0cba3311c6e0793ca2ad4a453f0ab48c5628e35cd9ada5896"
+    },
+    {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/consumed-review.json",
+      "sha256": "4c0c7f476541899c1f52760687e871d79adce6788e0fa0aaf0ba01102eeb4b00"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+    },
+    {
+      "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+      "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+    },
+    {
+      "path": "runtime/quote-sessions/20260923T005634211464Z/bundle.json",
+      "sha256": "5e49dc79bbc0132b040175e993e2f5dd5a3813c7167ade7aa2afc5c51cea19c0"
+    },
+    {
+      "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/600887-page-1.raw.json",
+      "sha256": "39d77daaf05127dd8e9628c5579d061999df88f430226c197cd3c9e342f0d6a5"
+    },
+    {
+      "path": "config/m1-valuation-packages-v1/600887-quality-compounder.json",
+      "sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803"
+    },
+    {
+      "path": "config/research-proposals/600887-20261011-v3.json",
+      "sha256": "fc7dba372686f7fefb17364546046ae9bc8b2cd9eef29431a3ad2d83e6aa0edb"
+    },
+    {
+      "path": "docs/current/600887-current-financial-review-20261011.md",
+      "sha256": "5241cd6420eb497bf5450d43bced4c35703d562db0e8762460b2af93bd0a7427"
+    },
+    {
+      "path": "docs/current/600887-economic-closure-review-20261011.md",
+      "sha256": "6bc1bb2886e7c783119a51ad57bc5a7c146a105164db42c3f6e66176c27d45e6"
+    },
+    {
+      "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/index.json",
+      "sha256": "172808bcfe7069e5e30017136089764804a7edb4b2370422703ef79b3d10f54a"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/manifest.json",
+      "sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/facts.json",
+      "sha256": "fb07bf552d84dc41ddd58fd2088aafb33a3196d9679baaaa85c029739ac335f7"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/report.md",
+      "sha256": "f6ced418424cdfec55e4d92f01121abfbe117b4a6c20fe1d920fecf95b49a2e3"
+    },
+    {
+      "path": "scripts/research_cases/yili/build_yili_current_fact_review.py",
+      "sha256": "5c89272af435024ef17e742906f559a801c621f9b3f38dfb87323af9289e7529"
+    },
+    {
+      "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+      "sha256": "76ab1d93a88c8d5955ecded565b7fb79fcbcc731a48efac8928f503c37ec04c1"
+    },
+    {
+      "path": "runtime/company-research/m1-dividend-followup-20260928/600887/yili-fy2025-final-dividend-implementation.pdf",
+      "sha256": "c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70"
+    },
+    {
+      "path": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2025_interim_implementation.pdf",
+      "sha256": "cb0f2870dd2ed48799ec5c3403c402dc09129270b030b533818ba7b9662f0322"
+    },
+    {
+      "path": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2024_final_implementation.pdf",
+      "sha256": "94999a4f3f922ab372895488f872b8be864e1f3d5f8c9c78e34d3c3dc6ae0b3f"
+    },
+    {
+      "path": "runtime/company-research/yili-dividend-approval-202605/1225321219.pdf",
+      "sha256": "bda5690cbb6f81b591c7b731f9091d157071abed3054269000b8c690d68a8934"
+    },
+    {
+      "path": "runtime/public-event-followup-20261002/1225591152.pdf",
+      "sha256": "f59267675689f0d77cc142d91e910e2e839adfc0282a260483e0858cc82a1ba3"
+    },
+    {
+      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/acquisition-receipt.json",
+      "sha256": "1e045e881c96f42fff410610c1d7170a1f04890e8459842a1b1af6f106f32657"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/source_reobservation.py",
+      "sha256": "d2e5e61585321f6f10a07a5d31937dd37363c670264d8ed039d9c251598d8555"
+    },
+    {
+      "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
+      "sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5"
+    },
+    {
+      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/prior-case-registry.json",
+      "sha256": "bcd27349fb18aa17dd4f17820e642d7d07c8865a1652abe0b1a78e9f4aed2996"
+    },
+    {
+      "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/manifest.json",
+      "sha256": "1d2d17b65d22a770fb3417ade7ae6599586b2a85de805077db7e6847030b852b"
+    },
+    {
+      "path": "scripts/build_moutai_consolidated_equity_discount_range.py",
+      "sha256": "101ae422674ab2d7b993939aa485ab482eead32684a5741c38f19a1d52534339"
+    },
+    {
+      "path": "runtime/company-research/600519-consolidated-parent-equity-model-feasibility-20260914T104237Z/evidence.json",
+      "sha256": "fd701df519ec2bb5734e1faa9306b9914fa16f0aa5ee5fefc1b788d2019ba00f"
+    },
+    {
+      "path": "runtime/valuation-research/moutai-discount-basis-20260909T120002401955Z/evidence.json",
+      "sha256": "6dea599866140d28b7058d60b7c9a0d235aaed1def4df902011fc46e854de709"
+    },
+    {
+      "path": "runtime/valuation-research/moutai-market-beta-20260912T161052067136Z/evidence.json",
+      "sha256": "edb4592aa6a5d81f5f8c5e9c8c48578950d0b59f65b79f9db6f3b173546c7a3c"
+    },
+    {
+      "path": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+      "sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad"
+    },
+    {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/event-scan.json",
+      "sha256": "fbe2e916a74c04e36be11b062c7fbcfdd54319d37604d5a4a56289a4c7f47ae9"
+    }
+  ],
+  "implementation_bindings": [
+    {
+      "path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+      "sha256": "7b8a3dbaba16b0f54cf1a3f5416488ddadd57bf89b6097f4d280a30f10efb258"
+    }
+  ],
+  "recommendation_type": "NO_ACTION",
+  "decision_blockers": [
+    "formal G3 human valuation approval not present",
+    "issuer-specific beta evidence missing; generic beta=1 assumption used",
+    "ROIC and incremental ROIC remain unverified",
+    "H1 2026 interim report is unaudited",
+    "pending_economic_model_review",
+    "pending_complete_event_materiality_review",
+    "G3_估值门",
+    "等待已验证收盘行情",
+    "price_bridge_pending_external_data",
+    "research_case:formal G3 human valuation approval not present",
+    "research_case:issuer-specific beta evidence missing; generic beta=1 assumption used",
+    "research_case:ROIC and incremental ROIC remain unverified",
+    "research_case:H1 2026 interim report is unaudited",
+    "research_case:pending_economic_model_review",
+    "research_case:pending_complete_event_materiality_review",
+    "research_case_valuation_not_approved",
+    "valuation_status_not_approved_for_research",
+    "model_validity_unavailable",
+    "event_materiality_review_unavailable",
+    "decision_dependency_artifacts_unavailable",
+    "predecision_eligibility_unavailable",
+    "human_research_approval_not_resolved"
+  ],
+  "valuation_basis_date": "2026-10-21",
+  "valuation_basis_scope": "EX_POST_PRIOR_COMPLETED_SESSION",
+  "basis_binding": {
+    "path": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+    "sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad"
+  },
+  "coverage_binding": {
+    "observation_bindings": [
+      {
+        "path": "runtime/d2-full-event-window-20261011/600887-v1/observation.json",
+        "sha256": "32db89adaff1b03bb011aa4fcb172754a639ae58f059c33c9d92b16014714934"
+      },
+      {
+        "path": "runtime/web-first-event-coverage/600887-20261018/observation.json",
+        "sha256": "560c1dd6bd42c461985e1fe1880fb50de0f2ed82d628baa9e1a0c255ff5d9f58"
+      },
+      {
+        "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/observation.json",
+        "sha256": "ba7968662d59f59c4a9f35000e05d75e7c8a07524697c1743ae5a316f2df42d5"
+      }
+    ],
+    "scan_binding": {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/event-scan.json",
+      "sha256": "fbe2e916a74c04e36be11b062c7fbcfdd54319d37604d5a4a56289a4c7f47ae9"
+    },
+    "coverage_from": "2026-07-01",
+    "review_cutoff": "2026-10-21",
+    "handoff_binding": {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/materiality-handoff.json",
+      "sha256": "13b6fca26826a7afcd42ee7afe5f1329be8f14278d911e292f1cf0152b385f06"
+    }
+  },
+  "materiality_approved": false,
+  "current_market_validity_approved": false
+}

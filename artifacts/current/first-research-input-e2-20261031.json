@@ -1,0 +1,48 @@
+{
+  "schema_version": "first-research-input-e2-acceptance-v1",
+  "action": "no_order",
+  "symbol": "000568",
+  "scope": "CONDITIONAL_PRESSURE_FIRST_INPUT_NOT_ADOPTED_MAIN_RANGE",
+  "c_fixed_five_unchanged": true,
+  "source_manifest": {
+    "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+    "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+  },
+  "native_facts": 84,
+  "source_pdfs": 2,
+  "source_coverage": "FY2025/H12026; Q3 and current event coverage not verified",
+  "engine": "existing residual-income-equity-path-v4",
+  "annual_rows_per_scenario": 10,
+  "scenarios": 3,
+  "main_range_adopted": false,
+  "main_valuation_range": null,
+  "current_price": null,
+  "condition_price": null,
+  "personal_quantity": null,
+  "real_llm_called": false,
+  "cost": 0,
+  "independent_economic_review": {
+    "status": "NO_CONFIRMED_P1_P2_IN_SCOPE",
+    "path": ".tmp/e2-000568-conditional-parameters.md",
+    "scope": "conditional arithmetic, not approval"
+  },
+  "local_deployment": "PENDING_FINAL_BUILD",
+  "user_acceptance": "NOT_CONFIRMED",
+  "acceptance_commands": [
+    "E2_REAL_SOURCE_ROOT=<checkout> python -B -m pytest -q -p no:cacheprovider tests/test_first_research_input_v1.py tests/test_first_research_fact_replay_v1.py tests/web_api/test_first_research_input_api.py"
+  ],
+  "receipt_registry": "config/current-first-research-inputs-v1.json",
+  "preserved_user_pointer_sha256": "2aba22a9e043d20076c7c40916808aee1bae9ba48f13951b8d0735e6fa077686",
+  "final_receipt": {
+    "path": "runtime/e2-first-input-000568-20261031/compiled-20261031T111006911210Z/receipt.json",
+    "sha256": "b3c3b1eec045381779156dc150d57a67c21a9c0c92fedd94403c42f390e92b48"
+  },
+  "real_api_receipt": "runtime/e2-first-input-000568-20261031/api-acceptance-final/receipt.json",
+  "validation": {
+    "d1_d2_e2": "155 passed; .tmp/d1-d2-e2-final.xml; real sources explicitly enabled",
+    "c_frozen_architecture": "105 passed; .tmp/c-frozen-final.xml",
+    "web": "1388 passed/28 inherited skipped; sole stale E2 label assertion fixed, focused29passed; final CI pending",
+    "typecheck": "PASS",
+    "format": "PASS"
+  }
+}

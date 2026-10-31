@@ -1,0 +1,511 @@
+{
+  "schema_version": "v5-daily-refresh-verification-v1",
+  "execution": "ACTUAL_WINDOWS_SAFE_REFRESH",
+  "excel": "FROZEN",
+  "run": {
+    "mode": "SAFE_REFRESH",
+    "status": "PARTIAL",
+    "quote_securities": [
+      {
+        "symbol": "600887",
+        "status": "VERIFIED",
+        "market_trade_date": "2026-10-21",
+        "latest_completed_session": "2026-10-21",
+        "sources": [
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
+            "kind": "quote_session",
+            "path": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+            "sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
+            "status": "collected_not_verified",
+            "expected_session": "2026-10-21",
+            "session_result": "matched_close",
+            "reason": "带日期双源报价与最近已完成交易日一致"
+          },
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad-tencent",
+            "kind": "quote_provider_document",
+            "provider": "tencent",
+            "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-21T15:12:45.085017+08:00",
+            "sha256": "8dcfc68644cb9c3bcd0c2ca7aee65b77ff46d5fbb73ff28b6fd774bab6024018",
+            "observed_trade_at": "2026-10-21T15:12:35+08:00"
+          },
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad-sina",
+            "kind": "quote_provider_document",
+            "provider": "sina",
+            "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-21T15:12:45.18502+08:00",
+            "sha256": "d2692cdc87d51775d234dce197ef366fcfa1297c5855e09c8fb673cfa6ec8b30",
+            "observed_trade_at": "2026-10-21T15:12:36+08:00"
+          }
+        ],
+        "reason": "source retrieval precedes observed availability",
+        "missing": []
+      },
+      {
+        "symbol": "600519",
+        "status": "VERIFIED",
+        "market_trade_date": "2026-10-21",
+        "latest_completed_session": "2026-10-21",
+        "sources": [
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
+            "kind": "quote_session",
+            "path": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+            "sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
+            "status": "collected_not_verified",
+            "expected_session": "2026-10-21",
+            "session_result": "matched_close",
+            "reason": "带日期双源报价与最近已完成交易日一致"
+          },
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad-tencent",
+            "kind": "quote_provider_document",
+            "provider": "tencent",
+            "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-21T15:12:45.085017+08:00",
+            "sha256": "8dcfc68644cb9c3bcd0c2ca7aee65b77ff46d5fbb73ff28b6fd774bab6024018",
+            "observed_trade_at": "2026-10-21T15:12:38+08:00"
+          },
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad-sina",
+            "kind": "quote_provider_document",
+            "provider": "sina",
+            "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-21T15:12:45.18502+08:00",
+            "sha256": "d2692cdc87d51775d234dce197ef366fcfa1297c5855e09c8fb673cfa6ec8b30",
+            "observed_trade_at": "2026-10-21T15:12:36+08:00"
+          }
+        ],
+        "reason": "pending_complete_event_materiality_review；event scan is pending human review；This acquired query window does not replace earlier event/model/G3 reviews.",
+        "missing": []
+      },
+      {
+        "symbol": "000333",
+        "status": "VERIFIED",
+        "market_trade_date": "2026-10-21",
+        "latest_completed_session": "2026-10-21",
+        "sources": [
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
+            "kind": "quote_session",
+            "path": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+            "sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
+            "status": "collected_not_verified",
+            "expected_session": "2026-10-21",
+            "session_result": "matched_close",
+            "reason": "带日期双源报价与最近已完成交易日一致"
+          },
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad-tencent",
+            "kind": "quote_provider_document",
+            "provider": "tencent",
+            "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-21T15:12:45.085017+08:00",
+            "sha256": "8dcfc68644cb9c3bcd0c2ca7aee65b77ff46d5fbb73ff28b6fd774bab6024018",
+            "observed_trade_at": "2026-10-21T15:12:24+08:00"
+          },
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad-sina",
+            "kind": "quote_provider_document",
+            "provider": "sina",
+            "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-21T15:12:45.18502+08:00",
+            "sha256": "d2692cdc87d51775d234dce197ef366fcfa1297c5855e09c8fb673cfa6ec8b30",
+            "observed_trade_at": "2026-10-21T15:12:15+08:00"
+          }
+        ],
+        "reason": "双源收盘已核验；尚无绑定的完整研究包，仅作事实展示，不授予价格比较或交易资格。",
+        "missing": []
+      },
+      {
+        "symbol": "000651",
+        "status": "VERIFIED",
+        "market_trade_date": "2026-10-21",
+        "latest_completed_session": "2026-10-21",
+        "sources": [
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
+            "kind": "quote_session",
+            "path": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+            "sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
+            "status": "collected_not_verified",
+            "expected_session": "2026-10-21",
+            "session_result": "matched_close",
+            "reason": "带日期双源报价与最近已完成交易日一致"
+          },
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad-tencent",
+            "kind": "quote_provider_document",
+            "provider": "tencent",
+            "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-21T15:12:45.085017+08:00",
+            "sha256": "8dcfc68644cb9c3bcd0c2ca7aee65b77ff46d5fbb73ff28b6fd774bab6024018",
+            "observed_trade_at": "2026-10-21T15:12:45+08:00"
+          },
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad-sina",
+            "kind": "quote_provider_document",
+            "provider": "sina",
+            "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-21T15:12:45.18502+08:00",
+            "sha256": "d2692cdc87d51775d234dce197ef366fcfa1297c5855e09c8fb673cfa6ec8b30",
+            "observed_trade_at": "2026-10-21T15:12:45+08:00"
+          }
+        ],
+        "reason": "双源收盘已核验；尚无绑定的完整研究包，仅作事实展示，不授予价格比较或交易资格。",
+        "missing": []
+      },
+      {
+        "symbol": "600741",
+        "status": "VERIFIED",
+        "market_trade_date": "2026-10-21",
+        "latest_completed_session": "2026-10-21",
+        "sources": [
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
+            "kind": "quote_session",
+            "path": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+            "sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
+            "status": "collected_not_verified",
+            "expected_session": "2026-10-21",
+            "session_result": "matched_close",
+            "reason": "带日期双源报价与最近已完成交易日一致"
+          },
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad-tencent",
+            "kind": "quote_provider_document",
+            "provider": "tencent",
+            "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-21T15:12:45.085017+08:00",
+            "sha256": "8dcfc68644cb9c3bcd0c2ca7aee65b77ff46d5fbb73ff28b6fd774bab6024018",
+            "observed_trade_at": "2026-10-21T15:12:26+08:00"
+          },
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad-sina",
+            "kind": "quote_provider_document",
+            "provider": "sina",
+            "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-21T15:12:45.18502+08:00",
+            "sha256": "d2692cdc87d51775d234dce197ef366fcfa1297c5855e09c8fb673cfa6ec8b30",
+            "observed_trade_at": "2026-10-21T15:12:36+08:00"
+          }
+        ],
+        "reason": "双源收盘已核验；尚无绑定的完整研究包，仅作事实展示，不授予价格比较或交易资格。",
+        "missing": []
+      },
+      {
+        "symbol": "601088",
+        "status": "VERIFIED",
+        "market_trade_date": "2026-10-21",
+        "latest_completed_session": "2026-10-21",
+        "sources": [
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
+            "kind": "quote_session",
+            "path": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+            "sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad",
+            "status": "collected_not_verified",
+            "expected_session": "2026-10-21",
+            "session_result": "matched_close",
+            "reason": "带日期双源报价与最近已完成交易日一致"
+          },
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad-tencent",
+            "kind": "quote_provider_document",
+            "provider": "tencent",
+            "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-21T15:12:45.085017+08:00",
+            "sha256": "8dcfc68644cb9c3bcd0c2ca7aee65b77ff46d5fbb73ff28b6fd774bab6024018",
+            "observed_trade_at": "2026-10-21T15:12:43+08:00"
+          },
+          {
+            "id": "daily-assistant-quote-24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad-sina",
+            "kind": "quote_provider_document",
+            "provider": "sina",
+            "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-21T15:12:45.18502+08:00",
+            "sha256": "d2692cdc87d51775d234dce197ef366fcfa1297c5855e09c8fb673cfa6ec8b30",
+            "observed_trade_at": "2026-10-21T15:12:36+08:00"
+          }
+        ],
+        "reason": "双源收盘已核验；尚无绑定的完整研究包，仅作事实展示，不授予价格比较或交易资格。",
+        "missing": []
+      }
+    ],
+    "exit_code": 3,
+    "published": true,
+    "marketwide_screen": {
+      "status": "RESEARCH_ONLY",
+      "coverage_counts": {
+        "quality": {
+          "coverage_count": 5576,
+          "pass_count": 0,
+          "rejected_count": 0,
+          "data_gap_count": 5457,
+          "conflict_count": 0,
+          "unsupported_count": 119,
+          "not_evaluated_count": 0,
+          "budget_excluded_count": 0
+        },
+        "dividend_cash_return": {
+          "coverage_count": 5576,
+          "pass_count": 50,
+          "rejected_count": 3102,
+          "data_gap_count": 0,
+          "conflict_count": 0,
+          "unsupported_count": 104,
+          "not_evaluated_count": 1956,
+          "budget_excluded_count": 364
+        },
+        "value": {
+          "coverage_count": 5576,
+          "pass_count": 50,
+          "rejected_count": 3547,
+          "data_gap_count": 1467,
+          "conflict_count": 0,
+          "unsupported_count": 119,
+          "not_evaluated_count": 0,
+          "budget_excluded_count": 393
+        },
+        "cyclical": {
+          "coverage_count": 5576,
+          "pass_count": 50,
+          "rejected_count": 136,
+          "data_gap_count": 690,
+          "conflict_count": 0,
+          "unsupported_count": 119,
+          "not_evaluated_count": 3067,
+          "budget_excluded_count": 1514
+        }
+      },
+      "financial_input": {
+        "input_adapter_version": "financial-export-v2",
+        "annual_evidence_adoption": {
+          "added_accepted_official_rows": 6206,
+          "added_accepted_rows": 7636,
+          "added_fields": {
+            "bonds_payable": 208,
+            "borrowings_bonds_subtotal": 63,
+            "bvps": 704,
+            "cash": 664,
+            "current_portion_long_term_debt": 602,
+            "debt_ratio": 705,
+            "eps_annual": 135,
+            "eps_reported": 705,
+            "fcf_per_share": 360,
+            "free_cash_flow": 329,
+            "gross_margin": 312,
+            "interest_bearing_debt": 337,
+            "lease_liabilities_noncurrent": 380,
+            "long_term_borrowings": 479,
+            "long_term_payables_excluding_special": 125,
+            "long_term_payables_noncurrent": 40,
+            "main_business_revenue_yoy": 360,
+            "net_income": 381,
+            "net_income_yoy": 667,
+            "net_margin": 626,
+            "operating_cash_flow": 704,
+            "operating_cash_flow_to_net_income": 701,
+            "operating_cost": 508,
+            "provider_cashflow_profit_ratio": 382,
+            "provider_net_income_yoy": 367,
+            "provider_sales_net_margin": 360,
+            "revenue": 458,
+            "revenue_yoy": 612,
+            "roe": 696,
+            "roe_simple": 388,
+            "roe_weighted": 703,
+            "roic": 360,
+            "short_term_borrowings": 548,
+            "special_payables_noncurrent": 58,
+            "total_assets": 546,
+            "total_liabilities": 546,
+            "total_revenue": 361
+          },
+          "added_official_rows": 6225,
+          "added_rows": 16480,
+          "added_symbols": 705,
+          "annual_rows": 16957,
+          "excluded": {
+            "already_present": 477
+          },
+          "new_verification_or_approval_count": 0,
+          "sha256": "8959b11a308703a0a8dd49caa091bff5d6da2545a028c0899e9ef3717e92fdb9",
+          "source_path": "D:\\GPTProject\\value-investment\\runtime\\server-export-payload.json"
+        },
+        "retained_generated_at": "2026-09-20T15:24:29.794582+08:00"
+      },
+      "manifest_sha256": "a54fc0c8565d8ce504acfe49ccba30926a71e2aafa3c45d8bfbc583685b86a28",
+      "current_publication_eligible": false,
+      "output_dir": "runtime/daily-marketwide/20261021T1056235731672Z",
+      "receipt_path": "runtime\\daily-marketwide\\20261021T1056235731672Z\\receipt.json",
+      "data_health": {
+        "universe_count": 5576,
+        "quote_count": 5576,
+        "matched_quote_count": 5576,
+        "missing_quote_count": 0,
+        "extra_quote_count": 0,
+        "price_conflict_count": 0,
+        "industry_mapping_count": 5576,
+        "financial_evidence_count": 872,
+        "dividend_evidence_count": 3620,
+        "unsupported_financial_count": 119,
+        "status": "PARTIAL",
+        "blockers": [
+          "provider trade date is unverified; fetch date is not a verified quote date"
+        ]
+      },
+      "manifest_path": "runtime/daily-marketwide/20261021T1056235731672Z/manifest.json",
+      "rule_version": "m2-evidence-screen-v3",
+      "exit_code": 0
+    },
+    "price_securities": [
+      {
+        "symbol": "000592",
+        "status": "VERIFIED",
+        "market_trade_date": "2026-10-21",
+        "sources": {
+          "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+          "price": "7.190",
+          "bundle_path": "runtime/hotspot-current-refresh/16c1978d225149228316ba340800bf50/bundle.json",
+          "bundle_sha256": "6b51c4b9df2ed1e9ef61ce9898078b7268c4d2dce78d115a4c065d8b1359b9e7",
+          "evidence_refs": [
+            "07fb21fa5137f9acb9119e7b6f5c59ccee94553a30c81373d63c715c1b8a29cb",
+            "914b247ddc081bc7a0d68420c42c5f00d603778a226b848686e071a9767d1de6",
+            "c61672ae0919ca940ea3773b329fe61f0c24ca273b7c7e841954c2dad2043893",
+            "ad4cf9f837074c85f49da6f247e671482d1f9cf3e44960f0e9bb9e2d30a133e5"
+          ],
+          "provider_times": {
+            "tencent": "2026-10-21T16:14:57+08:00",
+            "sina": "2026-10-21T15:35:30+08:00"
+          },
+          "next_session": "2026-10-22"
+        },
+        "missing": []
+      },
+      {
+        "symbol": "300308",
+        "status": "VERIFIED",
+        "market_trade_date": "2026-10-21",
+        "sources": {
+          "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+          "price": "646.770",
+          "bundle_path": "runtime/hotspot-current-refresh/16c1978d225149228316ba340800bf50/bundle.json",
+          "bundle_sha256": "6b51c4b9df2ed1e9ef61ce9898078b7268c4d2dce78d115a4c065d8b1359b9e7",
+          "evidence_refs": [
+            "07fb21fa5137f9acb9119e7b6f5c59ccee94553a30c81373d63c715c1b8a29cb",
+            "914b247ddc081bc7a0d68420c42c5f00d603778a226b848686e071a9767d1de6",
+            "c61672ae0919ca940ea3773b329fe61f0c24ca273b7c7e841954c2dad2043893",
+            "ad4cf9f837074c85f49da6f247e671482d1f9cf3e44960f0e9bb9e2d30a133e5"
+          ],
+          "provider_times": {
+            "tencent": "2026-10-21T16:14:48+08:00",
+            "sina": "2026-10-21T15:35:30+08:00"
+          },
+          "next_session": "2026-10-22"
+        },
+        "missing": []
+      },
+      {
+        "symbol": "600246",
+        "status": "VERIFIED",
+        "market_trade_date": "2026-10-21",
+        "sources": {
+          "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+          "price": "11.580",
+          "bundle_path": "runtime/hotspot-current-refresh/16c1978d225149228316ba340800bf50/bundle.json",
+          "bundle_sha256": "6b51c4b9df2ed1e9ef61ce9898078b7268c4d2dce78d115a4c065d8b1359b9e7",
+          "evidence_refs": [
+            "07fb21fa5137f9acb9119e7b6f5c59ccee94553a30c81373d63c715c1b8a29cb",
+            "914b247ddc081bc7a0d68420c42c5f00d603778a226b848686e071a9767d1de6",
+            "090c75b3fb9bbcbd447fd93607e28cca821603b897a58ef7df84eb05ea4be841"
+          ],
+          "provider_times": {
+            "tencent": "2026-10-21T16:14:59+08:00",
+            "sina": "2026-10-21T15:34:59+08:00"
+          },
+          "next_session": "2026-10-22"
+        },
+        "missing": []
+      },
+      {
+        "symbol": "600693",
+        "status": "VERIFIED",
+        "market_trade_date": "2026-10-21",
+        "sources": {
+          "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+          "price": "8.970",
+          "bundle_path": "runtime/hotspot-current-refresh/16c1978d225149228316ba340800bf50/bundle.json",
+          "bundle_sha256": "6b51c4b9df2ed1e9ef61ce9898078b7268c4d2dce78d115a4c065d8b1359b9e7",
+          "evidence_refs": [
+            "07fb21fa5137f9acb9119e7b6f5c59ccee94553a30c81373d63c715c1b8a29cb",
+            "914b247ddc081bc7a0d68420c42c5f00d603778a226b848686e071a9767d1de6",
+            "090c75b3fb9bbcbd447fd93607e28cca821603b897a58ef7df84eb05ea4be841"
+          ],
+          "provider_times": {
+            "tencent": "2026-10-21T16:15:00+08:00",
+            "sina": "2026-10-21T15:34:59+08:00"
+          },
+          "next_session": "2026-10-22"
+        },
+        "missing": []
+      },
+      {
+        "symbol": "688825",
+        "status": "VERIFIED",
+        "market_trade_date": "2026-10-21",
+        "sources": {
+          "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+          "price": "40.970",
+          "bundle_path": "runtime/hotspot-current-refresh/16c1978d225149228316ba340800bf50/bundle.json",
+          "bundle_sha256": "6b51c4b9df2ed1e9ef61ce9898078b7268c4d2dce78d115a4c065d8b1359b9e7",
+          "evidence_refs": [
+            "07fb21fa5137f9acb9119e7b6f5c59ccee94553a30c81373d63c715c1b8a29cb",
+            "914b247ddc081bc7a0d68420c42c5f00d603778a226b848686e071a9767d1de6",
+            "090c75b3fb9bbcbd447fd93607e28cca821603b897a58ef7df84eb05ea4be841"
+          ],
+          "provider_times": {
+            "tencent": "2026-10-21T16:14:44+08:00",
+            "sina": "2026-10-21T15:34:59+08:00"
+          },
+          "next_session": "2026-10-22"
+        },
+        "missing": []
+      }
+    ],
+    "started_at": "2026-10-21T18:56:15.3267967+08:00",
+    "core_integrity_ok": true,
+    "retained_publication_id": "pub-70c87bb81ba42bb5a51e",
+    "value_research_priority": {
+      "status": "RESEARCH_QUEUE_ONLY",
+      "execution": {
+        "status": "COMPLETED_WITH_GAPS",
+        "path": "runtime/daily-marketwide/20261021T1056235731672Z/research-priority-v2-enrichment/execution.json",
+        "sha256": "e44009afed5ed32241259d5806fda905ff6c0e296cb3af51c95a45ebcde0a151",
+        "attempted_count": 2
+      },
+      "selected_enrichment_count": 10,
+      "path": "runtime/daily-marketwide/20261021T1056235731672Z/research-priority-v2.json",
+      "sha256": "0a2614d4592e0fa3805d05a63a2acad22d64baf8658aaef5d55d87048eb6f07f",
+      "selected_deep_research_count": 0
+    },
+    "schema_version": "daily-workbench-run-v1",
+    "finished_at": "2026-10-21T18:58:10.6612791+08:00",
+    "publication_id": "pub-70c87bb81ba42bb5a51e",
+    "notes": [
+      "财务补证已执行但仍有来源或口径缺口；未授予财务事实、估值或交易准入。"
+    ],
+    "action": "no_order"
+  },
+  "source_commit": "ea6cf5d9b7c503b1f6dc2a25524133ea5f576e4d",
+  "action": "no_order",
+  "real_or_test": "REAL_PUBLIC_DATA",
+  "command": "pwsh -NoProfile -File scripts/current/run_daily_workbench.ps1 -Mode SAFE_REFRESH -NoServer -BuildValueResearchPriority -ExecuteValueEnrichment",
+  "production_deployment": false,
+  "log_sha256": "4b44e1fb69272c1dc00619c10483afa6302894e5bceb1ac4104d633c65c438ca",
+  "test_private_account_used": false,
+  "actual_exit_code": 3
+}

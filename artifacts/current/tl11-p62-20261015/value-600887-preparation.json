@@ -1,0 +1,117 @@
+{
+  "schema_version": "value-price-policy-prepared-v1",
+  "status": "BLOCKED",
+  "draft": {
+    "schema_version": "value-price-policy-draft-v1",
+    "status": "DRAFT",
+    "draft_id": "tl11-p5-600887-draft-20261014",
+    "policy_id": "600887-value-price-policy-pending",
+    "rule_version": "value-price-policy-review-v1",
+    "profile_id": "quality_compounder",
+    "effective_from": "2026-10-15",
+    "effective_through": "2026-11-14",
+    "rationale": "先核实短优势模型、事件及分红现金覆盖，再由本人选择适用情景和明确比例。当前没有依据替用户预选安全边际。",
+    "dividend_coverage_risk": "高分红承诺不保证未来可分配现金；须复核维护投入、债务、回购及担保占用。",
+    "basis": {
+      "symbol": "600887",
+      "research_version": "pending-600887-2026-10-11-short-advantage-fc7dba372686",
+      "valuation_input_version": "876bfdf7829c1e8225e3338bd090dd102965ebce8049edc2628bae90c0264b68",
+      "model_id": "residual_income_or_equity_value",
+      "model_type": "residual_income_or_equity_value",
+      "model_version": "residual-income-equity-shared-dated-v2",
+      "valuation_date": "2026-10-11",
+      "bear": "9.79764118439777680597278298395676515182872214703",
+      "base": "10.0751373530680129477021471870066470782479712991",
+      "bull": "10.3006925009950307944059171660835859543186976072"
+    },
+    "rules": [],
+    "thesis_reviews": [
+      {
+        "action": "reduce",
+        "condition": "盈利恢复未兑现、资本效率下降或分红现金覆盖减弱时，复核原论点及个人风险。"
+      },
+      {
+        "action": "exit",
+        "condition": "原盈利优势或分红论点被新证据推翻时，按既有Entry/Consistency规则独立复核。"
+      }
+    ],
+    "source_bindings": [
+      {
+        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/600887-value-decision-explanation.json",
+        "sha256": "54ecf79bd1e1f752d32dd9d7032224f8aa2ee3d557265b84600475ad99454049"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+        "sha256": "76ab1d93a88c8d5955ecded565b7fb79fcbcc731a48efac8928f503c37ec04c1"
+      },
+      {
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+        "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+      },
+      {
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+        "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+      },
+      {
+        "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+        "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+      },
+      {
+        "path": "runtime/quote-sessions/20261014T090240643969Z/bundle.json",
+        "sha256": "66fd5d957d7441ae1dca81242551b2f860007d754868453181a2aa3ea886365f"
+      },
+      {
+        "path": "artifacts/current/tl11-p62-20261015/value-quote-registry-at-review.json",
+        "sha256": "78186d164be785791f3c663cbf8618cbec219a40e06537e4d87b19693cd986d6"
+      }
+    ],
+    "currency": "CNY",
+    "share_basis": "ordinary_share_unadjusted",
+    "registered": false,
+    "action": "no_order"
+  },
+  "draft_sha256": "b06761ecd304431dc16063433b89b77a96f0ad7567acc8533bc7f1767c107147",
+  "prepared_at": "2026-10-15T07:18:44.722755+00:00",
+  "blockers": [
+    "VALUE_POLICY_EXPLICIT_ACTION_RULES_REQUIRED"
+  ],
+  "draft_prices": {
+    "entry": null,
+    "add": null,
+    "reduce": null,
+    "exit": null
+  },
+  "price_scope": "UNAPPROVED_DRAFT_ARITHMETIC_ONLY",
+  "existing_research_blockers": [
+    "formal G3 human valuation approval not present",
+    "issuer-specific beta evidence missing; generic beta=1 assumption used",
+    "ROIC and incremental ROIC remain unverified",
+    "H1 2026 interim report is unaudited",
+    "pending_economic_model_review",
+    "pending_complete_event_materiality_review",
+    "G3_估值门",
+    "research_case:formal G3 human valuation approval not present",
+    "research_case:issuer-specific beta evidence missing; generic beta=1 assumption used",
+    "research_case:ROIC and incremental ROIC remain unverified",
+    "research_case:H1 2026 interim report is unaudited",
+    "research_case:pending_economic_model_review",
+    "research_case:pending_complete_event_materiality_review",
+    "research_case_valuation_not_approved",
+    "valuation_status_not_approved_for_research",
+    "model_validity_unavailable",
+    "event_materiality_review_unavailable",
+    "decision_dependency_artifacts_unavailable",
+    "predecision_eligibility_unavailable",
+    "human_research_approval_not_resolved",
+    "VALUE_PRICE_COMPARISON_NOT_ELIGIBLE",
+    "VALUE_ENTRY_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+    "VALUE_ADD_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+    "VALUE_REDUCE_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+    "VALUE_EXIT_PRICE_POLICY_MISSING_OR_INAPPLICABLE"
+  ],
+  "formal_eligibility": false,
+  "portfolio_eligibility": null,
+  "registered": false,
+  "action": "no_order",
+  "prepared_sha256": "e36f5fd71055c22fdccee5d12d0c136c7e14cbf5c703c8d7669791f27ea07494"
+}

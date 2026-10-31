@@ -1,0 +1,13 @@
+{
+  "action": "no_order",
+  "candidate_binding": {
+    "path": "runtime/midea-economic-v1-20261021T191517191943Z/candidate.json",
+    "sha256": "505713d6d0a2ec88739261da39dec2132eef955699039a033a56db9284022f78"
+  },
+  "public_draft_binding": {
+    "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/public-draft.json",
+    "sha256": "33f9dc6d84dcd640650bf866bbd9664476a9f9c97186fa8bb259c8c66529f6aa"
+  },
+  "registration_status": "NOT_REGISTERED",
+  "source_scope": "local runtime dependencies required; this folder alone is not a portable closure"
+}

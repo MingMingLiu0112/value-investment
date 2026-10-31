@@ -1,0 +1,156 @@
+{
+  "schema_version": "hotspot-v5-decision-chain-v1",
+  "evaluated_at": "2026-10-21T10:17:45.143332+00:00",
+  "baseline_head": "815315a33ae6a0bf579735cace886afa8068e453",
+  "working_tree_delivery": true,
+  "action": "no_order",
+  "HOTSPOT_ENGINEERING_CLOSURE": "PARTIAL",
+  "HOTSPOT_REAL_STRATEGY_ADMISSION": "NOT_PROVEN",
+  "root_integration": "Root owns API, Web, private risk and final integrated acceptance",
+  "changed_source_and_test_bindings": [
+    {
+      "path": "src/value_investment_agent/application/hotspot/current_registry.py",
+      "sha256": "3a29900aa933bcb980106ce8060ea1d2b440f05e9bed62396b4093e707bd504e"
+    },
+    {
+      "path": "src/value_investment_agent/application/hotspot/intraday_completed_plan.py",
+      "sha256": "c54c05de28e9952942417184e9ece1389dfe4f36916795f8e65be0d0eddb7c9f"
+    },
+    {
+      "path": "src/value_investment_agent/application/hotspot/intraday_plan_observation.py",
+      "sha256": "d1405c8f8decb4cb26d1118402b8e56e0394128e4ab17a7f3683e7b9986d74a8"
+    },
+    {
+      "path": "src/value_investment_agent/application/hotspot/public_observation_session.py",
+      "sha256": "7633cd427bf13efbbbd84ae549fb7e12b62fe74f1b70a7acd70319f1e2a98221"
+    },
+    {
+      "path": "tests/test_current_price_registry.py",
+      "sha256": "9b13eed94e1ee562cf5e5e4efde3831432f691300ebeae3b5f3fd8fe99e2755b"
+    },
+    {
+      "path": "tests/test_hotspot_current_refresh.py",
+      "sha256": "77c4cad006031d9092fff5530897b60378c0939b8e2fca826288a97240f5cab7"
+    },
+    {
+      "path": "tests/test_intraday_completed_plan.py",
+      "sha256": "76474d10a51e05b3e8e7d1c3c7744c6d2400cf9b1e243d60977f6ce75931605d"
+    },
+    {
+      "path": "tests/test_public_completed_bar_integration.py",
+      "sha256": "8b75e34c07e7dae079548ed5b1b72f178f59ba6edf62d1a25577d857ed571991"
+    },
+    {
+      "path": "tests/test_public_observation_session.py",
+      "sha256": "48906239221e7f2627db5603a3e05fe8d1f14284b3bbb9f5e10aa17e29a31930"
+    }
+  ],
+  "real_evidence_binding": {
+    "path": "artifacts/current/dual-strategy-v5/hotspot-real-validation.json",
+    "sha256": "3f15c2f501e73caa56aff75b4f36857af5ca2e2f2722f6b9e81b0b3855d86338"
+  },
+  "repairs": [
+    "Completed close comparisons cannot satisfy original volume or multi-period confirmation",
+    "Invalidation remains a risk observation even with missing supporting bars",
+    "Verified same-plan cursors continue across sessions, rebindings, restarts and collection gaps",
+    "Old cases reverify at actual acquisition time without changing source dates or original expiry",
+    "Off-shortlist status alone does not erase original signal or structure quality"
+  ],
+  "verification": {
+    "status": "PASS",
+    "passed": 427,
+    "failed": 0,
+    "skipped": 0,
+    "duration_seconds": "51.90",
+    "interpreter": "D:/APP/Python313/python.exe",
+    "shell": "PowerShell 7.6.6",
+    "command": "python -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest-v5-hotspot-final <all tests/*hotspot*.py expanded by PowerShell> tests/test_current_price_registry.py tests/test_intraday_plan_observation.py tests/test_intraday_completed_plan.py tests/test_public_observation_session.py tests/test_public_completed_bar_integration.py tests/test_public_condition_notifications.py",
+    "isolated_positive_chain": "Existing TEST_ONLY signed source/case/release loaders through isolated risk review passed",
+    "boundaries": [
+      "No API or browser acceptance performed by this worker",
+      "No production scheduler, private data, pointer changes, orders or commits"
+    ]
+  },
+  "isolated_cost_engine": {
+    "namespace": "TEST_ONLY",
+    "fixture_root": ".tmp/v4-s2-numeric-example",
+    "fixture_protocol_sha256": "c7ce12c289581d1e65c7af5f4d35e47507785aefcf9548a0e0a3cfdfc992c268",
+    "synthetic_evaluation_clock": "2026-10-24T00:00:00+00:00",
+    "synthetic_clock_is_not_actual_market_cutoff": true,
+    "trade_count": 3,
+    "minimum_oos_trades": 30,
+    "sample_status": "INSUFFICIENT",
+    "strategy_validation": "NOT_PROVEN",
+    "formal_eligibility": false,
+    "folds": [
+      {
+        "fold": "a",
+        "trade_count": 2,
+        "total_fees_cny": "21.05",
+        "total_slippage_cny": "5.00",
+        "maximum_drawdown": "0.01103922877562239849210712322",
+        "ending_equity_cny": "10073.95",
+        "rejection_counts": {
+          "T_PLUS_ONE": 1
+        }
+      },
+      {
+        "fold": "b",
+        "trade_count": 1,
+        "total_fees_cny": "10.55",
+        "total_slippage_cny": "3.00",
+        "maximum_drawdown": "0.0006",
+        "ending_equity_cny": "10086.45",
+        "rejection_counts": {}
+      }
+    ],
+    "zero_base_double_cost_ending_equity": [
+      {
+        "multiplier": "0",
+        "values": [
+          "10100.00",
+          "10100.00"
+        ]
+      },
+      {
+        "multiplier": "1",
+        "values": [
+          "10073.95",
+          "10086.45"
+        ]
+      },
+      {
+        "multiplier": "2",
+        "values": [
+          "10048.90",
+          "10073.90"
+        ]
+      }
+    ]
+  },
+  "root_contract_requirements": [
+    "Load candidates using current_registry.load_price_conditions; never trust a request-supplied plan",
+    "Permit PREVIOUS_CANDIDATE_NOT_SELECTED_TODAY only with retained_observation_valid is True and an existing nonstale loader-verified plan",
+    "bind_quote_plan and evaluate_quote_plan enforce original next-session 15:00 deadline; never redate or extend it",
+    "Retained observation is independent of today selection, formal admission, personal risk or trading permission",
+    "Read continuity through compare_observation_continuity; preserve {path, sha256}, case_binding, watch_source_binding and registry_binding",
+    "Root read_observation_changes may project verified transitions; do not count them as natural-time Shadow",
+    "WAITING_CONFIRMATION may expose price_conditions_observed but must preserve structure_confirmation false and pending_confirmations",
+    "Use returned session plan_binding: identical plan rebindings reuse the original binding/cursor identity",
+    "Legacy reports are never rewritten; failed replay must remain CORRUPT rather than approving old price-only confirmations"
+  ],
+  "remaining_requirements": [
+    "Real frozen execution orders and dated cost/tradability evidence",
+    "Strict historical source/universe/classification PIT and untouched OOS",
+    "Independent signed release and natural-time Shadow",
+    "Root integrated API/Web/private-risk acceptance"
+  ],
+  "untouched_existing_dirty_modules": [
+    "application/hotspot/quantitative_validation.py",
+    "domain/hotspot/quantitative_validation.py",
+    "application/hotspot/validation_evidence.py",
+    "application/hotspot/observation_continuity.py"
+  ],
+  "commits_created": false,
+  "formal_eligibility": false
+}

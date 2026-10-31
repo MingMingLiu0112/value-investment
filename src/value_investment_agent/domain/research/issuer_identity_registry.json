@@ -15,9 +15,17 @@
     "600887": {
       "organization_id": "gssh0600887",
       "issuer_names": ["伊利股份", "内蒙古伊利实业集团股份有限公司"]
+    },
+    "000568": {
+      "organization_id": "gssz0000568",
+      "issuer_names": ["泸州老窖", "泸州老窖股份有限公司"]
     }
   },
   "hkex": {
+    "000333": {
+      "security_code": "00300",
+      "issuer_names": ["美的集团", "美的集團", "美的集團股份有限公司"]
+    },
     "601088": {
       "security_code": "01088",
       "issuer_names": ["中国神华", "中國神華"]

@@ -1,0 +1,690 @@
+{
+  "schema_version": "pending-research-candidate-v1",
+  "symbol": "600519",
+  "status": "PENDING_REVIEW",
+  "action": "no_order",
+  "generated_at": "2026-10-11T08:21:50.762534+00:00",
+  "candidate_research_as_of": "2026-10-11",
+  "financial_period": "2026-06-30",
+  "prior_research_as_of": "2026-10-08",
+  "selected_choice": "B_CONTINUITY_ALTERNATIVE",
+  "choice_rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。",
+  "countercase": "毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+  "retained_date_valuation": {
+    "symbol": "600519",
+    "model_type": "residual_income_or_equity_value",
+    "valuation_date": "2026-10-08",
+    "bear_value": "437.396929657896529032083939240620346963956611156",
+    "base_value": "587.570270855920993633479610620166806374360175590",
+    "bull_value": "811.892106379243834750317144353341992037511204871",
+    "confidence": "低",
+    "assumptions": {
+      "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+      "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+      "status": "conditional_research_only",
+      "disclaimer": "No market price, margin of safety, position or order is produced here.",
+      "valuation_timing": {
+        "basis_at": "2026-06-30T23:59:59+08:00",
+        "valuation_at": "2026-10-08T17:05:06.590874+08:00",
+        "evidence_refs": [
+          {
+            "id": "timing_policy",
+            "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          }
+        ],
+        "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+      }
+    },
+    "sensitivities": [
+      {
+        "scenario": "bear",
+        "cost_of_equity": "0.07700613218071982829471266996",
+        "ordinary_equity_value": "546781854099.227675304770471132301407565878369768",
+        "per_share_value": "437.396929657896529032083939240620346963956611156",
+        "terminal_residual_contribution_ratio": "0E+47",
+        "dividend_crosscheck_difference": "3E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02047287822586210960996539695563004580629995445"
+      },
+      {
+        "scenario": "base",
+        "cost_of_equity": "0.06757227028801867310",
+        "ordinary_equity_value": "734510784891.573356050850998844914724199517173652",
+        "per_share_value": "587.570270855920993633479610620166806374360175590",
+        "terminal_residual_contribution_ratio": "0E+47",
+        "dividend_crosscheck_difference": "4E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.01802317118122425716209004748410121123523921115"
+      },
+      {
+        "scenario": "bull",
+        "cost_of_equity": "0.05813840839531752869806524586",
+        "ordinary_equity_value": "1014931384181.82744611405589107097386710678125904",
+        "per_share_value": "811.892106379243834750317144353341992037511204871",
+        "terminal_residual_contribution_ratio": "0E+47",
+        "dividend_crosscheck_difference": "1E-35",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.01555767950521809190472281769470856810955340499"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "cninfo:1225114741",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+        "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+        "available_at": "2026-04-17T16:00:00+00:00",
+        "availability_basis": "date_only_conservative_next_day_bound",
+        "timestamp_precision": "date"
+      },
+      {
+        "id": "cninfo:1225475868",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+        "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+        "available_at": "2026-08-15T16:00:00+00:00",
+        "availability_basis": "date_only_conservative_next_day_bound",
+        "timestamp_precision": "date"
+      },
+      {
+        "id": "current_model",
+        "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+        "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+      },
+      {
+        "id": "timing_policy",
+        "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+        "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+      },
+      {
+        "id": "scope_review",
+        "path": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+        "sha256": "cca8b43c6069ffda329e940a4be96d27d7af4c3387ec08f4d24a5c9f42da4069"
+      },
+      {
+        "id": "assumption_diagnostic",
+        "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+        "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+      },
+      {
+        "id": "source_index",
+        "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+        "sha256": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f"
+      },
+      {
+        "id": "current_quote",
+        "path": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+        "sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5"
+      },
+      {
+        "id": "current_event_scan",
+        "path": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+        "sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9"
+      },
+      {
+        "id": "independent-announcement-research-20261008",
+        "path": "docs/current/600519-full-window-materiality-review-20261008.md",
+        "sha256": "aa7a70c94dcde08a9fef7f6207139a5fcb4527cbbee9adb775c19699a34a7d54"
+      },
+      {
+        "id": "cninfo:1225475863",
+        "path": "runtime/d2-source-bound-current-20261008/announcements/1225475863.pdf",
+        "sha256": "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b"
+      },
+      {
+        "id": "cninfo:1225431263",
+        "path": "runtime/d2-source-bound-current-20261008/announcements/1225431263.pdf",
+        "sha256": "24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873"
+      },
+      {
+        "id": "independent-normalized-profit-research-20261008",
+        "path": "docs/current/600519-normalized-assumption-research-20261008.md",
+        "sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a"
+      },
+      {
+        "id": "historical-profit-reconciliation-20261008",
+        "path": "runtime/d2-model-bound-followup-20261008/historical-profit-reconciliation-v1.json",
+        "sha256": "6f9e4334a5f5be4526c99f2b60fe345ff4935bb1e0c1ec925915b42e3d98559e"
+      },
+      {
+        "id": "profit-adjustment-bridge-20261008",
+        "path": "runtime/d2-economic-research-20261008/profit-adjustment-bridge-v1.json",
+        "sha256": "b11db869bacf07bcbed428b4ed8f61be1733ee5b63a111eaf3cb9d2d239ed188"
+      },
+      {
+        "id": "profit-adjustment-research-20261008",
+        "path": "docs/current/600519-profit-adjustment-bridge-20261008.md",
+        "sha256": "8d9ff9e6fb94e9f18a62108992a91b7c8f2a438da6e8d32df424e55ffc176260"
+      },
+      {
+        "id": "parent-distribution-capital-bridge-20261008",
+        "path": "runtime/d2-economic-research-20261008/parent-distribution-capital-bridge-v1.json",
+        "sha256": "34cf0f4ac76a6fd2e2b6bd0cfe56500c270371fd4b9e6a25767a247b1ad25d78"
+      },
+      {
+        "id": "parent-distribution-capital-research-20261008",
+        "path": "docs/current/600519-parent-distribution-capital-bridge-20261008.md",
+        "sha256": "ac1477ab886a7ee02ca621b06a8af66a518c638858bc042c7da293b029d69573"
+      },
+      {
+        "id": "operating-mechanism-evidence-20261008",
+        "path": "runtime/d2-economic-research-20261008/operating-mechanism-evidence-v1.json",
+        "sha256": "4234aaaa2e2b580d89cabee665f59571e29f58b8714f99409e5f362b95ee7bae"
+      },
+      {
+        "id": "operating-mechanism-research-20261008",
+        "path": "docs/current/600519-operating-mechanism-research-20261008.md",
+        "sha256": "567b9fa1114a766e76f88ba491ef4449c13163ec1d4f973b8abf2b9fe43763aa"
+      },
+      {
+        "id": "forward-path-independent-review-20261008",
+        "path": "docs/current/600519-forward-path-independent-review-20261008-v2.md",
+        "sha256": "37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37"
+      },
+      {
+        "id": "financial-scope-independent-review-20261008",
+        "path": "docs/current/600519-financial-scope-independent-review-20261008.md",
+        "sha256": "17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c"
+      },
+      {
+        "id": "equity-cost-independent-review-20261008",
+        "path": "docs/current/600519-equity-cost-independent-review-20261008.md",
+        "sha256": "c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214"
+      }
+    ],
+    "blockers": [],
+    "status": "conditional_research_only",
+    "model_version": "residual-income-equity-shared-dated-v2"
+  },
+  "candidate_valuation": {
+    "symbol": "600519",
+    "model_type": "residual_income_or_equity_value",
+    "valuation_date": "2026-10-11",
+    "bear_value": "437.661037051257377210009396299208543059978060171",
+    "base_value": "587.882968752928712528108758068248661826586906010",
+    "bull_value": "812.265519341743271174653700375813758776246925340",
+    "confidence": "低",
+    "assumptions": {
+      "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+      "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+      "status": "conditional_research_only",
+      "disclaimer": "No market price, margin of safety, position or order is produced here.",
+      "valuation_timing": {
+        "basis_at": "2026-06-30T23:59:59+08:00",
+        "valuation_at": "2026-10-11T08:21:50.762534+00:00",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+      }
+    },
+    "sensitivities": [
+      {
+        "scenario": "bear",
+        "cost_of_equity": "0.07700613218071982829471266996",
+        "ordinary_equity_value": "547112009892.356141165749459350758090541294812483",
+        "per_share_value": "437.661037051257377210009396299208543059978060171",
+        "terminal_residual_contribution_ratio": "0E+47",
+        "dividend_crosscheck_difference": "0E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02108905637799150697508814902871994854632738386"
+      },
+      {
+        "scenario": "base",
+        "cost_of_equity": "0.06757227028801867310",
+        "ordinary_equity_value": "734901682779.294098396006953788077954442287343830",
+        "per_share_value": "587.882968752928712528108758068248661826586906010",
+        "terminal_residual_contribution_ratio": "0E+47",
+        "dividend_crosscheck_difference": "0E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.01856495098276148800024333789455539194472751153"
+      },
+      {
+        "scenario": "bull",
+        "cost_of_equity": "0.05813840839531752869806524586",
+        "ordinary_equity_value": "1015398180855.82289456098824838637156524883855720",
+        "per_share_value": "812.265519341743271174653700375813758776246925340",
+        "terminal_residual_contribution_ratio": "0E+47",
+        "dividend_crosscheck_difference": "0E-35",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.01602476423077885216150351958555827018883937635"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "cninfo:1225114741",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+        "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+        "available_at": "2026-04-17T16:00:00+00:00",
+        "availability_basis": "date_only_conservative_next_day_bound",
+        "timestamp_precision": "date"
+      },
+      {
+        "id": "cninfo:1225475868",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+        "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+        "available_at": "2026-08-15T16:00:00+00:00",
+        "availability_basis": "date_only_conservative_next_day_bound",
+        "timestamp_precision": "date"
+      },
+      {
+        "id": "current_model",
+        "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+        "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+      },
+      {
+        "id": "timing_policy",
+        "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+        "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+      },
+      {
+        "id": "scope_review",
+        "path": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+        "sha256": "cca8b43c6069ffda329e940a4be96d27d7af4c3387ec08f4d24a5c9f42da4069"
+      },
+      {
+        "id": "assumption_diagnostic",
+        "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+        "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+      },
+      {
+        "id": "source_index",
+        "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+        "sha256": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f"
+      },
+      {
+        "id": "current_quote",
+        "path": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+        "sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5"
+      },
+      {
+        "id": "current_event_scan",
+        "path": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+        "sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9"
+      },
+      {
+        "id": "pending-economic-proposal",
+        "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+        "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+      },
+      {
+        "id": "independent-announcement-research-20261008",
+        "path": "docs/current/600519-full-window-materiality-review-20261008.md",
+        "sha256": "aa7a70c94dcde08a9fef7f6207139a5fcb4527cbbee9adb775c19699a34a7d54"
+      },
+      {
+        "id": "cninfo:1225475863",
+        "path": "runtime/d2-source-bound-current-20261008/announcements/1225475863.pdf",
+        "sha256": "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b"
+      },
+      {
+        "id": "cninfo:1225431263",
+        "path": "runtime/d2-source-bound-current-20261008/announcements/1225431263.pdf",
+        "sha256": "24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873"
+      },
+      {
+        "id": "independent-normalized-profit-research-20261008",
+        "path": "docs/current/600519-normalized-assumption-research-20261008.md",
+        "sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a"
+      },
+      {
+        "id": "historical-profit-reconciliation-20261008",
+        "path": "runtime/d2-model-bound-followup-20261008/historical-profit-reconciliation-v1.json",
+        "sha256": "6f9e4334a5f5be4526c99f2b60fe345ff4935bb1e0c1ec925915b42e3d98559e"
+      },
+      {
+        "id": "profit-adjustment-bridge-20261008",
+        "path": "runtime/d2-economic-research-20261008/profit-adjustment-bridge-v1.json",
+        "sha256": "b11db869bacf07bcbed428b4ed8f61be1733ee5b63a111eaf3cb9d2d239ed188"
+      },
+      {
+        "id": "profit-adjustment-research-20261008",
+        "path": "docs/current/600519-profit-adjustment-bridge-20261008.md",
+        "sha256": "8d9ff9e6fb94e9f18a62108992a91b7c8f2a438da6e8d32df424e55ffc176260"
+      },
+      {
+        "id": "parent-distribution-capital-bridge-20261008",
+        "path": "runtime/d2-economic-research-20261008/parent-distribution-capital-bridge-v1.json",
+        "sha256": "34cf0f4ac76a6fd2e2b6bd0cfe56500c270371fd4b9e6a25767a247b1ad25d78"
+      },
+      {
+        "id": "parent-distribution-capital-research-20261008",
+        "path": "docs/current/600519-parent-distribution-capital-bridge-20261008.md",
+        "sha256": "ac1477ab886a7ee02ca621b06a8af66a518c638858bc042c7da293b029d69573"
+      },
+      {
+        "id": "operating-mechanism-evidence-20261008",
+        "path": "runtime/d2-economic-research-20261008/operating-mechanism-evidence-v1.json",
+        "sha256": "4234aaaa2e2b580d89cabee665f59571e29f58b8714f99409e5f362b95ee7bae"
+      },
+      {
+        "id": "operating-mechanism-research-20261008",
+        "path": "docs/current/600519-operating-mechanism-research-20261008.md",
+        "sha256": "567b9fa1114a766e76f88ba491ef4449c13163ec1d4f973b8abf2b9fe43763aa"
+      },
+      {
+        "id": "forward-path-independent-review-20261008",
+        "path": "docs/current/600519-forward-path-independent-review-20261008-v2.md",
+        "sha256": "37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37"
+      },
+      {
+        "id": "financial-scope-independent-review-20261008",
+        "path": "docs/current/600519-financial-scope-independent-review-20261008.md",
+        "sha256": "17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c"
+      },
+      {
+        "id": "equity-cost-independent-review-20261008",
+        "path": "docs/current/600519-equity-cost-independent-review-20261008.md",
+        "sha256": "c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214"
+      }
+    ],
+    "blockers": [],
+    "status": "conditional_research_only",
+    "model_version": "residual-income-equity-shared-dated-v2"
+  },
+  "model_context": {
+    "input_descriptor_sha256": "4d661099bea94b1a069703a814aca6d45e7a3d144e5d38c528828843fcaffe46",
+    "research_case_sha256": "cc618580d496ff7d3fd95ed5863f101390bcdf8dae740372318ab53a6c5b408b",
+    "facts_sha256": "6c0942628927273bedeae43862134b41bcded3a0c6421044a0c077846ef2e0d2",
+    "assumptions_sha256": "c63ab1e7ea8fb8dcbc895147d45f475ace8875860e095ed76f44ef3de17a34a2",
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "profile_id": "quality_compounder",
+    "research_as_of": "2026-10-11"
+  },
+  "approval_changed": false,
+  "research_admitted": false,
+  "model_context_scope": "ACTUALLY_CONSUMED",
+  "execution_status": "NO_ACTION",
+  "schedule_gate": {
+    "allowed": true,
+    "status": "ALLOW_NORMAL_RESEARCH",
+    "matched_stop_ids": [],
+    "reason": "No Evidence Stop is registered for this research case."
+  },
+  "research_blockers": [
+    "仅认可历史财务与条件剩余收益范围；中性主估值、正常化盈利及金融尾部审阅未获准入",
+    "本候选优势期和全资本衰减未获主模型批准",
+    "原文独立解释已形成；重大性、当前模型有效性和估值批准仍未准入",
+    "pending_economic_model_review",
+    "pending_complete_event_materiality_review",
+    "G3_估值门",
+    "等待已验证收盘行情",
+    "price_bridge_pending_external_data",
+    "Selected finite model assumptions remain pending economic approval."
+  ],
+  "price_admitted": false,
+  "position_guidance": null,
+  "canonical_written": false,
+  "registered_current_case_changed": false,
+  "strict_contemporaneous_pit": "NOT_PROVEN",
+  "event_coverage": "NOT_REVIEWED_FOR_NEW_CANDIDATE",
+  "date_semantics": "New unapproved research computed at actual time; old report basis and raw public dates retained; no historical PIT/current data admission.",
+  "model_limits": [
+    "有限提案计算保留旧财务基准；完整待审包实际生成日更新，不声称历史PIT或完整当前事件准入。",
+    "增长、成本、期限是假设；B为低置信研究候选，未获模型、材料性或G3批准。",
+    "三档同时改变增长、成本和衰减，不是统计置信区间；终段利润可能倒序。",
+    "合并权益不等于母公司可分配现金；金融损失和维护投入上界未知。",
+    "当前NO_ACTION，无价格准入和私人仓位；不替换登记研究或正式Excel。"
+  ],
+  "review_questions": [
+    "是否接受扣非TTM为低置信历史代理，同时保持正常化未知？",
+    "是否接受B十年盈利条件和五年全资本衰减的候选用途？",
+    "是否接受25%留存与75%分配条件，同时保留法人现金限制？",
+    "是否接受具体权益成本和终端自筹条件？",
+    "逐项公告是否改变模型；精确候选能否进入现有G3审查？"
+  ],
+  "review_groups": [
+    {
+      "id": "EARNINGS",
+      "question": "历史盈利代理是否足以用于低置信条件研究？",
+      "support": "扣非TTM 813.6706767744亿元，原财报及归母口径桥已绑定。",
+      "countercase": "正常化调整、金融尾部损失和维护投入上界未知，不能填零。",
+      "impact": "保留代理只允许条件估值；若否定代理，现有逐年盈利路径需要重审，不能机械加回减损。",
+      "field_paths": [
+        "facts.operating_inputs",
+        "research_case.financial_summary"
+      ]
+    },
+    {
+      "id": "DURATION",
+      "question": "B的优势持续期和衰减机制是否合理？",
+      "support": "核心产品毛利与品牌渠道支持研究存量盈利持续性；A衰减速度尚无中性依据。",
+      "countercase": "扣非和毛利走弱；十年不是可观测寿命，后五年仍为全资本ROE衰减。",
+      "impact": "选A缩短条件持续期，选C延长尾部；具体逐年值与A/B/C输出见提案，不以市场价选择。",
+      "field_paths": [
+        "facts.scenario_inputs",
+        "assumption_bindings"
+      ]
+    },
+    {
+      "id": "DISTRIBUTION",
+      "question": "留存、必要投入和股东分配的条件用途是否可接受？",
+      "support": "共享模型逐年递推账面权益、留存和分配，未重复加入现金。",
+      "countercase": "母公司可用现金、上划和认缴时点不由合并利润证明；维护与扩产未拆分。",
+      "impact": "75%分配是模型条件，不是可得现金批准；资金限制重大时须重审分配或暂停模型。",
+      "field_paths": [
+        "facts.scenario_inputs",
+        "source_contract.distribution_input_status"
+      ]
+    },
+    {
+      "id": "COST_TERMINAL",
+      "question": "权益成本和终端条件是否可用于该版本？",
+      "support": "复用已绑定国债、beta、ERP研究和共享模型；中央成本约6.7572%。",
+      "countercase": "成本代理异步，端点非完整风险区间；终端ROE等于成本不意味着资本损失风险消失。",
+      "impact": "成本影响折现与衰减；2%增长在零终端剩余收益下抵消但影响自筹分配。复用已有敏感性，不调参制造买点。",
+      "field_paths": [
+        "facts.scenario_inputs",
+        "facts.valuation_timing"
+      ]
+    },
+    {
+      "id": "EVENT_MODEL",
+      "question": "事件材料性和精确模型版本能否进入正式审查？",
+      "support": "候选包、实际共享输出、Facts/Assumptions及模型上下文均精确绑定。",
+      "countercase": "新候选没有继承公告批准、完整扫描或G3；生成日不是当前事件准入。",
+      "impact": "逐项VERIFIED/REJECTED/INSUFFICIENT后依现有合同重算有效性和价格桥；当前仍NO_ACTION。",
+      "field_paths": [
+        "model_validity_input",
+        "source_contract",
+        "dependencies.model_version"
+      ]
+    }
+  ],
+  "economic_policy_binding": {
+    "path": "config/research-proposals/600519-20261011-v3.json",
+    "sha256": "91daee7dc97830c1644b0f4c5838bc774127c658b309e9397c93bc073e618d9e"
+  },
+  "source_bindings": [
+    {
+      "path": "runtime/d2-model-bound-followup-20261008/package-v8-financial-scope-bound.json",
+      "sha256": "c48e3dbfbe8b643cc71a609a2277f726246a1f32b1ac5dcb4b2da47055ec3d04"
+    },
+    {
+      "path": "config/research-proposals/600519-20261011-v3.json",
+      "sha256": "91daee7dc97830c1644b0f4c5838bc774127c658b309e9397c93bc073e618d9e"
+    },
+    {
+      "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+      "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+    },
+    {
+      "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/package.json",
+      "sha256": "f100c2a26b0d61a3f9d90a1b60976b00d8217b55592360f6940b0696a46829bf"
+    },
+    {
+      "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/workbench.json",
+      "sha256": "aee91c9cf37cedd0877d92a8ea91448f2dfcf6c7de04b5a964fd6805b4d99b22"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6"
+    },
+    {
+      "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+      "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+    },
+    {
+      "path": "runtime/company-research/600519-current-equity-policy-staged-20261008T090506Z/policy.json",
+      "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+    },
+    {
+      "path": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+      "sha256": "cca8b43c6069ffda329e940a4be96d27d7af4c3387ec08f4d24a5c9f42da4069"
+    },
+    {
+      "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+      "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+      "sha256": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f"
+    },
+    {
+      "path": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+      "sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5"
+    },
+    {
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225475864.pdf",
+      "sha256": "1a12378ed0e4a803eae00e73c74bc20eb2d73821fc960d746d52476dbf80df1d"
+    },
+    {
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225475863.pdf",
+      "sha256": "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b"
+    },
+    {
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225475862.pdf",
+      "sha256": "c22571b28d92addc54fed9a75e56b0ffb5c2abbf834000d5c3ea77e02df129cd"
+    },
+    {
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225475860.pdf",
+      "sha256": "9ba031b34a7f05caec0e71a154257b8b449fb0b18a58badd7e346fe66bc90313"
+    },
+    {
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225475856.pdf",
+      "sha256": "fc78904a1a1babaea6e31838d5a8c3fc7933c6d1925fd3101942c130d21c66fc"
+    },
+    {
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225431263.pdf",
+      "sha256": "24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873"
+    },
+    {
+      "path": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+      "sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9"
+    },
+    {
+      "path": "runtime/d2-source-bound-current-20261008/cninfo-full-window-index.json",
+      "sha256": "f97ae2b3b8d5991d58d6297ae6b090be37efd447a53552367c61de66e86b5e1a"
+    },
+    {
+      "path": "docs/current/600519-full-window-materiality-review-20261008.md",
+      "sha256": "aa7a70c94dcde08a9fef7f6207139a5fcb4527cbbee9adb775c19699a34a7d54"
+    },
+    {
+      "path": "docs/current/600519-normalized-assumption-research-20261008.md",
+      "sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a"
+    },
+    {
+      "path": "runtime/d2-model-bound-followup-20261008/historical-profit-reconciliation-v1.json",
+      "sha256": "6f9e4334a5f5be4526c99f2b60fe345ff4935bb1e0c1ec925915b42e3d98559e"
+    },
+    {
+      "path": "runtime/d2-economic-research-20261008/profit-adjustment-bridge-v1.json",
+      "sha256": "b11db869bacf07bcbed428b4ed8f61be1733ee5b63a111eaf3cb9d2d239ed188"
+    },
+    {
+      "path": "docs/current/600519-profit-adjustment-bridge-20261008.md",
+      "sha256": "8d9ff9e6fb94e9f18a62108992a91b7c8f2a438da6e8d32df424e55ffc176260"
+    },
+    {
+      "path": "runtime/d2-economic-research-20261008/parent-distribution-capital-bridge-v1.json",
+      "sha256": "34cf0f4ac76a6fd2e2b6bd0cfe56500c270371fd4b9e6a25767a247b1ad25d78"
+    },
+    {
+      "path": "docs/current/600519-parent-distribution-capital-bridge-20261008.md",
+      "sha256": "ac1477ab886a7ee02ca621b06a8af66a518c638858bc042c7da293b029d69573"
+    },
+    {
+      "path": "runtime/d2-economic-research-20261008/operating-mechanism-evidence-v1.json",
+      "sha256": "4234aaaa2e2b580d89cabee665f59571e29f58b8714f99409e5f362b95ee7bae"
+    },
+    {
+      "path": "docs/current/600519-operating-mechanism-research-20261008.md",
+      "sha256": "567b9fa1114a766e76f88ba491ef4449c13163ec1d4f973b8abf2b9fe43763aa"
+    },
+    {
+      "path": "docs/current/600519-forward-path-independent-review-20261008-v2.md",
+      "sha256": "37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37"
+    },
+    {
+      "path": "docs/current/600519-financial-scope-independent-review-20261008.md",
+      "sha256": "17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c"
+    },
+    {
+      "path": "docs/current/600519-equity-cost-independent-review-20261008.md",
+      "sha256": "c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214"
+    },
+    {
+      "path": "docs/current/600519-primary-earnings-assumption-research-20261009.md",
+      "sha256": "70028ada50bc3c50d897087451b5b18f6387fc4e8af4fa16d09679ef7da6ce1a"
+    },
+    {
+      "path": "docs/current/600519-neutral-model-review-20261011.md",
+      "sha256": "fe862b41296adf239c006f0fa2b7c44902c5b83c623e3c7c99fe83cb306fa14d"
+    },
+    {
+      "path": "src/value_investment_agent/valuation_models/residual_income.py",
+      "sha256": "090bb42f00300662ed4f626ee0df19c58c0e6049edd612021d8ccd4b7925a0f7"
+    },
+    {
+      "path": "docs/current/600519-bounded-research-preference-20261011.md",
+      "sha256": "f86dc7b2197775f2e697925fa6fddc7d6077ed4ea06bd1e4ee675e78d2b2ee0e"
+    },
+    {
+      "path": "docs/current/600519-economic-candidate-closure-20261011.md",
+      "sha256": "2027ab44826ff28903a29d449fe1abe016da039d9c90e3d20746c2328415e71a"
+    }
+  ],
+  "implementation_bindings": [
+    {
+      "path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+      "sha256": "f9b9e1292708511d88ba89ac100ef72341c023cea1e988d0bd7c17929c63a042"
+    }
+  ],
+  "recommendation_type": "NO_ACTION",
+  "decision_blockers": [
+    "仅认可历史财务与条件剩余收益范围；中性主估值、正常化盈利及金融尾部审阅未获准入",
+    "本候选优势期和全资本衰减未获主模型批准",
+    "原文独立解释已形成；重大性、当前模型有效性和估值批准仍未准入",
+    "pending_economic_model_review",
+    "pending_complete_event_materiality_review",
+    "G3_估值门",
+    "等待已验证收盘行情",
+    "price_bridge_pending_external_data",
+    "Selected finite model assumptions remain pending economic approval.",
+    "research_case:仅认可历史财务与条件剩余收益范围；中性主估值、正常化盈利及金融尾部审阅未获准入",
+    "research_case:本候选优势期和全资本衰减未获主模型批准",
+    "research_case:原文独立解释已形成；重大性、当前模型有效性和估值批准仍未准入",
+    "research_case:pending_economic_model_review",
+    "research_case:pending_complete_event_materiality_review",
+    "research_case_valuation_not_approved",
+    "valuation_status_not_approved_for_research",
+    "model_validity_unavailable",
+    "event_materiality_review_unavailable",
+    "decision_dependency_artifacts_unavailable",
+    "predecision_eligibility_unavailable",
+    "human_research_approval_not_resolved"
+  ]
+}

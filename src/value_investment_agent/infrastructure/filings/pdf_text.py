@@ -3,7 +3,10 @@ from pathlib import Path
 
 import pypdfium2 as pdfium
 
+from .pdfium_runtime import serialized_pdfium
 
+
+@serialized_pdfium
 def extract_pages(path: Path, limit: int | None = None) -> list[str]:
     document = pdfium.PdfDocument(path)
     pages = []

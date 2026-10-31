@@ -1,0 +1,26 @@
+{
+  "schema_version": "d2-operating-assumption-closeout-v1",
+  "action": "no_order",
+  "scope": "EXISTING_TWO_COMPANY_SOURCE_BOUND_ASSUMPTIONS_NOT_E2",
+  "adapter_sha256": "1efced4b306ebadf0442eeed0da9fd7b588b612691dcdd7679338cd295d5d1b5",
+  "evidence": "runtime/d2-assumption-acceptance/1efced4b306e/receipt.json",
+  "real_cases": [
+    {
+      "symbol": "600519",
+      "branches": 3,
+      "fact_anchors": 52
+    },
+    {
+      "symbol": "600887",
+      "branches": 3,
+      "fact_anchors": 50
+    }
+  ],
+  "capital_path": "TEN_YEARS_RECOMPUTED_PER_SCENARIO",
+  "independent_review": "P1_MAPPING_AND_P2_FUTURE_SOURCE_CLOSED",
+  "real_model_calls": 0,
+  "valuation_computed": false,
+  "formal_eligibility": false,
+  "user_acceptance": "NOT_CONFIRMED",
+  "deployment": "SEPARATE_RECEIPT_REQUIRED"
+}

@@ -379,7 +379,7 @@ def test_compatibility_shims_are_registered_and_forwarding():
     declared = {item["old_path"] for item in registry["shims"]}
     discovered = {
         path.relative_to(ROOT).as_posix()
-        for path in (ROOT / "src" / "value_investment_agent").glob("*.py")
+        for path in (ROOT / "src" / "value_investment_agent").rglob("*.py")
         if "DEPRECATED_COMPATIBILITY_SHIM"
         in path.read_text(encoding="utf-8")
     }

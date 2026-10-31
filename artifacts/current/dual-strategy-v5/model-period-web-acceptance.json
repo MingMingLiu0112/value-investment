@@ -1,0 +1,31 @@
+{
+  "action": "no_order",
+  "observed_at": "2026-10-21T18:32:42.157027+00:00",
+  "url": "http://127.0.0.1:8001/decisions/000333",
+  "scope": "Public conditional research assumption period display only",
+  "desktop": "PASS_FOR_MODEL_PERIOD_LABELS_ONLY",
+  "first_period_visible": "2026-06-30 to 2027-06-30",
+  "fifth_period_visible": "2030-06-30 to 2031-06-30",
+  "calendar_year_forecast_inferred_from_parameter_name": false,
+  "conditional_values_unchanged_cny": [
+    "36.01",
+    "45.74",
+    "58.17"
+  ],
+  "economic_approval_created": false,
+  "formal_investment_eligibility": false,
+  "web_tests_passed": 340,
+  "typecheck": "PASS",
+  "format": "PASS",
+  "build": "PASS",
+  "mobile": "NOT_PASSED_VIEWPORT_OVERRIDE_NOT_APPLIED",
+  "authenticated_materiality_workflow": "PENDING_MANUAL_URL_POLICY_RECOVERY",
+  "runtime_identity": "MISMATCH_SHARED_DIRTY_CHECKOUT_NOT_RELEASE_ACCEPTANCE",
+  "screenshot": {
+    "path": "artifacts/current/dual-strategy-v5/midea-model-periods-desktop.jpg",
+    "sha256": "0c5178913ae7d757b79f18275c8b0fad13215f4ba36b7775b5fada9062ab6f40"
+  },
+  "real_assisted_use": "NOT_PROVEN",
+  "total_goal": "IN_PROGRESS",
+  "excel": "FROZEN"
+}

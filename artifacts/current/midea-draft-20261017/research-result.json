@@ -1,0 +1,2003 @@
+{
+  "schema_version": "generic-company-research-result-v1",
+  "run_id": "midea-draft-20261017-v2",
+  "symbol": "000333",
+  "profile_id": "mature_manufacturing",
+  "status": "COMPLETED_WITH_BLOCKERS",
+  "issuer_identity_status": "VERIFIED",
+  "action": "no_order",
+  "as_of": "2026-10-17",
+  "available_at": "2026-10-17T10:58:56.051146+00:00",
+  "blockers": [
+    "DRAFT_NOT_APPROVED",
+    "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+    "EVENT_COVERAGE_INCOMPLETE",
+    "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+    "G1_财务门",
+    "G3_估值门",
+    "event scan coverage is incomplete",
+    "EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.",
+    "Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.",
+    "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff.",
+    "price_bridge_invalid",
+    "CANDIDATE_DRAFT_ASSUMPTIONS_NOT_HUMAN_VALIDATED",
+    "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+  ],
+  "route": {
+    "profile_id": "mature_manufacturing",
+    "requested_model": "residual_income_or_equity_value",
+    "selected_model": "residual_income_or_equity_value",
+    "status": "SUPPORTED",
+    "model_type": "residual_income_or_equity_value",
+    "model_factory": "ResidualIncomeEquityValuationModel",
+    "facts_contract": "QualityCompounderFacts",
+    "required_inputs": [
+      "start_book_equity",
+      "ordinary_shares",
+      "scenario_inputs"
+    ],
+    "blockers": []
+  },
+  "gate": {
+    "symbol": "000333",
+    "results": {
+      "G0_证据门": true,
+      "G1_财务门": false,
+      "G2_商业论点门": true,
+      "G3_估值门": false
+    },
+    "blockers": [
+      "DRAFT_NOT_APPROVED",
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "EVENT_COVERAGE_INCOMPLETE",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "G1_财务门",
+      "G3_估值门"
+    ],
+    "conclusion": "研究未完成"
+  },
+  "valuation": {
+    "symbol": "000333",
+    "model_type": "residual_income_or_equity_value",
+    "valuation_date": "2026-10-16",
+    "bear_value": "36.0121866604528720800629631840921914063801838080",
+    "base_value": "45.7417037044192281574936570926129861357849631511",
+    "bull_value": "58.1686744055803340295467634666441075299523416697",
+    "confidence": "低",
+    "assumptions": {
+      "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+      "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+      "status": "conditional_research_only",
+      "disclaimer": "No market price, margin of safety, position or order is produced here.",
+      "valuation_timing": {
+        "basis_at": "2026-06-30T23:59:59+08:00",
+        "valuation_at": "2026-10-16T17:00:31+08:00",
+        "evidence_refs": [
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea_202606_hkex_monthly_return",
+            "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+          }
+        ],
+        "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+      }
+    },
+    "sensitivities": [
+      {
+        "scenario": "bear",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "268807469526.473945603913885875381663318523827004",
+        "per_share_value": "36.0121866604528720800629631840921914063801838080",
+        "terminal_residual_contribution_ratio": "0.04534430046962670813598094236",
+        "dividend_crosscheck_difference": "0E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061"
+      },
+      {
+        "scenario": "base",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "341431964144.441293420144739598649591249038437830",
+        "per_share_value": "45.7417037044192281574936570926129861357849631511",
+        "terminal_residual_contribution_ratio": "0.1567110536503976527408765945",
+        "dividend_crosscheck_difference": "-2E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061"
+      },
+      {
+        "scenario": "bull",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "434191189779.776275441857195140120305434653194219",
+        "per_share_value": "58.1686744055803340295467634666441075299523416697",
+        "terminal_residual_contribution_ratio": "0.2672536050867622579183066563",
+        "dividend_crosscheck_difference": "-2E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "midea_fy2025_annual",
+        "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+      },
+      {
+        "id": "midea_2026h1",
+        "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+      },
+      {
+        "id": "midea_202606_hkex_monthly_return",
+        "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+      },
+      {
+        "id": "cninfo_1225608903",
+        "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd"
+      },
+      {
+        "id": "cninfo_1225603532",
+        "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd"
+      },
+      {
+        "id": "cninfo_1225603533",
+        "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c"
+      },
+      {
+        "id": "cninfo_1225603534",
+        "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733"
+      }
+    ],
+    "blockers": [],
+    "status": "conditional_research_only",
+    "model_version": "residual-income-equity-shared-dated-v2"
+  },
+  "assumptions": {
+    "symbol": "000333",
+    "profile_id": "mature_manufacturing",
+    "model_type": "residual_income_or_equity_value",
+    "as_of": "2026-10-16",
+    "assumptions": [
+      {
+        "name": "cost_of_equity",
+        "unit": "decimal",
+        "bear": "0.09",
+        "base": "0.09",
+        "bull": "0.09",
+        "basis": "Candidate 9% equity hurdle applied to all scenarios.",
+        "rationale": "No issuer-specific beta estimate is admitted; a common hurdle keeps the draft internally consistent.",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2026",
+        "unit": "ratio",
+        "bear": "0.15",
+        "base": "0.18",
+        "bull": "0.205",
+        "basis": "Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.",
+        "rationale": "The path allows margin and competitive pressure while preserving a quality-compounder base case.",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2027",
+        "unit": "ratio",
+        "bear": "0.14",
+        "base": "0.17",
+        "bull": "0.20",
+        "basis": "Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.",
+        "rationale": "The path allows margin and competitive pressure while preserving a quality-compounder base case.",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2028",
+        "unit": "ratio",
+        "bear": "0.13",
+        "base": "0.16",
+        "bull": "0.195",
+        "basis": "Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.",
+        "rationale": "The path allows margin and competitive pressure while preserving a quality-compounder base case.",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2029",
+        "unit": "ratio",
+        "bear": "0.12",
+        "base": "0.155",
+        "bull": "0.19",
+        "basis": "Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.",
+        "rationale": "The path allows margin and competitive pressure while preserving a quality-compounder base case.",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "forecast_roe_2030",
+        "unit": "ratio",
+        "bear": "0.11",
+        "base": "0.15",
+        "bull": "0.185",
+        "basis": "Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.",
+        "rationale": "The path allows margin and competitive pressure while preserving a quality-compounder base case.",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "terminal_roe",
+        "unit": "ratio",
+        "bear": "0.095",
+        "base": "0.11",
+        "bull": "0.13",
+        "basis": "Candidate terminal excess-return persistence assumption.",
+        "rationale": "Terminal ROE remains above or near the equity hurdle by scenario without assuming permanent high excess returns.",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "high",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "terminal_growth",
+        "unit": "ratio",
+        "bear": "0.015",
+        "base": "0.02",
+        "bull": "0.025",
+        "basis": "Candidate long-run nominal growth band.",
+        "rationale": "Growth is capped below the 9% equity hurdle in every scenario.",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "ascending"
+      },
+      {
+        "name": "retention",
+        "unit": "ratio",
+        "bear": "0.40",
+        "base": "0.35",
+        "bull": "0.30",
+        "basis": "Candidate reinvestment and shareholder-return allocation.",
+        "rationale": "The bear case retains more capital to defend operations; the bull case distributes more of higher earnings.",
+        "as_of": "2026-10-16",
+        "confidence": "low",
+        "sensitivity": "medium",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_202606_hkex_monthly_return",
+            "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+          }
+        ],
+        "blockers": [
+          "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+        ],
+        "ordering": "descending"
+      }
+    ],
+    "status": "PARTIAL",
+    "blockers": [
+      "CANDIDATE_DRAFT_ASSUMPTIONS_NOT_HUMAN_VALIDATED",
+      "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+    ],
+    "evidence_refs": [
+      {
+        "id": "midea_assumption_memo_20261017_v2",
+        "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+      },
+      {
+        "id": "midea_fy2025_annual",
+        "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+      },
+      {
+        "id": "midea_2026h1",
+        "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+      },
+      {
+        "id": "midea_202606_hkex_monthly_return",
+        "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+      }
+    ]
+  },
+  "model_validity": {
+    "model_id": "residual-income-equity-shared-dated-v2",
+    "symbol": "000333",
+    "model_as_of": "2026-10-16",
+    "valid_from": "2026-10-16",
+    "last_material_event_check": "2026-10-16",
+    "financial_statement_changed": null,
+    "capital_structure_changed": null,
+    "material_event_found": null,
+    "status": "UNKNOWN",
+    "blockers": [
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "EVENT_COVERAGE_INCOMPLETE",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "event scan coverage is incomplete",
+      "EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.",
+      "Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff."
+    ],
+    "evidence_refs": [
+      {
+        "id": "midea_event_scan_20261017",
+        "symbol": "000333",
+        "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+        "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+      },
+      {
+        "id": "cninfo_1225608903",
+        "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+      },
+      {
+        "id": "cninfo_1225603532",
+        "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+      },
+      {
+        "id": "cninfo_1225603533",
+        "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+      },
+      {
+        "id": "cninfo_1225603534",
+        "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+      }
+    ]
+  },
+  "quote_snapshot": {
+    "symbol": "000333",
+    "quote_date": "2026-10-16",
+    "current_price": "84.60",
+    "status": "verified_close",
+    "evidence_refs": [
+      {
+        "id": "midea_quote_20261016",
+        "kind": "quote_session",
+        "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+        "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+        "status": "collected_not_verified",
+        "expected_session": "2026-10-16",
+        "session_result": "matched_close",
+        "reason": "带日期双源报价与最近已完成交易日一致"
+      },
+      {
+        "id": "midea_quote_20261016-tencent",
+        "kind": "quote_provider_document",
+        "provider": "tencent",
+        "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+        "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+        "observed_trade_at": "2026-10-16T16:14:30+08:00"
+      },
+      {
+        "id": "midea_quote_20261016-sina",
+        "kind": "quote_provider_document",
+        "provider": "sina",
+        "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+        "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+        "observed_trade_at": "2026-10-16T15:35:30+08:00"
+      }
+    ],
+    "blockers": []
+  },
+  "price_bridge": {
+    "symbol": "000333",
+    "valuation_date": "2026-10-16",
+    "quote_date": null,
+    "current_price": null,
+    "margin_to_bear": null,
+    "margin_to_base": null,
+    "model_validity_status": "UNKNOWN",
+    "quote_status": "verified_close",
+    "bridge_status": "INVALID",
+    "evidence_refs": [
+      {
+        "id": "midea_event_scan_20261017",
+        "symbol": "000333",
+        "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+        "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+      },
+      {
+        "id": "cninfo_1225608903",
+        "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+      },
+      {
+        "id": "cninfo_1225603532",
+        "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+      },
+      {
+        "id": "cninfo_1225603533",
+        "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+      },
+      {
+        "id": "cninfo_1225603534",
+        "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+      },
+      {
+        "id": "midea_quote_20261016",
+        "kind": "quote_session",
+        "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+        "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+        "status": "collected_not_verified",
+        "expected_session": "2026-10-16",
+        "session_result": "matched_close",
+        "reason": "带日期双源报价与最近已完成交易日一致"
+      },
+      {
+        "id": "midea_quote_20261016-tencent",
+        "kind": "quote_provider_document",
+        "provider": "tencent",
+        "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+        "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+        "observed_trade_at": "2026-10-16T16:14:30+08:00"
+      },
+      {
+        "id": "midea_quote_20261016-sina",
+        "kind": "quote_provider_document",
+        "provider": "sina",
+        "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+        "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+        "observed_trade_at": "2026-10-16T15:35:30+08:00"
+      }
+    ],
+    "quote_evidence_refs": [
+      {
+        "id": "midea_quote_20261016",
+        "kind": "quote_session",
+        "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+        "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+        "status": "collected_not_verified",
+        "expected_session": "2026-10-16",
+        "session_result": "matched_close",
+        "reason": "带日期双源报价与最近已完成交易日一致"
+      },
+      {
+        "id": "midea_quote_20261016-tencent",
+        "kind": "quote_provider_document",
+        "provider": "tencent",
+        "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+        "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+        "observed_trade_at": "2026-10-16T16:14:30+08:00"
+      },
+      {
+        "id": "midea_quote_20261016-sina",
+        "kind": "quote_provider_document",
+        "provider": "sina",
+        "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+        "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+        "observed_trade_at": "2026-10-16T15:35:30+08:00"
+      }
+    ],
+    "blockers": [
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "EVENT_COVERAGE_INCOMPLETE",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "event scan coverage is incomplete",
+      "EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.",
+      "Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff."
+    ],
+    "schema_version": "c0-v1",
+    "model_id": "residual-income-equity-shared-dated-v2",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "model_as_of": "2026-10-16",
+    "quote_symbol": "000333",
+    "valuation_bear_value": "36.0121866604528720800629631840921914063801838080",
+    "valuation_base_value": "45.7417037044192281574936570926129861357849631511"
+  },
+  "price_attractiveness": {
+    "symbol": "000333",
+    "profile_id": "mature_manufacturing",
+    "status": "NOT_ASSESSABLE",
+    "display_status": "不可判断价格吸引力",
+    "margin_to_bear": null,
+    "margin_to_base": null,
+    "downside_reference": null,
+    "upside_reference": null,
+    "confidence": "低",
+    "reasons": [
+      "没有合法 READY PriceBridge，不能判断价格吸引力"
+    ],
+    "blockers": [
+      "price_bridge_invalid"
+    ],
+    "evidence_refs": [
+      {
+        "id": "midea_event_scan_20261017",
+        "symbol": "000333",
+        "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+        "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+      },
+      {
+        "id": "cninfo_1225608903",
+        "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+      },
+      {
+        "id": "cninfo_1225603532",
+        "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+      },
+      {
+        "id": "cninfo_1225603533",
+        "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+      },
+      {
+        "id": "cninfo_1225603534",
+        "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+      },
+      {
+        "id": "midea_quote_20261016",
+        "kind": "quote_session",
+        "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+        "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+        "status": "collected_not_verified",
+        "expected_session": "2026-10-16",
+        "session_result": "matched_close",
+        "reason": "带日期双源报价与最近已完成交易日一致"
+      },
+      {
+        "id": "midea_quote_20261016-tencent",
+        "kind": "quote_provider_document",
+        "provider": "tencent",
+        "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+        "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+        "observed_trade_at": "2026-10-16T16:14:30+08:00"
+      },
+      {
+        "id": "midea_quote_20261016-sina",
+        "kind": "quote_provider_document",
+        "provider": "sina",
+        "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+        "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+        "observed_trade_at": "2026-10-16T15:35:30+08:00"
+      }
+    ]
+  },
+  "distribution_result": null,
+  "current_status": {
+    "symbol": "000333",
+    "research_conclusion": "研究未完成",
+    "valuation_status": "conditional_research_only",
+    "price_bridge_status": "INVALID",
+    "engineering_status": "READY",
+    "current_data_status": {
+      "status": "INVALID",
+      "waiting_for": [
+        "模型有效性复核"
+      ],
+      "blockers": [
+        "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+        "EVENT_COVERAGE_INCOMPLETE",
+        "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+        "event scan coverage is incomplete",
+        "EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.",
+        "Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.",
+        "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff."
+      ],
+      "evidence_refs": [
+        {
+          "id": "midea_event_scan_20261017",
+          "symbol": "000333",
+          "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+          "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+        },
+        {
+          "id": "cninfo_1225608903",
+          "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+        },
+        {
+          "id": "cninfo_1225603532",
+          "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+        },
+        {
+          "id": "cninfo_1225603533",
+          "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+        },
+        {
+          "id": "cninfo_1225603534",
+          "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+        },
+        {
+          "id": "midea_quote_20261016",
+          "kind": "quote_session",
+          "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+          "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+          "status": "collected_not_verified",
+          "expected_session": "2026-10-16",
+          "session_result": "matched_close",
+          "reason": "带日期双源报价与最近已完成交易日一致"
+        },
+        {
+          "id": "midea_quote_20261016-tencent",
+          "kind": "quote_provider_document",
+          "provider": "tencent",
+          "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+          "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+          "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+          "observed_trade_at": "2026-10-16T16:14:30+08:00"
+        },
+        {
+          "id": "midea_quote_20261016-sina",
+          "kind": "quote_provider_document",
+          "provider": "sina",
+          "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+          "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+          "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+          "observed_trade_at": "2026-10-16T15:35:30+08:00"
+        }
+      ]
+    },
+    "price_attractiveness": {
+      "symbol": "000333",
+      "profile_id": "mature_manufacturing",
+      "status": "NOT_ASSESSABLE",
+      "display_status": "不可判断价格吸引力",
+      "margin_to_bear": null,
+      "margin_to_base": null,
+      "downside_reference": null,
+      "upside_reference": null,
+      "confidence": "低",
+      "reasons": [
+        "没有合法 READY PriceBridge，不能判断价格吸引力"
+      ],
+      "blockers": [
+        "price_bridge_invalid"
+      ],
+      "evidence_refs": [
+        {
+          "id": "midea_event_scan_20261017",
+          "symbol": "000333",
+          "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+          "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+        },
+        {
+          "id": "cninfo_1225608903",
+          "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+        },
+        {
+          "id": "cninfo_1225603532",
+          "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+        },
+        {
+          "id": "cninfo_1225603533",
+          "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+        },
+        {
+          "id": "cninfo_1225603534",
+          "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+          "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+        },
+        {
+          "id": "midea_quote_20261016",
+          "kind": "quote_session",
+          "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+          "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+          "status": "collected_not_verified",
+          "expected_session": "2026-10-16",
+          "session_result": "matched_close",
+          "reason": "带日期双源报价与最近已完成交易日一致"
+        },
+        {
+          "id": "midea_quote_20261016-tencent",
+          "kind": "quote_provider_document",
+          "provider": "tencent",
+          "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+          "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+          "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+          "observed_trade_at": "2026-10-16T16:14:30+08:00"
+        },
+        {
+          "id": "midea_quote_20261016-sina",
+          "kind": "quote_provider_document",
+          "provider": "sina",
+          "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+          "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+          "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+          "observed_trade_at": "2026-10-16T15:35:30+08:00"
+        }
+      ]
+    },
+    "display_text": "研究结论：研究未完成；估值状态：conditional_research_only；价格吸引力：不可判断价格吸引力；工程链路：READY；当前数据：INVALID。价格桥接不可用；须先完成模型有效性复核。该状态只属于研究层，不生成交易、仓位或订单。",
+    "blockers": [
+      "DRAFT_NOT_APPROVED",
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "EVENT_COVERAGE_INCOMPLETE",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "G1_财务门",
+      "G3_估值门",
+      "price_bridge_invalid"
+    ],
+    "evidence_refs": [
+      {
+        "id": "midea_fy2025_annual",
+        "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+      },
+      {
+        "id": "midea_2026h1",
+        "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+      },
+      {
+        "id": "midea_202606_hkex_monthly_return",
+        "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+      },
+      {
+        "id": "cninfo_1225608903",
+        "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+      },
+      {
+        "id": "cninfo_1225603532",
+        "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+      },
+      {
+        "id": "cninfo_1225603533",
+        "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+      },
+      {
+        "id": "cninfo_1225603534",
+        "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+      },
+      {
+        "id": "midea_event_scan_20261017",
+        "symbol": "000333",
+        "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+        "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+      },
+      {
+        "id": "midea_quote_20261016",
+        "kind": "quote_session",
+        "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+        "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+        "status": "collected_not_verified",
+        "expected_session": "2026-10-16",
+        "session_result": "matched_close",
+        "reason": "带日期双源报价与最近已完成交易日一致"
+      },
+      {
+        "id": "midea_quote_20261016-tencent",
+        "kind": "quote_provider_document",
+        "provider": "tencent",
+        "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+        "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+        "observed_trade_at": "2026-10-16T16:14:30+08:00"
+      },
+      {
+        "id": "midea_quote_20261016-sina",
+        "kind": "quote_provider_document",
+        "provider": "sina",
+        "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+        "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+        "observed_trade_at": "2026-10-16T15:35:30+08:00"
+      }
+    ]
+  },
+  "human_research_approval": null,
+  "event_materiality_review": null,
+  "pre_decision_eligibility": null,
+  "decision_recommendation": {
+    "schema_version": "advisory-decision-recommendation-v2",
+    "symbol": "000333",
+    "run_id": "midea-draft-20261017-v2",
+    "decision_as_of": "2026-10-17",
+    "recommendation_type": "NO_ACTION",
+    "confidence": "低",
+    "valuation_range": {
+      "bear": "36.0121866604528720800629631840921914063801838080",
+      "base": "45.7417037044192281574936570926129861357849631511",
+      "bull": "58.1686744055803340295467634666441075299523416697",
+      "currency": "CNY",
+      "basis": "valuation_result"
+    },
+    "current_price": null,
+    "margin_of_safety": {
+      "to_bear": null,
+      "to_base": null
+    },
+    "entry_zone": null,
+    "reduce_zone": null,
+    "exit_conditions": [
+      "若未来两年ROE持续低于9%的候选权益门槛，剩余收益假设失效。",
+      "若利润下降伴随经营现金转换和资产负债表质量同步恶化，当前底部ROE路径仍需下调。",
+      "若股本注销、回购或分红导致普通股分母与可分配现金桥接发生变化，必须重算每股价值。"
+    ],
+    "thesis": "美的具备规模化制造、渠道效率、全球化品牌与现金流优势；但2026H1扣非归母净利润同比下降25.31%，本次草案只检验在较低ROE路径下是否存在条件性价值，不用历史高ROE外推。",
+    "counter_evidence": [
+      {
+        "kind": "fact",
+        "text": "2026H1扣非归母净利润195.95亿元，同比下降25.31%。",
+        "evidence_refs": [
+          "midea_2026h1"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "2026H1归母权益2,128.61亿元，ROE 11.33%，较FY2025明显回落。",
+        "evidence_refs": [
+          "midea_2026h1"
+        ]
+      },
+      {
+        "kind": "gap",
+        "text": "2026年10月14日三项公告及10月17日回购进展公告仍待逐条材料性复核，模型有效性只能保持UNKNOWN。",
+        "evidence_refs": [
+          "cninfo_1225608903",
+          "cninfo_1225603532",
+          "cninfo_1225603533",
+          "cninfo_1225603534"
+        ]
+      }
+    ],
+    "thesis_breakers": [
+      {
+        "kind": "hypothesis",
+        "text": "若未来两年ROE持续低于9%的候选权益门槛，剩余收益假设失效。",
+        "evidence_refs": [
+          "midea_2026h1"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "若利润下降伴随经营现金转换和资产负债表质量同步恶化，当前底部ROE路径仍需下调。",
+        "evidence_refs": [
+          "midea_2026h1"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "若股本注销、回购或分红导致普通股分母与可分配现金桥接发生变化，必须重算每股价值。",
+        "evidence_refs": [
+          "midea_202606_hkex_monthly_return",
+          "cninfo_1225608903",
+          "cninfo_1225603532",
+          "cninfo_1225603533",
+          "cninfo_1225603534"
+        ]
+      }
+    ],
+    "next_events": [
+      {
+        "kind": "fact",
+        "text": "人工复核临时股东会决议、法律意见、注册资本减少及最新回购进展公告。",
+        "evidence_refs": [
+          "cninfo_1225608903",
+          "cninfo_1225603532",
+          "cninfo_1225603533",
+          "cninfo_1225603534"
+        ]
+      },
+      {
+        "kind": "gap",
+        "text": "下一期定期报告发布后复核利润、现金转换和ROE路径。",
+        "evidence_refs": [
+          "midea_2026h1"
+        ]
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "midea_fy2025_annual",
+        "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+      },
+      {
+        "id": "midea_2026h1",
+        "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+      },
+      {
+        "id": "midea_202606_hkex_monthly_return",
+        "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+      },
+      {
+        "id": "cninfo_1225608903",
+        "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+      },
+      {
+        "id": "cninfo_1225603532",
+        "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+      },
+      {
+        "id": "cninfo_1225603533",
+        "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+      },
+      {
+        "id": "cninfo_1225603534",
+        "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+      },
+      {
+        "id": "midea_event_scan_20261017",
+        "symbol": "000333",
+        "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+        "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+      },
+      {
+        "id": "midea_quote_20261016",
+        "kind": "quote_session",
+        "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+        "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+        "status": "collected_not_verified",
+        "expected_session": "2026-10-16",
+        "session_result": "matched_close",
+        "reason": "带日期双源报价与最近已完成交易日一致"
+      },
+      {
+        "id": "midea_quote_20261016-tencent",
+        "kind": "quote_provider_document",
+        "provider": "tencent",
+        "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+        "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+        "observed_trade_at": "2026-10-16T16:14:30+08:00"
+      },
+      {
+        "id": "midea_quote_20261016-sina",
+        "kind": "quote_provider_document",
+        "provider": "sina",
+        "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+        "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+        "observed_trade_at": "2026-10-16T15:35:30+08:00"
+      }
+    ],
+    "model_validity": {
+      "status": "UNKNOWN",
+      "model_id": "residual-income-equity-shared-dated-v2",
+      "model_as_of": "2026-10-16",
+      "valid_from": "2026-10-16",
+      "last_material_event_check": "2026-10-16",
+      "blockers": [
+        "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+        "EVENT_COVERAGE_INCOMPLETE",
+        "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+        "event scan coverage is incomplete",
+        "EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.",
+        "Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.",
+        "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff."
+      ]
+    },
+    "price_bridge_status": "INVALID",
+    "price_attractiveness_status": "NOT_ASSESSABLE",
+    "recommendation_reasons": [
+      "DRAFT_NOT_APPROVED",
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "EVENT_COVERAGE_INCOMPLETE",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "G1_财务门",
+      "G3_估值门",
+      "event scan coverage is incomplete",
+      "EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.",
+      "Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff.",
+      "price_bridge_invalid",
+      "CANDIDATE_DRAFT_ASSUMPTIONS_NOT_HUMAN_VALIDATED",
+      "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED",
+      "research_case:DRAFT_NOT_APPROVED",
+      "research_case:EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "research_case:EVENT_COVERAGE_INCOMPLETE",
+      "research_case:STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "research_scope_not_approved",
+      "research_case_valuation_not_approved",
+      "valuation_status_not_approved_for_research",
+      "model_validity_unknown",
+      "event_materiality_review_unavailable",
+      "decision_dependency_artifacts_unavailable",
+      "predecision_eligibility_unavailable",
+      "price assessment profile does not match valuation",
+      "human_research_approval_not_resolved"
+    ],
+    "blockers": [
+      "DRAFT_NOT_APPROVED",
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "EVENT_COVERAGE_INCOMPLETE",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "G1_财务门",
+      "G3_估值门",
+      "event scan coverage is incomplete",
+      "EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.",
+      "Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff.",
+      "price_bridge_invalid",
+      "CANDIDATE_DRAFT_ASSUMPTIONS_NOT_HUMAN_VALIDATED",
+      "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED",
+      "research_case:DRAFT_NOT_APPROVED",
+      "research_case:EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "research_case:EVENT_COVERAGE_INCOMPLETE",
+      "research_case:STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "research_scope_not_approved",
+      "research_case_valuation_not_approved",
+      "valuation_status_not_approved_for_research",
+      "model_validity_unknown",
+      "event_materiality_review_unavailable",
+      "decision_dependency_artifacts_unavailable",
+      "predecision_eligibility_unavailable",
+      "price assessment profile does not match valuation",
+      "human_research_approval_not_resolved"
+    ],
+    "portfolio_input_status": "BLOCKED_PRIVATE_INPUT",
+    "position_guidance": null,
+    "action": "no_order",
+    "decision_input_sha256": "49004a866b16343377fb003848851b9fbfe547ac6bf656d4515c8c3ac8c7b0e8",
+    "input_model_id": "residual_income_or_equity_value",
+    "input_additional_blockers": [
+      "DRAFT_NOT_APPROVED",
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "EVENT_COVERAGE_INCOMPLETE",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "G1_财务门",
+      "G3_估值门",
+      "event scan coverage is incomplete",
+      "EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.",
+      "Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff.",
+      "price_bridge_invalid",
+      "CANDIDATE_DRAFT_ASSUMPTIONS_NOT_HUMAN_VALIDATED",
+      "CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED"
+    ],
+    "decision_dependency_refs": [
+      {
+        "role": "research_case",
+        "artifact_id": "00000000-0000-0000-0000-000000000001",
+        "artifact_type": "research_case",
+        "scope_type": "security",
+        "scope_key": "000333",
+        "payload_sha256": "eab5353c7f7a69d83c5b43bb6d8ca011f2cfe101fc12377461f4c8d3a3198d6f"
+      },
+      {
+        "role": "financial_facts",
+        "artifact_id": "00000000-0000-0000-0000-000000000002",
+        "artifact_type": "financial_facts",
+        "scope_type": "security",
+        "scope_key": "000333",
+        "payload_sha256": "c51b36cedb0b95c73deda53181547a82159723a0b30a4d3bf10472ed4ddb936c"
+      },
+      {
+        "role": "research_gate",
+        "artifact_id": "00000000-0000-0000-0000-000000000003",
+        "artifact_type": "research_gate",
+        "scope_type": "security",
+        "scope_key": "000333",
+        "payload_sha256": "0912cc1213286716660691a351d9a94efbbc12e421cdaac4e87977273b526e30"
+      },
+      {
+        "role": "valuation_assumptions",
+        "artifact_id": "00000000-0000-0000-0000-000000000004",
+        "artifact_type": "valuation_assumptions",
+        "scope_type": "security",
+        "scope_key": "000333",
+        "payload_sha256": "aea87a4308c3afd36f42e5eaf91e2bf25a6cf12f7361e0c705b37e656b2a11f0"
+      },
+      {
+        "role": "valuation",
+        "artifact_id": "00000000-0000-0000-0000-000000000005",
+        "artifact_type": "valuation_result",
+        "scope_type": "security",
+        "scope_key": "000333",
+        "payload_sha256": "342f9122c67ba797b9a69d037ca40f2b1be6c2436fda5b8dec3f52fed8fe67c6"
+      },
+      {
+        "role": "model_validity",
+        "artifact_id": "00000000-0000-0000-0000-000000000006",
+        "artifact_type": "model_validity",
+        "scope_type": "security",
+        "scope_key": "000333",
+        "payload_sha256": "dc1fc00c9391daaa6a227e1f938d3510153de2cb90fe63934e5a58a8f7bd03ba"
+      },
+      {
+        "role": "price_bridge",
+        "artifact_id": "00000000-0000-0000-0000-000000000008",
+        "artifact_type": "price_bridge",
+        "scope_type": "security",
+        "scope_key": "000333",
+        "payload_sha256": "e1defeac5d014a85dee864d745b3e27571ec6cb85ed5bdb4222ec53b36a21fc7"
+      },
+      {
+        "role": "price_attractiveness",
+        "artifact_id": "00000000-0000-0000-0000-000000000009",
+        "artifact_type": "price_attractiveness",
+        "scope_type": "security",
+        "scope_key": "000333",
+        "payload_sha256": "eb6743c23a6acdddbc146a9a1a32910b5d299e9890fdedd1f9f2b60cc575e157"
+      }
+    ],
+    "recommendation_payload_sha256": "465a26dce447a3a687fe84d8a16b219457bf45d5c3c1cf908e8204670eb9710d"
+  },
+  "artifact_bundle": {
+    "schema_version": "research-decision-artifact-bundle-v1",
+    "artifacts": [
+      {
+        "artifact_id": "00000000-0000-0000-0000-000000000001",
+        "identity": {
+          "scope_type": "security",
+          "scope_key": "000333",
+          "artifact_type": "research_case",
+          "schema_version": "c3-v1",
+          "as_of": "2026-10-17",
+          "available_at": "2026-10-17T10:58:56.051146+00:00"
+        },
+        "canonical_payload": "{\"as_of\":\"2026-10-17\",\"blockers\":[\"DRAFT_NOT_APPROVED\",\"EVENT_MATERIALITY_PENDING_HUMAN_REVIEW\",\"EVENT_COVERAGE_INCOMPLETE\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN\"],\"counter_evidence\":[{\"evidence_refs\":[\"midea_2026h1\"],\"kind\":\"fact\",\"text\":\"2026H1扣非归母净利润195.95亿元，同比下降25.31%。\"},{\"evidence_refs\":[\"midea_2026h1\"],\"kind\":\"fact\",\"text\":\"2026H1归母权益2,128.61亿元，ROE 11.33%，较FY2025明显回落。\"},{\"evidence_refs\":[\"cninfo_1225608903\",\"cninfo_1225603532\",\"cninfo_1225603533\",\"cninfo_1225603534\"],\"kind\":\"gap\",\"text\":\"2026年10月14日三项公告及10月17日回购进展公告仍待逐条材料性复核，模型有效性只能保持UNKNOWN。\"}],\"evidence_refs\":[{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"},{\"id\":\"midea_202606_hkex_monthly_return\",\"sha256\":\"fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd\"},{\"id\":\"cninfo_1225608903\",\"sha256\":\"cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd\"},{\"id\":\"cninfo_1225603532\",\"sha256\":\"6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd\"},{\"id\":\"cninfo_1225603533\",\"sha256\":\"e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c\"},{\"id\":\"cninfo_1225603534\",\"sha256\":\"b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733\"}],\"evidence_status\":\"verified\",\"financial_period\":\"2026-06-30\",\"financial_summary\":{\"fy2025_parent_equity_cny\":\"223221305000\",\"fy2025_parent_profit_cny\":\"43945411000\",\"fy2025_weighted_roe\":\"0.1970\",\"h1_2026_adjusted_parent_profit_cny\":\"19595179000\",\"h1_2026_adjusted_parent_profit_yoy\":\"-0.2531\",\"h1_2026_parent_equity_cny\":\"212861055000\",\"h1_2026_parent_profit_cny\":\"26446037000\",\"h1_2026_revenue_cny\":\"260042490000\",\"h1_2026_roe\":\"0.1133\",\"ordinary_shares_20260630\":\"7464347335\",\"period_end\":\"2026-06-30\"},\"generated_at\":\"2026-10-17T10:58:56.033982+00:00\",\"industry\":\"家用电器-白色家电\",\"investment_path\":\"成熟制造复利 / 全球化与现金回报\",\"mispricing_hypothesis\":\"当前只检验价格与条件性内在价值区间的关系，不证明市场低估，也不把当前价格当作买入信号。\",\"missing_date_reasons\":{},\"name\":\"美的集团\",\"next_events\":[{\"evidence_refs\":[\"cninfo_1225608903\",\"cninfo_1225603532\",\"cninfo_1225603533\",\"cninfo_1225603534\"],\"kind\":\"fact\",\"text\":\"人工复核临时股东会决议、法律意见、注册资本减少及最新回购进展公告。\"},{\"evidence_refs\":[\"midea_2026h1\"],\"kind\":\"gap\",\"text\":\"下一期定期报告发布后复核利润、现金转换和ROE路径。\"}],\"positives\":[{\"evidence_refs\":[\"midea_fy2025_annual\"],\"kind\":\"fact\",\"text\":\"FY2025归母净利润439.45亿元、归母权益2,232.21亿元，加权ROE 19.70%。\"},{\"evidence_refs\":[\"midea_fy2025_annual\"],\"kind\":\"fact\",\"text\":\"FY2025每10股派38.00元，披露基数7,522,863,645股。\"},{\"evidence_refs\":[\"midea_fy2025_annual\",\"midea_2026h1\"],\"kind\":\"interpretation\",\"text\":\"规模、渠道和全球化仍可能支持高于门槛的资本回报，但必须由未来盈利和现金转换验证。\"}],\"quote_date\":\"2026-10-16\",\"research_status\":\"DRAFT_NOT_APPROVED\",\"research_version\":\"midea-draft-20261017-v2\",\"return_driver\":\"家电主业效率、全球化收入结构、ToB业务质量、现金转换与股东回报。\",\"run_id\":\"midea-draft-20261017-v2\",\"symbol\":\"000333\",\"thesis\":\"美的具备规模化制造、渠道效率、全球化品牌与现金流优势；但2026H1扣非归母净利润同比下降25.31%，本次草案只检验在较低ROE路径下是否存在条件性价值，不用历史高ROE外推。\",\"thesis_breakers\":[{\"evidence_refs\":[\"midea_2026h1\"],\"kind\":\"hypothesis\",\"text\":\"若未来两年ROE持续低于9%的候选权益门槛，剩余收益假设失效。\"},{\"evidence_refs\":[\"midea_2026h1\"],\"kind\":\"hypothesis\",\"text\":\"若利润下降伴随经营现金转换和资产负债表质量同步恶化，当前底部ROE路径仍需下调。\"},{\"evidence_refs\":[\"midea_202606_hkex_monthly_return\",\"cninfo_1225608903\",\"cninfo_1225603532\",\"cninfo_1225603533\",\"cninfo_1225603534\"],\"kind\":\"hypothesis\",\"text\":\"若股本注销、回购或分红导致普通股分母与可分配现金桥接发生变化，必须重算每股价值。\"}],\"valuation_status\":\"conditional_research_only\"}",
+        "payload_sha256": "eab5353c7f7a69d83c5b43bb6d8ca011f2cfe101fc12377461f4c8d3a3198d6f",
+        "evidence_refs": [
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea_202606_hkex_monthly_return",
+            "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+          },
+          {
+            "id": "cninfo_1225608903",
+            "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd"
+          },
+          {
+            "id": "cninfo_1225603532",
+            "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd"
+          },
+          {
+            "id": "cninfo_1225603533",
+            "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c"
+          },
+          {
+            "id": "cninfo_1225603534",
+            "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733"
+          }
+        ],
+        "run_id": "midea-draft-20261017-v2",
+        "created_at": "2026-10-17T11:03:02.151678+00:00"
+      },
+      {
+        "artifact_id": "00000000-0000-0000-0000-000000000002",
+        "identity": {
+          "scope_type": "security",
+          "scope_key": "000333",
+          "artifact_type": "financial_facts",
+          "schema_version": "c3-v1",
+          "as_of": "2026-10-16",
+          "available_at": "2026-10-17T10:58:56.051146+00:00"
+        },
+        "canonical_payload": "{\"as_of\":\"2026-10-16\",\"blockers\":[],\"confidence\":\"低\",\"confidence_evidence\":null,\"evidence_refs\":[{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"},{\"id\":\"midea_202606_hkex_monthly_return\",\"sha256\":\"fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd\"}],\"facts_type\":\"quality_compounder\",\"operating_inputs\":{\"ordinary_shares\":\"7464347335\",\"start_book_equity\":\"212861055000\"},\"scenario_inputs\":{\"base\":{\"cost_of_equity\":\"0.09\",\"forecast_roes\":[\"0.18\",\"0.17\",\"0.16\",\"0.155\",\"0.15\"],\"retention\":\"0.35\",\"terminal_growth\":\"0.02\",\"terminal_roe\":\"0.11\"},\"bear\":{\"cost_of_equity\":\"0.09\",\"forecast_roes\":[\"0.15\",\"0.14\",\"0.13\",\"0.12\",\"0.11\"],\"retention\":\"0.40\",\"terminal_growth\":\"0.015\",\"terminal_roe\":\"0.095\"},\"bull\":{\"cost_of_equity\":\"0.09\",\"forecast_roes\":[\"0.205\",\"0.20\",\"0.195\",\"0.19\",\"0.185\"],\"retention\":\"0.30\",\"terminal_growth\":\"0.025\",\"terminal_roe\":\"0.13\"}},\"symbol\":\"000333\",\"valuation_timing\":{\"basis_at\":\"2026-06-30T23:59:59+08:00\",\"evidence_refs\":[{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"},{\"id\":\"midea_202606_hkex_monthly_return\",\"sha256\":\"fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd\"}],\"scope\":\"conditional_cash_flow_timing_not_observed_current_equity\",\"valuation_at\":\"2026-10-16T17:00:31+08:00\"},\"verified\":true}",
+        "payload_sha256": "c51b36cedb0b95c73deda53181547a82159723a0b30a4d3bf10472ed4ddb936c",
+        "evidence_refs": [
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea_202606_hkex_monthly_return",
+            "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+          }
+        ],
+        "run_id": "midea-draft-20261017-v2",
+        "created_at": "2026-10-17T11:03:02.151799+00:00"
+      },
+      {
+        "artifact_id": "00000000-0000-0000-0000-000000000003",
+        "identity": {
+          "scope_type": "security",
+          "scope_key": "000333",
+          "artifact_type": "research_gate",
+          "schema_version": "c3-v1",
+          "as_of": "2026-10-17",
+          "available_at": "2026-10-17T10:58:56.051146+00:00"
+        },
+        "canonical_payload": "{\"blockers\":[\"DRAFT_NOT_APPROVED\",\"EVENT_MATERIALITY_PENDING_HUMAN_REVIEW\",\"EVENT_COVERAGE_INCOMPLETE\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN\",\"G1_财务门\",\"G3_估值门\"],\"conclusion\":\"研究未完成\",\"results\":{\"G0_证据门\":true,\"G1_财务门\":false,\"G2_商业论点门\":true,\"G3_估值门\":false},\"symbol\":\"000333\"}",
+        "payload_sha256": "0912cc1213286716660691a351d9a94efbbc12e421cdaac4e87977273b526e30",
+        "evidence_refs": [
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea_202606_hkex_monthly_return",
+            "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+          },
+          {
+            "id": "cninfo_1225608903",
+            "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd"
+          },
+          {
+            "id": "cninfo_1225603532",
+            "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd"
+          },
+          {
+            "id": "cninfo_1225603533",
+            "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c"
+          },
+          {
+            "id": "cninfo_1225603534",
+            "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733"
+          }
+        ],
+        "run_id": "midea-draft-20261017-v2",
+        "created_at": "2026-10-17T11:03:02.151867+00:00"
+      },
+      {
+        "artifact_id": "00000000-0000-0000-0000-000000000004",
+        "identity": {
+          "scope_type": "security",
+          "scope_key": "000333",
+          "artifact_type": "valuation_assumptions",
+          "schema_version": "c3-v1",
+          "as_of": "2026-10-16",
+          "available_at": "2026-10-17T10:58:56.051146+00:00"
+        },
+        "canonical_payload": "{\"as_of\":\"2026-10-16\",\"assumptions\":[{\"as_of\":\"2026-10-16\",\"base\":\"0.09\",\"basis\":\"Candidate 9% equity hurdle applied to all scenarios.\",\"bear\":\"0.09\",\"blockers\":[\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\"],\"bull\":\"0.09\",\"confidence\":\"low\",\"evidence_refs\":[{\"id\":\"midea_assumption_memo_20261017_v2\",\"sha256\":\"a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"}],\"name\":\"cost_of_equity\",\"ordering\":\"ascending\",\"rationale\":\"No issuer-specific beta estimate is admitted; a common hurdle keeps the draft internally consistent.\",\"sensitivity\":\"high\",\"unit\":\"decimal\"},{\"as_of\":\"2026-10-16\",\"base\":\"0.18\",\"basis\":\"Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.\",\"bear\":\"0.15\",\"blockers\":[\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\"],\"bull\":\"0.205\",\"confidence\":\"low\",\"evidence_refs\":[{\"id\":\"midea_assumption_memo_20261017_v2\",\"sha256\":\"a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402\"},{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"}],\"name\":\"forecast_roe_2026\",\"ordering\":\"ascending\",\"rationale\":\"The path allows margin and competitive pressure while preserving a quality-compounder base case.\",\"sensitivity\":\"medium\",\"unit\":\"ratio\"},{\"as_of\":\"2026-10-16\",\"base\":\"0.17\",\"basis\":\"Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.\",\"bear\":\"0.14\",\"blockers\":[\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\"],\"bull\":\"0.20\",\"confidence\":\"low\",\"evidence_refs\":[{\"id\":\"midea_assumption_memo_20261017_v2\",\"sha256\":\"a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402\"},{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"}],\"name\":\"forecast_roe_2027\",\"ordering\":\"ascending\",\"rationale\":\"The path allows margin and competitive pressure while preserving a quality-compounder base case.\",\"sensitivity\":\"medium\",\"unit\":\"ratio\"},{\"as_of\":\"2026-10-16\",\"base\":\"0.16\",\"basis\":\"Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.\",\"bear\":\"0.13\",\"blockers\":[\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\"],\"bull\":\"0.195\",\"confidence\":\"low\",\"evidence_refs\":[{\"id\":\"midea_assumption_memo_20261017_v2\",\"sha256\":\"a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402\"},{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"}],\"name\":\"forecast_roe_2028\",\"ordering\":\"ascending\",\"rationale\":\"The path allows margin and competitive pressure while preserving a quality-compounder base case.\",\"sensitivity\":\"medium\",\"unit\":\"ratio\"},{\"as_of\":\"2026-10-16\",\"base\":\"0.155\",\"basis\":\"Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.\",\"bear\":\"0.12\",\"blockers\":[\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\"],\"bull\":\"0.19\",\"confidence\":\"low\",\"evidence_refs\":[{\"id\":\"midea_assumption_memo_20261017_v2\",\"sha256\":\"a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402\"},{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"}],\"name\":\"forecast_roe_2029\",\"ordering\":\"ascending\",\"rationale\":\"The path allows margin and competitive pressure while preserving a quality-compounder base case.\",\"sensitivity\":\"medium\",\"unit\":\"ratio\"},{\"as_of\":\"2026-10-16\",\"base\":\"0.15\",\"basis\":\"Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.\",\"bear\":\"0.11\",\"blockers\":[\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\"],\"bull\":\"0.185\",\"confidence\":\"low\",\"evidence_refs\":[{\"id\":\"midea_assumption_memo_20261017_v2\",\"sha256\":\"a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402\"},{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"}],\"name\":\"forecast_roe_2030\",\"ordering\":\"ascending\",\"rationale\":\"The path allows margin and competitive pressure while preserving a quality-compounder base case.\",\"sensitivity\":\"medium\",\"unit\":\"ratio\"},{\"as_of\":\"2026-10-16\",\"base\":\"0.11\",\"basis\":\"Candidate terminal excess-return persistence assumption.\",\"bear\":\"0.095\",\"blockers\":[\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\"],\"bull\":\"0.13\",\"confidence\":\"low\",\"evidence_refs\":[{\"id\":\"midea_assumption_memo_20261017_v2\",\"sha256\":\"a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402\"},{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"}],\"name\":\"terminal_roe\",\"ordering\":\"ascending\",\"rationale\":\"Terminal ROE remains above or near the equity hurdle by scenario without assuming permanent high excess returns.\",\"sensitivity\":\"high\",\"unit\":\"ratio\"},{\"as_of\":\"2026-10-16\",\"base\":\"0.02\",\"basis\":\"Candidate long-run nominal growth band.\",\"bear\":\"0.015\",\"blockers\":[\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\"],\"bull\":\"0.025\",\"confidence\":\"low\",\"evidence_refs\":[{\"id\":\"midea_assumption_memo_20261017_v2\",\"sha256\":\"a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402\"},{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"}],\"name\":\"terminal_growth\",\"ordering\":\"ascending\",\"rationale\":\"Growth is capped below the 9% equity hurdle in every scenario.\",\"sensitivity\":\"medium\",\"unit\":\"ratio\"},{\"as_of\":\"2026-10-16\",\"base\":\"0.35\",\"basis\":\"Candidate reinvestment and shareholder-return allocation.\",\"bear\":\"0.40\",\"blockers\":[\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\"],\"bull\":\"0.30\",\"confidence\":\"low\",\"evidence_refs\":[{\"id\":\"midea_assumption_memo_20261017_v2\",\"sha256\":\"a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402\"},{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_202606_hkex_monthly_return\",\"sha256\":\"fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd\"}],\"name\":\"retention\",\"ordering\":\"descending\",\"rationale\":\"The bear case retains more capital to defend operations; the bull case distributes more of higher earnings.\",\"sensitivity\":\"medium\",\"unit\":\"ratio\"}],\"blockers\":[\"CANDIDATE_DRAFT_ASSUMPTIONS_NOT_HUMAN_VALIDATED\",\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\"],\"evidence_refs\":[{\"id\":\"midea_assumption_memo_20261017_v2\",\"sha256\":\"a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402\"},{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"},{\"id\":\"midea_202606_hkex_monthly_return\",\"sha256\":\"fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd\"}],\"model_type\":\"residual_income_or_equity_value\",\"profile_id\":\"mature_manufacturing\",\"status\":\"PARTIAL\",\"symbol\":\"000333\"}",
+        "payload_sha256": "aea87a4308c3afd36f42e5eaf91e2bf25a6cf12f7361e0c705b37e656b2a11f0",
+        "evidence_refs": [
+          {
+            "id": "midea_assumption_memo_20261017_v2",
+            "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+          },
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea_202606_hkex_monthly_return",
+            "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+          }
+        ],
+        "run_id": "midea-draft-20261017-v2",
+        "created_at": "2026-10-17T11:03:02.152111+00:00"
+      },
+      {
+        "artifact_id": "00000000-0000-0000-0000-000000000005",
+        "identity": {
+          "scope_type": "security",
+          "scope_key": "000333",
+          "artifact_type": "valuation_result",
+          "schema_version": "c3-v1",
+          "as_of": "2026-10-16",
+          "available_at": "2026-10-17T10:58:56.051146+00:00"
+        },
+        "canonical_payload": "{\"assumptions\":{\"disclaimer\":\"No market price, margin of safety, position or order is produced here.\",\"formula\":\"Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares\",\"scope\":\"conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability\",\"status\":\"conditional_research_only\",\"valuation_timing\":{\"basis_at\":\"2026-06-30T23:59:59+08:00\",\"evidence_refs\":[{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"},{\"id\":\"midea_202606_hkex_monthly_return\",\"sha256\":\"fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd\"}],\"scope\":\"conditional_cash_flow_timing_not_observed_current_equity\",\"valuation_at\":\"2026-10-16T17:00:31+08:00\"}},\"base_value\":\"45.7417037044192281574936570926129861357849631511\",\"bear_value\":\"36.0121866604528720800629631840921914063801838080\",\"blockers\":[],\"bull_value\":\"58.1686744055803340295467634666441075299523416697\",\"confidence\":\"低\",\"evidence_refs\":[{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"},{\"id\":\"midea_202606_hkex_monthly_return\",\"sha256\":\"fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd\"},{\"id\":\"cninfo_1225608903\",\"sha256\":\"cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd\"},{\"id\":\"cninfo_1225603532\",\"sha256\":\"6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd\"},{\"id\":\"cninfo_1225603533\",\"sha256\":\"e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c\"},{\"id\":\"cninfo_1225603534\",\"sha256\":\"b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733\"}],\"model_type\":\"residual_income_or_equity_value\",\"model_version\":\"residual-income-equity-shared-dated-v2\",\"sensitivities\":[{\"arithmetic_status\":\"research_arithmetic_only\",\"basis_to_valuation_factor\":\"1.02575648851072872078280171866928461148754088061\",\"cost_of_equity\":\"0.09\",\"dividend_crosscheck_difference\":\"0E-36\",\"ordinary_equity_value\":\"268807469526.473945603913885875381663318523827004\",\"per_share_value\":\"36.0121866604528720800629631840921914063801838080\",\"scenario\":\"bear\",\"terminal_residual_contribution_ratio\":\"0.04534430046962670813598094236\"},{\"arithmetic_status\":\"research_arithmetic_only\",\"basis_to_valuation_factor\":\"1.02575648851072872078280171866928461148754088061\",\"cost_of_equity\":\"0.09\",\"dividend_crosscheck_difference\":\"-2E-36\",\"ordinary_equity_value\":\"341431964144.441293420144739598649591249038437830\",\"per_share_value\":\"45.7417037044192281574936570926129861357849631511\",\"scenario\":\"base\",\"terminal_residual_contribution_ratio\":\"0.1567110536503976527408765945\"},{\"arithmetic_status\":\"research_arithmetic_only\",\"basis_to_valuation_factor\":\"1.02575648851072872078280171866928461148754088061\",\"cost_of_equity\":\"0.09\",\"dividend_crosscheck_difference\":\"-2E-36\",\"ordinary_equity_value\":\"434191189779.776275441857195140120305434653194219\",\"per_share_value\":\"58.1686744055803340295467634666441075299523416697\",\"scenario\":\"bull\",\"terminal_residual_contribution_ratio\":\"0.2672536050867622579183066563\"}],\"status\":\"conditional_research_only\",\"symbol\":\"000333\",\"valuation_date\":\"2026-10-16\"}",
+        "payload_sha256": "342f9122c67ba797b9a69d037ca40f2b1be6c2436fda5b8dec3f52fed8fe67c6",
+        "evidence_refs": [
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea_202606_hkex_monthly_return",
+            "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+          },
+          {
+            "id": "cninfo_1225608903",
+            "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd"
+          },
+          {
+            "id": "cninfo_1225603532",
+            "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd"
+          },
+          {
+            "id": "cninfo_1225603533",
+            "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c"
+          },
+          {
+            "id": "cninfo_1225603534",
+            "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733"
+          }
+        ],
+        "run_id": "midea-draft-20261017-v2",
+        "created_at": "2026-10-17T11:03:02.152291+00:00"
+      },
+      {
+        "artifact_id": "00000000-0000-0000-0000-000000000006",
+        "identity": {
+          "scope_type": "security",
+          "scope_key": "000333",
+          "artifact_type": "model_validity",
+          "schema_version": "c3-v1",
+          "as_of": "2026-10-16",
+          "available_at": "2026-10-17T10:58:56.051146+00:00"
+        },
+        "canonical_payload": "{\"blockers\":[\"EVENT_MATERIALITY_PENDING_HUMAN_REVIEW\",\"EVENT_COVERAGE_INCOMPLETE\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN\",\"event scan coverage is incomplete\",\"EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.\",\"Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff.\"],\"capital_structure_changed\":null,\"evidence_refs\":[{\"id\":\"midea_event_scan_20261017\",\"path\":\"runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json\",\"sha256\":\"7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f\",\"symbol\":\"000333\"},{\"id\":\"cninfo_1225608903\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF\",\"sha256\":\"cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF\"},{\"id\":\"cninfo_1225603532\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF\",\"sha256\":\"6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF\"},{\"id\":\"cninfo_1225603533\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF\",\"sha256\":\"e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF\"},{\"id\":\"cninfo_1225603534\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF\",\"sha256\":\"b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF\"}],\"financial_statement_changed\":null,\"last_material_event_check\":\"2026-10-16\",\"material_event_found\":null,\"model_as_of\":\"2026-10-16\",\"model_id\":\"residual-income-equity-shared-dated-v2\",\"status\":\"UNKNOWN\",\"symbol\":\"000333\",\"valid_from\":\"2026-10-16\"}",
+        "payload_sha256": "dc1fc00c9391daaa6a227e1f938d3510153de2cb90fe63934e5a58a8f7bd03ba",
+        "evidence_refs": [
+          {
+            "id": "midea_event_scan_20261017",
+            "symbol": "000333",
+            "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+            "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+          },
+          {
+            "id": "cninfo_1225608903",
+            "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+          },
+          {
+            "id": "cninfo_1225603532",
+            "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+          },
+          {
+            "id": "cninfo_1225603533",
+            "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+          },
+          {
+            "id": "cninfo_1225603534",
+            "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+          }
+        ],
+        "run_id": "midea-draft-20261017-v2",
+        "created_at": "2026-10-17T11:03:02.152405+00:00"
+      },
+      {
+        "artifact_id": "00000000-0000-0000-0000-000000000007",
+        "identity": {
+          "scope_type": "security",
+          "scope_key": "000333",
+          "artifact_type": "quote_snapshot",
+          "schema_version": "c3-v1",
+          "as_of": "2026-10-16",
+          "available_at": "2026-10-17T10:58:56.051146+00:00"
+        },
+        "canonical_payload": "{\"blockers\":[],\"current_price\":\"84.60\",\"evidence_refs\":[{\"expected_session\":\"2026-10-16\",\"id\":\"midea_quote_20261016\",\"kind\":\"quote_session\",\"path\":\"runtime/quote-sessions/20261016T090031652233Z/bundle.json\",\"reason\":\"带日期双源报价与最近已完成交易日一致\",\"session_result\":\"matched_close\",\"sha256\":\"08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e\",\"status\":\"collected_not_verified\"},{\"fetched_at\":\"2026-10-16T09:00:31.538074+00:00\",\"id\":\"midea_quote_20261016-tencent\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T16:14:30+08:00\",\"provider\":\"tencent\",\"sha256\":\"1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6\",\"source_url\":\"https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"},{\"fetched_at\":\"2026-10-16T09:00:31.651614+00:00\",\"id\":\"midea_quote_20261016-sina\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T15:35:30+08:00\",\"provider\":\"sina\",\"sha256\":\"37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e\",\"source_url\":\"https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"}],\"quote_date\":\"2026-10-16\",\"status\":\"verified_close\",\"symbol\":\"000333\"}",
+        "payload_sha256": "61360f4c86a254ff9a66c8f9a022c6548e8480d059735bd61836737fb68e3d00",
+        "evidence_refs": [
+          {
+            "id": "midea_quote_20261016",
+            "kind": "quote_session",
+            "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+            "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+            "status": "collected_not_verified",
+            "expected_session": "2026-10-16",
+            "session_result": "matched_close",
+            "reason": "带日期双源报价与最近已完成交易日一致"
+          },
+          {
+            "id": "midea_quote_20261016-tencent",
+            "kind": "quote_provider_document",
+            "provider": "tencent",
+            "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+            "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+            "observed_trade_at": "2026-10-16T16:14:30+08:00"
+          },
+          {
+            "id": "midea_quote_20261016-sina",
+            "kind": "quote_provider_document",
+            "provider": "sina",
+            "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+            "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+            "observed_trade_at": "2026-10-16T15:35:30+08:00"
+          }
+        ],
+        "run_id": "midea-draft-20261017-v2",
+        "created_at": "2026-10-17T11:03:02.152492+00:00"
+      },
+      {
+        "artifact_id": "00000000-0000-0000-0000-000000000008",
+        "identity": {
+          "scope_type": "security",
+          "scope_key": "000333",
+          "artifact_type": "price_bridge",
+          "schema_version": "c3-v1",
+          "as_of": "2026-10-16",
+          "available_at": "2026-10-17T10:58:56.051146+00:00"
+        },
+        "canonical_payload": "{\"blockers\":[\"EVENT_MATERIALITY_PENDING_HUMAN_REVIEW\",\"EVENT_COVERAGE_INCOMPLETE\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN\",\"event scan coverage is incomplete\",\"EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.\",\"Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff.\"],\"bridge_status\":\"INVALID\",\"current_price\":null,\"evidence_refs\":[{\"id\":\"midea_event_scan_20261017\",\"path\":\"runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json\",\"sha256\":\"7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f\",\"symbol\":\"000333\"},{\"id\":\"cninfo_1225608903\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF\",\"sha256\":\"cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF\"},{\"id\":\"cninfo_1225603532\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF\",\"sha256\":\"6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF\"},{\"id\":\"cninfo_1225603533\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF\",\"sha256\":\"e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF\"},{\"id\":\"cninfo_1225603534\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF\",\"sha256\":\"b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF\"},{\"expected_session\":\"2026-10-16\",\"id\":\"midea_quote_20261016\",\"kind\":\"quote_session\",\"path\":\"runtime/quote-sessions/20261016T090031652233Z/bundle.json\",\"reason\":\"带日期双源报价与最近已完成交易日一致\",\"session_result\":\"matched_close\",\"sha256\":\"08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e\",\"status\":\"collected_not_verified\"},{\"fetched_at\":\"2026-10-16T09:00:31.538074+00:00\",\"id\":\"midea_quote_20261016-tencent\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T16:14:30+08:00\",\"provider\":\"tencent\",\"sha256\":\"1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6\",\"source_url\":\"https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"},{\"fetched_at\":\"2026-10-16T09:00:31.651614+00:00\",\"id\":\"midea_quote_20261016-sina\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T15:35:30+08:00\",\"provider\":\"sina\",\"sha256\":\"37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e\",\"source_url\":\"https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"}],\"margin_to_base\":null,\"margin_to_bear\":null,\"model_as_of\":\"2026-10-16\",\"model_id\":\"residual-income-equity-shared-dated-v2\",\"model_validity_status\":\"UNKNOWN\",\"model_version\":\"residual-income-equity-shared-dated-v2\",\"quote_date\":null,\"quote_evidence_refs\":[{\"expected_session\":\"2026-10-16\",\"id\":\"midea_quote_20261016\",\"kind\":\"quote_session\",\"path\":\"runtime/quote-sessions/20261016T090031652233Z/bundle.json\",\"reason\":\"带日期双源报价与最近已完成交易日一致\",\"session_result\":\"matched_close\",\"sha256\":\"08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e\",\"status\":\"collected_not_verified\"},{\"fetched_at\":\"2026-10-16T09:00:31.538074+00:00\",\"id\":\"midea_quote_20261016-tencent\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T16:14:30+08:00\",\"provider\":\"tencent\",\"sha256\":\"1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6\",\"source_url\":\"https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"},{\"fetched_at\":\"2026-10-16T09:00:31.651614+00:00\",\"id\":\"midea_quote_20261016-sina\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T15:35:30+08:00\",\"provider\":\"sina\",\"sha256\":\"37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e\",\"source_url\":\"https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"}],\"quote_status\":\"verified_close\",\"quote_symbol\":\"000333\",\"schema_version\":\"c0-v1\",\"symbol\":\"000333\",\"valuation_base_value\":\"45.7417037044192281574936570926129861357849631511\",\"valuation_bear_value\":\"36.0121866604528720800629631840921914063801838080\",\"valuation_date\":\"2026-10-16\"}",
+        "payload_sha256": "e1defeac5d014a85dee864d745b3e27571ec6cb85ed5bdb4222ec53b36a21fc7",
+        "evidence_refs": [
+          {
+            "id": "midea_event_scan_20261017",
+            "symbol": "000333",
+            "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+            "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+          },
+          {
+            "id": "cninfo_1225608903",
+            "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+          },
+          {
+            "id": "cninfo_1225603532",
+            "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+          },
+          {
+            "id": "cninfo_1225603533",
+            "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+          },
+          {
+            "id": "cninfo_1225603534",
+            "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+          },
+          {
+            "id": "midea_quote_20261016",
+            "kind": "quote_session",
+            "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+            "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+            "status": "collected_not_verified",
+            "expected_session": "2026-10-16",
+            "session_result": "matched_close",
+            "reason": "带日期双源报价与最近已完成交易日一致"
+          },
+          {
+            "id": "midea_quote_20261016-tencent",
+            "kind": "quote_provider_document",
+            "provider": "tencent",
+            "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+            "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+            "observed_trade_at": "2026-10-16T16:14:30+08:00"
+          },
+          {
+            "id": "midea_quote_20261016-sina",
+            "kind": "quote_provider_document",
+            "provider": "sina",
+            "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+            "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+            "observed_trade_at": "2026-10-16T15:35:30+08:00"
+          }
+        ],
+        "run_id": "midea-draft-20261017-v2",
+        "created_at": "2026-10-17T11:03:02.152681+00:00"
+      },
+      {
+        "artifact_id": "00000000-0000-0000-0000-000000000009",
+        "identity": {
+          "scope_type": "security",
+          "scope_key": "000333",
+          "artifact_type": "price_attractiveness",
+          "schema_version": "c3-v1",
+          "as_of": "2026-10-16",
+          "available_at": "2026-10-17T10:58:56.051146+00:00"
+        },
+        "canonical_payload": "{\"blockers\":[\"price_bridge_invalid\"],\"confidence\":\"低\",\"display_status\":\"不可判断价格吸引力\",\"downside_reference\":null,\"evidence_refs\":[{\"id\":\"midea_event_scan_20261017\",\"path\":\"runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json\",\"sha256\":\"7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f\",\"symbol\":\"000333\"},{\"id\":\"cninfo_1225608903\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF\",\"sha256\":\"cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF\"},{\"id\":\"cninfo_1225603532\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF\",\"sha256\":\"6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF\"},{\"id\":\"cninfo_1225603533\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF\",\"sha256\":\"e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF\"},{\"id\":\"cninfo_1225603534\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF\",\"sha256\":\"b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF\"},{\"expected_session\":\"2026-10-16\",\"id\":\"midea_quote_20261016\",\"kind\":\"quote_session\",\"path\":\"runtime/quote-sessions/20261016T090031652233Z/bundle.json\",\"reason\":\"带日期双源报价与最近已完成交易日一致\",\"session_result\":\"matched_close\",\"sha256\":\"08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e\",\"status\":\"collected_not_verified\"},{\"fetched_at\":\"2026-10-16T09:00:31.538074+00:00\",\"id\":\"midea_quote_20261016-tencent\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T16:14:30+08:00\",\"provider\":\"tencent\",\"sha256\":\"1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6\",\"source_url\":\"https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"},{\"fetched_at\":\"2026-10-16T09:00:31.651614+00:00\",\"id\":\"midea_quote_20261016-sina\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T15:35:30+08:00\",\"provider\":\"sina\",\"sha256\":\"37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e\",\"source_url\":\"https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"}],\"margin_to_base\":null,\"margin_to_bear\":null,\"profile_id\":\"mature_manufacturing\",\"reasons\":[\"没有合法 READY PriceBridge，不能判断价格吸引力\"],\"status\":\"NOT_ASSESSABLE\",\"symbol\":\"000333\",\"upside_reference\":null}",
+        "payload_sha256": "eb6743c23a6acdddbc146a9a1a32910b5d299e9890fdedd1f9f2b60cc575e157",
+        "evidence_refs": [
+          {
+            "id": "midea_event_scan_20261017",
+            "symbol": "000333",
+            "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+            "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+          },
+          {
+            "id": "cninfo_1225608903",
+            "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+          },
+          {
+            "id": "cninfo_1225603532",
+            "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+          },
+          {
+            "id": "cninfo_1225603533",
+            "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+          },
+          {
+            "id": "cninfo_1225603534",
+            "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+          },
+          {
+            "id": "midea_quote_20261016",
+            "kind": "quote_session",
+            "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+            "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+            "status": "collected_not_verified",
+            "expected_session": "2026-10-16",
+            "session_result": "matched_close",
+            "reason": "带日期双源报价与最近已完成交易日一致"
+          },
+          {
+            "id": "midea_quote_20261016-tencent",
+            "kind": "quote_provider_document",
+            "provider": "tencent",
+            "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+            "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+            "observed_trade_at": "2026-10-16T16:14:30+08:00"
+          },
+          {
+            "id": "midea_quote_20261016-sina",
+            "kind": "quote_provider_document",
+            "provider": "sina",
+            "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+            "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+            "observed_trade_at": "2026-10-16T15:35:30+08:00"
+          }
+        ],
+        "run_id": "midea-draft-20261017-v2",
+        "created_at": "2026-10-17T11:03:02.152777+00:00"
+      },
+      {
+        "artifact_id": "00000000-0000-0000-0000-000000000010",
+        "identity": {
+          "scope_type": "security",
+          "scope_key": "000333",
+          "artifact_type": "current_research_status",
+          "schema_version": "c3-v1",
+          "as_of": "2026-10-16",
+          "available_at": "2026-10-17T10:58:56.051146+00:00"
+        },
+        "canonical_payload": "{\"blockers\":[\"DRAFT_NOT_APPROVED\",\"EVENT_MATERIALITY_PENDING_HUMAN_REVIEW\",\"EVENT_COVERAGE_INCOMPLETE\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN\",\"G1_财务门\",\"G3_估值门\",\"price_bridge_invalid\"],\"current_data_status\":{\"blockers\":[\"EVENT_MATERIALITY_PENDING_HUMAN_REVIEW\",\"EVENT_COVERAGE_INCOMPLETE\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN\",\"event scan coverage is incomplete\",\"EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.\",\"Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff.\"],\"evidence_refs\":[{\"id\":\"midea_event_scan_20261017\",\"path\":\"runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json\",\"sha256\":\"7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f\",\"symbol\":\"000333\"},{\"id\":\"cninfo_1225608903\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF\",\"sha256\":\"cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF\"},{\"id\":\"cninfo_1225603532\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF\",\"sha256\":\"6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF\"},{\"id\":\"cninfo_1225603533\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF\",\"sha256\":\"e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF\"},{\"id\":\"cninfo_1225603534\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF\",\"sha256\":\"b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF\"},{\"expected_session\":\"2026-10-16\",\"id\":\"midea_quote_20261016\",\"kind\":\"quote_session\",\"path\":\"runtime/quote-sessions/20261016T090031652233Z/bundle.json\",\"reason\":\"带日期双源报价与最近已完成交易日一致\",\"session_result\":\"matched_close\",\"sha256\":\"08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e\",\"status\":\"collected_not_verified\"},{\"fetched_at\":\"2026-10-16T09:00:31.538074+00:00\",\"id\":\"midea_quote_20261016-tencent\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T16:14:30+08:00\",\"provider\":\"tencent\",\"sha256\":\"1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6\",\"source_url\":\"https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"},{\"fetched_at\":\"2026-10-16T09:00:31.651614+00:00\",\"id\":\"midea_quote_20261016-sina\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T15:35:30+08:00\",\"provider\":\"sina\",\"sha256\":\"37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e\",\"source_url\":\"https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"}],\"status\":\"INVALID\",\"waiting_for\":[\"模型有效性复核\"]},\"display_text\":\"研究结论：研究未完成；估值状态：conditional_research_only；价格吸引力：不可判断价格吸引力；工程链路：READY；当前数据：INVALID。价格桥接不可用；须先完成模型有效性复核。该状态只属于研究层，不生成交易、仓位或订单。\",\"engineering_status\":\"READY\",\"evidence_refs\":[{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"},{\"id\":\"midea_202606_hkex_monthly_return\",\"sha256\":\"fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd\"},{\"id\":\"cninfo_1225608903\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF\",\"sha256\":\"cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF\"},{\"id\":\"cninfo_1225603532\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF\",\"sha256\":\"6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF\"},{\"id\":\"cninfo_1225603533\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF\",\"sha256\":\"e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF\"},{\"id\":\"cninfo_1225603534\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF\",\"sha256\":\"b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF\"},{\"id\":\"midea_event_scan_20261017\",\"path\":\"runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json\",\"sha256\":\"7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f\",\"symbol\":\"000333\"},{\"expected_session\":\"2026-10-16\",\"id\":\"midea_quote_20261016\",\"kind\":\"quote_session\",\"path\":\"runtime/quote-sessions/20261016T090031652233Z/bundle.json\",\"reason\":\"带日期双源报价与最近已完成交易日一致\",\"session_result\":\"matched_close\",\"sha256\":\"08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e\",\"status\":\"collected_not_verified\"},{\"fetched_at\":\"2026-10-16T09:00:31.538074+00:00\",\"id\":\"midea_quote_20261016-tencent\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T16:14:30+08:00\",\"provider\":\"tencent\",\"sha256\":\"1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6\",\"source_url\":\"https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"},{\"fetched_at\":\"2026-10-16T09:00:31.651614+00:00\",\"id\":\"midea_quote_20261016-sina\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T15:35:30+08:00\",\"provider\":\"sina\",\"sha256\":\"37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e\",\"source_url\":\"https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"}],\"price_attractiveness\":{\"blockers\":[\"price_bridge_invalid\"],\"confidence\":\"低\",\"display_status\":\"不可判断价格吸引力\",\"downside_reference\":null,\"evidence_refs\":[{\"id\":\"midea_event_scan_20261017\",\"path\":\"runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json\",\"sha256\":\"7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f\",\"symbol\":\"000333\"},{\"id\":\"cninfo_1225608903\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF\",\"sha256\":\"cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF\"},{\"id\":\"cninfo_1225603532\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF\",\"sha256\":\"6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF\"},{\"id\":\"cninfo_1225603533\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF\",\"sha256\":\"e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF\"},{\"id\":\"cninfo_1225603534\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF\",\"sha256\":\"b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF\"},{\"expected_session\":\"2026-10-16\",\"id\":\"midea_quote_20261016\",\"kind\":\"quote_session\",\"path\":\"runtime/quote-sessions/20261016T090031652233Z/bundle.json\",\"reason\":\"带日期双源报价与最近已完成交易日一致\",\"session_result\":\"matched_close\",\"sha256\":\"08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e\",\"status\":\"collected_not_verified\"},{\"fetched_at\":\"2026-10-16T09:00:31.538074+00:00\",\"id\":\"midea_quote_20261016-tencent\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T16:14:30+08:00\",\"provider\":\"tencent\",\"sha256\":\"1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6\",\"source_url\":\"https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"},{\"fetched_at\":\"2026-10-16T09:00:31.651614+00:00\",\"id\":\"midea_quote_20261016-sina\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T15:35:30+08:00\",\"provider\":\"sina\",\"sha256\":\"37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e\",\"source_url\":\"https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"}],\"margin_to_base\":null,\"margin_to_bear\":null,\"profile_id\":\"mature_manufacturing\",\"reasons\":[\"没有合法 READY PriceBridge，不能判断价格吸引力\"],\"status\":\"NOT_ASSESSABLE\",\"symbol\":\"000333\",\"upside_reference\":null},\"price_bridge_status\":\"INVALID\",\"research_conclusion\":\"研究未完成\",\"symbol\":\"000333\",\"valuation_status\":\"conditional_research_only\"}",
+        "payload_sha256": "2452a4cd43dca6216d4f06dea06aa87df50efddd0097c6dcb4e932c5bfaf4b15",
+        "evidence_refs": [
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea_202606_hkex_monthly_return",
+            "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+          },
+          {
+            "id": "cninfo_1225608903",
+            "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+          },
+          {
+            "id": "cninfo_1225603532",
+            "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+          },
+          {
+            "id": "cninfo_1225603533",
+            "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+          },
+          {
+            "id": "cninfo_1225603534",
+            "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+          },
+          {
+            "id": "midea_event_scan_20261017",
+            "symbol": "000333",
+            "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+            "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+          },
+          {
+            "id": "midea_quote_20261016",
+            "kind": "quote_session",
+            "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+            "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+            "status": "collected_not_verified",
+            "expected_session": "2026-10-16",
+            "session_result": "matched_close",
+            "reason": "带日期双源报价与最近已完成交易日一致"
+          },
+          {
+            "id": "midea_quote_20261016-tencent",
+            "kind": "quote_provider_document",
+            "provider": "tencent",
+            "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+            "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+            "observed_trade_at": "2026-10-16T16:14:30+08:00"
+          },
+          {
+            "id": "midea_quote_20261016-sina",
+            "kind": "quote_provider_document",
+            "provider": "sina",
+            "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+            "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+            "observed_trade_at": "2026-10-16T15:35:30+08:00"
+          }
+        ],
+        "run_id": "midea-draft-20261017-v2",
+        "created_at": "2026-10-17T11:03:02.153040+00:00"
+      },
+      {
+        "artifact_id": "00000000-0000-0000-0000-000000000011",
+        "identity": {
+          "scope_type": "security",
+          "scope_key": "000333",
+          "artifact_type": "decision_recommendation",
+          "schema_version": "c3-v1",
+          "as_of": "2026-10-17",
+          "available_at": "2026-10-17T10:58:56.051146+00:00"
+        },
+        "canonical_payload": "{\"action\":\"no_order\",\"blockers\":[\"DRAFT_NOT_APPROVED\",\"EVENT_MATERIALITY_PENDING_HUMAN_REVIEW\",\"EVENT_COVERAGE_INCOMPLETE\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN\",\"G1_财务门\",\"G3_估值门\",\"event scan coverage is incomplete\",\"EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.\",\"Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff.\",\"price_bridge_invalid\",\"CANDIDATE_DRAFT_ASSUMPTIONS_NOT_HUMAN_VALIDATED\",\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\",\"research_case:DRAFT_NOT_APPROVED\",\"research_case:EVENT_MATERIALITY_PENDING_HUMAN_REVIEW\",\"research_case:EVENT_COVERAGE_INCOMPLETE\",\"research_case:STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN\",\"research_scope_not_approved\",\"research_case_valuation_not_approved\",\"valuation_status_not_approved_for_research\",\"model_validity_unknown\",\"event_materiality_review_unavailable\",\"decision_dependency_artifacts_unavailable\",\"predecision_eligibility_unavailable\",\"price assessment profile does not match valuation\",\"human_research_approval_not_resolved\"],\"confidence\":\"低\",\"counter_evidence\":[{\"evidence_refs\":[\"midea_2026h1\"],\"kind\":\"fact\",\"text\":\"2026H1扣非归母净利润195.95亿元，同比下降25.31%。\"},{\"evidence_refs\":[\"midea_2026h1\"],\"kind\":\"fact\",\"text\":\"2026H1归母权益2,128.61亿元，ROE 11.33%，较FY2025明显回落。\"},{\"evidence_refs\":[\"cninfo_1225608903\",\"cninfo_1225603532\",\"cninfo_1225603533\",\"cninfo_1225603534\"],\"kind\":\"gap\",\"text\":\"2026年10月14日三项公告及10月17日回购进展公告仍待逐条材料性复核，模型有效性只能保持UNKNOWN。\"}],\"current_price\":null,\"decision_as_of\":\"2026-10-17\",\"decision_dependency_refs\":[{\"artifact_id\":\"00000000-0000-0000-0000-000000000001\",\"artifact_type\":\"research_case\",\"payload_sha256\":\"eab5353c7f7a69d83c5b43bb6d8ca011f2cfe101fc12377461f4c8d3a3198d6f\",\"role\":\"research_case\",\"scope_key\":\"000333\",\"scope_type\":\"security\"},{\"artifact_id\":\"00000000-0000-0000-0000-000000000002\",\"artifact_type\":\"financial_facts\",\"payload_sha256\":\"c51b36cedb0b95c73deda53181547a82159723a0b30a4d3bf10472ed4ddb936c\",\"role\":\"financial_facts\",\"scope_key\":\"000333\",\"scope_type\":\"security\"},{\"artifact_id\":\"00000000-0000-0000-0000-000000000003\",\"artifact_type\":\"research_gate\",\"payload_sha256\":\"0912cc1213286716660691a351d9a94efbbc12e421cdaac4e87977273b526e30\",\"role\":\"research_gate\",\"scope_key\":\"000333\",\"scope_type\":\"security\"},{\"artifact_id\":\"00000000-0000-0000-0000-000000000004\",\"artifact_type\":\"valuation_assumptions\",\"payload_sha256\":\"aea87a4308c3afd36f42e5eaf91e2bf25a6cf12f7361e0c705b37e656b2a11f0\",\"role\":\"valuation_assumptions\",\"scope_key\":\"000333\",\"scope_type\":\"security\"},{\"artifact_id\":\"00000000-0000-0000-0000-000000000005\",\"artifact_type\":\"valuation_result\",\"payload_sha256\":\"342f9122c67ba797b9a69d037ca40f2b1be6c2436fda5b8dec3f52fed8fe67c6\",\"role\":\"valuation\",\"scope_key\":\"000333\",\"scope_type\":\"security\"},{\"artifact_id\":\"00000000-0000-0000-0000-000000000006\",\"artifact_type\":\"model_validity\",\"payload_sha256\":\"dc1fc00c9391daaa6a227e1f938d3510153de2cb90fe63934e5a58a8f7bd03ba\",\"role\":\"model_validity\",\"scope_key\":\"000333\",\"scope_type\":\"security\"},{\"artifact_id\":\"00000000-0000-0000-0000-000000000008\",\"artifact_type\":\"price_bridge\",\"payload_sha256\":\"e1defeac5d014a85dee864d745b3e27571ec6cb85ed5bdb4222ec53b36a21fc7\",\"role\":\"price_bridge\",\"scope_key\":\"000333\",\"scope_type\":\"security\"},{\"artifact_id\":\"00000000-0000-0000-0000-000000000009\",\"artifact_type\":\"price_attractiveness\",\"payload_sha256\":\"eb6743c23a6acdddbc146a9a1a32910b5d299e9890fdedd1f9f2b60cc575e157\",\"role\":\"price_attractiveness\",\"scope_key\":\"000333\",\"scope_type\":\"security\"}],\"decision_input_sha256\":\"49004a866b16343377fb003848851b9fbfe547ac6bf656d4515c8c3ac8c7b0e8\",\"entry_zone\":null,\"evidence_refs\":[{\"id\":\"midea_fy2025_annual\",\"sha256\":\"16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6\"},{\"id\":\"midea_2026h1\",\"sha256\":\"576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8\"},{\"id\":\"midea_202606_hkex_monthly_return\",\"sha256\":\"fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd\"},{\"id\":\"cninfo_1225608903\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF\",\"sha256\":\"cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF\"},{\"id\":\"cninfo_1225603532\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF\",\"sha256\":\"6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF\"},{\"id\":\"cninfo_1225603533\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF\",\"sha256\":\"e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF\"},{\"id\":\"cninfo_1225603534\",\"path\":\"runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF\",\"sha256\":\"b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733\",\"source_url\":\"https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF\"},{\"id\":\"midea_event_scan_20261017\",\"path\":\"runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json\",\"sha256\":\"7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f\",\"symbol\":\"000333\"},{\"expected_session\":\"2026-10-16\",\"id\":\"midea_quote_20261016\",\"kind\":\"quote_session\",\"path\":\"runtime/quote-sessions/20261016T090031652233Z/bundle.json\",\"reason\":\"带日期双源报价与最近已完成交易日一致\",\"session_result\":\"matched_close\",\"sha256\":\"08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e\",\"status\":\"collected_not_verified\"},{\"fetched_at\":\"2026-10-16T09:00:31.538074+00:00\",\"id\":\"midea_quote_20261016-tencent\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T16:14:30+08:00\",\"provider\":\"tencent\",\"sha256\":\"1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6\",\"source_url\":\"https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"},{\"fetched_at\":\"2026-10-16T09:00:31.651614+00:00\",\"id\":\"midea_quote_20261016-sina\",\"kind\":\"quote_provider_document\",\"observed_trade_at\":\"2026-10-16T15:35:30+08:00\",\"provider\":\"sina\",\"sha256\":\"37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e\",\"source_url\":\"https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088\"}],\"exit_conditions\":[\"若未来两年ROE持续低于9%的候选权益门槛，剩余收益假设失效。\",\"若利润下降伴随经营现金转换和资产负债表质量同步恶化，当前底部ROE路径仍需下调。\",\"若股本注销、回购或分红导致普通股分母与可分配现金桥接发生变化，必须重算每股价值。\"],\"input_additional_blockers\":[\"DRAFT_NOT_APPROVED\",\"EVENT_MATERIALITY_PENDING_HUMAN_REVIEW\",\"EVENT_COVERAGE_INCOMPLETE\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN\",\"G1_财务门\",\"G3_估值门\",\"event scan coverage is incomplete\",\"EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.\",\"Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff.\",\"price_bridge_invalid\",\"CANDIDATE_DRAFT_ASSUMPTIONS_NOT_HUMAN_VALIDATED\",\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\"],\"input_model_id\":\"residual_income_or_equity_value\",\"margin_of_safety\":{\"to_base\":null,\"to_bear\":null},\"model_validity\":{\"blockers\":[\"EVENT_MATERIALITY_PENDING_HUMAN_REVIEW\",\"EVENT_COVERAGE_INCOMPLETE\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN\",\"event scan coverage is incomplete\",\"EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.\",\"Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff.\"],\"last_material_event_check\":\"2026-10-16\",\"model_as_of\":\"2026-10-16\",\"model_id\":\"residual-income-equity-shared-dated-v2\",\"status\":\"UNKNOWN\",\"valid_from\":\"2026-10-16\"},\"next_events\":[{\"evidence_refs\":[\"cninfo_1225608903\",\"cninfo_1225603532\",\"cninfo_1225603533\",\"cninfo_1225603534\"],\"kind\":\"fact\",\"text\":\"人工复核临时股东会决议、法律意见、注册资本减少及最新回购进展公告。\"},{\"evidence_refs\":[\"midea_2026h1\"],\"kind\":\"gap\",\"text\":\"下一期定期报告发布后复核利润、现金转换和ROE路径。\"}],\"portfolio_input_status\":\"BLOCKED_PRIVATE_INPUT\",\"position_guidance\":null,\"price_attractiveness_status\":\"NOT_ASSESSABLE\",\"price_bridge_status\":\"INVALID\",\"recommendation_payload_sha256\":\"465a26dce447a3a687fe84d8a16b219457bf45d5c3c1cf908e8204670eb9710d\",\"recommendation_reasons\":[\"DRAFT_NOT_APPROVED\",\"EVENT_MATERIALITY_PENDING_HUMAN_REVIEW\",\"EVENT_COVERAGE_INCOMPLETE\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN\",\"G1_财务门\",\"G3_估值门\",\"event scan coverage is incomplete\",\"EVENT_COVERAGE_INCOMPLETE: the CNINFO snapshot was captured before the research day closed.\",\"Four 2026-10-14 and 2026-10-17 announcements remain PENDING_HUMAN_REVIEW.\",\"STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff.\",\"price_bridge_invalid\",\"CANDIDATE_DRAFT_ASSUMPTIONS_NOT_HUMAN_VALIDATED\",\"CANDIDATE_DRAFT_ASSUMPTION_NOT_HUMAN_VALIDATED\",\"research_case:DRAFT_NOT_APPROVED\",\"research_case:EVENT_MATERIALITY_PENDING_HUMAN_REVIEW\",\"research_case:EVENT_COVERAGE_INCOMPLETE\",\"research_case:STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN\",\"research_scope_not_approved\",\"research_case_valuation_not_approved\",\"valuation_status_not_approved_for_research\",\"model_validity_unknown\",\"event_materiality_review_unavailable\",\"decision_dependency_artifacts_unavailable\",\"predecision_eligibility_unavailable\",\"price assessment profile does not match valuation\",\"human_research_approval_not_resolved\"],\"recommendation_type\":\"NO_ACTION\",\"reduce_zone\":null,\"run_id\":\"midea-draft-20261017-v2\",\"schema_version\":\"advisory-decision-recommendation-v2\",\"symbol\":\"000333\",\"thesis\":\"美的具备规模化制造、渠道效率、全球化品牌与现金流优势；但2026H1扣非归母净利润同比下降25.31%，本次草案只检验在较低ROE路径下是否存在条件性价值，不用历史高ROE外推。\",\"thesis_breakers\":[{\"evidence_refs\":[\"midea_2026h1\"],\"kind\":\"hypothesis\",\"text\":\"若未来两年ROE持续低于9%的候选权益门槛，剩余收益假设失效。\"},{\"evidence_refs\":[\"midea_2026h1\"],\"kind\":\"hypothesis\",\"text\":\"若利润下降伴随经营现金转换和资产负债表质量同步恶化，当前底部ROE路径仍需下调。\"},{\"evidence_refs\":[\"midea_202606_hkex_monthly_return\",\"cninfo_1225608903\",\"cninfo_1225603532\",\"cninfo_1225603533\",\"cninfo_1225603534\"],\"kind\":\"hypothesis\",\"text\":\"若股本注销、回购或分红导致普通股分母与可分配现金桥接发生变化，必须重算每股价值。\"}],\"valuation_range\":{\"base\":\"45.7417037044192281574936570926129861357849631511\",\"basis\":\"valuation_result\",\"bear\":\"36.0121866604528720800629631840921914063801838080\",\"bull\":\"58.1686744055803340295467634666441075299523416697\",\"currency\":\"CNY\"}}",
+        "payload_sha256": "3d805379551879547b4a85c80a56efafcc7ca73bb85d3a7f286dc8c81e0ada0d",
+        "evidence_refs": [
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea_202606_hkex_monthly_return",
+            "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+          },
+          {
+            "id": "cninfo_1225608903",
+            "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-17/1225608903.PDF"
+          },
+          {
+            "id": "cninfo_1225603532",
+            "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+          },
+          {
+            "id": "cninfo_1225603533",
+            "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+          },
+          {
+            "id": "cninfo_1225603534",
+            "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+            "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+          },
+          {
+            "id": "midea_event_scan_20261017",
+            "symbol": "000333",
+            "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+            "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+          },
+          {
+            "id": "midea_quote_20261016",
+            "kind": "quote_session",
+            "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+            "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+            "status": "collected_not_verified",
+            "expected_session": "2026-10-16",
+            "session_result": "matched_close",
+            "reason": "带日期双源报价与最近已完成交易日一致"
+          },
+          {
+            "id": "midea_quote_20261016-tencent",
+            "kind": "quote_provider_document",
+            "provider": "tencent",
+            "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+            "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+            "observed_trade_at": "2026-10-16T16:14:30+08:00"
+          },
+          {
+            "id": "midea_quote_20261016-sina",
+            "kind": "quote_provider_document",
+            "provider": "sina",
+            "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+            "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+            "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+            "observed_trade_at": "2026-10-16T15:35:30+08:00"
+          }
+        ],
+        "run_id": "midea-draft-20261017-v2",
+        "created_at": "2026-10-17T11:03:02.155232+00:00"
+      }
+    ]
+  },
+  "source_verification": {
+    "status": "LOCAL_BYTES_VERIFIED",
+    "scope": "byte_integrity_not_fact_semantics_or_investment_approval",
+    "source_contract_status": "SOURCE_CUTOFF_AND_SCENARIO_BINDINGS_VALIDATED",
+    "sources": [
+      {
+        "path": "runtime/midea-2025-official.pdf",
+        "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+      },
+      {
+        "path": "runtime/prospective-public-event-20260927/gapfill-000333-20260927T091704729284Z/1225531404.pdf",
+        "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+      },
+      {
+        "path": "runtime/company-research/midea-denominator-recheck-20261013/hkex-window-20260701-20260807/originals/12235688-2026070700419_c.pdf",
+        "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+      },
+      {
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF",
+        "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd"
+      },
+      {
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF",
+        "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd"
+      },
+      {
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF",
+        "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c"
+      },
+      {
+        "path": "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF",
+        "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733"
+      },
+      {
+        "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+        "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+      },
+      {
+        "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+        "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+      },
+      {
+        "path": "runtime/company-research/midea-draft-20261017-v2/assumption-memo-v2.json",
+        "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+      }
+    ]
+  },
+  "input_descriptor_sha256": "be460eb1b66a268a7f2a7294b258b3a0bc3f9bbefd4c35f615eaa08d83be30b0",
+  "schedule_gate": {
+    "allowed": true,
+    "status": "ALLOW_NORMAL_RESEARCH",
+    "matched_stop_ids": [],
+    "scope_key": {
+      "source_id": "CNINFO",
+      "period": "2026-06-30",
+      "research_question_id": "midea_ordinary_share_denominator",
+      "blocker_id": "ordinary_share_denominator_unbounded"
+    },
+    "active_stop_ids": [
+      "000333-fcff-finance-business-scope",
+      "000333-fcff-internal-eliminations",
+      "000333-fcff-project-capex"
+    ],
+    "reason": "No Evidence Stop matches this research case scope."
+  },
+  "schedule_consumption": {
+    "created": true,
+    "consumed": false,
+    "status": "NORMAL_RESEARCH_NOT_CONSUMED",
+    "schedule_id": null,
+    "receipt_path": null
+  },
+  "generated_at": "2026-10-17T11:03:02.166455+00:00"
+}

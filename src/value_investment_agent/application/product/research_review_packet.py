@@ -6,23 +6,39 @@ from typing import Any
 
 from .common import load_json_object, require_inside, sha256_file, write_new_json
 from .decision_surface import verify_current_decision_workbench
+from .research_reviews import verify_human_approval_transport_provenance
 from .source_bound_inputs import verify_package_local_sources
 from ...research_artifact_codecs import artifact_payload
-from ...m1_valuation_package_builder import build_descriptor
+from ..research.v4_input_adapter import build_descriptor_for_package
 
 
 def build_research_review_packet(*, root: Path, package_path: Path,
                                 package_sha256: str, workbench_path: Path,
                                 workbench_sha256: str, output_path: Path) -> dict[str, Any]:
+    output_path = require_inside(root.resolve() / "runtime", output_path, "review output")
+    result = project_research_review_packet(root=root, package_path=package_path,
+        package_sha256=package_sha256, workbench_path=workbench_path,
+        workbench_sha256=workbench_sha256)
+    write_new_json(output_path, result)
+    return result
+
+
+def project_research_review_packet(*, root: Path, package_path: Path,
+        package_sha256: str, workbench_path: Path, workbench_sha256: str) -> dict[str, Any]:
+    """Pure projection from verified consumed inputs; never trusts a saved packet."""
     root = root.resolve()
     package_path = require_inside(root, package_path, "review package")
     workbench_path = require_inside(root / "runtime", workbench_path, "review workbench")
-    output_path = require_inside(root / "runtime", output_path, "review output")
     if sha256_file(package_path) != package_sha256 or sha256_file(workbench_path) != workbench_sha256:
         raise ValueError("research review input hash mismatch")
     package = load_json_object(package_path, "review package")
     workbench = load_json_object(workbench_path, "review workbench")
-    verified = verify_current_decision_workbench(workbench)
+    verified = verify_current_decision_workbench(
+        workbench,
+        human_approval_provenance_verifier=lambda approval: (
+            verify_human_approval_transport_provenance(root, approval)
+        ),
+    )
     objects = {key: artifact_payload(value)[1] for key, value in verified.dependency_objects.items()}
     case, facts = objects["research_case"], objects["financial_facts"]
     if package["symbol"] != workbench["symbol"] or package["research_case"]["as_of"] != case["as_of"]:
@@ -35,13 +51,19 @@ def build_research_review_packet(*, root: Path, package_path: Path,
             or receipt.get("action") != "no_order"
             or (receipt.get("input_sha256") or {}).get("valuation_package") != package_sha256):
         raise ValueError("review package differs from consumed package binding")
-    local_sources = verify_package_local_sources(root, package)
+    if (package.get('dependencies') or {}).get('model_version') in {
+            'residual-income-equity-path-v3', 'residual-income-equity-path-v4'}:
+        from .historical_source_restore import verify_or_restore_package_sources
+        local_sources = verify_or_restore_package_sources(
+            root, package, restore_dir=package_path.parent / 'historical-source-code', create=False)
+    else:
+        local_sources = verify_package_local_sources(root, package)
     effective_package = dict(package)
     effective_package["facts"] = dict(package["facts"])
     if "kind" not in effective_package["facts"]:
         effective_package["facts"]["kind"] = effective_package["facts"].get("facts_type")
     effective_package["recommendation_schema_version"] = verified.recommendation.schema_version
-    descriptor = build_descriptor(effective_package, root=root)
+    descriptor = build_descriptor_for_package(effective_package, root=root)
     if descriptor.input_sha256 != workbench.get("input_descriptor_sha256"):
         raise ValueError("review package differs from consumed source/input descriptor")
     for role, value in (("research_case", descriptor.research_case),
@@ -107,5 +129,4 @@ def build_research_review_packet(*, root: Path, package_path: Path,
     for item in result["source_bindings"]:
         if sha256_file(root / item["path"]) != item["sha256"]:
             raise ValueError("research review source changed during consumption")
-    write_new_json(output_path, result)
     return result

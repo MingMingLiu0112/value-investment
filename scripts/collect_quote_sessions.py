@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 from value_investment_agent.quote_session_collection import collect_session_bundle, resolve_session_reference
-from value_investment_agent.quote_sessions import evaluate_quote_session, parse_quote
+from value_investment_agent.quote_sessions import b1_acquisition_verdict, evaluate_quote_session, parse_quote
 
 
 def main():
@@ -27,8 +27,13 @@ def main():
         except (ValueError, KeyError, TypeError):
             pass
         result = evaluate_quote_session(symbol, price, reference, now, documents=bundle['documents'])
+        try:
+            resolved = resolve_session_reference(reference, bundle['documents'])
+            acquisition = b1_acquisition_verdict(result, resolved)
+        except (ValueError, KeyError, TypeError):
+            acquisition = {'status': 'SOURCE_UNAVAILABLE', 'eligible': False, 'available_at': None}
         results.append({'symbol': symbol, 'observed_price': str(price) if price is not None else None,
-                        'result': result})
+                        'result': result, 'b1_acquisition': acquisition})
     target = ROOT / 'runtime/quote-sessions' / now.strftime('%Y%m%dT%H%M%S%fZ')
     target.mkdir(parents=True)
     raw = json.dumps(bundle, ensure_ascii=False, sort_keys=True).encode('utf-8')

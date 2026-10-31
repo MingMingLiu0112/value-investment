@@ -1,0 +1,24 @@
+{
+  "action": "no_order",
+  "source_commit": "ac48ff6bda3d1a1fcd35c29631f7b28a0d711f51",
+  "checked_at": "2026-10-21T13:20:30.119Z",
+  "real_or_test": "REAL_PUBLIC_DATA",
+  "desktop": {
+    "ineligible": true,
+    "metrics": true,
+    "scrollWidth": 1265,
+    "width": 1280
+  },
+  "mobile": {
+    "ineligible": true,
+    "metrics": true,
+    "scrollWidth": 375,
+    "width": 390
+  },
+  "screenshots": [
+    "value-income-current-desktop.png",
+    "value-income-current-mobile390.png"
+  ],
+  "formal_eligibility": false,
+  "clean_runtime_identity": false
+}

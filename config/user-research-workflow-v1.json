@@ -1,6 +1,24 @@
 {
   "schema_version": "user-research-workflow-v1",
   "action": "no_order",
+  "supplemental_event_consumptions": {
+    "600519": {
+      "path": "runtime/v5-event-supplement-consumed-20261021T151651051751Z/consumption.json",
+      "sha256": "f5930d231cc2ec52ce818ce785ed3b16a3b9efc1dcd916c7941be0ff035fe658"
+    }
+  },
+  "supplemental_review_candidates": {
+    "600519": {
+      "path": "runtime/product-operating-research/20261025T071814444248Z/proposal/candidate/candidate.json",
+      "sha256": "2e53d50d988a737272d7a95b822c8e0e9998d3749c1432cac7f6c12d92fe8ed0"
+    }
+  },
+  "bound_draft_review_candidates": {
+    "000333": {
+      "path": "runtime/bound-draft-reviews/midea-consumed-v3-dated-20261018/candidate.json",
+      "sha256": "2c329f188d538d0b90293aae1d989916c556afedc358f0c08964605b4ff5fba5"
+    }
+  },
   "review_candidates": {
     "600519": {
       "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/candidate.json",

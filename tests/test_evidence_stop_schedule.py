@@ -18,7 +18,12 @@ from value_investment_agent.domain.research.evidence_stop import (
 )
 from value_investment_agent.infrastructure.evidence.evidence_stop_schedule import (
     claim_research_schedule_once,
+    load_evidence_stop_resolutions,
+    record_admitted_schedule_resume,
+    record_evidence_stop_resolution,
     recover_admitted_schedule,
+    resolved_evidence_stop_ids,
+    verified_official_package_source_ids,
 )
 
 
@@ -43,7 +48,12 @@ def _request(**overrides):
     return schedule_request_from_payload(payload)
 
 
-def _recovery_fixture(root: Path, *, source_bytes: bytes = b"official filing bytes"):
+def _recovery_fixture(
+    root: Path,
+    *,
+    source_bytes: bytes = b"official filing bytes",
+    request_sha256: str = "b" * 64,
+):
     config_dir = root / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
     ledger_bytes = json.dumps(LEDGER, ensure_ascii=False, indent=2).encode("utf-8")
@@ -54,9 +64,15 @@ def _recovery_fixture(root: Path, *, source_bytes: bytes = b"official filing byt
     source = {
         "id": "cninfo_1230000000",
         "kind": "official_issuer_filing",
-        "location": "evidence/new-filing.pdf",
+        "location": "https://static.cninfo.com.cn/finalpage/2026-10-14/1230000000.PDF",
+        "local_path": "evidence/new-filing.pdf",
         "sha256": hashlib.sha256(source_bytes).hexdigest(),
-        "issuer_identity": {"security_code": "000333"},
+        "issuer_identity": {
+            "venue": "CNINFO",
+            "security_code": "000333",
+            "issuer_name": "美的集团",
+            "organization_id": "9900005965",
+        },
     }
     request = _request()
     decision = evaluate_research_schedule(
@@ -70,7 +86,7 @@ def _recovery_fixture(root: Path, *, source_bytes: bytes = b"official filing byt
         request=request,
         decision=decision,
         ledger_sha256=hashlib.sha256(ledger_bytes).hexdigest(),
-        request_sha256="b" * 64,
+        request_sha256=request_sha256,
     )
     assert admission["created"] is True
     return request, source, hashlib.sha256(ledger_bytes).hexdigest()
@@ -122,9 +138,15 @@ def test_new_evidence_id_must_resolve_to_hash_bound_official_package_source(tmp_
         "sources": [{
             "id": "cninfo_1230000000",
             "kind": "official_issuer_filing",
-            "location": "evidence/new-filing.pdf",
+            "location": "https://static.cninfo.com.cn/finalpage/2026-10-14/1230000000.PDF",
+            "local_path": "evidence/new-filing.pdf",
             "sha256": digest,
-            "issuer_identity": {"security_code": "000333"},
+            "issuer_identity": {
+                "venue": "CNINFO",
+                "security_code": "000333",
+                "issuer_name": "美的集团",
+                "organization_id": "9900005965",
+            },
         }]
     }
     assert _verified_source_ids(tmp_path, package, request) == frozenset({"cninfo_1230000000"})
@@ -199,7 +221,7 @@ def test_consumption_receipt_refuses_symlink_path_outside_project_root(tmp_path)
 
 def test_recovery_requires_existing_admission_and_revalidates_official_source(tmp_path):
     request, source, ledger_hash = _recovery_fixture(tmp_path)
-    evidence_path = tmp_path / source["location"]
+    evidence_path = tmp_path / source["local_path"]
     evidence_path.write_bytes(b"changed after admission")
     with pytest.raises(ValueError, match="issuer, hash and reopen validation"):
         recover_admitted_schedule(
@@ -387,6 +409,69 @@ def test_fresh_case_without_registered_stop_allows_normal_research():
     assert decision["matched_stop_ids"] == []
 
 
+def test_hkex_official_source_uses_registered_a_h_mapping_without_rewriting_code(tmp_path):
+    filing = tmp_path / "midea-hkex.pdf"
+    filing.write_bytes(b"official HKEX monthly return")
+    source = {
+        "id": "midea_hkex_monthly_20260630",
+        "kind": "official_exchange_filing",
+        "location": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0707/2026070700419_c.pdf",
+        "local_path": "midea-hkex.pdf",
+        "sha256": hashlib.sha256(filing.read_bytes()).hexdigest(),
+        "issuer_identity": {
+            "venue": "HKEX",
+            "security_code": "00300",
+            "issuer_name": "美的集團",
+        },
+    }
+
+    assert verified_official_package_source_ids(
+        tmp_path,
+        [source],
+        [source["id"]],
+        symbol="000333",
+    ) == frozenset({source["id"]})
+
+    forged = {
+        **source,
+        "issuer_identity": {
+            **source["issuer_identity"],
+            "security_code": "000333",
+        },
+    }
+    assert verified_official_package_source_ids(
+        tmp_path,
+        [forged],
+        [source["id"]],
+        symbol="000333",
+    ) == frozenset()
+
+    missing_name = {
+        **source,
+        "issuer_identity": {
+            "venue": "HKEX",
+            "security_code": "00300",
+        },
+    }
+    assert verified_official_package_source_ids(
+        tmp_path,
+        [missing_name],
+        [source["id"]],
+        symbol="000333",
+    ) == frozenset()
+
+    unofficial_location = {
+        **source,
+        "location": "https://example.com/midea.pdf",
+    }
+    assert verified_official_package_source_ids(
+        tmp_path,
+        [unofficial_location],
+        [source["id"]],
+        symbol="000333",
+    ) == frozenset()
+
+
 def test_fresh_case_reaches_research_application_without_consuming_a_stop(
     tmp_path, monkeypatch,
 ):
@@ -400,7 +485,7 @@ def test_fresh_case_reaches_research_application_without_consuming_a_stop(
     called = {}
 
     class RecordingResearchService:
-        def __init__(self, repository):
+        def __init__(self, repository, *, router=None):
             pass
 
         def run_company_research(self, spec):
@@ -411,11 +496,11 @@ def test_fresh_case_reaches_research_application_without_consuming_a_stop(
         company_research, "_package_for_symbol", lambda *_args: package
     )
     monkeypatch.setattr(
-        company_research, "build_descriptor", lambda _payload, *, root: {}
+        company_research, "build_descriptor_for_package", lambda _payload, *, root: {}
     )
     monkeypatch.setattr(
         company_research, "build_research_run_spec", lambda descriptor:
-        SimpleNamespace(input_descriptor_sha256='a' * 64)
+        SimpleNamespace(input_descriptor_sha256='a' * 64, research_mode='valuation')
     )
     monkeypatch.setattr(
         company_research, "ResearchApplicationService", RecordingResearchService
@@ -488,15 +573,15 @@ def test_explicit_daily_inputs_reach_descriptor_before_one_shot_consumption(
         if descriptor_rejected:
             raise ValueError('Quote date cannot follow research as-of')
         return payload
-    monkeypatch.setattr(company_research, 'build_descriptor', descriptor)
+    monkeypatch.setattr(company_research, 'build_descriptor_for_package', descriptor)
     monkeypatch.setattr(company_research, 'build_research_run_spec', lambda payload:
-        SimpleNamespace(input_descriptor_sha256='a' * 64))
+        SimpleNamespace(input_descriptor_sha256='a' * 64, research_mode='valuation'))
     def claim(**kwargs):
         calls.append('consume')
         return dict(created=True)
     monkeypatch.setattr(company_research, 'claim_research_schedule_once', claim)
     class Service:
-        def __init__(self, repository):
+        def __init__(self, repository, *, router=None):
             pass
         def run_company_research(self, spec):
             calls.append('calculate')
@@ -549,15 +634,15 @@ def test_recommendation_v3_opt_in_reaches_product_descriptor(tmp_path, monkeypat
         )
         return SimpleNamespace(input_sha256='a' * 64)
 
-    monkeypatch.setattr(company_research, 'build_descriptor', descriptor)
+    monkeypatch.setattr(company_research, 'build_descriptor_for_package', descriptor)
     monkeypatch.setattr(
         company_research,
         'build_research_run_spec',
-        lambda payload: SimpleNamespace(input_descriptor_sha256='a' * 64),
+        lambda payload: SimpleNamespace(input_descriptor_sha256='a' * 64, research_mode='valuation'),
     )
 
     class Service:
-        def __init__(self, repository):
+        def __init__(self, repository, *, router=None):
             pass
 
         def run_company_research(self, spec):
@@ -646,7 +731,8 @@ def test_reviewed_package_runs_actual_shared_entry_and_guards_consumed_bytes(tmp
     output = tmp_path / 'result.json'
     kwargs = dict(root=tmp_path, symbol='600887', package_path=package,
         schedule_request=request, output_path=output, reviews_path=reviews,
-        reviews_sha256=hashlib.sha256(reviews.read_bytes()).hexdigest())
+        reviews_sha256=hashlib.sha256(reviews.read_bytes()).hexdigest(),
+        allow_unsigned_legacy_frozen_replay=True)
     if drift:
         with pytest.raises(ValueError, match='changed during execution'):
             run_company_research_for_symbol(**kwargs)
@@ -672,3 +758,152 @@ def test_reviewed_package_runs_actual_shared_entry_and_guards_consumed_bytes(tmp
     assert 'SYNTHETIC_REVIEW_REJECTION' in card and 'action=no_order' in card
     (tmp_path / 'synthetic-entry-card.md').write_text(
         '# SYNTHETIC INTEGRATION TEST ONLY - NOT INVESTMENT RESEARCH\n\n' + card, encoding='utf-8')
+
+
+def _completed_resolution_fixture(tmp_path):
+    request_payload = {
+        'schema_version': 'research-schedule-request-v1',
+        'symbol': '000333',
+        'source_id': 'CNINFO',
+        'period': '2026-06-30',
+        'research_question_id': 'midea_ordinary_share_denominator',
+        'blocker_id': 'ordinary_share_denominator_unbounded',
+        'reopen_condition_met': True,
+        'new_evidence_ids': ['cninfo_1230000000'],
+    }
+    request_path = tmp_path / 'request.json'
+    request_path.write_text(json.dumps(request_payload), encoding='utf-8')
+    request_sha = hashlib.sha256(request_path.read_bytes()).hexdigest()
+    request, source, ledger_sha = _recovery_fixture(
+        tmp_path, request_sha256=request_sha,
+    )
+    package = tmp_path / 'package.json'
+    package.write_text(json.dumps({
+        'schema_version': 'm1-valuation-package-v2',
+        'symbol': '000333',
+        'sources': [source],
+    }), encoding='utf-8')
+    recovery = recover_admitted_schedule(
+        root=tmp_path,
+        request=request,
+        evidence_sources=[source],
+        ledger_sha256=ledger_sha,
+        request_sha256=request_sha,
+        interrupted_run_id='synthetic-interrupted-run',
+    )
+    consumption_path = next(
+        (tmp_path / 'runtime' / 'research-evidence-stop-consumptions').glob('*.json')
+    )
+    schedule_id = consumption_path.stem
+    result_path = tmp_path / 'result.json'
+    result_path.write_text(json.dumps({
+        'schema_version': 'generic-company-research-result-v1',
+        'run_id': 'synthetic-completed-run',
+        'symbol': '000333',
+        'action': 'no_order',
+        'source_verification': {
+            'status': 'LOCAL_BYTES_VERIFIED',
+            'sources': [{
+                'path': source['local_path'],
+                'sha256': source['sha256'],
+            }],
+        },
+        'schedule_gate': {
+            'status': 'REOPENED_WITH_NEW_EVIDENCE',
+            'matched_stop_ids': ['000333-share-denominator-2026-06-30'],
+            'new_evidence_ids': ['cninfo_1230000000'],
+        },
+        'schedule_consumption': {'schedule_id': schedule_id},
+    }), encoding='utf-8')
+    result_sha = hashlib.sha256(result_path.read_bytes()).hexdigest()
+    resume = record_admitted_schedule_resume(
+        root=tmp_path,
+        schedule_id=schedule_id,
+        recovery_receipt_sha256=recovery['receipt_sha256'],
+        interrupted_run_id='synthetic-interrupted-run',
+        research_run_id='synthetic-completed-run',
+        output_sha256=result_sha,
+    )
+    return {
+        'request_path': request_path,
+        'package': package,
+        'result_path': result_path,
+        'result_sha': result_sha,
+        'schedule_id': schedule_id,
+        'resume': resume,
+    }
+
+
+def test_completed_admitted_scope_can_be_closed_once_and_then_allows_normal_research(tmp_path):
+    fixture = _completed_resolution_fixture(tmp_path)
+    first = record_evidence_stop_resolution(
+        root=tmp_path,
+        schedule_id=fixture['schedule_id'],
+        request_path=fixture['request_path'],
+        package_path=fixture['package'],
+        research_result_path=fixture['result_path'],
+        research_result_sha256=fixture['result_sha'],
+    )
+    second = record_evidence_stop_resolution(
+        root=tmp_path,
+        schedule_id=fixture['schedule_id'],
+        request_path=fixture['request_path'],
+        package_path=fixture['package'],
+        research_result_path=fixture['result_path'],
+        research_result_sha256=fixture['result_sha'],
+    )
+    assert first['created'] is True
+    assert first['status'] == 'EVIDENCE_RESOLVED'
+    assert second['created'] is False
+    assert second['status'] == 'EVIDENCE_RESOLUTION_ALREADY_RECORDED'
+    resolved = resolved_evidence_stop_ids(tmp_path)
+    assert resolved == frozenset({'000333-share-denominator-2026-06-30'})
+    decision = evaluate_research_schedule(
+        symbol='000333',
+        stops=STOPS,
+        request=_request(),
+        resolved_stop_ids=resolved,
+    )
+    assert decision['allowed'] is True
+    assert decision['status'] == 'ALLOW_NORMAL_RESEARCH'
+    assert decision['matched_stop_ids'] == []
+
+
+def test_resolution_requires_completed_resume_and_rejects_conflicting_claims(tmp_path):
+    fixture = _completed_resolution_fixture(tmp_path)
+    resume_path = (
+        tmp_path / 'runtime' / 'research-evidence-stop-resumes'
+        / f"{fixture['schedule_id']}.json"
+    )
+    resume_bytes = resume_path.read_bytes()
+    resume_path.unlink()
+    with pytest.raises(ValueError, match='resume receipt'):
+        record_evidence_stop_resolution(
+            root=tmp_path,
+            schedule_id=fixture['schedule_id'],
+            request_path=fixture['request_path'],
+            package_path=fixture['package'],
+            research_result_path=fixture['result_path'],
+            research_result_sha256=fixture['result_sha'],
+        )
+    resume_path.write_bytes(resume_bytes)
+    record_evidence_stop_resolution(
+        root=tmp_path,
+        schedule_id=fixture['schedule_id'],
+        request_path=fixture['request_path'],
+        package_path=fixture['package'],
+        research_result_path=fixture['result_path'],
+        research_result_sha256=fixture['result_sha'],
+    )
+    resolution_dir = tmp_path / 'runtime' / 'research-evidence-stop-resolutions'
+    (resolution_dir / ('f' * 64 + '.json')).write_text(json.dumps({
+        'schema_version': 'research-evidence-stop-resolution-v1',
+        'schedule_id': 'f' * 64,
+        'symbol': '000333',
+        'stop_ids': ['000333-share-denominator-2026-06-30'],
+        'resolved_evidence_ids': ['cninfo_1230000000'],
+        'status': 'EVIDENCE_RESOLVED',
+        'action': 'no_order',
+    }), encoding='utf-8')
+    with pytest.raises(ValueError, match='conflicting resolution'):
+        load_evidence_stop_resolutions(tmp_path)

@@ -1,0 +1,115 @@
+{
+  "schema_version": "v5-value-decision-chain-v1",
+  "generated_at": "2026-10-21T10:38:16.026653+00:00",
+  "action": "no_order",
+  "symbol": "600519",
+  "evidence": {
+    "path": "artifacts/current/dual-strategy-v5/value-real-evidence.json",
+    "sha256": "3e4b0dfbcf9a02cf829fbbe1163c220540a177d17a6e74afb95c58f4ac3b6f65"
+  },
+  "stages": [
+    {
+      "stage": "OFFICIAL_REPORT",
+      "status": "HASH_AND_IDENTITY_VERIFIED",
+      "pages": [
+        57,
+        58,
+        61,
+        62,
+        105,
+        114
+      ]
+    },
+    {
+      "stage": "SOURCED_FACT_DERIVATION",
+      "status": "ONE_ADMITTED_TWO_SOURCE_VERIFIED_PENDING_PRIOR_INPUT_ADMISSION"
+    },
+    {
+      "stage": "QUALITY_REEVALUATION",
+      "coverage_before": "0.5556",
+      "coverage_after": "0.6667",
+      "total_score": null
+    },
+    {
+      "stage": "RESEARCH_CONSUMPTION",
+      "status": "RESEARCH_INPUTS_UPDATED",
+      "binding": {
+        "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/research-registration.json",
+        "sha256": "c26f60a207e5bce5cd349115946801328e53780f65ad265a7b78d1560cc4afbd"
+      }
+    },
+    {
+      "stage": "MODEL_REEVALUATION",
+      "status": "not_ready",
+      "binding": {
+        "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/recomputed-valuation.json",
+        "sha256": "3212cfdff6d002c332a0fcb22489c07d5e88ac50c1f3a2b3575b7754008bc2f8"
+      }
+    },
+    {
+      "stage": "DURABLE_DEFAULT_CONTEXT_REUSE",
+      "status": "VERIFIED_ENRICHMENT_CONTEXT_RESTORED",
+      "binding": {
+        "path": "runtime/value-evidence-enrichment/runs/v5-durable-20261021T111510026587Z/durable-reuse-receipt.json",
+        "sha256": "c4a8e187f98ab7c2250ee9e29d2e21f11bd045d2462fc05c673b607008202314"
+      },
+      "supersedes": "Historical missing-default-reuse diagnosis; other debt/economic limits remain.",
+      "p1_debt_scope_reverification": {
+        "path": "runtime/value-evidence-enrichment/runs/v5-debt-scope-fix-20261021T112419140437Z/reverification.json",
+        "sha256": "3b45e869e45fb3bbfa342cf7e48a815f5b5d71e1decdfcb65cf9022c39bbb6e4"
+      },
+      "debt_scope_integrity": "Entire source-recomputed scope must equal saved scope; typed case and summary completeness both false for actual 600519. Fully rebound scope/case forgery regressions passed."
+    },
+    {
+      "stage": "ECONOMIC_APPROVAL",
+      "status": "NOT_PROVEN"
+    }
+  ],
+  "root_continuation": {
+    "loader": "value_enrichment_batch.load_enrichment_research_contexts(root=..., symbols=..., evaluation_at=...)",
+    "batch": "Pass returned repository and contexts to execute_value_enrichment_batch; queue CLI now does so automatically.",
+    "explicit_company": "enrich_retained_company -> persist_verified_enrichment_adoption(root=..., result=..., financial_export_path=..., financial_export_sha256=..., output_dir=fresh_runtime_path). Rebuilds typed registration from current registered baseline and durably binds the checkpoint. Actual Moutai invocation and restart are in durable-reuse-receipt.json.",
+    "public_financial_progress": "value_enrichment_batch.read_verified_enrichment_progress(root: Path, symbol: str, evaluation_at: datetime) -> dict | None. Root attaches as payload.financial_progress separately from published economics/gates. Success status VERIFIED_FACT_ADOPTION, symbol, adopted_fact_count, research_inputs_updated, string quality_coverage_before/after, formal_eligibility=false, action=no_order, optional as_of/verified_at. Invalid/unavailable returns None; no raw paths/typed payloads.",
+    "verifier": "verify_enrichment_adoption(root=..., result_binding=..., financial_export_path=..., financial_export_sha256=..., evaluation_at=...)",
+    "summary": {
+      "status": "VERIFIED_FACT_ADOPTION",
+      "symbol": "600519",
+      "adopted_fact_ids": [
+        "value-ratio:ee63fd05df6aaa1df86232de65116f1e8c4ae2bad78efd54ea2ec55bf037d10c"
+      ],
+      "adopted_fact_count": 1,
+      "research_inputs_updated": true,
+      "sourced_arithmetic_observation_count": 2,
+      "quality_coverage_before": "0.5556",
+      "quality_coverage_after": "0.6667",
+      "complete_debt_verified": false,
+      "new_fact_approvals": 0,
+      "formal_eligibility": false,
+      "action": "no_order"
+    },
+    "consumption_export": {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/financial-consumption-export.json",
+      "sha256": "a77bbd72394a527c31c51870a4ad1dc593b0c622c9f176eb73fc16400161c3cc"
+    },
+    "limits": "No daily candidate insertion, economic approval, publication, private portfolio or PostgreSQL writes.",
+    "integration_validation": {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/integration-validation.json",
+      "sha256": "7bb1af79e8b4291069494758d9cb1834fddc754b644909ade5dc3c8b332e7198"
+    },
+    "bounded_debt_investigation": {
+      "path": "runtime/value-evidence-enrichment/debt-review-20261021/bounded-debt-investigation.json",
+      "sha256": "ef9beef11ae5db9d16fbac1553541c53d96a5746c1dc9a4d252cfaccf631b6fc"
+    },
+    "existing_read_path_integration": {
+      "path": "runtime/value-evidence-enrichment/debt-review-20261021/existing-read-path-integration.json",
+      "sha256": "5cea01317df21e8f585dd6aeed4f2d48fa02dbd7d41e5d73c74a3d03ce5dca0e"
+    }
+  },
+  "unresolved": [
+    "Prior-year revenue/net-income source admission: official cross-report agreement is proven, independent verification is not.",
+    "Complete debt scope classifications and retained independent backing.",
+    "Normalized economics, forecast, current event review, G3 and registered price policy."
+  ],
+  "VALUE_ENGINEERING_CLOSURE": "PARTIAL",
+  "VALUE_REAL_ECONOMIC_ADMISSION": "NOT_PROVEN"
+}

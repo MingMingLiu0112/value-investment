@@ -56,10 +56,18 @@ def read_published_research(*, root: Path, workbook: Path) -> dict[str, Any]:
     return result
 
 
-def selected_review_candidate(*, root: Path, published: dict[str, Any], symbol: str) -> dict[str, str]:
+def selected_review_candidate(*, root: Path, published: dict[str, Any], symbol: str,
+                              bound_draft: bool = False, now=None) -> dict[str, str]:
     config = load_json_object(root/'config/user-research-workflow-v1.json', 'user workflow')
     if config.get('schema_version') != 'user-research-workflow-v1' or config.get('action') != 'no_order':
         raise ValueError('user workflow configuration scope mismatch')
+    if bound_draft:
+        from .bound_draft_review import verify_bound_draft_review_candidate
+        binding = config.get('bound_draft_review_candidates', {}).get(symbol)
+        if not isinstance(binding, dict) or set(binding) != {'path', 'sha256'}:
+            raise ValueError('EXACT_VERSION_REVIEW_CANDIDATE_MISSING')
+        verify_bound_draft_review_candidate(root=root, symbol=symbol, binding=binding, now=now)
+        return dict(binding)
     binding = config['review_candidates'].get(symbol)
     if not isinstance(binding, dict) or binding not in published['source_bindings']:
         raise ValueError('review candidate is not bound to current publication')

@@ -1,0 +1,110 @@
+{
+  "stage": "G4_AGENT_LOOP",
+  "commit": "b98f49e3f84bac8a0e044adfff89c3341e2422d7",
+  "working_tree_delivery": true,
+  "status": "PARTIAL",
+  "action": "no_order",
+  "files_changed": [
+    "src/value_investment_agent/application/research/agent_review/context_workflows.py",
+    "src/value_investment_agent/application/research/agent_review/daily_batch.py",
+    "src/value_investment_agent/application/research/agent_review/daily_registration.py",
+    "src/value_investment_agent/application/research/agent_review/web_research.py",
+    "scripts/current/run_agent_research_pilot.py",
+    "web/src/pages/DecisionDetail/AgentResearchPanel.tsx",
+    "web/tests/agent-research-panel.test.tsx",
+    "tests/test_agent_context_workflows.py",
+    "artifacts/current/four-business-loops/agent-loop.json"
+  ],
+  "actual_data_used": [
+    {
+      "source_id": "cninfo:1225114741",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "usage": "Retained public original copied into isolated test roots; fresh event and financial Mock drafts, registration, verified read model"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "usage": "Retained public event source in isolated fresh draft replay"
+    }
+  ],
+  "test_only_data_used": [
+    "Synthetic ResearchCase plus exact original text locators for hotspot and retrospective",
+    "TEST_ONLY retrospective context; no real private journal or account consumed"
+  ],
+  "tests_passed": {
+    "targeted_four_loop_regression": 75,
+    "full_python_regression": "6662 passed, 44 skipped",
+    "python_agent_regression": 278,
+    "python_command": "python -B -m pytest -q -p no:cacheprovider tests/test_agent_context_workflows.py tests/test_daily_agent_research.py tests/test_daily_agent_research_cli.py tests/test_web_agent_research.py tests/web_api/test_agent_research_api.py tests/test_llm_agent_research.py tests/test_agent_source_context.py tests/test_agent_research_pilot.py tests/test_agent_semantic_review.py tests/test_agent_independent_semantic_review.py tests/test_architecture_migration_agent_runtime.py --basetemp=.tmp/g4-temp/verified-final --tb=short",
+    "environment": "PowerShell 7.6.6; PYTHONPATH=src;tests;tests/web_api; TEMP and TMP both repository .tmp/g4-temp; UTF-8",
+    "agent_panel_vitest": 3,
+    "web_regression": 251,
+    "web_typecheck": "PASS",
+    "changed_web_files_prettier": "PASS",
+    "web_build": "PASS",
+    "targeted_git_diff_check": "PASS",
+    "warnings": "Two upstream uvicorn/websockets deprecation warnings"
+  },
+  "tests_failed": [],
+  "initial_test_setup_issue": "First run had 119 fixture setup errors because process TEMP was outside repository basetemp. Resolved by setting TEMP/TMP to repository .tmp/g4-temp; final regression passed.",
+  "api_checks": [
+    "Real FastAPI session/origin boundary exercised with TestClient and no provider calls on reads",
+    "Real loopback HTTP via uvicorn on OS-selected isolated ports; anonymous 401, session unlock, authenticated VERIFIED, no-store",
+    "Two independent server starts replay same persisted registered draft; both stopped and joined"
+  ],
+  "browser_checks": {
+    "status": "NOT_RUN",
+    "observation": "Claimed existing Chrome browser 4 tab 1032105737 and read existing ERR_CONNECTION_REFUSED page only; no navigation/reload/click or shared server launch",
+    "ownership": "Main owns integrated browser acceptance; no further interaction; no retention mark",
+    "current_static_capture": "browser-value-000333-desktop.png shows the local company page, but it is not evidence that the revised Agent workflow selector was interacted with."
+  },
+  "replay_checks": [
+    "Same inputs reuse same immutable packet and registration returns UNCHANGED",
+    "Retained public event and financial sources generate fresh verified Mock drafts in isolated roots",
+    "HTTP server restart preserves verified research view"
+  ],
+  "negative_checks": [
+    "Missing records, unsupported scope and unknown fields rejected before draft creation",
+    "Unknown citation and source availability mismatch rejected",
+    "Retrospective later plan cannot masquerade as original knowledge",
+    "Private context rejected before file open",
+    "Context hash tampering makes registered Web view UNAVAILABLE",
+    "Rehashed context with fabricated excerpt still fails original-excerpt verification",
+    "One failing retrospective job does not block valid hotspot job",
+    "Existing packet/source/PIT/semantic/registration rejection regression retained"
+  ],
+  "user_visible_result": "Existing AgentResearchPanel offers event, financial, hotspot and TEST_ONLY retrospective selection; drafts keep three roles, counterevidence questions, citations and pending human follow-up.",
+  "real_world_gates": {
+    "live_llm": "LIVE_LLM_NOT_AUTHORIZED",
+    "paid_calls": 0,
+    "approval_count": 0,
+    "formal_fact_count": 0,
+    "real_private_retrospective": "NOT_ENABLED",
+    "production_scheduling": "NOT_AUTHORIZED",
+    "shared_runtime_pointers_changed": false,
+    "commits_created_before_delivery": 0
+  },
+  "main_integration_contract": {
+    "launcher": "Reuse existing -ResearchMockPlan <path> -ResearchMockPlanSha256 <hash> and explicit -RegisterResearchDrafts; no second launcher or scheduler",
+    "cli": "scripts/current/run_agent_research_pilot.py --mode mock --batch-plan <path> --batch-plan-sha256 <hash> [--register-drafts]",
+    "single_job_cli": "--workflow hotspot|retrospective --context <path> --context-sha256 <hash> plus existing symbol/workbench/output/source-requests pins",
+    "batch_schema": "daily-agent-mock-batch-v1 (unchanged)",
+    "work_types": ["event", "financial", "hotspot", "retrospective"],
+    "new_job_fields": "context:{path,sha256}; existing workbench/output/source_requests fields required for admitted originals",
+    "context_schema": "agent-source-workflow-context-v1",
+    "context_exact_fields": ["schema_version", "action", "symbol", "workflow", "scope", "records"],
+    "context_record_exact_fields": ["kind", "source_id", "excerpt", "available_at"],
+    "hotspot_record_kinds": ["theme", "activity", "price_structure"],
+    "retrospective_record_kinds": ["original_plan", "manual_fill", "confirmed_holding", "subsequent_information"],
+    "admission": "Every record must cite exact verified original excerpt in selected ResearchCase; availability equals source record and stays within research cutoff. Retrospective plan <= fill <= confirmed holding <= subsequent information; scope TEST_ONLY only. Exact bytes do not prove semantic or strategy admission.",
+    "web": "Existing authenticated GET /api/v1/agent-research/{symbol}?workflow=hotspot|retrospective; existing api.agentResearch accepts workflow string so shared api/types need no change",
+    "registration": "Reuse register_daily_draft_results; validates candidate using exact Web reader, preserves good prior entries and immutable history; display-only"
+  },
+  "remaining_p0": [],
+  "remaining_p1": [
+    "Main must supply pinned source-admitted hotspot/isolated portfolio context jobs through the unique daily entry; automatic context discovery/export is not implemented here",
+    "Main must rebuild and run integrated Web, verify responsive selector interaction and register intended drafts explicitly",
+    "No real private account retrospective or paid live model validation claimed"
+  ],
+  "next_executable_step": "Main supplies context bindings in its pinned daily batch plan and completes shared Web/runtime acceptance. No shared app/api/types/launcher/config/ledger/pointers were edited by this work package."
+}

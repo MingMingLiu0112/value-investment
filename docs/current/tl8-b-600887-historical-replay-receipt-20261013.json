@@ -1,0 +1,83 @@
+{
+  "schema_version": "tl8-b-historical-replay-receipt-v1",
+  "action": "no_order",
+  "symbol": "600887",
+  "scope": "RETAINED_HISTORICAL_OBSERVATIONS_NOT_STRATEGY_VALIDATION",
+  "run_at": "2026-10-13",
+  "cutoffs": [
+    "2026-08-27T15:00:00+08:00",
+    "2026-09-22T15:00:00+08:00",
+    "2026-10-01T12:00:00+08:00"
+  ],
+  "inputs": {
+    "workbench": {
+      "path": "runtime/shared-existing-workbench-20261001/result.json",
+      "sha256": "d8f7581b3380741d113e9d964ee74bb606d675b26d769778cc3d6508a39f29dd"
+    },
+    "arithmetic_input": {
+      "path": "runtime/primary-equity-basis-20261001/primary-bound-arithmetic-input.json",
+      "sha256": "da108054f7479fed52de5c96cd160f845d41486abb75dd7c7542450ed5b17d80"
+    },
+    "disclosure_index": {
+      "path": "runtime/company-research/m1-event-scans/20260923T050643Z/600887/cninfo-index.json",
+      "sha256": "f68b7e83d77c4c1d09c8d033a6e0054c97c0ce93c9f383349388bbc2d815ceea"
+    },
+    "event_scan": {
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/evidence.json",
+      "sha256": "a6a2dffac4a14726968979c3e401ce7e3b9f65a8d5c9c58a1f9dec1625f05a90"
+    },
+    "quote_bundle": {
+      "path": "runtime/quote-sessions/20260923T005634211464Z/bundle.json",
+      "sha256": "5e49dc79bbc0132b040175e993e2f5dd5a3813c7167ade7aa2afc5c51cea19c0"
+    },
+    "execution_scenario": {
+      "path": "runtime/shared-execution-scenario-20261001/input.json",
+      "sha256": "521826b790d1a24760d42f3598aa1f1c90a51370ec829ef74e91affbe8a71e3a",
+      "scope": "SYNTHETIC_ENGINEERING_FIXTURE"
+    },
+    "recovered_event_original": {
+      "id": "600887-cninfo-event-index",
+      "path": "runtime/company-research/m1-event-scans/20260923T050735Z/600887/cninfo-index.json",
+      "sha256": "f68b7e83d77c4c1d09c8d033a6e0054c97c0ce93c9f383349388bbc2d815ceea"
+    }
+  },
+  "outputs": {
+    "result": {
+      "path": "runtime/tl8-b-600887-replay-bound-20261013/result.json",
+      "sha256": "985cf871aa5344e7a1f2f3241ef7158fd0aa6738437d4dd6763b0323c92fdd58"
+    },
+    "report": {
+      "path": "runtime/tl8-b-600887-replay-bound-20261013/replay.md",
+      "sha256": "e2a53632fc86bbfc82f11bcfc136da118495d3c4b2ac3fa8c5d4ef3bcd3c11b8"
+    }
+  },
+  "recheck": {
+    "path": "runtime/tl8-b-600887-replay-bound-20261013-recheck/result.json",
+    "matches_first_run": true,
+    "excluded_field": "reconstructed_financial_inputs.reconstructed_at"
+  },
+  "comparison_with_prior_artifact": {
+    "prior": "runtime/real-historical-decision-input-bound-20261001/result.json",
+    "identical_except": [
+      "execution_engineering_scenario (new section)",
+      "reconstructed_financial_inputs.cutoffs (new field)",
+      "reconstructed_financial_inputs.reconstructed_at (timestamp)",
+      "historical_decision_input_review.rows[*].fact_evidence_timeline (added since prior artifact)"
+    ]
+  },
+  "audit_findings": [
+    {
+      "id": "600887-cninfo-event-index",
+      "issue": "the scan-directory copy at 20260923T051018Z was overwritten after the scan (expected f68b7e83..., current 1b267402...)",
+      "resolution": "replay fails closed without the binding; the sealed copy at 20260923T050735Z verifies PASS_RECOVERED_ORIGINAL"
+    }
+  ],
+  "statuses": {
+    "engineering_delivery": "DELIVERED",
+    "current_research_admission": "NOT_ADMITTED",
+    "final_operational_acceptance": "NOT_PASSED",
+    "strict_pit_admitted": false,
+    "historical_execution_validated": false,
+    "performance_claim_allowed": false
+  }
+}

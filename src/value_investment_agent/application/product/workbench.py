@@ -62,6 +62,7 @@ def build_current_workbench_for_symbol(
     reviews_path: Path | None = None,
     reviews_sha256: str | None = None,
     recommendation_schema_version: str | None = None,
+    valuation_router=None,
 ) -> dict[str, Any]:
     normalized = normalize_symbol(symbol)
     target = require_inside(root, output_path, "current workbench output")
@@ -115,6 +116,7 @@ def build_current_workbench_for_symbol(
         reviews_path=reviews_path,
         reviews_sha256=reviews_sha256,
         recommendation_schema_version=recommendation_schema_version,
+        valuation_router=valuation_router,
     )
     outcome = research["result"]
     stopped = outcome["status"] == "BLOCKED_BY_RESEARCH_SCHEDULER"
@@ -124,9 +126,13 @@ def build_current_workbench_for_symbol(
         if not isinstance(bundle, dict) or not isinstance(recommendation, dict):
             raise ValueError("Current workbench requires replayable decision artifacts")
         repository = ReadOnlyArtifactBundleRepository(bundle)
+        from .research_reviews import verify_human_approval_transport_provenance
         verify_decision_recommendation_payload(
             repository, payload=recommendation,
             recommendation_artifact=repository.recommendation_artifact(recommendation),
+            human_approval_provenance_verifier=lambda approval: (
+                verify_human_approval_transport_provenance(root, approval)
+            ),
         )
     evidence_stops = []
     if stopped:

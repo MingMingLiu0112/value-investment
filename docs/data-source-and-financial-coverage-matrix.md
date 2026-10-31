@@ -56,3 +56,37 @@ Skill 文档，非可作为本项目依赖导入的财务数据服务。可借�
 
 本矩阵仅定义来源与必要字段，不再分配“下一步”。三公司已完成工程边界冻结，不重做逐字段考古或复制专用流水线；实际任务统一读取 current-stage-goal.md。
 未来历史估值仍须满足当时资本成本等输入的可用时点合同；研究敏感性、工程回放不等于策略收益证明。
+
+## 2026-10-22 本地公开财务补采核查
+
+本节仅更新数据接入事实，不改变上面的正式财务准入合同。此前每日 M2 只读取
+`runtime/server-export-payload.json`；缺失文件不是公开财务接口整体不可用。
+
+现有 `run_m2_opportunity_discovery.py` 新增 `--collect-public-financials`，日更
+`SAFE_REFRESH` 使用该参数。适配器按 A 股及年度过滤东方财富 `RPT_LICO_FN_CPD`，
+保留逐页原始 JSON、请求 URL、Hash、采集时间和精确字段名。串行分页有页数、单页字节、
+超时和请求间隔上限；总数漂移、重复证券、报告期/交易所错误或缺页均拒绝完整导出。
+缺失值不补零。接口失败不删除已有财务输入，也不停止独立行情节点。
+
+真实抽查及完整采集得到 2025 年报摘要 5,580 条，50,063 个非缺失观察值；157 个字段缺失。
+与当次 5,577 家官方股票池匹配 5,575 家。六家公司 600519、600887、000333、000651、
+600741、601088 均返回九个观察字段。这不是九个已审定估值输入或全面财报覆盖。
+
+字段为营业总收入、归母利润、加权 ROE、毛利率、基本 EPS、每股净资产、每股经营现金流、
+营业总收入同比、归母利润同比。不把营业总收入替代营业收入，不把加权 ROE 替代简单 ROE，
+不以每股现金流重建现金流总额，也不编造完整有息债务。已有公司 retained points 原样保留，
+补采值不会在最新报告期选择中覆盖其既有事实。
+
+所有补采值保持 E1、`validation_status=unverified`、`formal_admission=false`。
+`available_at` 为真实首次观察时间，供应商公告/更新时间另存；当前接口的历史数值不证明
+历史当天版本可得。回放重新核对原始响应和字段，不联网补入今日数据。质量评分、正式估值、
+策略准入和人工授权没有被放宽，`action=no_order`。
+
+源码与候选路径复核：
+
+- [AKShare 年报摘要字段定义](https://github.com/akfamily/akshare/blob/fe10d1decb705e5f43cc8ca3339ca39e580fb8f4/akshare/stock_feature/stock_yjbb_em.py)：本次端点/字段参考；未安装新依赖或复制整包。
+- [a-stock-data](https://github.com/simonlin1212/a-stock-data/tree/29b07d2e37005b9fd568bca1262f6e572b5f9407)：继续用于端点发现；其新浪财报和 AKShare 新浪财报不是独立上游。
+- [新浪三表参考](https://github.com/akfamily/akshare/blob/fe10d1decb705e5f43cc8ca3339ca39e580fb8f4/akshare/stock_fundamental/stock_finance_sina.py)：后续逐公司补证可保留 `item_field`、币种和报表元数据；不能按重名中文科目覆盖。
+- [东方财富三表参考](https://github.com/akfamily/akshare/blob/fe10d1decb705e5f43cc8ca3339ca39e580fb8f4/akshare/stock_feature/stock_three_report_em.py)与[同花顺三表参考](https://github.com/akfamily/akshare/blob/fe10d1decb705e5f43cc8ca3339ca39e580fb8f4/akshare/stock_fundamental/stock_finance_ths.py)：候选补充，不是本次已集成的自动回退；累计/单季、百分数/小数及分页范围须分别验证。
+
+源码许可不等于上游数据再分发授权。本次原始响应仅保留在本地 runtime，不上传公开 GitHub。

@@ -1,0 +1,103 @@
+{
+  "schema_version": "pending-candidate-price-proposal-config-v1",
+  "action": "no_order",
+  "registered": false,
+  "user_approved": false,
+  "draft_id": "600519-97a83c-research-review-v1",
+  "policy_id": "600519-97a83c-scenario-review-v1",
+  "rule_version": "pending-scenario-endpoint-review-v1",
+  "currency": "CNY",
+  "share_basis": "ordinary_share_unadjusted",
+  "unit": "CNY/share",
+  "available_at": "2026-10-29T13:25:11.117327+00:00",
+  "expires_at": "2026-11-05T13:25:11.117327+00:00",
+  "expiry_rationale": "为本提案设置七天行政复核窗口；这不是模型经济有效期的证据。出现相反证据须提前重开研究，到期须重新核验证据，不得通过GET读取自动续期。",
+  "exact_basis": {
+    "symbol": "600519",
+    "candidate_binding": {
+      "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600519/candidate.json",
+      "sha256": "97a83c496feab701fe3f4718d8c09535ce18226729210bc2deac5f625f930086"
+    },
+    "review_binding": {
+      "candidate_binding": {
+        "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600519/candidate.json",
+        "sha256": "97a83c496feab701fe3f4718d8c09535ce18226729210bc2deac5f625f930086"
+      },
+      "package_binding": {
+        "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600519/package.json",
+        "sha256": "d4a6606e05f3a6d7d7eebd755a3fdddf4a25e7ffcdc2e925a361e9e1e687a3f1"
+      },
+      "workbench_binding": {
+        "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600519/workbench.json",
+        "sha256": "bdd3325e1a01b2f446e037559b07ada874ac1f929d13a1677fab864c00d9e001"
+      },
+      "review_packet_binding": {
+        "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600519/consumed-review.json",
+        "sha256": "2d1941594bf0f0707ae9690d452b998121de0b0d51eca0fd7839241146dc0cfd"
+      },
+      "model_context": {
+        "input_descriptor_sha256": "3f9d04f77d6fb04ddfc6eb21f493730ccae90c2f5bfb991da5c4a1660604d417",
+        "research_case_sha256": "b20a98f4ca23fdb972cc4cd08f6e0d60aa8765c021c4f1572774b80b205db5b5",
+        "facts_sha256": "a7aabe93dfab6fe04305fb93153e6c984dac209e99a27768ab558a919e8c824d",
+        "assumptions_sha256": "2ee9651a4b24f1c35dfa260fba43be7413a70d346ae6c7e54e47cc95d29d42cc",
+        "model_id": "residual_income_or_equity_value",
+        "model_version": "residual-income-equity-path-v4",
+        "terminal_contract_version": "terminal-economic-contract-v2",
+        "profile_id": "quality_compounder",
+        "research_as_of": "2026-10-28"
+      }
+    },
+    "economic_policy_binding": {
+      "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600519/historical-source-code/e5b61d38da4cdb0850dafedefa240d6ecd1406ab584f672fa9e8628dd3818686.blob",
+      "sha256": "e5b61d38da4cdb0850dafedefa240d6ecd1406ab584f672fa9e8628dd3818686"
+    },
+    "valuation_proposal_binding": {
+      "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600519/valuation-proposal.json",
+      "sha256": "b52b68ef388db5f9c4f470bfb482916a7866b36303e5a000e75c782a32dffc3c"
+    },
+    "input_descriptor_sha256": "3f9d04f77d6fb04ddfc6eb21f493730ccae90c2f5bfb991da5c4a1660604d417",
+    "research_version": "pending-600519-2026-10-28-ADVANTAGE_CONTINUITY-e5b61d38da4c",
+    "valuation_date": "2026-06-30",
+    "model_version": "residual-income-equity-path-v4",
+    "model_type": "residual_income_or_equity_value",
+    "available_at": "2026-10-28T04:49:55.159673+00:00",
+    "computed_at": "2026-10-28T04:49:55.159673+00:00",
+    "currency": "CNY",
+    "ordinary_shares": "1250081601",
+    "confidence": "低",
+    "valuation_sha256": "ca477ded5528a9e8432ee17b6de5ebc20faa530943013f479b078b72203e67c5",
+    "scenarios_sha256": "fd6fb7168e49601688f43c746b665799a8e92e242c8c91b8b1aac73c8189a5c4",
+    "joint_scenarios_sha256": "c47be15a00510f0c97b8617f8f58bd9e9ec2f098a4ef64f6f8d2461ed0d46a08",
+    "source_catalog_sha256": "03e12158a744cfcbd42f4ca64fd2b1b15c657d4d10c0f3db90f5257d2650246d",
+    "source_bindings_sha256": "d6d94d3e815272040fc9700b2a8003b0a3c1244af82913536be62dd40f79c804",
+    "bear": "675.101931808336330633086859237385304200825199831",
+    "base": "799.202761190787346313148559443605377671678616667",
+    "bull": "930.006282028058820468717326852150733119524689757"
+  },
+  "rationale": "本候选的竞争优势延续情景，以品牌和产品结构支持盈利延续，同时约束新增资本回报，不能把历史品牌回报直接外推。entry采用悲观情景×1，仅作为重新研究的触发线：须重新核验收入弱增长、资金可达性、维护及营运资金承诺和终值回报仍成立。reduce采用乐观情景×1，仅用于复核估值对乐观假设的依赖，不表示卖出。两者均未套用通用折扣，也不构成安全边际结论。",
+  "dividend_coverage_risk": "目标分配仍受可达现金和法定分配能力约束；股利路径的代数交叉核对不能证明发行人分红可持续。当前置信度低，悲观情景也可能低估风险，不能视为价值底线或充分安全边际。",
+  "explanation": "仅为研究者提出的条件价格草案，未经用户批准，也未正式准备或注册。entry是悲观经济假设经复核仍成立时的研究复核参考价；reduce是乐观估值复核参考价，均非买卖指令。估值日期保留为2026年6月30日，不代表当前价值。七天固定到期仅为行政复核窗口，不证明模型到期前持续有效；读取不会续期。尚未进行当前行情、事件及股本分配口径对齐，不进行当前价格比较，也未建立当前投资资格。低置信度下，悲观估值不能证明安全边际。缺少Entry Thesis、私人组合和决策背景，因此add、exit及数量均为空。",
+  "rules": [
+    {
+      "action": "entry",
+      "scenario": "bear",
+      "value_fraction": "1",
+      "comparison": "LTE",
+      "rationale": "仅为研究复核触发线，前提是悲观情景的盈利、资金可达性、再投资及终值经济假设经新证据复核仍成立。低置信度不支持将其视为充分安全边际。"
+    },
+    {
+      "action": "reduce",
+      "scenario": "bull",
+      "value_fraction": "1",
+      "comparison": "GTE",
+      "rationale": "仅为估值复核触发线，重新评估上行空间对乐观联合路径的依赖；不是卖出决定，也不提供减仓数量。"
+    }
+  ],
+  "reopenconditions": [
+    "精确候选、输入描述符、模型或研究版本、来源字节或可用时点改变后，原提案不得复用，须建立单独版本。",
+    "实际价格实现或渠道需求走弱，维护及营运资金需求上升，资金不可达、分配受限或终值回报侵蚀时，重新核验悲观经济假设。",
+    "股本、币种或分配口径改变时重新研究；不得把历史估值直接换算为当前报价比较。",
+    "行政窗口到期须重新审阅证据；读取不得续期，窗口内也不保证模型持续有效。",
+    "当前行情和事件覆盖、正式经济审批分别核验；add及exit还须具备Entry Thesis、私人组合和决策背景。"
+  ]
+}
