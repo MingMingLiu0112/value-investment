@@ -123,6 +123,7 @@ def test_new_native_pdfium_calls_require_shared_serialization():
     assert sites == {
         ('infrastructure/filings/pdf_text.py', 'extract_pages'),
         ('infrastructure/filings/official_pdf.py', 'validate_pdf_original'),
+        ('infrastructure/filings/first_research_fact_replay_v1.py', '_native_column'),
         ('application/product/prospective_baseline.py', '_verify_shenhua_h1_column_geometry'),
         ('application/research/shareholder_cash_evidence.py', '_verify_current_column'),
     }
