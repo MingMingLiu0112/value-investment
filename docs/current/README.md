@@ -14,6 +14,7 @@ The 2026-10-09 architecture/agent pilot boundary and runbook are in
 
 | Need | Authoritative entry |
 | --- | --- |
+| Dual-strategy architecture, module progress and scoped Codex handoff | [Architecture and progress workbench](project-control-board.md); Web `/project`; structured page projection `web/src/data/projectControl.ts` |
 | Value strategy rules, sources and unapproved hypotheses | [Value strategy specification](value-strategy-specification-20261023.md) (fixed historical rule baseline; not strategy or account approval) |
 | Swing strategy rules and independent validation limits | [Swing strategy specification](swing-strategy-specification-20261023.md) (source/coverage evidence is not OOS or Shadow) |
 | Current goal | `docs/current-stage-goal.md` |
@@ -66,3 +67,4 @@ The 2026-10-09 architecture/agent pilot boundary and runbook are in
 
 `docs/execution-status.md` is factual history, not a backlog. Historical stage
 acceptance files are read-only context and do not create new work.
+

@@ -1,0 +1,22 @@
+{
+  "sourceBaseline": "1e3f6af10e62fc55cf0141e0c91dddee12310aa3",
+  "localVerificationCommit": "138be37a779ff1c7a6eb136f2e86e29b06674086",
+  "scope": "isolated frontend snapshot, not deployed to user service",
+  "checks": {
+    "typecheck": "passed",
+    "format": "passed",
+    "webTests": {
+      "passed": 1213,
+      "skipped": 28
+    },
+    "productionBuildIncludingIdentity": "passed"
+  },
+  "sourceSha256": {
+    "web/.umirc.ts": "fe4e0a1d8f7eb1f5270922e39be52e1c0a2d08b8507d32e05acc4e53c05fcde9",
+    "web/src/components/Workbench.tsx": "98255dce9af774236fd97f7e287758f9f7374df56bed6991bc2aff8d11db08e9",
+    "web/src/data/projectControl.ts": "02a8d7e6145f7a743a4b9ff7d87c4b7b51351e43c640f29f6fa6c6b84022477e",
+    "web/src/pages/ProjectControl/index.tsx": "8ec036f22ee35f4da5e0a3cc1239c5424e516a0d4a214918b84761e0099740ea",
+    "web/src/pages/ProjectControl/project-control.css": "9f0f9a9e7d1b44d4628ee7b9f9c6b89fb2dfa7e9bb30c2f9f69f496ff5480be3",
+    "web/tests/project-control.test.tsx": "c96c825444e9cdfa0dd7c7ce523acad5f8285ae6391e3f6418a7fa6885f36601"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "verifiedAt": "2026-10-28T10:12:37.494Z",
+  "checks": [
+    "Real production bundle opens /project with 20 modules and no backend/private API dependency",
+    "Desktop flow shows separate strategies and shared capabilities without horizontal overflow",
+    "Search empty state, clear filters, hotspot filter and module selection work",
+    "Module task includes scoped handoff and provides selectable text when clipboard is denied",
+    "Module notes persist across reload, can be cleared, and never change user acceptance",
+    "Corrupt local draft storage does not prevent the page from opening",
+    "390px mobile layout has no horizontal overflow and remains filterable"
+  ],
+  "browserErrors": [],
+  "apiRequests": [],
+  "desktopWidth": {
+    "inner": 1440,
+    "scroll": 1440
+  },
+  "mobileWidth": {
+    "inner": 390,
+    "scroll": 390
+  },
+  "scope": "isolated real production bundle; no deployment or investment approval"
+}
