@@ -81,3 +81,50 @@ it("does not make hostile source schemes clickable", () => {
     renderToStaticMarkup(<CompanyProfileView data={data} symbol="600519" />),
   ).not.toContain('href="javascript:');
 });
+
+it("shows source-only route and pending inputs without claiming model replay or valuation", () => {
+  const data: CompanyProfile = {
+    ...example(),
+    schema_version: "source-company-profile-v1",
+    status: "SOURCE_BOUND_ROUTE_ONLY",
+    profile: { profile_id: "mature_manufacturing" },
+    route: {
+      status: "SUPPORTED",
+      selected_model: "fcff",
+      required_inputs: ["ebit", "scenario_inputs"],
+    },
+    missing_inputs: ["ebit", "scenario_inputs"],
+    applicability_contract: {
+      version: "c-profile-applicability-v1",
+      applicability_conditions: ["TEST_ONLY 发行人自身制造业务"],
+      refusal_conditions: ["FINANCIAL_BUSINESS_REQUIRES_SPECIALIZED_MODEL"],
+      required_economic_inputs: ["ebit", "capex"],
+    },
+  };
+  const html = renderToStaticMarkup(
+    <CompanyProfileView data={data} symbol="600519" />,
+  );
+  expect(html).toContain("来源与路由已核验，估值输入待补");
+  expect(html).toContain("模型输入尚未完整");
+  expect(html).toContain("金融业务需要专用模型");
+  expect(html).not.toContain("停止展示");
+});
+
+it("keeps verified financial refusal evidence visible without a generic model", () => {
+  const data: CompanyProfile = {
+    ...example(),
+    schema_version: "source-company-profile-v1",
+    status: "MODEL_NOT_APPLICABLE",
+    profile: null,
+    route: null,
+    business_model: "TEST_ONLY 发行人从事银行业务",
+    blockers: ["FINANCIAL_MAIN_BUSINESS_REQUIRES_SPECIALIZED_MODEL"],
+  };
+  const html = renderToStaticMarkup(
+    <CompanyProfileView data={data} symbol="600519" />,
+  );
+  expect(html).toContain("不适用现有通用模型");
+  expect(html).toContain("金融主营需专用模型");
+  expect(html).toContain("https://example.org/official.pdf");
+  expect(html).not.toContain("停止展示");
+});

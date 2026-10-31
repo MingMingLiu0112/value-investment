@@ -462,6 +462,8 @@ jobs:
           tests/test_b_selection_scope_api.py
           tests/test_company_profile.py
           tests/test_company_profile_api.py
+          tests/test_company_profile_sources_v1.py
+          tests/test_profile_applicability_contract_v1.py
           tests/test_hotspot_candidate_selection.py
           tests/test_economic_review_cli.py
           tests/test_economic_review_bundle.py

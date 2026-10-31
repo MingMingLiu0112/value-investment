@@ -160,3 +160,25 @@ Starter/Normal/Max 上限，仅输出上限、剩余空间、共同预算冲突�
 `M5MaterialityBridge`。
 缺少 Portfolio 输入不能自动批准 BUY/ADD；已证实的 Thesis Breaker 风险提示不能因缺价格而消失。旧数据未知不是 HOLD，更不是自动卖出。
 Entry 是用户确认行为的不可变研究基线，不是系统生成的成交；无历史理由只能标记事后重建。MarketContext 不直接修改内在价值。
+
+## C: bounded company profile and model applicability contract
+
+C accepts hash-bound official issuer evidence and returns reported own-business
+classification, a conditional existing-model route (or explicit refusal),
+applicability/refusal conditions, required economic and calculation inputs, and
+unresolved evidence. C does not assert business quality, moat, normalized
+earnings, valuation completion, G3 approval or trading permission.
+Its supported envelope is consumer-equity research, mature manufacturing and
+cyclical resource research through the existing registry. Financial, unknown,
+ambiguous/mixed or unsupported own business has no automatic generic fallback.
+Source-only routing never fabricates a ResearchCase, assumptions or model facts
+and does not run a valuation. Existing registered research retains its exact
+precedence, code/source identity and model result. A damaged current source
+cannot fall back to another historical/source-only result.
+D1 owns bounded research execution; D2 owns business/assumption/counterevidence
+research; E2 owns first compilation into complete model inputs. C supplies a
+versioned input/refusal contract to those modules. New economic families or
+models require a separately reviewed contract version; this closeout is not
+permission to expand C or start broad Agent studies.
+Acceptance and frozen source versions are recorded in the single execution
+ledger and its bounded public evidence receipts. action=no_order.

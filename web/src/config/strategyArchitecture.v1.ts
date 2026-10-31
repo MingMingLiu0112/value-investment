@@ -157,35 +157,35 @@ export const catalog: Record<
           "src/value_investment_agent/domain/research/research_profile.py",
           "src/value_investment_agent/valuation_router.py",
         ],
-        engineeringStatus: "两公司真实接口已验／跨类型仍有缺口",
+        engineeringStatus: "固定五家及合同已验／C职责冻结",
         evidenceStatus: "原件哈希、经营页码及现有接口已验",
         shortStatus:
-          "600519、600887已有来源经营判别与资本证据消费；经营分类不等于企业质量证明",
+          "固定五家：旧两家消费不变；制造与周期仅条件路由、输入待补；金融有据拒绝",
         implementation:
-          "复用原件经营段落、既有研究与资本输入，核对分类及模型路由；金融、未知和混合业务拒绝另有合成测试",
+          "复用既有研究及有限官方完整段落审核准入；不代表通用自动分类，不新增预测或估值",
         milestone:
-          "两公司来源绑定画像接口已验证；通用新公司研究与经济准入未完成。",
+          "固定五家及合同已验，C职责冻结；有限审核不代表通用分类或经济准入。",
         existingEvidence:
-          "茅台产品／渠道收入及母公司与财务公司资金范围；伊利乳品分部、采购渠道及借款／存款结构",
+          "旧两家来源与消费指纹不变；美的完整主营与资本范围、神华一体化周期业务、招商银行身份与金融主营已核",
         evidenceSource:
-          "artifacts/current/company-profile-c-20261031.json（最终冻结源码复验）；runtime/c-profile-source-handoff-20261031/final-receipt.json；business-differentiation.json",
+          "artifacts/current/company-profile-c-closeout-20261031.json；runtime/c-closeout-20261031/api-acceptance/receipt.json；source-pack.json",
         evidence:
-          "两公司现有接口均可读取来源绑定画像及反证；000333、601088当前接口不可评估，旧路由例证不升级为当前验收",
+          "000333仅FCFF路由、10项输入全缺；601088仅周期正常化路由、13项输入全缺；600036身份已验后金融拒绝，无替代模型",
         nextStep:
-          "补足跨类型缺失原件或依赖后再核验；ROIC、正常化盈利、竞争优势及分红持续性须独立研究",
+          "后续顺序为D1受限执行 → D2假设 → E2编译；本轮不启动新功能，不扩展已冻结的C职责",
         ruleWhy:
           "行业、经营收入机制与资本结构共同约束模型；不能以行业标签或品牌名称证明质量。",
         boundary:
           "经营分类与既有模型路由不授予经济、估值或交易资格；保留来源日期、未知与反证。action=no_order。",
         progress: {
           consumer:
-            "两公司先校验画像再重放既有分析及接口已验；页面消费由集成方另行核验",
-          realData:
-            "600519/600887两家公司官方原件及既有经营／资本证据；未开展第三家深研",
+            "固定五家接口已验；旧两家分析消费不变，新两家仅路由，银行有据拒绝",
+          realData: "固定五家已验；新三家有限官方完整段落审核，未新增公司深研",
           economic:
             "业务族仅约束模板候选，不证明经济质量；正常化盈利、资本回报和持续分配仍有缺口",
           deployment: "运行版本及页面验收另存回执；画像状态不代替正式投资资格",
-          acceptance: "用户尚未确认此版本；拒绝场景的合成测试不冒充真实取证",
+          acceptance:
+            "用户尚未确认此版本；固定范围接口验收不代表经济或最终使用批准",
         },
       },
       {

@@ -942,7 +942,14 @@ def create_app(
                 "status": "INVALID_SYMBOL", "action": "no_order"})
         from ...application.research.company_profile import load_company_profile
         try:
-            result = load_company_profile(root=project, symbol=symbol, now=datetime.now(timezone.utc))
+            cutoff = datetime.now(timezone.utc)
+            result = load_company_profile(root=project, symbol=symbol, now=cutoff)
+            if result.get("blockers") == ["NO_CURRENT_SOURCE_BOUND_RESEARCH"]:
+                from ...application.research.company_profile_sources_v1 import load_source_company_profile
+                result = load_source_company_profile(root=project, symbol=symbol, now=cutoff)
+            if result.get("profile"):
+                from ...domain.research.profile_applicability_v1 import contract_for_profile
+                result["applicability_contract"] = contract_for_profile(result["profile"]["profile_id"])
         except (ValueError, OSError, KeyError, TypeError) as error:
             result = dict(schema_version="company-research-profile-v1", symbol=symbol,
                 status="SOURCE_OR_PROFILE_UNAVAILABLE", action="no_order", formal_eligibility=False,

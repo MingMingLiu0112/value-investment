@@ -7074,3 +7074,217 @@ closure; marked as Root-reported, separate from this worker's actual two API
 positives and 34 backend/6 component checks. Public artifact and C catalog
 Prettier checks pass. Root-owned C deployment wording retained without overwrite.
 Private pointer remains unchanged. No further collection, commit or deployment.
+
+### 2026-10-31 C fixed three-sample actual-source closeout scope (in progress)
+
+User baseline 4a58287e17d2df245441e3fa3b5e6116dc0c4df9. Fixed samples only:
+000333 manufacturing, 601088 cyclical, 600036 financial-sector refusal.
+Reuse official FY2025/H12026 originals first; only absent originals may use
+existing A CNINFO acquire_official_report, one exact period per missing issuer.
+No company deep research, forecast, valuation, new model or framework.
+This worker changes only runtime/c-closeout-20261031 and this sole ledger;
+no company_profile/API/Web/template edits. Public summary destination/content
+await Root. Protect the pre-existing private current-research-drafts pointer;
+initial SHA256 2aba22a9e043d20076c7c40916808aee1bae9ba48f13951b8d0735e6fa077686.
+No account data read. Receipt must retain original hashes, cover identity,
+report periods, actual acquisition/materialization clocks and full selected
+main-business sections plus scoped capital/model-input evidence.
+No historical PIT, economic quality, model-input admission or bank-model
+authorization is inferred. action=no_order.
+
+### 2026-10-31 C bounded closeout and responsibility freeze (in progress)
+
+User explicitly limits C to retained two-company results plus finite real
+cross-economic-type validation, a fixed applicability/refusal/input contract,
+and independent source/API/Web acceptance. Baseline 4a58287e17d2df245441e3fa3b5e6116dc0c4df9;
+preserve existing research and local current-research-drafts.json.
+Fixed additional sample: 000333 manufacturing, 601088 cyclical resources,
+600036 financial refusal. No new valuation model, new company forecast,
+large Agent study or general classification platform.
+C exposes conditional model applicability; D2/E2 own assumptions and complete
+valuation inputs. Unknown or mixed own business is not forced to a model.
+After acceptance freeze this responsibility and hand off to D1/D2/E2.
+action=no_order.
+
+### 2026-10-31 C fixed-sample actual-source evidence results
+
+Results only under Root's bounded closeout scope; no additional plan or company
+research dispatch. Source output runtime/c-closeout-20261031/source-pack.json
+SHA256 6d28e3fa03975088d402862a70718125e6c75303d4f034bed194eea7a6318af9.
+Minimal runtime summary: same folder/summary.json. Public summary destination
+awaits Root; no new public file was created in this package.
+
+000333 H12026 reused the exact retained CNINFO 1225531404 original,
+SHA256 576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8.
+Full company name/code/half-year cover passed existing A cover verification.
+Complete main-business section physical pages 10-16 retained without truncating
+ToC/ToB, industrial, building, robotics, energy, medical or logistics activities.
+Capital/financial-scope original pages retained separately. Manufacturing FCFF
+is source-only route context: consistent industrial EBIT/tax/D&A/capex/NWC,
+net debt and shares remain explicit required inputs, not admitted values.
+Financial subsidiary/FX/derivative and parent/distributable scope gaps remain.
+
+601088 FY2025 reused retained CNINFO 1225064293 original,
+SHA256 7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2.
+Complete physical p16 business includes coal/power production and sales,
+rail/port/shipping and coal-to-olefins; no activity was silently removed.
+Selected segment/capital pages (including segment-note p278) are preserved.
+Cycle-normalized route requirements remain missing inputs, not normalized
+earnings. A cover checker rejects literal 2025年度报告 versus its expected
+2025年年度报告; exact labelled 601088, full issuer name and year were separately
+verified from original. No A rule was changed or false success receipt created.
+
+600036 FY2025 used one bounded existing A CNINFO acquisition attempt:
+actual index responses and full original PDF received, CNINFO 1225047590,
+SHA256 abe612a273468072b176dd51ea460c1e1596f8ca729cbc6db3fa28ba9a57ea79.
+A returns FAILED at the same literal-title cover check; original title is
+2025年度报告（A股）. Raw failure.json, received indexes and PDF remain immutable.
+The original is complete/readable and independently identifies 招商银行股份有限公司,
+600036, FY2025, not a summary. Actual index replay reselected the same report.
+Available-at conservatively uses actual attempt completion 2026-10-31T05:03:26.898411Z,
+not publication time. Full own bank-business p12 and capital-adequacy/credit-risk
+pages retained. Identity evidence supports financial refusal, not an industrial
+model or a substitute bank model. No forecast or valuation was executed.
+
+Per-source receipts: runtime/c-closeout-20261031/{000333,601088,600036}/source-receipt.json.
+Complete main paragraphs and selected full original pages are in each directory's
+main-business-section.json / evidence-pages.json. Reused originals use actual
+local-materialization clocks and explicitly unknown original retrieval clocks,
+not fabricated original acquisition or historical PIT.
+These C receipts are not A official-acquisition success packets. Current Volta
+registry shape is entries[symbol]={issuer_name,period,receipt_binding:{path,sha256}};
+its initial source adapter expects an A success receipt. Compatibility and exact
+A failures were explicitly handed off, no fake package/receipt was substituted.
+
+Actual inherited _reported_activities replay found no rows for Midea and CMB;
+Shenhua's two returned own-business rows had empty family sets. The exact
+complete source wording is retained for Volta, not rewritten into recognized
+keywords. Those are parser/registration gaps, not lack of official sources.
+Original 600519/600887 were not rerun. One issuer downloaded, two originals reused.
+Private pointer hash remains 2aba22a9e043d20076c7c40916808aee1bae9ba48f13951b8d0735e6fa077686.
+No company_profile/source-module/API/Web/template/config edits, no financial
+model expansion, no account data read, no commit/deploy. action=no_order.
+
+C source registration handoff result (no new scope): Volta's current finite
+source adapter now explicitly supports c-fixed-sample-source-receipt-v1
+independently of A success packets. Exact three-entry registration candidate:
+runtime/c-closeout-20261031/company-profile-sources-v1.candidate.json,
+SHA256 dcb82e2fa3ebac6a60f7988119d940e2cbc5f6133f006585d7acadeb1b072dde.
+Shape: source-company-profile-registry-v1 / action=no_order / entries;
+entry keys issuer_name, period, receipt_binding, main_business_section,
+evidence_pages, identity_pages. Every receipt/section/page binding was hash
+checked against the already retained originals. Config file itself is left to
+Volta/Root integration, not overwritten by this evidence worker.
+runtime/c-closeout-20261031/registration-ready.json records this exact handoff.
+Root owns .tmp/c_closeout_accept.py fixed-five actual API verification; this
+worker does not rerun it. Awaiting final adapter/registration/API receipt is an
+engineering integration condition, not an external-data/source absence.
+Catalog closeout will consume Root's final receipt, preserve 用户尚未确认 and
+separate deployment receipt, and freeze C responsibility to the verified scope.
+
+### 2026-10-31 C fixed-five actual API receipt reconciliation (final method freeze pending)
+
+Consumed Root's existing fixed-five TestClient receipt at
+runtime/c-closeout-20261031/api-acceptance/receipt.json,
+evaluated 2026-10-31T05:17:37.470253Z. This worker did not rerun APIs.
+All five saved response hashes match the receipt. The existing 600519/600887
+source-bound analysis consumption and saved original input fingerprints match.
+000333=SOURCE_BOUND_ROUTE_ONLY, FCFF, 10 required inputs ALL MISSING.
+601088=SOURCE_BOUND_ROUTE_ONLY, cyclical_normalized, 13 required inputs ALL MISSING.
+600036=MODEL_NOT_APPLICABLE, source evidence present, route=null, no alternative
+financial-sector model. No forecast, valuation or economic quality admission.
+
+Actual config was integrated by Root from the exact candidate registration.
+Finite official complete-section review admission, not general automatic
+classification: retained source text and section hashes are exact-bound and all
+business scopes are retained. A title-compatibility failures remain historical
+provenance, not relabelled success. Sources already exist; former adapter/
+registration waits were engineering issues and are not external-data gaps.
+
+C catalog responsibility is bounded to these five accepted source/conditional-
+route/refusal cases, preserving 用户尚未确认 and Root's separate deployment receipt
+wording. Public minimal summary is reconciled to Root's five response outputs
+using only dates, SHA, routes/refusal and missing-input status, with no raw text,
+PDFs/runtime data or private pointer contents. Old intermediate implementation
+hashes removed from the current public summary.
+
+Volta final method-label/direct-test closure remains pending. The current
+public summary explicitly does NOT claim final implementation hash freeze;
+freeze receipt only after that final version/test result is available.
+No business implementation/config changes by this worker and no repeated API,
+new source acquisition, commit or deployment. action=no_order.
+
+
+C public artifact preservation correction: the fixed-five closeout summary lives
+only at artifacts/current/company-profile-c-closeout-20261031.json.
+artifacts/current/company-profile-c-20261031.json has been restored byte-for-byte
+to current HEAD, retaining the first-stage two-company result and its existing
+hash-bound receipts. No prior receipt was regenerated, re-signed or updated.
+C catalog and this closeout result reference the new closeout summary only.
+Historical first-stage artifact references remain historical and unchanged.
+
+C responsibility closeout wording, per final independent review reported by Root:
+fixed five actual source/API cases and applicability contracts passed, no new
+P1/P2 identified; final period-format Jan01/H1 boundary guard/test belongs to
+Volta/Root. Web full-suite result reported by Root: 1336 passed, 28 inherited
+optional skips. This worker did not rerun APIs or broaden evidence.
+C catalog now states 固定五家及合同已验，C职责冻结; subsequent work belongs to
+D1/D2/E2, not expansion of C. Limited complete-official-section review does
+not claim a general classifier, economic quality, valuation or trade admission.
+Deployment/page runtime acceptance remains separately receipted and
+用户尚未确认此版本 is retained. Public closeout reference remains
+artifacts/current/company-profile-c-closeout-20261031.json; the first-stage
+public artifact and its prior receipts remain unchanged.
+Root will run the final fixed-five check after the period guard to generate
+the exact final implementation-hash receipt; none was fabricated here.
+
+Final Root closeout acceptance after the report-period guard:
+114 targeted tests passed, zero skipped, including both real-source opt-in
+sets, source mutation refusal tests, old two-company analysis and route/
+architecture contracts. Fixed-five API receipt has been regenerated at
+runtime/c-closeout-20261031/api-acceptance/receipt.json; the new public closeout
+summary now binds its exact bytes and final source/contract/config hashes.
+The first-stage artifact and original company_profile.py bytes remain unchanged.
+C responsibility is frozen to this accepted envelope. CI, actual 8001
+publication and browser receipts are recorded separately; no economic approval.
+Next modules: bounded D1 execution, D2 assumptions/counterevidence, E2 input
+compilation. This C closeout does not itself start a broad Agent study.
+action=no_order.
+
+### 2026-10-31 C bounded fixed-five final source/hash reconciliation complete
+
+Root final integrated verification reported 114 passed / 0 skipped, with both
+real-input environments enabled and all retained-source checks included.
+Recorded as Root-reported; this evidence worker did not rerun APIs/tests.
+Final fixed-five API receipt evaluated_at 2026-10-31T05:23:00.976193Z:
+runtime/c-closeout-20261031/api-acceptance/receipt.json.
+All five saved response SHA256 values were verified against that receipt.
+New three outputs bind the exact final source-module SHA256
+5ed8a3b418c3726be43d5f8c2654a001cebc607f01b29b89688a6b2a211f3cbf,
+which also matches the current source file after final period-format guard.
+
+600519/600887 retain their original source-bound analysis consumption and
+input fingerprints. 000333 supports source-only FCFF with 10 required inputs
+ALL MISSING; 601088 supports source-only cyclical_normalized with 13 required
+inputs ALL MISSING; 600036 is identity/source-evidenced MODEL_NOT_APPLICABLE,
+route=null and no substitute bank model. Method label is explicitly
+FIXED_SOURCE_SECTION_REVIEW_NOT_GENERAL_CLASSIFIER: finite reviewed complete
+official business sections and input contracts, not a general automatic
+classifier, economic quality approval, model calculation or trade authority.
+
+Final public closeout summary only:
+artifacts/current/company-profile-c-closeout-20261031.json
+SHA256 3451f45e085d7939d945a3ab0aa8c9724619832906c386b6f2cbd8a107337b64.
+Final runtime index: runtime/c-closeout-20261031/final-receipt.json.
+Both bind the final Root receipt/date/source hash; no intermediate code hash
+is presented as final proof. First-stage company-profile-c-20261031.json was
+checked byte-for-byte against HEAD and remains unchanged, with old receipts
+preserved and not re-signed. No PDF/raw runtime evidence is added to the public
+summary. Private current-research-drafts pointer remains unchanged.
+
+C catalog: 固定五家及合同已验，C职责冻结.
+Next sequence only D1受限执行 → D2假设 → E2编译; this package starts no new feature.
+用户尚未确认此版本 and separate runtime/deployment/page receipt wording remain.
+Catalog and new public closeout summary passed Prettier. No further collection,
+business/source/config implementation edits, commit or deployment by this worker.
+Ready for Root's single-batch submission/CI. action=no_order.

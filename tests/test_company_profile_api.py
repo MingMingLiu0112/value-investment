@@ -38,3 +38,30 @@ def test_corrupt_profile_sources_fail_closed_without_leaking_a_route(tmp_path, m
     assert data["status"] == "SOURCE_OR_PROFILE_UNAVAILABLE"
     assert data["route"] is None and data["formal_eligibility"] is False
     assert data["evidence_refs"] == []
+
+def test_explicit_source_lane_only_runs_when_current_research_is_absent(tmp_path, monkeypatch):
+    from value_investment_agent.application.research import company_profile_sources_v1 as sources
+    calls = []
+    monkeypatch.setattr(company_profile, "load_company_profile", lambda **kwargs: dict(
+        blockers=["NO_CURRENT_SOURCE_BOUND_RESEARCH"], action="no_order", profile=None))
+    def source(**kwargs):
+        calls.append(kwargs["symbol"])
+        return dict(symbol=kwargs["symbol"], schema_version="source-company-profile-v1",
+            status="MODEL_NOT_APPLICABLE", profile=None, route=None,
+            action="no_order", formal_eligibility=False, blockers=["FINANCIAL_BUSINESS_REQUIRES_SPECIALIZED_MODEL"])
+    monkeypatch.setattr(sources, "load_source_company_profile", source)
+    data = TestClient(create_app(tmp_path)).get("/api/v1/research-profiles/600036").json()
+    assert data["status"] == "MODEL_NOT_APPLICABLE"
+    assert calls == ["600036"] and data["route"] is None
+
+def test_damaged_current_research_never_uses_source_only_lane(tmp_path, monkeypatch):
+    from value_investment_agent.application.research import company_profile_sources_v1 as sources
+    def rejected(**kwargs):
+        raise ValueError("TEST_ONLY bad current binding")
+    def forbidden(**kwargs):
+        raise AssertionError("bad current must not fall back")
+    monkeypatch.setattr(company_profile, "load_company_profile", rejected)
+    monkeypatch.setattr(sources, "load_source_company_profile", forbidden)
+    data = TestClient(create_app(tmp_path)).get("/api/v1/research-profiles/000333").json()
+    assert data["status"] == "SOURCE_OR_PROFILE_UNAVAILABLE"
+    assert data["route"] is None
