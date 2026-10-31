@@ -1,5 +1,6 @@
 import { CompanyProfilePanel } from "../../components/CompanyProfilePanel";
 import { OperatingAssumptionDraftPanel } from "../../components/OperatingAssumptionDraftPanel";
+import { FirstResearchInputPanel } from "../../components/FirstResearchInputPanel";
 import { HotspotSampleReview } from "../../components/HotspotSampleReview";
 import { useParams, Link } from "@umijs/max";
 import { CurrentHolding } from "./CurrentHolding";
@@ -1172,6 +1173,7 @@ export default function DecisionDetail() {
         <>
           <CompanyProfilePanel symbol={id} />
           <OperatingAssumptionDraftPanel key={id} symbol={id} />
+          <FirstResearchInputPanel key={"first-" + id} symbol={id} />
         </>
       )}
       <RemoteState loading={loading} error={error} retry={retry}>

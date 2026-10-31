@@ -15,6 +15,10 @@
     "600887": {
       "organization_id": "gssh0600887",
       "issuer_names": ["伊利股份", "内蒙古伊利实业集团股份有限公司"]
+    },
+    "000568": {
+      "organization_id": "gssz0000568",
+      "issuer_names": ["泸州老窖", "泸州老窖股份有限公司"]
     }
   },
   "hkex": {

@@ -71,6 +71,7 @@ from .condition_alert_routes import register_condition_alert_routes
 from .agent_research_routes import register_agent_research_routes
 from .research_task_routes import register_research_task_routes
 from .operating_assumption_routes import register_operating_assumption_routes
+from .first_research_input_routes import register_first_research_input_routes
 from .simulated_journey_routes import register_simulated_journey_routes
 from .dual_simulated_journey_routes import register_dual_simulated_journey_routes
 from .simulated_portfolio_routes import register_simulated_portfolio_routes
@@ -1158,6 +1159,7 @@ def create_app(
     register_agent_research_routes(api, project=project, sessions=sessions, port=bound_port)
     register_research_task_routes(api, project=project, sessions=sessions, port=bound_port)
     register_operating_assumption_routes(api, project=project)
+    register_first_research_input_routes(api, project=project)
     register_simulated_journey_routes(api, project=project)
     register_dual_simulated_journey_routes(api, project=project)
     register_simulated_portfolio_routes(api, project=project, port=bound_port)

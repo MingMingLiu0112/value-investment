@@ -1,0 +1,12 @@
+{
+  "schema_version": "current-first-research-inputs-v1",
+  "action": "no_order",
+  "cases": {
+    "000568": {
+      "receipt": {
+        "path": "runtime/e2-first-input-000568-20261031/compiled-20261031T111006911210Z/receipt.json",
+        "sha256": "b3c3b1eec045381779156dc150d57a67c21a9c0c92fedd94403c42f390e92b48"
+      }
+    }
+  }
+}

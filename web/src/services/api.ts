@@ -326,6 +326,75 @@ export type QuotePlanObservation = {
   transitions: QuotePlanTransition[];
 };
 
+export type FirstResearchScenarioKey = "bear" | "base" | "bull";
+
+export type FirstResearchAnnualRow = {
+  year: number | string;
+  profit?: string | number;
+  distribution?: string | number;
+  retained?: string | number;
+  [key: string]: unknown;
+};
+
+export type FirstResearchAnnualLedger = {
+  rows10?: FirstResearchAnnualRow[];
+  rows?: FirstResearchAnnualRow[];
+  funding_status?: string;
+  [key: string]: unknown;
+};
+
+export type FirstResearchInputResponse = {
+  schema_version?: string;
+  symbol: string;
+  status: "NOT_STARTED" | "SOURCE_BOUND_FIRST_INPUT_COMPILED" | "UNASSESSABLE";
+  scope: "CONDITIONAL_STRESS_RESEARCH_NOT_ADOPTED_MAIN_RANGE";
+  action: "no_order";
+  formal_eligibility: false;
+  main_range_adopted: false;
+  main_valuation_range: null;
+  current_price: null;
+  condition_price: null;
+  personal_quantity: null;
+  company_name?: string;
+  financial_basis?: string;
+  research_as_of?: string;
+  available_at?: string;
+  reason?: string | null;
+  investment_conclusion?: string;
+  research_case?: {
+    symbol?: string;
+    name?: string;
+    thesis: string;
+    return_driver?: string;
+    counter_evidence: unknown[];
+    thesis_breakers: unknown[];
+    next_events: unknown[];
+  };
+  valuation?: {
+    bear_value: string | number;
+    base_value: string | number;
+    bull_value: string | number;
+    confidence: string;
+    valuation_date: string;
+  } | null;
+  annual_ledgers?: Record<FirstResearchScenarioKey, FirstResearchAnnualLedger>;
+  source_bindings?: { path: string; sha256: string }[];
+  input_fingerprint?: string;
+  sources?: {
+    id?: string;
+    title?: string;
+    source_url?: string;
+    official_url?: string;
+    officialURL?: string;
+    location?: string;
+    url?: string;
+    sha256?: string;
+  }[];
+  native_fact_count?: number;
+  operating_assumptions?: unknown;
+  blockers?: string[];
+};
+
 export type OperatingAssumptionScenario = {
   drivers: unknown;
   operating_capital_path?: unknown;
@@ -658,6 +727,11 @@ export type ConditionAlertsResponse = {
 };
 
 export const api = {
+  firstResearchInput: (symbol: string, signal?: AbortSignal) =>
+    get<FirstResearchInputResponse>(
+      "first-research-inputs/" + encodeURIComponent(symbol),
+      signal,
+    ),
   researchAssumptionDraft: (symbol: string, signal?: AbortSignal) =>
     get<OperatingAssumptionDraftResponse>(
       "research-assumption-drafts/" + encodeURIComponent(symbol),

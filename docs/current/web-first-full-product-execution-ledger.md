@@ -7353,3 +7353,36 @@ Its H1 original was fetched by existing A acquisition in2 queries/1 download;
 FY retained original remains unchanged. First input still must be cold-verified,
 economically explained and actually consumed before claiming E2 success.
 action=no_order.
+
+
+### 2026-10-31 E2 source-bound first input; C remains frozen
+
+000568 is E2 first-input transfer, NOT a sixth C classification sample.
+Its own FY2025/H12026 official originals replay84 dated scoped native facts;
+TTM is explicitly FY2025+H12026-H12025, not normalized profit. A finite
+versioned scenario compiler builds10 annual rows for each of3 conditional
+paths without predecessor model package. Existing v4 descriptor/run-spec/
+ResearchApplicationService actually consumed those inputs. Corporate identity
+only is appended from the sealed official CNINFO index; C types/rules/models
+and existing4 identity entries remain unchanged.
+
+First actual model run was not accepted while approval blockers were confused
+with input completeness and issuer identity was absent. Those receipts remain
+historical. Conditional mathematics now runs while G3, price, economic review
+and account qualifications remain denied. Source and implementation changes
+require fresh compilation, never re-signing old evidence.
+
+Independent review recomputed30 annual identities and1000 terminal steps:
+no confirmed P1/P2 in scope, RI/distribution arithmetic agrees; persistent
+maintenance/WC and cash constraints remain. Terminal distribution is not
+falsely held at its first-year amount. Main range remains REJECTED, no
+current-price/condition-price/personal quantity. These are counterfactual
+pressure scenarios, not adopted Bear/Base/Bull fair value or an AI prediction.
+No live LLM, paid calls, official approval, order, scheduler or server action.
+
+Public consumer: GET /api/v1/first-research-inputs/{symbol}, existing value
+company page; no private account needed. Read-only cold replay performs no
+network/source acquisition or output write. Source index and acceptance
+command: artifacts/current/first-research-input-e2-20261031.json. Final
+source commit, CI and8001 browser acceptance are recorded separately below;
+not inferred from earlier green CI. action=no_order.

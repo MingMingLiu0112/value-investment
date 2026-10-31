@@ -467,6 +467,9 @@ jobs:
           tests/test_research_task_execution_v1.py
           tests/web_api/test_research_tasks_api.py
           tests/test_operating_assumption_draft_v1.py
+          tests/test_first_research_input_v1.py
+          tests/test_first_research_fact_replay_v1.py
+          tests/web_api/test_first_research_input_api.py
           tests/web_api/test_operating_assumption_api.py
           tests/test_hotspot_candidate_selection.py
           tests/test_economic_review_cli.py
