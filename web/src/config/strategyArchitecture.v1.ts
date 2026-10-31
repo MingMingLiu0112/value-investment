@@ -198,21 +198,27 @@ export const catalog: Record<
           "src/value_investment_agent/infrastructure/agent_runtime/provider.py",
           "src/value_investment_agent/application/research/agent_review/llm_pilot.py",
         ],
-        engineeringStatus: "部分实现",
-        evidenceStatus: "源码定位／业务待验",
+        engineeringStatus: "保存响应任务闭环／真实模型待验",
+        evidenceStatus: "真实600519来源重放及恢复合同已验",
         shortStatus: "完整持久恢复、真实模型验收未据此证明",
-        implementation: "Provider、Mock与受限研究试点存在",
-        milestone: "部分实现；不代表正式研究准入或实盘资格。",
-        existingEvidence: "Provider、Mock与受限研究试点存在",
-        evidenceSource: "d01923cd源码职责复核；本轮未运行该模块真实业务验收",
-        evidence: "完整持久恢复、真实模型验收未据此证明",
-        nextStep: "复用Provider补足研究任务生命周期",
+        implementation:
+          "复用Provider与三角色执行器；追加Hash状态、调用前预算预留、显式取消恢复与只读历史发现",
+        milestone:
+          "SAVED_RESPONSE工程链已验；真实模型、用户确认及研究批准分别待验。",
+        existingEvidence:
+          "600519官方原件重新核验后执行成功，重建服务可读取验证；崩溃预算漏账反例已修",
+        evidenceSource:
+          "runtime/research-task-execution-v1/acceptance-2b9bfea72d4b.json；.tmp/d1-integrated-final.xml",
+        evidence:
+          "来源变化拒绝；幂等、取消、预算中断恢复及任务发现已验；600887无登记入口不计成功",
+        nextStep: "独立完成D2来源绑定假设与反证；真实付费调用仍需单独授权",
         ruleWhy: "执行可靠性与投资判断不同；Mock只能证明工程路径。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
-          consumer: "端到端尚未证明",
-          realData: "本轮未验真实业务",
+          consumer:
+            "现有公司AI区域显式操作 → 任务API → 持久执行器；不在首屏后台调用",
+          realData: "600519真实来源＋保存响应重放通过；不是新模型或当日研究",
           economic: "不适用或由下游独立准入",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",

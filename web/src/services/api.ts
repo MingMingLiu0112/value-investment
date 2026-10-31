@@ -326,6 +326,45 @@ export type QuotePlanObservation = {
   transitions: QuotePlanTransition[];
 };
 
+export type ResearchTaskCreateRequest = {
+  symbol: string;
+  workflow: "legacy";
+  request_key: string;
+};
+
+export type ResearchTaskResponse = {
+  task_id: string;
+  status:
+    | "QUEUED"
+    | "RUNNING"
+    | "WAITING_EVIDENCE"
+    | "SUCCEEDED"
+    | "FAILED"
+    | "CANCELLED";
+  workflow: string;
+  symbol: string;
+  execution_mode: "SAVED_RESPONSE" | "MOCK";
+  snapshot_status: string;
+  checkpoint_verified: boolean;
+  finding_count?: number;
+  error_code: string | null;
+  attempts: number;
+  provider_requests: number;
+  usage: { prompt_tokens: number; completion_tokens: number };
+  usage_basis: string;
+  new_llm_calls: 0;
+  record_binding: { path: string; sha256: string };
+  action: "no_order";
+  formal_eligibility: false;
+};
+
+export type ResearchTaskHistoryResponse = {
+  action: "no_order";
+  symbol: string;
+  items: ResearchTaskResponse[];
+  scope: "BOUNDED_TASK_HISTORY";
+};
+
 export type AgentResearchResponse = {
   workflow?: string;
   available_workflows?: string[];
@@ -591,6 +630,28 @@ export const api = {
     getPrivate<PrivateRetrospective>(
       `private/portfolio/retrospective?review_date=${encodeURIComponent(reviewDate)}`,
       signal,
+    ),
+  createResearchTask: (body: ResearchTaskCreateRequest) =>
+    post<ResearchTaskResponse>("research-tasks", body),
+  researchTasksForSymbol: (symbol: string, signal?: AbortSignal) =>
+    getPrivate<ResearchTaskHistoryResponse>(
+      "research-tasks?symbol=" + encodeURIComponent(symbol),
+      signal,
+    ),
+  researchTask: (taskId: string, signal?: AbortSignal) =>
+    getPrivate<ResearchTaskResponse>(
+      "research-tasks/" + encodeURIComponent(taskId),
+      signal,
+    ),
+  cancelResearchTask: (taskId: string) =>
+    post<ResearchTaskResponse>(
+      "research-tasks/" + encodeURIComponent(taskId) + "/cancel",
+      {},
+    ),
+  resumeResearchTask: (taskId: string) =>
+    post<ResearchTaskResponse>(
+      "research-tasks/" + encodeURIComponent(taskId) + "/resume",
+      {},
     ),
   agentResearch: (symbol: string, signal?: AbortSignal, workflow?: string) =>
     getPrivate<AgentResearchResponse>(

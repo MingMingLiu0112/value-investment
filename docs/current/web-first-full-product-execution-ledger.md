@@ -7307,3 +7307,22 @@ D2 and E2 may start only after their predecessor has its own recorded evidence.
 The actual checkout has /strategy/value but no /project route: add /project as
 an alias of the exact same component/catalog, never a parallel progress store.
 All outputs remain unapproved and action=no_order.
+
+### 2026-10-31 D1 bounded task engineering and independent review
+Reused existing llm_pilot/snapshot/MockLLMProvider and OS lock; new versioned
+task service plus thin authenticated task API, lazy company-panel controls.
+Immutable input and hash-chained status versions, pre-call token reservations,
+idempotency, exclusion, cancellation, explicit whole-packet resume and bounded
+read-only task discovery are implemented. No live provider or new approval path.
+Independent review's budget-crash P1, workflow and lock-busy P2 were fixed and
+rechecked. Final linked regression 107 passed / zero skipped (D1/API/Provider/
+architecture); direct service 33 passed, API 5 passed. Real 600519 official
+source bytes were restored from the original local checkout only after hash
+checks, then saved-response task executed and verified through a fresh service.
+Receipt runtime/research-task-execution-v1/acceptance-2b9bfea72d4b.json.
+600887 has no matching registered legacy entry: failed, not counted PASS.
+Historical task versions retained, no private/canonical/publication pointers
+changed. Real model acceptance remains pending separate authorization.
+C /project actual browser screenshot saved as c-frozen-project-20261031.png.
+D1 CI/current deployment/browser evidence must be recorded separately.
+After D1 closeout only D2 may advance; E2 follows D2. action=no_order.

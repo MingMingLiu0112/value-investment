@@ -3,6 +3,7 @@ import { Alert, Button, Descriptions, Segmented, Tag, Typography } from "antd";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
 import { RemoteState } from "../../components/RemoteState";
+import { ResearchTaskPanel } from "./ResearchTaskPanel";
 
 const WORKFLOW_LABELS: Record<string, string> = {
   event: "公告事件",
@@ -58,6 +59,7 @@ export function AgentResearchPanel({ symbol }: { symbol: string }) {
         AI 研究材料、反证与来源
         {queueItems.length ? ` · 待复核 ${queueItems.length}` : ""}
       </summary>
+      <ResearchTaskPanel key={activeSymbol} symbol={activeSymbol} />
       <section style={{ marginTop: 12 }} aria-label="待人工复核队列">
         <Typography.Title level={5}>待人工复核队列</Typography.Title>
         <RemoteState
