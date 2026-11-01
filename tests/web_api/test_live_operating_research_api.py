@@ -451,3 +451,23 @@ def test_driver_bridge_does_not_admit_test_only_public_research(api):
     assert body['status']=='UNASSESSABLE' and 'operating_driver_bridge' not in body
     assert body['action']=='no_order' and body['formal_eligibility'] is False
     assert not data.provider_calls
+
+
+
+def test_native_http_execution_uses_bounded_controller(tmp_path, monkeypatch):
+    calls=[]
+    class TestOnlyNative(routes._NativeLiveService):
+        def create(self, **kwargs):
+            return dict(task_id='rt-'+'a'*32,symbol=kwargs['symbol'],
+                status='QUEUED',action='no_order',formal_eligibility=False,
+                scope='TEST_ONLY_LIVE_CONTRACT')
+        def run(self, task_id):
+            raise AssertionError('Unbounded parent execution must not run')
+    monkeypatch.setattr(routes,'LiveOperatingTaskService',TestOnlyNative)
+    monkeypatch.setattr(routes,'supervise_live_task',
+        lambda root,task_id:calls.append((root,task_id)))
+    client,secret=client_for(tmp_path,tmp_path/'TEST_ONLY-journal.jsonl',monkeypatch)
+    unlock(client,secret)
+    response=client.post(BASE+'/tasks',json=dict(symbol='600519',request_key='TEST_ONLY-controller'))
+    assert response.status_code==202,response.text
+    assert len(calls)==1 and calls[0][1]=='rt-'+'a'*32

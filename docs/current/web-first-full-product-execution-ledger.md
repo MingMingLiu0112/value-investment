@@ -7692,3 +7692,11 @@ Business commit7537c7a0 clean checkout restored57 public refs;202 actual-source/
 Web CI41301243114成功；Core41301243135仍运行，未标全绿。
 后续最小补丁仅原件明细折叠及单次闭包重复Hash去重，不改金融公式/阈值/批准。
 当前整体交互验收仍PARTIAL，完整扫描、新LLM、重试/恢复/真实入账不得冒称已过。
+
+
+透明工作台收尾：820f2aa4 Core41303030731/Web41303030729均SUCCESS。
+真实模型第三角色暴露无总时限，原任务已取消并保留响应/未结算预算。
+追加最小operational owned-process controller至既有HTTP后台入口；
+金融v2/provider及已有候选Hash不变，不另建任务系统。
+后台总截止300秒，取消回收本次子进程；不能回收则保留未证实状态。
+原live/API86、监督17、结果组件10已通过；最终发布/CI回执单独存runtime。

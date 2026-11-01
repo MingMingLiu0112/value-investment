@@ -5,9 +5,20 @@ from fastapi import FastAPI,Request,BackgroundTasks
 from fastapi.responses import JSONResponse
 from .local_auth import authorize,LocalAuthorizationError,AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.operating_task_v2 import LiveOperatingTaskService,model_status,ROLES
+from ...application.research.agent_review.operating_task_v2 import LiveOperatingTaskService as _NativeLiveService
+from ...application.research.agent_review.live_task_controller_v1 import supervise_live_task
+
 
 def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     service=LiveOperatingTaskService(project)
+    def enqueue(background,task_id):
+        # Execution resource supervision only; frozen research inputs/providers
+        # and financial implementation fingerprints remain byte-identical.
+        if isinstance(service,_NativeLiveService) and service.test_provider is None:
+            background.add_task(supervise_live_task,project,task_id)
+        else:
+            background.add_task(service.run,task_id)
+
     def reply(value,status=200):
         return JSONResponse(value,status_code=status,headers={"Cache-Control":"no-store"})
     def review_projection(value):
@@ -61,7 +72,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                     or not isinstance(body["symbol"],str) or re.fullmatch("[0-9]{6}",body["symbol"]) is None):
                 raise ValueError("LIVE_REQUEST_INVALID")
             task=service.create(symbol=body["symbol"],request_key=body["request_key"])
-            if task["status"]=="QUEUED":background.add_task(service.run,task["task_id"])
+            if task["status"]=="QUEUED":enqueue(background,task["task_id"])
             return reply(review_projection(task),202)
         except PermissionError as error:
             return reply(dict(action="no_order",status=str(error)),409)
@@ -84,7 +95,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             if operation=="cancel":task=service.cancel(task_id)
             elif operation=="resume":
                 task=service.resume(task_id)
-                if task["status"]=="QUEUED":background.add_task(service.run,task_id)
+                if task["status"]=="QUEUED":enqueue(background,task_id)
             else:raise ValueError("UNSUPPORTED_OPERATION")
             return reply(review_projection(task))
         except (ValueError,OSError,KeyError,RuntimeError,TypeError):

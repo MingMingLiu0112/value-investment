@@ -270,8 +270,19 @@ function TaskSelectionResult({ data }: { data: Record<string, any> }) {
                 {rows.map((row: any, i: number) => (
                   <tr key={i}>
                     <td>
-                      {textValue(row.company_name || row.name)} ·{" "}
-                      {textValue(row.symbol)}
+                      {/^[0-9]{6}$/.test(row.symbol) ? (
+                        <a
+                          href={"/decisions/" + row.symbol + "?strategy=value"}
+                        >
+                          {textValue(row.company_name || row.name)} ·{" "}
+                          {row.symbol}
+                        </a>
+                      ) : (
+                        <>
+                          {textValue(row.company_name || row.name)} ·{" "}
+                          {textValue(row.symbol)}
+                        </>
+                      )}
                     </td>
                     <td>
                       {channelNames[row.channel] ||

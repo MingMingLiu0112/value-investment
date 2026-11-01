@@ -9,7 +9,11 @@ vi.mock("../src/components/MainValuationRevalidationPanel", () => ({
     </p>
   ),
 }));
-import { TransparentTaskResult } from "../src/components/TransparentTaskControls";
+import {
+  TransparentTaskResult,
+  taskFailure,
+} from "../src/components/TransparentTaskControls";
+import { ApiError } from "../src/services/api";
 const { renderToStaticMarkup } = require("react-dom/server");
 function task(
   operation: string,
@@ -241,4 +245,36 @@ it("rejects operation/authority mismatches even if task status is success and co
   expect(css).toContain(".task-result-scroll");
   expect(css).toContain("overflow-x: auto");
   expect(css).toContain("margin-inline-start: 0");
+});
+
+it("fresh native candidates link to value context without inventing a current buy", () => {
+  const html = renderToStaticMarkup(
+    <TransparentTaskResult
+      task={task("FRESH_PUBLIC_SCAN", {
+        shortlist: [
+          {
+            symbol: "000568",
+            company_name: "TEST_ONLY_COMPANY",
+            channel: "value",
+            reasons: ["TEST_ONLY_REASON"],
+          },
+        ],
+      })}
+    />,
+  );
+  expect(html).toContain("/decisions/000568?strategy=value");
+  expect(html).toContain("TEST_ONLY_REASON");
+  expect(html).toContain("不是当前入池或买入名单");
+});
+it("retains the exact native failure reason while unauthorized reads stay generic", () => {
+  expect(
+    taskFailure(
+      new ApiError(422, "UNASSESSABLE", "TASK_CHANGED_DURING_PUBLIC_READ"),
+    ),
+  ).toContain("TASK_CHANGED_DURING_PUBLIC_READ");
+  expect(
+    taskFailure(
+      new ApiError(401, "AUTHORIZATION_REQUIRED", "TEST_ONLY_PRIVATE_DETAIL"),
+    ),
+  ).not.toContain("TEST_ONLY_PRIVATE_DETAIL");
 });
