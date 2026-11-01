@@ -62,3 +62,19 @@ def test_floor_overlap_not_reserved_twice():
     result = run(cash_floor=100, obligations=[dict(id='reserve', scope='parent',
                   amount=100, included_in_cash_floor=True)])
     assert Decimal(result['conditional_cash_remaining']) == Decimal('17016211233.61')
+
+
+@pytest.mark.parametrize('key', ['generated_at', 'identity_available_at', 'published_at'])
+def test_later_packet_identity_publication(tmp_path, key):
+    import json
+    import hashlib
+    from datetime import datetime, timezone
+    from value_investment_agent.infrastructure.filings.parent_funding_facts_v1 import load_parent_facts
+    (tmp_path / 'original.pdf').write_bytes(b'original')
+    source = dict(id='s', path='original.pdf', available_at='2026-10-01T00:00:00+00:00',
+                  sha256=hashlib.sha256(b'original').hexdigest())
+    packet = dict(sources=[source], facts=[])
+    (packet if key == 'generated_at' else source)[key] = '2026-11-03T00:00:00+00:00'
+    (tmp_path / 'facts.json').write_text(json.dumps(packet), encoding='utf-8')
+    with pytest.raises(ValueError, match='future'):
+        load_parent_facts(tmp_path, 'facts.json', cutoff=datetime(2026, 11, 2, tzinfo=timezone.utc))
