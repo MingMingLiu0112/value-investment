@@ -1,6 +1,8 @@
 """TEST_ONLY owned-child supervision; no providers, network or real task writes."""
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from copy import deepcopy
+import hashlib
+import json
 from pathlib import Path
 import socket
 import subprocess
@@ -16,7 +18,9 @@ class Service:
     def __init__(self, root):
         self.root = root
         self.spec = {'symbol': '123456', 'task_id': TASK, 'config': {'TEST_ONLY': True}}
+        self.input_raw = json.dumps(self.spec, sort_keys=True, separators=(',', ':')).encode()
         self.state = dict(status='QUEUED', error_code=None, version=1, reserved_cost='1.75',
+            input_sha256=hashlib.sha256(self.input_raw).hexdigest(),
             settled_cost='0.25', reservations={'r': {'status': 'RESERVED', 'cost': '1.75'}},
             returned_responses=[{'path': 'runtime/TEST_ONLY-response', 'sha256': 'a' * 64}],
             roles={'FUNDAMENTAL': {'sha256': 'b' * 64}}, usage={'prompt_tokens': 20})
@@ -87,7 +91,7 @@ def case(tmp_path, monkeypatch):
 
 
 def assert_retained(before, after):
-    for k in ('reserved_cost', 'settled_cost', 'reservations', 'returned_responses', 'roles', 'usage'):
+    for k in ('reserved_cost', 'settled_cost', 'reservations', 'returned_responses', 'roles', 'usage', 'input_sha256'):
         assert after[k] == before[k]
 
 
@@ -217,3 +221,92 @@ def test_kill_exit_race_accepts_only_confirmed_exit(case, monkeypatch):
     monkeypatch.setattr(child, 'kill', exited_during_kill)
     app._reap(child)
     assert child.waited == 1 and child.poll() == 0
+
+
+def test_terminal_state_lock_race_retries_then_persists_failure(case, monkeypatch):
+    root, service, child, clock, _, on_sleep = case
+    before = deepcopy(service.state)
+    @contextmanager
+    def lock(directory, name='state'):
+        if name == 'state' and .2 <= clock[0] < .8:
+            raise app.LockTimeout('TEST_ONLY UI _view holds state lock')
+        yield
+    monkeypatch.setattr(service, '_lock', lock)
+    on_sleep[0] = lambda: service.state.update(status='RUNNING')
+    r = app.supervise_live_task(root, TASK, timeout_seconds=.2)
+    assert clock[0] >= .8 and child.killed == 1
+    assert r['status'] == 'FAILED' and r['error_code'] == app.DEADLINE_ERROR
+    assert_retained(before, r)
+
+
+def pending_case(case, monkeypatch):
+    root, service, child, clock, _, on_sleep = case
+    directory = service._directory(TASK)
+    directory.mkdir()
+    (directory / 'input.json').write_bytes(service.input_raw)
+    busy = [True]
+    @contextmanager
+    def lock(directory, name='state'):
+        if name == 'state' and busy[0] and clock[0] >= .2:
+            raise app.LockTimeout('TEST_ONLY long UI read')
+        yield
+    monkeypatch.setattr(service, '_lock', lock)
+    monkeypatch.setattr(app, 'FINALIZE_LOCK_RETRY_SECONDS', .4)
+    on_sleep[0] = lambda: service.state.update(status='RUNNING')
+    before = deepcopy(service.state)
+    r = app.supervise_live_task(root, TASK, timeout_seconds=.2)
+    return root, service, child, busy, before, r
+
+
+def test_lock_exhaustion_durable_pending_then_explicit_idempotent_finalization(case, monkeypatch):
+    root, service, child, busy, before, r = pending_case(case, monkeypatch)
+    assert child.killed == 1 and r['status'] == 'FINALIZATION_PENDING'
+    assert r['persisted_task_status'] is None and service.state['status'] == 'RUNNING'
+    assert service.state['live_controller']['result'] == 'STARTING'
+    binding = r['pending_bindings'][0]
+    path = root / binding['path']
+    raw = path.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == binding['sha256']
+    assert path.name == app.PENDING_PREFIX + binding['sha256'] + '.json'
+    assert json.loads(raw)['input_sha256'] == before['input_sha256']
+    assert len(raw) <= app.MAX_PENDING_BYTES
+    count = len(service.saves)
+    assert app.read_pending_live_task(root, TASK)['status'] == 'FINALIZATION_PENDING'
+    assert len(service.saves) == count  # Detection is read-only, even under lock contention.
+    busy[0] = False
+    final = app.finalize_pending_live_task(root, TASK)
+    assert final['status'] == 'FAILED' and final['error_code'] == app.DEADLINE_ERROR
+    assert_retained(before, final)
+    assert path.read_bytes() == raw
+    count = len(service.saves)
+    assert app.finalize_pending_live_task(root, TASK)['status'] == 'FAILED'
+    assert len(service.saves) == count
+    assert app.read_pending_live_task(root, TASK)['status'] == 'NO_PENDING_FINALIZATION'
+
+
+@pytest.mark.parametrize('damage', ['artifact', 'input', 'controller'])
+def test_pending_finalization_refuses_tamper_or_new_controller(case, monkeypatch, damage):
+    root, service, _, busy, _, r = pending_case(case, monkeypatch)
+    busy[0] = False
+    if damage == 'artifact':
+        path = root / r['pending_bindings'][0]['path']
+        path.write_bytes(path.read_bytes() + b' ')
+    elif damage == 'input':
+        (service._directory(TASK) / 'input.json').write_bytes(b'CHANGED_TEST_ONLY')
+    else:
+        service.state['live_controller']['started_at'] = '2099-01-01T00:00:00+00:00'
+    count = len(service.saves)
+    with pytest.raises(ValueError):
+        app.finalize_pending_live_task(root, TASK)
+    assert len(service.saves) == count and service.state['status'] == 'RUNNING'
+
+
+def test_pending_cancelled_state_preserved_and_finalizer_has_no_model_calls(case, monkeypatch):
+    root, service, _, busy, _, _ = pending_case(case, monkeypatch)
+    busy[0] = False
+    service.state.update(status='CANCELLED', error_code='USER_CANCELLED')
+    def forbidden(*a, **k):
+        raise AssertionError('Finalization must never start a worker or model')
+    monkeypatch.setattr(app.subprocess, 'Popen', forbidden)
+    r = app.finalize_pending_live_task(root, TASK)
+    assert r['status'] == 'CANCELLED' and r['error_code'] == 'USER_CANCELLED'

@@ -2,6 +2,7 @@
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import hashlib
+import json
 import math
 import os
 from pathlib import Path
@@ -11,12 +12,18 @@ import sys
 import time
 
 from ...portfolio.private_journal_lock import LockTimeout
+from ...product.common import write_new_bytes
 
 MODULE = 'value_investment_agent.application.research.agent_review.live_task_controller_v1'
 VERSION = 'live-task-controller-v1'
 DEADLINE_ERROR = 'LIVE_TOTAL_DEADLINE_UNSETTLED_RESERVATION_RETAINED'
 POLL_SECONDS = 0.2
 REAP_TIMEOUT_SECONDS = 5
+FINALIZE_LOCK_RETRY_SECONDS = 60
+PENDING_VERSION = 'live-task-pending-finalization-v1'
+PENDING_PREFIX = 'live-controller-pending-'
+MAX_PENDING = 16
+MAX_PENDING_BYTES = 16_384
 TERMINAL = {'SUCCEEDED', 'CANCELLED', 'FAILED', 'WAITING_EVIDENCE'}
 
 
@@ -62,17 +69,144 @@ def _reap(child):
         raise RuntimeError('LIVE_CONTROLLER_CHILD_TERMINATION_UNCONFIRMED')
 
 
+def _retry_lock(operation, exhausted):
+    deadline = time.monotonic() + FINALIZE_LOCK_RETRY_SECONDS
+    while True:
+        try:
+            return operation()
+        except LockTimeout:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return exhausted()
+            time.sleep(min(POLL_SECONDS, remaining))
+
+
+def _input_hash(service, task_id):
+    return hashlib.sha256((service._directory(task_id) / 'input.json').read_bytes()).hexdigest()
+
+
+def _pending_records(service, task_id):
+    directory = service._directory(task_id)
+    files = sorted(directory.glob(PENDING_PREFIX + '*.json'))
+    if len(files) > MAX_PENDING:
+        raise ValueError('LIVE_PENDING_FINALIZATION_LIMIT')
+    result = []
+    for path in files:
+        if path.is_symlink() or path.resolve().parent != directory.resolve() or path.stat().st_size > MAX_PENDING_BYTES:
+            raise ValueError('LIVE_PENDING_FINALIZATION_PATH_OR_SIZE_INVALID')
+        raw = path.read_bytes()
+        digest = hashlib.sha256(raw).hexdigest()
+        if len(raw) > MAX_PENDING_BYTES or path.name != PENDING_PREFIX + digest + '.json':
+            raise ValueError('LIVE_PENDING_FINALIZATION_HASH_INVALID')
+        packet = json.loads(raw)
+        fields = {'schema_version', 'action', 'task_id', 'input_sha256', 'metadata',
+                  'failure', 'result', 'exit_code', 'recorded_at'}
+        if (not isinstance(packet, dict) or set(packet) != fields
+                or packet['schema_version'] != PENDING_VERSION or packet['action'] != 'no_order'
+                or packet['task_id'] != task_id or packet['input_sha256'] != _input_hash(service, task_id)
+                or not isinstance(packet['metadata'], dict)
+                or packet['metadata'].get('schema_version') != VERSION
+                or packet['metadata'].get('input_sha256') != packet['input_sha256']
+                or (packet['failure'] is not None and (not isinstance(packet['failure'], str)
+                    or re.fullmatch('[A-Z0-9_]{1,160}', packet['failure']) is None))
+                or not isinstance(packet['result'], str)
+                or len(packet['result']) > 160
+                or (packet['exit_code'] is not None and type(packet['exit_code']) is not int)):
+            raise ValueError('LIVE_PENDING_FINALIZATION_BINDING_INVALID')
+        result.append((packet, dict(path=path.relative_to(service.root).as_posix(), sha256=digest)))
+    return result
+
+
+def _pending_view(task_id, records, applied=(), *, state_verified=True):
+    bindings = [ref for _, ref in records if ref['sha256'] not in applied]
+    return dict(schema_version=PENDING_VERSION, action='no_order', task_id=task_id,
+        status=('FINALIZATION_PENDING' if bindings and state_verified else
+                'FINALIZATION_STATE_UNCONFIRMED' if bindings else 'NO_PENDING_FINALIZATION'),
+        pending_bindings=bindings, persisted_task_status=None,
+        state_verified=state_verified, model_calls=0)
+
+
+def read_pending_live_task(root, task_id):
+    """Read-only detection; pending metadata never replaces the native task state."""
+    service = _service(Path(root).resolve())
+    records = _pending_records(service, task_id)
+    if not records:
+        return _pending_view(task_id, records)
+    try:
+        _, state, _ = service._load(task_id, recover=False)  # No lock file, view or recovery writes.
+        applied = state.get('live_controller_pending_applied', [])
+        if not isinstance(applied, list):
+            raise ValueError('LIVE_PENDING_APPLIED_LIST_INVALID')
+    except (ValueError, OSError, KeyError, TypeError):
+        return _pending_view(task_id, records, state_verified=False)
+    return _pending_view(task_id, records, applied)
+
+
+def _write_pending(service, task_id, metadata, failure, result, exit_code):
+    if metadata['input_sha256'] != _input_hash(service, task_id):
+        raise ValueError('LIVE_PENDING_INPUT_CHANGED')
+    if len(_pending_records(service, task_id)) >= MAX_PENDING:
+        raise ValueError('LIVE_PENDING_FINALIZATION_LIMIT')
+    packet = dict(schema_version=PENDING_VERSION, action='no_order', task_id=task_id,
+        input_sha256=metadata['input_sha256'], metadata=metadata, failure=failure,
+        result=result, exit_code=exit_code, recorded_at=_now().isoformat())
+    raw = json.dumps(packet, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('utf-8')
+    if len(raw) > MAX_PENDING_BYTES:
+        raise ValueError('LIVE_PENDING_FINALIZATION_SIZE_INVALID')
+    digest = hashlib.sha256(raw).hexdigest()
+    path = service._directory(task_id) / (PENDING_PREFIX + digest + '.json')
+    write_new_bytes(path, raw)  # Atomic, fsynced publication inside the SAME task directory.
+    return _pending_view(task_id, [(packet, dict(path=path.relative_to(service.root).as_posix(), sha256=digest))])
+
+
+def _apply_finish(service, task_id, metadata, failure, result, exit_code, pending_digest=None):
+    # Caller holds the existing state lock. Native recovery validates interrupted head publication.
+    spec, state, pin = service._load(task_id, recover=True)
+    if state['input_sha256'] != metadata['input_sha256']:
+        raise ValueError('LIVE_PENDING_INPUT_CHANGED')
+    applied = list(state.get('live_controller_pending_applied', []))
+    if pending_digest is not None:
+        if pending_digest in applied:
+            return _view(spec, state, pin)
+        current = state.get('live_controller') or {}
+        if any(current.get(k) != metadata.get(k) for k in
+               ('input_sha256', 'started_at', 'deadline_at', 'controller_sha256', 'code_commit')):
+            raise ValueError('LIVE_PENDING_CONTROLLER_VERSION_MISMATCH')
+        applied.append(pending_digest)
+    receipt = dict(metadata, result=result, finished_at=_now().isoformat(), worker_exit_code=exit_code)
+    changes = dict(live_controller=receipt)
+    if pending_digest is not None:
+        changes['live_controller_pending_applied'] = applied
+    if result == 'WORKER_EXITED' and state['status'] in TERMINAL:
+        failure = None  # Preserve the native error/status if its final write raced poll.
+    if failure is not None and state['status'] not in {'SUCCEEDED', 'CANCELLED'}:
+        changes.update(status='FAILED', error_code=failure)
+    state, pin = service._save(spec, state, pin, _now(), **changes)
+    return _view(spec, state, pin)
+
+
 def _finish(service, task_id, metadata, *, failure=None, result, exit_code=None):
-    with service._lock(service._directory(task_id)):
-        # After owned-worker termination, recover a fully written version whose
-        # head publish was interrupted. Native recovery validates the whole chain.
-        spec, state, pin = service._load(task_id, recover=True)
-        receipt = dict(metadata, result=result, finished_at=_now().isoformat(), worker_exit_code=exit_code)
-        changes = dict(live_controller=receipt)
-        if failure is not None and state['status'] not in {'SUCCEEDED', 'CANCELLED'}:
-            changes.update(status='FAILED', error_code=failure)
-        state, pin = service._save(spec, state, pin, _now(), **changes)
-        return _view(spec, state, pin)
+    def save():
+        with service._lock(service._directory(task_id)):
+            return _apply_finish(service, task_id, metadata, failure, result, exit_code)
+    return _retry_lock(save, lambda: _write_pending(service, task_id, metadata, failure, result, exit_code))
+
+
+def finalize_pending_live_task(root, task_id):
+    """Explicitly apply validated pending operations once; no model or native.resume."""
+    service = _service(Path(root).resolve())
+    records = _pending_records(service, task_id)
+    if not records:
+        return _pending_view(task_id, records)
+    def save():
+        with service._lock(service._directory(task_id)):
+            latest = None
+            # Re-read/hash each artifact under lock before using its contents.
+            for packet, ref in _pending_records(service, task_id):
+                latest = _apply_finish(service, task_id, packet['metadata'], packet['failure'],
+                    packet['result'], packet['exit_code'], pending_digest=ref['sha256'])
+            return latest
+    return _retry_lock(save, lambda: read_pending_live_task(root, task_id))
 
 
 def supervise_live_task(root, task_id, timeout_seconds=300):
@@ -99,6 +233,7 @@ def supervise_live_task(root, task_id, timeout_seconds=300):
         started = _now()
         deadline = time.monotonic() + timeout_seconds
         metadata = dict(schema_version=VERSION, **_identity(), started_at=started.isoformat(),
+            input_sha256=state['input_sha256'],
             deadline_at=(started + timedelta(seconds=timeout_seconds)).isoformat(),
             timeout_seconds=timeout_seconds, scope='OPERATIONAL_ENVELOPE_NOT_RESEARCH_INPUT',
             action='no_order', result='STARTING')
@@ -144,10 +279,9 @@ def supervise_live_task(root, task_id, timeout_seconds=300):
                 code = child.poll()
                 if code is not None:
                     stop_owned_child()
-                    # A terminal write may have raced the last state poll.
-                    spec, state, pin = _load(service, task_id, recover=True)
-                    failure = None if state['status'] in TERMINAL else (
-                        'LIVE_WORKER_EXIT_NONZERO_UNSETTLED_RESERVATION_RETAINED' if code else
+                    # _finish re-reads under its bounded retry lock. Never let an
+                    # extra single-shot state read strand the already-reaped worker.
+                    failure = ('LIVE_WORKER_EXIT_NONZERO_UNSETTLED_RESERVATION_RETAINED' if code else
                         'LIVE_WORKER_EXIT_WITHOUT_TERMINAL_STATE_UNSETTLED_RESERVATION_RETAINED')
                     return _finish(service, task_id, metadata, failure=failure,
                                    result='WORKER_EXITED', exit_code=code)

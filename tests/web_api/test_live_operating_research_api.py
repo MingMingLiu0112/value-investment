@@ -463,6 +463,7 @@ def test_native_http_execution_uses_bounded_controller(tmp_path, monkeypatch):
                 scope='TEST_ONLY_LIVE_CONTRACT')
         def run(self, task_id):
             raise AssertionError('Unbounded parent execution must not run')
+    monkeypatch.setattr(routes,'_NativeLiveService',TestOnlyNative)
     monkeypatch.setattr(routes,'LiveOperatingTaskService',TestOnlyNative)
     monkeypatch.setattr(routes,'supervise_live_task',
         lambda root,task_id:calls.append((root,task_id)))
@@ -471,3 +472,79 @@ def test_native_http_execution_uses_bounded_controller(tmp_path, monkeypatch):
     response=client.post(BASE+'/tasks',json=dict(symbol='600519',request_key='TEST_ONLY-controller'))
     assert response.status_code==202,response.text
     assert len(calls)==1 and calls[0][1]=='rt-'+'a'*32
+
+
+
+def test_injected_native_subclass_keeps_its_own_runner(tmp_path, monkeypatch):
+    calls=[]
+    class TestOnlyInjected(routes._NativeLiveService):
+        def create(self, **kwargs):
+            return dict(task_id='rt-'+'b'*32,symbol=kwargs['symbol'],
+                status='QUEUED',action='no_order',formal_eligibility=False,
+                scope='TEST_ONLY_LIVE_CONTRACT')
+        def run(self, task_id):
+            calls.append(('injected',task_id))
+    monkeypatch.setattr(routes,'LiveOperatingTaskService',TestOnlyInjected)
+    monkeypatch.setattr(routes,'supervise_live_task',
+        lambda *args:calls.append(('wrong_native',args)))
+    client,secret=client_for(tmp_path,tmp_path/'TEST_ONLY-journal.jsonl',monkeypatch)
+    unlock(client,secret)
+    response=client.post(BASE+'/tasks',json=dict(symbol='600519',request_key='TEST_ONLY-injected'))
+    assert response.status_code==202,response.text
+    assert calls==[('injected','rt-'+'b'*32)]
+
+
+
+def test_explicit_finalization_is_authorized_and_never_runs_model(tmp_path, monkeypatch):
+    calls=[]
+    class TestOnlyNative(routes._NativeLiveService):
+        def read(self, task_id):
+            calls.append('read')
+            return dict(task_id=task_id,status='FAILED',action='no_order',
+                formal_eligibility=False,error_code='TEST_ONLY_ORIGINAL_TIMEOUT')
+        def run(self, task_id):
+            raise AssertionError('finalization must never run a model')
+        def resume(self, task_id):
+            raise AssertionError('finalization must not resume research')
+    monkeypatch.setattr(routes,'_NativeLiveService',TestOnlyNative)
+    monkeypatch.setattr(routes,'LiveOperatingTaskService',TestOnlyNative)
+    monkeypatch.setattr(routes,'finalize_pending_live_task',lambda *a:calls.append('finalize'))
+    monkeypatch.setattr(routes,'read_pending_live_task',
+        lambda *a:dict(status='NO_PENDING_FINALIZATION',action='no_order'))
+    client,secret=client_for(tmp_path,tmp_path/'TEST_ONLY-journal.jsonl',monkeypatch)
+    url=BASE+'/tasks/rt-'+'c'*32+'/finalize'
+    assert client.post(url).status_code==401 and not calls
+    unlock(client,secret)
+    response=client.post(url)
+    assert response.status_code==200,response.text
+    assert response.json()['status']=='FAILED'
+    assert calls==['finalize','read']
+
+
+def test_pending_terminal_read_exposes_pending_without_recovery_writes(tmp_path, monkeypatch):
+    calls=[]
+    class TestOnlyNative(routes._NativeLiveService):
+        def _load(self, *a, **kw):
+            calls.append('load')
+            return {},{},{}
+        def _view(self,*a):
+            return dict(task_id='rt-'+'d'*32,status='RUNNING',action='no_order',
+                formal_eligibility=False)
+        def read(self,*a):
+            raise AssertionError('pending read must not hold the expensive view lock')
+        def _save(self,*a,**kw):
+            raise AssertionError('GET must not finalize state')
+    monkeypatch.setattr(routes,'_NativeLiveService',TestOnlyNative)
+    monkeypatch.setattr(routes,'LiveOperatingTaskService',TestOnlyNative)
+    waiting=dict(status='FINALIZATION_PENDING',action='no_order',model_calls=0,
+        pending_bindings=[{'path':'TEST_ONLY_HASH_BOUND_PENDING'}])
+    monkeypatch.setattr(routes,'read_pending_live_task',lambda *a:waiting)
+    monkeypatch.setattr(routes,'finalize_pending_live_task',
+        lambda *a:(_ for _ in ()).throw(AssertionError('GET must not recover')))
+    client,secret=client_for(tmp_path,tmp_path/'TEST_ONLY-journal.jsonl',monkeypatch)
+    unlock(client,secret)
+    response=client.get(BASE+'/tasks/rt-'+'d'*32)
+    assert response.status_code==200,response.text
+    assert response.json()['status']=='RUNNING'  # Persisted state is not fabricated as complete.
+    assert response.json()['controller_finalization']==waiting
+    assert calls==['load']

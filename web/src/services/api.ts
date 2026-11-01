@@ -1134,6 +1134,16 @@ export type ParentFundingReview = {
 };
 export type MainValuationRevalidationRecord = Record<string, unknown>;
 export type LiveOperatingResearchTask = {
+  controller_finalization?: { status: string; pending_bindings: unknown[] };
+  live_controller?: {
+    schema_version: string;
+    started_at: string;
+    deadline_at: string;
+    timeout_seconds: number;
+    result: string;
+    finished_at?: string;
+  };
+
   main_valuation_revalidation?: MainValuationRevalidationRecord;
   parent_funding_review?: ParentFundingReview;
   current_capital_observation?: CurrentCapitalObservation;
@@ -1444,6 +1454,11 @@ export const api = {
   cancelOperatingResearchTask: (id: string) =>
     post<LiveOperatingResearchTask>(
       "operating-research/tasks/" + encodeURIComponent(id) + "/cancel",
+      {},
+    ),
+  finalizeOperatingResearchTask: (id: string) =>
+    post<LiveOperatingResearchTask>(
+      "operating-research/tasks/" + encodeURIComponent(id) + "/finalize",
       {},
     ),
   resumeOperatingResearchTask: (id: string) =>

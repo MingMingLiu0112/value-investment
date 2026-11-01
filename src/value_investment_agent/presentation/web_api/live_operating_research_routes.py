@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from .local_auth import authorize,LocalAuthorizationError,AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.operating_task_v2 import LiveOperatingTaskService,model_status,ROLES
 from ...application.research.agent_review.operating_task_v2 import LiveOperatingTaskService as _NativeLiveService
-from ...application.research.agent_review.live_task_controller_v1 import supervise_live_task
+from ...application.research.agent_review.live_task_controller_v1 import supervise_live_task, read_pending_live_task, finalize_pending_live_task
 
 
 def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
@@ -14,10 +14,20 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     def enqueue(background,task_id):
         # Execution resource supervision only; frozen research inputs/providers
         # and financial implementation fingerprints remain byte-identical.
-        if isinstance(service,_NativeLiveService) and service.test_provider is None:
+        if type(service) is _NativeLiveService and service.test_provider is None:
             background.add_task(supervise_live_task,project,task_id)
         else:
             background.add_task(service.run,task_id)
+
+    def pending(task_id):
+        if type(service) is not _NativeLiveService or service.test_provider is not None:
+            return None
+        value=read_pending_live_task(project,task_id)
+        return value if value["status"]!="NO_PENDING_FINALIZATION" else None
+    def pending_response(value):
+        return reply(dict(action="no_order",status="FINALIZATION_PENDING",
+            detail="工作进程已停止，状态写入尚未完成；请使用完成状态写入，不会调用模型。",
+            controller_finalization=value),409)
 
     def reply(value,status=200):
         return JSONResponse(value,status_code=status,headers={"Cache-Control":"no-store"})
@@ -83,7 +93,14 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     def read(task_id:str,request:Request):
         error=denied(request)
         if error is not None:return error
-        try:return reply(review_projection(service.read(task_id)))
+        try:
+            waiting=pending(task_id)
+            if waiting is not None:
+                spec,state,pin=service._load(task_id,recover=False)
+                value=service._view(spec,state,pin,datetime.now(timezone.utc))
+                value["controller_finalization"]=waiting
+                return reply(review_projection(value))
+            return reply(review_projection(service.read(task_id)))
         except (ValueError,OSError,KeyError,RuntimeError,TypeError):
             return reply(dict(action="no_order",status="LIVE_TASK_UNAVAILABLE"),404)
 
@@ -93,7 +110,18 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         if error is not None:return error
         try:
             if operation=="cancel":task=service.cancel(task_id)
+            elif operation=="finalize":
+                if type(service) is not _NativeLiveService or service.test_provider is not None:
+                    raise ValueError("NATIVE_FINALIZATION_REQUIRED")
+                finalize_pending_live_task(project,task_id)
+                waiting=pending(task_id)
+                if waiting is not None:return pending_response(waiting)
+                task=service.read(task_id)
             elif operation=="resume":
+                if pending(task_id) is not None:
+                    finalize_pending_live_task(project,task_id)
+                    waiting=pending(task_id)
+                    if waiting is not None:return pending_response(waiting)
                 task=service.resume(task_id)
                 if task["status"]=="QUEUED":enqueue(background,task_id)
             else:raise ValueError("UNSUPPORTED_OPERATION")

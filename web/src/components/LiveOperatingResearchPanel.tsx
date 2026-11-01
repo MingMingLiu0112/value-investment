@@ -1292,6 +1292,22 @@ export function LiveOperatingResearchDraft({
         任务：{task.task_id} · {LABELS[task.status] || task.status} · 模型：
         {task.model_id}
       </p>
+      {"controller_finalization" in task && task.controller_finalization && (
+        <Alert
+          type="warning"
+          message="工作进程已停止，原记录的状态写入尚未完成"
+          description="这是落盘待恢复，不是模型仍在运行。点击完成状态写入，不重新研究或释放预留费用。"
+        />
+      )}
+      {"live_controller" in task && task.live_controller && (
+        <p>
+          后台总时限：{task.live_controller.timeout_seconds}秒； 开始：
+          {task.live_controller.started_at}； 截止：
+          {task.live_controller.deadline_at}； 监督结果：
+          {task.live_controller.result}。
+          取消或到期会停止本次自建工作进程；未结算费用不会自动记零。
+        </p>
+      )}
       {"reserved_cost" in task ? (
         <p>
           新增模型调用：{task.new_llm_calls} · 预留费用（人民币元）：
@@ -1606,7 +1622,7 @@ export function PublicOperatingResearchView({
   return <LiveOperatingResearchDraft task={value} />;
 }
 type Operation =
-  "status" | "start" | "history" | "refresh" | "cancel" | "resume";
+  "status" | "start" | "history" | "refresh" | "cancel" | "resume" | "finalize";
 export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
   const [opened, setOpened] = useState(false);
   const [publicResult, setPublicResult] =
@@ -1625,7 +1641,11 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
       model?.status !== "READY"
     )
       return;
-    if (["refresh", "cancel", "resume"].includes(operation) && !task) return;
+    if (
+      ["refresh", "cancel", "resume", "finalize"].includes(operation) &&
+      !task
+    )
+      return;
     lock.current = true;
     setBusy(true);
     setError(undefined);
@@ -1688,7 +1708,9 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
               ? await api.operatingResearchTask(task!.task_id)
               : operation === "cancel"
                 ? await api.cancelOperatingResearchTask(task!.task_id)
-                : await api.resumeOperatingResearchTask(task!.task_id);
+                : operation === "finalize"
+                  ? await api.finalizeOperatingResearchTask(task!.task_id)
+                  : await api.resumeOperatingResearchTask(task!.task_id);
         if (
           !validLiveTask(result, symbol) ||
           (operation !== "start" && result.task_id !== task!.task_id)
@@ -1700,7 +1722,9 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
       setError(
         cause instanceof ApiError && cause.status === 401
           ? "任务操作需要本机授权；公开研究仍可查看，请解锁后手动重试。"
-          : "经营研究操作未完成或响应边界无法核验，请手动重试。",
+          : cause instanceof ApiError && cause.code === "FINALIZATION_PENDING"
+            ? "工作进程已停止，状态落盘尚待完成；点击完成状态写入，不会调用模型。"
+            : "经营研究操作未完成或响应边界无法核验，请手动重试。",
       );
       if (operation === "status") setModel(undefined);
     } finally {
@@ -1768,6 +1792,9 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
           onClick={() => perform("resume")}
         >
           恢复当前任务
+        </Button>
+        <Button disabled={busy || !task} onClick={() => perform("finalize")}>
+          完成状态写入（不调用模型）
         </Button>
       </Space>
       <ul>
