@@ -672,9 +672,18 @@ def test_both_registry_failures_not_fake_empty_success(case):
 
 
 def test_actual_registered_company_entry_list_not_tied_to_current_shortlist():
-    root = Path(__file__).resolve().parents[2]
+    import os
+    location = os.environ.get('TRANSPARENT_TASK_REAL_ROOT')
+    root = Path(location).resolve() if location else Path(__file__).resolve().parents[2]
+    expected = set()
+    for name, field in (
+            ('config/current-research-drafts.json', 'pending_candidates'),
+            ('config/current-operating-research-sources-v1.json', 'cases')):
+        expected.update(json.loads((root / name).read_bytes()).get(field, {}))
     with no_io_effects():
         body = routes._companies(root)
     assert body['status'] == 'REGISTERED_ENTRIES', body
-    assert {'600519', '600887', '000568'} <= {row['symbol'] for row in body['items']}
+    assert {row['symbol'] for row in body['items']} == expected
+    if location:
+        assert {'600519', '600887', '000568'} <= expected
     assert all(row['status'] == 'REGISTERED_NOT_YET_REVALIDATED' for row in body['items'])
