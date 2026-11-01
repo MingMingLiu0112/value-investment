@@ -472,6 +472,7 @@ jobs:
           tests/test_operating_driver_draft_v2.py
           tests/test_operating_cash_consumption_v1.py
           tests/test_fiscal_distribution_review_v1.py
+          tests/test_parent_funding_review_v1.py
           tests/test_operating_distribution_review_v1.py
           tests/test_current_capital_observation_v1.py
           tests/test_native_capital_observation_v1.py

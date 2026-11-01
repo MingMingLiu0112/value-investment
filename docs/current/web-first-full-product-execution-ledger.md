@@ -7636,3 +7636,23 @@ parent scope checked; no unique validQ3 means no comparison. Independent Euclid
 review found no definiteP1/P2. Explicit source/API related tests104passed0skip.
 New source/receipt index: artifacts/current/value-fiscal-update-20261101/index.json.
 Latest follow-up CI/deployment still require their own receipt. action=no_order.
+
+Parent package65fce3b0 independently reviewed by Darwin/Euclid and merged6a3e03e4,
+only four child files; no old hotspot commits. Root integrated one bound follow-up
+in existing source registry, a read-only wrapper, existing public company API,
+pure parent-funding component, and explicit Core selector. Source-approved
+historical result:23,517,778,984.18 minus6,501,567,650.57 =17,016,211,333.61 CNY.
+No duplicate dividend/CapEx deduction;8/28 is FY2025 implementation arrangement,
+not account receipt or FY2026 policy fulfillment. Parent due obligations/legal
+capacity remain incomplete; ceilings and shortfall null, currentcapacityfalse.
+
+Comparison with the actual model opening is expressly AMOUNT-ONLY in the same
+bound symbol/native/date/CNY/v4 scope. It does NOT prove derivation or mapping.
+Initial overly broad amount-match terminology/null structure P2 were fixed and
+independently closed with13 counterexamples. No source_mapping or financial grant.
+True isolated API PASS; old cash fingerprint153d179a...e95426 unchanged, Q3
+fiscal result unchanged.48 final parent/API tests passed including real source;
+231 related source/model/architecture tests passed. Registered review is fixed
+case, not a general parent maturity parser. Final CI/build/8001 remain separately
+verified on the delivery commit. Permanent action=no_order.
+Public source/integration index:artifacts/current/parent-funding-integration-20261101/index.json.

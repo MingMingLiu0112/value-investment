@@ -1033,7 +1033,107 @@ export type FiscalDistributionReview = {
   reason?: string;
   error_code?: string;
 };
+export type ParentFundingSource = {
+  sha256: string;
+  path?: string;
+  url?: string;
+  source_url?: string;
+  available_at?: string;
+  [key: string]: unknown;
+};
+export type ParentFundingFact = {
+  field: string;
+  value: string;
+  unit: string;
+  scope: string;
+  period_end: string;
+  source_id: string;
+  physical_page: number;
+  [key: string]: unknown;
+};
+export type ParentFundingPage = {
+  source: ParentFundingSource;
+  physical_page: number;
+  amount: string;
+  excerpt: string;
+};
+export type ParentFundingReview = {
+  cash_input_comparison?: {
+    status:
+      | "AMOUNT_EQUAL_NOT_MAPPING_VERIFIED"
+      | "AMOUNT_DIFFERENT"
+      | "NOT_ASSESSABLE";
+    source_mapping_verified: false;
+    scope: "AMOUNT_COMPARISON_NOT_SOURCE_MAPPING_OR_LEGAL_CAPACITY";
+    source_static_remainder_cny?: string;
+    model_opening_cash_cny?: string;
+    model_financial_basis?: string;
+    model_scope?: string | null;
+    explanation?: string;
+    reason?: string;
+    action?: "no_order";
+    current_capacity_proven?: false;
+  };
+  status: "HISTORICAL_PARENT_REVIEW" | "NOT_STARTED" | "UNASSESSABLE";
+  symbol?: string;
+  action: "no_order";
+  formal_eligibility: false;
+  current_capacity_proven?: false;
+  reason?: string;
+  error_code?: string;
+  review?: {
+    period: string;
+    action: "no_order";
+    native_sha256: string;
+    result: {
+      static_after_declared_dividend: string;
+      status: string;
+      conditional_distribution_ceiling: string | null;
+      conditional_shortfall: string | null;
+      current_capacity_proven: false;
+      approved: false;
+      action: "no_order";
+    };
+    evidence: ParentFundingFact[];
+    sources: Record<string, ParentFundingSource>;
+    debt_review: {
+      parent_current_noncurrent_liabilities: string;
+      other_payables_ex_dividend: string;
+      other_payables_cash_timing: string;
+      principal_interest_split: unknown | null;
+      parent_page?: number;
+      warning?: string;
+      [key: string]: unknown;
+    };
+    debt_evidence?: ParentFundingPage[];
+    historical_capex?: ParentFundingPage;
+    retained_profit_evidence?: ParentFundingPage;
+    future_necessary_investment?: string;
+    legal_adjustments?: string;
+    unknowns?: string[];
+    historical_cash_uses?: {
+      scope: string;
+      period: string;
+      unit: string;
+      treatment: string;
+      cash_statement_reconciliation?: string;
+    };
+    post_h1_bridge?: {
+      status: "IMPLEMENTATION_ARRANGEMENT";
+      fiscal_attribution: string;
+      scheduled_date: string;
+      additional_cash_deduction: string;
+      current_parent_cash: null;
+      amount_evidence?: ParentFundingPage;
+      timing_evidence?: ParentFundingPage;
+      receipt_sha256?: string;
+      reason?: string;
+      action?: "no_order";
+    };
+  } | null;
+};
 export type LiveOperatingResearchTask = {
+  parent_funding_review?: ParentFundingReview;
   current_capital_observation?: CurrentCapitalObservation;
   fiscal_distribution_review?: FiscalDistributionReview;
   operating_driver_bridge?: OperatingDriverBridge;
@@ -1076,6 +1176,7 @@ export type LiveOperatingResearchRole = {
 };
 export type PublicOperatingResearchSuccess = Pick<
   LiveOperatingResearchTask,
+  | "parent_funding_review"
   | "current_capital_observation"
   | "fiscal_distribution_review"
   | "operating_driver_bridge"

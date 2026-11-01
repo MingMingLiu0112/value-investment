@@ -174,3 +174,10 @@ src/value_investment_agent/application/research/operating_distribution_review_v1
 src/value_investment_agent/domain/research/fiscal_distribution_review_v1.py -text whitespace=cr-at-eol
 src/value_investment_agent/infrastructure/filings/native_capital_observation_v1.py -text whitespace=cr-at-eol
 config/current-capital-observations-v1.json -text whitespace=cr-at-eol
+
+# Fixed-case parent funding source/implementation integration.
+src/value_investment_agent/application/research/parent_funding_review_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/domain/research/parent_distribution_capacity_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/infrastructure/filings/parent_funding_facts_v1.py -text whitespace=cr-at-eol
+artifacts/current/parent-funding-integration-20261101/research-spec.json -text whitespace=cr-at-eol
+config/current-operating-research-sources-v1.json -text whitespace=cr-at-eol

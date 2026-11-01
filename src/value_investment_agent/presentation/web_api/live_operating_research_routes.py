@@ -144,6 +144,16 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             except (ValueError,OSError,KeyError,TypeError):
                 public["fiscal_distribution_review"] = dict(status="UNASSESSABLE",
                     reason="FISCAL_POLICY_SOURCE_OR_PERIOD_NOT_VERIFIED",action="no_order",formal_eligibility=False)
+            try:
+                from ...application.research.parent_funding_review_v1 import read_registered_parent_funding_review
+                public["parent_funding_review"] = read_registered_parent_funding_review(
+                    root=project,symbol=symbol,now=datetime.now(timezone.utc))
+                from ...application.research.parent_funding_review_v1 import compare_parent_cash_opening
+                public["parent_funding_review"]["cash_input_comparison"] = compare_parent_cash_opening(
+                    public["parent_funding_review"],public.get("cash_consumption",{}))
+            except (ValueError,OSError,KeyError,TypeError):
+                public["parent_funding_review"] = dict(status="UNASSESSABLE",
+                    reason="PARENT_FUNDING_SOURCE_NOT_VERIFIED",action="no_order",formal_eligibility=False)
             reviewed=review_projection(value)
             for key in ("independent_review","independent_review_status"):
                 if key in reviewed:public[key]=reviewed[key]

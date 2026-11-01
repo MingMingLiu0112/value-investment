@@ -1,3 +1,4 @@
+import { ParentFundingResearchPanel } from "./ParentFundingResearchPanel";
 import { useRef, useState } from "react";
 import { Alert, Button, Space, Table } from "antd";
 import {
@@ -1413,6 +1414,12 @@ export function LiveOperatingResearchDraft({
             (task.current_capital_observation ||
               task.fiscal_distribution_review!.current_observations)!
           }
+          symbol={task.symbol}
+        />
+      )}
+      {task.parent_funding_review && (
+        <ParentFundingResearchPanel
+          value={task.parent_funding_review}
           symbol={task.symbol}
         />
       )}
