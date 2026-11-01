@@ -414,6 +414,263 @@ export function validLiveTask(
     row.new_llm_calls >= 0
   );
 }
+export function OperatingCashConsumptionView({
+  value,
+}: {
+  value: Record<string, unknown>;
+}) {
+  if (value.status === "UNASSESSABLE")
+    return (
+      <Alert
+        type="warning"
+        message="股东现金消费来源尚未核验"
+        description={String(
+          value.reason || "来源或映射失败；原经营研究仍可阅读",
+        )}
+      />
+    );
+  const annual =
+    value.annual_followup && typeof value.annual_followup === "object"
+      ? (value.annual_followup as Record<string, unknown>)
+      : null;
+  const history = Array.isArray(value.historical_parent_cash)
+    ? (value.historical_parent_cash as Record<string, unknown>[])
+    : [];
+  const paths =
+    value.scenarios && typeof value.scenarios === "object"
+      ? (value.scenarios as Record<string, Record<string, unknown>>)
+      : {};
+  const blockers = Array.isArray(value.current_blockers)
+    ? (value.current_blockers as Record<string, unknown>[])
+    : [];
+  return (
+    <section aria-label="经营利润到股东现金的实际消费">
+      <h3>经营利润 → 股东现金 → 估值 → 条件价格</h3>
+      <Alert
+        type="info"
+        message={
+          annual?.status === "CONDITIONAL_STRESS_CONSUMED"
+            ? "条件压力经营 → 股东现金 → 共享估值已接通；尚非主估值或买价"
+            : "税后归属已实际计算；未来现金、年度估值与条件价格尚未形成完整链路"
+        }
+        description="这里消费同一D2角点，保留半年期间。归母利润不等于可分配现金，历史母公司现金代理不等于未来自由现金；不将旧年度估值冒充本次D2结果。"
+      />
+      <p>
+        研究任务：{String(value.task_id || "未提供")}；消费版本：
+        {String(value.consumption_fingerprint || "未核验")}；action=no_order。
+      </p>
+      {history.length > 0 && (
+        <table>
+          <caption>母公司历史现金勾稽（元；不同期间分别列示，非FCFE）</caption>
+          <thead>
+            <tr>
+              <th>期间</th>
+              <th>经营现金流</th>
+              <th>投资收益收现</th>
+              <th>购建资产现金</th>
+              <th>前三项合计：经营＋投资收现－购建</th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.map((row) => (
+              <tr key={String(row.period)}>
+                <td>
+                  {String(row.period)} · {String(row.period_basis)}
+                </td>
+                <td>{driverNumber(row.parent_cfo, 2)}</td>
+                <td>{driverNumber(row.investment_cash, 2)}</td>
+                <td>{driverNumber(row.gross_cash_capex, 2)}</td>
+                <td>{driverNumber(row.cash_proxy_cny, 2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <p>
+        历史经营现金流已包含营运资本变动，不再扣一次WC；投资收益收现不能直接视为经常性分红，集团现金不与母公司现金相加。
+      </p>
+      {Object.entries(paths).map(([name, path]) => {
+        const points =
+          path.witnesses && typeof path.witnesses === "object"
+            ? (path.witnesses as Record<string, Record<string, unknown>>)
+            : {};
+        return (
+          <section key={name}>
+            <h4>{LABELS[name] || name}：税后及归母勾稽（非现金预测）</h4>
+            <p>
+              {String(path.period_start)} ～ {String(path.period_end)}；
+              {String(path.period_basis)}
+              。沿用历史有效税率和带符号少数损益关系只是显式条件假设，不是已知未来事实。
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>原经营角点</th>
+                  <th>税前利润（元）</th>
+                  <th>所得税（元）</th>
+                  <th>少数损益（元）</th>
+                  <th>归母利润（元）</th>
+                  <th>可分配现金</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(points).map(([key, point]) => (
+                  <tr key={key}>
+                    <td>{key}</td>
+                    <td>{driverNumber(point.group_pbt_cny, 2)}</td>
+                    <td>{driverNumber(point.income_tax_cny, 2)}</td>
+                    <td>{driverNumber(point.signed_nci_cny, 2)}</td>
+                    <td>{driverNumber(point.parent_profit_cny, 2)}</td>
+                    <td>未形成，不补零</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        );
+      })}
+      {annual && <AnnualCashFollowup value={annual} />}
+      <h4>当前必需缺口（阻断本条业务链）</h4>
+      <ul>
+        {blockers.map((row) => (
+          <li key={String(row.code)}>
+            {CASH_BLOCKERS[String(row.code)] ||
+              String(row.explanation || row.code)}
+          </li>
+        ))}
+      </ul>
+      <p>
+        {annual?.status === "CONDITIONAL_STRESS_CONSUMED"
+          ? "已调用原ResearchApplicationService和v4共享模型；新结果绑定本次D2、年度传递假设和现金政策，非旧估值改名。主研究区间未采纳，条件价格与个人股数仍为空。"
+          : "尚未完成年度估值消费，不生成条件买价或个人股数；旧年度研究有独立版本，不能冒充本次D2结果。"}
+      </p>
+      <details>
+        <summary>税后归属来源与精确数值</summary>
+        <Readable value={value} />
+      </details>
+    </section>
+  );
+}
+function AnnualCashFollowup({ value }: { value: Record<string, unknown> }) {
+  if (value.status !== "CONDITIONAL_STRESS_CONSUMED")
+    return (
+      <Alert
+        type="warning"
+        message="年度现金/估值消费未通过"
+        description={String(value.reason || value.status)}
+      />
+    );
+  const valuation =
+    value.valuation && typeof value.valuation === "object"
+      ? (value.valuation as Record<string, unknown>)
+      : {};
+  const ledgers =
+    value.annual_ledgers && typeof value.annual_ledgers === "object"
+      ? (value.annual_ledgers as Record<string, Record<string, unknown>>)
+      : {};
+  return (
+    <section aria-label="D2实际消费的条件现金与估值">
+      <h4>新增滚动年度条件研究：现金约束与估值实际消费</h4>
+      <p>
+        财务及估值基准：{String(value.financial_basis)}
+        ；低置信度，仅未采用的压力路径，不是当前合理价值或买价。首年由下半年条件估计和原D2上半年完整角点组成，不将半年乘二。
+      </p>
+      <p>{String(value.rationale)}</p>
+      <table>
+        <caption>
+          共享v4模型计算的三条条件路径（元/股，不是已采纳Bear/Base/Bull）
+        </caption>
+        <thead>
+          <tr>
+            <th>条件路径</th>
+            <th>条件值</th>
+            <th>价格资格</th>
+          </tr>
+        </thead>
+        <tbody>
+          {["bear", "base", "bull"].map((name) => (
+            <tr key={name}>
+              <td>{LABELS[name]}</td>
+              <td>{driverNumber(valuation[name + "_value"], 2)}</td>
+              <td>未采用主区间；未形成买价</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {Object.entries(ledgers).map(([name, ledger]) => {
+        const rows = Array.isArray(ledger.rows)
+          ? (ledger.rows as Record<string, unknown>[])
+          : [];
+        return (
+          <details key={name}>
+            <summary>{LABELS[name]}：逐年股东现金、分配和权益账</summary>
+            <p>
+              现金约束导致分配低于目标的模型年：
+              {Array.isArray(ledger.distribution_constraint_years)
+                ? ledger.distribution_constraint_years.length
+                  ? ledger.distribution_constraint_years.join("、")
+                  : "本条件路径未发生"
+                : "未提供"}
+              。目标派息不是保证兑现。
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>模型期间</th>
+                  <th>归母利润</th>
+                  <th>可达利润</th>
+                  <th>维护/WC/承诺合计</th>
+                  <th>现金约束后的假设分配</th>
+                  <th>期末现金</th>
+                  <th>期末权益</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={String(row.year)}>
+                    <td>
+                      {String(row.period_start)} ～ {String(row.period_end)}
+                    </td>
+                    <td>{driverNumber(row.profit, 2)}</td>
+                    <td>{driverNumber(row.accessible_profit, 2)}</td>
+                    <td>{driverNumber(row.mandatory_cash, 2)}</td>
+                    <td>{driverNumber(row.distribution, 2)}</td>
+                    <td>{driverNumber(row.closing_cash, 2)}</td>
+                    <td>{driverNumber(row.closing_book, 2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+        );
+      })}
+      <p>最强反证与失效依据：{String(value.countercase)}</p>
+      <details>
+        <summary>既有条件价格政策的实际检查结果（无买价、未批准）</summary>
+        <p>
+          未采用压力值不具备操作价格基础；没有阈值理由，不创建默认安全边际。空规则预览不是待批准的买入计划。
+        </p>
+        <Readable value={value.price_policy} />
+      </details>
+      <p>
+        完整利润→现金→权益输入指纹：{String(value.input_descriptor_sha256)}
+        。现金政策是另行绑定的原条件研究，不是把Agent的UNKNOWN填零或取得G3。
+      </p>
+    </section>
+  );
+}
+const CASH_BLOCKERS: Record<string, string> = {
+  ANNUAL_TRANSPORT_AND_CASH_POLICY_NOT_ECONOMICALLY_ADOPTED:
+    "年度压力传递、利润持续性及资金政策还未获得经济采纳；原D2资本未知项没有因此变成已知事实。",
+  COMPLETE_ANNUAL_OPERATING_PATH_REQUIRED:
+    "完整年度经营路径缺失：当前是2027H1，不能乘二、默认下半年或让旧年度模型改写费用。",
+  EXPLICIT_SAME_PERIOD_CASH_POLICY_REQUIRED:
+    "同期间现金政策缺失：需绑定期初现金、维护/营运资本、上划和分配假设；既有UNKNOWN不能填零。",
+  MAIN_ECONOMIC_RANGE_NOT_ADOPTED:
+    "尚未选定有经济依据的主研究区间；利润和现金代理不能直接变成买价。",
+  CURRENT_CAPITAL_DISTRIBUTION_EVENT_QUOTE_ALIGNMENT_REQUIRED:
+    "当前股本、期间分配、重大事件和合格报价仍需同版本对齐；历史现金不是今日余额。",
+};
 export function LiveOperatingResearchDraft({
   task,
 }: {
@@ -543,6 +800,9 @@ export function LiveOperatingResearchDraft({
       )}
       {task.operating_driver_bridge && (
         <OperatingDriverBridgeView bridge={task.operating_driver_bridge} />
+      )}
+      {task.cash_consumption && (
+        <OperatingCashConsumptionView value={task.cash_consumption} />
       )}
       {"error_code" in task && task.error_code && (
         <Alert type="info" message={"任务错误：" + task.error_code} />

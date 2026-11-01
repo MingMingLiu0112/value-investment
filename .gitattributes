@@ -162,3 +162,9 @@ src/value_investment_agent/application/research/v4_review_context.py -text white
 src/value_investment_agent/application/research/v4_valuation_router.py -text whitespace=cr-at-eol
 src/value_investment_agent/application/research/v4_input_adapter.py -text whitespace=cr-at-eol
 src/value_investment_agent/valuation_models/residual_income_path_v4.py -text whitespace=cr-at-eol
+
+# D2 shareholder-cash consumption binds these new implementation bytes.
+src/value_investment_agent/application/research/operating_cash_consumption_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/domain/research/operating_cash_consumption_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/domain/valuation/operating_profit_cash_path_v1.py -text whitespace=cr-at-eol
+artifacts/current/d2-cash-consumption-20261101/research-spec.json -text whitespace=cr-at-eol

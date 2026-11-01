@@ -37,6 +37,31 @@ export const review = {
   disclaimer:
     "静态人工维护目录，不是实时进度。源码复核仅说明模块职责；里程碑状态是基线台账的人工整理，不代表人工投资批准。运行证据未接入，也未在本页核验。",
 } as const;
+export const valueVerticalScope = {
+  focus: "D2 → 股东现金 → 估值 → 条件价格",
+  evidenceSource: "artifacts/current/d2-operating-driver-20261101.json",
+  capitalUnknownCount: 9,
+  cashEvidenceSource:
+    "runtime/d2-cash-consumption-20261101/actual-annual-consumption.json",
+  accepted:
+    "当前真实回执：D2→股东现金→条件估值工程已接，待最终验收。ResearchApplicationService已消费年度输入并复用v4，三路径共30行现金账；纯条件模型结果9.03/20.26/25.82，非主区间、非买价，不代表整链或投资批准。",
+  currentBlocker:
+    "当前阻断：季节性/持续盈利与资金政策尚未获经济采纳，当前资本/分配/事件/报价尚未对齐，无阈值理由不出条件价。原9项资本UNKNOWN不因复用来源绑定的条件现金政策而升级为已证；不能补零、未经核验沿用旧假设或重试模型凑通过。年度计算通道已接，不能据此推定主区间获批。",
+  nextRequired: [
+    "年度经营路径（工程已接，待终验）：H2逐组成行压力投影，与原D2 H1同一个margin_lower witness组成2026年7月—2027年6月滚动全年，后续年度flat；非机械年化，复用既有计算、不复制公式，不得H1×2，不得调整COGS凑利润。当前需验证季节性与持续盈利的经济适用性，不再列作计算通道缺失。",
+    "税后归属与现金政策（经济采纳待验）：年度PBT→税后归属→v4现金/终值已真实消费，三路径共30行现金账；经营税前利润不能直接当股东现金。复用000568原已来源绑定的条件资金政策，但不是批准，不升级原9项资本UNKNOWN；历史代理或旧首编单独重放不冒充本次D2消费。",
+    "条件估值已消费，主区间未采用：当前三路径压力值仅为条件研究，RI/DDM差小于1e-36属于算术一致性；季节性、持续盈利与资金政策经济采纳、模型终端适用性仍须验收，不代表未来参数已证、主估值或投资批准。",
+    "当前资本/分配/事件/报价及价格理由（当前必需）：核验股本连续性、当前分配/事件/报价及估值采用资格；无阈值理由不出条件价，当前不生成买价。公开条件研究不依赖私人持仓解锁，不把压力结果直接套为当前参考价格。",
+  ],
+  futureExtensions: [
+    "全市场自动研究、通用企业分类与新增公司样本：属于后续扩展，不是本轮纵向链的前置任务。",
+    "真实组合、私人持仓、个人账户收益/分红对账与交易执行：不在本轮范围，不作为公开研究的解锁条件；不包含本轮必需的公开股本/分配/事件/报价核验。",
+    "热点通道及更多平台能力：保留既有状态，本轮不并行扩展；C职责冻结。",
+  ],
+  boundary:
+    "本轮只推进当前纵向链。下方全景保留其他模块职责，不表示需先完成全部模块；生产部署与用户确认仍单独验收。",
+} as const;
+
 export const catalog: Record<
   StrategyKey,
   { title: string; summary: string; stages: Stage[] }
@@ -233,39 +258,41 @@ export const catalog: Record<
         title: "D2 · 经营假设与反证",
         question: "增长和分配为何成立，什么会推翻？",
         dependencies: ["C", "D1"],
-        input: "已核事实、商业模式、事件",
-        output: "分情景经营假设、理由、反证、未知项",
+        input:
+          "D2 H1同一margin_lower witness、年度/H1实际、逐行H2压力投影与来源绑定的条件现金政策",
+        output:
+          "滚动全年税前/税后归属输入、三路径30行现金账、未采用主区间的条件估值；无条件价",
         modules: [
           "src/value_investment_agent/application/research/product_operating_research.py",
           "src/value_investment_agent/application/research/agent_review/operating_draft_v1.py",
         ],
         engineeringStatus:
-          "真实三角色工程及条件压力算术已验收／经济适用性未证明",
+          "条件压力算术已验／D2→现金→条件估值工程已接，待最终验收",
         evidenceStatus:
-          "96条官方来源；21项经营驱动范围、6项增长/税前利润率由代码派生、9项资本UNKNOWN；不是模型直接填利润率",
+          "96条官方来源；21项经营驱动范围、6项增长/税前利润率由代码派生、9项资本UNKNOWN；不是模型直接填利润率；新增30行现金账与v4条件估值真实消费",
         shortStatus:
-          "量价成本驱动 → 税前利润传导 → 同bounds重审阈值已真实跑通；仅条件压力分析，不是主估值或未来参数已证",
+          "D2 H1 witness + H2逐行压力 → 滚动全年 → v4现金/条件估值已接；季节性、持续盈利和资金政策未获经济采纳",
         implementation:
-          "锁定H12026→H12027；模型提供7类经营驱动范围，确定性代码按每情景128角点压力包络重算增长与税前利润率；同比FY只对FY、H1只对H1",
+          "原驱动桥锁定H12026→H12027，按每情景128角点重算；同比FY只对FY、H1只对H1。新增2026Jul–2027Jun滚动全年适配，后续flat，ResearchApplicationService→既有v4计算",
         milestone:
           "独立Euclid冷复算3×128角点及12条阈值一致，工程与条件压力分析算术验收通过。12条重审严格按同bounds、同期间/基线比较，等于不触发，不混用历史阈值。",
         existingEvidence:
           "旧D2两公司草案及rt-c40经济拒绝保留为历史，不覆盖旧raw；当前H1第11/14/12页量价成本表构成新驱动桥，不沿用旧直接填利润率路径",
         evidenceSource:
-          "runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json；runtime/d2-operating-driver-20261101/independent-acceptance.json；源码版本见实际运行身份；验收索引 artifacts/current/d2-operating-driver-20261101.json",
+          "runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json；runtime/d2-operating-driver-20261101/independent-acceptance.json；runtime/d2-cash-consumption-20261101/actual-annual-consumption.json；源码版本见实际运行身份；验收索引 artifacts/current/d2-operating-driver-20261101.json",
         evidence:
-          "仅拒绝两类AI文字：产品结构向高档集中误述、Event母现金23.93亿元少10倍；不作为事实摘要，typed bridge不消费这些文字，算术验收不受其替代。Event仍限FY/H1；未来参数适用性未证，9项资本UNKNOWN不编估值。",
+          "仅拒绝两类AI文字：产品结构向高档集中误述、Event母现金23.93亿元少10倍；不作为事实摘要，typed bridge不消费这些文字，算术验收不受其替代。Event仍限FY/H1；未来参数适用性未证，原9项资本UNKNOWN不升级已证；新现金/估值仅复用另行绑定的条件政策。",
         nextStep:
-          "首要决定性缺口：验证参数经济适用性及资本/现金资料，不重试模型凑通过；保留9项资本UNKNOWN，不供主估值、E2批准、G3或交易",
+          "首要决定性缺口：验证参数经济适用性及资本/现金资料，不重试模型凑通过；重点为季节性/持续盈利与资金政策经济采纳、当前资本/分配/事件/报价对齐，无阈值理由不出条件价；原9项资本UNKNOWN不升级，不授予投资批准",
         ruleWhy: "价格上涨不直接等于净利上涨；预测必须明确为假设。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer:
-            "公开假设API → 现有价值公司详情；研究期、反证、失效默认可读",
+            "D2滚动年度输入 → ResearchApplicationService → v4条件现金/估值 → 公开研究；新消费待最终验收",
           realData:
             "最新rt-eac三角色、4次调用；96官方记录，21驱动范围、6代码派生指标、9资本UNKNOWN；独立3×128角点与12阈值复算一致",
-          economic: "条件压力算术已验／参数经济适用性未证／非主估值",
+          economic: "条件现金/估值工程已接待终验／参数经济适用性未证／非主区间",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",
         },

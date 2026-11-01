@@ -5,6 +5,7 @@ import { Workbench } from "../../components/Workbench";
 import {
   catalog,
   review,
+  valueVerticalScope,
   type Stage,
   type StrategyKey,
 } from "../../config/strategyArchitecture.v1";
@@ -212,6 +213,34 @@ export function ValuePlanOverview() {
         <p>
           方案覆盖16个价值/共享模块。旧页面按9个粗阶段展示；本页改为逐模块对标，未增加新的选股或估值公式。
         </p>
+        <section aria-label="本轮纵向链与扩展边界">
+          <h3>本轮仅推进：{valueVerticalScope.focus}</h3>
+          <p>{valueVerticalScope.accepted}</p>
+          <section aria-label="当前阻断与后续纵向验收">
+            <h4>当前阻断与后续纵向验收</h4>
+            <Alert type="warning" message={valueVerticalScope.currentBlocker} />
+            <ul>
+              {valueVerticalScope.nextRequired.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+          <section aria-label="未来扩展非本轮前置">
+            <h4>未来扩展（非本轮前置，不计作当前阻断）</h4>
+            <ul>
+              {valueVerticalScope.futureExtensions.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+          <p>{valueVerticalScope.boundary}</p>
+          <p>
+            当前依据：<code>{valueVerticalScope.evidenceSource}</code>
+            ；新增现金/条件估值回执：
+            <code>{valueVerticalScope.cashEvidenceSource}</code>
+            （静态回执，非实时进度）
+          </p>
+        </section>
         <div className="value-plan-lanes" aria-label="业务依赖图">
           <div>
             <strong>发现与研究</strong>
@@ -251,7 +280,7 @@ export function ValuePlanOverview() {
               A/B：来源、筛选与覆盖范围按各自证据核验，候选不是买入名单。C仅完成固定五家的有限官方完整段落审核与合同验收，不是通用自动分类器，也不是经济质量批准。
             </li>
             <li>
-              D1/D2：000568最新rt-eac任务三角色成功，4次调用含1次反证缺字段拒绝后恢复；96条官方来源，21项经营驱动范围（7×3），6项增长/税前利润率由代码派生，不是模型直接填值；9项资本UNKNOWN不编估值。量价成本表来源为H1第11/14/12页，锁定H12026→H12027，历史同比FY只对FY、H1只对H1。独立冷复算3×128角点与12条重审阈值一致，工程及条件压力分析算术已验收；128角点是压力包络，不是概率。AI原文两类误述（产品结构向高档集中、母现金少10倍）仅拒这些文字，驱动桥不消费它们；Event仍不是当前完整事件扫描。旧rt-c40经济拒绝与原始回执保留，不覆盖旧raw或当作本任务。
+              D1/D2：000568最新rt-eac任务三角色成功，4次调用含1次反证缺字段拒绝后恢复；96条官方来源，21项经营驱动范围（7×3），6项增长/税前利润率由代码派生，不是模型直接填值；原9项资本UNKNOWN不升级已证；新现金/估值仅复用另行绑定的条件政策。量价成本表来源为H1第11/14/12页，锁定H12026→H12027，历史同比FY只对FY、H1只对H1。独立冷复算3×128角点与12条重审阈值一致，工程及条件压力分析算术已验收；128角点是压力包络，不是概率。AI原文两类误述（产品结构向高档集中、母现金少10倍）仅拒这些文字，驱动桥不消费它们；Event仍不是当前完整事件扫描。旧rt-c40经济拒绝与原始回执保留，不覆盖旧raw或当作本任务。
             </li>
             <li>
               E1/F1/G1：已有600519、600887真实条件研究链。年度现金、留存和终值可复算，但预测不因此成为事实。
@@ -284,7 +313,7 @@ export function ValuePlanOverview() {
           </Link>
           <Link to="/decisions/600887?strategy=value">600887 实际研究</Link>
           <Link to="/decisions/000568?strategy=value">
-            000568 真实Agent研究结果（条件压力算术已验，非主估值）
+            000568 真实Agent研究结果（条件现金/估值已接，待终验）
           </Link>
           <Link to="/system">查看实际运行版本与数据状态</Link>
         </Space>

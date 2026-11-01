@@ -7528,3 +7528,60 @@ Index artifacts/current/d2-operating-driver-20261101.json; targeted345 passed0sk
 including real-original source reconstruction; fullWeb1465 passed28skip. /project
 records the conditional acceptance and remaining economic scope; final commit/clean
 replay/CI and8001 browser proofs are separate receipts. action=no_order.
+
+### 2026-11-01 D2 -> owner cash -> shared v4 conditional consumption
+
+Baseline dd9e1574 verified GitHub Core41262120116 and Web41262120125 SUCCESS.
+Scope remains one existing real company000568; no hotspot, account, Excel,
+server/PTA, scheduling, approval or paid-model call. Protected user draft pointer
+retains SHA256 2aba22a9e043d20076c7c40916808aee1bae9ba48f13951b8d0735e6fa077686.
+
+The actual economic contract mismatch was reproduced: D2 is2027H1 and independently
+varies OPEX/surcharges/other, while old v4 annual operating compiler fixes expense
+ratios. Do not annualize H1 or alter COGS to wash that mismatch. New minimal
+explicit-annual-profit adapter reuses signed_parent_profit, original v4 cash step,
+TerminalEconomicContract and the SAME shared RI valuation model.
+
+A separately bound adverse stress supplement now transports FY2025 minusH12025
+component rows into an explicitly estimatedH22026, using each corresponding
+observedH12026/H12025 multiplier, then recomputes PBT from components. Positive
+unclassifiedH2 residual is excluded only as a stress hypothesis, not normalized
+fact. Combine with the original complete D2 margin_lower witness forH12027;
+first full rolling model year is2026-07-01..2027-06-30. Y2..Y10 operating
+earnings persist without growth as an explicit pressure condition, not a forecast.
+Tax and signed NCI are separate period assumptions; no spliced extremes.
+
+Cold source reconstruction -> exact task/context validation -> 30 annual owner
+cash/equity rows -> source-bound typed descriptor -> ResearchApplicationService
+-> existing v4 model is actually consumed. New conditional values approximately
+9.03 /20.26 /25.82 CNY/share at the2026-06-30 financial basis are NOT a selected
+main Bear/Base/Bull interval, NOT current fair value or buying prices. Actual
+RI/dividend cross-check differences are below1e-36 CNY. The adverse path is
+cash-constrained from modelyear4 through10 under the bound original cash policy:
+target payout is an upper limit, not a sustainable-dividend guarantee.
+
+Old capital/maintenance/WC/remittance/terminal parameters remain separately bound
+RESEARCH HYPOTHESES; they do not resolve or overwrite the9 original D2 UNKNOWNs.
+Original declared payable was already removed from opening cash; no second book
+deduction, commitment or distribution is added. New-capital/liquidity return
+parameters are verified zero before reuse. No automatic reinvestment returns.
+
+Existing value_price_policy draft/preview/preparation contracts are exercised
+read-only with NO action rules. No global margin, price or personal quantity is
+invented. Main economic selection, explicit threshold rationale and current
+shares/distributions/material events/eligible quotes remain required. A diagnostic
+empty-rules preview is NOT an approved or actionable plan.
+
+Independent Euclid identified one real memory-substitution P1; fixed by cold
+reloading the exact task chain and source context at the annual consumer entry.
+The original in-memory parent-profit+100m counterexample and changed task
+witness now refuse; files/hashes alone cannot wash modified consumed values.
+Independent repeat closed that P1, no new definiteP1/P2 in reviewed scope.
+
+Company public API and existing D2 panel consume the new cash/valuation output.
+/project now separates CURRENT REQUIRED BLOCKERS from FUTURE EXTENSIONS, rather
+than claiming all modules must be built first. Engineering conditional consumption,
+economic adoption, current-price qualification and user confirmation remain separate.
+Final source commit, clean replay, test receipts and8001 browser evidence are
+recorded in artifacts/current/d2-cash-consumption-20261101 and runtime receipts.
+action=no_order.

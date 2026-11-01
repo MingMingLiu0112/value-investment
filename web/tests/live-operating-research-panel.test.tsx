@@ -1085,3 +1085,84 @@ it("preserves old numeric completeness labels without bridge or optional derivat
     expect(html).not.toContain("由代码派生，不是模型直接填值");
   }
 });
+
+it("cash consumption shows new conditional calculation without promoting a buy price", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const html = renderToStaticMarkup(
+    <LiveOperatingResearchDraft
+      task={task({
+        status: "SUCCEEDED",
+        cash_consumption: {
+          task_id: "TEST_ONLY_CASH_CONSUMPTION",
+          consumption_fingerprint: "test-only",
+          historical_parent_cash: [
+            {
+              period: "2026-06-30",
+              period_basis: "H1",
+              parent_cfo: "100",
+              investment_cash: "20",
+              gross_cash_capex: "10",
+              cash_proxy_cny: "110",
+            },
+          ],
+          current_blockers: [{ code: "MAIN_ECONOMIC_RANGE_NOT_ADOPTED" }],
+          annual_followup: {
+            status: "CONDITIONAL_STRESS_CONSUMED",
+            financial_basis: "2026-06-30",
+            rationale: "TEST_ONLY explicit stress, not main value",
+            countercase: "TEST_ONLY cash risk",
+            input_descriptor_sha256: "test-only",
+            valuation: { bear_value: "1", base_value: "2", bull_value: "3" },
+            annual_ledgers: {
+              base: {
+                rows: [
+                  {
+                    year: 1,
+                    period_start: "2026-07-01",
+                    period_end: "2027-06-30",
+                    profit: "100",
+                    accessible_profit: "50",
+                    mandatory_cash: "20",
+                    distribution: "30",
+                    closing_cash: "90",
+                    closing_book: "170",
+                  },
+                ],
+              },
+            },
+          },
+        },
+      })}
+    />,
+  );
+  expect(html).toContain("条件压力经营");
+  expect(html).toContain("股东现金");
+  expect(html).toContain("共享估值已接通");
+  expect(html).toContain("不是当前合理价值或买价");
+  expect(html).toContain("逐年股东现金、分配和权益账");
+  expect(html).toContain("2026-07-01");
+  expect(html).toContain("主研究区间未采纳");
+  expect(html).not.toContain("当前未调用年度估值内核");
+  expect(calls.start).not.toHaveBeenCalled();
+});
+it("cash mapping failure remains readable alongside public operating research", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const html = renderToStaticMarkup(
+    <LiveOperatingResearchDraft
+      task={task({
+        status: "SUCCEEDED",
+        research_draft: publicSuccess().research_draft,
+        cash_consumption: {
+          status: "SOURCE_BOUND_EARNINGS_CONSUMED_CASH_INPUTS_INCOMPLETE",
+          annual_followup: {
+            status: "UNASSESSABLE",
+            reason: "SOURCE_HASH_CHANGED",
+          },
+        },
+      })}
+    />,
+  );
+  expect(html).toContain("SOURCE_HASH_CHANGED");
+  expect(html).toContain("经营基本面草案");
+  expect(html).not.toContain("共享估值已接通");
+});

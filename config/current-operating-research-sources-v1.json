@@ -38,7 +38,11 @@
           "start_marker": "其他酒类",
           "max_chars": 500
         }
-      ]
+      ],
+      "cash_followup": {
+        "path": "artifacts/current/d2-cash-consumption-20261101/research-spec.json",
+        "sha256": "92a540c81d41fe05ad3c3837b826a734b3f61ca9cdaee2e0880fa7214ea06a4e"
+      }
     }
   }
 }

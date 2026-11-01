@@ -861,6 +861,7 @@ export type OperatingDriverBridge = {
 };
 export type LiveOperatingResearchTask = {
   operating_driver_bridge?: OperatingDriverBridge;
+  cash_consumption?: Record<string, unknown>;
   research_completeness?: OperatingResearchCompleteness;
   independent_review?: OperatingResearchIndependentReview;
   independent_review_status?: "REVIEW_BINDING_INVALID";
@@ -900,6 +901,7 @@ export type LiveOperatingResearchRole = {
 export type PublicOperatingResearchSuccess = Pick<
   LiveOperatingResearchTask,
   | "operating_driver_bridge"
+  | "cash_consumption"
   | "independent_review_status"
   | "independent_review"
   | "research_completeness"

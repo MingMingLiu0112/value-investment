@@ -120,6 +120,15 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                     error_code=value.get("error_code"),
                     completed_roles=[role for role in ROLES if role in draft],
                     pending_roles=[role for role in ROLES if role not in draft])
+            # A new read-model consumer, outside the immutable paid research task.
+            # Failure here does not erase valid public operating research.
+            try:
+                from ...application.research.operating_cash_consumption_v1 import read_operating_cash_consumption
+                public["cash_consumption"]=read_operating_cash_consumption(
+                    root=project,task=value,now=datetime.now(timezone.utc))
+            except (ValueError,OSError,KeyError,TypeError):
+                public["cash_consumption"]=dict(status="UNASSESSABLE",
+                    reason="CASH_SOURCE_OR_MAPPING_NOT_VERIFIED",action="no_order",formal_eligibility=False)
             reviewed=review_projection(value)
             for key in ("independent_review","independent_review_status"):
                 if key in reviewed:public[key]=reviewed[key]

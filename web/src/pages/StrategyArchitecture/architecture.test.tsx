@@ -7,7 +7,11 @@ vi.mock("@umijs/max", () => ({
   Link: ({ to, children }: any) => <a href={to}>{children}</a>,
   useLocation: () => ({ pathname: "/strategy/value" }),
 }));
-import { catalog, review } from "../../config/strategyArchitecture.v1";
+import {
+  catalog,
+  review,
+  valueVerticalScope,
+} from "../../config/strategyArchitecture.v1";
 import { ArchitectureView, StageButton, StageDetail } from "./index";
 describe("versioned strategy architecture", () => {
   it("pins review separately from disconnected runtime evidence", () => {
@@ -244,7 +248,7 @@ it("records the current driver bridge arithmetic acceptance without adopting par
   ])
     expect(html).toContain(text);
   expect(html).toContain('href="/decisions/000568?strategy=value"');
-  expect(html).toContain("真实Agent研究结果（条件压力算术已验，非主估值）");
+  expect(html).toContain("真实Agent研究结果（条件现金/估值已接，待终验）");
   expect(html).not.toContain("首要决定性缺口是经营量价/成本传导与一致性验证");
   expect(
     catalog.value.stages.find((stage) => stage.id === "C")?.progress
@@ -253,4 +257,76 @@ it("records the current driver bridge arithmetic acceptance without adopting par
   expect(
     catalog.value.stages.find((stage) => stage.id === "E2")?.engineeringStatus,
   ).toBe("工程首编与真实来源重算完成／部署待验收");
+});
+
+it("separates the actual capital blocker and vertical acceptance from future platform expansion", () => {
+  const evidence = JSON.parse(
+    readFileSync(resolve("..", valueVerticalScope.evidenceSource), "utf8"),
+  );
+  expect(evidence.capital_assumptions_unknown).toBe(
+    valueVerticalScope.capitalUnknownCount,
+  );
+  expect(evidence.compile_into_main_valuation).toBe(false);
+  expect(evidence.condition_price).toBeNull();
+  const cash = JSON.parse(
+    readFileSync(resolve("..", valueVerticalScope.cashEvidenceSource), "utf8"),
+  );
+  expect(cash.status).toBe("CONDITIONAL_STRESS_CONSUMED");
+  expect(cash.main_range_adopted).toBe(false);
+  expect(cash.condition_price).toBeNull();
+  expect(cash.formal_eligibility).toBe(false);
+  expect(
+    Object.values(cash.annual_ledgers).reduce(
+      (total: number, row: any) => total + row.rows.length,
+      0,
+    ),
+  ).toBe(30);
+
+  const html = renderToStaticMarkup(<ArchitectureView strategy="value" />);
+  const focus = html
+    .split('aria-label="本轮纵向链与扩展边界"')[1]
+    .split('aria-label="业务依赖图"')[0];
+  expect(focus).toContain(valueVerticalScope.focus);
+  expect(focus).toContain(
+    "原9项资本UNKNOWN不因复用来源绑定的条件现金政策而升级为已证",
+  );
+  expect(focus).toContain("不能补零、未经核验沿用旧假设或重试模型凑通过");
+  expect(focus).toContain("经营税前利润不能直接当股东现金");
+  expect(focus).toContain("当前不生成买价");
+  expect(focus).toContain("公开条件研究不依赖私人持仓解锁");
+  const current = focus
+    .split('aria-label="当前阻断与后续纵向验收"')[1]
+    .split('aria-label="未来扩展非本轮前置"')[0];
+  for (const text of [
+    "原D2 H1同一个margin_lower witness",
+    "复用既有计算、不复制公式",
+    "不再列作计算通道缺失",
+    "非机械年化",
+    "不得H1×2",
+    "不得调整COGS凑利润",
+    "税后归属与现金政策（经济采纳待验）",
+    "条件估值已消费，主区间未采用",
+    "当前资本/分配/事件/报价及价格理由（当前必需）",
+    "不冒充本次D2消费",
+    "复用000568原已来源绑定的条件资金政策，但不是批准",
+    "季节性、持续盈利与资金政策经济采纳",
+    "无阈值理由不出条件价",
+  ])
+    expect(current).toContain(text);
+  expect(valueVerticalScope.nextRequired).toHaveLength(4);
+  const future = focus.split('aria-label="未来扩展非本轮前置"')[1];
+  for (const text of [
+    "全市场自动研究",
+    "通用企业分类",
+    "真实组合",
+    "热点通道",
+    "非本轮前置",
+  ])
+    expect(future).toContain(text);
+  expect(focus).toContain("不表示需先完成全部模块");
+  expect(focus).toContain("D2→股东现金→条件估值工程已接，待最终验收");
+  expect(focus).not.toContain("二者尚不兼容");
+  expect(
+    renderToStaticMarkup(<ArchitectureView strategy="hotspot" />),
+  ).not.toContain("本轮纵向链与扩展边界");
 });
