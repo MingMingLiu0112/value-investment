@@ -1,4 +1,4 @@
-"""Historical parent funding review; future/current cash needs a separate bridge."""
+"""000568 H1-2026 case adapter; not a general issuer/period extractor."""
 from value_investment_agent.infrastructure.filings.parent_funding_facts_v1 import (
     load_parent_facts, bind_original_page, bind_payment_arrangement,
 )
@@ -7,6 +7,9 @@ from value_investment_agent.domain.research.parent_distribution_capacity_v1 impo
 
 def review_parent_funding(root, native_path, *, cutoff, period='2026-06-30'):
     packet = load_parent_facts(root, native_path, cutoff=cutoff)
+    if period != '2026-06-30' or any(
+            s.get('symbol') != '000568' for s in packet['sources'].values()):
+        raise ValueError('unsupported issuer/period')
     def one(field):
         matches = [f for f in packet['facts'] if f['field'] == field and f['period_end'] == period]
         if len(matches) != 1:
@@ -35,7 +38,7 @@ def review_parent_funding(root, native_path, *, cutoff, period='2026-06-30'):
                 future_necessary_investment='UNKNOWN',
                 historical_cash_uses=dict(scope='parent', period='2026-H1', unit='CNY',
                     treatment='Already included in ending cash; no additional deduction.',
-                    cash_statement_reconciliation='Use existing reconcile_parent_cash_statement; not recomputed here.'),
+                    cash_statement_reconciliation='NOT_PERFORMED_OUT_OF_SCOPE'),
                 retained_profit_evidence=legal_evidence, legal_adjustments='UNKNOWN',
                 unknowns=['subsequent_parent_cash_bridge', 'principal_interest_maturity_split',
                           'operating_reserve', 'necessary_investment', 'legal_distribution_adjustments'],
