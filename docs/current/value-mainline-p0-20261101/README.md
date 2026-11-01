@@ -108,3 +108,7 @@ B：显式manifest/hash/evaluation_at输入，调用原selector而不改阈值/�
 
 下一阶段只有在A/B实际回执完成后，沿D1/D2→E1或E2→F1→F2逐段接通。
 本轮不增加公司、热点策略、账户、调度、签名、Excel、数据库迁移或生产任务。
+
+## 干净检出发现的来源字节缺口
+
+0c3f830f隔离检出中，A/B等316项通过，但两项旧真实研究测试被SOURCE_OR_IMPLEMENTATION_CHANGED拒绝。定位为operating_driver_draft_v2.py被core.autocrlf从原LF转换为CRLF，语义未变但原任务严格绑定raw SHA。仅补该文件.gitattributes的-text规则保留Git blob原始字节，不修改文件、模型、旧任务或证据Hash。精确字节冷重放19项全部通过；原失败回执保留，不冒称首次检出全绿。

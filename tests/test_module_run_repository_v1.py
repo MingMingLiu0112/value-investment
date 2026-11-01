@@ -60,3 +60,16 @@ def test_catalog_has_exact_eleven_modules_and_schema_refs_are_resolvable():
             "input_schema", "output_schema", "validate", "run", "get_run", "replay", "explain", "health_check"}
         assert m["action"] == "no_order"
         assert (root/m["source_report"]).is_file()
+
+
+
+def test_retained_driver_source_checkout_preserves_committed_bytes():
+    # Historical task hashes bind raw implementation bytes, not normalized text.
+    import subprocess
+    root = Path(__file__).resolve().parents[1]
+    name = "src/value_investment_agent/application/research/agent_review/operating_driver_draft_v2.py"
+    blob = subprocess.check_output(["git", "-C", str(root), "show", "HEAD:" + name])
+    assert (root/name).read_bytes() == blob
+    attribute = subprocess.check_output(
+        ["git", "-C", str(root), "check-attr", "text", "--", name], text=True)
+    assert attribute.strip().endswith(": text: unset")

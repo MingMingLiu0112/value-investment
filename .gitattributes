@@ -194,3 +194,6 @@ src/value_investment_agent/domain/research/liability_settlement_schedule_v1.py -
 
 
 artifacts/current/value-main-revalidation-20261101/research-spec-source-lf-v2.json -text whitespace=cr-at-eol
+
+# Retained live-driver tasks bind this original LF source byte-for-byte.
+src/value_investment_agent/application/research/agent_review/operating_driver_draft_v2.py -text whitespace=cr-at-eol
