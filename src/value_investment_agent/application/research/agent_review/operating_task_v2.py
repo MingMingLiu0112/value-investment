@@ -63,7 +63,8 @@ def research_context(context):
     if len(cutoff)>10:
         cutoff=datetime.fromisoformat(cutoff).astimezone(ZoneInfo("Asia/Shanghai")).date().isoformat()
     fields=("id","source_id","pdf_sha256","available_at","period","scope","unit","text")
-    evidence=[dict(**{k:row[k] for k in fields},**({"value":row["value"]} if "value" in row else {}))
+    evidence=[dict(**{k:row[k] for k in fields},**({"value":row["value"]} if "value" in row else {}),
+                   **({"field":row["field"]} if "field" in row else {}))
               for row in context["evidence"]]
     return dict(symbol=context["symbol"],issuer_name=context["issuer_name"],as_of=cutoff,
                 snapshot_fingerprint=context["snapshot_fingerprint"],evidence=evidence)

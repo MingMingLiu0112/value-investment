@@ -266,3 +266,78 @@ def test_prompt_catalog_disambiguates_same_source_id_hash_and_time(context):
     assert len({row['source_ref'] for row in view['evidence']}) == 3
     context['evidence'][-1]['available_at'] = '2027-01-01T00:00:00+00:00'
     with pytest.raises(ValueError): mod.build_request('EVENT', context)
+
+def test_counter_prompt_requires_exact_proposal_before_scope_criticism(context):
+    request = mod.build_request('COUNTER_EVIDENCE', context)
+    assert 'exact wording of THIS proposal' in request.system
+    assert 'strictly after research as_of ' + context['as_of'] in request.user
+    assert 'quote a short exact phrase' in request.system
+    assert 'absence of future actuals alone does not refute' in request.system
+    assert 'Never invent an error' in request.system
+    assert mod.PROMPT_VERSION == 'operating-source-prompts-v5-arithmetic-anchors'
+
+
+@pytest.fixture
+def margin_context(context):
+    row = context['evidence'][0]
+    context['evidence'] = [dict(row, field='pre_tax_profit', value='12.50'),
+                           dict(row, id='row:2', field='revenue', value='100.00')]
+    return context
+
+
+def test_historical_arithmetic_anchor_preserves_native_values_and_ids(margin_context):
+    original = deepcopy(margin_context)
+    view = mod._prompt_context(margin_context)
+    assert view['deterministic_arithmetic_anchors'] == [dict(
+        period='2026-06-30', scope='consolidated', unit='CNY', formula='pre_tax_profit / revenue',
+        numerator='12.50', denominator='100.00', evidence_ids=['row:1', 'row:2'], ratio_str='0.125')]
+    assert [row['id'] for row in view['evidence']] == ['row:1', 'row:2']
+    assert [row['value'] for row in view['evidence']] == ['12.50', '100.00']
+    assert margin_context == original
+    assert mod._context(margin_context) == {'row:1', 'row:2'}
+    for role in mod.ROLES:
+        request = mod.build_request(role, margin_context)
+        assert mod._canonical(view) in request.user
+        assert request.output_schema == mod._schema(role)
+        assert 'not future assumptions' in request.system
+        assert 'not a loan interest' in request.system
+        assert 'funding_access must be UNKNOWN with null bounds' in request.system
+    payload = output('FUNDAMENTAL')
+    payload['business_drivers'][0]['evidence_ids'] = ['deterministic_arithmetic_anchors:0']
+    with pytest.raises(ValueError, match='evidence citation'):
+        mod.validate_response(json.dumps(payload), 'FUNDAMENTAL', margin_context, NOW)
+
+
+@pytest.mark.parametrize('damage', ['scope', 'period', 'duplicate_equal', 'duplicate_conflict',
+    'zero_denominator', 'negative_denominator', 'field_missing', 'wrong_field', 'unit', 'value_missing'])
+def test_ambiguous_or_incompatible_rows_never_form_arithmetic_anchor(margin_context, damage):
+    numerator, denominator = margin_context['evidence']
+    if damage == 'scope': denominator['scope'] = 'parent'
+    elif damage == 'period': denominator['period'] = '2025-12-31'
+    elif damage.startswith('duplicate'):
+        margin_context['evidence'].append(dict(numerator, id='duplicate:1',
+            value=numerator['value'] if damage == 'duplicate_equal' else '99'))
+    elif damage == 'zero_denominator': denominator['value'] = '0'
+    elif damage == 'negative_denominator': denominator['value'] = '-100'
+    elif damage == 'field_missing': del numerator['field']
+    elif damage == 'wrong_field': numerator['field'] = 'net_profit'
+    elif damage == 'unit': denominator['unit'] = 'CNY_million'
+    else: del numerator['value']
+    before = deepcopy(margin_context)
+    assert mod._prompt_context(margin_context)['deterministic_arithmetic_anchors'] == []
+    assert margin_context == before
+
+
+def test_separate_period_anchors_and_negative_profit_are_not_forecasts(margin_context):
+    numerator, denominator = margin_context['evidence']
+    margin_context['evidence'] += [dict(numerator, id='prior:profit', period='2025-06-30', value='-2'),
+                                  dict(denominator, id='prior:revenue', period='2025-06-30', value='8')]
+    anchors = mod._prompt_context(margin_context)['deterministic_arithmetic_anchors']
+    assert [(a['period'], a['ratio_str'], a['evidence_ids']) for a in anchors] == [
+        ('2025-06-30', '-0.25', ['prior:profit', 'prior:revenue']),
+        ('2026-06-30', '0.125', ['row:1', 'row:2'])]
+
+
+def test_legacy_fieldless_context_still_valid_without_inferred_anchor(context):
+    assert mod._prompt_context(context)['deterministic_arithmetic_anchors'] == []
+    assert mod.validate_response(json.dumps(output('FUNDAMENTAL')), 'FUNDAMENTAL', context, NOW)['draft'] == output('FUNDAMENTAL')

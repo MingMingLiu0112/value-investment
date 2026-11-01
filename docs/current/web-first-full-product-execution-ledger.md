@@ -7444,3 +7444,44 @@ review, without promotion to formal eligibility, valuation, condition price or q
 Current evidence index: artifacts/current/live-operating-research-d1-d2-20261031.json.
 Actual raw/history and budget receipts: runtime/live-operating-research-20261031/actual/.
 No hotspot, C expansion, account, Excel, server or scheduler changes. action=no_order.
+
+### 2026-11-01 D2 continuation: real billing and economic contract
+
+Baseline57174226 Core41214886154 and Web41214886268 both succeeded.
+Protected user current-research-drafts pointer remains unchanged.
+User explicitly continues D2 under existing CNY10/day authorization.
+
+The already logged-in Edge gateway showed yesterday7 calls/146669 tokens/actual
+CNY0.158, whereas old7.33345 was a conservative estimate, never actual billing.
+Usage-detail rate: peak input2/output8, off-peak1/4 per million CNY; cache0.04/0.02,
+group1. Use peak/no-cache discount as upper-bound local rate; preserve old chains.
+First today5 calls show actual0.112404 in browser. No fee or account secret in Git.
+
+One new Fundamental was rejected for a forecast starting before research cutoff.
+Next task rt-59a5b430c42ab46cd1d023041f0b8b76 completed F/C/Event after one
+Event retry for too many references. Its execution success is NOT economic acceptance:
+independent review rejected F historical-margin contradiction, C cross-period
+arithmetic and funding_access answered as loan interest rates. Raw answers,
+rejected calls and exact prior versions remain intact, not manually corrected.
+
+Only targeted repair: preserve native field metadata, deterministically derive
+historical same-period/scope pretax margins from unique source values and bind
+numerator/denominator evidence; distinguish funding accessibility from financing
+cost. No valuation formula, screening rule, C scope, G3 or trade eligibility changed.
+Final genuine output is separately verified before any D2 completion claim.
+action=no_order.
+
+Final v5 task rt-c40c613f50e24ec29f9bd374be5b900b completed3 genuine roles without
+retry:3 scenarios/9 numeric assumptions/6 UNKNOWN. Same-period margin anchors and
+funding-access semantic correction passed independent review. Two different P2
+remain in generated wording: F annual/half-year revenue comparison, Counter upper
+scenario trigger inconsistent with its interval. Independent review binds exact
+responses and rejects economic adoption. No further model calls to manufacture PASS.
+D2 engineering/real-provider flow accepted; complete D2 economic adoption NOT accepted.
+Public result shows raw drafts plus bound rejection; no new financial facts,
+valuation input, price or approval. Today8 calls actual gateway total0.186856.
+Final index artifacts/current/d2-real-agent-20261101.json; real receipt includes
+source93 and role hashes. Targeted257 passed0skip; fullWeb1456 passed28skip;
+typecheck/format and project10 targeted passed. Final CI and8001 delivery are
+separate observations, never inferred from baseline57174226 green.
+action=no_order.

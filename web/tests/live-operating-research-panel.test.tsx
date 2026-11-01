@@ -658,3 +658,67 @@ it("keeps old results without independent review compatible and scopes the parti
   expect(html).toContain("本轮已停止于每日预算预留，事件待继续");
   expect(html).not.toContain("今日不再发起付费调用");
 });
+
+it("hides stale independent review when its binding is invalid on public and private results", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const review = {
+    status: "REVIEW_REQUIRED_NOT_APPROVAL" as const,
+    findings: [
+      {
+        priority: "P2",
+        role: "COUNTER_EVIDENCE" as const,
+        claim_index: 5,
+        reason: "TEST_ONLY_STALE_REVIEW_MUST_NOT_RENDER",
+      },
+    ],
+  };
+  for (const input of [
+    task({ status: "SUCCEEDED" }),
+    publicSuccess(),
+    publicPartial(),
+  ]) {
+    const value = {
+      ...input,
+      independent_review: review,
+      independent_review_status: "REVIEW_BINDING_INVALID" as const,
+    };
+    const before = JSON.stringify(value);
+    const html = renderToStaticMarkup(
+      <LiveOperatingResearchDraft task={value} />,
+    );
+    expect(html).toContain("独立经济复核绑定失效，旧复核内容不予展示");
+    expect(html).not.toContain("TEST_ONLY_STALE_REVIEW_MUST_NOT_RENDER");
+    expect(html).not.toContain("独立复核待处理");
+    expect(html).not.toContain("尚无独立经济复核");
+    expect(JSON.stringify(value)).toBe(before);
+  }
+});
+it("distinguishes successful research without independent review from review-binding failure", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  for (const value of [task({ status: "SUCCEEDED" }), publicSuccess()]) {
+    const html = renderToStaticMarkup(
+      <LiveOperatingResearchDraft task={value} />,
+    );
+    expect(html).toContain("尚无独立经济复核");
+    expect(html).not.toContain("独立经济复核绑定失效");
+  }
+  const html = renderToStaticMarkup(
+    <LiveOperatingResearchDraft
+      task={{
+        ...publicSuccess(),
+        independent_review_status: "REVIEW_BINDING_INVALID",
+      }}
+    />,
+  );
+  expect(html).toContain("独立经济复核绑定失效");
+  expect(html).not.toContain("尚无独立经济复核");
+});
+it("labels task settlement as an estimate rather than actual provider billing", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const html = renderToStaticMarkup(
+    <LiveOperatingResearchDraft task={task({ settled_cost: "7.33345" })} />,
+  );
+  expect(html).toContain("估算结算费用（人民币元）：7.33345");
+  expect(html).toContain("非服务商账单");
+  expect(html).not.toContain("已结算费用");
+});

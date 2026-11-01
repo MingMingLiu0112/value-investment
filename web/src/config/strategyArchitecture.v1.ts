@@ -198,22 +198,23 @@ export const catalog: Record<
           "src/value_investment_agent/infrastructure/agent_runtime/provider.py",
           "src/value_investment_agent/application/research/agent_review/operating_task_v2.py",
         ],
-        engineeringStatus: "真实调用、逐角色恢复与日预算拦截已验证",
+        engineeringStatus: "真实三角色执行链工程可验收／经济采用拒绝",
         evidenceStatus:
-          "000568真实调用7次；最新基本面与反证通过结构引用校验，事件预算前置拦截",
-        shortStatus: "真实执行已有产出；最新事件未完成，不宣称三角色完整验收",
+          "000568最新v5任务一次成功，F/C/Event三角色、3次调用、无校验错误；不是今日调用总数",
+        shortStatus:
+          "最新任务三角色真实产出，工程可验收；经济采用拒绝，不代表研究全部验收",
         implementation:
           "复用D1追加状态和锁，接真实Provider、逐角色检查点、调用前CNY预留、跨任务日限额和显式取消恢复",
         milestone:
-          "旧保存响应保留；真实执行工程与模拟Provider合同已验，真实模型及研究充分性不据此通过。",
+          "rt-c40c613f50e24ec29f9bd374be5b900b执行SUCCEEDED；此前失败、拒绝及恢复运行保留为历史，不冒充本次成功。",
         existingEvidence:
-          "000568自身84项财务事实和7段经营原文构成新请求；不读取旧预测、旧估值或保存响应",
+          "000568自身84项财务事实和9段官方原文；同口径历史利润率由确定性代码计算，不读取旧预测、旧估值或保存响应",
         evidenceSource:
-          "artifacts/current/live-operating-research-d1-d2-20261031.json；.tmp/live-operating-integrated.xml",
+          "runtime/live-operating-research-20261101/rt-c40c613f50e24ec29f9bd374be5b900b.json；pricing-browser-confirmed.json",
         evidence:
-          "每日上限10元；按配置保守费率估算7.33345元，非网关账单；下一请求预留不足，未发出",
+          "每日上限10元；本任务峰值费率保守估算0.15066元，非账单；昨日浏览器实际0.158元，旧估算7.33345元不是实际费用。已核费率为峰2/8、非峰1/4元每百万输入/输出token",
         nextStep:
-          "保持本轮不再付费；事件待后续预算及显式继续，复核反证误述，不提高预算或降低预留",
+          "工程真实执行可验收；经济采用拒绝，不再增加模型调用，不采用主估值或授予E2批准",
         ruleWhy: "执行可靠性与投资判断不同；Mock只能证明工程路径。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
@@ -221,7 +222,7 @@ export const catalog: Record<
           consumer:
             "现有公司AI区域显式操作 → 任务API → 持久执行器；不在首屏后台调用",
           realData:
-            "84项财务事实与9段官方原文；真实响应、拒绝原文、用量、恢复与预算回执均保留",
+            "最新v5任务3次真实调用一次成功；历史失败/拒绝/恢复和预算回执分别保留，不将当日所有调用归为本任务",
           economic: "不适用或由下游独立准入",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",
@@ -238,23 +239,23 @@ export const catalog: Record<
           "src/value_investment_agent/application/research/product_operating_research.py",
           "src/value_investment_agent/application/research/agent_review/operating_draft_v1.py",
         ],
-        engineeringStatus: "真实经营草案与反证部分交付／事件待完成",
+        engineeringStatus: "真实三角色链工程闭环／经济采用拒绝，未全部验收",
         evidenceStatus:
-          "最新真实三情景：9项预测区间、6项UNKNOWN；不是批准主估值",
+          "最新v5真实3情景、9项条件预测、6项UNKNOWN；独审确定两项P2，经济采用拒绝",
         shortStatus:
           "新经营假设 → 针对本次假设的反证 → 已见事件与未覆盖事项；不复制旧结论",
         implementation:
           "真实Provider读取核验事实与经营原文；经营五维区间、反证、失效与事件输出经独立结构和引用校验；GET不调用模型",
         milestone:
-          "真实基本面修正了母/合并资本投入与公司/渠道库存混淆；新反证存在两项误述，独审标为待复核，不采纳为事实。",
+          "同口径历史margin锚点正确，投资与资金可达6项UNKNOWN语义已修；F驱动0把2025全年257.31与2026H1 104.72连接为-36.35%同比，正确分母为2025H1 164.54；C失效2把margin高于0.5695视为需上修，但bull区间0.55–0.585仍含0.58。两项P2导致经济采用拒绝。",
         existingEvidence:
           "历史D2两公司草案保留；新合同覆盖三情景、增长/盈利/投入/资金可达/终端区间或明确UNKNOWN",
         evidenceSource:
-          "artifacts/current/live-operating-research-d1-d2-20261031.json；runtime/live-operating-research-20261031/actual/",
+          "runtime/live-operating-research-20261101/rt-c40c613f50e24ec29f9bd374be5b900b.json",
         evidence:
-          "新草案不写事实、估值或批准；任务成功与数值假设充分性分别显示",
+          "9项预测仅为条件草案，不供E2；Event仅覆盖FY/H1，不是当前完整事件扫描；库存表述混乱，不作为事实摘要。工程成功不覆盖经济缺陷。",
         nextStep:
-          "完成最新事件分析和反证误述处理后，再评估假设能否进入E2；不将未知投入/资金可达性补成数字",
+          "首要决定性缺口：经营量价/成本传导与一致性验证，不再增加模型调用；保留6项UNKNOWN，不供E2或主估值采用",
         ruleWhy: "价格上涨不直接等于净利上涨；预测必须明确为假设。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
@@ -262,8 +263,8 @@ export const catalog: Record<
           consumer:
             "公开假设API → 现有价值公司详情；研究期、反证、失效默认可读",
           realData:
-            "000568真实来源生成新情景；基本面与反证可读，最新事件缺失，旧成功结果不冒充当前完成",
-          economic: "条件研究／未批准",
+            "最新v5任务F/C/Event三角色真实结果；3情景、9数值、6UNKNOWN；仅本任务3次调用，不混入今日其他失败或恢复run",
+          economic: "经济采用拒绝／未全部验收",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",
         },

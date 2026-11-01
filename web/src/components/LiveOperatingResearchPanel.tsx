@@ -130,7 +130,7 @@ export function LiveOperatingResearchDraft({
       {"reserved_cost" in task ? (
         <p>
           新增模型调用：{task.new_llm_calls} · 预留费用（人民币元）：
-          {task.reserved_cost} · 已结算费用（人民币元）：{task.settled_cost}
+          {task.reserved_cost} · 估算结算费用（人民币元）：{task.settled_cost}
           （用量与费用按配置费率估算，非服务商账单）
         </p>
       ) : (
@@ -168,7 +168,13 @@ export function LiveOperatingResearchDraft({
         <p>任务完成仅表示流程完成，不代表经营或估值研究充分。</p>
       )}
       <p>任务成功不等于研究可信；反证本身也可能存在误述，需逐条核验。</p>
-      {task.independent_review && (
+      {task.independent_review_status === "REVIEW_BINDING_INVALID" ? (
+        <Alert
+          type="warning"
+          message="独立经济复核绑定失效，旧复核内容不予展示"
+          description="复核与当前来源或角色结果的绑定未通过核验，不能作为当前研究的独立复核依据。"
+        />
+      ) : task.independent_review ? (
         <Alert
           type="warning"
           message="独立复核待处理，不代表批准；反证也可能有误述"
@@ -183,7 +189,13 @@ export function LiveOperatingResearchDraft({
             </ul>
           }
         />
-      )}
+      ) : task.status === "SUCCEEDED" ? (
+        <Alert
+          type="info"
+          message="尚无独立经济复核"
+          description="任务成功不代表已完成独立经济复核，不能推定研究可信或经济有效性通过。"
+        />
+      ) : null}
       {task.research_completeness ? (
         <section aria-label="研究完整度">
           <p>

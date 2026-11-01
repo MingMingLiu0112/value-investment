@@ -15,7 +15,7 @@ LIVE='LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED'
 
 @pytest.fixture
 def api(tmp_path,monkeypatch):
-    data=SimpleNamespace(calls=[],rows=[],failure=None,provider_calls=[])
+    data=SimpleNamespace(calls=[],rows=[],failure=None,provider_calls=[],views={})
     def no_provider(*args,**kwargs):
         data.provider_calls.append(True)
         raise AssertionError('TEST_ONLY API must never call a provider or network')
@@ -26,6 +26,7 @@ def api(tmp_path,monkeypatch):
         def create(self,**kwargs):
             data.calls.append(('create',kwargs))
             if data.failure:raise data.failure
+            if 'create' in data.views:return data.views['create']
             return dict(task_id='TEST_ONLY-task',symbol=kwargs['symbol'],status='QUEUED',
                 action='no_order',formal_eligibility=False,scope='TEST_ONLY_LIVE_CONTRACT')
         def run(self,task_id):data.calls.append(('run',task_id))
@@ -36,12 +37,15 @@ def api(tmp_path,monkeypatch):
         def read(self,task_id):
             data.calls.append(('read',task_id))
             if data.failure:raise data.failure
+            if 'read' in data.views:return data.views['read']
             return dict(task_id=task_id,status='WAITING_EVIDENCE',action='no_order',formal_eligibility=False)
         def cancel(self,task_id):
             data.calls.append(('cancel',task_id))
+            if 'cancel' in data.views:return data.views['cancel']
             return dict(task_id=task_id,status='CANCELLED',action='no_order')
         def resume(self,task_id):
             data.calls.append(('resume',task_id))
+            if 'resume' in data.views:return data.views['resume']
             return dict(task_id=task_id,status='QUEUED',action='no_order')
     monkeypatch.setattr(routes,'LiveOperatingTaskService',TestOnlyService)
     client,secret=client_for(tmp_path,tmp_path/'TEST_ONLY-journal.jsonl',monkeypatch)
@@ -335,3 +339,62 @@ def test_absent_review_remains_optional(api):
     body=client.get(BASE+'/companies/600519').json()
     assert body['status']=='SUCCEEDED'
     assert 'independent_review' not in body and 'independent_review_status' not in body
+
+
+@pytest.mark.parametrize('endpoint',['read','create','cancel','resume','history'])
+@pytest.mark.parametrize('valid',[True,False])
+def test_authorized_endpoints_share_bound_review_projection_without_task_mutation(api,endpoint,valid):
+    client,secret,data,root=api
+    value=reviewed_result()
+    value['action']='no_order'
+    value['formal_eligibility']=False
+    value['status']={'read':'FAILED','create':'QUEUED','resume':'QUEUED','cancel':'CANCELLED','history':'FAILED'}[endpoint]
+    if not valid:value['independent_review']['reviewed_role_responses']['FUNDAMENTAL']['sha256']='f'*64
+    data.views[endpoint]=value
+    data.rows=[value]
+    snapshot=deepcopy(value)
+    unlock(client,secret)
+    before=state(root)
+    if endpoint=='read':response=client.get(BASE+'/tasks/TEST_ONLY-task')
+    elif endpoint=='history':response=client.get(BASE+'/tasks?symbol=600519')
+    elif endpoint=='create':response=client.post(BASE+'/tasks',json=dict(symbol='600519',request_key='TEST_ONLY-review'))
+    else:response=client.post(BASE+'/tasks/TEST_ONLY-task/'+endpoint)
+    assert response.status_code==(202 if endpoint=='create' else 200),response.text
+    assert response.headers['cache-control']=='no-store'
+    body=response.json()['items'][0] if endpoint=='history' else response.json()
+    assert body['status']==value['status'] and body['action']=='no_order'
+    assert body['formal_eligibility'] is False
+    if valid:
+        assert body['independent_review']==value['independent_review']
+        assert body['independent_review_status']=='REVIEW_REQUIRED_NOT_APPROVAL'
+    else:
+        assert 'independent_review' not in body
+        assert body['independent_review_status']=='REVIEW_BINDING_INVALID'
+    assert value==snapshot and state(root)==before and not data.provider_calls
+    assert sum(call[0]=='run' for call in data.calls)==(1 if endpoint in {'create','resume'} else 0)
+
+
+def test_resume_changed_role_pins_invalidates_old_review_on_control_read_and_public(api):
+    client,secret,data,_=api
+    value=reviewed_result('FAILED')
+    value.update(action='no_order',formal_eligibility=False)
+    data.views['read']=value
+    data.rows=[value]
+    unlock(client,secret)
+    assert client.get(BASE+'/tasks/TEST_ONLY-task').json()['independent_review_status']=='REVIEW_REQUIRED_NOT_APPROVAL'
+    resumed=deepcopy(value)
+    resumed['roles']['COUNTER_EVIDENCE']['sha256']='e'*64
+    resumed['status']='QUEUED'
+    data.views['resume']=resumed
+    data.views['read']=resumed
+    data.rows=[resumed]
+    responses=[client.post(BASE+'/tasks/TEST_ONLY-task/resume'),
+        client.get(BASE+'/tasks/TEST_ONLY-task'),client.get(BASE+'/companies/600519')]
+    for response in responses:
+        body=response.json()
+        assert response.status_code==200
+        assert 'independent_review' not in body
+        assert body['independent_review_status']=='REVIEW_BINDING_INVALID'
+        assert body['formal_eligibility'] is False and body['action']=='no_order'
+    assert resumed['independent_review']==value['independent_review']
+    assert not data.provider_calls

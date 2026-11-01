@@ -753,6 +753,7 @@ export type OperatingResearchIndependentReview = {
 export type LiveOperatingResearchTask = {
   research_completeness?: OperatingResearchCompleteness;
   independent_review?: OperatingResearchIndependentReview;
+  independent_review_status?: "REVIEW_BINDING_INVALID";
   task_id: string;
   symbol: string;
   status: string;
@@ -788,6 +789,7 @@ export type LiveOperatingResearchRole = {
 };
 export type PublicOperatingResearchSuccess = Pick<
   LiveOperatingResearchTask,
+  | "independent_review_status"
   | "independent_review"
   | "research_completeness"
   | "task_id"

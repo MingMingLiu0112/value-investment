@@ -10,6 +10,26 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     service=LiveOperatingTaskService(project)
     def reply(value,status=200):
         return JSONResponse(value,status_code=status,headers={"Cache-Control":"no-store"})
+    def review_projection(value):
+        # Response-only copy: never edit an immutable task or its role pins.
+        projected=dict(value)
+        projected.pop("independent_review_status",None)
+        if "independent_review" not in value:return projected
+        review=projected.pop("independent_review")
+        roles=value.get("roles")
+        valid=(isinstance(review,dict) and isinstance(roles,dict) and bool(roles)
+            and isinstance(value.get("context_fingerprint"),str) and bool(value["context_fingerprint"])
+            and review.get("source_context_fingerprint")==value["context_fingerprint"]
+            and review.get("reviewed_role_responses")==roles
+            and review.get("status")=="REVIEW_REQUIRED_NOT_APPROVAL"
+            and isinstance(review.get("findings"),list))
+        projected["independent_review_status"]=("REVIEW_REQUIRED_NOT_APPROVAL" if valid
+            else "REVIEW_BINDING_INVALID")
+        if valid:
+            projected["independent_review"]={key:review[key] for key in
+                ("source_context_fingerprint","reviewed_role_responses","status","findings")}
+        return projected
+
     def denied(request):
         try:authorize(request,session=sessions,port=port)
         except LocalAuthorizationError as error:
@@ -25,7 +45,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     def history(request:Request,symbol:str):
         error=denied(request)
         if error is not None:return error
-        try:return reply(dict(action="no_order",symbol=symbol,items=service.list_for_symbol(symbol)))
+        try:return reply(dict(action="no_order",symbol=symbol,items=[review_projection(row) for row in service.list_for_symbol(symbol)]))
         except (ValueError,OSError,KeyError,RuntimeError,TypeError):
             return reply(dict(action="no_order",status="LIVE_HISTORY_UNAVAILABLE"),422)
 
@@ -42,7 +62,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 raise ValueError("LIVE_REQUEST_INVALID")
             task=service.create(symbol=body["symbol"],request_key=body["request_key"])
             if task["status"]=="QUEUED":background.add_task(service.run,task["task_id"])
-            return reply(task,202)
+            return reply(review_projection(task),202)
         except PermissionError as error:
             return reply(dict(action="no_order",status=str(error)),409)
         except (ValueError,OSError,KeyError,RuntimeError,TypeError):
@@ -52,7 +72,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     def read(task_id:str,request:Request):
         error=denied(request)
         if error is not None:return error
-        try:return reply(service.read(task_id))
+        try:return reply(review_projection(service.read(task_id)))
         except (ValueError,OSError,KeyError,RuntimeError,TypeError):
             return reply(dict(action="no_order",status="LIVE_TASK_UNAVAILABLE"),404)
 
@@ -66,7 +86,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 task=service.resume(task_id)
                 if task["status"]=="QUEUED":background.add_task(service.run,task_id)
             else:raise ValueError("UNSUPPORTED_OPERATION")
-            return reply(task)
+            return reply(review_projection(task))
         except (ValueError,OSError,KeyError,RuntimeError,TypeError):
             return reply(dict(action="no_order",status="LIVE_CONTROL_REJECTED"),409)
 
@@ -98,20 +118,9 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                     error_code=value.get("error_code"),
                     completed_roles=[role for role in ROLES if role in draft],
                     pending_roles=[role for role in ROLES if role not in draft])
-            if "independent_review" in value:
-                review=value["independent_review"]
-                roles=value.get("roles")
-                valid=(isinstance(review,dict) and isinstance(roles,dict) and bool(roles)
-                    and isinstance(value.get("context_fingerprint"),str) and bool(value["context_fingerprint"])
-                    and review.get("source_context_fingerprint")==value["context_fingerprint"]
-                    and review.get("reviewed_role_responses")==roles
-                    and review.get("status")=="REVIEW_REQUIRED_NOT_APPROVAL"
-                    and isinstance(review.get("findings"),list))
-                public["independent_review_status"]=("REVIEW_REQUIRED_NOT_APPROVAL" if valid
-                    else "REVIEW_BINDING_INVALID")
-                if valid:
-                    public["independent_review"]={key:review[key] for key in
-                        ("source_context_fingerprint","reviewed_role_responses","status","findings")}
+            reviewed=review_projection(value)
+            for key in ("independent_review","independent_review_status"):
+                if key in reviewed:public[key]=reviewed[key]
             return reply(dict(action="no_order",formal_eligibility=False,**public))
         except (ValueError,OSError,KeyError,RuntimeError,TypeError):
             return reply(dict(action="no_order",symbol=symbol,status="UNASSESSABLE",

@@ -194,3 +194,42 @@ describe("versioned strategy architecture", () => {
     expect(page).not.toMatch(/useApi|fetch\(|services\/|localStorage/);
   });
 });
+
+it("records the latest v5 three-role execution separately from economic approval and historical runs", () => {
+  const d1 = catalog.value.stages.find((stage) => stage.id === "D1")!;
+  const d2 = catalog.value.stages.find((stage) => stage.id === "D2")!;
+  for (const stage of [d1, d2]) {
+    expect(stage.evidenceSource).toContain(
+      "rt-c40c613f50e24ec29f9bd374be5b900b.json",
+    );
+    expect(stage.nextStep).toContain("不再增加模型调用");
+    expect(stage.progress?.acceptance).toContain("尚未确认");
+  }
+  expect(d1.evidenceStatus).toContain("3次调用");
+  expect(d1.evidenceStatus).toContain("不是今日调用总数");
+  expect(d1.evidence).toContain("峰值费率保守估算0.15066元，非账单");
+  expect(d1.evidence).toContain("昨日浏览器实际0.158元");
+  expect(d1.evidence).toContain("旧估算7.33345元不是实际费用");
+  expect(d2.evidenceStatus).toContain("9项条件预测、6项UNKNOWN");
+  expect(d2.milestone).toContain("投资与资金可达6项UNKNOWN语义已修");
+  expect(d2.progress?.economic).toContain("经济采用拒绝／未全部验收");
+  expect(d2.engineeringStatus).toContain("真实三角色链工程闭环");
+  expect(d2.milestone).toContain("2025H1 164.54");
+  expect(d2.milestone).toContain("bull区间0.55–0.585仍含0.58");
+  expect(d2.evidence).toContain("不供E2");
+  expect(d2.evidence).toContain("Event仅覆盖FY/H1");
+  expect(d2.nextStep).toContain("经营量价/成本传导与一致性验证");
+  const html = renderToStaticMarkup(<ArchitectureView strategy="value" />);
+  expect(html).toContain('href="/decisions/000568?strategy=value"');
+  expect(html).toContain("真实Agent研究结果（经济采用拒绝）");
+  expect(html).not.toContain("最新事件缺失");
+  expect(html).not.toContain("事件被每日预算预检拦截");
+  expect(html).toContain("不授予主估值采用或E2批准");
+  expect(
+    catalog.value.stages.find((stage) => stage.id === "C")?.progress
+      ?.acceptance,
+  ).toContain("用户尚未确认");
+  expect(
+    catalog.value.stages.find((stage) => stage.id === "E2")?.engineeringStatus,
+  ).toBe("工程首编与真实来源重算完成／部署待验收");
+});
