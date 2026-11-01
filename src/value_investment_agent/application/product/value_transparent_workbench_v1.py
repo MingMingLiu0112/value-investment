@@ -65,6 +65,12 @@ def _bindings(root, value):
         name = name.replace('\\', '/')
         if not re.fullmatch('[0-9a-f]{64}', digest):
             raise ValueError('PUBLIC_SOURCE_BINDING_HASH_REQUIRED')
+        # Deduplicate only within this closure walk. Later closure walks still
+        # re-read raw bytes, including the final after-consumer verification.
+        if name in result:
+            if result[name] != digest:
+                raise ValueError('PUBLIC_SOURCE_BINDING_CONFLICT:' + name)
+            return
         if PureWindowsPath(name).drive or PurePosixPath(name).is_absolute():
             candidate = Path(name)
             if not candidate.is_absolute():

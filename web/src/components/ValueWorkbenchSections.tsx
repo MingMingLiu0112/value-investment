@@ -334,36 +334,40 @@ export function ValueWorkbenchSections({
         message="条件研究，不是投资批准：主区间及当前价格资格须另验；个人数量为空，不下单。"
       />
       <section aria-label="核验来源下载">
-        <h3>原件下载</h3>
-        <p>
-          仅下载本次聚合允许的原件；服务端会再次核对绑定。原件存在不等于预测或投资获准。
-        </p>
-        {(value.evidence_downloads || [])
-          .filter(
-            (item) =>
-              /^[a-zA-Z0-9_-]{1,128}$/.test(item.id) &&
-              /^[a-f0-9]{64}$/.test(item.binding.sha256),
-          )
-          .map((item) => (
-            <p key={item.id}>
-              <a
-                download
-                href={
-                  "/api/v1/value-workbench/evidence/" +
-                  encodeURIComponent(item.id) +
-                  "?symbol=" +
-                  encodeURIComponent(symbol)
-                }
-              >
-                下载已核验原件 · {item.binding.path.split("/").pop()}
-              </a>
-            </p>
-          ))}
-        {!value.evidence_downloads?.length && (
+        <details>
+          <summary>
+            原件下载（{value.evidence_downloads?.length || 0} 项，点击展开）
+          </summary>
           <p>
-            原件下载不可用：本次聚合未提供已核验的下载条目，不生成任意路径链接。
+            仅下载本次聚合允许的原件；服务端会再次核对绑定。原件存在不等于预测或投资获准。
           </p>
-        )}
+          {(value.evidence_downloads || [])
+            .filter(
+              (item) =>
+                /^[a-zA-Z0-9_-]{1,128}$/.test(item.id) &&
+                /^[a-f0-9]{64}$/.test(item.binding.sha256),
+            )
+            .map((item) => (
+              <p key={item.id}>
+                <a
+                  download
+                  href={
+                    "/api/v1/value-workbench/evidence/" +
+                    encodeURIComponent(item.id) +
+                    "?symbol=" +
+                    encodeURIComponent(symbol)
+                  }
+                >
+                  下载已核验原件 · {item.binding.path.split("/").pop()}
+                </a>
+              </p>
+            ))}
+          {!value.evidence_downloads?.length && (
+            <p>
+              原件下载不可用：本次聚合未提供已核验的下载条目，不生成任意路径链接。
+            </p>
+          )}
+        </details>
       </section>
       <nav aria-label="研究链各环节">
         {value.sections.map((section) => (
