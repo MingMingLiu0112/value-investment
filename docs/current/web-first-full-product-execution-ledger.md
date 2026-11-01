@@ -7656,3 +7656,5 @@ fiscal result unchanged.48 final parent/API tests passed including real source;
 case, not a general parent maturity parser. Final CI/build/8001 remain separately
 verified on the delivery commit. Permanent action=no_order.
 Public source/integration index:artifacts/current/parent-funding-integration-20261101/index.json.
+
+Clean e6 checkout exposed two parent files whose indexed LF bytes differed from reviewed local CRLF bytes despite new -text attributes. Explicitly materialized their already-reviewed local bytes into Git; whitespace-ignored diff is empty. No formula/data/old evidence resigned. Existing source/implementation acceptance hashes retained; clean replay must use delivery follow-up. action=no_order.
