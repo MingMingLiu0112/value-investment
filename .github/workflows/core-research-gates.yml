@@ -473,6 +473,14 @@ jobs:
           tests/test_operating_cash_consumption_v1.py
           tests/test_fiscal_distribution_review_v1.py
           tests/test_parent_funding_review_v1.py
+          tests/test_parent_obligation_pressure_v2.py
+          tests/test_parent_obligation_sources_v2.py
+          tests/test_period_earnings_assembly_v1.py
+          tests/test_liability_settlement_schedule_v1.py
+          tests/test_explicit_cash_research_runner_v1.py
+          tests/test_quarterly_operating_facts_v1.py
+          tests/test_main_valuation_revalidation_v1.py
+          tests/web_api/test_main_valuation_revalidation_api.py
           tests/test_operating_distribution_review_v1.py
           tests/test_current_capital_observation_v1.py
           tests/test_native_capital_observation_v1.py

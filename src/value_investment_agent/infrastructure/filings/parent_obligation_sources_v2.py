@@ -2,7 +2,7 @@
 from datetime import datetime
 from hashlib import sha256
 import json
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import re
 
 from .parent_funding_facts_v1 import load_parent_facts, validate_supported_case
@@ -126,7 +126,7 @@ def load_official_parent_constraint_disclosures(*, bundle_root, cutoff):
     for source in manifest['sources']:
         if datetime.fromisoformat(source['actual_acquired_at']) > cutoff:
             raise ValueError('Constraint source not available at cutoff')
-        path = _inside(bundle_root, Path(source['path']).name)
+        path = _inside(bundle_root, PureWindowsPath(source['path']).name)
         original = path.read_bytes()
         if sha256(original).hexdigest() != source['sha256']:
             raise ValueError('Constraint source hash mismatch')

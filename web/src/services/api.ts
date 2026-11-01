@@ -1132,7 +1132,9 @@ export type ParentFundingReview = {
     };
   } | null;
 };
+export type MainValuationRevalidationRecord = Record<string, unknown>;
 export type LiveOperatingResearchTask = {
+  main_valuation_revalidation?: MainValuationRevalidationRecord;
   parent_funding_review?: ParentFundingReview;
   current_capital_observation?: CurrentCapitalObservation;
   fiscal_distribution_review?: FiscalDistributionReview;
@@ -1176,6 +1178,7 @@ export type LiveOperatingResearchRole = {
 };
 export type PublicOperatingResearchSuccess = Pick<
   LiveOperatingResearchTask,
+  | "main_valuation_revalidation"
   | "parent_funding_review"
   | "current_capital_observation"
   | "fiscal_distribution_review"
@@ -1230,6 +1233,7 @@ export type PublicOperatingResearchResult =
       formal_eligibility: false;
       symbol: string;
       status: "NOT_STARTED" | "UNASSESSABLE";
+      main_valuation_revalidation?: MainValuationRevalidationRecord;
       reason?: string;
       task_id?: string;
       latest_task_status?: string;

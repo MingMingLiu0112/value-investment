@@ -1,3 +1,4 @@
+import { MainValuationRevalidationPanel } from "./MainValuationRevalidationPanel";
 import { ParentFundingResearchPanel } from "./ParentFundingResearchPanel";
 import { useRef, useState } from "react";
 import { Alert, Button, Space, Table } from "antd";
@@ -1303,6 +1304,12 @@ export function LiveOperatingResearchDraft({
           ；此处仅读取已生成研究，不发起新调用。
         </p>
       )}
+      {task.main_valuation_revalidation && (
+        <MainValuationRevalidationPanel
+          value={task.main_valuation_revalidation}
+          symbol={task.symbol}
+        />
+      )}
       <p>
         研究截止：{task.research_as_of || "未提供"} ·
         经济主区间未采用；审批未改变，正式事实新增 0。
@@ -1417,6 +1424,7 @@ export function LiveOperatingResearchDraft({
           symbol={task.symbol}
         />
       )}
+
       {task.parent_funding_review && (
         <ParentFundingResearchPanel
           value={task.parent_funding_review}
@@ -1490,14 +1498,30 @@ export function PublicOperatingResearchView({
     return (
       <Alert type="warning" message="公开经营研究身份或边界不符，停止展示" />
     );
-  if (value.status === "NOT_STARTED") return <p>尚无已生成的公开经营研究。</p>;
+  const independentRevalidation = value.main_valuation_revalidation ? (
+    <MainValuationRevalidationPanel
+      value={value.main_valuation_revalidation}
+      symbol={symbol}
+    />
+  ) : null;
+  if (value.status === "NOT_STARTED")
+    return (
+      <>
+        <p>尚无已生成的公开经营研究。</p>
+        {independentRevalidation}
+      </>
+    );
   if (value.status === "UNASSESSABLE")
     return (
-      <Alert
-        type="info"
-        message="最新经营研究暂不可核验，不回退展示旧成功结果"
-        description={value.reason}
-      />
+      <>
+        {" "}
+        <Alert
+          type="info"
+          message="最新经营研究暂不可核验，不回退展示旧成功结果"
+          description={value.reason}
+        />
+        {independentRevalidation}
+      </>
     );
   if (value.status !== "SUCCEEDED" && value.status !== "PARTIAL")
     return <Alert type="warning" message="公开经营研究状态不符，停止展示" />;
@@ -1570,10 +1594,14 @@ export function PublicOperatingResearchView({
     })
   )
     return (
-      <Alert
-        type="warning"
-        message="公开经营研究来源、角色草案或准入边界不完整，停止展示"
-      />
+      <>
+        {" "}
+        <Alert
+          type="warning"
+          message="公开经营研究来源、角色草案或准入边界不完整，停止展示"
+        />
+        {independentRevalidation}
+      </>
     );
   return <LiveOperatingResearchDraft task={value} />;
 }
@@ -1688,7 +1716,7 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
     <section aria-label="新Agent经营研究" style={{ marginBlock: 20 }}>
       <h3>新Agent经营研究 · {symbol}</h3>
       <p>
-        打开此区仅读取模型状态与已生成公开研究，不发起模型调用；点击启动才可能产生新调用费用，与已保存响应重放分开。仅生成未准入的经营研究草案，不采用经济主区间、不审批、不生成条件价或个人数量、不下单。任务状态仅点击读取，不自动轮询。
+        打开此区仅读取模型状态与已生成公开研究，不发起模型调用；点击启动才可能产生新调用费用，与已保存响应重放分开。研究任务不直接生成正式条件价；独立重算可提供明确未批准、带日期的研究草案，不代表当前买价。主区间未采用、不审批、个人数量为空、不下单。任务状态仅点击读取，不自动轮询。
       </p>
       <section aria-label="已生成的公开经营研究">
         <h4>已生成的公开经营研究</h4>

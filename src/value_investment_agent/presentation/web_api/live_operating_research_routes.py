@@ -154,6 +154,15 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             except (ValueError,OSError,KeyError,TypeError):
                 public["parent_funding_review"] = dict(status="UNASSESSABLE",
                     reason="PARENT_FUNDING_SOURCE_NOT_VERIFIED",action="no_order",formal_eligibility=False)
+            # Versioned public revalidation never changes the paid task or approval.
+            try:
+                from ...application.research.main_valuation_revalidation_v1 import read_main_valuation_revalidation
+                public["main_valuation_revalidation"] = read_main_valuation_revalidation(
+                    root=project,symbol=symbol,now=datetime.now(timezone.utc))
+            except (ValueError,OSError,KeyError,TypeError) as error:
+                public["main_valuation_revalidation"] = dict(status="UNASSESSABLE",
+                    reason=str(error),action="no_order",formal_eligibility=False,
+                    current_comparable=False,personal_quantity=None)
             reviewed=review_projection(value)
             for key in ("independent_review","independent_review_status"):
                 if key in reviewed:public[key]=reviewed[key]

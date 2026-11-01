@@ -1,0 +1,100 @@
+{
+  "schema_version": "value-main-revalidation-integration-v1",
+  "symbol": "000568",
+  "action": "no_order",
+  "baseline_commit": "590b13f3ed220f6a53a2952328818f6216364a8c",
+  "parent_source_delivery": "12f12207eb43cbd39be0cb0ce8f025dd916e4f1a",
+  "source_spec": {
+    "path": "artifacts/current/value-main-revalidation-20261101/research-spec-source-lf-v2.json",
+    "sha256": "2c09f05fd525b950e7245944a996b96a2e34f1bdd3927f3760c2a1066f9f7b89"
+  },
+  "source_closure": {
+    "path": "artifacts/current/value-main-revalidation-20261101/source-closure.json",
+    "sha256": "b1b9a63050cb4d765f43bb63b7d00b1f5b82ef910f2eb6fac66a21bd6fdbc328"
+  },
+  "prior_source_closure": {
+    "path": "artifacts/current/d2-cash-consumption-20261101/index.json",
+    "sha256": "4d3790ccf48be86a801fe0d1f4f8c417f8e1f44c11f909a6bc5f0ecaa2ff4049"
+  },
+  "actual_model_receipt": {
+    "path": "runtime/value-main-revalidation-20261101/acceptance-source-lf-v2.json",
+    "sha256": "982cde55d1d56ff42ed9ba8adef7e80683b31f6f9c820ee4f55818d4bbd055ea"
+  },
+  "actual_isolated_api_receipt": {
+    "path": "runtime/value-main-revalidation-20261101/actual-isolated-api-source-lf-v2.json",
+    "sha256": "c1a563732cea6c619768545f90e96d968c03642091a75bc677e423d02512c841"
+  },
+  "implementation_sha256": {
+    "value_investment_agent.application.research.explicit_cash_research_runner_v1": "def4a3ad51ed3f8d1c0bc4d5684a4d411e1916136bd2fc366fc19fb2e974de56",
+    "value_investment_agent.domain.research.period_earnings_assembly_v1": "314b5fa0edf0227a4bf8fff119098e50539f4ee47b70297691d895450234523f",
+    "value_investment_agent.infrastructure.filings.first_research_fact_replay_v1": "604d199160ca2872be58de85bebc4ab068cfb53b0d061de6eed3000ff60277c0",
+    "value_investment_agent.infrastructure.filings.quarterly_operating_facts_v1": "8f0b700cc618413e147bb35d2d86f75539317360fff4f1a7d70c60d1ef0b3c64",
+    "value_investment_agent.infrastructure.filings.parent_obligation_sources_v2": "40ad7df6cbe7a85307d809b97107a362249c3a715bb3a0a0629e8c79572b7672",
+    "value_investment_agent.domain.valuation.operating_profit_cash_path_v1": "00f6781766c2f0ad427df3a7b126d45cc9518b61be78a92f44eb3fcba8ea2764",
+    "value_investment_agent.domain.valuation.joint_capital_cash_path_v4": "730769d6094a9e6860e05fcde33f3e14bbff887fe6b7a313dfd128b6ce951b68",
+    "value_investment_agent.domain.research.parent_obligation_pressure_v2": "e35646b84ae88ddafc50cf34ac38e4d314faa2316cdfa6f2a67593794628d32a",
+    "value_investment_agent.domain.research.liability_settlement_schedule_v1": "3bc9802126095546675f1b49b16a7ab4c9bfe5d6674d32aace55f176f848d84d",
+    "value_investment_agent.valuation_models.residual_income_path_v4": "3d41bc7b1967c3f45fa7e1f3f058b6b139706bc93db4300cef6dfeb6c2dab666",
+    "value_investment_agent.domain.valuation.signed_parent_profit": "8a25b8f3a8b989bfe9b28c6c88add89b347e539306af7252b944f03b29724a38",
+    "value_investment_agent.domain.decision.value_price_policy": "7c57846b3f212c44b8fc219a4dff11cda620f5f552ef248ff9a98c98261ce032",
+    "value_investment_agent.infrastructure.filings.native_capital_observation_v1": "3319c0842727f9ab23d8af39061c04cdadcf813d4726ddd82d12a9cc89587f68",
+    "value_investment_agent.research_application": "d34ac7998117d13aef19cc02ae42e3f807420ae13f748b012b51b72bad0dc158",
+    "value_investment_agent.research_input": "ae8cfdfa916c5dafe1a4bddba6ea23702aa0af36089cf27d74375ec55c55cd46",
+    "value_investment_agent.m1_valuation_package_builder": "f6aaff840c1a692d7a96f4d1b64269ac936455bd3e4f871bf135dcb804da602b",
+    "value_investment_agent.application.research.v4_input_adapter": "1e134d961627d5ab42ade9d2af9b46010d71a5a0e67cc60e6e8703d0d9737481",
+    "value_investment_agent.application.research.v4_valuation_router": "0a3a396b1739f5633a297c747db2c0a1ce1beba7ae51ff80c12683b33ac6845b",
+    "value_investment_agent.application.product.source_bound_inputs": "0d71c0627d7654dbe173b645dcf046e85e778f80bcffce95fd3dd694923efd3d",
+    "value_investment_agent.application.research.main_valuation_revalidation_v1": "7093d350f6a8e977035f738a4cc726838f55fe1dc870947b7dac660653c8ea6a"
+  },
+  "actual_results": {
+    "status": "CONDITIONAL_RESEARCH_CANDIDATE_PENDING_ECONOMIC_REVIEW",
+    "financial_basis": "2026-06-30",
+    "latest_actual_period": "2026-09-30",
+    "conditional_values": {
+      "bear": "6.19516095862810855569965876377006258631438193577",
+      "base": "16.8514936991820541015832604567417263958017059117",
+      "bull": "27.2228432487115353986042054649538600385111636932"
+    },
+    "liability_settlement_cny": "11013375072.53",
+    "payment_year": 1,
+    "payment_timing": "EXPLICIT_RESEARCH_HYPOTHESIS_NOT_ACTUAL_PAYMENT_RECEIPT",
+    "main_range_adopted": false,
+    "current_comparable": false,
+    "personal_quantity": null,
+    "numeric_price_thresholds": "NOT_PREPARED",
+    "price_draft": "EXISTING_POLICY_ENGINE_DRAFT_WITH_NO_RULES_NOT_BUY_PRICE",
+    "old_cash_fingerprint_unchanged": true,
+    "paid_task_unchanged": true,
+    "new_llm_calls": 0
+  },
+  "verification": {
+    "registered_actual_source_tests": "19 passed,0 skipped",
+    "independent_code_review": "Darwin: receipt/DA P2 fixed; actual three v4 calls and33 cash identities",
+    "independent_economic_review": "Euclid: limited conditional research acceptable; no economically adopted main range",
+    "core_web_ci": "VERIFY_ON_FINAL_COMMIT",
+    "deployment": "VERIFY_ON_FINAL_COMMIT"
+  },
+  "reproduction": {
+    "public_api": "GET /api/v1/operating-research/companies/000568",
+    "command": "python -B -m pytest -q -p no:cacheprovider tests/test_main_valuation_revalidation_v1.py tests/test_quarterly_operating_facts_v1.py",
+    "environment": [
+      "PYTHONPATH=src",
+      "TEMP=<checkout>/.tmp",
+      "TMP=<checkout>/.tmp",
+      "MAIN_VALUATION_REVALIDATION_REAL_ROOT=<checkout>",
+      "QUARTERLY_OPERATING_REAL_ROOT=<checkout>",
+      "QUARTERLY_OPERATING_REAL_REQUIRED=1"
+    ]
+  },
+  "remaining_decisive_gap": "Quarterly driver transfer, ten-year nominal earnings freeze and access/terminal persistence are not selected as a representative long-term economic path; no numeric buy threshold inferred.",
+  "limitations": [
+    "Not current fair value or approved main valuation.",
+    "FY2026 CNY8.5bn policy fulfillment is not represented or certified.",
+    "Parent book liabilities and year-one payment hypotheses do not establish actual maturity/principal split, current legal capacity or payment receipts.",
+    "Historical v1/v2/v3/v4 candidates and private pointer retained."
+  ],
+  "implementation_fingerprint_basis": {
+    "default": "SOURCE_CRLF_TO_LF_SHA256_V1",
+    "overrides": {}
+  }
+}

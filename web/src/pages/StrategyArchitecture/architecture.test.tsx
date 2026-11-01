@@ -296,7 +296,7 @@ it("separates the actual capital blocker and vertical acceptance from future pla
     .split('aria-label="当前阻断与后续纵向验收"')[1]
     .split('aria-label="未来扩展非本轮前置"')[0];
   for (const text of [
-    "原D2 H1同一个margin_lower witness",
+    "新Q3实际 + 条件Q4 + 条件次年H1",
     "复用既有计算、不复制公式",
     "不再列作计算通道缺失",
     "非机械年化",
@@ -306,8 +306,8 @@ it("separates the actual capital blocker and vertical acceptance from future pla
     "条件估值已消费，主区间未采用",
     "当前资本/分配/事件/报价及价格理由（当前必需）",
     "不冒充本次D2消费",
-    "复用000568原已来源绑定的条件资金政策，但不是批准",
-    "季节性、持续盈利与资金政策经济采纳",
+    "母公司v2义务与准备金实际进入模型",
+    "付款年是研究假设",
     "无阈值理由不出条件价",
   ])
     expect(current).toContain(text);
@@ -322,7 +322,13 @@ it("separates the actual capital blocker and vertical acceptance from future pla
   ])
     expect(future).toContain(text);
   expect(focus).toContain("不表示需先完成全部模块");
-  expect(focus).toContain("D2→股东现金→条件估值工程已接，待最终验收");
+  expect(focus).toContain("本轮正式回执已形成条件研究工作候选");
+  expect(focus).toContain("约6.19516/16.85149/27.22284");
+  expect(focus).toContain("来源spec及SHA已固定，部署待验收，用户尚未确认");
+  expect(focus).toContain("旧9.03/20.26/25.82");
+  expect(focus).toContain("不是本轮最新结果");
+  expect(focus).toContain("本页仅手工整理真实回执，非自动监测");
+  expect(focus).toContain("11,013,375,072.53元");
   expect(focus).not.toContain("二者尚不兼容");
   expect(
     renderToStaticMarkup(<ArchitectureView strategy="hotspot" />),

@@ -46,6 +46,10 @@
       "parent_funding_followup": {
         "path": "artifacts/current/parent-funding-integration-20261101/research-spec.json",
         "sha256": "412481ac6f4ed2d0a70180f137cf9a4ebbd92ca99cb2a37d8e762bef8e055fab"
+      },
+      "main_revalidation": {
+        "path": "artifacts/current/value-main-revalidation-20261101/research-spec-source-lf-v2.json",
+        "sha256": "2c09f05fd525b950e7245944a996b96a2e34f1bdd3927f3760c2a1066f9f7b89"
       }
     }
   }
