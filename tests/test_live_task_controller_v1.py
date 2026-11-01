@@ -9,7 +9,7 @@ import subprocess
 
 import pytest
 
-from value_investment_agent.application.research.agent_review import live_task_controller_v1 as app
+from value_investment_agent.operations import live_task_controller_v1 as app
 
 TASK = 'rt-' + 'a' * 32
 

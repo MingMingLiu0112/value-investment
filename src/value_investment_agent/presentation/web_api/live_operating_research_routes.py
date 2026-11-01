@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from .local_auth import authorize,LocalAuthorizationError,AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.operating_task_v2 import LiveOperatingTaskService,model_status,ROLES
 from ...application.research.agent_review.operating_task_v2 import LiveOperatingTaskService as _NativeLiveService
-from ...application.research.agent_review.live_task_controller_v1 import supervise_live_task, read_pending_live_task, finalize_pending_live_task
+from ...operations.live_task_controller_v1 import supervise_live_task, read_pending_live_task, finalize_pending_live_task
 
 
 def register_live_operating_routes(api:FastAPI,*,project,sessions,port):

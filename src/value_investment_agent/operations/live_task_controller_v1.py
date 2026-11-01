@@ -11,10 +11,10 @@ import subprocess
 import sys
 import time
 
-from ...portfolio.private_journal_lock import LockTimeout
-from ...product.common import write_new_bytes
+from ..application.portfolio.private_journal_lock import LockTimeout
+from ..application.product.common import write_new_bytes
 
-MODULE = 'value_investment_agent.application.research.agent_review.live_task_controller_v1'
+MODULE = 'value_investment_agent.operations.live_task_controller_v1'
 VERSION = 'live-task-controller-v1'
 DEADLINE_ERROR = 'LIVE_TOTAL_DEADLINE_UNSETTLED_RESERVATION_RETAINED'
 POLL_SECONDS = 0.2
@@ -28,7 +28,7 @@ TERMINAL = {'SUCCEEDED', 'CANCELLED', 'FAILED', 'WAITING_EVIDENCE'}
 
 
 def _service(root):
-    from .operating_task_v2 import LiveOperatingTaskService
+    from ..application.research.agent_review.operating_task_v2 import LiveOperatingTaskService
     return LiveOperatingTaskService(root)
 
 
@@ -38,7 +38,7 @@ def _now():
 
 def _identity():
     source = Path(__file__).resolve()
-    commit = subprocess.check_output(['git', '-C', str(source.parents[5]), 'rev-parse', 'HEAD'],
+    commit = subprocess.check_output(['git', '-C', str(source.parents[3]), 'rev-parse', 'HEAD'],
         stderr=subprocess.DEVNULL, text=True, timeout=5).strip()
     if re.fullmatch('[0-9a-f]{40}', commit) is None:
         raise ValueError('LIVE_CONTROLLER_CODE_COMMIT_UNAVAILABLE')
@@ -245,7 +245,7 @@ def supervise_live_task(root, task_id, timeout_seconds=300):
                 raise ValueError('LIVE_CONTROLLER_REQUIRES_QUEUED_TASK')
             service._save(spec, state, pin, _now(), live_controller=metadata)
         env = os.environ.copy()  # Credential is inherited, never argv/stdin/logged.
-        source_root = str(Path(__file__).resolve().parents[4])
+        source_root = str(Path(__file__).resolve().parents[2])
         env['PYTHONPATH'] = source_root + (os.pathsep + env['PYTHONPATH'] if env.get('PYTHONPATH') else '')
         env['PYTHONIOENCODING'] = 'utf-8'
         child = None
