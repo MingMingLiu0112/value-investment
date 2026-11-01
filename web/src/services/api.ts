@@ -735,6 +735,9 @@ export type OperatingResearchModelStatus = {
   daily_cost_limit?: string | number | null;
 };
 export type OperatingResearchCompleteness = {
+  structured_driver_range_count?: number;
+  derived_scenario_metric_count?: number;
+  numeric_basis?: "GROWTH_AND_PROFIT_ARE_CODE_DERIVED_NOT_MODEL_ENTERED";
   scenario_count: number;
   numeric_assumption_count: number;
   unknown_assumption_count: number;
@@ -750,7 +753,114 @@ export type OperatingResearchIndependentReview = {
     reason: string;
   }[];
 };
+export type OperatingDriverNumber = string | number | null;
+export type OperatingDriverScenario = "bear" | "base" | "bull";
+export type OperatingDriverRange = {
+  lower: OperatingDriverNumber;
+  upper: OperatingDriverNumber;
+};
+export type OperatingDriverAssumption = OperatingDriverRange & {
+  rationale: string;
+  evidence_ids: string[];
+};
+export type OperatingDriverKey =
+  | "volume_change"
+  | "realization_mix_change"
+  | "unit_cost_change"
+  | "fixed_cogs_share"
+  | "opex_change"
+  | "surcharge_ratio"
+  | "other_pretax_cny";
+export type OperatingDriverBaseline = {
+  period_basis: string;
+  scope: string;
+  currency: string;
+  fields: Record<
+    | "revenue"
+    | "cost"
+    | "surcharges"
+    | "selling"
+    | "admin"
+    | "research"
+    | "pre_tax_profit",
+    { value: OperatingDriverNumber; evidence_id: string }
+  >;
+  opex_cny: OperatingDriverNumber;
+  other_pretax_cny: OperatingDriverNumber;
+  pretax_margin: OperatingDriverNumber;
+  surcharge_ratio: OperatingDriverNumber;
+  evidence_ids: string[];
+};
+export type OperatingDriverExtremum = {
+  revenue_cny: OperatingDriverNumber;
+  cogs_cny: OperatingDriverNumber;
+  opex_cny: OperatingDriverNumber;
+  surcharges_cny: OperatingDriverNumber;
+  other_pretax_cny: OperatingDriverNumber;
+  pretax_profit_cny: OperatingDriverNumber;
+  drivers: Record<string, OperatingDriverNumber>;
+};
+export type OperatingDriverBridge = {
+  version: string;
+  basis: {
+    baselines: Record<string, OperatingDriverBaseline>;
+    comparisons: {
+      field: string;
+      current_period: string;
+      prior_period: string;
+      period_basis: string;
+      current_value: OperatingDriverNumber;
+      prior_value: OperatingDriverNumber;
+      change_ratio: OperatingDriverNumber;
+      status: string;
+      evidence_ids: string[];
+    }[];
+    gaps: unknown;
+  };
+  inputs: Record<
+    OperatingDriverScenario,
+    {
+      baseline_period: string;
+      period_start: string;
+      period_end: string;
+      drivers: Record<OperatingDriverKey, OperatingDriverAssumption>;
+      capital_assumptions: unknown;
+    }
+  >;
+  paths: Record<
+    OperatingDriverScenario,
+    {
+      growth_range: OperatingDriverRange;
+      margin_range: OperatingDriverRange;
+      baseline: unknown;
+      comparison_basis: unknown;
+      extrema: Record<
+        "growth_lower" | "growth_upper" | "margin_lower" | "margin_upper",
+        OperatingDriverExtremum
+      >;
+      limitations: string[];
+      period_start: string;
+      period_end: string;
+      scope: string;
+      period_basis: string;
+    }
+  >;
+  thresholds: {
+    scenario: OperatingDriverScenario;
+    metric: string;
+    direction: string;
+    threshold: OperatingDriverNumber;
+    period_start: string;
+    period_end: string;
+    baseline_period: string;
+    period_basis: string;
+    scope: string;
+    comparison_basis: unknown;
+    meaning: string;
+  }[];
+};
 export type LiveOperatingResearchTask = {
+  operating_driver_bridge?: OperatingDriverBridge;
   research_completeness?: OperatingResearchCompleteness;
   independent_review?: OperatingResearchIndependentReview;
   independent_review_status?: "REVIEW_BINDING_INVALID";
@@ -789,6 +899,7 @@ export type LiveOperatingResearchRole = {
 };
 export type PublicOperatingResearchSuccess = Pick<
   LiveOperatingResearchTask,
+  | "operating_driver_bridge"
   | "independent_review_status"
   | "independent_review"
   | "research_completeness"

@@ -24,7 +24,7 @@ def model_configuration(root):
     required={"endpoint","model_id","api_key_env","timeout_seconds","max_completion_tokens_cap",
               "max_run_cost","input_cost_per_million","output_cost_per_million","authorized",
               "authorization_reference","currency","daily_cost_limit"}
-    optional={"response_format_mode","thinking_mode"}
+    optional={"response_format_mode","thinking_mode","research_contract"}
     if not required<=set(value) or set(value)-required-optional or value["authorized"] is not True:
         raise PermissionError("MODEL_AUTHORIZATION_REQUIRED")
     if (not isinstance(value["authorization_reference"],str)
@@ -35,6 +35,8 @@ def model_configuration(root):
         except Exception: raise ValueError("MODEL_BUDGET_INVALID") from None
         if not number.is_finite() or not Decimal("0")<number<=Decimal("100"):
             raise ValueError("MODEL_BUDGET_INVALID")
+    if value.get("research_contract","operating-draft-v1") not in {"operating-draft-v1","operating-drivers-v2"}:
+        raise ValueError("UNSUPPORTED_RESEARCH_CONTRACT")
     if value["currency"]!="CNY" or not Decimal("0")<Decimal(str(value["daily_cost_limit"]))<=Decimal("10"):
         raise ValueError("DAILY_CNY_AUTHORIZATION_LIMIT_INVALID")
     if Decimal(str(value["max_run_cost"]))>Decimal(str(value["daily_cost_limit"])):
@@ -57,14 +59,15 @@ def model_status(root):
         return dict(status="MODEL_AUTHORIZATION_REQUIRED",model_id=None,
                     credential_present=False,action="no_order",real_calls_started=False)
 
-def research_context(context):
+def research_context(context, *, drivers=False):
     """Projection for the model: verified public data only, no old forecast package."""
     cutoff=context["as_of"]
     if len(cutoff)>10:
         cutoff=datetime.fromisoformat(cutoff).astimezone(ZoneInfo("Asia/Shanghai")).date().isoformat()
     fields=("id","source_id","pdf_sha256","available_at","period","scope","unit","text")
     evidence=[dict(**{k:row[k] for k in fields},**({"value":row["value"]} if "value" in row else {}),
-                   **({"field":row["field"]} if "field" in row else {}))
+                   **({"field":row["field"]} if "field" in row else {}),
+                   **({"period_basis":row["period_basis"]} if drivers and "period_basis" in row else {}))
               for row in context["evidence"]]
     return dict(symbol=context["symbol"],issuer_name=context["issuer_name"],as_of=cutoff,
                 snapshot_fingerprint=context["snapshot_fingerprint"],evidence=evidence)
@@ -72,7 +75,10 @@ def research_context(context):
 def implementation():
     from . import operating_draft_v1, operating_sources_v1, task_execution_v1
     from ....infrastructure.agent_runtime import provider
-    modules=(operating_draft_v1,operating_sources_v1,provider,task_execution_v1)
+    from . import operating_driver_draft_v2
+    from ....domain.research import operating_driver_bridge_v1
+    modules=(operating_draft_v1,operating_sources_v1,provider,task_execution_v1,
+             operating_driver_draft_v2,operating_driver_bridge_v1)
     return {**{m.__name__:_hash(Path(m.__file__).read_bytes()) for m in modules},
             __name__:_hash(Path(__file__).read_bytes())}
 
@@ -163,8 +169,11 @@ class LiveOperatingTaskService(ResearchTaskService):
         except (ValueError,OSError,KeyError,TypeError):return None,"FAILED","SOURCE_OR_IMPLEMENTATION_CHANGED"
 
     def _result(self,spec,state,context):
-        from .operating_draft_v1 import validate_response, build_request
-        context=research_context(context)
+        if spec["config"].get("research_contract")=="operating-drivers-v2":
+            from .operating_driver_draft_v2 import validate_response, build_request
+        else:
+            from .operating_draft_v1 import validate_response, build_request
+        context=research_context(context,drivers=spec["config"].get("research_contract")=="operating-drivers-v2")
         roles={}
         if set(state["roles"])-set(ROLES):raise ValueError("LIVE_UNEXPECTED_ROLE_CHECKPOINT")
         for role in ROLES:
@@ -197,6 +206,8 @@ class LiveOperatingTaskService(ResearchTaskService):
             try:
                 value["research_draft"]=self._result(spec,state,context)
                 fundamental=value["research_draft"].get("FUNDAMENTAL",{}).get("draft",{})
+                bridge=value["research_draft"].get("FUNDAMENTAL",{}).get("driver_bridge")
+                if bridge is not None:value["operating_driver_bridge"]=bridge
                 scenarios=fundamental.get("scenarios",{})
                 assumptions=[item for items in scenarios.values() for item in items]
                 numeric=sum(item.get("classification")=="FORECAST" for item in assumptions)
@@ -205,6 +216,11 @@ class LiveOperatingTaskService(ResearchTaskService):
                     numeric_assumption_count=numeric,unknown_assumption_count=unknown,
                     status="REVIEW_REQUIRED" if numeric else "INSUFFICIENT_FOR_NUMERIC_SCENARIOS",
                     economic_validation="NOT_APPROVED")
+                if bridge is not None:
+                    value["research_completeness"].update(
+                        structured_driver_range_count=sum(len(path["drivers"]) for path in bridge["inputs"].values()),
+                        derived_scenario_metric_count=2*len(bridge["paths"]),
+                        numeric_basis="GROWTH_AND_PROFIT_ARE_CODE_DERIVED_NOT_MODEL_ENTERED")
                 if state["status"]=="SUCCEEDED" and set(value["research_draft"])!=set(ROLES):
                     raise ValueError("LIVE_RESULT_INCOMPLETE")
             except (ValueError,OSError,KeyError,TypeError):
@@ -251,11 +267,14 @@ class LiveOperatingTaskService(ResearchTaskService):
         "response_format_mode","thinking_mode") if k in cfg})
 
     def _drive(self,task_id,now,*,resume):
-        from .operating_draft_v1 import build_request, validate_response
         directory=self._directory(task_id)
         with self._lock(directory,"execution"):
             with self._lock(directory):
                 spec,state,pin=self._load(task_id,recover=resume)
+                if spec["config"].get("research_contract")=="operating-drivers-v2":
+                    from .operating_driver_draft_v2 import build_request, validate_response
+                else:
+                    from .operating_draft_v1 import build_request, validate_response
                 context,status,error=self._check(spec,now)
                 if state["status"] in {"CANCELLED","SUCCEEDED"}:return self._view(spec,state,pin,now)
                 if status:
@@ -271,7 +290,7 @@ class LiveOperatingTaskService(ResearchTaskService):
                 state,pin=self._save(spec,state,pin,now,status="RUNNING",attempts=state["attempts"]+1,error_code=None)
             try:
                 provider=self._provider(spec)
-                context=research_context(context)
+                context=research_context(context,drivers=spec["config"].get("research_contract")=="operating-drivers-v2")
                 for role in ROLES:
                     prior=self._result(spec,state,context)
                     req=build_request(role,context,max_completion_tokens=spec["config"]["max_completion_tokens_cap"],

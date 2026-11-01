@@ -7485,3 +7485,46 @@ source93 and role hashes. Targeted257 passed0skip; fullWeb1456 passed28skip;
 typecheck/format and project10 targeted passed. Final CI and8001 delivery are
 separate observations, never inferred from baseline57174226 green.
 action=no_order.
+
+### 2026-11-01 D2 operating-driver closure; no valuation gate weakened
+
+Baseline15359ee3 Core41258906449 and Web41258906380 both SUCCESS.
+Only current-research-drafts.json was pre-existing dirty; its bytes remain unchanged.
+
+The actual missing business path is now implemented: same-period official financial
+basis + source-bound volume/realization/cost/OPEX/surcharges/other-pretax hypotheses
+-> deterministic sales/cost/pretax stress envelope -> exact matching reopen bounds
+-> existing persisted research task -> company API and Web. No parallel valuation engine.
+v1 remains default; operating-drivers-v2 is explicitly selected in ignored local config.
+Source originals/native-facts-v5 untouched. Three bounded H1 operating-table excerpts
+add cost composition, category revenue/cost and volume context:96 source records.
+FY compares only FY; H1 only H1. Official column headers determine period kind.
+Next full matching forecast period is schema-locked, not left to model date selection.
+The earlier true provider answer starting on as_of was refused and preserved.
+
+New raw contract requires seven explicit drivers per scenario. Domain computes R,
+COGS, OPEX, tax/surcharges and explicit other-pretax amount; model does NOT supply
+the six published growth/profit-margin endpoints. Each scenario enumerates128
+independent corners, not a probability forecast. Historical residual is not assumed
+recurring; fixed-share and aggregate sales-activity index remain conditional.
+Three scenario period/baseline tuples must agree. Same-basis strict thresholds are
+derived from the SAME resulting intervals: equality does not reopen; historical
+baseline crossing alone cannot trigger automatic upward revision. Wrong observation
+scope/period/comparison basis and future baselines refuse. No orders or automatic revision.
+
+Real task rt-eac1c74997d17510398ce1fe1e5bea9e succeeds F/C/Event via4 actual calls,
+including one schema-rejected Counter answer and its explicit recovery.21 driver
+ranges,6 derived growth/margin ranges,9 UNKNOWN capital dimensions. Euclid cold
+recomputed actual raw->3x128 corner results->12 thresholds consistently. Conditional
+operating analysis arithmetic accepted; future assumptions NOT proven. The rejected
+AI-only product-mix direction and Event cash-unit statements remain visible with
+exact bound independent findings; neither is a machine financial input.
+No further model calls for cosmetic PASS. Capital UNKNOWNs do not become zero,
+shareholder cash, primary valuation, approved prices, G3 or personalized quantities.
+
+Gateway today13 calls actualCNY0.282832; this work package5 calls actualdelta0.095976.
+Configured-rate reservations remain estimates, not invoice replacement. CNY10/day kept.
+Index artifacts/current/d2-operating-driver-20261101.json; targeted345 passed0skip
+including real-original source reconstruction; fullWeb1465 passed28skip. /project
+records the conditional acceptance and remaining economic scope; final commit/clean
+replay/CI and8001 browser proofs are separate receipts. action=no_order.

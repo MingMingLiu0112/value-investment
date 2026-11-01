@@ -198,23 +198,23 @@ export const catalog: Record<
           "src/value_investment_agent/infrastructure/agent_runtime/provider.py",
           "src/value_investment_agent/application/research/agent_review/operating_task_v2.py",
         ],
-        engineeringStatus: "真实三角色执行链工程可验收／经济采用拒绝",
+        engineeringStatus: "真实三角色执行与拒绝恢复已验收",
         evidenceStatus:
-          "000568最新v5任务一次成功，F/C/Event三角色、3次调用、无校验错误；不是今日调用总数",
+          "000568最新rt-eac任务三角色成功，4次调用含1次反证缺字段拒绝后恢复；不是今日调用总数",
         shortStatus:
-          "最新任务三角色真实产出，工程可验收；经济采用拒绝，不代表研究全部验收",
+          "工程与真实执行已验收；条件压力算术另验，不代表未来参数、主估值或交易通过",
         implementation:
           "复用D1追加状态和锁，接真实Provider、逐角色检查点、调用前CNY预留、跨任务日限额和显式取消恢复",
         milestone:
-          "rt-c40c613f50e24ec29f9bd374be5b900b执行SUCCEEDED；此前失败、拒绝及恢复运行保留为历史，不冒充本次成功。",
+          "rt-eac1c74997d17510398ce1fe1e5bea9e最终SUCCEEDED、两次执行尝试；4次调用含反证字段校验拒绝与恢复，不隐藏失败轨迹。",
         existingEvidence:
-          "000568自身84项财务事实和9段官方原文；同口径历史利润率由确定性代码计算，不读取旧预测、旧估值或保存响应",
+          "000568共96条官方来源记录，含H1第11/14/12页量价成本表；不读取旧估值或保存响应，当前来源与角色回执绑定",
         evidenceSource:
-          "runtime/live-operating-research-20261101/rt-c40c613f50e24ec29f9bd374be5b900b.json；pricing-browser-confirmed.json",
+          "runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json；runtime/d2-operating-driver-20261101/independent-acceptance.json；源码版本见实际运行身份；验收索引 artifacts/current/d2-operating-driver-20261101.json",
         evidence:
-          "每日上限10元；本任务峰值费率保守估算0.15066元，非账单；昨日浏览器实际0.158元，旧估算7.33345元不是实际费用。已核费率为峰2/8、非峰1/4元每百万输入/输出token",
+          "每日上限10元；历史rt-c40任务峰值费率保守估算0.15066元，非账单；昨日浏览器实际0.158元，旧估算7.33345元不是实际费用。已核费率为峰2/8、非峰1/4元每百万输入/输出token",
         nextStep:
-          "工程真实执行可验收；经济采用拒绝，不再增加模型调用，不采用主估值或授予E2批准",
+          "验证参数经济适用性及资本/现金资料，不重试模型凑通过；不以执行成功授予E2或主估值批准",
         ruleWhy: "执行可靠性与投资判断不同；Mock只能证明工程路径。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
@@ -222,7 +222,7 @@ export const catalog: Record<
           consumer:
             "现有公司AI区域显式操作 → 任务API → 持久执行器；不在首屏后台调用",
           realData:
-            "最新v5任务3次真实调用一次成功；历史失败/拒绝/恢复和预算回执分别保留，不将当日所有调用归为本任务",
+            "最新rt-eac任务三角色、4次调用，含1次反证缺字段拒绝与恢复；旧rt-c40经济拒绝及其他失败run原始回执保留，不混为本任务",
           economic: "不适用或由下游独立准入",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",
@@ -239,23 +239,24 @@ export const catalog: Record<
           "src/value_investment_agent/application/research/product_operating_research.py",
           "src/value_investment_agent/application/research/agent_review/operating_draft_v1.py",
         ],
-        engineeringStatus: "真实三角色链工程闭环／经济采用拒绝，未全部验收",
+        engineeringStatus:
+          "真实三角色工程及条件压力算术已验收／经济适用性未证明",
         evidenceStatus:
-          "最新v5真实3情景、9项条件预测、6项UNKNOWN；独审确定两项P2，经济采用拒绝",
+          "96条官方来源；21项经营驱动范围、6项增长/税前利润率由代码派生、9项资本UNKNOWN；不是模型直接填利润率",
         shortStatus:
-          "新经营假设 → 针对本次假设的反证 → 已见事件与未覆盖事项；不复制旧结论",
+          "量价成本驱动 → 税前利润传导 → 同bounds重审阈值已真实跑通；仅条件压力分析，不是主估值或未来参数已证",
         implementation:
-          "真实Provider读取核验事实与经营原文；经营五维区间、反证、失效与事件输出经独立结构和引用校验；GET不调用模型",
+          "锁定H12026→H12027；模型提供7类经营驱动范围，确定性代码按每情景128角点压力包络重算增长与税前利润率；同比FY只对FY、H1只对H1",
         milestone:
-          "同口径历史margin锚点正确，投资与资金可达6项UNKNOWN语义已修；F驱动0把2025全年257.31与2026H1 104.72连接为-36.35%同比，正确分母为2025H1 164.54；C失效2把margin高于0.5695视为需上修，但bull区间0.55–0.585仍含0.58。两项P2导致经济采用拒绝。",
+          "独立Euclid冷复算3×128角点及12条阈值一致，工程与条件压力分析算术验收通过。12条重审严格按同bounds、同期间/基线比较，等于不触发，不混用历史阈值。",
         existingEvidence:
-          "历史D2两公司草案保留；新合同覆盖三情景、增长/盈利/投入/资金可达/终端区间或明确UNKNOWN",
+          "旧D2两公司草案及rt-c40经济拒绝保留为历史，不覆盖旧raw；当前H1第11/14/12页量价成本表构成新驱动桥，不沿用旧直接填利润率路径",
         evidenceSource:
-          "runtime/live-operating-research-20261101/rt-c40c613f50e24ec29f9bd374be5b900b.json",
+          "runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json；runtime/d2-operating-driver-20261101/independent-acceptance.json；源码版本见实际运行身份；验收索引 artifacts/current/d2-operating-driver-20261101.json",
         evidence:
-          "9项预测仅为条件草案，不供E2；Event仅覆盖FY/H1，不是当前完整事件扫描；库存表述混乱，不作为事实摘要。工程成功不覆盖经济缺陷。",
+          "仅拒绝两类AI文字：产品结构向高档集中误述、Event母现金23.93亿元少10倍；不作为事实摘要，typed bridge不消费这些文字，算术验收不受其替代。Event仍限FY/H1；未来参数适用性未证，9项资本UNKNOWN不编估值。",
         nextStep:
-          "首要决定性缺口：经营量价/成本传导与一致性验证，不再增加模型调用；保留6项UNKNOWN，不供E2或主估值采用",
+          "首要决定性缺口：验证参数经济适用性及资本/现金资料，不重试模型凑通过；保留9项资本UNKNOWN，不供主估值、E2批准、G3或交易",
         ruleWhy: "价格上涨不直接等于净利上涨；预测必须明确为假设。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
@@ -263,8 +264,8 @@ export const catalog: Record<
           consumer:
             "公开假设API → 现有价值公司详情；研究期、反证、失效默认可读",
           realData:
-            "最新v5任务F/C/Event三角色真实结果；3情景、9数值、6UNKNOWN；仅本任务3次调用，不混入今日其他失败或恢复run",
-          economic: "经济采用拒绝／未全部验收",
+            "最新rt-eac三角色、4次调用；96官方记录，21驱动范围、6代码派生指标、9资本UNKNOWN；独立3×128角点与12阈值复算一致",
+          economic: "条件压力算术已验／参数经济适用性未证／非主估值",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",
         },

@@ -18,6 +18,26 @@
           "physical_page": 45,
           "scope": "CONSOLIDATED_CASH_FLOW"
         }
+      ],
+      "operating_excerpts": [
+        {
+          "source_id": "cninfo:1225501255",
+          "physical_page": 11,
+          "start_marker": "营业成本的主要构成项目",
+          "max_chars": 2000
+        },
+        {
+          "source_id": "cninfo:1225501255",
+          "physical_page": 14,
+          "start_marker": "金额 占营业收入比重 金额 占营业收入比重",
+          "max_chars": 2000
+        },
+        {
+          "source_id": "cninfo:1225501255",
+          "physical_page": 12,
+          "start_marker": "其他酒类",
+          "max_chars": 500
+        }
       ]
     }
   }

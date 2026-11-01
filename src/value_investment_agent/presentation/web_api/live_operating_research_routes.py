@@ -112,6 +112,8 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                   "context_fingerprint","source_binding","research_as_of","formal_fact_count",
                   "approval_changed","main_range_adopted","condition_price","personal_quantity","research_completeness")
             public={k:value[k] for k in keys}
+            if "operating_driver_bridge" in value:
+                public["operating_driver_bridge"]=value["operating_driver_bridge"]
             if value["status"]!="SUCCEEDED":
                 public.update(status="PARTIAL",execution_status=value["status"],
                     reason=value.get("error_code") or "LATEST_TASK_INCOMPLETE_VERIFIED_PARTIAL_RESEARCH",

@@ -35,10 +35,13 @@ def build_operating_source_context(*,root,symbol,now,binding=None):
         registry=_json(_raw(config_path,65536))
     entry=(registry or {}).get("cases",{}).get(symbol,{})
     extras=entry.get("cash_excerpts",[])
-    if extras and entry.get("native_facts")!=binding:
+    operating_extras=entry.get("operating_excerpts",[])
+    if (extras or operating_extras) and entry.get("native_facts")!=binding:
         raise ValueError("SUPPLEMENT_SOURCE_BINDING_MISMATCH")
     if not isinstance(extras,list) or len(extras)>4:
         raise ValueError("SUPPLEMENT_EXCERPT_LIMIT")
+    if not isinstance(operating_extras,list) or len(operating_extras)>3:
+        raise ValueError("OPERATING_EXCERPT_LIMIT")
     evidence=[]
     for row in manifest["facts"]:
         source=source_map[row["source_id"]]
@@ -46,7 +49,9 @@ def build_operating_source_context(*,root,symbol,now,binding=None):
             pdf_sha256=source["sha256"],available_at=source["available_at"],
             period=row["period_end"],scope=row["scope"],unit=row["unit"],
             value=row["value"],field=row["field"],physical_page=row["physical_page"],
-            text=row["excerpt"],kind="VERIFIED_REPORTED_FACT"))
+            text=row["excerpt"],kind="VERIFIED_REPORTED_FACT",
+            period_basis=("H1" if "半年度" in row["column_header"] else
+                          "FY" if "年度" in row["column_header"] else "UNKNOWN")))
     # Finite official-section extraction, not an interpretation or an event crawler.
     # Full selected page is retained up to the bounded excerpt; the truncation is explicit.
     selected=[]
@@ -104,12 +109,41 @@ def build_operating_source_context(*,root,symbol,now,binding=None):
             excerpt_truncated=True,kind="OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM"))
         if hashlib.sha256(_raw(path,64*1024*1024)).hexdigest()!=source["sha256"]:
             raise ValueError("SUPPLEMENT_ORIGINAL_CHANGED_DURING_EXTRACTION")
+    for extra in operating_extras:
+        if (not isinstance(extra,dict) or set(extra)!={"source_id","physical_page","start_marker","max_chars"}
+                or not isinstance(extra["source_id"],str) or extra["source_id"] not in source_map
+                or type(extra["physical_page"]) is not int or not 1<=extra["physical_page"]<=300
+                or not isinstance(extra["start_marker"],str) or not extra["start_marker"].strip()
+                or len(extra["start_marker"])>300
+                or type(extra["max_chars"]) is not int or not 1<=extra["max_chars"]<=2000):
+            raise ValueError("OPERATING_EXCERPT_CONTRACT_INVALID")
+        source=source_map[extra["source_id"]];number=extra["physical_page"]
+        path=_binding(root,{"path":source["path"],"sha256":source["sha256"]},runtime_only=False)
+        if hashlib.sha256(_raw(path,64*1024*1024)).hexdigest()!=source["sha256"]:
+            raise ValueError("OPERATING_ORIGINAL_CHANGED")
+        pages=extract_pages(path,limit=number)
+        if len(pages)<number:raise ValueError("OPERATING_EXCERPT_PAGE_MISSING")
+        page=pages[number-1];marker=extra["start_marker"]
+        if page.count(marker)!=1:raise ValueError("OPERATING_EXCERPT_MARKER_MISSING_OR_AMBIGUOUS")
+        start=page.index(marker);text=page[start:start+extra["max_chars"]]
+        identifier=source["id"]+":operating-excerpt-"+str(number)+":"+hashlib.sha256(marker.encode()).hexdigest()[:12]
+        if any(row["id"]==identifier for row in evidence):raise ValueError("OPERATING_EXCERPT_DUPLICATE")
+        evidence.append(dict(id=identifier,source_id=source["id"],pdf_sha256=source["sha256"],
+            available_at=source["available_at"],period=source["report_period"],
+            scope="ISSUER_REPORTED_NARRATIVE",unit="TEXT",text=text,physical_page=number,
+            start_marker=marker,text_sha256=hashlib.sha256(text.encode()).hexdigest(),
+            excerpt_truncated=start+len(text)<len(page),kind="OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM"))
+        if hashlib.sha256(_raw(path,64*1024*1024)).hexdigest()!=source["sha256"]:
+            raise ValueError("OPERATING_ORIGINAL_CHANGED_DURING_EXTRACTION")
+    if len(evidence)>100:raise ValueError("OPERATING_EVIDENCE_LIMIT")
     if not selected:raise ValueError("OPERATING_BUSINESS_EXCERPTS_MISSING")
     value=dict(schema_version="operating-source-context-v1",symbol=symbol,
         issuer_name=manifest["issuer_name"],as_of=now.isoformat(),
         financial_basis=manifest["financial_basis"],source_binding=binding,
         evidence=evidence,action="no_order",
         limitations=["Not a current-event completeness check","Historical facts are not normalized profit",
+                     "Product revenue per tonne is a mix measure, not pure price change",
+                     "Research investment is not interchangeable with income-statement research expense",
                      "No previous forecasts, thesis, final valuation or saved model response supplied"])
     # Cutoff is fixed in a task, so every read can cold-verify the same context.
     from ....infrastructure.filings import first_research_fact_replay_v1, pdf_text

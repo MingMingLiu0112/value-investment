@@ -398,3 +398,56 @@ def test_resume_changed_role_pins_invalidates_old_review_on_control_read_and_pub
         assert body['formal_eligibility'] is False and body['action']=='no_order'
     assert resumed['independent_review']==value['independent_review']
     assert not data.provider_calls
+
+
+@pytest.mark.parametrize('status',['SUCCEEDED','FAILED'])
+def test_public_driver_bridge_is_service_projection_without_account_write_or_approval(api,status):
+    client,_,data,root=api
+    value=reviewed_result(status)
+    # Opaque TEST_ONLY transport marker, not a fabricated v2 bridge or source acceptance.
+    bridge={'TEST_ONLY_service_projection':{'strict_upper':'0.585','unknowns':['TEST_ONLY']},
+        'action':'no_order','formal_eligibility':False}
+    value['operating_driver_bridge']=deepcopy(bridge)
+    data.rows=[value]
+    original=deepcopy(value)
+    before=state(root)
+    assert 'x-local-session' not in client.headers
+    for _ in range(2):
+        response=client.get(BASE+'/companies/600519')
+        body=response.json()
+        assert response.status_code==200 and response.headers['cache-control']=='no-store'
+        assert body['status']==('SUCCEEDED' if status=='SUCCEEDED' else 'PARTIAL')
+        assert body['operating_driver_bridge']==bridge
+        assert body['research_draft']==value['research_draft']
+        assert body['action']=='no_order' and body['formal_eligibility'] is False
+        assert body['formal_fact_count']==0 and body['approval_changed'] is False
+        assert body['main_range_adopted'] is False
+        assert body['condition_price'] is None and body['personal_quantity'] is None
+    assert data.rows==[original] and state(root)==before and not data.provider_calls
+    assert all(call[0]=='list' for call in data.calls)
+
+
+@pytest.mark.parametrize('status',['SUCCEEDED','FAILED'])
+def test_legacy_public_result_without_driver_bridge_never_synthesizes_one(api,status):
+    client,_,data,root=api
+    value=reviewed_result(status)
+    assert 'operating_driver_bridge' not in value
+    data.rows=[value]
+    before=state(root)
+    body=client.get(BASE+'/companies/600519').json()
+    assert body['status']==('SUCCEEDED' if status=='SUCCEEDED' else 'PARTIAL')
+    assert 'operating_driver_bridge' not in body
+    assert body['action']=='no_order' and body['formal_eligibility'] is False
+    assert state(root)==before and not data.provider_calls
+
+
+def test_driver_bridge_does_not_admit_test_only_public_research(api):
+    client,_,data,_=api
+    value=reviewed_result()
+    value['scope']='TEST_ONLY_LIVE_CONTRACT_NOT_REAL_RESEARCH'
+    value['operating_driver_bridge']={'TEST_ONLY':'must not escape rejected scope'}
+    data.rows=[value]
+    body=client.get(BASE+'/companies/600519').json()
+    assert body['status']=='UNASSESSABLE' and 'operating_driver_bridge' not in body
+    assert body['action']=='no_order' and body['formal_eligibility'] is False
+    assert not data.provider_calls

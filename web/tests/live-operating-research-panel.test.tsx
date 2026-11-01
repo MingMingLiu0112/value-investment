@@ -2,7 +2,11 @@ import React from "react";
 import { webcrypto } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { LiveOperatingResearchTask } from "../src/services/api";
+import type {
+  LiveOperatingResearchTask,
+  OperatingDriverBridge,
+  OperatingDriverKey,
+} from "../src/services/api";
 
 const hooks = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
 const calls = vi.hoisted(() => ({
@@ -59,6 +63,7 @@ import {
   LiveOperatingResearchPanel,
   LiveOperatingResearchDraft,
   PublicOperatingResearchView,
+  OperatingDriverBridgeView,
 } from "../src/components/LiveOperatingResearchPanel";
 
 function task(
@@ -721,4 +726,362 @@ it("labels task settlement as an estimate rather than actual provider billing", 
   expect(html).toContain("估算结算费用（人民币元）：7.33345");
   expect(html).toContain("非服务商账单");
   expect(html).not.toContain("已结算费用");
+});
+
+function driverBridge(): OperatingDriverBridge {
+  const assumption = (lower: string, upper: string) => ({
+    lower,
+    upper,
+    rationale: "TEST_ONLY_DRIVER_REASON",
+    evidence_ids: ["TEST_ONLY_EVIDENCE"],
+  });
+  const fields = Object.fromEntries(
+    [
+      "revenue",
+      "cost",
+      "surcharges",
+      "selling",
+      "admin",
+      "research",
+      "pre_tax_profit",
+    ].map((key) => [
+      key,
+      {
+        value: "1000000.123456789012345678901234567890",
+        evidence_id: "TEST_ONLY_" + key,
+      },
+    ]),
+  ) as OperatingDriverBridge["basis"]["baselines"][string]["fields"];
+  const baseline = {
+    period_basis: "H1",
+    scope: "CONSOLIDATED",
+    currency: "CNY",
+    fields,
+    opex_cny: "100",
+    other_pretax_cny: "-12",
+    pretax_margin: "0.55",
+    surcharge_ratio: "0.12",
+    evidence_ids: ["TEST_ONLY_EVIDENCE"],
+  };
+  const inputs = {} as OperatingDriverBridge["inputs"],
+    paths = {} as OperatingDriverBridge["paths"];
+  for (const name of ["bear", "base", "bull"] as const) {
+    const drivers = Object.fromEntries(
+      [
+        "volume_change",
+        "realization_mix_change",
+        "unit_cost_change",
+        "fixed_cogs_share",
+        "opex_change",
+        "surcharge_ratio",
+        "other_pretax_cny",
+      ].map((key) => [key, assumption("-0.02", "0.03")]),
+    ) as Record<OperatingDriverKey, ReturnType<typeof assumption>>;
+    const corner = {
+      revenue_cny: "1234567.1267890123456789",
+      cogs_cny: "400000",
+      opex_cny: "200000",
+      surcharges_cny: "100000",
+      other_pretax_cny: "-5000",
+      pretax_profit_cny: "529567.126789",
+      drivers: { volume_change: "-0.02", realization_mix_change: "0.03" },
+    };
+    inputs[name] = {
+      baseline_period: "2026-H1",
+      period_start: "2027-01-01",
+      period_end: "2027-06-30",
+      drivers,
+      capital_assumptions: { investment: "UNKNOWN", funding_access: "UNKNOWN" },
+    };
+    paths[name] = {
+      growth_range: { lower: "-0.1234", upper: "0.2345" },
+      margin_range: { lower: "0.41", upper: "0.59" },
+      baseline,
+      comparison_basis: "TEST_ONLY_SAME_H1_BASELINE",
+      extrema: {
+        growth_lower: corner,
+        growth_upper: { ...corner, revenue_cny: "2345678.129" },
+        margin_lower: { ...corner, pretax_profit_cny: "100000" },
+        margin_upper: { ...corner, pretax_profit_cny: "900000" },
+      },
+      limitations: ["TEST_ONLY_LIMITATION"],
+      period_start: "2027-01-01",
+      period_end: "2027-06-30",
+      scope: "CONSOLIDATED",
+      period_basis: "H1",
+    };
+  }
+  return {
+    version: "TEST_ONLY_DRIVER_V1",
+    basis: {
+      baselines: { "2026-H1": baseline },
+      comparisons: [
+        {
+          field: "revenue",
+          current_period: "2026-H1",
+          prior_period: "2025-H1",
+          period_basis: "H1",
+          current_value: "10472000000",
+          prior_value: "16454000000",
+          change_ratio: "-0.3635",
+          status: "COMPARABLE",
+          evidence_ids: ["TEST_ONLY_EVIDENCE"],
+        },
+      ],
+      gaps: ["TEST_ONLY_NO_CHANNEL_VOLUME"],
+    },
+    inputs,
+    paths,
+    thresholds: [
+      {
+        scenario: "base",
+        metric: "margin",
+        direction: "ABOVE",
+        threshold: "0.59",
+        period_start: "2027-01-01",
+        period_end: "2027-06-30",
+        baseline_period: "2026-H1",
+        period_basis: "H1",
+        scope: "CONSOLIDATED",
+        comparison_basis: "TEST_ONLY_SAME_H1_BASELINE",
+        meaning: "TEST_ONLY_SAME_BOUNDS_REVIEW",
+      },
+    ],
+  };
+}
+function visibleDriverHtml(html: string) {
+  let depth = 0;
+  return html
+    .split(/(<\/?details\b[^>]*>)/)
+    .map((part) => {
+      if (/^<details\b/.test(part)) {
+        depth++;
+        return "";
+      }
+      if (/^<\/details\b/.test(part)) {
+        depth--;
+        return "";
+      }
+      return depth === 0 ? part : "";
+    })
+    .join("");
+}
+it("shows source-period comparisons and each scenario driver inputs, backend paths and cost transmission by default without recomputing", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const bridge = driverBridge(),
+    before = JSON.stringify(bridge);
+  const html = renderToStaticMarkup(
+    <OperatingDriverBridgeView bridge={bridge} />,
+  );
+  const visible = visibleDriverHtml(html);
+  for (const text of [
+    "同期间历史比较",
+    "2026-H1",
+    "2025-H1",
+    "-0.3635",
+    "2027-01-01",
+    "2027-06-30",
+    "CONSOLIDATED",
+    "10,472,000,000.00",
+    "16,454,000,000.00",
+    "-0.1234 ～ 0.2345",
+    "0.4100 ～ 0.5900",
+    "活动量指数变化",
+    "实现价与产品组合变化",
+    "整体营业成本水平变化（假设）",
+    "基期营业成本的非活动量敏感份额（假设）",
+    "期间费用变化",
+    "税金及附加占收入比率",
+    "其他税前残差（元）",
+    "TEST_ONLY_DRIVER_REASON",
+    "TEST_ONLY_EVIDENCE",
+    "1,234,567.13",
+    "2,345,678.13",
+    "400,000.00",
+    "200,000.00",
+    "100,000.00",
+    "-5,000.00",
+    "529,567.13",
+    "900,000.00",
+    "TEST_ONLY_LIMITATION",
+    "同一bounds生成的重审阈值",
+    "严格高于",
+    "0.5900",
+    "TEST_ONLY_SAME_BOUNDS_REVIEW",
+  ])
+    expect(visible).toContain(text);
+  for (const name of [
+    "压力条件情景",
+    "中间条件情景（未采用主区间）",
+    "修复条件情景",
+  ])
+    expect(visible).toContain(name);
+  expect(visible).not.toContain("TEST_ONLY_NO_CHANNEL_VOLUME");
+  expect(html).toContain("TEST_ONLY_NO_CHANNEL_VOLUME");
+  expect(html).toContain("1234567.1267890123456789");
+  expect(html).not.toContain("<details open");
+  expect(JSON.stringify(bridge)).toBe(before);
+});
+it("states conditional index/mix/fixed-share/residual and strict matching-period threshold limits without inventing trigger or valuation", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const html = visibleDriverHtml(
+    renderToStaticMarkup(<OperatingDriverBridgeView bridge={driverBridge()} />),
+  );
+  for (const text of [
+    "活动量指数不是酒吨数",
+    "不是纯涨价",
+    "固定份额仅为敏感性假设",
+    "128角点压力包络不是概率分布",
+    "其他税前残差不等于经常性盈利",
+    "不是正式净利、股东现金或估值",
+    "等于阈值不触发",
+    "跨历史基线不等于越界",
+    "不判断已触发",
+    "各指标极值可能来自不同角点",
+    "不将全年与半年拼成同比",
+  ])
+    expect(html).toContain(text);
+  expect(html).not.toContain("已触发重审");
+  expect(html).not.toContain("经济批准通过");
+});
+it("consumes the optional bridge on private tasks, public success and partial without promoting any role or E2", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  for (const input of [task(), publicSuccess(), publicPartial()]) {
+    const value = {
+      ...input,
+      operating_driver_bridge: driverBridge(),
+      independent_review: {
+        status: "REVIEW_REQUIRED_NOT_APPROVAL" as const,
+        findings: [
+          {
+            priority: "P2",
+            role: "COUNTER_EVIDENCE" as const,
+            claim_index: 2,
+            reason:
+              "TEST_ONLY经济采用拒绝，经营驱动一致性尚未证明，不能生成买价",
+          },
+        ],
+      },
+    };
+    const before = JSON.stringify(value);
+    const html = renderToStaticMarkup(
+      <LiveOperatingResearchDraft task={value} />,
+    );
+    expect(html).toContain("经营驱动与成本传导桥");
+    expect(html).toContain("独立复核待处理，不代表批准");
+    expect(html).toContain(value.independent_review.findings[0].reason);
+    expect(html).toContain("经济主区间未采用");
+    expect(html).toContain("正式事实新增 0");
+    expect(html).not.toMatch(/建议买价|目标买价|买入价格|已采用主估值/);
+    expect(value.condition_price).toBeNull();
+    expect(value.personal_quantity).toBeNull();
+    expect(value.main_range_adopted).toBe(false);
+    expect(value.approval_changed).toBe(false);
+    expect(JSON.stringify(value)).toBe(before);
+  }
+});
+it("keeps legacy responses without bridge unchanged and does not pretend they have a driver chain", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  for (const input of [task(), publicSuccess(), publicPartial()]) {
+    const html = renderToStaticMarkup(
+      <LiveOperatingResearchDraft task={input} />,
+    );
+    expect(html).not.toContain("经营驱动与成本传导桥");
+    expect(html).not.toContain("128角点");
+  }
+});
+it("stops malformed bridge summaries and preserves missing numeric inputs rather than filling zero", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const bridge = driverBridge();
+  delete (bridge.paths as any).base;
+  const html = renderToStaticMarkup(
+    <OperatingDriverBridgeView bridge={bridge} />,
+  );
+  expect(html).toContain("经营驱动桥字段不完整");
+  expect(html).not.toContain("后端收入增长区间");
+  const missing = driverBridge();
+  missing.inputs.base.drivers.volume_change.lower = null;
+  missing.paths.base.extrema.margin_lower.cogs_cny = null;
+  const view = visibleDriverHtml(
+    renderToStaticMarkup(<OperatingDriverBridgeView bridge={missing} />),
+  );
+  expect(view).toContain("未提供，不补零");
+});
+
+it("labels cost-level sensitivity as multiplying all COGS without asserting accounting fixed costs", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const bridge = driverBridge();
+  bridge.paths.base.comparison_basis =
+    "CUMULATIVE_RELATIVE_TO_BASELINE_NOT_YOY";
+  bridge.thresholds[0].comparison_basis =
+    "CUMULATIVE_RELATIVE_TO_BASELINE_NOT_YOY";
+  bridge.thresholds[0].meaning = "REOPEN_RESEARCH_ONLY_NOT_AUTOMATIC_REVISION";
+  const html = visibleDriverHtml(
+    renderToStaticMarkup(<OperatingDriverBridgeView bridge={bridge} />),
+  );
+  for (const text of [
+    "整体营业成本水平变化（假设）",
+    "基期营业成本的非活动量敏感份额（假设）",
+    "不是已证实的会计固定成本拆分",
+    "成本水平变化作用于固定与活动量敏感份额组成的全部营业成本",
+    "相对历史基线的累计变化，不是逐年同比",
+    "仅重开研究，不自动修订假设或批准",
+    "严格高于",
+    "仅原始精确值可用于判断",
+  ])
+    expect(html).toContain(text);
+  expect(html).not.toContain("单位变动成本变化");
+  expect(html).not.toContain("固定营业成本份额（假设）");
+});
+
+it("distinguishes structured driver inputs from code-derived growth and margin counts", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  for (const input of [task(), publicSuccess(), publicPartial()]) {
+    const value = {
+      ...input,
+      operating_driver_bridge: driverBridge(),
+      research_completeness: {
+        scenario_count: 3,
+        numeric_assumption_count: 9,
+        unknown_assumption_count: 6,
+        status: "REVIEW_REQUIRED" as const,
+        economic_validation: "NOT_APPROVED" as const,
+        structured_driver_range_count: 21,
+        derived_scenario_metric_count: 6,
+        numeric_basis:
+          "GROWTH_AND_PROFIT_ARE_CODE_DERIVED_NOT_MODEL_ENTERED" as const,
+      },
+    };
+    const html = renderToStaticMarkup(
+      <LiveOperatingResearchDraft task={value} />,
+    );
+    expect(html).toContain("21项经营驱动范围");
+    expect(html).toContain("6项增长/税前利润率由代码派生，不是模型直接填值");
+    expect(html).not.toContain("数值假设数：9");
+    expect(html).not.toContain("9个LLM预测");
+    expect(html).toContain("经济有效性尚未批准");
+  }
+});
+it("preserves old numeric completeness labels without bridge or optional derivation counts", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const completeness = {
+    scenario_count: 3,
+    numeric_assumption_count: 9,
+    unknown_assumption_count: 6,
+    status: "REVIEW_REQUIRED" as const,
+    economic_validation: "NOT_APPROVED" as const,
+  };
+  for (const extra of [{}, { operating_driver_bridge: driverBridge() }]) {
+    const value = {
+      ...publicSuccess(),
+      ...extra,
+      research_completeness: completeness,
+    };
+    const html = renderToStaticMarkup(
+      <LiveOperatingResearchDraft task={value} />,
+    );
+    expect(html).toContain("数值假设数：9");
+    expect(html).not.toContain("项经营驱动范围");
+    expect(html).not.toContain("由代码派生，不是模型直接填值");
+  }
 });

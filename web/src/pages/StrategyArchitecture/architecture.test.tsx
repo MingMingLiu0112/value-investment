@@ -34,7 +34,9 @@ describe("versioned strategy architecture", () => {
         expect(html).toContain(text);
       for (const path of ["/daily", "/history", "/system", "/portfolio"])
         expect(html).toContain('href="' + path + '"');
-      expect(html).not.toMatch(/\d+%|ant-progress|ant-tag-success/);
+      expect(html.replace("0.10=10%", "")).not.toMatch(
+        /\d+%|ant-progress|ant-tag-success/,
+      );
       expect(html).toContain("工程：");
       expect(html).toContain("证据：");
       expect(catalog[key].stages.length).toBe(key === "value" ? 16 : 8);
@@ -195,36 +197,55 @@ describe("versioned strategy architecture", () => {
   });
 });
 
-it("records the latest v5 three-role execution separately from economic approval and historical runs", () => {
+it("records the current driver bridge arithmetic acceptance without adopting parameters, capital cash or valuation", () => {
   const d1 = catalog.value.stages.find((stage) => stage.id === "D1")!;
   const d2 = catalog.value.stages.find((stage) => stage.id === "D2")!;
   for (const stage of [d1, d2]) {
     expect(stage.evidenceSource).toContain(
-      "rt-c40c613f50e24ec29f9bd374be5b900b.json",
+      "rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json",
     );
-    expect(stage.nextStep).toContain("不再增加模型调用");
+    expect(stage.evidenceSource).toContain("independent-acceptance.json");
+    expect(stage.evidenceSource).toContain(
+      "artifacts/current/d2-operating-driver-20261101.json",
+    );
+    expect(stage.evidenceSource).not.toContain("待Root");
+    expect(stage.nextStep).toContain(
+      "验证参数经济适用性及资本/现金资料，不重试模型凑通过",
+    );
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
-  expect(d1.evidenceStatus).toContain("3次调用");
+  expect(d1.evidenceStatus).toContain("4次调用含1次反证缺字段拒绝后恢复");
   expect(d1.evidenceStatus).toContain("不是今日调用总数");
-  expect(d1.evidence).toContain("峰值费率保守估算0.15066元，非账单");
+  expect(d1.evidence).toContain(
+    "历史rt-c40任务峰值费率保守估算0.15066元，非账单",
+  );
   expect(d1.evidence).toContain("昨日浏览器实际0.158元");
   expect(d1.evidence).toContain("旧估算7.33345元不是实际费用");
-  expect(d2.evidenceStatus).toContain("9项条件预测、6项UNKNOWN");
-  expect(d2.milestone).toContain("投资与资金可达6项UNKNOWN语义已修");
-  expect(d2.progress?.economic).toContain("经济采用拒绝／未全部验收");
-  expect(d2.engineeringStatus).toContain("真实三角色链工程闭环");
-  expect(d2.milestone).toContain("2025H1 164.54");
-  expect(d2.milestone).toContain("bull区间0.55–0.585仍含0.58");
-  expect(d2.evidence).toContain("不供E2");
-  expect(d2.evidence).toContain("Event仅覆盖FY/H1");
-  expect(d2.nextStep).toContain("经营量价/成本传导与一致性验证");
+  expect(d2.evidenceStatus).toContain(
+    "21项经营驱动范围、6项增长/税前利润率由代码派生、9项资本UNKNOWN",
+  );
+  expect(d2.implementation).toContain("H12026→H12027");
+  expect(d2.implementation).toContain("同比FY只对FY、H1只对H1");
+  expect(d2.milestone).toContain("3×128角点及12条阈值一致");
+  expect(d2.milestone).toContain("等于不触发");
+  expect(d2.existingEvidence).toContain("rt-c40经济拒绝保留为历史");
+  expect(d2.evidence).toContain("typed bridge不消费这些文字");
+  expect(d2.progress?.economic).toContain("参数经济适用性未证");
   const html = renderToStaticMarkup(<ArchitectureView strategy="value" />);
+  for (const text of [
+    "21项经营驱动范围",
+    "9项资本UNKNOWN",
+    "条件压力分析算术已验收",
+    "0.10=10%",
+    "同值不触发",
+    "不能混用历史阈值",
+    "不等于未来参数已证明、主估值、E2批准、G3或交易",
+    "验证参数经济适用性及资本/现金资料，不重试模型凑通过",
+  ])
+    expect(html).toContain(text);
   expect(html).toContain('href="/decisions/000568?strategy=value"');
-  expect(html).toContain("真实Agent研究结果（经济采用拒绝）");
-  expect(html).not.toContain("最新事件缺失");
-  expect(html).not.toContain("事件被每日预算预检拦截");
-  expect(html).toContain("不授予主估值采用或E2批准");
+  expect(html).toContain("真实Agent研究结果（条件压力算术已验，非主估值）");
+  expect(html).not.toContain("首要决定性缺口是经营量价/成本传导与一致性验证");
   expect(
     catalog.value.stages.find((stage) => stage.id === "C")?.progress
       ?.acceptance,

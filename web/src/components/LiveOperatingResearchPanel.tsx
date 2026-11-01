@@ -9,9 +9,23 @@ import {
   type PublicOperatingResearchSuccess,
   type PublicOperatingResearchPartial,
   type OperatingResearchRoleKey,
+  type OperatingDriverBridge,
+  type OperatingDriverKey,
+  type OperatingDriverScenario,
+  type OperatingDriverRange,
 } from "../services/api";
 
 const LABELS: Record<string, string> = {
+  PROJECTED_YOY_SAME_PERIOD: "与历史基线相邻年份的同期间投影同比",
+  CUMULATIVE_RELATIVE_TO_BASELINE_NOT_YOY:
+    "相对历史基线的累计变化，不是逐年同比",
+  REOPEN_RESEARCH_ONLY_NOT_AUTOMATIC_REVISION:
+    "仅重开研究，不自动修订假设或批准",
+  COMPARABLE: "同期间可比较",
+  NONPOSITIVE_BASE_NOT_ASSESSABLE: "历史基数非正，变化率不可评估",
+  H1: "半年口径",
+  FY: "全年口径",
+  consolidated: "合并口径",
   business_drivers: "经营驱动",
   scenarios: "条件情景",
   bear: "压力条件情景",
@@ -86,6 +100,296 @@ function Readable({ value }: { value: unknown }) {
       </dl>
     );
   return <span>{LABELS[String(value)] || String(value)}</span>;
+}
+const DRIVER_LABELS: Record<OperatingDriverKey, string> = {
+  volume_change: "活动量指数变化",
+  realization_mix_change: "实现价与产品组合变化",
+  unit_cost_change: "整体营业成本水平变化（假设）",
+  fixed_cogs_share: "基期营业成本的非活动量敏感份额（假设）",
+  opex_change: "期间费用变化",
+  surcharge_ratio: "税金及附加占收入比率",
+  other_pretax_cny: "其他税前残差（元）",
+};
+const FIELD_LABELS: Record<string, string> = {
+  revenue: "营业收入",
+  cost: "营业成本",
+  surcharges: "税金及附加",
+  selling: "销售费用",
+  admin: "管理费用",
+  research: "研发费用",
+  pre_tax_profit: "税前利润",
+  revenue_growth: "收入增长率",
+  growth: "收入增长率",
+  margin: "税前利润率",
+  pretax_margin: "税前利润率",
+};
+function driverNumber(value: unknown, digits = 4) {
+  const number =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" &&
+          /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(value.trim())
+        ? Number(value)
+        : NaN;
+  return Number.isFinite(number)
+    ? number.toLocaleString("en-US", {
+        maximumFractionDigits: digits,
+        minimumFractionDigits: digits,
+      })
+    : "未提供，不补零";
+}
+function driverRange(value?: OperatingDriverRange, digits = 4) {
+  return value
+    ? driverNumber(value.lower, digits) +
+        " ～ " +
+        driverNumber(value.upper, digits)
+    : "未提供，不补区间";
+}
+const DRIVER_SCENARIOS: OperatingDriverScenario[] = ["bear", "base", "bull"];
+const EXTREMA = [
+  ["growth_lower", "收入增长下界角点"],
+  ["growth_upper", "收入增长上界角点"],
+  ["margin_lower", "税前利润率下界角点"],
+  ["margin_upper", "税前利润率上界角点"],
+] as const;
+export function OperatingDriverBridgeView({
+  bridge,
+}: {
+  bridge: OperatingDriverBridge;
+}) {
+  if (
+    !bridge.version ||
+    !bridge.basis?.baselines ||
+    !Array.isArray(bridge.basis.comparisons) ||
+    !Array.isArray(bridge.thresholds) ||
+    DRIVER_SCENARIOS.some((name) => {
+      const input = bridge.inputs?.[name],
+        path = bridge.paths?.[name];
+      return (
+        !input?.drivers ||
+        !bridge.basis.baselines[input.baseline_period] ||
+        !path?.growth_range ||
+        !path.margin_range ||
+        !path.extrema ||
+        !Array.isArray(path.limitations)
+      );
+    })
+  )
+    return (
+      <Alert
+        type="warning"
+        message="经营驱动桥字段不完整，停止展示计算摘要，不推定已有完整driver链"
+      />
+    );
+  return (
+    <section aria-label="经营驱动与成本传导桥">
+      <h3>经营驱动与成本传导桥（条件研究）</h3>
+      <p>
+        本区只展示后端同口径计算，不在页面重算。活动量指数不是酒吨数；实现价包含产品组合mix，不是纯涨价；固定份额仅为敏感性假设，不是已证实的会计固定成本拆分；成本水平变化作用于固定与活动量敏感份额组成的全部营业成本。
+      </p>
+      <p>
+        128角点压力包络不是概率分布；其他税前残差不等于经常性盈利。结果不是正式净利、股东现金或估值，也不代表经济批准。
+      </p>
+      <p>
+        金额单位为人民币元，比率为小数而非百分数；摘要仅作展示四舍五入，完整原值见折叠明细。
+      </p>
+      <h4>同期间历史比较</h4>
+      <div style={{ overflowX: "auto" }}>
+        <table>
+          <caption>
+            仅按后端明确列出的期间与比较状态展示；不将全年与半年拼成同比
+          </caption>
+          <thead>
+            <tr>
+              <th>指标</th>
+              <th>本期</th>
+              <th>对比期</th>
+              <th>期间口径</th>
+              <th>本期值</th>
+              <th>对比值</th>
+              <th>变化比率</th>
+              <th>比较状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bridge.basis.comparisons.map((row, i) => (
+              <tr key={i}>
+                <td>{FIELD_LABELS[row.field] || row.field}</td>
+                <td>{row.current_period}</td>
+                <td>{row.prior_period}</td>
+                <td>{row.period_basis}</td>
+                <td>{driverNumber(row.current_value, 2)}</td>
+                <td>{driverNumber(row.prior_value, 2)}</td>
+                <td>{driverNumber(row.change_ratio)}</td>
+                <td>{LABELS[row.status] || row.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {bridge.basis.comparisons.length === 0 && (
+        <p>尚无可显示的同期间比较，不自行生成同比。</p>
+      )}
+      <details>
+        <summary>历史基线、证据编号与缺口</summary>
+        <Readable value={bridge.basis} />
+      </details>
+      {DRIVER_SCENARIOS.map((name) => {
+        const input = bridge.inputs[name],
+          path = bridge.paths[name];
+        const baseline = bridge.basis.baselines[input.baseline_period];
+        return (
+          <section key={name} aria-label={LABELS[name] + "经营驱动"}>
+            <h4>{LABELS[name]}：输入假设与计算摘要</h4>
+            <p>
+              历史基线：{input.baseline_period}（{baseline.period_basis}，
+              {baseline.scope}，{baseline.currency}）； 条件期间：
+              {input.period_start} ～ {input.period_end}； 结果期间：
+              {path.period_start} ～ {path.period_end}（{path.period_basis}，
+              {path.scope}）。
+            </p>
+            <div>
+              结果比较口径：
+              <Readable value={path.comparison_basis} />
+            </div>
+            <p>
+              后端收入增长区间：{driverRange(path.growth_range)}；
+              税前利润率区间：{driverRange(path.margin_range)}（比率）。
+            </p>
+            <div style={{ overflowX: "auto" }}>
+              <table>
+                <caption>
+                  输入bounds与理由：条件假设，不是已验证经营事实
+                </caption>
+                <thead>
+                  <tr>
+                    <th>驱动</th>
+                    <th>下界 ～ 上界</th>
+                    <th>理由</th>
+                    <th>证据编号</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(Object.keys(DRIVER_LABELS) as OperatingDriverKey[]).map(
+                    (key) => {
+                      const value = input.drivers[key];
+                      return (
+                        <tr key={key}>
+                          <th>{DRIVER_LABELS[key]}</th>
+                          <td>
+                            {driverRange(
+                              value,
+                              key === "other_pretax_cny" ? 2 : 4,
+                            )}
+                          </td>
+                          <td>{value?.rationale || "尚未提供理由"}</td>
+                          <td>
+                            {value?.evidence_ids?.join("、") ||
+                              "尚无证据编号，不推定有据"}
+                          </td>
+                        </tr>
+                      );
+                    },
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p>
+              成本传导：以下为后端包络角点的收入、营业成本、期间费用、税金及附加、其他税前残差与税前利润；各指标极值可能来自不同角点，不拼成一个实际情景。
+            </p>
+            <div style={{ overflowX: "auto" }}>
+              <table>
+                <caption>
+                  计算结果（元；各自极值角点，不代表概率或净利预测）
+                </caption>
+                <thead>
+                  <tr>
+                    <th>极值角点</th>
+                    <th>收入</th>
+                    <th>营业成本</th>
+                    <th>期间费用</th>
+                    <th>税金及附加</th>
+                    <th>其他税前残差</th>
+                    <th>税前利润</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {EXTREMA.map(([key, title]) => {
+                    const row = path.extrema[key];
+                    return (
+                      <tr key={key}>
+                        <th>{title}</th>
+                        {(
+                          [
+                            "revenue_cny",
+                            "cogs_cny",
+                            "opex_cny",
+                            "surcharges_cny",
+                            "other_pretax_cny",
+                            "pretax_profit_cny",
+                          ] as const
+                        ).map((field) => (
+                          <td key={field}>{driverNumber(row?.[field], 2)}</td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <ul>
+              {path.limitations.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+            <details>
+              <summary>
+                {LABELS[name]}：角点驱动、资本假设与完整路径原值
+              </summary>
+              <Readable value={{ inputs: input, path }} />
+            </details>
+          </section>
+        );
+      })}
+      <h4>同一bounds生成的重审阈值（不是自动批准或触发交易）</h4>
+      <p>
+        仅在同一期间、范围和比较基准下严格越界才满足重审条件；等于阈值不触发，跨历史基线不等于越界。阈值摘要四舍五入，仅原始精确值可用于判断。本页不读取当前经营值或报价，也不判断已触发。
+      </p>
+      {bridge.thresholds.map((row, i) => (
+        <section key={i}>
+          <p>
+            {LABELS[row.scenario]} · {FIELD_LABELS[row.metric] || row.metric}：
+            {row.direction === "below" ||
+            row.direction === "lt" ||
+            row.direction === "LOWER" ||
+            row.direction === "BELOW"
+              ? "严格低于"
+              : row.direction === "above" ||
+                  row.direction === "gt" ||
+                  row.direction === "UPPER" ||
+                  row.direction === "ABOVE"
+                ? "严格高于"
+                : row.direction}{" "}
+            {driverNumber(row.threshold)}（比率）；期间 {row.period_start} ～{" "}
+            {row.period_end}； 历史基线 {row.baseline_period} ·{" "}
+            {row.period_basis} · {row.scope}。
+          </p>
+          <div>
+            阈值比较口径：
+            <Readable value={row.comparison_basis} />
+          </div>
+          <p>{LABELS[row.meaning] || row.meaning}</p>
+        </section>
+      ))}
+      {bridge.thresholds.length === 0 && (
+        <p>尚无后端重审阈值，不由页面补造。</p>
+      )}
+      <details>
+        <summary>经营驱动桥完整原稿与版本</summary>
+        <Readable value={bridge} />
+      </details>
+    </section>
+  );
 }
 export function validLiveTask(
   value: unknown,
@@ -199,9 +503,29 @@ export function LiveOperatingResearchDraft({
       {task.research_completeness ? (
         <section aria-label="研究完整度">
           <p>
-            情景数：{task.research_completeness.scenario_count} · 数值假设数：
-            {task.research_completeness.numeric_assumption_count} · 未知假设数：
-            {task.research_completeness.unknown_assumption_count}
+            情景数：{task.research_completeness.scenario_count} ·{" "}
+            {task.operating_driver_bridge &&
+            task.research_completeness.numeric_basis ===
+              "GROWTH_AND_PROFIT_ARE_CODE_DERIVED_NOT_MODEL_ENTERED" &&
+            Number.isInteger(
+              task.research_completeness.structured_driver_range_count,
+            ) &&
+            Number.isInteger(
+              task.research_completeness.derived_scenario_metric_count,
+            ) ? (
+              <>
+                {task.research_completeness.structured_driver_range_count}
+                项经营驱动范围，
+                {task.research_completeness.derived_scenario_metric_count}
+                项增长/税前利润率由代码派生，不是模型直接填值
+              </>
+            ) : (
+              <>
+                数值假设数：
+                {task.research_completeness.numeric_assumption_count}
+              </>
+            )}{" "}
+            · 未知假设数：{task.research_completeness.unknown_assumption_count}
           </p>
           <Alert
             type="info"
@@ -216,6 +540,9 @@ export function LiveOperatingResearchDraft({
         </section>
       ) : (
         <p>尚未提供研究完整度统计，不推定研究充分。</p>
+      )}
+      {task.operating_driver_bridge && (
+        <OperatingDriverBridgeView bridge={task.operating_driver_bridge} />
       )}
       {"error_code" in task && task.error_code && (
         <Alert type="info" message={"任务错误：" + task.error_code} />

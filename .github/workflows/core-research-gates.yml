@@ -468,6 +468,8 @@ jobs:
           tests/web_api/test_research_tasks_api.py
           tests/test_operating_assumption_draft_v1.py
           tests/test_operating_draft_v1.py
+          tests/test_operating_driver_bridge_v1.py
+          tests/test_operating_driver_draft_v2.py
           tests/test_operating_sources_v1.py
           tests/test_operating_provider_contract.py
           tests/test_operating_task_v2.py

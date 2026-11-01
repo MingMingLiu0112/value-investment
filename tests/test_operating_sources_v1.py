@@ -229,7 +229,7 @@ def test_original_changed_during_narrative_extraction_rejected(source_case, monk
                                                   symbol="000001", now=NOW, binding=binding)
 
 
-def test_real_000568_84_native_facts_and_9_official_excerpts():
+def test_real_000568_84_native_facts_and_12_official_excerpts():
     configured = os.environ.get("OPERATING_SOURCES_REAL_ROOT")
     if not configured:
         pytest.skip("REAL SOURCE NOT VALIDATED: set OPERATING_SOURCES_REAL_ROOT explicitly")
@@ -239,10 +239,29 @@ def test_real_000568_84_native_facts_and_9_official_excerpts():
     assert result["issuer_name"] == "泸州老窖股份有限公司"
     assert result["action"] == "no_order"
     assert sum(r["kind"] == "VERIFIED_REPORTED_FACT" for r in result["evidence"]) == 84
-    assert sum(r["kind"] == "OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM" for r in result["evidence"]) == 9
-    business = [r for r in result["evidence"] if r["scope"] == "ISSUER_REPORTED_NARRATIVE"]
+    assert sum(r["kind"] == "OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM" for r in result["evidence"]) == 12
+    business = [r for r in result["evidence"] if ":operating-page-" in r["id"]]
     cash = [r for r in result["evidence"] if ":cashflow-capex-" in r["id"]]
     assert len(business) == 7 and len(cash) == 2
+    extra = [r for r in result["evidence"] if ":operating-excerpt-" in r["id"]]
+    assert len(extra) == 3 and len(result["evidence"]) == 96
+    compact = "".join("".join(r["text"].split()) for r in extra)
+    for number in ["1,057,171,217.67", "150,076,382.02", "301,057,747.25",
+                   "13,862.32", "22,371.09", "9,200,048,584.14", "851,976,322.23",
+                   "1,211,013,642.41", "656,329,024.71", "533,426,251.14"]:
+        assert number in compact
+    assert all(r["scope"] == "ISSUER_REPORTED_NARRATIVE" for r in extra)
+    assert all(len(r["text"]) <= 2000 for r in extra)
+    from value_investment_agent.application.research.agent_review.operating_task_v2 import research_context
+    from value_investment_agent.application.research.agent_review.operating_driver_draft_v2 import legacy_context
+    from value_investment_agent.application.research.agent_review import operating_draft_v1
+    projected = legacy_context(research_context(result))
+    operating_draft_v1._context(projected)
+    assert len(operating_draft_v1._canonical(projected)) <= 48000
+    assert len(operating.encode(result)) <= 100000
+    bases = {r["period_basis"] for r in result["evidence"] if r["kind"] == "VERIFIED_REPORTED_FACT"}
+    assert bases == {"H1", "FY", "UNKNOWN"}
+
     expected = {"cninfo:1225240660": (83, "1,932,762,969.97", "652,780,256.66"),
                 "cninfo:1225501255": (45, "713,743,846.14", "413,591,845.80")}
     for row in cash:
@@ -330,3 +349,86 @@ def test_parent_capex_cannot_be_relabelled_as_group(source_case):
         "购建固定资产、无形资产和其他长期资产支付的现金 90.00 70.00")
     with pytest.raises(ValueError, match="SUPPLEMENT_CASH_FLOW_SCOPE_NOT_PROVEN"):
         build(source_case, binding)
+
+
+
+def configure_operating_excerpt(case):
+    binding = case["seal"]()
+    entry = {"native_facts": dict(binding), "operating_excerpts": [
+        {"source_id": "TEST_ONLY-source", "physical_page": 3,
+         "start_marker": "主要业务", "max_chars": 2000}]}
+    path = case["root"] / operating.REGISTRY
+    path.parent.mkdir(exist_ok=True)
+    registry = {"schema_version": "current-operating-research-sources-v1",
+                "action": "no_order", "cases": {"000001": entry}}
+    path.write_bytes(operating.encode(registry))
+    return binding, path, registry
+
+
+def test_configured_operating_excerpt_is_exact_bounded_source_text(source_case):
+    binding, _, _ = configure_operating_excerpt(source_case)
+    result = build(source_case, binding)
+    row = next(r for r in result["evidence"] if ":operating-excerpt-" in r["id"])
+    original = source_case["pages"][2]
+    assert row["text"] == original[original.index("主要业务"):]
+    assert row["scope"] == "ISSUER_REPORTED_NARRATIVE"
+    assert row["kind"] == "OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM"
+    assert row["text_sha256"] == digest(row["text"].encode())
+
+
+@pytest.mark.parametrize("fault,error", [
+    ("missing_marker", "MARKER_MISSING_OR_AMBIGUOUS"),
+    ("ambiguous_marker", "MARKER_MISSING_OR_AMBIGUOUS"),
+    ("unknown_source", "CONTRACT_INVALID"),
+    ("too_many", "EXCERPT_LIMIT"),
+    ("too_long", "CONTRACT_INVALID"),
+    ("bad_page", "PAGE_MISSING"),
+    ("hash", "hash/size mismatch"),
+    ("binding", "SOURCE_BINDING_MISMATCH"),
+])
+def test_configured_operating_excerpt_rejects_invalid_evidence(source_case, fault, error):
+    binding, path, registry = configure_operating_excerpt(source_case)
+    entry = registry["cases"]["000001"]
+    row = entry["operating_excerpts"][0]
+    if fault == "missing_marker":
+        row["start_marker"] = "NOT_IN_ORIGINAL"
+    elif fault == "ambiguous_marker":
+        source_case["pages"][2] += "主要业务"
+    elif fault == "unknown_source":
+        row["source_id"] = "UNKNOWN"
+    elif fault == "too_many":
+        entry["operating_excerpts"] *= 4
+    elif fault == "too_long":
+        row["max_chars"] = 2001
+    elif fault == "bad_page":
+        row["physical_page"] = 99
+    elif fault == "hash":
+        source_case["original"].write_bytes(RAW + b"changed")
+    elif fault == "binding":
+        entry["native_facts"]["sha256"] = "0" * 64
+    path.write_bytes(operating.encode(registry))
+    with pytest.raises(ValueError, match=error):
+        build(source_case, binding)
+
+
+@pytest.mark.parametrize("header,expected", [
+    ("项目 2025年度 2024年度", "FY"),
+    ("项目 本期金额 上期金额", "UNKNOWN"),
+    ("项目 2025年12月31日 2024年12月31日", "UNKNOWN"),
+])
+def test_native_period_basis_uses_column_header_not_date(source_case, header, expected):
+    source_case["pages"][1] = source_case["pages"][1].replace(HEADER, header)
+    source_case["spec"]["facts"][0]["column_header"] = header
+    assert build(source_case)["evidence"][0]["period_basis"] == expected
+
+
+def test_native_half_year_header_is_h1_not_fy(source_case):
+    spec = source_case["spec"]
+    spec["financial_basis"] = "2025-06-30"
+    spec["sources"][0].update(report_period="2025-06-30", report_title="2025年半年度报告")
+    source_case["pages"][0] = source_case["pages"][0].replace("2025年年度报告", "2025年半年度报告")
+    header = "项目 2025年半年度 2024年半年度"
+    source_case["pages"][1] = source_case["pages"][1].replace(HEADER, header)
+    spec["facts"][0].update(column_header=header, period_end="2025-06-30",
+                            column_periods=["2025-06-30", "2024-06-30"])
+    assert build(source_case)["evidence"][0]["period_basis"] == "H1"

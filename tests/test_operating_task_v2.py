@@ -475,3 +475,60 @@ def test_new_proposal_checkpoint_resume_preserves_requests_without_duplicate_rol
     # Cold read reconstructs the same bound requests without any extra provider call.
     assert env.service(second).read(task)['status'] == 'SUCCEEDED'
     assert first.calls + second.calls == list(mod.ROLES)
+
+
+def test_driver_contract_consumes_actual_domain_path_in_existing_task(env):
+    from value_investment_agent.domain.research.operating_driver_bridge_v1 import DRIVERS
+    env.configure(research_contract="operating-drivers-v2")
+    def loader(**kwargs):
+        value=env.loader(**kwargs)
+        template=value["evidence"][0]
+        numbers=dict(revenue="100",cost="40",surcharges="10",selling="6",
+                     admin="3",research="1",pre_tax_profit="45")
+        value["evidence"]=[dict(template,id="driver:"+field,field=field,value=number,
+            period_basis="H1",text="TEST_ONLY scoped amount "+number) for field,number in numbers.items()]
+        value["snapshot_fingerprint"]=hashlib.sha256(mod._bytes(value)).hexdigest()
+        return value
+    def response(request):
+        if request.role!="FUNDAMENTAL":
+            statement=dict(text="TEST_ONLY interpretation",evidence_ids=["driver:revenue"])
+            body=(dict(counterevidence=[statement],invalidation=[statement]) if request.role=="COUNTER_EVIDENCE"
+                  else dict(seen_events=[],uncovered=[dict(text="TEST_ONLY coverage limited",evidence_ids=[])]))
+        else:
+            points=dict(volume_change="0",realization_mix_change="0",unit_cost_change="0",
+                        fixed_cogs_share=".25",opex_change="0",surcharge_ratio=".1",other_pretax_cny="5")
+            capital=[dict(dimension=dimension,period_start="2027-01-01",period_end="2027-06-30",
+                          classification="UNKNOWN",lower=None,upper=None,unit="not_quantified",
+                          rationale="TEST_ONLY unknown",evidence_ids=["driver:revenue"])
+                     for dimension in ("investment","funding_access","terminal")]
+            paths={}
+            for name,low,high in (("bear","-.2","-.1"),("base","-.05",".05"),("bull",".05",".1")):
+                drivers={key:dict(lower=number,upper=number,rationale="TEST_ONLY condition",
+                                  evidence_ids=["driver:revenue"]) for key,number in points.items()}
+                drivers["volume_change"].update(lower=low,upper=high)
+                paths[name]=dict(baseline_period="2026-06-30",period_start="2027-01-01",
+                    period_end="2027-06-30",drivers=drivers,capital_assumptions=deepcopy(capital))
+            body=dict(business_drivers=[dict(text="TEST_ONLY business",evidence_ids=["driver:revenue"])],
+                      operating_paths=paths)
+        return LLMResponse(json.dumps(body),100,50,"TEST_ONLY_MODEL")
+    provider=TestOnlyProvider(behavior=response)
+    service=mod.LiveOperatingTaskService(env.root,test_provider=provider,source_loader=loader)
+    task=create(service)
+    result=service.run(task)
+    assert result["status"]=="SUCCEEDED",result.get("validation_error")
+    assert provider.calls==["FUNDAMENTAL","COUNTER_EVIDENCE","EVENT"]
+    assert result["operating_driver_bridge"]["paths"]["bear"]["growth_range"]==dict(lower="-0.2",upper="-0.1")
+    assert len(result["operating_driver_bridge"]["thresholds"])==12
+    assert result["operating_driver_bridge"]["basis"]["baselines"]["2026-06-30"]["period_basis"]=="H1"
+    assert result["formal_eligibility"] is False and result["condition_price"] is None
+    assert result["new_llm_calls"]==0 and result["scope"]=="TEST_ONLY_LIVE_CONTRACT_NOT_REAL_RESEARCH"
+    before=snapshot(env.root)
+    read=service.read(task)
+    assert read["operating_driver_bridge"]==result["operating_driver_bridge"]
+    assert snapshot(env.root)==before and len(provider.calls)==3
+
+
+def test_research_contract_is_explicit_and_not_an_arbitrary_model(env):
+    env.configure(research_contract="unknown-driver-framework")
+    with pytest.raises(ValueError,match="UNSUPPORTED_RESEARCH_CONTRACT"):
+        mod.model_configuration(env.root)
