@@ -29,7 +29,7 @@ export interface Stage {
 }
 export const review = {
   version: "strategy-architecture-v2-module-map",
-  reviewedAt: "2026-10-31",
+  reviewedAt: "2026-11-01",
   baseline: "d01923cd72c3e638bb3df490f9e148abccd82219",
   mode: "MANUAL_SOURCE_REVIEW",
   runtimeEvidence: "NOT_CONNECTED",
