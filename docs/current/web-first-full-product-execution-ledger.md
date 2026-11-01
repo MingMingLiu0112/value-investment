@@ -7678,3 +7678,10 @@ Business commit7537c7a0 clean checkout restored57 public refs;202 actual-source/
 审计/54 refs/3PR/11×12能力矩阵及包装Schema已归档；A真实22文件依赖闭包隔离恢复、B显式manifest原生run/get/replay已执行。B历史5224/shortlist30/正式财务采纳0仍PARTIAL。最终干净检出319passed、0skip；Web本地1513passed/28skip、类型与格式通过；隔离生产构建38e5bb8f成功。首轮检出2个旧真实研究失败如实保留，定位LF→CRLF后仅加单路径-text规则，未改旧原件/任务/Hash；复验已通过。独立复核4个projection P2及B scope P2已关闭。
 
 [限定验收回执](../../artifacts/current/value-mainline-p0-20261101/acceptance-code-38e5bb8f.json)。回执记录当时Core41291347559/Web41291347540仍IN_PROGRESS，不是CI通过证明；最终状态以精确SHA的GitHub原始回执为准。未合main、未部署8001，运行backend/frontend仍283c7212，旧publication registry不可用保留。已有私有指针Hash未变，10冻结路径未改。11模块的通用执行wrapper不是全部完成；本次不是价值投资经济有效性或实盘准入验收。下一业务工作仍为既有F2确切候选的经济采纳与当前股本/分配/事件/财务/报价对齐，不重建内核或热点。
+
+
+## 2026-11-01 VALUE-STRATEGY-TRANSPARENT-WORKBENCH-V1
+
+最新用户任务替代上一P0只审计/不发布的局部工作边界：在现有Web做透明研究入口及真实用户交互，复用原有来源/估值/研究任务/授权/账本，永久no_order，不改G3。基线6236d912；保留未提交current-research-drafts.json指针。不新建平行任务平台；公开GET零网络/零模型/零写，操作需显式POST和原授权。工作包：真实只读研究链聚合；原生任务动作/状态/取消/重试；用户可读工作台；独立API/浏览器验收。真实成交没有具体经确认记录时只能验收确认拦截，不能造实盘交易。8001本机更新需先核对归属并保留旧构建；不涉及服务器/PTA/生产调度。
+
+透明工作台开发已接既有原生任务与公开研究链；[操作与验收索引](value-transparent-workbench-v1.md)。Root真实联调发现上一P0修改金融Codec使600519/600887旧候选失效，已恢复原Codec05722dc字节，新增ModuleRun经仓储适配分发，不改证据/公式。后台168通过0skip、Web1553通过；部署与真实用户操作仍单独验收，不宣称全部交互通过。

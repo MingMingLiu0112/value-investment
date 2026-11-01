@@ -1244,7 +1244,178 @@ export type LiveOperatingResearchHistory = {
   items: LiveOperatingResearchTask[];
 };
 
+export type ValueWorkbenchSection = {
+  id:
+    | "selection"
+    | "profile"
+    | "research"
+    | "assumptions"
+    | "cash"
+    | "valuation"
+    | "price"
+    | "decision"
+    | "continuity"
+    | "evidence";
+  title: string;
+  status: string;
+  summary: string;
+  data: {
+    native_results?: Record<string, Record<string, unknown>>;
+    source_bindings?: unknown[];
+    knowledge_types?: unknown[];
+  } | null;
+  blockers: unknown[];
+};
+export type ValueWorkbenchCompanies = {
+  action: "no_order";
+  formal_eligibility: false;
+  status: string;
+  scope: "REGISTERED_RESEARCH_ENTRIES_NOT_CURRENT_SHORTLIST";
+  items: {
+    symbol: string;
+    name: string | null;
+    status: "REGISTERED_NOT_YET_REVALIDATED";
+    current_candidate: null;
+    research_verified: false;
+    action: "no_order";
+    formal_eligibility: false;
+  }[];
+  sources: unknown[];
+};
+export type ValueWorkbenchResponse = {
+  schema_version: "value-transparent-workbench-v1";
+  symbol: string;
+  action: "no_order";
+  formal_eligibility: false;
+  quantity: null;
+  sections: ValueWorkbenchSection[];
+  evidence_downloads?: {
+    id: string;
+    binding: { path: string; sha256: string };
+  }[];
+};
+export type ValueWorkbenchTask = {
+  result?: {
+    operation: string;
+    outcome: string;
+    action: "no_order";
+    formal_eligibility: false;
+    approval_changed: false;
+    current_published: false;
+    new_llm_calls: 0;
+    result: Record<string, unknown>;
+    selection_content?: Record<string, unknown>;
+  };
+  module_id?: string;
+  module_version?: string;
+  run_id?: string | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+  duration_seconds?: number | null;
+  duration_basis?: string;
+  current_step?: string | null;
+  retry_allowed?: boolean;
+  input_sha256?: string;
+  input_binding?: { path: string; sha256: string };
+  current_validation?: string;
+  current_validation_reason?: string | null;
+  currently_consumable?: boolean;
+  warnings?: string[];
+  task_id: string;
+  symbol: string;
+  status: string;
+  operation: string;
+  action: "no_order";
+  formal_eligibility: false;
+  new_llm_calls: 0;
+  native_metadata: {
+    schema_version: string;
+    new_llm_calls: 0;
+    approval_changed: false;
+    execution: string;
+  };
+  completed_steps?: number;
+  total_steps?: number;
+  resume_required?: boolean;
+  error_code?: string | null;
+  steps?: { name: string; status: string }[];
+};
+export type PreparedWorkbenchOperation = {
+  module_id: string;
+  operation: string;
+  enabled: boolean;
+  reason?: string | null;
+  prepared_payload: Record<string, unknown> | null;
+  user_fields: unknown[];
+  network_authorization_required: boolean;
+};
+export type PreparedWorkbenchInputs = {
+  action: "no_order";
+  formal_eligibility: false;
+  symbol: string;
+  status: string;
+  tasks_started: 0;
+  operations: PreparedWorkbenchOperation[];
+};
+export type ValueWorkbenchTaskCreate = {
+  module_id: string;
+  operation: string;
+  symbol: string;
+  request_key: string;
+  payload: Record<string, unknown>;
+  timeout_seconds?: number;
+};
+export type ValueWorkbenchTaskHistory = {
+  task_id: string;
+  action: "no_order";
+  formal_eligibility: false;
+  history: {
+    record_binding: { path: string; sha256: string };
+    record: Record<string, unknown>;
+  }[];
+};
 export const api = {
+  valueWorkbenchCompanies: (signal?: AbortSignal) =>
+    get<ValueWorkbenchCompanies>("value-workbench/companies", signal),
+  valueWorkbenchTaskInputs: (symbol: string, signal?: AbortSignal) =>
+    get<PreparedWorkbenchInputs>(
+      "value-workbench/task-inputs?symbol=" + encodeURIComponent(symbol),
+      signal,
+    ),
+  createValueWorkbenchTask: (body: ValueWorkbenchTaskCreate) =>
+    post<ValueWorkbenchTask>("value-workbench/tasks", body),
+  valueWorkbenchTasks: (symbol: string, signal?: AbortSignal) =>
+    getPrivate<{
+      symbol: string;
+      action: "no_order";
+      formal_eligibility: false;
+      items: ValueWorkbenchTask[];
+    }>("value-workbench/tasks?symbol=" + encodeURIComponent(symbol), signal),
+  valueWorkbenchTask: (id: string, signal?: AbortSignal) =>
+    getPrivate<ValueWorkbenchTask>(
+      "value-workbench/tasks/" + encodeURIComponent(id),
+      signal,
+    ),
+  valueWorkbenchTaskHistory: (id: string, signal?: AbortSignal) =>
+    getPrivate<ValueWorkbenchTaskHistory>(
+      "value-workbench/tasks/" + encodeURIComponent(id) + "/history",
+      signal,
+    ),
+  controlValueWorkbenchTask: (
+    id: string,
+    operation: "cancel" | "retry" | "resume",
+  ) =>
+    post<ValueWorkbenchTask>(
+      "value-workbench/tasks/" + encodeURIComponent(id) + "/" + operation,
+      {},
+    ),
+
+  valueWorkbench: (symbol: string, signal?: AbortSignal) =>
+    get<ValueWorkbenchResponse>(
+      "value-workbench?symbol=" + encodeURIComponent(symbol),
+      signal,
+    ),
+
   operatingResearchCompany: (symbol: string, signal?: AbortSignal) =>
     get<PublicOperatingResearchResult>(
       "operating-research/companies/" + encodeURIComponent(symbol),

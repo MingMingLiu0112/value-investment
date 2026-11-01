@@ -8,7 +8,7 @@ from value_investment_agent.domain.research.module_run_v1 import (
     ModuleRun, make_manifest, canonical_sha256, module_run_schema,
 )
 from value_investment_agent.research_artifact_repository import InMemoryResearchArtifactRepository
-from value_investment_agent.research_artifact_codecs import artifact_payload, decode_artifact
+from value_investment_agent.infrastructure.module_run_artifact_codec_v1 import artifact_payload, decode_artifact
 from value_investment_agent.research_artifacts import ResearchArtifactIdentity
 
 
@@ -73,3 +73,14 @@ def test_retained_driver_source_checkout_preserves_committed_bytes():
     attribute = subprocess.check_output(
         ["git", "-C", str(root), "check-attr", "text", "--", name], text=True)
     assert attribute.strip().endswith(": text: unset")
+
+
+
+def test_additive_module_dispatch_preserves_frozen_financial_codec():
+    import hashlib
+    from value_investment_agent import research_artifact_codecs as legacy
+    root = Path(__file__).resolve().parents[1]
+    raw = (root/"src/value_investment_agent/research_artifact_codecs.py").read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == "05722dc2263f6e29cf58dc7caf62cff00a16d25fb1525561e772ac9a77d32e28"
+    assert "module_run" not in legacy.CODECS
+    assert artifact_payload(_run())[0] == "module_run"

@@ -1158,6 +1158,8 @@ def create_app(
     register_condition_alert_routes(api, project=project, sessions=sessions, port=bound_port)
     register_agent_research_routes(api, project=project, sessions=sessions, port=bound_port)
     register_research_task_routes(api, project=project, sessions=sessions, port=bound_port)
+    from .value_workbench_routes import register_value_workbench_routes
+    register_value_workbench_routes(api, project=project, sessions=sessions, port=bound_port)
     register_operating_assumption_routes(api, project=project)
     register_first_research_input_routes(api, project=project)
     from .live_operating_research_routes import register_live_operating_routes

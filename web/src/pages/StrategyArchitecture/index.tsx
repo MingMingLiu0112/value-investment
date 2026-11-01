@@ -397,7 +397,7 @@ export function ValuePlanOverview() {
               S1/S2/S3：有风险、账本和计算合同；真实账户、外部对账及实际税后分红闭环需独立验收，本页不访问私人资料。
             </li>
             <li>
-              W1：/project与/strategy/value复用同一Value组件和模块目录；路由接通不代表生产部署验收，也不代替用户确认。
+              W1：/project保留模块地图，/strategy/value进入价值研究工作台；路由接通不代表生产部署验收，也不代替用户确认。
             </li>
           </ul>
           <p>

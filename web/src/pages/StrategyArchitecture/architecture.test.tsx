@@ -171,7 +171,7 @@ describe("versioned strategy architecture", () => {
       expect(html).toContain("目标输出（不代表已实现）");
     }
   });
-  it("aliases project to the exact existing Value component and replaces the obsolete disconnected-route claim", () => {
+  it("keeps project as module map while the main value route opens the transparent workbench", () => {
     const routes = readFileSync(".umirc.ts", "utf8");
     const component = (path: string) => {
       const declaration = routes
@@ -180,9 +180,11 @@ describe("versioned strategy architecture", () => {
       return declaration?.match(/component: "([^"]+)"/)?.[1];
     };
     expect(component("/project")).toBe("./StrategyArchitecture/Value");
-    expect(component("/project")).toBe(component("/strategy/value"));
+    expect(component("/strategy/value")).toBe("./ValueWorkbench");
     const html = renderToStaticMarkup(<ArchitectureView strategy="value" />);
-    expect(html).toContain("/project与/strategy/value复用同一Value组件");
+    expect(html).toContain(
+      "/project保留模块地图，/strategy/value进入价值研究工作台",
+    );
     expect(html).not.toContain("当前工作树没有已接入的/project");
     expect(html).toContain("不因C完成而推定已闭环");
   });

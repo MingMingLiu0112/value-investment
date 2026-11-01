@@ -79,7 +79,7 @@ const LABELS: Record<string, string> = {
   evidence_refs: "证据引用",
   unknowns: "未知与待补证",
 };
-function Readable({ value }: { value: unknown }) {
+export function Readable({ value }: { value: unknown }) {
   if (value == null) return <p>未提供，不补零</p>;
   if (Array.isArray(value))
     return (

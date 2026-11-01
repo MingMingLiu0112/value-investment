@@ -23,7 +23,12 @@ export default defineConfig({
     { path: "/history", component: "./DecisionHistory" },
     { path: "/alerts", component: "./ConditionAlerts" },
     { path: "/system", component: "./SystemStatus" },
-    { path: "/strategy/value", component: "./StrategyArchitecture/Value" },
+    { path: "/strategy/value", component: "./ValueWorkbench" },
+    { path: "/value-workbench", component: "./ValueWorkbench" },
+    {
+      path: "/strategy/value/architecture",
+      component: "./StrategyArchitecture/Value",
+    },
     { path: "/project", component: "./StrategyArchitecture/Value" },
     { path: "/strategy/hotspot", component: "./StrategyArchitecture/Hotspot" },
   ],

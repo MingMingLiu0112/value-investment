@@ -58,3 +58,5 @@ module_run_projection_v1只包装既有D1/D2/G2任务的来源/元数据验证�
 真实来源验收必须显式设置PUBLIC_EVIDENCE_ARCHIVE_REAL_ROOT、
 VALUE_MODULE_REAL_ROOT及对应REQUIRED=1；缺少原件不能将skip算真实通过。
 8001本轮不发布；页面代码与现有运行版本分别报告。
+
+2026-11-01兼容修正：金融research_artifact_codecs.py由旧候选精确绑定，新增ModuleRun不再注册于冻结文件，而由infrastructure/module_run_artifact_codec_v1.py在同一Repository分发。原P0回执仍为当时事实；本次修正保留旧金融Codec原字节，未重签研究。
