@@ -287,7 +287,8 @@ def test_source_bound_simulation_reconstructs_and_calls_real_v4(tmp_path, compil
         payload=dict(spec_binding=spec_ref, scenario='base',
             changes=[dict(field='annual.1.target_payout_ratio', value='0.5')],
             rationale='TEST_ONLY explicit lower distribution assumption')))
-    assert calls == [True]
+    assert calls == [True, True]  # baseline and changed scenario both use v4
+    assert result['baseline_calculation']['per_share_value']
     assert mod.Decimal(result['ledger']['rows'][0]['distribution']) == 10
     assert result['inputs']['opening_state'] == compiler_inputs['opening_state']
     assert result['inputs']['annual_rows'][0]['cash_policy']['commitment_cash_cny'] == '0'

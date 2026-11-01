@@ -724,13 +724,15 @@ def _simulate(service, spec):
         blockers=['NOT_ADOPTED_MAIN_RANGE'], operating_inputs={
             'start_book_equity': Decimal(opening['book_equity_cny']),
             'ordinary_shares': Decimal(opening['ordinary_shares'])})
+    baseline_calculation = scenario_calculation(facts, original['typed_scenario'])
     calculation = scenario_calculation(facts, compiled['typed_scenario'])
     return _json(dict(scope='SOURCE_BOUND_USER_ASSUMPTION_SIMULATION_NOT_ADOPTED',
         baseline_binding=payload['spec_binding'], input_descriptor_sha256=baseline['input_descriptor_sha256'],
         changes=payload['changes'], rationale=payload['rationale'], inputs=inputs,
         source_bindings=baseline['source_bindings'],
         ledger={k: v for k, v in compiled.items() if k != 'typed_scenario'},
-        calculation=calculation, action='no_order', formal_eligibility=False, main_range_adopted=False))
+        baseline_calculation=baseline_calculation, calculation=calculation,
+        action='no_order', formal_eligibility=False, main_range_adopted=False))
 
 
 def _guard_public_io(service, spec, attempt, module):

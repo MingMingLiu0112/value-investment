@@ -29,7 +29,7 @@ function text(value: unknown): string | undefined {
   }
   return undefined;
 }
-function amount(value: unknown): string {
+export function amount(value: unknown): string {
   const numeric =
     typeof value === "number"
       ? value
