@@ -76,3 +76,14 @@ def test_same_economic_policy_with_different_source_metadata_corrobates(monkeypa
     value=run()
     assert value["status"]=="SOURCE_BOUND_FISCAL_POLICY_REVIEW"
     assert [r["policy"]["physical_page"] for r in value["policy_evidence"]]==[31,21]
+
+def test_verified_q3_consumed_without_modifying_frozen_cash_path(monkeypatch):
+    run,obs,_,cash,_=arrange(monkeypatch)
+    obs["source_bound_observations"][0]["observation"]["financial_update"]=dict(
+        status="VERIFIED",period_basis="YEAR_TO_DATE_9M_NOT_SINGLE_QUARTER",
+        period_start="2026-01-01",period_end="2026-09-30",
+        fields=dict(parent_profit_cny=dict(value="567",unit="CNY",scope="consolidated_parent")))
+    before=deepcopy(cash)
+    result=run()
+    assert result["financial_update_review"]["comparisons"]["base"]["implied_q4_parent_profit_cny"]=="-58"
+    assert cash==before

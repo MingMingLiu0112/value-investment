@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Alert, Button, Space } from "antd";
+import { Alert, Button, Space, Table } from "antd";
 import {
   api,
   ApiError,
@@ -762,6 +762,42 @@ export function FiscalDistributionReviewView({
         row.policy_compliance === "NOT_ASSESSED"
       );
     });
+  const q3Names = DRIVER_SCENARIOS.filter(
+    (name) => update?.comparisons?.[name],
+  );
+  const q3Source = update?.comparison_source;
+  const q3Verified =
+    !!q3Source &&
+    observationHash(q3Source.sha256) &&
+    q3Names.every((name) => {
+      const row = update!.comparisons![name]!;
+      return (
+        row.status === "ACTUAL_UPDATE_COMPARED_WITH_FROZEN_CONDITIONAL_PATH" &&
+        row.model_revalidated === false &&
+        row.action === "no_order" &&
+        row.formal_eligibility === false &&
+        row.condition_price === null &&
+        row.fiscal_year === value.scenarios?.[name]?.fiscal_year &&
+        row.source_anchor?.unit === "CNY" &&
+        row.source_anchor.scope === "consolidated_parent" &&
+        row.implied_q4_start === row.fiscal_year + "-10-01" &&
+        row.implied_q4_end === row.fiscal_year + "-12-31" &&
+        q3Source.report_period === row.fiscal_year + "-09-30"
+      );
+    });
+  const q3Rows = q3Names.map((name) => {
+    const row = update!.comparisons![name]!;
+    return [
+      LABELS[name],
+      observationMoney(row.reported_ytd_parent_profit_cny),
+      observationMoney(row.unchanged_conditional_fy_parent_profit_cny),
+      observationMoney(row.implied_q4_parent_profit_cny),
+      row.implied_q4_start + " ～ " + row.implied_q4_end,
+      row.implication === "IMPLIED_Q4_LOSS_REQUIRES_EXPLICIT_REVIEW"
+        ? "隐含Q4亏损要求，须显式复核"
+        : "隐含Q4非负利润要求，仍须复核",
+    ];
+  });
   return (
     <section aria-label="财政年度分配政策诊断">
       <h3>财政年度政策目标与利润诊断（非资金能力评估）</h3>
@@ -781,6 +817,61 @@ export function FiscalDistributionReviewView({
             "。新财报不回写冻结研究输入；不能据旧模型直接输出当前买价。"
           }
         />
+      )}
+      {valid && q3Names.length > 0 && (
+        <section aria-label="Q3实际与原全年条件情景比较">
+          <h4>Q3累计实际对原条件全年值的隐含要求</h4>
+          <p>
+            原全年条件值保持不变；隐含Q4是维持该情景所需的剩余归母利润，不是已发生亏损或新预测，不自动拒绝或改值。模型尚未重验，无投资批准。
+          </p>
+          {!q3Verified ? (
+            <Alert
+              type="info"
+              message="Q3比较来源或期间未核验，仅本表不展示，原财政诊断保留"
+            />
+          ) : (
+            <>
+              <p>
+                金额单位亿元；Q3为年初累计九个月，负数仅是原情景的隐含要求。
+              </p>
+              <Table
+                size="small"
+                pagination={false}
+                scroll={{ x: true }}
+                rowKey={(row) => row[0]}
+                columns={[
+                  "情景",
+                  "累计实际归母",
+                  "原条件全年归母（未改）",
+                  "隐含Q4归母要求",
+                  "Q4期间",
+                  "需复核事项",
+                ].map((title, index) => ({
+                  title,
+                  dataIndex: index,
+                  key: title,
+                }))}
+                dataSource={q3Rows}
+              />
+              <p>
+                Q3原件报告期：{q3Source!.report_period}；登记可用：
+                {q3Source!.available_at}；
+                {observationLink(q3Source!.source_url) && (
+                  <a
+                    href={q3Source!.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    查看Q3官方原件
+                  </a>
+                )}
+              </p>
+            </>
+          )}
+        </section>
+      )}
+      {valid && update?.comparison_status && q3Names.length === 0 && (
+        <p>暂无唯一可核验的同年Q3实际对比；不推定Q4结果或模型已重验。</p>
       )}
       {!valid ? (
         <Alert
@@ -856,6 +947,20 @@ export function FiscalDistributionReviewView({
           </ul>
           <details>
             <summary>政策绑定与财政年度精确元值</summary>
+            {q3Verified && q3Names.length > 0 && (
+              <>
+                <p>
+                  Q3来源SHA-256：<code>{q3Source!.sha256}</code>
+                </p>
+                {q3Names.map((name) => (
+                  <p key={name}>
+                    {LABELS[name]} · 物理页{" "}
+                    {update!.comparisons![name]!.source_anchor.physical_page}：
+                    {update!.comparisons![name]!.source_anchor.excerpt}
+                  </p>
+                ))}
+              </>
+            )}
             <p>
               复核指纹：<code>{value.review_fingerprint || "未提供"}</code>
             </p>

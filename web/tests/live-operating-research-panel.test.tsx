@@ -1559,3 +1559,96 @@ it("shows Q3 year-to-date facts separately from the frozen H1 model and works wi
   ])
     expect(html).toContain(text);
 });
+
+function q3FiscalReview(): FiscalDistributionReview {
+  const value = fiscalReview();
+  value.scenarios!.base!.conditional_fy_parent_profit_cny = "5392390000";
+  value.financial_update_review!.comparison_source = {
+    ...value.source_binding![0],
+    report_period: "2026-09-30",
+    source_url:
+      "https://static.cninfo.com.cn/finalpage/2026-10-30/123456790.PDF",
+    available_at: "2026-10-30T09:00:00+08:00",
+  };
+  value.financial_update_review!.comparisons = {
+    base: {
+      status: "ACTUAL_UPDATE_COMPARED_WITH_FROZEN_CONDITIONAL_PATH",
+      fiscal_year: 2026,
+      reported_ytd_parent_profit_cny: "5671060000",
+      unchanged_conditional_fy_parent_profit_cny: "5392390000",
+      implied_q4_parent_profit_cny: "-278670000",
+      implied_q4_start: "2026-10-01",
+      implied_q4_end: "2026-12-31",
+      implication: "IMPLIED_Q4_LOSS_REQUIRES_EXPLICIT_REVIEW",
+      model_revalidated: false,
+      action: "no_order",
+      formal_eligibility: false,
+      condition_price: null,
+      source_anchor: {
+        value: "5671060000",
+        scope: "consolidated_parent",
+        unit: "CNY",
+        physical_page: 2,
+        excerpt: "TEST_ONLY_ACTUAL_YTD_ANCHOR",
+      },
+    },
+  };
+  return value;
+}
+it("compares Q3 actual with unchanged conditional FY as an implied Q4 requirement rather than a realised loss, new forecast or rejection", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = q3FiscalReview(),
+    before = JSON.stringify(value);
+  const html = renderToStaticMarkup(
+    <FiscalDistributionReviewView value={value} symbol="600519" />,
+  );
+  const visible = visibleDriverHtml(html);
+  for (const text of [
+    "Q3累计实际对原条件全年值的隐含要求",
+    "56.7106",
+    "53.9239",
+    "-2.7867",
+    "2026-10-01",
+    "2026-12-31",
+    "不是已发生亏损或新预测",
+    "不自动拒绝或改值",
+    "隐含Q4亏损要求，须显式复核",
+    "模型尚未重验",
+    "2026-10-30T09:00:00+08:00",
+    "政策目标超过当年正利润金额",
+  ])
+    expect(visible).toContain(text);
+  expect(html).toContain("TEST_ONLY_ACTUAL_YTD_ANCHOR");
+  expect(visible).not.toContain("TEST_ONLY_ACTUAL_YTD_ANCHOR");
+  expect(JSON.stringify(value)).toBe(before);
+});
+it("renders a nonnegative implied Q4 requirement honestly and keeps older fiscal responses without comparisons compatible", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = q3FiscalReview(),
+    row = value.financial_update_review!.comparisons!.base!;
+  row.implied_q4_parent_profit_cny = "0";
+  row.implication = "IMPLIED_Q4_PROFIT_REQUIRES_EXPLICIT_REVIEW";
+  const html = renderToStaticMarkup(
+    <FiscalDistributionReviewView value={value} symbol="600519" />,
+  );
+  expect(html).toContain("隐含Q4非负利润要求，仍须复核");
+  expect(html).toContain("0.0000");
+  const old = renderToStaticMarkup(
+    <FiscalDistributionReviewView value={fiscalReview()} symbol="600519" />,
+  );
+  expect(old).not.toContain("Q3累计实际对原条件全年值的隐含要求");
+  expect(old).toContain("当年政策目标");
+});
+it("isolates unverified Q3 comparison binding without hiding fiscal policy diagnostics or promoting current model validity", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = q3FiscalReview();
+  value.financial_update_review!.comparison_source!.sha256 = "broken";
+  const html = renderToStaticMarkup(
+    <FiscalDistributionReviewView value={value} symbol="600519" />,
+  );
+  expect(html).toContain("Q3比较来源或期间未核验，仅本表不展示");
+  expect(html).not.toContain("-2.7867");
+  expect(html).toContain("85.0000");
+  expect(html).toContain("实际付款：未评估");
+  expect(html).toContain("模型当前使用需重验");
+});

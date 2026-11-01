@@ -83,6 +83,18 @@ def read_operating_distribution_review(*, root, task, now):
     result["financial_update_review"] = dict(
         status="NEWER_REPORT_REQUIRES_MODEL_REVALIDATION" if latest and latest > period else "REGISTERED_COVERAGE_ONLY",
         model_financial_basis=period, latest_registered_report_period=latest, current_model_validity="NOT_GRANTED")
+    from ...domain.research.fiscal_distribution_review_v1 import compare_fiscal_projection_with_nine_months
+    updates = [row for row in observations["source_bound_observations"]
+        if row["observation"].get("financial_update", {}).get("status") == "VERIFIED"
+        and row["observation"]["financial_update"].get("period_end") == f"{year}-09-30"]
+    if len(updates) == 1:
+        result["financial_update_review"]["comparisons"] = {
+            name: compare_fiscal_projection_with_nine_months(
+                fiscal_review=review,ytd_update=updates[0]["observation"]["financial_update"])
+            for name,review in result["scenarios"].items()}
+        result["financial_update_review"]["comparison_source"] = updates[0]["source"]
+    else:
+        result["financial_update_review"]["comparison_status"] = "NO_UNIQUE_VERIFIED_SAME_YEAR_Q3_UPDATE"
     from pathlib import Path
     from ...domain.research import fiscal_distribution_review_v1 as fiscal_kernel
     result["implementation_sha256"] = {

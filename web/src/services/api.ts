@@ -979,6 +979,29 @@ export type FiscalDistributionScenario = {
   policy_compliance: "NOT_ASSESSED";
   limitations?: string[];
 };
+export type FiscalQ3Comparison = {
+  status: "ACTUAL_UPDATE_COMPARED_WITH_FROZEN_CONDITIONAL_PATH";
+  fiscal_year: number;
+  reported_ytd_parent_profit_cny: string;
+  unchanged_conditional_fy_parent_profit_cny: string;
+  implied_q4_parent_profit_cny: string;
+  implied_q4_start: string;
+  implied_q4_end: string;
+  implication:
+    | "IMPLIED_Q4_LOSS_REQUIRES_EXPLICIT_REVIEW"
+    | "IMPLIED_Q4_PROFIT_REQUIRES_EXPLICIT_REVIEW";
+  source_anchor: {
+    value: string;
+    unit: string;
+    scope: string;
+    physical_page: number;
+    excerpt: string;
+  };
+  model_revalidated: false;
+  action: "no_order";
+  formal_eligibility: false;
+  condition_price: null;
+};
 export type FiscalDistributionReview = {
   schema_version?: string;
   symbol?: string;
@@ -1000,6 +1023,9 @@ export type FiscalDistributionReview = {
       "NEWER_REPORT_REQUIRES_MODEL_REVALIDATION" | "REGISTERED_COVERAGE_ONLY";
     model_financial_basis: string;
     latest_registered_report_period: string | null;
+    comparisons?: Partial<Record<OperatingDriverScenario, FiscalQ3Comparison>>;
+    comparison_source?: CapitalObservationSource;
+    comparison_status?: string;
     current_model_validity: "NOT_GRANTED";
   };
   current_observations?: CurrentCapitalObservation;

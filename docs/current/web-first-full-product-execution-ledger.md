@@ -7618,3 +7618,21 @@ Public source/implementation receipt: artifacts/current/value-fiscal-distributio
 Delegated next independent package to authorized chat framework(2): parent
 resources, due obligations and dividend capacity in independent pf1 from d718;
 Root retains shared API/Web/CI integration. No hotspot assignment. action=no_order.
+
+c5fbd7d7 Core41274369437 and Web41274369442 SUCCESS. Raw offline job124753430996
+explicitly executed all five new test files: 8576 passed/413 skipped; real public
+acceptance remains separate. Clean d2cash at c5fbd7d7 restored44 exact public
+source references, denied network and writes during cold reads, no key, exact
+review and old-cash fingerprints matched. Local8001 source/backend/web all c5;
+existing PUBLICATION_REGISTRY_UNAVAILABLE remains, not price/production readiness.
+Browser screenshots preserved in the designated local visualization folder.
+
+One same-business follow-up now quantitatively consumes the verified Q3 update:
+reported9M parent profit5.67105924153bn exceeds old conditionalFY5.39239027770bn.
+Maintaining that old path implies Q4 -0.27866896383bn. This is a derived remaining-
+quarter requirement, not reportedQ4, new forecast or automatic stress rejection.
+Existing cash/valuation inputs and policy target remain unchanged. Same-year9M
+parent scope checked; no unique validQ3 means no comparison. Independent Euclid
+review found no definiteP1/P2. Explicit source/API related tests104passed0skip.
+New source/receipt index: artifacts/current/value-fiscal-update-20261101/index.json.
+Latest follow-up CI/deployment still require their own receipt. action=no_order.
