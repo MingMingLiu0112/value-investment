@@ -7585,3 +7585,10 @@ economic adoption, current-price qualification and user confirmation remain sepa
 Final source commit, clean replay, test receipts and8001 browser evidence are
 recorded in artifacts/current/d2-cash-consumption-20261101 and runtime receipts.
 action=no_order.
+
+Web41269857032 exposed one portability failure: the progress-page test read an
+untracked local runtime receipt. Corrected to the committed acceptance index;
+no runtime bulk upload, skip or weakened arithmetic assertion. Actual financial
+replay remains in the explicit-source backend acceptance, separate from static
+progress-contract assertions. New source is a follow-up to99736265, not a change
+to its economic formulas or source facts. action=no_order.

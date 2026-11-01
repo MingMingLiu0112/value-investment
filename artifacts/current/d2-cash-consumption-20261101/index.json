@@ -235,5 +235,7 @@
     "format": "PASS"
   },
   "deployment": "CHECK_RUNTIME_DELIVERY_RECEIPT_NOT_INFERRED_FROM_SOURCE",
-  "source_evidence_review": ".tmp/d2-cash-evidence-20261101.md"
+  "source_evidence_review": ".tmp/d2-cash-evidence-20261101.md",
+  "status": "CONDITIONAL_STRESS_CONSUMED",
+  "main_range_adopted": false
 }

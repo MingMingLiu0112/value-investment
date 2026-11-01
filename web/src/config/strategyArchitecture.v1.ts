@@ -42,7 +42,7 @@ export const valueVerticalScope = {
   evidenceSource: "artifacts/current/d2-operating-driver-20261101.json",
   capitalUnknownCount: 9,
   cashEvidenceSource:
-    "runtime/d2-cash-consumption-20261101/actual-annual-consumption.json",
+    "artifacts/current/d2-cash-consumption-20261101/index.json",
   accepted:
     "当前真实回执：D2→股东现金→条件估值工程已接，待最终验收。ResearchApplicationService已消费年度输入并复用v4，三路径共30行现金账；纯条件模型结果9.03/20.26/25.82，非主区间、非买价，不代表整链或投资批准。",
   currentBlocker:
@@ -279,7 +279,7 @@ export const catalog: Record<
         existingEvidence:
           "旧D2两公司草案及rt-c40经济拒绝保留为历史，不覆盖旧raw；当前H1第11/14/12页量价成本表构成新驱动桥，不沿用旧直接填利润率路径",
         evidenceSource:
-          "runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json；runtime/d2-operating-driver-20261101/independent-acceptance.json；runtime/d2-cash-consumption-20261101/actual-annual-consumption.json；源码版本见实际运行身份；验收索引 artifacts/current/d2-operating-driver-20261101.json",
+          "runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json；runtime/d2-operating-driver-20261101/independent-acceptance.json；artifacts/current/d2-cash-consumption-20261101/index.json；源码版本见实际运行身份；验收索引 artifacts/current/d2-operating-driver-20261101.json",
         evidence:
           "仅拒绝两类AI文字：产品结构向高档集中误述、Event母现金23.93亿元少10倍；不作为事实摘要，typed bridge不消费这些文字，算术验收不受其替代。Event仍限FY/H1；未来参数适用性未证，原9项资本UNKNOWN不升级已证；新现金/估值仅复用另行绑定的条件政策。",
         nextStep:

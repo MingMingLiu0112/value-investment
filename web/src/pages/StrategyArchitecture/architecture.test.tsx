@@ -275,12 +275,10 @@ it("separates the actual capital blocker and vertical acceptance from future pla
   expect(cash.main_range_adopted).toBe(false);
   expect(cash.condition_price).toBeNull();
   expect(cash.formal_eligibility).toBe(false);
-  expect(
-    Object.values(cash.annual_ledgers).reduce(
-      (total: number, row: any) => total + row.rows.length,
-      0,
-    ),
-  ).toBe(30);
+  expect(cash.annual_cash_rows).toBe(30);
+  expect(cash.result_binding.path).toMatch(/^runtime\//);
+  expect(cash.source_closure.length).toBeGreaterThan(0);
+  // This is a committed evidence-index contract; actual finance replays run separately.
 
   const html = renderToStaticMarkup(<ArchitectureView strategy="value" />);
   const focus = html
