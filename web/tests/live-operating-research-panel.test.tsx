@@ -6,6 +6,8 @@ import type {
   LiveOperatingResearchTask,
   OperatingDriverBridge,
   OperatingDriverKey,
+  CurrentCapitalObservation,
+  FiscalDistributionReview,
 } from "../src/services/api";
 
 const hooks = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
@@ -64,6 +66,8 @@ import {
   LiveOperatingResearchDraft,
   PublicOperatingResearchView,
   OperatingDriverBridgeView,
+  CurrentCapitalObservationView,
+  FiscalDistributionReviewView,
 } from "../src/components/LiveOperatingResearchPanel";
 
 function task(
@@ -1165,4 +1169,393 @@ it("cash mapping failure remains readable alongside public operating research", 
   expect(html).toContain("SOURCE_HASH_CHANGED");
   expect(html).toContain("经营基本面草案");
   expect(html).not.toContain("共享估值已接通");
+});
+
+function capitalObservation(): CurrentCapitalObservation {
+  return {
+    schema_version: "current-capital-observations-v1",
+    symbol: "600519",
+    status: "VERIFIED",
+    action: "no_order",
+    formal_eligibility: false,
+    current_capital_continuity: "NOT_PROVEN",
+    source_bound_observations: [
+      {
+        source_index: 0,
+        status: "VERIFIED",
+        source_id: "TEST_ONLY_SOURCE",
+        source: {
+          path: "runtime/TEST_ONLY.pdf",
+          sha256: "c".repeat(64),
+          source_url:
+            "https://static.cninfo.com.cn/finalpage/2026-08-29/123456789.PDF",
+          available_at: "2026-08-29T10:00:00+08:00",
+          report_period: "2026-06-30",
+          kind: "interim",
+        },
+        observation: {
+          status: "VERIFIED",
+          symbol: "600519",
+          issuer_name: "TEST_ONLY_ISSUER",
+          report_period: "2026-06-30",
+          ordinary_shares: "1470000000",
+          shares_before: "1471000000",
+          cancelled_shares: "1000000",
+          cancellation_date: "2026-05-10",
+          cancellation_state:
+            "REPORTED_RESTRICTED_SHARE_CANCELLATION_COMPLETED_BY_PERIOD_END",
+          report_approved_date: "2026-08-28",
+          declared_ordinary_dividend_cny: "8000000000",
+          dividend_fiscal_year: "2025",
+          interim_proposal_state:
+            "REPORTED_NO_INTERIM_DIVIDEND_OR_CAPITALIZATION_PLANNED",
+          payment_completion_state: "UNKNOWN",
+          dividend_policy: {
+            status: "VERIFIED",
+            policies: [
+              {
+                fiscal_year: 2026,
+                minimum_payout_ratio: "0.70",
+                minimum_distribution_cny: "8500000000",
+                currency: "CNY",
+                scope: "consolidated_parent",
+              },
+            ],
+          },
+          evidence_refs: [
+            {
+              field: "ordinary_shares",
+              physical_page: 99,
+              excerpt: "TEST_ONLY_ORIGINAL_EXCERPT",
+            },
+          ],
+        },
+      },
+    ],
+    source_results: [],
+    current_financial_coverage: {
+      status: "REGISTERED_SOURCES_ONLY",
+      report_periods: ["2026-06-30", "2026-09-30"],
+      latest_report_period: "2026-09-30",
+      complete_current_coverage: false,
+    },
+  };
+}
+function fiscalReview(): FiscalDistributionReview {
+  const row = {
+    status: "CONDITIONAL_FISCAL_POLICY_DIAGNOSTIC" as const,
+    fiscal_year: 2026,
+    reported_h1_parent_profit_cny: "3000000000",
+    assumed_h2_parent_profit_cny: "2000000000",
+    conditional_fy_parent_profit_cny: "5000000000",
+    ratio_target_cny: "3500000000",
+    disclosed_floor_cny: "8500000000",
+    policy_target_cny: "8500000000",
+    target_above_current_year_positive_earnings_cny: "3500000000",
+    dominant_constraint: "ABSOLUTE_FLOOR" as const,
+    funding_status: "NOT_ASSESSED" as const,
+    payment_status: "NOT_ASSESSED" as const,
+    policy_compliance: "NOT_ASSESSED" as const,
+  };
+  return {
+    schema_version: "operating-distribution-review-v1",
+    symbol: "600519",
+    status: "SOURCE_BOUND_FISCAL_POLICY_REVIEW",
+    action: "no_order",
+    formal_eligibility: false,
+    main_range_adopted: false,
+    condition_price: null,
+    personal_quantity: null,
+    financial_basis: "2026-06-30",
+    scenarios: { bear: { ...row }, base: { ...row }, bull: { ...row } },
+    source_binding: [capitalObservation().source_bound_observations![0].source],
+    review_fingerprint: "d".repeat(64),
+    fiscal_payment_alignment: "NOT_ASSESSED",
+    current_observations: capitalObservation(),
+    financial_update_review: {
+      status: "NEWER_REPORT_REQUIRES_MODEL_REVALIDATION",
+      model_financial_basis: "2026-06-30",
+      latest_registered_report_period: "2026-09-30",
+      current_model_validity: "NOT_GRANTED",
+    },
+    limitations: ["TEST_ONLY_FISCAL_LIMITATION"],
+  };
+}
+it("shows source report/availability dates and share quantities while distinguishing a dividend scheme from payment", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = capitalObservation(),
+    before = JSON.stringify(value);
+  const html = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  const visible = visibleDriverHtml(html);
+  for (const text of [
+    "2026-06-30",
+    "2026-08-29",
+    "2026-08-29T10:00:00+08:00",
+    "2026-08-28",
+    "1,470,000,000",
+    "1,000,000",
+    "方案归属财政年度：2025",
+    "80.0000",
+    "2026财政年度",
+    "85.0000",
+    "这是方案金额，不是已付款金额",
+    "实际付款完成：未知，不能推定",
+    "拟不进行中期现金分红",
+    "不等于全年政策取消",
+    "当前资本连续性：尚未证明",
+    "不使用人民币股本金额换算股数",
+    "不授予当前价格资格",
+  ])
+    expect(visible).toContain(text);
+  expect(visible).not.toContain("TEST_ONLY_ORIGINAL_EXCERPT");
+  expect(html).toContain("TEST_ONLY_ORIGINAL_EXCERPT");
+  expect(html).toContain(
+    'href="https://static.cninfo.com.cn/finalpage/2026-08-29/123456789.PDF"',
+  );
+  expect(JSON.stringify(value)).toBe(before);
+});
+it("preserves verified capital sources alongside explicit partial failure and never fills unknown share quantity from monetary capital", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = capitalObservation();
+  value.status = "PARTIAL";
+  value.source_results = [
+    {
+      source_index: 1,
+      status: "UNASSESSABLE",
+      error_code: "TEST_ONLY_ORIGINAL_HASH_MISMATCH",
+    },
+  ];
+  value.source_bound_observations![0].observation.ordinary_shares = "UNKNOWN";
+  const html = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(html).toContain("仅部分原件通过");
+  expect(html).toContain("TEST_ONLY_ORIGINAL_HASH_MISMATCH");
+  expect(html).toContain("2026-08-29");
+  expect(html).toContain("未提供，不补零");
+  expect(html).not.toContain("1,470,000,000");
+});
+it("shows fiscal H1 fact plus exact-derived H2 and CNY-8.5-billion policy target without calling excess earnings a cash deficit or default", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = fiscalReview(),
+    before = JSON.stringify(value);
+  const visible = visibleDriverHtml(
+    renderToStaticMarkup(
+      <FiscalDistributionReviewView value={value} symbol="600519" />,
+    ),
+  );
+  for (const text of [
+    "H1实际与H2条件派生",
+    "2026",
+    "30.0000",
+    "20.0000",
+    "50.0000",
+    "85.0000",
+    "35.0000",
+    "滚动首年减同一2027H1 witness",
+    "不是另设一份利润预测",
+    "不把2026H2+2027H1滚动年度套用财政年度政策下限",
+    "不是资金缺口，不证明违约",
+    "资金能力：未评估",
+    "实际付款：未评估",
+    "政策履约：未评估",
+    "财政年度付款归属对齐：未评估",
+    "已登记更新财报，模型当前使用需重验",
+    "2026-09-30",
+    "主研究区间未采用",
+    "不生成条件价",
+  ])
+    expect(visible).toContain(text);
+  expect(visible).not.toContain("TEST_ONLY_FISCAL_LIMITATION");
+  expect(JSON.stringify(value)).toBe(before);
+});
+it("shows capital and fiscal public supplements while locked, without requesting private tasks or new model calls", async () => {
+  calls.status.mockResolvedValue({
+    status: "MODEL_AUTHORIZATION_REQUIRED",
+    model_id: null,
+  });
+  calls.publicRead.mockResolvedValue({
+    ...publicSuccess(),
+    current_capital_observation: capitalObservation(),
+    fiscal_distribution_review: fiscalReview(),
+  });
+  await click("新Agent经营研究");
+  const shownValue = shown();
+  expect(shownValue).toContain("TEST_ONLY_PUBLIC_BUSINESS");
+  expect(shownValue).toContain("current_capital_observation");
+  expect(shownValue).toContain("fiscal_distribution_review");
+  expect(calls.publicRead).toHaveBeenCalledTimes(1);
+  for (const call of [
+    calls.start,
+    calls.history,
+    calls.refresh,
+    calls.cancel,
+    calls.resume,
+  ])
+    expect(call).not.toHaveBeenCalled();
+});
+it("isolates failed observation/fiscal diagnostics without hiding existing operating or cash results, and reuses nested observations once", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = {
+    ...publicSuccess(),
+    current_capital_observation: {
+      status: "UNASSESSABLE" as const,
+      action: "no_order" as const,
+      formal_eligibility: false as const,
+      reason: "TEST_ONLY_BAD_ORIGINAL",
+    },
+    fiscal_distribution_review: {
+      status: "UNASSESSABLE" as const,
+      action: "no_order" as const,
+      formal_eligibility: false as const,
+      reason: "TEST_ONLY_FISCAL_PERIOD_FAILURE",
+    },
+    cash_consumption: {
+      status: "SOURCE_BOUND_EARNINGS_CONSUMED_CASH_INPUTS_INCOMPLETE",
+      annual_followup: {
+        status: "UNASSESSABLE",
+        reason: "TEST_ONLY_CASH_REMAINS",
+      },
+    },
+  };
+  const html = renderToStaticMarkup(
+    <PublicOperatingResearchView value={value} symbol="600519" />,
+  );
+  for (const text of [
+    "TEST_ONLY_BAD_ORIGINAL",
+    "TEST_ONLY_FISCAL_PERIOD_FAILURE",
+    "TEST_ONLY_PUBLIC_BUSINESS",
+    "TEST_ONLY_CASH_REMAINS",
+  ])
+    expect(html).toContain(text);
+  const nested = renderToStaticMarkup(
+    <LiveOperatingResearchDraft
+      task={{ ...publicSuccess(), fiscal_distribution_review: fiscalReview() }}
+    />,
+  );
+  expect(
+    (nested.match(/aria-label="来源绑定的公开资本观察"/g) || []).length,
+  ).toBe(1);
+});
+it("stops mismatched identity/hash and fiscal basis locally without showing unverified figures", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const observation = capitalObservation();
+  observation.source_bound_observations![0].source.sha256 = "broken";
+  const html = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={observation} symbol="600519" />,
+  );
+  expect(html).toContain("Hash绑定不符");
+  expect(html).not.toContain("1,470,000,000");
+  const fiscal = fiscalReview();
+  fiscal.scenarios!.base!.fiscal_year = 2027;
+  const invalid = renderToStaticMarkup(
+    <FiscalDistributionReviewView value={fiscal} symbol="600519" />,
+  );
+  expect(invalid).toContain("财政年度政策诊断暂不可核验");
+  expect(invalid).not.toContain("85.0000");
+  expect(
+    renderToStaticMarkup(
+      <CurrentCapitalObservationView
+        value={capitalObservation()}
+        symbol="600887"
+      />,
+    ),
+  ).toContain("身份或边界不符");
+});
+it("keeps old public responses without the optional observations or fiscal fields unchanged", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const html = renderToStaticMarkup(
+    <PublicOperatingResearchView value={publicSuccess()} symbol="600519" />,
+  );
+  expect(html).toContain("TEST_ONLY_PUBLIC_BUSINESS");
+  expect(html).not.toContain("公开资本与分配观察");
+  expect(html).not.toContain("财政年度政策目标与利润诊断");
+});
+
+it("shows actual implementation and unlock notice schedules as source observations, never account payment or new cancellation", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = capitalObservation();
+  const row = value.source_bound_observations![0];
+  row.observation.kind = "dividend_implementation";
+  row.observation.record_date = "2026-07-01";
+  row.observation.ex_date = "2026-07-02";
+  row.observation.agency_payment_date = "2026-07-02";
+  row.observation.observation_date = "2026-06-26";
+  row.observation.distribution_base_shares = "1460000000";
+  row.observation.excluded_repurchase_shares = "10000000";
+  row.observation.dividend_per_10_shares_cny = "55.00";
+  row.observation.share_effective_date = "2026-09-10";
+  row.observation.share_observation_state =
+    "SCHEDULED_CLASS_TRANSFER_SUBJECT_TO_CSDC_STRUCTURE";
+  row.observation.historical_cancelled_shares = "1000000";
+  row.observation.historical_cancellation_date = "2026-05-10";
+  row.observation.share_table_qualification = "TEST_ONLY中国结算结构表为准";
+  const html = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  for (const text of [
+    "分红派息实施公告",
+    "分红实施安排（不是到账证明）",
+    "2026-07-01",
+    "2026-07-02",
+    "2026-06-26",
+    "1,460,000,000",
+    "10,000,000",
+    "55.00",
+    "不等于账户到账",
+    "不能算入另一年度政策目标",
+    "2026-09-10",
+    "拟解除限售的股份类别转移",
+    "不是新增注销",
+    "TEST_ONLY中国结算结构表为准",
+  ])
+    expect(html).toContain(text);
+  expect(html).not.toContain("已完成付款");
+});
+it("shows Q3 year-to-date facts separately from the frozen H1 model and works with report_kind alias", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = capitalObservation(),
+    row = value.source_bound_observations![0];
+  row.source.report_period = "2026-09-30";
+  row.observation.report_period = "2026-09-30";
+  row.observation.report_kind = "q3";
+  delete row.observation.kind;
+  row.observation.financial_update = {
+    status: "VERIFIED",
+    period_start: "2026-01-01",
+    period_end: "2026-09-30",
+    period_basis: "YEAR_TO_DATE_9M_NOT_SINGLE_QUARTER",
+    fields: {
+      revenue_cny: {
+        value: "10000000000",
+        unit: "CNY",
+        scope: "consolidated",
+        physical_page: 2,
+        excerpt: "TEST_ONLY_Q3_REVENUE",
+      },
+      parent_profit_cny: {
+        value: "4000000000",
+        unit: "CNY",
+        scope: "consolidated_parent",
+        physical_page: 2,
+        excerpt: "TEST_ONLY_Q3_PROFIT",
+      },
+    },
+  };
+  const html = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  for (const text of [
+    "第三季度报告",
+    "后续财报实际观察",
+    "2026-01-01",
+    "2026-09-30",
+    "年初累计九个月，不是第三季度单季，也不是全年",
+    "100.0000",
+    "40.0000",
+    "不自动覆盖原研究或授予当前价格资格",
+  ])
+    expect(html).toContain(text);
 });

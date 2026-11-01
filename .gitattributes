@@ -168,3 +168,9 @@ src/value_investment_agent/application/research/operating_cash_consumption_v1.py
 src/value_investment_agent/domain/research/operating_cash_consumption_v1.py -text whitespace=cr-at-eol
 src/value_investment_agent/domain/valuation/operating_profit_cash_path_v1.py -text whitespace=cr-at-eol
 artifacts/current/d2-cash-consumption-20261101/research-spec.json -text whitespace=cr-at-eol
+# Source-bound current capital and fiscal-policy observations.
+src/value_investment_agent/application/research/current_capital_observation_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/operating_distribution_review_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/domain/research/fiscal_distribution_review_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/infrastructure/filings/native_capital_observation_v1.py -text whitespace=cr-at-eol
+config/current-capital-observations-v1.json -text whitespace=cr-at-eol

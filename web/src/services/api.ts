@@ -859,7 +859,157 @@ export type OperatingDriverBridge = {
     meaning: string;
   }[];
 };
+export type CapitalObservationSource = {
+  path: string;
+  sha256: string;
+  source_url: string;
+  available_at: string;
+  report_period: string;
+  kind: string;
+};
+export type NativeCapitalObservation = {
+  status: string;
+  symbol: string;
+  report_period: string;
+  issuer_name?: string;
+  report_kind?: string;
+  kind?: string;
+  observation_date?: string;
+  record_date?: string;
+  ex_date?: string;
+  agency_payment_date?: string;
+  distribution_base_shares?: string;
+  excluded_repurchase_shares?: string;
+  dividend_per_10_shares_cny?: string;
+  payment_scope?: string;
+  share_effective_date?: string;
+  share_observation_state?: string;
+  share_table_qualification?: string;
+  historical_cancelled_shares?: string;
+  historical_cancellation_date?: string;
+  equity_distribution_implementation?: Record<string, unknown>;
+  financial_update?: {
+    status: string;
+    period_start?: string;
+    period_end?: string;
+    period_basis?: string;
+    fields?: Partial<
+      Record<
+        "revenue_cny" | "parent_profit_cny",
+        {
+          value: string;
+          unit: string;
+          scope: string;
+          physical_page: number;
+          excerpt: string;
+        }
+      >
+    >;
+  };
+  ordinary_shares?: string;
+  shares_before?: string;
+  cancelled_shares?: string;
+  cancellation_date?: string;
+  cancellation_state?: string;
+  interim_proposal_state?: string;
+  report_approved_date?: string;
+  published_date?: string;
+  payment_completion_state?: string;
+  declared_ordinary_dividend_cny?: string;
+  dividend_fiscal_year?: string;
+  dividend_observation_basis?: string;
+  dividend_policy?: {
+    status: string;
+    policies: {
+      fiscal_year: number;
+      minimum_payout_ratio: string;
+      minimum_distribution_cny: string;
+      currency: string;
+      scope: string;
+      physical_page?: number;
+      excerpt?: string;
+    }[];
+    limitations?: string[];
+  };
+  evidence_refs?: { field: string; physical_page: number; excerpt: string }[];
+  unknowns?: string[];
+};
+export type CurrentCapitalObservation = {
+  schema_version?: string;
+  status: "NOT_STARTED" | "VERIFIED" | "PARTIAL" | "UNASSESSABLE";
+  symbol?: string;
+  action: "no_order";
+  formal_eligibility: false;
+  current_capital_continuity?: "NOT_PROVEN";
+  source_bound_observations?: {
+    source_index: number;
+    status: string;
+    source_id?: string;
+    source: CapitalObservationSource;
+    observation: NativeCapitalObservation;
+  }[];
+  source_results?: {
+    source_index: number;
+    status: string;
+    error_code?: string;
+    source?: Partial<CapitalObservationSource>;
+  }[];
+  current_financial_coverage?: {
+    status: string;
+    report_periods: string[];
+    latest_report_period: string | null;
+    complete_current_coverage?: false;
+  };
+  error_code?: string;
+  reason?: string;
+};
+export type FiscalDistributionScenario = {
+  status?: "CONDITIONAL_FISCAL_POLICY_DIAGNOSTIC";
+  fiscal_year: number;
+  reported_h1_parent_profit_cny: string;
+  assumed_h2_parent_profit_cny: string;
+  conditional_fy_parent_profit_cny: string;
+  ratio_target_cny: string;
+  disclosed_floor_cny: string;
+  policy_target_cny: string;
+  target_above_current_year_positive_earnings_cny: string;
+  dominant_constraint: "ABSOLUTE_FLOOR" | "PAYOUT_RATIO";
+  funding_status: "NOT_ASSESSED";
+  payment_status: "NOT_ASSESSED";
+  policy_compliance: "NOT_ASSESSED";
+  limitations?: string[];
+};
+export type FiscalDistributionReview = {
+  schema_version?: string;
+  symbol?: string;
+  status: "SOURCE_BOUND_FISCAL_POLICY_REVIEW" | "UNASSESSABLE" | "NOT_STARTED";
+  action: "no_order";
+  formal_eligibility: false;
+  main_range_adopted?: false;
+  condition_price?: null;
+  personal_quantity?: null;
+  scenarios?: Partial<
+    Record<OperatingDriverScenario, FiscalDistributionScenario>
+  >;
+  source_binding?: CapitalObservationSource[];
+  financial_basis?: string;
+  review_fingerprint?: string;
+  fiscal_payment_alignment?: "NOT_ASSESSED";
+  financial_update_review?: {
+    status:
+      "NEWER_REPORT_REQUIRES_MODEL_REVALIDATION" | "REGISTERED_COVERAGE_ONLY";
+    model_financial_basis: string;
+    latest_registered_report_period: string | null;
+    current_model_validity: "NOT_GRANTED";
+  };
+  current_observations?: CurrentCapitalObservation;
+  limitations?: string[];
+  reason?: string;
+  error_code?: string;
+};
 export type LiveOperatingResearchTask = {
+  current_capital_observation?: CurrentCapitalObservation;
+  fiscal_distribution_review?: FiscalDistributionReview;
   operating_driver_bridge?: OperatingDriverBridge;
   cash_consumption?: Record<string, unknown>;
   research_completeness?: OperatingResearchCompleteness;
@@ -900,6 +1050,8 @@ export type LiveOperatingResearchRole = {
 };
 export type PublicOperatingResearchSuccess = Pick<
   LiveOperatingResearchTask,
+  | "current_capital_observation"
+  | "fiscal_distribution_review"
   | "operating_driver_bridge"
   | "cash_consumption"
   | "independent_review_status"

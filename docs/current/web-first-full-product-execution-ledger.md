@@ -7592,3 +7592,29 @@ no runtime bulk upload, skip or weakened arithmetic assertion. Actual financial
 replay remains in the explicit-source backend acceptance, separate from static
 progress-contract assertions. New source is a follow-up to99736265, not a change
 to its economic formulas or source facts. action=no_order.
+
+2026-11-01 follow-up: close fiscal-year dividend-policy and native post-H1 capital observations for 000568. Reuse immutable D2/cash outputs; add versioned read-only observations, fiscal H1+H2 diagnostics and existing API/Web consumers. No model rewrite, company expansion or approval. action=no_order.
+
+Native H1/annual-dividend implementation/September share notice/Q3 originals
+now cold-parse into existing public operating API and company panel. Shares
+are quantities from share tables, not monetary capital; the Q3 quantity remains
+UNKNOWN. Source availability cannot predate original formation; disclosed
+per-ten-share amount and total reconcile within printed-precision intervals.
+Independent Darwin reproduced and closed both source PIT P1 and rounding P2.
+
+FY2026 policy review now reconstructs actual H1 + conditional H2, not the rolling
+July--June year. Existing stress implies conditional parent profit 5.3923902777bn,
+policy target 8.5bn and excess over positive current-year earnings 3.1076097223bn.
+This is NOT a cash shortfall, breach or funding approval. Three scenarios share
+the same H2 transport; their future H1 differences do not get counted as FY2026.
+FY/H1 policy metadata are retained separately from economic-policy comparison.
+New Q3 source explicitly requires revalidation of H1 model for current use.
+
+Old D2 task/candidate/cash input and fingerprint remain unchanged. No price
+threshold, main-range adoption, G3, personal quantity or private input added.
+Public API cold-source isolated acceptance PASS; task JSON unchanged, existing
+transient execution locks allowed. 8001 deployment is a separate next acceptance.
+Public source/implementation receipt: artifacts/current/value-fiscal-distribution-20261101/index.json.
+Delegated next independent package to authorized chat framework(2): parent
+resources, due obligations and dividend capacity in independent pf1 from d718;
+Root retains shared API/Web/CI integration. No hotspot assignment. action=no_order.

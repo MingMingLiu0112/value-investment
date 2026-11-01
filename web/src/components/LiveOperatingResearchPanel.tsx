@@ -13,6 +13,9 @@ import {
   type OperatingDriverKey,
   type OperatingDriverScenario,
   type OperatingDriverRange,
+  type CurrentCapitalObservation,
+  type FiscalDistributionReview,
+  type FiscalDistributionScenario,
 } from "../services/api";
 
 const LABELS: Record<string, string> = {
@@ -388,6 +391,500 @@ export function OperatingDriverBridgeView({
         <summary>经营驱动桥完整原稿与版本</summary>
         <Readable value={bridge} />
       </details>
+    </section>
+  );
+}
+const CAPITAL_KIND_LABELS: Record<string, string> = {
+  interim: "半年度报告",
+  annual: "年度报告",
+  q1: "第一季度报告",
+  q3: "第三季度报告",
+  dividend_implementation: "分红派息实施公告",
+  share_unlock_notice: "解除限售股份上市流通公告",
+};
+const CAPITAL_STATE_LABELS: Record<string, string> = {
+  SCHEME_ADJUSTMENT_RECALL_NOT_ADDITIONAL_CANCELLATION:
+    "方案回溯说明，不是新增注销",
+  HISTORICAL_RECALL_NOT_NEW_SHARE_REDUCTION:
+    "历史注销回溯，不是本次新增股数减少",
+  SCHEDULED_CLASS_TRANSFER_SUBJECT_TO_CSDC_STRUCTURE:
+    "拟解除限售的股份类别转移，须以中国结算股本结构表为准",
+};
+function observationText(value: unknown) {
+  return typeof value === "string" && value.trim() && value !== "UNKNOWN"
+    ? value
+    : "未知，不能推定";
+}
+function observationMoney(value: unknown) {
+  const n =
+    typeof value === "string" &&
+    /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(value.trim())
+      ? Number(value)
+      : NaN;
+  return Number.isFinite(n) ? driverNumber(n / 100000000, 4) : "未知，不补零";
+}
+function observationHash(value: unknown) {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
+function observationLink(value: string) {
+  return /^https:\/\/static\.cninfo\.com\.cn\/finalpage\/\d{4}-\d{2}-\d{2}\/\d+\.PDF$/.test(
+    value,
+  )
+    ? value
+    : undefined;
+}
+export function CurrentCapitalObservationView({
+  value,
+  symbol,
+}: {
+  value: CurrentCapitalObservation;
+  symbol: string;
+}) {
+  if (
+    value.action !== "no_order" ||
+    value.formal_eligibility !== false ||
+    (value.symbol !== undefined && value.symbol !== symbol) ||
+    (value.current_capital_continuity !== undefined &&
+      value.current_capital_continuity !== "NOT_PROVEN")
+  )
+    return (
+      <Alert
+        type="warning"
+        message="公开资本观察身份或边界不符，本区停止展示；其他研究保留"
+      />
+    );
+  const rows = Array.isArray(value.source_bound_observations)
+    ? value.source_bound_observations
+    : [];
+  const results = Array.isArray(value.source_results)
+    ? value.source_results
+    : [];
+  return (
+    <section aria-label="来源绑定的公开资本观察">
+      <h3>公开资本与分配观察（登记原件范围）</h3>
+      <p>
+        报告期股数与股利方案是原件观察，不证明当前股本连续性；股利计划、财政年度归属、宣告和实际付款必须分开。当前资本连续性：尚未证明。
+      </p>
+      {value.status === "NOT_STARTED" && (
+        <p>尚无已登记资本原件观察，不推定没有分配或股本变化。</p>
+      )}
+      {value.status === "UNASSESSABLE" && (
+        <Alert
+          type="info"
+          message="资本原件暂不可核验，不能据此显示观察值；其他D2/现金结果保留"
+          description={value.reason || value.error_code}
+        />
+      )}
+      {value.status === "PARTIAL" && (
+        <Alert
+          type="warning"
+          message="资本观察仅部分原件通过，未通过来源不参与展示"
+        />
+      )}
+      {value.status !== "UNASSESSABLE" &&
+        value.status !== "NOT_STARTED" &&
+        rows.map((row, i) => {
+          const source = row.source,
+            native = row.observation;
+          if (
+            row.status !== "VERIFIED" ||
+            !source ||
+            !observationHash(source.sha256) ||
+            typeof source.source_url !== "string" ||
+            !native ||
+            native.status !== "VERIFIED" ||
+            native.symbol !== symbol ||
+            native.report_period !== source.report_period
+          )
+            return (
+              <Alert
+                key={i}
+                type="warning"
+                message="该条原件身份或Hash绑定不符，观察值不展示"
+              />
+            );
+          const url = observationLink(source.source_url);
+          return (
+            <section key={i}>
+              <h4>
+                {source.report_period} · {native.issuer_name || symbol} ·{" "}
+                {CAPITAL_KIND_LABELS[native.kind || native.report_kind || ""] ||
+                  native.kind ||
+                  native.report_kind ||
+                  source.kind}
+              </h4>
+              <p>
+                原件报告期：{source.report_period}；原件链接日期：
+                {source.source_url.match(
+                  /finalpage\/(\d{4}-\d{2}-\d{2})\//,
+                )?.[1] || "未知"}
+                ； 登记可用时间：{source.available_at}；董事会批准报出日：
+                {observationText(native.report_approved_date)}。
+                这些日期不是股本变化生效日或付款日。
+              </p>
+              {url && (
+                <p>
+                  <a href={url} target="_blank" rel="noreferrer">
+                    查看官方原件
+                  </a>
+                </p>
+              )}
+              <table>
+                <caption>
+                  报告期末股数（股；不使用人民币股本金额换算股数）
+                </caption>
+                <thead>
+                  <tr>
+                    <th>变动前股数</th>
+                    <th>期末普通股数</th>
+                    <th>注销股数</th>
+                    <th>注销日期与状态</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{driverNumber(native.shares_before, 0)}</td>
+                    <td>{driverNumber(native.ordinary_shares, 0)}</td>
+                    <td>{driverNumber(native.cancelled_shares, 0)}</td>
+                    <td>
+                      {observationText(native.cancellation_date)} ·{" "}
+                      {native.cancellation_state ===
+                      "REPORTED_RESTRICTED_SHARE_CANCELLATION_COMPLETED_BY_PERIOD_END"
+                        ? "原件称报告期末前已完成限制性股票注销"
+                        : CAPITAL_STATE_LABELS[
+                            native.cancellation_state || ""
+                          ] || observationText(native.cancellation_state)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              {native.observation_date && (
+                <p>公告署期：{native.observation_date}；不等于实际付款日。</p>
+              )}
+              {(native.record_date ||
+                native.ex_date ||
+                native.agency_payment_date) && (
+                <section>
+                  <h5>分红实施安排（不是到账证明）</h5>
+                  <p>
+                    股权登记日：{observationText(native.record_date)}
+                    ；除权除息日：{observationText(native.ex_date)}；
+                    公告计划委托代派日：
+                    {observationText(native.agency_payment_date)}。
+                  </p>
+                  <p>
+                    派息基数：{driverNumber(native.distribution_base_shares, 0)}
+                    股； 排除的回购股份：
+                    {driverNumber(native.excluded_repurchase_shares, 0)}股；
+                    每10股派息：
+                    {driverNumber(native.dividend_per_10_shares_cny, 2)}元。
+                    委托代派与公司自行派发安排不等于账户到账；该付款安排归属原财政年度，不能算入另一年度政策目标。
+                  </p>
+                </section>
+              )}
+              {native.share_effective_date && (
+                <p>
+                  限售股拟上市流通日：{native.share_effective_date}；
+                  {CAPITAL_STATE_LABELS[native.share_observation_state || ""] ||
+                    observationText(native.share_observation_state)}
+                  。 历史注销回溯：
+                  {driverNumber(native.historical_cancelled_shares, 0)}股（
+                  {observationText(native.historical_cancellation_date)}
+                  ），不是新增注销；不证明当前股本连续性。
+                </p>
+              )}
+              {native.share_table_qualification && (
+                <p>{native.share_table_qualification}</p>
+              )}
+              {native.equity_distribution_implementation && (
+                <section>
+                  <h5>原件实施观察（非付款完成结论）</h5>
+                  <Readable value={native.equity_distribution_implementation} />
+                </section>
+              )}
+              {native.financial_update?.status === "VERIFIED" && (
+                <section>
+                  <h5>后续财报实际观察（不回写冻结模型输入）</h5>
+                  <p>
+                    {native.financial_update.period_start} ～{" "}
+                    {native.financial_update.period_end}；
+                    {native.financial_update.period_basis ===
+                    "YEAR_TO_DATE_9M_NOT_SINGLE_QUARTER"
+                      ? "年初累计九个月，不是第三季度单季，也不是全年"
+                      : native.financial_update.period_basis}
+                    。
+                  </p>
+                  <p>
+                    营业收入：
+                    {observationMoney(
+                      native.financial_update.fields?.revenue_cny?.value,
+                    )}
+                    亿元； 归母利润：
+                    {observationMoney(
+                      native.financial_update.fields?.parent_profit_cny?.value,
+                    )}
+                    亿元。
+                    后续财报需触发当前模型重验，不自动覆盖原研究或授予当前价格资格。
+                  </p>
+                </section>
+              )}
+              <p>
+                股利方案归属财政年度：
+                {observationText(native.dividend_fiscal_year)}；
+                已披露方案总额（含税，亿元）：
+                {observationMoney(native.declared_ordinary_dividend_cny)}。
+                这是方案金额，不是已付款金额。
+              </p>
+              <p>
+                中期分配计划：
+                {native.interim_proposal_state ===
+                "REPORTED_NO_INTERIM_DIVIDEND_OR_CAPITALIZATION_PLANNED"
+                  ? "报告称拟不进行中期现金分红、送股或转增；不等于全年政策取消"
+                  : observationText(native.interim_proposal_state)}
+                。
+              </p>
+              <p>
+                实际付款完成：{observationText(native.payment_completion_state)}
+                ；不能把方案或历史付款当作当年已支付。
+              </p>
+              {native.dividend_policy?.status === "VERIFIED" &&
+                Array.isArray(native.dividend_policy.policies) && (
+                  <ul>
+                    {native.dividend_policy.policies.map((policy, j) => (
+                      <li key={j}>
+                        {policy.fiscal_year}财政年度：最低派息比率{" "}
+                        {driverNumber(policy.minimum_payout_ratio)}
+                        （小数比率），最低政策总额{" "}
+                        {observationMoney(policy.minimum_distribution_cny)}
+                        亿元；条件性政策意向，不是已宣告负债或付款完成证明。
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              <details>
+                <summary>该原件Hash与逐字段原文证据</summary>
+                <p>
+                  SHA-256：<code>{source.sha256}</code>
+                </p>
+                <ul>
+                  {(Array.isArray(native.evidence_refs)
+                    ? native.evidence_refs
+                    : []
+                  ).map((ref, j) => (
+                    <li key={j}>
+                      <code>{ref.field}</code> · 物理页 {ref.physical_page}
+                      <blockquote>{ref.excerpt}</blockquote>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </section>
+          );
+        })}
+      {results.some((row) => row.status !== "VERIFIED") && (
+        <ul>
+          {results
+            .filter((row) => row.status !== "VERIFIED")
+            .map((row, i) => (
+              <li key={i}>
+                原件 {row.source_index} 未通过：{row.error_code || row.status}
+                ；报告期 {row.source?.report_period || "未知"}。
+              </li>
+            ))}
+        </ul>
+      )}
+      {value.current_financial_coverage && (
+        <p>
+          仅已登记财报覆盖：
+          {(Array.isArray(value.current_financial_coverage.report_periods)
+            ? value.current_financial_coverage.report_periods
+            : []
+          ).join("、") || "未知"}
+          ； 最新登记报告期：
+          {value.current_financial_coverage.latest_report_period || "未知"}
+          。不代表当前财务/事件完整覆盖，不授予当前价格资格。
+        </p>
+      )}
+    </section>
+  );
+}
+const FISCAL_MONEY_FIELDS: [keyof FiscalDistributionScenario, string][] = [
+  ["reported_h1_parent_profit_cny", "H1实际归母利润"],
+  ["assumed_h2_parent_profit_cny", "H2条件归母利润（派生）"],
+  ["conditional_fy_parent_profit_cny", "同一财政年度条件归母利润"],
+  ["ratio_target_cny", "比例政策目标"],
+  ["disclosed_floor_cny", "披露的年度绝对政策下限"],
+  ["policy_target_cny", "当年政策目标"],
+  [
+    "target_above_current_year_positive_earnings_cny",
+    "政策目标超过当年正利润金额（非资金缺口）",
+  ],
+];
+export function FiscalDistributionReviewView({
+  value,
+  symbol,
+}: {
+  value: FiscalDistributionReview;
+  symbol: string;
+}) {
+  if (
+    value.action !== "no_order" ||
+    value.formal_eligibility !== false ||
+    (value.symbol !== undefined && value.symbol !== symbol) ||
+    (value.main_range_adopted !== undefined &&
+      value.main_range_adopted !== false) ||
+    value.condition_price != null ||
+    value.personal_quantity != null
+  )
+    return (
+      <Alert
+        type="warning"
+        message="财政年度诊断身份或边界不符，本区停止展示；其他研究保留"
+      />
+    );
+  const update = value.financial_update_review;
+  const sources = Array.isArray(value.source_binding)
+    ? value.source_binding
+    : [];
+  const names = DRIVER_SCENARIOS.filter((name) => value.scenarios?.[name]);
+  const valid =
+    value.status === "SOURCE_BOUND_FISCAL_POLICY_REVIEW" &&
+    names.length > 0 &&
+    sources.length > 0 &&
+    sources.every((row) => observationHash(row.sha256)) &&
+    names.every((name) => {
+      const row = value.scenarios![name]!;
+      return (
+        Number.isInteger(row.fiscal_year) &&
+        value.financial_basis === String(row.fiscal_year) + "-06-30" &&
+        row.funding_status === "NOT_ASSESSED" &&
+        row.payment_status === "NOT_ASSESSED" &&
+        row.policy_compliance === "NOT_ASSESSED"
+      );
+    });
+  return (
+    <section aria-label="财政年度分配政策诊断">
+      <h3>财政年度政策目标与利润诊断（非资金能力评估）</h3>
+      {update && (
+        <Alert
+          type="warning"
+          message={
+            update.status === "NEWER_REPORT_REQUIRES_MODEL_REVALIDATION"
+              ? "已登记更新财报，模型当前使用需重验"
+              : "仅登记来源覆盖，当前模型资格未授予"
+          }
+          description={
+            "模型财务基准：" +
+            update.model_financial_basis +
+            "；最新登记报告期：" +
+            (update.latest_registered_report_period || "未知") +
+            "。新财报不回写冻结研究输入；不能据旧模型直接输出当前买价。"
+          }
+        />
+      )}
+      {!valid ? (
+        <Alert
+          type="info"
+          message="财政年度政策诊断暂不可核验，其他D2/现金结果保留"
+          description={value.reason || value.error_code || value.status}
+        />
+      ) : (
+        <>
+          <p>
+            同一财政年度H1实际归母利润 +
+            H2条件归母利润。H2来自滚动首年减同一2027H1
+            witness，不是另设一份利润预测；不把2026H2+2027H1滚动年度套用财政年度政策下限。
+          </p>
+          <p>
+            金额单位亿元，仅单位换算与展示四舍五入；原始元值在折叠明细。政策目标高于当年正利润的金额不是资金缺口，不证明违约，也不证明已支付；历史留存和可达现金须另行验证。
+          </p>
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <caption>
+                财政年度归属：H1实际与H2条件派生；未评估资金、付款或政策履约
+              </caption>
+              <thead>
+                <tr>
+                  <th>情景</th>
+                  <th>财政年度</th>
+                  {FISCAL_MONEY_FIELDS.map(([key, title]) => (
+                    <th key={key}>{title}</th>
+                  ))}
+                  <th>主导政策约束</th>
+                </tr>
+              </thead>
+              <tbody>
+                {names.map((name) => {
+                  const row = value.scenarios![name]!;
+                  return (
+                    <tr key={name}>
+                      <th>{LABELS[name]}</th>
+                      <td>{row.fiscal_year}</td>
+                      {FISCAL_MONEY_FIELDS.map(([key]) => (
+                        <td key={key}>{observationMoney(row[key])}</td>
+                      ))}
+                      <td>
+                        {row.dominant_constraint === "ABSOLUTE_FLOOR"
+                          ? "绝对政策下限"
+                          : "派息比例"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p>
+            资金能力：未评估；实际付款：未评估；政策履约：未评估；财政年度付款归属对齐：
+            {value.fiscal_payment_alignment === "NOT_ASSESSED"
+              ? "未评估"
+              : "尚未提供，不推定完成"}
+            。无投资批准，主研究区间未采用，不生成条件价。
+          </p>
+          <ul>
+            {sources.map((source, i) => (
+              <li key={i}>
+                政策来源报告期：{source.report_period}；登记可用：
+                {source.available_at}；
+                {observationLink(source.source_url) && (
+                  <a href={source.source_url} target="_blank" rel="noreferrer">
+                    官方政策原件
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+          <details>
+            <summary>政策绑定与财政年度精确元值</summary>
+            <p>
+              复核指纹：<code>{value.review_fingerprint || "未提供"}</code>
+            </p>
+            {sources.map((source, i) => (
+              <p key={i}>
+                来源SHA-256：<code>{source.sha256}</code>
+              </p>
+            ))}
+            {names.map((name) => (
+              <section key={name}>
+                <h4>{LABELS[name]}（元；原始值）</h4>
+                <dl>
+                  {FISCAL_MONEY_FIELDS.map(([key, title]) => (
+                    <div key={key}>
+                      <dt>{title}</dt>
+                      <dd>{value.scenarios![name]![key]}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            ))}
+            <ul>
+              {value.limitations?.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </details>
+        </>
+      )}
     </section>
   );
 }
@@ -803,6 +1300,22 @@ export function LiveOperatingResearchDraft({
       )}
       {task.cash_consumption && (
         <OperatingCashConsumptionView value={task.cash_consumption} />
+      )}
+      {(task.current_capital_observation ||
+        task.fiscal_distribution_review?.current_observations) && (
+        <CurrentCapitalObservationView
+          value={
+            (task.current_capital_observation ||
+              task.fiscal_distribution_review!.current_observations)!
+          }
+          symbol={task.symbol}
+        />
+      )}
+      {task.fiscal_distribution_review && (
+        <FiscalDistributionReviewView
+          value={task.fiscal_distribution_review}
+          symbol={task.symbol}
+        />
       )}
       {"error_code" in task && task.error_code && (
         <Alert type="info" message={"任务错误：" + task.error_code} />

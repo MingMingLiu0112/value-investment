@@ -129,6 +129,21 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             except (ValueError,OSError,KeyError,TypeError):
                 public["cash_consumption"]=dict(status="UNASSESSABLE",
                     reason="CASH_SOURCE_OR_MAPPING_NOT_VERIFIED",action="no_order",formal_eligibility=False)
+            # Public native observations are independent of approval/private accounts.
+            try:
+                from ...application.research.current_capital_observation_v1 import read_current_capital_observation
+                public["current_capital_observation"] = read_current_capital_observation(
+                    project, symbol, datetime.now(timezone.utc))
+            except (ValueError,OSError,KeyError,TypeError):
+                public["current_capital_observation"] = dict(status="UNASSESSABLE",
+                    reason="CURRENT_CAPITAL_SOURCE_NOT_VERIFIED",action="no_order",formal_eligibility=False)
+            try:
+                from ...application.research.operating_distribution_review_v1 import read_operating_distribution_review
+                public["fiscal_distribution_review"] = read_operating_distribution_review(
+                    root=project,task=value,now=datetime.now(timezone.utc))
+            except (ValueError,OSError,KeyError,TypeError):
+                public["fiscal_distribution_review"] = dict(status="UNASSESSABLE",
+                    reason="FISCAL_POLICY_SOURCE_OR_PERIOD_NOT_VERIFIED",action="no_order",formal_eligibility=False)
             reviewed=review_projection(value)
             for key in ("independent_review","independent_review_status"):
                 if key in reviewed:public[key]=reviewed[key]

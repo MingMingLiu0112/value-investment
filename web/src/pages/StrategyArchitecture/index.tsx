@@ -216,6 +216,7 @@ export function ValuePlanOverview() {
         <section aria-label="本轮纵向链与扩展边界">
           <h3>本轮仅推进：{valueVerticalScope.focus}</h3>
           <p>{valueVerticalScope.accepted}</p>
+          <p>{valueVerticalScope.currentFollowup}</p>
           <section aria-label="当前阻断与后续纵向验收">
             <h4>当前阻断与后续纵向验收</h4>
             <Alert type="warning" message={valueVerticalScope.currentBlocker} />
