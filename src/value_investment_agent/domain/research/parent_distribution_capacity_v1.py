@@ -36,7 +36,7 @@ def assess_capacity(*, opening_cash, dividend_payable, retained_profit,
     target = money(additional_distribution)
     return dict(static_after_declared_dividend=str(static),
                 conditional_cash_remaining=str(remaining),
-                conditional_distribution_ceiling=str(ceiling),
-                conditional_shortfall=str(max(target - ceiling, Decimal(0))),
+                conditional_distribution_ceiling=str(ceiling) if obligations_complete else None,
+                conditional_shortfall=str(max(target - ceiling, Decimal(0))) if obligations_complete else None,
                 status='CONDITIONAL_SCENARIO' if obligations_complete else 'INCOMPLETE_OBLIGATIONS',
                 current_capacity_proven=False, approved=False, action='no_order')

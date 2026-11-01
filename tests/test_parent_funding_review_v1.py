@@ -17,6 +17,8 @@ def test_historical_and_conditional_budget():
     assert Decimal(result['conditional_shortfall']) == 0
     assert result['current_capacity_proven'] is False
     assert run()['status'] == 'INCOMPLETE_OBLIGATIONS'
+    assert run()['conditional_distribution_ceiling'] is None
+    assert run()['conditional_shortfall'] is None
 
 
 def test_paid_dividend_not_deducted_again():
@@ -35,3 +37,28 @@ def test_scope_and_duplicate():
                         [dict(id='x', amount=1, scope='parent')]*2):
         with pytest.raises(ValueError):
             run(obligations=obligations)
+
+
+def test_source_tampering_and_future(tmp_path):
+    import hashlib
+    import json
+    from datetime import datetime, timezone
+    from value_investment_agent.infrastructure.filings.parent_funding_facts_v1 import load_parent_facts
+    pdf = tmp_path / 'original.pdf'
+    pdf.write_bytes(b'original')
+    packet = dict(sources=[dict(id='s', path='original.pdf',
+                  sha256=hashlib.sha256(b'original').hexdigest(),
+                  available_at='2026-11-01T00:00:00+00:00')], facts=[])
+    path = tmp_path / 'facts.json'
+    path.write_text(json.dumps(packet), encoding='utf-8')
+    with pytest.raises(ValueError, match='future source'):
+        load_parent_facts(tmp_path, 'facts.json', cutoff=datetime(2026, 10, 31, tzinfo=timezone.utc))
+    pdf.write_bytes(b'changed')
+    with pytest.raises(ValueError, match='hash mismatch'):
+        load_parent_facts(tmp_path, 'facts.json', cutoff=datetime(2026, 11, 2, tzinfo=timezone.utc))
+
+
+def test_floor_overlap_not_reserved_twice():
+    result = run(cash_floor=100, obligations=[dict(id='reserve', scope='parent',
+                  amount=100, included_in_cash_floor=True)])
+    assert Decimal(result['conditional_cash_remaining']) == Decimal('17016211233.61')
