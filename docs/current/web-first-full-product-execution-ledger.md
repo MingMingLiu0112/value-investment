@@ -7658,3 +7658,5 @@ verified on the delivery commit. Permanent action=no_order.
 Public source/integration index:artifacts/current/parent-funding-integration-20261101/index.json.
 
 Clean e6 checkout exposed two parent files whose indexed LF bytes differed from reviewed local CRLF bytes despite new -text attributes. Explicitly materialized their already-reviewed local bytes into Git; whitespace-ignored diff is empty. No formula/data/old evidence resigned. Existing source/implementation acceptance hashes retained; clean replay must use delivery follow-up. action=no_order.
+
+68e167b7 recorded the byte-preservation intention but ordinary git-add reused cached normalized entries. Explicit git-add --renormalize now staged both exact reviewed CRLF blobs; staged hashes equal the retained acceptance pins and whitespace-ignored diff is empty. No business logic or evidence signature changed.
