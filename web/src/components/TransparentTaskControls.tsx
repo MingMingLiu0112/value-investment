@@ -48,6 +48,12 @@ export function taskFailure(cause: unknown) {
     return "任务操作需要本机授权；仍可阅读公开研究。";
   if (cause instanceof ApiError && cause.status === 403)
     return "服务端拒绝该操作的授权或能力条件；不自动重试，公开研究仍可阅读。";
+  if (cause instanceof ApiError && typeof cause.detail === "string")
+    return (
+      "任务读取或执行失败：" +
+      cause.detail.slice(0, 400) +
+      "；原记录保留，可手动刷新，不自动重启。"
+    );
   return "任务操作未完成，请核对来源、原生输入或运行限制后手动处理；不会自动重启任务。";
 }
 export function watchWorkbenchTask(

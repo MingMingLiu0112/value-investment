@@ -140,7 +140,7 @@ def _task_history(service, task_id):
 
 
 def _failure(error, *, status=422):
-    return _reply(dict(status='UNASSESSABLE', reason=str(error), error_type=type(error).__name__,
+    return _reply(dict(status='UNASSESSABLE', reason=str(error), detail=str(error), error_type=type(error).__name__,
                        action='no_order', formal_eligibility=False), status)
 
 

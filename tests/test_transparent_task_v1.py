@@ -307,9 +307,16 @@ def test_fresh_dispatch_reuses_actual_run_once_contract_newdir_only(case, monkey
         calls.append(kwargs)
         ref = put(service.root, (kwargs['output_dir'] / 'raw.json').relative_to(service.root).as_posix(),
                   {'synthetic_public': True})
+        summary = dict(input_mode='LIVE_COLLECTION', current_publication_eligible=False,
+                       run_id='TEST_ONLY_FRESH', as_of='2026-11-01', channel_counts={})
+        report_ref = put(service.root,
+            (kwargs['output_dir'] / 'lead-report.json').relative_to(service.root).as_posix(),
+            dict(schema_version='value-discovery-product-v1', action='no_order',
+                 status='RESEARCH_LEADS_ONLY', run_id=summary['run_id'], as_of=summary['as_of'],
+                 channel_counts={}, leads=[], deduplicated_lead_count=0))
         put(service.root, (kwargs['output_dir'] / 'manifest.json').relative_to(service.root).as_posix(),
-            dict(files={'raw': ref}))
-        return dict(input_mode='LIVE_COLLECTION', current_publication_eligible=False)
+            dict(files={'raw': ref, 'lead_report': report_ref}))
+        return summary
     monkeypatch.setattr(mod.importlib.util, 'module_from_spec',
                         lambda spec: types.SimpleNamespace(run_once=run_once,
                             build_financial_input=lambda: None, _collect_official=lambda: None,
@@ -746,3 +753,76 @@ def test_real_replay_task_exposes_bound_stock_selection():
     assert all('symbol' in item for item in result['selection']['items'])
     assert result['source_refs'] and result['run_id'].startswith('b-')
     assert not view['result']['current_published']
+
+
+@pytest.fixture
+def fresh_report_case(tmp_path):
+    service = mod.TransparentTaskService(tmp_path)
+    row = dict(symbol='600519', company_name='TEST_ONLY_COMPANY',
+        channels=['value', 'cyclical'], screening_reasons=['TEST_ONLY native reason'],
+        next_required_evidence='TEST_ONLY next evidence', quote_date='2026-10-30')
+    summary = dict(run_id='TEST_ONLY_FRESH', as_of='2026-11-01',
+                   channel_counts={'value': 1, 'cyclical': 1}, input_mode='LIVE_COLLECTION')
+    report = dict(summary, schema_version='value-discovery-product-v1',
+        action='no_order', status='RESEARCH_LEADS_ONLY', deduplicated_lead_count=1,
+        leads=[row], excluded=[{'symbol': '000001'}], evaluated=[{'symbol': '000002'}])
+    ref = put(tmp_path, 'runtime/daily-marketwide/test/lead-report.json', report)
+    return service, summary, dict(files={'lead_report': ref}), report
+
+
+def test_fresh_projection_exact_native_pool_and_fields(fresh_report_case):
+    service, summary, manifest, report = fresh_report_case
+    before = deepcopy(report)
+    result = mod._fresh_result(service, summary, manifest)
+    assert len(result['shortlist']) == 1
+    row = result['shortlist'][0]
+    assert all(row[key] == value for key, value in report['leads'][0].items())
+    assert row['channel'] == 'value / cyclical'
+    assert row['reasons'] == report['leads'][0]['screening_reasons']
+    assert row['blockers'] == [report['leads'][0]['next_required_evidence']]
+    assert result['channel_counts'] == summary['channel_counts']
+    assert result['lead_report_binding'] == manifest['files']['lead_report']
+    assert report == before and 'shortlist' not in summary
+
+
+@pytest.mark.parametrize('damage', ['raw', 'missing', 'wrong_run', 'invalid_rows', 'count'])
+def test_fresh_report_tamper_or_wrong_native_contract_rejected(fresh_report_case, damage):
+    service, summary, manifest, report = fresh_report_case
+    ref = manifest['files']['lead_report']
+    if damage == 'raw':
+        (service.root / ref['path']).write_bytes(b'{"leads":[]}')
+    elif damage == 'missing':
+        del manifest['files']['lead_report']
+    else:
+        if damage == 'wrong_run':
+            report['run_id'] = 'different-native-run'
+        elif damage == 'invalid_rows':
+            report['leads'][0]['screening_reasons'] = 'not-a-list'
+        else:
+            report['deduplicated_lead_count'] = 2
+        manifest['files']['lead_report'] = put(service.root, ref['path'], report)
+    with pytest.raises((ValueError, KeyError)):
+        mod._fresh_result(service, summary, manifest)
+
+
+def test_fresh_real_retained_report_projection_readonly_no_execution():
+    configured = os.environ.get('TRANSPARENT_TASK_REAL_ROOT')
+    if not configured:
+        pytest.skip('TRANSPARENT_TASK_REAL_ROOT required for retained browser scan report')
+    service = mod.TransparentTaskService(Path(configured))
+    path = service.root / 'runtime/daily-marketwide/rt-61196abedb7e23a0d5cf1eba9c117b92-0001/manifest.json'
+    raw_manifest = path.read_bytes()
+    manifest = json.loads(raw_manifest)
+    ref = manifest['files']['lead_report']
+    raw_report = (service.root / ref['path']).read_bytes()
+    native = json.loads(raw_report)
+    result = mod._fresh_result(service, manifest['summary'], manifest)
+    assert result['shortlist']
+    assert len(result['shortlist']) == len(native['leads'])
+    for row, original in zip(result['shortlist'], native['leads']):
+        assert all(row[key] == value for key, value in original.items())
+        assert row['reasons'] == original['screening_reasons']
+        assert row['channel'] == ' / '.join(original['channels'])
+    assert result['lead_report_binding'] == ref
+    assert path.read_bytes() == raw_manifest
+    assert (service.root / ref['path']).read_bytes() == raw_report

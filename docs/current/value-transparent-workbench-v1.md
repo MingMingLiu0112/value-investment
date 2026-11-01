@@ -63,3 +63,19 @@ ModuleRun分发移到未冻结仓储适配层；不改旧候选/Hash/原件/公�
 没有为了验收构造实盘成交或补零费用/时间。
 本机回执runtime/value-transparent-workbench-20261101/；
 模拟及工程意见不等于用户投资意见。action=no_order。
+
+
+### 实机收尾补证
+7997d894 Core41301900358与Web41301900273均SUCCESS；
+Core原始命令包含新任务/聚合测试，9064passed/437skip，skip不算真实验收。
+最终干净检出157passed/2skip，随后显式bundle补验2passed，非跳过冒通过。
+真实页面取消后重试产生新task rt-61196abedb7e23a0d5cf1eba9c117b92，
+原cancel记录保留；真实采集覆盖5223、SZSE/SSE、行情2026-10-30，
+BSE缺失/交易日供应商日期未独立核验，因此PARTIAL不称全A完成。
+另修复任务只返扫描计数的消费断点：未来FRESH执行对manifest-bound
+lead_report逐条核验后投影shortlist；保留原生leads，不含excluded/evaluated。
+旧任务输出不改不重签；实现变化按原合同使旧任务仅可作历史。
+错误响应新增原始detail；UI显示实际错误及可手动刷新，不假报自动恢复。
+整合后任务/API146通过0skip；无策略阈值/来源/G3/账户改动。
+新的真实模型任务rt-e6d15d2f9d54e5bb57f9c20e57467685已从页面启动，
+截至记录仍RUNNING，已有3次实际调用；不能宣称新研究验收通过。

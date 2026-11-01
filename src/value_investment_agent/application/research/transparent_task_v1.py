@@ -754,6 +754,39 @@ def _guard_public_io(service, spec, attempt, module):
         setattr(module, name, guarded)
 
 
+def _fresh_result(service, summary, manifest):
+    """Presentation aliases over the exact manifest-bound native candidate pool."""
+    ref = manifest['files']['lead_report']
+    report = service._bound(ref)
+    if (report.get('schema_version') != 'value-discovery-product-v1'
+            or report.get('action') != 'no_order'
+            or report.get('status') != 'RESEARCH_LEADS_ONLY'
+            or report.get('run_id') != summary.get('run_id')
+            or report.get('as_of') != summary.get('as_of')
+            or report.get('channel_counts') != summary.get('channel_counts')
+            or not isinstance(report.get('leads'), list)
+            or report.get('deduplicated_lead_count') != len(report['leads'])):
+        raise ValueError('FRESH_BOUND_LEAD_REPORT_IDENTITY_MISMATCH')
+    shortlist = []
+    for native in report['leads']:
+        if (not isinstance(native, dict) or not isinstance(native.get('symbol'), str)
+                or not re.fullmatch('[0-9]{6}', native['symbol'])
+                or not isinstance(native.get('company_name'), str)
+                or not isinstance(native.get('channels'), list)
+                or not all(isinstance(value, str) for value in native['channels'])
+                or not isinstance(native.get('screening_reasons'), list)
+                or not all(isinstance(value, str) for value in native['screening_reasons'])):
+            raise ValueError('FRESH_BOUND_LEAD_ROW_INVALID')
+        row = deepcopy(native)
+        row.update(channel=' / '.join(native['channels']),
+                   reasons=deepcopy(native['screening_reasons']))
+        # Pending evidence is an existing native statement, not a new rejection.
+        if 'blockers' not in row and isinstance(native.get('next_required_evidence'), str):
+            row['blockers'] = [native['next_required_evidence']]
+        shortlist.append(row)
+    return dict(summary, shortlist=shortlist, lead_report_binding=deepcopy(ref))
+
+
 def _dispatch(service, spec, attempt):
     payload, operation = spec['payload'], spec['operation']
     artifacts, outcome = [], 'SUCCESS'
@@ -822,6 +855,7 @@ def _dispatch(service, spec, attempt):
             project_leads=True, skip_workbook=True, collect_public_financials=True)
         ref = service._binding(output / 'manifest.json')
         manifest = service._bound(ref)
+        result = _fresh_result(service, result, manifest)
         artifacts.append(ref)
         artifacts.extend(manifest['files'].values())
         outcome = 'PARTIAL'  # Fresh acquisition does not establish whole-market/fact completeness.
