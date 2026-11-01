@@ -8,6 +8,13 @@ from pathlib import Path
 REVIEWED_NATIVE_SHA256 = '223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9'
 
 
+def validate_supported_case(packet, period):
+    if period != '2026-06-30' or any(
+            s.get('symbol') != '000568' for s in packet['sources'].values()):
+        raise ValueError('unsupported issuer/period')
+    return period
+
+
 def load_parent_facts(root, relative_path, *, cutoff):
     root = Path(root).resolve()
     def contained(relative):
@@ -87,6 +94,10 @@ def bind_payment_arrangement(root, receipt_path, cutoff):
     if len(matches) != 1:
         raise ValueError('ambiguous payment source')
     source = matches[0]
+    if (source.get('available_at') != '2026-11-01T04:14:53.228543+00:00'
+            or source.get('url') != 'https://static.cninfo.com.cn/finalpage/2026-08-20/1225481717.PDF'
+            or source.get('published_at') != '2026-08-19T16:00:00+00:00'):
+        raise ValueError('unreviewed payment record identity/time')
     expected = 'bff4efd3a9aa3d486ffce8143117627aafa4d86dd5d0e1ecb74278ceb3b0980b'
     if source['sha256'] != expected:
         raise ValueError('unexpected payment original')

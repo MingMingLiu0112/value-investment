@@ -1,15 +1,13 @@
-"""000568 H1-2026 case adapter; not a general issuer/period extractor."""
+"""Parent funding research orchestration."""
 from value_investment_agent.infrastructure.filings.parent_funding_facts_v1 import (
-    load_parent_facts, bind_original_page, bind_payment_arrangement,
+    load_parent_facts, bind_original_page, bind_payment_arrangement, validate_supported_case,
 )
 from value_investment_agent.domain.research.parent_distribution_capacity_v1 import assess_capacity
 
 
 def review_parent_funding(root, native_path, *, cutoff, period='2026-06-30'):
     packet = load_parent_facts(root, native_path, cutoff=cutoff)
-    if period != '2026-06-30' or any(
-            s.get('symbol') != '000568' for s in packet['sources'].values()):
-        raise ValueError('unsupported issuer/period')
+    period = validate_supported_case(packet, period)
     def one(field):
         matches = [f for f in packet['facts'] if f['field'] == field and f['period_end'] == period]
         if len(matches) != 1:
