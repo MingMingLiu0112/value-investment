@@ -30,7 +30,7 @@ export interface Stage {
 export const review = {
   version: "strategy-architecture-v2-module-map",
   reviewedAt: "2026-11-01",
-  baseline: "d01923cd72c3e638bb3df490f9e148abccd82219",
+  baseline: "7537c7a00e1b42c6d487e35ad772b032c6516bb1",
   mode: "MANUAL_SOURCE_REVIEW",
   runtimeEvidence: "NOT_CONNECTED",
   ledger: "docs/current/web-first-full-product-execution-ledger.md",
@@ -42,9 +42,9 @@ export const valueVerticalScope = {
   evidenceSource: "artifacts/current/d2-operating-driver-20261101.json",
   capitalUnknownCount: 9,
   cashEvidenceSource:
-    "artifacts/current/d2-cash-consumption-20261101/index.json",
+    "artifacts/current/value-main-revalidation-20261101/index.json",
   accepted:
-    "人工回执快照，非自动监测：本轮正式回执已形成条件研究工作候选，待人工经济复核；三条条件值约6.19516/16.85149/27.22284，Jun30财务基准、Sep30最新实际，三情景共30行现金账。正式回执runtime/value-main-revalidation-20261101/acceptance.json；来源spec及SHA已固定，部署待验收，用户尚未确认；主区间未采用，无投资批准。",
+    "人工回执快照，非自动监测：本轮正式回执已形成条件研究工作候选，待人工经济复核；三条条件值约6.19516/16.85149/27.22284，Jun30财务基准、Sep30最新实际，三情景共30行现金账。最终回执runtime/value-main-revalidation-20261101/acceptance-source-lf-v2.json；来源spec2c09f05f及SHA已固定。业务版7537c7a0已在唯一8001完成公司页与API核验；当前运行版本见系统页。旧全产品刊发注册仍不可用，用户尚未确认；主区间未采用，无投资批准。",
   currentFollowup:
     "新链只计入一次Q3实际（9M－H1），Q4由上年同季基数作显式季节预测，次年H1另列条件假设，再经既有共享v4。母公司v2三条账面义务合计11,013,375,072.53元仅在模型年1假定清偿一次，后续不重复；非新分红、非CapEx，不能与年度新distribution相加当股东回报。已有价格引擎生成带日期未批准draft，但未选数值规则，无当前买价。旧9.03/20.26/25.82及170.1621亿元历史静态余量保留作历史说明，不是本轮最新结果，不覆盖旧raw。",
   currentBlocker:
@@ -269,7 +269,7 @@ export const catalog: Record<
           "src/value_investment_agent/application/research/agent_review/operating_draft_v1.py",
         ],
         engineeringStatus:
-          "条件压力算术已验／D2→现金→条件估值工程已接，待最终验收",
+          "条件压力算术已验／000568经营→现金→条件估值有限工程链已验收；经济待审",
         evidenceStatus:
           "96条官方来源；21项经营驱动范围、6项增长/税前利润率由代码派生、9项资本UNKNOWN；不是模型直接填利润率；新增30行现金账与v4条件估值真实消费",
         shortStatus:

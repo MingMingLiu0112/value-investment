@@ -15,7 +15,7 @@ import {
 import { ArchitectureView, StageButton, StageDetail } from "./index";
 describe("versioned strategy architecture", () => {
   it("pins review separately from disconnected runtime evidence", () => {
-    expect(review.baseline).toBe("d01923cd72c3e638bb3df490f9e148abccd82219");
+    expect(review.baseline).toBe("7537c7a00e1b42c6d487e35ad772b032c6516bb1");
     expect(review.runtimeEvidence).toBe("NOT_CONNECTED");
     expect(catalog.value.stages.find((s) => s.id === "F2")?.evidence).toContain(
       "跨日股本",
@@ -271,13 +271,21 @@ it("separates the actual capital blocker and vertical acceptance from future pla
   const cash = JSON.parse(
     readFileSync(resolve("..", valueVerticalScope.cashEvidenceSource), "utf8"),
   );
-  expect(cash.status).toBe("CONDITIONAL_STRESS_CONSUMED");
-  expect(cash.main_range_adopted).toBe(false);
-  expect(cash.condition_price).toBeNull();
-  expect(cash.formal_eligibility).toBe(false);
-  expect(cash.annual_cash_rows).toBe(30);
-  expect(cash.result_binding.path).toMatch(/^runtime\//);
-  expect(cash.source_closure.length).toBeGreaterThan(0);
+  expect(cash.actual_results.status).toBe(
+    "CONDITIONAL_RESEARCH_CANDIDATE_PENDING_ECONOMIC_REVIEW",
+  );
+  expect(cash.actual_results.main_range_adopted).toBe(false);
+  expect(cash.actual_results.condition_price).toBeNull();
+  expect(cash.actual_results.formal_eligibility).toBe(false);
+  expect(cash.actual_results.current_comparable).toBe(false);
+  expect(cash.actual_results.annual_cash_rows).toBe(30);
+  expect(cash.actual_model_receipt.path).toMatch(/^runtime\//);
+  const closure = JSON.parse(
+    readFileSync(resolve("..", cash.source_closure.path), "utf8"),
+  );
+  expect(closure.sources.length).toBe(closure.source_count);
+  expect(closure.source_count).toBeGreaterThan(0);
+  expect(cash.source_spec.path).toContain("source-lf-v2");
   // This is a committed evidence-index contract; actual finance replays run separately.
 
   const html = renderToStaticMarkup(<ArchitectureView strategy="value" />);
@@ -324,7 +332,10 @@ it("separates the actual capital blocker and vertical acceptance from future pla
   expect(focus).toContain("不表示需先完成全部模块");
   expect(focus).toContain("本轮正式回执已形成条件研究工作候选");
   expect(focus).toContain("约6.19516/16.85149/27.22284");
-  expect(focus).toContain("来源spec及SHA已固定，部署待验收，用户尚未确认");
+  expect(focus).toContain("acceptance-source-lf-v2.json");
+  expect(focus).toContain("来源spec2c09f05f及SHA已固定");
+  expect(focus).toContain("业务版7537c7a0已在唯一8001完成公司页与API核验");
+  expect(focus).toContain("旧全产品刊发注册仍不可用，用户尚未确认");
   expect(focus).toContain("旧9.03/20.26/25.82");
   expect(focus).toContain("不是本轮最新结果");
   expect(focus).toContain("本页仅手工整理真实回执，非自动监测");

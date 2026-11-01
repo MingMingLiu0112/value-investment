@@ -65,14 +65,18 @@
     "price_draft": "EXISTING_POLICY_ENGINE_DRAFT_WITH_NO_RULES_NOT_BUY_PRICE",
     "old_cash_fingerprint_unchanged": true,
     "paid_task_unchanged": true,
-    "new_llm_calls": 0
+    "new_llm_calls": 0,
+    "condition_price": null,
+    "formal_eligibility": false,
+    "annual_cash_rows": 30
   },
   "verification": {
     "registered_actual_source_tests": "19 passed,0 skipped",
     "independent_code_review": "Darwin: receipt/DA P2 fixed; actual three v4 calls and33 cash identities",
     "independent_economic_review": "Euclid: limited conditional research acceptable; no economically adopted main range",
     "core_web_ci": "VERIFY_ON_FINAL_COMMIT",
-    "deployment": "VERIFY_ON_FINAL_COMMIT"
+    "deployment": "VERIFY_ON_FINAL_COMMIT",
+    "business_deployment_7537": "Source/backend/frontend7537 matched on8001; browser model values and obligations verified; global publication registry unavailable, not current trading qualification."
   },
   "reproduction": {
     "public_api": "GET /api/v1/operating-research/companies/000568",
