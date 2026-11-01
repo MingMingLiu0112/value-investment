@@ -7672,3 +7672,9 @@ Business commit7537c7a0 clean checkout restored57 public refs;202 actual-source/
 ## 2026-11-01 VALUE-MAINLINE-P0 + 阶段1（当前用户指令）
 
 仅CORE_VALUE；热点冻结。基线283c7212，保护既有current-research-drafts.json未提交指针。以[真实审计与接口冻结](value-mainline-p0-20261101/README.md)及config/value-mainline-modules-v1.json为本期事实索引；不是新Goal。先复用既有D1/G2、B冲突保护和F1，不重复开发。阶段1仅A绑定闭包归档/恢复、B独立原生适配、ModuleRun元数据与现有流程页。工程/真实验证/用户确认/部署独立记录；本轮不发布、不重启8001、不触碰真实账户、数据库或批准，action=no_order。最终执行回执随后追加，未验证不得标完成。
+
+### P0与阶段1限定验收：源码38e5bb8f
+
+审计/54 refs/3PR/11×12能力矩阵及包装Schema已归档；A真实22文件依赖闭包隔离恢复、B显式manifest原生run/get/replay已执行。B历史5224/shortlist30/正式财务采纳0仍PARTIAL。最终干净检出319passed、0skip；Web本地1513passed/28skip、类型与格式通过；隔离生产构建38e5bb8f成功。首轮检出2个旧真实研究失败如实保留，定位LF→CRLF后仅加单路径-text规则，未改旧原件/任务/Hash；复验已通过。独立复核4个projection P2及B scope P2已关闭。
+
+[限定验收回执](../../artifacts/current/value-mainline-p0-20261101/acceptance-code-38e5bb8f.json)。回执记录当时Core41291347559/Web41291347540仍IN_PROGRESS，不是CI通过证明；最终状态以精确SHA的GitHub原始回执为准。未合main、未部署8001，运行backend/frontend仍283c7212，旧publication registry不可用保留。已有私有指针Hash未变，10冻结路径未改。11模块的通用执行wrapper不是全部完成；本次不是价值投资经济有效性或实盘准入验收。下一业务工作仍为既有F2确切候选的经济采纳与当前股本/分配/事件/财务/报价对齐，不重建内核或热点。
