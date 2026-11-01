@@ -1,0 +1,56 @@
+{
+  "action": "no_order",
+  "scope": "REAL_600519_600887_OFFLINE_ARCHIVE_RESTORE",
+  "archive": {
+    "schema_version": "public-evidence-closure-archive-v2",
+    "status": "PUBLIC_EVIDENCE_ARCHIVED",
+    "manifest_ref": {
+      "path": "runtime/public-evidence-archives/83c1cab784d34e16b3380c36cc8478d7/manifest.json",
+      "sha256": "5884f012b8062de623e52ebe27fd8cb5bfb47c4b3450b2b791b7262b699f54f6"
+    },
+    "bundle_ref": {
+      "path": "runtime/public-evidence/20261030T110724-accepted/bundle.json",
+      "sha256": "ab4d528f7f30144ac451a33d2326e9d143d7496f4d376a22a8a12800f877034a"
+    },
+    "file_count": 22,
+    "scope": "EXPLICIT_PUBLIC_BUNDLE_CLOSURE_WITH_PREDECESSORS",
+    "action": "no_order",
+    "formal_eligibility": false,
+    "current_published": false
+  },
+  "restore": {
+    "schema_version": "public-evidence-closure-archive-v2",
+    "status": "PUBLIC_EVIDENCE_RESTORED_AND_VERIFIED",
+    "manifest_ref": {
+      "path": "runtime/public-evidence-archives/83c1cab784d34e16b3380c36cc8478d7/manifest.json",
+      "sha256": "5884f012b8062de623e52ebe27fd8cb5bfb47c4b3450b2b791b7262b699f54f6"
+    },
+    "bundle_ref": {
+      "path": "runtime/public-evidence/20261030T110724-accepted/bundle.json",
+      "sha256": "ab4d528f7f30144ac451a33d2326e9d143d7496f4d376a22a8a12800f877034a"
+    },
+    "destination": ".tmp/value-mainline-p0/real-restore-83c1cab784d34e16b3380c36cc8478d7",
+    "file_count": 22,
+    "scope": "EXPLICIT_PUBLIC_BUNDLE_CLOSURE_WITH_PREDECESSORS",
+    "action": "no_order",
+    "formal_eligibility": false,
+    "current_published": false,
+    "source_clocks_preserved": true
+  },
+  "closure_files": 22,
+  "load_bundle_equal": true,
+  "consumer_equal": true,
+  "original_hashes_unchanged": true,
+  "consumed": [
+    {
+      "symbol": "600519",
+      "field": "debt_ratio",
+      "value": "16.4153621922476232995785399664596602459430389897"
+    },
+    {
+      "symbol": "600887",
+      "field": "debt_ratio",
+      "value": "61.5089759095572909689042766776440454268374604969"
+    }
+  ]
+}

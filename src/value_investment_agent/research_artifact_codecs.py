@@ -11,6 +11,8 @@ from decimal import Decimal, InvalidOperation
 import json
 from typing import Any, Mapping, Protocol
 
+from .domain.research.module_run_v1 import ModuleRunCodec
+
 from .current_research_status import (
     CurrentDataStatus,
     CurrentResearchStatus,
@@ -965,6 +967,7 @@ class PreDecisionEligibilityCodec:
 CODECS: dict[str, ArtifactCodec] = {
     codec.artifact_type: codec
     for codec in (
+        ModuleRunCodec(),
         ResearchCaseCodec(),
         ResearchGateCodec(),
         ValuationAssumptionSetCodec(),

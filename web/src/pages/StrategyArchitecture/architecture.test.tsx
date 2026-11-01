@@ -15,7 +15,7 @@ import {
 import { ArchitectureView, StageButton, StageDetail } from "./index";
 describe("versioned strategy architecture", () => {
   it("pins review separately from disconnected runtime evidence", () => {
-    expect(review.baseline).toBe("7537c7a00e1b42c6d487e35ad772b032c6516bb1");
+    expect(review.baseline).toBe("283c7212d832f52118705bb095e046e0c36dcbfc");
     expect(review.runtimeEvidence).toBe("NOT_CONNECTED");
     expect(catalog.value.stages.find((s) => s.id === "F2")?.evidence).toContain(
       "跨日股本",
@@ -344,4 +344,146 @@ it("separates the actual capital blocker and vertical acceptance from future pla
   expect(
     renderToStaticMarkup(<ArchitectureView strategy="hotspot" />),
   ).not.toContain("本轮纵向链与扩展边界");
+});
+
+it("separates eleven main nodes and five support nodes while preserving IDs and routes", () => {
+  const html = renderToStaticMarkup(<ArchitectureView strategy="value" />);
+  expect(html).toContain("价值主链（11个模块）");
+  expect(html).toContain("共享支持（5个模块，非公开研究共同前置）");
+  expect(catalog.value.stages.slice(0, 11).map((s) => s.id)).toEqual([
+    "A",
+    "B",
+    "C",
+    "D1",
+    "D2",
+    "E1",
+    "E2",
+    "F1",
+    "F2",
+    "G1",
+    "G2",
+  ]);
+  expect(catalog.value.stages.slice(11).map((s) => s.id)).toEqual([
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "W1",
+  ]);
+  expect(
+    renderToStaticMarkup(<ArchitectureView strategy="hotspot" />),
+  ).not.toContain("价值主链（11个模块）");
+  const route = readFileSync(resolve(".umirc.ts"), "utf8");
+  expect(route).toContain('path: "/strategy/hotspot"');
+  expect(route.split('component: "./StrategyArchitecture/Value"')).toHaveLength(
+    3,
+  );
+});
+it("scopes disconnected runtime to the directory and acknowledges existing task controls", () => {
+  const stage = catalog.value.stages.find((s) => s.id === "G2")!;
+  const html = renderToStaticMarkup(<StageDetail stage={stage} />);
+  expect(html).toContain("本目录尚未接运行reader");
+  expect(html).toContain("不否认既有API和页面消费者");
+  expect(html).not.toContain("没有开始、取消、恢复");
+  expect(stage.implementation).toContain(
+    "开始、历史读取、手动刷新、取消与恢复",
+  );
+  expect(html).toContain("config/value-mainline-modules-v1.json");
+});
+it("renders native references and eight method capabilities without claiming a run", () => {
+  const methods = Object.fromEntries(
+    Array.from({ length: 8 }, (_, i) => [
+      "method_" + i,
+      (["DESIGNED", "IMPLEMENTED", "PARTIAL"] as const)[i % 3],
+    ]),
+  );
+  const stage = {
+    ...catalog.value.stages[0],
+    nativeContract: {
+      source: "TEST_ONLY_ROOT_CONTRACT",
+      entryRefs: ["TEST_ONLY_NATIVE_ENTRY"],
+      inputSchemaRefs: ["TEST_ONLY_INPUT_SCHEMA"],
+      outputSchemaRefs: ["TEST_ONLY_OUTPUT_SCHEMA"],
+      methods,
+    },
+  };
+  const html = renderToStaticMarkup(<StageDetail stage={stage} />);
+  for (const text of [
+    "TEST_ONLY_INPUT_SCHEMA",
+    "TEST_ONLY_OUTPUT_SCHEMA",
+    "TEST_ONLY_NATIVE_ENTRY",
+    "DESIGNED",
+    "IMPLEMENTED",
+    "PARTIAL",
+    "不是本次运行结果或经济批准",
+  ])
+    expect(html).toContain(text);
+  for (const method of Object.keys(methods)) expect(html).toContain(method);
+});
+
+it("consumes Root's sole eleven-module catalog with all eight native capability methods and no reader fanout", () => {
+  const root = JSON.parse(
+    readFileSync(
+      resolve("..", "config/value-mainline-modules-v1.json"),
+      "utf8",
+    ),
+  );
+  expect(root.modules).toHaveLength(11);
+  for (const module of root.modules) {
+    const stage = catalog.value.stages.find(
+      (item) => item.id === module.module_id,
+    )!;
+    const contract = stage.nativeContract!;
+    expect(contract.baseline).toBe(root.source_baseline);
+    expect(contract.inputSchemaRefs).toEqual([module.input_schema.$ref]);
+    expect(contract.outputSchemaRefs).toEqual([module.output_schema.$ref]);
+    expect(contract.rawMethods).toEqual(module.method_status);
+    expect(Object.keys(contract.methods)).toHaveLength(8);
+    const html = renderToStaticMarkup(<StageDetail stage={stage} />);
+    expect(html).toContain("原生已实现不等于统一wrapper已完成");
+    expect(html).toContain(module.source_report);
+    for (const status of Object.values(module.method_status))
+      expect(html).toContain(String(status));
+  }
+  for (const stage of catalog.value.stages.slice(11))
+    expect(stage.nativeContract).toBeUndefined();
+  const page = readFileSync(
+    resolve("src/pages/StrategyArchitecture/index.tsx"),
+    "utf8",
+  );
+  const config = readFileSync(
+    resolve("src/config/strategyArchitecture.v1.ts"),
+    "utf8",
+  );
+  expect(page).not.toMatch(
+    /useApi|useEffect|fetch\s*\(|setInterval|Promise\.all/,
+  );
+  expect(config).not.toMatch(/fetch\s*\(|setInterval|Promise\.all/);
+  expect(page).not.toContain('from "../../services/api"');
+});
+
+it("shows Root phase-one source deltas only for A/B without promoting audited baseline to deployment", () => {
+  const root = JSON.parse(
+    readFileSync(
+      resolve("..", "config/value-mainline-modules-v1.json"),
+      "utf8",
+    ),
+  );
+  expect(review.baseline).toBe(root.source_baseline);
+  expect(catalog.value.summary).toContain("11个价值主链模块与5个共享支持模块");
+  for (const id of ["A", "B"]) {
+    const stage = catalog.value.stages.find((item) => item.id === id)!;
+    expect(stage.nativeContract?.phase1Delta?.implementation).toEqual(
+      root.phase1_implementation_delta[id].implementation,
+    );
+    const html = renderToStaticMarkup(<StageDetail stage={stage} />);
+    expect(html).toContain("本轮源码未部署");
+    expect(html).toContain(root.phase1_implementation_delta[id].boundary);
+    for (const ref of root.phase1_implementation_delta[id].implementation)
+      expect(html).toContain(ref);
+  }
+  expect(
+    catalog.value.stages.find((item) => item.id === "C")?.nativeContract
+      ?.phase1Delta,
+  ).toBeUndefined();
 });

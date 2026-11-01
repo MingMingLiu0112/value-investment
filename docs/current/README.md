@@ -66,3 +66,8 @@ The 2026-10-09 architecture/agent pilot boundary and runbook are in
 
 `docs/execution-status.md` is factual history, not a backlog. Historical stage
 acceptance files are read-only context and do not create new work.
+
+
+## 2026-11-01 VALUE-MAINLINE-P0
+
+[真实基线、11模块合同与阶段1](value-mainline-p0-20261101/README.md) · [12项能力矩阵](value-mainline-p0-20261101/capability-matrix.md) · [阶段1调用](value-mainline-p0-20261101/phase1-usage.md)。工程目录不等于实时状态；本轮不发布8001。

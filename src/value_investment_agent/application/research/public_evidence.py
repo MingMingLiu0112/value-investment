@@ -356,3 +356,115 @@ def validate_queue_public_evidence(*, root, bundle_path, bundle_sha256,
     _bound(root, bundle_binding)
     _bound(root, export_binding)
     return packet
+
+
+def public_evidence_closure(*, root, bundle_binding):
+    """Enumerate only explicit bound dependencies, including predecessor bundles.
+
+    No directory search, network, new facts, timestamp refresh or pointer writes.
+    A source-only/partial bundle is archiveable without claiming queue admission.
+    """
+    from ...infrastructure.public_evidence_archive_v2 import binding, _inside
+
+    root = Path(root).resolve()
+    files, visited, active = {}, set(), set()
+
+    def add(ref):
+        ref = dict(path=ref["path"], sha256=ref["sha256"])
+        binding(ref)
+        path = _inside(root, ref["path"])
+        if _digest(path) != ref["sha256"]:
+            raise ValueError("PUBLIC_ARCHIVE_SOURCE_HASH_MISMATCH")
+        old = files.get(ref["path"])
+        if old is not None and old != ref:
+            raise ValueError("PUBLIC_ARCHIVE_CONFLICTING_BINDINGS")
+        files[ref["path"]] = ref
+        if len(files) > 10000:
+            raise ValueError("PUBLIC_ARCHIVE_CLOSURE_LIMIT")
+        return path
+
+    def visit(ref, depth=0):
+        binding(ref)
+        key = (ref["path"], ref["sha256"])
+        if key in active or depth > 64:
+            raise ValueError("PUBLIC_ARCHIVE_PREDECESSOR_CYCLE_OR_LIMIT")
+        add(ref)
+        if key in visited:
+            return
+        active.add(key)
+        packet = load_bundle(root, ref)
+        add(packet["financial_export"])
+        for item in packet["items"]:
+            if not item.get("receipt"):
+                continue
+            receipt = json.loads(add(item["receipt"]).read_bytes())
+            add(receipt["source"])
+            for index in receipt["index_bindings"]:
+                add(index)
+            _retained(root, item)
+            if item.get("fact_snapshot"):
+                add(item["fact_snapshot"])
+        if packet.get("previous_bundle") is not None:
+            visit(packet["previous_bundle"], depth + 1)
+        active.remove(key)
+        visited.add(key)
+
+    visit(bundle_binding)
+    for ref in list(files.values()):
+        add(ref)  # Recheck raw closure after all native source validation.
+    return [files[key] for key in sorted(files)]
+
+
+def archive_public_evidence(*, root, bundle_binding, output_dir):
+    """Create a portable raw-byte archive; never publish current or rewrite sources."""
+    from ...infrastructure.public_evidence_archive_v2 import create_archive, VERSION
+
+    root = Path(root).resolve()
+    refs = public_evidence_closure(root=root, bundle_binding=bundle_binding)
+    manifest = create_archive(root=root, bindings=refs, bundle_binding=bundle_binding,
+                              output_dir=output_dir)
+    return dict(schema_version=VERSION, status="PUBLIC_EVIDENCE_ARCHIVED",
+                manifest_ref=manifest, bundle_ref=bundle_binding, file_count=len(refs),
+                scope="EXPLICIT_PUBLIC_BUNDLE_CLOSURE_WITH_PREDECESSORS",
+                action="no_order", formal_eligibility=False, current_published=False)
+
+
+def restore_public_evidence(*, root, manifest_binding, destination):
+    """Restore to a new isolated .tmp root, or verify an identical prior restore."""
+    from ...infrastructure.public_evidence_archive_v2 import restore_archive, _inside, VERSION
+
+    root = Path(root).resolve()
+    if (not isinstance(manifest_binding, dict) or set(manifest_binding) != {"path", "sha256"}
+            or not isinstance(manifest_binding["path"], str)
+            or not re.fullmatch("[0-9a-f]{64}", str(manifest_binding["sha256"]))):
+        raise ValueError("PUBLIC_ARCHIVE_MANIFEST_BINDING_INVALID")
+    name = manifest_binding["path"]
+    from pathlib import PurePosixPath, PureWindowsPath
+    if ("\\" in name or PureWindowsPath(name).drive or PurePosixPath(name).is_absolute()
+            or any(part in {"", ".", ".."} for part in name.split("/"))):
+        raise ValueError("PUBLIC_ARCHIVE_MANIFEST_PATH_INVALID")
+    manifest = _inside(root, name)
+    if manifest.name != "manifest.json" or not (
+            manifest.is_relative_to(root / "runtime") or manifest.is_relative_to(root / "artifacts")):
+        raise ValueError("PUBLIC_ARCHIVE_MANIFEST_SCOPE_INVALID")
+    dest = Path(destination)
+    if not dest.is_absolute():
+        dest = root / dest
+    dest = _inside(root, dest.relative_to(root).as_posix())
+    if not dest.is_relative_to(root / ".tmp") or dest == root / ".tmp":
+        raise ValueError("PUBLIC_ARCHIVE_ISOLATED_DESTINATION_REQUIRED")
+
+    def validate(restored, packet):
+        actual = public_evidence_closure(root=restored, bundle_binding=packet["bundle"])
+        declared = [dict(path=row["original_path"], sha256=row["sha256"]) for row in packet["items"]]
+        if sorted(declared, key=lambda r: r["path"]) != actual:
+            raise ValueError("PUBLIC_ARCHIVE_NOT_EXACT_BUNDLE_CLOSURE")
+
+    packet = restore_archive(archive_root=manifest.parent,
+                             manifest_sha256=manifest_binding["sha256"],
+                             destination=dest, validate=validate)
+    return dict(schema_version=VERSION, status="PUBLIC_EVIDENCE_RESTORED_AND_VERIFIED",
+                manifest_ref=manifest_binding, bundle_ref=packet["bundle"],
+                destination=dest.relative_to(root).as_posix(), file_count=len(packet["items"]),
+                scope=packet["scope"], action="no_order", formal_eligibility=False,
+                current_published=False, source_clocks_preserved=True)

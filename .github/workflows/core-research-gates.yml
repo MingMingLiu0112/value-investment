@@ -38,6 +38,11 @@ jobs:
           tests/test_public_financial_snapshot.py
           tests/test_official_report_acquisition.py
           tests/test_public_evidence.py
+          tests/test_module_run_v1.py
+          tests/test_module_run_repository_v1.py
+          tests/test_module_run_projection_v1.py
+          tests/test_public_evidence_archive_v2.py
+          tests/test_value_module_adapter_v1.py
           tests/test_public_evidence_consumer.py
           tests/test_public_evidence_status_fields.py
           tests/test_value_balance_source_parser_v2.py

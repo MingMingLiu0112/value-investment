@@ -1,5 +1,42 @@
+import mainlineCatalog from "../../../config/value-mainline-modules-v1.json";
 export type StrategyKey = "value" | "hotspot";
+export type CapabilityStatus = "DESIGNED" | "IMPLEMENTED" | "PARTIAL";
+export interface NativeModuleContract {
+  source: string;
+  phase1Delta?: {
+    scope: string;
+    deployment: string;
+    implementation: string[];
+    boundary: string;
+  };
+  inputSchemaRefs: string[];
+  outputSchemaRefs: string[];
+  entryRefs: string[];
+  methods: Record<string, CapabilityStatus>;
+  nativeInputs?: string[];
+  nativeOutputs?: string[];
+  methodEvidence?: Record<string, { native_refs: string[]; scope: string }>;
+  rawMethods?: Record<string, string>;
+  baseline?: string;
+  requiredDependencies?: string;
+  evidence?: string;
+}
+export const valueMainModuleIds = [
+  "A",
+  "B",
+  "C",
+  "D1",
+  "D2",
+  "E1",
+  "E2",
+  "F1",
+  "F2",
+  "G1",
+  "G2",
+] as const;
+export const valueSharedModuleIds = ["S1", "S2", "S3", "S4", "W1"] as const;
 export interface Stage {
+  nativeContract?: NativeModuleContract;
   progress?: {
     consumer: string;
     realData: string;
@@ -28,14 +65,14 @@ export interface Stage {
   boundary: string;
 }
 export const review = {
-  version: "strategy-architecture-v2-module-map",
+  version: "value-mainline-p0-module-map",
   reviewedAt: "2026-11-01",
-  baseline: "7537c7a00e1b42c6d487e35ad772b032c6516bb1",
+  baseline: mainlineCatalog.source_baseline,
   mode: "MANUAL_SOURCE_REVIEW",
   runtimeEvidence: "NOT_CONNECTED",
   ledger: "docs/current/web-first-full-product-execution-ledger.md",
   disclaimer:
-    "静态人工维护目录，不是实时进度。源码复核仅说明模块职责；里程碑状态是基线台账的人工整理，不代表人工投资批准。运行证据未接入，也未在本页核验。",
+    "静态人工维护目录，不是实时进度。源码复核仅说明模块职责；里程碑状态是基线台账的人工整理，不代表人工投资批准。本目录尚未接运行reader，也未在本页核验；不否认既有API与页面消费者。",
 } as const;
 export const valueVerticalScope = {
   focus: "D2 → 股东现金 → 估值 → 条件价格",
@@ -71,7 +108,7 @@ export const catalog: Record<
   value: {
     title: "价值投资 · 模块化研究与决策闭环",
     summary:
-      "从公开证据到企业经营、股东现金与估值，再到当前价格、持仓和持续复核。完整展示16个价值/共享模块；热点H1–H4保留为独立暂停通道。",
+      "从公开证据到企业经营、股东现金与估值，再到当前价格、持仓和持续复核。展示11个价值主链模块与5个共享支持模块；热点H1–H4保留为独立暂停通道。",
     stages: [
       {
         id: "A",
@@ -480,13 +517,15 @@ export const catalog: Record<
         engineeringStatus: "部分实现",
         evidenceStatus: "源码定位／业务待验",
         shortStatus:
-          "确定缺口：现有研究包/状态仅GET，没有开始、取消、恢复及任务检查点接线",
-        implementation: "已有研究状态及Agent界面入口",
+          "已有保留响应与真实经营研究任务操作；本目录未接任务运行reader，不代表缺少既有消费者",
+        implementation:
+          "既有任务面板已接开始、历史读取、手动刷新、取消与恢复；保留响应和真实模型执行分开",
         milestone: "部分实现；不代表正式研究准入或实盘资格。",
-        existingEvidence: "已有研究状态及Agent界面入口",
+        existingEvidence:
+          "ResearchTaskPanel与LiveOperatingResearchPanel已有显式任务操作接线；本轮仅源码复核，不新增运行验收结论",
         evidenceSource: "d01923cd源码职责复核；本轮未运行该模块真实业务验收",
         evidence:
-          "确定缺口：现有研究包/状态仅GET，没有开始、取消、恢复及任务检查点接线",
+          "已有保留响应与真实经营研究任务操作；本目录未接任务运行reader，不代表缺少既有消费者",
         nextStep: "与D1共用持久任务状态，不另建任务平台",
         ruleWhy: "页面GET只读；真正恢复要保留步骤和已验证产物。",
         boundary:
@@ -866,3 +905,47 @@ export const catalog: Record<
     ],
   },
 };
+
+const capabilityLabels: Record<string, CapabilityStatus> = {
+  EXISTING_NATIVE: "IMPLEMENTED",
+  DESIGN_ONLY: "DESIGNED",
+  PARTIAL: "PARTIAL",
+};
+function nativeRef(ref: { type: string; path: string; entrypoint?: string }) {
+  return [ref.type, ref.path, ref.entrypoint].filter(Boolean).join(" · ");
+}
+// Build-time read of Root's sole catalog: no network, task state or duplicate capability table.
+for (const stage of catalog.value.stages) {
+  const module = mainlineCatalog.modules.find(
+    (item) => item.module_id === stage.id,
+  );
+  if (!module) continue;
+  stage.nativeContract = {
+    source: "config/value-mainline-modules-v1.json",
+    ...(stage.id === "A" || stage.id === "B"
+      ? {
+          phase1Delta: {
+            ...mainlineCatalog.phase1_implementation_delta[stage.id],
+            scope: mainlineCatalog.phase1_implementation_delta.scope,
+            deployment: mainlineCatalog.phase1_implementation_delta.deployment,
+          },
+        }
+      : {}),
+    baseline: mainlineCatalog.source_baseline,
+    inputSchemaRefs: [module.input_schema.$ref],
+    outputSchemaRefs: [module.output_schema.$ref],
+    nativeInputs: module.native_inputs.map(nativeRef),
+    nativeOutputs: module.native_outputs.map(nativeRef),
+    entryRefs: module.entrypoints.map(nativeRef),
+    methods: Object.fromEntries(
+      Object.entries(module.method_status).map(([method, status]) => [
+        method,
+        capabilityLabels[status],
+      ]),
+    ),
+    rawMethods: module.method_status,
+    methodEvidence: module.method_evidence,
+    requiredDependencies: JSON.stringify(module.required_dependencies),
+    evidence: module.source_report,
+  };
+}

@@ -7667,3 +7667,8 @@ Clean e6 checkout exposed two parent files whose indexed LF bytes differed from 
 Clean-check portability: the NEW research source-fingerprint contract explicitly uses SOURCE_CRLF_TO_LF_SHA256_V1 for Python source only; all financial/PDF evidence remains raw-byte SHA256, old implementations/evidence untouched. Final source-lf-v2 spec2c09f05f...f7b89;19 real-source tests passed0skip; actual isolated API retained old paid-task bytes and cashfingerprint. Unreleased prior working spec/source/API retained under runtime/pre-clean-check, not represented as an adopted historical candidate.
 
 Business commit7537c7a0 clean checkout restored57 public refs;202 actual-source/related tests passed0skip. Local8001 source/backend/frontend7537 matched; code/config MATCHED, retained PUBLICATION_REGISTRY_UNAVAILABLE is not cleared. Browser showed new6.20/16.85/27.22 research values and11.013bn one-time obligation uses; no paid/start/private actions. Progress links now point to final source-lf-v2 receipt, and old screening-only captions no longer deny separate existing research. Web follow-up commit is presentation/evidence navigation only; final CI/runtime receipt remains separate.
+
+
+## 2026-11-01 VALUE-MAINLINE-P0 + 阶段1（当前用户指令）
+
+仅CORE_VALUE；热点冻结。基线283c7212，保护既有current-research-drafts.json未提交指针。以[真实审计与接口冻结](value-mainline-p0-20261101/README.md)及config/value-mainline-modules-v1.json为本期事实索引；不是新Goal。先复用既有D1/G2、B冲突保护和F1，不重复开发。阶段1仅A绑定闭包归档/恢复、B独立原生适配、ModuleRun元数据与现有流程页。工程/真实验证/用户确认/部署独立记录；本轮不发布、不重启8001、不触碰真实账户、数据库或批准，action=no_order。最终执行回执随后追加，未验证不得标完成。

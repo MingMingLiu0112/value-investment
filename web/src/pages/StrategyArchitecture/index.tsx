@@ -6,6 +6,8 @@ import {
   catalog,
   review,
   valueVerticalScope,
+  valueMainModuleIds,
+  valueSharedModuleIds,
   type Stage,
   type StrategyKey,
 } from "../../config/strategyArchitecture.v1";
@@ -58,6 +60,107 @@ export function StageButton({
     </button>
   );
 }
+export function NativeContractDetail({ stage }: { stage: Stage }) {
+  const contract = stage.nativeContract;
+  if (
+    !contract &&
+    (valueSharedModuleIds as readonly string[]).includes(stage.id)
+  )
+    return (
+      <p>共享支持模块：保留现有输入输出与消费者，不虚构主链八方法合同。</p>
+    );
+  if (!contract)
+    return (
+      <p>
+        原生输入/输出schema及8方法能力：等待Root合同文件接入；未读取不推定能力或运行状态。
+      </p>
+    );
+  return (
+    <section aria-label="原生模块合同与方法能力">
+      <p>
+        合同来源：<code>{contract.source}</code>
+        ；能力状态是源码合同，不是本次运行结果或经济批准。原生已实现不等于统一wrapper已完成。
+      </p>
+      <p>
+        源码审计基线：<code>{contract.baseline || "未提供"}</code>
+        ；未在本目录读取运行状态。
+      </p>
+      <p>标准wrapper schema引用不替代原生输入输出及金融校验。</p>
+      {contract.phase1Delta && (
+        <section aria-label="阶段1源码增量">
+          <h4>阶段1源码增量 · 本轮源码未部署</h4>
+          <p>
+            {contract.phase1Delta.scope} · {contract.phase1Delta.deployment}
+          </p>
+          <ul>
+            {contract.phase1Delta.implementation.map((ref) => (
+              <li key={ref}>
+                <code>{ref}</code>
+              </li>
+            ))}
+          </ul>
+          <p>实现边界：{contract.phase1Delta.boundary}</p>
+        </section>
+      )}
+      {[
+        { title: "原生输入", refs: contract.nativeInputs || [] },
+        { title: "原生输出", refs: contract.nativeOutputs || [] },
+        { title: "原生入口", refs: contract.entryRefs },
+        { title: "输入schema引用", refs: contract.inputSchemaRefs },
+        { title: "输出schema引用", refs: contract.outputSchemaRefs },
+      ].map(({ title, refs }) => (
+        <div key={title}>
+          <strong>{title}</strong>
+          <ul>
+            {refs.map((ref) => (
+              <li key={ref}>
+                <code>{ref}</code>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      <ul>
+        {Object.entries(contract.methods).map(([method, status]) => (
+          <li key={method}>
+            <code>{method}</code>：{status}（
+            {
+              {
+                DESIGNED: "已设计",
+                IMPLEMENTED: "已实现",
+                PARTIAL: "部分实现",
+              }[status]
+            }
+            ）
+            {contract.rawMethods?.[method] && (
+              <small> · 原始合同状态：{contract.rawMethods[method]}</small>
+            )}
+            {contract.methodEvidence?.[method] && (
+              <details>
+                <summary>方法依据与范围</summary>
+                <p>{contract.methodEvidence[method].scope}</p>
+                <ul>
+                  {contract.methodEvidence[method].native_refs.map((ref) => (
+                    <li key={ref}>
+                      <code>{ref}</code>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p>
+        必需依赖（all_of/any_of/external，非所有关联共同前置）：
+        <code>{contract.requiredDependencies}</code>
+      </p>
+      <p>
+        审计证据：<code>{contract.evidence}</code>
+      </p>
+    </section>
+  );
+}
 export function StageDetail({ stage }: { stage: Stage }) {
   return (
     <section
@@ -67,6 +170,7 @@ export function StageDetail({ stage }: { stage: Stage }) {
     >
       <Card title={stage.title}>
         <CStatusAxes stage={stage} />
+        <NativeContractDetail stage={stage} />
         <Descriptions
           column={1}
           size="small"
@@ -182,7 +286,7 @@ export function StageDetail({ stage }: { stage: Stage }) {
                     从真实候选进入公司，查看企业画像与模型依据
                   </Link>
                 ) : (
-                  "未接入 / NOT_CONNECTED；静态快照不推定当前运行结果。"
+                  "本目录尚未接运行reader / NOT_CONNECTED；不否认既有API和页面消费者，静态快照不推定当前运行结果。"
                 ),
             },
             { key: "next", label: "下一步", children: stage.nextStep },
@@ -211,7 +315,7 @@ export function ValuePlanOverview() {
     <section aria-label="新方案与当前架构对标" className="value-plan">
       <Card title="先看清整条业务链">
         <p>
-          方案覆盖16个价值/共享模块。旧页面按9个粗阶段展示；本页改为逐模块对标，未增加新的选股或估值公式。
+          方案包含11个价值主链模块与5个共享支持模块。旧页面按9个粗阶段展示；本页改为逐模块对标，未增加新的选股或估值公式。
         </p>
         <section aria-label="本轮纵向链与扩展边界">
           <h3>本轮仅推进：{valueVerticalScope.focus}</h3>
@@ -383,40 +487,62 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
         空格选择。箭头表示目标流转，不表示已通过。价值模块关联不代表共同前置：E1/E2二选一进入F1，S1/S2仅约束个人决策，不阻塞公开研究。
       </p>
       {strategy === "value" && <ValuePlanOverview />}
-      <nav aria-label="完整策略阶段总览" className="architecture-overview">
-        {flow.stages.map((item, index) => (
-          <button
-            key={item.id}
-            type="button"
-            aria-pressed={stage.id === item.id}
-            onClick={() => selectStage(item.id)}
-            aria-controls="architecture-detail"
-          >
-            <strong>
-              {index + 1}. {item.title}
-            </strong>
-            <span>
-              {item.id === "C" ? (
-                <CStatusAxes stage={item} />
-              ) : (
-                <>
-                  {item.engineeringStatus} · {item.evidenceStatus}
-                </>
-              )}
-            </span>
-            <small>
-              {item.dependencies.length
-                ? (strategy === "value" ? "关联模块：" : "依赖：") +
-                  item.dependencies
-                    .map(
-                      (id) => flow.stages.find((s) => s.id === id)?.title || id,
-                    )
-                    .join("、")
-                : "流程起点"}
-            </small>
-          </button>
-        ))}
-      </nav>
+      {(strategy === "value"
+        ? [
+            {
+              title: "价值主链（11个模块）",
+              stages: flow.stages.filter((item) =>
+                (valueMainModuleIds as readonly string[]).includes(item.id),
+              ),
+            },
+            {
+              title: "共享支持（5个模块，非公开研究共同前置）",
+              stages: flow.stages.filter((item) =>
+                (valueSharedModuleIds as readonly string[]).includes(item.id),
+              ),
+            },
+          ]
+        : [{ title: "完整策略阶段总览", stages: flow.stages }]
+      ).map((group) => (
+        <section key={group.title} aria-label={group.title + "分组"}>
+          <h3>{group.title}</h3>
+          <nav aria-label={group.title} className="architecture-overview">
+            {group.stages.map((item, index) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={stage.id === item.id}
+                onClick={() => selectStage(item.id)}
+                aria-controls="architecture-detail"
+              >
+                <strong>
+                  {index + 1}. {item.title}
+                </strong>
+                <span>
+                  {item.id === "C" ? (
+                    <CStatusAxes stage={item} />
+                  ) : (
+                    <>
+                      {item.engineeringStatus} · {item.evidenceStatus}
+                    </>
+                  )}
+                </span>
+                <small>
+                  {item.dependencies.length
+                    ? (strategy === "value" ? "关联模块：" : "依赖：") +
+                      item.dependencies
+                        .map(
+                          (id) =>
+                            flow.stages.find((s) => s.id === id)?.title || id,
+                        )
+                        .join("、")
+                    : "流程起点"}
+                </small>
+              </button>
+            ))}
+          </nav>
+        </section>
+      ))}
       <div className="architecture-layout">
         <section aria-label="策略流程图">
           <ol className="architecture-flow">
