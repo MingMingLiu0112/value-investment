@@ -141,3 +141,35 @@ def test_supplement_consumed_without_promoting_verification_or_restamping_quote(
     supplement['period']='1900-12-31'
     with pytest.raises(ValueError,match='PERIOD'):
         app.compile_inputs(root=root,inputs=manifest,now=NOW,run_id='TEST_ONLY')
+
+
+def test_debt_and_secondary_are_consumed_without_granting_quality(inputs,monkeypatch):
+    root,manifest,payload=inputs
+    period=payload['financial']['points'][0]['period_label']
+    payload['financial']['public_financial_input']=dict(period=period)
+    manifest['debt_supplement']=dict(path='runtime/TEST_ONLY-debt.json',sha256='b'*64)
+    manifest['sina_supplements']=[dict(path='runtime/TEST_ONLY-sina.json',sha256='d'*64)]
+    ref=dict(path='runtime/TEST_ONLY-original.json',sha256='c'*64,source_url='https://datacenter-web.eastmoney.com/api/data/v1/get',acquired_at='2026-11-02T05:00:00+00:00')
+    debt=dict(balance={'600001':dict(raw=dict(CURRENCY='CNY',SHORT_LOAN=123,LONG_LOAN=0,NONCURRENT_LIAB_1YEAR=999),source_ref=ref)},period=period,status='COMPLETE',available_at=ref['acquired_at'],errors=[])
+    monkeypatch.setattr(app.debt_source,'load',lambda *a,**kw:deepcopy(debt))
+    secondary=dict(symbols={'600001':dict(period=period,statements={},comparatives={},errors=[])},available_at=ref['acquired_at'],errors=[])
+    monkeypatch.setattr(app.sina_source,'load',lambda *a,**kw:deepcopy(secondary))
+    result,_=app.compile_inputs(root=root,inputs=manifest,now=NOW,run_id='TEST_ONLY')
+    row=next(r for r in result['rows'] if r['symbol']=='600001')
+    assert row['debt_details']['identified_total']=='123' and not row['debt_details']['complete_debt_verified']
+    assert row['financial_crosscheck']['matched_count']==0
+    assert result['financial_source_comparison']['symbols_attempted']==1
+    assert result['financial_source_comparison']['symbols_checked']==0
+    assert row['formal_eligibility'] is False and row['buy_eligible'] is False
+    manifest['sina_supplements']*=2
+    with pytest.raises(ValueError,match='DUPLICATE_SECONDARY_COMPANY'):
+        app.compile_inputs(root=root,inputs=manifest,now=NOW,run_id='TEST_ONLY')
+
+
+def test_failed_new_debt_collection_does_not_manufacture_debt_value(inputs,monkeypatch):
+    root,manifest,payload=inputs
+    manifest['debt_supplement']=dict(path='runtime/TEST_ONLY-failed.json',sha256='c'*64)
+    monkeypatch.setattr(app.debt_source,'load',lambda *a,**kw:dict(balance={},period='2025-12-31',available_at='2026-11-02T05:00:00+00:00',errors=[dict(role='balance',message='TEST_ONLY_PROVIDER_FAILURE')]))
+    result,_=app.compile_inputs(root=root,inputs=manifest,now=NOW,run_id='TEST_ONLY')
+    assert all(r['debt_details']['identified_total'] is None for r in result['rows'])
+    assert result['financial_source_comparison']['errors'][0]['message']=='TEST_ONLY_PROVIDER_FAILURE'

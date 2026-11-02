@@ -30,6 +30,44 @@ export type ScreenPage = {
     gaps: string[];
     period: string | null;
     updated_at: string | null;
+    financial_crosscheck?: {
+      matched_count: number;
+      conflict_count: number;
+      fields: {
+        field: string;
+        label: string;
+        status: "MATCHED" | "CONFLICT" | "ONE_SOURCE_ONLY" | "NOT_COMPARABLE";
+        primary_value: string | null;
+        secondary_value: string | null;
+        unit: string;
+        reason: string;
+      }[];
+      assurance: "E1_TWO_PROVIDER_COMPARISON_NOT_OFFICIAL_ADMISSION";
+    };
+    debt_details?: {
+      components: {
+        field: string;
+        label: string;
+        value: string | null;
+        unit: string;
+        status: string;
+        reason: string;
+      }[];
+      official_components?: {
+        field: string;
+        label: string;
+        value: string | null;
+        unit: string;
+        page: number;
+        excerpt: string;
+        source_url: string;
+        sha256: string;
+      }[];
+      official_evidence_count?: number;
+      identified_total: string | null;
+      complete_debt_verified: false;
+      reason: string;
+    };
     financial_data?: {
       required_count: number;
       available_count: number;
@@ -162,6 +200,90 @@ function validApplicability(v: unknown) {
   );
 }
 
+const comparisonStatuses: Record<string, string> = {
+  MATCHED: "两源一致（非正式核验）",
+  CONFLICT: "两源冲突",
+  ONE_SOURCE_ONLY: "仅取得一源",
+  NOT_COMPARABLE: "口径不具可比性",
+};
+function validCrosscheck(v: unknown) {
+  return (
+    object(v) &&
+    v.assurance === "E1_TWO_PROVIDER_COMPARISON_NOT_OFFICIAL_ADMISSION" &&
+    count(v.matched_count) &&
+    count(v.conflict_count) &&
+    Array.isArray(v.fields) &&
+    v.fields.every(
+      (f: unknown) =>
+        object(f) &&
+        typeof f.field === "string" &&
+        typeof f.label === "string" &&
+        typeof f.status === "string" &&
+        Object.prototype.hasOwnProperty.call(comparisonStatuses, f.status) &&
+        nullable(f.primary_value) &&
+        nullable(f.secondary_value) &&
+        typeof f.unit === "string" &&
+        typeof f.reason === "string",
+    ) &&
+    v.matched_count ===
+      v.fields.filter((f: { status: string }) => f.status === "MATCHED")
+        .length &&
+    v.conflict_count ===
+      v.fields.filter((f: { status: string }) => f.status === "CONFLICT").length
+  );
+}
+function officialSourceUrl(v: unknown): v is string {
+  if (typeof v !== "string") return false;
+  try {
+    const url = new URL(v);
+    return (
+      (url.protocol === "https:" || url.protocol === "http:") &&
+      !url.username &&
+      !url.password
+    );
+  } catch {
+    return false;
+  }
+}
+
+function validDebtDetails(v: unknown) {
+  return (
+    object(v) &&
+    v.complete_debt_verified === false &&
+    (v.official_evidence_count === undefined ||
+      count(v.official_evidence_count)) &&
+    (v.official_components === undefined ||
+      (Array.isArray(v.official_components) &&
+        v.official_components.every(
+          (f: unknown) =>
+            object(f) &&
+            typeof f.field === "string" &&
+            typeof f.label === "string" &&
+            nullable(f.value) &&
+            typeof f.unit === "string" &&
+            count(f.page) &&
+            f.page > 0 &&
+            typeof f.excerpt === "string" &&
+            officialSourceUrl(f.source_url) &&
+            typeof f.sha256 === "string" &&
+            /^[a-fA-F0-9]{64}$/.test(f.sha256),
+        ))) &&
+    nullable(v.identified_total) &&
+    typeof v.reason === "string" &&
+    Array.isArray(v.components) &&
+    v.components.every(
+      (f: unknown) =>
+        object(f) &&
+        typeof f.field === "string" &&
+        typeof f.label === "string" &&
+        nullable(f.value) &&
+        typeof f.unit === "string" &&
+        typeof f.status === "string" &&
+        typeof f.reason === "string",
+    )
+  );
+}
+
 export function validScreenPage(v: unknown): v is ScreenPage {
   if (
     !object(v) ||
@@ -216,6 +338,9 @@ export function validScreenPage(v: unknown): v is ScreenPage {
       strings(r.gaps) &&
       nullable(r.period) &&
       nullable(r.updated_at) &&
+      (r.financial_crosscheck === undefined ||
+        validCrosscheck(r.financial_crosscheck)) &&
+      (r.debt_details === undefined || validDebtDetails(r.debt_details)) &&
       (r.financial_data === undefined ||
         validFinancialData(r.financial_data)) &&
       (r.applicability === undefined || validApplicability(r.applicability)) &&
@@ -238,6 +363,189 @@ export function validScreenPage(v: unknown): v is ScreenPage {
           typeof c.status === "string" &&
           nullable(c.period),
       ),
+  );
+}
+
+function CrosscheckAndDebt({ row }: { row: ScreenPage["items"][number] }) {
+  const comparison = row.financial_crosscheck;
+  const debt = row.debt_details;
+  if (!comparison && !debt) return null;
+  return (
+    <section aria-label={row.name + "双源比对与债务明细"}>
+      {comparison && (
+        <>
+          <p>
+            已完成实际双源比对
+            {comparison.matched_count + comparison.conflict_count}项；冲突
+            {comparison.conflict_count}项（一致{comparison.matched_count}项）。
+          </p>
+          <p>
+            仅取得一源
+            {
+              comparison.fields.filter((f) => f.status === "ONE_SOURCE_ONLY")
+                .length
+            }
+            项；口径不可比
+            {
+              comparison.fields.filter((f) => f.status === "NOT_COMPARABLE")
+                .length
+            }
+            项，未计入已完成比对。
+          </p>
+          <p>
+            E1
+            两供应商观察比对；一致不等于正式核验或官方事实准入，更不是买入依据。
+          </p>
+          <details>
+            <summary>双源原始值与差异（{comparison.fields.length}项）</summary>
+            {comparison.fields.length ? (
+              <div style={{ overflowX: "auto" }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>字段</th>
+                      <th>主来源值</th>
+                      <th>第二来源值</th>
+                      <th>状态</th>
+                      <th>原因 / 口径</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparison.fields.map((f, i) => (
+                      <tr key={i}>
+                        <th scope="row" title={f.field}>
+                          {f.label}
+                        </th>
+                        <td>
+                          {text(f.primary_value)} {f.unit}
+                        </td>
+                        <td>
+                          {text(f.secondary_value)} {f.unit}
+                        </td>
+                        <td>{comparisonStatuses[f.status]}</td>
+                        <td>{f.reason}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p>未返回逐字段比对，不能据此认定已完成双源验证。</p>
+            )}
+            <p>范围：仅两供应商观察值比较，不升级已有正式事实核验状态。</p>
+          </details>
+        </>
+      )}
+      {debt && (
+        <>
+          <p>
+            已识别借款、租赁等金额：{text(debt.identified_total)}
+            （单位与范围见明细；不是完整有息负债）。
+          </p>
+          <p>{debt.reason}</p>
+          <details>
+            <summary>债务项目与识别范围（{debt.components.length}项）</summary>
+            <p>
+              完整有息负债尚未核验。缺项、未知金额不视为零；合计未单列单位，请核对项目单位及来源口径。
+            </p>
+            <p>供应商已识别项目（小计不代表完整总额）</p>
+            {debt.components.length ? (
+              <div style={{ overflowX: "auto" }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>项目</th>
+                      <th>原始金额</th>
+                      <th>状态</th>
+                      <th>原因 / 范围</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {debt.components.map((c, i) => (
+                      <tr key={i}>
+                        <th scope="row" title={c.field}>
+                          {c.label}
+                        </th>
+                        <td>
+                          {text(c.value)} {c.unit}
+                        </td>
+                        <td>
+                          {financialStatuses[c.status] ||
+                            statuses[c.status] ||
+                            c.status}
+                        </td>
+                        <td>{c.reason}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p>未提供债务项目明细，无法判断完整负债范围。</p>
+            )}
+            {(debt.official_components !== undefined ||
+              debt.official_evidence_count !== undefined) && (
+              <section aria-label="官方附注构成">
+                <p>
+                  {debt.official_evidence_count === undefined ? (
+                    "官方附注构成（条数未提供）"
+                  ) : (
+                    <>已补{debt.official_evidence_count}条官方附注构成</>
+                  )}
+                </p>
+                <p>
+                  官方构成与供应商已识别小计分开展示，不能相加或替代完整有息负债总额；融资分类仍未完整核验。
+                </p>
+                {debt.official_components?.length ? (
+                  <div style={{ overflowX: "auto" }}>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>官方附注项目</th>
+                          <th>原始金额</th>
+                          <th>原文页 / 摘录</th>
+                          <th>原件</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {debt.official_components.map((c, i) => (
+                          <tr key={i}>
+                            <th scope="row" title={c.field}>
+                              {c.label}
+                            </th>
+                            <td>
+                              {text(c.value)} {c.unit}
+                            </td>
+                            <td>
+                              原文第{c.page}页：{c.excerpt}
+                            </td>
+                            <td>
+                              <a
+                                href={c.source_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                官方原件
+                              </a>
+                              <details>
+                                <summary>来源哈希</summary>
+                                <code>{c.sha256}</code>
+                              </details>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p>未提供官方附注构成明细，不推定金额为零。</p>
+                )}
+              </section>
+            )}
+          </details>
+        </>
+      )}
+    </section>
   );
 }
 
@@ -586,6 +894,7 @@ export function SseMainScreeningPanel({ load }: SseMainScreeningPanelProps) {
                           <td>
                             <p>{row.reason}</p>
                             <FinancialDiagnostic row={row} />
+                            <CrosscheckAndDebt row={row} />
                             {row.gaps.length ? (
                               <>
                                 <ul>

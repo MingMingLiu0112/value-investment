@@ -22,6 +22,12 @@ from ...infrastructure.screening import public_three_statements_v1 as three_stat
 from ...financial_institutions import provisional_financial_type
 from ...financial_quality import _accepted
 from copy import deepcopy
+from ...domain.discovery.financial_source_comparison_v1 import compare_observations, debt_details, debt_observations, sina_observations
+from ...infrastructure.screening import public_debt_details_v1 as debt_source
+from ...infrastructure.screening import sina_financial_statements_v1 as sina_source
+from ...infrastructure.screening import official_funding_details_v1 as official_funding
+from ..research.value_evidence_enrichment_v1 import _reconcile_official_balance_ratio
+from ...infrastructure.screening.value_evidence_enrichment_v1 import RetainedAnnualSource
 
 POINTER = '.tmp/sse-main-screening-current.json'
 SCOPE = 'SSE_MAIN_A_ONLY'
@@ -35,7 +41,7 @@ def _binding(root, path):
     return dict(path=path.relative_to(root).as_posix(), sha256=sha256(path.read_bytes()).hexdigest())
 
 
-def _read(root, ref):
+def _read(root, ref, *, result_artifact=False):
     if not isinstance(ref, dict) or set(ref) != {'path','sha256'}:
         raise ValueError('EXACT_SCREEN_BINDING_REQUIRED')
     name=Path(ref['path'])
@@ -43,17 +49,23 @@ def _read(root, ref):
         raise ValueError('RELATIVE_SCREEN_BINDING_REQUIRED')
     path=require_inside(root/'runtime/sse-main-screening',root/name,'SSE screening')
     raw=path.read_bytes()
-    if len(raw)>40_000_000 or sha256(raw).hexdigest()!=ref['sha256']:
+    # Full main-board, per-line source proofs exceed the old small snapshot budget.
+    # Only the bound screening result may use 96 MB; raw inputs retain 40 MB.
+    budget=96_000_000 if result_artifact and path.name=='screening.json' else 40_000_000
+    if len(raw)>budget or sha256(raw).hexdigest()!=ref['sha256']:
         raise ValueError('SCREEN_SOURCE_HASH_MISMATCH')
     return json.loads(raw)
 
 
 def implementation():
     import inspect
-    from ...domain.discovery import sse_main_pool_v1, value_candidate_selection, financial_gap_diagnostics_v1
+    from ...domain.discovery import sse_main_pool_v1, value_candidate_selection, financial_gap_diagnostics_v1, financial_source_comparison_v1
     from ... import m2_discovery_engine, m2_opportunity_discovery, m2_market_data, financial_quality, official_universe, financial_institutions
     from ...infrastructure.screening import evidence_screen_v3, public_financial_snapshot
-    modules=[sse_main_pool_v1,value_candidate_selection,financial_gap_diagnostics_v1,three_statements,m2_discovery_engine,m2_opportunity_discovery,
+    from ..research import value_evidence_enrichment_v1 as official_adoption
+    from ...infrastructure.screening import value_evidence_enrichment_v1 as official_parser
+    from ...infrastructure.filings import financial_funding_scope,pdf_text,official_pdf
+    modules=[official_adoption,official_parser,financial_funding_scope,pdf_text,official_pdf,sse_main_pool_v1,value_candidate_selection,financial_gap_diagnostics_v1,financial_source_comparison_v1,debt_source,sina_source,official_funding,three_statements,m2_discovery_engine,m2_opportunity_discovery,
              m2_market_data,financial_quality,official_universe,financial_institutions,evidence_screen_v3,public_financial_snapshot,sources]
     paths=[Path(__file__),*[Path(inspect.getfile(m)) for m in modules],Path(__file__).with_name('public_financial_input.py')]
     base=Path(__file__).resolve().parents[4]
@@ -93,6 +105,42 @@ def compile_inputs(*, root, inputs, now, run_id):
         ref=inputs['financial_supplement']
         refs['financial_supplement']=EvidenceReference(id='financial_supplement',path=ref['path'],sha256=ref['sha256'],
             source_name='Eastmoney same-period three statements',source_url='https://datacenter-web.eastmoney.com/api/data/v1/get',fetched_at=acquired)
+    observed_period=(payload['financial'].get('public_financial_input') or {}).get('period')
+    primary_points=list(all_points)
+    debt_points=[];secondary_points=[];supplement_errors=[]
+    if inputs.get('debt_supplement'):
+        debt=debt_source.load(root,inputs['debt_supplement'],now)
+        if observed_period and debt['period']!=observed_period:raise ValueError('DEBT_REPORT_PERIOD_MISMATCH')
+        debt_points.extend(p for p in debt_observations(debt['balance'],period=debt['period']) if p['symbol'] in symbols)
+        generated=max(generated,datetime.fromisoformat(debt['available_at']))
+        supplement_errors.extend(debt['errors'])
+    official_observations=[];official_financial=[];official_balance_adoptions=[]
+    if inputs.get('official_funding_supplement'):
+        funding=official_funding.load(root,inputs['official_funding_supplement'],now)
+        official_financial=funding.get('financial_observations',[])
+        for packet in funding.get('balance_packets',[]):
+            source=RetainedAnnualSource(**packet['source'])
+            company=[p for p in all_points if p['symbol']==source.symbol]
+            adopted,proof=_reconcile_official_balance_ratio(source,company,packet['packet'])
+            official_balance_adoptions.append(dict(symbol=source.symbol,status=proof['status'],issues=proof['issues']))
+            for point in adopted:
+                # A qualified official ratio supersedes observations only in this new run.
+                # Provider originals remain bound in primary_points and historical snapshots.
+                all_points=[p for p in all_points if not (p['symbol']==source.symbol and p['field_name']=='debt_ratio' and p.get('period_label')==source.period and not _accepted(p))]
+                all_points.append(point)
+        for observation in funding['observations']:
+            if observation.get('period_label',observation.get('period'))!=observed_period:raise ValueError('OFFICIAL_FUNDING_PERIOD_MISMATCH')
+            if observation['symbol'] in symbols:official_observations.append(observation)
+    seen_secondary=set()
+    for binding in inputs.get('sina_supplements',[]):
+        secondary=sina_source.load(root,binding,now)
+        for symbol,company in secondary['symbols'].items():
+            if symbol in seen_secondary:raise ValueError('DUPLICATE_SECONDARY_COMPANY_INPUT')
+            seen_secondary.add(symbol)
+            if observed_period and company['period']!=observed_period:raise ValueError('SECONDARY_REPORT_PERIOD_MISMATCH')
+        secondary_points.extend(p for p in sina_observations(secondary) if p['symbol'] in symbols)
+        generated=max(generated,datetime.fromisoformat(secondary['available_at']))
+        supplement_errors.extend(secondary['errors'])
     receipt=build_discovery_receipt(run_id=run_id,generated_at=generated,official_payload=official,
         tencent_payload=filtered['tencent'],sina_payload=filtered['sina'],dividend_payload=payload['dividend'],
         financial_points=all_points,quote_date=generated.astimezone(ZoneInfo('Asia/Shanghai')).date().isoformat(),
@@ -108,6 +156,9 @@ def compile_inputs(*, root, inputs, now, run_id):
             evaluations.setdefault(ev['symbol'],[]).append(dict(ev,channel=channel))
     points={}
     for point in all_points:points.setdefault(point['symbol'],[]).append(point)
+    primary_by_symbol={};secondary_by_symbol={};debt_by_symbol={}
+    for values,target in [(primary_points,primary_by_symbol),(secondary_points,secondary_by_symbol),(debt_points,debt_by_symbol)]:
+        for item in values:target.setdefault(item['symbol'],[]).append(item)
     ranked=[]
     for security in records:
         symbol=security['symbol'];ev=evaluations.get(symbol,[])
@@ -133,19 +184,28 @@ def compile_inputs(*, root, inputs, now, run_id):
             outcome['gaps']=[g for g in outcome['gaps'] if not g.startswith('quality:')]
             if financial_data['verified_count']<9:
                 outcome['gaps'].insert(0,f"质量核验未齐；已有{financial_data['available_count']}/9项数据，实际缺失："+('、'.join(actual_missing) or '无'))
+        comparison=compare_observations(primary_by_symbol.get(symbol,[]),secondary_by_symbol.get(symbol,[]),symbol=symbol,period=period,evaluated_at=now)
+        debt_view=debt_details(debt_by_symbol.get(symbol,[]),symbol=symbol,period=period,evaluated_at=now)
+        native_official=[r for r in official_observations if r['symbol']==symbol]
+        official_labels={'financial_deposits_and_interbank':'吸收存款及同业存放','financial_member_deposits':'财务公司成员存款','short_term_borrowings':'短期借款','long_term_borrowings_noncurrent':'长期借款（非流动）','lease_liabilities_noncurrent':'租赁负债（非流动）','lease_liabilities_current':'一年内到期租赁负债','long_term_borrowings_current':'一年内到期长期借款','bonds_payable_current':'一年内到期应付债券','long_term_payables_current':'一年内到期长期应付款','short_term_bonds':'短期应付债券'}
+        debt_view['official_components']=[dict(field=r['field_name'],label=official_labels.get(r['field_name'],r.get('source_label') or r['field_name']),value=r.get('value'),unit=r.get('unit'),page=r.get('page'),excerpt=r.get('excerpt'),source_url=r['source_binding']['source_url'],sha256=r['source_binding']['sha256']) for r in native_official]
+        debt_view['official_evidence_count']=len(native_official)
+        debt_view['official_financial_observations']=[r for r in official_financial if r['symbol']==symbol]
         row=dict(symbol=symbol,company_name=security['name'],name=security['name'],
             industry=quote.industry if quote else security.get('official_industry'),
             profile_status='SPECIALIZED_RESEARCH_REQUIRED' if specialized else 'GENERAL_RESEARCH',
             conditions=conditions,period=period,risk_warning=risk,price_conflict=symbol in conflicts,
-            channel_evaluations=ev,updated_at=generated.isoformat(),financial_data=financial_data,applicability=applicability,**outcome)
+            channel_evaluations=ev,updated_at=generated.isoformat(),financial_data=financial_data,applicability=applicability,financial_crosscheck=comparison,debt_details=debt_view,**outcome)
         # Data-gap fields remain explicit even when another cheap channel passes.
         if row['status']=='CANDIDATE':
             labels=dict(quality='质量',dividend_cash_return='股息现金回报',value='低估值线索',cyclical='周期研究')
             row['reason']='；'.join(labels[e['channel']]+'：'+(e.get('trigger_reasons') or [e['reason']])[0] for e in ev if e['channel'] in row['channels'])
+        if comparison['conflict_count']:
+            row['gaps'].insert(0,'独立供应商数值冲突：'+str(comparison['conflict_count'])+'项；保留差异，不放行。')
         row['gaps']+=['财务及分红为初筛来源观察，尚非完整法定事实核验。','尚未完成企业经营、分红持续性和适用估值研究。','行情真实交易日未单独核验，不形成当前条件买价。']
         row.update(reference_price=str(quote.current_price) if quote and quote.current_price is not None else None,
                    quote_date=None,quote_observed_at=payload['tencent'].get('fetched_at'),
-                   financial_quality_status='NOT_GRANTED',formal_eligibility=False,buy_eligible=False,action='no_order')
+                   financial_quality_status='SOURCE_CONFLICT' if comparison['conflict_count'] else 'NOT_GRANTED',formal_eligibility=False,buy_eligible=False,action='no_order')
         ranked.append(row)
     ranked,_=rank_research_candidates(ranked,limit=200)
     candidates=[r for r in ranked if r['status']=='CANDIDATE']
@@ -164,6 +224,8 @@ def compile_inputs(*, root, inputs, now, run_id):
         rows=rows,source_refs=[dict(path=v['path'],sha256=v['sha256']) for _,v in sorted(inputs['inputs'].items())],
         blockers=['INITIAL_SCREENING_NOT_BUY_ADVICE','PROVIDER_FINANCIAL_NOT_OFFICIAL_ADMISSION','QUOTE_TRADE_DATE_UNVERIFIED'],
         financial_supplement_status=supplement['status'] if supplement else 'NOT_COLLECTED',
+        financial_source_comparison=dict(symbols_attempted=len(seen_secondary & symbols),symbols_checked=sum(r['financial_crosscheck']['matched_count']>0 for r in rows),matched_fields=sum(r['financial_crosscheck']['matched_count'] for r in rows),conflict_fields=sum(r['financial_crosscheck']['conflict_count'] for r in rows),
+            official_balance_adoptions=official_balance_adoptions,debt_companies_with_identified_amount=sum(r['debt_details']['identified_total'] is not None for r in rows),errors=supplement_errors,formal_admission=False),
         financial_data_summary=dict(
             general_company_count=sum(r['applicability']['kind'] is None for r in rows),
             institutions_by_type=dict(Counter(r['applicability']['label'] for r in rows if r['applicability']['kind'] is not None)),
@@ -172,10 +234,41 @@ def compile_inputs(*, root, inputs, now, run_id):
             missing_fields=sum(r['financial_data']['missing_count'] for r in rows if r['applicability']['kind'] is None)),
         assurance='PUBLIC_SOURCE_OBSERVATION_E1_NOT_DEEP_RESEARCH',implementation=implementation())
     if inputs.get('financial_supplement'):result['source_refs'].append(inputs['financial_supplement'])
+    if inputs.get('debt_supplement'):result['source_refs'].append(inputs['debt_supplement'])
+    result['source_refs'].extend(inputs.get('sina_supplements',[]))
+    if inputs.get('official_funding_supplement'):result['source_refs'].append(inputs['official_funding_supplement'])
     return result,receipt_payload
 
 
-def refresh(*,root,allow_network=False):
+def supplement_financial_sources(*,root,inputs,output,comparison_batches=1):
+    """Bounded source recovery on the existing screen, not a second research queue."""
+    if type(comparison_batches) is not int or not 1<=comparison_batches<=10:
+        raise ValueError('COMPARISON_BATCH_BUDGET_1_TO_10_REQUIRED')
+    now=datetime.now(timezone.utc)
+    base=sources.verify_inputs(root,inputs,now,financial_verifier=verify_public_supplement)
+    period=(base['financial'].get('public_financial_input') or {}).get('period')
+    if not period:raise ValueError('EXPLICIT_RETAINED_ANNUAL_PERIOD_REQUIRED')
+    if not inputs.get('debt_supplement'):
+        inputs['debt_supplement']=debt_source.collect(root,output/'debt-details',period,True)
+    else:
+        cached=debt_source.load(root,inputs['debt_supplement'],now)
+        if cached['period']!=period:raise ValueError('CACHED_DEBT_PERIOD_MISMATCH')
+        if (now-datetime.fromisoformat(cached['available_at'])).total_seconds()>86400:
+            inputs['debt_supplement']=debt_source.collect(root,output/'debt-details',period,True)
+    current,_=compile_inputs(root=root,inputs=inputs,now=datetime.now(timezone.utc),run_id='FINANCIAL_SOURCE_SELECTION_ONLY')
+    bindings=list(inputs.get('sina_supplements',[]));seen=set()
+    for binding in bindings:
+        cached=sina_source.load(root,binding,datetime.now(timezone.utc));seen.update(cached['symbols'])
+    pending=[r['symbol'] for r in current['rows'] if r['applicability']['kind'] is None and r['symbol'] not in seen]
+    for n in range(comparison_batches):
+        selected=pending[n*sina_source.MAX_SYMBOLS:(n+1)*sina_source.MAX_SYMBOLS]
+        if not selected:break
+        bindings.append(sina_source.collect(root,output/('sina-'+str(n+1)),selected,period,True))
+    inputs['sina_supplements']=bindings
+    return inputs
+
+
+def refresh(*,root,allow_network=False,comparison_batches=1):
     root=Path(root).resolve()
     if allow_network is not True:raise ValueError('EXPLICIT_PUBLIC_NETWORK_AUTHORIZATION_REQUIRED')
     run_id='sse-main-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')+'-'+uuid4().hex[:8]
@@ -186,11 +279,12 @@ def refresh(*,root,allow_network=False):
     period=(verified['financial'].get('public_financial_input') or {}).get('period')
     if not period:raise ValueError('EXPLICIT_COLLECTED_ANNUAL_PERIOD_REQUIRED')
     inputs['financial_supplement']=three_statements.collect(root,output/'three-statements',period,True)
+    supplement_financial_sources(root=root,inputs=inputs,output=output,comparison_batches=comparison_batches)
     return publish_inputs(root=root, inputs=inputs, output=output, run_id=run_id)
 
 
 
-def enrich_current(*,root,allow_network=False):
+def enrich_current(*,root,allow_network=False,comparison_batches=1):
     if allow_network is not True:raise ValueError('EXPLICIT_PUBLIC_NETWORK_AUTHORIZATION_REQUIRED')
     root=Path(root).resolve()
     pointer=json.loads((root/POINTER).read_bytes())
@@ -201,7 +295,10 @@ def enrich_current(*,root,allow_network=False):
     if not period:raise ValueError('EXPLICIT_RETAINED_ANNUAL_PERIOD_REQUIRED')
     run_id='sse-main-financial-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')+'-'+uuid4().hex[:8]
     output=root/'runtime/sse-main-screening'/run_id
-    inputs['financial_supplement']=three_statements.collect(root,output/'three-statements',period,True)
+    # Reuse the verified same-period original; retain its acquisition clock.
+    if inputs.get('financial_supplement'):three_statements.load(root,inputs['financial_supplement'],datetime.now(timezone.utc))
+    else:inputs['financial_supplement']=three_statements.collect(root,output/'three-statements',period,True)
+    supplement_financial_sources(root=root,inputs=inputs,output=output,comparison_batches=comparison_batches)
     return publish_inputs(root=root,inputs=inputs,output=output,run_id=run_id)
 
 
@@ -240,7 +337,7 @@ def read_screen(*,root,now,offset=0,limit=20,query='',status='CANDIDATE'):
         stamp=datetime.fromisoformat(manifest['generated_at'])
         if stamp.utcoffset() is None or stamp>now:raise ValueError('FUTURE_SCREEN_MANIFEST')
         result,receipt=compile_inputs(root=root,inputs=manifest['inputs'],now=now,run_id=manifest['run_id'])
-        stored_result=_read(root,manifest['result'])
+        stored_result=_read(root,manifest['result'],result_artifact=True)
         stored_receipt=_read(root,manifest['receipt'])
         if _bytes(result)!=_bytes(stored_result):
             raise ValueError('SCREEN_RESULT_REPLAY_MISMATCH:' + ','.join(k for k in result if _bytes(result[k])!=_bytes(stored_result.get(k))))

@@ -611,3 +611,294 @@ it("does not conflate DATA_GAP with missing originals or unsupported methods wit
   expect(visible).toContain("已取得8/9项；真正缺1项；已核验2项");
   expect(visible).not.toContain("缺资料");
 });
+
+function crosscheck(): NonNullable<
+  ScreenPage["items"][number]["financial_crosscheck"]
+> {
+  return {
+    matched_count: 2,
+    conflict_count: 1,
+    assurance: "E1_TWO_PROVIDER_COMPARISON_NOT_OFFICIAL_ADMISSION",
+    fields: [
+      {
+        field: "cash",
+        label: "现金",
+        status: "MATCHED",
+        primary_value: "100.00",
+        secondary_value: "100.00",
+        unit: "元",
+        reason: "TEST_ONLY 同期同口径数值一致",
+      },
+      {
+        field: "ratio",
+        label: "负债率",
+        status: "MATCHED",
+        primary_value: "0",
+        secondary_value: "0",
+        unit: "%",
+        reason: "TEST_ONLY 原始零值",
+      },
+      {
+        field: "net_profit",
+        label: "净利润",
+        status: "CONFLICT",
+        primary_value: "25.30",
+        secondary_value: "25.31",
+        unit: "元",
+        reason: "TEST_ONLY 两源数值不同",
+      },
+      {
+        field: "cashflow",
+        label: "经营现金流",
+        status: "ONE_SOURCE_ONLY",
+        primary_value: "10",
+        secondary_value: null,
+        unit: "元",
+        reason: "TEST_ONLY 第二来源未取得",
+      },
+      {
+        field: "margin",
+        label: "利润率",
+        status: "NOT_COMPARABLE",
+        primary_value: null,
+        secondary_value: null,
+        unit: "%",
+        reason: "TEST_ONLY 非正分母口径不可比",
+      },
+    ],
+  };
+}
+function debt(): NonNullable<ScreenPage["items"][number]["debt_details"]> {
+  return {
+    identified_total: "123.456789",
+    complete_debt_verified: false,
+    reason: "TEST_ONLY 已识别项目范围有限，应付债券尚未取得",
+    components: [
+      {
+        field: "loan",
+        label: "借款",
+        value: "120.456789",
+        unit: "元",
+        status: "AVAILABLE_PENDING_VERIFICATION",
+        reason: "TEST_ONLY 原始观察待核验",
+      },
+      {
+        field: "lease",
+        label: "租赁负债",
+        value: "3",
+        unit: "元",
+        status: "PARTIAL_SCOPE",
+        reason: "TEST_ONLY 只有已返回口径",
+      },
+      {
+        field: "bond",
+        label: "应付债券",
+        value: null,
+        unit: "元",
+        status: "MISSING",
+        reason: "TEST_ONLY 真实缺项",
+      },
+    ],
+  };
+}
+it("renders actual comparable count, conflict, incomplete comparison and raw provider differences without admission", () => {
+  const page = fixture();
+  page.items[0].financial_crosscheck = crosscheck();
+  expect(validScreenPage(page)).toBe(true);
+  const html = renderToStaticMarkup(show(page));
+  expect(html).toContain("已完成实际双源比对3项；冲突1项（一致2项）");
+  expect(html).toContain("仅取得一源1项；口径不可比1项");
+  expect(html).toContain("一致不等于正式核验或官方事实准入");
+  expect(html).toContain("更不是买入依据");
+  expect(html).toContain("<details><summary>双源原始值与差异（5项）</summary>");
+  for (const value of [
+    "100.00",
+    "25.30",
+    "25.31",
+    "两源冲突",
+    "仅取得一源",
+    "口径不具可比性",
+    "第二来源未取得",
+    "非正分母口径不可比",
+    "不升级已有正式事实核验状态",
+  ])
+    expect(html).toContain(value);
+  expect(html).toContain("<td>0 %</td>");
+  expect(html).toContain("<td>未知 元</td>");
+});
+it("shows identified debt exactly, keeps missing components accessible and never claims complete debt", () => {
+  const page = fixture();
+  page.items[0].debt_details = debt();
+  expect(validScreenPage(page)).toBe(true);
+  const html = renderToStaticMarkup(show(page));
+  expect(html).toContain("已识别借款、租赁等金额：123.456789");
+  expect(html).toContain("不是完整有息负债");
+  expect(html).toContain("完整有息负债尚未核验");
+  expect(html).toContain("应付债券尚未取得");
+  expect(html).toContain(
+    "<details><summary>债务项目与识别范围（3项）</summary>",
+  );
+  expect(html).toContain("120.456789");
+  expect(html).toContain("真实缺项");
+  expect(html).toContain("<td>未知 元</td>");
+  expect(html).toContain("单位及来源口径");
+});
+it("supports old responses and keeps unknown identified debt unknown rather than zero", () => {
+  const page = fixture();
+  expect(validScreenPage(page)).toBe(true);
+  expect(renderToStaticMarkup(show(page))).not.toContain("已完成实际双源比对");
+  expect(renderToStaticMarkup(show(page))).not.toContain("已识别借款");
+  page.items[0].debt_details = {
+    ...debt(),
+    identified_total: null,
+    components: [],
+  };
+  const html = renderToStaticMarkup(show(page));
+  expect(html).toContain("已识别借款、租赁等金额：未知");
+  expect(html).toContain("未提供债务项目明细");
+  expect(html).not.toContain("已识别借款、租赁等金额：0");
+});
+it.each([
+  "null_comparison",
+  "bad_assurance",
+  "negative_count",
+  "wrong_count",
+  "unknown_comparison_status",
+  "numeric_provider_value",
+  "missing_reason",
+  "null_debt",
+  "debt_verified_true",
+  "numeric_total",
+  "numeric_component",
+  "invalid_components",
+  "missing_debt_scope",
+])(
+  "fails closed for malformed dual-source/debt response: %s",
+  async (damage) => {
+    const page = fixture();
+    const row = page.items[0] as any;
+    row.financial_crosscheck = crosscheck();
+    row.debt_details = debt();
+    if (damage === "null_comparison") row.financial_crosscheck = null;
+    if (damage === "bad_assurance")
+      row.financial_crosscheck.assurance = "OFFICIAL_ADMISSION";
+    if (damage === "negative_count")
+      row.financial_crosscheck.matched_count = -1;
+    if (damage === "wrong_count") row.financial_crosscheck.conflict_count = 99;
+    if (damage === "unknown_comparison_status")
+      row.financial_crosscheck.fields[0].status = "VERIFIED";
+    if (damage === "numeric_provider_value")
+      row.financial_crosscheck.fields[0].primary_value = 100;
+    if (damage === "missing_reason")
+      delete row.financial_crosscheck.fields[0].reason;
+    if (damage === "null_debt") row.debt_details = null;
+    if (damage === "debt_verified_true")
+      row.debt_details.complete_debt_verified = true;
+    if (damage === "numeric_total") row.debt_details.identified_total = 123;
+    if (damage === "numeric_component")
+      row.debt_details.components[0].value = 0;
+    if (damage === "invalid_components") row.debt_details.components = {};
+    if (damage === "missing_debt_scope") delete row.debt_details.reason;
+    expect(validScreenPage(page)).toBe(false);
+    tree();
+    load.mockResolvedValue(page);
+    await expect(hooks.fetch!(new AbortController().signal)).rejects.toThrow(
+      "停止展示",
+    );
+  },
+);
+
+function officialDebt() {
+  return {
+    ...debt(),
+    official_evidence_count: 2,
+    official_components: [
+      {
+        field: "short_loan",
+        label: "TEST_ONLY 官方短借",
+        value: "100",
+        unit: "元",
+        page: 39,
+        excerpt: "TEST_ONLY 短期借款原文",
+        source_url: "https://example.com/official.pdf",
+        sha256: "a".repeat(64),
+      },
+      {
+        field: "bond",
+        label: "TEST_ONLY 官方债券",
+        value: null,
+        unit: "元",
+        page: 40,
+        excerpt: "TEST_ONLY 金额待核",
+        source_url: "http://example.com/official.pdf",
+        sha256: "b".repeat(64),
+      },
+    ],
+  };
+}
+it("shows bound official notes separately without summing or replacing supplier debt", () => {
+  const page = fixture();
+  page.items[0].debt_details = officialDebt();
+  expect(validScreenPage(page)).toBe(true);
+  const html = renderToStaticMarkup(show(page));
+  for (const value of [
+    "已补2条官方附注构成",
+    "原文第39页",
+    "TEST_ONLY 短期借款原文",
+    "原文第40页",
+    "TEST_ONLY 金额待核",
+    "未知 元",
+    'href="https://example.com/official.pdf"',
+    "123.456789",
+    "不能相加或替代完整有息负债总额",
+    "融资分类仍未完整核验",
+  ])
+    expect(html).toContain(value);
+  expect(html).not.toContain("223.456789");
+  expect(html.indexOf("官方附注构成")).toBeGreaterThan(
+    html.indexOf("债务项目与识别范围"),
+  );
+});
+it("keeps optional official count and rows unknown when omitted", () => {
+  const page = fixture();
+  page.items[0].debt_details = { ...debt(), official_evidence_count: 0 };
+  expect(validScreenPage(page)).toBe(true);
+  expect(renderToStaticMarkup(show(page))).toContain("不推定金额为零");
+  page.items[0].debt_details = {
+    ...debt(),
+    official_components: officialDebt().official_components,
+  };
+  expect(validScreenPage(page)).toBe(true);
+  expect(renderToStaticMarkup(show(page))).toContain("条数未提供");
+  page.items[0].debt_details = debt();
+  expect(renderToStaticMarkup(show(page))).not.toContain("官方附注构成");
+});
+it.each([
+  "count",
+  "null_rows",
+  "page",
+  "fractional_page",
+  "value",
+  "hash",
+  "url",
+  "excerpt",
+])("rejects malformed official debt evidence: %s", async (damage) => {
+  const page = fixture();
+  const details: any = officialDebt();
+  page.items[0].debt_details = details;
+  if (damage === "count") details.official_evidence_count = "2";
+  if (damage === "null_rows") details.official_components = null;
+  if (damage === "page") details.official_components[0].page = 0;
+  if (damage === "fractional_page") details.official_components[0].page = 1.5;
+  if (damage === "value") details.official_components[0].value = 100;
+  if (damage === "hash") details.official_components[0].sha256 = "bad";
+  if (damage === "url")
+    details.official_components[0].source_url = "javascript:alert(1)";
+  if (damage === "excerpt") details.official_components[0].excerpt = null;
+  expect(validScreenPage(page)).toBe(false);
+  tree();
+  load.mockResolvedValue(page);
+  await expect(hooks.fetch!(new AbortController().signal)).rejects.toThrow(
+    "停止展示",
+  );
+});
