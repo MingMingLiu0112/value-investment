@@ -103,6 +103,13 @@ def test_identity_conflicts_or_out_of_scope_cannot_bind(tmp_path, source, fault)
         pages[2] = pages[2].replace('编制单位：测试股份有限公司', '编制单位：另一股份有限公司')
     else:
         pages[0] = pages[0].replace('600519', '600887')
+    if fault in {'conflicting_code_same_page', 'conflicting_code_other_page'}:
+        # The shared label/table guard now rejects earlier, before any parsed
+        # facts or extraction cache are produced. Do not relax source identity.
+        with pytest.raises(ValueError, match='original labelled security identity'):
+            enrich(tmp_path, src)
+        assert not (tmp_path / '.tmp/balance-v2').exists()
+        return
     try:
         result = enrich(tmp_path, src)
     except ValueError as exc:
