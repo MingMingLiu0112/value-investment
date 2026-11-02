@@ -117,7 +117,7 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
         debt_points.extend(p for p in debt_observations(debt['balance'],period=debt['period']) if p['symbol'] in symbols)
         generated=max(generated,datetime.fromisoformat(debt['available_at']))
         supplement_errors.extend(debt['errors'])
-    official_observations=[];official_financial=[];official_balance_adoptions=[]
+    official_observations=[];official_financial=[];official_balance_adoptions=[];native_revalidated_points=[]
     if inputs.get('official_funding_supplement'):
         funding=official_funding.load(root,inputs['official_funding_supplement'],now)
         official_financial=funding.get('financial_observations',[])
@@ -126,6 +126,7 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
             company=[p for p in all_points if p['symbol']==source.symbol]
             adopted,proof=_reconcile_official_balance_ratio(source,company,packet['packet'])
             official_balance_adoptions.append(dict(symbol=source.symbol,status=proof['status'],issues=proof['issues']))
+            native_revalidated_points.extend(deepcopy(adopted))
             for point in adopted:
                 # A qualified official ratio supersedes observations only in this new run.
                 # Provider originals remain bound in primary_points and historical snapshots.
@@ -155,6 +156,7 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
     if _research_capture is not None:
         _research_capture['points']=deepcopy(all_points)
         _research_capture['financial_payload']=deepcopy(payload['financial'])
+        _research_capture['native_revalidated_points']=deepcopy(native_revalidated_points)
     receipt=build_discovery_receipt(run_id=run_id,generated_at=generated,official_payload=official,
         tencent_payload=filtered['tencent'],sina_payload=filtered['sina'],dividend_payload=payload['dividend'],
         financial_points=all_points,quote_date=generated.astimezone(ZoneInfo('Asia/Shanghai')).date().isoformat(),
@@ -374,7 +376,7 @@ def replay_research_inputs(*, root, manifest_binding, now) -> dict:
     if implementation()!=current_implementation:
         raise ValueError('SCREEN_IMPLEMENTATION_CHANGED_DURING_REPLAY')
     return dict(screen=screen,receipt=receipt,points=capture['points'],
-                financial_payload=capture['financial_payload'])
+                financial_payload=capture['financial_payload'],native_revalidated_points=capture['native_revalidated_points'])
 
 
 def read_screen(*,root,now,offset=0,limit=20,query='',status='CANDIDATE'):

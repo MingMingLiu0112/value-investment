@@ -30,6 +30,7 @@ def setup(tmp_path, monkeypatch):
     capture = dict(screen=dict(scope="SSE_MAIN_A_ONLY", action="no_order",
         coverage_complete=True, available_at="2026-11-01T10:00:00+00:00", run_id="TEST_ONLY",
         counts={"candidate": len(rows)}, rows=rows), receipt={"action": "no_order"}, points=points,
+        native_revalidated_points=[],
         financial_payload={"points": points, "public_financial_input": {"TEST_ONLY": True}})
     monkeypatch.setattr(m.sse_main_screening, "replay_research_inputs", lambda **kwargs: deepcopy(capture))
     monkeypatch.setattr(m, "consume_retained_enrichment",
@@ -256,3 +257,96 @@ def test_paused_tracking_survives_multiple_rounds(setup, state):
         assert "NOT_BUSINESS_DETERIORATION" in paused["history_interpretation"]
         assert symbol not in _selected(result)
         assert result["tracking_count"] == 30
+
+def _native_claim(setup):
+    args, capture = setup
+    point = next(p for p in capture["points"] if p["field_name"] == "debt_ratio")
+    point["data_point_id"] = "TEST_ONLY-native-balance"
+    point["metadata"] = dict(derivation_formula="OFFICIAL_BALANCE_RECONCILIATION_V1",
+        verification_method="OFFICIAL_BALANCE_RECONCILIATION_V1",
+        single_source_balance_verification=True, automatic_cross_source_verification=False,
+        statement_scope="consolidated")
+    args["financial_export_sha256"] = bound(args["financial_export_path"], capture["financial_payload"])
+    capture["native_revalidated_points"] = [deepcopy(point)]
+    return args, capture, deepcopy(point)
+
+
+def test_native_claim_without_declarations_survives_real_consumer(setup, monkeypatch):
+    args, capture, native = _native_claim(setup)
+    from value_investment_agent.application.research.value_evidence_enrichment_v1 import consume_retained_enrichment
+    monkeypatch.setattr(m, "consume_retained_enrichment", consume_retained_enrichment)
+    result = m.build_sse_research_priority(**args)
+    row = next(r for r in all_rows(result) if r["symbol"] == native["symbol"])
+    found = [p for p in row["field_observations"] if p["data_point_id"] == native["data_point_id"]]
+    assert len(found) == 1
+    assert {k:v for k,v in found[0].items() if k != "accepted_by_existing_quality_policy"} == native
+    assert found[0]["metadata"]["automatic_cross_source_verification"] is False
+    assert result["retained_enrichment_adoption"] == []
+
+
+def test_rehashed_native_export_injection_rejected(setup):
+    args, capture, native = _native_claim(setup)
+    payload = deepcopy(capture["financial_payload"])
+    next(p for p in payload["points"] if p["data_point_id"] == native["data_point_id"])["value"] = "0"
+    args["financial_export_sha256"] = bound(args["financial_export_path"], payload)
+    with pytest.raises(ValueError, match="points differ"):
+        m.build_sse_research_priority(**args)
+
+
+@pytest.mark.parametrize("mode", ["exact", "alias", "identity_conflict", "semantic_conflict"])
+def test_native_new_source_merge_cannot_manufacture_crosssource(setup, monkeypatch, mode):
+    args, capture, native = _native_claim(setup)
+    added = deepcopy(native)
+    if mode in {"alias", "semantic_conflict"}:
+        added["data_point_id"] = "TEST_ONLY-alias"
+        added["source_id"] = "TEST_ONLY-renamed-same-original"
+        added["metadata"]["automatic_cross_source_verification"] = True
+    if mode in {"identity_conflict", "semantic_conflict"}: added["value"] = "999"
+    def consume(root, points, sources, **kwargs):
+        assert all(p["data_point_id"] != native["data_point_id"] for p in points)
+        assert kwargs["write_cache"] is False
+        return [*points, added], []
+    monkeypatch.setattr(m, "consume_retained_enrichment", consume)
+    if "conflict" in mode:
+        with pytest.raises(ValueError, match="conflicting"):
+            m.build_sse_research_priority(**args)
+    else:
+        result = m.build_sse_research_priority(**args)
+        row = next(r for r in all_rows(result) if r["symbol"] == native["symbol"])
+        matches = [p for p in row["field_observations"] if p["field_name"] == "debt_ratio"]
+        assert len(matches) == 1
+        assert matches[0]["data_point_id"] == native["data_point_id"]
+        assert matches[0]["metadata"]["automatic_cross_source_verification"] is False
+
+
+def test_historical_claim_without_explicit_native_revalidation_rejected(setup, monkeypatch):
+    args, capture, _ = _native_claim(setup)
+    capture["native_revalidated_points"] = []
+    from value_investment_agent.application.research.value_evidence_enrichment_v1 import consume_retained_enrichment
+    monkeypatch.setattr(m, "consume_retained_enrichment", consume_retained_enrichment)
+    with pytest.raises(ValueError, match="Official balance ratio does not match"):
+        m.build_sse_research_priority(**args)
+
+
+@pytest.mark.parametrize("damage", ["missing", "null", "different_value", "different_id", "duplicate"])
+def test_native_revalidation_requires_explicit_exact_identity_and_content(setup, damage):
+    args, capture, _ = _native_claim(setup)
+    if damage == "missing": del capture["native_revalidated_points"]
+    if damage == "null": capture["native_revalidated_points"] = None
+    if damage == "different_value": capture["native_revalidated_points"][0]["value"] = "999"
+    if damage == "different_id": capture["native_revalidated_points"][0]["data_point_id"] = "not-in-capture"
+    if damage == "duplicate": capture["native_revalidated_points"] *= 2
+    with pytest.raises(ValueError, match="native"):
+        m.build_sse_research_priority(**args)
+
+
+def test_unlisted_derived_points_still_reach_legacy_consumer(setup, monkeypatch):
+    args, capture, _ = _native_claim(setup)
+    capture["native_revalidated_points"] = []
+    original = deepcopy(capture["points"])
+    def consume(root, points, sources, **kwargs):
+        assert points == original
+        raise ValueError("TEST_ONLY legacy validation enforced")
+    monkeypatch.setattr(m, "consume_retained_enrichment", consume)
+    with pytest.raises(ValueError, match="legacy validation enforced"):
+        m.build_sse_research_priority(**args)

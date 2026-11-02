@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .value_research_queue import _canonical_hash, _load_bound
-from .value_evidence_enrichment_v1 import consume_retained_enrichment
+from .value_evidence_enrichment_v1 import DERIVED_VERSIONS, consume_retained_enrichment
 from ..discovery import sse_main_screening
 from ...domain.discovery.value_candidate_selection import observation_conditions, rank_research_candidates
 from ...financial_quality import GENERAL_FIELDS, _accepted
@@ -70,6 +70,34 @@ def _previous(root, path, digest, now):
     return members, previous
 
 
+def _merge_replayed_points(native, consumed):
+    """Keep native evidence verbatim; duplicates never create independent sources."""
+    merged, identities, semantic = [], {}, {}
+    for point in [*native, *consumed]:
+        digest = _canonical_hash(point)
+        identity = point.get("data_point_id")
+        if identity in identities:
+            if identities[identity] != digest:
+                raise ValueError("conflicting replayed financial fact identity")
+            continue
+        if identity:
+            identities[identity] = digest
+        meta = point.get("metadata") or {}
+        source_hash = point.get("sha256") or point.get("raw_file_hash")
+        key = (point.get("symbol"), point.get("period_label"), point.get("field_name"),
+               point.get("unit"), source_hash, meta.get("statement_scope"),
+               meta.get("derivation_formula"))
+        if source_hash and meta.get("derivation_formula") in DERIVED_VERSIONS:
+            if key in semantic:
+                if _canonical_hash({"value": semantic[key]["value"]}) != _canonical_hash({"value": point["value"]}):
+                    raise ValueError("conflicting same-source derived fact")
+                # Do not promote a repeated original into cross-source assurance.
+                continue
+            semantic[key] = point
+        merged.append(deepcopy(point))
+    return merged
+
+
 def build_sse_research_priority(*, root, manifest_binding, financial_export_path,
         financial_export_sha256, now, budget=30, previous_path=None, previous_sha256=None):
     """Replay at explicit current cutoff; caller persists the immutable result."""
@@ -99,8 +127,27 @@ def build_sse_research_priority(*, root, manifest_binding, financial_export_path
     for original in capture["financial_payload"].get("value_enrichment_sources", []):
         if original not in sources:
             raise ValueError("captured enrichment source omitted")
-    points, adoption = consume_retained_enrichment(
-        root, deepcopy(base), sources, evaluation_at=now, write_cache=False)
+    # Only the helper's explicit current reconciliation results bypass legacy
+    # declaration replay. Historical derived claims in base retain its checks.
+    revalidated = capture.get("native_revalidated_points")
+    if not isinstance(revalidated, list):
+        raise ValueError("explicit native_revalidated_points list required")
+    native_ids = set()
+    for point in revalidated:
+        if not isinstance(point, dict):
+            raise ValueError("invalid native revalidation point")
+        identity = point.get("data_point_id")
+        if not isinstance(identity, str) or not identity or identity in native_ids:
+            raise ValueError("invalid or duplicate native revalidation identity")
+        matches = [p for p in base if p.get("data_point_id") == identity]
+        if len(matches) != 1 or _canonical_hash(matches[0]) != _canonical_hash(point):
+            raise ValueError("native revalidation point differs from exact capture")
+        native_ids.add(identity)
+    native = [p for p in base if p.get("data_point_id") in native_ids]
+    ordinary = [p for p in base if p.get("data_point_id") not in native_ids]
+    consumed, adoption = consume_retained_enrichment(
+        root, deepcopy(ordinary), sources, evaluation_at=now, write_cache=False)
+    points = _merge_replayed_points(native, consumed)
     grouped, unavailable = defaultdict(list), defaultdict(int)
     for point in points:
         if _point_available_at(point, now) is None:

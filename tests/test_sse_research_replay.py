@@ -56,7 +56,8 @@ def test_explicit_replay_ignores_current_pointer_preserves_payload_and_no_io(inp
     before = snapshot(root)
     block_io(monkeypatch)
     result = app.replay_research_inputs(root=root, manifest_binding=binding, now=NOW)
-    assert set(result) == {"screen", "receipt", "points", "financial_payload"}
+    assert set(result) == {"screen", "receipt", "points", "financial_payload", "native_revalidated_points"}
+    assert result["native_revalidated_points"] == []  # TEST_ONLY fixture has no official balance adoption.
     assert result["screen"] == screen and result["receipt"] == receipt
     assert result["points"] == payload["financial"]["points"]
     assert result["financial_payload"] == payload["financial"]
