@@ -420,10 +420,194 @@ it("uses short Chinese metric and observation status labels without changing num
     "缺失",
     "存在冲突",
     "未通过初筛",
-    "缺资料",
+    "资料或核验未齐",
     "资料冲突",
     "不适用",
     "已通过初筛（展示数量受限）",
   ])
     expect(html).toContain(value);
+});
+
+function diagnostics(): NonNullable<
+  ScreenPage["items"][number]["financial_data"]
+> {
+  return {
+    required_count: 9,
+    available_count: 8,
+    missing_count: 1,
+    verified_count: 2,
+    fields: [
+      {
+        field: "revenue",
+        label: "营业收入",
+        status: "AVAILABLE_PENDING_VERIFICATION",
+        value: "123.45",
+        unit: "亿元",
+        reason: "TEST_ONLY 已取得原始观察，尚待正式核验",
+      },
+      {
+        field: "cashflow",
+        label: "经营现金流",
+        status: "MISSING",
+        value: null,
+        unit: "亿元",
+        reason: "TEST_ONLY 原始字段尚未取得",
+      },
+      {
+        field: "scope",
+        label: "口径限定字段",
+        status: "PARTIAL_SCOPE",
+        value: "0",
+        unit: "元",
+        reason: "TEST_ONLY 只有部分报表范围",
+      },
+      {
+        field: "equity",
+        label: "净资产",
+        status: "VERIFIED",
+        value: "8",
+        unit: "亿元",
+        reason: "TEST_ONLY 已完成限定字段核验",
+      },
+      {
+        field: "profit",
+        label: "归母利润",
+        status: "CONFLICT",
+        value: "3",
+        unit: "亿元",
+        reason: "TEST_ONLY 来源之间存在差异",
+      },
+    ],
+  };
+}
+it("distinguishes raw financial availability from missing originals and formal verification", () => {
+  const page = fixture();
+  page.items[0].financial_data = diagnostics();
+  expect(validScreenPage(page)).toBe(true);
+  const html = renderToStaticMarkup(show(page));
+  expect(html).toContain("已取得8/9项；真正缺1项；已核验2项");
+  for (const value of [
+    "原始数据取得不等于通过正式事实准入",
+    "已取得，待核验",
+    "原始数据缺失",
+    "口径/适用性受限",
+    "字段已核验",
+    "数据冲突待核验",
+    "123.45",
+    "只有部分报表范围",
+  ])
+    expect(html).toContain(value);
+  expect(html).toContain("<td>未知 亿元</td>");
+  expect(html).toContain("<td>0 元</td>");
+  expect(html).toContain(
+    "<details><summary>逐字段取得与核验状态（5项）</summary>",
+  );
+});
+it.each([
+  ["bank", "银行"],
+  ["insurer", "保险"],
+  ["broker", "证券"],
+  ["financial_group", "金融机构"],
+])(
+  "uses %s specialist requirements rather than ordinary-company completion scores",
+  (kind, label) => {
+    const page = fixture();
+    page.items[0].financial_data = diagnostics();
+    page.items[0].applicability = {
+      kind,
+      label: label + "专用研究",
+      reason: "TEST_ONLY 行业指标需单独核验",
+      required_metrics: ["TEST_ONLY 专用指标甲", "TEST_ONLY 专用指标乙"],
+      provisional: true,
+    };
+    expect(validScreenPage(page)).toBe(true);
+    const html = renderToStaticMarkup(show(page));
+    expect(html).toContain("需" + label + "专用指标");
+    expect(html).toContain("普通企业方法不适用");
+    expect(html).toContain("这不是公司不好或没有财报");
+    expect(html).toContain("初步识别，待核验");
+    expect(html).toContain("TEST_ONLY 专用指标甲");
+    expect(html).not.toContain("已取得8/9项");
+    expect(html).not.toContain("真正缺1项");
+    expect(html).toContain("以下仅展示返回的原始字段");
+  },
+);
+it("supports ordinary applicability and respects the backend denominator instead of hardcoding nine", () => {
+  const page = fixture();
+  page.items[0].financial_data = { ...diagnostics(), required_count: 12 };
+  page.items[0].applicability = {
+    kind: null,
+    label: "普通企业",
+    reason: "TEST_ONLY 普通企业范围",
+    required_metrics: [],
+    provisional: false,
+  };
+  const html = renderToStaticMarkup(show(page));
+  expect(html).toContain("已取得8/12项");
+  expect(html).not.toContain("初步识别，待核验");
+  expect(html).not.toContain("需对应行业专用指标");
+});
+it("keeps absent diagnostics backward-compatible and missing counts unknown", () => {
+  const page = fixture();
+  expect(validScreenPage(page)).toBe(true);
+  const old = renderToStaticMarkup(show(page));
+  expect(old).not.toContain("已取得0/");
+  expect(old).not.toContain("逐字段取得与核验状态");
+  page.items[0].applicability = {
+    kind: "bank",
+    label: "银行",
+    reason: "TEST_ONLY",
+    required_metrics: [],
+    provisional: true,
+  };
+  const html = renderToStaticMarkup(show(page));
+  expect(html).toContain("数量未知");
+  expect(html).toContain("未提供具体专用指标清单");
+  expect(html).not.toContain("已核验0项");
+});
+it.each([
+  "null_data",
+  "negative",
+  "missing_count",
+  "unknown_status",
+  "numeric_value",
+  "bad_applicability",
+])("rejects malformed optional diagnostic contract: %s", (damage) => {
+  const page = fixture();
+  const row = page.items[0] as any;
+  row.financial_data = diagnostics();
+  if (damage === "null_data") row.financial_data = null;
+  if (damage === "negative") row.financial_data.available_count = -1;
+  if (damage === "missing_count") delete row.financial_data.verified_count;
+  if (damage === "unknown_status")
+    row.financial_data.fields[0].status = "APPROVED";
+  if (damage === "numeric_value") row.financial_data.fields[0].value = 0;
+  if (damage === "bad_applicability")
+    row.applicability = {
+      kind: "bank",
+      label: "银行",
+      reason: "",
+      required_metrics: "not-a-list",
+      provisional: true,
+    };
+  expect(validScreenPage(page)).toBe(false);
+});
+
+it("does not conflate DATA_GAP with missing originals or unsupported methods with company quality", () => {
+  const page = fixture();
+  page.channel_counts = { quality: { DATA_GAP: 100, UNSUPPORTED: 3 } };
+  page.items[0].financial_data = diagnostics();
+  page.items[0].channel_evaluations = [
+    { channel: "quality", status: "DATA_GAP", reason: "TEST_ONLY 等待核验" },
+    { channel: "quality", status: "UNSUPPORTED", reason: "TEST_ONLY 专用指标" },
+  ];
+  const visible = renderToStaticMarkup(show(page)).replace(/<[^>]*>/g, "");
+  expect(visible).toContain("资料或核验未齐不等于原始数据缺失");
+  expect(visible).toContain("金融机构需要金融专用指标");
+  expect(visible).toContain("普通企业方法不适用，不是公司不好");
+  expect(visible).toContain("已取得，待核验");
+  expect(visible).toContain("原始数据缺失");
+  expect(visible).toContain("口径/适用性受限");
+  expect(visible).toContain("已取得8/9项；真正缺1项；已核验2项");
+  expect(visible).not.toContain("缺资料");
 });

@@ -17,6 +17,11 @@ from ...m2_market_data import parse_tencent_board, parse_sina_industry
 from ...m2_opportunity_discovery import EvidenceReference
 from ..product.common import require_inside, write_new_bytes
 from .public_financial_input import build_financial_input, verify_public_supplement
+from ...domain.discovery.financial_gap_diagnostics_v1 import build_diagnostics, statement_observations
+from ...infrastructure.screening import public_three_statements_v1 as three_statements
+from ...financial_institutions import provisional_financial_type
+from ...financial_quality import _accepted
+from copy import deepcopy
 
 POINTER = '.tmp/sse-main-screening-current.json'
 SCOPE = 'SSE_MAIN_A_ONLY'
@@ -45,10 +50,10 @@ def _read(root, ref):
 
 def implementation():
     import inspect
-    from ...domain.discovery import sse_main_pool_v1, value_candidate_selection
+    from ...domain.discovery import sse_main_pool_v1, value_candidate_selection, financial_gap_diagnostics_v1
     from ... import m2_discovery_engine, m2_opportunity_discovery, m2_market_data, financial_quality, official_universe, financial_institutions
     from ...infrastructure.screening import evidence_screen_v3, public_financial_snapshot
-    modules=[sse_main_pool_v1,value_candidate_selection,m2_discovery_engine,m2_opportunity_discovery,
+    modules=[sse_main_pool_v1,value_candidate_selection,financial_gap_diagnostics_v1,three_statements,m2_discovery_engine,m2_opportunity_discovery,
              m2_market_data,financial_quality,official_universe,financial_institutions,evidence_screen_v3,public_financial_snapshot,sources]
     paths=[Path(__file__),*[Path(inspect.getfile(m)) for m in modules],Path(__file__).with_name('public_financial_input.py')]
     base=Path(__file__).resolve().parents[4]
@@ -74,9 +79,23 @@ def compile_inputs(*, root, inputs, now, run_id):
         refs[role]=EvidenceReference(id=role,path=ref['path'],sha256=ref['sha256'],source_name=role,
             source_url=source_url,fetched_at=datetime.fromisoformat(ref['fetched_at']))
     generated=datetime.fromisoformat(inputs['finished_at'])
+    all_points=list(payload['financial']['points'])
+    supplement=None
+    if inputs.get('financial_supplement'):
+        supplement=three_statements.load(root,inputs['financial_supplement'],now)
+        supplement_period=supplement['period']
+        observed_period=(payload['financial'].get('public_financial_input') or {}).get('period')
+        if observed_period and supplement_period!=observed_period:
+            raise ValueError('SUPPLEMENT_REPORT_PERIOD_MISMATCH')
+        all_points.extend(p for p in statement_observations(supplement,period=supplement_period) if p['symbol'] in symbols)
+        acquired=datetime.fromisoformat(supplement['available_at'])
+        generated=max(generated,acquired)
+        ref=inputs['financial_supplement']
+        refs['financial_supplement']=EvidenceReference(id='financial_supplement',path=ref['path'],sha256=ref['sha256'],
+            source_name='Eastmoney same-period three statements',source_url='https://datacenter-web.eastmoney.com/api/data/v1/get',fetched_at=acquired)
     receipt=build_discovery_receipt(run_id=run_id,generated_at=generated,official_payload=official,
         tencent_payload=filtered['tencent'],sina_payload=filtered['sina'],dividend_payload=payload['dividend'],
-        financial_points=payload['financial']['points'],quote_date=generated.astimezone(ZoneInfo('Asia/Shanghai')).date().isoformat(),
+        financial_points=all_points,quote_date=generated.astimezone(ZoneInfo('Asia/Shanghai')).date().isoformat(),
         run_refs=refs,policy=M2ScreeningPolicy(),quote_date_verified=False)
     receipt_payload=receipt.as_policy()
     official_records={r.symbol:r for r in receipt.universe.records}
@@ -88,7 +107,7 @@ def compile_inputs(*, root, inputs, now, run_id):
         for ev in result['evaluations']:
             evaluations.setdefault(ev['symbol'],[]).append(dict(ev,channel=channel))
     points={}
-    for point in payload['financial']['points']:points.setdefault(point['symbol'],[]).append(point)
+    for point in all_points:points.setdefault(point['symbol'],[]).append(point)
     ranked=[]
     for security in records:
         symbol=security['symbol'];ev=evaluations.get(symbol,[])
@@ -100,11 +119,25 @@ def compile_inputs(*, root, inputs, now, run_id):
         if specialized:
             for c in conditions:c['favorable']=None
         quote=quotes.get(symbol)
+        verified_fields={p['field_name'] for p in points.get(symbol,[]) if p.get('period_label')==period and _accepted(p)}
+        kind=provisional_financial_type(security['name'],quote.industry if quote else security.get('official_industry'))
+        financial_data,applicability=build_diagnostics(points.get(symbol,[]),period=period,
+            institution_kind=kind,verified_fields=verified_fields)
+        actual_missing=[f['label'] for f in financial_data['fields'] if f['status']=='MISSING']
+        if kind is None:
+            for e in ev:
+                if e['channel']=='quality' and e['status']=='DATA_GAP':
+                    e['native_reason']=e['reason']
+                    e['reason']=(f"已取得{financial_data['available_count']}/9项普通企业指标，正式核验{financial_data['verified_count']}/9；"
+                        +"实际缺失："+('、'.join(actual_missing) or '无，但来源核验或完整口径尚未满足')+"。已有未核验数据不等于没有数据。")
+            outcome['gaps']=[g for g in outcome['gaps'] if not g.startswith('quality:')]
+            if financial_data['verified_count']<9:
+                outcome['gaps'].insert(0,f"质量核验未齐；已有{financial_data['available_count']}/9项数据，实际缺失："+('、'.join(actual_missing) or '无'))
         row=dict(symbol=symbol,company_name=security['name'],name=security['name'],
             industry=quote.industry if quote else security.get('official_industry'),
             profile_status='SPECIALIZED_RESEARCH_REQUIRED' if specialized else 'GENERAL_RESEARCH',
             conditions=conditions,period=period,risk_warning=risk,price_conflict=symbol in conflicts,
-            channel_evaluations=ev,updated_at=inputs['finished_at'],**outcome)
+            channel_evaluations=ev,updated_at=generated.isoformat(),financial_data=financial_data,applicability=applicability,**outcome)
         # Data-gap fields remain explicit even when another cheap channel passes.
         if row['status']=='CANDIDATE':
             labels=dict(quality='质量',dividend_cash_return='股息现金回报',value='低估值线索',cyclical='周期研究')
@@ -122,7 +155,7 @@ def compile_inputs(*, root, inputs, now, run_id):
     counts=Counter(r['status'] for r in rows)
     result=dict(schema_version=VERSION,scope=SCOPE,action='no_order',formal_eligibility=False,
         buy_eligible=False,status='PARTIAL',run_id=run_id,rule_version=receipt.rule_version,
-        policy=M2ScreeningPolicy().as_policy(),available_at=inputs['finished_at'],
+        policy=M2ScreeningPolicy().as_policy(),available_at=generated.isoformat(),
         quote_date=None,quote_date_verified=False,observation_date=receipt.quote_date,
         quote_status='PROVIDER_OBSERVATION_NOT_VERIFIED_TRADE_DATE',
         source_status=inputs['status'],coverage_complete=len(rows)==len(records),
@@ -130,7 +163,15 @@ def compile_inputs(*, root, inputs, now, run_id):
         channel_counts={c:dict(Counter(e['status'] for r in rows for e in r['channel_evaluations'] if e['channel']==c)) for c in CHANNELS},
         rows=rows,source_refs=[dict(path=v['path'],sha256=v['sha256']) for _,v in sorted(inputs['inputs'].items())],
         blockers=['INITIAL_SCREENING_NOT_BUY_ADVICE','PROVIDER_FINANCIAL_NOT_OFFICIAL_ADMISSION','QUOTE_TRADE_DATE_UNVERIFIED'],
+        financial_supplement_status=supplement['status'] if supplement else 'NOT_COLLECTED',
+        financial_data_summary=dict(
+            general_company_count=sum(r['applicability']['kind'] is None for r in rows),
+            institutions_by_type=dict(Counter(r['applicability']['label'] for r in rows if r['applicability']['kind'] is not None)),
+            full_observation_count=sum(r['financial_data']['missing_count']==0 and r['applicability']['kind'] is None for r in rows),
+            available_fields=sum(r['financial_data']['available_count'] for r in rows if r['applicability']['kind'] is None),
+            missing_fields=sum(r['financial_data']['missing_count'] for r in rows if r['applicability']['kind'] is None)),
         assurance='PUBLIC_SOURCE_OBSERVATION_E1_NOT_DEEP_RESEARCH',implementation=implementation())
+    if inputs.get('financial_supplement'):result['source_refs'].append(inputs['financial_supplement'])
     return result,receipt_payload
 
 
@@ -141,7 +182,27 @@ def refresh(*,root,allow_network=False):
     output=root/'runtime/sse-main-screening'/run_id
     inputs=sources.collect_inputs(root,output,allow_network=True,
         financial_builder=build_financial_input,financial_verifier=verify_public_supplement)
+    verified=sources.verify_inputs(root,inputs,datetime.now(timezone.utc),financial_verifier=verify_public_supplement)
+    period=(verified['financial'].get('public_financial_input') or {}).get('period')
+    if not period:raise ValueError('EXPLICIT_COLLECTED_ANNUAL_PERIOD_REQUIRED')
+    inputs['financial_supplement']=three_statements.collect(root,output/'three-statements',period,True)
     return publish_inputs(root=root, inputs=inputs, output=output, run_id=run_id)
+
+
+
+def enrich_current(*,root,allow_network=False):
+    if allow_network is not True:raise ValueError('EXPLICIT_PUBLIC_NETWORK_AUTHORIZATION_REQUIRED')
+    root=Path(root).resolve()
+    pointer=json.loads((root/POINTER).read_bytes())
+    manifest=_read(root,pointer['manifest'])
+    inputs=deepcopy(manifest['inputs'])
+    old=sources.verify_inputs(root,inputs,datetime.now(timezone.utc),financial_verifier=verify_public_supplement)
+    period=(old['financial'].get('public_financial_input') or {}).get('period')
+    if not period:raise ValueError('EXPLICIT_RETAINED_ANNUAL_PERIOD_REQUIRED')
+    run_id='sse-main-financial-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')+'-'+uuid4().hex[:8]
+    output=root/'runtime/sse-main-screening'/run_id
+    inputs['financial_supplement']=three_statements.collect(root,output/'three-statements',period,True)
+    return publish_inputs(root=root,inputs=inputs,output=output,run_id=run_id)
 
 
 def publish_inputs(*, root, inputs, output, run_id):

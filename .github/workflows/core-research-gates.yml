@@ -468,6 +468,8 @@ jobs:
           tests/test_sse_main_pool_v1.py
           tests/test_sse_main_sources_v1.py
           tests/test_sse_main_screening.py
+          tests/test_financial_gap_diagnostics_v1.py
+          tests/test_public_three_statements_v1.py
           tests/test_value_candidate_selection.py
           tests/test_value_research_queue.py
           tests/test_b_selection_scope_api.py

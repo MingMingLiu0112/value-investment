@@ -119,3 +119,25 @@ def test_display_budget_preserves_economic_entry_reason(inputs):
         assert row['status']=='CANDIDATE'
         assert '市盈率' in row['reason']
         assert '超出单通道展示预算' not in row['reason']
+
+
+def test_supplement_consumed_without_promoting_verification_or_restamping_quote(inputs,monkeypatch):
+    root,manifest,payload=inputs
+    manifest['financial_supplement']=dict(path='runtime/TEST_ONLY-statements.json',sha256='b'*64)
+    ref=dict(path='runtime/TEST_ONLY-balance.json',sha256='c'*64,source_url='https://example.test',acquired_at='2026-11-02T05:00:00+00:00')
+    period=payload['financial']['points'][0]['period_label']
+    payload['financial']['public_financial_input']=dict(period=period)
+    payload['financial']['points']=[p for p in payload['financial']['points'] if not (p['symbol']=='600001' and p['field_name']=='cash')]
+    supplement=dict(status='COMPLETE',period=period,available_at='2026-11-02T05:00:00+00:00',
+        balance={'600001':dict(raw=dict(MONETARYFUNDS=123,TOTAL_ASSETS=1000,TOTAL_LIABILITIES=200),source_ref=ref)},income={},cashflow={})
+    monkeypatch.setattr(app.three_statements,'load',lambda *a,**kw:deepcopy(supplement))
+    result,_=app.compile_inputs(root=root,inputs=manifest,now=NOW,run_id='TEST_ONLY')
+    row=next(r for r in result['rows'] if r['symbol']=='600001')
+    cash=next(p for p in row['financial_data']['fields'] if p['field']=='cash')
+    assert cash['value']=='123' and cash['status']=='AVAILABLE_PENDING_VERIFICATION'
+    assert row['quote_observed_at']=='2026-11-02T03:00:00+00:00'
+    assert result['available_at']=='2026-11-02T05:00:00+00:00'
+    assert row['formal_eligibility'] is False and row['buy_eligible'] is False
+    supplement['period']='1900-12-31'
+    with pytest.raises(ValueError,match='PERIOD'):
+        app.compile_inputs(root=root,inputs=manifest,now=NOW,run_id='TEST_ONLY')

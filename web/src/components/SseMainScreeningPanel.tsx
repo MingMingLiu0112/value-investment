@@ -30,6 +30,32 @@ export type ScreenPage = {
     gaps: string[];
     period: string | null;
     updated_at: string | null;
+    financial_data?: {
+      required_count: number;
+      available_count: number;
+      verified_count: number;
+      missing_count: number;
+      fields: {
+        field: string;
+        label: string;
+        status:
+          | "AVAILABLE_PENDING_VERIFICATION"
+          | "MISSING"
+          | "PARTIAL_SCOPE"
+          | "VERIFIED"
+          | "CONFLICT";
+        value: string | null;
+        unit: string;
+        reason: string;
+      }[];
+    };
+    applicability?: {
+      kind: string | null;
+      label: string;
+      reason: string;
+      required_metrics: string[];
+      provisional: boolean;
+    };
     channel_evaluations: { channel: string; status: string; reason: string }[];
     conditions: {
       field: string;
@@ -63,9 +89,9 @@ const statuses: Record<string, string> = {
   FAIL: "未通过",
   NOT_EVALUATED: "未评估",
   REJECTED: "未通过初筛",
-  DATA_GAP: "缺资料",
+  DATA_GAP: "资料或核验未齐",
   CONFLICT: "资料冲突",
-  UNSUPPORTED: "不适用",
+  UNSUPPORTED: "普通企业方法不适用",
   BUDGET_EXCLUDED: "已通过初筛（展示数量受限）",
   observed: "来源观察",
   missing: "缺失",
@@ -94,6 +120,47 @@ const count = (v: unknown): v is number =>
 const nullable = (v: unknown) => v === null || typeof v === "string";
 const strings = (v: unknown): v is string[] =>
   Array.isArray(v) && v.every((x) => typeof x === "string");
+
+const financialStatuses: Record<string, string> = {
+  AVAILABLE_PENDING_VERIFICATION: "已取得，待核验",
+  MISSING: "原始数据缺失",
+  PARTIAL_SCOPE: "口径/适用性受限",
+  VERIFIED: "字段已核验",
+  CONFLICT: "数据冲突待核验",
+};
+function validFinancialData(v: unknown) {
+  return (
+    object(v) &&
+    [
+      "required_count",
+      "available_count",
+      "verified_count",
+      "missing_count",
+    ].every((k) => count(v[k])) &&
+    Array.isArray(v.fields) &&
+    v.fields.every(
+      (f: unknown) =>
+        object(f) &&
+        typeof f.field === "string" &&
+        typeof f.label === "string" &&
+        typeof f.status === "string" &&
+        Object.prototype.hasOwnProperty.call(financialStatuses, f.status) &&
+        nullable(f.value) &&
+        typeof f.unit === "string" &&
+        typeof f.reason === "string",
+    )
+  );
+}
+function validApplicability(v: unknown) {
+  return (
+    object(v) &&
+    nullable(v.kind) &&
+    typeof v.label === "string" &&
+    typeof v.reason === "string" &&
+    strings(v.required_metrics) &&
+    typeof v.provisional === "boolean"
+  );
+}
 
 export function validScreenPage(v: unknown): v is ScreenPage {
   if (
@@ -149,6 +216,9 @@ export function validScreenPage(v: unknown): v is ScreenPage {
       strings(r.gaps) &&
       nullable(r.period) &&
       nullable(r.updated_at) &&
+      (r.financial_data === undefined ||
+        validFinancialData(r.financial_data)) &&
+      (r.applicability === undefined || validApplicability(r.applicability)) &&
       Array.isArray(r.channel_evaluations) &&
       r.channel_evaluations.every(
         (c: unknown) =>
@@ -171,6 +241,110 @@ export function validScreenPage(v: unknown): v is ScreenPage {
   );
 }
 
+function FinancialDiagnostic({ row }: { row: ScreenPage["items"][number] }) {
+  const data = row.financial_data;
+  const applicability = row.applicability;
+  if (!data && !applicability) return null;
+  // Classification is supplied by the backend; never infer from issuer names.
+  const specialized = applicability?.kind != null && applicability.kind !== "";
+  const kinds: Record<string, string> = {
+    bank: "银行",
+    insurer: "保险",
+    broker: "证券",
+    financial_group: "金融机构",
+    insurance: "保险",
+    securities: "证券",
+  };
+  const kindLabel = applicability?.kind
+    ? kinds[applicability.kind.toLowerCase()]
+    : undefined;
+  return (
+    <section aria-label={row.name + "财务数据与适用性"}>
+      {applicability && (
+        <>
+          <p>
+            <strong>{applicability.label}</strong>
+            {applicability.provisional ? "（初步识别，待核验）" : ""}：
+            {applicability.reason}
+          </p>
+          {specialized && (
+            <p>
+              需{kindLabel || "对应行业"}
+              专用指标：普通企业方法不适用，不套用普通企业9项完成率；这不是公司不好或没有财报。
+            </p>
+          )}
+          {applicability.required_metrics.length > 0 ? (
+            <details>
+              <summary>
+                需核验的{specialized ? "专用" : "适用"}指标（
+                {applicability.required_metrics.length}项）
+              </summary>
+              <ul>
+                {applicability.required_metrics.map((metric, i) => (
+                  <li key={i}>{metric}</li>
+                ))}
+              </ul>
+            </details>
+          ) : specialized ? (
+            <p>未提供具体专用指标清单，不能认定已覆盖。</p>
+          ) : null}
+        </>
+      )}
+      {data ? (
+        <>
+          {!specialized && (
+            <p>
+              已取得{data.available_count}/{data.required_count}项；真正缺
+              {data.missing_count}项；已核验{data.verified_count}项。
+            </p>
+          )}
+          <p>
+            原始数据取得不等于通过正式事实准入；待核验、口径/适用性受限或冲突不应一概称为没有财报。字段核验也不构成投资批准。
+          </p>
+          {specialized && (
+            <p>以下仅展示返回的原始字段，不作为专用指标覆盖率。</p>
+          )}
+          <details>
+            <summary>逐字段取得与核验状态（{data.fields.length}项）</summary>
+            {data.fields.length ? (
+              <div style={{ overflowX: "auto" }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>字段</th>
+                      <th>原始值</th>
+                      <th>取得 / 核验状态</th>
+                      <th>口径与原因</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.fields.map((field, i) => (
+                      <tr key={i}>
+                        <th scope="row" title={field.field}>
+                          {field.label}
+                        </th>
+                        <td>
+                          {text(field.value)} {field.unit}
+                        </td>
+                        <td>{financialStatuses[field.status]}</td>
+                        <td>{field.reason}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p>未返回字段明细，不能推断任何字段为零。</p>
+            )}
+          </details>
+        </>
+      ) : (
+        <p>未提供财务字段取得与核验计数，数量未知。</p>
+      )}
+    </section>
+  );
+}
+
 function ChannelCoverage({ counts }: { counts: ScreenPage["channel_counts"] }) {
   const names = Array.from(
     new Set([...Object.keys(channels), ...Object.keys(counts || {})]),
@@ -179,7 +353,7 @@ function ChannelCoverage({ counts }: { counts: ScreenPage["channel_counts"] }) {
     <section aria-label="逐通道初筛覆盖">
       <h4>逐通道初筛覆盖（不是研究完成度）</h4>
       <p>
-        缺资料或不适用不代表已完成质量研究。公司可出现在多个通道，各通道数量不可相加为公司总数。
+        资料或核验未齐不等于原始数据缺失，请查看逐字段的取得、缺失与口径状态。金融机构需要金融专用指标；普通企业方法不适用，不是公司不好。公司可出现在多个通道，各通道数量不可相加为公司总数。
       </p>
       {!counts && <p>来源未提供通道计数，不能认定四通道均已评估。</p>}
       <div style={{ overflowX: "auto" }}>
@@ -188,8 +362,8 @@ function ChannelCoverage({ counts }: { counts: ScreenPage["channel_counts"] }) {
             <tr>
               <th>通道</th>
               <th>通过初筛（含展示数量受限）</th>
-              <th>缺资料</th>
-              <th>不适用</th>
+              <th>资料或核验未齐</th>
+              <th>普通企业方法不适用</th>
               <th>其他状态</th>
             </tr>
           </thead>
@@ -411,6 +585,7 @@ export function SseMainScreeningPanel({ load }: SseMainScreeningPanelProps) {
                           </td>
                           <td>
                             <p>{row.reason}</p>
+                            <FinancialDiagnostic row={row} />
                             {row.gaps.length ? (
                               <>
                                 <ul>
