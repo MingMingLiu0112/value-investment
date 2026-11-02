@@ -5,7 +5,7 @@ import hashlib
 import json
 import math
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
@@ -68,6 +68,17 @@ def _decode(raw, *, dividend=False):
             raise ValueError('nonfinite JSON number')
         return number
     return json.loads(raw, parse_constant=reject, parse_float=finite, object_pairs_hook=unique)
+
+
+def _dividend_date_string(value):
+    """Match the provider's default=str only for its date-like values.
+
+    pandas.NaT is a datetime subclass: str(NaT) remains the raw "NaT"
+    missing-date marker, never a fabricated date or numeric zero.
+    """
+    if isinstance(value, (date, datetime)):
+        return str(value)
+    raise TypeError('Unsupported dividend payload object: ' + type(value).__name__)
 
 
 def _path(root, value):
@@ -194,7 +205,8 @@ def collect_inputs(root: Path, output_dir: Path, allow_network: bool, *,
                     binding['decoder_version'] = DIVIDEND_DECODER
                     # Normalize both representations, never rewrite the acquired bytes.
                     decoded = _decode(raw, dividend=True)
-                    payload = _decode(json.dumps(payload, ensure_ascii=False, allow_nan=True), dividend=True)
+                    payload = _decode(json.dumps(payload, ensure_ascii=False, allow_nan=True,
+                                                 default=_dividend_date_string), dividend=True)
                 else:
                     decoded = _decode(raw)
                 if decoded != payload or not payload.get('rows'):

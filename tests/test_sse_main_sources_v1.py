@@ -342,3 +342,44 @@ def test_main_a_prefix_guard_accepts_only_with_official_response(sources, symbol
     payload = m._official(encode(raw), datetime.now(timezone.utc).isoformat())
     assert any(row['symbol'] == symbol for row in payload['records'])
     assert payload['complete'] is False and payload['quote_date_verified'] is False
+
+
+def test_real_shape_dividend_date_datetime_nan_nat_matches_native_raw(sources, monkeypatch):
+    from datetime import date
+    import pandas as pd
+    from value_investment_agent.m2_market_data import _raw_json
+    row = ['600001', '公司', None, None, None, float('nan'), 3, None, None,
+           None, None, None, None, date(2026, 5, 20),
+           datetime(2026, 6, 1, 12, 30, tzinfo=timezone.utc), pd.NaT, None, None]
+    raw, value = _raw_json([row], fiscal_year='2025')
+    monkeypatch.setattr(m, 'fetch_eastmoney_dividends', lambda: (raw, value))
+    manifest = collect(sources)
+    assert 'dividend' in manifest['inputs']
+    decoded = replay(sources, manifest)['dividend']['rows'][0]
+    assert decoded[5] is None
+    assert decoded[13:16] == ['2026-05-20', '2026-06-01 12:30:00+00:00', 'NaT']
+    assert (sources[1] / 'dividend.json').read_bytes() == raw
+
+
+def test_dividend_date_support_does_not_stringify_arbitrary_objects(sources, monkeypatch):
+    from value_investment_agent.m2_market_data import _raw_json
+    class Unexpected:
+        def __str__(self): return '2026-05-20'
+    raw, value = _raw_json([['600001', Unexpected(), float('nan')]])
+    monkeypatch.setattr(m, 'fetch_eastmoney_dividends', lambda: (raw, value))
+    manifest = collect(sources)
+    assert 'dividend' not in manifest['inputs']
+    assert any(e['source'] == 'dividend' and e['error_type'] == 'TypeError'
+               and 'Unsupported dividend payload object' in e['message'] for e in manifest['errors'])
+    assert (sources[1] / 'dividend.json').read_bytes() == raw
+
+
+def test_dividend_real_date_mismatch_still_rejected(sources, monkeypatch):
+    from datetime import date
+    from value_investment_agent.m2_market_data import _raw_json
+    raw, value = _raw_json([['600001', date(2026, 5, 20), float('nan')]])
+    value['rows'][0][1] = date(2026, 5, 21)
+    monkeypatch.setattr(m, 'fetch_eastmoney_dividends', lambda: (raw, value))
+    manifest = collect(sources)
+    assert 'dividend' not in manifest['inputs']
+    assert any(e['message'] == 'PROVIDER_RAW_PAYLOAD_MISMATCH_OR_EMPTY' for e in manifest['errors'])
