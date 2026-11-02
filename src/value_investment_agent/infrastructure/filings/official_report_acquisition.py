@@ -132,9 +132,8 @@ def _select(rows, *, symbol, period, kind, today):
 
 def _verify_cover(pages, *, symbol, issuer_name, period, kind):
     text = "\n".join(pages)
-    codes = set()
-    for labelled in re.findall(r"(?:公司|证券|股票)代码\s*[:：]?\s*([0-9]{6})(?!\d)", text):
-        codes.add(labelled)
+    from .stock_identity_table_v1 import labelled_security_codes
+    codes=labelled_security_codes(pages,symbol=symbol)
     compact = re.sub(r"\s+", "", text)
     report = "年度报告" if kind == "annual" else "半年度报告"
     if (codes != {symbol} or re.sub(r"\s+", "", issuer_name) not in compact

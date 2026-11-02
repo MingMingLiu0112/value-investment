@@ -591,8 +591,9 @@ def extract_retained_annual(root: Path, source: RetainedAnnualSource, *,
     if source.period[:4] + '\u5e74\u5e74\u5ea6\u62a5\u544a' not in header:
         raise ValueError('original annual-report identity not found')
     opening = ''.join(''.join(pages[:12]).split())
-    labelled_codes = set(re.findall(r'(?:\u80a1\u7968|\u8bc1\u5238|\u516c\u53f8)\u4ee3\u7801[:\uff1a]?(\d{6})(?!\d)', opening))
-    if source.symbol not in labelled_codes:
+    from ..filings.stock_identity_table_v1 import labelled_security_codes
+    labelled_codes=labelled_security_codes(pages[:12],symbol=source.symbol)
+    if labelled_codes != {source.symbol}:
         raise ValueError('original labelled security identity not found in first twelve pages')
     candidates = extract_candidates_from_pages(pages)
     debt_candidates = extract_debt_balance_candidates(pages, source.period)

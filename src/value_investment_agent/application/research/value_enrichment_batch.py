@@ -394,8 +394,8 @@ def _work_key(root, row, points, allow_network, retry_token, context=None):
     from ... import financial_quality, filing_extract
     from . import income_source_correlation
     from ...infrastructure.screening import sina_income_original
-    from ...infrastructure.filings import official_report_acquisition
-    modules = [Path(__file__), Path(income_source_correlation.__file__), Path(value_evidence_enrichment_v1.__file__),
+    from ...infrastructure.filings import official_report_acquisition,stock_identity_table_v1
+    modules = [Path(__file__), Path(stock_identity_table_v1.__file__), Path(income_source_correlation.__file__), Path(value_evidence_enrichment_v1.__file__),
         Path(sina_income_original.__file__), Path(official_report_acquisition.__file__),
         Path(value_research_priority_v2.__file__), Path(extraction.__file__),
         Path(evidence_screen_v3.__file__), Path(financial_quality.__file__), Path(filing_extract.__file__)]

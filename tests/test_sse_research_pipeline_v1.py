@@ -133,3 +133,15 @@ def test_concurrent_publish_rechecks_pointer_under_real_lock_and_preserves_paren
     else:
         assert queue["inputs"]["previous_queue_sha256"] is None
     assert all(path.read_bytes() == raw for path, raw in preserved.items())
+
+
+def test_prior_period_attempt_cannot_be_displayed_as_current_period_stage(setup):
+    root,_=setup;result=prepare(setup)
+    pointer=json.loads((root/app.POINTER).read_bytes());mp=root/pointer['manifest']['path'];manifest=json.loads(mp.read_bytes());queue=app._bound(root,result['queue'])
+    receipt=root/'runtime/TEST_ONLY_attempt.json'
+    receipt.write_text(json.dumps(dict(action='no_order',queue_content_sha256=queue['content_sha256'],started_at=queue['evaluation_at'],finished_at=queue['evaluation_at'],items=[dict(symbol='600001',scheduling=dict(financial_period='2024-12-31'),state='TEST_ONLY_OLD_PERIOD_STAGE',next_action='TEST_ONLY_OLD_ACTION')])))
+    manifest['execution']=app._binding(root,receipt);mp.write_text(json.dumps(manifest));pointer['manifest']=app._binding(root,mp);(root/app.POINTER).write_text(json.dumps(pointer))
+    view=app.read_sse_research_pool(root=root,now=datetime.now(timezone.utc))
+    assert view['status']=='AVAILABLE'
+    assert view['items'][0]['tracking_status']=='DEEP_RESEARCH_PENDING'
+    assert 'TEST_ONLY_OLD_ACTION' not in view['items'][0]['next_action']

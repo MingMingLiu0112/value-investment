@@ -65,8 +65,8 @@ def implementation():
     from ...infrastructure.screening import evidence_screen_v3, public_financial_snapshot, verified_screen_cache_v1
     from ..research import value_evidence_enrichment_v1 as official_adoption
     from ...infrastructure.screening import value_evidence_enrichment_v1 as official_parser
-    from ...infrastructure.filings import financial_funding_scope,pdf_text,official_pdf
-    modules=[verified_screen_cache_v1,official_adoption,official_parser,financial_funding_scope,pdf_text,official_pdf,sse_main_pool_v1,value_candidate_selection,financial_gap_diagnostics_v1,financial_source_comparison_v1,debt_source,sina_source,official_funding,three_statements,m2_discovery_engine,m2_opportunity_discovery,
+    from ...infrastructure.filings import financial_funding_scope,pdf_text,official_pdf,stock_identity_table_v1
+    modules=[stock_identity_table_v1,verified_screen_cache_v1,official_adoption,official_parser,financial_funding_scope,pdf_text,official_pdf,sse_main_pool_v1,value_candidate_selection,financial_gap_diagnostics_v1,financial_source_comparison_v1,debt_source,sina_source,official_funding,three_statements,m2_discovery_engine,m2_opportunity_discovery,
              m2_market_data,financial_quality,official_universe,financial_institutions,evidence_screen_v3,public_financial_snapshot,sources]
     paths=[Path(__file__),*[Path(inspect.getfile(m)) for m in modules],Path(__file__).with_name('public_financial_input.py')]
     base=Path(__file__).resolve().parents[4]

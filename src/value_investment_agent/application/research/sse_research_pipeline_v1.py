@@ -100,7 +100,7 @@ def prepare_sse_research_run(*,root,manifest_binding,output_path,budget=30,
         execution_status=execution['status'] if execution else 'NOT_REQUESTED')
 
 
-def _latest_attempts(root,manifest):
+def _latest_attempts(root,manifest,now):
     """Read bounded immutable run history, never the private account/task registry."""
     attempts={};seen=set()
     for _ in range(64):
@@ -109,8 +109,12 @@ def _latest_attempts(root,manifest):
             receipt=_bound(root,execution);queue=_bound(root,manifest['queue'])
             if receipt.get('queue_content_sha256')!=queue.get('content_sha256') or receipt.get('action')!='no_order':
                 raise ValueError('ENRICHMENT_EXECUTION_QUEUE_BINDING_MISMATCH')
+            started=datetime.fromisoformat(receipt['started_at']);finished=datetime.fromisoformat(receipt['finished_at'])
+            if started.utcoffset() is None or finished.utcoffset() is None or not datetime.fromisoformat(queue['evaluation_at'])<=started<=finished<=now:
+                raise ValueError('ENRICHMENT_EXECUTION_TIME_INVALID')
             for row in receipt.get('items',[]):
-                if row['symbol'] not in attempts:attempts[row['symbol']]=dict(row,completed_at=receipt['finished_at'])
+                key=(row['symbol'],(row.get('scheduling') or {}).get('financial_period'))
+                if key[1] and key not in attempts:attempts[key]=dict(row,completed_at=receipt['finished_at'])
         parent=manifest.get('parent_manifest')
         if not parent:return attempts
         if parent['sha256'] in seen:raise ValueError('CYCLIC_RESEARCH_HISTORY')
@@ -145,10 +149,10 @@ def read_sse_research_pool(*,root,now):
                 if queue!=expected:raise ValueError('RESEARCH_QUEUE_REPLAY_MISMATCH')
                 _CACHE.put(root,binding,queue)
         rows=[r for r in queue['deep_research_priority']+queue['evidence_enrichment_work_queue'] if r.get('tracking_selected') is True]
-        items=[];attempts=_latest_attempts(root,manifest)
+        items=[];attempts=_latest_attempts(root,manifest,now)
         for row in rows:
             completion=row['evidence_completeness']
-            attempt=attempts.get(row['symbol'])
+            attempt=attempts.get((row['symbol'],row['timing']['financial_period']))
             gaps=list(row['gaps'])
             if attempt and attempt.get('reason'):gaps.insert(0,'最近补证：'+attempt['reason'])
             next_action=('进入经营与反证研究' if row in queue['deep_research_priority'] else '自动取得并核验官方年度原件；不跳过财务质量')
