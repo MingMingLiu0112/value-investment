@@ -1,6 +1,30 @@
 import { useCallback, useState } from "react";
 import { useApi } from "../hooks/useApi";
 
+type OfficialSummary = {
+  version: "official-identified-financing-sum-v1";
+  status: "PARTIAL" | "NOT_AVAILABLE" | "REJECTED";
+  known_total: string | null;
+  unit: "CNY";
+  components: {
+    field: string;
+    label: string;
+    value: string;
+    unit: "CNY";
+    page: number;
+    excerpt: string;
+    source_url: string;
+    sha256: string;
+  }[];
+  unknown_components: { field: string; label: string; reason: string }[];
+  errors: string[];
+  formula: "SUM_EXPLICIT_NONOVERLAPPING_CURRENT_AND_NONCURRENT_FINANCING_BUCKETS";
+  complete_debt_verified: false;
+  formal_admission: false;
+  action: "no_order";
+  reason: string;
+};
+
 type RowStatus = "CANDIDATE" | "EXCLUDED" | "UNASSESSABLE";
 type Params = { offset: number; limit: number; query: string; status: string };
 export type ScreenPage = {
@@ -45,6 +69,7 @@ export type ScreenPage = {
       assurance: "E1_TWO_PROVIDER_COMPARISON_NOT_OFFICIAL_ADMISSION";
     };
     debt_details?: {
+      official_summary?: OfficialSummary;
       components: {
         field: string;
         label: string;
@@ -246,10 +271,132 @@ function officialSourceUrl(v: unknown): v is string {
   }
 }
 
+const financingFields = new Set([
+  "short_term_borrowings",
+  "short_term_bonds",
+  "long_term_borrowings_noncurrent",
+  "long_term_borrowings_current",
+  "lease_liabilities_noncurrent",
+  "lease_liabilities_current",
+  "bonds_payable_current",
+  "long_term_payables_current",
+  "financial_member_deposits",
+  "financial_deposits_and_interbank",
+]);
+const nonempty = (v: unknown): v is string =>
+  typeof v === "string" && v.trim().length > 0;
+const amount = (v: unknown): v is string =>
+  typeof v === "string" && /^\d+(?:\.\d+)?$/.test(v);
+function validOfficialSummary(v: unknown): v is OfficialSummary {
+  if (
+    !object(v) ||
+    v.version !== "official-identified-financing-sum-v1" ||
+    !["PARTIAL", "NOT_AVAILABLE", "REJECTED"].includes(v.status) ||
+    v.unit !== "CNY" ||
+    v.complete_debt_verified !== false ||
+    v.formal_admission !== false ||
+    v.action !== "no_order" ||
+    v.formula !==
+      "SUM_EXPLICIT_NONOVERLAPPING_CURRENT_AND_NONCURRENT_FINANCING_BUCKETS" ||
+    !nonempty(v.reason) ||
+    !strings(v.errors) ||
+    !v.errors.every(nonempty) ||
+    !Array.isArray(v.components) ||
+    !Array.isArray(v.unknown_components)
+  )
+    return false;
+  if (
+    !v.components.every(
+      (c: unknown) =>
+        object(c) &&
+        financingFields.has(c.field) &&
+        nonempty(c.label) &&
+        amount(c.value) &&
+        c.unit === "CNY" &&
+        count(c.page) &&
+        c.page > 0 &&
+        nonempty(c.excerpt) &&
+        officialSourceUrl(c.source_url) &&
+        new URL(c.source_url).hostname === "static.cninfo.com.cn" &&
+        typeof c.sha256 === "string" &&
+        /^[a-fA-F0-9]{64}$/.test(c.sha256),
+    )
+  )
+    return false;
+  if (
+    !v.unknown_components.every(
+      (c: unknown) =>
+        object(c) &&
+        financingFields.has(c.field) &&
+        nonempty(c.label) &&
+        nonempty(c.reason),
+    )
+  )
+    return false;
+  if (v.status === "REJECTED")
+    return v.known_total === null && v.errors.length > 0;
+  const fields = [...v.components, ...v.unknown_components].map((c) => c.field);
+  if (new Set(fields).size !== fields.length || v.errors.length !== 0)
+    return false;
+  if (v.status === "NOT_AVAILABLE")
+    return v.known_total === null && v.components.length === 0;
+  const known = new Set(v.components.map((c) => c.field));
+  return (
+    amount(v.known_total) &&
+    v.components.length > 0 &&
+    !(
+      known.has("financial_member_deposits") &&
+      known.has("financial_deposits_and_interbank")
+    )
+  );
+}
+
+function OfficialFinancing({ summary: s }: { summary: OfficialSummary }) {
+  return (
+    <section aria-label="官方融资小计">
+      <p>
+        官方已识别融资小计：{s.status === "PARTIAL" ? s.known_total : "未知"}{" "}
+        CNY（{s.status}）
+      </p>
+      <p>
+        PARTIAL仅表示已识别部分，不是完整有息负债；不与供应商小计相加。不代表正式准入。
+      </p>
+      <p>{s.reason}</p>
+      {s.errors.map((e, i) => (
+        <p key={i}>拒绝汇总：{e}</p>
+      ))}
+      <ul>
+        {s.components.map((c, i) => (
+          <li key={i}>
+            {c.label}：{c.value} CNY；原文第{c.page}页<p>{c.excerpt}</p>
+            <a href={c.source_url} target="_blank" rel="noopener noreferrer">
+              官方原件
+            </a>
+            <code>{c.sha256}</code>
+          </li>
+        ))}
+      </ul>
+      <p>
+        未知项（不按零计；未列出也不表示完整核验）：
+        {s.unknown_components.length}项
+      </p>
+      <ul>
+        {s.unknown_components.map((c, i) => (
+          <li key={i}>
+            {c.label}：未知；{c.reason}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function validDebtDetails(v: unknown) {
   return (
     object(v) &&
     v.complete_debt_verified === false &&
+    (v.official_summary === undefined ||
+      validOfficialSummary(v.official_summary)) &&
     (v.official_evidence_count === undefined ||
       count(v.official_evidence_count)) &&
     (v.official_components === undefined ||
@@ -443,6 +590,9 @@ function CrosscheckAndDebt({ row }: { row: ScreenPage["items"][number] }) {
             （单位与范围见明细；不是完整有息负债）。
           </p>
           <p>{debt.reason}</p>
+          {debt.official_summary && (
+            <OfficialFinancing summary={debt.official_summary} />
+          )}
           <details>
             <summary>债务项目与识别范围（{debt.components.length}项）</summary>
             <p>

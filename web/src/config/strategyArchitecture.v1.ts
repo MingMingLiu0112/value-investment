@@ -36,6 +36,12 @@ export const valueMainModuleIds = [
 ] as const;
 export const valueSharedModuleIds = ["S1", "S2", "S3", "S4", "W1"] as const;
 export interface DeliveryReview {
+  inputDetails?: string[];
+  steps?: { title: string; description: string }[];
+  outputDetails?: string[];
+  acceptanceChecks?: string[];
+  implementationRefs?: { path: string; symbol?: string; description: string }[];
+
   status: "COMPLETE" | "LIMITED" | "PARTIAL" | "UNVERIFIED";
   what: string;
   why: string;
@@ -49,7 +55,7 @@ export interface DeliveryReview {
 }
 export const deliveryReviewMeta = {
   reviewedAt: "2026-11-02",
-  baseline: "2f9259fa93daa09549f148f23278c8325a995f0f",
+  baseline: "f9aadce0",
   kind: "人工交付复核，不是实时运行状态",
 } as const;
 export interface Stage {
@@ -131,13 +137,84 @@ export const catalog: Record<
       {
         id: "A",
         deliveryReview: {
+          inputDetails: [
+            "显式证券、发行人和报告期请求；官方原件receipt、相对路径、SHA256及原始取得时间。",
+            "沪市主板链另读取官方名单、供应商行情/财务、完整合并表、Sina三表及可选官方PDF绑定；不将供应商观察当作法定事实。",
+          ],
+          steps: [
+            {
+              title: "取得或复用公开原件",
+              description:
+                "run_public_evidence按请求执行；新网络取得须显式授权。复用保留原fetched时间，不把本次读取时间改成历史可得时间。",
+            },
+            {
+              title: "校验整包闭包",
+              description:
+                "load_bundle校验请求、receipt、事实快照及export绑定。来源缺失或不支持保持缺口；来源取得成功不证明事实完整。",
+            },
+            {
+              title: "逐项复核后交队列",
+              description:
+                "validate_queue_public_evidence要求export路径和SHA完全一致。严格闭包的PARTIAL可消费健康来源；任何已声明receipt原件损坏则整体拒绝，全无可核来源也拒绝。",
+            },
+            {
+              title: "按既有窄规则采纳",
+              description:
+                "官方资产、负债、权益两期精确勾稽经既有_reconcile_official_balance_ratio；身份、期间、币种或存量已采纳事实冲突时不采纳，最多形成限定debt_ratio事实。",
+            },
+            {
+              title: "可携带归档与隔离恢复",
+              description:
+                "archive_public_evidence只枚举已绑定闭包；restore_public_evidence在隔离目录预检并恢复，保留字节/来源时间，不联网、不发布current、不覆盖不一致目标。",
+            },
+          ],
+          outputDetails: [
+            "来源包、事实快照、财务export及归档manifest引用；系统页区分来源状态、已采纳字段和未采纳原因。",
+            "局部真实验收：最终A+B回执覆盖1700只官方主板证券、1618家普通企业；官方勾稽样本列600519/600887/603985，正式范围仍仅既有资产负债率方法。",
+          ],
+          acceptanceChecks: [
+            "检查项：错Hash、错主体/期间、缺币种及坏receipt不能被静默剔除或补零。",
+            "检查项：隔离恢复后load_bundle及队列消费者结果一致；旧原件和fetched时间不变。",
+            "未完成：全市场任意报告解析、完整融资分类和全量财务质量准入；本次只核源码及留存回执，不重新采集。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/application/research/public_evidence.py",
+              symbol: "load_bundle",
+              description: "请求范围来源包的严格闭包校验。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/public_evidence.py",
+              symbol: "validate_queue_public_evidence",
+              description: "PARTIAL包健康来源消费及坏原件整体拒绝。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/public_evidence.py",
+              symbol: "restore_public_evidence",
+              description: "精确闭包隔离恢复；与archive_public_evidence配对。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/value_evidence_enrichment_v1.py",
+              symbol: "_reconcile_official_balance_ratio",
+              description: "沿用两期勾稽的单字段采纳规则。",
+            },
+            {
+              path: "scripts/current/collect_public_evidence.py",
+              symbol: "main",
+              description: "显式采集/归档/恢复CLI入口。",
+            },
+            {
+              path: "runtime/sse-main-financial-verification-20261102/final-delivery-receipt.json",
+              description: "2026-11-02留存验收结果，非页面实时探测。",
+            },
+          ],
           status: "LIMITED",
           what: "取得并保存公开原件。",
           why: "研究必须有可核对的出处。",
           how: "下载原件、绑定来源和哈希，再核验期间与口径。",
           scope: "沪市主板公开观察初筛；模块长期能力和完整经济研究仍未完成。",
-          done: "沪市主板官方名单、行情、年度财务及分红观察已接通来源重放。",
-          gap: "初筛数据可用；质量研究所需完整财务、逐股交易日仍未核验。",
+          done: "1700只主板来源重放已接通；三表、双源和官方资产负债率窄勾稽有真实留存验收。",
+          gap: "完整融资分类、全量财务质量及行情交易日仍未核验；来源取得不代表事实完整。",
           acceptance: "独立取得所需原件；缺失、冲突和重复执行均有准确回执。",
           evidence: ["docs/current/value-mainline-p0-20261101/abc-e-audit.md"],
           runHref: "/strategy/value",
@@ -181,13 +258,85 @@ export const catalog: Record<
       {
         id: "B",
         deliveryReview: {
+          inputDetails: [
+            "A提供的官方SSE主板A股范围、带来源时点的行情/年度财务/分红观察；可选三表、债务、Sina及官方附注补证。",
+            "筛选政策和四通道规则；Web查询仅传搜索词、状态、offset/limit，不传自造估值或筛选结果。",
+          ],
+          steps: [
+            {
+              title: "先锁定证券范围",
+              description:
+                "compile_inputs先验证来源和SSE/主板/A股身份，拒绝重复symbol；先限定官方名单再执行通道预算，不把其他交易所混入。",
+            },
+            {
+              title: "复用四通道原规则",
+              description:
+                "build_discovery_receipt调用既有质量、股息现金回报、价值和周期规则。报价冲突、风险警示、数据不足与方法不适用分别保留；展示数量限制不会丢弃已通过初筛的公司。",
+            },
+            {
+              title: "区分取得与核验",
+              description:
+                "财务诊断逐字段显示已取得待核验、真正缺失、口径受限或冲突。金融机构提示专用指标，不以普通企业9项完成率评价。",
+            },
+            {
+              title: "独立来源比较与债务拆分",
+              description:
+                "compare_observations验证期间、范围、单位、时间和不同供应商；一致仅是E1观察。debt_details只合计已识别借款/债券/非流动租赁，待分类项及官方构成单列，不补零或重复加。",
+            },
+            {
+              title: "重放并分页交付",
+              description:
+                "read_screen重新校验实现、来源和结果绑定；旧快照显示年龄，失败返回UNAVAILABLE且total=null。前端保持后端排序，展示每通道状态、理由和缺口；GET不采集。",
+            },
+          ],
+          outputDetails: [
+            "本次留存结果：1700只中候选736、排除142、无法评价822；官方名单均有记录不代表资料完整。",
+            "1618家普通企业至少比对一项，4844项一致、2项冲突、1581家有已识别融资金额；冲突不择源消除。",
+            "可搜索分页股票池、逐通道理由、字段值差异、融资分项与原件页链接；初筛不是买入。",
+          ],
+          acceptanceChecks: [
+            "检查项：未来来源/错币种/混合单位/同源镜像不能记双源一致；跨表倍率未声明不放行。",
+            "检查项：重复债务不重加，null与0区分；已识别小计不替代完整有息负债，双源MATCHED不升级质量门。",
+            "局部真实验收：final-delivery-receipt记录上述覆盖及API结果；完整有息负债NOT_PROVEN、full_financial_quality NOT_GRANTED，行情交易日仍未独立核验。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/application/discovery/sse_main_screening.py",
+              symbol: "compile_inputs",
+              description: "官方范围、补证、四通道和行级诊断实际聚合。",
+            },
+            {
+              path: "src/value_investment_agent/application/discovery/sse_main_screening.py",
+              symbol: "read_screen",
+              description: "只读重放、失效拒绝及全量分页。",
+            },
+            {
+              path: "src/value_investment_agent/domain/discovery/financial_source_comparison_v1.py",
+              symbol: "compare_observations",
+              description: "不同供应商数值比较，不授正式事实资格。",
+            },
+            {
+              path: "src/value_investment_agent/domain/discovery/financial_source_comparison_v1.py",
+              symbol: "debt_details",
+              description: "去重的已识别融资小计及未分类项。",
+            },
+            {
+              path: "web/src/components/SseMainScreeningPanel.tsx",
+              symbol: "SseMainScreeningPanel",
+              description: "真实股票池、缺口、双源和官方附注展示。",
+            },
+            {
+              path: "runtime/sse-main-financial-verification-20261102/final-delivery-receipt.json",
+              description: "最终覆盖数据的唯一引用；不是实时计数。",
+            },
+          ],
           status: "LIMITED",
           what: "从市场中找值得继续研究的公司。",
           why: "避免只研究事先指定的股票。",
           how: "复用四通道筛选，将入池理由和缺口送入队列。",
           scope: "沪市主板公开观察初筛；模块长期能力和完整经济研究仍未完成。",
-          done: "沪市主板范围先于预算执行四通道；逐股入池、排除与无法评价可查。",
-          gap: "本轮仅沪市主板初筛；质量通道资料不足，不代表全A或深度研究完成。",
+          done: "1700只逐股初筛可查；1618家参与双源比对，4844项一致、2项冲突，1581家有已识别融资。",
+          gap: "已取得、待核验、真正缺失及口径受限已分开；完整债务和全量质量资格未通过，不是买入建议。",
           acceptance: "来源与交易日核验通过，候选、排除理由及覆盖范围可复算。",
           evidence: [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
@@ -257,6 +406,66 @@ export const catalog: Record<
       {
         id: "C",
         deliveryReview: {
+          inputDetails: [
+            "已消费研究包、descriptor及发行人经营原文；固定source-only样本的官方完整段落和审核规则。",
+            "冻结五家为600519、600887、000333、601088、600036；000568的E2首编不增加C样本。",
+          ],
+          steps: [
+            {
+              title: "优先校验已有研究",
+              description:
+                "load_company_profile先取当前已绑定候选或重放包，核验时点；损坏当前证据不能悄悄退回source-only。",
+            },
+            {
+              title: "绑定画像与输入",
+              description:
+                "validate_company_profile_for_package核对经营与资本证据；project_company_profile生成业务画像，并与真实消费descriptor一致性校验。",
+            },
+            {
+              title: "有限原文路由",
+              description:
+                "固定新三家按已审核完整原文映射业务族：制造及周期仅提供条件模型路由，银行明确方法不适用；不是名称关键词通用分类器。",
+            },
+            {
+              title: "列出模型缺项",
+              description:
+                "既有路由返回required_inputs与拒绝原因；画像不代填预测或资本参数，不允许无输入估值，不授经济批准。",
+            },
+          ],
+          outputDetails: [
+            "来源绑定的经营画像、模型路由、必需输入和反证；旧两家公司分析消费保持一致。",
+            "固定五家局部真实验收：000333/601088只有路由与输入缺口，600036金融拒绝；不是五家都可估值。",
+          ],
+          acceptanceChecks: [
+            "已验范围：冻结五家来源与API回执；检查错公司、坏Hash、descriptor不一致不得回退。",
+            "未完成：任意新公司自动分类和模型经济适用性验证；固定五家完成不能外推全行业。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/application/research/company_profile.py",
+              symbol: "load_company_profile",
+              description: "当前研究优先级和真实descriptor对齐。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/company_profile.py",
+              symbol: "validate_company_profile_for_package",
+              description: "画像来源与模型输入校验。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/company_profile_sources_v1.py",
+              symbol: "load_source_company_profile",
+              description: "固定原文审核样本入口。",
+            },
+            {
+              path: "src/value_investment_agent/domain/research/profile_applicability_v1.py",
+              symbol: "contract_for_profile",
+              description: "路由必需输入与禁止批准边界。",
+            },
+            {
+              path: "runtime/c-closeout-20261031/api-acceptance/receipt.json",
+              description: "固定五家留存验收。",
+            },
+          ],
           status: "COMPLETE",
           what: "判断企业类型及适用研究方法。",
           why: "不同企业不能套同一种估值公式。",
@@ -314,6 +523,67 @@ export const catalog: Record<
       {
         id: "D1",
         deliveryReview: {
+          inputDetails: [
+            "显式任务请求、已封存官方source context、模型配置及预算权限；不将旧估值或保存响应冒充新研究。",
+            "经营、反证、事件三角色结构化合同，逐角色request/response及usage记录。",
+          ],
+          steps: [
+            {
+              title: "创建冻结任务",
+              description:
+                "LiveOperatingTaskService复用ResearchTaskService的锁和状态版本；绑定来源与实现，执行前重建context并校验身份。",
+            },
+            {
+              title: "先检查预算再请求",
+              description:
+                "调用前预留CNY预算并检查跨任务日上限，Provider返回后记录usage和结算；估算不是供应商账单，未结算不伪造零费用。",
+            },
+            {
+              title: "逐角色校验与留痕",
+              description:
+                "FUNDAMENTAL后再由反证和事件角色审视本次提案；引用、字段或反证缺失拒绝，原失败响应保留，恢复不能冒称首次即成功。",
+            },
+            {
+              title: "有界执行与取消",
+              description:
+                "既有HTTP后台由supervise_live_task监督自有子进程，取消或总超时须回收worker；终态锁冲突保留pending记录，不伪装状态已落盘。",
+            },
+            {
+              title: "只输出研究草案",
+              description:
+                "任务视图重新校验绑定并展示真实角色完成情况；执行成功不代表经济论断正确、主区间采用或投资批准。",
+            },
+          ],
+          outputDetails: [
+            "来源可追踪的角色响应、失败轨迹、费用估计、检查点和可恢复任务状态。",
+            "局部真实验证：000568历史rt-eac三角色成功含4次调用/一次拒绝恢复；近期新任务取消记录另存，不冒充完整成功。",
+          ],
+          acceptanceChecks: [
+            "检查项：未经明确操作不调用模型；预算不足、来源变化、坏响应应准确拒绝。",
+            "检查项：取消/超时不被晚返回覆盖，终态写入失败可见；旧raw响应及实现绑定不改。",
+            "未完成：近期新研究的完整业务验收和参数经济采纳；本次只读源码/台账，无模型调用。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/application/research/agent_review/operating_task_v2.py",
+              symbol: "LiveOperatingTaskService",
+              description: "来源重验、预算、角色执行和持久状态。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/agent_review/operating_driver_draft_v2.py",
+              symbol: "validate_response",
+              description: "结构化经营驱动响应校验。",
+            },
+            {
+              path: "src/value_investment_agent/operations/live_task_controller_v1.py",
+              symbol: "supervise_live_task",
+              description: "自有worker总时限、取消及回收。",
+            },
+            {
+              path: "docs/current/value-transparent-workbench-v1.md",
+              description: "历史成功、近期取消和监督修复分别记载。",
+            },
+          ],
           status: "PARTIAL",
           what: "让三类AI执行来源绑定的研究。",
           why: "同时研究经营、反证和事件，避免单面叙事。",
@@ -371,6 +641,71 @@ export const catalog: Record<
       {
         id: "D2",
         deliveryReview: {
+          inputDetails: [
+            "600519/600887来源绑定的历史事实、假设及proposal；另一条000568新研究链读取官方摘录和三角色驱动范围。",
+            "明确期间的量、价、产品结构、成本假设；资金可达、维护及终端缺依据项允许UNKNOWN。",
+          ],
+          steps: [
+            {
+              title: "重放历史经营基准",
+              description:
+                "load_operating_assumption_draft冷核官方报表及历史字段，核对source/assumption/proposal绑定；历史重放不叫重新生成未来预测。",
+            },
+            {
+              title: "把事实与预测分开",
+              description:
+                "新driver响应通过来源和calendar合同后，历史量价成本属于事实基础，未来区间仍标FORECAST；不能以引用存在证明文字经济正确。",
+            },
+            {
+              title: "确定性派生经营结果",
+              description:
+                "operating_driver_bridge按同期间基准计算路径及七维角点，不让语言模型直接填最终利润率；FY对FY、H1对H1。",
+            },
+            {
+              title: "生成反证与重开条件",
+              description:
+                "build_thresholds与evaluate_condition使用同一bounds、期间和基线，阈值等号不当超限；保留受影响字段及尚未证实资本条件。",
+            },
+            {
+              title: "交现金模型但不采用主区间",
+              description:
+                "经营驱动经后续期间适配和共享v4消费；条件算术通过与季节性、持续盈利和资金政策被经济采用分开。",
+            },
+          ],
+          outputDetails: [
+            "可定位来源的假设、经营驱动范围、派生增长/利润率、反证阈值与UNKNOWN。",
+            "局部真实样本：000568的21项驱动、3×128角点、6项代码派生指标及9项资本UNKNOWN；不把后续有条件现金政策反写为事实。",
+          ],
+          acceptanceChecks: [
+            "检查项：错来源/期间/字段、历史值与proposal不一致应拒绝；不靠H1乘2或调成本凑利润。",
+            "局部验收：独立角点和阈值复算有留存记录；未完成参数未来适用性和经济主区间采用。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/application/research/operating_assumption_draft_v1.py",
+              symbol: "load_operating_assumption_draft",
+              description: "旧两公司来源绑定假设重放。",
+            },
+            {
+              path: "src/value_investment_agent/domain/research/operating_driver_bridge_v1.py",
+              symbol: "calculate_path",
+              description: "同期间量价成本及角点计算。",
+            },
+            {
+              path: "src/value_investment_agent/domain/research/operating_driver_bridge_v1.py",
+              symbol: "evaluate_condition",
+              description: "同基线反证条件评价。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/main_valuation_revalidation_v1.py",
+              symbol: "_consume",
+              description: "季度经营到实际共享现金模型的后续消费者。",
+            },
+            {
+              path: "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+              description: "三家公司分路径审计及真实复算边界。",
+            },
+          ],
           status: "PARTIAL",
           what: "把资料变成有依据的经营假设和反证。",
           why: "估值参数需要经济理由，而不是AI直接报价格。",
@@ -428,6 +763,62 @@ export const catalog: Record<
       {
         id: "E1",
         deliveryReview: {
+          inputDetails: [
+            "既有公司研究包、候选/assumption/proposal绑定与新版本事实；必须有真实前序研究，不适用无旧包首编。",
+            "实际消费choice、模型实现身份及descriptor；600519/600887为已验证案例，不是任意symbol模板。",
+          ],
+          steps: [
+            {
+              title: "从旧包准备新候选",
+              description:
+                "prepare_pending_research_candidate读取真实来源及显式研究选择，在新产物中保留前序谱系，不用最终估值反推输入。",
+            },
+            {
+              title: "核对经济输入一致",
+              description:
+                "_verify_joint_economic_inputs复核assumption、proposal和descriptor；换公司、换来源或实际choice不符拒绝。",
+            },
+            {
+              title: "冷核并重算",
+              description:
+                "verify_pending_research_candidate重核原件/实现，构建v4 descriptor和ResearchRunSpec，调用ResearchApplicationService，不能只返回保存的估值。",
+            },
+            {
+              title: "通过已有分析消费者公开",
+              description:
+                "project_value_research_analysis比较实际descriptor、年度现金review和三情景数值；新候选保持待复核，当前价格资格另交F2。",
+            },
+          ],
+          outputDetails: [
+            "带版本谱系及来源绑定的新候选、真实输入descriptor、三情景现金/估值与未批准review。",
+            "局部真实验证：600519/600887同一v4消费路径成功；已有包更新不证明任意新公司首编。",
+          ],
+          acceptanceChecks: [
+            "检查项：坏原件/错实现/错choice或冷重算不一致拒绝，不静默继续旧结果。",
+            "检查项：真实源环境缺失不能把skip算真实通过；历史包不可覆盖。",
+            "未完成：通用独立重新研究及全部当前对齐条件；conditional_research_only不是正式研究采用。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/application/product/pending_research_candidate.py",
+              symbol: "prepare_pending_research_candidate",
+              description: "新候选准备与来源绑定。",
+            },
+            {
+              path: "src/value_investment_agent/application/product/pending_research_candidate.py",
+              symbol: "verify_pending_research_candidate",
+              description: "旧候选实际冷重算入口。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/value_research_analysis.py",
+              symbol: "project_value_research_analysis",
+              description: "现金review和估值实际消费一致性。",
+            },
+            {
+              path: "tests/test_joint_cash_v4_two_company_real_replay.py",
+              description: "两公司真实同内核消费测试，需真实来源环境。",
+            },
+          ],
           status: "PARTIAL",
           what: "根据新输入重算已有研究。",
           why: "研究要更新并保留原判断的变化原因。",
@@ -472,6 +863,72 @@ export const catalog: Record<
       {
         id: "E2",
         deliveryReview: {
+          inputDetails: [
+            "无旧研究包公司的自身原件、native facts、首编spec和显式条件假设；不能要求E1旧候选作为前置。",
+            "000568官方FY/H1事实；条件owner-equivalent现金、capacity/floor及未来投入须标假设，未知实际净可新增分配不补零。",
+          ],
+          steps: [
+            {
+              title: "验证首编规格",
+              description:
+                "_prepare拒绝前序候选、市场价格、批准等越界键，要求源绑定和实现身份；未备齐必要输入返回明确缺口。",
+            },
+            {
+              title: "原页重建历史事实",
+              description:
+                "replay_first_research_facts核发行人、期间、页列、金额及单位；TTM仅在受支持同字段上按FY+当期H1－同期H1派生，不允许历史值手填假设。",
+            },
+            {
+              title: "编译十年条件输入",
+              description:
+                "明确三情景未来收入/成本、资金可达、维护/WC/承诺及终端条件；已宣告股利和期初资源口径单独约束，不能当新分配重复消费。",
+            },
+            {
+              title: "实际调用共享内核",
+              description:
+                "replay_first_research_input重建proposal/package和descriptor，经ResearchApplicationService运行v4并比对冷重算指纹，不是套用600519/600887结果。",
+            },
+            {
+              title: "只写新首版产物",
+              description:
+                "build_first_research_input要求新输出目录，不注册当前候选；公开reader重验receipt后展示条件研究，主区间与C分类均不随首编成功升级。",
+            },
+          ],
+          outputDetails: [
+            "首版proposal、package、receipt、三条十年现金账及条件压力估值，或字段级拒绝。",
+            "000568两份自身官方原件84项事实首编有留存API验收；main_range_adopted=false，主经济区间REJECTED。",
+          ],
+          acceptanceChecks: [
+            "检查项：无旧包仍可首编，输出已存在拒覆盖；来源变化、未来日期或descriptor不一致拒绝。",
+            "检查项：只证明明确条件下数学压力可重算，不把终端假说、未来资金或利润称已证。",
+            "未完成：通用独立首编自动化、主估值经济闭环；不新增第六家C。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/application/research/first_research_input_v1.py",
+              symbol: "_prepare",
+              description: "首编来源与条件输入合同。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/first_research_input_v1.py",
+              symbol: "replay_first_research_input",
+              description: "实际共享v4冷重算。",
+            },
+            {
+              path: "src/value_investment_agent/infrastructure/filings/first_research_fact_replay_v1.py",
+              symbol: "replay_first_research_facts",
+              description: "原页事实重放。",
+            },
+            {
+              path: "src/value_investment_agent/application/product/first_research_input_view_v1.py",
+              symbol: "read_first_research_input",
+              description: "注册首输入公开reader。",
+            },
+            {
+              path: "artifacts/current/first-research-input-e2-20261031.json",
+              description: "000568首编验收索引。",
+            },
+          ],
           status: "PARTIAL",
           what: "为没有旧研究包的公司首次建立模型输入。",
           why: "不能永远依赖预先准备好的公司研究。",
@@ -520,6 +977,73 @@ export const catalog: Record<
       {
         id: "F1",
         deliveryReview: {
+          inputDetails: [
+            "通过类型/范围校验的年度利润与资本路径、期初权益、现金、分配容量、现金底线和折现率。",
+            "显式十年经营/资金政策及独立终端合同；输入来自E1或E2等受支持入口，不要求两者同时存在。",
+          ],
+          steps: [
+            {
+              title: "逐年递推真实模型输入",
+              description:
+                "compile_joint_capital_cash_path消费显式利润路径与资本配置；新经营/流动资本回报单独计算，留存不自动获得高回报。",
+            },
+            {
+              title: "现金和容量同时限分配",
+              description:
+                "_step先处理利润可达/未上划、维护/WC/承诺，再以目标、现金和可分配容量限制新分配，结转现金、权益与未上划余额。",
+            },
+            {
+              title: "一次性义务与持续投入分开",
+              description:
+                "当前000568主重验将账面借款和旧股利在假定Y1清偿一次，并移出对应floor避免重复；不是新股东分配，不推未来利息节约。",
+            },
+            {
+              title: "终端仍受现金合同约束",
+              description:
+                "value_terminal_economic_contract按旧业务持续假说、新资本回报和维护/现金底线递推，要求受支持的收敛合同；十年不是永久可持续证明。",
+            },
+            {
+              title: "提供诊断与独立复算",
+              description:
+                "共享v4输出年度账和估值；分配诊断区分经营缺口与各年期初资源支持下限，累计支持不是模型起始日所需现金，覆盖倍数不是市场股息率。",
+            },
+          ],
+          outputDetails: [
+            "三情景年度利润、现金、权益、分配、终端与折现结果；资金约束失败或未支持合同的精确原因。",
+            "已实现内核及局部真实消费：两既有公司与000568主重验；仅有界模型合同可交付，不代表全行业估值完成。",
+          ],
+          acceptanceChecks: [
+            "检查项：年度账与descriptor一致；目标分配不能越过现金/容量，旧股利和义务不重扣。",
+            "检查项：终端持续投入和未付义务不能凭空消失；算术成功不授经济批准。",
+            "已验为源码及留存真实复算范围；假设持续性、主采用和当前买价另审。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/domain/valuation/joint_capital_cash_path_v4.py",
+              symbol: "compile_joint_capital_cash_path",
+              description: "年度现金/权益联合编译。",
+            },
+            {
+              path: "src/value_investment_agent/domain/valuation/joint_capital_cash_path_v4.py",
+              symbol: "value_terminal_economic_contract",
+              description: "终端递推及收敛合同。",
+            },
+            {
+              path: "src/value_investment_agent/domain/research/liability_settlement_schedule_v1.py",
+              symbol: "compile_liability_settlements",
+              description: "一次性非生产义务清偿账本。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/main_valuation_revalidation_v1.py",
+              symbol: "_consume",
+              description: "季度与义务输入实际进入共享模型。",
+            },
+            {
+              path: "src/value_investment_agent/domain/valuation/distribution_capacity_review.py",
+              symbol: "explain_distribution_capacity",
+              description: "年度分配覆盖与约束诊断。",
+            },
+          ],
           status: "COMPLETE",
           what: "计算给定假设下的条件价值。",
           why: "让估值算术可以独立复算，而非接受自然语言报价。",
@@ -567,6 +1091,65 @@ export const catalog: Record<
       {
         id: "F2",
         deliveryReview: {
+          inputDetails: [
+            "确切候选及descriptor、估值基准日、合格报价，期间股本/分红/重大事件/财务更新的原件与复核绑定。",
+            "显式价格政策和阈值理由；有条件估值数值不等于已有可用数值价格规则。",
+          ],
+          steps: [
+            {
+              title: "绑定同一候选",
+              description:
+                "load_pending_candidate_alignment拒绝候选或descriptor不匹配，来源消费和准入结论分开，不能拿另一版本复核代用。",
+            },
+            {
+              title: "独立检查五个维度",
+              description:
+                "报价、资本结构、期间分配、重大事件和财务更新逐项评价；原件已消费不等于事件重大性批准。",
+            },
+            {
+              title: "保留当前不兼容",
+              description:
+                "报价过期、跨日行动链未闭合或财报更新未复核时返回具体阻断；不会通过改日期或默认不变凑齐当前资格。",
+            },
+            {
+              title: "生成未批准价格草案",
+              description:
+                "project_pending_candidate_price_proposal消费对齐和既有价格政策；无数值规则/理由则不生成当前条件价，有日期参考线也不是BUY。",
+            },
+          ],
+          outputDetails: [
+            "同候选五维状态、已消费来源/未复核原因、日期参考线或明确拒绝；action=no_order。",
+            "局部真实证据是600519/600887的阻断及000568未采用主区间的条件草案，不是全部当前门槛联合成功。",
+          ],
+          acceptanceChecks: [
+            "检查项：未知不映射无影响，原件声明不代独立重大性审核，旧报价不冒当前价。",
+            "检查项：candidate/quote/action错绑定拒绝；未选规则不给默认安全边际。",
+            "未完成：同一经济采用候选的全部当前对齐联合正例；本页不授批准或个人数量。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/application/research/pending_candidate_alignment.py",
+              symbol: "load_pending_candidate_alignment",
+              description: "五维来源核验和精确候选绑定。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/pending_candidate_price_proposal.py",
+              symbol: "project_pending_candidate_price_proposal",
+              description: "未注册条件价格草案。",
+            },
+            {
+              path: "src/value_investment_agent/domain/decision/value_price_policy.py",
+              description: "既有价格政策合同，不由Web新增公式。",
+            },
+            {
+              path: "web/src/components/CandidatePriceDraft.tsx",
+              description: "当前资格、来源明细及阻断可读展示。",
+            },
+            {
+              path: "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+              description: "真实拒绝而非联合成功的审计记录。",
+            },
+          ],
           status: "PARTIAL",
           what: "将条件价值连接到当前价格判断。",
           why: "历史估值不能直接当作今天的买入依据。",
@@ -612,6 +1195,69 @@ export const catalog: Record<
       {
         id: "G1",
         deliveryReview: {
+          inputDetails: [
+            "公开公司API的来源绑定画像、经营草案、首输入、条件现金/估值及当前价格资格。",
+            "实际任务返回的结果、错误与source refs；当前页面读取与点击执行分开。",
+          ],
+          steps: [
+            {
+              title: "沿现有公司入口读取",
+              description:
+                "DecisionDetail复用公开研究API，按symbol展示画像、假设、首编和研究分析，不建立第二公司页面或前端估值公式。",
+            },
+            {
+              title: "各自呈现来源与缺口",
+              description:
+                "公开panel保留UNKNOWN、拒绝、报告期间和模型年区别，来源页/链接可查，技术Hash及年度长表折叠。",
+            },
+            {
+              title: "显式打开新研究功能",
+              description:
+                "LiveOperatingResearchPanel由用户打开后读上下文/模型状态，执行需明确操作；不能把已有保存响应说成新模型研究。",
+            },
+            {
+              title: "展示本次实际任务输出",
+              description:
+                "扫描/重放显示绑定候选正文，重算/模拟显示共享内核结果，REVIEW_NOTE显示注释边界；失败不得残留旧成功画面冒充本次。",
+            },
+            {
+              title: "把交付与运行资格分开",
+              description:
+                "组件有内容不代表全链已验收；研究、当前可比、代码运行身份及正式发布分别呈现，公开研究不要求私人账户解锁。",
+            },
+          ],
+          outputDetails: [
+            "可读公司研究、三情景摘要、年度明细、原件引用、当前对齐缺口及实际任务结果。",
+            "局部真实浏览器/接口回执存在；11模块完整交互矩阵和全量用户确认仍未证明。",
+          ],
+          acceptanceChecks: [
+            "检查项：页面金额/状态来自API，未知不补0、无前端重算金融；加载失败不伪装空股票池。",
+            "检查项：手机/桌面及刷新后真实状态需分别验收；本次内容更新不代表重新验证线上版本。",
+          ],
+          implementationRefs: [
+            {
+              path: "web/src/pages/DecisionDetail/index.tsx",
+              description: "现有公司页及公开研究panel挂载。",
+            },
+            {
+              path: "web/src/components/LiveOperatingResearchPanel.tsx",
+              description: "显式研究操作和原生结果。",
+            },
+            {
+              path: "src/value_investment_agent/application/product/company_research.py",
+              symbol: "run_company_research_for_symbol",
+              description: "已有公司研究应用入口。",
+            },
+            {
+              path: "web/src/components/SseMainScreeningPanel.tsx",
+              symbol: "SseMainScreeningPanel",
+              description: "A+B公开初筛与财务诊断消费者。",
+            },
+            {
+              path: "docs/current/value-transparent-workbench-v1.md",
+              description: "真实操作、取消与未验收事项记录。",
+            },
+          ],
           status: "PARTIAL",
           what: "在网页读懂并操作研究流程。",
           why: "用户不应依靠源码或终端理解结果。",
@@ -659,6 +1305,67 @@ export const catalog: Record<
       {
         id: "G2",
         deliveryReview: {
+          inputDetails: [
+            "已注册来源/spec及prepare返回的可执行payload；六类operation由服务定义，缺基线明确disabled。",
+            "显式用户假设白名单或研究意见；actor来自路由授权上下文，不能payload自报批准。",
+          ],
+          steps: [
+            {
+              title: "准备实际输入",
+              description:
+                "TransparentTaskService.prepare核验来源/研究基线，返回每项enabled/reason/payload；FRESH默认未授权网络，不给用户手填SHA/path。",
+            },
+            {
+              title: "冻结并版本化任务",
+              description:
+                "create复用父类锁、head和状态，冻结输入及所需实现源码；读历史任务发现输入/实现变更时current_validation不可评价，原成功历史和manifest保持。",
+            },
+            {
+              title: "分发真实业务",
+              description:
+                "_dispatch分别调用A核证、B保留重放或新公开run_once、主重验和共享内核假设模拟；离线重放不叫今日scan，不调用旧saved响应冒充新业务。",
+            },
+            {
+              title: "保留运行与取消轨迹",
+              description:
+                "run/resume/cancel依据持久状态；重启未完任务需明确恢复，未知进度为null。取消终止自有worker，retry创建新ID并保留失败parent。",
+            },
+            {
+              title: "注释不变批准",
+              description:
+                "REVIEW_NOTE将意见与真实target绑定保存为同task artifact，scope为COMMENT_NOT_G3_APPROVAL，approval_changed=false；任务不发布正式current。",
+            },
+          ],
+          outputDetails: [
+            "统一视图状态、native_status、attempt/run身份、真实起止与步骤、输入/输出manifest和错误；不伪造进度百分比。",
+            "已支持六类透明操作；D1走既有Live服务，其余模块保持原生只读入口，不生成假的通用run按钮。",
+          ],
+          acceptanceChecks: [
+            "检查项：输入/实现变化不能洗旧任务；取消后迟到输出不能覆写CANCELLED。",
+            "检查项：模拟须绑定基线和白名单且真实调用shared core；意见不是G3或投资判断。",
+            "局部真实运行及取消重试有台账；完整操作矩阵仍PARTIAL，未知历史时间不得补造。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/application/research/transparent_task_v1.py",
+              symbol: "TransparentTaskService",
+              description: "父服务子类：prepare、持久任务及真实状态视图。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/transparent_task_v1.py",
+              symbol: "_dispatch",
+              description: "六种operation调用原生服务。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/transparent_task_v1.py",
+              symbol: "_simulate",
+              description: "显式白名单假设经共享模型计算。",
+            },
+            {
+              path: "docs/current/value-transparent-workbench-v1.md",
+              description: "本机任务结果、取消及验收边界。",
+            },
+          ],
           status: "PARTIAL",
           what: "保存研究任务的执行与产物历史。",
           why: "任务中断或重试不能丢失过程和版本。",
@@ -709,6 +1416,45 @@ export const catalog: Record<
       {
         id: "S1",
         deliveryReview: {
+          inputDetails: [
+            "经认证的账户快照、IPS版本、持仓批次、既有资金承诺及研究/风险请求；本轮未读取这些私人数据。",
+          ],
+          steps: [
+            {
+              title: "校验风险输入",
+              description:
+                "review_dual_sleeve_risk验证金额、时间、精确字段、账户和策略范围；缺输入返回blockers，不能借公开研究成功补资格。",
+            },
+            {
+              title: "合并既有占用",
+              description:
+                "PrivateCommittedRiskService从已确认记录构造风险上下文，核对账户、IPS和lots，避免单笔建议忽略已有承诺。",
+            },
+            {
+              title: "给复核边界而非订单",
+              description:
+                "既有风险合同计算资金/集中度等限制；输出原因和可复核范围，真实个人政策与当前资金资格仍须独立确认。",
+            },
+          ],
+          outputDetails: [
+            "风险限制、阻断原因和承诺投影；源码存在，不代表本轮真实账户验收。",
+          ],
+          acceptanceChecks: [
+            "待独立验收：真实账户时点、IPS/批次绑定、重复占用和当前可用资金。",
+            "保持未验证边界：本次只读源码，不访问私人账本，不因主链通过提升状态。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/domain/portfolio/dual_sleeve_risk.py",
+              symbol: "review_dual_sleeve_risk",
+              description: "双仓共享风险校验与限制。",
+            },
+            {
+              path: "src/value_investment_agent/application/portfolio/private_committed_risk.py",
+              symbol: "PrivateCommittedRiskService",
+              description: "已确认资金承诺的账户/IPS绑定服务。",
+            },
+          ],
           status: "PARTIAL",
           what: "约束现金、仓位和组合风险。",
           why: "单只股票便宜，不代表账户有能力继续买。",
@@ -753,6 +1499,50 @@ export const catalog: Record<
       {
         id: "S2",
         deliveryReview: {
+          inputDetails: [
+            "用户确认的成交、账户基线、手续费/税费、日期、幂等键和预期revision；模拟与真实账户上下文分开。",
+          ],
+          steps: [
+            {
+              title: "准备及确认成交",
+              description:
+                "PrivatePortfolioService校验证券、数量、日期和金额，按准备/确认流程处理；研究候选不是成交事实。",
+            },
+            {
+              title: "追加记录并重放",
+              description:
+                "PrivateJournal校验记录链，服务用revision和幂等键防止重复记账或并发覆盖；重放计算持仓及可卖量。",
+            },
+            {
+              title: "呈现对账状态",
+              description:
+                "reconciliation_state区分内部重放和外部对账证据；凭证引用及人工确认不能冒充自动券商流水完整核对。",
+            },
+          ],
+          outputDetails: [
+            "可追溯成交记录、持仓/成本/可卖量及对账缺口；本轮未写任何实盘记录。",
+          ],
+          acceptanceChecks: [
+            "待独立验收：真实成交准备/确认/取消、幂等冲突、更正及外部对账全链。",
+            "本轮只核实现位置，不声明本人持仓已正确或交易已发生。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/application/portfolio/private_portfolio_service.py",
+              symbol: "PrivatePortfolioService",
+              description: "成交校验与持仓重放服务。",
+            },
+            {
+              path: "src/value_investment_agent/application/portfolio/private_portfolio_service.py",
+              symbol: "PrivateJournal",
+              description: "追加事件链和并发锁。",
+            },
+            {
+              path: "src/value_investment_agent/application/portfolio/private_portfolio_service.py",
+              symbol: "reconciliation_state",
+              description: "对账状态表达。",
+            },
+          ],
           status: "PARTIAL",
           what: "记录人工成交并核对持仓。",
           why: "持仓建议必须基于真实、可对账的资产。",
@@ -798,6 +1588,50 @@ export const catalog: Record<
       {
         id: "S3",
         deliveryReview: {
+          inputDetails: [
+            "明确账户/股份税处理、取得日、股权登记日、卖出结算日和应税基数；应税基数不能直接等同现金股息。",
+            "批次及有序账户净值路径；现有收益函数限定无外部资金流。",
+          ],
+          steps: [
+            {
+              title: "按受支持税制计算",
+              description:
+                "calculate_dividend_tax要求有限非负Decimal及明确日期/账户类型；不支持账户、边界日期和月末约定拒绝，不自行猜扣税日或舍入。",
+            },
+            {
+              title: "保持批次与现金口径",
+              description:
+                "已有FIFO批次组件与税计算分别存在；预测分红、应收、实际到账和补税不可合并成同一现金事件。",
+            },
+            {
+              title: "限定账户路径收益",
+              description:
+                "account_path_metrics校验日期顺序和正净值，算收盘标记收益/回撤/资金占用；不支持外部流量归因，不称可执行净业绩。",
+            },
+          ],
+          outputDetails: [
+            "税额/追加税计算及限定账户路径指标；不是实际到账证明，也不是可再投资现金的完整闭环。",
+          ],
+          acceptanceChecks: [
+            "未完成：税批次/收益组件接入私人账户服务及真实到账、补税、外部资金流核对。",
+            "本轮只核计算源码，不读取个人流水或验证税务适用事实。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/dividend_tax.py",
+              symbol: "calculate_dividend_tax",
+              description: "受限个人股息税计算，非结算账本。",
+            },
+            {
+              path: "src/value_investment_agent/dividend_tax_lots.py",
+              description: "已有FIFO税批次组件。",
+            },
+            {
+              path: "src/value_investment_agent/account_path_metrics.py",
+              symbol: "account_path_metrics",
+              description: "无外部流量的标记账户收益及回撤。",
+            },
+          ],
           status: "PARTIAL",
           what: "跟踪实际股息及税后现金流。",
           why: "公布分红与实际可用现金并不是一回事。",
@@ -846,6 +1680,49 @@ export const catalog: Record<
       {
         id: "S4",
         deliveryReview: {
+          inputDetails: [
+            "精确候选/descriptor、已核事件原文及实际经营路径；私人持仓支线另需原入场逻辑、当前计划与风险。",
+          ],
+          steps: [
+            {
+              title: "定位实际被消费假设",
+              description:
+                "candidate_event_impact仅消费事件与当前候选/descriptor一致的记录，把affected_model_fields定位到情景、模型年和输入路径。",
+            },
+            {
+              title: "区分事实与待核影响",
+              description:
+                "零售与销售合同价格变化分别计算，不直接推净利；资产划转决议不叫完成，会计政策声明不叫独立重大性批准。缺销量/渠道/税基等列下一核验事项。",
+            },
+            {
+              title: "保持持有逻辑连续性",
+              description:
+                "held_continuity已有原入场依据、当前计划及风险适配；事件草案只提出重开复核，不改模型、不自动卖出或批准持有。",
+            },
+          ],
+          outputDetails: [
+            "未批准事件研究草案、受影响输入、反证/下一核验事项；私人持有连续性结论需另有真实输入。",
+          ],
+          acceptanceChecks: [
+            "局部真实：600519事件到模型字段定位有历史证据；不能据此证明全部当前事件完成。",
+            "未完成：真实原始买入逻辑到后续事件/私人风险的完整连续验收。",
+          ],
+          implementationRefs: [
+            {
+              path: "src/value_investment_agent/application/research/candidate_event_impact.py",
+              description: "精确候选绑定的事件到实际模型字段草案。",
+            },
+            {
+              path: "src/value_investment_agent/application/portfolio/held_continuity.py",
+              symbol: "evaluate_owned_held_advisory",
+              description: "原入场逻辑与当前持有建议适配。",
+            },
+            {
+              path: "src/value_investment_agent/application/portfolio/held_continuity.py",
+              symbol: "project_held_continuity",
+              description: "持仓连续性公开投影逻辑；本轮不读取账户。",
+            },
+          ],
           status: "PARTIAL",
           what: "检查新事件是否改变原投资逻辑。",
           why: "买入后需要知道原来的理由是否仍成立。",
@@ -895,6 +1772,53 @@ export const catalog: Record<
       {
         id: "W1",
         deliveryReview: {
+          inputDetails: [
+            "同一strategyArchitecture目录、Root模块机器目录、台账及精确留存验收路径；不是自动运行结果订阅。",
+          ],
+          steps: [
+            {
+              title: "读取统一目录",
+              description:
+                "catalog.value提供11主模块和5共享支持；nativeContract从value-mainline-modules-v1.json投影方法能力、输入输出与入口，不复制任务平台。",
+            },
+            {
+              title: "分层说明交付",
+              description:
+                "deliveryReview保留简明概述，细节按输入、处理、输出、检查项和源码引用组织；静态人工复核、局部真实验收及未完成分别说明。",
+            },
+            {
+              title: "跳转实际功能并保留边界",
+              description:
+                "现有架构页选择模块和跳转研究入口；代码运行身份由系统页独立读取，本目录不证明实时健康、部署成功或用户批准。",
+            },
+          ],
+          outputDetails: [
+            "可供renderer消费的16模块结构化交付详情、现有能力/证据定位和缺口；热点目录保持独立。",
+          ],
+          acceptanceChecks: [
+            "本次检查：16模块字段齐全、主模块4–6步骤、共享2–4步骤、引用文件/符号存在。",
+            "renderer、交互和部署验收由Root另行执行；本配置更新不宣称所有模块完成。",
+          ],
+          implementationRefs: [
+            {
+              path: "web/src/config/strategyArchitecture.v1.ts",
+              symbol: "catalog",
+              description: "单一展示目录和人工交付详情。",
+            },
+            {
+              path: "web/src/pages/StrategyArchitecture/index.tsx",
+              symbol: "DeliverySummary",
+              description: "现有交付概述renderer；详细字段由Root接线。",
+            },
+            {
+              path: "config/value-mainline-modules-v1.json",
+              description: "Root统一模块能力目录。",
+            },
+            {
+              path: "docs/current/web-first-full-product-execution-ledger.md",
+              description: "历史验收与未完成边界台账。",
+            },
+          ],
           status: "PARTIAL",
           what: "展示模块实现、证据与缺口。",
           why: "让用户直接判断开发方向与交付质量。",

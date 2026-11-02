@@ -45,6 +45,52 @@ export function DeliverySummary({ stage }: { stage: Stage }) {
         <dt>完成标准</dt>
         <dd>{item.acceptance}</dd>
       </dl>
+      <section
+        className="module-functional-detail"
+        aria-label={stage.id + "模块功能与实现逻辑"}
+      >
+        <div className="module-io-grid">
+          <section>
+            <h4>实际输入</h4>
+            <ul>
+              {item.inputDetails?.map((text) => (
+                <li key={text}>{text}</li>
+              ))}
+            </ul>
+          </section>
+          <section>
+            <h4>输出与下游消费</h4>
+            <ul>
+              {item.outputDetails?.map((text) => (
+                <li key={text}>{text}</li>
+              ))}
+            </ul>
+          </section>
+        </div>
+        <h4>具体实现流程</h4>
+        <ol className="module-processing-steps">
+          {item.steps?.map((step, index) => (
+            <li key={step.title}>
+              <span className="module-step-number" aria-hidden="true">
+                {index + 1}
+              </span>
+              <div>
+                <strong>{step.title}</strong>
+                <p>{step.description}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <h4>怎样才算功能交付完成</h4>
+        <ul>
+          {item.acceptanceChecks?.map((text) => (
+            <li key={text}>{text}</li>
+          ))}
+        </ul>
+        <p className="module-implementation-boundary">
+          上述流程按当前实现与列明验证范围说明；运行成功、经济判断通过、用户确认分别验收。
+        </p>
+      </section>
       <Link to={item.runHref}>打开实际功能</Link>
       <details>
         <summary>验收依据与版本</summary>
@@ -56,6 +102,18 @@ export function DeliverySummary({ stage }: { stage: Stage }) {
           {item.evidence.map((ref) => (
             <li key={ref}>
               <code>{ref}</code>
+            </li>
+          ))}
+        </ul>
+        <h4>具体实现依据</h4>
+        <ul className="module-implementation-refs">
+          {item.implementationRefs?.map((ref) => (
+            <li key={ref.path + (ref.symbol || "")}>
+              <p>{ref.description}</p>
+              <code>
+                {ref.path}
+                {ref.symbol ? " · " + ref.symbol : ""}
+              </code>
             </li>
           ))}
         </ul>

@@ -23,7 +23,7 @@ from ...financial_institutions import provisional_financial_type
 from ...financial_quality import _accepted
 from copy import deepcopy
 from ...infrastructure.screening.verified_screen_cache_v1 import SCREEN_CACHE
-from ...domain.discovery.financial_source_comparison_v1 import compare_observations, debt_details, debt_observations, sina_observations
+from ...domain.discovery.financial_source_comparison_v1 import compare_observations, debt_details, debt_observations, sina_observations, summarize_official_financing
 from ...infrastructure.screening import public_debt_details_v1 as debt_source
 from ...infrastructure.screening import sina_financial_statements_v1 as sina_source
 from ...infrastructure.screening import official_funding_details_v1 as official_funding
@@ -199,6 +199,7 @@ def compile_inputs(*, root, inputs, now, run_id):
         official_labels={'financial_deposits_and_interbank':'吸收存款及同业存放','financial_member_deposits':'财务公司成员存款','short_term_borrowings':'短期借款','long_term_borrowings_noncurrent':'长期借款（非流动）','lease_liabilities_noncurrent':'租赁负债（非流动）','lease_liabilities_current':'一年内到期租赁负债','long_term_borrowings_current':'一年内到期长期借款','bonds_payable_current':'一年内到期应付债券','long_term_payables_current':'一年内到期长期应付款','short_term_bonds':'短期应付债券'}
         debt_view['official_components']=[dict(field=r['field_name'],label=official_labels.get(r['field_name'],r.get('source_label') or r['field_name']),value=r.get('value'),unit=r.get('unit'),page=r.get('page'),excerpt=r.get('excerpt'),source_url=r['source_binding']['source_url'],sha256=r['source_binding']['sha256']) for r in native_official]
         debt_view['official_evidence_count']=len(native_official)
+        debt_view['official_summary']=summarize_official_financing(native_official,symbol=symbol,period=period,evaluated_at=now)
         debt_view['official_financial_observations']=[r for r in official_financial if r['symbol']==symbol]
         row=dict(symbol=symbol,company_name=security['name'],name=security['name'],
             industry=quote.industry if quote else security.get('official_industry'),

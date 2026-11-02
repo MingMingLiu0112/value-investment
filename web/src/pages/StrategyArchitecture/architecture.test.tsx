@@ -526,3 +526,35 @@ it("shows Root phase-one source deltas only for A/B without promoting audited ba
       ?.phase1Delta,
   ).toBeUndefined();
 });
+
+it("explains every value module through actual inputs, processing, consumers and independent acceptance", () => {
+  for (const stage of catalog.value.stages) {
+    const detail = stage.deliveryReview!;
+    expect(detail, stage.id).toBeDefined();
+    expect(detail.inputDetails!.length, stage.id).toBeGreaterThan(0);
+    expect(detail.steps!.length, stage.id).toBeGreaterThanOrEqual(2);
+    expect(detail.outputDetails!.length, stage.id).toBeGreaterThan(0);
+    expect(detail.acceptanceChecks!.length, stage.id).toBeGreaterThan(0);
+    expect(detail.implementationRefs!.length, stage.id).toBeGreaterThan(0);
+    for (const ref of detail.implementationRefs!) {
+      expect(
+        existsSync(resolve("..", ref.path)),
+        `${stage.id}: ${ref.path}`,
+      ).toBe(true);
+    }
+    const html = renderToStaticMarkup(<StageDetail stage={stage} />);
+    for (const heading of [
+      "实际输入",
+      "具体实现流程",
+      "输出与下游消费",
+      "怎样才算功能交付完成",
+      "具体实现依据",
+    ])
+      expect(html).toContain(heading);
+    for (const step of detail.steps!) {
+      expect(html).toContain(step.title.replace(/&/g, "&amp;"));
+      expect(step.description.length).toBeGreaterThan(12);
+    }
+    expect(html).toContain("运行成功、经济判断通过、用户确认分别验收");
+  }
+});

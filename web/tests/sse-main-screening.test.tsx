@@ -902,3 +902,167 @@ it.each([
     "停止展示",
   );
 });
+
+function officialSummary(): any {
+  return {
+    version: "official-identified-financing-sum-v1",
+    status: "PARTIAL",
+    known_total: "100.123456",
+    unit: "CNY",
+    components: [
+      {
+        field: "short_term_borrowings",
+        label: "短期借款",
+        value: "100.123456",
+        unit: "CNY",
+        page: 39,
+        excerpt: "TEST_ONLY 短期借款 本期100.123456",
+        source_url: "https://static.cninfo.com.cn/finalpage/test.pdf",
+        sha256: "a".repeat(64),
+      },
+    ],
+    unknown_components: [
+      {
+        field: "short_term_bonds",
+        label: "短期应付债券",
+        reason: "未定位明确当期金额；不采用比较列，不按零计。",
+      },
+    ],
+    errors: [],
+    formula:
+      "SUM_EXPLICIT_NONOVERLAPPING_CURRENT_AND_NONCURRENT_FINANCING_BUCKETS",
+    complete_debt_verified: false,
+    formal_admission: false,
+    action: "no_order",
+    reason: "仅汇总已明确融资负债，不代替完整有息负债。",
+  };
+}
+it("renders official partial subtotal and unknowns separately from supplier amounts", () => {
+  const page = fixture();
+  page.items[0].debt_details = {
+    ...debt(),
+    official_summary: officialSummary(),
+  };
+  expect(validScreenPage(page)).toBe(true);
+  const html = renderToStaticMarkup(show(page));
+  for (const text of [
+    "100.123456",
+    "123.456789",
+    "PARTIAL",
+    "不是完整有息负债",
+    "不与供应商小计相加",
+    "短期应付债券：未知",
+    "不按零计",
+    "原文第39页",
+    "TEST_ONLY 短期借款 本期100.123456",
+    "a".repeat(64),
+  ])
+    expect(html).toContain(text);
+  expect(html).not.toContain("223.580245");
+});
+it.each(["PARTIAL", "NOT_AVAILABLE", "REJECTED"])(
+  "handles official %s without inventing missing zero",
+  (status) => {
+    const page = fixture(),
+      summary = officialSummary();
+    summary.status = status;
+    if (status === "PARTIAL") {
+      summary.known_total = "0";
+      summary.components[0].value = "0";
+    } else {
+      summary.known_total = null;
+      if (status === "NOT_AVAILABLE") summary.components = [];
+      else summary.errors = ["重复融资桶，拒绝汇总"];
+    }
+    page.items[0].debt_details = { ...debt(), official_summary: summary };
+    expect(validScreenPage(page)).toBe(true);
+    const html = renderToStaticMarkup(show(page));
+    expect(html).toContain(
+      status === "PARTIAL"
+        ? "官方已识别融资小计：0"
+        : "官方已识别融资小计：未知",
+    );
+    expect(html).toContain("短期应付债券：未知");
+  },
+);
+it.each([
+  ["version", "bad"],
+  ["status", "COMPLETE"],
+  ["known_total", "NaN"],
+  ["known_total", "Infinity"],
+  ["known_total", "-1"],
+  ["known_total", 100],
+  ["known_total", null],
+  ["unit", "万元"],
+  ["components", null],
+  ["components", []],
+  ["unknown_components", null],
+  ["errors", ["failure"]],
+  ["formula", "SUM_ALL"],
+  ["complete_debt_verified", true],
+  ["formal_admission", true],
+  ["action", "order"],
+  ["reason", ""],
+])("rejects official summary invalid %s=%s", async (key, value) => {
+  const page = fixture(),
+    summary = officialSummary();
+  summary[key as string] = value;
+  page.items[0].debt_details = { ...debt(), official_summary: summary };
+  expect(validScreenPage(page)).toBe(false);
+  tree();
+  load.mockResolvedValue(page);
+  await expect(hooks.fetch!(new AbortController().signal)).rejects.toThrow(
+    "停止展示",
+  );
+});
+it.each([
+  "null",
+  "page",
+  "hash",
+  "url",
+  "amount",
+  "unit",
+  "excerpt",
+  "unknown",
+  "duplicate",
+  "overlap",
+  "rejected_total",
+  "rejected_no_errors",
+  "unavailable_components",
+])("rejects official binding/status damage %s", (damage) => {
+  const page = fixture(),
+    s = officialSummary();
+  if (damage === "page") s.components[0].page = 0;
+  if (damage === "hash") s.components[0].sha256 = "bad";
+  if (damage === "url")
+    s.components[0].source_url = "https://example.com/fake.pdf";
+  if (damage === "amount") s.components[0].value = "NaN";
+  if (damage === "unit") s.components[0].unit = "USD";
+  if (damage === "excerpt") s.components[0].excerpt = "";
+  if (damage === "unknown") s.unknown_components[0].reason = null;
+  if (damage === "duplicate") s.components.push({ ...s.components[0] });
+  if (damage === "overlap") {
+    s.components[0].field = "financial_member_deposits";
+    s.components.push({
+      ...s.components[0],
+      field: "financial_deposits_and_interbank",
+    });
+  }
+  if (damage === "rejected_total") {
+    s.status = "REJECTED";
+    s.errors = ["bad"];
+  }
+  if (damage === "rejected_no_errors") {
+    s.status = "REJECTED";
+    s.known_total = null;
+  }
+  if (damage === "unavailable_components") {
+    s.status = "NOT_AVAILABLE";
+    s.known_total = null;
+  }
+  page.items[0].debt_details = {
+    ...debt(),
+    official_summary: damage === "null" ? null : s,
+  };
+  expect(validScreenPage(page)).toBe(false);
+});

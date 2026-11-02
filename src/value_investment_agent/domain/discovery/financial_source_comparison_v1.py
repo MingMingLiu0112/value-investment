@@ -199,3 +199,51 @@ def sina_observations(data):
         if profit is not None and profit>0 and ocf is not None:
             emit('operating_cash_flow_to_net_income',ocf/profit*100,'percent',[cashflow,income],'EXPLICIT_SAME_CNY_GROUP_OCF/NETPROFIT*100')
     return output
+
+
+OFFICIAL_FINANCING_BUCKETS={
+ 'short_term_borrowings':'短期借款','short_term_bonds':'短期应付债券',
+ 'long_term_borrowings_noncurrent':'长期借款（非流动）','long_term_borrowings_current':'一年内到期长期借款',
+ 'lease_liabilities_noncurrent':'租赁负债（非流动）','lease_liabilities_current':'一年内到期租赁负债',
+ 'bonds_payable_current':'一年内到期应付债券','long_term_payables_current':'一年内到期长期应付款',
+ 'financial_member_deposits':'财务公司成员存款','financial_deposits_and_interbank':'吸收存款及同业存放',
+}
+
+
+def summarize_official_financing(observations,*,symbol,period,evaluated_at):
+    """Sum only explicitly located disjoint financing buckets, never complete interest debt."""
+    if evaluated_at.utcoffset() is None:raise ValueError('AWARE_FINANCING_CUTOFF_REQUIRED')
+    components=[];unknown=[];errors=[];seen=set()
+    for row in observations:
+        field=row.get('field_name')
+        if field not in OFFICIAL_FINANCING_BUCKETS:continue
+        source=row.get('source_binding') or {}
+        if field in seen:errors.append('DUPLICATE_FINANCING_BUCKET:'+field);continue
+        seen.add(field)
+        try:
+            when=datetime.fromisoformat(source['available_at'])
+            valid=(row.get('symbol')==source.get('symbol')==symbol
+                and row.get('period_label',row.get('period'))==source.get('period')==period
+                and row.get('unit')=='CNY' and row.get('currency')=='CNY' and row.get('statement_scope')=='consolidated'
+                and isinstance(row.get('page'),int) and not isinstance(row.get('page'),bool) and row['page']>0
+                and bool(row.get('excerpt')) and re.fullmatch('[a-f0-9]{64}',source.get('sha256',''))
+                and urlparse(source.get('source_url','')).hostname=='static.cninfo.com.cn'
+                and urlparse(source.get('source_url','')).scheme=='https' and not urlparse(source.get('source_url','')).username
+                and when.utcoffset() is not None and when<=evaluated_at)
+        except (ValueError,TypeError,KeyError):valid=False
+        if not valid:errors.append('FINANCING_SOURCE_SCOPE_OR_TIME_INVALID:'+field);continue
+        value=_number(row.get('value'))
+        if row.get('value') is None:
+            unknown.append(dict(field=field,label=OFFICIAL_FINANCING_BUCKETS[field],reason='未定位明确当期金额；不采用比较列，不按零计。'))
+            continue
+        if value is None or value<0:errors.append('INVALID_FINANCING_AMOUNT:'+field);continue
+        components.append(dict(field=field,label=OFFICIAL_FINANCING_BUCKETS[field],value=str(value),unit='CNY',
+            page=row['page'],excerpt=row['excerpt'],source_url=source['source_url'],sha256=source['sha256']))
+    if {'financial_member_deposits','financial_deposits_and_interbank'}<=seen:
+        errors.append('DEPOSIT_AGGREGATE_AND_MEMBER_COMPONENT_MAY_OVERLAP')
+    total=sum((_number(r['value']) for r in components),Decimal(0)) if components and not errors else None
+    return dict(version='official-identified-financing-sum-v1',status='REJECTED' if errors else 'PARTIAL' if components else 'NOT_AVAILABLE',
+        known_total=str(total) if total is not None else None,unit='CNY',components=components,unknown_components=unknown,errors=errors,
+        formula='SUM_EXPLICIT_NONOVERLAPPING_CURRENT_AND_NONCURRENT_FINANCING_BUCKETS',
+        complete_debt_verified=False,formal_admission=False,action='no_order',
+        reason='仅汇总原文已明确的融资相关负债；不与供应商小计相加，不含性质未明的其他应付款、票据或其他融资，不代替完整有息负债。')
