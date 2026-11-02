@@ -6,6 +6,7 @@ _HEADER = ("股票种类", "股票上市交易所", "股票简称", "股票代�
 _EXCHANGES = {"上海证券交易所": ("6",), "深圳证券交易所": ("0", "3"),
               "北京证券交易所": ("4", "8", "9")}
 _MAX_ROWS = 3
+_NEXT_SECTION = re.compile(r"\s+[一二三四五六七八九十]{1,3}、\s*其他相关资料$")
 _ROW_START = re.compile(r"^[ABH]\s*股(?:\s|$)")
 
 
@@ -36,6 +37,11 @@ def labelled_security_codes(pages, *, symbol) -> set[str]:
                 row_count += 1
                 if row_count > _MAX_ROWS:
                     raise ValueError("STOCK_IDENTITY_TABLE_ROW_LIMIT")
+                # PDF text may glue this exact following section heading to the row.
+                # Remove only that anchored suffix; all preceding cells remain checked.
+                next_section = _NEXT_SECTION.search(row)
+                if next_section:
+                    row = row[:next_section.start()]
                 # A 股 is a permitted typography variant, not two table columns.
                 cells = re.sub(r"^([ABH])\s+股", r"\1股", row).split()
                 if cells[0] != "A股":
@@ -53,4 +59,6 @@ def labelled_security_codes(pages, *, symbol) -> set[str]:
                 table_codes.append(code)
                 if len(table_codes) > 1:
                     raise ValueError("MULTIPLE_A_SHARE_ROWS_OR_CONFLICTING_TABLES")
+                if next_section:
+                    break
     return codes | set(table_codes)

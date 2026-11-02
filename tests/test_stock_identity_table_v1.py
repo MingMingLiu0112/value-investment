@@ -141,3 +141,46 @@ def test_real_retained_annual_identity_compatibility(index, symbol, digest):
         assert HEADER in pages[4]
         assert "A股 上海证券交易所 贵州茅台 600519" in pages[4]
     assert path.read_bytes() == raw and path.stat().st_mtime_ns == stamp
+
+
+def test_glued_exact_following_section_heading_is_not_an_extra_column():
+    assert codes(HEADER+"\n"+ROW+" 六、 其他相关资料") == {"600398"}
+
+
+@pytest.mark.parametrize("suffix", [
+    " 多余列",
+    " 六、 其他相关资料伪标题",
+    " 六、 其他相关资料 多余列",
+    " 六 其他相关资料",
+    " 六、 其他资料",
+    " 宣传 其他相关资料",
+    " 多余列 六、 其他相关资料",
+])
+def test_glued_fake_heading_or_extra_cells_still_rejected(suffix):
+    with pytest.raises(ValueError, match="AMBIGUOUS_A_SHARE_TABLE_COLUMNS"):
+        codes(HEADER+"\n"+ROW+suffix)
+
+
+def test_real_600933_glued_section_public_original_not_pit():
+    import json
+    configured = os.environ.get("STOCK_IDENTITY_REAL_ROOT") or os.environ.get("OFFICIAL_FUNDING_REAL_ROOT")
+    if not configured:
+        if os.environ.get("STOCK_IDENTITY_REAL_REQUIRED") == "1":
+            pytest.fail("STOCK_IDENTITY_REAL_ROOT required")
+        pytest.skip("Explicit real public PDF root opt-in")
+    root = Path(configured)
+    receipt_path = root / "runtime/sse-value-research/sse-research-followup-20261102T123448/queue-inputs/enrichment/600933-official-original/receipt.json"
+    receipt_raw, receipt_stamp = receipt_path.read_bytes(), receipt_path.stat().st_mtime_ns
+    receipt = json.loads(receipt_raw)
+    source = receipt["source"]
+    assert source["symbol"] == "600933" and source["period"] == "2025-12-31"
+    assert receipt["strict_historical_pit"] is False
+    path = root / source["path"]
+    raw, stamp = path.read_bytes(), path.stat().st_mtime_ns
+    assert hashlib.sha256(raw).hexdigest() == source["sha256"] == "866b075a72a8c9151f4b2004ce0cb5bdf669194fa34bae0d9d5768eb3a9a007b"
+    pages = extract_pages(path, limit=12)
+    assert HEADER in pages[8]
+    assert "A股 上海证券交易所 爱柯迪 600933 - 六、 其他相关资料" in pages[8]
+    assert labelled_security_codes(pages, symbol="600933") == {"600933"}
+    assert path.read_bytes() == raw and path.stat().st_mtime_ns == stamp
+    assert receipt_path.read_bytes() == receipt_raw and receipt_path.stat().st_mtime_ns == receipt_stamp

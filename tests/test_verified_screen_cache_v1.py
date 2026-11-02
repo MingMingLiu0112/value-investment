@@ -42,3 +42,16 @@ def test_path_escape_and_conflicting_hash_rejected(tmp_path):
  with pytest.raises(ValueError,match='OUTSIDE_RUNTIME'):c.put(tmp_path,dict(path='../secret',sha256='a'*64),{})
  a=bound(tmp_path,'a.json',{});bad=dict(a,sha256='b'*64);m=bound(tmp_path,'manifest.json',[a,bad])
  with pytest.raises(ValueError,match='CONFLICTING_BINDINGS'):c.put(tmp_path,m,{})
+
+
+def test_cache_budget_is_bounded_per_reader_not_a_native_source_admission(tmp_path):
+    from value_investment_agent.infrastructure.screening.verified_screen_cache_v1 import VerifiedScreenCache
+    from hashlib import sha256
+    import pytest
+    path=tmp_path/'runtime'/'TEST_ONLY.bin';path.parent.mkdir();path.write_bytes(b'x'*120)
+    binding=dict(path='runtime/TEST_ONLY.bin',sha256=sha256(path.read_bytes()).hexdigest())
+    with pytest.raises(ValueError,match='CACHE_SOURCE_TOO_LARGE'):VerifiedScreenCache(max_file_bytes=100).put(tmp_path,binding,{})
+    cache=VerifiedScreenCache(max_file_bytes=200);cache.put(tmp_path,binding,{'TEST_ONLY':True})
+    assert cache.get(tmp_path,binding)=={'TEST_ONLY':True}
+    for bad in [True,0,-1,192_000_001]:
+        with pytest.raises(ValueError):VerifiedScreenCache(max_file_bytes=bad)

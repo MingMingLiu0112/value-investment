@@ -222,7 +222,7 @@ it.each([
 it.each([
   ["EVIDENCE_REVIEW_PENDING", "等待补证与资料复核"],
   ["DEEP_RESEARCH_PENDING", "等待经营与反证研究"],
-  ["DATA_UNAVAILABLE", "资料不足或不可用"],
+  ["DATA_UNAVAILABLE", "资料核验尚未齐（查看具体缺口）"],
   ["EVIDENCE_ENRICHED", "已补充证据（非研究完成）"],
   ["QUALITY_READY", "质量资料就绪（非投资准入）"],
   ["QUALITY_EVALUATED", "已按既有规则评价质量（非投资准入）"],
@@ -254,4 +254,17 @@ it.each([
   const html = render(view);
   expect(html).toContain("下一动作：" + label + "</p>");
   expect(html).toContain('title="' + code + '"');
+});
+
+it("distinguishes obtained source observations from admitted facts", () => {
+  const view = fixture();
+  view.items[0].observed_fields = 8;
+  expect(validTrackingPoolView(view)).toBe(true);
+  const html = render(view);
+  expect(html).toContain("已取得来源观察");
+  expect(html).toContain("已采纳字段");
+  view.items[0].observed_fields = 10;
+  expect(validTrackingPoolView(view)).toBe(false);
+  view.items[0].observed_fields = -1;
+  expect(validTrackingPoolView(view)).toBe(false);
 });

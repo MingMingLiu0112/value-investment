@@ -21,6 +21,7 @@ export interface TrackingPoolView {
     tracking_status: string;
     financial_period: string | null;
     accepted_fields: number;
+    observed_fields?: number | null;
     required_fields: number;
     next_action: string;
     gaps: string[];
@@ -78,6 +79,9 @@ export function validTrackingPoolView(v: unknown): v is TrackingPoolView {
         strings(r.gaps) &&
         count(r.accepted_fields) &&
         count(r.required_fields) &&
+        (r.observed_fields == null ||
+          (count(r.observed_fields) &&
+            r.observed_fields <= r.required_fields)) &&
         r.accepted_fields <= r.required_fields,
     )
   );
@@ -91,7 +95,7 @@ const channels: Record<string, string> = {
 const stages: Record<string, string> = {
   EVIDENCE_REVIEW_PENDING: "等待补证与资料复核",
   DEEP_RESEARCH_PENDING: "等待经营与反证研究",
-  DATA_UNAVAILABLE: "资料不足或不可用",
+  DATA_UNAVAILABLE: "资料核验尚未齐（查看具体缺口）",
   EVIDENCE_ENRICHED: "已补充证据（非研究完成）",
   QUALITY_READY: "质量资料就绪（非投资准入）",
   QUALITY_EVALUATED: "已按既有规则评价质量（非投资准入）",
@@ -232,6 +236,12 @@ export function ValueTrackingResearchPool({
                         {display(row.financial_period)}
                       </p>
                       <p>
+                        {row.observed_fields != null && (
+                          <>
+                            已取得来源观察：{row.observed_fields} /{" "}
+                            {row.required_fields}；
+                          </>
+                        )}
                         已采纳字段：{row.accepted_fields} / 所需字段：
                         {row.required_fields}；不代表完整质量、估值或投资准入。
                       </p>

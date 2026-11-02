@@ -13,7 +13,8 @@ from ...infrastructure.screening.verified_screen_cache_v1 import VerifiedScreenC
 
 POINTER='.tmp/sse-main-research-current.json'
 VERSION='sse-research-tracking-view-v1'
-_CACHE=VerifiedScreenCache()
+# Existing lawful-consumption exports are 132 MB; native source limits stay unchanged.
+_CACHE=VerifiedScreenCache(max_file_bytes=160_000_000)
 
 
 def _binding(root,path):
@@ -163,6 +164,7 @@ def read_sse_research_pool(*,root,now):
                 channels=row['channels'],reason='；'.join(row['screening_reasons']),
                 first_seen_at=row['first_seen_at'],tracking_status=stage,
                 financial_period=row['timing']['financial_period'],accepted_fields=len(completion['accepted_fields']),
+                observed_fields=(row.get('financial_data') or {}).get('available_count'),
                 required_fields=len(completion['required_fields']),next_action=next_action,gaps=gaps))
         return dict(schema_version=VERSION,action='no_order',status='AVAILABLE',scope='SSE_MAIN_A_ONLY',
             source_status=screen['source_status'],source_available_at=queue['source_available_at'],

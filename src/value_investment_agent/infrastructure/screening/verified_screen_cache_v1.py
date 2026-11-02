@@ -8,7 +8,10 @@ from threading import RLock
 # Native loaders retain their own input limits. The verified closure includes
 # the existing 98 MB financial export; this bound only limits cache rehash reads.
 class VerifiedScreenCache:
-    def __init__(self):
+    def __init__(self, *, max_file_bytes=128_000_000):
+        if type(max_file_bytes) is not int or not 1<=max_file_bytes<=192_000_000:
+            raise ValueError('BOUNDED_VERIFIED_CACHE_READ_BUDGET_REQUIRED')
+        self.max_file_bytes=max_file_bytes
         self.lock=RLock()
         self._entry=None
 
@@ -18,7 +21,7 @@ class VerifiedScreenCache:
         for name,digest in self._entry[1]:
             path=(Path(root)/name).resolve()
             if not path.is_relative_to((Path(root)/'runtime').resolve()):raise ValueError('CACHE_SOURCE_OUTSIDE_RUNTIME')
-            if path.stat().st_size>128_000_000 or sha256(path.read_bytes()).hexdigest()!=digest:
+            if path.stat().st_size>self.max_file_bytes or sha256(path.read_bytes()).hexdigest()!=digest:
                 self._entry=None
                 raise ValueError('CACHED_SCREEN_SOURCE_HASH_CHANGED')
         return self._entry[2]
@@ -34,7 +37,7 @@ class VerifiedScreenCache:
                     if name in seen:
                         if seen[name]!=value['sha256']:raise ValueError('CACHE_CONFLICTING_BINDINGS')
                     else:
-                        if target.stat().st_size>128_000_000:raise ValueError('CACHE_SOURCE_TOO_LARGE')
+                        if target.stat().st_size>self.max_file_bytes:raise ValueError('CACHE_SOURCE_TOO_LARGE')
                         raw=target.read_bytes()
                         if sha256(raw).hexdigest()!=value['sha256']:raise ValueError('CACHE_CLOSURE_HASH_MISMATCH')
                         seen[name]=value['sha256'];url=value.get('source_url','')
