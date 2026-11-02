@@ -471,6 +471,7 @@ jobs:
           tests/test_financial_gap_diagnostics_v1.py
           tests/test_public_three_statements_v1.py
           tests/test_financial_source_comparison_v1.py
+          tests/test_verified_screen_cache_v1.py
           tests/test_public_debt_details_v1.py
           tests/test_sina_financial_statements_v1.py
           tests/test_official_funding_details_v1.py

@@ -47,6 +47,10 @@ def resign(env,binding,mutator,body=False):
         rp=env[0]/descriptor['receipt']['path'];receipt=json.loads(rp.read_bytes())
         receipt.update(sha256=descriptor['sha256'],bytes=len(raw));rp.write_bytes(m._json(receipt))
         descriptor['receipt']['sha256']=m._sha(rp.read_bytes())
+        # Fully rebind the success attempt for parser-focused mutation tests.
+        ab=manifest['sources'][0]['attempts'][-1];ap=env[0]/ab['path']
+        attempt=json.loads(ap.read_bytes());attempt['descriptor']=descriptor
+        ap.write_bytes(m._json(attempt));ab['sha256']=m._sha(ap.read_bytes())
     else:mutator(manifest)
     path.write_bytes(m._json(manifest));return dict(binding,sha256=m._sha(path.read_bytes()))
 
@@ -132,3 +136,128 @@ def test_isolated_copy_replay_keeps_source_times(env):
     binding=collect(env);expected=load(env,binding)
     isolated=env[0]/'restored';shutil.copytree(env[1],isolated/'runtime/sina/test')
     assert m.load(isolated,binding,datetime.now(timezone.utc))==expected
+
+
+def transport_error(status=None, retry_after=False):
+    if status is None:
+        return m.requests.exceptions.ReadTimeout('single attempt timed out')
+    response=m.requests.Response();response.status_code=status
+    if retry_after:response.headers['Retry-After']='1'
+    return m.requests.HTTPError('HTTP '+str(status),response=response)
+
+
+@pytest.mark.parametrize('failure',[transport_error(),m.requests.ConnectionError('connection lost'),transport_error(503)])
+def test_retry_once_in_fresh_directory_then_strict_success(env,monkeypatch,failure):
+    original=m.collect_sina_statement_original;folders=[]
+    def collector(**kw):
+        if kw['symbol']=='600519' and kw['statement']==m.SinaStatement.INCOME:
+            folders.append(kw['output_dir'])
+            if len(folders)==1:
+                kw['output_dir'].mkdir(parents=True)
+                (kw['output_dir']/'partial.raw').write_bytes(b'first attempt retained')
+                raise failure
+        return original(**kw)
+    monkeypatch.setattr(m,'collect_sina_statement_original',collector)
+    monkeypatch.setattr(m.time,'sleep',lambda seconds:None)
+    binding=collect(env);result=load(env,binding)
+    assert result['status']=='COMPLETE' and len(folders)==2 and folders[0]!=folders[1]
+    assert (folders[0]/'partial.raw').read_bytes()==b'first attempt retained'
+    manifest=json.loads((env[0]/binding['path']).read_bytes())
+    entry=next(e for e in manifest['sources'] if e['symbol']=='600519' and e['role']=='income')
+    assert len(entry['attempts'])==2 and 'error' not in entry
+    first=json.loads((env[0]/entry['attempts'][0]['path']).read_bytes())
+    second=json.loads((env[0]/entry['attempts'][1]['path']).read_bytes())
+    assert first['status']=='FAILED' and first['retry_scheduled'] is True
+    assert second['status']=='COMPLETE' and second['descriptor']==entry['descriptor']
+
+
+@pytest.mark.parametrize('failure',[
+    ValueError('identity mismatch'),json.JSONDecodeError('invalid JSON','x',0),
+    ValueError('scope mismatch'),PermissionError('denied'),transport_error(401),
+    transport_error(403),transport_error(429),transport_error(503,True),
+    m.requests.exceptions.SSLError('certificate invalid')])
+def test_nonretryable_failure_calls_collector_only_once(env,monkeypatch,failure):
+    original=m.collect_sina_statement_original;attempts=[]
+    def collector(**kw):
+        if kw['symbol']=='600519' and kw['statement']==m.SinaStatement.INCOME:
+            attempts.append(kw['output_dir']);raise failure
+        return original(**kw)
+    monkeypatch.setattr(m,'collect_sina_statement_original',collector)
+    monkeypatch.setattr(m.time,'sleep',lambda seconds:pytest.fail('unexpected retry'))
+    result=load(env,collect(env))
+    assert len(attempts)==1 and result['status']=='PARTIAL'
+    assert 'income' not in result['symbols']['600519']['statements']
+
+
+def test_two_timeouts_stop_and_preserve_both_attempt_receipts(env,monkeypatch):
+    original=m.collect_sina_statement_original;attempts=[]
+    def collector(**kw):
+        if kw['symbol']=='600519' and kw['statement']==m.SinaStatement.INCOME:
+            attempts.append(kw['output_dir']);raise transport_error()
+        return original(**kw)
+    monkeypatch.setattr(m,'collect_sina_statement_original',collector)
+    monkeypatch.setattr(m.time,'sleep',lambda seconds:None)
+    binding=collect(env);result=load(env,binding)
+    assert len(attempts)==2 and result['status']=='PARTIAL'
+    manifest=json.loads((env[0]/binding['path']).read_bytes())
+    entry=next(e for e in manifest['sources'] if e['symbol']=='600519' and e['role']=='income')
+    assert len(entry['attempts'])==2 and entry['descriptor'] is None
+    records=[json.loads((env[0]/b['path']).read_bytes()) for b in entry['attempts']]
+    assert [r['retry_scheduled'] for r in records]==[True,False]
+    assert all(r['status']=='FAILED' for r in records)
+
+
+def test_legacy_without_attempts_still_replays(env):
+    binding=collect(env)
+    binding=resign(env,binding,lambda value:[e.pop('attempts') for e in value['sources']])
+    assert load(env,binding)['status']=='COMPLETE'
+
+
+@pytest.mark.parametrize('mutation',['bytes','symbol','role','number','naive','future','reverse',
+                                    'descriptor','request','raw_hash','receipt_hash','receipt_content',
+                                    'empty','too_many'])
+def test_attempt_binding_identity_time_and_descriptor_rejected(env,mutation):
+    binding=collect(env)
+    path=env[0]/binding['path'];manifest=json.loads(path.read_bytes())
+    entry=manifest['sources'][0];ab=entry['attempts'][0];ap=env[0]/ab['path']
+    attempt=json.loads(ap.read_bytes())
+    if mutation=='bytes':ap.write_bytes(ap.read_bytes()+b' ')
+    elif mutation=='empty':entry['attempts']=[]
+    elif mutation=='too_many':entry['attempts']*=3
+    else:
+        if mutation=='symbol':attempt['symbol']='600887'
+        if mutation=='role':attempt['role']='income'
+        if mutation=='number':attempt['attempt']=2
+        if mutation=='naive':attempt['started_at']='2026-01-01T00:00:00'
+        if mutation=='future':attempt['finished_at']='2099-01-01T00:00:00+00:00'
+        if mutation=='reverse':attempt['started_at']=attempt['finished_at'];attempt['finished_at']=manifest['started_at']
+        if mutation=='descriptor':attempt['descriptor']=None
+        if mutation=='request':attempt['descriptor']['source_url']=m._url('600887','balance')
+        if mutation=='raw_hash':attempt['descriptor']['sha256']='0'*64
+        if mutation=='receipt_hash':attempt['descriptor']['receipt']['sha256']='0'*64
+        if mutation=='receipt_content':
+            rb=attempt['descriptor']['receipt'];rp=env[0]/rb['path'];receipt=json.loads(rp.read_bytes())
+            receipt['bytes']+=1;rp.write_bytes(m._json(receipt));rb['sha256']=m._sha(rp.read_bytes())
+        ap.write_bytes(m._json(attempt));ab['sha256']=m._sha(ap.read_bytes())
+    path.write_bytes(m._json(manifest));binding['sha256']=m._sha(path.read_bytes())
+    with pytest.raises(ValueError):load(env,binding)
+
+
+def test_failed_json_attempt_replays_bound_bytes_without_parsing_them(env,monkeypatch):
+    original=m.collect_sina_statement_original
+    def collector(**kw):
+        descriptor=original(**kw)
+        if kw['symbol']=='600519' and kw['statement']==m.SinaStatement.INCOME:
+            path=kw['root']/descriptor['path'];path.write_bytes(b'not JSON response')
+            rp=kw['root']/descriptor['receipt']['path'];receipt=json.loads(rp.read_bytes())
+            receipt.update(sha256=m._sha(path.read_bytes()),bytes=len(path.read_bytes()))
+            rp.write_bytes(m._json(receipt))
+            raise ValueError('failed source JSON')
+        return descriptor
+    monkeypatch.setattr(m,'collect_sina_statement_original',collector)
+    binding=collect(env)
+    assert load(env,binding)['status']=='PARTIAL'
+    manifest=json.loads((env[0]/binding['path']).read_bytes())
+    entry=next(e for e in manifest['sources'] if e['symbol']=='600519' and e['role']=='income')
+    (env[0]/entry['descriptor']['path']).write_bytes(b'tampered invalid JSON')
+    with pytest.raises(ValueError,match='hash'):load(env,binding)

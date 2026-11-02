@@ -5,6 +5,9 @@ from pathlib import Path
 import hashlib
 import json
 import re
+import time
+
+import requests
 from urllib.parse import urlencode
 
 from .sina_income_original import ENDPOINT, SinaStatement, STATEMENT_SOURCES, collect_sina_statement_original
@@ -122,9 +125,64 @@ def _replay(root, descriptor, symbol, role, period, now):
     return current, comparison, error
 
 
+def _retryable_transport(error):
+    response = getattr(error, 'response', None)
+    if response is not None and 'Retry-After' in response.headers:
+        return False
+    if isinstance(error, requests.exceptions.SSLError):
+        return False
+    if isinstance(error, (requests.Timeout, requests.ConnectionError)):
+        return True
+    return (isinstance(error, requests.HTTPError) and response is not None
+            and 500 <= response.status_code <= 599)
+
+
+def _collect_with_retry(root, folder, symbol, role, period):
+    """At most two outer calls; preserve existing collector's own transport policy."""
+    folder.mkdir(parents=True, exist_ok=False)
+    entry = dict(symbol=symbol, role=role, status='FAILED', descriptor=None, attempts=[])
+    for number in (1, 2):
+        attempt_folder = folder / f'attempt-{number:02d}'
+        record = dict(symbol=symbol, role=role, attempt=number,
+                      started_at=datetime.now(timezone.utc).isoformat(),
+                      action='no_order', descriptor=None)
+        retry = False
+        try:
+            descriptor = collect_sina_statement_original(root=root, symbol=symbol,
+                output_dir=attempt_folder, statement=SinaStatement(role), allow_network=True)
+            record['descriptor'] = descriptor
+            _replay(root, descriptor, symbol, role, period, datetime.now(timezone.utc))
+            record['status'] = 'COMPLETE'
+            entry.update(status='COMPLETE', descriptor=descriptor)
+        except Exception as error:
+            receipt_path = attempt_folder / 'acquisition.json'
+            if record['descriptor'] is None and receipt_path.exists():
+                raw = receipt_path.read_bytes(); receipt = json.loads(raw)
+                record['descriptor'] = dict(path=receipt['path'], sha256=receipt['sha256'],
+                    acquired_at=receipt['acquired_at'], source_url=receipt['url'],
+                    receipt=dict(path=receipt_path.relative_to(root).as_posix(), sha256=_sha(raw)))
+            failure = dict(symbol=symbol, role=role, error_type=type(error).__name__, message=str(error)[:500])
+            retry = number == 1 and _retryable_transport(error)
+            record.update(status='FAILED', error=failure, retry_scheduled=retry)
+            entry.update(error=failure, descriptor=record['descriptor'])
+        record['finished_at'] = datetime.now(timezone.utc).isoformat()
+        path = folder / f'attempt-{number:02d}.json'
+        raw = _json(record)
+        with path.open('xb') as stream:
+            stream.write(raw)
+        entry['attempts'].append(dict(path=path.relative_to(root).as_posix(), sha256=_sha(raw)))
+        if entry['status'] == 'COMPLETE':
+            entry.pop('error', None)
+            break
+        if not retry:
+            break
+        time.sleep(1)
+    return entry
+
+
 def collect(root: Path, output_dir: Path, symbols: list[str], period: str,
             allow_network: bool = False) -> dict:
-    """Reuse the existing bounded collector; one serial call per symbol/statement."""
+    """Reuse the bounded collector; at most two outer attempts per statement."""
     if allow_network is not True:
         raise ValueError('explicit public network authorization required')
     symbols = _symbols(symbols)
@@ -140,25 +198,9 @@ def collect(root: Path, output_dir: Path, symbols: list[str], period: str,
         started_at=started.isoformat(), errors=[])
     for symbol in symbols:
         for role in ROLES:
-            folder=output/symbol/role
-            entry=dict(symbol=symbol, role=role, status='FAILED', descriptor=None)
-            try:
-                descriptor=collect_sina_statement_original(root=root,symbol=symbol,output_dir=folder,
-                    statement=SinaStatement(role),allow_network=True)
-                entry['descriptor']=descriptor
-                _replay(root,descriptor,symbol,role,period,datetime.now(timezone.utc))
-                entry['status']='COMPLETE'
-            except Exception as error:
-                # Existing collector leaves the raw and receipt on content failure.
-                receipt_path=folder/'acquisition.json'
-                if entry['descriptor'] is None and receipt_path.exists():
-                    raw=receipt_path.read_bytes();receipt=json.loads(raw)
-                    entry['descriptor']=dict(path=receipt['path'],sha256=receipt['sha256'],
-                        acquired_at=receipt['acquired_at'],source_url=receipt['url'],
-                        receipt=dict(path=receipt_path.relative_to(root).as_posix(),sha256=_sha(raw)))
-                failure=dict(symbol=symbol,role=role,error_type=type(error).__name__,message=str(error)[:500])
-                entry['error']=failure
-                manifest['errors'].append(failure)
+            entry = _collect_with_retry(root, output/symbol/role, symbol, role, period)
+            if entry['status'] == 'FAILED':
+                manifest['errors'].append(entry['error'])
             manifest['sources'].append(entry)
     manifest['available_at']=datetime.now(timezone.utc).isoformat()
     complete=sum(x['status']=='COMPLETE' for x in manifest['sources'])
@@ -166,6 +208,57 @@ def collect(root: Path, output_dir: Path, symbols: list[str], period: str,
     raw=_json(manifest);path=output/'manifest.json'
     with path.open('xb') as stream:stream.write(raw)
     return dict(path=path.relative_to(root).as_posix(),sha256=_sha(raw))
+
+
+
+def _verify_attempts(root, entry, start, finish):
+    """Optional additive audit closure; legacy entries without attempts stay valid."""
+    if 'attempts' not in entry:
+        return
+    bindings = entry['attempts']
+    if not isinstance(bindings, list) or not 1 <= len(bindings) <= 2:
+        raise ValueError('one or two attempt receipts required')
+    previous_end = start
+    for number, binding in enumerate(bindings, 1):
+        if not isinstance(binding, dict) or set(binding) != {'path', 'sha256'}:
+            raise ValueError('exact attempt binding required')
+        record = json.loads(_bound(root, binding, 100_000))
+        if (record.get('symbol') != entry['symbol'] or record.get('role') != entry['role']
+                or type(record.get('attempt')) is not int or record['attempt'] != number
+                or record.get('action') != 'no_order' or record.get('status') not in {'COMPLETE', 'FAILED'}):
+            raise ValueError('attempt identity/sequence mismatch')
+        begin, end = _clock(record['started_at']), _clock(record['finished_at'])
+        if not start <= previous_end <= begin <= end <= finish:
+            raise ValueError('attempt time outside manifest or sequence')
+        previous_end = end
+        descriptor = record['descriptor']
+        if descriptor is not None:
+            acquired = _clock(descriptor['acquired_at'])
+            if not begin <= acquired <= end or descriptor['source_url'] != _url(entry['symbol'], entry['role']):
+                raise ValueError('attempt source time/request mismatch')
+            raw = _bound(root, descriptor)
+            receipt = json.loads(_bound(root, descriptor['receipt'], 100_000))
+            expected = dict(url=descriptor['source_url'], path=descriptor['path'],
+                sha256=descriptor['sha256'], acquired_at=descriptor['acquired_at'],
+                bytes=len(raw), action='no_order')
+            if any(receipt.get(k) != v for k, v in expected.items()):
+                raise ValueError('attempt source/acquisition receipt mismatch')
+            # Failed response bytes may be invalid JSON; binding verification is sufficient here.
+        if number < len(bindings):
+            if record['status'] != 'FAILED' or record.get('retry_scheduled') is not True:
+                raise ValueError('only failed retry-scheduled attempt can precede another')
+        elif (record['status'] != entry['status'] or descriptor != entry['descriptor']
+                or record.get('retry_scheduled', False) is not False):
+            raise ValueError('final attempt differs from source entry')
+        if record['status'] == 'COMPLETE':
+            if descriptor is None or 'error' in record:
+                raise ValueError('successful attempt needs descriptor and no error')
+        else:
+            error = record['error']
+            if error.get('symbol') != entry['symbol'] or error.get('role') != entry['role']:
+                raise ValueError('attempt error identity mismatch')
+            if number == len(bindings) and error != entry['error']:
+                raise ValueError('final attempt error differs from source entry')
 
 
 def load(root: Path, binding: dict, evaluation_at: datetime) -> dict:
@@ -192,6 +285,7 @@ def load(root: Path, binding: dict, evaluation_at: datetime) -> dict:
     for entry in entries:
         symbol,role=entry['symbol'],entry['role'];descriptor=entry['descriptor']
         if entry['status'] not in {'COMPLETE','FAILED'}:raise ValueError('invalid source status')
+        _verify_attempts(root, entry, start, finish)
         if descriptor is not None:
             if not start<=_clock(descriptor['acquired_at'])<=finish or descriptor['source_url']!=_url(symbol,role):
                 raise ValueError('source time/request mismatch')

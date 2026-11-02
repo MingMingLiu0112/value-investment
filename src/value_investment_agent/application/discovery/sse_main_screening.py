@@ -22,6 +22,7 @@ from ...infrastructure.screening import public_three_statements_v1 as three_stat
 from ...financial_institutions import provisional_financial_type
 from ...financial_quality import _accepted
 from copy import deepcopy
+from ...infrastructure.screening.verified_screen_cache_v1 import SCREEN_CACHE
 from ...domain.discovery.financial_source_comparison_v1 import compare_observations, debt_details, debt_observations, sina_observations
 from ...infrastructure.screening import public_debt_details_v1 as debt_source
 from ...infrastructure.screening import sina_financial_statements_v1 as sina_source
@@ -61,11 +62,11 @@ def implementation():
     import inspect
     from ...domain.discovery import sse_main_pool_v1, value_candidate_selection, financial_gap_diagnostics_v1, financial_source_comparison_v1
     from ... import m2_discovery_engine, m2_opportunity_discovery, m2_market_data, financial_quality, official_universe, financial_institutions
-    from ...infrastructure.screening import evidence_screen_v3, public_financial_snapshot
+    from ...infrastructure.screening import evidence_screen_v3, public_financial_snapshot, verified_screen_cache_v1
     from ..research import value_evidence_enrichment_v1 as official_adoption
     from ...infrastructure.screening import value_evidence_enrichment_v1 as official_parser
     from ...infrastructure.filings import financial_funding_scope,pdf_text,official_pdf
-    modules=[official_adoption,official_parser,financial_funding_scope,pdf_text,official_pdf,sse_main_pool_v1,value_candidate_selection,financial_gap_diagnostics_v1,financial_source_comparison_v1,debt_source,sina_source,official_funding,three_statements,m2_discovery_engine,m2_opportunity_discovery,
+    modules=[verified_screen_cache_v1,official_adoption,official_parser,financial_funding_scope,pdf_text,official_pdf,sse_main_pool_v1,value_candidate_selection,financial_gap_diagnostics_v1,financial_source_comparison_v1,debt_source,sina_source,official_funding,three_statements,m2_discovery_engine,m2_opportunity_discovery,
              m2_market_data,financial_quality,official_universe,financial_institutions,evidence_screen_v3,public_financial_snapshot,sources]
     paths=[Path(__file__),*[Path(inspect.getfile(m)) for m in modules],Path(__file__).with_name('public_financial_input.py')]
     base=Path(__file__).resolve().parents[4]
@@ -336,19 +337,26 @@ def read_screen(*,root,now,offset=0,limit=20,query='',status='CANDIDATE'):
         if manifest['implementation']!=implementation():raise ValueError('SCREEN_IMPLEMENTATION_CHANGED_REPLAY_REQUIRED')
         stamp=datetime.fromisoformat(manifest['generated_at'])
         if stamp.utcoffset() is None or stamp>now:raise ValueError('FUTURE_SCREEN_MANIFEST')
-        result,receipt=compile_inputs(root=root,inputs=manifest['inputs'],now=now,run_id=manifest['run_id'])
-        stored_result=_read(root,manifest['result'],result_artifact=True)
-        stored_receipt=_read(root,manifest['receipt'])
-        if _bytes(result)!=_bytes(stored_result):
-            raise ValueError('SCREEN_RESULT_REPLAY_MISMATCH:' + ','.join(k for k in result if _bytes(result[k])!=_bytes(stored_result.get(k))))
-        if _bytes(receipt)!=_bytes(stored_receipt):
-            raise ValueError('SCREEN_RECEIPT_REPLAY_MISMATCH:' + ','.join(k for k in receipt if _bytes(receipt[k])!=_bytes(stored_receipt.get(k))))
-        rows=result.pop('rows')
+        use_cache=bool(manifest['inputs'].get('debt_supplement') and manifest['inputs'].get('sina_supplements'))
+        with SCREEN_CACHE.lock:
+            verified=SCREEN_CACHE.get(root,pointer['manifest']) if use_cache else None
+            if verified is None:
+                result,receipt=compile_inputs(root=root,inputs=manifest['inputs'],now=now,run_id=manifest['run_id'])
+                stored_result=_read(root,manifest['result'],result_artifact=True)
+                stored_receipt=_read(root,manifest['receipt'])
+                if _bytes(result)!=_bytes(stored_result):
+                    raise ValueError('SCREEN_RESULT_REPLAY_MISMATCH:' + ','.join(k for k in result if _bytes(result[k])!=_bytes(stored_result.get(k))))
+                if _bytes(receipt)!=_bytes(stored_receipt):
+                    raise ValueError('SCREEN_RECEIPT_REPLAY_MISMATCH:' + ','.join(k for k in receipt if _bytes(receipt[k])!=_bytes(stored_receipt.get(k))))
+                verified=result
+                if use_cache:SCREEN_CACHE.put(root,pointer['manifest'],verified)
+            rows=verified['rows']
+            result=deepcopy({k:v for k,v in verified.items() if k!='rows'})
         needle=query.strip().casefold()
         rows=[r for r in rows if (status=='ALL' or r['status']==status) and
               (not needle or any(needle in str(r.get(k,'' )).casefold() for k in ['symbol','name','industry']))]
         result.update(pagination=dict(offset=offset,limit=limit,total=len(rows)),
-            items=rows[offset:offset+limit],read_at=now.isoformat(),
+            items=deepcopy(rows[offset:offset+limit]),read_at=now.isoformat(),
             snapshot_age_hours=max(0,(now-datetime.fromisoformat(result['available_at'])).total_seconds()/3600))
         if result['snapshot_age_hours']>24:
             result['source_status']='HISTORICAL_SNAPSHOT_SOURCE_REVALIDATED'
