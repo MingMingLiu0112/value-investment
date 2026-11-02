@@ -692,7 +692,7 @@ def create_app(
             lane = lanes[strategy]
             row = next((r for r in lane['items'] if r.get('symbol') == decision_id), None)
             sse_progress = None
-            if row is None and strategy == 'value':
+            if strategy == 'value':
                 from ...application.discovery.sse_main_screening import read_screen
                 public_screen = read_screen(root=project,now=datetime.now(timezone.utc),
                     query=decision_id,status='ALL',limit=20)
@@ -701,10 +701,16 @@ def create_app(
                         if r['symbol']==decision_id and r['status']=='CANDIDATE'),None)
                     if source_row is not None:
                         row=dict(source_row,reasons=[source_row['reason']],blockers=source_row['gaps'],
-                            source_available_at=public_screen['available_at'],source_refs=public_screen['source_refs'])
+                            source_available_at=public_screen['available_at'],source_refs=public_screen['source_refs'],
+                            quote_date=source_row.get('quote_date'),trade_date=None,
+                            detail_source='CURRENT_VERIFIED_SSE_SCREEN')
                         from ...application.research.value_enrichment_batch import read_verified_enrichment_progress
                         sse_progress=read_verified_enrichment_progress(root=project,symbol=decision_id,
                             evaluation_at=datetime.now(timezone.utc))
+                if row is not None and row.get('detail_source') != 'CURRENT_VERIFIED_SSE_SCREEN':
+                    row=dict(row,detail_source='LEGACY_SELECTION_CONTEXT_NOT_CURRENT_SSE',
+                        current_sse_status=public_screen['status'],
+                        current_sse_candidate_available=False)
             if row is None:
                 return dict(action='no_order', status='UNAVAILABLE', decision=None,
                     reason='SELECTION_CANDIDATE_UNAVAILABLE', formal_eligibility=False)

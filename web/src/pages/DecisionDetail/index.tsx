@@ -1200,13 +1200,44 @@ export default function DecisionDetail() {
                 <h3>
                   {strategy === "hotspot" ? "热点结构观察" : "价值初筛研究依据"}
                 </h3>
+                {strategy !== "hotspot" &&
+                "detail_source" in data.selection_candidate &&
+                data.selection_candidate.detail_source ===
+                  "CURRENT_VERIFIED_SSE_SCREEN" ? (
+                  <p>
+                    来源可得时间：
+                    {data.selection_candidate.source_available_at || "未提供"}
+                    ；行情日期：
+                    {data.selection_candidate.quote_date || "待核验"}
+                    {data.selection_candidate.quote_date
+                      ? "（原来源日期，交易日资格待核验）"
+                      : ""}
+                    。来源可得时间不代表行情交易日。
+                  </p>
+                ) : strategy !== "hotspot" &&
+                  "detail_source" in data.selection_candidate &&
+                  data.selection_candidate.detail_source ===
+                    "LEGACY_SELECTION_CONTEXT_NOT_CURRENT_SSE" ? (
+                  <p>
+                    历史候选参考，当前SSE未核验。历史记录行情日期：
+                    {data.selection_candidate.quote_date ||
+                      data.selection_candidate.trade_date ||
+                      "未提供"}
+                    ；来源可得时间：
+                    {data.selection_candidate.source_available_at || "未提供"}
+                    。不作为当前沪市主板候选依据。
+                  </p>
+                ) : (
+                  <p>
+                    资料日期：
+                    {data.selection_candidate.quote_date ||
+                      data.selection_candidate.trade_date ||
+                      "未提供"}
+                  </p>
+                )}
                 <p>
-                  资料日期：
-                  {data.selection_candidate.quote_date ||
-                    data.selection_candidate.trade_date ||
-                    "未提供"}
-                  ；行业：{data.selection_candidate.industry || "未提供"}
-                  。初筛候选不是已批准操作计划。
+                  行业：{data.selection_candidate.industry || "未提供"}。
+                  初筛候选不是已批准操作计划。
                 </p>
                 <ul>
                   {data.selection_candidate.channel_evaluations?.map((item) => (

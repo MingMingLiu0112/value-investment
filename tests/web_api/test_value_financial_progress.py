@@ -133,3 +133,60 @@ def test_new_input_candidate_supersedes_only_review_materials_never_public_econo
             assert status['valuation_basis_date'] == '2026-10-20'
             assert status['valuation_basis_scope'] == 'EX_POST_PRIOR_COMPLETED_SESSION'
             assert status['approval_changed'] is status['research_admitted'] is status['price_admitted'] is False
+
+@pytest.mark.parametrize("strategy,unavailable", [("value", False), ("value", True), ("hotspot", False)])
+def test_sse_current_detail_overrides_legacy_without_affecting_hotspot(tmp_path, monkeypatch, strategy, unavailable):
+    from value_investment_agent.application.discovery import dual_strategy_selection, sse_main_screening
+    from value_investment_agent.application.discovery import value_candidate_selection
+    from value_investment_agent.application.hotspot import replay_read_model
+    monkeypatch.setattr(value_candidate_selection, "load_current_public_candidate_research", lambda **kw: None)
+    legacy = dict(symbol="600323", name="TEST_ONLY legacy", channels=["value"],
+        reason="old missing nine", gaps=["old missing nine"], quote_date="2026-10-23")
+    lane = dict(items=[legacy], quote_date="2026-10-23", trade_date="2026-10-23")
+    monkeypatch.setattr(dual_strategy_selection, "build_dual_strategy_selection",
+        lambda **kw: dict(value=deepcopy(lane), hotspot=deepcopy(lane)))
+    monkeypatch.setattr(replay_read_model, "load_symbol_retained_replay", lambda **kw: None)
+    calls = []
+    def screen(**kw):
+        assert strategy == "value", "hotspot must not query SSE value sources"
+        calls.append("screen")
+        return dict(status="UNAVAILABLE" if unavailable else "PARTIAL",
+            available_at="2026-11-02T12:00:00+00:00",
+            source_refs=[dict(path="runtime/TEST_ONLY/new.json", sha256="a"*64)],
+            items=[] if unavailable else [dict(symbol="600323", name="TEST_ONLY current",
+                status="CANDIDATE", reason="new verified source", gaps=["research remains"],
+                quote_date=None, financial_data={"verified_count": 7})])
+    monkeypatch.setattr(sse_main_screening, "read_screen", screen)
+    progress = dict(status="VERIFIED_FACT_ADOPTION", action="no_order", adopted_fact_count=2,
+        formal_eligibility=False)
+    def read_progress(**kw):
+        calls.append("progress")
+        assert kw["symbol"] == "600323" and kw["evaluation_at"].utcoffset() is not None
+        return deepcopy(progress)
+    monkeypatch.setattr(value_enrichment_batch, "read_verified_enrichment_progress", read_progress)
+    with TestClient(create_app(tmp_path)) as client:
+        response = client.get("/api/v1/decisions/600323", params={"strategy": strategy})
+    assert response.status_code == 200
+    actual = response.json()
+    candidate = actual["selection_candidate"]
+    assert actual["action"] == "no_order" and actual["formal_eligibility"] is False
+    if strategy == "hotspot":
+        assert calls == [] and candidate["name"] == "TEST_ONLY legacy"
+        assert "detail_source" not in candidate
+    elif unavailable:
+        assert calls == ["screen"]
+        assert candidate["detail_source"] == "LEGACY_SELECTION_CONTEXT_NOT_CURRENT_SSE"
+        assert candidate["current_sse_status"] == "UNAVAILABLE"
+        assert candidate["current_sse_candidate_available"] is False
+        assert "financial_progress" not in actual
+        assert "source_available_at" not in candidate
+    else:
+        assert calls == ["screen", "progress"]
+        assert candidate["name"] == "TEST_ONLY current"
+        assert candidate["financial_data"]["verified_count"] == 7
+        assert candidate["source_available_at"] == "2026-11-02T12:00:00+00:00"
+        assert candidate["source_refs"][0]["path"] == "runtime/TEST_ONLY/new.json"
+        assert candidate["detail_source"] == "CURRENT_VERIFIED_SSE_SCREEN"
+        assert candidate["quote_date"] is None and candidate["trade_date"] is None
+        assert actual["financial_progress"] == progress
+        assert "old missing nine" not in str(actual)

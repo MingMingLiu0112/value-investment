@@ -409,3 +409,56 @@ it("TEST_ONLY refuses an incomplete future scope and leaves the legacy view unch
   expect(legacy).not.toContain("知识可得上界");
   expect(legacy).toContain("原始操作判断");
 });
+
+it.each([null, "2026-10-30"])(
+  "separates verified SSE source availability from quote date %s",
+  (quote) => {
+    state.detail.data.selection_candidate = {
+      symbol: "600887",
+      detail_source: "CURRENT_VERIFIED_SSE_SCREEN",
+      source_available_at: "2026-11-02T12:34:56+08:00",
+      quote_date: quote,
+      trade_date: null,
+      reasons: [],
+      blockers: [],
+    };
+    const html = renderToStaticMarkup(<DecisionDetail />);
+    const section =
+      html.match(
+        /<section aria-label="公开候选依据">([\s\S]*?)<\/section>/,
+      )?.[1] || "";
+    expect(section).toContain("来源可得时间：2026-11-02T12:34:56+08:00");
+    expect(section).toContain("行情日期：" + (quote || "待核验"));
+    expect(section).toContain("来源可得时间不代表行情交易日");
+    expect(section).not.toContain("行情日期：2026-11-02");
+    expect(section).not.toContain("资料日期：");
+    if (quote) expect(section).toContain("交易日资格待核验");
+  },
+);
+it("labels legacy candidate context as historical and not currently SSE verified", () => {
+  state.detail.data.selection_candidate = {
+    symbol: "600887",
+    detail_source: "LEGACY_SELECTION_CONTEXT_NOT_CURRENT_SSE",
+    source_available_at: "2026-10-25T01:00:00+08:00",
+    quote_date: "2026-10-23",
+    trade_date: null,
+    reasons: [],
+    blockers: [],
+  };
+  const html = renderToStaticMarkup(<DecisionDetail />);
+  expect(html).toContain("历史候选参考，当前SSE未核验");
+  expect(html).toContain("历史记录行情日期：2026-10-23");
+  expect(html).toContain("不作为当前沪市主板候选依据");
+});
+it("never substitutes a source timestamp for missing SSE quote or source date", () => {
+  state.detail.data.selection_candidate = {
+    symbol: "600887",
+    detail_source: "CURRENT_VERIFIED_SSE_SCREEN",
+    source_available_at: null,
+    quote_date: null,
+    trade_date: "2026-10-29",
+  };
+  const html = renderToStaticMarkup(<DecisionDetail />);
+  expect(html).toContain("来源可得时间：未提供");
+  expect(html).toContain("行情日期：待核验");
+});
