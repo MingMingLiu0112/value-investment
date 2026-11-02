@@ -173,3 +173,18 @@ def test_failed_new_debt_collection_does_not_manufacture_debt_value(inputs,monke
     result,_=app.compile_inputs(root=root,inputs=manifest,now=NOW,run_id='TEST_ONLY')
     assert all(r['debt_details']['identified_total'] is None for r in result['rows'])
     assert result['financial_source_comparison']['errors'][0]['message']=='TEST_ONLY_PROVIDER_FAILURE'
+
+
+def test_available_secondary_fact_fills_missing_field_without_replacing_existing_or_granting(inputs,monkeypatch):
+    root,manifest,payload=inputs
+    period=payload['financial']['points'][0]['period_label']
+    payload['financial']['points']=[p for p in payload['financial']['points'] if not (p['symbol']=='600001' and p['field_name']=='net_margin')]
+    manifest['sina_supplements']=[dict(path='runtime/TEST_ONLY-sina.json',sha256='a'*64)]
+    secondary=dict(symbols={'600001':dict(period=period,statements={},comparatives={})},available_at='2026-11-02T05:00:00+00:00',errors=[])
+    monkeypatch.setattr(app.sina_source,'load',lambda *a,**kw:secondary)
+    point=dict(symbol='600001',field_name='net_margin',period_label=period,value='12',unit='percent',currency='CNY',validation_status='unverified',available_at='2026-11-02T05:00:00+00:00',fetched_at='2026-11-02T05:00:00+00:00',created_at='2026-11-02T05:00:00+00:00',source_id='TEST_ONLY',metadata=dict(automatic_cross_source_verification=False,statement_scope='consolidated'))
+    monkeypatch.setattr(app,'sina_observations',lambda _: [point])
+    result,_=app.compile_inputs(root=root,inputs=manifest,now=NOW,run_id='TEST_ONLY')
+    row=next(r for r in result['rows'] if r['symbol']=='600001');field=next(f for f in row['financial_data']['fields'] if f['field']=='net_margin')
+    assert field['value']=='12' and field['status']=='AVAILABLE_PENDING_VERIFICATION'
+    assert not row['formal_eligibility']

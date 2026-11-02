@@ -17,7 +17,7 @@ from ...m2_market_data import parse_tencent_board, parse_sina_industry
 from ...m2_opportunity_discovery import EvidenceReference
 from ..product.common import require_inside, write_new_bytes
 from .public_financial_input import build_financial_input, verify_public_supplement
-from ...domain.discovery.financial_gap_diagnostics_v1 import build_diagnostics, statement_observations
+from ...domain.discovery.financial_gap_diagnostics_v1 import FIELDS as DIAGNOSTIC_FIELDS, build_diagnostics, statement_observations
 from ...infrastructure.screening import public_three_statements_v1 as three_statements
 from ...financial_institutions import provisional_financial_type
 from ...financial_quality import _accepted
@@ -142,6 +142,14 @@ def compile_inputs(*, root, inputs, now, run_id):
         secondary_points.extend(p for p in sina_observations(secondary) if p['symbol'] in symbols)
         generated=max(generated,datetime.fromisoformat(secondary['available_at']))
         supplement_errors.extend(secondary['errors'])
+    # Consume available same-period public observations, rather than only displaying comparisons.
+    # Existing values and admitted facts win; aliases share one economic identity.
+    aliases={alias:field for field,(_,_,names) in DIAGNOSTIC_FIELDS.items() for alias in names}
+    keys={(p['symbol'],p.get('period_label'),aliases.get(p['field_name'],p['field_name'])) for p in all_points if p.get('value') is not None}
+    for point in secondary_points:
+        key=(point['symbol'],point['period_label'],aliases.get(point['field_name'],point['field_name']))
+        if key not in keys:
+            all_points.append(point);keys.add(key)
     receipt=build_discovery_receipt(run_id=run_id,generated_at=generated,official_payload=official,
         tencent_payload=filtered['tencent'],sina_payload=filtered['sina'],dividend_payload=payload['dividend'],
         financial_points=all_points,quote_date=generated.astimezone(ZoneInfo('Asia/Shanghai')).date().isoformat(),
