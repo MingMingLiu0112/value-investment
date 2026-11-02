@@ -569,49 +569,56 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
   };
   return (
     <>
-      <Typography.Title level={2}>{flow.title}</Typography.Title>
-      <Typography.Paragraph>{flow.summary}</Typography.Paragraph>
-      <Alert
-        type="warning"
-        showIcon
-        message="静态复核快照 · 非实时进度 · 非策略认证"
-      />
-      <details className="architecture-source">
-        <summary>复核日期 {review.reviewedAt} · 查看版本与证据边界</summary>
-        <p>{review.disclaimer}</p>
+      <Typography.Title level={2}>
+        {strategy === "value" ? "价值策略 · 模块交付进度" : flow.title}
+      </Typography.Title>
+      {strategy === "value" && (
+        <DeliveryOverview stages={flow.stages} onSelect={selectStage} />
+      )}
+      <details open={strategy !== "value"}>
+        <summary>流程关系与历史审查说明</summary>
+        <Typography.Paragraph>{flow.summary}</Typography.Paragraph>
+        <Alert
+          type="warning"
+          showIcon
+          message="静态复核快照 · 非实时进度 · 非策略认证"
+        />
+        <details className="architecture-source">
+          <summary>复核日期 {review.reviewedAt} · 查看版本与证据边界</summary>
+          <p>{review.disclaimer}</p>
+          <p>
+            {review.version} · reviewed baseline <code>{review.baseline}</code>
+            <br />
+            复核日期：{review.reviewedAt} · 里程碑来源：
+            <code>{review.ledger}</code>
+            。最近交付说明单独标注，不代表当前运行结果。
+          </p>
+          <Space wrap>
+            <Tag>人工整理 / {review.mode}</Tag>
+            <Tag>运行证据 / {review.runtimeEvidence}</Tag>
+            <Tag>action=no_order</Tag>
+          </Space>
+        </details>
+        <nav aria-label="策略及现有工作入口" className="architecture-links">
+          <Link to="/strategy/value">价值策略</Link>
+          {strategy === "value" && (
+            <Link to="/project">项目进度（同一模块目录）</Link>
+          )}
+          <Link to="/strategy/hotspot">热点策略</Link>
+          <Link to="/daily">今日决策</Link>
+          <Link to="/daily">选取真实条目 → 决策详情</Link>
+          <Link to="/portfolio">组合风险</Link>
+          <Link to="/history">交易复盘 / 300059历史样本</Link>
+          <Link to="/system">数据状态</Link>
+        </nav>
         <p>
-          {review.version} · reviewed baseline <code>{review.baseline}</code>
-          <br />
-          复核日期：{review.reviewedAt} · 里程碑来源：
-          <code>{review.ledger}</code>
-          。最近交付说明单独标注，不代表当前运行结果。
+          节点徽标是人工整理的工程与证据状态；“真实算术已核”仅指台账记载的历史样本，不代表策略有效。点击节点查看实现、证据和下一步；键盘
+          Tab 移动，Enter /
+          空格选择。箭头表示目标流转，不表示已通过。价值模块关联不代表共同前置：E1/E2二选一进入F1，S1/S2仅约束个人决策，不阻塞公开研究。
         </p>
-        <Space wrap>
-          <Tag>人工整理 / {review.mode}</Tag>
-          <Tag>运行证据 / {review.runtimeEvidence}</Tag>
-          <Tag>action=no_order</Tag>
-        </Space>
       </details>
-      <nav aria-label="策略及现有工作入口" className="architecture-links">
-        <Link to="/strategy/value">价值策略</Link>
-        {strategy === "value" && (
-          <Link to="/project">项目进度（同一模块目录）</Link>
-        )}
-        <Link to="/strategy/hotspot">热点策略</Link>
-        <Link to="/daily">今日决策</Link>
-        <Link to="/daily">选取真实条目 → 决策详情</Link>
-        <Link to="/portfolio">组合风险</Link>
-        <Link to="/history">交易复盘 / 300059历史样本</Link>
-        <Link to="/system">数据状态</Link>
-      </nav>
-      <p>
-        节点徽标是人工整理的工程与证据状态；“真实算术已核”仅指台账记载的历史样本，不代表策略有效。点击节点查看实现、证据和下一步；键盘
-        Tab 移动，Enter /
-        空格选择。箭头表示目标流转，不表示已通过。价值模块关联不代表共同前置：E1/E2二选一进入F1，S1/S2仅约束个人决策，不阻塞公开研究。
-      </p>
       {strategy === "value" && (
         <>
-          <DeliveryOverview stages={flow.stages} onSelect={selectStage} />
           <details>
             <summary>历史规划与完整流程说明</summary>
             <ValuePlanOverview />
