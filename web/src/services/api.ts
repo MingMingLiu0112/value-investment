@@ -1,3 +1,4 @@
+import type { TrackingPoolView } from "../components/ValueTrackingResearchPool";
 import type { ScreenPage } from "../components/SseMainScreeningPanel";
 import type { CompanyProfile } from "../components/CompanyProfilePanel";
 import type {
@@ -1386,6 +1387,8 @@ export type ValueWorkbenchTaskHistory = {
   }[];
 };
 export const api = {
+  sseResearchQueue: (signal?: AbortSignal) =>
+    get<TrackingPoolView>("value-screening/sse-main/research-queue", signal),
   sseMainScreening: (
     params: { offset: number; limit: number; query: string; status: string },
     signal?: AbortSignal,

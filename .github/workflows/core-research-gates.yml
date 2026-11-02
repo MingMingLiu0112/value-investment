@@ -113,6 +113,11 @@ jobs:
           tests/web_api/test_personal_entry_thesis_api.py
           tests/test_held_decision_code_gap.py
           tests/test_value_research_priority_v2.py
+          tests/test_sse_research_replay.py
+          tests/test_sse_research_priority_v1.py
+          tests/test_sse_research_pipeline_v1.py
+          tests/test_sse_enrichment_dispatch.py
+          tests/test_enrichment_readonly_replay.py
           tests/test_hotspot_observation_continuity.py
           tests/test_observation_history_read.py
           tests/test_daily_refresh_value_adoption_integration.py

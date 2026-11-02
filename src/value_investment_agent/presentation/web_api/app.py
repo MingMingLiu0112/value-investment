@@ -960,6 +960,12 @@ def create_app(
                 blockers=["SOURCE_OR_PROFILE_VALIDATION_FAILED"], error_type=type(error).__name__)
         return JSONResponse(result, headers={"Cache-Control": "no-store"})
 
+    @api.get("/api/v1/value-screening/sse-main/research-queue")
+    def sse_main_research_queue():
+        from ...application.research.sse_research_pipeline_v1 import read_sse_research_pool
+        return JSONResponse(read_sse_research_pool(root=project,now=datetime.now(timezone.utc)),
+            headers={"Cache-Control":"no-store"})
+
     @api.get("/api/v1/value-screening/sse-main")
     def sse_main_screening(offset: int = Query(0, ge=0),
                            limit: int = Query(20, ge=1, le=100),

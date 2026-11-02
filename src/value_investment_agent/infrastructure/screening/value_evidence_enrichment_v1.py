@@ -537,8 +537,12 @@ def extract_financing_note_candidates(pages: list[str], period: str) -> dict:
 def extract_retained_annual(root: Path, source: RetainedAnnualSource, *,
                             evaluation_at: datetime, cache_dir: Path,
                             max_bytes: int = 30_000_000, max_pages: int = 600,
-                            verify_cache: bool = False) -> dict:
-    """Hash/clock check before cached reuse; no fetching and no source mutation."""
+                            verify_cache: bool = False, write_cache: bool = True) -> dict:
+    """Hash/clock check before cached reuse; no fetching and no source mutation.
+
+    write_cache=False bypasses all cache reads/writes and re-extracts the original.
+    Cache path containment is still checked in this mode.
+    """
     if evaluation_at.tzinfo is None:
         raise ValueError('evaluation clock must be timezone aware')
     available = datetime.fromisoformat(source.available_at)
@@ -568,7 +572,7 @@ def extract_retained_annual(root: Path, source: RetainedAnnualSource, *,
     key = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
     cached = cache / (key + '.json')
     cached_packet = None
-    if cached.exists():
+    if write_cache and cached.exists():
         envelope = json.loads(cached.read_bytes())
         packet = envelope['packet']
         digest = hashlib.sha256(json.dumps(packet, sort_keys=True).encode()).hexdigest()
@@ -619,6 +623,8 @@ def extract_retained_annual(root: Path, source: RetainedAnnualSource, *,
         if cached_packet != packet:
             raise ValueError('extraction cache differs from original re-extraction')
         return dict(packet, reused=True)
+    if not write_cache:
+        return packet
     cache.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256(json.dumps(packet, sort_keys=True).encode()).hexdigest()
     cached.write_text(json.dumps(dict(packet=packet, packet_sha256=digest),

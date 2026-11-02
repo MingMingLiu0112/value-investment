@@ -623,7 +623,8 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
                             evaluation_at: datetime, cache_dir: Path,
                             name: str | None = None, sector: str | None = None,
                             components: list[dict] | None = None,
-                            public_summary_binding: dict | None = None) -> dict:
+                            public_summary_binding: dict | None = None,
+                            write_cache: bool = True) -> dict:
     """Extract, match existing facts, validate scope and re-run unchanged scoring.
 
     Candidate matches never change a fact's original validation flags. Only
@@ -632,7 +633,7 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
     original = deepcopy(points)
     public_summary_binding = _public_profit_binding(points, source, public_summary_binding)
     packet = extract_retained_annual(root, source, evaluation_at=evaluation_at, cache_dir=cache_dir,
-                                     verify_cache=True)
+                                     verify_cache=True, write_cache=write_cache)
     profit_points, profit_adoption = _correlate_public_parent_profit(
         root, source, packet, public_summary_binding, evaluation_at)
     funding_scope = _source_financial_funding_scope(packet, source)
@@ -837,7 +838,7 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
 
 
 def consume_retained_enrichment(root: Path, points: list[dict], sources: list[dict], *,
-                               evaluation_at: datetime) -> tuple[list[dict], list[dict]]:
+                               evaluation_at: datetime, write_cache: bool = True) -> tuple[list[dict], list[dict]]:
     """Re-run original and independent-source checks, never trust saved PASS flags.
 
     Source declarations belong to the hash-bound financial export. Existing
@@ -859,7 +860,7 @@ def consume_retained_enrichment(root: Path, points: list[dict], sources: list[di
         seen.add(identity)
         result = enrich_retained_company(root, source, merged, evaluation_at=evaluation_at,
             cache_dir=root / '.tmp/value-enrichment-consumption',
-            public_summary_binding=_public_profit_binding(points, source))
+            public_summary_binding=_public_profit_binding(points, source), write_cache=write_cache)
         identities = {p['data_point_id']: p for p in merged if p.get('data_point_id')}
         for point in result['adopted_points']:
             if point['data_point_id'] in identities:

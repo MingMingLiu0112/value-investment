@@ -15,10 +15,10 @@ from value_investment_agent.application.research.value_research_queue import bui
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--report", type=Path, required=True)
-    parser.add_argument("--report-sha256", required=True)
-    parser.add_argument("--receipt", type=Path, required=True)
-    parser.add_argument("--receipt-sha256", required=True)
+    parser.add_argument("--report", type=Path)
+    parser.add_argument("--report-sha256")
+    parser.add_argument("--receipt", type=Path)
+    parser.add_argument("--receipt-sha256")
     parser.add_argument("--budget", type=int, default=10)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--previous", type=Path)
@@ -33,7 +33,26 @@ def main() -> int:
     parser.add_argument("--execute-enrichment", action="store_true")
     parser.add_argument("--allow-public-evidence-downloads", action="store_true")
     parser.add_argument("--execution-budget", type=int, default=2)
+    parser.add_argument("--sse-manifest", type=Path, help="Explicit verified SSE screen manifest; reuse existing priority/enrichment engine")
+    parser.add_argument("--sse-manifest-sha256")
     args = parser.parse_args()
+    if args.sse_manifest is not None or args.sse_manifest_sha256 is not None:
+        if args.sse_manifest is None or args.sse_manifest_sha256 is None:
+            parser.error("SSE manifest requires path and hash")
+        if any(v is not None for v in (args.report,args.report_sha256,args.receipt,args.receipt_sha256,args.previous,args.previous_sha256,args.financial_export,args.financial_export_sha256,args.public_evidence_bundle,args.public_evidence_sha256)):
+            parser.error("SSE source contract cannot be mixed with legacy report/export/previous inputs")
+        if args.allow_public_evidence_downloads and not args.execute_enrichment:
+            parser.error("public downloads require explicit enrichment execution")
+        from value_investment_agent.application.research.sse_research_pipeline_v1 import prepare_sse_research_run
+        result=prepare_sse_research_run(root=ROOT,
+            manifest_binding=dict(path=args.sse_manifest.as_posix(),sha256=args.sse_manifest_sha256),
+            output_path=ROOT/args.output,budget=args.budget,
+            execution_budget=args.execution_budget if args.execute_enrichment else 0,
+            allow_network=args.allow_public_evidence_downloads)
+        print(json.dumps(result,ensure_ascii=False,indent=2))
+        return 0
+    if any(v is None for v in (args.report,args.report_sha256,args.receipt,args.receipt_sha256)):
+        parser.error("legacy queue requires report and receipt path/hash")
     if (args.public_evidence_bundle is None) != (args.public_evidence_sha256 is None):
         parser.error("public evidence bundle requires path and hash")
     if args.public_evidence_bundle is not None and args.priority_version != "v2":

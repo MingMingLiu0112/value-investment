@@ -522,7 +522,7 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
         raise ValueError('Enrichment execution budget must be between one and three')
     if retry_token is not None and (not isinstance(retry_token, str) or not 1 <= len(retry_token) <= 128):
         raise ValueError('retry token must be a nonempty bounded audit reason')
-    if (queue.get('schema_version') != 'value-research-priority-v2'
+    if (queue.get('schema_version') not in {'value-research-priority-v2','sse-value-research-priority-v1'}
             or queue.get('action') != 'no_order' or queue.get('admission') != 'RESEARCH_QUEUE_ONLY'
             or queue.get('content_sha256') != _canonical_hash({k: v for k, v in queue.items() if k != 'content_sha256'})):
         raise ValueError('Enrichment requires an intact research-only priority queue')
@@ -537,13 +537,21 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
     financial_export_sha256 = effective['sha256']
     export_payload = _load_bound(export, financial_export_sha256)
     inputs = queue['inputs']
-    expected = build_value_research_priority_v2(root=root,
-        report_path=root / inputs['report_path'], report_sha256=inputs['report_sha256'],
-        receipt_path=root / inputs['receipt_path'], receipt_sha256=inputs['receipt_sha256'],
-        budget=queue['budget'], enrichment_budget=queue['enrichment_budget'],
-        financial_export_path=export, financial_export_sha256=financial_export_sha256,
-        previous_path=root / inputs['previous_queue_path'] if inputs.get('previous_queue_path') else None,
-        previous_sha256=inputs.get('previous_queue_sha256'))
+    if queue['schema_version']=='sse-value-research-priority-v1':
+        from .sse_research_priority_v1 import build_sse_research_priority
+        expected=build_sse_research_priority(root=root,manifest_binding=inputs['sse_manifest'],
+            financial_export_path=export,financial_export_sha256=financial_export_sha256,
+            now=datetime.fromisoformat(queue['evaluation_at']),budget=queue['budget'],
+            previous_path=root/inputs['previous_queue_path'] if inputs.get('previous_queue_path') else None,
+            previous_sha256=inputs.get('previous_queue_sha256'))
+    else:
+        expected = build_value_research_priority_v2(root=root,
+            report_path=root / inputs['report_path'], report_sha256=inputs['report_sha256'],
+            receipt_path=root / inputs['receipt_path'], receipt_sha256=inputs['receipt_sha256'],
+            budget=queue['budget'], enrichment_budget=queue['enrichment_budget'],
+            financial_export_path=export, financial_export_sha256=financial_export_sha256,
+            previous_path=root / inputs['previous_queue_path'] if inputs.get('previous_queue_path') else None,
+            previous_sha256=inputs.get('previous_queue_sha256'))
     if expected != queue:
         raise ValueError('Priority queue differs from replayed bound inputs')
     now = datetime.now(timezone.utc)
@@ -554,7 +562,8 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
         raise FileExistsError('Enrichment requires a fresh output directory')
     selected = [row for row in queue['evidence_enrichment_work_queue']
                 if queue['enrichment_budget'] > 0
-                and row.get('queue_status') in {'SELECTED_FOR_RESEARCH', 'BUDGET_DEFERRED'}]
+                and row.get('queue_status') in {'SELECTED_FOR_RESEARCH', 'BUDGET_DEFERRED'}
+                and (queue['schema_version']!='sse-value-research-priority-v1' or row.get('tracking_selected') is True)]
     if len({row['symbol'] for row in selected}) != len(selected):
         raise ValueError('Duplicate enrichment selection')
     history = progress.scheduling_history(cutoff=now)

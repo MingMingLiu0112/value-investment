@@ -283,6 +283,16 @@ export const catalog: Record<
                 "compare_observations验证期间、范围、单位、时间和不同供应商；一致仅是E1观察。debt_details只合计已识别借款/债券/非流动租赁，待分类项及官方构成单列，不补零或重复加。",
             },
             {
+              title: "把完整初筛集合送入研究队列",
+              description:
+                "显式SSE适配重放完整1700只及原始财务消费输入，保留预算外候选；复用原质量计算，资料未准入的进入补证队列，有可用质量分数的才进入深研优先队列。30只是初始研究预算，不是新增买入门槛。",
+            },
+            {
+              title: "跨轮延续并有限补证",
+              description:
+                "保存首次入池、父版本和暂停原因，保持已跟踪成员，不因排序变化静默换票；现有补证执行器每批最多3家，公平轮转、失败隔离。新来源经重验进入下一队列版本，不倒灌旧时点；页面只读，不启动采集。",
+            },
+            {
               title: "重放并分页交付",
               description:
                 "read_screen重新校验实现、来源和结果绑定；旧快照显示年龄，失败返回UNAVAILABLE且total=null。前端保持后端排序，展示每通道状态、理由和缺口；GET不采集。",
@@ -299,6 +309,18 @@ export const catalog: Record<
             "局部真实验收：final-delivery-receipt记录上述覆盖及API结果；完整有息负债NOT_PROVEN、full_financial_quality NOT_GRANTED，行情交易日仍未独立核验。",
           ],
           implementationRefs: [
+            {
+              path: "src/value_investment_agent/application/research/sse_research_priority_v1.py",
+              symbol: "build_sse_research_priority",
+              description:
+                "SSE完整来源到现有质量分流与长期研究队列的显式适配。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/sse_research_pipeline_v1.py",
+              symbol: "prepare_sse_research_run / read_sse_research_pool",
+              description:
+                "版本留存、现有补证执行器消费和公开只读结果出口；不创建新任务平台。",
+            },
             {
               path: "src/value_investment_agent/application/discovery/sse_main_screening.py",
               symbol: "compile_inputs",
@@ -331,7 +353,7 @@ export const catalog: Record<
           how: "复用四通道筛选，将入池理由和缺口送入队列。",
           scope: "沪市主板公开观察初筛；模块长期能力和完整经济研究仍未完成。",
           done: "1700只逐股初筛可查；1618家参与双源比对，4844项一致、2项冲突，1581家有已识别融资。",
-          gap: "已取得、待核验、真正缺失及口径受限已分开；完整债务和全量质量资格未通过，不是买入建议。",
+          gap: "完整债务和全量质量资格仍未通过；新队列接线不等于批量经营研究、估值及持续自动监控已完成。",
           acceptance: "来源与交易日核验通过，候选、排除理由及覆盖范围可复算。",
           evidence: [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
