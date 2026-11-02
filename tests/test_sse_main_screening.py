@@ -103,3 +103,19 @@ def test_source_order_not_economic_change(inputs):
     manifest['inputs']=dict(reversed(list(manifest['inputs'].items())))
     second=app.compile_inputs(root=root,inputs=manifest,now=NOW,run_id='TEST_ONLY')
     assert app._bytes(first)==app._bytes(second)
+
+
+def test_display_budget_preserves_economic_entry_reason(inputs):
+    root,manifest,payload=inputs
+    for n in range(60):
+        symbol=str(600100+n)
+        payload['official']['records'].append(dict(payload['official']['records'][0],symbol=symbol,name='样本'+str(n)))
+        payload['tencent']['rows'].append(dict(payload['tencent']['rows'][0],code='sh'+symbol,name='样本'+str(n)))
+        payload['sina']['rows'].append(dict(payload['sina']['rows'][0],code=symbol,name='样本'+str(n)))
+    result,_=app.compile_inputs(root=root,inputs=manifest,now=NOW,run_id='TEST_ONLY')
+    budget=[r for r in result['rows'] if any(e['status']=='BUDGET_EXCLUDED' for e in r['channel_evaluations'])]
+    assert budget
+    for row in budget:
+        assert row['status']=='CANDIDATE'
+        assert '市盈率' in row['reason']
+        assert '超出单通道展示预算' not in row['reason']

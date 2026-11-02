@@ -108,7 +108,7 @@ def compile_inputs(*, root, inputs, now, run_id):
         # Data-gap fields remain explicit even when another cheap channel passes.
         if row['status']=='CANDIDATE':
             labels=dict(quality='质量',dividend_cash_return='股息现金回报',value='低估值线索',cyclical='周期研究')
-            row['reason']='；'.join(labels[e['channel']]+'：'+e['reason'] for e in ev if e['channel'] in row['channels'])
+            row['reason']='；'.join(labels[e['channel']]+'：'+(e.get('trigger_reasons') or [e['reason']])[0] for e in ev if e['channel'] in row['channels'])
         row['gaps']+=['财务及分红为初筛来源观察，尚非完整法定事实核验。','尚未完成企业经营、分红持续性和适用估值研究。','行情真实交易日未单独核验，不形成当前条件买价。']
         row.update(reference_price=str(quote.current_price) if quote and quote.current_price is not None else None,
                    quote_date=None,quote_observed_at=payload['tencent'].get('fetched_at'),
