@@ -11,9 +11,42 @@ import {
   catalog,
   review,
   valueVerticalScope,
+  valueMainModuleIds,
 } from "../../config/strategyArchitecture.v1";
 import { ArchitectureView, StageButton, StageDetail } from "./index";
 describe("versioned strategy architecture", () => {
+  it("separates independently delivered scope from unfinished modules", () => {
+    for (const id of valueMainModuleIds) {
+      const stage = catalog.value.stages.find((s) => s.id === id)!;
+      const review = stage.deliveryReview!;
+      expect(review).toBeDefined();
+      for (const key of [
+        "what",
+        "why",
+        "how",
+        "done",
+        "gap",
+        "acceptance",
+      ] as const)
+        expect(review[key].length).toBeGreaterThan(8);
+      expect(review.evidence.length).toBeGreaterThan(0);
+      const html = renderToStaticMarkup(<StageDetail stage={stage} />);
+      expect(html).toContain("模块交付说明");
+      expect(html).toContain("完成标准");
+      expect(html).not.toContain("<details open=");
+    }
+    expect(
+      catalog.value.stages
+        .filter((s) => s.deliveryReview?.status === "COMPLETE")
+        .map((s) => s.id),
+    ).toEqual(["C", "F1"]);
+    expect(
+      catalog.value.stages.find((s) => s.id === "C")!.deliveryReview!.scope,
+    ).toContain("固定五家");
+    expect(
+      catalog.value.stages.find((s) => s.id === "F1")!.deliveryReview!.gap,
+    ).toContain("不等于当前买价");
+  });
   it("pins review separately from disconnected runtime evidence", () => {
     expect(review.baseline).toBe("283c7212d832f52118705bb095e046e0c36dcbfc");
     expect(review.runtimeEvidence).toBe("NOT_CONNECTED");
@@ -41,8 +74,13 @@ describe("versioned strategy architecture", () => {
       expect(html.replace("0.10=10%", "")).not.toMatch(
         /\d+%|ant-progress|ant-tag-success/,
       );
-      expect(html).toContain("工程：");
-      expect(html).toContain("证据：");
+      if (key === "value") {
+        expect(html).toContain("模块交付进度");
+        expect(html).toContain("可独立交付");
+      } else {
+        expect(html).toContain("工程：");
+        expect(html).toContain("证据：");
+      }
       expect(catalog[key].stages.length).toBe(key === "value" ? 16 : 8);
       const ids = catalog[key].stages.map((s) => s.id);
       expect(new Set(ids).size).toBe(ids.length);
@@ -140,13 +178,7 @@ describe("versioned strategy architecture", () => {
   });
   it("shows C's four independent frozen states in overview and details without graduating downstream inputs", () => {
     const c = catalog.value.stages.find((stage) => stage.id === "C")!;
-    for (const html of [
-      renderToStaticMarkup(<ArchitectureView strategy="value" />),
-      renderToStaticMarkup(<StageDetail stage={c} />),
-      renderToStaticMarkup(
-        <StageButton stage={c} selected={true} onSelect={() => {}} />,
-      ),
-    ]) {
+    for (const html of [renderToStaticMarkup(<StageDetail stage={c} />)]) {
       expect(html).toContain("C模块四轴状态");
       for (const text of [
         "工程闭环完成",
@@ -156,6 +188,11 @@ describe("versioned strategy architecture", () => {
       ])
         expect(html).toContain(text);
     }
+    const current = renderToStaticMarkup(
+      <StageButton stage={c} selected={true} onSelect={() => {}} />,
+    );
+    expect(current).toContain("可独立交付");
+    expect(current).not.toContain("部署待验收");
     expect(c.boundary).toContain("不授予经济、估值或交易资格");
     const detail = renderToStaticMarkup(<StageDetail stage={c} />);
     expect(detail).toContain("已验输入（固定五家范围）");

@@ -35,7 +35,25 @@ export const valueMainModuleIds = [
   "G2",
 ] as const;
 export const valueSharedModuleIds = ["S1", "S2", "S3", "S4", "W1"] as const;
+export interface DeliveryReview {
+  status: "COMPLETE" | "LIMITED" | "PARTIAL" | "UNVERIFIED";
+  what: string;
+  why: string;
+  how: string;
+  scope: string;
+  done: string;
+  gap: string;
+  acceptance: string;
+  evidence: string[];
+  runHref: string;
+}
+export const deliveryReviewMeta = {
+  reviewedAt: "2026-11-02",
+  baseline: "2f9259fa93daa09549f148f23278c8325a995f0f",
+  kind: "人工交付复核，不是实时运行状态",
+} as const;
 export interface Stage {
+  deliveryReview?: DeliveryReview;
   nativeContract?: NativeModuleContract;
   progress?: {
     consumer: string;
@@ -112,6 +130,18 @@ export const catalog: Record<
     stages: [
       {
         id: "A",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "取得并保存公开原件。",
+          why: "研究必须有可核对的出处。",
+          how: "下载原件、绑定来源和哈希，再核验期间与口径。",
+          scope: "已列明的真实能力；尚不标模块整体完成。",
+          done: "已有官方原件下载、字段核验和来源重放。",
+          gap: "尚未证明研究所需资料可自动完整取得。",
+          acceptance: "独立取得所需原件；缺失、冲突和重复执行均有准确回执。",
+          evidence: ["docs/current/value-mainline-p0-20261101/abc-e-audit.md"],
+          runHref: "/strategy/value",
+        },
         title: "A · 公开资料与证据",
         question: "资料是否真实、何时可得、属于哪个主体？",
         dependencies: [],
@@ -150,6 +180,21 @@ export const catalog: Record<
       },
       {
         id: "B",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "从市场中找值得继续研究的公司。",
+          why: "避免只研究事先指定的股票。",
+          how: "复用四通道筛选，将入池理由和缺口送入队列。",
+          scope: "已列明的真实能力；尚不标模块整体完成。",
+          done: "真实扫描取得5223条沪深行情并生成研究线索。",
+          gap: "北交所覆盖和交易日期核验未齐备，不能称全A完成。",
+          acceptance: "来源与交易日核验通过，候选、排除理由及覆盖范围可复算。",
+          evidence: [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "docs/current/value-transparent-workbench-v1.md",
+          ],
+          runHref: "/strategy/value",
+        },
         title: "B · 四通道筛选与研究队列",
         question: "哪些公司值得投入研究时间？",
         dependencies: ["A"],
@@ -211,6 +256,21 @@ export const catalog: Record<
       },
       {
         id: "C",
+        deliveryReview: {
+          status: "COMPLETE",
+          what: "判断企业类型及适用研究方法。",
+          why: "不同企业不能套同一种估值公式。",
+          how: "读取企业画像，核对模型必需输入，不适用时明确拒绝。",
+          scope: "固定五家画像与方法适用性；不含经济质量或投资准入。",
+          done: "固定五家画像与路由已验收；支持有据路由和明确拒绝。",
+          gap: "固定五家之外未验收；不是通用自动分类器。",
+          acceptance: "固定五家来源、适用和拒绝合同独立通过，API可读取。",
+          evidence: [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "runtime/c-closeout-20261031/api-acceptance/receipt.json",
+          ],
+          runHref: "/strategy/value",
+        },
         title: "C · 企业画像与模型适用性",
         question: "企业靠什么赚钱，适合什么模型？",
         dependencies: ["A", "B"],
@@ -253,6 +313,22 @@ export const catalog: Record<
       },
       {
         id: "D1",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "让三类AI执行来源绑定的研究。",
+          why: "同时研究经营、反证和事件，避免单面叙事。",
+          how: "受限模型读取封存资料，生成结构化结果并校验引用。",
+          scope: "已列明的真实能力；尚不标模块整体完成。",
+          done: "有真实三角色历史成功；新任务、取消和重试可执行。",
+          gap: "近期新研究未完整成功，不能把取消算作研究完成。",
+          acceptance:
+            "真实模型完整完成三角色；预算、失败、取消和恢复均可验证。",
+          evidence: [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "docs/current/value-transparent-workbench-v1.md",
+          ],
+          runHref: "/strategy/value",
+        },
         title: "D1 · 受限研究执行",
         question: "研究能否在预算内运行并恢复？",
         dependencies: ["A", "B"],
@@ -294,6 +370,19 @@ export const catalog: Record<
       },
       {
         id: "D2",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "把资料变成有依据的经营假设和反证。",
+          why: "估值参数需要经济理由，而不是AI直接报价格。",
+          how: "区分事实与预测，推导量价成本及资金路径，保留反例。",
+          scope: "已列明的真实能力；尚不标模块整体完成。",
+          done: "已有两家公司假设重放及000568真实经营驱动链。",
+          gap: "正常化盈利、资金可达与维护投入仍有待核实的条件假设。",
+          acceptance:
+            "来源绑定的经营假设、三情景、反证和重开条件可被模型消费。",
+          evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
+          runHref: "/strategy/value",
+        },
         title: "D2 · 经营假设与反证",
         question: "增长和分配为何成立，什么会推翻？",
         dependencies: ["C", "D1"],
@@ -338,6 +427,18 @@ export const catalog: Record<
       },
       {
         id: "E1",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "根据新输入重算已有研究。",
+          why: "研究要更新并保留原判断的变化原因。",
+          how: "读取旧研究版本，重编译受影响输入，再交共享内核计算。",
+          scope: "已列明的真实能力；尚不标模块整体完成。",
+          done: "600519、600887旧包真实再编译并进入消费者。",
+          gap: "仍偏固定案例，通用独立重新研究入口尚未完整证明。",
+          acceptance: "独立更新输入、重算、保留历史并在API看到新版本。",
+          evidence: ["docs/current/value-mainline-p0-20261101/abc-e-audit.md"],
+          runHref: "/strategy/value",
+        },
         title: "E1 · 已有研究更新与重放",
         question: "新资料如何改变已有判断？",
         dependencies: ["F1"],
@@ -370,6 +471,18 @@ export const catalog: Record<
       },
       {
         id: "E2",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "为没有旧研究包的公司首次建立模型输入。",
+          why: "不能永远依赖预先准备好的公司研究。",
+          how: "核验事实和假设，经画像路由编译为共享模型输入。",
+          scope: "已列明的真实能力；尚不标模块整体完成。",
+          done: "000568以84项原生事实完成首次编译及API消费。",
+          gap: "仍依赖预备清单与规格，通用独立首编入口未齐。",
+          acceptance: "无旧研究包的真实公司经同一入口形成可消费的完整输入。",
+          evidence: ["docs/current/value-mainline-p0-20261101/abc-e-audit.md"],
+          runHref: "/strategy/value",
+        },
         title: "E2 · 新公司首次编译",
         question: "没有旧估值，能否完成第一份研究？",
         dependencies: ["B", "C", "D2"],
@@ -406,6 +519,19 @@ export const catalog: Record<
       },
       {
         id: "F1",
+        deliveryReview: {
+          status: "COMPLETE",
+          what: "计算给定假设下的条件价值。",
+          why: "让估值算术可以独立复算，而非接受自然语言报价。",
+          how: "逐年计算利润、现金、分配和权益，按合同处理终值与折现。",
+          scope: "既有模型、有界合法输入的计算合同；不含假设采用与投资批准。",
+          done: "两家真实输入通过共享现金、权益、终值与独立重算。",
+          gap: "不证明未来假设必然实现；不等于当前买价或经济批准。",
+          acceptance:
+            "既有模型及有界输入内，年度账、现金约束和终值合同可独立验证。",
+          evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
+          runHref: "/strategy/value",
+        },
         title: "F1 · 经营—股东现金—估值内核",
         question: "利润何时真正成为股东现金？",
         dependencies: ["A", "C"],
@@ -440,6 +566,18 @@ export const catalog: Record<
       },
       {
         id: "F2",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "将条件价值连接到当前价格判断。",
+          why: "历史估值不能直接当作今天的买入依据。",
+          how: "核对股本、期间分配、事件、模型有效性和合格报价。",
+          scope: "已列明的真实能力；尚不标模块整体完成。",
+          done: "对齐、拒绝和精确缺口展示已接通。",
+          gap: "同一候选的全部当前对齐条件尚缺联合成功样本。",
+          acceptance: "完整对齐正例能产未批准条件价；不齐时准确拒绝。",
+          evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
+          runHref: "/strategy/value",
+        },
         title: "F2 · 价格对齐与条件决策",
         question: "历史估值今天还能与价格比较吗？",
         dependencies: ["E1", "E2", "F1", "S1", "S4"],
@@ -473,6 +611,21 @@ export const catalog: Record<
       },
       {
         id: "G1",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "在网页读懂并操作研究流程。",
+          why: "用户不应依靠源码或终端理解结果。",
+          how: "现有工作台调用真实API，展示研究、证据及任务回执。",
+          scope: "已列明的真实能力；尚不标模块整体完成。",
+          done: "真实页面已执行重算、扫描、取消重试与来源下载。",
+          gap: "11模块独立操作及完整用户交互矩阵尚未全部验收。",
+          acceptance: "真实浏览器逐项完成操作、回执、异常和刷新恢复验收。",
+          evidence: [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "docs/current/value-transparent-workbench-v1.md",
+          ],
+          runHref: "/strategy/value",
+        },
         title: "G1 · 公司研究 API 与页面",
         question: "用户能否直接读懂真实结论？",
         dependencies: ["E1", "E2", "F2"],
@@ -505,6 +658,21 @@ export const catalog: Record<
       },
       {
         id: "G2",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "保存研究任务的执行与产物历史。",
+          why: "任务中断或重试不能丢失过程和版本。",
+          how: "复用持久任务、不可变清单和阶段事件，关联输入输出。",
+          scope: "已列明的真实能力；尚不标模块整体完成。",
+          done: "版本链、历史、取消、新任务重试及终态恢复已有。",
+          gap: "全部模块统一独立运行与持久产物闭环尚未完整证明。",
+          acceptance: "任务恢复、幂等、取消、重试和产物版本均可独立重放。",
+          evidence: [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "docs/current/value-transparent-workbench-v1.md",
+          ],
+          runHref: "/strategy/value",
+        },
         title: "G2 · 研究任务操作",
         question: "能否开始、取消、恢复并解释失败？",
         dependencies: ["D1"],
@@ -540,6 +708,19 @@ export const catalog: Record<
       },
       {
         id: "S1",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "约束现金、仓位和组合风险。",
+          why: "单只股票便宜，不代表账户有能力继续买。",
+          how: "读取已确认账户与IPS，计算预算和集中度限制。",
+          scope: "共享支持；不随主模块接入自动标完成。",
+          done: "已有组合风控与私人风险读取实现。",
+          gap: "缺本轮独立交付及真实账户对齐验收。",
+          acceptance:
+            "独立真实输入、异常处理、运行回执和现有消费者逐项通过后再标完成。",
+          evidence: ["docs/current/value-mainline-p0-20261101/g1-web-audit.md"],
+          runHref: "/portfolio",
+        },
         title: "S1 · 共享现金与组合风险",
         question: "即使便宜，账户能承受多少？",
         dependencies: ["S2"],
@@ -571,6 +752,19 @@ export const catalog: Record<
       },
       {
         id: "S2",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "记录人工成交并核对持仓。",
+          why: "持仓建议必须基于真实、可对账的资产。",
+          how: "校验并确认成交，按事件账本重放成本和持仓。",
+          scope: "共享支持；不随主模块接入自动标完成。",
+          done: "已有成交校验、确认与账本服务。",
+          gap: "真实成交完整入账与对账尚未完成验收；本轮不写实盘。",
+          acceptance:
+            "独立真实输入、异常处理、运行回执和现有消费者逐项通过后再标完成。",
+          evidence: ["docs/current/value-mainline-p0-20261101/g1-web-audit.md"],
+          runHref: "/portfolio",
+        },
         title: "S2 · 人工成交与持仓对账",
         question: "实际买卖后，账是否准确？",
         dependencies: [],
@@ -603,6 +797,19 @@ export const catalog: Record<
       },
       {
         id: "S3",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "跟踪实际股息及税后现金流。",
+          why: "公布分红与实际可用现金并不是一回事。",
+          how: "结合持仓、税费和现金事件计算可再投资金额。",
+          scope: "共享支持；不随主模块接入自动标完成。",
+          done: "已有股息税费及账户路径计算。",
+          gap: "税后现金与逐笔实际到账的完整业务链待验收。",
+          acceptance:
+            "独立真实输入、异常处理、运行回执和现有消费者逐项通过后再标完成。",
+          evidence: ["docs/current/value-mainline-p0-20261101/g1-web-audit.md"],
+          runHref: "/portfolio",
+        },
         title: "S3 · 分红现金与收益",
         question: "实际收到多少，税后能否持续？",
         dependencies: ["S2", "F1"],
@@ -638,6 +845,19 @@ export const catalog: Record<
       },
       {
         id: "S4",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "检查新事件是否改变原投资逻辑。",
+          why: "买入后需要知道原来的理由是否仍成立。",
+          how: "对比原研究与新事件，定位受影响假设和复核事项。",
+          scope: "共享支持；不随主模块接入自动标完成。",
+          done: "已有事件影响和持仓逻辑连续性实现。",
+          gap: "真实原始买入逻辑到后续事件的完整连续验收未齐。",
+          acceptance:
+            "独立真实输入、异常处理、运行回执和现有消费者逐项通过后再标完成。",
+          evidence: ["docs/current/value-mainline-p0-20261101/g1-web-audit.md"],
+          runHref: "/strategy/value",
+        },
         title: "S4 · 事件与持有逻辑跟踪",
         question: "什么变化需要重看原来的判断？",
         dependencies: ["A", "S2"],
@@ -674,6 +894,19 @@ export const catalog: Record<
       },
       {
         id: "W1",
+        deliveryReview: {
+          status: "PARTIAL",
+          what: "展示模块实现、证据与缺口。",
+          why: "让用户直接判断开发方向与交付质量。",
+          how: "读取同一展示目录，分开呈现交付复核和运行版本。",
+          scope: "共享支持；不随主模块接入自动标完成。",
+          done: "已有流程图、模块导航及本轮简明交付总览。",
+          gap: "当前是人工复核快照；不代表全部模块实时健康。",
+          acceptance:
+            "独立真实输入、异常处理、运行回执和现有消费者逐项通过后再标完成。",
+          evidence: ["docs/current/value-mainline-p0-20261101/g1-web-audit.md"],
+          runHref: "/project",
+        },
         title: "W1 · 模块进度与证据工作台",
         question: "哪里能用，哪里还缺什么？",
         dependencies: ["G1", "G2", "S1", "S2", "S3", "S4"],

@@ -165,7 +165,7 @@ export default function ValueWorkbench() {
           从为什么关注一家公司，到经营假设、股东现金、条件估值与当前决定，逐环节查看依据和未解决的问题。
         </p>
         <Space wrap>
-          <Link to="/project">模块地图</Link>
+          <Link to="/project">模块进度与实现说明</Link>
           <Link to="/system">当前服务与数据状态</Link>
           <Link to="/daily">全部研究候选</Link>
         </Space>

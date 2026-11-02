@@ -4,6 +4,7 @@ import { Alert, Card, Descriptions, Space, Tag, Typography } from "antd";
 import { Workbench } from "../../components/Workbench";
 import {
   catalog,
+  deliveryReviewMeta,
   review,
   valueVerticalScope,
   valueMainModuleIds,
@@ -12,6 +13,120 @@ import {
   type StrategyKey,
 } from "../../config/strategyArchitecture.v1";
 import "./architecture.css";
+
+const deliveryLabels = {
+  COMPLETE: "可独立交付",
+  LIMITED: "限定范围可用",
+  PARTIAL: "部分完成",
+  UNVERIFIED: "待独立验收",
+} as const;
+export function DeliverySummary({ stage }: { stage: Stage }) {
+  const item = stage.deliveryReview;
+  if (!item)
+    return <p>该共享支持模块尚未按本轮交付标准独立复核，不标为完成。</p>;
+  return (
+    <section aria-label="模块交付说明" className="module-delivery-summary">
+      <Tag color="blue">{deliveryLabels[item.status]}</Tag>
+      <p>
+        <strong>交付范围：</strong>
+        {item.scope}
+      </p>
+      <dl>
+        <dt>是什么</dt>
+        <dd>{item.what}</dd>
+        <dt>为什么</dt>
+        <dd>{item.why}</dd>
+        <dt>怎么做</dt>
+        <dd>{item.how}</dd>
+        <dt>已能做到</dt>
+        <dd>{item.done}</dd>
+        <dt>还缺什么</dt>
+        <dd>{item.gap}</dd>
+        <dt>完成标准</dt>
+        <dd>{item.acceptance}</dd>
+      </dl>
+      <Link to={item.runHref}>打开实际功能</Link>
+      <details>
+        <summary>验收依据与版本</summary>
+        <p>
+          复核日期 {deliveryReviewMeta.reviewedAt}；源码基线{" "}
+          {deliveryReviewMeta.baseline}。
+        </p>
+        <ul>
+          {item.evidence.map((ref) => (
+            <li key={ref}>
+              <code>{ref}</code>
+            </li>
+          ))}
+        </ul>
+        <p>这是交付复核记录；当前运行结果和用户确认分别核对。</p>
+      </details>
+    </section>
+  );
+}
+export function DeliveryOverview({
+  stages,
+  onSelect,
+}: {
+  stages: Stage[];
+  onSelect: (id: string) => void;
+}) {
+  const main = stages.filter((s) =>
+    (valueMainModuleIds as readonly string[]).includes(s.id),
+  );
+  return (
+    <section aria-label="模块交付进度总览" className="module-delivery-overview">
+      <h3>模块交付进度 · 一眼看懂</h3>
+      <p>
+        完成＝输入输出明确、能够独立运行、真实样本成功、异常处理有效、下游按合同可消费、交付入口已验。缺一项就不标完成。
+      </p>
+      <p>
+        “限定范围可用”只证明列明能力，不代表模块整体完成。CI通过不代替业务验收；研究批准不计为工程功能。
+      </p>
+      <p>
+        复核 {deliveryReviewMeta.reviewedAt} · {deliveryReviewMeta.kind} ·{" "}
+        <Link to="/system">查看当前运行版本</Link>
+      </p>
+      <div className="module-delivery-table">
+        <table>
+          <thead>
+            <tr>
+              <th>模块</th>
+              <th>交付状态</th>
+              <th>现在能做</th>
+              <th>当前缺口</th>
+            </tr>
+          </thead>
+          <tbody>
+            {main.map((stage) => (
+              <tr key={stage.id}>
+                <th>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(stage.id)}
+                    aria-controls="architecture-detail"
+                  >
+                    {stage.title}
+                  </button>
+                </th>
+                <td>
+                  {stage.deliveryReview
+                    ? deliveryLabels[stage.deliveryReview.status]
+                    : "待独立验收"}
+                </td>
+                <td>{stage.deliveryReview?.done || "尚未按交付标准核实"}</td>
+                <td>{stage.deliveryReview?.gap || "缺少独立交付验收"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>
+        点击模块，只看“是什么、为什么、怎么做”和完成依据；源码及历史规划默认折叠。
+      </p>
+    </section>
+  );
+}
 
 export function CStatusAxes({ stage }: { stage: Stage }) {
   if (stage.id !== "C" || !stage.progress) return null;
@@ -45,9 +160,11 @@ export function StageButton({
       <strong>{stage.title}</strong>
       <code>{stage.id}</code>
       <span>{stage.question}</span>
-      <small>规则理由：{stage.ruleWhy}</small>
+      <small>规则理由：{stage.deliveryReview?.why || stage.ruleWhy}</small>
       <span className="architecture-node-status">
-        {stage.id === "C" ? (
+        {stage.deliveryReview ? (
+          <Tag color="blue">{deliveryLabels[stage.deliveryReview.status]}</Tag>
+        ) : stage.id === "C" ? (
           <CStatusAxes stage={stage} />
         ) : (
           <>
@@ -56,7 +173,7 @@ export function StageButton({
           </>
         )}
       </span>
-      <span>{stage.shortStatus}</span>
+      <span>{stage.deliveryReview?.done || stage.shortStatus}</span>
     </button>
   );
 }
@@ -169,143 +286,149 @@ export function StageDetail({ stage }: { stage: Stage }) {
       aria-live="polite"
     >
       <Card title={stage.title}>
-        <CStatusAxes stage={stage} />
-        <NativeContractDetail stage={stage} />
-        <Descriptions
-          column={1}
-          size="small"
-          bordered
-          items={[
-            {
-              key: "id",
-              label: "稳定模块 ID",
-              children: <code>{stage.id}</code>,
-            },
-            ...(stage.progress
-              ? [
-                  {
-                    key: "consumer",
-                    label: "实际消费",
-                    children: stage.progress.consumer,
-                  },
-                  {
-                    key: "realData",
-                    label: "真实数据验证",
-                    children: stage.progress.realData,
-                  },
-                  {
-                    key: "economic",
-                    label: "经济批准",
-                    children: stage.progress.economic,
-                  },
-                  {
-                    key: "deployment",
-                    label: "运行部署",
-                    children: stage.progress.deployment,
-                  },
-                  {
-                    key: "acceptance",
-                    label: "用户确认",
-                    children: stage.progress.acceptance,
-                  },
-                ]
-              : []),
-            {
-              key: "input",
-              label:
-                stage.id === "C"
-                  ? "已验输入（固定五家范围）"
-                  : stage.progress
-                    ? "目标输入"
-                    : "输入",
-              children: stage.input,
-            },
-            {
-              key: "output",
-              label:
-                stage.id === "C"
-                  ? "已验输出（固定五家范围）"
-                  : stage.progress
-                    ? "目标输出（不代表已实现）"
-                    : "输出",
-              children: stage.output,
-            },
-            ...(stage.channels
-              ? [
-                  {
-                    key: "channels",
-                    label: "四通道规则理由",
-                    children: (
-                      <ul>
-                        {stage.channels.map((channel) => (
-                          <li key={channel.id}>
-                            <strong>{channel.title}</strong>：{channel.why}
-                          </li>
-                        ))}
-                      </ul>
-                    ),
-                  },
-                ]
-              : []),
-            { key: "why", label: "规则为什么", children: stage.ruleWhy },
-            {
-              key: "code",
-              label: "模块实现 · 源码/交付复核",
-              children: stage.implementation,
-            },
-            {
-              key: "milestone",
-              label: "里程碑 · 人工整理",
-              children: stage.milestone,
-            },
-            {
-              key: "existing",
-              label: "已记录证据",
-              children: (
-                <>
-                  {stage.existingEvidence}
-                  <p className="architecture-source">{stage.evidenceSource}</p>
-                </>
-              ),
-            },
-            { key: "required", label: "仍需证据", children: stage.evidence },
-            {
-              key: "runtime",
-              label: "运行证据状态",
-              children:
-                stage.id === "A" ? (
-                  <Link to="/system">
-                    查看A模块公开来源实测状态（只读；按请求范围）
-                  </Link>
-                ) : stage.id === "B" ? (
-                  <Link to="/daily">
-                    查看B模块真实候选与覆盖范围（只读；保留资料日期）
-                  </Link>
-                ) : stage.id === "C" ? (
-                  <Link to="/daily">
-                    从真实候选进入公司，查看企业画像与模型依据
-                  </Link>
-                ) : (
-                  "本目录尚未接运行reader / NOT_CONNECTED；不否认既有API和页面消费者，静态快照不推定当前运行结果。"
+        {stage.deliveryReview && <DeliverySummary stage={stage} />}
+        <details open={!stage.deliveryReview}>
+          <summary>历史审查与技术明细（非本轮交付结论）</summary>
+          <CStatusAxes stage={stage} />
+          <NativeContractDetail stage={stage} />
+          <Descriptions
+            column={1}
+            size="small"
+            bordered
+            items={[
+              {
+                key: "id",
+                label: "稳定模块 ID",
+                children: <code>{stage.id}</code>,
+              },
+              ...(stage.progress
+                ? [
+                    {
+                      key: "consumer",
+                      label: "实际消费",
+                      children: stage.progress.consumer,
+                    },
+                    {
+                      key: "realData",
+                      label: "真实数据验证",
+                      children: stage.progress.realData,
+                    },
+                    {
+                      key: "economic",
+                      label: "经济批准",
+                      children: stage.progress.economic,
+                    },
+                    {
+                      key: "deployment",
+                      label: "运行部署",
+                      children: stage.progress.deployment,
+                    },
+                    {
+                      key: "acceptance",
+                      label: "用户确认",
+                      children: stage.progress.acceptance,
+                    },
+                  ]
+                : []),
+              {
+                key: "input",
+                label:
+                  stage.id === "C"
+                    ? "已验输入（固定五家范围）"
+                    : stage.progress
+                      ? "目标输入"
+                      : "输入",
+                children: stage.input,
+              },
+              {
+                key: "output",
+                label:
+                  stage.id === "C"
+                    ? "已验输出（固定五家范围）"
+                    : stage.progress
+                      ? "目标输出（不代表已实现）"
+                      : "输出",
+                children: stage.output,
+              },
+              ...(stage.channels
+                ? [
+                    {
+                      key: "channels",
+                      label: "四通道规则理由",
+                      children: (
+                        <ul>
+                          {stage.channels.map((channel) => (
+                            <li key={channel.id}>
+                              <strong>{channel.title}</strong>：{channel.why}
+                            </li>
+                          ))}
+                        </ul>
+                      ),
+                    },
+                  ]
+                : []),
+              { key: "why", label: "规则为什么", children: stage.ruleWhy },
+              {
+                key: "code",
+                label: "模块实现 · 源码/交付复核",
+                children: stage.implementation,
+              },
+              {
+                key: "milestone",
+                label: "里程碑 · 人工整理",
+                children: stage.milestone,
+              },
+              {
+                key: "existing",
+                label: "已记录证据",
+                children: (
+                  <>
+                    {stage.existingEvidence}
+                    <p className="architecture-source">
+                      {stage.evidenceSource}
+                    </p>
+                  </>
                 ),
-            },
-            { key: "next", label: "下一步", children: stage.nextStep },
-            { key: "boundary", label: "停止边界", children: stage.boundary },
-            {
-              key: "modules",
-              label: "实现定位（仓库相对路径）",
-              children: (
-                <ul>
-                  {stage.modules.map((path) => (
-                    <li key={path}>
-                      <code>{path}</code>
-                    </li>
-                  ))}
-                </ul>
-              ),
-            },
-          ]}
-        />
+              },
+              { key: "required", label: "仍需证据", children: stage.evidence },
+              {
+                key: "runtime",
+                label: "运行证据状态",
+                children:
+                  stage.id === "A" ? (
+                    <Link to="/system">
+                      查看A模块公开来源实测状态（只读；按请求范围）
+                    </Link>
+                  ) : stage.id === "B" ? (
+                    <Link to="/daily">
+                      查看B模块真实候选与覆盖范围（只读；保留资料日期）
+                    </Link>
+                  ) : stage.id === "C" ? (
+                    <Link to="/daily">
+                      从真实候选进入公司，查看企业画像与模型依据
+                    </Link>
+                  ) : (
+                    "本目录尚未接运行reader / NOT_CONNECTED；不否认既有API和页面消费者，静态快照不推定当前运行结果。"
+                  ),
+              },
+              { key: "next", label: "下一步", children: stage.nextStep },
+              { key: "boundary", label: "停止边界", children: stage.boundary },
+              {
+                key: "modules",
+                label: "实现定位（仓库相对路径）",
+                children: (
+                  <ul>
+                    {stage.modules.map((path) => (
+                      <li key={path}>
+                        <code>{path}</code>
+                      </li>
+                    ))}
+                  </ul>
+                ),
+              },
+            ]}
+          />
+        </details>
       </Card>
     </section>
   );
@@ -486,7 +609,15 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
         Tab 移动，Enter /
         空格选择。箭头表示目标流转，不表示已通过。价值模块关联不代表共同前置：E1/E2二选一进入F1，S1/S2仅约束个人决策，不阻塞公开研究。
       </p>
-      {strategy === "value" && <ValuePlanOverview />}
+      {strategy === "value" && (
+        <>
+          <DeliveryOverview stages={flow.stages} onSelect={selectStage} />
+          <details>
+            <summary>历史规划与完整流程说明</summary>
+            <ValuePlanOverview />
+          </details>
+        </>
+      )}
       {(strategy === "value"
         ? [
             {
@@ -519,7 +650,9 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
                   {index + 1}. {item.title}
                 </strong>
                 <span>
-                  {item.id === "C" ? (
+                  {item.deliveryReview ? (
+                    deliveryLabels[item.deliveryReview.status]
+                  ) : item.id === "C" ? (
                     <CStatusAxes stage={item} />
                   ) : (
                     <>
