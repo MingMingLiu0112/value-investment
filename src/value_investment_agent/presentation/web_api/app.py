@@ -691,6 +691,20 @@ def create_app(
                    {'hotspot_selector': lambda **kw: dict(action='no_order', items=[])}))
             lane = lanes[strategy]
             row = next((r for r in lane['items'] if r.get('symbol') == decision_id), None)
+            sse_progress = None
+            if row is None and strategy == 'value':
+                from ...application.discovery.sse_main_screening import read_screen
+                public_screen = read_screen(root=project,now=datetime.now(timezone.utc),
+                    query=decision_id,status='ALL',limit=20)
+                if public_screen['status'] != 'UNAVAILABLE':
+                    source_row=next((r for r in public_screen['items']
+                        if r['symbol']==decision_id and r['status']=='CANDIDATE'),None)
+                    if source_row is not None:
+                        row=dict(source_row,reasons=[source_row['reason']],blockers=source_row['gaps'],
+                            source_available_at=public_screen['available_at'],source_refs=public_screen['source_refs'])
+                        from ...application.research.value_enrichment_batch import read_verified_enrichment_progress
+                        sse_progress=read_verified_enrichment_progress(root=project,symbol=decision_id,
+                            evaluation_at=datetime.now(timezone.utc))
             if row is None:
                 return dict(action='no_order', status='UNAVAILABLE', decision=None,
                     reason='SELECTION_CANDIDATE_UNAVAILABLE', formal_eligibility=False)
@@ -711,7 +725,7 @@ def create_app(
                     root=project, symbol=decision_id, now=datetime.now(timezone.utc))
             return dict(action='no_order', status='RESEARCH_ONLY', decision=item,
                 selection_candidate=candidate, formal_eligibility=False, trade_eligible=False,
-                publication=publication_block_unavailable(), **sample)
+                publication=publication_block_unavailable(), **({'financial_progress':sse_progress} if sse_progress is not None else {}), **sample)
 
         packet, _ = _load_snapshot(project)
         current = _public(project)
