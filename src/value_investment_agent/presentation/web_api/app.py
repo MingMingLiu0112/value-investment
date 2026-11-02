@@ -960,6 +960,16 @@ def create_app(
                 blockers=["SOURCE_OR_PROFILE_VALIDATION_FAILED"], error_type=type(error).__name__)
         return JSONResponse(result, headers={"Cache-Control": "no-store"})
 
+    @api.get("/api/v1/value-screening/sse-main")
+    def sse_main_screening(offset: int = Query(0, ge=0),
+                           limit: int = Query(20, ge=1, le=100),
+                           query: str = Query('', max_length=80),
+                           status: Literal["ALL", "CANDIDATE", "EXCLUDED", "UNASSESSABLE"] = "CANDIDATE"):
+        from ...application.discovery.sse_main_screening import read_screen
+        return JSONResponse(read_screen(root=project, now=datetime.now(timezone.utc),
+            offset=offset, limit=limit, query=query, status=status),
+            headers={"Cache-Control": "no-store"})
+
     @api.get("/api/v1/strategy-selection")
     def strategy_selection(value_offset: int = Query(0, ge=0),
                            hotspot_offset: int = Query(0, ge=0),

@@ -131,13 +131,13 @@ export const catalog: Record<
       {
         id: "A",
         deliveryReview: {
-          status: "PARTIAL",
+          status: "LIMITED",
           what: "取得并保存公开原件。",
           why: "研究必须有可核对的出处。",
           how: "下载原件、绑定来源和哈希，再核验期间与口径。",
-          scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "已有官方原件下载、字段核验和来源重放。",
-          gap: "尚未证明研究所需资料可自动完整取得。",
+          scope: "沪市主板公开观察初筛；模块长期能力和完整经济研究仍未完成。",
+          done: "沪市主板官方名单、行情、年度财务及分红观察已接通来源重放。",
+          gap: "初筛数据可用；质量研究所需完整财务、逐股交易日仍未核验。",
           acceptance: "独立取得所需原件；缺失、冲突和重复执行均有准确回执。",
           evidence: ["docs/current/value-mainline-p0-20261101/abc-e-audit.md"],
           runHref: "/strategy/value",
@@ -181,13 +181,13 @@ export const catalog: Record<
       {
         id: "B",
         deliveryReview: {
-          status: "PARTIAL",
+          status: "LIMITED",
           what: "从市场中找值得继续研究的公司。",
           why: "避免只研究事先指定的股票。",
           how: "复用四通道筛选，将入池理由和缺口送入队列。",
-          scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "真实扫描取得5223条沪深行情并生成研究线索。",
-          gap: "北交所覆盖和交易日期核验未齐备，不能称全A完成。",
+          scope: "沪市主板公开观察初筛；模块长期能力和完整经济研究仍未完成。",
+          done: "沪市主板范围先于预算执行四通道；逐股入池、排除与无法评价可查。",
+          gap: "本轮仅沪市主板初筛；质量通道资料不足，不代表全A或深度研究完成。",
           acceptance: "来源与交易日核验通过，候选、排除理由及覆盖范围可复算。",
           evidence: [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md",

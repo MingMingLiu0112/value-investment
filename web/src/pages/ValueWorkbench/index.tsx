@@ -1,3 +1,4 @@
+import { SseMainScreeningPanel } from "../../components/SseMainScreeningPanel";
 import "./workbench.css";
 import { useCallback, useState } from "react";
 import { Link } from "@umijs/max";
@@ -173,6 +174,7 @@ export default function ValueWorkbench() {
           type="warning"
           message="本工作台提供研究解释与真实任务操作，不批准投资、不读取个人账户、不下单。"
         />
+        <SseMainScreeningPanel load={api.sseMainScreening} />
         {selection.loading && <p role="status">正在读取实际候选列表……</p>}
         {selection.error && (
           <Alert

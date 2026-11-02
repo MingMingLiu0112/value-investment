@@ -6,7 +6,7 @@
   "counts": {
     "CURRENT_OPERATIONAL_CLI": 0,
     "CURRENT_PRODUCT_CLI": 26,
-    "CURRENT_RESEARCH_CLI": 227,
+    "CURRENT_RESEARCH_CLI": 228,
     "HISTORICAL_VALIDATION_TOOL": 57,
     "COMPANY_RESEARCH_CASE_TOOL": 218,
     "MIGRATION_TOOL": 13,
@@ -18,7 +18,9 @@
     {
       "path": "scripts/current/reobserve_pending_sources.py",
       "category": "CURRENT_RESEARCH_CLI",
-      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json"
+      ],
       "imports_business_logic": false,
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
@@ -29,7 +31,9 @@
     {
       "path": "scripts/current/prepare_event_scan_supplement.py",
       "category": "CURRENT_RESEARCH_CLI",
-      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json"
+      ],
       "imports_business_logic": false,
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
@@ -40,7 +44,9 @@
     {
       "path": "scripts/current/replay_pending_candidate.py",
       "category": "CURRENT_RESEARCH_CLI",
-      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json"
+      ],
       "imports_business_logic": false,
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
@@ -51,7 +57,9 @@
     {
       "path": "scripts/current/replay_intraday_test_only.py",
       "category": "CURRENT_RESEARCH_CLI",
-      "current_consumers": ["config/current-cli-entrypoints-v2.json"],
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json"
+      ],
       "imports_business_logic": false,
       "replacement": null,
       "recommended_action": "KEEP_CURRENT",
@@ -7914,6 +7922,19 @@
       "risk": "LOW",
       "line_count": 37,
       "sha256": "e0cf21ac57500f905c1381e79de1da720c1e48711846d42793e7c22dbc230bd1"
+    },
+    {
+      "path": "scripts/current/refresh_sse_main_screening.py",
+      "category": "CURRENT_RESEARCH_CLI",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "LOW",
+      "line_count": 21,
+      "sha256": "ed021e9d55dd0e9aac72a7805f685d20fe3b9683593b423c8ad2a005c36a9275"
     }
   ]
 }

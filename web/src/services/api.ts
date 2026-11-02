@@ -1,3 +1,4 @@
+import type { ScreenPage } from "../components/SseMainScreeningPanel";
 import type { CompanyProfile } from "../components/CompanyProfilePanel";
 import type {
   PrivateAccountObservations,
@@ -1385,6 +1386,20 @@ export type ValueWorkbenchTaskHistory = {
   }[];
 };
 export const api = {
+  sseMainScreening: (
+    params: { offset: number; limit: number; query: string; status: string },
+    signal?: AbortSignal,
+  ) =>
+    get<ScreenPage>(
+      "value-screening/sse-main?" +
+        new URLSearchParams({
+          offset: String(params.offset),
+          limit: String(params.limit),
+          query: params.query,
+          status: params.status,
+        }).toString(),
+      signal,
+    ),
   valueWorkbenchCompanies: (signal?: AbortSignal) =>
     get<ValueWorkbenchCompanies>("value-workbench/companies", signal),
   valueWorkbenchTaskInputs: (symbol: string, signal?: AbortSignal) =>

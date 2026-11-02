@@ -103,7 +103,8 @@
     "scripts/current/audit_decision_writers.py",
     "scripts/current/audit_research_funnel.py",
     "scripts/current/build_hotspot_structure_validation.py",
-    "scripts/current/collect_public_evidence.py"
+    "scripts/current/collect_public_evidence.py",
+    "scripts/current/refresh_sse_main_screening.py"
   ],
   "INTERNAL_PRODUCT_HELPERS": [
     "scripts/current/refresh_current_price_conditions.py",
@@ -128,8 +129,8 @@
   ],
   "counts": {
     "product": 26,
-    "engineering": 66,
+    "engineering": 67,
     "internal_helpers": 19,
-    "total": 111
+    "total": 112
   }
 }
