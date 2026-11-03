@@ -765,9 +765,9 @@ export const catalog: Record<
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer:
-          "D2研究产物 → 现金消费读取器；只有同发行人年度现金政策、主经济区间和模型适用性齐备时，才可进入ResearchApplicationService → v4 → 条件价格",
+            "D2研究产物 → 现金消费读取器；只有同发行人年度现金政策、主经济区间和模型适用性齐备时，才可进入ResearchApplicationService → v4 → 条件价格",
           realData:
-          "600323最新真实任务为 SUCCEEDED，三角色共3次调用；来源绑定、反证和未知项均保留，不能将UNKNOWN填为零或把模型输出升级为事实",
+            "600323最新真实任务为 SUCCEEDED，三角色共3次调用；来源绑定、反证和未知项均保留，不能将UNKNOWN填为零或把模型输出升级为事实",
           economic: "条件现金/估值工程已接待终验／参数经济适用性未证／非主区间",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",
