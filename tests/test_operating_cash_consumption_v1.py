@@ -192,6 +192,34 @@ def test_application_rejects_context_recomputation_diff(case,monkeypatch):
         app.read_operating_cash_consumption(root=Path("."),task=task,now=datetime.now(timezone.utc))
 
 
+def test_issuer_specific_readiness_refuses_600323_cash_followup_without_parent_cash_or_policy(tmp_path, case, monkeypatch):
+    """A reported consolidated cash-flow statement is not an E2 cash policy."""
+    context,bridge=case
+    context.update(symbol="600323", issuer_name="瀚蓝环境股份有限公司", financial_basis="2025-12-31",
+                   source_binding={"path":"runtime/TEST_ONLY-600323.json","sha256":"a"*64},
+                   snapshot_fingerprint="b"*64)
+    (tmp_path/"config").mkdir()
+    (tmp_path/"config/current-operating-research-sources-v1.json").write_text(
+        '{"schema_version":"current-operating-research-sources-v1","action":"no_order","cases":{}}', encoding="utf-8")
+    monkeypatch.setattr(app,"build_operating_source_context",lambda **kwargs:context)
+    task=dict(status="SUCCEEDED",scope="LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED",symbol="600323",
+              task_id="TEST_ONLY-600323",research_as_of="2026-10-31T00:00:00+00:00",
+              source_binding=context["source_binding"],context_fingerprint=context["snapshot_fingerprint"],
+              operating_driver_bridge=bridge)
+    result=app.read_operating_cash_consumption(root=tmp_path,task=task,now=datetime.now(timezone.utc))
+    readiness=result["cash_followup_readiness"]
+    assert readiness["status"]=="BLOCKED" and readiness["action"]=="no_order"
+    assert readiness["issuer_name"]=="瀚蓝环境股份有限公司"
+    assert readiness["cash_followup_registered"] is False
+    assert readiness["historical_parent_cash_rows"]==0
+    rows={item["code"]:item for item in readiness["missing_evidence"]}
+    assert rows["SOURCE_BOUND_CASH_FOLLOWUP_SPEC_REQUIRED"]
+    assert rows["PARENT_CASH_FLOW_FACTS_REQUIRED"]["fields"]==["parent_cfo","parent_investment_cash","parent_capex"]
+    assert rows["EXPLICIT_SAME_PERIOD_CASH_POLICY_REQUIRED"]
+    assert "annual_followup" not in result
+    assert result["condition_price"] is None and result["formal_eligibility"] is False
+
+
 def test_real_000568_existing_task_consumption_and_rolling_inputs():
     configured=os.environ.get("OPERATING_SOURCES_REAL_ROOT")
     if not configured:pytest.skip("REAL TASK NOT VALIDATED: set OPERATING_SOURCES_REAL_ROOT")

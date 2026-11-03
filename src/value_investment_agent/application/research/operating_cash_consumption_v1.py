@@ -38,6 +38,13 @@ def read_operating_cash_consumption(*, root, task, now):
                 *[r for r in result["current_blockers"] if r["stage"]=="condition_price"]]
         except (ValueError,OSError,KeyError,TypeError) as error:
             result["annual_followup"]=dict(status="UNASSESSABLE",reason=str(error),action="no_order",formal_eligibility=False)
+    else:
+        # Do not turn a successful operating-research task into an annual cash
+        # path just because the issuer has a consolidated cash-flow statement.
+        # This names the issuer-specific missing bindings so an E2 caller can
+        # request the right public evidence without guessing a cash policy.
+        result["cash_followup_readiness"]=_missing_cash_followup_readiness(
+            context=context, registry=registry, result=result)
     from pathlib import Path
     from ...domain.research import operating_cash_consumption_v1 as kernel
     from ...domain.valuation import signed_parent_profit
@@ -55,6 +62,50 @@ def read_operating_cash_consumption(*, root, task, now):
     result["consumption_fingerprint"] = hashlib.sha256(json.dumps(identity,sort_keys=True,
         ensure_ascii=False,separators=(",",":"),allow_nan=False).encode()).hexdigest()
     return result
+
+
+def _missing_cash_followup_readiness(*, context, registry, result):
+    """State why this issuer cannot yet enter the annual E2 cash adapter.
+
+    The output is deliberately a readiness result, not a replacement adapter:
+    no cash policy, main range, distribution, or price qualification is inferred
+    from a consolidated statement or from a successful D2 task.
+    """
+    case=registry["cases"].get(context["symbol"], {})
+    parent_fields=("parent_cfo", "parent_investment_cash", "parent_capex")
+    verified={row.get("field") for row in context["evidence"]
+              if row.get("kind")=="VERIFIED_REPORTED_FACT" and row.get("scope")=="parent"}
+    financial_refs=[]
+    for row in context["evidence"]:
+        if row.get("kind")!="VERIFIED_REPORTED_FACT" or row.get("period")!=context["financial_basis"]:
+            continue
+        ref=dict(evidence_id=row["id"],source_id=row["source_id"],physical_page=row["physical_page"],
+                 pdf_sha256=row["pdf_sha256"],available_at=row["available_at"])
+        if ref not in financial_refs:
+            financial_refs.append(ref)
+    missing=[
+        dict(code="SOURCE_BOUND_CASH_FOLLOWUP_SPEC_REQUIRED", category="source_binding",
+             explanation="No immutable cash_followup binding is registered for this issuer; a D2 task cannot select a task state, annual input receipt, or policy package by itself."),
+    ]
+    absent=[field for field in parent_fields if field not in verified]
+    if absent:
+        missing.append(dict(code="PARENT_CASH_FLOW_FACTS_REQUIRED", category="public_fact",
+            fields=absent,
+            explanation="The admitted source context lacks the parent-company CFO, investment-cash and gross-capex facts required to construct a parent cash proxy. Consolidated cash is not substituted."))
+    missing.extend([
+        dict(code="EXPLICIT_SAME_PERIOD_CASH_POLICY_REQUIRED", category="research_assumption",
+             explanation="Maintenance/WC, remittance, payout, cash floor and funding terms require a source-bound same-period policy; unknown values are not zero."),
+        dict(code="MAIN_ECONOMIC_RANGE_ADOPTION_REQUIRED", category="research_adoption",
+             explanation="Conditional D2 operating witnesses have not been adopted as the issuer's main economic range."),
+        dict(code="CURRENT_CAPITAL_DISTRIBUTION_EVENT_QUOTE_ALIGNMENT_REQUIRED", category="market_alignment",
+             explanation="Financial-period capital and distribution facts are not yet aligned to a current eligible quote."),
+    ])
+    return dict(schema_version="operating-cash-followup-readiness-v1", status="BLOCKED",
+        action="no_order", formal_eligibility=False, symbol=context["symbol"],
+        issuer_name=context.get("issuer_name"), financial_basis=context["financial_basis"],
+        source_binding=deepcopy(context["source_binding"]), cash_followup_registered="cash_followup" in case,
+        supported_financial_evidence=financial_refs, historical_parent_cash_rows=len(result["historical_parent_cash"]),
+        missing_evidence=missing)
 
 def _bound_json(root, binding):
     import re
