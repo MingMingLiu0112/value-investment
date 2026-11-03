@@ -487,6 +487,10 @@ def public_adoption_case(source_case, monkeypatch):
             financial_summary=dict(context_origin="AUTOMATIC_PUBLIC_FACTS_ONLY_V1")))
         return dict(adopted_fact_count=1),context,packet
     monkeypatch.setattr(batch,"_verified_registered_adoption",native)
+    from value_investment_agent.infrastructure.filings import operating_statement_basis_v1 as statement
+    # Existing boundary tests provide no seven-row statement; do not invent a baseline.
+    monkeypatch.setattr(statement,"load_operating_statement_basis",
+        lambda **kw: statement_packet(kw["source"],[]))
     case.update(result=result,result_pin=pin,seal_public=seal,export=export,calls=calls,config=config)
     return case
 
@@ -598,3 +602,137 @@ def test_existing_unreadable_registry_never_falls_back(public_adoption_case,monk
     with pytest.raises((PermissionError,ValueError)):
         guarded_build(case["root"],symbol="000001",now=NOW)
     assert not case["calls"]
+
+
+def statement_rows(source):
+    from value_investment_agent.domain.research.operating_driver_bridge_v1 import FIELDS
+    return [dict(id=f"TEST_ONLY-statement-{period}-{field}",source_id="TEST_ONLY-pdf",
+        pdf_sha256=source["sha256"],available_at=source["available_at"],period=period,
+        period_basis="FY",scope="consolidated",unit="CNY",kind="VERIFIED_REPORTED_FACT",
+        field=field,value="100.00" if field=="revenue" else "10.00",physical_page=2,
+        text=f"TEST_ONLY {field} 100.00 10.00")
+        for period in ("2025-12-31","2024-12-31") for field in FIELDS]
+
+
+def test_public_statement_merge_builds_two_bases_without_duplicate_adopted_field(public_adoption_case):
+    case=public_adoption_case
+    source=case["result"]["source_extraction"]["identity"]["source"]
+    context=guarded_build(case["root"],symbol="000001",now=NOW)
+    original=context["evidence"][0]
+    merged=operating._merge_public_statement_evidence(context["evidence"],statement_rows(source),source,NOW)
+    from value_investment_agent.domain.research.operating_driver_bridge_v1 import build_basis
+    basis=build_basis(dict(evidence=merged))
+    assert set(basis["baselines"])=={"2025-12-31","2024-12-31"}
+    assert not basis["gaps"]
+    revenue=[r for r in merged if r.get("field")=="revenue" and r["period"]=="2025-12-31"]
+    assert len(revenue)==1 and revenue[0]["kind"]=="VERIFIED_REPORTED_FACT"
+    assert revenue[0]["adopted_fact_evidence"]==original
+    assert context["evidence"][0]==original
+
+
+def test_public_statement_missing_row_is_gap_never_zero(public_adoption_case):
+    case=public_adoption_case
+    source=case["result"]["source_extraction"]["identity"]["source"]
+    rows=[r for r in statement_rows(source) if r["field"]!="research"]
+    merged=operating._merge_public_statement_evidence([],rows,source,NOW)
+    from value_investment_agent.domain.research.operating_driver_bridge_v1 import build_basis
+    basis=build_basis(dict(evidence=merged))
+    assert not basis["baselines"] and len(basis["gaps"])==2
+    assert all(r["field"]!="research" for r in merged)
+
+
+@pytest.mark.parametrize("fault",["amount","pdf","clock","scope","unit","period","kind","duplicate","page","grant"])
+def test_public_statement_merge_rejects_wrong_binding_or_semantics(public_adoption_case,fault):
+    case=public_adoption_case;source=case["result"]["source_extraction"]["identity"]["source"]
+    context=guarded_build(case["root"],symbol="000001",now=NOW)
+    rows=statement_rows(source)
+    if fault=="amount":rows[0]["value"]="999"
+    elif fault=="pdf":rows[0]["pdf_sha256"]="0"*64
+    elif fault=="clock":rows[0]["available_at"]="2099-01-01T00:00:00+00:00"
+    elif fault=="scope":rows[0]["scope"]="parent"
+    elif fault=="unit":rows[0]["unit"]="CNY 10K"
+    elif fault=="period":rows[0]["period"]="2026-12-31"
+    elif fault=="kind":rows[0]["kind"]="FORECAST"
+    elif fault=="duplicate":rows[1]=dict(rows[0])
+    elif fault=="page":rows[0]["physical_page"]=None
+    elif fault=="grant":rows[0]["automatic_cross_source_verification"]=True
+    with pytest.raises(ValueError):
+        operating._merge_public_statement_evidence(context["evidence"],rows,source,NOW)
+
+
+def statement_packet(source,rows):
+    return dict(schema_version="operating-statement-basis-v1",symbol=source["symbol"],
+        source_binding=source,action="no_order",formal_eligibility=False,
+        financial_quality_granted=False,
+        assurance="SOURCE_BOUND_REPORTED_ROWS_NOT_FINANCIAL_QUALITY_ADMISSION",
+        status="COMPLETE_SOURCE_BOUND_STATEMENT" if len(rows)==14 else "PARTIAL",
+        evidence=[dict(r,kind="SOURCE_BOUND_REPORTED_STATEMENT_ROW",symbol=source["symbol"],
+            source_binding=source,action="no_order",formal_eligibility=False,
+            financial_quality_granted=False) for r in rows],
+        gaps=[] if len(rows)==14 else [dict(reason="TEST_ONLY_MISSING_REPORTED_ROWS")])
+
+
+def test_public_context_consumes_actual_statement_interface_and_hash(public_adoption_case,monkeypatch):
+    from value_investment_agent.infrastructure.filings import operating_statement_basis_v1 as statement
+    from value_investment_agent.domain.research.operating_driver_bridge_v1 import build_basis
+    case=public_adoption_case;source=case["result"]["source_extraction"]["identity"]["source"]
+    calls=[]
+    def read(**kw):
+        calls.append(kw)
+        return statement_packet(source,statement_rows(source))
+    monkeypatch.setattr(statement,"load_operating_statement_basis",read)
+    context=guarded_build(case["root"],symbol="000001",now=NOW)
+    assert calls==[dict(root=case["root"],source=source,evaluation_at=NOW)]
+    basis=build_basis(context)
+    assert set(basis["baselines"])=={"2025-12-31","2024-12-31"} and not basis["gaps"]
+    assert context["statement_basis_gaps"]==[]
+    assert context["implementation_sha256"][statement.__name__]==digest(Path(statement.__file__).read_bytes())
+    rows=[r for r in context["evidence"] if r["kind"]=="VERIFIED_REPORTED_FACT"]
+    assert len(rows)==14
+    assert all(r["financial_quality_granted"] is False and r["formal_eligibility"] is False
+               and r["automatic_cross_source_verification"] is False for r in rows)
+    assert guarded_build(case["root"],symbol="000001",now=NOW,binding=context["source_binding"])==context
+
+
+def test_public_context_retains_statement_gaps_without_filling(public_adoption_case):
+    case=public_adoption_case
+    context=guarded_build(case["root"],symbol="000001",now=NOW)
+    assert context["statement_basis_status"]=="PARTIAL" and context["statement_basis_gaps"]
+    assert all(r["kind"]!="VERIFIED_REPORTED_FACT" for r in context["evidence"])
+
+
+@pytest.mark.parametrize("fault",["packet_source","row_source","row_symbol","row_kind","grant"])
+def test_statement_interface_binding_cannot_upgrade_or_switch_source(public_adoption_case,monkeypatch,fault):
+    from copy import deepcopy
+    from value_investment_agent.infrastructure.filings import operating_statement_basis_v1 as statement
+    case=public_adoption_case;source=case["result"]["source_extraction"]["identity"]["source"]
+    packet=deepcopy(statement_packet(source,statement_rows(source)))
+    if fault=="packet_source":packet["source_binding"]=dict(source,sha256="f"*64)
+    elif fault=="row_source":packet["evidence"][0]["source_binding"]=dict(source,sha256="f"*64)
+    elif fault=="row_symbol":packet["evidence"][0]["symbol"]="000002"
+    elif fault=="row_kind":packet["evidence"][0]["kind"]="FORECAST"
+    elif fault=="grant":packet["financial_quality_granted"]=True
+    monkeypatch.setattr(statement,"load_operating_statement_basis",lambda **kw:packet)
+    with pytest.raises(ValueError,match="OPERATING_STATEMENT"):
+        guarded_build(case["root"],symbol="000001",now=NOW)
+
+
+def test_real_registered_public_two_period_statement_basis_readonly():
+    root_env=os.environ.get("OPERATING_PUBLIC_SOURCES_REAL_ROOT")
+    if not root_env:
+        pytest.skip("Explicit real source root required; never count synthetic as actual")
+    from value_investment_agent.domain.research.operating_driver_bridge_v1 import build_basis,FIELDS
+    from value_investment_agent.infrastructure.filings import operating_statement_basis_v1 as statement
+    root=Path(root_env);now=datetime.now(timezone.utc)
+    context=guarded_build(root,symbol="600323",now=now)
+    basis=build_basis(context)
+    assert set(basis["baselines"])=={"2025-12-31","2024-12-31"}
+    assert not basis["gaps"] and context["statement_basis_gaps"]==[]
+    rows=[r for r in context["evidence"] if r["kind"]=="VERIFIED_REPORTED_FACT"]
+    assert len(rows)==14
+    for period in basis["baselines"]:
+        assert {r["field"] for r in rows if r["period"]==period}==set(FIELDS)
+    assert {"debt_ratio","net_income"}<={r.get("field") for r in context["evidence"]}
+    assert context["implementation_sha256"][statement.__name__]==digest(Path(statement.__file__).read_bytes())
+    assert all(r["formal_eligibility"] is False and r["financial_quality_granted"] is False for r in rows)
+    assert guarded_build(root,symbol="600323",now=now,binding=context["source_binding"])==context

@@ -35,11 +35,11 @@ def main():
             operating_budget=args.operating_research_budget,
             on_stage=lambda event: print(json.dumps(event,ensure_ascii=False),flush=True))
         print(json.dumps(dict(status=result['status'],receipt=str(output/'cycle.json'),action='no_order'),ensure_ascii=False))
-        return
+        return 2 if result['status'] == 'FAILED' else 130 if result['status'] == 'CANCELLED' else 0
     from value_investment_agent.application.discovery.sse_main_screening import refresh,enrich_current
     result=(enrich_current if args.financial_only else refresh)(root=ROOT,allow_network=args.allow_public_network,comparison_batches=args.comparison_batches)
     print(json.dumps(result,ensure_ascii=False))
 
 
 if __name__=='__main__':
-    main()
+    raise SystemExit(main())

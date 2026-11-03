@@ -687,3 +687,37 @@ def test_actual_registered_company_entry_list_not_tied_to_current_shortlist():
     if location:
         assert {'600519', '600887', '000568'} <= expected
     assert all(row['status'] == 'REGISTERED_NOT_YET_REVALIDATED' for row in body['items'])
+
+
+def test_refresh_route_reuses_native_operation_contract(case, monkeypatch):
+    from value_investment_agent.application.research import transparent_task_v1 as native
+    client, session, data, root = case
+    assert routes.OPERATION_MODULES is native.OPERATION_MODULES
+    assert routes.OPERATION_MODULES['VALUE_RESEARCH_REFRESH']=='B'
+    body=dict(module_id='B', operation='VALUE_RESEARCH_REFRESH',symbol='000568',
+        request_key='TEST_ONLY_refresh_api',timeout_seconds=1800,
+        payload=dict(source_mode='FRESH',network_authorized=True,tracking_budget=30,
+            enrichment_batches=1,comparison_batches=1,operating_budget=0))
+    assert client.post(routes.BASE+'/tasks',json=body).status_code==401
+    assert not data.calls
+    unlock(client,session)
+    response=client.post(routes.BASE+'/tasks',json=body)
+    assert response.status_code==202
+    created=next(kw for method,kw in data.calls if method=='create')
+    assert created['operation']=='VALUE_RESEARCH_REFRESH' and created['payload']==body['payload']
+    assert created['timeout_seconds']==1800
+
+
+def test_refresh_preparation_never_carries_network_authorization(case, monkeypatch):
+    client, _, data, root = case
+    class Service:
+        def prepare(self,**kw):
+            return dict(action='no_order',symbol=kw['symbol'],operations=[dict(
+                operation='VALUE_RESEARCH_REFRESH',enabled=True,payload=dict(source_mode='FRESH',network_authorized=True))])
+        def capabilities(self):return {}
+    monkeypatch.setattr(routes,'_task_service',lambda project:Service())
+    response=client.get(routes.BASE+'/task-inputs?symbol=000568')
+    row=next(r for r in response.json()['operations'] if r['operation']=='VALUE_RESEARCH_REFRESH')
+    assert row['enabled'] and row['prepared_payload']['network_authorized'] is False
+    assert row['network_authorization_required'] is True
+    assert not data.calls

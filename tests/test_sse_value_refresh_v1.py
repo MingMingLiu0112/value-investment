@@ -29,6 +29,9 @@ def cycle(tmp_path, monkeypatch):
     monkeypatch.setattr(app.pipeline,'prepare_sse_research_run',prepare)
     monkeypatch.setattr(enrichment,'reobserve_registered_public_adoptions',
         lambda **kw:dict(status='TEST_ONLY_UNCHANGED',items=[]),raising=False)
+    from value_investment_agent.application.research.agent_review import operating_task_v2
+    monkeypatch.setattr(operating_task_v2,'model_configuration',lambda root:{'research_contract':'TEST_ONLY'})
+    monkeypatch.setattr(operating_task_v2,'research_context',lambda context,**kw:context)
     return tmp_path,calls
 
 
@@ -181,3 +184,17 @@ def test_reused_model_calls_and_lock_contention_are_not_new_calls(cycle,monkeypa
     assert result['new_llm_calls']==0 and not ran and result['status']=='PARTIAL'
     assert result['operating_research'][0]['status']==('BLOCKED' if locked else 'SUCCEEDED')
     assert (root/'runtime/reused/cycle.json').is_file()
+
+
+def test_driver_calendar_preflight_blocks_missing_baseline_before_task_or_fees(cycle,monkeypatch):
+    from value_investment_agent.application.research.agent_review import operating_sources_v1,operating_task_v2
+    root,_=cycle; calls=[]
+    monkeypatch.setattr(operating_sources_v1,'build_operating_source_context',lambda **kw:dict(as_of='2026-11-03',evidence=[]))
+    monkeypatch.setattr(operating_task_v2,'model_configuration',lambda root:{'research_contract':'operating-drivers-v2'})
+    class Service:
+        def __init__(self,root):pass
+        def create(self,**kw):calls.append(kw);raise AssertionError('No task before valid baseline')
+    monkeypatch.setattr(operating_task_v2,'LiveOperatingTaskService',Service)
+    result=app.run_value_research_refresh(root=root,output_dir=root/'runtime/no-baseline',enrichment_batches=0,operating_budget=1)
+    assert not calls and result['new_llm_calls']==0
+    assert result['operating_research'][0]['reason']=='ValueError:VERIFIED_BASELINE_REQUIRED'

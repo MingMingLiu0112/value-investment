@@ -128,7 +128,8 @@ def run_value_research_refresh(*, root, output_dir, source_mode='RETAINED',
             queue = pipeline._bound(root, latest['queue'])
             if operating_budget:
                 from .agent_review.operating_sources_v1 import build_operating_source_context
-                from .agent_review.operating_task_v2 import LiveOperatingTaskService, implementation
+                from .agent_review.operating_task_v2 import (LiveOperatingTaskService, implementation,
+                    model_configuration, research_context)
                 service = LiveOperatingTaskService(root)
                 started_model_tasks = 0
                 for row in _selected(queue):
@@ -142,6 +143,15 @@ def run_value_research_refresh(*, root, output_dir, source_mode='RETAINED',
                     # this does NOT mean quality/G3/valuation prerequisites have passed.
                     try:
                         context = build_operating_source_context(root=root, symbol=symbol, now=_now())
+                        cfg = model_configuration(root)
+                        # Deterministic financial prerequisites before task/budget creation.
+                        # A source-only candidate cannot bypass a quantitative driver contract.
+                        drivers = cfg.get('research_contract') == 'operating-drivers-v2'
+                        model_context = research_context(context, drivers=drivers)
+                        if drivers:
+                            from .agent_review.operating_driver_draft_v2 import calendar_plan
+                            from ...domain.research.operating_driver_bridge_v1 import build_basis
+                            calendar_plan(build_basis(model_context), model_context)
                         identity = dict(symbol=symbol, source=context['source_binding'],
                                         workflow=implementation())
                         key = 'sse-auto-' + sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()

@@ -14,14 +14,12 @@ from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 
 from ...application.product.common import require_inside
+from ...application.research.transparent_task_v1 import OPERATION_MODULES
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 
 BASE = '/api/v1/value-workbench'
 MODULES = frozenset(('A', 'B', 'C', 'D1', 'D2', 'E1', 'E2', 'F1', 'F2', 'G1', 'G2'))
 CONTROLS = frozenset(('cancel', 'retry', 'resume'))
-OPERATION_MODULES = {'REPLAY_SELECTION': 'B', 'FRESH_PUBLIC_SCAN': 'B',
-    'VERIFY_EVIDENCE': 'A', 'RECALCULATE_MAIN': 'F1', 'SIMULATE_ASSUMPTIONS': 'F1',
-    'REVIEW_NOTE': 'G2'}
 MAX_BODY = 16_384
 MAX_DOWNLOAD = 50_000_000
 
@@ -74,12 +72,12 @@ def _task_inputs(project, symbol):
             row = deepcopy(rows.get(operation, {}))
             enabled = row.get('enabled') is True and isinstance(row.get('payload'), dict)
             payload = row.get('payload') if enabled else None
-            if enabled and operation == 'FRESH_PUBLIC_SCAN':
+            if enabled and operation in {'FRESH_PUBLIC_SCAN', 'VALUE_RESEARCH_REFRESH'}:
                 payload['network_authorized'] = False  # only a subsequent explicit checkbox authorizes POST
             operations.append(dict(row, operation=operation, module_id=module_id, enabled=enabled,
                 reason=row.get('reason') or (None if enabled else 'VERIFIED_TASK_INPUT_UNAVAILABLE'),
                 payload=payload, prepared_payload=payload, user_fields=row.get('user_fields', []),
-                network_authorization_required=operation == 'FRESH_PUBLIC_SCAN'))
+                network_authorization_required=operation in {'FRESH_PUBLIC_SCAN', 'VALUE_RESEARCH_REFRESH'}))
         capabilities = service.capabilities() if hasattr(service, 'capabilities') else {}
         return dict(action='no_order', formal_eligibility=False, symbol=symbol,
             status='PREPARED' if any(row['enabled'] for row in operations) else 'DISABLED',
@@ -89,7 +87,7 @@ def _task_inputs(project, symbol):
         return dict(action='no_order', formal_eligibility=False, symbol=symbol, status='DISABLED',
             operations=[dict(operation=operation, module_id=module_id, enabled=False,
                 reason=str(error), prepared_payload=None, user_fields=[],
-                network_authorization_required=operation == 'FRESH_PUBLIC_SCAN')
+                network_authorization_required=operation in {'FRESH_PUBLIC_SCAN', 'VALUE_RESEARCH_REFRESH'})
                 for operation, module_id in OPERATION_MODULES.items()], tasks_started=0)
 
 
@@ -230,7 +228,7 @@ def _catalog(project):
     return dict(schema_version='value-workbench-module-catalog-v1', action='no_order',
         formal_eligibility=False, modules=items, runtime_status='NOT_READ',
         task_operations=[dict(module_id=module, operation=operation,
-            network_authorization_required=operation == 'FRESH_PUBLIC_SCAN')
+            network_authorization_required=operation in {'FRESH_PUBLIC_SCAN', 'VALUE_RESEARCH_REFRESH'})
             for operation, module in OPERATION_MODULES.items()],
         catalog_binding=dict(path=path.relative_to(project).as_posix(), sha256=sha256(raw).hexdigest()),
         review_note_status='COMMENT_TASK_ONLY_NOT_G3_APPROVAL')

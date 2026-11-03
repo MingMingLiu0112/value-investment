@@ -202,7 +202,7 @@ def _public_source_context(*,root,symbol,now,binding=None):
     from .. import value_enrichment_batch as batch
     from .. import value_evidence_enrichment_v1 as enrichment
     from ....infrastructure.screening import value_evidence_enrichment_v1 as extraction
-    from ....infrastructure.filings import pdf_text
+    from ....infrastructure.filings import pdf_text, operating_statement_basis_v1 as statement_basis
     adoption=_public_adoption(root,symbol,now,binding)
     if adoption.get("baseline_kind")!="AUTOMATIC_PUBLIC_FACTS_ONLY_V1":
         raise ValueError("OPERATING_PUBLIC_FACTS_ONLY_BASELINE_REQUIRED")
@@ -263,6 +263,28 @@ def _public_source_context(*,root,symbol,now,binding=None):
             derivation_formula=meta.get("derivation_formula"),
             assurance_basis=meta.get("assurance_basis")))
     if not evidence:raise ValueError("OPERATING_PUBLIC_ADOPTED_FACTS_EMPTY")
+    statement=statement_basis.load_operating_statement_basis(root=root,source=source,evaluation_at=now)
+    if (statement.get("schema_version")!=statement_basis.VERSION
+            or statement.get("symbol")!=symbol or statement.get("source_binding")!=source
+            or statement.get("action")!="no_order" or statement.get("formal_eligibility") is not False
+            or statement.get("financial_quality_granted") is not False
+            or statement.get("assurance")!="SOURCE_BOUND_REPORTED_ROWS_NOT_FINANCIAL_QUALITY_ADMISSION"
+            or statement.get("status") not in {"PARTIAL","COMPLETE_SOURCE_BOUND_STATEMENT"}
+            or not isinstance(statement.get("evidence"),list) or not isinstance(statement.get("gaps"),list)):
+        raise ValueError("OPERATING_STATEMENT_PACKET_INVALID")
+    reported=[]
+    for row in statement["evidence"]:
+        if (not isinstance(row,dict) or row.get("symbol")!=symbol
+                or row.get("source_binding")!=source
+                or row.get("kind")!="SOURCE_BOUND_REPORTED_STATEMENT_ROW"
+                or row.get("action")!="no_order"
+                or row.get("formal_eligibility") is not False
+                or row.get("financial_quality_granted") is not False):
+            raise ValueError("OPERATING_STATEMENT_ROW_BINDING_INVALID")
+        reported.append(dict(row,kind="VERIFIED_REPORTED_FACT",
+            native_kind=row["kind"],automatic_cross_source_verification=False,
+            assurance_basis="SOURCE_BOUND_REPORTED_ROWS_NOT_FINANCIAL_QUALITY_ADMISSION"))
+    evidence=_merge_public_statement_evidence(evidence,reported,source,now)
     pages=extract_pages(path,limit=24)
     selected=[]
     for number,page in enumerate(pages,1):
@@ -285,14 +307,69 @@ def _public_source_context(*,root,symbol,now,binding=None):
     value=dict(schema_version="operating-source-context-v1",symbol=symbol,
         issuer_name=context["case"].name,as_of=now.isoformat(),financial_basis=source["period"],
         source_binding=deepcopy(pin),source_bindings=refs,evidence=evidence,action="no_order",
-        limitations=["Only natively revalidated adopted financial fields are supplied; financial completeness is not proven",
+        statement_basis_status=statement["status"],statement_basis_gaps=deepcopy(statement["gaps"]),
+        limitations=["Natively revalidated adopted fields and separately checked reported operating rows are supplied; financial completeness is not proven",
+            "Reported operating rows support a historical basis only, not dual-source quality verification or formal financial admission",
             "Derived adopted ratios are not printed report amounts",
             "Official narrative excerpts are issuer disclosures, not independently verified economic claims",
             "First 24 pages, at most four bounded operating/risk excerpts; not complete business or current-event coverage",
             "No model, normalized profit, future assumptions, valuation or G3 approval is inferred",
             "No previous forecasts, thesis, final valuation or saved model response supplied"])
-    modules=(batch,enrichment,extraction,pdf_text)
+    modules=(batch,enrichment,extraction,pdf_text,statement_basis)
     value["implementation_sha256"]={m.__name__:hashlib.sha256(Path(m.__file__).read_bytes()).hexdigest() for m in modules}
     value["snapshot_fingerprint"]=hashlib.sha256(encode(value)).hexdigest()
     if len(encode(value))>100000:raise ValueError("OPERATING_SOURCE_CONTEXT_TOO_LARGE")
     return value
+
+
+def _merge_public_statement_evidence(evidence, rows, source, now):
+    """Keep one baseline row per field/period; retain adoption proof without upgrading it."""
+    from copy import deepcopy
+    from decimal import Decimal
+    from ....domain.research.operating_driver_bridge_v1 import FIELDS
+    if not isinstance(rows,list) or len(rows)>14:
+        raise ValueError("OPERATING_STATEMENT_EVIDENCE_LIMIT")
+    period=source["period"]
+    periods={period,str(int(period[:4])-1)+period[4:]}
+    merged=deepcopy(evidence)
+    seen=set()
+    for row in rows:
+        if (not isinstance(row,dict) or row.get("field") not in FIELDS
+                or row.get("period") not in periods or row.get("period_basis")!="FY"
+                or row.get("scope")!="consolidated" or row.get("unit")!="CNY"
+                or row.get("kind")!="VERIFIED_REPORTED_FACT"
+                or row.get("pdf_sha256")!=source["sha256"]
+                or row.get("available_at")!=source["available_at"]
+                or not isinstance(row.get("id"),str) or not row["id"]
+                or not isinstance(row.get("source_id"),str) or not row["source_id"]
+                or type(row.get("physical_page")) is not int or not 1<=row["physical_page"]<=600
+                or not isinstance(row.get("text"),str) or not row["text"].strip()
+                or not isinstance(row.get("value"),str) or len(row["value"])>64
+                or row.get("automatic_cross_source_verification") is True
+                or row.get("formal_eligibility") is True):
+            raise ValueError("OPERATING_STATEMENT_EVIDENCE_INVALID")
+        stamp=datetime.fromisoformat(row["available_at"])
+        if stamp.utcoffset() is None or stamp>now:
+            raise ValueError("OPERATING_STATEMENT_SOURCE_FUTURE")
+        amount=Decimal(row["value"])
+        if not amount.is_finite() or abs(amount)>Decimal("1e24"):
+            raise ValueError("OPERATING_STATEMENT_AMOUNT_INVALID")
+        key=(row["field"],row["period"],row["scope"],row["unit"])
+        if key in seen:raise ValueError("OPERATING_STATEMENT_DUPLICATE")
+        seen.add(key)
+        matches=[(i,r) for i,r in enumerate(merged) if
+            (r.get("field"),r.get("period"),r.get("scope"),r.get("unit"))==key]
+        if len(matches)>1:raise ValueError("OPERATING_STATEMENT_EXISTING_DUPLICATE")
+        incoming=deepcopy(row)
+        if matches:
+            index,old=matches[0]
+            if Decimal(str(old.get("value")))!=amount:
+                raise ValueError("OPERATING_STATEMENT_ADOPTED_VALUE_CONFLICT")
+            if old.get("pdf_sha256")!=source["sha256"]:
+                raise ValueError("OPERATING_STATEMENT_ADOPTED_SOURCE_CONFLICT")
+            # The reported row is the sole baseline input; its prior adoption is evidence only.
+            incoming["adopted_fact_evidence"]=deepcopy(old)
+            merged[index]=incoming
+        else:
+            merged.append(incoming)
+    return merged
