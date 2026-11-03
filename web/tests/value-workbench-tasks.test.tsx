@@ -522,3 +522,44 @@ it("renders actual server feedback and leaves unknown clocks/identities unknown 
     ),
   ).toContain("不能当作当前有效成果");
 });
+
+it("defaults to bounded automatic refresh when the backend advertises it", async () => {
+  const auto: PreparedWorkbenchOperation = {
+    module_id: "B",
+    operation: "VALUE_RESEARCH_REFRESH",
+    enabled: true,
+    prepared_payload: {
+      source_mode: "FRESH",
+      network_authorized: false,
+      tracking_budget: 30,
+      enrichment_batches: 1,
+      comparison_batches: 1,
+      operating_budget: 0,
+    },
+    user_fields: [],
+    network_authorization_required: true,
+  };
+  calls.prepare.mockResolvedValue({
+    symbol: "000568",
+    action: "no_order",
+    formal_eligibility: false,
+    tasks_started: 0,
+    operations: [...preparedRows(), auto],
+  });
+  await click("读取可执行操作与绑定");
+  authorize();
+  calls.start.mockResolvedValue(task({ operation: "VALUE_RESEARCH_REFRESH" }));
+  await click("执行所选操作");
+  expect(calls.start).toHaveBeenCalledTimes(1);
+  expect(calls.start.mock.calls[0][0]).toMatchObject({
+    operation: "VALUE_RESEARCH_REFRESH",
+    timeout_seconds: 1800,
+    payload: {
+      source_mode: "FRESH",
+      network_authorized: true,
+      tracking_budget: 30,
+      enrichment_batches: 1,
+      operating_budget: 0,
+    },
+  });
+});

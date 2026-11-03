@@ -873,7 +873,23 @@ export function TransparentTaskControls({
           !Array.isArray(result.operations)
         )
           throw new Error("PREPARATION_BOUNDARY_INVALID");
-        if (mounted.current) setPrepared(result.operations);
+        if (mounted.current) {
+          setPrepared(result.operations);
+          if (
+            !result.operations.some(
+              (row) => row.operation === selectedOperation,
+            )
+          ) {
+            const fallback =
+              result.operations.find(
+                (row) => row.operation === "VALUE_RESEARCH_REFRESH",
+              ) || result.operations[0];
+            if (fallback) {
+              setSelectedOperation(fallback.operation);
+              if (fallback.operation === "FRESH_PUBLIC_SCAN") setLimit(10);
+            }
+          }
+        }
         return;
       }
       if (operation === "list") {

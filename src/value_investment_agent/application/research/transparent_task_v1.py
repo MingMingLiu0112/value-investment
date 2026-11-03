@@ -66,7 +66,8 @@ def _refresh_code_files(package):
     import ast
     prefix = 'value_investment_agent'
     pending = [prefix + '.application.research.sse_value_refresh_v1',
-               prefix + '.application.research.sse_research_pipeline_v1']
+               prefix + '.application.research.sse_research_pipeline_v1',
+               prefix + '.infrastructure.screening.public_refresh_transport_v1']
     visited, files = set(), set()
     while pending:
         module_name = pending.pop()
@@ -879,11 +880,7 @@ def _fresh_result(service, summary, manifest):
 
 
 def _refresh_public_io(service, spec, attempt):
-    """Owned-worker scope: preserve existing transports/guards and reject nonpublic IO."""
-    from contextlib import contextmanager
-    from urllib.parse import urlparse
-    import urllib.request
-    import requests
+    from ...infrastructure.screening.public_refresh_transport_v1 import public_refresh_transport
 
     def checkpoint():
         with service._lock(service._directory(spec['task_id'])):
@@ -891,35 +888,8 @@ def _refresh_public_io(service, spec, attempt):
             if state['status'] != 'RUNNING' or state['attempts'] != int(attempt.name):
                 raise base._Cancelled('NATIVE_CANCELLED_OR_SUPERSEDED')
 
-    # Exact existing collector hosts; provider IO is intentionally unsupported here.
-    hosts = {'query.sse.com.cn', 'www.sse.com.cn', 'static.sse.com.cn',
-             'www.szse.cn', 'disc.static.szse.cn', 'www.bse.cn',
-             'proxy.finance.qq.com', 'vip.stock.finance.sina.com.cn', 'quotes.sina.cn',
-             'datacenter-web.eastmoney.com', 'www.cninfo.com.cn', 'static.cninfo.com.cn'}
-    def guard(url):
-        checkpoint()
-        if spec['payload']['network_authorized'] is not True:
-            raise PermissionError('PUBLIC_REFRESH_NETWORK_AUTHORIZATION_REQUIRED')
-        parsed = urlparse(url)
-        if (parsed.scheme != 'https' or parsed.hostname not in hosts or parsed.username
-                or parsed.password or parsed.port not in {None, 443}):
-            raise PermissionError('PUBLIC_REFRESH_ENDPOINT_NOT_ALLOWED')
-
-    @contextmanager
-    def scoped():
-        send, opened = requests.Session.send, urllib.request.OpenerDirector.open
-        def checked_send(session, request, **kwargs):
-            guard(request.url)
-            return send(session, request, **kwargs)
-        def checked_open(opener, request, *args, **kwargs):
-            guard(request.full_url if hasattr(request, 'full_url') else request)
-            return opened(opener, request, *args, **kwargs)
-        requests.Session.send, urllib.request.OpenerDirector.open = checked_send, checked_open
-        try:
-            yield checkpoint
-        finally:
-            requests.Session.send, urllib.request.OpenerDirector.open = send, opened
-    return scoped()
+    return public_refresh_transport(
+        network_authorized=spec['payload']['network_authorized'], checkpoint=checkpoint)
 
 
 def _dispatch(service, spec, attempt):
