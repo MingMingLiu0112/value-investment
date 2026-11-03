@@ -432,3 +432,169 @@ def test_native_half_year_header_is_h1_not_fy(source_case):
     spec["facts"][0].update(column_header=header, period_end="2025-06-30",
                             column_periods=["2025-06-30", "2024-06-30"])
     assert build(source_case)["evidence"][0]["period_basis"] == "H1"
+
+
+@pytest.fixture
+def public_adoption_case(source_case, monkeypatch):
+    """TEST_ONLY native-adoption boundary double; exact progress pins remain real."""
+    from types import SimpleNamespace
+    from value_investment_agent.application.research import value_enrichment_batch as batch
+    from value_investment_agent.infrastructure.screening.value_enrichment_progress import digest as checkpoint_digest
+    case=source_case
+    root=case["root"]
+    config=root/operating.REGISTRY
+    config.parent.mkdir(parents=True)
+    config.write_bytes(operating.encode(dict(schema_version="current-operating-research-sources-v1",
+                                            action="no_order",cases={})))
+    folder=root/"runtime/TEST_ONLY-public"
+    folder.mkdir()
+    def save(path,value):
+        path.write_bytes(operating.encode(value))
+        return dict(path=path.relative_to(root).as_posix(),sha256=digest(path.read_bytes()))
+    source=case["spec"]["sources"][0]
+    pdf=dict(symbol="000001",period="2025-12-31",**{k:source[k] for k in ("path","sha256","available_at","source_url")})
+    export=save(folder/"export.json",dict(points=[]))
+    point=dict(symbol="000001",field_name="revenue",period_label=pdf["period"],
+        value="100.00",unit="CNY",data_point_id="TEST_ONLY-adopted",source_id="TEST_ONLY-source",
+        available_at=pdf["available_at"],validation_status="verified",
+        metadata=dict(statement_scope="consolidated",evidence_refs=[
+            dict(path=pdf["path"],sha256=pdf["sha256"],page=2,excerpt="营业收入 100.00 80.00")]))
+    result=dict(version="value-debt-scope-enrichment-v1",symbol="000001",period=pdf["period"],
+        action="no_order",formal_eligibility=False,evaluation_at="2026-04-21T00:00:00+00:00",
+        source_extraction=dict(identity=dict(source=pdf)),adopted_points=[point])
+    result_path=folder/"result.json"
+    progress=root/"runtime/value-evidence-enrichment/progress-v1"
+    progress.mkdir(parents=True)
+    def seal(result_value=None,key="a",completed="2026-04-22T00:00:00+00:00"):
+        result_pin=save(result_path if key=="a" else folder/(key+"-result.json"), result_value or result)
+        execution=save(folder/(key+"-execution.json"),dict(symbol="000001",state="DATA_CHECK",result_binding=result_pin))
+        adoption=dict(symbol="000001",baseline_kind="AUTOMATIC_PUBLIC_FACTS_ONLY_V1",
+                      baseline_sha256="b"*64,financial_export=export)
+        payload=dict(key=key*64,completed_at=completed,execution_binding=execution,registered_adoption=adoption)
+        checkpoint=progress/(key*64+"-1.json")
+        save(checkpoint,dict(payload=payload,sha256=checkpoint_digest(payload)))
+        return result_pin
+    pin=seal()
+    calls=[]
+    def native(root,symbol,now,*,binding,write_cache):
+        assert write_cache is False
+        assert binding["financial_export"]==export
+        calls.append(binding)
+        path=operating._binding(root,binding["result_binding"])
+        operating._binding(root,binding["financial_export"])
+        packet=json.loads(path.read_bytes())
+        context=dict(case=SimpleNamespace(symbol=symbol,name="TEST_ONLY发行人",
+            financial_summary=dict(context_origin="AUTOMATIC_PUBLIC_FACTS_ONLY_V1")))
+        return dict(adopted_fact_count=1),context,packet
+    monkeypatch.setattr(batch,"_verified_registered_adoption",native)
+    case.update(result=result,result_pin=pin,seal_public=seal,export=export,calls=calls,config=config)
+    return case
+
+
+def test_public_fallback_same_contract_readonly_and_explicit_pin_replay(public_adoption_case):
+    case=public_adoption_case
+    first=guarded_build(case["root"],symbol="000001",now=NOW)
+    again=guarded_build(case["root"],symbol="000001",now=NOW,binding=first["source_binding"])
+    assert first==again
+    assert first["source_binding"]==case["result_pin"]
+    assert first["schema_version"]=="operating-source-context-v1"
+    assert first["action"]=="no_order"
+    assert first["evidence"][0]["value"]=="100.00"
+    assert first["evidence"][0]["kind"]=="VERIFIED_ADOPTED_FINANCIAL_FACT"
+    assert first["evidence"][0]["physical_pages"]==[2]
+    assert first["evidence"][-1]["kind"]=="OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM"
+    assert all(r["available_at"]=="2026-04-20T00:00:00+00:00" for r in first["evidence"])
+    assert case["calls"][0]["baseline_kind"]=="AUTOMATIC_PUBLIC_FACTS_ONLY_V1"
+
+
+def test_explicit_old_public_result_never_uses_newer_symbol_adoption(public_adoption_case):
+    from copy import deepcopy
+    case=public_adoption_case
+    first=guarded_build(case["root"],symbol="000001",now=NOW,binding=case["result_pin"])
+    newer=deepcopy(case["result"]);newer["adopted_points"][0]["value"]="999.00"
+    case["seal_public"](newer,key="c",completed="2026-04-23T00:00:00+00:00")
+    again=guarded_build(case["root"],symbol="000001",now=NOW,binding=case["result_pin"])
+    assert again==first
+    assert all(call["result_binding"]==case["result_pin"] for call in case["calls"])
+
+
+@pytest.mark.parametrize("fault",["registered_broken","registered_null","registry_invalid","explicit_hash",
+    "pdf_hash","future","wrong_symbol","wrong_period","missing_page","no_facts","no_narrative"])
+def test_public_fallback_rejects_bad_sources_without_switching(public_adoption_case,fault):
+    case=public_adoption_case
+    kwargs=dict(symbol="000001",now=NOW)
+    if fault.startswith("registered"):
+        entry={"native_facts":dict(path="runtime/missing.json",sha256="0"*64)} if fault=="registered_broken" else None
+        case["config"].write_bytes(operating.encode(dict(schema_version="current-operating-research-sources-v1",action="no_order",cases={"000001":entry})))
+    elif fault=="registry_invalid":
+        case["config"].write_bytes(operating.encode(dict(schema_version="bad",action="no_order",cases={})))
+    elif fault=="explicit_hash":
+        kwargs["binding"]=dict(case["result_pin"],sha256="0"*64)
+    elif fault=="pdf_hash":case["original"].write_bytes(b"tampered")
+    elif fault=="future":case["result"]["source_extraction"]["identity"]["source"]["available_at"]="2099-01-01T00:00:00+00:00"
+    elif fault=="wrong_symbol":case["result"]["adopted_points"][0]["symbol"]="000002"
+    elif fault=="wrong_period":case["result"]["adopted_points"][0]["period_label"]="2024-12-31"
+    elif fault=="missing_page":case["result"]["adopted_points"][0]["metadata"]["evidence_refs"][0]["page"]=None
+    elif fault=="no_facts":case["result"]["adopted_points"]=[]
+    elif fault=="no_narrative":case["pages"][2]="只有财务表，无受支持的经营摘要"
+    if fault in {"future","wrong_symbol","wrong_period","missing_page","no_facts"}:case["seal_public"]()
+    with pytest.raises((ValueError,KeyError,TypeError,FileNotFoundError)):
+        guarded_build(case["root"],**kwargs)
+    if fault in {"registered_broken","registered_null","registry_invalid","explicit_hash"}:
+        assert not case["calls"]
+
+
+def test_explicit_public_result_requires_exact_checkpoint(public_adoption_case):
+    case=public_adoption_case
+    for p in (case["root"]/"runtime/value-evidence-enrichment/progress-v1").glob("*.json"):p.unlink()
+    with pytest.raises(ValueError,match="EXACT_ADOPTION"):
+        guarded_build(case["root"],symbol="000001",now=NOW,binding=case["result_pin"])
+
+
+def test_fixed_registry_context_unchanged_and_no_public_fallback(source_case,monkeypatch):
+    case=source_case;binding=case["seal"]()
+    expected=guarded_build(case["root"],symbol="000001",now=NOW,binding=binding)
+    path=case["root"]/operating.REGISTRY;path.parent.mkdir()
+    path.write_bytes(operating.encode(dict(schema_version="current-operating-research-sources-v1",
+        action="no_order",cases={"000001":dict(native_facts=binding)})))
+    monkeypatch.setattr(operating,"_public_source_context",lambda **kw:pytest.fail("fixed case fell back"))
+    assert guarded_build(case["root"],symbol="000001",now=NOW)==expected
+
+
+def test_real_registered_public_operating_context_readonly():
+    root_env=os.environ.get("OPERATING_PUBLIC_SOURCES_REAL_ROOT")
+    if not root_env:
+        pytest.skip("Explicit real public-source root required; not real acceptance")
+    root=Path(root_env)
+    now=datetime.now(timezone.utc)
+    context=guarded_build(root,symbol="600323",now=now)
+    assert context["symbol"]=="600323" and context["financial_basis"]=="2025-12-31"
+    adopted=[r for r in context["evidence"] if r["kind"]=="VERIFIED_ADOPTED_FINANCIAL_FACT"]
+    assert {"debt_ratio","net_income"}<={r["field"] for r in adopted}
+    assert any(r["kind"]=="OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM" for r in context["evidence"])
+    assert guarded_build(root,symbol="600323",now=now,binding=context["source_binding"])==context
+
+def test_public_adoption_without_registry_supports_auto_and_explicit_binding(public_adoption_case):
+    case=public_adoption_case
+    expected=guarded_build(case["root"],symbol="000001",now=NOW)
+    case["config"].unlink()
+    assert guarded_build(case["root"],symbol="000001",now=NOW)==expected
+    assert guarded_build(case["root"],symbol="000001",now=NOW,
+                         binding=case["result_pin"])==expected
+
+
+@pytest.mark.parametrize("fault",["permission","malformed_json"])
+def test_existing_unreadable_registry_never_falls_back(public_adoption_case,monkeypatch,fault):
+    case=public_adoption_case
+    if fault=="malformed_json":
+        case["config"].write_bytes(b"{broken")
+    else:
+        raw=operating._raw
+        def deny_registry(path,limit):
+            if Path(path)==case["config"]:
+                raise PermissionError("TEST_ONLY registry permission denied")
+            return raw(path,limit)
+        monkeypatch.setattr(operating,"_raw",deny_registry)
+    with pytest.raises((PermissionError,ValueError)):
+        guarded_build(case["root"],symbol="000001",now=NOW)
+    assert not case["calls"]

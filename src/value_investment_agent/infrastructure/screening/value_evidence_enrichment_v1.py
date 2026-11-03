@@ -338,7 +338,7 @@ def extract_income_comparatives(pages: list[str], period: str) -> list[dict]:
     period_evidence = {}
     number = r'(-?\d[\d,]*\.\d{2})(?!\d)'
     note = (r'(?:\d{1,2}|[\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e]{1,6}\s*'
-            r'(?:\(\s*[1-9]\d{0,2}\s*\)|\uff08\s*[1-9]\d{0,2}\s*\uff09))\s+')
+            r'(?:\(\s*[1-9]\d{0,2}\s*\)|\uff08\s*[1-9]\d{0,2}\s*\uff09|[、-]\s*[1-9]\d{0,2}))\s+')
     labels = {'revenue': '\u8425\u4e1a\u6536\u5165',
               'net_income': '\u5f52\u5c5e\u4e8e\u6bcd\u516c\u53f8\u80a1\u4e1c\u7684\u51c0\u5229\u6da6'}
     for page_number, page in enumerate(pages, 1):

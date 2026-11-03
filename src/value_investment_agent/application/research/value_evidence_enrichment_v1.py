@@ -643,7 +643,7 @@ def enrich_retained_company(root: Path, source: RetainedAnnualSource, points: li
                and _point_available_at(p, evaluation_at) is not None
                and (p.get('metadata') or {}).get('derivation_formula') not in DERIVED_VERSIONS]
     from .income_source_correlation import reverify_income_inputs
-    reverify_income_inputs(root, source, company, evaluation_at=evaluation_at)
+    reverify_income_inputs(root, source, company, evaluation_at=evaluation_at, write_cache=write_cache)
     before = evaluate_financial_quality(source.symbol, name, sector, company,
                                         evaluation_date=evaluation_at.date())
     existing_profit = [p for p in company if p.get('field_name') == 'net_income'
@@ -887,7 +887,7 @@ def consume_retained_enrichment(root: Path, points: list[dict], sources: list[di
 
 
 def register_enriched_research(result: dict, *, root: Path, points: list[dict],
-                              repository, case, facts, run_id: str) -> dict:
+                              repository, case, facts, run_id: str, write_cache: bool = True) -> dict:
     """Consume admitted enrichment through existing typed research codecs.
 
     The caller supplies its case/model contract. Financial completeness and
@@ -907,7 +907,7 @@ def register_enriched_research(result: dict, *, root: Path, points: list[dict],
     checked = enrich_retained_company(root, source, points, evaluation_at=cutoff,
         cache_dir=root / '.tmp/value-enrichment-extraction',
         name=result.get('company_name'), sector=result.get('sector'),
-        public_summary_binding=result.get('public_summary_binding'))
+        public_summary_binding=result.get('public_summary_binding'), write_cache=write_cache)
     # JSON normalization allows persisted Decimal values to be revalidated.
     for field in ('adopted_points', 'sourced_arithmetic_points', 'after', 'input_points_sha256', 'debt_scope'):
         normalize = lambda value: json.loads(json.dumps(value, default=str))
@@ -973,7 +973,7 @@ def register_enriched_research(result: dict, *, root: Path, points: list[dict],
 
 def verify_enrichment_adoption(*, root: Path, result_binding: dict,
                               financial_export_path: Path, financial_export_sha256: str,
-                              evaluation_at: datetime) -> dict:
+                              evaluation_at: datetime, write_cache: bool = True) -> dict:
     """Verify bound immutable inputs; shared hash-keyed extraction cache may write.
 
     Original bytes and clocks are checked on every cache hit. Cached extraction
@@ -1001,7 +1001,7 @@ def verify_enrichment_adoption(*, root: Path, result_binding: dict,
     checked = enrich_retained_company(root, source, points, evaluation_at=stamp,
         cache_dir=root / '.tmp/value-enrichment-extraction',
         name=result.get('company_name'), sector=result.get('sector'),
-        public_summary_binding=result.get('public_summary_binding'))
+        public_summary_binding=result.get('public_summary_binding'), write_cache=write_cache)
     for field in ('adopted_points', 'sourced_arithmetic_points', 'after', 'input_points_sha256', 'debt_scope'):
         if json.loads(json.dumps(checked[field], default=str)) != result[field]:
             raise ValueError('Enrichment result differs from revalidated source facts: ' + field)

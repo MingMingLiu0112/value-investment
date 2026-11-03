@@ -50,6 +50,8 @@ jobs:
           tests/test_public_evidence_consumer.py
           tests/test_public_evidence_status_fields.py
           tests/test_value_balance_source_parser_v2.py
+          tests/test_income_comparative_note_formats.py
+          tests/test_income_readonly_replay.py
           tests/test_official_balance_reconciliation.py
           tests/test_retained_statement_layout.py
           tests/test_sina_statement_original.py
@@ -117,6 +119,7 @@ jobs:
           tests/test_sse_research_replay.py
           tests/test_sse_research_priority_v1.py
           tests/test_sse_research_pipeline_v1.py
+          tests/test_sse_value_refresh_v1.py
           tests/web_api/test_sse_research_queue_api.py
           tests/test_sse_enrichment_dispatch.py
           tests/test_enrichment_readonly_replay.py

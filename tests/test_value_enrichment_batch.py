@@ -480,3 +480,220 @@ def test_queue_cli_wires_loaded_repository_and_contexts(flow, registered_context
         '--execute-enrichment', '--output', 'runtime/cli-queue.json'])
     assert cli.main() == 0 and len(calls) == 1
     assert 'REGISTERED_CONTEXT_LOADED' in capsys.readouterr().out
+
+# TEST_ONLY: bounded public parser reobservation, no acquisition.
+@pytest.fixture
+def reobserve_setup(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from datetime import datetime, timezone
+    root = tmp_path
+    (root / 'runtime').mkdir()
+    stamp = '2026-01-01T00:00:00+00:00'
+    bindings, saved, checked, writes = {}, {}, {}, []
+    for symbol in ('600001', '600002', '600003', '600004'):
+        result = dict(symbol=symbol, evaluation_at=stamp, action='no_order',
+            source_extraction=dict(identity=dict(source=dict(symbol=symbol),
+                implementation_sha256='a'*64)), adopted_points=[dict(field_name='debt_ratio')],
+            company_name='TEST_ONLY', sector=None)
+        path = root / 'runtime' / (symbol+'.json')
+        path.write_text(json.dumps(result), encoding='utf-8')
+        export = root / 'runtime' / (symbol+'-export.json')
+        export.write_text('{"points":[]}', encoding='utf-8')
+        bindings[symbol] = dict(symbol=symbol, baseline_kind='AUTOMATIC_PUBLIC_FACTS_ONLY_V1',
+            result_binding=dict(path=path.relative_to(root).as_posix(),sha256=sha256(path.read_bytes()).hexdigest()),
+            financial_export=dict(path=export.relative_to(root).as_posix(),sha256=sha256(export.read_bytes()).hexdigest()))
+        saved[symbol] = result
+        checked[symbol] = True
+    monkeypatch.setattr(batch.ValueEnrichmentProgress, 'registered_adoption',
+        lambda self,symbol,cutoff: deepcopy(bindings.get(symbol)))
+    monkeypatch.setattr(batch, 'RetainedAnnualSource', lambda **kw: SimpleNamespace(**kw))
+    monkeypatch.setattr(batch, 'load_retained_financial_export', lambda *a,**kw: ([],None))
+    def enrich(root, source, points, **kwargs):
+        assert kwargs['write_cache'] is False
+        result = deepcopy(saved[source.symbol])
+        result['evaluation_at'] = kwargs['evaluation_at'].isoformat()
+        result['source_extraction']['identity']['implementation_sha256'] = 'b'*64
+        return result
+    monkeypatch.setattr(batch,'enrich_retained_company',enrich)
+    def check(root,binding,result,current,points):
+        outcome = checked[result['symbol']]
+        if isinstance(outcome,Exception): raise outcome
+        return outcome
+    monkeypatch.setattr(batch,'_public_reobservation_check',check)
+    monkeypatch.setattr(batch,'load_enrichment_research_contexts',lambda **kw:(None,{},None))
+    def persist(**kw):
+        symbol=kw['result']['symbol']
+        writes.append(symbol)
+        assert datetime.fromisoformat(kw['result']['evaluation_at']) > datetime.fromisoformat(stamp)
+        checked[symbol]=False
+        return dict(status='VERIFIED_FACT_ADOPTION', action='no_order')
+    monkeypatch.setattr(batch,'persist_verified_enrichment_adoption',persist)
+    args=dict(root=root,symbols=list(bindings),output_dir=root/'runtime/new',budget=3)
+    return args,bindings,checked,writes
+
+
+def test_public_reobserve_budget_and_idempotence(reobserve_setup):
+    args,bindings,checked,writes=reobserve_setup
+    first=batch.reobserve_registered_public_adoptions(**args)
+    assert [r['status'] for r in first['items']]==['REOBSERVED']*3+['BUDGET_EXHAUSTED']
+    assert first['attempted_count']==3
+    second=batch.reobserve_registered_public_adoptions(**args)
+    assert [r['status'] for r in second['items']]==['UNCHANGED']*3+['REOBSERVED']
+    third=batch.reobserve_registered_public_adoptions(**args)
+    assert all(r['status']=='UNCHANGED' for r in third['items'])
+    assert writes==list(bindings)
+
+
+def test_public_reobserve_unchanged_no_output(reobserve_setup):
+    args,_,checked,writes=reobserve_setup
+    checked.update({s:False for s in checked})
+    result=batch.reobserve_registered_public_adoptions(**args)
+    assert all(r['status']=='UNCHANGED' for r in result['items'])
+    assert not args['output_dir'].exists() and writes==[]
+
+
+def test_public_reobserve_failures_continue_and_nonpublic_untouched(reobserve_setup):
+    args,bindings,checked,writes=reobserve_setup
+    checked['600001']=ValueError('ORIGINAL_HASH_MISMATCH')
+    bindings['600002']['baseline_kind']='PRIVATE_OR_REGISTERED_RESEARCH'
+    checked['600003']=ValueError('UNRELATED_REVALIDATION_MISMATCH')
+    result=batch.reobserve_registered_public_adoptions(**args)
+    assert [r['status'] for r in result['items']]==['FAILED','REVIEW_REQUIRED','FAILED','REOBSERVED']
+    assert result['items'][0]['reason']=='ORIGINAL_HASH_MISMATCH'
+    assert writes==['600004']
+
+
+@pytest.mark.parametrize('damage',['export_hash','result_hash','future','no_registration'])
+def test_public_reobserve_bound_inputs_fail_closed(reobserve_setup,damage):
+    args,bindings,checked,writes=reobserve_setup
+    args['symbols']=['600001']
+    b=bindings['600001']
+    if damage=='export_hash': b['financial_export']['sha256']='0'*64
+    if damage=='result_hash': b['result_binding']['sha256']='0'*64
+    if damage=='future':
+        p=args['root']/b['result_binding']['path']
+        value=json.loads(p.read_bytes());value['evaluation_at']='2999-01-01T00:00:00+00:00'
+        p.write_text(json.dumps(value),encoding='utf-8')
+        b['result_binding']['sha256']=sha256(p.read_bytes()).hexdigest()
+    if damage=='no_registration': del bindings['600001']
+    result=batch.reobserve_registered_public_adoptions(**args)
+    assert result['items'][0]['status']==('NOT_REGISTERED' if damage=='no_registration' else 'FAILED')
+    assert writes==[] and not args['output_dir'].exists()
+
+
+@pytest.mark.parametrize('budget',[0,4,True])
+def test_public_reobserve_budget_validation(reobserve_setup,budget):
+    args,*_=reobserve_setup
+    with pytest.raises(ValueError):
+        batch.reobserve_registered_public_adoptions(**dict(args,budget=budget))
+
+
+def test_public_reobserve_symbol_bound(reobserve_setup):
+    args,*_=reobserve_setup
+    for symbols in ([],['600001']*2,[str(600000+i) for i in range(31)]):
+        with pytest.raises(ValueError):
+            batch.reobserve_registered_public_adoptions(**dict(args,symbols=symbols))
+
+@pytest.mark.parametrize('change', ['parser_only', 'unchanged', 'original_corrupt', 'nonparser_change'])
+def test_public_reobserve_native_registration_replay(tmp_path, public_profit_inputs, monkeypatch, change):
+    from datetime import datetime, timezone
+    from test_value_evidence_public_profit import enrich
+    from value_investment_agent.application.research import value_evidence_enrichment_v1 as native
+    source, binding, candidates, _ = public_profit_inputs
+    result = enrich(tmp_path, (source,binding,candidates,datetime.now(timezone.utc)))
+    export = tmp_path/'runtime/public-reobserve-export.json'
+    export.write_text('{"points":[]}',encoding='utf-8')
+    registered = batch.persist_verified_enrichment_adoption(root=tmp_path,result=result,
+        financial_export_path=export,financial_export_sha256=sha256(export.read_bytes()).hexdigest(),
+        output_dir=tmp_path/'runtime/old-public')
+    old_path=tmp_path/registered['result_binding']['path']
+    before=old_path.read_bytes()
+    original_extract=native.extract_retained_annual
+    def changed_extract(*args,**kwargs):
+        packet=original_extract(*args,**kwargs)
+        if change in {'parser_only','nonparser_change'}:
+            packet['identity']['implementation_sha256']='b'*64
+        if change=='nonparser_change':
+            packet['debt_searches']['TEST_ONLY_UNRELATED']='changed'
+        return packet
+    monkeypatch.setattr(native,'extract_retained_annual',changed_extract)
+    if change=='original_corrupt':
+        (tmp_path/source.path).write_bytes(b'CORRUPT TEST_ONLY')
+    destination=tmp_path/'runtime/new-public'
+    args=dict(root=tmp_path,symbols=[source.symbol],output_dir=destination,budget=1)
+    outcome=batch.reobserve_registered_public_adoptions(**args)
+    expected={'parser_only':'REOBSERVED','unchanged':'UNCHANGED',
+        'original_corrupt':'FAILED','nonparser_change':'FAILED'}[change]
+    assert outcome['items'][0]['status']==expected, outcome
+    assert old_path.read_bytes()==before
+    assert json.loads(json.dumps(outcome))==outcome
+    if change=='parser_only':
+        second=batch.reobserve_registered_public_adoptions(**args)
+        assert second['items'][0]['status']=='UNCHANGED', second
+        assert second['attempted_count']==0
+    else:
+        assert not destination.exists()
+
+@pytest.mark.parametrize('damage', [
+    None, 'adopted_amount', 'adopted_period', 'adopted_scope',
+    'observation_promoted', 'observation_amount', 'old_tamper', 'unchanged_parser'])
+def test_public_reobserve_additive_pending_observation(tmp_path, public_profit_inputs, monkeypatch, damage):
+    from datetime import datetime, timezone
+    from test_value_evidence_public_profit import enrich
+    from value_investment_agent.application.research import value_evidence_enrichment_v1 as native
+    source, binding, candidates, _ = public_profit_inputs
+    result = enrich(tmp_path, (source,binding,candidates,datetime.now(timezone.utc)))
+    export=tmp_path/'runtime/additive-export.json'
+    export.write_text('{"points":[]}',encoding='utf-8')
+    registration=batch.persist_verified_enrichment_adoption(root=tmp_path,result=result,
+        financial_export_path=export,financial_export_sha256=sha256(export.read_bytes()).hexdigest(),
+        output_dir=tmp_path/'runtime/old-additive')
+    old_path=tmp_path/registration['result_binding']['path']
+    old_bytes=old_path.read_bytes()
+    old_binding=batch.ValueEnrichmentProgress(tmp_path).registered_adoption(source.symbol,cutoff=datetime.now(timezone.utc))
+    original_extract=native.extract_retained_annual
+    def additive_extract(*args,**kwargs):
+        packet=original_extract(*args,**kwargs)
+        if damage!='unchanged_parser': packet['identity']['implementation_sha256']='b'*64
+        packet['income_comparatives'].append(dict(field_name='revenue',value='120',prior_value='100',
+            unit='CNY',currency='CNY',statement_scope='consolidated',period_label=source.period,
+            prior_period_label='2024-12-31',page=1,excerpt='TEST_ONLY revenue 120 100',
+            status='SOURCE_LOCATED_NOT_INDEPENDENTLY_ADMITTED'))
+        return packet
+    monkeypatch.setattr(native,'extract_retained_annual',additive_extract)
+    original_enrich=batch.enrich_retained_company
+    def changed(*args,**kwargs):
+        current=original_enrich(*args,**kwargs)
+        if damage=='adopted_amount': current['adopted_points'][0]['value']='25'
+        if damage=='adopted_period': current['adopted_points'][0]['period_label']='2024-12-31'
+        if damage=='adopted_scope': current['adopted_points'][0]['metadata']['statement_scope']='parent'
+        observation=next(p for p in current['sourced_arithmetic_points'] if p['field_name']=='revenue_yoy')
+        if damage=='observation_promoted':
+            observation['validation_status']='verified'
+            observation['metadata']['automatic_cross_source_verification']=True
+        if damage=='observation_amount': observation['value']='999'
+        return current
+    monkeypatch.setattr(batch,'enrich_retained_company',changed)
+    if damage=='old_tamper':
+        old=json.loads(old_bytes)
+        old['adopted_points'][0]['value']='25'
+        old_path.write_text(json.dumps(old),encoding='utf-8')
+        old_binding['result_binding']['sha256']=sha256(old_path.read_bytes()).hexdigest()
+        monkeypatch.setattr(batch.ValueEnrichmentProgress,'registered_adoption',
+            lambda *a,**kw:deepcopy(old_binding))
+    destination=tmp_path/'runtime/new-additive'
+    outcome=batch.reobserve_registered_public_adoptions(root=tmp_path,symbols=[source.symbol],
+        output_dir=destination,budget=1)
+    assert outcome['items'][0]['status']==('REOBSERVED' if damage is None else 'FAILED'),outcome
+    if damage is None:
+        ref=outcome['items'][0]['adoption']['result_binding']
+        fresh=json.loads((tmp_path/ref['path']).read_bytes())
+        assert [p['field_name'] for p in fresh['adopted_points']]==['net_income']
+        observation=next(p for p in fresh['sourced_arithmetic_points'] if p['field_name']=='revenue_yoy')
+        assert observation['value']=='20.0' or observation['value']=='20'
+        assert observation['validation_status']=='pending'
+        assert observation['metadata']['automatic_cross_source_verification'] is False
+        assert datetime.fromisoformat(fresh['evaluation_at'])>datetime.fromisoformat(result['evaluation_at'])
+        assert old_path.read_bytes()==old_bytes
+    else:
+        assert not destination.exists()

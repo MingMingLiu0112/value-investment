@@ -104,6 +104,7 @@ export const SIMULATION_FIELDS: Record<
 };
 const OPERATION_LABELS: Record<string, string> = {
   FRESH_PUBLIC_SCAN: "更新公开初筛",
+  VALUE_RESEARCH_REFRESH: "自动筛选与研究补证",
   REPLAY_SELECTION: "重放已绑定筛选",
   RECALCULATE_MAIN: "重算条件估值",
   SIMULATE_ASSUMPTIONS: "调整假设并独立模拟",
@@ -125,7 +126,10 @@ export function preparedTaskPayload(
   if (!row?.enabled || !row.prepared_payload)
     throw new Error("请先读取服务端绑定；当前操作输入不可用");
   const payload = { ...row.prepared_payload };
-  if (row.operation === "FRESH_PUBLIC_SCAN") {
+  if (
+    row.operation === "FRESH_PUBLIC_SCAN" ||
+    row.operation === "VALUE_RESEARCH_REFRESH"
+  ) {
     if (
       !options.network ||
       !Number.isInteger(options.limit) ||
@@ -135,7 +139,13 @@ export function preparedTaskPayload(
       throw new Error("需明确允许本次公开联网，并选择1–50的范围");
     Object.assign(payload, {
       network_authorized: true,
-      max_per_channel: options.limit,
+      ...(row.operation === "VALUE_RESEARCH_REFRESH"
+        ? {
+            tracking_budget: options.limit,
+            source_mode: "FRESH",
+            operating_budget: 0,
+          }
+        : { max_per_channel: options.limit }),
     });
   } else if (row.operation === "SIMULATE_ASSUMPTIONS") {
     if (
@@ -526,6 +536,40 @@ export function TransparentTaskResult({
       );
       break;
     }
+    case "VALUE_RESEARCH_REFRESH": {
+      const latest = resultObject(data.latest_research);
+      body = (
+        <>
+          <p>
+            自动筛选与补证周期：{textValue(data.status)}。本轮不产生批准或订单。
+          </p>
+          <p>
+            初筛候选：{textValue(latest.candidate_count)}；研究跟踪：
+            {textValue(latest.tracking_count)}。
+          </p>
+          <p>财务补证完成后仍需企业经营、适用估值与价格核验，不能据此买入。</p>
+          <a href="/strategy/value">查看已核验股票池与每家公司的实际缺口</a>
+          {data.stop_reason ? (
+            <p>停止原因：{textValue(data.stop_reason)}</p>
+          ) : null}
+          <details>
+            <summary>实际阶段、批次与研究记录</summary>
+            <pre>
+              {JSON.stringify(
+                {
+                  stages: data.stages,
+                  batches: data.batches,
+                  operating_research: data.operating_research,
+                },
+                null,
+                2,
+              )}
+            </pre>
+          </details>
+        </>
+      );
+      break;
+    }
     case "FRESH_PUBLIC_SCAN":
       body = <TaskSelectionResult data={data} />;
       break;
@@ -719,10 +763,11 @@ export function TransparentTaskControls({
   const [following, setFollowing] = useState(true);
   const [error, setError] = useState<string>();
   const [network, setNetwork] = useState(false);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(30);
   const [prepared, setPrepared] = useState<PreparedWorkbenchOperation[]>([]);
-  const [selectedOperation, setSelectedOperation] =
-    useState("FRESH_PUBLIC_SCAN");
+  const [selectedOperation, setSelectedOperation] = useState(
+    "VALUE_RESEARCH_REFRESH",
+  );
   const [scenario, setScenario] = useState("bear");
   const [parameter, setParameter] = useState("cost_of_equity");
   const [period, setPeriod] = useState("annual");
@@ -861,6 +906,8 @@ export function TransparentTaskControls({
         module_id: selected!.module_id,
         operation: selected!.operation,
         symbol,
+        timeout_seconds:
+          selectedOperation === "VALUE_RESEARCH_REFRESH" ? 1800 : 300,
         request_key:
           "workbench_" +
           Array.from(crypto.getRandomValues(new Uint8Array(16)), (x) =>
@@ -934,7 +981,9 @@ export function TransparentTaskControls({
           description={selected.reason || "服务端未提供所需绑定"}
         />
       )}
-      {selectedOperation === "FRESH_PUBLIC_SCAN" && (
+      {["FRESH_PUBLIC_SCAN", "VALUE_RESEARCH_REFRESH"].includes(
+        selectedOperation,
+      ) && (
         <>
           <label>
             <input
@@ -942,10 +991,14 @@ export function TransparentTaskControls({
               checked={network}
               onChange={(event) => setNetwork(event.target.checked)}
             />
-            明确允许本次联网更新公开初筛
+            {selectedOperation === "VALUE_RESEARCH_REFRESH"
+              ? "允许本次公开扫描、财务原件补证与股票池更新（不下单、不调用付费模型）"
+              : "明确允许本次联网更新公开初筛"}
           </label>
           <label>
-            每通道最多观察数量（1–50）
+            {selectedOperation === "VALUE_RESEARCH_REFRESH"
+              ? "研究跟踪预算（1–50，不是选股门槛）"
+              : "每通道最多观察数量（1–50）"}
             <InputNumber
               min={1}
               max={50}

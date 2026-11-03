@@ -17,7 +17,7 @@ FIELDS = {'revenue': 'BIZINCO', 'net_income': 'PARENETP'}
 
 
 def correlate_income_inputs(root: Path, source: RetainedAnnualSource,
-                           secondary: dict, *, evaluation_at: datetime) -> list[dict]:
+                           secondary: dict, *, evaluation_at: datetime, write_cache: bool = True) -> list[dict]:
     """Admit amount agreement, never historical availability or economic approval.
 
     BIZINCO excludes financial income; PARENETP is attributable to the parent.
@@ -59,7 +59,7 @@ def correlate_income_inputs(root: Path, source: RetainedAnnualSource,
     payload = json.loads(raw)
     reports = payload['result']['data']['report_list']
     packet = extract_retained_annual(root, source, evaluation_at=evaluation_at,
-                                    cache_dir=root / '.tmp/value-enrichment-extraction', verify_cache=True)
+                                    cache_dir=root / '.tmp/value-enrichment-extraction', verify_cache=True, write_cache=write_cache)
     known_at = max(clock, datetime.fromisoformat(source.available_at)).isoformat()
     points = []
     for field, code in FIELDS.items():
@@ -103,7 +103,7 @@ def correlate_income_inputs(root: Path, source: RetainedAnnualSource,
 
 
 def reverify_income_inputs(root: Path, source: RetainedAnnualSource, points: list[dict], *,
-                          evaluation_at: datetime) -> None:
+                          evaluation_at: datetime, write_cache: bool = True) -> None:
     """Saved assurance flags are insufficient: regenerate exact source-bound rows."""
     replayed = {}
     for point in points:
@@ -118,6 +118,6 @@ def reverify_income_inputs(root: Path, source: RetainedAnnualSource, points: lis
         key = json.dumps(descriptor, sort_keys=True)
         if key not in replayed:
             replayed[key] = {p['data_point_id']: p for p in correlate_income_inputs(
-                root, source, descriptor, evaluation_at=evaluation_at)}
+                root, source, descriptor, evaluation_at=evaluation_at, write_cache=write_cache)}
         if replayed[key].get(point.get('data_point_id')) != point:
             raise ValueError('Correlated income input differs from source replay')

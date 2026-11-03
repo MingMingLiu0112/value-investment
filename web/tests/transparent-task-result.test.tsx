@@ -278,3 +278,21 @@ it("retains the exact native failure reason while unauthorized reads stay generi
     ),
   ).not.toContain("TEST_ONLY_PRIVATE_DETAIL");
 });
+
+it("shows a real bounded value refresh outcome without claiming investment readiness", () => {
+  const value = task("VALUE_RESEARCH_REFRESH", {
+    status: "PARTIAL",
+    latest_research: { candidate_count: 736, tracking_count: 30 },
+    stages: [{ stage: "PUBLIC_ENRICHMENT", state: "FINISHED" }],
+    batches: [{ attempted_count: 3 }],
+    operating_research: [],
+    stop_reason: "TEST_ONLY_FINANCIAL_SCOPE_PENDING",
+  });
+  const html = renderToStaticMarkup(<TransparentTaskResult task={value} />);
+  expect(html).toContain("自动筛选与补证周期");
+  expect(html).toContain("736");
+  expect(html).toContain("30");
+  expect(html).toContain("TEST_ONLY_FINANCIAL_SCOPE_PENDING");
+  expect(html).toContain("/strategy/value");
+  expect(html).toContain("不能据此买入");
+});

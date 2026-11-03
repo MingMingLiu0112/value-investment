@@ -694,7 +694,8 @@ def test_receipt_resume_clears_old_attempt_clock_and_new_attempt_gets_new_id(cas
 def test_operation_module_mapping_is_bounded():
     assert mod.OPERATION_MODULES == {
         'VERIFY_EVIDENCE': 'A', 'REPLAY_SELECTION': 'B', 'FRESH_PUBLIC_SCAN': 'B',
-        'RECALCULATE_MAIN': 'F1', 'SIMULATE_ASSUMPTIONS': 'F1', 'REVIEW_NOTE': 'G2'}
+        'RECALCULATE_MAIN': 'F1', 'SIMULATE_ASSUMPTIONS': 'F1', 'REVIEW_NOTE': 'G2',
+        'VALUE_RESEARCH_REFRESH': 'B'}
 
 
 @pytest.mark.parametrize('damage', [None, 'changed', 'missing_binding'])
@@ -826,3 +827,202 @@ def test_fresh_real_retained_report_projection_readonly_no_execution():
     assert result['lead_report_binding'] == ref
     assert path.read_bytes() == raw_manifest
     assert (service.root / ref['path']).read_bytes() == raw_report
+
+
+# TEST_ONLY refresh integration. No collector/provider is invoked by these fixtures.
+def refresh_payload(**updates):
+    return dict(dict(source_mode='RETAINED', network_authorized=False, tracking_budget=30,
+        enrichment_batches=1, comparison_batches=1, operating_budget=0), **updates)
+
+
+@pytest.fixture
+def refresh_case(tmp_path):
+    service = mod.TransparentTaskService(tmp_path)
+    ref = put(tmp_path, 'runtime/sse-main-screening/TEST_ONLY/source.json',
+        dict(schema_version='sse-main-screening-v1', scope='SSE_MAIN_A_ONLY', action='no_order'))
+    put(tmp_path, '.tmp/sse-main-screening-current.json',
+        dict(schema_version='sse-main-screening-v1', action='no_order', manifest=ref))
+    return service, ref
+
+
+def refresh_task(refresh_case, **updates):
+    service, _ = refresh_case
+    return service.create(symbol='600323', operation='VALUE_RESEARCH_REFRESH',
+        payload=refresh_payload(**updates), request_key='TEST_ONLY_refresh', timeout_seconds=1800)
+
+
+def running_refresh(refresh_case, **updates):
+    service, _ = refresh_case
+    task = refresh_task(refresh_case, **updates)
+    spec, state, binding = service._load(task['task_id'])
+    service._save(spec, state, binding, mod.base._now(), status='RUNNING', attempts=1)
+    attempt = service._directory(task['task_id']) / 'attempts/0001'
+    attempt.mkdir(parents=True)
+    return service, spec, attempt
+
+
+def test_refresh_catalog_is_inert_fresh_requires_explicit_consent(refresh_case, monkeypatch):
+    from value_investment_agent.application.research import sse_value_refresh_v1 as cycle
+    service, _ = refresh_case
+    monkeypatch.setattr(cycle, 'run_value_research_refresh', lambda **kw: pytest.fail('catalog started work'))
+    before = {p: p.read_bytes() for p in service.root.rglob('*') if p.is_file()}
+    row = next(r for r in service.prepare(symbol='600323')['operations'] if r['operation']=='VALUE_RESEARCH_REFRESH')
+    assert row['enabled'] and row['payload']==refresh_payload(source_mode='FRESH')
+    assert mod.OPERATION_MODULES['VALUE_RESEARCH_REFRESH']=='B'
+    assert before=={p:p.read_bytes() for p in before}
+    with pytest.raises(ValueError, match='NETWORK_AUTHORIZATION'):
+        service.create(symbol='600323',operation='VALUE_RESEARCH_REFRESH',payload=row['payload'],request_key='NO_CONSENT')
+    assert not service.base.exists()
+
+
+@pytest.mark.parametrize('changes', [dict(source_mode='OTHER'),dict(network_authorized=1),
+    dict(tracking_budget=0),dict(tracking_budget=101),dict(tracking_budget=True),
+    dict(enrichment_batches=-1),dict(enrichment_batches=11),dict(comparison_batches=0),
+    dict(comparison_batches=11),dict(operating_budget=1),dict(operating_budget=3),
+    dict(operating_budget=True),dict(source_mode='FINANCIAL',network_authorized=False)])
+def test_refresh_exact_finite_input_and_paid_web_rejected(refresh_case, changes):
+    service, _ = refresh_case
+    with pytest.raises(ValueError):refresh_task(refresh_case,**changes)
+    with pytest.raises(ValueError, match='EXACT_NATIVE_INPUT'):
+        service._validate_payload('600323','VALUE_RESEARCH_REFRESH',dict(refresh_payload(),extra=True))
+    assert not service.base.exists()
+
+
+def test_refresh_retained_freezes_input_and_rejects_pointer_rotation_before_dispatch(refresh_case,monkeypatch):
+    from value_investment_agent.application.research import sse_value_refresh_v1 as cycle
+    service, spec, attempt = running_refresh(refresh_case)
+    original = deepcopy(spec)
+    assert spec['refresh_source_binding']==refresh_case[1]
+    other = put(service.root,'runtime/sse-main-screening/TEST_ONLY/other.json',
+        dict(schema_version='sse-main-screening-v1',scope='SSE_MAIN_A_ONLY',action='no_order',TEST_ONLY=2))
+    (service.root/'.tmp/sse-main-screening-current.json').write_bytes(mod.base._bytes(
+        dict(schema_version='sse-main-screening-v1',action='no_order',manifest=other)))
+    monkeypatch.setattr(cycle,'run_value_research_refresh',lambda **kw:pytest.fail('rotated source dispatched'))
+    with pytest.raises(ValueError,match='CURRENT_REFRESH_SCREEN_CHANGED'):mod._dispatch(service,spec,attempt)
+    assert service._load(spec['task_id'])[0]==original
+
+
+@pytest.mark.parametrize('mode',['RETAINED','FRESH','FINANCIAL'])
+def test_refresh_dispatch_binds_native_cycle_and_latest_without_formal_publication(refresh_case,monkeypatch,mode):
+    from value_investment_agent.application.research import sse_value_refresh_v1 as cycle
+    service, spec, attempt = running_refresh(refresh_case,source_mode=mode,network_authorized=mode!='RETAINED')
+    original = deepcopy(spec);seen=[]
+    def native_cycle(**kw):
+        assert kw['root']==service.root and kw['output_dir'].is_relative_to(attempt)
+        assert kw['operating_budget']==0 and kw['source_mode']==mode
+        kw['on_stage'](dict(stage='TEST_ONLY',state='RUNNING'))
+        # RETAINED can publish a source re-observation too. Input remains frozen.
+        changed = put(service.root,'runtime/sse-main-screening/TEST_ONLY/reobserved.json',
+            dict(schema_version='sse-main-screening-v1',scope='SSE_MAIN_A_ONLY',action='no_order',TEST_ONLY='reobserved'))
+        (service.root/'.tmp/sse-main-screening-current.json').write_bytes(mod.base._bytes(
+            dict(schema_version='sse-main-screening-v1',action='no_order',manifest=changed)))
+        out=kw['output_dir'];out.mkdir()
+        latest=put(service.root,(out/'consumption/manifest.json').relative_to(service.root).as_posix(),
+            dict(schema_version='sse-research-run-v1',action='no_order',TEST_ONLY=True))
+        result=dict(schema_version=cycle.VERSION,status='PARTIAL',source_mode=mode,action='no_order',
+            formal_eligibility=False,latest_research=dict(manifest=latest),
+            stages=[dict(stage='TEST_ONLY',state='FINISHED')],operating_budget=0,operating_research=[])
+        put(service.root,(out/'cycle.json').relative_to(service.root).as_posix(),result)
+        seen.append(deepcopy(result));return result
+    monkeypatch.setattr(cycle,'run_value_research_refresh',native_cycle)
+    result=mod._dispatch(service,spec,attempt)
+    assert result['outcome']=='PARTIAL' and result['result']==seen[0]
+    assert result['research_pool_updated'] is True and result['current_published'] is False
+    assert result['new_llm_calls']==0 and result['model_execution']=='DISABLED_IN_PUBLIC_TASK_WRAPPER'
+    assert result['formal_eligibility'] is result['approval_changed'] is False
+    assert len(result['artifact_bindings'])==2
+    for ref in result['artifact_bindings']:service._raw_binding(ref)
+    assert mod._dispatch.__module__==mod.__name__
+    assert service._check(spec,mod.base._now())==(True,None,None)
+    assert service._load(spec['task_id'])[0]==original
+    if mode=='RETAINED':
+        (service.root/spec['refresh_source_binding']['path']).write_bytes(b'changed')
+        assert service._check(spec,mod.base._now())[1] is not None
+
+
+@pytest.mark.parametrize('authorized,url,permitted',[
+    (False,'https://www.cninfo.com.cn/new/hisAnnouncement/query',False),
+    (True,'https://www.cninfo.com.cn/new/hisAnnouncement/query',True),
+    (True,'https://datacenter-web.eastmoney.com/api/data/v1/get',True),
+    (True,'https://127.0.0.1/private',False),(True,'https://example.test/data',False),
+    (True,'http://www.cninfo.com.cn/data',False),(True,'https://www.cninfo.com.cn:8080/data',False),
+    (True,'https://user:secret@www.cninfo.com.cn/data',False)])
+def test_refresh_public_transport_guard_preserves_original_transport(refresh_case,monkeypatch,authorized,url,permitted):
+    import requests
+    import urllib.request
+    service,spec,attempt=running_refresh(refresh_case,network_authorized=authorized)
+    calls=[]
+    def original_send(session,request,**kw):calls.append(request.url);return 'TEST_ONLY'
+    def original_open(opener,request,*a,**kw):calls.append(request.full_url);return 'TEST_ONLY'
+    monkeypatch.setattr(requests.Session,'send',original_send)
+    monkeypatch.setattr(urllib.request.OpenerDirector,'open',original_open)
+    with mod._refresh_public_io(service,spec,attempt):
+        request=requests.Request('GET',url).prepare()
+        if permitted:
+            assert requests.Session().send(request)=='TEST_ONLY'
+            assert urllib.request.build_opener().open(urllib.request.Request(url))=='TEST_ONLY'
+        else:
+            with pytest.raises(PermissionError):requests.Session().send(request)
+            with pytest.raises(PermissionError):urllib.request.build_opener().open(urllib.request.Request(url))
+            assert calls==[]
+    assert requests.Session.send is original_send
+    assert urllib.request.OpenerDirector.open is original_open
+
+
+def test_refresh_outer_guard_and_cancellation_cannot_be_bypassed(refresh_case,monkeypatch):
+    import requests
+    service,spec,attempt=running_refresh(refresh_case,network_authorized=True)
+    def outer_guard(*a,**kw):raise PermissionError('TEST_ONLY_GLOBAL_GUARD')
+    monkeypatch.setattr(requests.Session,'send',outer_guard)
+    with mod._refresh_public_io(service,spec,attempt):
+        request=requests.Request('GET','https://www.cninfo.com.cn/data').prepare()
+        with pytest.raises(PermissionError,match='TEST_ONLY_GLOBAL_GUARD'):requests.Session().send(request)
+        service.cancel(spec['task_id'])
+        with pytest.raises(mod.base._Cancelled):requests.Session().send(request)
+    assert requests.Session.send is outer_guard
+
+
+@pytest.mark.parametrize('changed',[
+ 'src/value_investment_agent/application/research/sse_value_refresh_v1.py',
+ 'src/value_investment_agent/infrastructure/screening/public_debt_details_v1.py',
+ 'src/value_investment_agent/application/research/value_enrichment_batch.py'])
+def test_refresh_source_closure_pins_cycle_adapter_and_enrichment(refresh_case,monkeypatch,changed):
+    service,_=refresh_case;task=refresh_task(refresh_case);spec=service._load(task['task_id'])[0]
+    assert changed in spec['source_contract']['files']
+    before=deepcopy(spec)
+    mirror=isolated_code_mirror(service.root,spec,monkeypatch)
+    path=mirror/changed;path.write_bytes(path.read_bytes()+b'\n# TEST_ONLY source mutation\n')
+    monkeypatch.setattr(service,'_execute',lambda *a:pytest.fail('changed source executed'))
+    assert service.run(task['task_id'])['status']=='FAILED'
+    assert service._load(task['task_id'])[0]==before
+
+
+def test_refresh_reuses_existing_cancel_retry_and_timeout_contract(refresh_case,monkeypatch):
+    service,_=refresh_case;task=refresh_task(refresh_case);old_input=service._load(task['task_id'])[0]
+    assert old_input['timeout_seconds']==1800
+    assert service.cancel(task['task_id'])['status']=='CANCELLED'
+    monkeypatch.setattr(service,'_execute',lambda *a:pytest.fail('cancelled task executed'))
+    assert service.run(task['task_id'])['status']=='CANCELLED'
+    retried=service.retry(task['task_id'],request_key='TEST_ONLY_refresh_retry')
+    assert retried['status']=='QUEUED' and retried['task_id']!=task['task_id']
+    assert retried['parent']['task_id']==task['task_id']
+    assert service._load(task['task_id'])[0]==old_input
+    with pytest.raises(ValueError):
+        service.create(symbol='600323',operation='VALUE_RESEARCH_REFRESH',payload=refresh_payload(),
+            request_key='TEST_ONLY_too_long',timeout_seconds=1801)
+
+
+
+def test_refresh_nonpublic_pointer_target_rejected_before_read(refresh_case,monkeypatch):
+    service,_=refresh_case
+    target=put(service.root,'config/TEST_ONLY-private.json',dict(TEST_ONLY=True))
+    put(service.root,'.tmp/sse-main-screening-current.json',
+        dict(schema_version='sse-main-screening-v1',action='no_order',manifest=target))
+    original_read=Path.read_bytes
+    def read(path):
+        if path == service.root / target['path']:
+            pytest.fail('nonpublic refresh source was read before containment check')
+        return original_read(path)
+    monkeypatch.setattr(Path,'read_bytes',read)
+    with pytest.raises(ValueError):refresh_task(refresh_case)
+    assert not service.base.exists()

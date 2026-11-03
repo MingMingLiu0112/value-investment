@@ -183,7 +183,7 @@ def _retry_baseline_contexts(root, supplied, *, evaluation_at, identity_at):
     return result
 
 
-def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=None, binding=None):
+def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=None, binding=None, write_cache=True):
     """Revalidate lineage and replay registration; checkpoints grant no authority."""
     from .value_evidence_enrichment_v1 import verify_enrichment_adoption
     from ...research_artifact_repository import InMemoryResearchArtifactRepository
@@ -203,7 +203,7 @@ def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=Non
     export = require_inside(root / 'runtime', root / export_binding['path'], 'financial export')
     summary = verify_enrichment_adoption(root=root, result_binding=binding['result_binding'],
         financial_export_path=export, financial_export_sha256=export_binding['sha256'],
-        evaluation_at=evaluation_at)
+        evaluation_at=evaluation_at, write_cache=write_cache)
     if not summary['research_inputs_updated'] or not summary['adopted_fact_count']:
         raise ValueError('No verified typed fact adoption')
     result = _load_bound(root / binding['result_binding']['path'], binding['result_binding']['sha256'])
@@ -227,7 +227,7 @@ def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=Non
     # Reconstruct the entire registration from the current registered baseline.
     # Check all payload fields, including inherited inputs and approval flags.
     replay = register_enriched_research(result, root=root, points=points,
-        repository=InMemoryResearchArtifactRepository(), **baseline, run_id=run_id)
+        repository=InMemoryResearchArtifactRepository(), **baseline, run_id=run_id, write_cache=write_cache)
     old = {a['envelope']['identity']['artifact_type']: a for a in saved['artifacts']}
     new = {a['envelope']['identity']['artifact_type']: a for a in replay['artifacts']}
     for kind in ('financial_facts', 'research_case'):
@@ -243,7 +243,7 @@ def _verified_registered_adoption(root, symbol, evaluation_at, *, repository=Non
             raise ValueError('Registered enrichment differs from baseline replay: ' + kind)
     if repository is not None:
         replay = register_enriched_research(result, root=root, points=points,
-            repository=repository, **baseline, run_id=run_id)
+            repository=repository, **baseline, run_id=run_id, write_cache=write_cache)
     typed = {a['envelope']['identity']['artifact_type']:
              json.loads(a['envelope']['canonical_payload']) for a in replay['artifacts']}
     context = dict(case=ResearchCaseCodec().from_payload(typed['research_case']),
@@ -744,3 +744,294 @@ def _execute_value_enrichment_batch(*, root, queue, financial_export_path,
         'new_fact_approvals': 0, 'formal_eligibility': False}
     write_new_json(output / 'execution.json', result)
     return result
+
+def _public_reobservation_check(root, binding, saved, checked, points):
+    """Fail closed unless a public receipt is intact and only parser identity moved."""
+    from copy import deepcopy
+    from . import value_evidence_enrichment_v1 as native
+    from ...research_artifacts import ResearchArtifactEnvelope, ResearchArtifactIdentity
+
+    baseline = _new_public_candidate_context(saved)
+    if _context_digest(baseline) != binding['baseline_sha256']:
+        raise ValueError('PUBLIC_BASELINE_CHANGED')
+    registration = saved['research_registration']
+    if (registration.get('status') != 'RESEARCH_INPUTS_UPDATED'
+            or registration.get('action') != 'no_order'
+            or registration.get('formal_eligibility') is not False
+            or registration.get('economic_admission') != 'NOT_PROVEN'):
+        raise ValueError('INVALID_PUBLIC_REGISTRATION')
+    artifacts = {}
+    for stored in registration['artifacts']:
+        raw = stored['envelope']
+        ident = raw['identity']
+        identity = ResearchArtifactIdentity(**dict(ident,
+            as_of=datetime.fromisoformat(ident['as_of']).date(),
+            available_at=datetime.fromisoformat(ident['available_at'])))
+        envelope = ResearchArtifactEnvelope(identity=identity, canonical_payload=raw['canonical_payload'],
+            payload_sha256=raw['payload_sha256'], evidence_refs=tuple(raw['evidence_refs']), run_id=raw['run_id'])
+        kind = identity.artifact_type
+        if kind in artifacts or identity.scope_key != saved['symbol'] or identity.available_at != datetime.fromisoformat(saved['evaluation_at']):
+            raise ValueError('PUBLIC_ARTIFACT_IDENTITY_MISMATCH')
+        if (registration[kind + '_artifact_id'] != stored['artifact_id']
+                or registration[kind + '_sha256'] != envelope.payload_sha256):
+            raise ValueError('PUBLIC_ARTIFACT_BINDING_MISMATCH')
+        artifacts[kind] = envelope.payload_object()
+    facts, case = artifacts['financial_facts'], artifacts['research_case']
+    if facts.get('verified') is not False or case['financial_summary'].get('context_origin') != 'AUTOMATIC_PUBLIC_FACTS_ONLY_V1':
+        raise ValueError('NON_PUBLIC_REGISTERED_FACTS')
+    link = case['financial_summary']['value_enrichment']
+    if (link['financial_facts']['artifact_id'] != registration['financial_facts_artifact_id']
+            or link['financial_facts']['sha256'] != registration['financial_facts_sha256']
+            or link['admitted_fact_ids'] != [p['data_point_id'] for p in saved['adopted_points']]
+            or link['quality'] != saved['after']
+            or link['sourced_arithmetic_observations'] != saved['sourced_arithmetic_points']
+            or link['economic_admission'] != 'NOT_PROVEN' or link['action'] != 'no_order'):
+        raise ValueError('PUBLIC_REGISTERED_CONSUMPTION_MISMATCH')
+    from decimal import Decimal
+    for point in saved['adopted_points']:
+        if Decimal(str(facts['operating_inputs'].get(point['field_name']))) != Decimal(str(point['value'])):
+            raise ValueError('PUBLIC_REGISTERED_FACT_VALUE_MISMATCH')
+    # Reconstruct the public typed contents without repository/cache writes.
+    # The original registration function remains the sole persistence path.
+    from dataclasses import fields, replace
+    from ...research_artifact_codecs import artifact_payload
+    base_facts, base_case = baseline['facts'], baseline['case']
+    inputs = dict(base_facts.operating_inputs)
+    refs = {r['id']: r for r in base_facts.evidence_refs}
+    for point in saved['adopted_points']:
+        inputs[point['field_name']] = Decimal(str(point['value']))
+        refs[point['data_point_id']] = dict(id=point['data_point_id'],
+            value=point['value'], unit=point['unit'], period_label=point['period_label'],
+            source_url=point['source_url'], sha256=point['sha256'],
+            input_fact_ids=point['metadata']['input_fact_ids'],
+            evidence_refs=point['metadata'].get('evidence_refs', []))
+    blockers = list(dict.fromkeys([*base_facts.blockers, 'ECONOMIC_REVIEW_NOT_GRANTED_BY_ENRICHMENT']))
+    cleared = {k: None for k in ('scenario_inputs', 'valuation_timing')
+               if k in {f.name for f in fields(base_facts)}}
+    expected_facts = replace(base_facts, operating_inputs=inputs, evidence_refs=list(refs.values()),
+        blockers=blockers, verified=False, **cleared)
+    canonical = lambda obj: json.loads(json.dumps(obj, default=str))
+    if canonical(artifact_payload(expected_facts)[1]) != facts:
+        raise ValueError('PUBLIC_REGISTERED_FACTS_DIFFER_FROM_BASELINE')
+    case_ref = dict(id='value-enrichment-financial-facts',
+        artifact_id=registration['financial_facts_artifact_id'], sha256=registration['financial_facts_sha256'])
+    summary = dict(base_case.financial_summary, value_enrichment=dict(
+        financial_facts=case_ref, admitted_fact_ids=[p['data_point_id'] for p in saved['adopted_points']],
+        operating_inputs=inputs, quality=saved['after'],
+        sourced_arithmetic_observations=saved['sourced_arithmetic_points'],
+        complete_debt_verified=saved['debt_scope']['complete_debt_verified'],
+        economic_admission='NOT_PROVEN', action='no_order'))
+    case_refs = {r['id']: r for r in base_case.evidence_refs}
+    case_refs[case_ref['id']] = case_ref
+    expected_case = replace(base_case, financial_summary=summary, evidence_refs=list(case_refs.values()),
+        research_status='DATA_CHECK', valuation_status='NOT_ASSESSED',
+        research_version=base_case.research_version + ':' + registration['financial_facts_sha256'][:16],
+        generated_at=datetime.fromisoformat(saved['evaluation_at']),
+        run_id=next(a['envelope']['run_id'] for a in registration['artifacts']
+                    if a['envelope']['identity']['artifact_type']=='research_case'),
+        blockers=list(dict.fromkeys([*base_case.blockers, *blockers])))
+    if canonical(artifact_payload(expected_case)[1]) != case:
+        raise ValueError('PUBLIC_REGISTERED_CASE_DIFFERS_FROM_BASELINE')
+    old_hash = saved['source_extraction']['identity']['implementation_sha256']
+    new_hash = checked['source_extraction']['identity']['implementation_sha256']
+    if not re.fullmatch('[0-9a-f]{64}', old_hash):
+        raise ValueError('INVALID_HISTORICAL_PARSER_HASH')
+    normalize = lambda v: json.loads(json.dumps(v, default=str))
+    # Reconstruct old IDs with current cold-extracted content and the recorded
+    # parser identity. This is an in-memory diagnostic, never an approved result.
+    projected = deepcopy(checked)
+    if old_hash != new_hash:
+        source = RetainedAnnualSource(**saved['source_extraction']['identity']['source'])
+        packet = deepcopy(checked['source_extraction'])
+        packet['identity']['implementation_sha256'] = old_hash
+        # A narrow additive repair: newly located income comparative rows may
+        # produce pending arithmetic, never additional admitted facts.
+        old_rows = saved['source_extraction'].get('income_comparatives', [])
+        current_rows = packet.get('income_comparatives', [])
+        remaining = deepcopy(current_rows)
+        for row in old_rows:
+            if remaining.count(row) != 1:
+                raise ValueError('OLD_INCOME_COMPARATIVE_CHANGED_OR_AMBIGUOUS')
+            remaining.remove(row)
+        added_outputs = set()
+        for row in remaining:
+            field = row.get('field_name')
+            if (field not in {'revenue', 'net_income'}
+                    or any(r.get('field_name') == field for r in old_rows)
+                    or sum(r.get('field_name') == field for r in remaining) != 1
+                    or row.get('status') != 'SOURCE_LOCATED_NOT_INDEPENDENTLY_ADMITTED'):
+                raise ValueError('UNSUPPORTED_ADDITIONAL_SOURCE_OBSERVATION')
+            output = {'revenue': 'revenue_yoy', 'net_income': 'net_income_yoy'}[field]
+            observations = [p for p in checked['sourced_arithmetic_points'] if p['field_name'] == output]
+            if (len(observations) != 1 or any(p['field_name'] == output for p in saved['sourced_arithmetic_points'])
+                    or any(p['field_name'] == output for p in checked['adopted_points'])):
+                raise ValueError('ADDITIONAL_OBSERVATION_NOT_PENDING_ONLY')
+            observation = observations[0]
+            meta = observation.get('metadata') or {}
+            if (observation.get('validation_status') != 'pending'
+                    or meta.get('automatic_cross_source_verification') is not False
+                    or meta.get('derivation_formula') != native.GROWTH_VERSION
+                    or not meta.get('rejection_reasons')
+                    or observation.get('sha256') != source.sha256
+                    or observation.get('source_url') != source.source_url
+                    or observation.get('source_path') != source.path):
+                raise ValueError('ADDITIONAL_OBSERVATION_ASSURANCE_OR_SOURCE_CHANGED')
+            old_reports = [r for r in saved['income_growth_adoption'] if r['field_name'] == output]
+            new_reports = [r for r in checked['income_growth_adoption'] if r['field_name'] == output]
+            if (old_reports != [dict(field_name=output, status='REJECTED_WITH_REASON',
+                    issues=['INCOME_COMPARATIVE_MISSING_OR_AMBIGUOUS'])]
+                    or len(new_reports) != 1
+                    or new_reports[0]['status'] != 'SOURCE_VERIFIED_PENDING_INPUT_ADMISSION'):
+                raise ValueError('ADDITIONAL_OBSERVATION_REPORT_CHANGED')
+            added_outputs.add(output)
+        if added_outputs:
+            # Project away ONLY proven new pending observations for comparison
+            # with history; the fresh persisted result retains them in full.
+            packet['income_comparatives'] = deepcopy(old_rows)
+            projected['source_extraction']['income_comparatives'] = deepcopy(old_rows)
+            projected['sourced_arithmetic_points'] = [p for p in projected['sourced_arithmetic_points']
+                if p['field_name'] not in added_outputs]
+            projected['income_growth_adoption'] = [
+                deepcopy(next(old for old in saved['income_growth_adoption'] if old['field_name']==r['field_name']))
+                if r['field_name'] in added_outputs else r for r in projected['income_growth_adoption']]
+        stamp = datetime.fromisoformat(saved['evaluation_at'])
+        company = [p for p in points if p.get('symbol') == source.symbol
+            and _point_available_at(p, stamp) is not None
+            and (p.get('metadata') or {}).get('derivation_formula') not in native.DERIVED_VERSIONS]
+        if added_outputs:
+            current_profit, _ = native._correlate_public_parent_profit(root, source,
+                checked['source_extraction'], saved.get('public_summary_binding'), stamp)
+            admitted, pending, reports = native._derive_income_growth(
+                source, company + current_profit, checked['source_extraction'])
+            if any(p['field_name'] in added_outputs for p in admitted):
+                raise ValueError('ADDITIONAL_OBSERVATION_WOULD_BE_ADMITTED')
+            for key, recomputed in (('sourced_arithmetic_points', pending), ('income_growth_adoption', reports)):
+                actual = [p for p in checked[key] if p['field_name'] in added_outputs]
+                expected_added = [p for p in recomputed if p['field_name'] in added_outputs]
+                if normalize(actual) != normalize(expected_added):
+                    raise ValueError('ADDITIONAL_OBSERVATION_RECOMPUTATION_MISMATCH')
+        profit, _ = native._correlate_public_parent_profit(root, source, packet,
+            saved.get('public_summary_binding'), stamp)
+        official, review = native._reconcile_official_balance_ratio(source, company, packet)
+        ratios, _ = native._derive_balance_ratio(source, company, packet, stamp)
+        if review['status'] == 'SOURCE_CONFLICT':
+            ratios = []
+        elif not ratios:
+            ratios = official
+        growth, observations, _ = native._derive_income_growth(source, company + profit, packet)
+        financing, _ = native._financing_composition_observation(source, packet)
+        expected = normalize(ratios + growth + profit)
+        arithmetic = normalize(observations + financing)
+        if expected != saved['adopted_points'] or arithmetic != saved['sourced_arithmetic_points']:
+            raise ValueError('NOT_PARSER_ONLY_FACT_CHANGE')
+        replacements = {new_hash: old_hash}
+        for old_list, new_list in ((expected, normalize(checked['adopted_points'])),
+                                   (arithmetic, normalize(projected['sourced_arithmetic_points']))):
+            if len(old_list) != len(new_list):
+                raise ValueError('NOT_PARSER_ONLY_FACT_COUNT')
+            for old, new in zip(old_list, new_list):
+                if old['field_name'] != new['field_name']:
+                    raise ValueError('NOT_PARSER_ONLY_FACT_ORDER')
+                replacements[new['data_point_id']] = old['data_point_id']
+                if old.get('source_id') != new.get('source_id'):
+                    replacements[new['source_id']] = old['source_id']
+        def replace_ids(v):
+            if isinstance(v, dict): return {k: replace_ids(x) for k, x in v.items()}
+            if isinstance(v, list): return [replace_ids(x) for x in v]
+            return replacements.get(v, v) if isinstance(v, str) else v
+        projected = replace_ids(normalize(projected))
+    def comparable(result):
+        result = normalize(deepcopy(result))
+        result.pop('research_registration', None)
+        result['source_extraction'].pop('page_texts', None)
+        result['source_extraction'].pop('reused', None)
+        return result
+    if comparable(projected) != comparable(saved):
+        raise ValueError('UNRELATED_REVALIDATION_MISMATCH')
+    return old_hash != new_hash
+
+
+def reobserve_registered_public_adoptions(*, root: Path, symbols, output_dir: Path, budget: int = 3) -> dict:
+    """Bounded explicit public revalidation; no acquisition or history mutation."""
+    root = Path(root).resolve()
+    if (not isinstance(symbols, (list, tuple)) or not 1 <= len(symbols) <= 30
+            or any(not isinstance(s, str) or not re.fullmatch(r'[0-9]{6}', s) for s in symbols)
+            or len(set(symbols)) != len(symbols)):
+        raise ValueError('ONE_TO_THIRTY_UNIQUE_SYMBOLS_REQUIRED')
+    if type(budget) is not int or not 1 <= budget <= 3:
+        raise ValueError('REOBSERVATION_BUDGET_ONE_TO_THREE_REQUIRED')
+    output = require_inside(root / 'runtime', Path(output_dir) if Path(output_dir).is_absolute()
+        else root / output_dir, 'public reobservation output')
+    results, attempts = [], 0
+    for symbol in symbols:
+        item = dict(symbol=symbol, action='no_order', formal_eligibility=False)
+        try:
+            now = datetime.now(timezone.utc)
+            binding = ValueEnrichmentProgress(root).registered_adoption(symbol, cutoff=now)
+            if binding is None:
+                item.update(status='NOT_REGISTERED', reason='NO_REGISTERED_PUBLIC_ADOPTION')
+                results.append(item)
+                continue
+            item['previous_binding'] = binding
+            if binding.get('baseline_kind') != 'AUTOMATIC_PUBLIC_FACTS_ONLY_V1':
+                item.update(status='REVIEW_REQUIRED', reason='NON_AUTOMATIC_PUBLIC_CONTEXT')
+                results.append(item)
+                continue
+            ref = binding['result_binding']
+            saved = _load_bound(require_inside(root / 'runtime', root / ref['path'], 'old result'), ref['sha256'])
+            export_ref = binding['financial_export']
+            export = require_inside(root / 'runtime', root / export_ref['path'], 'old export')
+            _load_bound(export, export_ref['sha256'])
+            stamp = datetime.fromisoformat(saved['evaluation_at'])
+            if stamp.utcoffset() is None or stamp > now or saved['symbol'] != symbol:
+                raise ValueError('INVALID_OLD_RESULT_TIME_OR_SYMBOL')
+            points, _ = load_retained_financial_export(export, evaluation_at=stamp)
+            source = RetainedAnnualSource(**saved['source_extraction']['identity']['source'])
+            if source.symbol != symbol:
+                raise ValueError('OLD_SOURCE_SYMBOL_MISMATCH')
+            kwargs = dict(cache_dir=root / '.tmp/value-enrichment-extraction',
+                name=saved.get('company_name'), sector=saved.get('sector'),
+                public_summary_binding=saved.get('public_summary_binding'), write_cache=False)
+            checked = enrich_retained_company(root, source, points, evaluation_at=stamp, **kwargs)
+            changed = _public_reobservation_check(root, binding, saved, checked, points)
+            if not changed:
+                item.update(status='UNCHANGED')
+            elif attempts >= budget:
+                item.update(status='BUDGET_EXHAUSTED', reason='PARSER_CHANGED_REOBSERVATION_DEFERRED')
+            else:
+                _, contexts, _ = load_enrichment_research_contexts(root=root, symbols=[symbol],
+                    evaluation_at=now, _reuse=False)
+                if symbol in contexts:
+                    item.update(status='REVIEW_REQUIRED', reason='CURRENT_NON_AUTOMATIC_CONTEXT')
+                else:
+                    attempts += 1
+                    fresh_time = datetime.now(timezone.utc)
+                    fresh_points, _ = load_retained_financial_export(export, evaluation_at=fresh_time)
+                    fresh = enrich_retained_company(root, source, fresh_points, evaluation_at=fresh_time, **kwargs)
+                    if not fresh['adopted_points']:
+                        raise ValueError('NO_CURRENT_ADOPTED_FACTS')
+                    if json.loads(json.dumps(fresh['adopted_points'], default=str)) != json.loads(json.dumps(checked['adopted_points'], default=str)):
+                        raise ValueError('ADOPTED_FACTS_CHANGED_AT_CURRENT_CUTOFF')
+                    if fresh['source_extraction']['identity'] != checked['source_extraction']['identity']:
+                        raise ValueError('PARSER_OR_SOURCE_CHANGED_DURING_REOBSERVATION')
+                    if ValueEnrichmentProgress(root).registered_adoption(symbol, cutoff=datetime.now(timezone.utc)) != binding:
+                        raise ValueError('REGISTERED_ADOPTION_CHANGED_DURING_REOBSERVATION')
+                    destination = output / symbol
+                    if destination.exists():
+                        raise FileExistsError('REOBSERVATION_DESTINATION_EXISTS')
+                    output.mkdir(parents=True, exist_ok=True)
+                    adopted = persist_verified_enrichment_adoption(root=root, result=fresh,
+                        financial_export_path=export, financial_export_sha256=export_ref['sha256'],
+                        output_dir=destination)
+                    item.update(status='REOBSERVED', evaluation_at=fresh_time.isoformat(), adoption=adopted,
+                        previous_parser_sha256=saved['source_extraction']['identity']['implementation_sha256'],
+                        current_parser_sha256=fresh['source_extraction']['identity']['implementation_sha256'])
+        except (ValueError, TypeError, KeyError, OSError) as error:
+            item.update(status='FAILED', reason=str(error), error_type=type(error).__name__)
+        results.append(item)
+    from collections import Counter
+    counts = dict(Counter(item['status'] for item in results))
+    status = 'PARTIAL' if any(item['status'] in {'FAILED', 'REVIEW_REQUIRED', 'BUDGET_EXHAUSTED'} for item in results) else 'COMPLETE'
+    return json.loads(json.dumps(dict(schema_version='public-adoption-reobservation-v1',
+        status=status, counts=counts, action='no_order', formal_eligibility=False,
+        budget=budget, attempted_count=attempts, items=results), default=str, allow_nan=False))

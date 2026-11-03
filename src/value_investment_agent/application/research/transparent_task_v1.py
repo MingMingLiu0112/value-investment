@@ -27,10 +27,10 @@ from ..product.common import require_inside, write_new_bytes
 VERSION = 'transparent-task-v1'
 _SESSION = uuid4().hex
 OPERATIONS = ('REPLAY_SELECTION', 'FRESH_PUBLIC_SCAN', 'RECALCULATE_MAIN',
-              'SIMULATE_ASSUMPTIONS', 'VERIFY_EVIDENCE', 'REVIEW_NOTE')
+              'SIMULATE_ASSUMPTIONS', 'VERIFY_EVIDENCE', 'REVIEW_NOTE', 'VALUE_RESEARCH_REFRESH')
 OPERATION_MODULES = {'VERIFY_EVIDENCE': 'A', 'REPLAY_SELECTION': 'B',
     'FRESH_PUBLIC_SCAN': 'B', 'RECALCULATE_MAIN': 'F1',
-    'SIMULATE_ASSUMPTIONS': 'F1', 'REVIEW_NOTE': 'G2'}
+    'SIMULATE_ASSUMPTIONS': 'F1', 'REVIEW_NOTE': 'G2', 'VALUE_RESEARCH_REFRESH': 'B'}
 PUBLIC_STATUSES = ('IDLE', 'QUEUED', 'RUNNING', 'SUCCESS', 'PARTIAL',
                    'BLOCKED', 'FAILED', 'CANCELLED')
 CASH_OVERRIDES = {'target_payout_ratio', 'accessible_profit_ratio', 'reserve_ratio',
@@ -59,6 +59,39 @@ def _identity():
 
 
 _CODE_ROOT = Path(__file__).resolve().parents[4]
+
+
+def _refresh_code_files(package):
+    """Bind the new cycle's local static import closure, without importing private config."""
+    import ast
+    prefix = 'value_investment_agent'
+    pending = [prefix + '.application.research.sse_value_refresh_v1',
+               prefix + '.application.research.sse_research_pipeline_v1']
+    visited, files = set(), set()
+    while pending:
+        module_name = pending.pop()
+        if module_name in visited or not module_name.startswith(prefix + '.'):
+            continue
+        visited.add(module_name)
+        relative = module_name[len(prefix) + 1:].replace('.', '/')
+        path = package / (relative + '.py')
+        if not path.is_file():
+            path = package / relative / '__init__.py'
+        if not path.is_file():
+            continue
+        files.add(path.relative_to(package).as_posix())
+        if len(files) > 1000:
+            raise ValueError('REFRESH_SOURCE_CLOSURE_TOO_LARGE')
+        parent = module_name if path.name == '__init__.py' else module_name.rsplit('.', 1)[0]
+        for node in ast.walk(ast.parse(path.read_text(encoding='utf-8-sig'))):
+            if isinstance(node, ast.Import):
+                pending.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                target = (importlib.util.resolve_name('.' * node.level + (node.module or ''), parent)
+                          if node.level else node.module or '')
+                pending.append(target)
+                pending.extend(target + '.' + alias.name for alias in node.names if alias.name != '*')
+    return files
 
 
 def _source_contract(operation):
@@ -94,6 +127,8 @@ def _source_contract(operation):
             'infrastructure/screening/value_evidence_enrichment_v1.py',
             'infrastructure/screening/evidence_screen_v3.py', 'financial_quality.py',
             'm2_discovery_engine.py', 'm2_market_data.py', 'm2_opportunity_discovery.py'})
+    if operation == 'VALUE_RESEARCH_REFRESH':
+        names.update(_refresh_code_files(package))
     paths = {('src/value_investment_agent/' + name): package / name for name in names}
     paths.update({name: _CODE_ROOT / name for name in script_names})
     return dict(schema_version='transparent-native-source-contract-v1', hash_basis='RAW_BYTES',
@@ -161,7 +196,7 @@ class TransparentTaskService(base.ResearchTaskService):
     def capabilities(self):
         return dict(schema_version=VERSION, action='no_order', formal_eligibility=False,
                     operations=[dict(operation=x, enabled=True,
-                        network_authorization_required=x == 'FRESH_PUBLIC_SCAN')
+                        network_authorization_required=x in {'FRESH_PUBLIC_SCAN', 'VALUE_RESEARCH_REFRESH'})
                         for x in OPERATIONS], statuses=list(PUBLIC_STATUSES),
                     simulation_fields=sorted(CASH_OVERRIDES),
                     progress_basis='COMPLETED_STEPS_NOT_TIME_PERCENT',
@@ -186,6 +221,10 @@ class TransparentTaskService(base.ResearchTaskService):
 
         ready('FRESH_PUBLIC_SCAN', dict(network_authorized=False, max_per_channel=50),
               ('network_authorized',))
+        ready('VALUE_RESEARCH_REFRESH', dict(source_mode='FRESH', network_authorized=False,
+            tracking_budget=30, enrichment_batches=1, comparison_batches=1, operating_budget=0),
+            ('source_mode', 'network_authorized', 'tracking_budget', 'enrichment_batches',
+             'comparison_batches', 'operating_budget'))
         main_ref = None
         try:
             from .main_valuation_revalidation_v1 import REGISTRY, VERSION as MAIN_VERSION
@@ -269,6 +308,8 @@ class TransparentTaskService(base.ResearchTaskService):
         if operation not in OPERATIONS or not isinstance(payload, dict):
             raise ValueError('UNSUPPORTED_OPERATION')
         fields = {
+            'VALUE_RESEARCH_REFRESH': {'source_mode', 'network_authorized', 'tracking_budget',
+                                       'enrichment_batches', 'comparison_batches', 'operating_budget'},
             'REPLAY_SELECTION': {'manifest_binding', 'evaluation_at', 'limit'},
             'FRESH_PUBLIC_SCAN': {'network_authorized', 'max_per_channel'},
             'VERIFY_EVIDENCE': {'bundle_binding'},
@@ -279,7 +320,20 @@ class TransparentTaskService(base.ResearchTaskService):
         }[operation]
         if set(payload) != fields:
             raise ValueError('EXACT_NATIVE_INPUT_FIELDS_REQUIRED')
-        if operation == 'FRESH_PUBLIC_SCAN':
+        if operation == 'VALUE_RESEARCH_REFRESH':
+            if payload['source_mode'] not in {'RETAINED', 'FRESH', 'FINANCIAL'} or type(payload['network_authorized']) is not bool:
+                raise ValueError('EXPLICIT_REFRESH_SOURCE_AND_NETWORK_MODE_REQUIRED')
+            for field, lo, hi in [('tracking_budget', 1, 100), ('enrichment_batches', 0, 10),
+                                  ('comparison_batches', 1, 10), ('operating_budget', 0, 3)]:
+                if type(payload[field]) is not int or not lo <= payload[field] <= hi:
+                    raise ValueError('FINITE_REFRESH_BUDGET_REQUIRED')
+            # The native CLI retains paid research. This public wrapper cannot yet
+            # safely count/route child provider IO; never claim zero after a paid call.
+            if payload['operating_budget'] != 0:
+                raise ValueError('WEB_REFRESH_OPERATING_BUDGET_MUST_BE_ZERO')
+            if payload['source_mode'] != 'RETAINED' and payload['network_authorized'] is not True:
+                raise ValueError('EXPLICIT_PUBLIC_NETWORK_AUTHORIZATION_REQUIRED')
+        elif operation == 'FRESH_PUBLIC_SCAN':
             if payload['network_authorized'] is not True:
                 raise ValueError('EXPLICIT_PUBLIC_NETWORK_AUTHORIZATION_REQUIRED')
             if type(payload['max_per_channel']) is not int or not 1 <= payload['max_per_channel'] <= 50:
@@ -339,6 +393,40 @@ class TransparentTaskService(base.ResearchTaskService):
                 _changes(payload['changes'])
         return json.loads(base._bytes(payload))
 
+    def _refresh_manifest(self, ref):
+        from ..discovery.sse_main_screening import VERSION as SCREEN_VERSION
+        if not isinstance(ref, dict) or set(ref) != {'path', 'sha256'} or not isinstance(ref['path'], str):
+            raise ValueError('EXACT_REFRESH_SCREEN_BINDING_REQUIRED')
+        # Constrain to the public screen compartment before any reads or hashes.
+        require_inside(self.root / 'runtime/sse-main-screening', self.root / ref['path'],
+                       'refresh screen manifest')
+        self._raw_binding(ref)
+        manifest = self._bound(ref)
+        if (manifest.get('schema_version') != SCREEN_VERSION or manifest.get('scope') != 'SSE_MAIN_A_ONLY'
+                or manifest.get('action') != 'no_order'):
+            raise ValueError('INVALID_REFRESH_SCREEN_MANIFEST')
+        return manifest
+
+    def _refresh_source(self):
+        from ..discovery.sse_main_screening import POINTER, VERSION as SCREEN_VERSION
+        pointer = json.loads((self.root / POINTER).read_bytes())
+        if pointer.get('schema_version') != SCREEN_VERSION or pointer.get('action') != 'no_order':
+            raise ValueError('INVALID_CURRENT_REFRESH_SCREEN_POINTER')
+        ref = pointer['manifest']
+        self._refresh_manifest(ref)
+        return deepcopy(ref)
+
+    def _check_refresh_source(self, spec, *, require_current=False):
+        if spec['operation'] != 'VALUE_RESEARCH_REFRESH':
+            return
+        if spec['payload']['source_mode'] == 'RETAINED':
+            ref = spec.get('refresh_source_binding')
+            self._refresh_manifest(ref)
+            if require_current and ref != self._refresh_source():
+                raise ValueError('CURRENT_REFRESH_SCREEN_CHANGED')
+        elif spec.get('refresh_source_binding') is not None:
+            raise ValueError('UNEXPECTED_REFRESH_RETAINED_BINDING')
+
     def _check(self, spec, now):
         try:
             _verify_source_contract(spec.get('source_contract'))
@@ -350,6 +438,7 @@ class TransparentTaskService(base.ResearchTaskService):
         try:
             _actor_context(spec['operation'], spec.get('actor_context'))
             self._validate_payload(spec['symbol'], spec['operation'], spec['payload'])
+            self._check_refresh_source(spec)
             return True, None, None
         except FileNotFoundError:
             return None, 'WAITING_EVIDENCE', 'SOURCE_MISSING'
@@ -476,6 +565,8 @@ class TransparentTaskService(base.ResearchTaskService):
             mode=VERSION, operation=operation, payload=payload, timeout_seconds=timeout_seconds,
             implementation_sha256=_identity(), action='no_order', parent=deepcopy(_parent),
             actor_context=actor, source_contract=source_contract)
+        if operation == 'VALUE_RESEARCH_REFRESH':
+            spec['refresh_source_binding'] = self._refresh_source() if payload['source_mode'] == 'RETAINED' else None
         _verify_source_contract(source_contract)
         directory = self._directory(task_id)
         with self._lock(directory):
@@ -787,10 +878,87 @@ def _fresh_result(service, summary, manifest):
     return dict(summary, shortlist=shortlist, lead_report_binding=deepcopy(ref))
 
 
+def _refresh_public_io(service, spec, attempt):
+    """Owned-worker scope: preserve existing transports/guards and reject nonpublic IO."""
+    from contextlib import contextmanager
+    from urllib.parse import urlparse
+    import urllib.request
+    import requests
+
+    def checkpoint():
+        with service._lock(service._directory(spec['task_id'])):
+            _, state, _ = service._load(spec['task_id'])
+            if state['status'] != 'RUNNING' or state['attempts'] != int(attempt.name):
+                raise base._Cancelled('NATIVE_CANCELLED_OR_SUPERSEDED')
+
+    # Exact existing collector hosts; provider IO is intentionally unsupported here.
+    hosts = {'query.sse.com.cn', 'www.sse.com.cn', 'static.sse.com.cn',
+             'www.szse.cn', 'disc.static.szse.cn', 'www.bse.cn',
+             'proxy.finance.qq.com', 'vip.stock.finance.sina.com.cn', 'quotes.sina.cn',
+             'datacenter-web.eastmoney.com', 'www.cninfo.com.cn', 'static.cninfo.com.cn'}
+    def guard(url):
+        checkpoint()
+        if spec['payload']['network_authorized'] is not True:
+            raise PermissionError('PUBLIC_REFRESH_NETWORK_AUTHORIZATION_REQUIRED')
+        parsed = urlparse(url)
+        if (parsed.scheme != 'https' or parsed.hostname not in hosts or parsed.username
+                or parsed.password or parsed.port not in {None, 443}):
+            raise PermissionError('PUBLIC_REFRESH_ENDPOINT_NOT_ALLOWED')
+
+    @contextmanager
+    def scoped():
+        send, opened = requests.Session.send, urllib.request.OpenerDirector.open
+        def checked_send(session, request, **kwargs):
+            guard(request.url)
+            return send(session, request, **kwargs)
+        def checked_open(opener, request, *args, **kwargs):
+            guard(request.full_url if hasattr(request, 'full_url') else request)
+            return opened(opener, request, *args, **kwargs)
+        requests.Session.send, urllib.request.OpenerDirector.open = checked_send, checked_open
+        try:
+            yield checkpoint
+        finally:
+            requests.Session.send, urllib.request.OpenerDirector.open = send, opened
+    return scoped()
+
+
 def _dispatch(service, spec, attempt):
     payload, operation = spec['payload'], spec['operation']
     artifacts, outcome = [], 'SUCCESS'
-    if operation == 'REPLAY_SELECTION':
+    if operation == 'VALUE_RESEARCH_REFRESH':
+        from .sse_value_refresh_v1 import run_value_research_refresh
+        service._validate_payload(spec['symbol'], operation, payload)
+        service._check_refresh_source(spec, require_current=True)
+        output = require_inside(attempt, attempt / 'value-research-refresh', 'owned refresh output')
+        with _refresh_public_io(service, spec, attempt) as checkpoint:
+            def on_stage(event):
+                checkpoint()
+                if (payload['source_mode'] == 'RETAINED' and event.get('stage') == 'PUBLIC_SOURCE'
+                        and event.get('state') == 'RUNNING'):
+                    service._check_refresh_source(spec, require_current=True)
+            checkpoint()
+            result = run_value_research_refresh(root=service.root, output_dir=output,
+                source_mode=payload['source_mode'], allow_network=payload['network_authorized'],
+                tracking_budget=payload['tracking_budget'], enrichment_batches=payload['enrichment_batches'],
+                comparison_batches=payload['comparison_batches'], operating_budget=0,
+                on_stage=on_stage)
+        cycle_ref = service._binding(output / 'cycle.json')
+        if (service._bound(cycle_ref) != result or result.get('action') != 'no_order'
+                or result.get('formal_eligibility') is not False
+                or result.get('operating_budget') != 0 or result.get('operating_research') != []):
+            raise ValueError('REFRESH_CYCLE_OUTPUT_MISMATCH')
+        artifacts.append(cycle_ref)
+        latest = result.get('latest_research')
+        if latest:
+            ref = latest['manifest']
+            require_inside(output, service.root / ref['path'], 'owned latest refresh manifest')
+            service._raw_binding(ref)
+            latest_manifest = service._bound(ref)
+            if latest_manifest.get('schema_version') != 'sse-research-run-v1' or latest_manifest.get('action') != 'no_order':
+                raise ValueError('INVALID_LATEST_REFRESH_RESEARCH_MANIFEST')
+            artifacts.append(deepcopy(ref))
+        outcome = 'FAILED' if result['status'] == 'FAILED' else 'BLOCKED' if result['status'] == 'CANCELLED' else 'PARTIAL'
+    elif operation == 'REPLAY_SELECTION':
         from ..discovery.value_module_adapter_v1 import run
         result = run(root=service.root, payload=dict(payload, symbol=spec['symbol']),
                      output_dir=attempt / 'selection').as_dict()
@@ -861,9 +1029,14 @@ def _dispatch(service, spec, attempt):
         outcome = 'PARTIAL'  # Fresh acquisition does not establish whole-market/fact completeness.
     else:
         raise ValueError('UNSUPPORTED_OPERATION')
-    return _json(dict(operation=operation, outcome=outcome, result=result,
+    envelope = dict(operation=operation, outcome=outcome, result=result,
         artifact_bindings=artifacts, action='no_order', formal_eligibility=False,
-        current_published=False, approval_changed=False, new_llm_calls=0))
+        current_published=False, approval_changed=False, new_llm_calls=0)
+    if operation == 'VALUE_RESEARCH_REFRESH':
+        envelope.update(research_pool_updated=bool(result.get('latest_research')),
+                        current_publication_scope='FORMAL_TRADING_PUBLICATION_UNCHANGED',
+                        model_execution='DISABLED_IN_PUBLIC_TASK_WRAPPER')
+    return _json(envelope)
 
 
 def _worker(root, input_path, attempt):
