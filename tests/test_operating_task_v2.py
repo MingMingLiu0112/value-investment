@@ -532,3 +532,23 @@ def test_research_contract_is_explicit_and_not_an_arbitrary_model(env):
     env.configure(research_contract="unknown-driver-framework")
     with pytest.raises(ValueError,match="UNSUPPORTED_RESEARCH_CONTRACT"):
         mod.model_configuration(env.root)
+
+@pytest.mark.parametrize(("message", "expected"), [
+    ("LLM response is truncated, filtered, refused or incomplete", "LIVE_PROVIDER_RESPONSE_INCOMPLETE"),
+    ("LLM response usage must contain integer token counts", "LIVE_PROVIDER_USAGE_INVALID"),
+    ("LLM response content is missing", "LIVE_PROVIDER_CONTENT_MISSING"),
+    ("LLM credential is absent", "LIVE_PROVIDER_CREDENTIAL_MISSING"),
+    ("untrusted provider detail", "LIVE_PROVIDER_RESPONSE_REJECTED_BEFORE_ADMISSION"),
+])
+def test_provider_value_error_classification_preserves_reserved_budget(env, message, expected):
+    def fail(_request):
+        raise ValueError(message)
+
+    service = env.service(TestOnlyProvider(fail))
+    task = service.create(symbol="600519", request_key="provider-error-classification", now=NOW)
+    result = service.run(task["task_id"])
+    assert result["status"] == "FAILED"
+    assert result["error_code"] == expected
+    assert Decimal(result["reserved_cost"]) > 0
+    assert Decimal(result["settled_cost"]) == 0
+    assert result["action"] == "no_order"

@@ -625,11 +625,11 @@ export const catalog: Record<
         evidenceStatus:
           "000568最新rt-eac任务三角色成功，4次调用含1次反证缺字段拒绝后恢复；不是今日调用总数",
         shortStatus:
-          "工程与真实执行已验收；条件压力算术另验，不代表未来参数、主估值或交易通过",
+          "600323 已完成一次真实三角色受限研究；任务成功不等于经营假设、主估值或交易通过",
         implementation:
           "复用D1追加状态和锁，接真实Provider、逐角色检查点、调用前CNY预留、跨任务日限额和显式取消恢复",
         milestone:
-          "rt-eac1c74997d17510398ce1fe1e5bea9e最终SUCCEEDED、两次执行尝试；4次调用含反证字段校验拒绝与恢复，不隐藏失败轨迹。",
+          "600323 的 rt-72bd66eee8fdba9ae99240ac1029e44e 最终 SUCCEEDED；三角色各完成一次真实调用。此前两次失败任务及引用拒绝仍保留，未以重试覆盖。",
         existingEvidence:
           "000568共96条官方来源记录，含H1第11/14/12页量价成本表；不读取旧估值或保存响应，当前来源与角色回执绑定",
         evidenceSource:
@@ -724,8 +724,8 @@ export const catalog: Record<
           why: "估值参数需要经济理由，而不是AI直接报价格。",
           how: "区分事实与预测，推导量价成本及资金路径，保留反例。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "已有两家公司假设重放及000568真实经营驱动链。",
-          gap: "正常化盈利、资金可达与维护投入仍有待核实的条件假设。",
+          done: "已有两家公司假设重放、000568经营驱动链，以及600323一次真实三角色研究产物。",
+          gap: "600323的正常化盈利、资金可达、维护投入和年度现金政策仍是待核实的条件假设。",
           acceptance:
             "来源绑定的经营假设、三情景、反证和重开条件可被模型消费。",
           evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
@@ -747,11 +747,11 @@ export const catalog: Record<
         evidenceStatus:
           "96条官方来源；21项经营驱动范围、6项增长/税前利润率由代码派生、9项资本UNKNOWN；不是模型直接填利润率；新增30行现金账与v4条件估值真实消费",
         shortStatus:
-          "D2 H1 witness + H2逐行压力 → 滚动全年 → v4现金/条件估值已接；季节性、持续盈利和资金政策未获经济采纳",
+          "600323真实三角色研究已产出；现金消费读取器已接，但年度现金政策和主经济区间未采用，不能升级为F1/F2结论",
         implementation:
           "原驱动桥锁定H12026→H12027，按每情景128角点重算；同比FY只对FY、H1只对H1。新增2026Jul–2027Jun滚动全年适配，后续flat，ResearchApplicationService→既有v4计算",
         milestone:
-          "独立Euclid冷复算3×128角点及12条阈值一致，工程与条件压力分析算术验收通过。12条重审严格按同bounds、同期间/基线比较，等于不触发，不混用历史阈值。",
+          "rt-72bd66eee8fdba9ae99240ac1029e44e 完成真实三角色调用；来源、反证和结构化输出仍须经过现金政策与经济采纳门禁。旧失败回执、提示词版本和输入指纹均保留。",
         existingEvidence:
           "旧D2两公司草案及rt-c40经济拒绝保留为历史，不覆盖旧raw；当前H1第11/14/12页量价成本表构成新驱动桥，不沿用旧直接填利润率路径",
         evidenceSource:
@@ -765,9 +765,9 @@ export const catalog: Record<
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer:
-            "D2滚动年度输入 → ResearchApplicationService → v4条件现金/估值 → 公开研究；新消费待最终验收",
+          "D2研究产物 → 现金消费读取器；只有同发行人年度现金政策、主经济区间和模型适用性齐备时，才可进入ResearchApplicationService → v4 → 条件价格",
           realData:
-            "最新rt-eac三角色、4次调用；96官方记录，21驱动范围、6代码派生指标、9资本UNKNOWN；独立3×128角点与12阈值复算一致",
+          "600323最新真实任务为 SUCCEEDED，三角色共3次调用；来源绑定、反证和未知项均保留，不能将UNKNOWN填为零或把模型输出升级为事实",
           economic: "条件现金/估值工程已接待终验／参数经济适用性未证／非主区间",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",

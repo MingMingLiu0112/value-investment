@@ -318,7 +318,18 @@ class LiveOperatingTaskService(ResearchTaskService):
                         state,pin=self._save(spec,state,pin,_now(),provider_requests=state["provider_requests"]+1,
                             new_llm_calls=state["new_llm_calls"]+(0 if self.test_provider is not None else 1),
                             reserved_cost=str(Decimal(state["reserved_cost"])+reserve),reservations=reservations)
-                    response=provider.complete(req)
+                    try:
+                        response=provider.complete(req)
+                    except ValueError as error:
+                        known_provider_errors = {
+                            "LLM response is truncated, filtered, refused or incomplete": "LIVE_PROVIDER_RESPONSE_INCOMPLETE",
+                            "LLM response usage must contain integer token counts": "LIVE_PROVIDER_USAGE_INVALID",
+                            "LLM response content is missing": "LIVE_PROVIDER_CONTENT_MISSING",
+                            "LLM credential is absent": "LIVE_PROVIDER_CREDENTIAL_MISSING",
+                        }
+                        raise ValueError(known_provider_errors.get(
+                            str(error), "LIVE_PROVIDER_RESPONSE_REJECTED_BEFORE_ADMISSION"
+                        )) from None
                     if (type(response.prompt_tokens) is not int or type(response.completion_tokens) is not int
                             or not 0<=response.prompt_tokens<=prompt_cap or not 0<=response.completion_tokens<=req.max_completion_tokens
                             or response.tool_calls or not isinstance(response.model_id,str) or not response.model_id.strip()):

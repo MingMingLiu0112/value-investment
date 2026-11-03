@@ -10,7 +10,7 @@ from ....infrastructure.agent_runtime.provider import LLMResponse
 from ....domain.research.operating_driver_bridge_v1 import DRIVERS
 
 DRIVER_CONTRACT_VERSION = 'operating-drivers-v2'
-PROMPT_VERSION = 'operating-driver-prompts-v2-calendar-locked'
+PROMPT_VERSION = 'operating-driver-prompts-v2-calendar-locked-citations'
 ROLES = v1.ROLES
 CAPITAL = ('investment', 'funding_access', 'terminal')
 SCENARIOS = ('bear', 'base', 'bull')
@@ -120,7 +120,9 @@ def build_request(role, context, max_completion_tokens=4096, fundamental_draft=N
         'concisely: business_drivers at most 2 statements; statement text at most 400 characters. '
         'Each rationale must be at most 40 Chinese characters, including capital assumptions. '
         'Prefer only 1-3 necessary original evidence IDs per item. Keep UNKNOWN reasons short '
-        'and avoid repeated template text. Preserve all seven drivers and all three capital items '
+        'and avoid repeated template text. Every capital assumption, including UNKNOWN, must cite '
+        'at least one exact original evidence ID. For UNKNOWN, cite the closest disclosed context '
+        'and explain what it does not establish. An empty array is invalid. Preserve all seven drivers and all three capital items '
         'in each scenario; return complete JSON within the existing completion budget. '
         'with original evidence IDs. Do not emit growth or profit-margin assumptions: the domain '
         'bridge derives them from these drivers. The server selects the latest complete baseline '
