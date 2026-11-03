@@ -20,12 +20,25 @@ def read_operating_cash_consumption(*, root, task, now):
                                             binding=task["source_binding"])
     if context["snapshot_fingerprint"] != task["context_fingerprint"]:
         raise ValueError("OPERATING_CONTEXT_CHANGED")
-    result = consume_operating_earnings(context=context, bridge=task["operating_driver_bridge"])
+    registry=json.loads((root/"config/current-operating-research-sources-v1.json").read_bytes())
+    earnings_error=None
+    try:
+        result = consume_operating_earnings(context=context, bridge=task["operating_driver_bridge"])
+    except (ValueError,KeyError,TypeError) as error:
+        # A valid D2 task is not permission to silently fill a missing tax/NCI
+        # or other annual attribution fact. Still return an issuer-specific E2
+        # readiness record so callers can obtain the exact public evidence.
+        earnings_error=str(error)
+        result=dict(schema_version=SCHEMA,status="UNASSESSABLE",reason=earnings_error,
+                    action="no_order",formal_eligibility=False,condition_price=None,
+                    historical_parent_cash=[],current_blockers=[])
     result.update(task_id=task["task_id"], context_fingerprint=task["context_fingerprint"],
                   source_binding=deepcopy(task["source_binding"]), research_as_of=task["research_as_of"])
-    registry=json.loads((root/"config/current-operating-research-sources-v1.json").read_bytes())
     ref=registry["cases"].get(task["symbol"],{}).get("cash_followup")
-    if ref is not None:
+    if earnings_error is not None:
+        result["cash_followup_readiness"]=_missing_cash_followup_readiness(
+            context=context, registry=registry, result=result, earnings_error=earnings_error)
+    elif ref is not None:
         try:
             annual=consume_annual_followup(root=root,spec=_bound_json(root,ref),task=task,context=context,now=now)
             result["annual_followup"]=annual
@@ -64,7 +77,7 @@ def read_operating_cash_consumption(*, root, task, now):
     return result
 
 
-def _missing_cash_followup_readiness(*, context, registry, result):
+def _missing_cash_followup_readiness(*, context, registry, result, earnings_error=None):
     """State why this issuer cannot yet enter the annual E2 cash adapter.
 
     The output is deliberately a readiness result, not a replacement adapter:
@@ -83,10 +96,15 @@ def _missing_cash_followup_readiness(*, context, registry, result):
                  pdf_sha256=row["pdf_sha256"],available_at=row["available_at"])
         if ref not in financial_refs:
             financial_refs.append(ref)
-    missing=[
+    missing=[]
+    if earnings_error is not None:
+        missing.append(dict(code="OPERATING_EARNINGS_FACTS_REQUIRED", category="public_fact",
+            reason=earnings_error,
+            explanation="The same-period tax/NCI attribution facts required for the operating earnings bridge are missing or ambiguous; the cash adapter does not infer them."))
+    missing.extend([
         dict(code="SOURCE_BOUND_CASH_FOLLOWUP_SPEC_REQUIRED", category="source_binding",
              explanation="No immutable cash_followup binding is registered for this issuer; a D2 task cannot select a task state, annual input receipt, or policy package by itself."),
-    ]
+    ])
     absent=[field for field in parent_fields if field not in verified]
     if absent:
         missing.append(dict(code="PARENT_CASH_FLOW_FACTS_REQUIRED", category="public_fact",
@@ -104,7 +122,7 @@ def _missing_cash_followup_readiness(*, context, registry, result):
         action="no_order", formal_eligibility=False, symbol=context["symbol"],
         issuer_name=context.get("issuer_name"), financial_basis=context["financial_basis"],
         source_binding=deepcopy(context["source_binding"]), cash_followup_registered="cash_followup" in case,
-        supported_financial_evidence=financial_refs, historical_parent_cash_rows=len(result["historical_parent_cash"]),
+        supported_financial_evidence=financial_refs, historical_parent_cash_rows=len(result.get("historical_parent_cash",[])),
         missing_evidence=missing)
 
 def _bound_json(root, binding):

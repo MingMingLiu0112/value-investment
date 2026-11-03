@@ -220,6 +220,29 @@ def test_issuer_specific_readiness_refuses_600323_cash_followup_without_parent_c
     assert result["condition_price"] is None and result["formal_eligibility"] is False
 
 
+def test_issuer_readiness_preserves_missing_tax_fact_instead_of_raising(tmp_path, case, monkeypatch):
+    """D2 success cannot hide an incomplete same-period earnings bridge."""
+    context,bridge=case
+    context.update(symbol="600323", issuer_name="瀚蓝环境股份有限公司", financial_basis="2025-12-31",
+                   source_binding={"path":"runtime/TEST_ONLY-600323.json","sha256":"a"*64},
+                   snapshot_fingerprint="b"*64)
+    (tmp_path/"config").mkdir()
+    (tmp_path/"config/current-operating-research-sources-v1.json").write_text(
+        '{"schema_version":"current-operating-research-sources-v1","action":"no_order","cases":{}}', encoding="utf-8")
+    monkeypatch.setattr(app,"build_operating_source_context",lambda **kwargs:context)
+    monkeypatch.setattr(app,"consume_operating_earnings",lambda **kwargs:(_ for _ in ()).throw(
+        ValueError("UNIQUE_REPORTED_FACT_REQUIRED:tax:2025-12-31")))
+    task=dict(status="SUCCEEDED",scope="LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED",symbol="600323",
+              task_id="TEST_ONLY-600323-tax",research_as_of="2026-10-31T00:00:00+00:00",
+              source_binding=context["source_binding"],context_fingerprint=context["snapshot_fingerprint"],
+              operating_driver_bridge=bridge)
+    result=app.read_operating_cash_consumption(root=tmp_path,task=task,now=datetime.now(timezone.utc))
+    assert result["status"]=="UNASSESSABLE" and result["action"]=="no_order"
+    rows={item["code"]:item for item in result["cash_followup_readiness"]["missing_evidence"]}
+    assert rows["OPERATING_EARNINGS_FACTS_REQUIRED"]["reason"]=="UNIQUE_REPORTED_FACT_REQUIRED:tax:2025-12-31"
+    assert result["condition_price"] is None
+
+
 def test_real_000568_existing_task_consumption_and_rolling_inputs():
     configured=os.environ.get("OPERATING_SOURCES_REAL_ROOT")
     if not configured:pytest.skip("REAL TASK NOT VALIDATED: set OPERATING_SOURCES_REAL_ROOT")
