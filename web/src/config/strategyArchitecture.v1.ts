@@ -623,7 +623,7 @@ export const catalog: Record<
         ],
         engineeringStatus: "真实三角色执行与拒绝恢复已验收",
         evidenceStatus:
-          "000568最新rt-eac任务三角色成功，4次调用含1次反证缺字段拒绝后恢复；不是今日调用总数",
+          "600323的 rt-72bd66eee8fdba9ae99240ac1029e44e 已完成三角色真实调用；两次此前失败记录保留，不混为成功。",
         shortStatus:
           "600323 已完成一次真实三角色受限研究；任务成功不等于经营假设、主估值或交易通过",
         implementation:
@@ -631,11 +631,11 @@ export const catalog: Record<
         milestone:
           "600323 的 rt-72bd66eee8fdba9ae99240ac1029e44e 最终 SUCCEEDED；三角色各完成一次真实调用。此前两次失败任务及引用拒绝仍保留，未以重试覆盖。",
         existingEvidence:
-          "000568共96条官方来源记录，含H1第11/14/12页量价成本表；不读取旧估值或保存响应，当前来源与角色回执绑定",
+          "600323的来源绑定摘要、角色回执、提示词版本、输入指纹和费用记录均留在任务存储；不读取旧估值或把保存响应冒充新研究。",
         evidenceSource:
-          "runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json；runtime/d2-operating-driver-20261101/independent-acceptance.json；源码版本见实际运行身份；验收索引 artifacts/current/d2-operating-driver-20261101.json",
+          "runtime/research-task-execution-v1/live-operating-v1/ 下的600323任务状态、角色响应和receipt；源码版本见实际运行身份。",
         evidence:
-          "每日上限10元；历史rt-c40任务峰值费率保守估算0.15066元，非账单；昨日浏览器实际0.158元，旧估算7.33345元不是实际费用。已核费率为峰2/8、非峰1/4元每百万输入/输出token",
+          "每日预算上限10元；成功任务的内部预算结算为0.127354元，属于配置费率估算，不能当作供应商账单或扩大后续调用额度。",
         nextStep:
           "验证参数经济适用性及资本/现金资料，不重试模型凑通过；不以执行成功授予E2或主估值批准",
         ruleWhy: "执行可靠性与投资判断不同；Mock只能证明工程路径。",
@@ -645,7 +645,7 @@ export const catalog: Record<
           consumer:
             "现有公司AI区域显式操作 → 任务API → 持久执行器；不在首屏后台调用",
           realData:
-            "最新rt-eac任务三角色、4次调用，含1次反证缺字段拒绝与恢复；旧rt-c40经济拒绝及其他失败run原始回执保留，不混为本任务",
+            "600323的最新任务已完成三角色真实调用；此前引用不足及供应商准入前失败均保留为独立任务历史，不掩盖失败或把成功升级为投资结论",
           economic: "不适用或由下游独立准入",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",
