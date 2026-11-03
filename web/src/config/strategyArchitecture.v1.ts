@@ -602,8 +602,8 @@ export const catalog: Record<
           why: "同时研究经营、反证和事件，避免单面叙事。",
           how: "受限模型读取封存资料，生成结构化结果并校验引用。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "600323已有一次真实三角色成功；新任务、取消和重试可执行。",
-          gap: "D1运行成功不自动采纳经营假设；600323仍需年度现金政策、模型适用性和经济复核。",
+          done: "600323保留一次历史真实三角色成功；新任务、取消和重试可执行。",
+          gap: "当前源码重跑因供应商返回不完整而被拒绝，当前有效D2结果尚未形成；即使重跑成功，仍需年度现金政策、模型适用性和经济复核。",
           acceptance:
             "真实模型完整完成三角色；预算、失败、取消和恢复均可验证。",
           evidence: [
@@ -621,15 +621,16 @@ export const catalog: Record<
           "src/value_investment_agent/infrastructure/agent_runtime/provider.py",
           "src/value_investment_agent/application/research/agent_review/operating_task_v2.py",
         ],
-        engineeringStatus: "真实三角色执行与拒绝恢复已验收",
+        engineeringStatus:
+          "真实三角色执行、失败分类与拒绝恢复已验收；当前有效研究待供应商完整响应",
         evidenceStatus:
-          "600323的 rt-72bd66eee8fdba9ae99240ac1029e44e 已完成三角色真实调用；两次此前失败记录保留，不混为成功。",
+          "600323的 rt-72bd66eee8fdba9ae99240ac1029e44e 是历史成功任务；当前实现重跑 rt-2edff143668401773f7026b299841ac7 因供应商响应不完整被拒绝，两者不混为当前有效研究。",
         shortStatus:
-          "600323 已完成一次真实三角色受限研究；任务成功不等于经营假设、主估值或交易通过",
+          "600323有历史真实三角色研究；当前重跑尚未准入，历史成功不等于当前经营假设、主估值或交易通过",
         implementation:
           "复用D1追加状态和锁，接真实Provider、逐角色检查点、调用前CNY预留、跨任务日限额和显式取消恢复",
         milestone:
-          "600323 的 rt-72bd66eee8fdba9ae99240ac1029e44e 最终 SUCCEEDED；三角色各完成一次真实调用。此前两次失败任务及引用拒绝仍保留，未以重试覆盖。",
+          "历史任务 rt-72bd66eee8fdba9ae99240ac1029e44e 最终 SUCCEEDED；当前重跑 rt-2edff143668401773f7026b299841ac7 以 LIVE_PROVIDER_RESPONSE_INCOMPLETE 失败。所有历史与当前回执均保留，未以重试覆盖。",
         existingEvidence:
           "600323的来源绑定摘要、角色回执、提示词版本、输入指纹和费用记录均留在任务存储；不读取旧估值或把保存响应冒充新研究。",
         evidenceSource:
@@ -645,7 +646,7 @@ export const catalog: Record<
           consumer:
             "现有公司AI区域显式操作 → 任务API → 持久执行器；不在首屏后台调用",
           realData:
-            "600323的最新任务已完成三角色真实调用；此前引用不足及供应商准入前失败均保留为独立任务历史，不掩盖失败或把成功升级为投资结论",
+            "600323历史任务完成过三角色真实调用；当前实现重跑被供应商不完整响应阻断。引用不足、供应商失败与历史成功均保留为独立任务历史，不升级为投资结论",
           economic: "不适用或由下游独立准入",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",
@@ -724,8 +725,8 @@ export const catalog: Record<
           why: "估值参数需要经济理由，而不是AI直接报价格。",
           how: "区分事实与预测，推导量价成本及资金路径，保留反例。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "已有两家公司假设重放、000568经营驱动链，以及600323一次真实三角色研究产物。",
-          gap: "600323的正常化盈利、资金可达、维护投入和年度现金政策仍是待核实的条件假设。",
+          done: "已有两家公司假设重放、000568经营驱动链，以及600323一份历史真实三角色研究产物。",
+          gap: "600323当前重跑未通过供应商完整响应准入；正常化盈利、资金可达、维护投入和年度现金政策仍是待核实的条件假设。",
           acceptance:
             "来源绑定的经营假设、三情景、反证和重开条件可被模型消费。",
           evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
@@ -747,11 +748,11 @@ export const catalog: Record<
         evidenceStatus:
           "96条官方来源；21项经营驱动范围、6项增长/税前利润率由代码派生、9项资本UNKNOWN；不是模型直接填利润率；新增30行现金账与v4条件估值真实消费",
         shortStatus:
-          "600323真实三角色研究已产出；现金消费读取器已接，但年度现金政策和主经济区间未采用，不能升级为F1/F2结论",
+          "600323保留历史三角色研究；当前重跑未准入，且现金消费读取器尚缺同发行人年度现金政策与主经济区间采纳，不能升级为F1/F2结论",
         implementation:
           "原驱动桥锁定H12026→H12027，按每情景128角点重算；同比FY只对FY、H1只对H1。新增2026Jul–2027Jun滚动全年适配，后续flat，ResearchApplicationService→既有v4计算",
         milestone:
-          "rt-72bd66eee8fdba9ae99240ac1029e44e 完成真实三角色调用；来源、反证和结构化输出仍须经过现金政策与经济采纳门禁。旧失败回执、提示词版本和输入指纹均保留。",
+          "历史 rt-72bd66eee8fdba9ae99240ac1029e44e 完成三角色调用；当前 rt-2edff143668401773f7026b299841ac7 因 LIVE_PROVIDER_RESPONSE_INCOMPLETE 未获准入。来源、反证和结构化输出仍须经过现金政策与经济采纳门禁。",
         existingEvidence:
           "旧D2两公司草案及rt-c40经济拒绝保留为历史，不覆盖旧raw；当前H1第11/14/12页量价成本表构成新驱动桥，不沿用旧直接填利润率路径",
         evidenceSource:
@@ -767,7 +768,7 @@ export const catalog: Record<
           consumer:
             "D2研究产物 → 现金消费读取器；只有同发行人年度现金政策、主经济区间和模型适用性齐备时，才可进入ResearchApplicationService → v4 → 条件价格",
           realData:
-            "600323最新真实任务为 SUCCEEDED，三角色共3次调用；来源绑定、反证和未知项均保留，不能将UNKNOWN填为零或把模型输出升级为事实",
+            "600323的历史任务曾SUCCEEDED、三角色共3次调用；当前重跑因不完整响应FAILED，来源绑定、反证和未知项均保留，不能将UNKNOWN填为零或把模型输出升级为事实",
           economic: "条件现金/估值工程已接待终验／参数经济适用性未证／非主区间",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",
