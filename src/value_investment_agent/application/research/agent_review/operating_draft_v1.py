@@ -86,8 +86,17 @@ def _context(context):
     return ids
 
 
-def _schema(role):
-    refs = {'type': 'array', 'maxItems': 8, 'items': {'type': 'string'}}
+def _schema(role, *, evidence_ids=None):
+    """Build a role schema whose citations can only select bound evidence.
+
+    Local validation remains authoritative. The enum is also included in the
+    provider-facing schema so JSON-object gateways receive a finite citation
+    vocabulary rather than inviting the model to construct identifiers.
+    """
+    item = {'type': 'string'}
+    if evidence_ids is not None:
+        item['enum'] = sorted(evidence_ids)
+    refs = {'type': 'array', 'maxItems': 8, 'items': item}
     statement = {'type': 'object', 'additionalProperties': False,
         'required': ['text', 'evidence_ids'], 'properties': {
             'text': {'type': 'string'}, 'evidence_ids': refs}}
@@ -149,7 +158,7 @@ def _prompt_context(context):
     source_ref disambiguates even the same source_id at different hashes/times.
     It joins each evidence row to one exact source metadata triple.
     """
-    _context(context)
+    evidence_ids = _context(context)
     view = {key: deepcopy(value) for key, value in context.items() if key != 'evidence'}
     catalog, references, evidence = {}, {}, []
     for row in context['evidence']:
@@ -198,7 +207,7 @@ def build_request(role: str, context: dict, max_completion_tokens: int = 4096,
     """
     if role not in ROLES or type(max_completion_tokens) is not int or not 1 <= max_completion_tokens <= 4096:
         raise ValueError('Invalid role or bounded completion budget')
-    _context(context)
+    evidence_ids = _context(context)
     proposal = None
     if fundamental_draft is not None:
         if role == 'FUNDAMENTAL':
@@ -258,7 +267,7 @@ def build_request(role: str, context: dict, max_completion_tokens: int = 4096,
                 'an error merely to populate the counterevidence list. '
                 'Return requested JSON.'),
         user=user,
-        output_schema=_schema(role), max_completion_tokens=max_completion_tokens)
+        output_schema=_schema(role, evidence_ids=evidence_ids), max_completion_tokens=max_completion_tokens)
 
 
 def validate_response(response_or_text, role: str, context: dict, generated_at: datetime) -> dict:

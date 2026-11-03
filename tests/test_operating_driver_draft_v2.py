@@ -123,7 +123,7 @@ def test_request_proposal_strips_extensions_preserves_v1_schema(context, payload
     proposal = mod.validate_response(json.dumps(payload), 'FUNDAMENTAL', context, NOW)
     before = deepcopy(proposal)
     request = mod.build_request(role, context, fundamental_draft=proposal)
-    assert request.output_schema == v1._schema(role)
+    assert request.output_schema == v1._schema(role, evidence_ids=v1._context(mod.legacy_context(context)))
     assert 'UNTRUSTED_NEW_PROPOSAL' in request.user and 'UNTRUSTED_NEW_DRIVER_BRIDGE' in request.user
     assert '仅结构化threshold为判定，文本不能代替' in request.user
     assert v1._canonical(mod._prompt_bridge(proposal['driver_bridge'])) in request.user
@@ -213,7 +213,7 @@ def test_actual_domain_api_derivation_thresholds_and_ce_requests(context, payloa
         assert threshold['meaning'] == 'REOPEN_RESEARCH_ONLY_NOT_AUTOMATIC_REVISION'
     for role in ('COUNTER_EVIDENCE', 'EVENT'):
         ce = mod.build_request(role, context, fundamental_draft=result)
-        assert ce.output_schema == v1._schema(role)
+        assert ce.output_schema == v1._schema(role, evidence_ids=v1._context(mod.legacy_context(context)))
         assert v1._canonical(mod._prompt_bridge(packet)) in ce.user
     assert (context, payload) == original
 

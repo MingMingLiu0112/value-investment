@@ -65,8 +65,8 @@ def calendar_plan(basis, context):
                 period_end=f'{year}-06-30' if kind == 'H1' else f'{year}-12-31')
 
 
-def _schema(plan):
-    old = v1._schema('FUNDAMENTAL')
+def _schema(plan, *, evidence_ids=None):
+    old = v1._schema('FUNDAMENTAL', evidence_ids=evidence_ids)
     assumption = deepcopy(old['properties']['scenarios']['properties']['base']['items'])
     assumption['properties']['dimension']['enum'] = list(CAPITAL)
     driver = dict(type='object', additionalProperties=False,
@@ -112,7 +112,7 @@ def build_request(role, context, max_completion_tokens=4096, fundamental_draft=N
     user += '\nLOCKED_CALENDAR_PLAN (copy these exact three values in every path):\n' + v1._canonical(plan)
     if len(user) > 64000:
         raise ValueError('Source plus driver basis exceeds bounded prompt')
-    return replace(request, output_schema=_schema(plan), user=user,
+    return replace(request, output_schema=_schema(plan, evidence_ids=v1._context(legacy)), user=user,
         system=request.system + '\n' + PROMPT_VERSION + ': Return operating_paths, not scenarios. '
         'Supply exactly seven bounded operating drivers per path: volume_change, realization_mix_change, '
         'unit_cost_change, fixed_cogs_share, opex_change, surcharge_ratio, other_pretax_cny. '

@@ -298,7 +298,15 @@ def test_historical_arithmetic_anchor_preserves_native_values_and_ids(margin_con
     for role in mod.ROLES:
         request = mod.build_request(role, margin_context)
         assert mod._canonical(view) in request.user
-        assert request.output_schema == mod._schema(role)
+        assert request.output_schema == mod._schema(role, evidence_ids={'row:1', 'row:2'})
+        citation_item = (
+            request.output_schema['properties']['business_drivers']['items']['properties']['evidence_ids']['items']
+            if role == 'FUNDAMENTAL'
+            else request.output_schema['properties']['counterevidence']['items']['properties']['evidence_ids']['items']
+            if role == 'COUNTER_EVIDENCE'
+            else request.output_schema['properties']['seen_events']['items']['properties']['evidence_ids']['items']
+        )
+        assert citation_item['enum'] == ['row:1', 'row:2']
         assert 'not future assumptions' in request.system
         assert 'not a loan interest' in request.system
         assert 'funding_access must be UNKNOWN with null bounds' in request.system
