@@ -303,6 +303,70 @@ def test_explicit_partial_cash_never_fills_blank_or_claims_full_reconciliation()
     assert 'fx_cny' not in result['balances'][0]
 
 
+def test_explicit_official_receipts_replay_partial_parent_observations(tmp_path, monkeypatch):
+    """A new issuer uses pinned receipt paths, never the historical two-company spec."""
+    originals, pages_by_name, bindings = {}, {}, []
+    for index, (period, periods) in enumerate((
+            ('2025-12-31', ['FY2025', 'FY2024']),
+            ('2026-06-30', ['H12026', 'H12025']))):
+        _, pages = statement(periods)
+        source = tmp_path / f'runtime/issuer-{index}/original.pdf'
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_bytes(b'%PDF-TEST_ONLY-source-' + str(index).encode())
+        receipt = tmp_path / f'runtime/issuer-{index}/receipt.json'
+        receipt.write_bytes(b'{"test_only":true}')
+        source_ref = dict(symbol=SYMBOL, period=period,
+            path=source.relative_to(tmp_path).as_posix(), sha256=sha256(source.read_bytes()).hexdigest(),
+            source_url=f'https://static.cninfo.com.cn/finalpage/2026-0{4 + 4 * index}-27/{index + 1}.PDF')
+        receipt_ref = dict(path=receipt.relative_to(tmp_path).as_posix(), sha256=sha256(receipt.read_bytes()).hexdigest())
+        originals[receipt_ref['path']] = dict(schema_version='official-report-acquisition-v1',
+            source=source_ref, source_id='cninfo:'+str(index + 1), published_date=source_ref['source_url'].split('/')[-2],
+            action='no_order')
+        pages_by_name[source.name + str(index)] = pages
+        bindings.append(dict(period=period, receipt_binding=receipt_ref))
+
+    def retained(**kwargs):
+        receipt = kwargs['receipt_binding']
+        assert receipt['path'] in originals
+        return originals[receipt['path']]
+
+    def pages(path):
+        # Both names are original.pdf; select from the parent archive identity.
+        return pages_by_name[path.name + ('0' if 'issuer-0' in str(path) else '1')]
+
+    monkeypatch.setattr(service, 'load_retained_official_report', retained)
+    monkeypatch.setattr(service, 'extract_pages', pages)
+    monkeypatch.setattr(service, '_receipt_issuer_query', lambda **_: '伊利')
+    result = service.replay_bound_parent_cash_observations(
+        root=tmp_path, symbol=SYMBOL, issuer_name='伊利', receipt_bindings=bindings,
+        now=datetime(2026, 10, 25, tzinfo=timezone.utc))
+    assert result['status'] == 'SOURCE_REPLAYED_PARTIAL_PARENT_CASH_OBSERVATIONS'
+    assert result['action'] == 'no_order' and result['formal_eligibility'] is False
+    assert result['whole_statement_reconciled'] is False
+    assert len(result['historical_statements']) == 2
+    assert result['historical_statements'][0]['rows']['cfo_cny']['source_binding']['source_id'] == 'cninfo:1'
+    assert 'fx_cny' in result['historical_statements'][1]['unknown_fields']
+
+
+def test_observation_replay_rejects_duplicate_period_or_unavailable_receipt(tmp_path, monkeypatch):
+    receipt = tmp_path / 'runtime/receipt.json'
+    receipt.parent.mkdir(parents=True)
+    receipt.write_bytes(b'{}')
+    binding = dict(path=receipt.relative_to(tmp_path).as_posix(), sha256=sha256(receipt.read_bytes()).hexdigest())
+    with pytest.raises(ValueError, match='PERIOD_DUPLICATE'):
+        service.replay_bound_parent_cash_observations(root=tmp_path, symbol=SYMBOL, issuer_name='伊利',
+            receipt_bindings=[dict(period='2025-12-31', receipt_binding=binding),
+                              dict(period='2025-12-31', receipt_binding=binding)], now=NOW)
+
+    monkeypatch.setattr(service, 'load_retained_official_report', lambda **_: dict(
+        source=dict(path='runtime/missing.pdf', sha256='0' * 64, source_url='https://example.invalid'),
+        source_id='cninfo:1', published_date='2026-10-25'))
+    monkeypatch.setattr(service, '_receipt_issuer_query', lambda **_: '伊利')
+    with pytest.raises(ValueError, match='NOT_YET_AVAILABLE'):
+        service.replay_bound_parent_cash_observations(root=tmp_path, symbol=SYMBOL, issuer_name='伊利',
+            receipt_bindings=[dict(period='2026-06-30', receipt_binding=binding)], now=NOW)
+
+
 def test_actual_partial_600519_preserves_known_rows_without_inventing_missing_columns():
     location = os.environ.get('PARENT_CASH_REPLAY_ROOT')
     if not location:

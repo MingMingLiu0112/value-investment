@@ -6,6 +6,7 @@ import json
 import re
 
 from ...infrastructure.filings.pdf_text import extract_pages
+from ...infrastructure.filings.official_report_acquisition import load_retained_official_report
 from ...domain.valuation.parent_cash_policy import reconcile_parent_cash_statement
 from ..product.common import require_inside, sha256_file
 
@@ -37,6 +38,53 @@ _EXECUTED_BINDINGS = tuple(dict(path=name, sha256=sha256_file(_EXECUTING_ROOT/na
     'src/value_investment_agent/infrastructure/filings/pdf_text.py',
     'src/value_investment_agent/infrastructure/filings/pdfium_runtime.py',
 ))
+
+
+def _period_pair(period: str) -> tuple[str, str]:
+    """Return the exact two printed periods required by the cash-table parser."""
+    if period == '2025-12-31':
+        return ('FY2025', 'FY2024')
+    if period == '2026-06-30':
+        return ('H12026', 'H12025')
+    raise ValueError('PARENT_CASH_UNSUPPORTED_OBSERVATION_PERIOD')
+
+
+def _partial_fields(periods: tuple[str, str]) -> set[str]:
+    """Fields which can be observed without asserting statement reconciliation."""
+    fields = {
+        'cfo_cny', 'cfi_cny', 'cff_cny', 'reported_net_change_cny',
+        'opening_cash_and_equivalents_cny', 'closing_cash_and_equivalents_cny',
+        'gross_capex_cny', 'mixed_distribution_interest_paid_cny',
+        'borrowings_received_cny', 'debt_repaid_cny',
+    }
+    if periods[0].startswith('FY'):
+        fields.add('investment_income_cash_cny')
+    return fields
+
+
+def _column_labels(periods: tuple[str, str]) -> list[str]:
+    if periods == ('FY2025', 'FY2024'):
+        return ['2025年度', '2024年度']
+    if periods == ('H12026', 'H12025'):
+        return ['2026年半年度', '2025年半年度']
+    raise ValueError('PARENT_CASH_UNSUPPORTED_PERIOD')
+
+
+def _receipt_issuer_query(*, root: Path, receipt_binding: dict) -> str:
+    """Reuse the exact issuer search term that the pinned CNINFO receipt recorded."""
+    path = require_inside(root, root / receipt_binding['path'], 'parent cash observation receipt')
+    if sha256_file(path) != receipt_binding['sha256']:
+        raise ValueError('PARENT_CASH_OBSERVATION_RECEIPT_HASH_MISMATCH')
+    packet = json.loads(path.read_bytes())
+    try:
+        query = packet['index_bindings'][0]['metadata']['request']
+        issuer = query['searchkey']
+    except (KeyError, IndexError, TypeError) as error:
+        raise ValueError('PARENT_CASH_OBSERVATION_RECEIPT_QUERY_MISSING') from error
+    if (not isinstance(issuer, str) or not issuer.strip() or len(issuer) > 128
+            or any(ord(char) < 32 for char in issuer)):
+        raise ValueError('PARENT_CASH_OBSERVATION_RECEIPT_QUERY_INVALID')
+    return issuer
 
 
 def _compact(text):
@@ -179,6 +227,86 @@ def extract_parent_cash_statement(*, pages: list[str], spec: dict, observation_f
                 reconciliation=reconciliation))
     return dict(symbol=spec['symbol'], issuer=owner, periods=list(periods),
                 statement_scope='listed_parent_only', rows=facts, balances=balances)
+
+
+def replay_bound_parent_cash_observations(*, root: Path, symbol: str, issuer_name: str,
+                                          receipt_bindings: list[dict], now: datetime) -> dict:
+    """Read explicitly pinned official reports into partial parent-cash observations.
+
+    This is intentionally narrower than a cash policy: every receipt must be
+    replayed through the existing official-report verifier, every amount remains
+    an observed parent-statement row, and a missing printed column stays unknown.
+    It neither forecasts remittances nor turns cash into a dividend capacity.
+    """
+    if (not isinstance(symbol, str) or re.fullmatch(r'[0-9]{6}', symbol) is None
+            or not isinstance(issuer_name, str) or not issuer_name.strip()
+            or not isinstance(receipt_bindings, list) or not receipt_bindings):
+        raise ValueError('PARENT_CASH_OBSERVATION_IDENTITY_OR_BINDINGS_REQUIRED')
+    if now.utcoffset() is None:
+        raise ValueError('PARENT_CASH_AWARE_CLOCK_REQUIRED')
+    root = root.resolve()
+    requested_periods = [item.get('period') if isinstance(item, dict) else None
+                         for item in receipt_bindings]
+    if len(set(requested_periods)) != len(requested_periods):
+        raise ValueError('PARENT_CASH_OBSERVATION_PERIOD_DUPLICATE')
+    seen_periods, statements, refs = set(), [], []
+    for binding in receipt_bindings:
+        if (not isinstance(binding, dict) or set(binding) != {'period', 'receipt_binding'}
+                or not isinstance(binding['receipt_binding'], dict)
+                or set(binding['receipt_binding']) != {'path', 'sha256'}):
+            raise ValueError('PARENT_CASH_OBSERVATION_BINDING_SCHEMA_INVALID')
+        period = binding['period']
+        if period in seen_periods:
+            raise ValueError('PARENT_CASH_OBSERVATION_PERIOD_DUPLICATE')
+        periods = _period_pair(period)
+        acquisition_issuer = _receipt_issuer_query(root=root, receipt_binding=binding['receipt_binding'])
+        receipt = load_retained_official_report(
+            root=root, receipt_binding=binding['receipt_binding'], symbol=symbol,
+            issuer_name=acquisition_issuer, period=period)
+        published = date.fromisoformat(receipt['published_date'])
+        available = datetime.combine(published + timedelta(days=1), time(),
+                                     timezone(timedelta(hours=8)))
+        if available > now:
+            raise ValueError('PARENT_CASH_OBSERVATION_NOT_YET_AVAILABLE')
+        source = receipt['source']
+        original = require_inside(root, root / source['path'], 'parent cash observation original')
+        if sha256_file(original) != source['sha256']:
+            raise ValueError('PARENT_CASH_OBSERVATION_ORIGINAL_HASH_MISMATCH')
+        spec = dict(symbol=symbol, issuer=issuer_name, periods=list(periods),
+                    column_labels=_column_labels(periods))
+        statement = extract_parent_cash_statement(
+            pages=extract_pages(original), spec=spec,
+            observation_fields=_partial_fields(periods))
+        source_binding = dict(
+            receipt_path=binding['receipt_binding']['path'],
+            receipt_sha256=binding['receipt_binding']['sha256'],
+            source_id=receipt['source_id'], source_url=source['source_url'],
+            published_date=receipt['published_date'],
+            source_path=source['path'], source_sha256=source['sha256'],
+            acquisition_issuer_query=acquisition_issuer,
+            date_only_available_at_conservative=available.isoformat(),
+        )
+        for fact in statement['rows'].values():
+            fact.update(source_id=receipt['source_id'], source_binding=dict(source_binding))
+        statement['source_binding'] = source_binding
+        seen_periods.add(period)
+        statements.append(statement)
+        refs.append(source_binding)
+    if len(statements) == 2 and seen_periods == {'2025-12-31', '2026-06-30'}:
+        annual = next(item for item in statements if item['periods'][0] == 'FY2025')
+        interim = next(item for item in statements if item['periods'][0] == 'H12026')
+        if (annual['issuer'] != interim['issuer'] or
+                Decimal(annual['balances'][0]['closing_cash_and_equivalents_cny']) !=
+                Decimal(interim['balances'][0]['opening_cash_and_equivalents_cny'])):
+            raise ValueError('PARENT_CASH_OBSERVATION_PERIOD_CONTINUITY_FAILED')
+    return dict(
+        schema_version='parent-cash-observations-v1', status='SOURCE_REPLAYED_PARTIAL_PARENT_CASH_OBSERVATIONS',
+        symbol=symbol, issuer_name=issuer_name, action='no_order', formal_eligibility=False,
+        evaluated_at=now.isoformat(), historical_statements=statements, source_bindings=refs,
+        whole_statement_reconciled=False,
+        limitation=('Observed parent-statement rows only; this is not FCFE, a remittance forecast, '
+                    'legal distribution capacity, a cash policy or a valuation approval.'),
+    )
 
 
 def load_parent_cash_research(*, root: Path, symbol: str, now: datetime, observations_only=False) -> dict | None:
