@@ -2,6 +2,25 @@
   "schema_version": "current-operating-research-sources-v1",
   "action": "no_order",
   "cases": {
+    "600323": {
+      "issuer_name": "瀚蓝环境股份有限公司",
+      "parent_cash_observation_receipts": [
+        {
+          "period": "2025-12-31",
+          "receipt_binding": {
+            "path": "runtime/e2-600323-public-followup/20261104T095722709545Z/receipt.json",
+            "sha256": "93337cb3a76d0ceafee6b60ede8a4207bc3f9e9b38ba75e3e457a8e96c6f874a"
+          }
+        },
+        {
+          "period": "2026-06-30",
+          "receipt_binding": {
+            "path": "runtime/e2-600323-public-followup/20261104T015250940833Z/receipt.json",
+            "sha256": "a9a9d47257528372d0ef8fc23f9a8191e187544828fcd4ba2468f26e801ca02c"
+          }
+        }
+      ]
+    },
     "000568": {
       "native_facts": {
         "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",

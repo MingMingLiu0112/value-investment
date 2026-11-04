@@ -1155,6 +1155,36 @@ export function OperatingCashConsumptionView({
     </section>
   );
 }
+
+function ParentCashFollowupView({ value }: { value: Record<string, unknown> }) {
+  const status = typeof value.status === "string" ? value.status : "UNASSESSABLE";
+  const blockers = Array.isArray(value.current_blockers) ? value.current_blockers : [];
+  const observation = value.observations as Record<string, unknown> | undefined;
+  const sourceCount = Array.isArray(observation?.source_bindings)
+    ? observation.source_bindings.length
+    : 0;
+  return (
+    <section aria-label="母公司现金观察准备">
+      <h4>母公司现金观察（E2 准备）</h4>
+      <p>
+        状态：{status} · 已绑定报告：{sourceCount} 份
+      </p>
+      <Alert
+        type={status === "SOURCE_BOUND_PARENT_CASH_OBSERVATIONS_READY_FOR_POLICY" ? "info" : "warning"}
+        message={
+          status === "SOURCE_BOUND_PARENT_CASH_OBSERVATIONS_READY_FOR_POLICY"
+            ? "已重放官方母公司现金表；这只是估值输入准备，不是可分配现金或买卖结论"
+            : "尚未形成可消费的母公司现金观察"
+        }
+        description={
+          blockers.length > 0
+            ? "仍需：" + blockers.map((row) => typeof row === "object" && row !== null && "code" in row ? String(row.code) : String(row)).join("；")
+            : typeof value.reason === "string" ? value.reason : "未提供可核验的来源绑定"
+        }
+      />
+    </section>
+  );
+}
 function AnnualCashFollowup({ value }: { value: Record<string, unknown> }) {
   if (value.status !== "CONDITIONAL_STRESS_CONSUMED")
     return (
@@ -1429,6 +1459,9 @@ export function LiveOperatingResearchDraft({
       )}
       {task.cash_consumption && (
         <OperatingCashConsumptionView value={task.cash_consumption} />
+      )}
+      {task.parent_cash_followup && (
+        <ParentCashFollowupView value={task.parent_cash_followup} />
       )}
       {(task.current_capital_observation ||
         task.fiscal_distribution_review?.current_observations) && (

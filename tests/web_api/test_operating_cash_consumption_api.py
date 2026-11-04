@@ -12,6 +12,7 @@ from web_api.test_live_operating_research_api import api,reviewed_result,BASE
 from test_web_agent_research import state
 from test_operating_cash_consumption_v1 import no_io_effects
 from value_investment_agent.application.research import operating_cash_consumption_v1 as consumer
+from value_investment_agent.application.research import operating_cash_followup_v1 as followup
 from value_investment_agent.infrastructure.agent_runtime import provider
 
 
@@ -66,6 +67,23 @@ def test_source_exception_is_cash_unassessable_not_erased_operating_success(api,
     assert body['cash_consumption']['formal_eligibility'] is False
     assert body['formal_eligibility'] is False and body['main_range_adopted'] is False
     assert body['condition_price'] is None and body['personal_quantity'] is None
+    assert not data.provider_calls and state(root)==before
+
+
+def test_public_projection_exposes_parent_cash_followup_without_promoting_it(api,monkeypatch):
+    client,_,data,root=api
+    task=reviewed_result()
+    data.rows=[task]
+    expected=dict(status="SOURCE_BOUND_PARENT_CASH_OBSERVATIONS_READY_FOR_POLICY",
+        action="no_order", formal_eligibility=False, valuation=None, condition_price=None,
+        current_blockers=[{"code":"TEST_ONLY_POLICY_REQUIRED"}])
+    monkeypatch.setattr(followup,"read_registered_operating_cash_followup",
+        lambda **kwargs: deepcopy(expected))
+    before=state(root)
+    body=client.get(BASE+"/companies/600519").json()
+    assert body["status"]=="SUCCEEDED"
+    assert body["parent_cash_followup"]==expected
+    assert body["formal_eligibility"] is False and body["condition_price"] is None
     assert not data.provider_calls and state(root)==before
 
 

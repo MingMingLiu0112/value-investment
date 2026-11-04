@@ -1152,6 +1152,7 @@ export type LiveOperatingResearchTask = {
   fiscal_distribution_review?: FiscalDistributionReview;
   operating_driver_bridge?: OperatingDriverBridge;
   cash_consumption?: Record<string, unknown>;
+  parent_cash_followup?: Record<string, unknown>;
   research_completeness?: OperatingResearchCompleteness;
   independent_review?: OperatingResearchIndependentReview;
   independent_review_status?: "REVIEW_BINDING_INVALID";
@@ -1196,6 +1197,7 @@ export type PublicOperatingResearchSuccess = Pick<
   | "fiscal_distribution_review"
   | "operating_driver_bridge"
   | "cash_consumption"
+  | "parent_cash_followup"
   | "independent_review_status"
   | "independent_review"
   | "research_completeness"

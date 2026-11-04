@@ -193,6 +193,17 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             except (ValueError,OSError,KeyError,TypeError):
                 public["parent_funding_review"] = dict(status="UNASSESSABLE",
                     reason="PARENT_FUNDING_SOURCE_NOT_VERIFIED",action="no_order",formal_eligibility=False)
+            # This is an E2 input-preparation projection only.  It intentionally
+            # exposes retained parent-cash observations before any policy,
+            # valuation or price consumer is allowed to use them.
+            try:
+                from ...application.research.operating_cash_followup_v1 import read_registered_operating_cash_followup
+                public["parent_cash_followup"] = read_registered_operating_cash_followup(
+                    root=project, task=value, now=datetime.now(timezone.utc))
+            except (ValueError, OSError, KeyError, TypeError):
+                public["parent_cash_followup"] = dict(status="UNASSESSABLE",
+                    reason="PARENT_CASH_FOLLOWUP_SOURCE_NOT_VERIFIED", action="no_order",
+                    formal_eligibility=False)
             # Versioned public revalidation never changes the paid task or approval.
             try:
                 from ...application.research.main_valuation_revalidation_v1 import read_main_valuation_revalidation

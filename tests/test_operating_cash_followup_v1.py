@@ -56,3 +56,13 @@ def test_preparation_rejects_future_or_naive_research_clock(tmp_path):
             assert str(error) == "OPERATING_CASH_FOLLOWUP_CLOCK_INVALID"
         else:
             raise AssertionError("invalid research clock was accepted")
+
+
+def test_registered_followup_reports_absent_registration_without_searching(tmp_path):
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config/current-operating-research-sources-v1.json").write_text(
+        '{"schema_version":"current-operating-research-sources-v1","action":"no_order","cases":{}}',
+        encoding="utf-8")
+    result = service.read_registered_operating_cash_followup(root=tmp_path, task=task(), now=NOW)
+    assert result["status"] == "NOT_STARTED"
+    assert result["reason"] == "PARENT_CASH_OBSERVATION_RECEIPTS_NOT_REGISTERED"

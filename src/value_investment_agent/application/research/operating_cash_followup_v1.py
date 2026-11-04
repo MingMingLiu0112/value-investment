@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 from .parent_cash_research import replay_bound_parent_cash_observations
+from ..product.common import require_inside
 
 
 SCHEMA = "operating-cash-followup-preparation-v1"
@@ -64,3 +65,42 @@ def prepare_operating_cash_followup(*, root: Path, task: dict, issuer_name: str,
                  explanation="Financial-period capital/distribution facts are not yet aligned to an eligible current quote."),
         ],
         limitation="No FCFE, distributable cash, policy threshold, valuation or price action is inferred.")
+
+
+def read_registered_operating_cash_followup(*, root: Path, task: dict, now: datetime) -> dict:
+    """Read only the receipt bindings explicitly registered for this issuer.
+
+    A missing registration is a normal, visible E2 gap.  This function never
+    searches for a report, writes a receipt, or turns a discovered PDF into a
+    cash-policy input.
+    """
+    root = Path(root).resolve()
+    symbol = task.get("symbol") if isinstance(task, dict) else None
+    base = dict(schema_version=SCHEMA, action="no_order", formal_eligibility=False,
+                main_range_adopted=False, condition_price=None, valuation=None)
+    if not isinstance(symbol, str):
+        return dict(base, status="NOT_READY", reason="OPERATING_TASK_SYMBOL_REQUIRED")
+    registry_path = require_inside(root, root / "config/current-operating-research-sources-v1.json",
+                                   "operating cash followup registry")
+    try:
+        registry = json.loads(registry_path.read_bytes())
+    except (OSError, ValueError):
+        return dict(base, symbol=symbol, status="UNASSESSABLE",
+                    reason="CASH_FOLLOWUP_REGISTRY_UNAVAILABLE")
+    if (not isinstance(registry, dict)
+            or registry.get("schema_version") != "current-operating-research-sources-v1"
+            or registry.get("action") != "no_order"
+            or not isinstance(registry.get("cases"), dict)):
+        return dict(base, symbol=symbol, status="UNASSESSABLE",
+                    reason="CASH_FOLLOWUP_REGISTRY_INVALID")
+    entry = registry["cases"].get(symbol)
+    if not isinstance(entry, dict) or "parent_cash_observation_receipts" not in entry:
+        return dict(base, symbol=symbol, status="NOT_STARTED",
+                    reason="PARENT_CASH_OBSERVATION_RECEIPTS_NOT_REGISTERED")
+    receipts = entry["parent_cash_observation_receipts"]
+    issuer_name = entry.get("issuer_name")
+    if not isinstance(issuer_name, str) or not issuer_name or not isinstance(receipts, list):
+        return dict(base, symbol=symbol, status="UNASSESSABLE",
+                    reason="PARENT_CASH_OBSERVATION_REGISTRATION_INVALID")
+    return prepare_operating_cash_followup(root=root, task=task, issuer_name=issuer_name,
+        receipt_bindings=receipts, now=now)
