@@ -47,6 +47,26 @@ def test_auxiliary_anchors_are_optional_and_never_enter_driver_basis():
     assert result["gaps"] == []
     assert len(result["evidence"]) == 14
     assert len(build_basis({"evidence": result["evidence"]})["baselines"]) == 2
+
+
+def test_parent_cash_rows_require_the_named_parent_cash_flow_statement():
+    p = pages()
+    p.append(
+        f"母公司现金流量表\n2025年1—6月\n编制单位：{NAME}\n单位：元 币种：人民币\n"
+        "项目 附注 2025年半年度 2024年半年度\n"
+        "经营活动产生的现金流量净额 -20.00 30.00\n"
+        "取得投资收益收到的现金 40.00 50.00\n"
+        "购建固定资产、无形资产和其他长期资产支付的现金\n5.00 6.00\n"
+    )
+    result = parse(p)
+    rows = [row for row in result["evidence"] if row.get("parent_cash_anchor")]
+    assert len(rows) == 6
+    assert {(row["field"], row["scope"], row["period"], row["value"]) for row in rows} >= {
+        ("parent_cfo", "parent", "2025-06-30", "-20.00"),
+        ("parent_investment_cash", "parent", "2025-06-30", "40.00"),
+        ("parent_capex", "parent", "2025-06-30", "5.00"),
+    }
+    assert len(build_basis({"evidence": result["evidence"]})["baselines"]) == 2
 @pytest.mark.parametrize("name", ["测试经营母公司有限公司", NAME+"分公司", ""])
 def test_preparer_must_be_exact(name):
     p = pages()
@@ -136,6 +156,11 @@ def test_real_annual_group_owner(symbol,receipt,page,monkeypatch):
                    if row.get("auxiliary_anchor")}
         assert ("tax", "consolidated", "2025-12-31") in anchors
         assert ("parent_profit", "consolidated_parent", "2025-12-31") in anchors
+        parent_cash = {(row["field"], row["scope"], row["period"]): row for row in r["evidence"]
+                        if row.get("parent_cash_anchor")}
+        assert {("parent_cfo", "parent", "2025-12-31"),
+                ("parent_investment_cash", "parent", "2025-12-31"),
+                ("parent_capex", "parent", "2025-12-31")} <= set(parent_cash)
     print(symbol, "owner page", proof["compiler_page"], "statement page", page, "rows", len(r["evidence"]))
     assert before == (pdf.stat().st_mtime_ns,hashlib.sha256(pdf.read_bytes()).hexdigest())
 

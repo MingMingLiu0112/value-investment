@@ -25,6 +25,11 @@ AUXILIARY_LABELS = dict(
     tax=("所得税费用",),
     parent_profit=("归属于母公司所有者的净利润", "归属于母公司股东的净利润"),
 )
+PARENT_CASH_LABELS = dict(
+    parent_cfo=("经营活动产生的现金流量净额",),
+    parent_investment_cash=("取得投资收益收到的现金",),
+    parent_capex=("购建固定资产、无形资产和其他长期资产支付的现金",),
+)
 _TITLE = re.compile(r"^(?:[0-9]+、\s*)?((?:合并|母公司)?(?:利润表|资产负债表|现金流量表))$")
 _NUMBER = r"-?(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)\.[0-9]{2}"
 _NOTE = (r"(?:[1-9][0-9]{0,2}|[一二三四五六七八九十百]{1,6}\s*"
@@ -250,7 +255,91 @@ def _parse(pages, source):
                 owner_proof=owner_proof, auxiliary_anchor=True, **unit_evidence,
                 kind="SOURCE_BOUND_REPORTED_STATEMENT_ROW", action="no_order",
                 financial_quality_granted=False, formal_eligibility=False))
+    result["evidence"].extend(_parent_cash_rows(pages, source, owner, period, prior, basis))
     return finish()
+
+
+def _parent_cash_rows(pages, source, owner, period, prior, basis):
+    """Read three optional parent-CF rows, never substitute consolidated cash.
+
+    The operating seven-row income basis remains independently complete.  This
+    optional extraction exists only for E2's historical parent-cash proxy and
+    requires a named parent-company cash-flow statement with the same explicit
+    comparative periods and yuan/RMB declaration.
+    """
+    starts = [(i, j) for i, page in enumerate(pages) for j, line in enumerate(page.splitlines())
+              if _TITLE.fullmatch(line.strip()) and _TITLE.fullmatch(line.strip())[1] == "母公司现金流量表"]
+    if len(starts) != 1:
+        return []
+    first, start = starts[0]
+    pieces, ended = [], False
+    for i in range(first, min(len(pages), first + _MAX_TABLE_PAGES)):
+        lines = pages[i].splitlines()
+        if i == first:
+            lines = lines[start + 1:]
+        selected = []
+        for line in lines:
+            if _TITLE.fullmatch(line.strip()):
+                ended = True
+                break
+            selected.append(line)
+        pieces.append((i + 1, selected))
+        if ended:
+            break
+    if not pieces:
+        return []
+    joined = "\n".join(line for _, lines in pieces for line in lines)
+    compact = "".join(joined.split())
+    if basis == "FY":
+        expected = (f"项目附注{period[:4]}年度{prior[:4]}年度", f"项目{period[:4]}年度{prior[:4]}年度")
+    else:
+        expected = tuple(f"项目{note}{period[:4]}{suffix}{prior[:4]}{suffix}"
+                         for note in ("", "附注") for suffix in ("年半年度", "年1—6月", "年1-6月", "年1至6月"))
+    header_lines = [line for _, lines in pieces for line in lines if "".join(line.split()) in expected]
+    if len(header_lines) != 1 or "单位：元币种：人民币" not in compact:
+        return []
+    header = header_lines[0]
+    prefix = r"(?:(?:其中|加|减)[：:]|[0-9]+[、.．]|[一二三四五六七八九十]+[、.．])?\s*"
+    rows = []
+    for field, labels in PARENT_CASH_LABELS.items():
+        label_re = "(?:" + "|".join(r"\s*".join(map(re.escape, label)) for label in labels) + ")"
+        pattern = re.compile(r"^[ \t]*" + prefix + label_re + r"\s+(?:" + _NOTE + r"\s+)?"
+                             + r"(" + _NUMBER + r")[ \t]+(" + _NUMBER + r")[ \t\r\n]*$")
+        matches = []
+        for page_number, lines in pieces:
+            for index in range(len(lines)):
+                tail = [line for line in lines[index:] if line.strip()]
+                for count in range(1, min(4, len(tail)) + 1):
+                    excerpt = "\n".join(tail[:count])
+                    match = pattern.fullmatch(excerpt)
+                    if match:
+                        if count < len(tail) and re.fullmatch(r"\s*" + _NUMBER + r"\s*", tail[count]):
+                            match = None
+                        else:
+                            matches.append((page_number, excerpt, match))
+                        break
+        if len(matches) != 1:
+            continue
+        page_number, excerpt, match = matches[0]
+        for column_index, (closing, value) in enumerate(zip((period, prior),
+                                                             [str(Decimal(match[k].replace(",", ""))) for k in (1, 2)])):
+            identity = "|".join((VERSION, source["sha256"], source["symbol"], closing, field,
+                                 str(page_number), str(column_index), value, "parent-cash"))
+            rows.append(dict(
+                id="operating-statement:" + hashlib.sha256(identity.encode()).hexdigest(),
+                source_id="official:" + source["sha256"], source_binding=dict(source),
+                symbol=source["symbol"], pdf_sha256=source["sha256"], available_at=source["available_at"],
+                period=closing, period_start=closing[:4] + "-01-01", period_basis=basis,
+                scope="parent", unit="CNY", currency="CNY", field=field, value=value,
+                physical_page=page_number, text=excerpt, excerpt=excerpt,
+                column_index=column_index, column_periods=[period, prior], column_header=header,
+                header_page=next(number for number, lines in pieces if header in lines),
+                header_excerpt=header, owner_proof=dict(method="PARENT_CASH_FLOW_TITLE_WITH_BOUND_ISSUER",
+                                                         owner_evidence=owner),
+                parent_cash_anchor=True,
+                kind="SOURCE_BOUND_REPORTED_STATEMENT_ROW", action="no_order",
+                financial_quality_granted=False, formal_eligibility=False))
+    return rows
 
 
 def load_operating_statement_basis(*, root, source, evaluation_at) -> dict:

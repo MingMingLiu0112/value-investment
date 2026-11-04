@@ -328,8 +328,9 @@ def _merge_public_statement_evidence(evidence, rows, source, now):
     from decimal import Decimal
     from ....domain.research.operating_driver_bridge_v1 import FIELDS
     allowed_scopes = {field: "consolidated" for field in FIELDS}
-    allowed_scopes.update(tax="consolidated", parent_profit="consolidated_parent")
-    if not isinstance(rows,list) or len(rows)>18:
+    allowed_scopes.update(tax="consolidated", parent_profit="consolidated_parent",
+                          parent_cfo="parent", parent_investment_cash="parent", parent_capex="parent")
+    if not isinstance(rows,list) or len(rows)>24:
         raise ValueError("OPERATING_STATEMENT_EVIDENCE_LIMIT")
     period=source["period"]
     periods={period,str(int(period[:4])-1)+period[4:]}
