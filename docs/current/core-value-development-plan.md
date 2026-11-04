@@ -45,6 +45,9 @@
 - **当前输入：** 已成功的来源绑定 D2 任务 `rt-7e972278c9c6186dbfbe0121cf270fe8`；其 E2 首个真实拒绝为 `UNIQUE_REPORTED_FACT_REQUIRED:tax:2025-12-31`。
 - **本轮实施：** 先检查既有 source adapter、年报提取和事实准入合同；仅在原始页、期间、合并/母公司范围、可得时间均可绑定时新增可重放事实。随后复测 D2→E2 消费链并记录实际输出。
 - **验收：** 新事实不能改变既有任务、不得伪造年度预测或主估值；E2 要么以来源绑定事实进入下一项现金门禁，要么保留可解释的 `BLOCKED/UNASSESSABLE`。F1/F2 只有在全部经济前提成立时才会继续。
+- **本轮代码与定向验证：** 提交 `6a004306` 新增通用的合并利润表辅助锚点解析：税费归属和归母净利润必须来自同一份、同期间、明确币种的合并报表；它们不进入 D2 的七行经营驱动，也不因缺失而伪造。`tests/test_operating_statement_basis_v1.py`、`tests/test_operating_sources_v1.py`、`tests/test_operating_cash_consumption_v1.py` 结果为 **123 passed, 6 skipped**；真实 600323 年报冷重放确认两个 FY2025/FY2024 锚点均可精确提取。
+- **本轮真实链路回执：** 新任务 `rt-9e2bbc814584a39b5e754d9c84935c99` 绑定当前提交、原件与新快照，三角色 `SUCCEEDED`，3 次真实模型调用的内部结算为 **0.150706 CNY**（不是供应商账单），永久 `action=no_order`。其冷读取 E2 已消费 Bear/Base/Bull 的同期间税费/NCI锚点；`OPERATING_EARNINGS_FACTS_REQUIRED` 已消失，且未生成估值、价格或资格。
+- **下一实际代码工作：** 在 600323 自身原件中以独立母公司现金流表范围补证 `parent_cfo`、`parent_investment_cash`、`parent_capex`。不能从合并现金流、集团现金或其他发行人替代；补证后再决定是否能建立同期间现金政策，未补齐前 F1/F2 保持不可消费。
 
 | 工作包 | 当前状态 | 下一项验收证据 |
 |---|---|---|
