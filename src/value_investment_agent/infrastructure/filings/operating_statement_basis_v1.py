@@ -17,6 +17,14 @@ from ..screening.value_evidence_enrichment_v1 import (
 VERSION = "operating-statement-basis-v1"
 LABELS = dict(revenue="营业收入", cost="营业成本", surcharges="税金及附加",
               selling="销售费用", admin="管理费用", research="研发费用", pre_tax_profit="利润总额")
+# These two rows are deliberately outside the seven-row operating-driver basis.
+# They are optional source-bound anchors for the downstream shareholder-income
+# bridge: they must never be substituted for the operating rows or guessed when
+# a report uses an unsupported presentation.
+AUXILIARY_LABELS = dict(
+    tax=("所得税费用",),
+    parent_profit=("归属于母公司所有者的净利润", "归属于母公司股东的净利润"),
+)
 _TITLE = re.compile(r"^(?:[0-9]+、\s*)?((?:合并|母公司)?(?:利润表|资产负债表|现金流量表))$")
 _NUMBER = r"-?(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)\.[0-9]{2}"
 _NOTE = (r"(?:[1-9][0-9]{0,2}|[一二三四五六七八九十百]{1,6}\s*"
@@ -158,7 +166,7 @@ def _parse(pages, source):
     income_rows = extract_income_comparatives(pages, period) if basis == "FY" else []
     for field,label in LABELS.items():
         label_re = r"\s*".join(map(re.escape,label))
-        prefix = r"(?:其中[：:]|[一二三四五六七八九十]+[、.．])?\s*"
+        prefix = r"(?:(?:其中|加|减)[：:]|[0-9]+[、.．]|[一二三四五六七八九十]+[、.．])?\s*"
         head = re.compile(r"^[ \t]*"+prefix+label_re+r"(?=\s|[（(]|$)")
         loss = r"(?:\s*[（(]\s*亏\s*损\s*总\s*额\s*以[^）)]{0,50}[）)])?" if field == "pre_tax_profit" else ""
         pattern = re.compile(r"^[ \t]*"+prefix+label_re+loss+r"\s+(?:"+_NOTE+r"\s+)?"
@@ -198,6 +206,48 @@ def _parse(pages, source):
                 physical_page=n, text=excerpt, excerpt=excerpt, column_index=index,
                 column_periods=[period,prior], column_header=header_lines[-1],
                 header_page=first+1, header_excerpt=header, owner_proof=owner_proof, **unit_evidence,
+                kind="SOURCE_BOUND_REPORTED_STATEMENT_ROW", action="no_order",
+                financial_quality_granted=False, formal_eligibility=False))
+    # Keep tax and attributable-profit anchors separate from the driver contract:
+    # E2 may consume them only when this exact consolidated statement prints both
+    # ordered values.  Missing/ambiguous auxiliary rows do not downgrade a valid
+    # seven-row D2 operating basis; they remain an explicit E2 evidence gap.
+    for field, labels in AUXILIARY_LABELS.items():
+        label_re = "(?:" + "|".join(r"\s*".join(map(re.escape, label)) for label in labels) + ")"
+        prefix = r"(?:(?:其中|加|减)[：:]|[0-9]+[、.．]|[一二三四五六七八九十]+[、.．])?\s*"
+        head = re.compile(r"^[ \t]*" + prefix + label_re + r"(?=\s|[（(]|$)")
+        pattern = re.compile(r"^[ \t]*" + prefix + label_re
+                             + r"(?:\s*[（(][^）)]{0,80}[）)])?\s+(?:" + _NOTE + r"\s+)?"
+                             + r"(" + _NUMBER + r")[ \t]+(" + _NUMBER + r")[ \t\r\n]*$")
+        occurrences = [(n, lines, j) for n, lines in pieces for j, line in enumerate(lines) if head.match(line)]
+        if len(occurrences) != 1:
+            continue
+        n, lines, j = occurrences[0]
+        tail = [line for line in lines[j:] if line.strip()]
+        match = None
+        for count in range(1, min(4, len(tail)) + 1):
+            excerpt = "\n".join(tail[:count])
+            match = pattern.fullmatch(excerpt)
+            if match:
+                if count < len(tail) and re.fullmatch(r"\s*" + _NUMBER + r"\s*", tail[count]):
+                    match = None
+                break
+        if match is None:
+            continue
+        for index, (closing, value) in enumerate(zip((period, prior),
+                                                      [str(Decimal(match[k].replace(",", ""))) for k in (1, 2)])):
+            identity = "|".join((VERSION, source["sha256"], source["symbol"], closing, field,
+                                 str(n), str(index), value, "auxiliary"))
+            result["evidence"].append(dict(
+                id="operating-statement:" + hashlib.sha256(identity.encode()).hexdigest(),
+                source_id="official:" + source["sha256"], source_binding=dict(source),
+                symbol=source["symbol"], pdf_sha256=source["sha256"], available_at=source["available_at"],
+                period=closing, period_start=closing[:4] + "-01-01", period_basis=basis,
+                scope="consolidated" if field == "tax" else "consolidated_parent",
+                unit="CNY", currency="CNY", field=field, value=value, physical_page=n,
+                text=excerpt, excerpt=excerpt, column_index=index, column_periods=[period, prior],
+                column_header=header_lines[-1], header_page=first+1, header_excerpt=header,
+                owner_proof=owner_proof, auxiliary_anchor=True, **unit_evidence,
                 kind="SOURCE_BOUND_REPORTED_STATEMENT_ROW", action="no_order",
                 financial_quality_granted=False, formal_eligibility=False))
     return finish()

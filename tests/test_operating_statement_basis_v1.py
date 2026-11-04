@@ -22,16 +22,31 @@ def pages():
         "营业收入 七、1 100.00 90.00\n营业成本 七、2 30.00 25.00\n"
         "税金及附加 七、3 3.00 2.00\n销售费用 七、4 4.00 3.00\n"
         "管理费用 七、5 5.00 4.00\n研发费用 七、6 6.00 5.00\n"
-        "利润总额 七、7 40.00 35.00\n母公司利润表"]
+        "利润总额 七、7 40.00 35.00\n所得税费用 七、8 8.00 7.00\n"
+        "归属于母公司所有者的净利润 七、9 30.00 26.00\n母公司利润表"]
 def parse(p):
     return m._parse(p, source())
 def test_complete():
     result = parse(pages())
     assert result["gaps"] == []
-    assert len(result["evidence"]) == 14
+    assert len(result["evidence"]) == 18
     assert len(build_basis({"evidence": result["evidence"]})["baselines"]) == 2
     assert result["action"] == "no_order"
     assert result["formal_eligibility"] is False
+    anchors = {(row["field"], row["scope"], row["period"]): row for row in result["evidence"]
+               if row.get("auxiliary_anchor")}
+    assert anchors[("tax", "consolidated", "2025-06-30")]["value"] == "8.00"
+    assert anchors[("parent_profit", "consolidated_parent", "2025-06-30")]["value"] == "30.00"
+
+
+def test_auxiliary_anchors_are_optional_and_never_enter_driver_basis():
+    p = pages()
+    p[1] = p[1].replace("所得税费用 七、8 8.00 7.00\n", "")
+    p[1] = p[1].replace("归属于母公司所有者的净利润 七、9 30.00 26.00\n", "")
+    result = parse(p)
+    assert result["gaps"] == []
+    assert len(result["evidence"]) == 14
+    assert len(build_basis({"evidence": result["evidence"]})["baselines"]) == 2
 @pytest.mark.parametrize("name", ["测试经营母公司有限公司", NAME+"分公司", ""])
 def test_preparer_must_be_exact(name):
     p = pages()
@@ -109,13 +124,18 @@ def test_real_annual_group_owner(symbol,receipt,page,monkeypatch):
     r = m.load_operating_statement_basis(root=root,source=s,evaluation_at=NOW)
     assert r["gaps"] == []
     assert r["status"] == "COMPLETE_SOURCE_BOUND_STATEMENT"
-    assert len(r["evidence"]) == 14
+    assert len(r["evidence"]) >= 14
     assert set(build_basis({"evidence": r["evidence"]})["baselines"]) == {"2025-12-31", "2024-12-31"}
     proof = r["owner_proof"]
     assert proof["method"] == "SAME_ANNUAL_FINANCIAL_STATEMENT_GROUP"
     assert 1 <= page-proof["compiler_page"] <= 8
     assert proof["source_binding"] == s
     assert proof["owner_evidence"]["compiler_name"] == r["issuer_name"]
+    if symbol == "600323":
+        anchors = {(row["field"], row["scope"], row["period"]): row for row in r["evidence"]
+                   if row.get("auxiliary_anchor")}
+        assert ("tax", "consolidated", "2025-12-31") in anchors
+        assert ("parent_profit", "consolidated_parent", "2025-12-31") in anchors
     print(symbol, "owner page", proof["compiler_page"], "statement page", page, "rows", len(r["evidence"]))
     assert before == (pdf.stat().st_mtime_ns,hashlib.sha256(pdf.read_bytes()).hexdigest())
 
@@ -139,7 +159,7 @@ def annual_parse(p):
 def test_annual_group_owner_native_evidence():
     r = annual_parse(annual_pages())
     assert r["gaps"] == []
-    assert len(r["evidence"]) == 14
+    assert len(r["evidence"]) == 18
     assert r["owner_proof"]["compiler_page"] == 2
     assert r["owner_proof"]["method"] == "SAME_ANNUAL_FINANCIAL_STATEMENT_GROUP"
     assert all(x["owner_proof"] == r["owner_proof"] for x in r["evidence"])

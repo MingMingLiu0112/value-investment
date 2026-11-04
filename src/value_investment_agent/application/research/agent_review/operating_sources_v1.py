@@ -327,16 +327,18 @@ def _merge_public_statement_evidence(evidence, rows, source, now):
     from copy import deepcopy
     from decimal import Decimal
     from ....domain.research.operating_driver_bridge_v1 import FIELDS
-    if not isinstance(rows,list) or len(rows)>14:
+    allowed_scopes = {field: "consolidated" for field in FIELDS}
+    allowed_scopes.update(tax="consolidated", parent_profit="consolidated_parent")
+    if not isinstance(rows,list) or len(rows)>18:
         raise ValueError("OPERATING_STATEMENT_EVIDENCE_LIMIT")
     period=source["period"]
     periods={period,str(int(period[:4])-1)+period[4:]}
     merged=deepcopy(evidence)
     seen=set()
     for row in rows:
-        if (not isinstance(row,dict) or row.get("field") not in FIELDS
+        if (not isinstance(row,dict) or row.get("field") not in allowed_scopes
                 or row.get("period") not in periods or row.get("period_basis")!="FY"
-                or row.get("scope")!="consolidated" or row.get("unit")!="CNY"
+                or row.get("scope")!=allowed_scopes[row["field"]] or row.get("unit")!="CNY"
                 or row.get("kind")!="VERIFIED_REPORTED_FACT"
                 or row.get("pdf_sha256")!=source["sha256"]
                 or row.get("available_at")!=source["available_at"]
