@@ -251,6 +251,13 @@ it("pauses polling on authorization failure and preserves task for manual refres
   expect(calls.refresh).toHaveBeenCalledTimes(1);
   expect(button("刷新当前任务").props.disabled).toBeFalsy();
 });
+it("does not block task controls on a slow economic replay", async () => {
+  calls.publicRead.mockReturnValue(new Promise(() => {}));
+  await click("新Agent经营研究");
+  expect(button("启动新研究").props.disabled).toBeFalsy();
+  expect(button("读取已有经营研究任务").props.disabled).toBeFalsy();
+  expect(calls.start).not.toHaveBeenCalled();
+});
 it("keeps local authorization failures in a single local alert", async () => {
   await click("新Agent经营研究");
   calls.start.mockRejectedValue(

@@ -1684,6 +1684,7 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
   const [error, setError] = useState<string>();
   const lock = useRef(false);
   const generation = useRef(0);
+  const publicReadEpoch = useRef(0);
   const [tracking, setTracking] = useState(true);
   useEffect(() => {
     generation.current += 1;
@@ -1746,22 +1747,32 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
     setError(undefined);
     try {
       if (operation === "status") {
+        const publicEpoch = ++publicReadEpoch.current;
         setOpened(true);
         setPublicResult(undefined);
         setPublicError(undefined);
-        const [modelRead, companyRead] = await Promise.allSettled([
-          api.operatingResearchModelStatus(),
-          api.operatingResearchCompany(symbol),
-        ]);
+        // Economic replay can be slow; it must not lock task controls. Both
+        // reads remain source-validated, and neither can start a model call.
+        void api.operatingResearchCompany(symbol).then(
+          (value) => {
+            if (
+              generation.current === requestGeneration &&
+              publicReadEpoch.current === publicEpoch
+            )
+              setPublicResult(value);
+          },
+          () => {
+            if (
+              generation.current === requestGeneration &&
+              publicReadEpoch.current === publicEpoch
+            )
+              setPublicError(
+                "公开经营研究暂不可读取，不回退展示旧结果；可手动刷新重试。",
+              );
+          },
+        );
+        const result = await api.operatingResearchModelStatus();
         if (generation.current !== requestGeneration) return;
-        if (companyRead.status === "fulfilled")
-          setPublicResult(companyRead.value);
-        else
-          setPublicError(
-            "公开经营研究暂不可读取，不回退展示旧结果；可手动刷新重试。",
-          );
-        if (modelRead.status === "rejected") throw modelRead.reason;
-        const result = modelRead.value;
         if (
           ![
             "READY",
