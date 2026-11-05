@@ -1053,6 +1053,8 @@ export function OperatingCashConsumptionView({
         reason?: string;
         task_id?: string;
         research_as_of?: string;
+        transport_status?: string;
+        scope_decomposition_status?: string;
         years?: Record<
           string,
           {
@@ -1115,6 +1117,8 @@ export function OperatingCashConsumptionView({
                 UNASSESSABLE: "当前不能核验",
                 ANNUAL_SUPPLEMENT_COMPILED_NOT_CASH_POLICY:
                   "年度利润已编译，现金路径尚未完成",
+                ANNUAL_SUPPLEMENT_TRANSPORT_NORMALIZED_ECONOMIC_REVIEW_REQUIRED:
+                  "传输格式已严格归一化；经济复核尚未通过",
               } as Record<string, string>
             )[supplement.status] || supplement.status}
             ；研究时点：
@@ -1162,6 +1166,13 @@ export function OperatingCashConsumptionView({
                   ? "模型响应格式、引用或来源未通过严格校验；本次结果未进入估值。原始响应已保留供定位，不代表公司不值得研究。"
                   : supplement.reason
               }
+            />
+          )}
+          {supplement.transport_status && (
+            <Alert
+              type="warning"
+              message="供应商传输格式已归一化"
+              description="只接受完整JSON对象后恰好一个多余右花括号；原始响应、修复响应和哈希均保留。此处理不认可任何经营假设，也不改变未批准状态。"
             />
           )}
         </section>

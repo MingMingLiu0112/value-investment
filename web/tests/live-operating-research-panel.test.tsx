@@ -1807,3 +1807,23 @@ it("shows rejected annual research as a task failure rather than no investment o
   expect(html).toContain("不代表公司不值得研究");
   expect(html).not.toContain("年度利润已编译");
 });
+
+it("labels transport-normalized research as economically unapproved", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const html = renderToStaticMarkup(
+    <OperatingCashConsumptionView
+      value={{
+        annual_research_supplement: {
+          status:
+            "ANNUAL_SUPPLEMENT_TRANSPORT_NORMALIZED_ECONOMIC_REVIEW_REQUIRED",
+          task_id: "TEST_ONLY_TRANSPORT",
+          transport_status: "EXACT_ONE_EXTRA_CLOSING_BRACE_NORMALIZED",
+          years: {},
+        },
+      }}
+    />,
+  );
+  expect(html).toContain("传输格式已严格归一化");
+  expect(html).toContain("经济复核尚未通过");
+  expect(html).toContain("不认可任何经营假设");
+});
