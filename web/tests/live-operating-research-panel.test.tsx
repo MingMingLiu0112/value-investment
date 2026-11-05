@@ -1788,3 +1788,22 @@ it("shows annual supplement as an estimate without upgrading cash or approval", 
   expect(html).toContain("不等同可分配现金或主估值");
   expect(html).toContain("action=no_order");
 });
+it("shows rejected annual research as a task failure rather than no investment opportunity", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const html = renderToStaticMarkup(
+    <OperatingCashConsumptionView
+      value={{
+        annual_research_supplement: {
+          status: "FAILED",
+          task_id: "TEST_ONLY_FAILED",
+          reason: "HORIZON_STRUCTURED_RESPONSE_OR_SOURCE_REJECTED",
+          years: {},
+        },
+      }}
+    />,
+  );
+  expect(html).toContain("研究未通过校验");
+  expect(html).toContain("本次结果未进入估值");
+  expect(html).toContain("不代表公司不值得研究");
+  expect(html).not.toContain("年度利润已编译");
+});

@@ -1105,7 +1105,19 @@ export function OperatingCashConsumptionView({
         <section aria-label="逐年经营研究补充">
           <h4>逐年经营研究补充</h4>
           <p>
-            任务：{supplement.task_id || "未形成"}；研究时点：
+            任务：{supplement.task_id || "未形成"}；状态：
+            {(
+              {
+                QUEUED: "等待执行",
+                RUNNING: "研究中",
+                FAILED: "研究未通过校验",
+                CANCELLED: "已取消",
+                UNASSESSABLE: "当前不能核验",
+                ANNUAL_SUPPLEMENT_COMPILED_NOT_CASH_POLICY:
+                  "年度利润已编译，现金路径尚未完成",
+              } as Record<string, string>
+            )[supplement.status] || supplement.status}
+            ；研究时点：
             {supplement.research_as_of || "未形成"}。
           </p>
           <p>
@@ -1144,7 +1156,12 @@ export function OperatingCashConsumptionView({
             <Alert
               type="warning"
               message="年度补充尚不可消费"
-              description={supplement.reason}
+              description={
+                supplement.reason ===
+                "HORIZON_STRUCTURED_RESPONSE_OR_SOURCE_REJECTED"
+                  ? "模型响应格式、引用或来源未通过严格校验；本次结果未进入估值。原始响应已保留供定位，不代表公司不值得研究。"
+                  : supplement.reason
+              }
             />
           )}
         </section>
