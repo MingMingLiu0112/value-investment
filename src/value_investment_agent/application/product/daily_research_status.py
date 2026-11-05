@@ -1,0 +1,129 @@
+"""Compose the daily research-status rows from the registered real inputs.
+
+The section answers one question per registered symbol: does the registered
+research cutoff still cover the verified close, or must the company be
+re-researched before any price comparison? It reuses the shared quote bridge,
+never admits a price, never re-registers research and never invents an event.
+"""
+from __future__ import annotations
+
+from datetime import datetime
+import json
+from pathlib import Path
+from typing import Any, Mapping
+
+from .common import load_json_object
+from .quote_bridge import execute_quote_bridge_for_symbol
+
+
+SCHEMA_VERSION = "daily-research-status-v1"
+POINTER_PATH = "config/current-quote-bridge.json"
+_EXECUTION_ERRORS = (OSError, ValueError, KeyError, TypeError, IndexError,
+                     AttributeError, UnicodeError, json.JSONDecodeError)
+
+REGISTRY_ABSENT = "ABSENT"
+REGISTRY_UNAVAILABLE = "UNAVAILABLE"
+REGISTRY_OK = "OK"
+
+
+def registry_state(root: Path) -> str:
+    """Distinguish a missing registry from a registered-but-unreadable one.
+
+    A corrupt or unreadable pointer file must never be reported as "nothing
+    is registered"; callers fail closed and say the registry is unavailable.
+    """
+    path = root / POINTER_PATH
+    if not path.exists():
+        return REGISTRY_ABSENT
+    try:
+        payload = load_json_object(path, "quote bridge pointer")
+    except _EXECUTION_ERRORS:
+        return REGISTRY_UNAVAILABLE
+    quotes = payload.get("quotes")
+    if quotes is None:
+        return REGISTRY_ABSENT
+    if not isinstance(quotes, dict):
+        return REGISTRY_UNAVAILABLE
+    return REGISTRY_OK
+
+
+def registered_quote_symbols(root: Path) -> list[str]:
+    """Symbols with a registered quote binding; an unreadable pointer registers nothing."""
+    try:
+        payload = load_json_object(root / POINTER_PATH, "quote bridge pointer")
+    except _EXECUTION_ERRORS:
+        return []
+    quotes = payload.get("quotes")
+    if not isinstance(quotes, dict):
+        return []
+    return sorted(symbol for symbol in quotes if isinstance(symbol, str))
+
+
+def _row(execution: Mapping[str, Any], name: str | None) -> dict[str, Any]:
+    symbol = str(execution.get("symbol") or "")
+    quote = execution.get("quote")
+    quote = quote if isinstance(quote, dict) else {}
+    research_day = execution.get("research_day")
+    quote_date = quote.get("quote_date")
+    research_day = research_day if isinstance(research_day, str) else None
+    quote_date = quote_date if isinstance(quote_date, str) else None
+    comparable = research_day is not None and quote_date is not None
+    return {
+        "symbol": symbol,
+        "name": name or symbol,
+        "research_day": research_day,
+        "quote_date": quote_date,
+        "bridge_status": execution.get("status"),
+        "price_admitted": execution.get("price_admitted") is True,
+        "needs_re_research": bool(comparable and quote_date > research_day and not execution.get("incremental_validity")),
+        "incremental_review_status": (execution.get("incremental_validity") or {}).get("status"),
+        "research_covers_close": bool(comparable and quote_date <= research_day),
+        "reason": execution.get("reason"),
+        "next_step": execution.get("next_step"),
+    }
+
+
+def build_daily_research_status(root: Path, *, today: datetime,
+                                names: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """One row per registered symbol; a per-symbol failure stays isolated."""
+    names = names or {}
+    state = registry_state(root)
+    if state == REGISTRY_UNAVAILABLE:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "action": "no_order",
+            "status": "REGISTRY_UNAVAILABLE",
+            "registry_status": state,
+            "registered_count": 0,
+            "verified_close_count": 0,
+            "needs_re_research_count": 0,
+            "admitted_count": 0,
+            "reason": (f"行情登记文件 {POINTER_PATH} 无法读取（损坏或不可访问）；"
+                       "登记状态未知，不代表没有登记。"),
+            "rows": [],
+        }
+    rows: list[dict[str, Any]] = []
+    for symbol in registered_quote_symbols(root):
+        try:
+            execution = execute_quote_bridge_for_symbol(root, symbol, today=today)
+            rows.append(_row(execution, names.get(symbol)))
+        except _EXECUTION_ERRORS as error:
+            rows.append({"symbol": symbol, "name": names.get(symbol, symbol),
+                         "research_day": None, "quote_date": None,
+                         "bridge_status": "EXECUTION_FAILED", "price_admitted": False,
+                         "needs_re_research": False, "research_covers_close": False,
+                         "reason": f"价格桥接执行失败：{type(error).__name__}",
+                         "next_step": None})
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "action": "no_order",
+        "registry_status": state,
+        "status": ("NO_REGISTERED_QUOTES" if not rows
+                   else "RE_RESEARCH_REQUIRED" if any(row["needs_re_research"] for row in rows)
+                   else "REGISTERED"),
+        "registered_count": len(rows),
+        "verified_close_count": sum(1 for row in rows if row["quote_date"]),
+        "needs_re_research_count": sum(1 for row in rows if row["needs_re_research"]),
+        "admitted_count": sum(1 for row in rows if row["price_admitted"]),
+        "rows": rows,
+    }

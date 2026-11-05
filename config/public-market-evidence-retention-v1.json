@@ -1,0 +1,12 @@
+{
+  "schema_version": "public-market-evidence-retention-v1",
+  "action": "no_order",
+  "daily_git_upload": false,
+  "current_runtime_raw_days": 90,
+  "unreferenced_compressed_archive_days": 365,
+  "immutable_referenced_originals": "PIN_INDEFINITELY_UNTIL_VERIFIED_SUCCESSOR_AND_RECOVERY",
+  "cleanup_default": "DRY_RUN_ONLY",
+  "deletion_requires": ["NO_CURRENT_OR_HISTORICAL_HASH_REFERENCE", "VERIFIED_ARCHIVE", "VERIFIED_ISOLATED_RESTORE"],
+  "private_data_destination": "NEVER_GIT",
+  "note": "This records retention intent only; it installs no scheduled cleanup and removes no originals."
+}

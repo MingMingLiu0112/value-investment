@@ -91,9 +91,34 @@ def test_latest_interim_does_not_hide_annual_score():
 
 
 def test_incomplete_new_annual_does_not_fall_back_to_old_complete_year():
+    from value_investment_agent.infrastructure.screening.evidence_screen_v3 import evaluate_financial_quality
     points = [dict(p, period_label='2024-12-31') for p in general_points()] + [point('roe', '16')]
     result = evaluate_financial_quality('600001', '样例制造', '制造业', points)
     assert result.total_score is None
+    assert result.coverage_ratio == Decimal('0.1111')
+    assert result.calculation_details['period'] == '2025-12-31'
+    assert 'cash' in result.calculation_details['missing_fields']
+    assert result.calculation_details['source_ids'] == {'roe': 'source-roe'}
+
+
+def test_incomplete_latest_interim_reports_actual_same_period_coverage():
+    from value_investment_agent.infrastructure.screening.evidence_screen_v3 import evaluate_financial_quality
+    points = [dict(p, period_label='2026-03-31') for p in general_points()]
+    points += [point('roe', '8', '2026-06-30')]
+    result = evaluate_financial_quality('600001', '样例制造', '制造业', points)
+    assert result.total_score is None
+    assert result.coverage_ratio == Decimal('0.1111')
+    assert result.calculation_details['period'] == '2026-06-30'
+
+
+def test_unverified_new_annual_never_reuses_verified_previous_year():
+    from value_investment_agent.infrastructure.screening.evidence_screen_v3 import evaluate_financial_quality
+    points = [dict(p, period_label='2024-12-31') for p in general_points()]
+    points += [dict(point('roe', '16'), validation_status='pending')]
+    result = evaluate_financial_quality('600001', '样例制造', '制造业', points)
+    assert result.total_score is None
+    assert result.coverage_ratio == 0
+    assert result.calculation_details['accepted_fields'] == []
 
 
 def test_old_annual_report_cannot_generate_current_score():

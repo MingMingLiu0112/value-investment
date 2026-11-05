@@ -1,0 +1,42 @@
+{
+  "schema_version": "pending-candidate-replay-publication-v1",
+  "action": "no_order",
+  "symbol": "600519",
+  "candidate_binding": {
+    "path": "runtime/pending-candidate-replay-v5-20261022-final/600519/candidate.json",
+    "sha256": "dc0eefec13bac730fecd67856af9789860e9d1f2b3f48f7b0430d233611e62f5"
+  },
+  "predecessor_binding": {
+    "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/candidate.json",
+    "sha256": "56554578776ab8eb7c1269ef2424df58a9cb90673f05c9370f2f792d929c1db2"
+  },
+  "package_binding": {
+    "path": "runtime/pending-candidate-replay-v5-20261022-final/600519/package.json",
+    "sha256": "f100c2a26b0d61a3f9d90a1b60976b00d8217b55592360f6940b0696a46829bf"
+  },
+  "workbench_binding": {
+    "path": "runtime/pending-candidate-replay-v5-20261022-final/600519/workbench.json",
+    "sha256": "aabd6833b31cd62b3e30b68389798c7b87c842c4f8e849ad10081d839d770e63"
+  },
+  "review_packet_binding": {
+    "path": "runtime/pending-candidate-replay-v5-20261022-final/600519/consumed-review.json",
+    "sha256": "12da911fe39d45da6ca47f3d58cfc54d17155355622789987d8a52f33a3afceb"
+  },
+  "model_context": {
+    "input_descriptor_sha256": "4d661099bea94b1a069703a814aca6d45e7a3d144e5d38c528828843fcaffe46",
+    "research_case_sha256": "cc618580d496ff7d3fd95ed5863f101390bcdf8dae740372318ab53a6c5b408b",
+    "facts_sha256": "6c0942628927273bedeae43862134b41bcded3a0c6421044a0c077846ef2e0d2",
+    "assumptions_sha256": "c63ab1e7ea8fb8dcbc895147d45f475ace8875860e095ed76f44ef3de17a34a2",
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "profile_id": "quality_compounder",
+    "research_as_of": "2026-10-11"
+  },
+  "scope": "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY",
+  "approval_changed": false,
+  "research_admitted": false,
+  "price_admitted": false,
+  "canonical_written": false,
+  "position_guidance": null,
+  "generated_at": "2026-10-21T16:41:10.523522+00:00"
+}

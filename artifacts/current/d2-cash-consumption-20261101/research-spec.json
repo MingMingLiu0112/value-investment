@@ -1,0 +1,18 @@
+{
+  "action": "no_order",
+  "countercase": "半年变化向后半年传递可能因季节性、回款、促销、库存及非经常项目失真；H22026为截至研究日尚未在本包补齐的期间估计，不是历史PIT或实际财报。原D2资金及投资UNKNOWN仍未知，旧资金政策和终端50/75/100%持续条件未获得经济采纳；维持/增长投资、WC、未来到账、现金底线或债务义务偏离时应重开。不得因算出三条数值成为Base或当前低估，不新增默认安全边际。",
+  "first_input_receipt": {
+    "path": "runtime/e2-first-input-000568-20261031/compiled-20261031T111006911210Z/receipt.json",
+    "sha256": "b3c3b1eec045381779156dc150d57a67c21a9c0c92fedd94403c42f390e92b48"
+  },
+  "generated_at": "2026-11-01T03:00:57.377486+00:00",
+  "rationale": "仅检验经营压力在既有现金约束下的股东价值影响，不选主区间。首模型年为2026H2条件估计加原D2完整2027H1低利润率角点；H2各经营组成行由FY2025减H12025并分别沿用H12026/H12025变化比，再统一重算PBT，不独立缩放PBT。正的未分类H2残差仅在本压力路径排除，非证明不经常；税和少数损益分半年明确计算。Y2至Y10经营利润保持不增长仅为冻结压力条件。现金、维护/WC、上划、分配与终端政策原样沿用已来源绑定的旧条件研究，不将其变为披露事实；旧新增资本/流动性收益均为零，避免重复计入。",
+  "schema_version": "operating-cash-followup-spec-v1",
+  "scope": "UNADOPTED_STRESS_NOT_MAIN_FORECAST",
+  "symbol": "000568",
+  "task_state_binding": {
+    "path": "runtime/research-task-execution-v1/live-operating-v1/rt-eac1c74997d17510398ce1fe1e5bea9e/versions/0023-3468ef4efc72747944deb4f4a0efde717d81bcfa58da887fc8fdf75b308ebc10.json",
+    "sha256": "3468ef4efc72747944deb4f4a0efde717d81bcfa58da887fc8fdf75b308ebc10"
+  },
+  "transport": "rolling-operating-stress-transport-v1"
+}

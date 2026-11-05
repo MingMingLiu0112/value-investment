@@ -1,0 +1,20 @@
+{
+  "schema_version": "daily-trade-assistant-cases-v1",
+  "action": "no_order",
+  "cases": {
+    "600519": {
+      "package": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/package.json",
+      "package_sha256": "f100c2a26b0d61a3f9d90a1b60976b00d8217b55592360f6940b0696a46829bf",
+      "schedule_request": "runtime/d3-v3-production-optin-20261009/schedule-request.json",
+      "schedule_request_sha256": "f0990f0c8bde913447b2f929ef007995ae8cffd8937243f01d1861c1518e6f03"
+    },
+    "600887": {
+      "recovery_manifest": "config/user-600887-original-recovery-v1.json",
+      "recovery_manifest_sha256": "4bf85e29ce4e992a5331eec0dbd1e4afda6a9cf90fd26d614dad2fc391891c5e",
+      "package": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
+      "package_sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5",
+      "schedule_request": "config/daily-trade-assistant-600887-scope-v1.json",
+      "schedule_request_sha256": "0e7fe8415541d1809fc5b483008c8f48c5aad8bba2ff6ce5b895207cf6f49f5f"
+    }
+  }
+}

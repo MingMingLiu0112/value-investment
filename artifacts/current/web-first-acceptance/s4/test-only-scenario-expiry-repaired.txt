@@ -1,0 +1,601 @@
+Browser tab: 2, Title: "双策略投资助手", URL: "http://127.0.0.1:8013/portfolio".
+1 AXWebArea 双策略投资助手, URL: 127.0.0.1:8013/portfolio
+	2 text TEST_ONLY 隔离账户验收 · 虚拟资金及人工成交演练 · 非真实账户
+	3 container root
+		4 container
+			5 text 投资决策工作台
+			6 menu
+				7 今日决策
+					8 link Description: 今日决策, Value: 127.0.0.1:8013/daily
+				9 我的持仓
+					10 link Description: 我的持仓, Value: 127.0.0.1:8013/portfolio
+				11 交易复盘
+					12 link Description: 交易复盘, Value: 127.0.0.1:8013/history
+				13 提醒与待办
+					14 link Description: 提醒与待办, Value: 127.0.0.1:8013/alerts
+				15 需要我确认
+					16 link Description: 需要我确认, Value: 127.0.0.1:8013/daily#confirmations
+			17 link Description: 数据状态, Value: 127.0.0.1:8013/system
+		18 container
+			19 heading 我的持仓, Value: 2
+				20 text 我的持仓
+			21 image info-circle
+			22 text 行情状态：按最近已核验收盘价估值
+			23 image exclamation-circle
+			24 text 已接入，风险输入不完整
+			25 text 真实台账已读取；双策略风险引擎列出以下缺失输入，补齐并确认后才会给出仓位建议。
+			26 text 总权益（元，核验口径）
+			27 container
+				28 text 17,557 .00
+			29 text 可用现金（元）
+			30 container
+				31 text 9,097 .00
+			32 text 已实现盈亏（元）
+			33 container
+				34 text 98 .00
+			35 text 浮动盈亏（元，核验行情）
+			36 container
+				37 text 7,459 .00
+			38 text 价值池仓位
+			39 container
+				40 text 48 .18 %
+			41 text 持仓成本  1001  元
+			42 text 热点池仓位
+			43 container
+				44 text 0 .00 %
+			45 text 持仓成本  0  元
+			46 text 总仓位
+			47 container
+				48 text 48 .18 %
+			49 text 已确认现金预留（元）
+			50 text 1,000
+			51 container 持仓今日复核
+				52 heading 我的持仓今天需要关注, Value: 2
+					53 text 我的持仓今天需要关注
+				54 container
+					55 text 可用现金  9,097.00  元；总权益 17,557.00  元；已记录 1  只证券。
+				56 button reload 刷新全部持仓证据
+					57 image reload
+					58 text 刷新全部持仓证据
+				59 container
+					60 link Description: 000333, Value: 127.0.0.1:8013/portfolio?symbol=000333
+					61 text ： 在今日观察名单 ；持有  100  股，可卖 100  股。 继续核对原持有依据及公告。 当前结构数据未覆盖，不能认定持仓正常。
+				62 container
+					63 text 风险复核未通过： 正式风险计算缺少已准入的持仓市值；核验收盘可展示市值，尚不能作为正式仓位准入价格 。缺少研究数据不等于应当卖出。
+				64 text 当前已读取的策略中未发现新增退出复核；未覆盖证券和风险缺口仍需检查。
+				65 link Description: 查看持仓与风险, Value: 127.0.0.1:8013/portfolio
+			66 table
+				67 row
+					68 cell
+						69 text 对账状态
+					70 cell
+						71 text 已完成对账
+						72 container
+							73 text 范围： 外部账户对账凭证
+						74 container
+							75 text 对账时间： 2026-10-18T21:14:23+08:00
+					76 cell
+						77 text 最新账本事实日期
+					78 cell
+						79 text 2026-10-15
+				80 row
+					81 cell
+						82 text 当前阻塞
+					83 cell
+						84 text 无
+			85 button (collapsed) 历史初始约束与台账修订 11, Secondary Actions: Expand
+				86 text 历史初始约束与台账修订 
+				87 text 11
+			88 heading 已确认持仓, Value: 4
+				89 text 已确认持仓
+			90 table
+				91 row
+					92 cell
+						93 text 代码
+					94 cell
+						95 text 交易所
+					96 cell
+						97 text 总股数
+					98 cell
+						99 text 持仓成本
+					100 cell
+						101 text 每股成本
+					102 cell
+						103 text 市值
+					104 cell
+						105 text 浮动盈亏
+				106 row
+					107 cell
+						108 button (collapsed) Description: 展开行, Secondary Actions: Expand
+					109 cell
+						110 text 000333
+					111 cell
+						112 text SZSE
+					113 cell
+						114 text 100
+					115 cell
+						116 text 1,001.00
+					117 cell
+						118 text 10.01
+					119 cell
+						120 text 8,460.00
+					121 cell
+						122 text 7,459.00
+			123 heading 双策略风险, Value: 4
+				124 text 双策略风险
+			125 table
+				126 row
+					127 cell
+						128 text 账户口径
+					129 cell
+						130 text TEST_ONLY_BROWSER_TWO_SLEEVES
+					131 cell
+						132 text 持仓基准日
+					133 cell
+						134 text 2026-10-15
+					135 cell
+						136 text 台账修订
+					137 cell
+						138 text 11
+				139 row
+					140 cell
+						141 text 现金（元）
+					142 cell
+						143 text 9,097.00
+					144 cell
+						145 text 成本口径资金占用（元）
+					146 cell
+						147 text 1,001.00
+					148 cell
+						149 text 已确认成交数
+					150 cell
+						151 text 3
+				152 row
+					153 cell
+						154 text 对账状态
+					155 cell
+						156 text 已完成对账
+					157 cell
+						158 text 对账范围
+					159 cell
+						160 text 外部账户对账凭证
+					161 cell
+						162 text 行情状态
+					163 cell
+						164 text 按最近已核验收盘价估值
+			165 table
+				166 row
+					167 cell
+						168 text 代码
+					169 cell
+						170 text 交易所
+					171 cell
+						172 text 总股数
+					173 cell
+						174 text 成本口径（元）
+					175 cell
+						176 text 各资金池股数
+					177 cell
+						178 text 市值
+					179 cell
+						180 text 浮动盈亏
+				181 row
+					182 cell
+						183 text 000333
+					184 cell
+						185 text SZSE
+					186 cell
+						187 text 100
+					188 cell
+						189 text 1,001.00
+					190 cell
+						191 text 价值池 100 股
+					192 cell
+						193 text 8,460.00
+					194 cell
+						195 text 7,459.00
+			196 container
+				197 image exclamation-circle
+				198 text 个人仓位上限暂不可计算：必要输入或证券风险核验尚未完整 已确认现金、成本和持仓仍正常展示。以下缺口影响个人仓位上限；不表示应卖出，也不代表你的持仓为空。
+				199 content list
+					200 container
+						201 text □ 正式风险计算缺少已准入的持仓市值
+					202 container
+						203 text □ 核验收盘可展示市值，尚不能作为正式仓位准入价格
+			204 container
+				205 image info-circle
+				206 text 仅供研究复核，不构成下单 引擎结论：trade_eligible=false，acceptance_authority=NONE。工作台不会产生任何委托或仓位指令。
+			207 button (collapsed) 证券身份、行业与尚未核验的经济风险属性, Secondary Actions: Expand
+				208 text 证券身份、行业与尚未核验的经济风险属性
+			209 button (collapsed) 技术详情（原始代码）, Secondary Actions: Expand
+				210 text 技术详情（原始代码）
+			211 container 投资政策与分池风险
+				212 heading 投资政策与分池风险（IPS）, Value: 4
+					213 text 投资政策与分池风险（IPS）
+				214 container
+					215 image info-circle
+					216 text 已有人工确认的 IPS 草稿不会启用个人仓位建议。证券风险属性、行情和独立门禁缺失时仍保留阻塞；系统不下单。
+				217 button (collapsed) 已确认的投资政策, Secondary Actions: Expand
+					218 text 已确认的投资政策
+				219 button (collapsed) 填写或更新投资政策, Secondary Actions: Expand
+					220 text 填写或更新投资政策
+			221 button (expanded) 查看热点条件性仓位上限, Secondary Actions: Collapse
+				222 text 查看热点条件性仓位上限
+			426 container 热点条件性仓位试算
+				427 heading 热点条件性仓位试算, Value: 4
+					428 text 热点条件性仓位试算
+				429 container
+					430 image info-circle
+					431 text 仅供本人风险复核，不代表可以买入，也不保证保护价能够成交
+				432 container hotspot-sizing
+					433 container
+						544 text * 证券代码
+					445 container
+						446 text field (settable) * 证券代码, Value: 000333, ID: hotspot-sizing_symbol
+						447 button close-circle
+							448 image close-circle
+					469 container
+						470 container 已确认热点资金池（元） : 4000
+							471 text 已确认热点资金池（元）
+							550 text :
+							473 text 4000
+						474 container 已确认热点单笔风险（%） : 2
+							475 text 已确认热点单笔风险（%）
+							551 text :
+							477 text 2
+						478 container 已确认现金预留（元） : 1000
+							479 text 已确认现金预留（元）
+							552 text :
+							481 text 1000
+					482 container
+						483 text 交易所竞价限价买入规则：最低 100  股，递增 100  股，单笔最多 1000000 股。数量规则不证明能够成交。
+					436 text 本人本笔资金上限（元）
+					449 container
+						450 text field (settable) 本人本笔资金上限（元）, Value: 1000, ID: hotspot-sizing_max_trade_notional_cny
+						451 button close-circle
+							452 image close-circle
+					453 container
+						454 button (expanded) 高级参数：费用、滑点、压力及交易单位, Secondary Actions: Collapse
+							455 text 高级参数：费用、滑点、压力及交易单位
+						456 text 跳空压力（元/股）
+						484 container
+							485 text field (settable) 跳空压力（元/股）, Value: 1, ID: hotspot-sizing_gap_stress_cny
+							486 button close-circle
+								487 image close-circle
+						458 text 买入滑点（元/股）
+						488 container
+							489 text field (settable) 买入滑点（元/股）, Value: 0.01, ID: hotspot-sizing_entry_slippage_cny
+							490 button close-circle
+								491 image close-circle
+						460 text 卖出滑点（元/股）
+						492 container
+							493 text field (settable) 卖出滑点（元/股）, Value: 0.01, ID: hotspot-sizing_exit_slippage_cny
+							494 button close-circle
+								495 image close-circle
+						462 text 买入费用比率（0 到 1）
+						496 container
+							497 text field (settable) 买入费用比率（0 到 1）, Value: 0.0003, ID: hotspot-sizing_buy_fee_fraction
+							498 button close-circle
+								499 image close-circle
+						464 text 卖出费用比率（0 到 1）
+						500 container
+							501 text field (settable) 卖出费用比率（0 到 1）, Value: 0.0013, ID: hotspot-sizing_sell_fee_fraction
+							502 button close-circle
+								503 image close-circle
+						466 text 最低买入费用（元）
+						504 container
+							505 text field (settable) 最低买入费用（元）, Value: 5, ID: hotspot-sizing_minimum_buy_fee_cny
+							506 button close-circle
+								507 image close-circle
+						468 text 最低卖出费用（元）
+						508 container
+							509 text field (settable) 最低卖出费用（元）, Value: 5, ID: hotspot-sizing_minimum_sell_fee_cny
+							510 button close-circle
+								511 image close-circle
+					440 container
+						441 checkbox (settable, integer) Description: 明确使用本人假设进行情景试算，不作为正式交易资格  , Value: 1
+						442 text 明确使用本人假设进行情景试算，不作为正式交易资格
+					512 text 假设仅用于本次 SIMULATED 试算，不登记为已核验的市场事实或批准。
+					513 container
+						514 container
+							545 text * 假设候选可流动成交
+						516 container
+							517 combo box (collapsed, settable) * 假设候选可流动成交, ID: hotspot-sizing_scenario_liquid, Secondary Actions: Expand
+							539 text 是
+						519 container
+							546 text * 假设候选涨停
+						521 container
+							522 combo box (collapsed, settable) * 假设候选涨停, ID: hotspot-sizing_scenario_limit_up, Secondary Actions: Expand
+							541 text 否
+						524 container
+							547 text * 假设候选跌停
+						526 container
+							527 combo box (collapsed, settable) * 假设候选跌停, ID: hotspot-sizing_scenario_limit_down, Secondary Actions: Expand
+							543 text 否
+					529 container
+						548 text * 000333 假设属于周期性公司
+					531 container
+						532 combo box (collapsed, settable) * 000333 假设属于周期性公司, ID: hotspot-sizing_cyclical_000333, Secondary Actions: Expand
+						549 text 否
+					534 text 000333 假设共同风险因子（逗号分隔；无则留空）
+					535 text field (settable) 000333 假设共同风险因子（逗号分隔；无则留空）, ID: hotspot-sizing_factors_000333
+					443 button 复核条件性数量
+				553 container
+					554 image exclamation-circle
+					555 text 假设情景数量，不是正式可操作股数 SIMULATED： 暂不能计算 当前计划缺少有效到期信息，需更新并核验计划。 当前计划缺少有效到期信息，不能计算情景数量；需更新并核验计划。
+				536 button (collapsed) 确认可复用成本设定, Secondary Actions: Expand
+					537 text 确认可复用成本设定
+				556 container
+					557 container 账本现金（元） : 9097
+						558 text 账本现金（元）
+						559 text :
+						560 text 9097
+					561 container 持仓总成本（元） : 1001
+						562 text 持仓总成本（元）
+						563 text :
+						564 text 1001
+					565 container 已实现盈亏（元） : 98
+						566 text 已实现盈亏（元）
+						567 text :
+						568 text 98
+				569 container
+					570 container 证券 : 000333
+						571 text 证券
+						572 text :
+						573 text 000333
+					574 container 核验计划入场价 : 85.800
+						575 text 核验计划入场价
+						576 text :
+						577 text 85.800
+					578 container 核验计划保护价 : 83.400
+						579 text 核验计划保护价
+						580 text :
+						581 text 83.400
+					582 container 条件性数量上限（股） : 暂不能计算
+						583 text 条件性数量上限（股）
+						584 text :
+						585 text 暂不能计算
+					586 container 含费用资金占用（元） : 暂不能计算
+						587 text 含费用资金占用（元）
+						588 text :
+						589 text 暂不能计算
+					590 container 本笔可用风险预算（元） : 尚不能核验
+						591 text 本笔可用风险预算（元）
+						592 text :
+						593 text 尚不能核验
+					594 container 假设压力损失（元） : 暂不能计算
+						595 text 假设压力损失（元）
+						596 text :
+						597 text 暂不能计算
+					598 container 假设压力退出价（元，不保证成交） : 暂不能计算
+						599 text 假设压力退出价（元，不保证成交）
+						600 text :
+						601 text 暂不能计算
+					602 container 全部投入本金风险（元） : 暂不能计算
+						603 text 全部投入本金风险（元）
+						604 text :
+						605 text 暂不能计算
+				606 container
+					607 image exclamation-circle
+					608 text 个人仓位条件尚不完整
+					609 content list
+						610 container
+							611 AXListMarker • 
+							612 text 当前计划缺少有效到期信息，需更新并核验计划。
+						613 container
+							614 AXListMarker • 
+							615 text 证券流动性属性尚未核验
+						616 container
+							617 AXListMarker • 
+							618 text 涨跌停执行状态尚未核验
+						619 container
+							620 AXListMarker • 
+							621 text 正式风险计算缺少已准入的持仓市值
+						622 container
+							623 AXListMarker • 
+							624 text 核验收盘可展示市值，尚不能作为正式仓位准入价格
+			223 heading 已确认成交记录, Value: 4
+				224 text 已确认成交记录
+			225 container
+				226 table
+					227 row
+						228 cell
+							229 text 成交日
+						230 cell
+							231 text 代码
+						232 cell
+							233 text 方向
+						234 cell
+							235 text 资金池
+						236 cell
+							237 text 实际股数
+						238 cell
+							239 text 实际成交价
+						240 cell
+							241 text 实际费用
+						242 cell
+							243 text 原研究版本
+						244 cell
+							245 text 成交编号
+					246 row
+						247 cell
+							248 button (collapsed) Description: 展开行, Secondary Actions: Expand
+						249 cell
+							250 text 2026-10-15
+						251 cell
+							252 text 000333
+						253 cell
+							254 text 卖出
+						255 cell
+							256 text 情绪卫星仓 · HOTSPOT_SATELLITE
+						257 cell
+							258 text 100
+						259 cell
+							260 text 11.00
+						261 cell
+							262 text 1.00
+						263 cell
+							264 text 未关联
+						265 cell
+							266 text TEST_ONLY_BROWSER_HOT_SELL_3
+					267 row
+						268 cell
+							269 button (collapsed) Description: 展开行, Secondary Actions: Expand
+						270 cell
+							271 text 2026-10-14
+						272 cell
+							273 text 000333
+						274 cell
+							275 text 买入
+						276 cell
+							277 text 价值池 · CORE_VALUE
+						278 cell
+							279 text 100
+						280 cell
+							281 text 10.00
+						282 cell
+							283 text 1.00
+						284 cell
+							285 text 未关联
+						286 cell
+							287 text TEST_ONLY_BROWSER_VALUE_BUY_2
+					288 row
+						289 cell
+							290 button (collapsed) Description: 展开行, Secondary Actions: Expand
+						291 cell
+							292 text 2026-10-14
+						293 cell
+							294 text 000333
+						295 cell
+							296 text 买入
+						297 cell
+							298 text 情绪卫星仓 · HOTSPOT_SATELLITE
+						299 cell
+							300 text 100
+						301 cell
+							302 text 10.00
+						303 cell
+							304 text 1.00
+						305 cell
+							306 text 未关联
+						307 cell
+							308 text TEST_ONLY_BROWSER_HOT_BUY_1
+				309 content list
+					310 container 上一页
+						311 button (disabled) left
+							312 image left
+					313 text 1
+					314 container 下一页
+						315 button (disabled) right
+							316 image right
+			317 heading 记录一笔成交（先生成草稿）, Value: 4
+				318 text 记录一笔成交（先生成草稿）
+			319 container
+				320 text * 成交编号
+			321 text field (settable) * 成交编号, ID: transaction_id
+			322 container
+				323 text * 方向
+			324 container
+				325 combo box (collapsed, settable) * 方向, ID: side, Secondary Actions: Expand
+				326 text 请选择
+			327 container
+				328 text * 资金池
+			329 container
+				330 combo box (collapsed, settable) * 资金池, ID: sleeve, Secondary Actions: Expand
+				331 text 请选择
+			332 container
+				333 text * 证券代码
+			334 text field (settable) * 证券代码, ID: symbol
+			335 container
+				336 text * 交易所
+			337 container
+				338 combo box (collapsed, settable) * 交易所, ID: exchange, Secondary Actions: Expand
+				339 text 请选择
+			340 container
+				341 text * 股数
+			342 text field (settable) * 股数, ID: quantity
+			343 container
+				344 text * 成交价（元）
+			345 text field (settable) * 成交价（元）, ID: price_cny
+			346 container
+				347 text * 费用合计（元）
+			348 text field (settable) * 费用合计（元）, ID: fees_cny
+			349 container
+				350 text * 成交日期
+			351 container
+				352 text field (settable) * 成交日期, ID: trade_date
+				353 image calendar
+			354 container
+				355 text 最早可卖日（买入必填）
+				356 image question-circle
+			357 container
+				358 text field (settable) 最早可卖日（买入必填） question-circle, ID: next_sell_session
+				359 image calendar
+			360 text 交易单位（买入必填）
+			361 text field (settable) 交易单位（买入必填）, ID: trading_unit
+			362 text 备注
+			363 text entry area (settable) 备注, ID: note
+			364 button 重 置
+			365 button 生成草稿
+			366 container 本人对账确认
+				367 heading 本人对账确认, Value: 4
+					368 text 本人对账确认
+				369 container
+					370 image info-circle
+					371 text 核对已记录的现金、持仓和成交 本次确认范围为系统内部流水重算。外部账户余额和券商对账单尚未核验，相关风险限制仍保留。
+				372 container 对账范围
+					373 container
+						374 radio button (settable, integer) Description: 内部流水核对  , Value: 1
+						375 text 内部流水核对
+					376 container
+						377 radio button (settable, integer) Description: 本人提供外部对账引用  , Value: 0
+						378 text 本人提供外部对账引用
+				379 heading 本次待核对持仓, Value: 4
+					380 text 本次待核对持仓
+				381 table
+					382 row
+						383 cell
+							384 text 代码
+						385 cell
+							386 text 交易所
+						387 cell
+							388 text 总股数
+						389 cell
+							390 text 持仓成本
+						391 cell
+							392 text 每股成本
+						393 cell
+							394 text 市值
+						395 cell
+							396 text 浮动盈亏
+					397 row
+						398 cell
+							399 button (collapsed) Description: 展开行, Secondary Actions: Expand
+						400 cell
+							401 text 000333
+						402 cell
+							403 text SZSE
+						404 cell
+							405 text 100
+						406 cell
+							407 text 1,001.00
+						408 cell
+							409 text 10.01
+						410 cell
+							411 text 8,460.00
+						412 cell
+							413 text 7,459.00
+				414 container
+					415 checkbox (settable, integer) Description: 现金 9097 元与记录一致  , Value: 0
+					416 text 现金 9097 元与记录一致
+				417 container
+					418 checkbox (settable, integer) Description: 已逐项核对下方持仓数量及总成本  , Value: 0
+					419 text 已逐项核对下方持仓数量及总成本
+				420 container
+					421 checkbox (settable, integer) Description: 已核对 3 笔已确认成交，无遗漏或重复  , Value: 0
+					422 text 已核对 3 笔已确认成交，无遗漏或重复
+				423 text entry area (settable) 本人对账说明
+				424 button (disabled) 本人确认内部对账
+			425 button 刷 新
+
+The focused UI element is 443 button 复核条件性数量

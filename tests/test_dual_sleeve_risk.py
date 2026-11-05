@@ -79,6 +79,35 @@ def test_loss_sizing_includes_fees_slippage_lot_and_gap_without_stop_guarantee()
     assert Decimal(result['full_capital_at_risk_cny']) > Decimal(result['stressed_loss_cny'])
 
 
+@pytest.mark.parametrize('sleeve', [CORE, HOTSPOT])
+@pytest.mark.parametrize('cash,quantity', [('1000', 0), ('1002.001', 100)])
+def test_pretrade_sleeve_cash_veto_includes_fees_without_borrowing(sleeve, cash, quantity):
+    payload = synthetic_input()
+    other = CORE if sleeve == HOTSPOT else HOTSPOT
+    payload['sleeves'][sleeve]['cash_cny'] = cash
+    payload['sleeves'][other]['cash_cny'] = str(Decimal('7000') - Decimal(cash))
+    # Keep both sleeve equity budgets valid while redistributing the same cash.
+    payload['shared_budget'].update(core_value_budget='0.2' if sleeve == CORE else '0.7',
+        tactical_hotspot_budget='0.2' if sleeve == HOTSPOT else '0.7', cash_floor='0.1')
+    # Fixed confirmed capital budgets avoid marked-equity fraction effects here.
+    for name in (CORE, HOTSPOT):
+        payload['sleeves'][name]['capital_budget_cny'] = '7000' if name == other else '2000'
+    request = payload['hotspot_request']
+    kwargs = {}
+    if sleeve == CORE:
+        payload['hotspot_request'] = None
+        kwargs['core_request'] = {key: request[key] for key in (
+            'symbol', 'entry_price_cny', 'entry_slippage_cny', 'buy_fee_fraction',
+            'minimum_buy_fee_cny', 'lot_size', 'max_trade_notional_cny', 'available_at',
+            'valid_until', 'quote_as_of', 'liquidity_verified', 'limit_up', 'limit_down')}
+    result = review_dual_sleeve_risk(payload, generated_at=GENERATED_AT,
+        allow_synthetic=True, **kwargs)
+    sizing = result['core_quantity_review' if sleeve == CORE else 'hotspot_quantity_review']
+    assert sizing['review_quantity'] == quantity
+    assert (sleeve + ':sleeve_cash_budget_insufficient' in sizing['blockers']) == (quantity == 0)
+    assert Decimal(result['aggregate']['cash_cny']) == 9000
+
+
 @pytest.mark.parametrize('change', ['cash', 'quantity', 'duplicate', 'budget', 'namespace', 'scope'])
 def test_double_reservation_or_namespace_policy_mixing_rejected(change):
     payload = synthetic_input()
@@ -127,6 +156,26 @@ def test_new_cash_use_preserves_existing_ips_cash_reserve():
     payload = synthetic_input()
     payload['portfolio']['policy']['minimum_cash_cny'] = '8500'
     assert review(payload)['hotspot_quantity_review']['review_quantity'] == 0
+
+
+@pytest.mark.parametrize('cap,quantity', [('15', 0), ('25', 100), ('40', 200)])
+def test_new_cyclical_exposure_respects_aggregate_ips_cap_across_sleeves(cap, quantity):
+    payload = synthetic_input()
+    payload['security_attributes'][0]['cyclical'] = True
+    payload['portfolio']['policy']['max_cyclical_exposure_pct'] = cap
+    result = review(payload)
+    sizing = result['hotspot_quantity_review']
+    assert sizing['review_quantity'] == quantity
+    existing = sum((Decimal(row['market_value_cny']) for sleeve in (CORE, HOTSPOT)
+        for row in result['sleeves'][sleeve]['holdings']), Decimal(0))
+    assert existing + Decimal(sizing['cash_required_cny']) <= Decimal('10000')*Decimal(cap)/100
+    assert result['action'] == 'no_order' and sizing['trade_eligible'] is False
+
+
+def test_noncyclical_purchase_does_not_consume_cyclical_headroom():
+    payload = synthetic_input()
+    payload['portfolio']['policy']['max_cyclical_exposure_pct'] = '1'
+    assert review(payload)['hotspot_quantity_review']['review_quantity'] == 200
 
 
 def test_cross_sleeve_overlap_cap_and_cash_floor_fail_closed():

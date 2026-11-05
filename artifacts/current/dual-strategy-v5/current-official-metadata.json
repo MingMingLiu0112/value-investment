@@ -1,0 +1,97 @@
+{
+  "action": "no_order",
+  "schema_version": "v5-current-official-metadata-replay-v1",
+  "source_commit": "b6969333373e8be58bc3050362346ae73adc2bc8",
+  "generated_at": "2026-10-21T12:37:54.570459+00:00",
+  "real_or_test": "REAL_PUBLIC_DATA",
+  "command": "python -B .tmp/v5-quantity-inspect.py",
+  "verified_symbols": [
+    {
+      "symbol": "600519",
+      "company_name": "贵州茅台",
+      "exchange": "SSE",
+      "industry": "CSRC_SECTION:C",
+      "known_at": "2026-10-21T10:56:30.144404+00:00",
+      "valid_until": "2026-10-28T10:56:27.270458+00:00",
+      "historical_pit": false,
+      "cyclical": "UNKNOWN",
+      "common_factors": "UNKNOWN",
+      "liquidity_profile": "UNKNOWN",
+      "trading_rules": {
+        "source_id": "SSE_QUANTITY",
+        "lot_size": 100,
+        "minimum_buy_quantity": 100,
+        "buy_quantity_increment": 100,
+        "known_at": "2026-10-21T10:56:30.144404+00:00",
+        "valid_until": "2026-10-22T17:47:49.118894+00:00"
+      },
+      "evidence_refs": [
+        {
+          "id": "44820a2e3a322f7f36a0dc11ac885d9037b001776bd9e37017ba9c1e10cbdd73",
+          "path": "runtime/daily-marketwide/20261021T1056235731672Z/official-raw/44820a2e3a322f7f36a0dc11ac885d9037b001776bd9e37017ba9c1e10cbdd73.bin",
+          "sha256": "44820a2e3a322f7f36a0dc11ac885d9037b001776bd9e37017ba9c1e10cbdd73",
+          "source_url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=2%2C4%2C5%2C7%2C8&type=inParams&isPagination=true&pageHelp.pageSize=10000&pageHelp.pageNo=1&pageHelp.beginPage=1&pageHelp.endPage=1",
+          "known_at": "2026-10-21T10:56:27.270458+00:00",
+          "source_role": "SSE_1",
+          "published_at": null
+        },
+        {
+          "id": "fb91ba739d3b177c539de6e181c905f39d1f2e23da1f6dba1f40c804433c8b74",
+          "path": "runtime/daily-marketwide/20261021T1056235731672Z/official-universe.json",
+          "sha256": "fb91ba739d3b177c539de6e181c905f39d1f2e23da1f6dba1f40c804433c8b74",
+          "source_role": "CURRENT_OFFICIAL_UNIVERSE"
+        }
+      ]
+    },
+    {
+      "symbol": "600693",
+      "company_name": "东百集团",
+      "exchange": "SSE",
+      "industry": "CSRC_SECTION:F",
+      "known_at": "2026-10-21T10:56:30.144404+00:00",
+      "valid_until": "2026-10-28T10:56:27.270458+00:00",
+      "historical_pit": false,
+      "cyclical": "UNKNOWN",
+      "common_factors": "UNKNOWN",
+      "liquidity_profile": "UNKNOWN",
+      "trading_rules": {
+        "source_id": "SSE_QUANTITY",
+        "lot_size": 100,
+        "minimum_buy_quantity": 100,
+        "buy_quantity_increment": 100,
+        "known_at": "2026-10-21T10:56:30.144404+00:00",
+        "valid_until": "2026-10-22T17:47:49.118894+00:00"
+      },
+      "evidence_refs": [
+        {
+          "id": "44820a2e3a322f7f36a0dc11ac885d9037b001776bd9e37017ba9c1e10cbdd73",
+          "path": "runtime/daily-marketwide/20261021T1056235731672Z/official-raw/44820a2e3a322f7f36a0dc11ac885d9037b001776bd9e37017ba9c1e10cbdd73.bin",
+          "sha256": "44820a2e3a322f7f36a0dc11ac885d9037b001776bd9e37017ba9c1e10cbdd73",
+          "source_url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=2%2C4%2C5%2C7%2C8&type=inParams&isPagination=true&pageHelp.pageSize=10000&pageHelp.pageNo=1&pageHelp.beginPage=1&pageHelp.endPage=1",
+          "known_at": "2026-10-21T10:56:27.270458+00:00",
+          "source_role": "SSE_1",
+          "published_at": null
+        },
+        {
+          "id": "fb91ba739d3b177c539de6e181c905f39d1f2e23da1f6dba1f40c804433c8b74",
+          "path": "runtime/daily-marketwide/20261021T1056235731672Z/official-universe.json",
+          "sha256": "fb91ba739d3b177c539de6e181c905f39d1f2e23da1f6dba1f40c804433c8b74",
+          "source_role": "CURRENT_OFFICIAL_UNIVERSE"
+        }
+      ]
+    }
+  ],
+  "economic_publication_changed": false,
+  "formal_eligibility": false,
+  "binding_loader_sha256": "7827e4cac4b2698c596ecaf6ed641bbcd8f489d758996683a0fba53675de47be",
+  "old_publication_universe_refs": [
+    {
+      "fetched_at": "2026-10-12T10:54:10.186212+00:00",
+      "id": "official",
+      "path": "runtime\\daily-trade-assistant\\fm3-auto-dryrun-20261012-v2-m2-discovery\\official-universe.json",
+      "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+      "source_name": "沪深北交易所官方证券清单",
+      "source_url": "https://www.szse.cn | https://query.sse.com.cn | https://www.bse.cn"
+    }
+  ]
+}

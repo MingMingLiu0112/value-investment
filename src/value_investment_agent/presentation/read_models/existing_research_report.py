@@ -1,7 +1,7 @@
 """Human-readable rendering of source-bound existing research, without calculations."""
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal
@@ -215,7 +215,11 @@ def render_existing_research_report(payload: Mapping[str, Any]) -> str:
               "research/decision approval and private portfolio constraints before personalized guidance.",
               "A hash match does not prove historical availability or research approval.", ""]
     return "\n".join(lines)
-def render_current_research_readiness(payload: dict) -> str:
+def render_current_research_readiness(
+    payload: dict,
+    *,
+    human_approval_provenance_verifier: Callable[[Any], Any] | None = None,
+) -> str:
     """Explain existing research stops without rerunning or admitting research."""
     if (payload.get("schema_version") != "product-current-workbench-request-v1"
             or payload.get("action") != "no_order"
@@ -232,7 +236,10 @@ def render_current_research_readiness(payload: dict) -> str:
         ):
             raise ValueError("stopped research cannot expose newly admitted results")
     else:
-        restored = verify_current_decision_workbench(payload)
+        restored = verify_current_decision_workbench(
+            payload,
+            human_approval_provenance_verifier=human_approval_provenance_verifier,
+        )
         recommendation = restored.recommendation
         kind = current_recommendation_type(recommendation)
         if payload.get("suggested_state") != kind:
@@ -456,3 +463,20 @@ def render_cutoff_replay_report(payload: dict) -> str:
             '这是现金收付款的描述性桥接，不证明下降原因具有持续性；销售回款不等于收入，'
             '营运资本与一次性因素仍需附注研究。不能据此批准分红能力、预测或买卖建议。action=no_order。', ''])
     return '\n'.join(lines)
+
+
+def render_workbench_result(
+    *, root: Any, result: Mapping[str, Any], existing_manifest: bool,
+) -> str:
+    """Render a shared workbench result with current approval provenance."""
+
+    if existing_manifest:
+        return render_existing_research_report(result)
+    from ...application.product.research_reviews import (
+        verify_human_approval_transport_provenance,
+    )
+    return render_current_research_readiness(
+        result,
+        human_approval_provenance_verifier=lambda approval:
+            verify_human_approval_transport_provenance(root, approval),
+    )

@@ -1,0 +1,538 @@
+{
+  "artifact_type": "one_off_existing_model_research_sensitivity_experiment",
+  "symbol": "000333",
+  "generated_at": "2026-10-21T18:31:49.445814+00:00",
+  "action": "no_order",
+  "registered_valuation_result": false,
+  "economic_approval": false,
+  "g3_approval": false,
+  "published": false,
+  "price_comparison_performed": false,
+  "best_cell_selected": false,
+  "source_package": {
+    "path": "artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/package.json",
+    "sha256": "61525b2918dc33f9f3cc761649b89dc1ba9c13443e4dcfb80381b8be9702facf",
+    "bytes": 49965
+  },
+  "original_descriptor_input_sha256": "574a7a1b649d27ac330860e63b20b587f4aec9da984be4f8a57b884f657cb5c6",
+  "frozen_point_in_time": {
+    "report_period": "2026-06-30",
+    "research_as_of": "2026-10-17",
+    "valuation_date": "2026-10-16",
+    "available_at": "2026-10-18T09:24:36.822583+00:00",
+    "computed_at": "2026-10-18T09:24:36.822583+00:00"
+  },
+  "frozen_operating_inputs": {
+    "start_book_equity": "212861055000",
+    "ordinary_shares": "7464347335"
+  },
+  "frozen_valuation_timing": {
+    "basis_at": "2026-06-30T23:59:59+08:00",
+    "valuation_at": "2026-10-16T17:00:31+08:00",
+    "evidence_refs": [
+      {
+        "id": "midea_fy2025_annual",
+        "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+      },
+      {
+        "id": "midea_2026h1",
+        "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+      },
+      {
+        "id": "midea_202606_hkex_monthly_return",
+        "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+      }
+    ]
+  },
+  "cost_proxy": {
+    "source_research_path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+    "underlying_basis_path": "runtime/valuation-research/moutai-discount-basis-20260909T120002401955Z/evidence.json",
+    "formula": "CNY_10Y_sovereign_YTM_proxy + assumed_beta_1 * China_total_ERP",
+    "risk_free_proxy": "0.016813",
+    "risk_free_curve_date": "2026-09-08",
+    "risk_free_source_url": "https://www.chinamoney.com.cn/ags/ms/cm-u-bk-currency/ClsYldCurvHis",
+    "china_total_erp": "0.0514",
+    "erp_publication_date": "2026-01-05",
+    "erp_source_url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/ctryprem.html",
+    "erp_retrieved_at": "2026-09-09T11:57:41.948858+00:00",
+    "basis_research_information_date": "2026-09-09",
+    "beta": "1",
+    "beta_status": "EXPLICIT_UNMEASURED_ASSUMPTION_NOT_MIDEA_OR_MOUTAI_BETA",
+    "nominal_cny_cost_proxy": "0.068213",
+    "is_lower_bound": false,
+    "is_current_measured_issuer_cost": false,
+    "separate_country_premium_added": false
+  },
+  "mapping": "Each model.value call maps one identical experimental input to all bear/base/bull slots; slot equality is asserted. Slot names do not rank the 12 independent cells.",
+  "verification": {
+    "package_and_all_local_sources_sha256": "PASS_BEFORE_AND_AFTER",
+    "proxy_underlying_source_hashes_and_values": "PASS",
+    "base_grid_cells": 6,
+    "paired_terminal_stress_cells": 6,
+    "identical_slots": "PASS_ALL_12",
+    "algebraic_dividend_crosscheck": "PASS_ALL_12",
+    "zero_terminal_residual_contribution_under_stress": "PASS_ALL_6",
+    "original_inputs_and_implementation_hashes_unchanged": true
+  },
+  "bindings": {
+    "artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/package.json": {
+      "sha256": "61525b2918dc33f9f3cc761649b89dc1ba9c13443e4dcfb80381b8be9702facf",
+      "bytes": 49965
+    },
+    "runtime/midea-2025-official.pdf": {
+      "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6",
+      "bytes": 5942399
+    },
+    "runtime/prospective-public-event-20260927/gapfill-000333-20260927T091704729284Z/1225531404.pdf": {
+      "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8",
+      "bytes": 3825459
+    },
+    "runtime/company-research/midea-denominator-recheck-20261013/hkex-window-20260701-20260807/originals/12235688-2026070700419_c.pdf": {
+      "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd",
+      "bytes": 170560
+    },
+    "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225608903.PDF": {
+      "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd",
+      "bytes": 152999
+    },
+    "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603532.PDF": {
+      "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd",
+      "bytes": 166122
+    },
+    "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603533.PDF": {
+      "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c",
+      "bytes": 215194
+    },
+    "runtime/prospective-public-event-2026-10-17/gapfill-000333-20261017T094945395069Z/1225603534.PDF": {
+      "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733",
+      "bytes": 158782
+    },
+    "runtime/quote-sessions/20261016T090031652233Z/bundle.json": {
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e",
+      "bytes": 51343
+    },
+    "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json": {
+      "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f",
+      "bytes": 6298
+    },
+    "runtime/company-research/midea-draft-20261017-v2/assumption-memo-v2.json": {
+      "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402",
+      "bytes": 1591
+    },
+    "src/value_investment_agent/valuation_models/residual_income.py": {
+      "sha256": "090bb42f00300662ed4f626ee0df19c58c0e6049edd612021d8ccd4b7925a0f7",
+      "bytes": 22090
+    },
+    "src/value_investment_agent/valuation_models/base.py": {
+      "sha256": "012962f12b389fc64de817427840d964a862dd33d501489ba20805bd740a5120",
+      "bytes": 3097
+    },
+    "src/value_investment_agent/valuation_confidence.py": {
+      "sha256": "f25d198233a3aa2b06fb0e6470d3ac5c070c7ca1bc54353d8209fb5c5ea7ef3c",
+      "bytes": 372
+    },
+    "src/value_investment_agent/m1_valuation_package_builder.py": {
+      "sha256": "64d55b666cc90514696410d926c49344f70afd350912ce342758319daa100c87",
+      "bytes": 27334
+    },
+    "src/value_investment_agent/application/product/source_bound_inputs.py": {
+      "sha256": "5c589e830cf691e47b212a1dc48d029df3bffffd2b7bda86a44b123090013d1e",
+      "bytes": 20565
+    },
+    "src/value_investment_agent/research_input.py": {
+      "sha256": "b597fe37bee9019ea87df4c00b2ed1f8b33c844cdbf205082fb9394c74281c98",
+      "bytes": 40637
+    },
+    "src/value_investment_agent/domain/research/research_run_contract.py": {
+      "sha256": "87aec9a3aed2813d282b97c5a4c093d4989f9cdfea89a6a3d90511aa84764c01",
+      "bytes": 14745
+    },
+    ".tmp/midea-existing-model-sensitivity.py": {
+      "sha256": "e5fbda30e24e84f627b7cdeb19339957e944c611fb1fefa6e8ae1728c15586e2",
+      "bytes": 13699
+    },
+    "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json": {
+      "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154",
+      "bytes": 3338
+    },
+    "runtime/valuation-research/moutai-discount-basis-20260909T120002401955Z/evidence.json": {
+      "sha256": "6dea599866140d28b7058d60b7c9a0d235aaed1def4df902011fc46e854de709",
+      "bytes": 3362
+    },
+    "runtime/valuation-research/cfets-normalized-20260909T091701127108Z/evidence.json": {
+      "sha256": "17a99be70a289f1be7d677ba3b63bc4c68c2855f62115e8b204cd1eb8f3f0578",
+      "bytes": 36176
+    },
+    "runtime/valuation-research/damodaran-country-premium-20260909T115741948194Z/evidence.json": {
+      "sha256": "e58ee7bc04282ad5ce71d8212281712e5e58512907985da42869b40794118119",
+      "bytes": 11234
+    },
+    "runtime/valuation-research/damodaran-country-premium-20260909T115741948194Z/original.html": {
+      "sha256": "ea30d57fc0858072c520930e2e5b8a5e5affdce81f7f2e1f9054efab79959dbc",
+      "bytes": 277049
+    },
+    "runtime/valuation-research/cfets-curve-20260909T080004856262Z/curve.raw": {
+      "sha256": "e364688dc8a866c53e19b733b9672fb1059bddeb5aae5b5804fc7bb8258b948f",
+      "bytes": 8553
+    },
+    "runtime/valuation-research/cfets-unit-20260909T083724878031Z/page2.json": {
+      "sha256": "6cd6ccc2cc466b8577a7dda82163678dff28e52ca83c63534c96385e736be811",
+      "bytes": 1073
+    },
+    "runtime/valuation-research/cfets-unit-20260909T084057742537Z/closed-fragment.html": {
+      "sha256": "0a48796e324479b7c7c7d26dd9e19f228b7f36d1563f1245a6de4f0bfacc1b91",
+      "bytes": 21160
+    }
+  },
+  "limitations": [
+    "This is an ex-post research experiment, not a newly registered ValuationResult, source-bound successor descriptor, review or publication. model.value returns only in-memory conditional results; no result is registered.",
+    "Original research/valuation dates, equity, shares and annual-payment timing are frozen. generated_at is the experiment time, not input availability or approval time. No historical package is changed.",
+    "P1 is the model year beginning at the 2026-06-30 basis, first payment 2027-06-30; forecast_roe_2026 in the original assumption names is not a calendar-FY2026 observation.",
+    "All ROE paths, 35% retention, 11% terminal ROE, 2% growth, beta=1 and 9% policy hurdle are unapproved research assumptions, not issuer guidance or probabilities.",
+    "6.8213% combines a 2026-09-08 sovereign YTM proxy with a 2026-01-05 academic ERP under beta=1. Sources are asynchronous; it is neither a lower bound nor current measured Midea equity cost. Moutai beta and its cost interval are not used.",
+    "Sovereign YTM is not a default-free zero-coupon annual-effective rate; currency, compounding, exposure and term matching remain assumptions. Total China ERP is used once.",
+    "Existing equity/share timing, OCI, buybacks, capital actions, actual distribution capacity and unmodelled operating risks are not repaired or approved by this experiment.",
+    "No hedge gains are mechanically added back. Exact hedge matching and tax/minority allocation remain unknown; this experiment makes no reconstructed normalized-profit claim.",
+    "Terminal contribution is the present value of terminal residual income divided by total equity value, not the terminal-dividend-value share. Zero terminal residual income does not mean zero future dividends or zero risk.",
+    "The dividend comparison is an algebraic identity under the same self-funded assumptions, not independent evidence of cash remittance or sustainable payout.",
+    "No current price comparison, best-cell selection, statistical confidence interval, scenario probability, G3, trading approval or order is produced."
+  ],
+  "cells": [
+    {
+      "cell_id": "existing_policy_hurdle:bear:terminal_roe_11pct",
+      "roe_path_source_scenario": "bear",
+      "cost_case": "existing_policy_hurdle",
+      "terminal_stress": false,
+      "inputs": {
+        "cost_of_equity": "0.09",
+        "forecast_roes_P1_to_P5": [
+          "0.15",
+          "0.14",
+          "0.13",
+          "0.12",
+          "0.11"
+        ],
+        "retention": "0.35",
+        "terminal_roe": "0.11",
+        "terminal_growth": "0.02"
+      },
+      "scenario_value_cny_per_frozen_ordinary_share": "41.1147410745737115102425368158174943272240283277",
+      "scenario_equity_value_cny": "306894707969.209319772537704884786699627792293796",
+      "terminal_residual_contribution_ratio": "0.1650237299936098324094603996",
+      "algebraic_dividend_equity_value_cny": "306894707969.209319772537704884786699627792293798",
+      "algebraic_dividend_crosscheck_difference_cny": "-2E-36",
+      "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061",
+      "shared_model_version": "residual-income-equity-shared-dated-v2",
+      "three_identical_scenario_slots_verified": true,
+      "dividend_crosscheck_pass": true
+    },
+    {
+      "cell_id": "existing_policy_hurdle:bear:terminal_roe_equals_cost",
+      "roe_path_source_scenario": "bear",
+      "cost_case": "existing_policy_hurdle",
+      "terminal_stress": true,
+      "inputs": {
+        "cost_of_equity": "0.09",
+        "forecast_roes_P1_to_P5": [
+          "0.15",
+          "0.14",
+          "0.13",
+          "0.12",
+          "0.11"
+        ],
+        "retention": "0.35",
+        "terminal_roe": "0.09",
+        "terminal_growth": "0.02"
+      },
+      "scenario_value_cny_per_frozen_ordinary_share": "34.3298331447260795627865484189047825832703328388",
+      "scenario_equity_value_cny": "256249798544.830781289483737864500377494188324510",
+      "terminal_residual_contribution_ratio": "0E+26",
+      "algebraic_dividend_equity_value_cny": "256249798544.830781289483737864500377494188324511",
+      "algebraic_dividend_crosscheck_difference_cny": "-1E-36",
+      "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061",
+      "shared_model_version": "residual-income-equity-shared-dated-v2",
+      "three_identical_scenario_slots_verified": true,
+      "dividend_crosscheck_pass": true
+    },
+    {
+      "cell_id": "existing_policy_hurdle:base:terminal_roe_11pct",
+      "roe_path_source_scenario": "base",
+      "cost_case": "existing_policy_hurdle",
+      "terminal_stress": false,
+      "inputs": {
+        "cost_of_equity": "0.09",
+        "forecast_roes_P1_to_P5": [
+          "0.18",
+          "0.17",
+          "0.16",
+          "0.155",
+          "0.15"
+        ],
+        "retention": "0.35",
+        "terminal_roe": "0.11",
+        "terminal_growth": "0.02"
+      },
+      "scenario_value_cny_per_frozen_ordinary_share": "45.7417037044192281574936570926129861357849631511",
+      "scenario_equity_value_cny": "341431964144.441293420144739598649591249038437830",
+      "terminal_residual_contribution_ratio": "0.1567110536503976527408765945",
+      "algebraic_dividend_equity_value_cny": "341431964144.441293420144739598649591249038437832",
+      "algebraic_dividend_crosscheck_difference_cny": "-2E-36",
+      "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061",
+      "shared_model_version": "residual-income-equity-shared-dated-v2",
+      "three_identical_scenario_slots_verified": true,
+      "dividend_crosscheck_pass": true
+    },
+    {
+      "cell_id": "existing_policy_hurdle:base:terminal_roe_equals_cost",
+      "roe_path_source_scenario": "base",
+      "cost_case": "existing_policy_hurdle",
+      "terminal_stress": true,
+      "inputs": {
+        "cost_of_equity": "0.09",
+        "forecast_roes_P1_to_P5": [
+          "0.18",
+          "0.17",
+          "0.16",
+          "0.155",
+          "0.15"
+        ],
+        "retention": "0.35",
+        "terminal_roe": "0.09",
+        "terminal_growth": "0.02"
+      },
+      "scenario_value_cny_per_frozen_ordinary_share": "38.5734731211353934377626505634332080764930589777",
+      "scenario_equity_value_cny": "287925801293.441106181340129095698915156271440926",
+      "terminal_residual_contribution_ratio": "0E+25",
+      "algebraic_dividend_equity_value_cny": "287925801293.441106181340129095698915156271440928",
+      "algebraic_dividend_crosscheck_difference_cny": "-2E-36",
+      "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061",
+      "shared_model_version": "residual-income-equity-shared-dated-v2",
+      "three_identical_scenario_slots_verified": true,
+      "dividend_crosscheck_pass": true
+    },
+    {
+      "cell_id": "existing_policy_hurdle:bull:terminal_roe_11pct",
+      "roe_path_source_scenario": "bull",
+      "cost_case": "existing_policy_hurdle",
+      "terminal_stress": false,
+      "inputs": {
+        "cost_of_equity": "0.09",
+        "forecast_roes_P1_to_P5": [
+          "0.205",
+          "0.20",
+          "0.195",
+          "0.19",
+          "0.185"
+        ],
+        "retention": "0.35",
+        "terminal_roe": "0.11",
+        "terminal_growth": "0.02"
+      },
+      "scenario_value_cny_per_frozen_ordinary_share": "50.4145781700471361889392612473881060206624722388",
+      "scenario_equity_value_cny": "376311922208.740517836290831168810184886029379590",
+      "terminal_residual_contribution_ratio": "0.1498824043423071763546468665",
+      "algebraic_dividend_equity_value_cny": "376311922208.740517836290831168810184886029379592",
+      "algebraic_dividend_crosscheck_difference_cny": "-2E-36",
+      "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061",
+      "shared_model_version": "residual-income-equity-shared-dated-v2",
+      "three_identical_scenario_slots_verified": true,
+      "dividend_crosscheck_pass": true
+    },
+    {
+      "cell_id": "existing_policy_hurdle:bull:terminal_roe_equals_cost",
+      "roe_path_source_scenario": "bull",
+      "cost_case": "existing_policy_hurdle",
+      "terminal_stress": true,
+      "inputs": {
+        "cost_of_equity": "0.09",
+        "forecast_roes_P1_to_P5": [
+          "0.205",
+          "0.20",
+          "0.195",
+          "0.19",
+          "0.185"
+        ],
+        "retention": "0.35",
+        "terminal_roe": "0.09",
+        "terminal_growth": "0.02"
+      },
+      "scenario_value_cny_per_frozen_ordinary_share": "42.8583199800172787231261914138100201809919933572",
+      "scenario_equity_value_cny": "319909386525.419227690919189748372706334283803272",
+      "terminal_residual_contribution_ratio": "0E+23",
+      "algebraic_dividend_equity_value_cny": "319909386525.419227690919189748372706334283803273",
+      "algebraic_dividend_crosscheck_difference_cny": "-1E-36",
+      "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061",
+      "shared_model_version": "residual-income-equity-shared-dated-v2",
+      "three_identical_scenario_slots_verified": true,
+      "dividend_crosscheck_pass": true
+    },
+    {
+      "cell_id": "dated_macro_beta1_proxy:bear:terminal_roe_11pct",
+      "roe_path_source_scenario": "bear",
+      "cost_case": "dated_macro_beta1_proxy",
+      "terminal_stress": false,
+      "inputs": {
+        "cost_of_equity": "0.068213",
+        "forecast_roes_P1_to_P5": [
+          "0.15",
+          "0.14",
+          "0.13",
+          "0.12",
+          "0.11"
+        ],
+        "retention": "0.35",
+        "terminal_roe": "0.11",
+        "terminal_growth": "0.02"
+      },
+      "scenario_value_cny_per_frozen_ordinary_share": "59.8756711071442623155009102535387046425037774909",
+      "scenario_equity_value_cny": "446932806059.948773875250148641075804317625199242",
+      "terminal_residual_contribution_ratio": "0.3780021611911596961913895858",
+      "algebraic_dividend_equity_value_cny": "446932806059.948773875250148641075804317625199245",
+      "algebraic_dividend_crosscheck_difference_cny": "-3E-36",
+      "basis_to_valuation_factor": "1.01966312694504674101678965419490234819807141121",
+      "shared_model_version": "residual-income-equity-shared-dated-v2",
+      "three_identical_scenario_slots_verified": true,
+      "dividend_crosscheck_pass": true
+    },
+    {
+      "cell_id": "dated_macro_beta1_proxy:bear:terminal_roe_equals_cost",
+      "roe_path_source_scenario": "bear",
+      "cost_case": "dated_macro_beta1_proxy",
+      "terminal_stress": true,
+      "inputs": {
+        "cost_of_equity": "0.068213",
+        "forecast_roes_P1_to_P5": [
+          "0.15",
+          "0.14",
+          "0.13",
+          "0.12",
+          "0.11"
+        ],
+        "retention": "0.35",
+        "terminal_roe": "0.068213",
+        "terminal_growth": "0.02"
+      },
+      "scenario_value_cny_per_frozen_ordinary_share": "37.2425380258726535233934418767447570763249315360",
+      "scenario_equity_value_cny": "277991239462.058702376720198029157125957888394305",
+      "terminal_residual_contribution_ratio": "0E+46",
+      "algebraic_dividend_equity_value_cny": "277991239462.058702376720198029157125957888394306",
+      "algebraic_dividend_crosscheck_difference_cny": "-1E-36",
+      "basis_to_valuation_factor": "1.01966312694504674101678965419490234819807141121",
+      "shared_model_version": "residual-income-equity-shared-dated-v2",
+      "three_identical_scenario_slots_verified": true,
+      "dividend_crosscheck_pass": true
+    },
+    {
+      "cell_id": "dated_macro_beta1_proxy:base:terminal_roe_11pct",
+      "roe_path_source_scenario": "base",
+      "cost_case": "dated_macro_beta1_proxy",
+      "terminal_stress": false,
+      "inputs": {
+        "cost_of_equity": "0.068213",
+        "forecast_roes_P1_to_P5": [
+          "0.18",
+          "0.17",
+          "0.16",
+          "0.155",
+          "0.15"
+        ],
+        "retention": "0.35",
+        "terminal_roe": "0.11",
+        "terminal_growth": "0.02"
+      },
+      "scenario_value_cny_per_frozen_ordinary_share": "65.7047410567934034817583666424633961345324025372",
+      "scenario_equity_value_cny": "490443008804.140924924642785161624548771846240350",
+      "terminal_residual_contribution_ratio": "0.3639284244359514276538330211",
+      "algebraic_dividend_equity_value_cny": "490443008804.140924924642785161624548771846240353",
+      "algebraic_dividend_crosscheck_difference_cny": "-3E-36",
+      "basis_to_valuation_factor": "1.01966312694504674101678965419490234819807141121",
+      "shared_model_version": "residual-income-equity-shared-dated-v2",
+      "three_identical_scenario_slots_verified": true,
+      "dividend_crosscheck_pass": true
+    },
+    {
+      "cell_id": "dated_macro_beta1_proxy:base:terminal_roe_equals_cost",
+      "roe_path_source_scenario": "base",
+      "cost_case": "dated_macro_beta1_proxy",
+      "terminal_stress": true,
+      "inputs": {
+        "cost_of_equity": "0.068213",
+        "forecast_roes_P1_to_P5": [
+          "0.18",
+          "0.17",
+          "0.16",
+          "0.155",
+          "0.15"
+        ],
+        "retention": "0.35",
+        "terminal_roe": "0.068213",
+        "terminal_growth": "0.02"
+      },
+      "scenario_value_cny_per_frozen_ordinary_share": "41.7929181660224099917114298812506841347041665674",
+      "scenario_equity_value_cny": "311956857334.422463571908583723152910587805826731",
+      "terminal_residual_contribution_ratio": "0E+45",
+      "algebraic_dividend_equity_value_cny": "311956857334.422463571908583723152910587805826733",
+      "algebraic_dividend_crosscheck_difference_cny": "-2E-36",
+      "basis_to_valuation_factor": "1.01966312694504674101678965419490234819807141121",
+      "shared_model_version": "residual-income-equity-shared-dated-v2",
+      "three_identical_scenario_slots_verified": true,
+      "dividend_crosscheck_pass": true
+    },
+    {
+      "cell_id": "dated_macro_beta1_proxy:bull:terminal_roe_11pct",
+      "roe_path_source_scenario": "bull",
+      "cost_case": "dated_macro_beta1_proxy",
+      "terminal_stress": false,
+      "inputs": {
+        "cost_of_equity": "0.068213",
+        "forecast_roes_P1_to_P5": [
+          "0.205",
+          "0.20",
+          "0.195",
+          "0.19",
+          "0.185"
+        ],
+        "retention": "0.35",
+        "terminal_roe": "0.11",
+        "terminal_growth": "0.02"
+      },
+      "scenario_value_cny_per_frozen_ordinary_share": "71.5968918884554688606402699413919103380157731433",
+      "scenario_equity_value_cny": "534424069161.875696256095685330709312122126985450",
+      "terminal_residual_contribution_ratio": "0.3520572869083984428855763063",
+      "algebraic_dividend_equity_value_cny": "534424069161.875696256095685330709312122126985452",
+      "algebraic_dividend_crosscheck_difference_cny": "-2E-36",
+      "basis_to_valuation_factor": "1.01966312694504674101678965419490234819807141121",
+      "shared_model_version": "residual-income-equity-shared-dated-v2",
+      "three_identical_scenario_slots_verified": true,
+      "dividend_crosscheck_pass": true
+    },
+    {
+      "cell_id": "dated_macro_beta1_proxy:bull:terminal_roe_equals_cost",
+      "roe_path_source_scenario": "bull",
+      "cost_case": "dated_macro_beta1_proxy",
+      "terminal_stress": true,
+      "inputs": {
+        "cost_of_equity": "0.068213",
+        "forecast_roes_P1_to_P5": [
+          "0.205",
+          "0.20",
+          "0.195",
+          "0.19",
+          "0.185"
+        ],
+        "retention": "0.35",
+        "terminal_roe": "0.068213",
+        "terminal_growth": "0.02"
+      },
+      "scenario_value_cny_per_frozen_ordinary_share": "46.3906843791319166547858475237123561074063272925",
+      "scenario_equity_value_cny": "346276181314.199451695592855959338674616889392888",
+      "terminal_residual_contribution_ratio": "0E+43",
+      "algebraic_dividend_equity_value_cny": "346276181314.199451695592855959338674616889392889",
+      "algebraic_dividend_crosscheck_difference_cny": "-1E-36",
+      "basis_to_valuation_factor": "1.01966312694504674101678965419490234819807141121",
+      "shared_model_version": "residual-income-equity-shared-dated-v2",
+      "three_identical_scenario_slots_verified": true,
+      "dividend_crosscheck_pass": true
+    }
+  ]
+}

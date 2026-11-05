@@ -15,7 +15,8 @@ from value_investment_agent.research_artifact_codecs import artifact_payload
 
 
 def inputs(root):
-    work = decision_workbench()
+    # A review packet is prepared before the human decision exists.
+    work = decision_workbench(missing_approval=True)
     objects = verify_current_decision_workbench(work).dependency_objects
     facts = artifact_payload(objects['financial_facts'])[1]
     facts['kind'] = facts['facts_type']

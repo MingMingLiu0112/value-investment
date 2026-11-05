@@ -1,0 +1,70 @@
+{
+  "schema_version": "d2-real-agent-acceptance-v1",
+  "action": "no_order",
+  "symbol": "000568",
+  "engineering": "ACCEPTED_REAL_THREE_ROLE_WORKFLOW",
+  "economic_adoption": "REJECTED",
+  "full_d2_acceptance": false,
+  "task_id": "rt-c40c613f50e24ec29f9bd374be5b900b",
+  "model": "deepseek-flash",
+  "prompt_version": "operating-source-prompts-v5-arithmetic-anchors",
+  "source_context_fingerprint": "5080988f19eb187cc3b4249a79b2e4da76ffb1d1a26dcdeacff17be2a8f3a5ca",
+  "source_binding": {
+    "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+    "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+  },
+  "role_response_bindings": {
+    "COUNTER_EVIDENCE": {
+      "path": "runtime/research-task-execution-v1/live-operating-v1/rt-c40c613f50e24ec29f9bd374be5b900b/response-35c1b801b0b4424dc3e610ad74bc38094c56fbcec9d378a3e762b3397590976e.json",
+      "sha256": "7f7c8e2c38b1f69bb43e86fa8e73602ad582db89d432c5a9f31765bbee04f127"
+    },
+    "EVENT": {
+      "path": "runtime/research-task-execution-v1/live-operating-v1/rt-c40c613f50e24ec29f9bd374be5b900b/response-ef3994f4bf7c7e6cc8143f5cf0263cac6172578c69ee2e6503759ea85ebe7039.json",
+      "sha256": "9f1e04a41c99ef18ffe1bbb5f5540e3cdc45b8ed7dbf9708e645ebf9947039e9"
+    },
+    "FUNDAMENTAL": {
+      "path": "runtime/research-task-execution-v1/live-operating-v1/rt-c40c613f50e24ec29f9bd374be5b900b/response-addbc50dccdeabf3986fdb0362523cb8556d32fa223b2d38cd4dea9eb727fece.json",
+      "sha256": "ef518efd352ce60c5bdbff5d3603148ff71df906dbec2c532821d22e1811fea5"
+    }
+  },
+  "real_task_calls": 3,
+  "scenario_count": 3,
+  "numeric_assumptions": 9,
+  "unknown_assumptions": 6,
+  "final_task_peak_rate_estimate_cny": "0.15066",
+  "day_actual_gateway_total_cny": "0.186856",
+  "day_actual_calls": 8,
+  "previous_day_actual_gateway_total_cny": "0.158",
+  "previous_day_configured_estimate_cny": "7.33345",
+  "daily_authorized_cny": "10",
+  "pricing_basis": "BROWSER_CONFIRMED_PEAK_2_INPUT_8_OUTPUT_CNY_PER_MILLION_NO_CACHE_DISCOUNT",
+  "current_run_receipt": {
+    "path": "runtime/live-operating-research-20261101/rt-c40c613f50e24ec29f9bd374be5b900b-reviewed.json",
+    "sha256": "69201e72a6321f835596108e29008111347b65c62af954245c86f364375dc138"
+  },
+  "economic_review": {
+    "path": "runtime/live-operating-research-20261101/independent-economic-disposition.json",
+    "sha256": "7d6caafbf914fd43b02dfcade035bbdcf7410833fb16f1724828187697eb5c69"
+  },
+  "billing_reconciliation": {
+    "path": "runtime/live-operating-research-20261101/actual-cost-reconciliation.json",
+    "sha256": "5034061b719e1c1469ca80f58e9e088f0e0aac34a95c410761447c4b8e777279"
+  },
+  "tests": {
+    "core_targeted_passed": 257,
+    "core_targeted_skipped": 0,
+    "core_receipt": ".tmp/d2-final.xml",
+    "web_passed": 1456,
+    "web_skipped": 28,
+    "web_receipt": ".tmp/d2-final-web.log"
+  },
+  "forbidden_promotions": {
+    "formal_fact_count": 0,
+    "approval_changed": false,
+    "main_range_adopted": false,
+    "compile_into_valuation": false,
+    "condition_price": null,
+    "personal_quantity": null
+  },
+  "first_decisive_gap": "Source-period and scenario-bound consistency plus justified operating price/volume/cost transmission; not another model retry"
+}

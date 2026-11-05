@@ -1,0 +1,401 @@
+{
+  "stage": "S3",
+  "status": "PARTIAL",
+  "action": "no_order",
+  "captured_at": "2026-10-18T10:09:36.272889+00:00",
+  "registry_sha256": "317f151100baaaac268f6dd759290b623ec66b4835e932901f63448cdfff7f93",
+  "observation_scope": "LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+  "watch_source_binding": {
+    "path": "runtime/hotspot-daily-selection/318a078e87de44d9a08b1cecafdda4e1/report.json",
+    "sha256": "3df8773984d1945607e7197ce4a68fb79ab4bded8d06f198471fadf166cb135e"
+  },
+  "selection_pipeline": {
+    "activity_observation_count": 10,
+    "candidate_pool_count": 10,
+    "candidate_pool_industry_count": 10,
+    "assessed_count": 10,
+    "failed_count": 0,
+    "final_count": 10,
+    "quality_counts": {
+      "STRUCTURE_QUALIFIED_OBSERVATION": 0,
+      "ACTIVE_ONLY": 4,
+      "CONFLICT_OR_REJECTED": 6
+    },
+    "stage_order": [
+      "activity_observation",
+      "cross_industry_candidate_pool",
+      "completed_price_structure",
+      "quality_then_activity_ranking"
+    ],
+    "final_rule_version": "hotspot-quality-then-activity-ranking-v1",
+    "action": "no_order"
+  },
+  "active_loaded_count": 10,
+  "retired_loaded_count": 4,
+  "candidates": [
+    {
+      "symbol": "600150",
+      "company_name": "中国船舶",
+      "industry": "国防军工",
+      "current_reference_price": "35.770",
+      "entry_condition": {
+        "price": "36.450",
+        "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+        "status": "WATCH",
+        "intent": "OPEN",
+        "observed": false,
+        "requires_existing_holding": false,
+        "formal_eligibility": false,
+        "personal_permission": false,
+        "action": "no_order"
+      },
+      "invalidation_condition": {
+        "price": "34.410",
+        "rule": "subsequent completed close < prior_5_low; research review required"
+      },
+      "quality": {
+        "rule_version": "hotspot-opportunity-quality-v1",
+        "activity_tier": "ACTIVE_OBSERVATION",
+        "structure_tier": "ACTIVE_ONLY",
+        "structure_reasons": [
+          "STRUCTURE_CONFIRMATION_PENDING"
+        ],
+        "assessed_trade_date": "2026-10-16",
+        "expires_after_session": null,
+        "expiry_rule": "Refresh after next completed exchange session",
+        "formal_eligibility": false,
+        "action": "no_order"
+      },
+      "case_path": "runtime/hotspot-current-price-cases/600150-2026-10-16-a1d2229173c84e87803d44f78c288cb7/case.json",
+      "case_sha256": "a0532111c1d74d63ae6b7dbcddc47f029d13693b754f0c0210901e4b47f64862"
+    },
+    {
+      "symbol": "600667",
+      "company_name": "太极实业",
+      "industry": "建筑装饰",
+      "current_reference_price": "14.630",
+      "entry_condition": {
+        "price": "15.080",
+        "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+        "status": "WATCH",
+        "intent": "OPEN",
+        "observed": false,
+        "requires_existing_holding": false,
+        "formal_eligibility": false,
+        "personal_permission": false,
+        "action": "no_order"
+      },
+      "invalidation_condition": {
+        "price": "14.210",
+        "rule": "subsequent completed close < prior_5_low; research review required"
+      },
+      "quality": {
+        "rule_version": "hotspot-opportunity-quality-v1",
+        "activity_tier": "ACTIVE_OBSERVATION",
+        "structure_tier": "ACTIVE_ONLY",
+        "structure_reasons": [
+          "STRUCTURE_CONFIRMATION_PENDING"
+        ],
+        "assessed_trade_date": "2026-10-16",
+        "expires_after_session": null,
+        "expiry_rule": "Refresh after next completed exchange session",
+        "formal_eligibility": false,
+        "action": "no_order"
+      },
+      "case_path": "runtime/hotspot-current-price-cases/600667-2026-10-16-df78ab2e2de34fafa31a4d5badd495e7/case.json",
+      "case_sha256": "5901fdc3bb58674c32c073aef8b4b98b6100004d977831065fc40637d619a828"
+    },
+    {
+      "symbol": "002008",
+      "company_name": "大族激光",
+      "industry": "机械设备",
+      "current_reference_price": "63.850",
+      "entry_condition": {
+        "price": "67.780",
+        "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+        "status": "WATCH",
+        "intent": "OPEN",
+        "observed": false,
+        "requires_existing_holding": false,
+        "formal_eligibility": false,
+        "personal_permission": false,
+        "action": "no_order"
+      },
+      "invalidation_condition": {
+        "price": "62.660",
+        "rule": "subsequent completed close < prior_5_low; research review required"
+      },
+      "quality": {
+        "rule_version": "hotspot-opportunity-quality-v1",
+        "activity_tier": "ACTIVE_OBSERVATION",
+        "structure_tier": "ACTIVE_ONLY",
+        "structure_reasons": [
+          "STRUCTURE_CONFIRMATION_PENDING"
+        ],
+        "assessed_trade_date": "2026-10-16",
+        "expires_after_session": null,
+        "expiry_rule": "Refresh after next completed exchange session",
+        "formal_eligibility": false,
+        "action": "no_order"
+      },
+      "case_path": "runtime/hotspot-current-price-cases/002008-2026-10-16-c16b41928f9045c08d2cdda19d55753e/case.json",
+      "case_sha256": "9210c69c868d345efc858f11fe5196b6ea70c7899803cf270819602579ea7fb6"
+    },
+    {
+      "symbol": "600019",
+      "company_name": "宝钢股份",
+      "industry": "钢铁",
+      "current_reference_price": "6.040",
+      "entry_condition": {
+        "price": "6.050",
+        "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+        "status": "WATCH",
+        "intent": "OPEN",
+        "observed": false,
+        "requires_existing_holding": false,
+        "formal_eligibility": false,
+        "personal_permission": false,
+        "action": "no_order"
+      },
+      "invalidation_condition": {
+        "price": "5.900",
+        "rule": "subsequent completed close < prior_5_low; research review required"
+      },
+      "quality": {
+        "rule_version": "hotspot-opportunity-quality-v1",
+        "activity_tier": "ACTIVE_OBSERVATION",
+        "structure_tier": "ACTIVE_ONLY",
+        "structure_reasons": [
+          "STRUCTURE_CONFIRMATION_PENDING"
+        ],
+        "assessed_trade_date": "2026-10-16",
+        "expires_after_session": null,
+        "expiry_rule": "Refresh after next completed exchange session",
+        "formal_eligibility": false,
+        "action": "no_order"
+      },
+      "case_path": "runtime/hotspot-current-price-cases/600019-2026-10-16-f50f688ee8df4a6da2e29128b2e17e91/case.json",
+      "case_sha256": "8cc9c3d62a08ec62413fa13d30f24d96382e5410d0c9b59ed29a331b3c6d25f1"
+    },
+    {
+      "symbol": "000338",
+      "company_name": "潍柴动力",
+      "industry": "汽车",
+      "current_reference_price": "21.770",
+      "entry_condition": {
+        "price": "22.330",
+        "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+        "status": "WATCH",
+        "intent": "OPEN",
+        "observed": false,
+        "requires_existing_holding": false,
+        "formal_eligibility": false,
+        "personal_permission": false,
+        "action": "no_order"
+      },
+      "invalidation_condition": {
+        "price": "21.230",
+        "rule": "subsequent completed close < prior_5_low; research review required"
+      },
+      "quality": {
+        "rule_version": "hotspot-opportunity-quality-v1",
+        "activity_tier": "ACTIVE_OBSERVATION",
+        "structure_tier": "CONFLICT_OR_REJECTED",
+        "structure_reasons": [
+          "DAILY_DOWNTREND_CONFLICT"
+        ],
+        "assessed_trade_date": "2026-10-16",
+        "expires_after_session": null,
+        "expiry_rule": "Refresh after next completed exchange session",
+        "formal_eligibility": false,
+        "action": "no_order"
+      },
+      "case_path": "runtime/hotspot-current-price-cases/000338-2026-10-16-2bc8ebe792364a92a055f98decc704ac/case.json",
+      "case_sha256": "76a31ce1e7d4a3fd2436cf24b93fb9ccefc56b6c4b42ce2dec696c4ceba1d62b"
+    },
+    {
+      "symbol": "600176",
+      "company_name": "XD中国巨",
+      "industry": "建筑材料",
+      "current_reference_price": "33.900",
+      "entry_condition": {
+        "price": "35.150",
+        "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+        "status": "WATCH",
+        "intent": "OPEN",
+        "observed": false,
+        "requires_existing_holding": false,
+        "formal_eligibility": false,
+        "personal_permission": false,
+        "action": "no_order"
+      },
+      "invalidation_condition": {
+        "price": "33.750",
+        "rule": "subsequent completed close < prior_5_low; research review required"
+      },
+      "quality": {
+        "rule_version": "hotspot-opportunity-quality-v1",
+        "activity_tier": "ACTIVE_OBSERVATION",
+        "structure_tier": "CONFLICT_OR_REJECTED",
+        "structure_reasons": [
+          "DAILY_DOWNTREND_CONFLICT",
+          "SUPPORTING_STRUCTURE_INVALIDATED"
+        ],
+        "assessed_trade_date": "2026-10-16",
+        "expires_after_session": null,
+        "expiry_rule": "Refresh after next completed exchange session",
+        "formal_eligibility": false,
+        "action": "no_order"
+      },
+      "case_path": "runtime/hotspot-current-price-cases/600176-2026-10-16-679618f8092a4242b0ecd1574f9982d6/case.json",
+      "case_sha256": "44d51ea8e5f51af7793a098133609e292462322a08b32f008ec566111f63484c"
+    },
+    {
+      "symbol": "000560",
+      "company_name": "我爱我家",
+      "industry": "房地产",
+      "current_reference_price": "3.200",
+      "entry_condition": {
+        "price": "3.400",
+        "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+        "status": "WATCH",
+        "intent": "OPEN",
+        "observed": false,
+        "requires_existing_holding": false,
+        "formal_eligibility": false,
+        "personal_permission": false,
+        "action": "no_order"
+      },
+      "invalidation_condition": {
+        "price": "3.060",
+        "rule": "subsequent completed close < prior_5_low; research review required"
+      },
+      "quality": {
+        "rule_version": "hotspot-opportunity-quality-v1",
+        "activity_tier": "ACTIVE_OBSERVATION",
+        "structure_tier": "CONFLICT_OR_REJECTED",
+        "structure_reasons": [
+          "INSUFFICIENT_UPPER_SPACE"
+        ],
+        "assessed_trade_date": "2026-10-16",
+        "expires_after_session": null,
+        "expiry_rule": "Refresh after next completed exchange session",
+        "formal_eligibility": false,
+        "action": "no_order"
+      },
+      "case_path": "runtime/hotspot-current-price-cases/000560-2026-10-16-2f288dd8e2464ce091412f95be968cd0/case.json",
+      "case_sha256": "6fde4c65ccaca264ffe40edc6746ee533e8d4970a56f8daa03854d2e847db26f"
+    },
+    {
+      "symbol": "601857",
+      "company_name": "中国石油",
+      "industry": "石油石化",
+      "current_reference_price": "12.760",
+      "entry_condition": {
+        "price": "12.690",
+        "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+        "status": "TRIGGER_PENDING",
+        "intent": "OPEN",
+        "observed": false,
+        "requires_existing_holding": false,
+        "formal_eligibility": false,
+        "personal_permission": false,
+        "action": "no_order"
+      },
+      "invalidation_condition": {
+        "price": "12.220",
+        "rule": "subsequent completed close < prior_5_low; research review required"
+      },
+      "quality": {
+        "rule_version": "hotspot-opportunity-quality-v1",
+        "activity_tier": "ACTIVE_OBSERVATION",
+        "structure_tier": "CONFLICT_OR_REJECTED",
+        "structure_reasons": [
+          "DAILY_DOWNTREND_CONFLICT"
+        ],
+        "assessed_trade_date": "2026-10-16",
+        "expires_after_session": null,
+        "expiry_rule": "Refresh after next completed exchange session",
+        "formal_eligibility": false,
+        "action": "no_order"
+      },
+      "case_path": "runtime/hotspot-current-price-cases/601857-2026-10-16-15e856c8ecb0473b8178f10b791bad17/case.json",
+      "case_sha256": "dd1696e30ce240ea6060f31f39c9c5f50de21d67d9bd9a5125e243fbd4854472"
+    },
+    {
+      "symbol": "600127",
+      "company_name": "金健米业",
+      "industry": "农林牧渔",
+      "current_reference_price": "14.620",
+      "entry_condition": {
+        "price": "14.760",
+        "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+        "status": "WATCH",
+        "intent": "OPEN",
+        "observed": false,
+        "requires_existing_holding": false,
+        "formal_eligibility": false,
+        "personal_permission": false,
+        "action": "no_order"
+      },
+      "invalidation_condition": {
+        "price": "13.300",
+        "rule": "subsequent completed close < prior_5_low; research review required"
+      },
+      "quality": {
+        "rule_version": "hotspot-opportunity-quality-v1",
+        "activity_tier": "ACTIVE_OBSERVATION",
+        "structure_tier": "CONFLICT_OR_REJECTED",
+        "structure_reasons": [
+          "DAILY_DOWNTREND_CONFLICT"
+        ],
+        "assessed_trade_date": "2026-10-16",
+        "expires_after_session": null,
+        "expiry_rule": "Refresh after next completed exchange session",
+        "formal_eligibility": false,
+        "action": "no_order"
+      },
+      "case_path": "runtime/hotspot-current-price-cases/600127-2026-10-16-6700c02ee101483bab640c830e99b097/case.json",
+      "case_sha256": "a1edb5ee6a30029699c09be7bafb7c17ad63296772d18b58e25ee45107ae279c"
+    },
+    {
+      "symbol": "000333",
+      "company_name": "美的集团",
+      "industry": "家用电器",
+      "current_reference_price": "84.600",
+      "entry_condition": {
+        "price": "85.800",
+        "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+        "status": "WATCH",
+        "intent": "OPEN",
+        "observed": false,
+        "requires_existing_holding": false,
+        "formal_eligibility": false,
+        "personal_permission": false,
+        "action": "no_order"
+      },
+      "invalidation_condition": {
+        "price": "83.400",
+        "rule": "subsequent completed close < prior_5_low; research review required"
+      },
+      "quality": {
+        "rule_version": "hotspot-opportunity-quality-v1",
+        "activity_tier": "ACTIVE_OBSERVATION",
+        "structure_tier": "CONFLICT_OR_REJECTED",
+        "structure_reasons": [
+          "INSUFFICIENT_UPPER_SPACE"
+        ],
+        "assessed_trade_date": "2026-10-16",
+        "expires_after_session": null,
+        "expiry_rule": "Refresh after next completed exchange session",
+        "formal_eligibility": false,
+        "action": "no_order"
+      },
+      "case_path": "runtime/hotspot-current-price-cases/000333-2026-10-16-835fe9d78ead4a7392a7a014aacc5064/case.json",
+      "case_sha256": "5c3641d912d63bf65f4b4638d2834327a8aac3c9e6a213107d292fe1395bfd49"
+    }
+  ],
+  "current_pit": false,
+  "formal_eligibility": false,
+  "actual_browser_evidence": "NOT_VERIFIED"
+}

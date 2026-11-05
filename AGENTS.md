@@ -4,6 +4,16 @@ This repository builds an evidence-driven A-share investment research and monito
 
 ## Authority
 
+Current task selection (2026-10-25): the only active business Goal is
+`DUAL-STRATEGY-RESEARCH-TO-DECISION-CLOSURE-20261023`, selected by
+`docs/current-stage-goal.md` and its linked current execution prompt.
+Earlier D0-D6/M2-M7 "current" descriptions below are historical scoped context,
+not a new task queue or a prerequisite tying the independent hotspot lane to
+value G3. Preserve their immutable evidence and permanent no_order boundaries.
+Current work is value economic research, decisive public-data enrichment and
+independent hotspot validation, consumed by the existing Web. Do not dispatch
+simulation-product, generic framework or approval-platform expansion.
+
 The latest explicit user task controls the current action. Within repository documents, use these scoped authorities:
 
 1. `AGENTS.md`: navigation, execution discipline and permanent boundaries.

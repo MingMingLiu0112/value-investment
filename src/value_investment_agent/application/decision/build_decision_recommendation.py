@@ -221,6 +221,7 @@ def build_decision_recommendation(
             research_case_payload=research_case_payload,
             facts_payload=facts_payload,
             assumptions_payload=assumptions_payload,
+            require_authenticated_provenance=True,
         )
         approval_blockers.extend(approval_decision.blockers)
 

@@ -123,7 +123,7 @@ def test_daily_one_shot_reopen_is_not_reused_and_candidate_reason_is_visible(tmp
     data["sources"].append({
         "id": new_id,
         "kind": "official_issuer_filing",
-        "location": source_path.relative_to(tmp_path).as_posix(),
+        "location": "https://static.cninfo.com.cn/finalpage/2026-09-22/synthetic-test.pdf",
         "local_path": source_path.relative_to(tmp_path).as_posix(),
         "sha256": sha256_file(source_path),
         "source_available_at": "2026-09-22T00:00:00+08:00",

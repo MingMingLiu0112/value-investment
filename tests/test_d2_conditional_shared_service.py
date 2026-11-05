@@ -13,6 +13,7 @@ import hashlib
 import json
 
 import pytest
+from materiality_transport_helpers import authenticated_materiality_packet
 
 from test_decision_recommendation import _case
 from test_event_materiality import _decision, _review, DECISION_NOT_MATERIAL
@@ -32,6 +33,7 @@ from value_investment_agent.application.product.company_research import (
 from value_investment_agent.application.product.research_reviews import attach_research_reviews
 from value_investment_agent.event_scan import AnnouncementReview, EventScanResult
 from value_investment_agent.human_research_approval import (
+    AUTHENTICATED_TRANSPORT_BINDING_SCHEMA,
     DECISION_APPROVED_RESEARCH_ONLY,
     artifact_fingerprint,
 )
@@ -218,7 +220,7 @@ def _packet(chain, approval):
     ("assumption_set_sha256", "assumption_set_sha256_changed"),
 ])
 def test_synthetic_conditional_approval_chain_and_bundle_replay(
-    synthetic_chain, entry, drift, expected_blocker,
+    synthetic_chain, authenticated_materiality_packet, entry, drift, expected_blocker,
 ):
     root, package_path, descriptor, app, baseline, approval, _, event_hash = synthetic_chain
     if drift == "missing":
@@ -227,11 +229,14 @@ def test_synthetic_conditional_approval_chain_and_bundle_replay(
         approval = replace(approval, **{drift: "synthetic-stale-model" if drift.endswith("version")
                                       else "0" * 64})
     packet_path, packet_hash = _packet(synthetic_chain, approval)
+    packet_path, packet_hash, _, _, _ = authenticated_materiality_packet(
+        package_path, synthetic_chain[6], extra_packet=packet_path)
     output_path = root / "synthetic-export.json"
     if entry == "shared_service":
         spec = attach_research_reviews(
             root=root, spec=build_research_run_spec(descriptor), descriptor=descriptor,
             path=packet_path, expected_sha256=packet_hash, event_sha256=event_hash,
+            allow_unsigned_legacy_frozen_replay=True,
         )
         payload = _serialize_outcome(app.run_company_research(spec))
         _store(root, output_path.name, payload)
@@ -239,6 +244,7 @@ def test_synthetic_conditional_approval_chain_and_bundle_replay(
         result = run_company_research_for_symbol(
             root=root, symbol=SYMBOL, package_path=package_path, output_path=output_path,
             reviews_path=packet_path, reviews_sha256=packet_hash,
+            allow_unsigned_legacy_frozen_replay=True,
             schedule_request={
                 "schema_version": "research-schedule-request-v1", "symbol": SYMBOL,
                 "source_id": SYNTHETIC, "period": DAY.isoformat(),
@@ -263,17 +269,18 @@ def test_synthetic_conditional_approval_chain_and_bundle_replay(
     assert payload["event_materiality_review"]["decisions"][0]["human_decision"] == DECISION_NOT_MATERIAL
     assert payload["event_materiality_review"]["action"] == "no_order"
     recommendation = payload["decision_recommendation"]
-    assert recommendation["recommendation_type"] == ("BUY_CANDIDATE" if drift is None else "NO_ACTION")
+    assert recommendation["recommendation_type"] == "NO_ACTION"
     assert payload["action"] == recommendation["action"] == "no_order"
     assert recommendation["position_guidance"] is None
     assert recommendation["portfolio_input_status"] == "BLOCKED_PRIVATE_INPUT"
     if drift is None:
-        assert payload["blockers"] == []
-        assert all(payload["gate"]["results"].values())
-        assert payload["price_attractiveness"]["status"] == "RESEARCH_ATTRACTIVE"
-        assert payload["pre_decision_eligibility"]["status"] == STATUS_ELIGIBLE
-        assert payload["pre_decision_eligibility"]["blockers"] == []
-        assert payload["pre_decision_eligibility"]["positive_price_review_eligible"] is True
+        assert "FROZEN_REPLAY_REQUIRES_AUTHENTICATED_G3" in payload["blockers"]
+        assert "FROZEN_REPLAY_REQUIRES_AUTHENTICATED_G3" in recommendation["blockers"]
+        assert payload["pre_decision_eligibility"]["status"] == STATUS_NOT_ELIGIBLE
+        assert "FROZEN_REPLAY_REQUIRES_AUTHENTICATED_G3" in (
+            payload["pre_decision_eligibility"]["blockers"]
+        )
+        assert payload["pre_decision_eligibility"]["positive_price_review_eligible"] is False
     else:
         assert expected_blocker in recommendation["blockers"]
         if drift == "missing":
@@ -293,7 +300,13 @@ def test_synthetic_conditional_approval_chain_and_bundle_replay(
     assert restored.recommendation.action == "no_order"
     assert restored.recommendation.position_guidance is None
     if drift is None:
-        assert restored.dependency_objects["human_approval"] == approval
+        frozen_approval = replace(
+            approval,
+            decision="SUPERSEDED",
+            price_assessment_eligible=False,
+            remaining_blockers=("FROZEN_REPLAY_REQUIRES_AUTHENTICATED_G3",),
+        )
+        assert restored.dependency_objects["human_approval"] == frozen_approval
         assert {"research_case", "financial_facts", "valuation_assumptions", "research_gate",
                 "valuation", "human_approval", "event_materiality", "model_validity",
                 "price_bridge", "price_attractiveness", "pre_decision"} <= set(restored.dependencies)
@@ -301,3 +314,66 @@ def test_synthetic_conditional_approval_chain_and_bundle_replay(
         tampered["artifacts"][0]["canonical_payload"] += " "
         with pytest.raises(ValueError, match="payload hash does not match"):
             ReadOnlyArtifactBundleRepository(tampered)
+
+
+def test_direct_typed_g3_injection_cannot_satisfy_service_gate(
+    synthetic_chain, authenticated_materiality_packet
+):
+    root, package_path, descriptor, app, _, approval, review, event_hash = synthetic_chain
+    packet_path, packet_hash = _packet(synthetic_chain, approval)
+    packet_path, packet_hash, _, _, _ = authenticated_materiality_packet(
+        package_path, review, extra_packet=packet_path
+    )
+    frozen_spec = attach_research_reviews(
+        root=root,
+        spec=build_research_run_spec(descriptor),
+        descriptor=descriptor,
+        path=packet_path,
+        expected_sha256=packet_hash,
+        event_sha256=event_hash,
+        allow_unsigned_legacy_frozen_replay=True,
+    )
+    injected = replace(frozen_spec, human_research_approval=approval)
+    outcome = app.run_company_research(injected)
+    assert outcome.gate.results['G3_估值门'] is False
+    assert 'human_approval_transport_provenance_missing' in outcome.blockers
+    assert outcome.pre_decision_eligibility is not None
+    assert outcome.pre_decision_eligibility.positive_price_review_eligible is False
+    assert outcome.decision_recommendation.recommendation_action == 'NO_ACTION'
+    assert outcome.decision_recommendation.action == 'no_order'
+    assert outcome.decision_recommendation.position_guidance is None
+
+
+def test_direct_fake_g3_transport_binding_cannot_satisfy_service_gate(
+    synthetic_chain, authenticated_materiality_packet
+):
+    root, package_path, descriptor, app, _, approval, review, event_hash = synthetic_chain
+    packet_path, packet_hash = _packet(synthetic_chain, approval)
+    packet_path, packet_hash, _, _, _ = authenticated_materiality_packet(
+        package_path, review, extra_packet=packet_path
+    )
+    frozen_spec = attach_research_reviews(
+        root=root,
+        spec=build_research_run_spec(descriptor),
+        descriptor=descriptor,
+        path=packet_path,
+        expected_sha256=packet_hash,
+        event_sha256=event_hash,
+        allow_unsigned_legacy_frozen_replay=True,
+    )
+    forged = replace(approval, authenticated_transport_binding={
+        'schema_version': AUTHENTICATED_TRANSPORT_BINDING_SCHEMA,
+        'transport': 'SIGNED_PENDING_REVIEW_RESPONSE',
+        'response_binding': {'path': 'runtime/missing-response.json', 'sha256': '1' * 64},
+        'candidate_binding': {'path': 'runtime/missing-candidate.json', 'sha256': '2' * 64},
+        'trust_root_binding': {'path': 'runtime/missing-trust.json', 'sha256': '3' * 64},
+    })
+    injected = replace(frozen_spec, human_research_approval=forged)
+    outcome = app.run_company_research(injected)
+    assert outcome.gate.results['G3_估值门'] is False
+    assert 'human_approval_transport_provenance_invalid' in outcome.blockers
+    assert outcome.pre_decision_eligibility is not None
+    assert outcome.pre_decision_eligibility.positive_price_review_eligible is False
+    assert outcome.decision_recommendation.recommendation_action == 'NO_ACTION'
+    assert outcome.decision_recommendation.action == 'no_order'
+    assert outcome.decision_recommendation.position_guidance is None

@@ -1,0 +1,97 @@
+{
+  "schema_version": "public-evidence-a-acceptance-summary-v1",
+  "action": "no_order",
+  "scope": "REQUESTED_FY2025_ORIGINALS_ONLY",
+  "bundle": {
+    "path": "runtime/public-evidence/20261030T110724-accepted/bundle.json",
+    "sha256": "ab4d528f7f30144ac451a33d2326e9d143d7496f4d376a22a8a12800f877034a"
+  },
+  "acceptance": {
+    "path": "runtime/public-evidence/20261030T110724-accepted/acceptance.json",
+    "sha256": "997640fb71e0838aea372f0d4cea6312e8172ee4f8624efaa9ecd3cea935e271"
+  },
+  "actual_public_sources": [
+    {
+      "symbol": "600519",
+      "issuer_name": "贵州茅台酒股份有限公司",
+      "period": "2025-12-31",
+      "exchange": "SSE",
+      "status": "VERIFIED",
+      "reason": "RETAINED_ORIGINAL_NOT_LATEST_REPORT_ASSERTION",
+      "reused": true,
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "published_date": "2026-04-17",
+      "fetched_at": "2026-10-30T10:40:54.570454+00:00",
+      "fact_status": "SCOPED_FACTS_VERIFIED",
+      "adopted_fact_count": 1,
+      "fact_issues": [],
+      "adopted_fields": [
+        "debt_ratio"
+      ]
+    },
+    {
+      "symbol": "600887",
+      "issuer_name": "内蒙古伊利实业集团股份有限公司",
+      "period": "2025-12-31",
+      "exchange": "SSE",
+      "status": "VERIFIED",
+      "reason": "RETAINED_ORIGINAL_NOT_LATEST_REPORT_ASSERTION",
+      "reused": true,
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+      "published_date": "2026-04-30",
+      "fetched_at": "2026-10-30T10:40:56.007051+00:00",
+      "fact_status": "SCOPED_FACTS_VERIFIED",
+      "adopted_fact_count": 1,
+      "fact_issues": [],
+      "adopted_fields": [
+        "debt_ratio"
+      ]
+    },
+    {
+      "symbol": "000544",
+      "issuer_name": "中原环保股份有限公司",
+      "period": "2025-12-31",
+      "exchange": "SZSE",
+      "status": "VERIFIED",
+      "reason": "RETAINED_ORIGINAL_NOT_LATEST_REPORT_ASSERTION",
+      "reused": true,
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-03/1225075381.PDF",
+      "sha256": "55bac5078b18dfe1c7ff5bf79c90bf985e2635a7432c1aed2de579a63fe55002",
+      "published_date": "2026-04-03",
+      "fetched_at": "2026-10-30T10:40:57.632829+00:00",
+      "fact_status": "OBSERVATIONS_ONLY",
+      "adopted_fact_count": 0,
+      "fact_issues": [
+        "MISSING_OR_AMBIGUOUS_PRINTED_BALANCE_TOTALS"
+      ],
+      "adopted_fields": []
+    }
+  ],
+  "restored_equal": true,
+  "source_clocks_preserved": true,
+  "consumed_fields": [
+    {
+      "symbol": "600519",
+      "field": "debt_ratio",
+      "value": "16.4153621922476232995785399664596602459430389897",
+      "assurance_basis": "source_reported_only"
+    },
+    {
+      "symbol": "600887",
+      "field": "debt_ratio",
+      "value": "61.5089759095572909689042766776440454268374604969",
+      "assurance_basis": "source_reported_only"
+    }
+  ],
+  "formal_eligibility": false,
+  "strict_historical_pit": false,
+  "limitations": [
+    "NOT_ALL_MARKET",
+    "BSE_NOT_VALIDATED",
+    "H1_FACT_PARSER_UNSUPPORTED",
+    "000544_REPORTED_CURRENCY_UNKNOWN",
+    "NOT_COMPLETE_DEBT_OR_ECONOMIC_APPROVAL"
+  ]
+}

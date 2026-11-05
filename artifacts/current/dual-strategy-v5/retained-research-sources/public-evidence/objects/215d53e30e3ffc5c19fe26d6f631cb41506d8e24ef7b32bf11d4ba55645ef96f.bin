@@ -1,0 +1,230 @@
+{
+  "schema_version": "finite-earnings-path-proposal-v1",
+  "action": "no_order",
+  "symbol": "600887",
+  "source_package_sha256": "3cdc95e1c08dfa09ed19a8ae056cc4331cb020483aa841a381539df4148b7e98",
+  "profit_anchor_field": "ttm_ex_nonrecurring_parent_profit_cny",
+  "profit_basis": "Historical ex-nonrecurring parent-profit TTM proxy, not normalized earnings.",
+  "income_growth": {
+    "bear": "-0.05",
+    "base": "0",
+    "bull": "0.03"
+  },
+  "scenario_conditions": {
+    "bear": {
+      "cost_of_equity": "0.10",
+      "retention": "0.20",
+      "terminal_growth": "0"
+    },
+    "base": {
+      "cost_of_equity": "0.09",
+      "retention": "0.15",
+      "terminal_growth": "0"
+    },
+    "bull": {
+      "cost_of_equity": "0.08",
+      "retention": "0.10",
+      "terminal_growth": "0"
+    }
+  },
+  "rationale_bindings": [
+    {
+      "path": "docs/current/600887-current-financial-review-20261011.md",
+      "sha256": "5241cd6420eb497bf5450d43bced4c35703d562db0e8762460b2af93bd0a7427"
+    },
+    {
+      "path": "docs/current/600887-economic-closure-review-20261011.md",
+      "sha256": "6bc1bb2886e7c783119a51ad57bc5a7c146a105164db42c3f6e66176c27d45e6"
+    },
+    {
+      "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/index.json",
+      "sha256": "172808bcfe7069e5e30017136089764804a7edb4b2370422703ef79b3d10f54a"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index-manifest.json",
+      "sha256": "2378d8dac7ef431ab416944b850a2565382f41170cce86fd2153a3ed99c0bd3f"
+    }
+  ],
+  "choices": [
+    {
+      "id": "short-advantage",
+      "growth_years": 1,
+      "fade_years": 3,
+      "rationale": "盈利条件保留一年，再用三年全资本ROE衰减至权益成本；不假定永久超额回报。",
+      "countercase": "盈利下降、减值及融资约束可能使短期持续性也无法成立。"
+    },
+    {
+      "id": "medium-advantage",
+      "growth_years": 3,
+      "fade_years": 5,
+      "rationale": "复用已披露TTM代理的三年持续与五年衰减条件；恢复机制仍待审。",
+      "countercase": "现有经营证据不能证明三年优势期；更长持续性须独立经济论证。"
+    }
+  ],
+  "economic_review_items": [
+    "Validate earnings normalization and forward operating mechanism without impairment addbacks.",
+    "Validate issuer-specific equity cost, share denominator and finite advantage duration.",
+    "Historical H1 consolidated ownership equity now reconciles; separately validate future OCI/capital changes and sustainable distribution."
+  ],
+  "assurance_limits": [
+    "Conditional mathematical alternatives only; not approved fair value or entry prices.",
+    "Self-funded model does not enforce the issuer DPS floor or financing-funded distributions.",
+    "No G3, materiality, strict PIT, current price or private portfolio approval."
+  ],
+  "financial_rebase": {
+    "schema_version": "financial-proposal-rebase-v1",
+    "manifest_path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/manifest.json",
+    "manifest_sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384",
+    "share_basis": "DISCLOSED_TOTAL_NOT_TREASURY_OR_DILUTION_ADJUSTED",
+    "start_book_equity": {
+      "value": "53711364981.99",
+      "unit": "CNY",
+      "scope": "consolidated_parent_attributable",
+      "period_end": "2026-06-30",
+      "source_id": "cninfo:1225511409",
+      "physical_page": 49,
+      "statement_header_page": 48,
+      "evidence_excerpt": "归属于母公司所有者权益（或股东权益）合计 53,711,364,981.99 54,655,690,475.89"
+    },
+    "ordinary_shares": {
+      "value": "6325360667",
+      "unit": "shares",
+      "scope": "disclosed_total_ordinary_shares",
+      "period_end": "2026-06-30",
+      "source_id": "cninfo:1225511409",
+      "physical_page": 66,
+      "evidence_excerpt": "6,325,360,667 股。"
+    },
+    "share_continuity": {
+      "period_end": "2026-06-30",
+      "source_id": "cninfo:1225511409",
+      "physical_page": 42,
+      "evidence_excerpt": "报告期内，公司股份总数及股本结构未发生变化。"
+    },
+    "share_capital_confirmation": {
+      "source_id": "cninfo:1225511409",
+      "physical_page": 159,
+      "evidence_excerpt": "股份总数 6,325,360,667.00 6,325,360,667.00"
+    },
+    "limitations": [
+      "Disclosed historical total shares, not a treasury-adjusted or diluted current denominator.",
+      "Historical H1 equity movements reconciled; prospective clean-surplus behavior and distribution are not approved.",
+      "Retained 2026-09-22 valuation date; first modeled annual payment 2027-06-30, not FY2026."
+    ],
+    "equity_bridge": {
+      "schema_version": "consolidated-equity-statement-bridge-v1",
+      "unit": "CNY",
+      "scope": "consolidated_parent_attributable",
+      "period_end": "2026-06-30",
+      "source_id": "cninfo:1225511409",
+      "header_page": 58,
+      "rows": {
+        "opening": {
+          "physical_page": 58,
+          "parent_value": "54655690475.89",
+          "evidence_excerpt": "二、本年期初余额 6,325,360,667.00 12,262,344,222.29 -173,163,583.80 3,200,065,459.00 33,041,083,711.40 54,655,690,475.89 3,888,586,202.27 58,544,276,678.16"
+        },
+        "closing": {
+          "physical_page": 59,
+          "parent_value": "53711364981.99",
+          "evidence_excerpt": "四、本期期末余额 6,325,360,667.00 12,240,717,240.54 -1,162,028,076.08 362,482.64 3,200,065,459.00 33,106,887,208.89 53,711,364,981.99 3,565,015,649.48 57,276,380,631.47"
+        },
+        "change": {
+          "physical_page": 58,
+          "parent_value": "-944325493.90",
+          "evidence_excerpt": "三、本期增减变动金额（减少以“-”号填列） -21,626,981.75 -988,864,492.28 362,482.64 65,803,497.49 -944,325,493.90 -323,570,552.79 -1,267,896,046.69"
+        },
+        "comprehensive": {
+          "physical_page": 58,
+          "parent_value": "4769763605.51",
+          "evidence_excerpt": "（一）综合收益总额 -988,864,492.28 5,758,628,097.79 4,769,763,605.51 -288,426,476.70 4,481,337,128.81"
+        },
+        "contribution": {
+          "physical_page": 58,
+          "parent_value": "0",
+          "evidence_excerpt": "（二）所有者投入和减少资本 12,460,000.00 12,460,000.00"
+        },
+        "distribution": {
+          "physical_page": 59,
+          "parent_value": "-5692824600.30",
+          "evidence_excerpt": "（三）利润分配 -5,692,824,600.30 -5,692,824,600.30 -45,212,091.14 -5,738,036,691.44"
+        },
+        "reserve": {
+          "physical_page": 59,
+          "parent_value": "362482.64",
+          "evidence_excerpt": "（五）专项储备 362,482.64 362,482.64 304,641.73 667,124.37"
+        },
+        "other": {
+          "physical_page": 59,
+          "parent_value": "-21626981.75",
+          "evidence_excerpt": "（六）其他 -21,626,981.75 -21,626,981.75 -2,696,626.68 -24,323,608.43"
+        }
+      },
+      "treasury_disclosure": {
+        "physical_page": 159,
+        "evidence_excerpt": "56、库存股 □适用 √不适用"
+      },
+      "comprehensive_components": {
+        "parent_profit_cny": "5758628097.79",
+        "parent_oci_cny": "-988864492.28"
+      }
+    }
+  },
+  "issuer_index_bindings": [
+    {
+      "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/600887-page-1.raw.json",
+      "sha256": "39d77daaf05127dd8e9628c5579d061999df88f430226c197cd3c9e342f0d6a5"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index/response-0002.bin",
+      "sha256": "4e24e0ad3a1ed1e3060d485c10964d41a3c7cf493b47bbf554e280a5ab8c9107"
+    }
+  ],
+  "human_review_groups": [
+    {
+      "id": "EARNINGS_IMPAIRMENT",
+      "question": "盈利恢复与减值的经济影响如何判断？",
+      "support": "已核扣非TTM及H1数据进入新候选；商誉和存货减值保持实际经济损失。",
+      "countercase": "H1扣非同比下降20.25%；减值非现金不等于无资本损失，正常化仍未知。",
+      "impact": "不加回损失；否定盈利代理时须暂停或重审未来路径，不能承诺恢复。",
+      "field_paths": [
+        "research_case.financial_summary",
+        "facts.scenario_inputs"
+      ]
+    },
+    {
+      "id": "CASH_FINANCING",
+      "question": "现金流恢复能否支撑分配？",
+      "support": "CFO和权益桥已核，集团/母公司及内部票据分别解释。",
+      "countercase": "付款基数影响恢复，内部抵销不免除外部银行债务，母公司CFO不等于集团创造现金。",
+      "impact": "80%至90%假定分配不证明1.22元底线或可持续现金；融资约束要求重审分配。",
+      "field_paths": [
+        "facts.scenario_inputs",
+        "source_contract.distribution_input_status"
+      ]
+    },
+    {
+      "id": "CAPITAL_DURATION",
+      "question": "成本与优势期限是否有足够公司依据？",
+      "support": "复用短期1+3与中期3+5有限方案及共享模型，历史归母资本与股数已核。",
+      "countercase": "8%至10%成本仍为临时条件，公司专属论证未完成；ROE衰减不识别两个资本池。",
+      "impact": "短方案不是正式公平价值；中方案需恢复机制，不能按较高值选；无新阈值。",
+      "field_paths": [
+        "facts.operating_inputs",
+        "facts.scenario_inputs",
+        "assumption_bindings"
+      ]
+    },
+    {
+      "id": "EVENT_MODEL",
+      "question": "新财务事实和公告是否支持正式模型审查？",
+      "support": "精确FY/H1官方身份、原件Hash和新版本实际消费可核验。",
+      "countercase": "公告材料性、G3及当前价格未准入，生成日不等于完整当前数据。",
+      "impact": "仅待审研究；逐项公告审阅后依既有合同重算，不生成订单或私人仓位。",
+      "field_paths": [
+        "source_contract",
+        "model_validity_input"
+      ]
+    }
+  ]
+}

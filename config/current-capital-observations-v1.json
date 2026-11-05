@@ -1,0 +1,42 @@
+{
+  "schema_version": "current-capital-observations-v1",
+  "action": "no_order",
+  "cases": {
+    "000568": {
+      "sources": [
+        {
+          "path": "runtime/value-000568-current-alignment-20261101/1225639079.pdf",
+          "sha256": "ce2027403f8c079bc70f34a7de4aa72d0b9a70ad76185a27cd0a3c4bde1052dd",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-30/1225639079.PDF",
+          "available_at": "2026-11-01T04:14:50.889101+00:00",
+          "report_period": "2026-09-30",
+          "kind": "q3"
+        },
+        {
+          "path": "runtime/value-000568-current-alignment-20261101/1225576512.pdf",
+          "sha256": "4c8de16792dba49cbdaaa3db0c032122e8744d59cd87d87e322c5f5e9953f267",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-23/1225576512.PDF",
+          "available_at": "2026-11-01T04:14:51.270442+00:00",
+          "report_period": "2026-09-23",
+          "kind": "share_unlock_notice"
+        },
+        {
+          "path": "runtime/value-000568-current-alignment-20261101/1225481717.pdf",
+          "sha256": "bff4efd3a9aa3d486ffce8143117627aafa4d86dd5d0e1ecb74278ceb3b0980b",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-20/1225481717.PDF",
+          "available_at": "2026-11-01T04:14:53.228543+00:00",
+          "report_period": "2025-12-31",
+          "kind": "dividend_implementation"
+        },
+        {
+          "path": "runtime/e2-first-input-000568-20261031/original.pdf",
+          "sha256": "33fbc65e9bc5c41a80d2cc5f8ae0eaa2990424c81bb93b90029ccdb05e092ade",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-26/1225501255.PDF",
+          "available_at": "2026-10-31T09:37:21.876549+00:00",
+          "report_period": "2026-06-30",
+          "kind": "interim"
+        }
+      ]
+    }
+  }
+}

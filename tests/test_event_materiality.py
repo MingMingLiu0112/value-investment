@@ -264,19 +264,11 @@ def test_shared_materiality_attachment_requires_exact_scan_and_keeps_recalculati
     kwargs = dict(root=tmp_path, spec=spec, descriptor=SimpleNamespace(as_policy=lambda:
         dict(research_case={}, facts={}, assumptions={})), path=path,
         expected_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
-    with pytest.raises(ValueError, match='exact acquired event scan'):
-        attach_research_reviews(**kwargs, event_sha256='c' * 64)
-    updated = attach_research_reviews(**kwargs, event_sha256='b' * 64)
-    assert updated.event_materiality_review.has_unresolved_recalculation is True
-    assert updated.model_validity_input.event_scan is None
-    assert 'SYNTHETIC_SOURCE_LIMITATION' in updated.model_validity_input.blockers
-    from dataclasses import replace
-    for bad_scan in (replace(scan, coverage_status='INCOMPLETE'), replace(scan, announcements=()),
-                     replace(scan, retrieved_at=datetime(2026, 9, 24, tzinfo=timezone.utc))):
-        with pytest.raises(ValueError, match='complete acquired scan|every acquired announcement|observation mismatch'):
-            attach_research_reviews(**{**kwargs, 'spec': replace(spec,
-                model_validity_input=replace(spec.model_validity_input, event_scan=bad_scan))},
-                event_sha256='b' * 64)
+    # Legacy fake descriptors and self-asserted unsigned decisions are no longer
+    # an application approval path. Signed recalculation is covered by transport E2E.
+    for digest in ('c' * 64, 'b' * 64):
+        with pytest.raises(ValueError, match='real hash-bound descriptor'):
+            attach_research_reviews(**kwargs, event_sha256=digest)
 
 
 def test_attached_materiality_reaches_real_shared_service_and_readable_projection(tmp_path):
@@ -321,23 +313,8 @@ def test_attached_materiality_reaches_real_shared_service_and_readable_projectio
     packet.write_text(json.dumps(dict(schema_version='shared-research-review-inputs-v1',
         symbol='600887', action='no_order', bindings=dict(event_materiality=dict(
             path=source.name, sha256=hashlib.sha256(source.read_bytes()).hexdigest())))), encoding='utf-8')
-    attached = attach_research_reviews(root=tmp_path, spec=spec,
-        descriptor=SimpleNamespace(as_policy=lambda: dict(research_case={'symbol': '600887'},
-            facts={'symbol': '600887'}, assumptions={'symbol': '600887'})),
-        path=packet, expected_sha256=hashlib.sha256(packet.read_bytes()).hexdigest(), event_sha256='b' * 64)
-    outcome = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(attached)
-    assert outcome.event_materiality_review == review
-    assert outcome.model_validity.status == 'STALE'
-    assert outcome.price_bridge.bridge_status != 'READY'
-    assert outcome.valuation.status == 'conditional_research_only'
-    assert outcome.pre_decision_eligibility is None  # No human research approval supplied.
-    serialized = _serialize_outcome(outcome)
-    product = dict(symbol='600887', suggested_state='NOT_READY', position_guidance=None, blockers=list(outcome.blockers))
-    card = render_shadow_company_review(research=dict(result=serialized,
-        session_date=reviewed.date().isoformat(), run_id=spec.run_id),
-        model=dict(model_validity=serialized['model_validity'], price_bridge=serialized['price_bridge'],
-                   valuation_result=serialized['valuation']), decision=product, product=product,
-        audit=dict(blockers=list(outcome.blockers), input_consistency_status='SHADOW_INPUT_INCOMPLETE'))
-    assert 'STALE' in card and 'action=no_order' in card
-    assert 'requires recalculation' in card
-    (tmp_path / 'synthetic-review-card.md').write_text(card, encoding='utf-8')
+    with pytest.raises(ValueError, match='real hash-bound descriptor'):
+        attach_research_reviews(root=tmp_path, spec=spec,
+            descriptor=SimpleNamespace(as_policy=lambda: dict(research_case={'symbol': '600887'},
+                facts={'symbol': '600887'}, assumptions={'symbol': '600887'})),
+            path=packet, expected_sha256=hashlib.sha256(packet.read_bytes()).hexdigest(), event_sha256='b' * 64)

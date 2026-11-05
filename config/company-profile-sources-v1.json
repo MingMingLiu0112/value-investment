@@ -1,0 +1,96 @@
+{
+  "schema_version": "source-company-profile-registry-v1",
+  "action": "no_order",
+  "entries": {
+    "000333": {
+      "issuer_name": "美的集团股份有限公司",
+      "period": "2026-06-30",
+      "receipt_binding": {
+        "path": "runtime/c-closeout-20261031/000333/source-receipt.json",
+        "sha256": "a8e396c118ea55638fcd30392394d64e05b479a7c4391af72f14d00ad91ea944"
+      },
+      "main_business_section": {
+        "path": "runtime/c-closeout-20261031/000333/main-business-section.json",
+        "sha256": "584752ad83637e18e429b83a68eee619ba7c3d1be0654ef372bd826e8620ada0"
+      },
+      "evidence_pages": {
+        "path": "runtime/c-closeout-20261031/000333/evidence-pages.json",
+        "sha256": "d6ac1b1adda3c91c69b2bebd01918dc796ddfbb85ebf482479559c21f54993f5"
+      },
+      "identity_pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
+    },
+    "601088": {
+      "issuer_name": "中国神华能源股份有限公司",
+      "period": "2025-12-31",
+      "receipt_binding": {
+        "path": "runtime/c-closeout-20261031/601088/source-receipt.json",
+        "sha256": "7372f160f6cd398d30ceb159bd851edf52d9c90967dd99588fe30d7dae84e787"
+      },
+      "main_business_section": {
+        "path": "runtime/c-closeout-20261031/601088/main-business-section.json",
+        "sha256": "88da85c19b5d7099695a1d72cef5f1607783f4e100828074f3d30458aa529bd5"
+      },
+      "evidence_pages": {
+        "path": "runtime/c-closeout-20261031/601088/evidence-pages.json",
+        "sha256": "0cfd7e7f4836eb63e2e4d0471bd5e8fdff2daefcccb9f2d83c6b94f75e33282f"
+      },
+      "identity_pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
+    },
+    "600036": {
+      "issuer_name": "招商银行股份有限公司",
+      "period": "2025-12-31",
+      "receipt_binding": {
+        "path": "runtime/c-closeout-20261031/600036/source-receipt.json",
+        "sha256": "72e1336038abf4dec37af7cf1baaebcdb0ca26dff8966e11a5b0d05e05bd0777"
+      },
+      "main_business_section": {
+        "path": "runtime/c-closeout-20261031/600036/main-business-section.json",
+        "sha256": "28feb2c231f2612f235cd4ac0e3789fcb665cf99619757b04ccf2011ae5b4816"
+      },
+      "evidence_pages": {
+        "path": "runtime/c-closeout-20261031/600036/evidence-pages.json",
+        "sha256": "52b4bba0a5515a1270367f78142b09c30e9ec26bbda02edd97cdc06c9647358f"
+      },
+      "identity_pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
+    }
+  }
+}

@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from approval_transport_fixture import mint_fixture_approval
 from test_current_decision_surface import decision_workbench
 from value_investment_agent.application.product import monthly_research_review as monthly
 from value_investment_agent.application.product.common import sha256_file
@@ -18,7 +19,8 @@ def _write(root, name, payload):
 def _run(root, current, previous=None, **kwargs):
     path, digest = _write(root, "current.json", current)
     args = dict(root=root, symbol=current["symbol"], current_workbench_path=path,
-                current_workbench_sha256=digest)
+                current_workbench_sha256=digest,
+                human_approval_provenance_verifier=mint_fixture_approval)
     if previous is not None:
         old, pin = _write(root, "previous.json", previous)
         args.update(previous_workbench_path=old, previous_workbench_sha256=pin)
@@ -48,7 +50,7 @@ def test_changed_explicit_fields_are_research_not_official(tmp_path, monkeypatch
     # Exercise extraction with controlled already-verified dependency shapes;
     # the unchanged test above independently exercises actual replay.
     from types import SimpleNamespace
-    def verify(payload):
+    def verify(payload, **kwargs):
         return SimpleNamespace(dependency_objects=payload["test_objects"])
     monkeypatch.setattr(monthly, "verify_current_decision_workbench", verify)
     monkeypatch.setattr(monthly, "artifact_payload", lambda obj: ("fixture", obj))

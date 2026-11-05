@@ -1,0 +1,92 @@
+{
+  "schema_version": "v5-automatic-income-real-v1",
+  "action": "no_order",
+  "scope": "REAL_PUBLIC_DATA",
+  "observed_at": "2026-10-21T14:05:56.674055+00:00",
+  "symbol": "600519",
+  "original_export": {
+    "path": "runtime/daily-marketwide/20261021T0128041036021Z/retained-financial-points.json",
+    "sha256": "d08dfd0f23a2dacb98ae6d053e7ed4a55ec7b4ca0d92c4d653520197ec1f9b40"
+  },
+  "supplemental_export": {
+    "path": "runtime/value-evidence-enrichment/automatic-income-20261021T140551701066Z/600519-financial-inputs.json",
+    "sha256": "70892dec910f0332c803dc5f8599c68b044f536af0ee69c1c6030cfab5e89898"
+  },
+  "acquisition": {
+    "acquired_at": "2026-10-21T14:05:52.682459+00:00",
+    "action": "no_order",
+    "bytes": 314687,
+    "path": "runtime/value-evidence-enrichment/automatic-income-20261021T140551701066Z/600519-income-original/sina-income.json",
+    "sha256": "e51d940053be3a79232267a9c53791fa7ac59a91f2f504403fb89ae88756c5a8",
+    "url": "https://quotes.sina.cn/cn/api/openapi.php/CompanyFinanceService.getFinanceReport2022?paperCode=sh600519&source=lrb&type=0&page=1&num=16"
+  },
+  "new_input_count": 2,
+  "derived_fields": [
+    "debt_ratio",
+    "revenue_yoy",
+    "net_income_yoy"
+  ],
+  "quality": {
+    "symbol": "600519",
+    "model_type": "general_enterprise",
+    "quality_status": "待补证",
+    "total_score": null,
+    "coverage_ratio": "0.8889",
+    "profitability_score": null,
+    "cash_flow_score": null,
+    "balance_sheet_score": null,
+    "growth_score": null,
+    "reasons": [
+      "缺少自动双源验证字段：interest_bearing_debt"
+    ],
+    "calculation_details": {
+      "required_fields": [
+        "roe",
+        "gross_margin",
+        "net_margin",
+        "operating_cash_flow_to_net_income",
+        "cash",
+        "interest_bearing_debt",
+        "debt_ratio",
+        "revenue_yoy",
+        "net_income_yoy"
+      ],
+      "accepted_fields": [
+        "cash",
+        "debt_ratio",
+        "gross_margin",
+        "net_income_yoy",
+        "net_margin",
+        "operating_cash_flow_to_net_income",
+        "revenue_yoy",
+        "roe"
+      ],
+      "source_ids": {
+        "net_income_yoy": "derived:1b8561f4296847ee4de0bb09be3b0085e83f7179cb5d50bf81f1ab369fff384c",
+        "revenue_yoy": "derived:afd93492ef28da872783d097ebedc17bceac3b3fcdb87902ec76d270ac48ea46",
+        "roe": "94012770-dee1-4c59-b6de-9ad4624fa942",
+        "cash": "94012770-dee1-4c59-b6de-9ad4624fa942",
+        "gross_margin": "a308496f-aa70-40fc-b4e3-f5f024fba87a",
+        "net_margin": "553a8610-7d53-4507-9912-ab40666ef6a1",
+        "operating_cash_flow_to_net_income": "673e610e-a6b7-4afd-a3ae-f09633cae3e9",
+        "debt_ratio": "derived:628bd94d982da63f5f674d5ddfdcb94bebc97ffcb5cbbe6e1e9ba09684a5399c"
+      },
+      "period": "2025-12-31",
+      "period_selection_version": "m2-evidence-screen-v3",
+      "missing_fields": [
+        "interest_bearing_debt"
+      ],
+      "older_period_fields_excluded": []
+    }
+  },
+  "base_export_unchanged": true,
+  "candidate_pool_changed": false,
+  "complete_debt_verified": false,
+  "economic_approval": false,
+  "formal_eligibility": false,
+  "worker_integration_evidence": "SEPARATE_ISOLATED_TEST_ONLY_TRANSPORT_TESTS",
+  "limitations": [
+    "ACTUAL_CAPTURE_NOT_HISTORICAL_PIT",
+    "SOURCE_CORRELATION_NOT_ECONOMIC_APPROVAL"
+  ]
+}

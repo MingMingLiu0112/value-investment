@@ -1,0 +1,29 @@
+{
+  "schema_version": "tl11-p7-browser-observations-v1",
+  "action": "no_order",
+  "date": "2026-10-15",
+  "real_application": "http://127.0.0.1:8001/daily",
+  "viewports": [
+    {"width": 1280, "height": 900, "document_width": 1265, "page": "daily", "screenshot": "real-daily-1280.png"},
+    {"width": 1440, "height": 900, "document_width": 1425, "page": "daily", "screenshot": "real-daily-1440.png"},
+    {"width": 390, "height": 844, "document_width": 375, "page": "decisions/600887", "screenshot": "real-value-390.png"},
+    {"width": 430, "height": 844, "document_width": 415, "page": "daily", "screenshot": "real-daily-430.png"},
+    {"width": 1280, "height": 900, "document_width": 1265, "page": "decisions/600887 authenticated review handoff", "screenshot": "real-materiality-handoff-1280.png"},
+    {"width": 390, "height": 844, "document_width": 375, "page": "decisions/600887 authenticated review handoff", "screenshot": "real-materiality-handoff-390.png"}
+  ],
+  "observations": [
+    "Restarted owned 8001 service, used local launcher authorization, read the real 600887 external handoff: two announcements bound to Oct 11-15; zero enrolled reviewer roots, no approval granted. Materiality signing/import/recompute instructions are available separately from G3. No real private policy or account was created.",
+    "Real 600887 detail displays verified 28.10 close, no admitted entry price, locked private state distinguished from empty holdings, symbol-prefilled risk link.",
+    "Real 601318 detail shows observed OPEN condition and downward daily structure; no BUY permission. OPEN/ADD/REDUCE/EXIT rules and 60m/15m chart references remain visible.",
+    "TEST_ONLY manual BUY 200 at 18 plus 5 fee, then linked partial SELL 100 at 20 minus 5 fee: cash 98390, remaining cost 1802.5, realized PnL 192.5, equity 100222 at real quote 18.32.",
+    "TEST_ONLY held 300059 shows REDUCE/EXIT review attention after rule observation, not personal sell permission.",
+    "TEST_ONLY history preserves unlinked initial BUY honestly and links SELL to its immutable decision/research version.",
+    "Separate TEST_ONLY cash account scenario: 200 shares, funds 3705, stress loss 278, risk budget 300, stressed exit 17.16. Formal quantity remains unavailable with missing verified execution attributes.",
+    "TEST_ONLY external reconciliation references are explicitly synthetic, not real account statements; no production private ledger was initialized or written.",
+    "System page separates Excel original baseline 2026-10-01, registered quote 2026-10-09, research publication 2026-10-12 and Web quote 2026-10-15."
+  ],
+  "limitations": [
+    "Browser evidence is engineering interaction acceptance, not user final acceptance or strategy validation.",
+    "Final incremental-validity backend integration and final CI are recorded separately; this file alone does not assert P7 completion."
+  ]
+}

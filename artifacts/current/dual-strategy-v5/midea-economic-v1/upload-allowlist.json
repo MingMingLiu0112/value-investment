@@ -1,0 +1,23 @@
+{
+  "action": "no_order",
+  "public_files": [
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/build-inputs.py",
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/candidate-binding.json",
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.md",
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/package.json",
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/public-draft.json",
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/research-case-source.json",
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/research-case.json",
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/shared-model-check.json",
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/verification.json",
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/upload-allowlist.json",
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/manifest.json"
+  ],
+  "local_only_exclusions": [
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/build-error.json",
+    "artifacts/current/dual-strategy-v5/midea-economic-v1/build-start.json"
+  ],
+  "runtime_candidate_status": "LOCAL_ONLY_PENDING_ROOT_REVIEW_NOT_PORTABLE_ARCHIVE",
+  "note": "Exact file allowlist only; never recursively add this directory. Runtime originals and failed tracebacks are excluded."
+}

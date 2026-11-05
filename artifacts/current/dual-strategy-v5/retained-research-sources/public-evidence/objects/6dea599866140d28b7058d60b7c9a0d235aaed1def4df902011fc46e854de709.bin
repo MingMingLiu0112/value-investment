@@ -1,0 +1,98 @@
+{
+  "symbol": "600519",
+  "valuation_information_date": "2026-09-09",
+  "academic_publication_date": "2026-01-05",
+  "curve_date": "2026-09-08",
+  "country_source_rows": {
+    "China": [
+      "China",
+      "A1",
+      "0.60%",
+      "0.91%",
+      "5.14%",
+      "25.00%",
+      "0.50%",
+      "4.99%"
+    ],
+    "United States": [
+      "United States",
+      "Aa1",
+      "0.23%",
+      "0.23%",
+      "4.46%",
+      "25.00%",
+      "0.30%",
+      "4.69%"
+    ]
+  },
+  "unit": "decimal_rates",
+  "china_default_spread": "0.006",
+  "china_country_risk_premium": "0.0091",
+  "china_total_equity_risk_premium": "0.0514",
+  "mature_market_premium": "0.0423",
+  "ten_year_sovereign_yield_to_maturity": "0.016813",
+  "illustrative_default_adjusted_sovereign_yield": "0.010813",
+  "formula": "Ke = (CNY sovereign yield - country default spread) + beta * mature ERP + lambda * country ERP",
+  "sensitivity": [
+    {
+      "beta_assumption": "0.8",
+      "country_loading_assumption": "0.5",
+      "illustrative_cost_of_equity": "0.049203"
+    },
+    {
+      "beta_assumption": "0.8",
+      "country_loading_assumption": "1.0",
+      "illustrative_cost_of_equity": "0.053753"
+    },
+    {
+      "beta_assumption": "0.8",
+      "country_loading_assumption": "1.5",
+      "illustrative_cost_of_equity": "0.058303"
+    },
+    {
+      "beta_assumption": "1.0",
+      "country_loading_assumption": "0.5",
+      "illustrative_cost_of_equity": "0.057663"
+    },
+    {
+      "beta_assumption": "1.0",
+      "country_loading_assumption": "1.0",
+      "illustrative_cost_of_equity": "0.062213"
+    },
+    {
+      "beta_assumption": "1.0",
+      "country_loading_assumption": "1.5",
+      "illustrative_cost_of_equity": "0.066763"
+    },
+    {
+      "beta_assumption": "1.2",
+      "country_loading_assumption": "0.5",
+      "illustrative_cost_of_equity": "0.066123"
+    },
+    {
+      "beta_assumption": "1.2",
+      "country_loading_assumption": "1.0",
+      "illustrative_cost_of_equity": "0.070673"
+    },
+    {
+      "beta_assumption": "1.2",
+      "country_loading_assumption": "1.5",
+      "illustrative_cost_of_equity": "0.075223"
+    }
+  ],
+  "unit_loading_example": "0.062213",
+  "double_country_risk_overstatement": "0.009100",
+  "selected_company_cost_of_equity": null,
+  "selected_wacc": null,
+  "approved_for_valuation": false,
+  "limitations": [
+    "January country estimate and September yield are asynchronous; country spread is not a same-day observation.",
+    "Subtracting rating-derived country default spread from local sovereign yield is a modelling hypothesis, not an observed default-free CNY rate.",
+    "Ten-year yield to maturity is not a zero-coupon annual-effective discount factor; compounding and duration matching remain unapproved.",
+    "Beta and lambda grid is hypothetical and symmetric around unit loadings; neither measured beta nor a statistical confidence interval.",
+    "Company operating exposure and peer unlevered beta, financial carveout and debt market weights remain necessary.",
+    "Do not add country premium again to total country equity premium.",
+    "Academic estimates are not company guidance or guaranteed expected returns.",
+    "Current references cannot be applied retroactively to 2015-2025 strategy decisions."
+  ]
+}

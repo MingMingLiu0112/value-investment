@@ -1,0 +1,38 @@
+{
+  "schema_version": "registered-quote-browser-acceptance-v1",
+  "action": "no_order",
+  "publication_id": "pub-c7e8c45a229c2006ee96",
+  "url": "http://127.0.0.1:8001/decisions/000333",
+  "desktop": {
+    "status": "PASS_FOR_QUOTE_OBSERVATION_AND_CORRECTION_ONLY",
+    "measured_document_width": 1265,
+    "measured_scroll_width": 1265,
+    "reference_close": "83.86",
+    "quote_date": "2026-10-21",
+    "verified_but_research_not_comparable_visible": true,
+    "decision_admission_not_granted_visible": true,
+    "private_account_locked": true,
+    "screenshot": "artifacts/current/dual-strategy-v5/midea-verified-close-desktop.jpg"
+  },
+  "mobile": {
+    "status": "NOT_PASSED_VIEWPORT_OVERRIDE_NOT_APPLIED",
+    "requested_width": 390,
+    "measured_document_width": 1265,
+    "measured_scroll_width": 1265,
+    "screenshot": null,
+    "temporary_override_reset": true
+  },
+  "local_web_checks": {
+    "tests_passed": 323,
+    "typecheck": "PASS",
+    "format": "PASS_AFTER_TARGETED_FORMATTING",
+    "build": "PASS"
+  },
+  "authenticated_materiality_recompute_browser": "PENDING_MANUAL_URL_POLICY_RECOVERY",
+  "real_signature_created": false,
+  "real_trade_created": false,
+  "excel_modified": false,
+  "whole_product_acceptance": "NOT_PASSED",
+  "real_assisted_use": "NOT_PROVEN",
+  "total_goal": "IN_PROGRESS"
+}

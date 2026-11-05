@@ -1,0 +1,46 @@
+{
+  "symbol": "600519",
+  "review_version": "moutai-current-equity-scope-review-v1",
+  "current_model": {
+    "path": "runtime\\company-research\\600519-consolidated-parent-equity-residual-income-current-20261008T090506Z\\evidence.json",
+    "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+  },
+  "facts_and_arithmetic_passed": true,
+  "assumptions": {
+    "income_paths": {
+      "bear": {
+        "income_growth": "-0.05",
+        "discount_case": "upper"
+      },
+      "base": {
+        "income_growth": "0",
+        "discount_case": "central"
+      },
+      "bull": {
+        "income_growth": "0.05",
+        "discount_case": "lower"
+      }
+    },
+    "payout_ratio": "0.75",
+    "forecast_years": 5,
+    "fade_years": 5,
+    "terminal_roe_policy": "cost_of_equity_no_permanent_excess_return"
+  },
+  "counterevidence": [
+    "FY2025 and H1 2026 parent profit declined; the model does not assume recovery in base.",
+    "75% payout is a research assumption, not issuer guidance.",
+    "Peer cash-flow and sales-expense evidence rejects automatic industry recovery."
+  ],
+  "decision": "admitted_for_bounded_same_date_paper_research_only",
+  "constraints": [
+    "Quote session date must equal the model valuation date and capital-event coverage date.",
+    "A refreshed policy, facts and review are required for every later quote date.",
+    "Only a segregated virtual account may consume this model; next-session execution evidence remains separate.",
+    "This is not a formal fair value, price target, historical strategy result, live-trading approval or investment recommendation."
+  ],
+  "formal_fair_value": null,
+  "valuation_approved": false,
+  "simulation_eligible": false,
+  "trade_approved": false,
+  "live_eligible": false
+}

@@ -1,0 +1,109 @@
+{
+  "schema_version": "v5-personal-entry-thesis-closure-evidence-v1",
+  "evidence_date": "2026-10-21",
+  "baseline_head": "815315a33ae6a0bf579735cace886afa8068e453",
+  "record_role": "HISTORICAL_SERVICE_CHECKPOINT_NOT_CURRENT_WEB_STATUS",
+  "root_integration_update": {
+    "source_commit": "b6969333373e8be58bc3050362346ae73adc2bc8",
+    "committed_risk_adapter_status": "CONNECTED_AUTHENTICATED_WEB_CONFIRMATION_AND_CORRECTION",
+    "browser_evidence": "web-e2e.json",
+    "current_acceptance": "final-acceptance.json",
+    "scope": "The service-only checkpoint fields below retain their original observation. The later integration implemented Web confirmation, immutable receipts and replay. TEST_ONLY positive scenario and manual BUY700 do not establish an approved decision to formal personal quantity or real private readiness.",
+    "real_private_portfolio_ready": "NOT_PROVEN"
+  },
+  "scope": "Portfolio services and corresponding tests in the existing shared dirty checkout; no commit or private runtime changes",
+  "engineering_status": "TARGETED_TEST_ONLY_CLOSURE_PASSED",
+  "real_private_portfolio_ready": "BLOCKED_PRIVATE_INPUT",
+  "personal_risk_end_to_end_status": "PARTIAL",
+  "committed_risk_adapter_status": "IMPLEMENTED_NOT_CONNECTED_FROM_WEB",
+  "action": "no_order",
+  "broker_execution_permission": false,
+  "implementation": {
+    "entry_service": "src/value_investment_agent/application/portfolio/personal_entry_thesis.py",
+    "held_service": "src/value_investment_agent/application/portfolio/held_continuity.py",
+    "durability": "Existing append-only PrivateJournal; authenticated confirmation/revocation, exact original BUY/symbol/exchange/sleeve binding, revision CAS, idempotence, embedded artifact replay and preserved retrospective provenance",
+    "research": "Registered hash-bound primary and audit workbenches; verified value dependencies passed to build_advisory_decision_recommendation_v3; signed independent hotspot strategy/event/market admission uses existing recommendation rules",
+    "ownership": "Partial sales preserve original binding; identical security in separate sleeves retains distinct theses; multiple distinct original theses within one sleeve fail closed pending separate reviews",
+    "sell_review": "Explicit positive integer quantity, action, account, journal revision, symbol/exchange, sleeve and owned thesis hash; actual risk, reconciliation, T+1 and current advisory remain mandatory",
+    "committed_risk_adapter": "Explicit read-only import from existing pinned dual-sleeve-risk-input-v1 using the existing outside-Git/private-path and hash validation. Exact journal revision/tip, account, policy, cash, sleeve quantity/sellability/cost and current risk gates remain mandatory. No discovery, persistence, or inference from narrative stops."
+  },
+  "interfaces": {
+    "entry": "PersonalEntryThesisService(journal, repository=None).view/confirm/revoke; authenticated_subject and server now are trusted separate arguments",
+    "held": "review_held_continuity(journal, repository_root=..., generated_at=..., authenticated_subject=...)",
+    "sell": "review_private_held_sell(journal, repository_root=..., generated_at=..., payload=..., authenticated_subject=...)",
+    "authenticated_route": "/api/v1/private/portfolio/held-continuity/sell-review",
+    "sell_request_template": {
+      "schema_version": "private-held-sell-review-request-v1",
+      "action": "no_order",
+      "expected_revision": 7,
+      "account_scope": "TEST_ONLY_OWNED_CLOSURE",
+      "symbol": "600519",
+      "exchange": "SSE",
+      "sleeve": "CORE_VALUE",
+      "requested_action": "REDUCE",
+      "requested_quantity": 100,
+      "entry_thesis_record_sha256": "REPLACE_WITH_CURRENT_OWNED_CONFIRMATION_64_HEX_HASH",
+      "read_and_confirmed": true
+    },
+    "quantity_semantics": "REDUCE100 requires held quantity greater than100 and sellable quantity at least100; EXIT requires the exact entire sleeve quantity; current advisory must match",
+    "committed_risk_source": "Optional trusted service argument on review_private_risk_rehearsal, review_held_continuity and review_private_held_sell: input_path, input_sha256, private_root, journal_revision, journal_tip_sha256. Current Web/API does not supply this binding or a user amount-confirmation workflow."
+  },
+  "verification": {
+    "test_files": [
+      "tests/test_owned_portfolio_closure.py",
+      "tests/test_personal_entry_thesis.py",
+      "tests/test_owned_held_actions.py",
+      "tests/test_held_continuity.py",
+      "tests/test_held_decision_code_gap.py",
+      "tests/test_held_announcement_coverage.py",
+      "tests/web_api/test_personal_entry_thesis_api.py",
+      "tests/web_api/test_held_continuity_api.py"
+    ],
+    "result": "164 passed in 26.20s",
+    "temporary_directory": ".tmp/pytest-v5-portfolio-closure-final3",
+    "positive_coverage": "Signed isolated research OPEN -> authenticated durable thesis confirmation -> actual v3 HOLD/ADD/REDUCE/EXIT -> explicit sell review -> manual partial/full sale -> external reconciliation -> restart replay; API REDUCE/EXIT200, no-store, exact request/result binding and unchanged journal",
+    "negative_coverage": "Unauthenticated401, stale revision409; missing explicit sell request, account/revision/sleeve/hash mismatch, oversell, incomplete EXIT/full REDUCE, T+1, missing IPS/reconciliation, unknown advisory, stale plan, risk revision, invalid/future/unregistered thesis/review and retrospective narrative ineligibility",
+    "fixture_boundary": "TEST_ONLY isolated journal and registered signing keys; real advisory builder, signed research replay, risk engine and registered FastAPI route. Explicit test security/quote/committed-risk source adapters; zero-fee manual loop. No production signatures, real economic inputs or real approval invented. Hotspot signed TEST_ONLY admission requires explicit service opt-in and is rejected by default."
+  },
+  "committed_risk_verification": {
+    "source_baseline_head": "ea6cf5d9b7c503b1f6dc2a25524133ea5f576e4d",
+    "previous_run_result": "340 passed in 55.91s",
+    "log_path": ".tmp/v5-portfolio-committed-risk.log",
+    "log_sha256": "fad94d54d81f8f4d18bf53361f2556bf0549350172929e62a59cb5b81c01c957",
+    "logged_run_result": "340 passed in 47.60s",
+    "temporary_directory": ".tmp/pytest-committed-risk-evidence-final",
+    "source_files_sha256": {
+      "src/value_investment_agent/application/portfolio/private_risk_projection.py": "962728fdcf77430740ae682cf46e4e4c65c019e732c5c24ef66549c24c605a3b",
+      "src/value_investment_agent/application/portfolio/held_continuity.py": "5c40a7b85c68d8787e352951ee7a815c98a519851d3047cead6405d4e5dd8340",
+      "tests/test_private_committed_risk.py": "7ca32507b003ee1ac4d9c76ff165f8aa09aa9f437d3c458cb48acfcecd35cb84"
+    },
+    "test_files": [
+      "tests/test_private_committed_risk.py",
+      "tests/test_personal_entry_thesis.py",
+      "tests/test_private_risk_partial_facts.py",
+      "tests/test_private_risk_held_marks.py",
+      "tests/test_private_risk_cash_floor.py",
+      "tests/test_private_risk_experience.py",
+      "tests/test_private_risk_preview.py",
+      "tests/web_api/test_private_risk_projection.py",
+      "tests/web_api/test_private_risk_preview_api.py",
+      "tests/test_owned_held_actions.py",
+      "tests/test_owned_portfolio_closure.py",
+      "tests/web_api/test_held_continuity_api.py"
+    ],
+    "coverage": "Explicit amount and zero versus unknown; source hash/private storage/namespace validation; account/policy/cash/quantity/sellability/cost mismatch; stale journal revision/tip, changed journal during validation, future journal, stale source after fill; risk unknown/exhausted blockers; held source forwarding without waiving ownership; fee-aware cross-sleeve partial sale and restart accounting.",
+    "accounting_fixture_result": {"namespace": "TEST_ONLY", "cash_cny": "8490", "remaining_cost_basis_cny": "2005", "realized_pnl_cny": "495"},
+    "fixture_boundary": "Isolated TEST_ONLY journal and risk amounts. The private-directory gate is stubbed only for positive fixture IO; a separate negative test exercises the real outside-repository gate. Actual file pin, strict JSON, ACTUAL contract and risk engine execute. No real private files or production signatures used.",
+    "actual_private_input_sha256": null,
+    "actual_private_input_status": "NOT_SUPPLIED_OR_CONNECTED",
+    "end_to_end_personal_risk": "PARTIAL: service adapter implemented, but current Web has neither a trusted source binding nor a user amount-confirmation path. Engineering tests do not establish real private risk readiness."
+  },
+  "remaining_root_integration": [
+    "Root owns browser/API integration and browser verification; portfolio service does not claim browser acceptance.",
+    "Connect the implemented explicit pinned committed-risk adapter from a trusted authenticated source and provide a user amount-confirmation workflow. Neither is connected from current Web/API. Until then, committed_risk_cny remains null and actual held actions remain risk_unknown; end-to-end personal risk is PARTIAL.",
+    "Supply explicit user-confirmed committed_risk_cny and evidence_ref for every held sleeve/security in the existing private risk contract, plus verified security economics and market state. Do not infer risk from budget, cost, market value or narrative invalidation. Source files must remain outside Git/sync; no actual private input hash is available in this evidence.",
+    "Publish current original-entry-matched consistency reviews through the registered workbench chain; private thesis confirmation alone does not create an economic review.",
+    "ADD requires existing explicit risk-preview cost/slippage/tranche assumptions and observed strategy condition; overview cannot infer them.",
+    "Multiple distinct original theses in one sleeve require separate review/aggregation support; current behavior fails closed."
+  ]
+}

@@ -1,0 +1,393 @@
+{
+  "schema_version": "public-research-draft-v1",
+  "action": "no_order",
+  "symbol": "000333",
+  "company_name": "美的集团",
+  "run_id": "midea-draft-20261016-v1",
+  "research_version": "midea-draft-20261016-v1",
+  "status": "RESEARCH_DRAFT_NOT_APPROVED",
+  "research_as_of": "2026-10-16",
+  "available_at": "2026-10-17T10:22:15.777714+00:00",
+  "financial_period": "2026-06-30",
+  "summary": "美的具备规模化制造、渠道效率、全球化品牌与现金流优势；但2026H1扣非归母净利润同比下降25.31%，本次草案只检验在较低ROE路径下是否存在条件性价值，不用历史高ROE外推。",
+  "thesis": "美的具备规模化制造、渠道效率、全球化品牌与现金流优势；但2026H1扣非归母净利润同比下降25.31%，本次草案只检验在较低ROE路径下是否存在条件性价值，不用历史高ROE外推。",
+  "return_driver": "家电主业效率、全球化收入结构、ToB业务质量、现金转换与股东回报。",
+  "mispricing_hypothesis": "当前只检验价格与条件性内在价值区间的关系，不证明市场低估，也不把当前价格当作买入信号。",
+  "financial_facts": {
+    "period_end": "2026-06-30",
+    "fy2025_parent_profit_cny": "43945411000",
+    "fy2025_parent_equity_cny": "223221305000",
+    "fy2025_weighted_roe": "0.1970",
+    "h1_2026_revenue_cny": "260042490000",
+    "h1_2026_parent_profit_cny": "26446037000",
+    "h1_2026_adjusted_parent_profit_cny": "19595179000",
+    "h1_2026_adjusted_parent_profit_yoy": "-0.2531",
+    "h1_2026_parent_equity_cny": "212861055000",
+    "h1_2026_roe": "0.1133",
+    "ordinary_shares_20260630": "7464347335"
+  },
+  "valuation": {
+    "model_type": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "valuation_date": "2026-10-16",
+    "status": "conditional_research_only",
+    "confidence": "低",
+    "currency": "CNY",
+    "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+    "disclaimer": "No market price, margin of safety, position or order is produced here.",
+    "scenarios": [
+      {
+        "scenario": "bear",
+        "per_share_value": "36.0121866604528720800629631840921914063801838080",
+        "terminal_residual_contribution_ratio": "0.04534430046962670813598094236",
+        "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061",
+        "dividend_crosscheck_difference": "0E-36"
+      },
+      {
+        "scenario": "base",
+        "per_share_value": "45.7417037044192281574936570926129861357849631511",
+        "terminal_residual_contribution_ratio": "0.1567110536503976527408765945",
+        "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061",
+        "dividend_crosscheck_difference": "-2E-36"
+      },
+      {
+        "scenario": "bull",
+        "per_share_value": "58.1686744055803340295467634666441075299523416697",
+        "terminal_residual_contribution_ratio": "0.2672536050867622579183066563",
+        "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061",
+        "dividend_crosscheck_difference": "-2E-36"
+      }
+    ],
+    "assumptions": [
+      {
+        "name": "cost_of_equity",
+        "unit": "decimal",
+        "bear": "0.09",
+        "base": "0.09",
+        "bull": "0.09",
+        "basis": "Candidate 9% equity hurdle applied to all scenarios.",
+        "rationale": "No issuer-specific beta estimate is admitted; a common hurdle keeps the draft internally consistent.",
+        "confidence": "low"
+      },
+      {
+        "name": "forecast_roe_2026",
+        "unit": "ratio",
+        "bear": "0.15",
+        "base": "0.18",
+        "bull": "0.205",
+        "basis": "Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.",
+        "rationale": "The path allows margin and competitive pressure while preserving a quality-compounder base case.",
+        "confidence": "low"
+      },
+      {
+        "name": "forecast_roe_2027",
+        "unit": "ratio",
+        "bear": "0.14",
+        "base": "0.17",
+        "bull": "0.20",
+        "basis": "Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.",
+        "rationale": "The path allows margin and competitive pressure while preserving a quality-compounder base case.",
+        "confidence": "low"
+      },
+      {
+        "name": "forecast_roe_2028",
+        "unit": "ratio",
+        "bear": "0.13",
+        "base": "0.16",
+        "bull": "0.195",
+        "basis": "Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.",
+        "rationale": "The path allows margin and competitive pressure while preserving a quality-compounder base case.",
+        "confidence": "low"
+      },
+      {
+        "name": "forecast_roe_2029",
+        "unit": "ratio",
+        "bear": "0.12",
+        "base": "0.155",
+        "bull": "0.19",
+        "basis": "Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.",
+        "rationale": "The path allows margin and competitive pressure while preserving a quality-compounder base case.",
+        "confidence": "low"
+      },
+      {
+        "name": "forecast_roe_2030",
+        "unit": "ratio",
+        "bear": "0.11",
+        "base": "0.15",
+        "bull": "0.185",
+        "basis": "Candidate five-year ROE path anchored on audited FY2025 and unaudited H1 2026.",
+        "rationale": "The path allows margin and competitive pressure while preserving a quality-compounder base case.",
+        "confidence": "low"
+      },
+      {
+        "name": "terminal_roe",
+        "unit": "ratio",
+        "bear": "0.095",
+        "base": "0.11",
+        "bull": "0.13",
+        "basis": "Candidate terminal excess-return persistence assumption.",
+        "rationale": "Terminal ROE remains above or near the equity hurdle by scenario without assuming permanent high excess returns.",
+        "confidence": "low"
+      },
+      {
+        "name": "terminal_growth",
+        "unit": "ratio",
+        "bear": "0.015",
+        "base": "0.02",
+        "bull": "0.025",
+        "basis": "Candidate long-run nominal growth band.",
+        "rationale": "Growth is capped below the 9% equity hurdle in every scenario.",
+        "confidence": "low"
+      },
+      {
+        "name": "retention",
+        "unit": "ratio",
+        "bear": "0.40",
+        "base": "0.35",
+        "bull": "0.30",
+        "basis": "Candidate reinvestment and shareholder-return allocation.",
+        "rationale": "The bear case retains more capital to defend operations; the bull case distributes more of higher earnings.",
+        "confidence": "low"
+      }
+    ]
+  },
+  "model_validity": {
+    "model_id": "residual-income-equity-shared-dated-v2",
+    "model_as_of": "2026-10-16",
+    "last_material_event_check": "2026-10-16",
+    "status": "UNKNOWN",
+    "blockers": [
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "event scan is pending human review",
+      "Three 2026-10-14 announcements remain PENDING_HUMAN_REVIEW.",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff."
+    ]
+  },
+  "quote_fact": {
+    "quote_date": "2026-10-16",
+    "current_price": "84.60",
+    "currency": "CNY",
+    "status": "VERIFIED_CLOSE_NOT_ADMITTED",
+    "providers": [
+      {
+        "id": "midea_quote_20261016-tencent",
+        "kind": "quote_provider_document",
+        "provider": "tencent",
+        "source_url": "https://qt.gtimg.cn/q=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.538074+00:00",
+        "sha256": "1241d6d61cc9f1bed0f3b6716deca879c8339e24d1e81e96b67d347677a97ce6",
+        "observed_trade_at": "2026-10-16T16:14:30+08:00"
+      },
+      {
+        "id": "midea_quote_20261016-sina",
+        "kind": "quote_provider_document",
+        "provider": "sina",
+        "source_url": "https://hq.sinajs.cn/list=sh600887,sh600519,sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-16T09:00:31.651614+00:00",
+        "sha256": "37b88049feb84f58666b08e32d2e3042837b6766ba6ed31c10572098efd1a31e",
+        "observed_trade_at": "2026-10-16T15:35:30+08:00"
+      }
+    ]
+  },
+  "price_bridge": {
+    "status": "INVALID",
+    "price_admitted": false,
+    "margin_to_bear": null,
+    "margin_to_base": null,
+    "blockers": [
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "event scan is pending human review",
+      "Three 2026-10-14 announcements remain PENDING_HUMAN_REVIEW.",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN: CNINFO provided date-level times and retained files were acquired after the research cutoff."
+    ],
+    "reason": "模型有效性尚未建立，不能把收盘价与条件性估值进行正式比较。",
+    "needed_evidence": "完成三项公告的材料性人工复核并建立模型有效性。"
+  },
+  "gates": {
+    "symbol": "000333",
+    "results": {
+      "G0_证据门": true,
+      "G1_财务门": false,
+      "G2_商业论点门": true,
+      "G3_估值门": false
+    },
+    "blockers": [
+      "DRAFT_NOT_APPROVED",
+      "EVENT_MATERIALITY_PENDING_HUMAN_REVIEW",
+      "STRICT_CONTEMPORANEOUS_PIT_NOT_PROVEN",
+      "G1_财务门",
+      "G3_估值门"
+    ],
+    "conclusion": "研究未完成"
+  },
+  "events": {
+    "status": "PENDING_HUMAN_REVIEW",
+    "coverage_status": "COMPLETE",
+    "pending_count": 3,
+    "items": [
+      {
+        "announcement_id": "1225603532",
+        "title": "2026年第一次临时股东会决议公告",
+        "published_at": "2026-10-14T00:00:00+08:00",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF"
+      },
+      {
+        "announcement_id": "1225603533",
+        "title": "北京市嘉源律师事务所关于美的集团2026年第一次临时股东会的法律意见书",
+        "published_at": "2026-10-14T00:00:00+08:00",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF"
+      },
+      {
+        "announcement_id": "1225603534",
+        "title": "关于回购注销部分限制性股票减资暨通知债权人的公告",
+        "published_at": "2026-10-14T00:00:00+08:00",
+        "review_status": "PENDING_HUMAN_REVIEW",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF"
+      }
+    ]
+  },
+  "counter_evidence": [
+    "2026H1扣非归母净利润195.95亿元，同比下降25.31%。",
+    "2026H1归母权益2,128.61亿元，ROE 11.33%，较FY2025明显回落。",
+    "2026年10月14日三项公告仍待逐条材料性复核，模型有效性只能保持UNKNOWN。"
+  ],
+  "thesis_breakers": [
+    "若未来两年ROE持续低于9%的候选权益门槛，剩余收益假设失效。",
+    "若利润下降伴随经营现金转换和资产负债表质量同步恶化，当前底部ROE路径仍需下调。",
+    "若股本注销、回购或分红导致普通股分母与可分配现金桥接发生变化，必须重算每股价值。"
+  ],
+  "next_events": [
+    "人工复核2026年第一次临时股东会决议、法律意见及注册资本减少公告。",
+    "下一期定期报告发布后复核利润、现金转换和ROE路径。"
+  ],
+  "reopen_triggers": [
+    "人工逐条完成2026-10-14三项公告的材料性复核。",
+    "补充下一期定期报告，重新核验利润、现金转换和ROE路径。",
+    "任何股本注销、回购或分红变化均触发普通股分母重算。"
+  ],
+  "limitations": [
+    "9%权益门槛、ROE路径、终端增长和留存率均为候选研究假设，未经人工批准。",
+    "正式 G3 估值门未通过；不得据此生成买卖信号。",
+    "报价仅为已核验收盘事实，PriceBridge 未准入。",
+    "未接入真实个人组合、现金和 IPS，不得生成仓位建议。"
+  ],
+  "boundary": "研究草稿不等于买入或卖出建议；当前 action=no_order，正式决策仍为待研究。",
+  "evidence": [
+    {
+      "id": "midea_fy2025_annual",
+      "title": "美的集团 2025 年年度报告",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-03-31/1225065145.PDF",
+      "published_at": "2026-03-31T00:00:00+08:00",
+      "available_at": "2026-03-31T23:59:59+08:00",
+      "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+    },
+    {
+      "id": "midea_2026h1",
+      "title": "美的集团 2026 年半年度报告",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-08-29/1225531404.PDF",
+      "published_at": "2026-08-29T00:00:00+08:00",
+      "available_at": "2026-08-29T23:59:59+08:00",
+      "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+    },
+    {
+      "id": "midea_202606_hkex_monthly_return",
+      "title": "美的集团 H 股 2026 年 6 月月度证券变动报告表",
+      "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0707/2026070700419_c.pdf",
+      "published_at": "2026-07-07T16:30:00+08:00",
+      "available_at": "2026-07-07T16:30:00+08:00",
+      "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+    },
+    {
+      "id": "cninfo_1225603532",
+      "title": "2026年第一次临时股东会决议公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603532.PDF",
+      "published_at": "2026-10-14T00:00:00+08:00",
+      "available_at": "2026-10-15T00:00:00+08:00",
+      "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd"
+    },
+    {
+      "id": "cninfo_1225603533",
+      "title": "北京市嘉源律师事务所关于美的集团2026年第一次临时股东会的法律意见书",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603533.PDF",
+      "published_at": "2026-10-14T00:00:00+08:00",
+      "available_at": "2026-10-15T00:00:00+08:00",
+      "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c"
+    },
+    {
+      "id": "cninfo_1225603534",
+      "title": "关于回购注销部分限制性股票减资暨通知债权人的公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603534.PDF",
+      "published_at": "2026-10-14T00:00:00+08:00",
+      "available_at": "2026-10-15T00:00:00+08:00",
+      "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733"
+    },
+    {
+      "id": "midea_quote_20261016",
+      "title": "2026-10-16 双源收盘行情封包（本地证据）",
+      "url": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "published_at": "2026-10-16T17:00:31+08:00",
+      "available_at": "2026-10-16T17:00:31+08:00",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "id": "midea_event_scan_20261016",
+      "title": "巨潮资讯 2026-10-14 公告检索结果",
+      "url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+      "published_at": "2026-10-14T00:00:00+08:00",
+      "available_at": "2026-10-15T00:00:00+08:00",
+      "sha256": "a3d2e0b0de6013f739ba0fb508a754fd40f164a13e0c7da01f85c75d401e7d84"
+    }
+  ],
+  "version_comparison": {
+    "schema_version": "research-version-comparison-v1",
+    "action": "no_order",
+    "symbol": "000333",
+    "from": {
+      "status": "INSUFFICIENT_PUBLIC_EVIDENCE",
+      "research_version": "midea-valuation-applicability-20261013-v5",
+      "evidence": {
+        "path": "runtime/company-research/midea-valuation-applicability-20261013-v5/evidence.json",
+        "sha256": "b69e2fc931a016393ae5d274ad8d7aec8c5aaad52787e92ae377c5ff5ee5f541"
+      },
+      "control_note": {
+        "path": "docs/current/tl8-c-000333-share-denominator-recheck-20261013.md",
+        "sha256": "cd580e6d6b73bb2233062344f6aa7ec52030d524604112729fe0f4048de2589a"
+      },
+      "valuation": null
+    },
+    "to": {
+      "status": "RESEARCH_DRAFT_NOT_APPROVED",
+      "research_version": "midea-draft-20261016-v1",
+      "research_as_of": "2026-10-16",
+      "valuation": {
+        "model_version": "residual-income-equity-shared-dated-v2",
+        "bear": "36.0121866604528720800629631840921914063801838080",
+        "base": "45.7417037044192281574936570926129861357849631511",
+        "bull": "58.1686744055803340295467634666441075299523416697",
+        "confidence": "低"
+      },
+      "model_validity": "UNKNOWN",
+      "price_bridge": "INVALID"
+    },
+    "changed": [
+      "ordinary_share_denominator_reopened_with_hkex_2026_06_monthly_return",
+      "shared_residual_income_model_executed",
+      "dated_basis_to_valuation_bridge_added",
+      "conditional_bear_base_bull_values_available"
+    ],
+    "unchanged": [
+      "human_research_approval_absent",
+      "formal_G3_absent",
+      "event_materiality_pending_human_review",
+      "strict_contemporaneous_pit_not_proven",
+      "price_admitted_false",
+      "position_guidance_null",
+      "action_no_order"
+    ],
+    "next_gate": "Human materiality review of the three 2026-10-14 announcements."
+  }
+}

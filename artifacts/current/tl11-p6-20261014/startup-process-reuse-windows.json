@@ -1,0 +1,35 @@
+{
+  "schema_version": "p6-startup-process-reuse-windows-v1",
+  "action": "no_order",
+  "root_cause": "PowerShell 7.6 ConvertFrom-Json parses created_at as System.DateTime; ISO-string equality against that object rejected valid recorded process identity.",
+  "fix": "Compare UTC ticks for both string and DateTime inputs; normalize root paths; require PID, port and loopback address on the same listener record.",
+  "validation": "Actual Windows invocation of the existing starter with real CIM, TCP and HTTP checks. Start-Process overridden to forbid any process creation. No Open or Reauthorize requested.",
+  "results": [
+    {
+      "state_source": "current recorded state",
+      "pid": 21888,
+      "port": 8002,
+      "created_at": "2026-10-14T15:05:00.7998090Z",
+      "exit_code": 0,
+      "reused": true
+    },
+    {
+      "state_source": "Root-provided prior record injected into state read only; current file not overwritten",
+      "pid": 37756,
+      "port": 8001,
+      "created_at": "2026-10-14T14:56:56.4536700Z",
+      "exit_code": 0,
+      "reused": true
+    }
+  ],
+  "state_file_bytes_unchanged": true,
+  "processes_started_or_stopped": false,
+  "tests_passed": 9,
+  "random_hex_probe": {
+    "requested_character_count": 32,
+    "observed_character_count": 32,
+    "hex_format_valid": true,
+    "secret_value_recorded": false
+  },
+  "handoff": "Current state remains bound to 8002. Root owns service cleanup and restoration of the original 8001 state; this validation did neither."
+}

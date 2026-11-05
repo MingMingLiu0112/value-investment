@@ -1,0 +1,41 @@
+{
+  "schema_version": "current-price-conditions-v1",
+  "action": "no_order",
+  "watch_source_binding": {
+    "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/hotspot-observation/report.json",
+    "sha256": "66f3f90d71ae341d9f00c492effed308a3e14293548dc53fccc9d596c43f7c4a"
+  },
+  "watch_source_scope": "DATED_SECURITIES_WATCH_FALLBACK_NOT_INDUSTRY_CERTIFIED",
+  "items": [
+    {
+      "symbol": "300308",
+      "company_name": "中际旭创",
+      "case_path": "runtime/hotspot-current-price-cases/300308-2026-10-14-850a7a03a1174be7874dd76acfcb2893/case.json",
+      "case_sha256": "449f256697fe37818a26e525c1cb959f0aa47cf2b2087b92cff4c21b7c95330c"
+    },
+    {
+      "symbol": "300750",
+      "company_name": "宁德时代",
+      "case_path": "runtime/hotspot-current-price-cases/300750-2026-10-14-da507b1ea615452981492c5e956c0e3b/case.json",
+      "case_sha256": "9753f1425f5c0bedec391ed3d2a820cdd3a06b0a6811a83f7cb2aa3d72c1896d"
+    },
+    {
+      "symbol": "300502",
+      "company_name": "新易盛",
+      "case_path": "runtime/hotspot-current-price-cases/300502-2026-10-14-33a95b96f7d845e5b4e3e9f5531839fe/case.json",
+      "case_sha256": "b385980656ef00181011eef81f49c2a9aa70e36a484a9d127c1e25fbb7388725"
+    },
+    {
+      "symbol": "688825",
+      "company_name": "长鑫科技",
+      "case_path": "runtime/hotspot-current-price-cases/688825-2026-10-14-09eee3c2e5b841e9bd9b49c9b7879029/case.json",
+      "case_sha256": "75f67fdb6245230bc4cbdf5ab5ce0b15fa88349fc0bbc394f6843034864e2fe8"
+    },
+    {
+      "symbol": "002384",
+      "company_name": "东山精密",
+      "case_path": "runtime/hotspot-current-price-cases/002384-2026-10-14-fa2a79d261ae4e97bc2ee79956d392e8/case.json",
+      "case_sha256": "a92a09259d495cb7d7f599c46749177507742ab25918f4cc703d8f29e66de6f8"
+    }
+  ]
+}

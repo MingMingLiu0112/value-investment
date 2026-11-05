@@ -1,0 +1,613 @@
+{
+  "schema_version": "v5-value-real-evidence-v1",
+  "generated_at": "2026-10-21T10:38:16.026653+00:00",
+  "action": "no_order",
+  "scope": "VALUE_ONLY_OFFLINE_REAL_REPLAY_NO_SHARED_PUBLICATION",
+  "symbol": "600519",
+  "source": {
+    "symbol": "600519",
+    "period": "2025-12-31",
+    "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+    "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+    "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+    "available_at": "2026-09-11 14:23:38.396608+00:00"
+  },
+  "original_export": {
+    "path": "runtime/daily-marketwide/20261021T0128041036021Z/retained-financial-points.json",
+    "sha256": "d08dfd0f23a2dacb98ae6d053e7ed4a55ec7b4ca0d92c4d653520197ec1f9b40"
+  },
+  "implementation": [
+    {
+      "path": "src/value_investment_agent/application/research/value_evidence_enrichment_v1.py",
+      "sha256": "e6d35b2115be12ba242876d9149ed0fb99981b9bd1359c7fbab7a2e477ae61f8"
+    },
+    {
+      "path": "src/value_investment_agent/application/research/value_enrichment_batch.py",
+      "sha256": "83c276e13146dbd32291cb122e7fa05413387e38e36d436c13ce4e733f49b670"
+    },
+    {
+      "path": "src/value_investment_agent/infrastructure/screening/value_evidence_enrichment_v1.py",
+      "sha256": "ab916a608fecccbdf106558202dde488c46ea3b4a277312096a3085c6c399471"
+    },
+    {
+      "path": "scripts/current/build_value_research_queue.py",
+      "sha256": "f6c20e5c25e31e26dcc4def51fc11f30e032cc7e737fe4187565d90f9d59bcbc"
+    }
+  ],
+  "admitted_points": [
+    {
+      "symbol": "600519",
+      "field_name": "debt_ratio",
+      "period_label": "2025-12-31",
+      "data_point_id": "value-ratio:ee63fd05df6aaa1df86232de65116f1e8c4ae2bad78efd54ea2ec55bf037d10c",
+      "value": "16.41536219224762329957853997",
+      "unit": "percent",
+      "source_id": "derived:ee63fd05df6aaa1df86232de65116f1e8c4ae2bad78efd54ea2ec55bf037d10c",
+      "source_name": "Derived from admitted official balances",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+      "created_at": "2026-09-11T14:23:38.396608+00:00",
+      "fetched_at": "2026-09-11T14:23:38.396608+00:00",
+      "available_at": "2026-09-11T14:23:38.396608+00:00",
+      "validation_status": "verified",
+      "human_reviewed": false,
+      "metadata": {
+        "automatic_cross_source_verification": true,
+        "assurance_basis": "INHERITED_FROM_EXISTING_ADMITTED_INPUTS_NOT_NEW_SOURCE_VERIFICATION",
+        "derivation_formula": "value-sourced-balance-ratio-v1",
+        "formula": "total_liabilities / total_assets * 100",
+        "input_fact_ids": [
+          "02829e6d-9e97-44f9-a422-050ea0e865a5",
+          "851ad82a-605f-4d50-9049-7f356f1b5a4e"
+        ],
+        "evidence_refs": [
+          {
+            "id": "02829e6d-9e97-44f9-a422-050ea0e865a5",
+            "field_name": "total_assets",
+            "value": "303834844021.44",
+            "unit": "CNY",
+            "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "page": 57,
+            "excerpt": "资产总计 303,834,844,021.44 298,944,579,918.70"
+          },
+          {
+            "id": "851ad82a-605f-4d50-9049-7f356f1b5a4e",
+            "field_name": "total_liabilities",
+            "value": "49875590112.37",
+            "unit": "CNY",
+            "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "page": 58,
+            "excerpt": "负债合计 49,875,590,112.37 56,933,264,798.10"
+          }
+        ],
+        "statement_scope": "consolidated",
+        "currency": "CNY",
+        "derivation_rule_pit_status": "NOT_ADMITTED"
+      }
+    }
+  ],
+  "sourced_arithmetic_observations": [
+    {
+      "symbol": "600519",
+      "field_name": "revenue_yoy",
+      "period_label": "2025-12-31",
+      "data_point_id": "value-growth:0b975f9d7372f2d464f54a84351fe0a8ce18ddbd8befd94f13168b71016354d5",
+      "value": "-1.206003502122310075731217400",
+      "unit": "percent",
+      "source_id": "derived:0b975f9d7372f2d464f54a84351fe0a8ce18ddbd8befd94f13168b71016354d5",
+      "source_name": "Derived from official income comparative",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+      "available_at": "2026-09-11T14:23:38.396608+00:00",
+      "created_at": "2026-09-11T14:23:38.396608+00:00",
+      "fetched_at": "2026-09-11T14:23:38.396608+00:00",
+      "validation_status": "pending",
+      "human_reviewed": false,
+      "metadata": {
+        "derivation_formula": "value-sourced-income-growth-v1",
+        "formula": "(current / prior - 1) * 100",
+        "automatic_cross_source_verification": false,
+        "assurance_basis": "BOTH_RETAINED_INPUTS_REQUIRED_FOR_INHERITED_ASSURANCE",
+        "statement_scope": "consolidated",
+        "currency": "CNY",
+        "input_fact_ids": [
+          "be3e0921-fbf7-4ec2-95bf-2848094e951f"
+        ],
+        "evidence_refs": [
+          {
+            "id": "income-comparative:revenue_yoy",
+            "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "field_name": "revenue",
+            "value": "168838102514.79",
+            "prior_value": "170899152276.34",
+            "unit": "CNY",
+            "statement_scope": "consolidated",
+            "currency": "CNY",
+            "period_label": "2025-12-31",
+            "prior_period_label": "2024-12-31",
+            "page": 61,
+            "excerpt": "营业收入 44 168,838,102,514.79 170,899,152,276.34",
+            "unit_evidence_page": 61,
+            "status": "SOURCE_LOCATED_NOT_INDEPENDENTLY_ADMITTED"
+          }
+        ],
+        "prior_period_label": "2024-12-31",
+        "source_observation_verified": true,
+        "rejection_reasons": [
+          "ADMITTED_INPUT_MISSING_OR_AMBIGUOUS:revenue:2024-12-31"
+        ],
+        "derivation_rule_pit_status": "NOT_ADMITTED"
+      }
+    },
+    {
+      "symbol": "600519",
+      "field_name": "net_income_yoy",
+      "period_label": "2025-12-31",
+      "data_point_id": "value-growth:283d1312eed0cd0fe79d5d712847ecb2e621fe92c80dab3baccf9746b8c1ab18",
+      "value": "-4.532254817158085759953691710",
+      "unit": "percent",
+      "source_id": "derived:283d1312eed0cd0fe79d5d712847ecb2e621fe92c80dab3baccf9746b8c1ab18",
+      "source_name": "Derived from official income comparative",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+      "available_at": "2026-09-11T14:23:38.396608+00:00",
+      "created_at": "2026-09-11T14:23:38.396608+00:00",
+      "fetched_at": "2026-09-11T14:23:38.396608+00:00",
+      "validation_status": "pending",
+      "human_reviewed": false,
+      "metadata": {
+        "derivation_formula": "value-sourced-income-growth-v1",
+        "formula": "(current / prior - 1) * 100",
+        "automatic_cross_source_verification": false,
+        "assurance_basis": "BOTH_RETAINED_INPUTS_REQUIRED_FOR_INHERITED_ASSURANCE",
+        "statement_scope": "consolidated",
+        "currency": "CNY",
+        "input_fact_ids": [
+          "88a1a647-405a-407d-8a35-070bcddeed4f"
+        ],
+        "evidence_refs": [
+          {
+            "id": "income-comparative:net_income_yoy",
+            "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "field_name": "net_income",
+            "value": "82320067101.68",
+            "prior_value": "86228146421.62",
+            "unit": "CNY",
+            "statement_scope": "consolidated",
+            "currency": "CNY",
+            "period_label": "2025-12-31",
+            "prior_period_label": "2024-12-31",
+            "page": 62,
+            "excerpt": "归属于母公司股东的净利润\r\n（净亏损以“-”号填列）\r\n82,320,067,101.68 86,228,146,421.62",
+            "unit_evidence_page": 61,
+            "status": "SOURCE_LOCATED_NOT_INDEPENDENTLY_ADMITTED"
+          }
+        ],
+        "prior_period_label": "2024-12-31",
+        "source_observation_verified": true,
+        "rejection_reasons": [
+          "ADMITTED_INPUT_MISSING_OR_AMBIGUOUS:net_income:2024-12-31"
+        ],
+        "derivation_rule_pit_status": "NOT_ADMITTED"
+      }
+    }
+  ],
+  "income_growth_adoption": [
+    {
+      "field_name": "revenue_yoy",
+      "status": "SOURCE_VERIFIED_PENDING_INPUT_ADMISSION",
+      "value": "-1.206003502122310075731217400",
+      "issues": [
+        "ADMITTED_INPUT_MISSING_OR_AMBIGUOUS:revenue:2024-12-31"
+      ],
+      "evidence_refs": [
+        {
+          "id": "income-comparative:revenue_yoy",
+          "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+          "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+          "field_name": "revenue",
+          "value": "168838102514.79",
+          "prior_value": "170899152276.34",
+          "unit": "CNY",
+          "statement_scope": "consolidated",
+          "currency": "CNY",
+          "period_label": "2025-12-31",
+          "prior_period_label": "2024-12-31",
+          "page": 61,
+          "excerpt": "营业收入 44 168,838,102,514.79 170,899,152,276.34",
+          "unit_evidence_page": 61,
+          "status": "SOURCE_LOCATED_NOT_INDEPENDENTLY_ADMITTED"
+        }
+      ]
+    },
+    {
+      "field_name": "net_income_yoy",
+      "status": "SOURCE_VERIFIED_PENDING_INPUT_ADMISSION",
+      "value": "-4.532254817158085759953691710",
+      "issues": [
+        "ADMITTED_INPUT_MISSING_OR_AMBIGUOUS:net_income:2024-12-31"
+      ],
+      "evidence_refs": [
+        {
+          "id": "income-comparative:net_income_yoy",
+          "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+          "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+          "field_name": "net_income",
+          "value": "82320067101.68",
+          "prior_value": "86228146421.62",
+          "unit": "CNY",
+          "statement_scope": "consolidated",
+          "currency": "CNY",
+          "period_label": "2025-12-31",
+          "prior_period_label": "2024-12-31",
+          "page": 62,
+          "excerpt": "归属于母公司股东的净利润\r\n（净亏损以“-”号填列）\r\n82,320,067,101.68 86,228,146,421.62",
+          "unit_evidence_page": 61,
+          "status": "SOURCE_LOCATED_NOT_INDEPENDENTLY_ADMITTED"
+        }
+      ]
+    }
+  ],
+  "before": {
+    "symbol": "600519",
+    "model_type": "general_enterprise",
+    "quality_status": "待补证",
+    "total_score": null,
+    "coverage_ratio": "0.5556",
+    "profitability_score": null,
+    "cash_flow_score": null,
+    "balance_sheet_score": null,
+    "growth_score": null,
+    "reasons": [
+      "缺少自动双源验证字段：interest_bearing_debt, debt_ratio, revenue_yoy, net_income_yoy"
+    ],
+    "calculation_details": {
+      "required_fields": [
+        "roe",
+        "gross_margin",
+        "net_margin",
+        "operating_cash_flow_to_net_income",
+        "cash",
+        "interest_bearing_debt",
+        "debt_ratio",
+        "revenue_yoy",
+        "net_income_yoy"
+      ],
+      "accepted_fields": [
+        "cash",
+        "gross_margin",
+        "net_margin",
+        "operating_cash_flow_to_net_income",
+        "roe"
+      ],
+      "source_ids": {
+        "roe": "94012770-dee1-4c59-b6de-9ad4624fa942",
+        "cash": "94012770-dee1-4c59-b6de-9ad4624fa942",
+        "gross_margin": "a308496f-aa70-40fc-b4e3-f5f024fba87a",
+        "net_margin": "553a8610-7d53-4507-9912-ab40666ef6a1",
+        "operating_cash_flow_to_net_income": "673e610e-a6b7-4afd-a3ae-f09633cae3e9"
+      },
+      "period": "2025-12-31",
+      "period_selection_version": "m2-evidence-screen-v3",
+      "missing_fields": [
+        "interest_bearing_debt",
+        "debt_ratio",
+        "revenue_yoy",
+        "net_income_yoy"
+      ],
+      "older_period_fields_excluded": []
+    }
+  },
+  "after": {
+    "symbol": "600519",
+    "model_type": "general_enterprise",
+    "quality_status": "待补证",
+    "total_score": null,
+    "coverage_ratio": "0.6667",
+    "profitability_score": null,
+    "cash_flow_score": null,
+    "balance_sheet_score": null,
+    "growth_score": null,
+    "reasons": [
+      "缺少自动双源验证字段：interest_bearing_debt, revenue_yoy, net_income_yoy"
+    ],
+    "calculation_details": {
+      "required_fields": [
+        "roe",
+        "gross_margin",
+        "net_margin",
+        "operating_cash_flow_to_net_income",
+        "cash",
+        "interest_bearing_debt",
+        "debt_ratio",
+        "revenue_yoy",
+        "net_income_yoy"
+      ],
+      "accepted_fields": [
+        "cash",
+        "debt_ratio",
+        "gross_margin",
+        "net_margin",
+        "operating_cash_flow_to_net_income",
+        "roe"
+      ],
+      "source_ids": {
+        "roe": "94012770-dee1-4c59-b6de-9ad4624fa942",
+        "cash": "94012770-dee1-4c59-b6de-9ad4624fa942",
+        "gross_margin": "a308496f-aa70-40fc-b4e3-f5f024fba87a",
+        "net_margin": "553a8610-7d53-4507-9912-ab40666ef6a1",
+        "operating_cash_flow_to_net_income": "673e610e-a6b7-4afd-a3ae-f09633cae3e9",
+        "debt_ratio": "derived:ee63fd05df6aaa1df86232de65116f1e8c4ae2bad78efd54ea2ec55bf037d10c"
+      },
+      "period": "2025-12-31",
+      "period_selection_version": "m2-evidence-screen-v3",
+      "missing_fields": [
+        "interest_bearing_debt",
+        "revenue_yoy",
+        "net_income_yoy"
+      ],
+      "older_period_fields_excluded": []
+    }
+  },
+  "debt_scope": {
+    "version": "value-debt-scope-enrichment-v1",
+    "symbol": "600519",
+    "period": "2025-12-31",
+    "status": "DATA_GAP",
+    "scope_contract_complete": false,
+    "complete_debt_verified": false,
+    "value": null,
+    "unit": "CNY",
+    "input_fact_ids": [
+      "c1c55d49-0a21-4373-9e7a-ff0ea54ee465",
+      "e7b1cd38-2bb5-4f44-a212-7b85d1f1b4bd"
+    ],
+    "issues": [
+      "MISSING_COMPONENT:short_term_borrowings",
+      "UNIT_CURRENCY_OR_SCOPE_MISMATCH:current_portion_long_term_debt",
+      "MISSING_OFFICIAL_BINDING:current_portion_long_term_debt",
+      "UNRESOLVED_CLASSIFICATION:current_portion_long_term_debt",
+      "MISSING_SCOPE_REVIEW:current_portion_long_term_debt",
+      "SCOPE_REVIEW_UNAVAILABLE_AT_CUTOFF:current_portion_long_term_debt",
+      "CURRENT_MATURITIES_SCOPE_UNRESOLVED",
+      "MISSING_COMPONENT:long_term_borrowings",
+      "MISSING_COMPONENT:bonds_payable",
+      "UNIT_CURRENCY_OR_SCOPE_MISMATCH:lease_liabilities_noncurrent",
+      "MISSING_OFFICIAL_BINDING:lease_liabilities_noncurrent",
+      "UNRESOLVED_CLASSIFICATION:lease_liabilities_noncurrent",
+      "MISSING_SCOPE_REVIEW:lease_liabilities_noncurrent",
+      "SCOPE_REVIEW_UNAVAILABLE_AT_CUTOFF:lease_liabilities_noncurrent",
+      "POSSIBLE_CURRENT_PORTION_DOUBLE_COUNT:lease_liabilities_noncurrent",
+      "MISSING_COMPONENT:financing_payables_noncurrent",
+      "MISSING_COMPONENT:other_current_financing",
+      "MISSING_COMPONENT:other_noncurrent_financing",
+      "MISSING_COMPONENT:other_financing_scope",
+      "ORIGINAL_BINDING_MISMATCH:current_portion_long_term_debt",
+      "INDEPENDENT_FACT_NOT_RETAINED:current_portion_long_term_debt",
+      "ORIGINAL_BINDING_MISMATCH:lease_liabilities_noncurrent",
+      "INDEPENDENT_FACT_NOT_RETAINED:lease_liabilities_noncurrent"
+    ],
+    "automatic_cross_source_verification_created": false
+  },
+  "bounded_debt_review": {
+    "official_source": {
+      "symbol": "600519",
+      "period": "2025-12-31",
+      "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "available_at": "2026-09-11 14:23:38.396608+00:00"
+    },
+    "quotes": {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/official-page-quotes.json",
+      "sha256": "cd4b35d8647be2fb435974683d14d5061f524413b766579b543dcf49eae5c733"
+    },
+    "items": [
+      {
+        "field": "current_lease",
+        "value": "44206237.05",
+        "unit": "CNY",
+        "page": 105,
+        "status": "OFFICIAL_AMOUNT_LOCATED"
+      },
+      {
+        "field": "lease_liabilities_noncurrent",
+        "value": "189504942.77",
+        "unit": "CNY",
+        "page": 105,
+        "status": "OFFICIAL_AMOUNT_LOCATED"
+      },
+      {
+        "field": "lease_subtotal",
+        "value": "233711179.82",
+        "unit": "CNY",
+        "page": 114,
+        "status": "RECONCILES_TO_FINANCING_MOVEMENT_TABLE_NOT_COMPLETE_DEBT"
+      },
+      {
+        "field": "other_current_liabilities",
+        "value": "994959710.24",
+        "unit": "CNY",
+        "page": 105,
+        "status": "VAT_NOT_FINANCING"
+      },
+      {
+        "field": "borrowings_bonds_financing_payables",
+        "value": null,
+        "status": "NO_VALIDATED_ABSENCE_OR_COMPONENT_CLASSIFICATION_NOT_ZERO"
+      },
+      {
+        "field": "finance_subsidiary_member_deposits",
+        "value": null,
+        "status": "ECONOMIC_FINANCING_PERIMETER_UNRESOLVED"
+      }
+    ],
+    "independent_component_backing": "MISSING_RETAINED_BYTES_FOR_EXISTING_SECONDARY_REFERENCES",
+    "complete_debt_verified": false
+  },
+  "prior_report_corroboration": {
+    "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/prior-report-corroboration.json",
+    "sha256": "a17b8569d894fe98953f1c60e9ccbb8e7423b49f276928f7382bc57ff871f7eb"
+  },
+  "research_registration": {
+    "status": "RESEARCH_INPUTS_UPDATED",
+    "runtime_snapshot": {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/research-registration.json",
+      "sha256": "c26f60a207e5bce5cd349115946801328e53780f65ad265a7b78d1560cc4afbd"
+    },
+    "repository": "InMemoryResearchArtifactRepository",
+    "durable_storage": "RUNTIME_CANONICAL_ENVELOPES",
+    "postgres_written": false,
+    "fresh_repository_restore_verified": true
+  },
+  "context_loading": {
+    "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/context-loading.json",
+    "sha256": "3dc0342d1634031fb20849b47f24211e6671106292dc693fb85b9b2b91baa715"
+  },
+  "verified_adoption_summary": {
+    "status": "VERIFIED_FACT_ADOPTION",
+    "symbol": "600519",
+    "adopted_fact_ids": [
+      "value-ratio:ee63fd05df6aaa1df86232de65116f1e8c4ae2bad78efd54ea2ec55bf037d10c"
+    ],
+    "adopted_fact_count": 1,
+    "research_inputs_updated": true,
+    "sourced_arithmetic_observation_count": 2,
+    "quality_coverage_before": "0.5556",
+    "quality_coverage_after": "0.6667",
+    "complete_debt_verified": false,
+    "new_fact_approvals": 0,
+    "formal_eligibility": false,
+    "action": "no_order"
+  },
+  "original_input_unchanged": true,
+  "repeated_consumption_equal": true,
+  "rerank_scope": "REAL_CONSUMPTION_REPLAYED_ISSUER_NOT_IN_BOUND_DISCOVERY_POOL_POSITIVE_RERANK_TEST_ONLY",
+  "valuation_status": "not_ready",
+  "strict_historical_pit_admission": "NOT_ADMITTED",
+  "synthetic_data_used": false,
+  "verifier_cache": "SHARED_CONTENT_ADDRESSED_EXTRACTION_ORIGINAL_HASH_AND_CUTOFF_RECHECKED_EVERY_READ",
+  "execution_bindings": [
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/600519.json",
+      "sha256": "fe801a33afed3ed50ade1de913ba804c3dab8fb51d05b74262dcbfe9b794f881"
+    },
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/context-loading.json",
+      "sha256": "3dc0342d1634031fb20849b47f24211e6671106292dc693fb85b9b2b91baa715"
+    },
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/debt-source-review.json",
+      "sha256": "6bcb638786f5960de562c42e4567a328831958ae6b53fad09559ce90afe0586d"
+    },
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/financial-consumption-export.json",
+      "sha256": "a77bbd72394a527c31c51870a4ad1dc593b0c622c9f176eb73fc16400161c3cc"
+    },
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/official-page-quotes.json",
+      "sha256": "cd4b35d8647be2fb435974683d14d5061f524413b766579b543dcf49eae5c733"
+    },
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/previous-value-decision-chain.json",
+      "sha256": "4f3f306907759a3a69bffb2c74db52fbc3d2ec0c56f508f3ed7afaa9d3e5ec5d"
+    },
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/previous-value-real-evidence.json",
+      "sha256": "8128ff4bc3b5e40d241a18b4f625c7bc0bc43e6cbcee6fcbbe0493d947a5ff7c"
+    },
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/prior-report-corroboration.json",
+      "sha256": "a17b8569d894fe98953f1c60e9ccbb8e7423b49f276928f7382bc57ff871f7eb"
+    },
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/priority-after.json",
+      "sha256": "3339729448595c066ff543482a5c6d57a4674ea0e69e3c3c4c160f97b5c81716"
+    },
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/priority-before.json",
+      "sha256": "6a4be6d22e11813d1d466abc6ae81d34390ced7fdfba9267dec479965f4da36d"
+    },
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/recomputed-valuation.json",
+      "sha256": "3212cfdff6d002c332a0fcb22489c07d5e88ac50c1f3a2b3575b7754008bc2f8"
+    },
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/research-registration.json",
+      "sha256": "c26f60a207e5bce5cd349115946801328e53780f65ad265a7b78d1560cc4afbd"
+    },
+    {
+      "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/verified-adoption-summary.json",
+      "sha256": "ca9a92c93ea17deb0ad7eab2e7517f29e6514e918a34b7e87950b55d903495ee"
+    }
+  ],
+  "VALUE_ENGINEERING_CLOSURE": "PARTIAL",
+  "VALUE_REAL_ECONOMIC_ADMISSION": "NOT_PROVEN",
+  "integration_validation": {
+    "path": "runtime/value-evidence-enrichment/runs/v5-value-final-20261021T103816026653Z/integration-validation.json",
+    "sha256": "7bb1af79e8b4291069494758d9cb1834fddc754b644909ade5dc3c8b332e7198"
+  },
+  "bounded_debt_investigation": {
+    "path": "runtime/value-evidence-enrichment/debt-review-20261021/bounded-debt-investigation.json",
+    "sha256": "ef9beef11ae5db9d16fbac1553541c53d96a5746c1dc9a4d252cfaccf631b6fc"
+  },
+  "existing_read_path_integration": {
+    "path": "runtime/value-evidence-enrichment/debt-review-20261021/existing-read-path-integration.json",
+    "sha256": "5cea01317df21e8f585dd6aeed4f2d48fa02dbd7d41e5d73c74a3d03ce5dca0e"
+  },
+  "durable_reuse": {
+    "status": "DURABLE_REUSE_VERIFIED",
+    "implementation_receipt": {
+      "path": "runtime/value-evidence-enrichment/runs/v5-durable-20261021T111510026587Z/durable-reuse-receipt.json",
+      "sha256": "c4a8e187f98ab7c2250ee9e29d2e21f11bd045d2462fc05c673b607008202314"
+    },
+    "supersedes": "The missing default reuse diagnosis in existing_read_path_integration is historical; the default loader now restores verified typed versions from bound progress checkpoints.",
+    "production_callable": "value_enrichment_batch.persist_verified_enrichment_adoption",
+    "public_helper": "value_enrichment_batch.read_verified_enrichment_progress(root: Path, symbol: str, evaluation_at: datetime) -> dict | None",
+    "reverification": "Source bytes, retained export, current registered baseline, admitted facts and full typed registration replay are reverified. A changed bound source/export/baseline refuses reuse; invalid latest adoption never falls back to an older enriched version.",
+    "discovery_scope": "Existing progress-v1 checkpoints only, bounded at 4096; no arbitrary runtime scans or latest-export guessing. The saved export is exact retained evidence, not a claim to be the newest market report.",
+    "restored_operating_input": {
+      "field": "debt_ratio",
+      "value": "16.41536219224762329957853997"
+    },
+    "coverage_before": "0.5556",
+    "coverage_after": "0.6667",
+    "targeted_validation": {
+      "passed": 112,
+      "modules": [
+        "tests/test_value_enrichment_durable_reuse.py",
+        "tests/test_value_enrichment_batch.py",
+        "tests/test_value_evidence_enrichment_v1.py",
+        "tests/test_daily_refresh_value_adoption_integration.py"
+      ],
+      "checks": "Restart default loader, exact safe public contract, source/export/baseline/result/checkpoint tampering, fully rehashed typed input forgery, cutoff, no inherited economic approval; P1 full debt-scope forgery refused at persistence and fully rebound scope/case forgery refused at verification and restart."
+    },
+    "historical_limits_retained": "Complete debt remains unproven; revenue_yoy/net_income_yoy remain sourced observations pending denominator admission. No fake daily candidate, publication, pointer/workbench mutation, economic approval or valuation upgrade.",
+    "p1_debt_scope_repair": {
+      "status": "P1_DEBT_SCOPE_REVALIDATION_PASSED",
+      "original_gap": "Registration copied the caller debt completeness flag without comparing the full source-recomputed scope, permitting case/summary disagreement.",
+      "repair": "Registration and adoption verification strictly compare the entire source-recomputed debt_scope; case completeness is populated from checked scope, and verifier independently compares typed case completeness with checked scope.",
+      "reverification": {
+        "path": "runtime/value-evidence-enrichment/runs/v5-debt-scope-fix-20261021T112419140437Z/reverification.json",
+        "sha256": "3b45e869e45fb3bbfa342cf7e48a815f5b5d71e1decdfcb65cf9022c39bbb6e4"
+      },
+      "actual_600519": "Existing immutable persisted result reverified; two fresh default loader/warm-cache reads and public helper passed. Saved scope, source-recomputed summary and typed case all have complete_debt_verified=false. One admitted ratio, coverage 0.5556 to 0.6667; no economic upgrade."
+    },
+    "formal_eligibility": false,
+    "new_fact_approvals": 0,
+    "action": "no_order"
+  }
+}

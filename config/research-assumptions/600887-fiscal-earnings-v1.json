@@ -1,0 +1,48 @@
+{
+  "schema_version": "fiscal-earnings-research-policy-v1",
+  "symbol": "600887",
+  "generated_at": "2026-10-25T09:10:58+00:00",
+  "identity_class": "RESEARCH_ASSUMPTIONS_NOT_OFFICIAL_FORECAST",
+  "confidence": "LOW",
+  "action": "no_order",
+  "annual_policy_binding": {
+    "path": "config/research-assumptions/600887-industrial-earnings-v1.json",
+    "sha256": "94632b3107d1289986720ea2d820664ae79afb1f5dd968461152ff14232b25b3"
+  },
+  "rationale": "以同口径FY2025减H12025推导上年下半年季节基准，再研究2026H2；FY2026为H12026事实加下半年假设。2027至2031沿用已登记年度驱动，但从各自FY2026研究营收递推，不把TTM改名财政年。",
+  "stub_rationale": "H22025商业利润率约8.07%，不能复制H12026约13.48%的利润率。Base仅假设2%收入增长、8.25%商业利润率，保留库存和追加商誉损失；其他税前贡献低于上年下半年，不延续低有效税率或永久负少数股东损益。",
+  "accounting_comparability": {
+    "basis_id": "600887-CAS-CONSOLIDATED-CNY-ASREPORTED-FY2025-H12026-V1",
+    "status": "REVIEWED_COMPARABLE_FOR_CURRENT_RESEARCH",
+    "conclusion": "NO_DISCLOSED_RESTATEMENT_IDENTIFIED_IN_REVIEWED_ORIGINALS",
+    "perimeter": "AS_REPORTED_NOT_CONSTANT_PERIMETER",
+    "source_sha256": {"cninfo:1225259562":"d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac", "cninfo:1225511409":"423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"},
+    "evidence": [
+      {"source_id":"cninfo:1225259562", "physical_page":58, "expected_excerpt":"公司对会计政策、会计估计变更原因及影响的分析说明□适用√不适用"},
+      {"source_id":"cninfo:1225511409", "physical_page":109, "expected_excerpt":"重要会计政策变更□适用√不适用"},
+      {"source_id":"cninfo:1225259562", "physical_page":218, "expected_excerpt":"内蒙古伊顺供应链管理有限公司"},
+      {"source_id":"cninfo:1225511409", "physical_page":180, "expected_excerpt":"内蒙古金瀚伊利乳业有限责任公司"}
+    ],
+    "limitations": "使用H12026列报的H12025比较列，未独立鉴证原始H12025报告。FY2025有非同控收购、H12026有新设公司，差额不等于固定合并范围有机经营结果。"
+  },
+  "stub_scenarios": {
+    "bear": {"revenue_growth":"-0.01", "commercial_margin":"0.075", "inventory_impairment_ratio":"0.008", "goodwill_impairment_cny":"200000000", "other_asset_impairment_cny":"40000000", "other_pbt_cny":"500000000", "tax_research_rate":"0.25", "signed_nci_cny":"0"},
+    "base": {"revenue_growth":"0.02", "commercial_margin":"0.0825", "inventory_impairment_ratio":"0.0065", "goodwill_impairment_cny":"100000000", "other_asset_impairment_cny":"30000000", "other_pbt_cny":"700000000", "tax_research_rate":"0.22", "signed_nci_cny":"-50000000"},
+    "bull": {"revenue_growth":"0.04", "commercial_margin":"0.0875", "inventory_impairment_ratio":"0.0055", "goodwill_impairment_cny":"0", "other_asset_impairment_cny":"30000000", "other_pbt_cny":"800000000", "tax_research_rate":"0.22", "signed_nci_cny":"0"}
+  },
+  "counter_evidence": [
+    "下半年促销及费用反弹可能使温和利润率改善失效；这些参数不是统计中心或概率下界。",
+    "FY2026到2027的利润反弹可能主要来自减值负担下降，不能全部归因于销售增长。",
+    "其他税前贡献含融资、投资、信用及营业外事项，可能无法持续；少数股东归属及税负须独立复核。"
+  ],
+  "thesis_breakers": [
+    "实际下半年收入、商业费用或存货损失偏离当前季节性假说，应重开情景，而非回填已知结果。",
+    "报表重述、会计范围变化或重大并购破坏年度与半年列的可比性时，停止当前财政年拼接。"
+  ],
+  "limitations": [
+    "H22025是同口径年度减半年推导值，不是另行披露的半年财报。",
+    "所有2026H2和后续年度均为低置信度研究假设，不是已确定的正常化利润。",
+    "集团归母不等于母公司单体利润、现金上划或股利；本路径不计算分红、估值或交易资格。",
+    "2025至2027股东回报政策不能自动延长至2028年以后。"
+  ]
+}

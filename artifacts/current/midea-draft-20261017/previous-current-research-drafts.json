@@ -1,0 +1,10 @@
+{
+  "schema_version": "current-research-drafts-v1",
+  "action": "no_order",
+  "drafts": {
+    "000333": {
+      "path": "artifacts/current/midea-draft-20261016/public-draft-v1.json",
+      "sha256": "ee781a8119baa1f7b00469f82f073b1b56604955e295a5b32c3c11a64e0d7490"
+    }
+  }
+}

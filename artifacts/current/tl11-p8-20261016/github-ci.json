@@ -1,0 +1,65 @@
+{
+  "schema_version": "p8-github-ci-v1",
+  "action": "no_order",
+  "head_sha": "7757a00923e2b12235358296bc47ec4edb19d7c8",
+  "runs": [
+    {
+      "id": 38789058416,
+      "name": "Core Research Gates",
+      "head_sha": "7757a00923e2b12235358296bc47ec4edb19d7c8",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789058416",
+      "jobs": [
+        {
+          "id": 116608551979,
+          "name": "offline-core",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789058416/job/116608551979"
+        },
+        {
+          "id": 116608552672,
+          "name": "postgres-integration",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789058416/job/116608552672"
+        }
+      ]
+    },
+    {
+      "id": 38789058461,
+      "name": "Web Workbench",
+      "head_sha": "7757a00923e2b12235358296bc47ec4edb19d7c8",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789058461",
+      "jobs": [
+        {
+          "id": 116608552595,
+          "name": "web",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789058461/job/116608552595"
+        }
+      ]
+    },
+    {
+      "id": 38789049731,
+      "name": "Web Workbench",
+      "head_sha": "7757a00923e2b12235358296bc47ec4edb19d7c8",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789049731",
+      "jobs": [
+        {
+          "id": 116608521065,
+          "name": "web",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/38789049731/job/116608521065"
+        }
+      ]
+    }
+  ]
+}

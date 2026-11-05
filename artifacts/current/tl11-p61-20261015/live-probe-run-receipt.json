@@ -1,0 +1,157 @@
+{
+  "started_at": "2026-10-15T02:18:16.3624334+00:00",
+  "notes": [
+    "600887 的最新收盘未通过验证；不升级该证券。",
+    "000333 的最新收盘未通过验证；不升级该证券。",
+    "部分证券数据未能更新；已核验证券可用，缺项不代表今日已刷新。"
+  ],
+  "status": "PARTIAL",
+  "price_securities": [
+    {
+      "symbol": "002354",
+      "status": "VERIFIED",
+      "market_trade_date": "2026-10-14",
+      "sources": {
+        "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+        "price": "7.650",
+        "bundle_path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "bundle_sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530",
+        "evidence_refs": [
+          "6af1abf0172d5aadd559a27299e17538a3052479910e5aa338cf67efdaca6ef9",
+          "014a0445f925f1d0731ef9b3a1720097979c8b5b67f95b5fb662f3da4170d821",
+          "87ab7f2b4e983ae689095f9f41bbfb2171baca5c37ddca75e9377e68516a0361",
+          "20c1ee04d7dc8285219b0b2ff135fbafc14de41dabae6bfef25d2d907e610722"
+        ],
+        "provider_times": {
+          "tencent": "2026-10-14T16:14:57+08:00",
+          "sina": "2026-10-14T15:35:30+08:00"
+        },
+        "next_session": "2026-10-15"
+      },
+      "missing": []
+    },
+    {
+      "symbol": "300058",
+      "status": "VERIFIED",
+      "market_trade_date": "2026-10-14",
+      "sources": {
+        "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+        "price": "12.850",
+        "bundle_path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "bundle_sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530",
+        "evidence_refs": [
+          "6af1abf0172d5aadd559a27299e17538a3052479910e5aa338cf67efdaca6ef9",
+          "014a0445f925f1d0731ef9b3a1720097979c8b5b67f95b5fb662f3da4170d821",
+          "87ab7f2b4e983ae689095f9f41bbfb2171baca5c37ddca75e9377e68516a0361",
+          "20c1ee04d7dc8285219b0b2ff135fbafc14de41dabae6bfef25d2d907e610722"
+        ],
+        "provider_times": {
+          "tencent": "2026-10-14T16:14:39+08:00",
+          "sina": "2026-10-14T15:35:15+08:00"
+        },
+        "next_session": "2026-10-15"
+      },
+      "missing": []
+    },
+    {
+      "symbol": "300364",
+      "status": "VERIFIED",
+      "market_trade_date": "2026-10-14",
+      "sources": {
+        "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+        "price": "26.580",
+        "bundle_path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "bundle_sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530",
+        "evidence_refs": [
+          "6af1abf0172d5aadd559a27299e17538a3052479910e5aa338cf67efdaca6ef9",
+          "014a0445f925f1d0731ef9b3a1720097979c8b5b67f95b5fb662f3da4170d821",
+          "87ab7f2b4e983ae689095f9f41bbfb2171baca5c37ddca75e9377e68516a0361",
+          "20c1ee04d7dc8285219b0b2ff135fbafc14de41dabae6bfef25d2d907e610722"
+        ],
+        "provider_times": {
+          "tencent": "2026-10-14T16:14:30+08:00",
+          "sina": "2026-10-14T15:35:30+08:00"
+        },
+        "next_session": "2026-10-15"
+      },
+      "missing": []
+    },
+    {
+      "symbol": "300413",
+      "status": "VERIFIED",
+      "market_trade_date": "2026-10-14",
+      "sources": {
+        "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+        "price": "25.640",
+        "bundle_path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "bundle_sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530",
+        "evidence_refs": [
+          "6af1abf0172d5aadd559a27299e17538a3052479910e5aa338cf67efdaca6ef9",
+          "014a0445f925f1d0731ef9b3a1720097979c8b5b67f95b5fb662f3da4170d821",
+          "87ab7f2b4e983ae689095f9f41bbfb2171baca5c37ddca75e9377e68516a0361",
+          "20c1ee04d7dc8285219b0b2ff135fbafc14de41dabae6bfef25d2d907e610722"
+        ],
+        "provider_times": {
+          "tencent": "2026-10-14T16:14:36+08:00",
+          "sina": "2026-10-14T15:35:30+08:00"
+        },
+        "next_session": "2026-10-15"
+      },
+      "missing": []
+    },
+    {
+      "symbol": "300418",
+      "status": "VERIFIED",
+      "market_trade_date": "2026-10-14",
+      "sources": {
+        "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+        "price": "42.100",
+        "bundle_path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "bundle_sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530",
+        "evidence_refs": [
+          "6af1abf0172d5aadd559a27299e17538a3052479910e5aa338cf67efdaca6ef9",
+          "014a0445f925f1d0731ef9b3a1720097979c8b5b67f95b5fb662f3da4170d821",
+          "87ab7f2b4e983ae689095f9f41bbfb2171baca5c37ddca75e9377e68516a0361",
+          "20c1ee04d7dc8285219b0b2ff135fbafc14de41dabae6bfef25d2d907e610722"
+        ],
+        "provider_times": {
+          "tencent": "2026-10-14T16:14:57+08:00",
+          "sina": "2026-10-14T15:35:45+08:00"
+        },
+        "next_session": "2026-10-15"
+      },
+      "missing": []
+    }
+  ],
+  "core_integrity_ok": true,
+  "retained_publication_id": "pub-53fd34a5ae8aefdcaa5e",
+  "finished_at": "2026-10-15T02:18:36.5064608+00:00",
+  "schema_version": "daily-workbench-run-v1",
+  "publication_id": "pub-53fd34a5ae8aefdcaa5e",
+  "mode": "SAFE_REFRESH",
+  "quote_securities": [
+    {
+      "symbol": "600887",
+      "status": "VERIFIED",
+      "market_trade_date": "2026-10-14",
+      "latest_completed_session": "2026-10-14",
+      "sources": null,
+      "reason": "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性",
+      "missing": []
+    },
+    {
+      "symbol": "000333",
+      "status": "MISSING_OR_INVALID",
+      "market_trade_date": null,
+      "latest_completed_session": null,
+      "sources": null,
+      "reason": "该标的尚未登记双源收盘行情。",
+      "missing": [
+        "PENDING_EXTERNAL_DATA"
+      ]
+    }
+  ],
+  "action": "no_order",
+  "exit_code": 3,
+  "published": true
+}

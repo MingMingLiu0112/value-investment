@@ -1,0 +1,56 @@
+{
+  "action": "no_order",
+  "engineering_status": "IMPLEMENTED_TARGETED_VALIDATION_PASSED",
+  "real_model_acceptance": "PARTIAL_LATEST_EVENT_PENDING_BUDGET",
+  "daily_budget_authorized_cny": "10",
+  "real_calls": 7,
+  "source_readiness_receipt": "runtime/live-operating-research-20261031/source-readiness.json",
+  "test_receipt": ".tmp/live-operating-integrated.xml",
+  "targeted_passed": 190,
+  "targeted_skipped": 0,
+  "c_scope": "FIXED_FIVE_UNCHANGED",
+  "semantic_research_approval": false,
+  "sealed_targeted_receipt": ".tmp/live-operating-sealed.xml",
+  "sealed_targeted_passed": 224,
+  "sealed_targeted_skipped": 0,
+  "falsey_test_provider_regression": "PASS;1 passed/21 deselected; no real-call promotion",
+  "web_full": {
+    "passed": 1432,
+    "skipped": 28,
+    "receipt": ".tmp/live-operating-web-full.log"
+  },
+  "typecheck": "PASS",
+  "format": "PASS",
+  "independent_review": "Latest Fundamental fixes two scope errors; two Counter-Evidence misstatements remain explicitly unaccepted",
+  "conservative_configured_cost_cny": "7.33345",
+  "remaining_conservative_budget_cny": "2.66655",
+  "next_event_reservation_cny": "3.5167",
+  "gateway_invoice_verified": false,
+  "latest_task": "rt-f55b4f35d02d6936dd7300e7150205af",
+  "latest_task_execution_status": "FAILED",
+  "latest_task_error": "DAILY_BUDGET_EXHAUSTED_BEFORE_CALL",
+  "latest_completed_roles": [
+    "FUNDAMENTAL",
+    "COUNTER_EVIDENCE"
+  ],
+  "latest_pending_roles": [
+    "EVENT"
+  ],
+  "latest_scenarios": 3,
+  "latest_numeric_forecasts": 9,
+  "latest_unknowns": 6,
+  "actual_receipts": "runtime/live-operating-research-20261031/actual/",
+  "daily_budget_receipt": "runtime/live-operating-research-20261031/actual/daily-budget-receipt.json",
+  "full_module_accepted": false,
+  "final_targeted": {
+    "passed": 199,
+    "skipped": 0,
+    "receipt": ".tmp/final-live.xml",
+    "real_source_env": "OPERATING_SOURCES_REAL_ROOT"
+  },
+  "final_web": {
+    "passed": 1453,
+    "skipped": 28,
+    "receipt": ".tmp/live-final-web.log"
+  }
+}

@@ -1,0 +1,501 @@
+{
+  "schema_version": "m1-event-scan-v1",
+  "symbol": "600887",
+  "provider": "cninfo",
+  "scan_from": "2026-08-27",
+  "scan_to": "2026-09-22",
+  "validity_from": "2026-09-22",
+  "validity_to": "2026-09-22",
+  "status": "COMPLETE_NO_MATERIAL_EVENT_IN_VALIDITY_WINDOW",
+  "coverage_status": "COMPLETE",
+  "pre_model_review_status": "PENDING_HUMAN_REVIEW",
+  "announcements": [
+    {
+      "announcement_id": "1225568026",
+      "published_at": "2026-09-17T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司2026年第一次临时股东会决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568026.PDF",
+      "rule_kind": "governance",
+      "review_status": "REVIEWED_NO_MATERIAL_CANDIDATE",
+      "materiality_candidate": false,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225568026",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-17/1225568026.pdf",
+          "sha256": "9d3b29c5d2664c07b7bf5074970f0f971806c55f6dbf1fb45bb339787775c0ed",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568026.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225568025",
+      "published_at": "2026-09-17T00:00:00+08:00",
+      "title": "北京天驰君泰律师事务所关于内蒙古伊利实业集团股份有限公司2026年第一次临时股东会的法律意见书",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568025.PDF",
+      "rule_kind": "governance",
+      "review_status": "REVIEWED_NO_MATERIAL_CANDIDATE",
+      "materiality_candidate": false,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225568025",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-17/1225568025.pdf",
+          "sha256": "4a836cfeca6078c7db7397e00d949a30a00237e6041b738da3b6aff9a382f9ae",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568025.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225568022",
+      "published_at": "2026-09-17T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于以集中竞价交易方式回购公司股份的回购报告书",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568022.PDF",
+      "rule_kind": "buyback",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225568022",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-17/1225568022.pdf",
+          "sha256": "5e5baa57776faf72d1993606f9044cb634298615c6841a3aedb30dbc52b67583",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568022.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225568017",
+      "published_at": "2026-09-17T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于回购股份减少注册资本通知债权人的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568017.PDF",
+      "rule_kind": "buyback",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225568017",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-17/1225568017.pdf",
+          "sha256": "65e4ed5f54c235e887f34b6c98f14f993d283b1b810cd059a2c1b7c958ea1ed3",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568017.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225559652",
+      "published_at": "2026-09-12T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于为控股子公司提供担保的进展公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-12/1225559652.PDF",
+      "rule_kind": "guarantee",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225559652",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-12/1225559652.pdf",
+          "sha256": "2b0109b9633f77a0eaba8e86769fb3a7f48736584c87dbfb4a6151017bfc9e44",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-12/1225559652.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225559649",
+      "published_at": "2026-09-12T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于回购股份事项前十名股东持股情况的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-12/1225559649.PDF",
+      "rule_kind": "buyback",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225559649",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-12/1225559649.pdf",
+          "sha256": "fed832b763bcd241a09dcad4a1e6a250ad24d2892dabcc00a4098feedfc513a1",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-12/1225559649.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225552949",
+      "published_at": "2026-09-09T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司2026年第一次临时股东会会议资料",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-09/1225552949.PDF",
+      "rule_kind": "governance",
+      "review_status": "REVIEWED_NO_MATERIAL_CANDIDATE",
+      "materiality_candidate": false,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225552949",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-09/1225552949.pdf",
+          "sha256": "9881a0bac7b205736c0a5be5932145164f1c86e46d6f5c7ab2cee49bdbad55e2",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-09/1225552949.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225547701",
+      "published_at": "2026-09-05T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司2023年持股计划（第三期）第二次持有人会议决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-05/1225547701.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225547701",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-05/1225547701.pdf",
+          "sha256": "382ce62c80197a2c343d5288db0445ffa62681e68e0e6e64f5488562f8c2b56e",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-05/1225547701.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225547678",
+      "published_at": "2026-09-05T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司第六期长期服务计划第二次持有人会议决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-05/1225547678.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225547678",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-05/1225547678.pdf",
+          "sha256": "b5ef55521fda3a39edc95d72e23eafc5318010e19214db0096684a3967382ba1",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-05/1225547678.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225536213",
+      "published_at": "2026-09-01T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于回购股份事项前十名股东持股情况的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-01/1225536213.PDF",
+      "rule_kind": "buyback",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225536213",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-01/1225536213.pdf",
+          "sha256": "6286c438ecc425f204c1e9a4fb7a0a037f330558c084d45c68eedb2b1af1a05b",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-01/1225536213.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225511505",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司2026年半年度报告摘要",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511505.PDF",
+      "rule_kind": "financial_statement",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225511505",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511505.pdf",
+          "sha256": "4bfeb24fa8d2974576eacfa7e9785561d296d789754344445a990306b812edaf",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511505.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225511493",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于计提资产减值准备的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511493.PDF",
+      "rule_kind": "asset_impairment",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225511493",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511493.pdf",
+          "sha256": "bf3a21d0c92b4f05c8c484720e3480396d4b00b78df3e94fce3e1476acc85d2d",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511493.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225511485",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司第十二届董事会第一次会议决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511485.PDF",
+      "rule_kind": "governance",
+      "review_status": "REVIEWED_NO_MATERIAL_CANDIDATE",
+      "materiality_candidate": false,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225511485",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511485.pdf",
+          "sha256": "77b0025534be78d6cd5d8efeae8d0b43b77d03921a214820280bbe8a02d0d63d",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511485.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225511474",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司2026年半年度募集资金存放、管理与实际使用情况的专项报告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511474.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225511474",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511474.pdf",
+          "sha256": "0a086e25a805acc62c4b5cfcc1cc80aa75d6d20713c9f960f771d8199aeabed9",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511474.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225511473",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于以集中竞价交易方式回购公司股份方案的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511473.PDF",
+      "rule_kind": "buyback",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225511473",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511473.pdf",
+          "sha256": "afdd5cf950e7b1910470e57ef63ac09d65ba88c14e115566425eb4715817956e",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511473.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225511470",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于2026年半年度经营数据的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511470.PDF",
+      "rule_kind": "operating_data",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225511470",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511470.pdf",
+          "sha256": "c84f92a52e3018c17c8b20d49ca6a96d5e9d4b6e514f4b4bfdfb2aaf6a4f20e1",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511470.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225511468",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司关于召开2026年第一次临时股东会的通知",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511468.PDF",
+      "rule_kind": "governance",
+      "review_status": "REVIEWED_NO_MATERIAL_CANDIDATE",
+      "materiality_candidate": false,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225511468",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511468.pdf",
+          "sha256": "af7947f63ab18f89ae8e9af1bbdee98346d3401b4ac48678cbfa4746bdae45da",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511468.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225511466",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司第十二届董事会临时会议决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511466.PDF",
+      "rule_kind": "governance",
+      "review_status": "REVIEWED_NO_MATERIAL_CANDIDATE",
+      "materiality_candidate": false,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225511466",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511466.pdf",
+          "sha256": "154e9f61da262b53a84d6d3123c8439f81ad1ab7ffcbe66249c3cd280745235e",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511466.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    },
+    {
+      "announcement_id": "1225511409",
+      "published_at": "2026-08-27T00:00:00+08:00",
+      "title": "内蒙古伊利实业集团股份有限公司2026年半年度报告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+      "rule_kind": "financial_statement",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": true,
+      "evidence_refs": [
+        {
+          "id": "600887-announcement-1225511409",
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511409.pdf",
+          "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+        }
+      ],
+      "notes": "Rule classification from announcement title only; not an independent materiality determination."
+    }
+  ],
+  "blockers": [
+    "pre-model disclosures require human review before the model basis is complete"
+  ],
+  "evidence_refs": [
+    {
+      "id": "600887-cninfo-event-index",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/cninfo-index.json",
+      "sha256": "f68b7e83d77c4c1d09c8d033a6e0054c97c0ce93c9f383349388bbc2d815ceea"
+    },
+    {
+      "id": "600887-announcement-1225568026",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-17/1225568026.pdf",
+      "sha256": "9d3b29c5d2664c07b7bf5074970f0f971806c55f6dbf1fb45bb339787775c0ed",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568026.PDF"
+    },
+    {
+      "id": "600887-announcement-1225568025",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-17/1225568025.pdf",
+      "sha256": "4a836cfeca6078c7db7397e00d949a30a00237e6041b738da3b6aff9a382f9ae",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568025.PDF"
+    },
+    {
+      "id": "600887-announcement-1225568022",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-17/1225568022.pdf",
+      "sha256": "5e5baa57776faf72d1993606f9044cb634298615c6841a3aedb30dbc52b67583",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568022.PDF"
+    },
+    {
+      "id": "600887-announcement-1225568017",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-17/1225568017.pdf",
+      "sha256": "65e4ed5f54c235e887f34b6c98f14f993d283b1b810cd059a2c1b7c958ea1ed3",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-17/1225568017.PDF"
+    },
+    {
+      "id": "600887-announcement-1225559652",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-12/1225559652.pdf",
+      "sha256": "2b0109b9633f77a0eaba8e86769fb3a7f48736584c87dbfb4a6151017bfc9e44",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-12/1225559652.PDF"
+    },
+    {
+      "id": "600887-announcement-1225559649",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-12/1225559649.pdf",
+      "sha256": "fed832b763bcd241a09dcad4a1e6a250ad24d2892dabcc00a4098feedfc513a1",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-12/1225559649.PDF"
+    },
+    {
+      "id": "600887-announcement-1225552949",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-09/1225552949.pdf",
+      "sha256": "9881a0bac7b205736c0a5be5932145164f1c86e46d6f5c7ab2cee49bdbad55e2",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-09/1225552949.PDF"
+    },
+    {
+      "id": "600887-announcement-1225547701",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-05/1225547701.pdf",
+      "sha256": "382ce62c80197a2c343d5288db0445ffa62681e68e0e6e64f5488562f8c2b56e",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-05/1225547701.PDF"
+    },
+    {
+      "id": "600887-announcement-1225547678",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-05/1225547678.pdf",
+      "sha256": "b5ef55521fda3a39edc95d72e23eafc5318010e19214db0096684a3967382ba1",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-05/1225547678.PDF"
+    },
+    {
+      "id": "600887-announcement-1225536213",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-09-01/1225536213.pdf",
+      "sha256": "6286c438ecc425f204c1e9a4fb7a0a037f330558c084d45c68eedb2b1af1a05b",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-01/1225536213.PDF"
+    },
+    {
+      "id": "600887-announcement-1225511505",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511505.pdf",
+      "sha256": "4bfeb24fa8d2974576eacfa7e9785561d296d789754344445a990306b812edaf",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511505.PDF"
+    },
+    {
+      "id": "600887-announcement-1225511493",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511493.pdf",
+      "sha256": "bf3a21d0c92b4f05c8c484720e3480396d4b00b78df3e94fce3e1476acc85d2d",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511493.PDF"
+    },
+    {
+      "id": "600887-announcement-1225511485",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511485.pdf",
+      "sha256": "77b0025534be78d6cd5d8efeae8d0b43b77d03921a214820280bbe8a02d0d63d",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511485.PDF"
+    },
+    {
+      "id": "600887-announcement-1225511474",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511474.pdf",
+      "sha256": "0a086e25a805acc62c4b5cfcc1cc80aa75d6d20713c9f960f771d8199aeabed9",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511474.PDF"
+    },
+    {
+      "id": "600887-announcement-1225511473",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511473.pdf",
+      "sha256": "afdd5cf950e7b1910470e57ef63ac09d65ba88c14e115566425eb4715817956e",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511473.PDF"
+    },
+    {
+      "id": "600887-announcement-1225511470",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511470.pdf",
+      "sha256": "c84f92a52e3018c17c8b20d49ca6a96d5e9d4b6e514f4b4bfdfb2aaf6a4f20e1",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511470.PDF"
+    },
+    {
+      "id": "600887-announcement-1225511468",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511468.pdf",
+      "sha256": "af7947f63ab18f89ae8e9af1bbdee98346d3401b4ac48678cbfa4746bdae45da",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511468.PDF"
+    },
+    {
+      "id": "600887-announcement-1225511466",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511466.pdf",
+      "sha256": "154e9f61da262b53a84d6d3123c8439f81ad1ab7ffcbe66249c3cd280745235e",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511466.PDF"
+    },
+    {
+      "id": "600887-announcement-1225511409",
+      "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511409.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+    }
+  ],
+  "retrieved_at": "2026-09-23T05:10:18.014265+00:00",
+  "parser_version": "cninfo-announcement-window-v1"
+}

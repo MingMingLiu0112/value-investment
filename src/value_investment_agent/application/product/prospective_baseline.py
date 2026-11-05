@@ -12,8 +12,10 @@ from decimal import Decimal, InvalidOperation
 
 from .common import load_json_object, require_inside, sha256_file, write_new_json
 from .prospective_registration import verify_prospective_registration_receipt
+from ...infrastructure.filings.pdfium_runtime import serialized_pdfium
 
 
+@serialized_pdfium
 def _verify_shenhua_h1_column_geometry(pdf_bytes: bytes, fact: Mapping[str, Any]) -> None:
     import pypdfium2
 

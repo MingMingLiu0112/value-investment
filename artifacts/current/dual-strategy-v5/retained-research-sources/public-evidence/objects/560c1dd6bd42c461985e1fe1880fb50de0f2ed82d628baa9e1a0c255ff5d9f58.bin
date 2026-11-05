@@ -1,0 +1,74 @@
+{
+  "schema_version": "daily-event-observation-v1",
+  "symbol": "600887",
+  "action": "no_order",
+  "scan_from": "2026-10-11",
+  "scan_to": "2026-10-16",
+  "acquired_at": "2026-10-18T10:35:40.417795+00:00",
+  "announcement_count": 2,
+  "collection_status": "OFFICIAL_QUERY_ARCHIVED",
+  "index_representation": "PARSED_OFFICIAL_QUERY_WITH_RECEIVED_RESPONSE_CONTENT",
+  "timestamp_assurance": "PROVIDER_DATE_METADATA_NOT_INTRADAY_AVAILABILITY",
+  "full_calendar_window_elapsed": true,
+  "reused_original_count": 0,
+  "pagination_complete": true,
+  "materiality_approved": false,
+  "model_revalidated": false,
+  "research_date_advanced": false,
+  "earlier_reviews_preserved": true,
+  "scan_binding": {
+    "path": "runtime/web-first-event-coverage/600887-20261018/event-scan.json",
+    "sha256": "90e2367ad9170b2d8aa8590ba0ea723005740a7fcfce5adcf48c8323d439baae"
+  },
+  "source_bindings": [
+    {
+      "id": "daily-index-600887",
+      "path": "runtime/web-first-event-coverage/600887-20261018/cninfo-index.json",
+      "sha256": "83a352d542cf2d37560c117ae76c4ed65761298be30edf151428c72dee1317fe",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-index-manifest-600887",
+      "path": "runtime/web-first-event-coverage/600887-20261018/raw-index-manifest.json",
+      "sha256": "b6183d2868684040373aed44bc0dc6f4cd5dd796cd95cecd7d305a2a495c441d",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-600887-1",
+      "path": "runtime/web-first-event-coverage/600887-20261018/raw-index/response-0001.bin",
+      "sha256": "2499c82f90fbc5f2279677bf2298466ae748f3afe3f4ae010241ee1e5e348039",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-metadata-600887-1",
+      "path": "runtime/web-first-event-coverage/600887-20261018/raw-index/response-0001.json",
+      "sha256": "5b8bd2742c595f909c4c7e5ee55b68e0747fc54a446b20b5e4f53cc2728db704",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-600887-2",
+      "path": "runtime/web-first-event-coverage/600887-20261018/raw-index/response-0002.bin",
+      "sha256": "aa05e1c3daa1d1f2a0af4ebc5ef74a4c5f5ddc83d978ded8fe05e6dda76e87ab",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-metadata-600887-2",
+      "path": "runtime/web-first-event-coverage/600887-20261018/raw-index/response-0002.json",
+      "sha256": "172fafba3c8a0c2acb71f0e8987e5e3a001a9cc361438aaeee7e3279c4e9e5ae",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "cninfo:1225603138",
+      "path": "runtime/web-first-event-coverage/600887-20261018/600887-1225603138.pdf",
+      "sha256": "bb98b2d13f492eed41c090e96156af41c41bdb1ef2a4d4d5a07ae197d5281d19",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603138.PDF"
+    },
+    {
+      "id": "cninfo:1225600810",
+      "path": "runtime/web-first-event-coverage/600887-20261018/600887-1225600810.pdf",
+      "sha256": "1ba54ca786f66efbaebe67f6e6c17cb50f52284251bd46c3b7ae7f226be6a3e2",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-13/1225600810.PDF"
+    }
+  ],
+  "next_step": "Bind the full earlier and incremental event windows to exact model/assumptions, then review; do not advance research date automatically."
+}

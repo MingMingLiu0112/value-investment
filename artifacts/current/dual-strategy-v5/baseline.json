@@ -1,0 +1,22 @@
+{
+  "schema_version": "dual-strategy-v5-baseline-v1",
+  "action": "no_order",
+  "baseline_head": "815315a33ae6a0bf579735cace886afa8068e453",
+  "branch": "codex/web-d1-investment-workbench",
+  "source_state": "INHERITED_DIRTY_V4_NOT_A_RELEASE",
+  "task_attachment_sha256": "db301e6e0bd5ab5af6df4d283b769b0a03b2863ebdec92facada95e4f41cb5de",
+  "requirements": "C:/Users/we/Downloads/dual_strategy_investment_assistant_PRD_v1.md",
+  "prior_metrics_are_new_acceptance": false,
+  "baseline_checks": {
+    "branch_head_status": "INSPECTED",
+    "diff_check": "PASS",
+    "inherited_working_changes": "PRESERVED",
+    "targeted_regression": "RUNNING",
+    "latest_source_ci": "NOT_RUN",
+    "browser_e2e": "NOT_RUN"
+  },
+  "scope": "VALUE_HOTSPOT_PERSONAL_WEB_EXISTING_VERTICAL_PATHS",
+  "real_private_account_readiness": "NOT_PROVEN",
+  "real_economic_or_strategy_approval_granted": false,
+  "excel": "FROZEN"
+}

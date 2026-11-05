@@ -1,0 +1,100 @@
+{
+  "action": "no_order",
+  "status": "BOUNDED_PUBLIC_ARCHIVE_CLEAN_RESTORE_PASS",
+  "candidate_binding": {
+    "path": "runtime/midea-economic-review-ready-20261021T193106744906Z/candidate.json",
+    "sha256": "51a1389c053067ab740ac9a8e7fa45d1e289a4ef605f224b38d14f667b99dfc8"
+  },
+  "public_draft_binding": {
+    "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/review-ready/public-draft.json",
+    "sha256": "d6f389fe91d29a1e5d877ef0f59813a8e0954bea385ee3ddccb2c31dd4b0d26e"
+  },
+  "archive_binding": {
+    "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/review-ready/public-evidence/manifest.json",
+    "sha256": "e5c8723d4d2a3b3491e79f8521c4936af073c127ed0fea262837a142bbd7099b"
+  },
+  "clean_restore": {
+    "restore": {
+      "action": "no_order",
+      "status": "PUBLIC_ARCHIVE_RESTORED_AND_VERIFIED",
+      "restored_files": 20,
+      "private_data": false,
+      "full_inherited_research_restored": false
+    },
+    "idempotent_restore": true,
+    "verification": {
+      "status": "CLEAN_RUNTIME_RESTORE_AND_BOUND_INPUT_VERIFICATION_PASS",
+      "descriptor_input_sha256": "74986ca9370ba7af8dcde481bd23f852f292ab85ef2e5e79d692f7879c2b2f62",
+      "candidate_sha256": "51a1389c053067ab740ac9a8e7fa45d1e289a4ef605f224b38d14f667b99dfc8",
+      "g3_approved": false,
+      "action": "no_order"
+    },
+    "isolated_fixture": ".tmp/midea-economic-clean-20261021T193110163009Z",
+    "source_scope": "Current implementation copied into empty-runtime fixture; no original runtime fallback and no global registry changes."
+  },
+  "descriptor_input_sha256": "74986ca9370ba7af8dcde481bd23f852f292ab85ef2e5e79d692f7879c2b2f62",
+  "new_runtime_file_count": 8,
+  "new_runtime_bytes": 436085,
+  "archive_restored_files": 20,
+  "new_object_count": 18,
+  "new_object_bytes": 1386316,
+  "reused_object_count": 2,
+  "reused_object_bytes": 9767858,
+  "removed_redundant_direct_history_bindings": [
+    {
+      "path": "runtime/historical-filing-index/20260908T041326996681Z/pdfs/000333-1200767542.pdf",
+      "sha256": "e982cf864c15ca8262d3537fa42b746c70dada2002eecfff559f0a8c46423dd9"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260908T041326996681Z/pdfs/000333-1202084987.pdf",
+      "sha256": "595c0bc14c311d723b3da2b4291cfd0c1bb784fe77bed62427d269ec2f94969f"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260908T041326996681Z/pdfs/000333-1203240657.pdf",
+      "sha256": "2bd478b158e7622ca4efb58ad46ae4eadd8f92ef873416a5ecd36a25e1864baa"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260908T041326996681Z/pdfs/000333-1204557296.pdf",
+      "sha256": "86d0e81b852f0de5276f042822dc277d0ea49ef4484e47f0adee8ddb9552bd8f"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260908T041326996681Z/pdfs/000333-1206062041.pdf",
+      "sha256": "aac5178a6322596c21bfe3738effe6d6cd257c7e2374407f3173c4d40cb8d851"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260908T041326996681Z/pdfs/000333-1207684829.pdf",
+      "sha256": "c00289fe09b1648e1f281daf8ae27f2b67699b2c72413cd17286c642559361a6"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260908T041326996681Z/pdfs/000333-1209870336.pdf",
+      "sha256": "882d289f0d753c91ddf967ffb725639827f8a5be0c835ca6da33011e787bf2cc"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260908T041326996681Z/pdfs/000333-1213264815.pdf",
+      "sha256": "f1210d6e006e00963492edbf4cc79884b0febdffa50a82ed2d291fa694369def"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260908T041326996681Z/pdfs/000333-1216695045.pdf",
+      "sha256": "444a83cb76f66242b15c2a83796312b0aa618dc90e280702a0b93fa7aac80688"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260908T041326996681Z/pdfs/000333-1219429374.pdf",
+      "sha256": "22f4915d91ada74a37eab8d074aef4c15420f3b1a8b5f5bd5777c00f97d58b86"
+    },
+    {
+      "path": "runtime/historical-filing-index/20260908T041326996681Z/pdfs/000333-1222951181.pdf",
+      "sha256": "b17a9b9b84bca1d2a4e4a3cadc5dd5ba5c85e3f1fd2d758acd3315b5b040ecd9"
+    }
+  ],
+  "original_case_and_first_candidate_unmodified": true,
+  "public_runtime_absolute_metadata_fields": [],
+  "config_pointers_changed": false,
+  "economic_parameters_validated": false,
+  "inherited_source_path_metadata": [],
+  "g3_approved": false,
+  "price_admitted": false,
+  "public_valuation_changed": false,
+  "scenario_inputs_unchanged": true,
+  "coverage": "INCOMPLETE; no new event approval or current-data assertion",
+  "review_boundary": "Root and independent review required before registering the two proposed pointers."
+}

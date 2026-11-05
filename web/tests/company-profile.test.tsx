@@ -1,0 +1,145 @@
+import React from "react";
+import { expect, it } from "vitest";
+const { renderToStaticMarkup } = require("react-dom/server") as {
+  renderToStaticMarkup: (node: React.ReactNode) => string;
+};
+import {
+  CompanyProfileView,
+  type CompanyProfile,
+} from "../src/components/CompanyProfilePanel";
+const example = (): CompanyProfile => ({
+  schema_version: "company-research-profile-v1",
+  symbol: "600519",
+  status: "CONDITIONAL_RESEARCH",
+  action: "no_order",
+  formal_eligibility: false,
+  as_of: "2026-06-30",
+  business_model: "TEST_ONLY 产品收入与股东现金路径",
+  profile: { profile_id: "quality_compounder" },
+  route: {
+    status: "SUPPORTED",
+    selected_model: "residual_income_or_equity_value",
+    required_inputs: ["shares"],
+  },
+  evidence_refs: [
+    {
+      id: "TEST_ONLY",
+      source_url: "https://example.org/official.pdf",
+      sha256: "a".repeat(64),
+    },
+  ],
+  counter_evidence: ["TEST_ONLY 资金上划有约束"],
+  invalidation_conditions: ["TEST_ONLY 收入结构改变"],
+  blockers: ["HUMAN_APPROVAL_PENDING"],
+});
+it("explains actual route, dates, counter evidence and limits without a buy claim", () => {
+  const html = renderToStaticMarkup(
+    <CompanyProfileView data={example()} symbol="600519" />,
+  );
+  for (const value of [
+    "剩余收益／股东权益价值",
+    "2026-06-30",
+    "资金上划有约束",
+    "收入结构改变",
+    "不授予",
+    "https://example.org/official.pdf",
+  ])
+    expect(html).toContain(value);
+});
+it.each([
+  { symbol: "600887" },
+  { action: "order" },
+  { formal_eligibility: true },
+])("rejects mixed identity or granted authority %s", (patch) => {
+  const data = { ...example(), ...patch } as CompanyProfile;
+  const html = renderToStaticMarkup(
+    <CompanyProfileView data={data} symbol="600519" />,
+  );
+  expect(html).toContain("停止展示");
+  expect(html).not.toContain("TEST_ONLY 产品");
+});
+it("keeps unknown economics visible and never invents a model", () => {
+  const data = {
+    ...example(),
+    profile: null,
+    route: null,
+    business_model: null,
+    evidence_refs: [],
+  };
+  const html = renderToStaticMarkup(
+    <CompanyProfileView data={data} symbol="600519" />,
+  );
+  expect(html).toContain("不能确定适用模型");
+  expect(html).toContain("未形成可核验证据");
+});
+it("does not make hostile source schemes clickable", () => {
+  const data = {
+    ...example(),
+    evidence_refs: [{ id: "x", source_url: "javascript:alert(1)" }],
+  };
+  expect(
+    renderToStaticMarkup(<CompanyProfileView data={data} symbol="600519" />),
+  ).not.toContain('href="javascript:');
+});
+
+it("shows source-only route and pending inputs without claiming model replay or valuation", () => {
+  const data: CompanyProfile = {
+    ...example(),
+    schema_version: "source-company-profile-v1",
+    status: "SOURCE_BOUND_ROUTE_ONLY",
+    profile: { profile_id: "mature_manufacturing" },
+    route: {
+      status: "SUPPORTED",
+      selected_model: "fcff",
+      required_inputs: ["ebit", "scenario_inputs"],
+    },
+    missing_inputs: ["ebit", "scenario_inputs"],
+    applicability_contract: {
+      version: "c-profile-applicability-v1",
+      applicability_conditions: ["TEST_ONLY 发行人自身制造业务"],
+      refusal_conditions: ["FINANCIAL_BUSINESS_REQUIRES_SPECIALIZED_MODEL"],
+      required_economic_inputs: ["ebit", "capex"],
+    },
+  };
+  const html = renderToStaticMarkup(
+    <CompanyProfileView data={data} symbol="600519" />,
+  );
+  expect(html).toContain("来源与路由已核验，估值输入待补");
+  expect(html).toContain("模型输入尚未完整");
+  expect(html).toContain("金融业务需要专用模型");
+  expect(html).not.toContain("停止展示");
+});
+
+it("keeps verified financial refusal evidence visible without a generic model", () => {
+  const data: CompanyProfile = {
+    ...example(),
+    schema_version: "source-company-profile-v1",
+    status: "MODEL_NOT_APPLICABLE",
+    profile: null,
+    route: null,
+    business_model: "TEST_ONLY 发行人从事银行业务",
+    blockers: ["FINANCIAL_MAIN_BUSINESS_REQUIRES_SPECIALIZED_MODEL"],
+  };
+  const html = renderToStaticMarkup(
+    <CompanyProfileView data={data} symbol="600519" />,
+  );
+  expect(html).toContain("不适用现有通用模型");
+  expect(html).toContain("金融主营需专用模型");
+  expect(html).toContain("https://example.org/official.pdf");
+  expect(html).not.toContain("停止展示");
+});
+
+it("keeps long official business text expandable without hiding the model contract", () => {
+  const data = {
+    ...example(),
+    business_model: "主营原文".repeat(100) + "TEST_ONLY_END",
+  };
+  const html = renderToStaticMarkup(
+    <CompanyProfileView data={data} symbol="600519" />,
+  );
+  expect(html).toContain("完整主营原文");
+  expect(html).toContain("原文节选");
+  expect(html).toContain("TEST_ONLY_END");
+  expect(html).toContain("white-space:nowrap");
+  expect(html).toContain("剩余收益／股东权益价值");
+});

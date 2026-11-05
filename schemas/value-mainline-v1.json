@@ -1,0 +1,1539 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:value-investment:value-mainline-v1",
+  "$comment": "11模块接口设计；实现覆盖以唯一能力目录为准。原生事实及外部bytes验证不可由JSON Schema代替。",
+  "$ref": "#/$defs/ModuleRun",
+  "$defs": {
+    "ModuleRun": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "action",
+        "run_id",
+        "module_id",
+        "run_type",
+        "status",
+        "parent_run_ids",
+        "created_at",
+        "started_at",
+        "finished_at",
+        "input_manifest",
+        "output_manifest",
+        "source_refs",
+        "artifact_refs",
+        "metrics",
+        "model_version",
+        "rule_version",
+        "code_commit",
+        "symbol",
+        "stage_events",
+        "warnings",
+        "errors"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "module-run-v1"
+        },
+        "action": {
+          "const": "no_order"
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "module_id": {
+          "enum": [
+            "A",
+            "B",
+            "C",
+            "D1",
+            "D2",
+            "E1",
+            "E2",
+            "F1",
+            "F2",
+            "G1",
+            "G2"
+          ]
+        },
+        "run_type": {
+          "enum": [
+            "FULL",
+            "INCREMENTAL",
+            "REPLAY",
+            "VALIDATE"
+          ]
+        },
+        "status": {
+          "enum": [
+            "QUEUED",
+            "RUNNING",
+            "SUCCESS",
+            "FAILED",
+            "CANCELLED",
+            "BLOCKED",
+            "PARTIAL"
+          ]
+        },
+        "parent_run_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "started_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "finished_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "input_manifest": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "required": [
+            "schema_id",
+            "items",
+            "sha256"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "schema_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "role",
+                  "schema_id",
+                  "sha256"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "schema_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "artifact_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "hash_basis": {
+                    "enum": [
+                      "RAW_BYTES",
+                      "CANONICAL_JSON"
+                    ]
+                  }
+                },
+                "oneOf": [
+                  {
+                    "required": [
+                      "payload"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "path"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "artifact_id"
+                    ]
+                  }
+                ]
+              }
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "output_manifest": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "required": [
+            "schema_id",
+            "items",
+            "sha256"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "schema_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "role",
+                  "schema_id",
+                  "sha256"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "schema_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "payload": {
+                    "type": "object"
+                  },
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "artifact_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "hash_basis": {
+                    "enum": [
+                      "RAW_BYTES",
+                      "CANONICAL_JSON"
+                    ]
+                  }
+                },
+                "oneOf": [
+                  {
+                    "required": [
+                      "payload"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "path"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "artifact_id"
+                    ]
+                  }
+                ]
+              }
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "role",
+              "schema_id",
+              "sha256"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "role": {
+                "type": "string",
+                "minLength": 1
+              },
+              "schema_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "payload": {
+                "type": "object"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "artifact_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "hash_basis": {
+                "enum": [
+                  "RAW_BYTES",
+                  "CANONICAL_JSON"
+                ]
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "payload"
+                ]
+              },
+              {
+                "required": [
+                  "path"
+                ]
+              },
+              {
+                "required": [
+                  "artifact_id"
+                ]
+              }
+            ]
+          }
+        },
+        "artifact_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "role",
+              "schema_id",
+              "sha256"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "role": {
+                "type": "string",
+                "minLength": 1
+              },
+              "schema_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "payload": {
+                "type": "object"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "artifact_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "hash_basis": {
+                "enum": [
+                  "RAW_BYTES",
+                  "CANONICAL_JSON"
+                ]
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "payload"
+                ]
+              },
+              {
+                "required": [
+                  "path"
+                ]
+              },
+              {
+                "required": [
+                  "artifact_id"
+                ]
+              }
+            ]
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "required": [
+            "assurance",
+            "source_ref_validation"
+          ],
+          "properties": {
+            "assurance": {
+              "enum": [
+                "TEST_ONLY",
+                "REAL_PUBLIC_REPLAY",
+                "REAL_PUBLIC_ACQUISITION",
+                "HISTORICAL_REPLAY",
+                "UNVERIFIED"
+              ]
+            },
+            "source_ref_validation": {
+              "const": "CALLER_RESPONSIBILITY"
+            }
+          }
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rule_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "code_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,64}$"
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{6}$",
+          "description": "null explicitly denotes batch/multi-security scope; strings are single-security codes."
+        },
+        "stage_events": {
+          "type": "array"
+        },
+        "warnings": {
+          "type": "array"
+        },
+        "errors": {
+          "type": "array"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "QUEUED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "started_at": {
+                "type": "null"
+              },
+              "finished_at": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "RUNNING"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "started_at": {
+                "type": "string"
+              },
+              "finished_at": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "SUCCESS",
+                  "PARTIAL",
+                  "FAILED",
+                  "CANCELLED",
+                  "BLOCKED"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "finished_at": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "SUCCESS",
+                  "PARTIAL",
+                  "FAILED"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "started_at": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "SUCCESS"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "errors": {
+                "maxItems": 0
+              },
+              "output_manifest": {
+                "properties": {
+                  "items": {
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "$comment": "from_payload also enforces hashes, finite JSON, lifecycle and time order. Assurance grants no investment authority."
+    },
+    "ArtifactManifest": {
+      "type": "object",
+      "required": [
+        "schema_id",
+        "items",
+        "sha256"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "role",
+              "schema_id",
+              "sha256"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "role": {
+                "type": "string",
+                "minLength": 1
+              },
+              "schema_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "payload": {
+                "type": "object"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "artifact_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "hash_basis": {
+                "enum": [
+                  "RAW_BYTES",
+                  "CANONICAL_JSON"
+                ]
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "payload"
+                ]
+              },
+              {
+                "required": [
+                  "path"
+                ]
+              },
+              {
+                "required": [
+                  "artifact_id"
+                ]
+              }
+            ]
+          }
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "Input_A": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_id",
+        "run_type",
+        "input_manifest",
+        "action"
+      ],
+      "properties": {
+        "module_id": {
+          "const": "A"
+        },
+        "run_type": {
+          "enum": [
+            "FULL",
+            "INCREMENTAL",
+            "REPLAY",
+            "VALIDATE"
+          ]
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{6}$"
+        },
+        "input_manifest": {
+          "$ref": "#/$defs/ArtifactManifest"
+        },
+        "action": {
+          "const": "no_order"
+        }
+      },
+      "description": "包装合同；原生输入位于manifest绑定中，必须由原生validate重新核验；不是可直接替代原生函数的HTTP API。",
+      "x-native-inputs": [
+        {
+          "type": "native_request_list",
+          "path": "src/value_investment_agent/application/research/public_evidence.py",
+          "entrypoint": "run_public_evidence(requests, root, output_dir, allow_network=False)"
+        }
+      ],
+      "x-method-status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "EXISTING_NATIVE",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "PARTIAL"
+      }
+    },
+    "Output_A": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ModuleRun"
+        },
+        {
+          "properties": {
+            "module_id": {
+              "const": "A"
+            }
+          }
+        }
+      ],
+      "description": "新的运行/验证记录；不改写历史任务；不授予投资资格。",
+      "x-native-outputs": [
+        {
+          "type": "public-evidence-bundle-v1",
+          "path": "src/value_investment_agent/application/research/public_evidence.py",
+          "entrypoint": "load_bundle"
+        },
+        {
+          "type": "public-evidence-status-v1",
+          "path": "src/value_investment_agent/application/research/public_evidence.py",
+          "entrypoint": "public_evidence_status"
+        }
+      ]
+    },
+    "Input_B": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_id",
+        "run_type",
+        "input_manifest",
+        "action"
+      ],
+      "properties": {
+        "module_id": {
+          "const": "B"
+        },
+        "run_type": {
+          "enum": [
+            "FULL",
+            "INCREMENTAL",
+            "REPLAY",
+            "VALIDATE"
+          ]
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{6}$"
+        },
+        "input_manifest": {
+          "$ref": "#/$defs/ArtifactManifest"
+        },
+        "action": {
+          "const": "no_order"
+        }
+      },
+      "description": "包装合同；原生输入位于manifest绑定中，必须由原生validate重新核验；不是可直接替代原生函数的HTTP API。",
+      "x-native-inputs": [
+        {
+          "type": "bound_discovery_receipt_and_financial_export",
+          "path": "src/value_investment_agent/application/research/value_research_priority_v2.py",
+          "entrypoint": "build_value_research_priority_v2"
+        }
+      ],
+      "x-method-status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "EXISTING_NATIVE",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "DESIGN_ONLY"
+      }
+    },
+    "Output_B": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ModuleRun"
+        },
+        {
+          "properties": {
+            "module_id": {
+              "const": "B"
+            }
+          }
+        }
+      ],
+      "description": "新的运行/验证记录；不改写历史任务；不授予投资资格。",
+      "x-native-outputs": [
+        {
+          "type": "value-research-priority-v2",
+          "path": "src/value_investment_agent/application/research/value_research_priority_v2.py",
+          "entrypoint": "build_value_research_priority_v2"
+        },
+        {
+          "type": "research_queue",
+          "path": "src/value_investment_agent/application/research/value_research_queue.py",
+          "entrypoint": "build_value_research_queue"
+        }
+      ]
+    },
+    "Input_C": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_id",
+        "run_type",
+        "input_manifest",
+        "action"
+      ],
+      "properties": {
+        "module_id": {
+          "const": "C"
+        },
+        "run_type": {
+          "enum": [
+            "FULL",
+            "INCREMENTAL",
+            "REPLAY",
+            "VALIDATE"
+          ]
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{6}$"
+        },
+        "input_manifest": {
+          "$ref": "#/$defs/ArtifactManifest"
+        },
+        "action": {
+          "const": "no_order"
+        }
+      },
+      "description": "包装合同；原生输入位于manifest绑定中，必须由原生validate重新核验；不是可直接替代原生函数的HTTP API。",
+      "x-native-inputs": [
+        {
+          "type": "source_bound_package_or_source_only_profile",
+          "path": "src/value_investment_agent/application/research/company_profile.py",
+          "entrypoint": "validate_company_profile_for_package"
+        },
+        {
+          "type": "fixed_source_section_binding",
+          "path": "src/value_investment_agent/application/research/company_profile_sources_v1.py",
+          "entrypoint": "load_source_company_profile"
+        }
+      ],
+      "x-method-status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "PARTIAL",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "EXISTING_NATIVE",
+        "health_check": "DESIGN_ONLY"
+      }
+    },
+    "Output_C": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ModuleRun"
+        },
+        {
+          "properties": {
+            "module_id": {
+              "const": "C"
+            }
+          }
+        }
+      ],
+      "description": "新的运行/验证记录；不改写历史任务；不授予投资资格。",
+      "x-native-outputs": [
+        {
+          "type": "company-research-profile-v1",
+          "path": "src/value_investment_agent/application/research/company_profile.py",
+          "entrypoint": "project_company_profile"
+        },
+        {
+          "type": "source-company-profile-v1",
+          "path": "src/value_investment_agent/application/research/company_profile_sources_v1.py",
+          "entrypoint": "load_source_company_profile"
+        }
+      ]
+    },
+    "Input_D1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_id",
+        "run_type",
+        "input_manifest",
+        "action"
+      ],
+      "properties": {
+        "module_id": {
+          "const": "D1"
+        },
+        "run_type": {
+          "enum": [
+            "FULL",
+            "INCREMENTAL",
+            "REPLAY",
+            "VALIDATE"
+          ]
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{6}$"
+        },
+        "input_manifest": {
+          "$ref": "#/$defs/ArtifactManifest"
+        },
+        "action": {
+          "const": "no_order"
+        }
+      },
+      "description": "包装合同；原生输入位于manifest绑定中，必须由原生validate重新核验；不是可直接替代原生函数的HTTP API。",
+      "x-native-inputs": [
+        {
+          "type": "bound_snapshot_and_saved_responses",
+          "path": "src/value_investment_agent/application/research/agent_review/task_execution_v1.py",
+          "entrypoint": "ResearchTaskService.create"
+        },
+        {
+          "type": "live_source_context_and_provider_config",
+          "path": "src/value_investment_agent/application/research/agent_review/operating_task_v2.py",
+          "entrypoint": "LiveOperatingTaskService.create"
+        }
+      ],
+      "x-method-status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "EXISTING_NATIVE",
+        "get_run": "EXISTING_NATIVE",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "PARTIAL"
+      }
+    },
+    "Output_D1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ModuleRun"
+        },
+        {
+          "properties": {
+            "module_id": {
+              "const": "D1"
+            }
+          }
+        }
+      ],
+      "description": "新的运行/验证记录；不改写历史任务；不授予投资资格。",
+      "x-native-outputs": [
+        {
+          "type": "versioned_task_checkpoint",
+          "path": "runtime/research-task-execution-v1",
+          "entrypoint": "input.json / versions / current.json"
+        },
+        {
+          "type": "live_role_responses",
+          "path": "runtime/research-task-execution-v1/live-operating-v1",
+          "entrypoint": "verified roles / returned_responses"
+        }
+      ]
+    },
+    "Input_D2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_id",
+        "run_type",
+        "input_manifest",
+        "action"
+      ],
+      "properties": {
+        "module_id": {
+          "const": "D2"
+        },
+        "run_type": {
+          "enum": [
+            "FULL",
+            "INCREMENTAL",
+            "REPLAY",
+            "VALIDATE"
+          ]
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{6}$"
+        },
+        "input_manifest": {
+          "$ref": "#/$defs/ArtifactManifest"
+        },
+        "action": {
+          "const": "no_order"
+        }
+      },
+      "description": "包装合同；原生输入位于manifest绑定中，必须由原生validate重新核验；不是可直接替代原生函数的HTTP API。",
+      "x-native-inputs": [
+        {
+          "type": "joint-capital-cash-path-inputs-v4",
+          "path": "config/research-assumptions",
+          "entrypoint": "{symbol}-joint-capital-cash-path-v4.json"
+        },
+        {
+          "type": "operating-source-context-v1",
+          "path": "src/value_investment_agent/application/research/agent_review/operating_sources_v1.py",
+          "entrypoint": "build_operating_source_context"
+        }
+      ],
+      "x-method-status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "PARTIAL",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "DESIGN_ONLY"
+      }
+    },
+    "Output_D2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ModuleRun"
+        },
+        {
+          "properties": {
+            "module_id": {
+              "const": "D2"
+            }
+          }
+        }
+      ],
+      "description": "新的运行/验证记录；不改写历史任务；不授予投资资格。",
+      "x-native-outputs": [
+        {
+          "type": "operating-assumption-draft-v1",
+          "path": "src/value_investment_agent/application/research/operating_assumption_draft_v1.py",
+          "entrypoint": "load_operating_assumption_draft"
+        },
+        {
+          "type": "operating_driver_bridge",
+          "path": "src/value_investment_agent/domain/research/operating_driver_bridge_v1.py",
+          "entrypoint": "calculate_path / build_thresholds"
+        }
+      ]
+    },
+    "Input_E1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_id",
+        "run_type",
+        "input_manifest",
+        "action"
+      ],
+      "properties": {
+        "module_id": {
+          "const": "E1"
+        },
+        "run_type": {
+          "enum": [
+            "FULL",
+            "INCREMENTAL",
+            "REPLAY",
+            "VALIDATE"
+          ]
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{6}$"
+        },
+        "input_manifest": {
+          "$ref": "#/$defs/ArtifactManifest"
+        },
+        "action": {
+          "const": "no_order"
+        }
+      },
+      "description": "包装合同；原生输入位于manifest绑定中，必须由原生validate重新核验；不是可直接替代原生函数的HTTP API。",
+      "x-native-inputs": [
+        {
+          "type": "bound_predecessor_package",
+          "path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+          "entrypoint": "prepare_pending_research_candidate(package_path, package_sha256, policy_path, policy_sha256, choice_id, ...)"
+        }
+      ],
+      "x-method-status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "EXISTING_NATIVE",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "DESIGN_ONLY"
+      }
+    },
+    "Output_E1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ModuleRun"
+        },
+        {
+          "properties": {
+            "module_id": {
+              "const": "E1"
+            }
+          }
+        }
+      ],
+      "description": "新的运行/验证记录；不改写历史任务；不授予投资资格。",
+      "x-native-outputs": [
+        {
+          "type": "pending-research-candidate-v1",
+          "path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+          "entrypoint": "prepare_pending_research_candidate"
+        },
+        {
+          "type": "m1-valuation-package-v2_and_workbench",
+          "path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+          "entrypoint": "verify_pending_research_candidate"
+        }
+      ]
+    },
+    "Input_E2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_id",
+        "run_type",
+        "input_manifest",
+        "action"
+      ],
+      "properties": {
+        "module_id": {
+          "const": "E2"
+        },
+        "run_type": {
+          "enum": [
+            "FULL",
+            "INCREMENTAL",
+            "REPLAY",
+            "VALIDATE"
+          ]
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{6}$"
+        },
+        "input_manifest": {
+          "$ref": "#/$defs/ArtifactManifest"
+        },
+        "action": {
+          "const": "no_order"
+        }
+      },
+      "description": "包装合同；原生输入位于manifest绑定中，必须由原生validate重新核验；不是可直接替代原生函数的HTTP API。",
+      "x-native-inputs": [
+        {
+          "type": "versioned_first_research_input_spec",
+          "path": "src/value_investment_agent/application/research/first_research_input_v1.py",
+          "entrypoint": "_prepare"
+        },
+        {
+          "type": "native_facts_binding",
+          "path": "src/value_investment_agent/infrastructure/filings/first_research_fact_replay_v1.py",
+          "entrypoint": "replay_first_research_facts"
+        }
+      ],
+      "x-method-status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "EXISTING_NATIVE",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "DESIGN_ONLY"
+      }
+    },
+    "Output_E2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ModuleRun"
+        },
+        {
+          "properties": {
+            "module_id": {
+              "const": "E2"
+            }
+          }
+        }
+      ],
+      "description": "新的运行/验证记录；不改写历史任务；不授予投资资格。",
+      "x-native-outputs": [
+        {
+          "type": "first_research_input_receipt_package_proposal",
+          "path": "src/value_investment_agent/application/research/first_research_input_v1.py",
+          "entrypoint": "build_first_research_input"
+        },
+        {
+          "type": "first-research-input-view-v1",
+          "path": "src/value_investment_agent/application/product/first_research_input_view_v1.py",
+          "entrypoint": "read_first_research_input"
+        }
+      ]
+    },
+    "Input_F1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_id",
+        "run_type",
+        "input_manifest",
+        "action"
+      ],
+      "properties": {
+        "module_id": {
+          "const": "F1"
+        },
+        "run_type": {
+          "enum": [
+            "FULL",
+            "INCREMENTAL",
+            "REPLAY",
+            "VALIDATE"
+          ]
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{6}$"
+        },
+        "input_manifest": {
+          "$ref": "#/$defs/ArtifactManifest"
+        },
+        "action": {
+          "const": "no_order"
+        }
+      },
+      "description": "包装合同；原生输入位于manifest绑定中，必须由原生validate重新核验；不是可直接替代原生函数的HTTP API。",
+      "x-native-inputs": [
+        {
+          "type": "typed_cash_scenarios_and_source_descriptor",
+          "path": "src/value_investment_agent/domain/valuation/operating_profit_cash_path_v1.py",
+          "entrypoint": "compile_operating_profit_cash_path"
+        },
+        {
+          "type": "v4_research_run_spec",
+          "path": "src/value_investment_agent/research_application.py",
+          "entrypoint": "ResearchRunSpec"
+        }
+      ],
+      "x-method-status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "EXISTING_NATIVE",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "DESIGN_ONLY"
+      }
+    },
+    "Output_F1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ModuleRun"
+        },
+        {
+          "properties": {
+            "module_id": {
+              "const": "F1"
+            }
+          }
+        }
+      ],
+      "description": "新的运行/验证记录；不改写历史任务；不授予投资资格。",
+      "x-native-outputs": [
+        {
+          "type": "annual_cash_ledgers_and_typed_scenario",
+          "path": "src/value_investment_agent/domain/valuation/joint_capital_cash_path_v4.py",
+          "entrypoint": "compile_joint_capital_cash_path"
+        },
+        {
+          "type": "conditional_valuation_outcome",
+          "path": "src/value_investment_agent/research_application.py",
+          "entrypoint": "CompanyResearchRunOutcome"
+        }
+      ]
+    },
+    "Input_F2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_id",
+        "run_type",
+        "input_manifest",
+        "action"
+      ],
+      "properties": {
+        "module_id": {
+          "const": "F2"
+        },
+        "run_type": {
+          "enum": [
+            "FULL",
+            "INCREMENTAL",
+            "REPLAY",
+            "VALIDATE"
+          ]
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{6}$"
+        },
+        "input_manifest": {
+          "$ref": "#/$defs/ArtifactManifest"
+        },
+        "action": {
+          "const": "no_order"
+        }
+      },
+      "description": "包装合同；原生输入位于manifest绑定中，必须由原生validate重新核验；不是可直接替代原生函数的HTTP API。",
+      "x-native-inputs": [
+        {
+          "type": "exact_candidate_quote_actions_events_financial_bindings",
+          "path": "src/value_investment_agent/application/research/pending_candidate_alignment.py",
+          "entrypoint": "load_pending_candidate_alignment"
+        }
+      ],
+      "x-method-status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "PARTIAL",
+        "get_run": "PARTIAL",
+        "replay": "PARTIAL",
+        "explain": "EXISTING_NATIVE",
+        "health_check": "DESIGN_ONLY"
+      }
+    },
+    "Output_F2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ModuleRun"
+        },
+        {
+          "properties": {
+            "module_id": {
+              "const": "F2"
+            }
+          }
+        }
+      ],
+      "description": "新的运行/验证记录；不改写历史任务；不授予投资资格。",
+      "x-native-outputs": [
+        {
+          "type": "pending-candidate-alignment-v1",
+          "path": "src/value_investment_agent/application/research/pending_candidate_alignment.py",
+          "entrypoint": "attach_pending_candidate_alignment"
+        },
+        {
+          "type": "unregistered_conditional_price_draft",
+          "path": "src/value_investment_agent/application/research/pending_candidate_price_proposal.py",
+          "entrypoint": "load_pending_candidate_price_proposal"
+        }
+      ]
+    },
+    "Input_G1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_id",
+        "run_type",
+        "input_manifest",
+        "action"
+      ],
+      "properties": {
+        "module_id": {
+          "const": "G1"
+        },
+        "run_type": {
+          "enum": [
+            "FULL",
+            "INCREMENTAL",
+            "REPLAY",
+            "VALIDATE"
+          ]
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{6}$"
+        },
+        "input_manifest": {
+          "$ref": "#/$defs/ArtifactManifest"
+        },
+        "action": {
+          "const": "no_order"
+        }
+      },
+      "description": "包装合同；原生输入位于manifest绑定中，必须由原生validate重新核验；不是可直接替代原生函数的HTTP API。",
+      "x-native-inputs": [
+        {
+          "type": "public_company_readmodels",
+          "path": "web/src/services/api.ts",
+          "entrypoint": "detail / researchProfile / operatingAssumptionDraft / firstResearchInput / live operating APIs"
+        }
+      ],
+      "x-method-status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "PARTIAL",
+        "run": "PARTIAL",
+        "get_run": "PARTIAL",
+        "replay": "DESIGN_ONLY",
+        "explain": "PARTIAL",
+        "health_check": "DESIGN_ONLY"
+      }
+    },
+    "Output_G1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ModuleRun"
+        },
+        {
+          "properties": {
+            "module_id": {
+              "const": "G1"
+            }
+          }
+        }
+      ],
+      "description": "新的运行/验证记录；不改写历史任务；不授予投资资格。",
+      "x-native-outputs": [
+        {
+          "type": "company_detail_readmodel",
+          "path": "src/value_investment_agent/presentation/web_api/app.py",
+          "entrypoint": "GET /api/v1/decisions/{decision_id}"
+        },
+        {
+          "type": "react_company_research_view",
+          "path": "web/src/pages/DecisionDetail/index.tsx",
+          "entrypoint": "DecisionDetail"
+        }
+      ]
+    },
+    "Input_G2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_id",
+        "run_type",
+        "input_manifest",
+        "action"
+      ],
+      "properties": {
+        "module_id": {
+          "const": "G2"
+        },
+        "run_type": {
+          "enum": [
+            "FULL",
+            "INCREMENTAL",
+            "REPLAY",
+            "VALIDATE"
+          ]
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{6}$"
+        },
+        "input_manifest": {
+          "$ref": "#/$defs/ArtifactManifest"
+        },
+        "action": {
+          "const": "no_order"
+        }
+      },
+      "description": "包装合同；原生输入位于manifest绑定中，必须由原生validate重新核验；不是可直接替代原生函数的HTTP API。",
+      "x-native-inputs": [
+        {
+          "type": "existing_task_id_or_artifact_binding",
+          "path": "src/value_investment_agent/application/research/agent_review/task_execution_v1.py",
+          "entrypoint": "read / list_for_symbol"
+        }
+      ],
+      "x-method-status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "PARTIAL",
+        "get_run": "EXISTING_NATIVE",
+        "replay": "PARTIAL",
+        "explain": "PARTIAL",
+        "health_check": "PARTIAL"
+      }
+    },
+    "Output_G2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ModuleRun"
+        },
+        {
+          "properties": {
+            "module_id": {
+              "const": "G2"
+            }
+          }
+        }
+      ],
+      "description": "新的运行/验证记录；不改写历史任务；不授予投资资格。",
+      "x-native-outputs": [
+        {
+          "type": "verified_task_view",
+          "path": "src/value_investment_agent/application/research/agent_review/task_execution_v1.py",
+          "entrypoint": "read"
+        },
+        {
+          "type": "artifact_envelope_or_readonly_bundle",
+          "path": "src/value_investment_agent/research_artifact_repository.py",
+          "entrypoint": "ResearchArtifactRepository"
+        }
+      ]
+    }
+  }
+}

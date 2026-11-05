@@ -1,0 +1,26 @@
+{
+  "stage": "S5",
+  "source_commit": "44a7e8cdd4469527133e1375f72d4ff11a2b2a9e",
+  "action": "no_order",
+  "scope": "TEST_ONLY_NOTIFICATION_LIFECYCLE_AND_RETAINED_BAR_BRIDGE",
+  "tests": {
+    "s5_and_web_api": {"passed": 405},
+    "existing_m5": {"passed": 280, "skipped": 23},
+    "web": {"passed": 228},
+    "typecheck": "PASS",
+    "build": "PASS"
+  },
+  "exact_sha_ci": {"core_run": 39124449266, "offline_core": "PASS", "postgres": "PASS", "web_run": 39124449183, "web": "PASS"},
+  "actual_browser": "browser-check.json#lifecycle_successor",
+  "public_api": {"runtime_identity": "MATCHED", "hotspot_detail_list_parity": 10, "unified_objects": 16, "formal_eligibility_granted": false},
+  "independent_review": "NO_CONCRETE_P0_P1_P2_FOUND_IN_BOUNDED_PATCH",
+  "stage_status": "IN_PROGRESS",
+  "total_goal_status": "IN_PROGRESS",
+  "monitor_running": false,
+  "remaining_engineering": [
+    "Manual real-source observation/monitor orchestration with legitimate ACTUAL event authorization; never substitute SIMULATED state",
+    "Wire completed-bar acquisition to monitor, retaining original bytes and incomplete/single-source restrictions",
+    "Connect remaining registered condition, event and holding-risk reminder inputs",
+    "Complete remaining S1-S4 browser flows and S6/S7 engineering/evidence"
+  ]
+}

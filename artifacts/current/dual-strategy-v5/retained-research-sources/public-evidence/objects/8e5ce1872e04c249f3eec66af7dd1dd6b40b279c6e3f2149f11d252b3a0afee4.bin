@@ -1,0 +1,207 @@
+{
+  "schema_version": "m1-event-scan-v1",
+  "symbol": "600519",
+  "provider": "CNINFO",
+  "scan_from": "2026-06-30",
+  "scan_to": "2026-10-08",
+  "validity_from": "2026-06-30",
+  "validity_to": "2026-10-08",
+  "status": "PENDING_HUMAN_REVIEW",
+  "coverage_status": "COMPLETE",
+  "pre_model_review_status": "NONE",
+  "retrieved_at": "2026-10-08T10:14:44.604408+00:00",
+  "parser_version": "cninfo-full-category-originals-v1",
+  "action": "no_order",
+  "blockers": [
+    "All seven official originals require evidence-bound materiality review."
+  ],
+  "index_binding": {
+    "id": "full_window_index",
+    "path": "runtime/d2-source-bound-current-20261008/cninfo-full-window-index.json",
+    "sha256": "f97ae2b3b8d5991d58d6297ae6b090be37efd447a53552367c61de66e86b5e1a"
+  },
+  "evidence_refs": [
+    {
+      "id": "full_window_index",
+      "path": "runtime/d2-source-bound-current-20261008/cninfo-full-window-index.json",
+      "sha256": "f97ae2b3b8d5991d58d6297ae6b090be37efd447a53552367c61de66e86b5e1a"
+    },
+    {
+      "id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF"
+    },
+    {
+      "id": "cninfo:1225475864",
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225475864.pdf",
+      "sha256": "1a12378ed0e4a803eae00e73c74bc20eb2d73821fc960d746d52476dbf80df1d",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475864.PDF"
+    },
+    {
+      "id": "cninfo:1225475863",
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225475863.pdf",
+      "sha256": "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475863.PDF"
+    },
+    {
+      "id": "cninfo:1225475862",
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225475862.pdf",
+      "sha256": "c22571b28d92addc54fed9a75e56b0ffb5c2abbf834000d5c3ea77e02df129cd",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475862.PDF"
+    },
+    {
+      "id": "cninfo:1225475860",
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225475860.pdf",
+      "sha256": "9ba031b34a7f05caec0e71a154257b8b449fb0b18a58badd7e346fe66bc90313",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475860.PDF"
+    },
+    {
+      "id": "cninfo:1225475856",
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225475856.pdf",
+      "sha256": "fc78904a1a1babaea6e31838d5a8c3fc7933c6d1925fd3101942c130d21c66fc",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475856.PDF"
+    },
+    {
+      "id": "cninfo:1225431263",
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225431263.pdf",
+      "sha256": "24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-18/1225431263.PDF"
+    }
+  ],
+  "announcements": [
+    {
+      "announcement_id": "1225475868",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "title": "贵州茅台2026年半年度报告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225475868",
+          "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+          "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF"
+        }
+      ],
+      "notes": "Full original retained; no title-only materiality approval."
+    },
+    {
+      "announcement_id": "1225475864",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "title": "贵州茅台关于会计政策变更的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475864.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225475864",
+          "path": "runtime/d2-source-bound-current-20261008/announcements/1225475864.pdf",
+          "sha256": "1a12378ed0e4a803eae00e73c74bc20eb2d73821fc960d746d52476dbf80df1d",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475864.PDF"
+        }
+      ],
+      "notes": "Full original retained; no title-only materiality approval."
+    },
+    {
+      "announcement_id": "1225475863",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "title": "贵州茅台关于贵州茅台集团财务有限公司的风险评估报告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475863.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225475863",
+          "path": "runtime/d2-source-bound-current-20261008/announcements/1225475863.pdf",
+          "sha256": "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475863.PDF"
+        }
+      ],
+      "notes": "Full original retained; no title-only materiality approval."
+    },
+    {
+      "announcement_id": "1225475862",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "title": "贵州茅台第五届董事会2026年度第三次会议决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475862.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225475862",
+          "path": "runtime/d2-source-bound-current-20261008/announcements/1225475862.pdf",
+          "sha256": "c22571b28d92addc54fed9a75e56b0ffb5c2abbf834000d5c3ea77e02df129cd",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475862.PDF"
+        }
+      ],
+      "notes": "Full original retained; no title-only materiality approval."
+    },
+    {
+      "announcement_id": "1225475860",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "title": "贵州茅台2026年半年度报告摘要",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475860.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225475860",
+          "path": "runtime/d2-source-bound-current-20261008/announcements/1225475860.pdf",
+          "sha256": "9ba031b34a7f05caec0e71a154257b8b449fb0b18a58badd7e346fe66bc90313",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475860.PDF"
+        }
+      ],
+      "notes": "Full original retained; no title-only materiality approval."
+    },
+    {
+      "announcement_id": "1225475856",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "title": "贵州茅台关于召开2026年半年度业绩说明会的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475856.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225475856",
+          "path": "runtime/d2-source-bound-current-20261008/announcements/1225475856.pdf",
+          "sha256": "fc78904a1a1babaea6e31838d5a8c3fc7933c6d1925fd3101942c130d21c66fc",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475856.PDF"
+        }
+      ],
+      "notes": "Full original retained; no title-only materiality approval."
+    },
+    {
+      "announcement_id": "1225431263",
+      "published_at": "2026-07-18T00:00:00+08:00",
+      "title": "贵州茅台重大事项公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-18/1225431263.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225431263",
+          "path": "runtime/d2-source-bound-current-20261008/announcements/1225431263.pdf",
+          "sha256": "24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-07-18/1225431263.PDF"
+        }
+      ],
+      "notes": "Full original retained; no title-only materiality approval."
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": "research-version-comparison-v1",
+  "action": "no_order",
+  "symbol": "000333",
+  "from": {
+    "status": "INSUFFICIENT_PUBLIC_EVIDENCE",
+    "research_version": "midea-valuation-applicability-20261013-v5",
+    "evidence": {
+      "path": "runtime/company-research/midea-valuation-applicability-20261013-v5/evidence.json",
+      "sha256": "b69e2fc931a016393ae5d274ad8d7aec8c5aaad52787e92ae377c5ff5ee5f541"
+    },
+    "control_note": {
+      "path": "docs/current/tl8-c-000333-share-denominator-recheck-20261013.md",
+      "sha256": "cd580e6d6b73bb2233062344f6aa7ec52030d524604112729fe0f4048de2589a"
+    },
+    "valuation": null
+  },
+  "to": {
+    "status": "RESEARCH_DRAFT_NOT_APPROVED",
+    "research_version": "midea-draft-20261016-v1",
+    "research_as_of": "2026-10-16",
+    "valuation": {
+      "model_version": "residual-income-equity-shared-dated-v2",
+      "bear": "36.0121866604528720800629631840921914063801838080",
+      "base": "45.7417037044192281574936570926129861357849631511",
+      "bull": "58.1686744055803340295467634666441075299523416697",
+      "confidence": "低"
+    },
+    "model_validity": "UNKNOWN",
+    "price_bridge": "INVALID"
+  },
+  "changed": [
+    "ordinary_share_denominator_reopened_with_hkex_2026_06_monthly_return",
+    "shared_residual_income_model_executed",
+    "dated_basis_to_valuation_bridge_added",
+    "conditional_bear_base_bull_values_available"
+  ],
+  "unchanged": [
+    "human_research_approval_absent",
+    "formal_G3_absent",
+    "event_materiality_pending_human_review",
+    "strict_contemporaneous_pit_not_proven",
+    "price_admitted_false",
+    "position_guidance_null",
+    "action_no_order"
+  ],
+  "next_gate": "Human materiality review of the three 2026-10-14 announcements."
+}

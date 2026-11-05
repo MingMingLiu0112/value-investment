@@ -123,3 +123,48 @@ def test_sse_bundle_uses_one_official_2026_notice_and_reaches_session_gate():
                                     documents=bundle['documents'])
     assert result['passed'] and result['expected_session'] == '2026-09-07'
     assert len(bundle['references']['600519']['document_refs']['calendar_documents']) == 1
+
+
+@pytest.mark.parametrize('failure,retries', [
+    (requests.Timeout('timeout'), 3), (requests.ConnectionError('reset'), 3),
+    (requests.exceptions.SSLError('certificate'), 1), (ValueError('invalid bytes'), 1)])
+def test_network_retry_is_bounded_and_does_not_retry_invalid_evidence(failure, retries):
+    from value_investment_agent.infrastructure.hotspot.daily_market import bounded_get
+    attempts, waits = [], []
+    def fetch(*args, **kwargs):
+        attempts.append(1)
+        raise failure
+    with pytest.raises(type(failure)):
+        bounded_get(fetch, 'https://example.test', sleep=waits.append, timeout=(10, 20))
+    assert len(attempts) == retries
+    assert waits == ([1, 2] if retries == 3 else [])
+
+
+@pytest.mark.parametrize('status,retries', [(429, 3), (503, 3), (403, 1), (404, 1)])
+def test_retry_only_recoverable_http_responses(status, retries):
+    from value_investment_agent.infrastructure.hotspot.daily_market import bounded_get
+    attempts, waits = [], []
+    def fetch(*args, **kwargs):
+        attempts.append(1)
+        response = requests.Response()
+        response.status_code = status
+        response._content = b'failure'
+        response._content_consumed = True
+        return response
+    with pytest.raises(requests.HTTPError):
+        bounded_get(fetch, 'https://example.test', sleep=waits.append)
+    assert len(attempts) == retries
+
+
+def test_network_recovers_after_one_backoff():
+    from value_investment_agent.infrastructure.hotspot.daily_market import bounded_get
+    attempts, waits = [], []
+    def fetch(*args, **kwargs):
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise requests.Timeout('transient')
+        response = requests.Response()
+        response.status_code = 200
+        return response
+    assert bounded_get(fetch, 'https://example.test', sleep=waits.append).status_code == 200
+    assert len(attempts) == 2 and waits == [1]

@@ -1,0 +1,17 @@
+{
+  "action": "no_order",
+  "status": "RECORDED",
+  "last_run": {
+    "schema_version": "daily-workbench-run-v1",
+    "action": "no_order",
+    "mode": "SAFE_REFRESH",
+    "started_at": "2026-10-15T11:30:30.9542396+00:00",
+    "finished_at": "2026-10-15T11:31:04.3697322+00:00",
+    "status": "SUCCESS",
+    "exit_code": 0,
+    "published": true,
+    "publication_id": "pub-a1f4249523ba0cfb7537",
+    "retained_publication_id": "pub-a1f4249523ba0cfb7537",
+    "notes": []
+  }
+}

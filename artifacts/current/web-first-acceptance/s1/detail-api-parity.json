@@ -1,0 +1,38 @@
+{
+  "source_commit": "28a4e9448153074fc0a628518ed1a2de1654c427",
+  "actual_browser_evidence": "NOT_VERIFIED",
+  "action": "no_order",
+  "checks": [
+    {
+      "symbol": "600150",
+      "schema_version": "price-action-plan-independent-v2",
+      "action": "no_order",
+      "matched": true
+    },
+    {
+      "symbol": "600391",
+      "schema_version": "price-action-plan-independent-v2",
+      "action": "no_order",
+      "matched": true
+    },
+    {
+      "symbol": "600967",
+      "schema_version": "price-action-plan-independent-v2",
+      "action": "no_order",
+      "matched": true
+    },
+    {
+      "symbol": "600316",
+      "schema_version": "price-action-plan-independent-v2",
+      "action": "no_order",
+      "matched": true
+    },
+    {
+      "symbol": "600893",
+      "schema_version": "price-action-plan-independent-v2",
+      "action": "no_order",
+      "matched": true
+    }
+  ],
+  "stage": "S1"
+}

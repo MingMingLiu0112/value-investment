@@ -1,0 +1,59 @@
+{
+  "symbol": "600519",
+  "contract_version": "moutai-consolidated-parent-equity-discount-range-v1",
+  "model_scope": "Listed-company consolidated parent-attributable equity, matching the candidate parent-equity residual-income or dividend-capacity model.",
+  "inputs": {
+    "scope_assessment": {
+      "path": "runtime\\company-research\\600519-consolidated-parent-equity-model-feasibility-20260914T104237Z\\evidence.json",
+      "sha256": "fd701df519ec2bb5734e1faa9306b9914fa16f0aa5ee5fefc1b788d2019ba00f"
+    },
+    "risk_free_proxy": {
+      "value": "0.016813",
+      "definition": "2026-09-08 CNY ten-year sovereign yield to maturity; a nominal maturity-matched proxy, not a zero-coupon risk-free rate.",
+      "source": "runtime\\valuation-research\\moutai-discount-basis-20260909T120002401955Z\\evidence.json"
+    },
+    "equity_risk_premium": {
+      "value": "0.0514",
+      "definition": "Dated China total equity risk premium; it is used once and no separate country premium is added.",
+      "source": "runtime\\valuation-research\\moutai-discount-basis-20260909T120002401955Z\\evidence.json"
+    },
+    "beta_proxy": {
+      "definition": "2015-02 to 2025-12 monthly total-return slope of the listed consolidated equity against H00300, with an IID-approximate interval.",
+      "source": "runtime\\valuation-research\\moutai-market-beta-20260912T161052067136Z\\evidence.json"
+    }
+  },
+  "formula": "Ke = CNY_10Y_yield_proxy + listed_equity_return_slope * China_total_equity_risk_premium",
+  "cases": [
+    {
+      "case": "lower_iid_slope_bound",
+      "equity_return_slope": "0.80399627228244219256936275996849872171878814697265625",
+      "cost_of_equity_cny_nominal": "0.0581384083953175286980652458623808342963457"
+    },
+    {
+      "case": "full_sample_slope",
+      "equity_return_slope": "0.9875344414011415",
+      "cost_of_equity_cny_nominal": "0.06757227028801867310"
+    },
+    {
+      "case": "upper_iid_slope_bound",
+      "equity_return_slope": "1.171072610519841017406861283234320580959320068359375",
+      "cost_of_equity_cny_nominal": "0.0770061321807198282947126699582440778613091"
+    }
+  ],
+  "range": {
+    "lower": "0.0581384083953175286980652458623808342963457",
+    "central": "0.06757227028801867310",
+    "upper": "0.0770061321807198282947126699582440778613091"
+  },
+  "selection_status": "bounded_research_range_not_single_selected_rate",
+  "valuation_approved": false,
+  "simulation_eligible": false,
+  "trade_approved": false,
+  "limitations": [
+    "The listed-equity slope is a descriptive historical co-movement measure, not an observed forward beta or a statistical confidence interval for cost of equity.",
+    "The yield is a ten-year yield to maturity rather than a zero-coupon annual-effective rate; duration and compounding remain model assumptions.",
+    "The premium snapshot and yield date are asynchronous and neither is issuer guidance or a guaranteed return.",
+    "The range matches the consolidated parent-equity model scope better than industrial FCFF, but it does not approve forward ROE, retention, payout, or residual-income fade assumptions.",
+    "The range is current-research evidence only and cannot be retroactively applied to historical daily decisions without separate point-in-time rate inputs."
+  ]
+}

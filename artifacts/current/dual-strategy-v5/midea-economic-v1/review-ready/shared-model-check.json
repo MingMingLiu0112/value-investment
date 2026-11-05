@@ -1,0 +1,226 @@
+{
+  "action": "no_order",
+  "original_value": {
+    "symbol": "000333",
+    "model_type": "residual_income_or_equity_value",
+    "valuation_date": "2026-10-16",
+    "bear_value": "36.0121866604528720800629631840921914063801838080",
+    "base_value": "45.7417037044192281574936570926129861357849631511",
+    "bull_value": "58.1686744055803340295467634666441075299523416697",
+    "confidence": "低",
+    "assumptions": {
+      "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+      "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+      "status": "conditional_research_only",
+      "disclaimer": "No market price, margin of safety, position or order is produced here.",
+      "valuation_timing": {
+        "basis_at": "2026-06-30T23:59:59+08:00",
+        "valuation_at": "2026-10-16T17:00:31+08:00",
+        "evidence_refs": [
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea_202606_hkex_monthly_return",
+            "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+          }
+        ],
+        "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+      }
+    },
+    "sensitivities": [
+      {
+        "scenario": "bear",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "268807469526.473945603913885875381663318523827004",
+        "per_share_value": "36.0121866604528720800629631840921914063801838080",
+        "terminal_residual_contribution_ratio": "0.04534430046962670813598094236",
+        "dividend_crosscheck_difference": "0E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061"
+      },
+      {
+        "scenario": "base",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "341431964144.441293420144739598649591249038437830",
+        "per_share_value": "45.7417037044192281574936570926129861357849631511",
+        "terminal_residual_contribution_ratio": "0.1567110536503976527408765945",
+        "dividend_crosscheck_difference": "-2E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061"
+      },
+      {
+        "scenario": "bull",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "434191189779.776275441857195140120305434653194219",
+        "per_share_value": "58.1686744055803340295467634666441075299523416697",
+        "terminal_residual_contribution_ratio": "0.2672536050867622579183066563",
+        "dividend_crosscheck_difference": "-2E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "midea_fy2025_annual",
+        "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+      },
+      {
+        "id": "midea_2026h1",
+        "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+      },
+      {
+        "id": "midea_202606_hkex_monthly_return",
+        "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+      },
+      {
+        "id": "cninfo_1225608903",
+        "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd"
+      },
+      {
+        "id": "cninfo_1225603532",
+        "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd"
+      },
+      {
+        "id": "cninfo_1225603533",
+        "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c"
+      },
+      {
+        "id": "cninfo_1225603534",
+        "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733"
+      }
+    ],
+    "blockers": [],
+    "status": "conditional_research_only",
+    "model_version": "residual-income-equity-shared-dated-v2"
+  },
+  "research_candidate_value": {
+    "symbol": "000333",
+    "model_type": "residual_income_or_equity_value",
+    "valuation_date": "2026-10-16",
+    "bear_value": "36.0121866604528720800629631840921914063801838080",
+    "base_value": "45.7417037044192281574936570926129861357849631511",
+    "bull_value": "58.1686744055803340295467634666441075299523416697",
+    "confidence": "低",
+    "assumptions": {
+      "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+      "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+      "status": "conditional_research_only",
+      "disclaimer": "No market price, margin of safety, position or order is produced here.",
+      "valuation_timing": {
+        "basis_at": "2026-06-30T23:59:59+08:00",
+        "valuation_at": "2026-10-16T17:00:31+08:00",
+        "evidence_refs": [
+          {
+            "id": "midea_fy2025_annual",
+            "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+          },
+          {
+            "id": "midea_2026h1",
+            "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+          },
+          {
+            "id": "midea_202606_hkex_monthly_return",
+            "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+          }
+        ],
+        "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+      }
+    },
+    "sensitivities": [
+      {
+        "scenario": "bear",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "268807469526.473945603913885875381663318523827004",
+        "per_share_value": "36.0121866604528720800629631840921914063801838080",
+        "terminal_residual_contribution_ratio": "0.04534430046962670813598094236",
+        "dividend_crosscheck_difference": "0E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061"
+      },
+      {
+        "scenario": "base",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "341431964144.441293420144739598649591249038437830",
+        "per_share_value": "45.7417037044192281574936570926129861357849631511",
+        "terminal_residual_contribution_ratio": "0.1567110536503976527408765945",
+        "dividend_crosscheck_difference": "-2E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061"
+      },
+      {
+        "scenario": "bull",
+        "cost_of_equity": "0.09",
+        "ordinary_equity_value": "434191189779.776275441857195140120305434653194219",
+        "per_share_value": "58.1686744055803340295467634666441075299523416697",
+        "terminal_residual_contribution_ratio": "0.2672536050867622579183066563",
+        "dividend_crosscheck_difference": "-2E-36",
+        "arithmetic_status": "research_arithmetic_only",
+        "basis_to_valuation_factor": "1.02575648851072872078280171866928461148754088061"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "midea_fy2025_annual",
+        "sha256": "16f95f70527db59dcf2736f276a9479cf7ee917e5f71e4f6cbbe83acbad9f4b6"
+      },
+      {
+        "id": "midea_2026h1",
+        "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+      },
+      {
+        "id": "midea_202606_hkex_monthly_return",
+        "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+      },
+      {
+        "id": "cninfo_1225608903",
+        "sha256": "cca6dc38ff6b5353422fe36f173108931ec53c734372d2b30cfeacb6260077fd"
+      },
+      {
+        "id": "cninfo_1225603532",
+        "sha256": "6732a5255485d7cdd81d0b73af961fac639c3f344420b84c1a69ac135be7a0bd"
+      },
+      {
+        "id": "cninfo_1225603533",
+        "sha256": "e0aebb190712c15e82b29297c1e27d843564ea51cfe36f587eb0955bbe63985c"
+      },
+      {
+        "id": "cninfo_1225603534",
+        "sha256": "b38a3d71faa803d485d3400410a1dab61699653fc8635e6b2d435df86f04d733"
+      },
+      {
+        "id": "midea-economic-v1-accounting",
+        "path": "artifacts/current/dual-strategy-v5/midea-earnings-interpretation-correction.json",
+        "sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462"
+      },
+      {
+        "id": "midea-economic-v1-stress",
+        "path": "artifacts/current/dual-strategy-v5/midea-existing-model-sensitivity.json",
+        "sha256": "dfdbf4047fc86d0c2248cddd0394ede91f529af25f51baec59d4a8b66a78cef8"
+      },
+      {
+        "id": "midea-economic-v1-business",
+        "path": "runtime/company-research/midea-business-evidence-20260921/evidence.json",
+        "sha256": "de60b009c83770834c033b06b71a093bacfd739be6b2bf4fa4cb1a029b6f4cc8"
+      },
+      {
+        "id": "midea-economic-v1-distribution",
+        "path": "runtime/company-research/midea-2014-2024-equity-return-candidate-20260922/evidence.json",
+        "sha256": "6726e821972d0490753a6cc718f6f54515ccbfbb53341f081900af208eab7ea1"
+      },
+      {
+        "id": "midea-economic-v1-proposal",
+        "path": "artifacts/current/dual-strategy-v5/midea-economic-v1/economic-research.json",
+        "sha256": "c3072cfee415fb62e2defded2b993e8aae6b095c56d944c1290d7255919fbe99"
+      }
+    ],
+    "blockers": [],
+    "status": "conditional_research_only",
+    "model_version": "residual-income-equity-shared-dated-v2"
+  }
+}

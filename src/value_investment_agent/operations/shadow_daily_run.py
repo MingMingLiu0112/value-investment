@@ -29,7 +29,8 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
                                simulated_portfolio_path: Path | None = None,
                                simulated_portfolio_sha256: str | None = None,
                                reviews_path: Path | None = None,
-                               reviews_sha256: str | None = None) -> dict:
+                               reviews_sha256: str | None = None,
+                               allow_unsigned_legacy_frozen_replay: bool = False) -> dict:
     root = root.resolve()
     output = require_inside(root, output, 'isolated daily output')
     if not output.is_relative_to(root / 'runtime') or output.exists():
@@ -112,6 +113,8 @@ def run_isolated_daily_attempt(*, root: Path, output: Path, symbol: str,
                            schedule_request_sha256=schedule_request_sha256)
     if reviews_path is not None:
         shared_args.update(reviews_path=output / 'research_reviews.json', reviews_sha256=reviews_sha256)
+    if allow_unsigned_legacy_frozen_replay:
+        shared_args['allow_unsigned_legacy_frozen_replay'] = True
     try:
         result = run_company_research_for_symbol(**shared_args)
     except ResearchInputValidationError as error:

@@ -1,0 +1,49 @@
+{
+  "schema_version": "web-first-batch-handoff-closure-v1",
+  "action": "no_order",
+  "source_commit": "b98f49e3f84bac8a0e044adfff89c3341e2422d7",
+  "development_branch": "codex/web-d1-investment-workbench",
+  "pushed": true,
+  "exact_commit_ci": {
+    "offline_core": "PASS",
+    "postgres_integration": "PASS",
+    "web": "PASS",
+    "evidence": "artifacts/current/web-first-acceptance/s6/github-current.json"
+  },
+  "runtime_identity": {
+    "code": "MATCHED",
+    "config": "MATCHED",
+    "web_build_commit": "b98f49e3f84bac8a0e044adfff89c3341e2422d7",
+    "evidence": "artifacts/current/web-first-acceptance/s6/runtime-identity.json"
+  },
+  "authenticated_workflow_api": {
+    "event": "VERIFIED",
+    "financial": "VERIFIED",
+    "legacy": "VERIFIED",
+    "evidence": "artifacts/current/web-first-acceptance/s6/workflow-api-validation.json"
+  },
+  "actual_retained_financial_replay": {
+    "status": "SUCCESS",
+    "packet_bytes_and_mtime_unchanged": true,
+    "formal_fact_count": 0,
+    "coverage": "SELECTED_ANNUAL_CASH_ROWS_NOT_FULL_REPORT_OR_NORMALIZED_EARNINGS"
+  },
+  "final_windows_offline_failure_test": "PASS",
+  "public_chain_isolated_restore": {
+    "status": "PASS_WITH_LIMITED_SCOPE",
+    "evidence": "artifacts/current/web-first-acceptance/s7/public-chain-restore.json",
+    "full_web_first_recovery": "NOT_PROVEN",
+    "off_machine_retrieval": "NOT_CONFIRMED"
+  },
+  "browser_acceptance": "NOT_VERIFIED",
+  "stage_s6": "IN_PROGRESS",
+  "stage_s7": "PARTIAL",
+  "formal_investment_eligibility": false,
+  "total_goal_complete": false,
+  "next_engineering": [
+    "Hotspot research workflow over the independent strategy read model",
+    "Complete daily operational integration",
+    "Extend existing recovery inventory to Agent and alert history with isolated private fixtures",
+    "Full real browser business interaction acceptance"
+  ]
+}

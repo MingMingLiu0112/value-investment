@@ -62,7 +62,7 @@ def _reference(ref_id: str) -> EvidenceReference:
 
 def _official_payload() -> dict:
     return {
-        "parser_version": "test",
+        "parser_version": "official-security-lists-v1",
         "complete": True,
         "scope": "沪深A股测试",
         "fetched_at": "2026-09-23T08:00:00+00:00",
@@ -152,8 +152,8 @@ def _financial_points() -> list[dict]:
     ]
 
 
-def _receipt():
-    run_refs = {key: _reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
+def _receipt(run_refs=None):
+    run_refs = run_refs if run_refs is not None else {key: _reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
     return build_discovery_receipt(
         run_id="m2-fixture-run",
         generated_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
@@ -176,6 +176,84 @@ def test_receipt_round_trip_preserves_no_order_and_candidate_signature():
     assert restored.action == ACTION_NO_ORDER
     assert restored.coverage_signature == receipt.coverage_signature
     assert restored.candidate_signature == receipt.candidate_signature
+
+
+@pytest.mark.parametrize('failure', ['missing_debt', 'unverified_debt', 'low_score'])
+def test_quality_distinguishes_missing_evidence_from_scored_rejection(failure):
+    from value_investment_agent.infrastructure.screening.evidence_screen_v3 import build_discovery_receipt
+    points = _financial_points()
+    if failure == 'missing_debt':
+        points = [p for p in points if p['field_name'] != 'interest_bearing_debt']
+    elif failure == 'unverified_debt':
+        points = [dict(p, metadata={'automatic_cross_source_verification': True})
+                  if p['field_name'] == 'interest_bearing_debt' else p for p in points]
+    else:
+        points = [dict(p, value='90' if p['field_name'] == 'debt_ratio' else '0') for p in points]
+    receipt = build_discovery_receipt(
+        run_id='quality-gap-test', generated_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
+        official_payload=_official_payload(), tencent_payload=_tencent_payload(),
+        sina_payload=_sina_payload(), dividend_payload=_dividend_payload(),
+        financial_points=points, quote_date='2026-09-23',
+        run_refs={key: _reference(key) for key in ('official', 'tencent', 'sina', 'dividend', 'financial')},
+        policy=M2ScreeningPolicy(max_per_channel=10),
+    )
+    row = next(row for row in receipt.channel_results[CHANNEL_QUALITY].evaluations if row.symbol == '600001')
+    assert row.status == ('REJECTED' if failure == 'low_score' else 'DATA_GAP')
+    assert not receipt.channel_results[CHANNEL_QUALITY].candidates
+    assert receipt.action == 'no_order'
+
+
+def test_retained_investigation_checks_hashes_and_preserves_clock(tmp_path):
+    from value_investment_agent.infrastructure.screening.retained_replay import replay_retained
+
+    inputs = {'official': _official_payload(), 'tencent': _tencent_payload(),
+              'sina': _sina_payload(), 'dividend': _dividend_payload(),
+              'financial': {'points': _financial_points()}}
+    directory = tmp_path / 'runtime'
+    directory.mkdir()
+    refs = {}
+    for key, payload in inputs.items():
+        raw = json.dumps(payload).encode('utf-8')
+        (directory / f'{key}.json').write_bytes(raw)
+        refs[key] = EvidenceReference(key, f'runtime/{key}.json', hashlib.sha256(raw).hexdigest(),
+                                      key, 'https://example.test',
+                                      datetime(2026, 9, 23, 8, tzinfo=timezone.utc))
+    policy = M2ScreeningPolicy(max_per_channel=10)
+    receipt = build_discovery_receipt(
+        run_id='retained-test', generated_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
+        official_payload=inputs['official'], tencent_payload=inputs['tencent'],
+        sina_payload=inputs['sina'], dividend_payload=inputs['dividend'],
+        financial_points=inputs['financial']['points'], quote_date='2026-09-23',
+        run_refs=refs, policy=policy, quote_date_verified=False,
+    )
+    (directory / 'receipt.json').write_text(json.dumps(receipt.as_policy()), encoding='utf-8')
+    (directory / 'policy.json').write_text(json.dumps(policy.as_policy()), encoding='utf-8')
+    summary, rebuilt = replay_retained(tmp_path, directory)
+    assert summary['before'] == summary['after']
+    assert summary['evaluation_at'] == '2026-09-23T08:05:00+00:00'
+    assert summary['candidate_signature_unchanged']
+    assert summary['universe_count'] == 4
+    assert summary['universe_without_available_financial_points'] == 3
+    assert rebuilt['rule_version'] == 'm2-evidence-screen-v3'
+    assert rebuilt['candidate_signature'] == receipt.candidate_signature
+    annual = dict(_financial_points()[0], data_point_id='annual-extra',
+                  field_name='operating_cost', value='10')
+    export_path = tmp_path / 'annual-export.json'
+    export_raw = json.dumps({'points': _financial_points(), 'annual_points': [annual],
+                             'generated_at': '2026-09-23T08:00:00+00:00'}).encode()
+    export_path.write_bytes(export_raw)
+    supplemented, new_receipt = replay_retained(tmp_path, directory,
+        annual_export=export_path, annual_export_sha256=hashlib.sha256(export_raw).hexdigest())
+    assert supplemented['annual_evidence_adoption']['added_rows'] == 1
+    successor = tmp_path / 'successor'
+    successor.mkdir()
+    (successor / 'receipt.json').write_text(json.dumps(new_receipt), encoding='utf-8')
+    (successor / 'policy.json').write_text(json.dumps(policy.as_policy()), encoding='utf-8')
+    _, second_receipt = replay_retained(tmp_path, successor)
+    assert second_receipt == new_receipt
+    (directory / 'financial.json').write_text('{}', encoding='utf-8')
+    with pytest.raises(ValueError, match='financial source hash mismatch'):
+        replay_retained(tmp_path, directory)
 
 
 def test_live_fetch_date_and_retained_universe_cannot_claim_complete_coverage():
@@ -203,12 +281,16 @@ def test_live_fetch_date_and_retained_universe_cannot_claim_complete_coverage():
 
 def test_m2_product_projection_keeps_leads_non_admitted_and_hash_bound(tmp_path):
     receipt = _receipt()
+    payload = receipt.as_policy()
     runtime = tmp_path / "runtime"
     runtime.mkdir()
-    for reference in receipt.evidence_refs:
-        (runtime / f"{reference.id}.json").write_text(reference.id, encoding="utf-8")
+    for reference in payload['evidence_refs']:
+        raw = (json.dumps(_official_payload()) if reference['id'] == 'official'
+               else reference['id']).encode('utf-8')
+        (runtime / f"{reference['id']}.json").write_bytes(raw)
+        reference['sha256'] = hashlib.sha256(raw).hexdigest()
     receipt_path = runtime / "receipt.json"
-    receipt_path.write_text(json.dumps(receipt.as_policy(), ensure_ascii=False), encoding="utf-8")
+    receipt_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     output_path = runtime / "value-discovery-report.json"
     report = publish_value_discovery_report(
         root=tmp_path, receipt_path=receipt_path,
@@ -567,6 +649,14 @@ def test_reuse_inputs_preserves_original_clock_instead_of_relabeling_today(tmp_p
     financial_points = _financial_points()
 
     run_refs = {key: clocked_reference(key) for key in ("official", "tencent", "sina", "dividend", "financial")}
+    official_path = output_dir / 'official-universe.json'
+    official_raw = json.dumps(official_payload, ensure_ascii=False).encode('utf-8')
+    official_path.write_bytes(official_raw)
+    run_refs['official'] = EvidenceReference(
+        id='official', path=official_path.relative_to(project).as_posix(),
+        sha256=hashlib.sha256(official_raw).hexdigest(),
+        source_name='TEST_ONLY retained v1', source_url='https://example.test/official',
+        fetched_at=datetime(2026, 9, 22, 7, 0, tzinfo=timezone.utc))
     original = build_discovery_receipt(
         run_id="m2-original-clock-fixture",
         generated_at=generated_at,
@@ -610,3 +700,37 @@ def test_reuse_inputs_preserves_original_clock_instead_of_relabeling_today(tmp_p
     assert summary["replay_of_run_id"] == original.run_id
     assert summary["replay"]["receipt_bytes_match"] is True
     assert summary["replay"]["raw_inputs_match"] is True
+
+
+@pytest.mark.parametrize('conflict', [False, True])
+def test_budget_preserves_quote_conflict_across_all_four_channels(conflict):
+    official, tencent, sina = _official_payload(), _tencent_payload(), _sina_payload()
+    # Two otherwise identical issuers pass every channel; only the second exceeds budget.
+    official['records'] = [dict(official['records'][0], symbol=symbol) for symbol in ('600001', '600005')]
+    tencent['rows'] = [dict(tencent['rows'][0], code='sh' + symbol) for symbol in ('600001', '600005')]
+    sina['rows'] = [dict(sina['rows'][0], code=symbol, **{'class': '煤炭'},
+                         trade='30' if conflict and symbol == '600005' else '20')
+                    for symbol in ('600001', '600005')]
+    dividend = _dividend_payload()
+    template = dividend['rows'][0]
+    dividend['rows'] = []
+    for symbol in ('600001', '600005'):
+        row = list(template)
+        row[0] = symbol
+        dividend['rows'].append(row)
+    points = [dict(point, symbol=symbol) for symbol in ('600001', '600005')
+              for point in _financial_points()]
+    receipt = build_discovery_receipt(
+        run_id='budget-conflict', generated_at=datetime(2026, 9, 23, 8, 5, tzinfo=timezone.utc),
+        official_payload=official, tencent_payload=tencent, sina_payload=sina,
+        dividend_payload=dividend, financial_points=points, quote_date='2026-09-23',
+        run_refs={key: _reference(key) for key in ('official', 'tencent', 'sina', 'dividend', 'financial')},
+        policy=M2ScreeningPolicy(max_per_channel=1))
+    restored = discovery_receipt_from_payload(receipt.as_policy())
+    for channel in (CHANNEL_QUALITY, CHANNEL_DIVIDEND, CHANNEL_VALUE, CHANNEL_CYCLICAL):
+        result = restored.channel_results[channel]
+        row = next(row for row in result.evaluations if row.symbol == '600005')
+        assert row.status == ('CONFLICT' if conflict else 'BUDGET_EXCLUDED')
+        assert row.raw_rank_before_budget == 2
+        assert len(result.candidates) == 1
+    assert restored.action == 'no_order'

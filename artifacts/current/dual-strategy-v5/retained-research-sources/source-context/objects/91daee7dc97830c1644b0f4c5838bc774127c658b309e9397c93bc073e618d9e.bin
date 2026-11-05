@@ -1,0 +1,43 @@
+{
+  "schema_version": "finite-earnings-path-proposal-v1",
+  "symbol": "600519",
+  "action": "no_order",
+  "source_package_sha256": "c48e3dbfbe8b643cc71a609a2277f726246a1f32b1ac5dcb4b2da47055ec3d04",
+  "profit_anchor_field": "ttm_ex_nonrecurring_parent_profit_cny",
+  "profit_basis": "disclosed_ex_nonrecurring_parent_TTM_proxy_not_verified_normalized_earnings",
+  "income_growth": {"bear": "-0.05", "base": "0", "bull": "0.05"},
+  "rationale_bindings": [
+    {"path": "docs/current/600519-primary-earnings-assumption-research-20261009.md", "sha256": "70028ada50bc3c50d897087451b5b18f6387fc4e8af4fa16d09679ef7da6ce1a"},
+    {"path": "docs/current/600519-neutral-model-review-20261011.md", "sha256": "fe862b41296adf239c006f0fa2b7c44902c5b83c623e3c7c99fe83cb306fa14d"},
+    {"path": "src/value_investment_agent/valuation_models/residual_income.py", "sha256": "090bb42f00300662ed4f626ee0df19c58c0e6049edd612021d8ccd4b7925a0f7"},
+    {"path": "docs/current/600519-bounded-research-preference-20261011.md", "sha256": "f86dc7b2197775f2e697925fa6fddc7d6077ed4ea06bd1e4ee675e78d2b2ee0e"},
+    {"path": "docs/current/600519-economic-candidate-closure-20261011.md", "sha256": "2027ab44826ff28903a29d449fe1abe016da039d9c90e3d20746c2328415e71a"}
+  ],
+  "choices": [
+    {"id": "A_PRESSURE_REFERENCE", "growth_years": 5, "fade_years": 5, "rationale": "复现现有强衰减压力，明确它假设存量经营总盈利受侵蚀，而不只是新资本低回报。", "countercase": "中档后五年整体利润降约65.84%，当前财报不能证明该速度可作为中性中心。"},
+    {"id": "B_CONTINUITY_ALTERNATIVE", "growth_years": 10, "fade_years": 5, "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。", "countercase": "毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。"},
+    {"id": "C_SLOW_EROSION_ALTERNATIVE", "growth_years": 10, "fade_years": 10, "rationale": "复用既有较慢整体优势衰减条件，量化尾部期限的影响。", "countercase": "二十年路径不确定性更大；更高估值不构成更强证据。"}
+  ],
+  "economic_review_items": [
+    "是否接受扣非TTM为低置信历史代理，同时保持正常化未知？",
+    "是否接受B十年盈利条件和五年全资本衰减的候选用途？",
+    "是否接受25%留存与75%分配条件，同时保留法人现金限制？",
+    "是否接受具体权益成本和终端自筹条件？",
+    "逐项公告是否改变模型；精确候选能否进入现有G3审查？"
+  ],
+  "human_review_groups": [
+    {"id": "EARNINGS", "question": "历史盈利代理是否足以用于低置信条件研究？", "support": "扣非TTM 813.6706767744亿元，原财报及归母口径桥已绑定。", "countercase": "正常化调整、金融尾部损失和维护投入上界未知，不能填零。", "impact": "保留代理只允许条件估值；若否定代理，现有逐年盈利路径需要重审，不能机械加回减损。", "field_paths": ["facts.operating_inputs", "research_case.financial_summary"]},
+    {"id": "DURATION", "question": "B的优势持续期和衰减机制是否合理？", "support": "核心产品毛利与品牌渠道支持研究存量盈利持续性；A衰减速度尚无中性依据。", "countercase": "扣非和毛利走弱；十年不是可观测寿命，后五年仍为全资本ROE衰减。", "impact": "选A缩短条件持续期，选C延长尾部；具体逐年值与A/B/C输出见提案，不以市场价选择。", "field_paths": ["facts.scenario_inputs", "assumption_bindings"]},
+    {"id": "DISTRIBUTION", "question": "留存、必要投入和股东分配的条件用途是否可接受？", "support": "共享模型逐年递推账面权益、留存和分配，未重复加入现金。", "countercase": "母公司可用现金、上划和认缴时点不由合并利润证明；维护与扩产未拆分。", "impact": "75%分配是模型条件，不是可得现金批准；资金限制重大时须重审分配或暂停模型。", "field_paths": ["facts.scenario_inputs", "source_contract.distribution_input_status"]},
+    {"id": "COST_TERMINAL", "question": "权益成本和终端条件是否可用于该版本？", "support": "复用已绑定国债、beta、ERP研究和共享模型；中央成本约6.7572%。", "countercase": "成本代理异步，端点非完整风险区间；终端ROE等于成本不意味着资本损失风险消失。", "impact": "成本影响折现与衰减；2%增长在零终端剩余收益下抵消但影响自筹分配。复用已有敏感性，不调参制造买点。", "field_paths": ["facts.scenario_inputs", "facts.valuation_timing"]},
+    {"id": "EVENT_MODEL", "question": "事件材料性和精确模型版本能否进入正式审查？", "support": "候选包、实际共享输出、Facts/Assumptions及模型上下文均精确绑定。", "countercase": "新候选没有继承公告批准、完整扫描或G3；生成日不是当前事件准入。", "impact": "逐项VERIFIED/REJECTED/INSUFFICIENT后依现有合同重算有效性和价格桥；当前仍NO_ACTION。", "field_paths": ["model_validity_input", "source_contract", "dependencies.model_version"]}
+  ],
+  "assurance_limits": [
+    "有限提案计算保留旧财务基准；完整待审包实际生成日更新，不声称历史PIT或完整当前事件准入。",
+    "增长、成本、期限是假设；B为低置信研究候选，未获模型、材料性或G3批准。",
+    "三档同时改变增长、成本和衰减，不是统计置信区间；终段利润可能倒序。",
+    "合并权益不等于母公司可分配现金；金融损失和维护投入上界未知。",
+    "当前NO_ACTION，无价格准入和私人仓位；不替换登记研究或正式Excel。"
+  ],
+  "research_preference": {"choice_id": "B_CONTINUITY_ALTERNATIVE", "scope": "INDEPENDENT_RESEARCH_HYPOTHESIS_NOT_APPROVAL", "confidence": "低", "reason": "优先审查存量盈利持续性，不以价格反推参数。", "countercase": "盈利恶化可能具有结构性，分配可得与全资本衰减仍待审。", "reopen_triggers": ["核心收入、毛利及扣非可比恶化。", "直营净贡献未改善。", "上划或减损限制现金。", "成本来源修订。"]}
+}

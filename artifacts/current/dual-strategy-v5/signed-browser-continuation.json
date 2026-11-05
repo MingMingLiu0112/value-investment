@@ -1,0 +1,61 @@
+{
+  "schema_version": "v5-signed-browser-continuation-v1",
+  "action": "no_order",
+  "real_or_test": "TEST_ONLY",
+  "production_or_user_approval": false,
+  "source_checkpoint": "ac48ff6bda3d1a1fcd35c29631f7b28a0d711f51",
+  "runtime_identity": "shared dirty checkout; no clean deployment identity claimed",
+  "observed_on": "2026-10-21",
+  "flow": [
+    "Isolated daily synthetic research card",
+    "Stock detail with existing signed synthetic research and price policy",
+    "Decision-bound manual fill link",
+    "Draft preview with decision 600519 and research synthetic-d2-v1",
+    "Explicit TEST_ONLY fill confirmation",
+    "Updated cash and holdings",
+    "Reload preserves committed facts",
+    "Portfolio retrospective and history retain original research version"
+  ],
+  "fill": {
+    "id": "TEST_ONLY_V5_BOUND_BUY300",
+    "symbol": "600519",
+    "research_version": "synthetic-d2-v1",
+    "shares": 300,
+    "price": "5.01",
+    "fee": "5",
+    "cash_after": "8492.00",
+    "cost_after": "1508.00",
+    "verified_test_quote": "5",
+    "market_value": "1500.00",
+    "equity_after": "9992.00",
+    "unrealized_pnl": "-8.00",
+    "sellable_same_session": 0
+  },
+  "checks": {
+    "bound_draft_visible": true,
+    "confirmed_fill_visible": true,
+    "reload_preserved_cash_cost_fill": true,
+    "retrospective_explicitly_mock": true,
+    "original_research_version_in_history": true,
+    "new_fill_invalidates_previous_reconciliation": true,
+    "formal_actual_quantity": null,
+    "desktop": {"width": 1280, "test_only_label": true},
+    "mobile_history": {"width": 390, "scroll_width": 375, "test_only_label": true, "bound_fill": true},
+    "mobile_portfolio": {"width": 390, "scroll_width": 375, "test_only_label": true, "cash_and_cost_visible": true}
+  },
+  "screenshots": [
+    "signed-test-only-fill-confirmed-desktop.png",
+    "signed-test-only-retrospective-desktop.png",
+    "signed-test-only-history-desktop.png",
+    "signed-test-only-fill-mobile390.png",
+    "signed-test-only-history-mobile390.png"
+  ],
+  "limitations": [
+    "Synthetic research, quotes, policy and account are isolated fixtures, not actual company valuation or user funds.",
+    "SIMULATED sizing and manual ledger confirmation do not grant ACTUAL formal quantities.",
+    "Retrospective remains a mock draft with missing contemporaneous-risk and decision-availability proof.",
+    "A prior unlinked TEST_ONLY draft was explicitly voided before creating the bound fill; its audit history was retained.",
+    "Real user IPS, account reconciliation, economic/strategy admission and final user acceptance remain unproven."
+  ],
+  "total_goal": "IN_PROGRESS"
+}

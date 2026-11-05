@@ -1,0 +1,60 @@
+{
+  "schema_version": "p10-assisted-use-acceptance-v1",
+  "action": "no_order",
+  "checked_at": "2026-10-17T14:05:28.7154528+00:00",
+  "head": "4a56ab357322122079400a0fed33fd023fceeff3",
+  "branch": "codex/web-d1-investment-workbench",
+  "worktree_dirty": true,
+  "head_after_tests": "4a56ab357322122079400a0fed33fd023fceeff3",
+  "publication_id": "pub-cb73f09b88c4150ecf0d",
+  "packet_sha256": "f0efba54ff69ccc774eba6a9ce4ec43deea2b541488af934cce11606c31b6dff",
+  "source_checks": 38,
+  "source_integrity": "ENGINEERING_PASS",
+  "b1_price_state": "BLOCKED_EXTERNAL",
+  "value_companies": {
+    "600887": {
+      "research_status": "PARTIAL",
+      "valuation_status": "UNDER_REVIEW",
+      "economic_reliability": "NOT_PROVEN",
+      "b1_price_admitted": false,
+      "quote_date": "2026-10-16",
+      "observed_at": "2026-10-16T17:00:31.652222+08:00",
+      "missing_inputs": [
+        "正常化归母盈利、维护投入与法人可分配现金桥",
+        "12月融资到期偿付来源、担保代偿及回收风险证据",
+        "超额收益期限、全资本ROE衰减和权益成本的证据化审核",
+        "6月末6,325,360,667股历史分母可核验；新日期重估仍需资本变动、价格及事件窗口核验"
+      ],
+      "formal_qualification": "NOT_PROVEN"
+    },
+    "600519": {
+      "research_status": "PARTIAL",
+      "valuation_status": "UNDER_REVIEW",
+      "economic_reliability": "NOT_PROVEN",
+      "b1_price_admitted": false,
+      "quote_date": "2026-10-16",
+      "observed_at": "2026-10-16T17:00:31.652222+08:00",
+      "missing_inputs": [
+        "正常化盈利、维护投入、法人可分配现金与金融尾部风险桥",
+        "十年盈利持续、五年全资本衰减、75%分配与权益成本的证据化审核",
+        "新日期价格、资本变动及事件窗口核验"
+      ],
+      "formal_qualification": "NOT_PROVEN"
+    }
+  },
+  "hotspot_observations": 5,
+  "hotspot_strategy_quality": "NOT_PROVEN",
+  "held_continuity_real_account": "BLOCKED_EXTERNAL",
+  "isolated_private_continuity": "ENGINEERING_PASS",
+  "isolated_private_full_dual_sleeve_flow": "NOT_PROVEN",
+  "full_core_tests": "NOT_RUN",
+  "browser": "NOT_RUN_BY_SCRIPT_REQUIRES_INTERACTIVE_EVIDENCE",
+  "canonical_excel": "NOT_WRITTEN",
+  "formal_admission_count": 0,
+  "human_g3_and_materiality": "BLOCKED_EXTERNAL",
+  "personal_ips_and_account": "BLOCKED_EXTERNAL",
+  "tests": "ENGINEERING_PASS",
+  "failures": [],
+  "status": "NOT_PROVEN",
+  "exit_code": 0
+}

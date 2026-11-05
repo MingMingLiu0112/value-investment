@@ -126,6 +126,7 @@ def evaluate_research_schedule(
     stops: tuple[EvidenceStop, ...],
     request: ResearchScheduleRequest | None,
     verified_evidence_ids: frozenset[str] = frozenset(),
+    resolved_stop_ids: frozenset[str] = frozenset(),
 ) -> dict[str, Any]:
     if request is not None and request.symbol != symbol:
         return {
@@ -134,7 +135,10 @@ def evaluate_research_schedule(
             "matched_stop_ids": [],
             "reason": "Schedule request symbol does not match the requested company.",
         }
-    active = tuple(stop for stop in stops if stop.symbol == symbol)
+    active = tuple(
+        stop for stop in stops
+        if stop.symbol == symbol and stop.stop_id not in resolved_stop_ids
+    )
     if not active:
         if request is None:
             return {

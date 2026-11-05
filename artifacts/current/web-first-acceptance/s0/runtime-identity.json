@@ -1,0 +1,52 @@
+{
+  "schema_version": "runtime-identity-v2",
+  "action": "no_order",
+  "checked_at": "2026-10-18T16:30:17.593033+08:00",
+  "status": "MATCHED",
+  "code_status": "MATCHED",
+  "config_status": "MATCHED",
+  "reasons": [],
+  "current_source_head": "0e794af5da982febd688b0bfc78a9d720ece639f",
+  "source_worktree_dirty": false,
+  "backend_loaded_head": "0e794af5da982febd688b0bfc78a9d720ece639f",
+  "backend_module_sha256_loaded": "bb237475d0ebe4150598de8e81a52c24cb707542a8616635c314d73e8e1eadd4",
+  "backend_module_sha256_on_disk": "bb237475d0ebe4150598de8e81a52c24cb707542a8616635c314d73e8e1eadd4",
+  "web_build": {
+    "schema_version": "web-build-identity-v1",
+    "commit": "0e794af5da982febd688b0bfc78a9d720ece639f",
+    "built_at": "2026-10-18T08:29:01.907Z",
+    "source_dirty": false
+  },
+  "web_index_sha256": "895d6f638e2ee5a127613bb97cf57b874fcc981c1c3b072b5c1c30b24d445d7c",
+  "config_changes": {
+    "behavior": [],
+    "data": []
+  },
+  "publication": {
+    "status": "VERIFIED",
+    "publication_id": "pub-cb73f09b88c4150ecf0d",
+    "packet_sha256": "f0efba54ff69ccc774eba6a9ce4ec43deea2b541488af934cce11606c31b6dff",
+    "published_at": "2026-10-17T21:53:57.371737+08:00",
+    "dates": {
+      "current_natural_date": "2026-10-17",
+      "latest_completed_trade_session": "2026-10-16",
+      "quote_trade_date": "2026-10-16",
+      "quote_observed_at": "2026-10-16T17:00:31.652222+08:00",
+      "research_as_of": "2026-10-11",
+      "model_validity": {
+        "status": "UNKNOWN",
+        "valid_through": null
+      },
+      "decision_published_on": "2026-10-12",
+      "excel_published_as_of": "2026-10-01",
+      "excel_quote_observation_as_of": "2026-10-09"
+    }
+  },
+  "data_freshness": {
+    "status": "FRESH",
+    "quote_trade_date": "2026-10-16",
+    "evaluated_on": "2026-10-18",
+    "weekday_age": 0,
+    "calendar_scope": "WEEKDAY_ONLY_EXCHANGE_HOLIDAYS_NOT_MODELED"
+  }
+}

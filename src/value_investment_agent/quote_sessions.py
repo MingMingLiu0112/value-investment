@@ -10,6 +10,8 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from urllib.parse import parse_qs, urlparse
 
+from .domain.execution.exchange_calendar import EXCHANGE_CLOSURES_2026
+
 
 CHINA = timezone(timedelta(hours=8))
 VERSION = 'quote-session-v2-szse-sse-raw-evidence'
@@ -26,15 +28,7 @@ SSE_2026_NOTICE_MARKERS = (
     '9月25日（星期五）至9月27日（星期日）休市',
     '10月1日（星期四）至10月7日（星期三）休市',
 )
-SSE_2026_CLOSURE_RANGES = (
-    (date(2026, 1, 1), date(2026, 1, 3)),
-    (date(2026, 2, 15), date(2026, 2, 23)),
-    (date(2026, 4, 4), date(2026, 4, 6)),
-    (date(2026, 5, 1), date(2026, 5, 5)),
-    (date(2026, 6, 19), date(2026, 6, 21)),
-    (date(2026, 9, 25), date(2026, 9, 27)),
-    (date(2026, 10, 1), date(2026, 10, 7)),
-)
+SSE_2026_CLOSURE_RANGES = EXCHANGE_CLOSURES_2026
 QUOTE_URLS = {'tencent': ('qt.gtimg.cn', '/q='),
               'sina': ('hq.sinajs.cn', '/list=')}
 LABELS = {
@@ -47,6 +41,26 @@ LABELS = {
     'untradeable_quote': '逐股报价未证明当日正常有成交',
     'matched_close': '带日期双源报价与最近已完成交易日一致',
 }
+
+
+def b1_acquisition_verdict(result, provider_documents):
+    """Classify acquisition timing; a verified archive is not necessarily B1-ready."""
+    session = result.get('expected_session')
+    if not session or result.get('status') != 'matched_close' or not result.get('passed'):
+        return {'status': 'CLOSE_NOT_VERIFIED', 'eligible': False, 'available_at': None}
+    try:
+        fetched = [_stamp(provider_documents[name]['fetched_at']) for name in ('tencent', 'sina')]
+    except (KeyError, TypeError, ValueError):
+        return {'status': 'SOURCE_TIME_INVALID', 'eligible': False, 'available_at': None}
+    available_at = max(fetched).isoformat()
+    if any(stamp.date().isoformat() != session for stamp in fetched):
+        status = 'OUTSIDE_SESSION_DAY'
+    elif any(stamp.time() < time(15, 5) for stamp in fetched):
+        status = 'BEFORE_CLOSE_BUFFER'
+    else:
+        status = 'SAME_SESSION_POST_CLOSE'
+    return {'status': status, 'eligible': status == 'SAME_SESSION_POST_CLOSE',
+            'available_at': available_at}
 
 
 def _stamp(value):

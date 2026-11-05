@@ -13,7 +13,7 @@ human decision. The contract deliberately has no execution semantics other than
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field, replace
 from datetime import date, datetime
 from decimal import Decimal
 import hashlib
@@ -29,6 +29,10 @@ from .research_run_contract import (
 
 HUMAN_APPROVAL_SCHEMA = "post-m1-human-research-approval-v1"
 ACTION_NO_ORDER = "no_order"
+AUTHENTICATED_TRANSPORT_BINDING_SCHEMA = (
+    "human-research-approval-authenticated-transport-v1"
+)
+_VERIFIED_TRANSPORT_CAPABILITY_TOKEN = object()
 
 DECISION_PENDING_HUMAN_REVIEW = "PENDING_HUMAN_REVIEW"
 DECISION_REJECTED_NEEDS_REWORK = "REJECTED_NEEDS_REWORK"
@@ -98,6 +102,44 @@ def _require_hash(value: str | None, field: str) -> str:
     return value.lower()
 
 
+def _normalize_transport_binding(value: Any) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    if not isinstance(value, Mapping):
+        raise ValueError("Approval transport binding must be an object")
+    expected = {
+        "schema_version",
+        "transport",
+        "response_binding",
+        "candidate_binding",
+        "trust_root_binding",
+    }
+    if set(value) != expected:
+        raise ValueError("Approval transport binding fields do not match the contract")
+    if (
+        value["schema_version"] != AUTHENTICATED_TRANSPORT_BINDING_SCHEMA
+        or value["transport"] != "SIGNED_PENDING_REVIEW_RESPONSE"
+    ):
+        raise ValueError("Approval transport binding is not an authenticated review")
+
+    def binding(field: str) -> dict[str, str]:
+        item = value[field]
+        if not isinstance(item, Mapping) or set(item) != {"path", "sha256"}:
+            raise ValueError(f"Approval transport {field} must bind exact path and hash")
+        path = item.get("path")
+        if not isinstance(path, str) or not path.strip() or ".." in path.replace("\\", "/").split("/"):
+            raise ValueError(f"Approval transport {field} path is invalid")
+        return {"path": path, "sha256": _require_hash(item.get("sha256"), field)}
+
+    return {
+        "schema_version": AUTHENTICATED_TRANSPORT_BINDING_SCHEMA,
+        "transport": "SIGNED_PENDING_REVIEW_RESPONSE",
+        "response_binding": binding("response_binding"),
+        "candidate_binding": binding("candidate_binding"),
+        "trust_root_binding": binding("trust_root_binding"),
+    }
+
+
 def _require_refs(refs: tuple[dict[str, Any], ...]) -> tuple[dict[str, Any], ...]:
     normalized = tuple(dict(ref) for ref in refs)
     if any(not ref.get("id") for ref in normalized):
@@ -154,6 +196,37 @@ def artifact_fingerprint(payload: Mapping[str, Any]) -> str:
 
 
 @dataclass(frozen=True)
+class VerifiedHumanResearchApprovalTransport:
+    """In-process proof minted only after the signed transport is revalidated.
+
+    This capability is deliberately excluded from policy and JSON serialization.
+    A transport binding restored from disk is archive evidence, not authority.
+    """
+
+    receipt_sha256: str
+    response_binding: dict[str, str]
+    candidate_binding: dict[str, str]
+    trust_root_binding: dict[str, str]
+    _token: object = field(repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        if self._token is not _VERIFIED_TRANSPORT_CAPABILITY_TOKEN:
+            raise ValueError("Verified approval transport cannot be constructed from data")
+        _require_hash(self.receipt_sha256, "receipt_sha256")
+        normalized = _normalize_transport_binding(
+            {
+                "schema_version": AUTHENTICATED_TRANSPORT_BINDING_SCHEMA,
+                "transport": "SIGNED_PENDING_REVIEW_RESPONSE",
+                "response_binding": self.response_binding,
+                "candidate_binding": self.candidate_binding,
+                "trust_root_binding": self.trust_root_binding,
+            }
+        )
+        if normalized is None:
+            raise ValueError("Verified approval transport requires bindings")
+
+
+@dataclass(frozen=True)
 class HumanResearchApprovalReceipt:
     """Immutable, append-only human review receipt for one valuation envelope."""
 
@@ -193,6 +266,10 @@ class HumanResearchApprovalReceipt:
     action: str = ACTION_NO_ORDER
     reviewer_id: str = ""
     reviewer_authorization_ref: dict[str, Any] | None = None
+    authenticated_transport_binding: dict[str, Any] | None = None
+    verified_transport: VerifiedHumanResearchApprovalTransport | None = field(
+        default=None, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         for field in (
@@ -271,6 +348,15 @@ class HumanResearchApprovalReceipt:
                 "reviewer_authorization_ref",
                 dict(self.reviewer_authorization_ref),
             )
+        object.__setattr__(
+            self,
+            "authenticated_transport_binding",
+            _normalize_transport_binding(self.authenticated_transport_binding),
+        )
+        if self.verified_transport is not None and not isinstance(
+            self.verified_transport, VerifiedHumanResearchApprovalTransport
+        ):
+            raise ValueError("Approval verified transport capability is invalid")
         _require_reviewer_identity(
             reviewer_type=self.reviewer_type,
             reviewer_id=self.reviewer_id,
@@ -340,6 +426,10 @@ class HumanResearchApprovalReceipt:
                 if self.reviewer_authorization_ref is not None
                 else None
             )
+        if self.authenticated_transport_binding is not None:
+            payload["authenticated_transport_binding"] = dict(
+                self.authenticated_transport_binding
+            )
         return payload
 
     def to_json(self) -> str:
@@ -349,6 +439,37 @@ class HumanResearchApprovalReceipt:
             allow_nan=False,
             indent=2,
         )
+
+
+def mint_verified_human_research_approval_transport(
+    receipt: HumanResearchApprovalReceipt,
+    binding: Mapping[str, Any],
+) -> HumanResearchApprovalReceipt:
+    """Mint a non-serializable capability after cryptographic verification.
+
+    Callers must first verify the signed response, pinned trust root, candidate,
+    journal head and completion chain. This helper only freezes that verified
+    binding to the exact receipt payload; it is not itself a signature check.
+    """
+    if not isinstance(receipt, HumanResearchApprovalReceipt):
+        raise TypeError("Verified transport requires a typed approval receipt")
+    normalized = _normalize_transport_binding(binding)
+    if normalized is None:
+        raise ValueError("Verified transport requires complete bindings")
+    bound_receipt = replace(
+        receipt,
+        authenticated_transport_binding=dict(normalized),
+        verified_transport=None,
+    )
+    receipt_sha256 = artifact_fingerprint(bound_receipt.as_policy())
+    capability = VerifiedHumanResearchApprovalTransport(
+        receipt_sha256=receipt_sha256,
+        response_binding=dict(normalized["response_binding"]),
+        candidate_binding=dict(normalized["candidate_binding"]),
+        trust_root_binding=dict(normalized["trust_root_binding"]),
+        _token=_VERIFIED_TRANSPORT_CAPABILITY_TOKEN,
+    )
+    return replace(bound_receipt, verified_transport=capability)
 
 
 @dataclass(frozen=True)
@@ -390,6 +511,19 @@ def _payload_hash(payload: Mapping[str, Any] | None) -> str | None:
     return artifact_fingerprint(payload) if payload else None
 
 
+def _verified_transport_matches(receipt: HumanResearchApprovalReceipt) -> bool:
+    capability = receipt.verified_transport
+    binding = receipt.authenticated_transport_binding
+    if capability is None or binding is None:
+        return False
+    return (
+        capability.receipt_sha256 == artifact_fingerprint(receipt.as_policy())
+        and capability.response_binding == binding["response_binding"]
+        and capability.candidate_binding == binding["candidate_binding"]
+        and capability.trust_root_binding == binding["trust_root_binding"]
+    )
+
+
 def resolve_human_research_approval(
     receipt: HumanResearchApprovalReceipt,
     valuation: Any,
@@ -398,6 +532,7 @@ def resolve_human_research_approval(
     research_case_payload: Mapping[str, Any] | None = None,
     facts_payload: Mapping[str, Any] | None = None,
     assumptions_payload: Mapping[str, Any] | None = None,
+    require_authenticated_provenance: bool = False,
 ) -> HumanResearchApprovalDecision:
     """Fail closed when any exact artifact or dependency fingerprint changes."""
     if not isinstance(receipt, HumanResearchApprovalReceipt):
@@ -447,6 +582,25 @@ def resolve_human_research_approval(
     status = receipt.decision
     if not valuation_bound or not dependencies_bound:
         status = DECISION_SUPERSEDED
+    # A record without an authenticated reviewer identity, or one carrying a
+    # known one-off generator signature, may stay in the archive but must never
+    # resolve as an approved human decision.
+    from .human_review_integrity import (
+        gate_demotes_approved,
+        screen_human_approval_payload,
+    )
+
+    integrity = screen_human_approval_payload(receipt.as_policy())
+    if status in APPROVED_DECISIONS and gate_demotes_approved(integrity):
+        status = DECISION_SUPERSEDED
+    blockers.extend(integrity.reasons)
+    if require_authenticated_provenance and status in APPROVED_DECISIONS:
+        if receipt.authenticated_transport_binding is None:
+            status = DECISION_SUPERSEDED
+            blockers.append("human_approval_transport_provenance_missing")
+        elif not _verified_transport_matches(receipt):
+            status = DECISION_SUPERSEDED
+            blockers.append("human_approval_transport_provenance_invalid")
     eligible = receipt.price_assessment_eligible and status in APPROVED_DECISIONS
     return HumanResearchApprovalDecision(
         approval_id=receipt.approval_id,
@@ -531,6 +685,9 @@ def human_research_approval_from_payload(
             dict(data["reviewer_authorization_ref"])
             if data.get("reviewer_authorization_ref") is not None
             else None
+        ),
+        authenticated_transport_binding=_normalize_transport_binding(
+            data.get("authenticated_transport_binding")
         ),
     )
 

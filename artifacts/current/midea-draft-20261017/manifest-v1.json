@@ -1,0 +1,47 @@
+{
+  "schema_version": "research-draft-publication-manifest-v1",
+  "status": "DRAFT_NOT_APPROVED",
+  "symbol": "000333",
+  "run_id": "midea-draft-20261017-v2",
+  "public_draft": {
+    "path": "artifacts/current/midea-draft-20261017/public-draft-v2.json",
+    "sha256": "6ddde5fd690fd862126de50bebd314f091335bb722ed9fe4f580a0412d6ea907"
+  },
+  "pointer": {
+    "path": "config/current-research-drafts.json",
+    "sha256": "61b5457efb10d383c4ff1fc6773ae951fe71ea50f41ec48ea6bf5b88cfc879de"
+  },
+  "artifacts": {
+    "research-result.json": "81f232242412f4b15b93f67e8d8c43132e26d19715484aa408b9eecb32140539",
+    "package.json": "cd7a14b3e09c2d87e6ed3ea8cb852728456ac6ea50a34f3314a2e47bba89316c",
+    "package-build-receipt.json": "9a5e06f46308386a8146cea9d62c10c2b6a0cee73d0b7179eaa680df83227dbe",
+    "event-scan-20261017.json": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f",
+    "assumption-memo-v2.json": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402",
+    "research-execution-receipt-v2.json": "566470fc37e8598b5a5b2bd39e58cf07ee561ae19f429e584ff964956ea3eb4d",
+    "research-report.md": "24056ed3cbe6803de2f0d231cef9fd891193f004fca254c8bab59f1e7da94650",
+    "research-version-comparison.json": "52693485bb6b97cea1e307f3b10534571168d5634f18c4ff6b4ddef2917de0f0",
+    "previous-current-research-drafts.json": "548eb7a9730db5d6ce14f8d0903875405ca88023bd703490ccd0bef41e8786e8"
+  },
+  "source_result": {
+    "path": "runtime/company-research/midea-draft-20261017-v2/research-result.json",
+    "sha256": "81f232242412f4b15b93f67e8d8c43132e26d19715484aa408b9eecb32140539"
+  },
+  "source_package": {
+    "path": "runtime/company-research/midea-draft-20261017-v2/package.json",
+    "sha256": "cd7a14b3e09c2d87e6ed3ea8cb852728456ac6ea50a34f3314a2e47bba89316c"
+  },
+  "schedule_chain": {
+    "request_sha256": "a89c8b7ab82f973e0f88d2846e7c170352564be6fd2c4bad68bad2bfba5d3db8",
+    "admission_sha256": "7ced270c8fd47d462b288bb4beba30a68e75591c9e3a073241fee859e0046457",
+    "recovery_sha256": "dda65dcf7b5e56ba56483cf1d9af975fb9898c49f5d5f2010eca462d775293aa",
+    "resume_sha256": "7c983de869e935d33348c7dd5ad4fe4b41066e8d10a334bb1b0a0bad6f778728",
+    "resolution_sha256": "2eb91192784341e42bfa79ee94015509b4871eccd3eefe1f7dd7bbe3e879c217",
+    "execution_receipt_sha256": "566470fc37e8598b5a5b2bd39e58cf07ee561ae19f429e584ff964956ea3eb4d"
+  },
+  "previous_pointer_sha256": "548eb7a9730db5d6ce14f8d0903875405ca88023bd703490ccd0bef41e8786e8",
+  "formal_admission": false,
+  "price_admitted": false,
+  "position_guidance": null,
+  "human_approval": false,
+  "action": "no_order"
+}

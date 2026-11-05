@@ -1,0 +1,39 @@
+{
+  "schema_version": "current-daily-public-snapshot-v1",
+  "action": "no_order",
+  "status": "VERIFIED",
+  "reason": null,
+  "publication_id": "pub-a1f4249523ba0cfb7537",
+  "packet_path": "runtime/daily-public-packet/daily-public-packet-pub-a1f4249523ba0cfb7537.json",
+  "packet_sha256": "7ad18ff3d2cc4c66c3ca98156eab6a0ef4e5ec82836a558b31b83b10315af25e",
+  "content_sha256": "0fe56dd481b3290a9ea3d54ac0692d6b930a42004a189a54ed4a28a9238df7cb",
+  "engine_version": "daily-public-packet-engine-v16",
+  "research_version": "canonical-reviewed-research-20261012T113935Z-362d7928",
+  "generated_at": "2026-10-15T11:30:32.056772+00:00",
+  "published_at": "2026-10-15T11:31:04.321029+00:00",
+  "receipt_path": "runtime/daily-public-packet/receipts/daily-public-packet-pub-a1f4249523ba0cfb7537.receipt.json",
+  "dates": {
+    "current_natural_date": "2026-10-15",
+    "latest_completed_trade_session": "2026-10-15",
+    "quote_trade_date": "2026-10-15",
+    "quote_observed_at": "2026-10-15T07:11:20.641464+00:00",
+    "research_as_of": "2026-10-11",
+    "model_validity": {
+      "status": "UNKNOWN",
+      "valid_through": null
+    },
+    "decision_published_on": "2026-10-12",
+    "excel_published_as_of": "2026-10-01",
+    "excel_quote_observation_as_of": "2026-10-09"
+  },
+  "excel_sync": null,
+  "excel_live": {
+    "status": "MATCHED",
+    "path": "C:\\Users\\we\\WPSDrive\\197617831\\WPS云盘\\价投跟踪\\A股价值投资_Agent前端智能跟踪模板.xlsx",
+    "expected_sha256": "aeaa3c7fec2b46d34c0651b0384dec49fb3ca16747dc41fcf675bbd022be82f1",
+    "observed_sha256": "aeaa3c7fec2b46d34c0651b0384dec49fb3ca16747dc41fcf675bbd022be82f1",
+    "pointer_published_as_of": "2026-10-01",
+    "checked_at": "2026-10-15T11:32:09.381605+00:00",
+    "note": "只读校验；不覆盖、不重建正式工作簿，不同步即为不同步。"
+  }
+}

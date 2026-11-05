@@ -1,0 +1,295 @@
+{
+  "schema_version": "research-validity-review-v1",
+  "action": "no_order",
+  "symbol": "600887",
+  "company_name": "伊利股份",
+  "generated_at": "2026-10-13T04:18:36.324636+00:00",
+  "status": "BLOCKED_ON_HUMAN_EVENT_REVIEW",
+  "previous_research_version": {
+    "package_path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
+    "package_sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5",
+    "package_version": "pending-600887-2026-10-11-short-advantage-fc7dba372686",
+    "research_as_of": "2026-10-11",
+    "report_period": "2026-06-30",
+    "model_id": "residual-income-equity-shared-dated-v2",
+    "profile_id": "quality_compounder"
+  },
+  "review_cutoff": "2026-10-12",
+  "source_availability_cutoff": "2026-10-13T03:13:31.815290+00:00",
+  "window": {
+    "scan_from": "2026-10-11",
+    "scan_to": "2026-10-12",
+    "validity_from": "2026-10-11",
+    "validity_to": "2026-10-12",
+    "coverage_status": "COMPLETE",
+    "scan_status": "PENDING_HUMAN_REVIEW",
+    "parser_version": "cninfo-announcement-window-v1"
+  },
+  "facts_change": {
+    "status": "NONE",
+    "reason": "复核窗口内官方公告为零，财务事实仍适用最近已披露报告期。",
+    "report_period": "2026-06-30"
+  },
+  "material_events": {
+    "status": "NONE_FOUND",
+    "announcements": []
+  },
+  "assumptions_change": {
+    "status": "NONE",
+    "reason": "本轮未重拟合假设；窗口内无新披露时既有假设维持原样。"
+  },
+  "model_validity_review": {
+    "current": {
+      "model_id": "residual-income-equity-shared-dated-v2",
+      "symbol": "600887",
+      "model_as_of": "2026-10-11",
+      "valid_from": "2026-10-11",
+      "last_material_event_check": "2026-10-12",
+      "financial_statement_changed": null,
+      "capital_structure_changed": null,
+      "material_event_found": null,
+      "status": "UNKNOWN",
+      "blockers": [
+        "pending_complete_event_materiality_review",
+        "event scan is pending human review",
+        "This acquired query window does not replace earlier event/model/G3 reviews."
+      ],
+      "evidence_refs": [
+        {
+          "id": "daily-index-600887",
+          "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/cninfo-index.json",
+          "sha256": "7664b603cc4c15873c175e7b1f0ed2a11d2d4e44f127ba4af252a83a33667f07",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "daily-raw-index-manifest-600887",
+          "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index-manifest.json",
+          "sha256": "679f858dbd7bef5a9908a2915622bdcc9c673e14b0a79c49ceb6e507ea45f4fc",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "daily-raw-600887-1",
+          "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index/response-0001.bin",
+          "sha256": "8dddfb3858f973e766e4c6f13bbfdcd21e208991b60752c1c5ab39894073552d",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "daily-raw-metadata-600887-1",
+          "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index/response-0001.json",
+          "sha256": "ecd7f38c12bde413d3033c298e7baad538c6328765851d9dd136f0f8c518f159",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "daily-raw-600887-2",
+          "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index/response-0002.bin",
+          "sha256": "c2a890bbf3a6a53ab02ddc6c1794bf1c72ba45799fe9f59dcc5ba2cc18467114",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "daily-raw-metadata-600887-2",
+          "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index/response-0002.json",
+          "sha256": "9149ece8442ace1bd952c8db7ff62c58579402d8a1494f05944d8e4dd2033f5f",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        }
+      ]
+    },
+    "if_event_window_reviewed": {
+      "model_id": "residual-income-equity-shared-dated-v2",
+      "symbol": "600887",
+      "model_as_of": "2026-10-11",
+      "valid_from": "2026-10-11",
+      "last_material_event_check": "2026-10-12",
+      "financial_statement_changed": false,
+      "capital_structure_changed": false,
+      "material_event_found": false,
+      "status": "VALID",
+      "blockers": [
+        "pending_complete_event_materiality_review",
+        "This acquired query window does not replace earlier event/model/G3 reviews."
+      ],
+      "evidence_refs": [
+        {
+          "id": "daily-index-600887",
+          "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/cninfo-index.json",
+          "sha256": "7664b603cc4c15873c175e7b1f0ed2a11d2d4e44f127ba4af252a83a33667f07",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "daily-raw-index-manifest-600887",
+          "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index-manifest.json",
+          "sha256": "679f858dbd7bef5a9908a2915622bdcc9c673e14b0a79c49ceb6e507ea45f4fc",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "daily-raw-600887-1",
+          "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index/response-0001.bin",
+          "sha256": "8dddfb3858f973e766e4c6f13bbfdcd21e208991b60752c1c5ab39894073552d",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "daily-raw-metadata-600887-1",
+          "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index/response-0001.json",
+          "sha256": "ecd7f38c12bde413d3033c298e7baad538c6328765851d9dd136f0f8c518f159",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "daily-raw-600887-2",
+          "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index/response-0002.bin",
+          "sha256": "c2a890bbf3a6a53ab02ddc6c1794bf1c72ba45799fe9f59dcc5ba2cc18467114",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        },
+        {
+          "id": "daily-raw-metadata-600887-2",
+          "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index/response-0002.json",
+          "sha256": "9149ece8442ace1bd952c8db7ff62c58579402d8a1494f05944d8e4dd2033f5f",
+          "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+        }
+      ]
+    },
+    "single_missing_approval": "EVENT_WINDOW_HUMAN_REVIEW",
+    "note": "if_event_window_reviewed 仅是“人工确认窗口无重大事件”后的计算结果，不是批准；不得据此直接形成正式研究版本。"
+  },
+  "price_compatibility": {
+    "status": "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
+    "reason": "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性",
+    "quote_date": "2026-10-12",
+    "display_price": "27.96",
+    "collected_at": "2026-10-12T09:23:13.080145+00:00",
+    "bundle_path": "runtime/quote-sessions/20261012T092313080159Z/bundle.json",
+    "bundle_sha256": "628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f",
+    "ladder": {
+      "verified_quote": {
+        "eligible": true,
+        "reason": "双源收盘行情已通过核验并归档。"
+      },
+      "research_compatible": {
+        "eligible": false,
+        "reason": "报价日 2026-10-12 晚于登记研究截止日 2026-10-11；须先完成研究重登记与事件复核。"
+      },
+      "historical_reconstruction_eligible": {
+        "eligible": false,
+        "reason": "报价日 2026-10-12 晚于登记研究截止日 2026-10-11；须先完成研究重登记与事件复核。"
+      },
+      "comparison_eligible": {
+        "eligible": false,
+        "reason": "报价日 2026-10-12 晚于登记研究截止日 2026-10-11；须先完成研究重登记与事件复核。"
+      },
+      "formal_decision_eligible": {
+        "eligible": false,
+        "reason": "正式投资决策资格需 G3 人工批准与决策门通过；执行层不评估、不预支。"
+      }
+    },
+    "comparison_eligible_within_review": {
+      "eligible": false,
+      "reason": "价格—估值比较需行情准入且模型有效性为 VALID；当前不满足。",
+      "note": "已发布桥接 READY 仍需在发布层核对，二者一致才可展示价格比较。"
+    }
+  },
+  "quote_sources": [
+    {
+      "provider": null,
+      "source_url": null,
+      "fetched_at": null,
+      "sha256": "628f52aa203a5ddc43a860d35772645f2903b163deea592264f00f79a9774f4f"
+    },
+    {
+      "provider": "tencent",
+      "source_url": "https://qt.gtimg.cn/q=sh600887",
+      "fetched_at": "2026-10-12T09:23:12.983524+00:00",
+      "sha256": "4787985d63fa7cce86868d3e3bbeed8b48fcf95ccbf7fb601d1b000e88e900db"
+    },
+    {
+      "provider": "sina",
+      "source_url": "https://hq.sinajs.cn/list=sh600887",
+      "fetched_at": "2026-10-12T09:23:13.079577+00:00",
+      "sha256": "702da032ffb390f44df8dc2139a36c320eaa29f0e88fe21fc9556beea035268b"
+    }
+  ],
+  "approval_required": [
+    {
+      "gate": "EVENT_WINDOW_HUMAN_REVIEW",
+      "owner": "human",
+      "why": "事件扫描有效期 2026-10-11→2026-10-12 仍为人工待复核；复核完成前，模型有效性不能由 UNKNOWN 变为 VALID。",
+      "unlocks": "模型有效性覆盖 2026-10-12（当前 UNKNOWN）"
+    },
+    {
+      "gate": "RESEARCH_VERSION_RE_REGISTRATION",
+      "owner": "engine+operator",
+      "why": "登记研究截止日为 2026-10-11，未覆盖更晚的已核验行情；重登记只能生成待复核版本，不能代签审批。",
+      "unlocks": "价格桥接从 QUOTE_VERIFIED_BUT_RESEARCH_STALE 进入可判断状态"
+    },
+    {
+      "gate": "G3_VALUATION_APPROVAL",
+      "owner": "human",
+      "why": "正式估值批准是正式投资决策的前置人工门。",
+      "unlocks": "正式决策资格（formal_decision_eligible）"
+    },
+    {
+      "gate": "PRIVATE_PORTFOLIO_OR_IPS",
+      "owner": "user",
+      "why": "仓位建议必须基于真实组合与约束，当前未接入。",
+      "unlocks": "position guidance（在此之前保持 null）"
+    }
+  ],
+  "blockers": [
+    "pending_complete_event_materiality_review",
+    "event scan is pending human review",
+    "This acquired query window does not replace earlier event/model/G3 reviews.",
+    "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性"
+  ],
+  "reopen_conditions": [
+    "人工完成事件窗口材料性复核（扫描 3c1a3ae9e8d5…，2026-10-11→2026-10-12，公告数 0）。",
+    "以覆盖 2026-10-12 的研究版本完成有界重登记（既有引擎 prepare_pending_research_candidate，输出 PENDING_REVIEW，不得代签）。",
+    "重登记后重跑价格桥接登记与执行（pin_current_quote_bridge.py / execute_quote_bridge_for_symbol）。",
+    "在产生当日已核验收盘后重跑 run_daily_trade_assistant.py，使报价日为当前交易会话。",
+    "G3 人工批准与决策门通过前保持 action=no_order，不产生买入/加仓建议。"
+  ],
+  "evidence_refs": [
+    {
+      "id": "review-package",
+      "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
+      "sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5"
+    },
+    {
+      "id": "review-event-scan",
+      "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/event-scan.json",
+      "sha256": "3c1a3ae9e8d59032a1ed247ede799c9cf15171bc1818144da58caaf59ba9fd57"
+    },
+    {
+      "id": "daily-index-600887",
+      "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/cninfo-index.json",
+      "sha256": "7664b603cc4c15873c175e7b1f0ed2a11d2d4e44f127ba4af252a83a33667f07",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-index-manifest-600887",
+      "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index-manifest.json",
+      "sha256": "679f858dbd7bef5a9908a2915622bdcc9c673e14b0a79c49ceb6e507ea45f4fc",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-600887-1",
+      "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index/response-0001.bin",
+      "sha256": "8dddfb3858f973e766e4c6f13bbfdcd21e208991b60752c1c5ab39894073552d",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-metadata-600887-1",
+      "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index/response-0001.json",
+      "sha256": "ecd7f38c12bde413d3033c298e7baad538c6328765851d9dd136f0f8c518f159",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-600887-2",
+      "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index/response-0002.bin",
+      "sha256": "c2a890bbf3a6a53ab02ddc6c1794bf1c72ba45799fe9f59dcc5ba2cc18467114",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-metadata-600887-2",
+      "path": "runtime/daily-trade-assistant/20261013T031330686666Z-600887/event-observation/raw-index/response-0002.json",
+      "sha256": "9149ece8442ace1bd952c8db7ff62c58579402d8a1494f05944d8e4dd2033f5f",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    }
+  ]
+}
