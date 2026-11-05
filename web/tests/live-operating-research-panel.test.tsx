@@ -10,7 +10,11 @@ import type {
   FiscalDistributionReview,
 } from "../src/services/api";
 
-const hooks = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
+const hooks = vi.hoisted(() => ({
+  values: [] as any[],
+  cursor: 0,
+  effects: [] as { deps?: unknown[]; cleanup?: () => void }[],
+}));
 const calls = vi.hoisted(() => ({
   status: vi.fn(),
   publicRead: vi.fn(),
@@ -24,6 +28,14 @@ vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react")>();
   return {
     ...actual,
+    useEffect(effect: () => void | (() => void), deps: unknown[]) {
+      const index = hooks.cursor++;
+      const previous = hooks.effects[index];
+      if (previous && deps.every((v, i) => Object.is(v, previous.deps?.[i])))
+        return;
+      previous?.cleanup?.();
+      hooks.effects[index] = { deps, cleanup: effect() || undefined };
+    },
     useState(initial: any) {
       const index = hooks.cursor++;
       if (!(index in hooks.values))
@@ -127,6 +139,8 @@ const ready = {
   daily_cost_limit: "10",
 };
 beforeEach(() => {
+  for (const effect of hooks.effects) effect?.cleanup?.();
+  hooks.effects = [];
   hooks.values = [];
   hooks.cursor = 0;
   for (const call of Object.values(calls)) call.mockReset();
@@ -139,7 +153,11 @@ beforeEach(() => {
     status: "NOT_STARTED",
   });
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  for (const effect of hooks.effects) effect?.cleanup?.();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 it("has no first-screen request, opens status only on click and never polls", async () => {
   vi.useFakeTimers();
@@ -180,10 +198,7 @@ it("starts with unique keys then manually refreshes cancels resumes and reads hi
   expect(calls.refresh).toHaveBeenCalledWith("TEST_ONLY_LIVE");
   calls.cancel.mockResolvedValue(task({ status: "CANCELLED" }));
   await click("取消当前任务");
-  calls.resume.mockResolvedValue(task({ status: "QUEUED" }));
-  await click("恢复当前任务");
-  calls.cancel.mockResolvedValue(task({ status: "CANCELLED" }));
-  await click("取消当前任务");
+  expect(button("恢复当前任务").props.disabled).toBeTruthy();
   await click("启动新研究");
   expect(calls.start.mock.calls[1][0].request_key).not.toBe(first.request_key);
   calls.history.mockResolvedValue({
@@ -194,7 +209,7 @@ it("starts with unique keys then manually refreshes cancels resumes and reads hi
 });
 it("recovers a discovered task without creating another", async () => {
   await click("新Agent经营研究");
-  calls.history.mockResolvedValue({ items: [task({ status: "CANCELLED" })] });
+  calls.history.mockResolvedValue({ items: [task({ status: "FAILED" })] });
   await click("读取已有经营研究任务");
   const select = nodes(render()).find(
     (x) =>
@@ -206,6 +221,35 @@ it("recovers a discovered task without creating another", async () => {
   select.props.onClick();
   expect(button("恢复当前任务").props.disabled).toBeFalsy();
   expect(calls.start).not.toHaveBeenCalled();
+});
+it("tracks selected running task and stops after terminal response without a model call", async () => {
+  vi.useFakeTimers();
+  await click("新Agent经营研究");
+  calls.history.mockResolvedValue({ items: [task({ status: "RUNNING" })] });
+  await click("读取已有经营研究任务");
+  calls.refresh.mockResolvedValue(task({ status: "SUCCEEDED" }));
+  render();
+  await vi.advanceTimersByTimeAsync(3000);
+  render();
+  await vi.advanceTimersByTimeAsync(9000);
+  expect(calls.refresh).toHaveBeenCalledTimes(1);
+  expect(calls.start).not.toHaveBeenCalled();
+  expect(calls.resume).not.toHaveBeenCalled();
+});
+it("pauses polling on authorization failure and preserves task for manual refresh", async () => {
+  vi.useFakeTimers();
+  await click("新Agent经营研究");
+  calls.history.mockResolvedValue({ items: [task({ status: "RUNNING" })] });
+  await click("读取已有经营研究任务");
+  calls.refresh.mockRejectedValue(
+    new ApiError(401, "AUTH_REQUIRED", "TEST_ONLY"),
+  );
+  render();
+  await vi.advanceTimersByTimeAsync(3000);
+  expect(shown()).toContain("自动读取已暂停");
+  await vi.advanceTimersByTimeAsync(9000);
+  expect(calls.refresh).toHaveBeenCalledTimes(1);
+  expect(button("刷新当前任务").props.disabled).toBeFalsy();
 });
 it("keeps local authorization failures in a single local alert", async () => {
   await click("新Agent经营研究");
@@ -268,7 +312,9 @@ it("mounts only beside existing value company panels and adds no timers or autom
   expect(index).toMatch(
     /strategy !== "hotspot"[\s\S]*?<LiveOperatingResearchPanel/,
   );
-  expect(panel).not.toMatch(/setInterval|setTimeout|localStorage/);
+  // Active-task GET polling is allowed; never use intervals or local state as
+  // the authority for durable task execution.
+  expect(panel).not.toMatch(/setInterval|localStorage/);
   expect(panel).not.toContain("SAVED_RESPONSE");
 });
 

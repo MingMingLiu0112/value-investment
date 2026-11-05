@@ -475,6 +475,38 @@ def test_native_http_execution_uses_bounded_controller(tmp_path, monkeypatch):
 
 
 
+@pytest.mark.parametrize('owner_active', [True, False])
+def test_resume_requires_controller_release_before_requeue(tmp_path, monkeypatch, owner_active):
+    from contextlib import contextmanager
+    calls=[]
+    class TestOnlyNative(routes._NativeLiveService):
+        @contextmanager
+        def _lock(self, directory, name='state'):
+            assert name == 'controller'
+            if owner_active:
+                raise routes.LockTimeout('TEST_ONLY active controller')
+            calls.append('controller-acquired')
+            yield
+            calls.append('controller-released')
+        def resume(self, task_id):
+            calls.append('resume')
+            return dict(task_id=task_id,status='QUEUED',action='no_order')
+    monkeypatch.setattr(routes,'_NativeLiveService',TestOnlyNative)
+    monkeypatch.setattr(routes,'LiveOperatingTaskService',TestOnlyNative)
+    monkeypatch.setattr(routes,'read_pending_live_task',lambda *a:dict(status='NO_PENDING_FINALIZATION'))
+    monkeypatch.setattr(routes,'supervise_live_task',lambda *a:calls.append('enqueue'))
+    client,secret=client_for(tmp_path,tmp_path/'TEST_ONLY-journal.jsonl',monkeypatch)
+    unlock(client,secret)
+    response=client.post(BASE+'/tasks/rt-'+('a'*32)+'/resume')
+    if owner_active:
+        assert response.status_code == 409
+        assert response.json()['status'] == 'LIVE_EXECUTION_STILL_ACTIVE'
+        assert calls == []
+    else:
+        assert response.status_code == 200
+        assert calls == ['controller-acquired','resume','controller-released','enqueue']
+
+
 def test_injected_native_subclass_keeps_its_own_runner(tmp_path, monkeypatch):
     calls=[]
     class TestOnlyInjected(routes._NativeLiveService):

@@ -1,6 +1,6 @@
 import { MainValuationRevalidationPanel } from "./MainValuationRevalidationPanel";
 import { ParentFundingResearchPanel } from "./ParentFundingResearchPanel";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Space, Table } from "antd";
 import {
   api,
@@ -1157,8 +1157,11 @@ export function OperatingCashConsumptionView({
 }
 
 function ParentCashFollowupView({ value }: { value: Record<string, unknown> }) {
-  const status = typeof value.status === "string" ? value.status : "UNASSESSABLE";
-  const blockers = Array.isArray(value.current_blockers) ? value.current_blockers : [];
+  const status =
+    typeof value.status === "string" ? value.status : "UNASSESSABLE";
+  const blockers = Array.isArray(value.current_blockers)
+    ? value.current_blockers
+    : [];
   const observation = value.observations as Record<string, unknown> | undefined;
   const sourceCount = Array.isArray(observation?.source_bindings)
     ? observation.source_bindings.length
@@ -1170,7 +1173,11 @@ function ParentCashFollowupView({ value }: { value: Record<string, unknown> }) {
         状态：{status} · 已绑定报告：{sourceCount} 份
       </p>
       <Alert
-        type={status === "SOURCE_BOUND_PARENT_CASH_OBSERVATIONS_READY_FOR_POLICY" ? "info" : "warning"}
+        type={
+          status === "SOURCE_BOUND_PARENT_CASH_OBSERVATIONS_READY_FOR_POLICY"
+            ? "info"
+            : "warning"
+        }
         message={
           status === "SOURCE_BOUND_PARENT_CASH_OBSERVATIONS_READY_FOR_POLICY"
             ? "已重放官方母公司现金表；这只是估值输入准备，不是可分配现金或买卖结论"
@@ -1178,8 +1185,17 @@ function ParentCashFollowupView({ value }: { value: Record<string, unknown> }) {
         }
         description={
           blockers.length > 0
-            ? "仍需：" + blockers.map((row) => typeof row === "object" && row !== null && "code" in row ? String(row.code) : String(row)).join("；")
-            : typeof value.reason === "string" ? value.reason : "未提供可核验的来源绑定"
+            ? "仍需：" +
+              blockers
+                .map((row) =>
+                  typeof row === "object" && row !== null && "code" in row
+                    ? String(row.code)
+                    : String(row),
+                )
+                .join("；")
+            : typeof value.reason === "string"
+              ? value.reason
+              : "未提供可核验的来源绑定"
         }
       />
     </section>
@@ -1667,6 +1683,51 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const lock = useRef(false);
+  const generation = useRef(0);
+  const [tracking, setTracking] = useState(true);
+  useEffect(() => {
+    generation.current += 1;
+    setOpened(false);
+    setTask(undefined);
+    setItems([]);
+    setPublicResult(undefined);
+    setModel(undefined);
+    setError(undefined);
+    setTracking(true);
+  }, [symbol]);
+  // Poll only a task explicitly selected by the user. GET never starts research.
+  useEffect(() => {
+    if (
+      !opened ||
+      !tracking ||
+      !task ||
+      !["QUEUED", "RUNNING"].includes(task.status)
+    )
+      return;
+    let disposed = false;
+    const id = task.task_id;
+    const timer = setTimeout(async () => {
+      if (lock.current) return;
+      try {
+        const value = await api.operatingResearchTask(id);
+        if (disposed) return;
+        if (!validLiveTask(value, symbol) || value.task_id !== id)
+          throw new Error("Invalid task identity");
+        setTask(value);
+      } catch {
+        if (!disposed) {
+          setTracking(false);
+          setError(
+            "自动读取已暂停，后台任务状态未知；请刷新当前任务，不会重新调用模型。",
+          );
+        }
+      }
+    }, 3000);
+    return () => {
+      disposed = true;
+      clearTimeout(timer);
+    };
+  }, [opened, tracking, task, symbol, busy]);
   async function perform(operation: Operation) {
     if (lock.current) return;
     if (
@@ -1680,6 +1741,7 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
     )
       return;
     lock.current = true;
+    const requestGeneration = generation.current;
     setBusy(true);
     setError(undefined);
     try {
@@ -1691,6 +1753,7 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
           api.operatingResearchModelStatus(),
           api.operatingResearchCompany(symbol),
         ]);
+        if (generation.current !== requestGeneration) return;
         if (companyRead.status === "fulfilled")
           setPublicResult(companyRead.value);
         else
@@ -1720,12 +1783,18 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
         setModel(result);
       } else if (operation === "history") {
         const result = await api.operatingResearchTasks(symbol);
+        if (generation.current !== requestGeneration) return;
         if (
           !Array.isArray(result.items) ||
           (result.symbol && result.symbol !== symbol)
         )
           throw new Error("Invalid task history");
         setItems(result.items);
+        const latest = result.items.find((row) => validLiveTask(row, symbol));
+        if (latest) {
+          setTask(latest);
+          setTracking(true);
+        }
       } else {
         const result =
           operation === "start"
@@ -1744,20 +1813,26 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
                 : operation === "finalize"
                   ? await api.finalizeOperatingResearchTask(task!.task_id)
                   : await api.resumeOperatingResearchTask(task!.task_id);
+        if (generation.current !== requestGeneration) return;
         if (
           !validLiveTask(result, symbol) ||
           (operation !== "start" && result.task_id !== task!.task_id)
         )
           throw new Error("Invalid research task boundary");
         setTask(result);
+        setTracking(true);
       }
     } catch (cause) {
+      if (generation.current !== requestGeneration) return;
       setError(
         cause instanceof ApiError && cause.status === 401
           ? "任务操作需要本机授权；公开研究仍可查看，请解锁后手动重试。"
           : cause instanceof ApiError && cause.code === "FINALIZATION_PENDING"
             ? "工作进程已停止，状态落盘尚待完成；点击完成状态写入，不会调用模型。"
-            : "经营研究操作未完成或响应边界无法核验，请手动重试。",
+            : cause instanceof ApiError &&
+                cause.code === "LIVE_EXECUTION_STILL_ACTIVE"
+              ? "任务仍在运行，未启动重复调用；请继续读取状态。"
+              : "经营研究操作未完成或响应边界无法核验，请手动重试。",
       );
       if (operation === "status") setModel(undefined);
     } finally {
@@ -1773,7 +1848,7 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
     <section aria-label="新Agent经营研究" style={{ marginBlock: 20 }}>
       <h3>新Agent经营研究 · {symbol}</h3>
       <p>
-        打开此区仅读取模型状态与已生成公开研究，不发起模型调用；点击启动才可能产生新调用费用，与已保存响应重放分开。研究任务不直接生成正式条件价；独立重算可提供明确未批准、带日期的研究草案，不代表当前买价。主区间未采用、不审批、个人数量为空、不下单。任务状态仅点击读取，不自动轮询。
+        打开此区仅读取模型状态与已生成公开研究，不发起模型调用；点击启动才可能产生新调用费用。运行中每3秒读取一次真实任务状态，失败时暂停读取；刷新页面后点击读取已有任务即可恢复跟踪，不重复启动研究。研究结果仍需复核，不审批、不下单。
       </p>
       <section aria-label="已生成的公开经营研究">
         <h4>已生成的公开经营研究</h4>
@@ -1820,7 +1895,10 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
         </Button>
         <Button
           disabled={
-            busy || !ready || !task || active || task.status === "SUCCEEDED"
+            busy ||
+            !ready ||
+            !task ||
+            ["SUCCEEDED", "CANCELLED"].includes(task.status)
           }
           onClick={() => perform("resume")}
         >
@@ -1834,7 +1912,14 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
         {items.map((row, i) => (
           <li key={i}>
             {validLiveTask(row, symbol) ? (
-              <Button disabled={busy} onClick={() => setTask(row)}>
+              <Button
+                disabled={busy}
+                onClick={() => {
+                  setTask(row);
+                  setTracking(true);
+                  setError(undefined);
+                }}
+              >
                 选择任务 {row.task_id} · {LABELS[row.status] || row.status}
               </Button>
             ) : (

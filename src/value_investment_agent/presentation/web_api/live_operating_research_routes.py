@@ -7,6 +7,7 @@ from .local_auth import authorize,LocalAuthorizationError,AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.operating_task_v2 import LiveOperatingTaskService,model_status,ROLES
 from ...application.research.agent_review.operating_task_v2 import LiveOperatingTaskService as _NativeLiveService
 from ...operations.live_task_controller_v1 import supervise_live_task, read_pending_live_task, finalize_pending_live_task
+from ...application.portfolio.private_journal_lock import LockTimeout
 
 
 def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
@@ -122,10 +123,20 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                     finalize_pending_live_task(project,task_id)
                     waiting=pending(task_id)
                     if waiting is not None:return pending_response(waiting)
-                task=service.resume(task_id)
+                # The controller owns the worker until termination/finalization.
+                # Recover a stranded RUNNING task only after that owner is gone;
+                # the native execution lock then protects against a surviving worker.
+                if type(service) is _NativeLiveService and service.test_provider is None:
+                    with service._lock(service._directory(task_id), "controller"):
+                        task=service.resume(task_id)
+                else:
+                    task=service.resume(task_id)
                 if task["status"]=="QUEUED":enqueue(background,task_id)
             else:raise ValueError("UNSUPPORTED_OPERATION")
             return reply(review_projection(task))
+        except LockTimeout:
+            return reply(dict(action="no_order",status="LIVE_EXECUTION_STILL_ACTIVE",
+                detail="任务仍由执行进程持有，请读取状态；不会启动重复模型调用。"),409)
         except (ValueError,OSError,KeyError,RuntimeError,TypeError):
             return reply(dict(action="no_order",status="LIVE_CONTROL_REJECTED"),409)
 
