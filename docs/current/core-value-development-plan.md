@@ -74,3 +74,13 @@
 
 ### 000568 真实输入冷重放
 2026-11-03 使用 config/current-first-research-inputs-v1.json 注册回执调用 replay_first_research_input，原件及假设经过冷重编译，返回 COLD_RECOMPILED、issuer VERIFIED、valuation conditional_research_only、formal_eligibility false、action no_order。本次未验证价格政策、API、页面及当前报价，不能计作完整业务闭环。
+
+## 2026-11-05 D1功能交付回执
+
+- 实现提交：f4084617（跟踪/恢复锁）、0a03a794（慢研究读取不阻塞操作）、7394c5ed（现金跟进登记与公开来源分发）、6298928a（封存锁占用可重读）。最终Web构建：5ee743dd33f3d875609d74a2186c2f7e1873bb86。
+- 真实任务：`rt-cc3d5e56a5a22e6deb03100092dad471`，600323，deepseek-flash。首次事件角色字段不匹配被拒；原检查点恢复只重试EVENT，最终SUCCEEDED，三角色均冷读核验。共4次真实调用，配置费率估算0.204382元，reserved_cost=0；不是供应商账单。
+- 来源：`runtime/value-auto-development-20261103/reobserve-011253/600323/600323.json`，SHA f47dded57536f8b61de8be0a792c475f96f3bc24549f6209b6d394f1189645a0。
+- 回执：`.tmp/d1-delivery-20261105/receipt.json`，SHA 1406504e4722e9c384fc8919efc1d09aa65af1546b13b61cca97b70d72ce7b56。角色原始响应、拒绝响应、输入及追加状态版本仍在原任务目录；未改写历史实现指纹。
+- 验证：D1/controller/provider/API初批167通过；恢复互斥2通过；来源与任务106通过、3项可选原件未设置跳过（不算真实验收）；前端84通过，后增封存锁重试单项通过。TypeScript及生产构建通过。真实任务冷读独立于上述Mock测试。未重复运行全仓Core CI，本轮不声称GitHub CI已通过。
+- 8001：已通过既有归属校验启动器原位更新，build-info与5ee743dd一致，模型状态READY。研究操作仍需本机授权，网页GET不启动模型。D1只交付受限执行和研究响应，不代表D2经济假设或E2/F1/F2批准。
+- 独立复核：Jason确认来源分发不放宽准入；首轮发现选择另一任务未恢复tracking，已修复。用户最终使用确认仍PENDING。
