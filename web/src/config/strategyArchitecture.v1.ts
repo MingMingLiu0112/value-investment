@@ -749,11 +749,11 @@ export const catalog: Record<
         evidenceStatus:
           "96条官方来源；21项经营驱动范围、6项增长/税前利润率由代码派生、9项资本UNKNOWN；不是模型直接填利润率；新增30行现金账与v4条件估值真实消费",
         shortStatus:
-          "600323当前三角色研究已准入；E2读取器明确缺同期间税费归属、发行人现金政策与主经济区间采纳，不能升级为F1/F2结论",
+          "600323三角色成功；FY2025→2027全年经营已编译年度归属利润输入。税费事实已补齐；仍缺连续现金路径、适用终端和主区间，尚无F1/F2价格结论",
         implementation:
           "原驱动桥锁定H12026→H12027，按每情景128角点重算；同比FY只对FY、H1只对H1。新增2026Jul–2027Jun滚动全年适配，后续flat，ResearchApplicationService→既有v4计算",
         milestone:
-          "历史 rt-72bd66eee8fdba9ae99240ac1029e44e 完成三角色调用；当前 rt-2edff143668401773f7026b299841ac7 因 LIVE_PROVIDER_RESPONSE_INCOMPLETE 未获准入。来源、反证和结构化输出仍须经过现金政策与经济采纳门禁。",
+          "2026-11-05任务rt-cc3d5e56a5a22e6deb03100092dad471真实三角色成功；每个完整角点经共享年度编译器核账。2027是第2模型年，2026及后续缺年不复制填充；现金与估值仍未闭环。",
         existingEvidence:
           "旧D2两公司草案及rt-c40经济拒绝保留为历史，不覆盖旧raw；当前H1第11/14/12页量价成本表构成新驱动桥，不沿用旧直接填利润率路径",
         evidenceSource:
@@ -769,7 +769,7 @@ export const catalog: Record<
           consumer:
             "D2研究产物 → 现金消费读取器；只有同发行人年度现金政策、主经济区间和模型适用性齐备时，才可进入ResearchApplicationService → v4 → 条件价格",
           realData:
-            "600323当前任务SUCCEEDED、三角色共3次调用；来源绑定、反证和未知项均保留，不能将UNKNOWN填为零或把模型输出升级为事实",
+            "600323当前任务SUCCEEDED，共4次调用（事件拒答后恢复）；三情景各4个年度输入角点由真实来源重算。没有新增模型调用，不把年度利润当股东现金",
           economic: "条件现金/估值工程已接待终验／参数经济适用性未证／非主区间",
           deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
           acceptance: "用户尚未确认此版本",

@@ -177,7 +177,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             # A new read-model consumer, outside the immutable paid research task.
             # Failure here does not erase valid public operating research.
             try:
-                from ...application.research.operating_cash_consumption_v1 import read_operating_cash_consumption
+                from ...application.research.operating_cash_consumption_v2 import read_operating_cash_consumption
                 public["cash_consumption"]=read_operating_cash_consumption(
                     root=project,task=value,now=datetime.now(timezone.utc))
             except (ValueError,OSError,KeyError,TypeError):

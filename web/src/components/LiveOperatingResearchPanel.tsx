@@ -1047,6 +1047,22 @@ export function OperatingCashConsumptionView({
   const blockers = Array.isArray(value.current_blockers)
     ? (value.current_blockers as Record<string, unknown>[])
     : [];
+  const compilation = value.earnings_input_compilation as
+    | {
+        status?: string;
+        reason?: string;
+        scenarios?: Record<
+          string,
+          {
+            period_start: string;
+            period_end: string;
+            model_year: number;
+            candidates: Record<string, unknown>;
+            missing_calendar_years: number[];
+          }
+        >;
+      }
+    | undefined;
   return (
     <section aria-label="经营利润到股东现金的实际消费">
       <h3>经营利润 → 股东现金 → 估值 → 条件价格</h3>
@@ -1057,12 +1073,43 @@ export function OperatingCashConsumptionView({
             ? "条件压力经营 → 股东现金 → 共享估值已接通；尚非主估值或买价"
             : "税后归属已实际计算；未来现金、年度估值与条件价格尚未形成完整链路"
         }
-        description="这里消费同一D2角点，保留半年期间。归母利润不等于可分配现金，历史母公司现金代理不等于未来自由现金；不将旧年度估值冒充本次D2结果。"
+        description="这里消费同一D2角点，保留实际年度或半年期间。归母利润不等于可分配现金，历史母公司现金代理不等于未来自由现金；不将旧年度估值冒充本次D2结果。"
       />
       <p>
         研究任务：{String(value.task_id || "未提供")}；消费版本：
         {String(value.consumption_fingerprint || "未核验")}；action=no_order。
       </p>
+      {compilation?.scenarios && (
+        <section aria-label="年度模型输入编译">
+          <h4>D2 到年度模型输入</h4>
+          <p>
+            每个完整情景保留自己的税前利润、税费和少数股东损益，经共享年度编译器核账；不拼接不同角点，不补齐未知年份。
+          </p>
+          {Object.entries(compilation.scenarios).map(([name, row]) => (
+            <p key={name}>
+              {LABELS[name] || name}：{row.period_start} ～ {row.period_end}，第
+              {row.model_year}模型年；
+              {Object.keys(row.candidates).length > 0
+                ? "完整年度输入已编译，尚未选择主预测"
+                : "不是完整年度，尚不能编译成年输入"}
+              。 尚缺年份：{row.missing_calendar_years.join("、")}
+              。现金政策和终值仍须独立验证。
+            </p>
+          ))}
+        </section>
+      )}
+      {compilation?.status === "UNASSESSABLE" && (
+        <Alert
+          type="warning"
+          message="年度输入编译未通过"
+          description={
+            compilation.reason || "年度编译未返回可核验结果；原经营研究仍可阅读"
+          }
+        />
+      )}
+      {compilation?.status === "DELEGATED_TO_EXISTING_PERIOD_ADAPTER" && (
+        <p>{compilation.reason}</p>
+      )}
       {history.length > 0 && (
         <table>
           <caption>母公司历史现金勾稽（元；不同期间分别列示，非FCFE）</caption>
@@ -1313,7 +1360,9 @@ const CASH_BLOCKERS: Record<string, string> = {
   ANNUAL_TRANSPORT_AND_CASH_POLICY_NOT_ECONOMICALLY_ADOPTED:
     "年度压力传递、利润持续性及资金政策还未获得经济采纳；原D2资本未知项没有因此变成已知事实。",
   COMPLETE_ANNUAL_OPERATING_PATH_REQUIRED:
-    "完整年度经营路径缺失：当前是2027H1，不能乘二、默认下半年或让旧年度模型改写费用。",
+    "完整年度经营路径缺失：已有期间尚未覆盖全年，不能乘二、默认其余期间或让旧年度模型改写费用。",
+  COMPLETE_TEN_YEAR_OPERATING_PATH_REQUIRED:
+    "已有完整年度输入，但十年路径仍不连续：缺失年份、主预测选择及现金政策必须显式补齐，不能把一年复制十次。",
   EXPLICIT_SAME_PERIOD_CASH_POLICY_REQUIRED:
     "同期间现金政策缺失：需绑定期初现金、维护/营运资本、上划和分配假设；既有UNKNOWN不能填零。",
   MAIN_ECONOMIC_RANGE_NOT_ADOPTED:

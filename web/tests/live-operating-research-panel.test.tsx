@@ -1218,6 +1218,37 @@ it("cash consumption shows new conditional calculation without promoting a buy p
   expect(html).not.toContain("当前未调用年度估值内核");
   expect(calls.start).not.toHaveBeenCalled();
 });
+it("shows a compiled full year and missing horizon without inventing a cash path", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const html = renderToStaticMarkup(
+    <LiveOperatingResearchDraft
+      task={task({
+        status: "SUCCEEDED",
+        cash_consumption: {
+          earnings_input_compilation: {
+            scenarios: {
+              base: {
+                period_start: "2027-01-01",
+                period_end: "2027-12-31",
+                model_year: 2,
+                candidates: { margin_lower: {} },
+                missing_calendar_years: [2026, 2028],
+              },
+            },
+          },
+          current_blockers: [
+            { code: "COMPLETE_TEN_YEAR_OPERATING_PATH_REQUIRED" },
+          ],
+        },
+      })}
+    />,
+  );
+  expect(html).toContain("完整年度输入已编译，尚未选择主预测");
+  expect(html).toContain("2026、2028");
+  expect(html).toContain("不能把一年复制十次");
+  expect(html).not.toContain("当前是2027H1");
+  expect(calls.start).not.toHaveBeenCalled();
+});
 it("cash mapping failure remains readable alongside public operating research", () => {
   const { renderToStaticMarkup } = require("react-dom/server");
   const html = renderToStaticMarkup(
