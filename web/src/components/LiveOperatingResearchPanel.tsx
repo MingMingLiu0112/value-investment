@@ -1047,6 +1047,26 @@ export function OperatingCashConsumptionView({
   const blockers = Array.isArray(value.current_blockers)
     ? (value.current_blockers as Record<string, unknown>[])
     : [];
+  const supplement = value.annual_research_supplement as
+    | {
+        status: string;
+        reason?: string;
+        task_id?: string;
+        research_as_of?: string;
+        years?: Record<
+          string,
+          {
+            estimate_kind: string;
+            counter_evidence: string;
+            reopen_condition: string;
+            earnings: Record<
+              string,
+              { witnesses: Record<string, { parent_profit_cny: string }> }
+            >;
+          }
+        >;
+      }
+    | undefined;
   const compilation = value.earnings_input_compilation as
     | {
         status?: string;
@@ -1079,6 +1099,49 @@ export function OperatingCashConsumptionView({
         研究任务：{String(value.task_id || "未提供")}；消费版本：
         {String(value.consumption_fingerprint || "未核验")}；action=no_order。
       </p>
+      {supplement && supplement.status !== "NOT_STARTED" && (
+        <section aria-label="逐年经营研究补充">
+          <h4>逐年经营研究补充</h4>
+          <p>
+            任务：{supplement.task_id || "未形成"}；研究时点：
+            {supplement.research_as_of || "未形成"}。
+          </p>
+          <p>
+            独立年度假设，尚未通过独立经济复核；不覆盖原研究、不自动连接成主预测。
+          </p>
+          {Object.entries(supplement.years || {}).map(([year, row]) => (
+            <section key={year}>
+              <h5>
+                {year}：
+                {row.estimate_kind === "CURRENT_FY_ESTIMATE"
+                  ? "当年全年估计（包含已过月份，非实际财报）"
+                  : "未来全年条件假设"}
+              </h5>
+              <p>反证：{row.counter_evidence}</p>
+              <p>重开研究条件：{row.reopen_condition}</p>
+              {Object.entries(row.earnings).map(([scenario, path]) => (
+                <p key={scenario}>
+                  {LABELS[scenario] || scenario}：
+                  {Object.entries(path.witnesses)
+                    .map(
+                      ([point, value]) =>
+                        `${point}归母利润 ${value.parent_profit_cny} 元`,
+                    )
+                    .join("；")}
+                  。 完整角点分别保留，不等同可分配现金或主估值。
+                </p>
+              ))}
+            </section>
+          ))}
+          {supplement.reason && (
+            <Alert
+              type="warning"
+              message="年度补充尚不可消费"
+              description={supplement.reason}
+            />
+          )}
+        </section>
+      )}
       {compilation?.scenarios && (
         <section aria-label="年度模型输入编译">
           <h4>D2 到年度模型输入</h4>

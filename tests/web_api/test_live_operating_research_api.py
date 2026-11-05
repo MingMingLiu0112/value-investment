@@ -591,3 +591,41 @@ def test_pending_terminal_read_exposes_pending_without_recovery_writes(tmp_path,
     assert response.json()['status']=='RUNNING'  # Persisted state is not fabricated as complete.
     assert response.json()['controller_finalization']==waiting
     assert calls==['load']
+
+
+def test_horizon_unauthorized_cannot_start_or_cancel(api):
+    client,_,data,root=api
+    before=state(root)
+    for path in ('/horizon-tasks','/horizon-tasks/rt-'+'a'*32+'/cancel'):
+        response=client.post(BASE+path,json=dict(symbol='600323',request_key='TEST_ONLY-horizon',years=[2026]))
+        assert response.status_code==401
+    assert state(root)==before and not data.provider_calls
+
+
+def test_horizon_request_cannot_override_source_or_budget(api):
+    client,secret,data,root=api
+    unlock(client,secret)
+    before=state(root)
+    response=client.post(BASE+'/horizon-tasks',json=dict(symbol='600323',request_key='TEST_ONLY-horizon',years=[2026],max_run_cost='100'))
+    assert response.status_code==422 and response.json()['status']=='HORIZON_TASK_REJECTED'
+    assert state(root)==before and not data.provider_calls
+
+
+def test_horizon_authorized_start_reads_and_cancels_real_service_boundary(api,monkeypatch):
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v1 import OperatingHorizonTaskService
+    client,secret,data,root=api
+    unlock(client,secret)
+    seen=[]
+    task='rt-'+'f'*32
+    def create(self,**kw):
+        seen.append(('create',kw));return dict(task_id=task,status='QUEUED',action='no_order')
+    monkeypatch.setattr(OperatingHorizonTaskService,'create',create)
+    monkeypatch.setattr(OperatingHorizonTaskService,'run',lambda self,id:seen.append(('run',id)))
+    monkeypatch.setattr(OperatingHorizonTaskService,'read',lambda self,id:dict(task_id=id,status='SUCCEEDED',action='no_order',formal_eligibility=False))
+    monkeypatch.setattr(OperatingHorizonTaskService,'cancel',lambda self,id:dict(task_id=id,status='CANCELLED',action='no_order'))
+    body=dict(symbol='600323',request_key='TEST_ONLY-horizon',years=[2026])
+    result=client.post(BASE+'/horizon-tasks',json=body)
+    assert result.status_code==202 and seen==[('create',body),('run',task)]
+    assert client.get(BASE+'/horizon-tasks/'+task).json()['formal_eligibility'] is False
+    assert client.post(BASE+'/horizon-tasks/'+task+'/cancel').json()['status']=='CANCELLED'
+    assert not data.provider_calls

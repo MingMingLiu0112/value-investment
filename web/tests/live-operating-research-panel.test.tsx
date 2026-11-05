@@ -1,3 +1,4 @@
+import { OperatingCashConsumptionView } from "../src/components/LiveOperatingResearchPanel";
 import React from "react";
 import { webcrypto } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -1751,4 +1752,39 @@ it("isolates unverified Q3 comparison binding without hiding fiscal policy diagn
   expect(html).toContain("85.0000");
   expect(html).toContain("实际付款：未评估");
   expect(html).toContain("模型当前使用需重验");
+});
+
+it("shows annual supplement as an estimate without upgrading cash or approval", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = {
+    status: "PARTIAL",
+    annual_research_supplement: {
+      status: "ANNUAL_SUPPLEMENT_COMPILED_NOT_CASH_POLICY",
+      task_id: "TEST_ONLY_SUPPLEMENT",
+      research_as_of: "2026-11-05T04:00:00Z",
+      years: {
+        "2026": {
+          estimate_kind: "CURRENT_FY_ESTIMATE",
+          counter_evidence: "特许期可能终止",
+          reopen_condition: "正式续期公告",
+          earnings: {
+            base: {
+              witnesses: {
+                growth_lower: { parent_profit_cny: "100.00" },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  const html = renderToStaticMarkup(
+    <OperatingCashConsumptionView value={value} />,
+  );
+  expect(html).toContain("当年全年估计");
+  expect(html).toContain("非实际财报");
+  expect(html).toContain("100.00");
+  expect(html).toContain("特许期可能终止");
+  expect(html).toContain("不等同可分配现金或主估值");
+  expect(html).toContain("action=no_order");
 });

@@ -59,6 +59,50 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                          401 if error.code==AUTHORIZATION_REQUIRED else 403)
         return None
 
+    # Annual supplements share source verification, authorization and the live daily budget.
+    # They do not replace the existing three-role task or grant research approval.
+    from ...application.research.agent_review.operating_horizon_task_v1 import OperatingHorizonTaskService
+    horizon = OperatingHorizonTaskService(project)
+
+    @api.post("/api/v1/operating-research/horizon-tasks")
+    async def create_horizon(request:Request,background:BackgroundTasks):
+        error=denied(request)
+        if error is not None:return error
+        try:
+            raw=await request.body()
+            if len(raw)>1024:raise ValueError("HORIZON_REQUEST_TOO_LARGE")
+            body=json.loads(raw)
+            if not isinstance(body,dict) or set(body)!={"symbol","request_key","years"}:
+                raise ValueError("HORIZON_REQUEST_INVALID")
+            task=horizon.create(**body)
+            if task["status"]=="QUEUED":background.add_task(horizon.run,task["task_id"])
+            return reply(task,202)
+        except (PermissionError,ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="HORIZON_TASK_REJECTED",reason=str(error)),422)
+
+    @api.get("/api/v1/operating-research/horizon-tasks/{task_id}")
+    def read_horizon(task_id:str,request:Request):
+        error=denied(request)
+        if error is not None:return error
+        try:return reply(horizon.read(task_id))
+        except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="HORIZON_TASK_UNAVAILABLE",reason=str(error)),422)
+
+    @api.post("/api/v1/operating-research/horizon-tasks/{task_id}/{operation}")
+    def control_horizon(task_id:str,operation:str,request:Request,background:BackgroundTasks):
+        error=denied(request)
+        if error is not None:return error
+        try:
+            if operation=="cancel":task=horizon.cancel(task_id)
+            elif operation=="resume":
+                task=horizon.resume(task_id)
+                if task["status"]=="QUEUED":background.add_task(horizon.run,task_id)
+            else:raise ValueError("UNSUPPORTED_HORIZON_OPERATION")
+            return reply(task)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="HORIZON_CONTROL_REJECTED",reason=str(error)),409)
+
     @api.get("/api/v1/operating-research/model-status")
     def availability():
         return reply(model_status(project))
@@ -177,7 +221,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             # A new read-model consumer, outside the immutable paid research task.
             # Failure here does not erase valid public operating research.
             try:
-                from ...application.research.operating_cash_consumption_v2 import read_operating_cash_consumption
+                from ...application.research.operating_cash_consumption_v3 import read_operating_cash_consumption
                 public["cash_consumption"]=read_operating_cash_consumption(
                     root=project,task=value,now=datetime.now(timezone.utc))
             except (ValueError,OSError,KeyError,TypeError):
