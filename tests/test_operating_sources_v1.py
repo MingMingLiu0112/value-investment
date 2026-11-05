@@ -29,6 +29,38 @@ def digest(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+def test_cash_followup_registration_keeps_public_source_dispatch(tmp_path, monkeypatch):
+    path=tmp_path/operating.REGISTRY
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(dict(schema_version='current-operating-research-sources-v1',
+        action='no_order',cases={'000001':dict(issuer_name='TEST_ONLY',
+        parent_cash_observation_receipts=[])})),encoding='utf-8')
+    calls=[]
+    def public(**kwargs):
+        calls.append(kwargs)
+        return {'TEST_ONLY':'source-verifier-called'}
+    monkeypatch.setattr(operating,'_public_source_context',public)
+    assert operating.build_operating_source_context(root=tmp_path,symbol='000001',now=NOW)=={'TEST_ONLY':'source-verifier-called'}
+    assert len(calls)==1 and calls[0]['symbol']=='000001'
+
+
+@pytest.mark.parametrize('entry', [
+    {'native_facts':None,'parent_cash_observation_receipts':[]},
+    {'issuer_name':'TEST_ONLY'},
+    {'parent_cash_observation_receipts':[], 'operating_excerpts':[]},
+])
+def test_invalid_declared_source_never_falls_back(tmp_path, monkeypatch, entry):
+    path=tmp_path/operating.REGISTRY
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(dict(schema_version='current-operating-research-sources-v1',
+        action='no_order',cases={'000001':entry})),encoding='utf-8')
+    def forbidden(**kwargs):
+        raise AssertionError('No fallback for declared/ambiguous source')
+    monkeypatch.setattr(operating,'_public_source_context',forbidden)
+    with pytest.raises((ValueError,TypeError)):
+        operating.build_operating_source_context(root=tmp_path,symbol='000001',now=NOW)
+
+
 @pytest.fixture
 def source_case(tmp_path, monkeypatch):
     directory = tmp_path / "runtime/TEST_ONLY-operating"

@@ -32,7 +32,20 @@ def build_operating_source_context(*,root,symbol,now,binding=None):
             raise ValueError("OPERATING_SOURCE_REGISTRY_INVALID")
         if symbol not in registry["cases"]:
             return _public_source_context(root=root,symbol=symbol,now=now)
-        binding=registry["cases"][symbol]["native_facts"]
+        entry=registry["cases"][symbol]
+        if not isinstance(entry,dict):
+            raise ValueError("OPERATING_SOURCE_REGISTRY_ENTRY_INVALID")
+        if "native_facts" not in entry:
+            # E2 may register parent-cash followups without replacing the
+            # issuer's existing public-evidence source. Such metadata is not a
+            # native-facts declaration; explicit malformed declarations still
+            # go through their original rejecting verifier below.
+            if ("parent_cash_observation_receipts" in entry
+                    and set(entry)<= {"issuer_name","parent_cash_observation_receipts"}
+                    and isinstance(entry["parent_cash_observation_receipts"],list)):
+                return _public_source_context(root=root,symbol=symbol,now=now)
+            raise ValueError("OPERATING_NATIVE_FACTS_BINDING_REQUIRED")
+        binding=entry["native_facts"]
     else:
         bound_payload=_json(_raw(_binding(root,binding,runtime_only=False),MAX_JSON))
         if bound_payload.get("version")=="value-debt-scope-enrichment-v1":
