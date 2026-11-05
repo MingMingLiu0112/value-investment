@@ -11,7 +11,7 @@ import pytest
 from web_api.test_live_operating_research_api import api,reviewed_result,BASE
 from test_web_agent_research import state
 from test_operating_cash_consumption_v1 import no_io_effects
-from value_investment_agent.application.research import operating_cash_consumption_v5 as consumer
+from value_investment_agent.application.research import operating_cash_consumption_v6 as consumer
 from value_investment_agent.application.research import operating_cash_followup_v1 as followup
 from value_investment_agent.infrastructure.agent_runtime import provider
 

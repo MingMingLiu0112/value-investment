@@ -16,7 +16,7 @@ from ..research.operating_assumption_draft_v1 import load_operating_assumption_d
 from ..research.value_research_analysis import load_current_value_research_analysis
 from .first_research_input_view_v1 import read_first_research_input
 from ..research.main_valuation_revalidation_v1 import read_main_valuation_revalidation
-from ..research.operating_cash_consumption_v5 import read_operating_cash_consumption
+from ..research.operating_cash_consumption_v6 import read_operating_cash_consumption
 from ..research.agent_review.operating_task_v2 import LiveOperatingTaskService
 from ..decision.value_action_plan import load_registered_value_action_plans
 
