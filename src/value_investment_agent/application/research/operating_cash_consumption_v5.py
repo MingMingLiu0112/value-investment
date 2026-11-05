@@ -78,6 +78,11 @@ def read_operating_cash_consumption(*, root, task, now):
         supplement = dict(status="UNASSESSABLE", reason=str(error), years={}, action="no_order")
     if supplement["status"] == "NOT_STARTED":
         return result
+    history = list(result.get("annual_research_supplement_history", []))
+    for previous in (result.get("historical_annual_research_supplement"), result.get("annual_research_supplement")):
+        if previous and previous not in history:
+            history.append(previous)
+    result["annual_research_supplement_history"] = history
     result["historical_annual_research_supplement"] = result.get("annual_research_supplement")
     result["annual_research_supplement"] = supplement
     result["preceding_consumption_fingerprint"] = result.get("consumption_fingerprint")

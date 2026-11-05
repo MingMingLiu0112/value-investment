@@ -54,3 +54,13 @@ def test_latest_failure_does_not_silently_restore_old_success(monkeypatch,tmp_pa
     monkeypatch.setattr(service.OperatingHorizonTaskService,"list_for_symbol",lambda self,symbol:tasks)
     out=mod.read_annual_supplement(root=tmp_path,symbol="123456",now=NOW)
     assert out["task_id"]=="new" and out["status"]=="FAILED" and out["years"]=={}
+
+
+def test_repair_projection_preserves_both_older_generations(monkeypatch,tmp_path):
+    from value_investment_agent.application.research import operating_cash_consumption_v4
+    old={"historical_annual_research_supplement":{"task_id":"v1"},"annual_research_supplement":{"task_id":"v2"},"consumption_fingerprint":"old"}
+    monkeypatch.setattr(operating_cash_consumption_v4,"read_operating_cash_consumption",lambda **kwargs:deepcopy(old))
+    monkeypatch.setattr(mod,"read_annual_supplement",lambda **kwargs:{"status":"FAILED","task_id":"v3"})
+    out=mod.read_operating_cash_consumption(root=tmp_path,task={"symbol":"123456"},now=NOW)
+    assert [x["task_id"] for x in out["annual_research_supplement_history"]]==["v1","v2"]
+    assert out["annual_research_supplement"]["task_id"]=="v3"
