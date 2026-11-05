@@ -1059,6 +1059,8 @@ export function OperatingCashConsumptionView({
             estimate_kind: string;
             counter_evidence: string;
             reopen_condition: string;
+            unit_cost_mechanisms?: Record<string, string>;
+            quantification_status?: string;
             earnings: Record<
               string,
               { witnesses: Record<string, { parent_profit_cny: string }> }
@@ -1117,15 +1119,20 @@ export function OperatingCashConsumptionView({
                   ? "当年全年估计（包含已过月份，非实际财报）"
                   : "未来全年条件假设"}
               </h5>
+              {row.quantification_status && (
+                <p>参数区间属于条件敏感性假设，尚未证明是可信预测边界。</p>
+              )}
               <p>反证：{row.counter_evidence}</p>
               <p>重开研究条件：{row.reopen_condition}</p>
               {Object.entries(row.earnings).map(([scenario, path]) => (
                 <p key={scenario}>
                   {LABELS[scenario] || scenario}：
+                  {row.unit_cost_mechanisms &&
+                    `独立成本依据：${({ INPUT_PRICE: "投入品价格", INDEPENDENT_EFFICIENCY: "独立运营效率", UNRESOLVED_SENSITIVITY: "尚未论证的敏感性假设" } as Record<string, string>)[row.unit_cost_mechanisms[scenario]] || "未核验"}；`}
                   {Object.entries(path.witnesses)
                     .map(
                       ([point, value]) =>
-                        `${point}归母利润 ${value.parent_profit_cny} 元`,
+                        `${EXTREMA.find(([key]) => key === point)?.[1] || point}归母利润 ${driverNumber(value.parent_profit_cny, 2)} 元`,
                     )
                     .join("；")}
                   。 完整角点分别保留，不等同可分配现金或主估值。

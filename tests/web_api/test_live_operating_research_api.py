@@ -612,7 +612,7 @@ def test_horizon_request_cannot_override_source_or_budget(api):
 
 
 def test_horizon_authorized_start_reads_and_cancels_real_service_boundary(api,monkeypatch):
-    from value_investment_agent.application.research.agent_review.operating_horizon_task_v1 import OperatingHorizonTaskService
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v2 import OperatingHorizonTaskService
     client,secret,data,root=api
     unlock(client,secret)
     seen=[]

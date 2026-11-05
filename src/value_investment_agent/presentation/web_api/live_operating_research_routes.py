@@ -61,7 +61,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
 
     # Annual supplements share source verification, authorization and the live daily budget.
     # They do not replace the existing three-role task or grant research approval.
-    from ...application.research.agent_review.operating_horizon_task_v1 import OperatingHorizonTaskService
+    from ...application.research.agent_review.operating_horizon_task_v2 import OperatingHorizonTaskService
     horizon = OperatingHorizonTaskService(project)
 
     @api.post("/api/v1/operating-research/horizon-tasks")
@@ -221,7 +221,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             # A new read-model consumer, outside the immutable paid research task.
             # Failure here does not erase valid public operating research.
             try:
-                from ...application.research.operating_cash_consumption_v3 import read_operating_cash_consumption
+                from ...application.research.operating_cash_consumption_v4 import read_operating_cash_consumption
                 public["cash_consumption"]=read_operating_cash_consumption(
                     root=project,task=value,now=datetime.now(timezone.utc))
             except (ValueError,OSError,KeyError,TypeError):

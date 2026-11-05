@@ -726,8 +726,8 @@ export const catalog: Record<
           why: "估值参数需要经济理由，而不是AI直接报价格。",
           how: "区分事实与预测，推导量价成本及资金路径，保留反例。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "11月5日：600323真实三角色成功；2027全年三情景各4个完整角点已编译为年度归属利润输入，保留原始事实与假设引用。",
-          gap: "税费事实已补齐；仍缺2026衔接及后续预测、维护与可达现金政策。有限期特许经营不能套用白酒永久终端，尚无该公司的估值与条件价。",
+          done: "11月5日：原2027三角色研究保留；新增真实2026年度补研，通过来源校验、税费归属及年度输入编译，API/Web可读。补研独立记录费用与失败，尚待经济复核。",
+          gap: "官方中报、并表及特许经营原文已接入34条证据并完成冷重放；新版真实响应仍需通过严格校验。量价成本边界、连续现金和有限期模型未闭环，不能出主估值或条件价。",
           acceptance:
             "来源绑定的经营假设、三情景、反证和重开条件可被模型消费。",
           evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
@@ -737,9 +737,9 @@ export const catalog: Record<
         question: "增长和分配为何成立，什么会推翻？",
         dependencies: ["C", "D1"],
         input:
-          "D2 H1同一margin_lower witness、年度/H1实际、逐行H2压力投影与来源绑定的条件现金政策",
+          "同公司官方事实、明确年度或半年口径、经营驱动假设与反证；年度补充保留独立任务、截止日和输入版本",
         output:
-          "滚动全年税前/税后归属输入、三路径30行现金账、未采用主区间的条件估值；无条件价",
+          "600323输出逐年条件税前/归属利润，尚无现金政策；000568历史条件现金与估值单独保留，不混用",
         modules: [
           "src/value_investment_agent/application/research/product_operating_research.py",
           "src/value_investment_agent/application/research/agent_review/operating_draft_v1.py",
@@ -753,7 +753,7 @@ export const catalog: Record<
         implementation:
           "原驱动桥锁定H12026→H12027，按每情景128角点重算；同比FY只对FY、H1只对H1。新增2026Jul–2027Jun滚动全年适配，后续flat，ResearchApplicationService→既有v4计算",
         milestone:
-          "2026-11-05任务rt-cc3d5e56a5a22e6deb03100092dad471真实三角色成功；每个完整角点经共享年度编译器核账。2027是第2模型年，2026及后续缺年不复制填充；现金与估值仍未闭环。",
+          "2026-11-05新增rt-3702a415真实2026年度补研并进入税后归属/年度编译；原rt-cc3d的2027研究保留。不同任务不自动合并主预测，后续年份、现金和估值仍未闭环。",
         existingEvidence:
           "旧D2两公司草案及rt-c40经济拒绝保留为历史，不覆盖旧raw；当前H1第11/14/12页量价成本表构成新驱动桥，不沿用旧直接填利润率路径",
         evidenceSource:
