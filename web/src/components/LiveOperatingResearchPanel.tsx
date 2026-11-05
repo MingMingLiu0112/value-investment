@@ -1715,8 +1715,15 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
         if (!validLiveTask(value, symbol) || value.task_id !== id)
           throw new Error("Invalid task identity");
         setTask(value);
-      } catch {
+      } catch (cause) {
         if (!disposed) {
+          if (cause instanceof ApiError && cause.code === "LIVE_STATE_BUSY") {
+            // Keep the last observed state; a publishing lock is not failure.
+            setTask((current) =>
+              current?.task_id === id ? { ...current } : current,
+            );
+            return;
+          }
           setTracking(false);
           setError(
             "自动读取已暂停，后台任务状态未知；请刷新当前任务，不会重新调用模型。",

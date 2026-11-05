@@ -62,6 +62,17 @@ def test_unauthorized_post_never_creates_or_calls_provider(api):
     assert data.calls==[] and data.provider_calls==[] and state(root)==before
 
 
+def test_busy_task_read_is_retryable_not_missing(api):
+    client,secret,data,_=api
+    unlock(client,secret)
+    data.failure=routes.LockTimeout('TEST_ONLY publishing')
+    response=client.get(BASE+'/tasks/TEST_ONLY-task')
+    assert response.status_code==503
+    assert response.json()['status']=='LIVE_STATE_BUSY'
+    assert response.headers['retry-after']=='3'
+    assert not data.provider_calls
+
+
 def test_public_get_and_model_status_no_account_no_network_no_writes(api):
     client,_,data,root=api
     before=state(root)

@@ -251,6 +251,22 @@ it("pauses polling on authorization failure and preserves task for manual refres
   expect(calls.refresh).toHaveBeenCalledTimes(1);
   expect(button("刷新当前任务").props.disabled).toBeFalsy();
 });
+it("retries a publishing lock without marking the task missing", async () => {
+  vi.useFakeTimers();
+  await click("新Agent经营研究");
+  calls.history.mockResolvedValue({ items: [task({ status: "RUNNING" })] });
+  await click("读取已有经营研究任务");
+  calls.refresh
+    .mockRejectedValueOnce(new ApiError(503, "LIVE_STATE_BUSY", "TEST_ONLY"))
+    .mockResolvedValue(task({ status: "SUCCEEDED" }));
+  render();
+  await vi.advanceTimersByTimeAsync(3000);
+  expect(shown()).not.toContain("自动读取已暂停");
+  await vi.advanceTimersByTimeAsync(3000);
+  render();
+  expect(calls.refresh).toHaveBeenCalledTimes(2);
+  expect(calls.start).not.toHaveBeenCalled();
+});
 it("does not block task controls on a slow economic replay", async () => {
   calls.publicRead.mockReturnValue(new Promise(() => {}));
   await click("新Agent经营研究");

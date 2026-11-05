@@ -102,6 +102,10 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 value["controller_finalization"]=waiting
                 return reply(review_projection(value))
             return reply(review_projection(service.read(task_id)))
+        except LockTimeout:
+            return JSONResponse(dict(action="no_order",status="LIVE_STATE_BUSY",
+                detail="任务正在封存状态，请稍后继续读取；这不表示任务不存在或失败。"),
+                status_code=503,headers={"Cache-Control":"no-store","Retry-After":"3"})
         except (ValueError,OSError,KeyError,RuntimeError,TypeError):
             return reply(dict(action="no_order",status="LIVE_TASK_UNAVAILABLE"),404)
 
