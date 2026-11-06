@@ -186,7 +186,18 @@ def collect_inputs(root: Path, output_dir: Path, allow_network: bool, *,
             if role == 'official':
                 binding = _collect_official(root, directory, result['errors'])
             elif role == 'financial':
-                payload = financial_builder(root=root, output_dir=directory, collect_public=True)
+                # The public annual-summary provider covers more than this
+                # screen.  Bind its observations to the exact official SSE
+                # source collected above, so missing providers are visible as
+                # coverage gaps rather than silent out-of-scope rows.
+                from .public_financial_snapshot import sse_main_board_scope
+                official = json.loads((root / result['inputs']['official']['path']).read_bytes())
+                scope = sse_main_board_scope(
+                    records=official['records'],
+                    source_sha256=result['inputs']['official']['raw']['sha256'],
+                )
+                payload = financial_builder(root=root, output_dir=directory,
+                    collect_public=True, public_scope=scope)
                 fetched = _now().isoformat()
                 binding = _save(root, directory, role + '.json', _json(payload), fetched)
                 financial_verifier(root=root, payload=payload, evaluation_at=_now())
