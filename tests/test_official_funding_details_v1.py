@@ -101,7 +101,7 @@ def test_single_column_unknown_not_zero(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("key,value", [
-    ("sha256", "0"*64), ("symbol", "600519"),
+    ("sha256", "0"*64),
     ("available_at", "2027-01-01T00:00:00+00:00"),
     ("available_at", "2026-01-01T00:00:00+00:00"),
     ("source_url", "https://example.com/finalpage/2026-04-30/123.PDF"),
@@ -115,6 +115,16 @@ def test_source_guards(tmp_path, monkeypatch, key, value):
         m.load(tmp_path, pin(path, tmp_path), NOW)
 
 
+def test_issuer_mismatch_is_retained_as_source_error_not_admitted(tmp_path, monkeypatch):
+    path, source = fixture(tmp_path, monkeypatch)
+    source["symbol"] = "600519"
+    path.write_text(json.dumps(dict(schema_version=m.VERSION, sources=[source])), encoding="utf-8")
+    result = m.load(tmp_path, pin(path, tmp_path), NOW)
+    assert result["status"] == "UNAVAILABLE"
+    assert result["observations"] == []
+    assert result["errors"][0]["message"] == "ISSUER_IDENTITY_MISMATCH"
+
+
 def test_manifest_hash_and_duplicate(tmp_path, monkeypatch):
     path, source = fixture(tmp_path, monkeypatch)
     binding = pin(path, tmp_path)
@@ -123,6 +133,53 @@ def test_manifest_hash_and_duplicate(tmp_path, monkeypatch):
         m.load(tmp_path, binding, NOW)
     with pytest.raises(ValueError, match="DUPLICATE_SOURCE"):
         m.load(tmp_path, pin(path, tmp_path), NOW)
+
+
+def test_one_unparseable_original_does_not_discard_other_bound_sources(tmp_path, monkeypatch):
+    path, source = fixture(tmp_path, monkeypatch)
+    second = tmp_path / "SECOND.pdf"
+    second.write_bytes(b"TEST_ONLY_SECOND")
+    rejected = dict(source, symbol="600888", path="SECOND.pdf",
+                    sha256=hashlib.sha256(second.read_bytes()).hexdigest(),
+                    source_url="https://static.cninfo.com.cn/finalpage/2026-04-30/124.PDF")
+    path.write_text(json.dumps(dict(schema_version=m.VERSION, sources=[source, rejected])), encoding="utf-8")
+    original_extract = m.extract_pages
+    monkeypatch.setattr(m, "extract_pages", lambda value: (_ for _ in ()).throw(ValueError("PDF_LAYOUT_UNSUPPORTED"))
+                        if Path(value).name == "SECOND.pdf" else original_extract(value))
+    result = m.load(tmp_path, pin(path, tmp_path), NOW)
+    assert result["status"] == "PARTIAL"
+    assert result["observations"]
+    assert result["errors"] == [dict(symbol="600888", period="2025-12-31", error_type="ValueError",
+                                       message="PDF_LAYOUT_UNSUPPORTED",
+                                       source_url=rejected["source_url"], sha256=rejected["sha256"])]
+
+
+def test_bounded_annual_collection_archives_exact_period_only(tmp_path, monkeypatch):
+    original = tmp_path / "downloaded.pdf"
+    original.write_bytes(b"%PDF-TEST-ONLY")
+    fetched = datetime(2026, 11, 2, tzinfo=timezone.utc)
+    monkeypatch.setattr(m, "collect_latest_reports", lambda symbols, directory: [
+        dict(symbol="600887", report_kind="annual", report_period="2025-12-31",
+             source_url="https://static.cninfo.com.cn/finalpage/2026-04-30/123.PDF",
+             local_path=str(original), fetched_at=fetched),
+        dict(symbol="600888", report_kind="annual", report_period="2024-12-31",
+             source_url="https://static.cninfo.com.cn/finalpage/2025-04-30/124.PDF",
+             local_path=str(original), fetched_at=fetched),
+    ])
+    binding = m.collect_annual_sources(tmp_path, "runtime/annual", symbols=["600887", "600888"],
+                                       period="2025-12-31", allow_network=True)
+    manifest = json.loads((tmp_path / binding["path"]).read_text(encoding="utf-8"))
+    assert manifest["collection"]["status"] == "PARTIAL"
+    assert [row["symbol"] for row in manifest["sources"]] == ["600887"]
+    assert manifest["sources"][0]["path"] == "downloaded.pdf"
+    assert manifest["collection"]["failures"][0]["symbol"] == "600888"
+
+
+@pytest.mark.parametrize("symbols", [[], ["600887"] * 2, ["600887"] * 6, ["not-a-code"]])
+def test_bounded_annual_collection_rejects_invalid_budget(tmp_path, symbols):
+    with pytest.raises(ValueError):
+        m.collect_annual_sources(tmp_path, "runtime/annual", symbols=symbols,
+                                 period="2025-12-31", allow_network=True)
 
 
 def test_real_cached_official_pdfs(tmp_path):

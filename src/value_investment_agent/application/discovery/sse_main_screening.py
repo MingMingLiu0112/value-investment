@@ -117,9 +117,11 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
         debt_points.extend(p for p in debt_observations(debt['balance'],period=debt['period']) if p['symbol'] in symbols)
         generated=max(generated,datetime.fromisoformat(debt['available_at']))
         supplement_errors.extend(debt['errors'])
-    official_observations=[];official_financial=[];official_balance_adoptions=[];native_revalidated_points=[]
+    official_observations=[];official_financial=[];official_balance_adoptions=[];native_revalidated_points=[];official_errors_by_symbol={}
     if inputs.get('official_funding_supplement'):
         funding=official_funding.load(root,inputs['official_funding_supplement'],now)
+        supplement_errors.extend(funding.get('errors', []))
+        official_errors_by_symbol={row['symbol']:row for row in funding.get('errors', [])}
         official_financial=funding.get('financial_observations',[])
         for packet in funding.get('balance_packets',[]):
             source=RetainedAnnualSource(**packet['source'])
@@ -219,6 +221,11 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
             row['reason']='；'.join(labels[e['channel']]+'：'+(e.get('trigger_reasons') or [e['reason']])[0] for e in ev if e['channel'] in row['channels'])
         if comparison['conflict_count']:
             row['gaps'].insert(0,'独立供应商数值冲突：'+str(comparison['conflict_count'])+'项；保留差异，不放行。')
+        if debt_view['official_evidence_count']:
+            row['gaps'].insert(0,'已自动归档年度报告并识别'+str(debt_view['official_evidence_count'])+
+                               '项融资负债；仍缺附注覆盖证明，不能合成为完整有息负债。')
+        if symbol in official_errors_by_symbol:
+            row['gaps'].insert(0,'年度报告已归档但解析未通过：'+official_errors_by_symbol[symbol]['message']+'；该公司保持待补证。')
         row['gaps']+=['财务及分红为初筛来源观察，尚非完整法定事实核验。','尚未完成企业经营、分红持续性和适用估值研究。','行情真实交易日未单独核验，不形成当前条件买价。']
         row.update(reference_price=str(quote.current_price) if quote and quote.current_price is not None else None,
                    quote_date=None,quote_observed_at=payload['tencent'].get('fetched_at'),
@@ -257,10 +264,12 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
     return result,receipt_payload
 
 
-def supplement_financial_sources(*,root,inputs,output,comparison_batches=1):
+def supplement_financial_sources(*,root,inputs,output,comparison_batches=1,official_source_budget=3):
     """Bounded source recovery on the existing screen, not a second research queue."""
     if type(comparison_batches) is not int or not 1<=comparison_batches<=10:
         raise ValueError('COMPARISON_BATCH_BUDGET_1_TO_10_REQUIRED')
+    if type(official_source_budget) is not int or not 1<=official_source_budget<=official_funding.MAX_AUTOMATIC_SOURCES:
+        raise ValueError('OFFICIAL_SOURCE_BUDGET_1_TO_5_REQUIRED')
     now=datetime.now(timezone.utc)
     base=sources.verify_inputs(root,inputs,now,financial_verifier=verify_public_supplement)
     period=(base['financial'].get('public_financial_input') or {}).get('period')
@@ -273,6 +282,21 @@ def supplement_financial_sources(*,root,inputs,output,comparison_batches=1):
         if (now-datetime.fromisoformat(cached['available_at'])).total_seconds()>86400:
             inputs['debt_supplement']=debt_source.collect(root,output/'debt-details',period,True)
     current,_=compile_inputs(root=root,inputs=inputs,now=datetime.now(timezone.utc),run_id='FINANCIAL_SOURCE_SELECTION_ONLY')
+    # Archive statutory annual originals for a small, deterministic slice of the
+    # current research queue.  This improves evidence quality without turning a
+    # daily first-pass screen into an unbounded 1,700-company filing crawl.
+    if not inputs.get('official_funding_supplement'):
+        official_symbols=[row['symbol'] for row in current['rows']
+                          if row['status']=='CANDIDATE' and row['applicability']['kind'] is None]
+        selected=official_symbols[:official_source_budget]
+        if selected:
+            candidate_binding=official_funding.collect_annual_sources(
+                root, output/'official-funding', symbols=selected, period=period, allow_network=True)
+            collected=json.loads((root/candidate_binding['path']).read_bytes())
+            # A failed individual archive is retained in its manifest, but an
+            # empty manifest must not be passed to the strict source parser.
+            if collected.get('sources'):
+                inputs['official_funding_supplement']=candidate_binding
     bindings=list(inputs.get('sina_supplements',[]));seen=set()
     for binding in bindings:
         cached=sina_source.load(root,binding,datetime.now(timezone.utc));seen.update(cached['symbols'])
@@ -285,7 +309,7 @@ def supplement_financial_sources(*,root,inputs,output,comparison_batches=1):
     return inputs
 
 
-def refresh(*,root,allow_network=False,comparison_batches=1):
+def refresh(*,root,allow_network=False,comparison_batches=1,official_source_budget=3):
     root=Path(root).resolve()
     if allow_network is not True:raise ValueError('EXPLICIT_PUBLIC_NETWORK_AUTHORIZATION_REQUIRED')
     run_id='sse-main-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')+'-'+uuid4().hex[:8]
@@ -296,12 +320,13 @@ def refresh(*,root,allow_network=False,comparison_batches=1):
     period=(verified['financial'].get('public_financial_input') or {}).get('period')
     if not period:raise ValueError('EXPLICIT_COLLECTED_ANNUAL_PERIOD_REQUIRED')
     inputs['financial_supplement']=three_statements.collect(root,output/'three-statements',period,True)
-    supplement_financial_sources(root=root,inputs=inputs,output=output,comparison_batches=comparison_batches)
+    supplement_financial_sources(root=root,inputs=inputs,output=output,comparison_batches=comparison_batches,
+                                 official_source_budget=official_source_budget)
     return publish_inputs(root=root, inputs=inputs, output=output, run_id=run_id)
 
 
 
-def enrich_current(*,root,allow_network=False,comparison_batches=1):
+def enrich_current(*,root,allow_network=False,comparison_batches=1,official_source_budget=3):
     if allow_network is not True:raise ValueError('EXPLICIT_PUBLIC_NETWORK_AUTHORIZATION_REQUIRED')
     root=Path(root).resolve()
     pointer=json.loads((root/POINTER).read_bytes())
@@ -315,7 +340,8 @@ def enrich_current(*,root,allow_network=False,comparison_batches=1):
     # Reuse the verified same-period original; retain its acquisition clock.
     if inputs.get('financial_supplement'):three_statements.load(root,inputs['financial_supplement'],datetime.now(timezone.utc))
     else:inputs['financial_supplement']=three_statements.collect(root,output/'three-statements',period,True)
-    supplement_financial_sources(root=root,inputs=inputs,output=output,comparison_batches=comparison_batches)
+    supplement_financial_sources(root=root,inputs=inputs,output=output,comparison_batches=comparison_batches,
+                                 official_source_budget=official_source_budget)
     return publish_inputs(root=root,inputs=inputs,output=output,run_id=run_id)
 
 

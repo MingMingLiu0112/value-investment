@@ -1,5 +1,5 @@
 """Read-only, source-bound financing observations; never exhaustive debt admission."""
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from decimal import Decimal
 import hashlib
 import json
@@ -15,10 +15,12 @@ from .value_evidence_enrichment_v1 import (
     extract_debt_balance_candidates, _statement_unit, _consolidated_currency_context,
 )
 from ...filing_extract import extract_candidates_from_pages
+from ...disclosures import collect_latest_reports
 
 VERSION = "official-funding-details-v1"
 FINANCIAL_FIELDS = ("cash", "group_net_profit", "operating_cash_flow",
                     "total_assets", "total_liabilities")
+MAX_AUTOMATIC_SOURCES = 5
 
 
 def _financial_rows(pages, source):
@@ -113,6 +115,58 @@ def _time(value):
     return result
 
 
+def _sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def collect_annual_sources(root, output_dir, *, symbols, period, allow_network):
+    """Archive a bounded set of exact-period statutory annual reports.
+
+    This is an evidence acquisition adapter, not a financial admission decision:
+    only the existing ``load`` parser can decide which printed cells are usable.
+    The bounded list is supplied by the current research queue, never inferred
+    from a company name or hard-coded security list.
+    """
+    if allow_network is not True:
+        raise ValueError("EXPLICIT_PUBLIC_NETWORK_AUTHORIZATION_REQUIRED")
+    if (not isinstance(period, str) or not re.fullmatch(r"[0-9]{4}-12-31", period)
+            or not isinstance(symbols, list) or not 1 <= len(symbols) <= MAX_AUTOMATIC_SOURCES
+            or any(not isinstance(symbol, str) or not re.fullmatch(r"[0-9]{6}", symbol) for symbol in symbols)
+            or len(set(symbols)) != len(symbols)):
+        raise ValueError("INVALID_BOUNDED_ANNUAL_SOURCE_REQUEST")
+    root = Path(root).resolve()
+    output = (Path(output_dir) if Path(output_dir).is_absolute() else root / output_dir).resolve()
+    if not output.is_relative_to(root) or output.exists():
+        raise ValueError("NEW_PROJECT_RELATIVE_OUTPUT_REQUIRED")
+    output.mkdir(parents=True)
+    reports = collect_latest_reports(symbols, output / "originals")
+    sources, failures = [], []
+    for symbol in symbols:
+        annual = [row for row in reports if row["symbol"] == symbol and row["report_kind"] == "annual"
+                  and row["report_period"] == period]
+        if len(annual) != 1:
+            failures.append(dict(symbol=symbol, reason="EXACT_PERIOD_ANNUAL_REPORT_NOT_AVAILABLE",
+                                 found_periods=sorted({row["report_period"] for row in reports
+                                                       if row["symbol"] == symbol and row["report_kind"] == "annual"})))
+            continue
+        row = annual[0]
+        file_path = Path(row["local_path"]).resolve()
+        if not file_path.is_relative_to(root):
+            raise ValueError("ARCHIVED_ANNUAL_OUTSIDE_PROJECT")
+        sources.append(dict(symbol=symbol, period=period,
+                            path=file_path.relative_to(root).as_posix(), sha256=_sha(file_path),
+                            source_url=row["source_url"], available_at=row["fetched_at"].astimezone(timezone.utc).isoformat()))
+    manifest = dict(schema_version=VERSION, action="no_order", sources=sources,
+                    collection=dict(requested_symbols=symbols, period=period,
+                                    status="COMPLETE" if len(sources) == len(symbols) else "PARTIAL",
+                                    failures=failures,
+                                    collected_at=datetime.now(timezone.utc).isoformat()))
+    manifest_path = output / "manifest.json"
+    manifest_path.write_bytes(json.dumps(manifest, ensure_ascii=False, sort_keys=True,
+                                         separators=(",", ":")).encode("utf-8"))
+    return dict(path=manifest_path.relative_to(root).as_posix(), sha256=_sha(manifest_path))
+
+
 def _bound(root, binding):
     if not isinstance(binding, dict) or set(binding) != {"path", "sha256"}:
         raise ValueError("INVALID_BINDING")
@@ -201,12 +255,12 @@ def load(root, binding, evaluation_at):
     _, raw = _bound(root, binding)
     manifest = json.loads(raw)
     if (not isinstance(manifest, dict)
-            or set(manifest) - {"schema_version", "sources", "action"}
+            or set(manifest) - {"schema_version", "sources", "action", "collection"}
             or manifest.get("schema_version") != VERSION
             or manifest.get("action", "no_order") != "no_order"
             or not isinstance(manifest.get("sources"), list) or not manifest["sources"]):
         raise ValueError("INVALID_MANIFEST")
-    observations, financial_observations, seen = [], [], set()
+    observations, financial_observations, seen, errors = [], [], set(), []
     balance_packets=[]
     for source in manifest["sources"]:
         if not isinstance(source, dict) or set(source) != {
@@ -228,24 +282,38 @@ def load(root, binding, evaluation_at):
             raise ValueError("DUPLICATE_SOURCE")
         seen.update((key, source["sha256"]))
         pin = {k: source[k] for k in ("path", "sha256")}
+        # Bind and hash-check the source before isolating parser failures.  A
+        # corrupted path/hash is an invalid manifest, not a recoverable PDF
+        # layout problem.
         path, _ = _bound(root, pin)
-        validate_pdf_original(path)
-        pages = extract_pages(path)
-        rows = _extract(pages, source)
-        financial_observations.extend(_financial_rows(pages, source))
-        balance_packets.append(dict(source=source,packet=dict(
-            balance_reconciliation_candidates=extract_debt_balance_candidates(pages,source['period'],balance_totals=True,include_equity=True),
-            identity=dict(implementation_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()))))
-        _bound(root, pin)
-        if not rows:
-            raise ValueError("NO_VERIFIABLE_FUNDING_ROWS")
-        observations.extend(rows)
+        try:
+            validate_pdf_original(path)
+            pages = extract_pages(path)
+            rows = _extract(pages, source)
+            financial = _financial_rows(pages, source)
+            balance_packets.append(dict(source=source,packet=dict(
+                balance_reconciliation_candidates=extract_debt_balance_candidates(pages,source['period'],balance_totals=True,include_equity=True),
+                identity=dict(implementation_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()))))
+            _bound(root, pin)
+            if not rows and not financial:
+                raise ValueError("NO_VERIFIABLE_FINANCIAL_OR_FUNDING_ROWS")
+            observations.extend(rows)
+            financial_observations.extend(financial)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            # A PDF layout or issuer-identity failure belongs to this source.
+            # It must remain visible and block this issuer only, not discard
+            # separately pinned originals that can still be replayed.
+            errors.append(dict(symbol=source["symbol"], period=source["period"],
+                               error_type=type(error).__name__, message=str(error)[:300],
+                               source_url=source["source_url"], sha256=source["sha256"]))
     _bound(root, binding)
-    return dict(schema_version=VERSION, status="PARTIAL", action="no_order",
+    return dict(schema_version=VERSION,
+                status="PARTIAL" if (observations or financial_observations) else "UNAVAILABLE",
                 financial_fact_admitted=False, complete_debt_verified=False,
                 interest_bearing_debt=None, observations=observations,
                 financial_observations=financial_observations,balance_packets=balance_packets,
                 manifest_binding=dict(binding), evaluation_at=now.isoformat(),
+                errors=errors,
                 unknowns=["EXHAUSTIVE_FINANCING_SCOPE_NOT_PROVEN",
                           "COMPLEX_MOVEMENT_TABLES_NOT_SUPPORTED",
                           "BLANK_OR_SINGLE_COLUMN_IS_NOT_ZERO"])
