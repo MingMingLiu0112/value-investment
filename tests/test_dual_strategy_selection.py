@@ -85,7 +85,14 @@ def test_source_bound_value_lane_preserves_real_screen_pagination(tmp_path, monk
             'counts': {'universe': 1700, 'candidate': 738},
             'financial_data_summary': {'available_fields': 12},
             'pagination': {'offset': 10, 'limit': 30, 'total': 738},
-            'items': [{'symbol': '600323', 'name': '瀚蓝环境', 'action': 'no_order'}],
+            'items': [{'symbol': '600323', 'name': '瀚蓝环境', 'action': 'no_order',
+                       'debt_details': {'official_scope_review': {
+                           'status': 'PARTIAL_OFFICIAL_COMPONENTS',
+                           'missing_components': ['bonds_payable'],
+                           'matched_component_count': 1,
+                           'conflicting_component_count': 0,
+                           'complete_debt_verified': False,
+                       }}}],
         }
 
     monkeypatch.setattr('value_investment_agent.application.discovery.sse_main_screening.read_screen', source_screen)
@@ -95,6 +102,7 @@ def test_source_bound_value_lane_preserves_real_screen_pagination(tmp_path, monk
     assert lane['pagination']['total'] == 738
     assert lane['items'][0]['company_name'] == '瀚蓝环境'
     assert lane['items'][0]['research_priority_eligible'] is True
+    assert lane['items'][0]['debt_scope_review']['matched_component_count'] == 1
     assert lane['formal_eligibility'] is lane['trade_eligible'] is False
     assert lane['evidence_capability']['no_order'] is True
     assert lane['evidence_capability']['full_debt_scope_verified_count'] == 0

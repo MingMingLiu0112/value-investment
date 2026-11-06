@@ -69,6 +69,13 @@ export interface SelectionRow {
     missing: number;
     conflicting: number;
   };
+  debt_scope_review?: {
+    status?: string;
+    missing_components?: string[];
+    matched_component_count?: number;
+    conflicting_component_count?: number;
+    complete_debt_verified?: boolean;
+  };
 }
 export interface SelectionLane {
   evidence_capability?: {

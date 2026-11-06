@@ -103,6 +103,14 @@ def select_source_bound_sse_main_value_candidates(*, root, now, limit=30,
             'financial_quality_status', 'observation_summary',
             'research_priority_rank', 'reason', 'status',
         ) if key in item}
+        scope = ((item.get('debt_details') or {}).get('official_scope_review') or {})
+        if scope:
+            row['debt_scope_review'] = {
+                key: deepcopy(scope.get(key)) for key in (
+                    'status', 'missing_components', 'matched_component_count',
+                    'conflicting_component_count', 'complete_debt_verified',
+                )
+            }
         row['company_name'] = row.get('company_name') or row.get('name')
         row['research_priority_eligible'] = True
         rows.append(row)

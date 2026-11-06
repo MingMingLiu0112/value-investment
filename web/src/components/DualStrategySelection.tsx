@@ -506,6 +506,17 @@ function SelectionPool({ mode }: { mode: "value" | "hotspot" }) {
                     周期口径：{row.cycle_status}
                     。满足观察条件不等于已证明企业质量。
                   </p>
+                  {row.debt_scope_review && (
+                    <p>
+                      年报债务范围诊断：{row.debt_scope_review.status || "未形成"}；
+                      可安全逐项比对 {row.debt_scope_review.matched_component_count ?? 0} 项；
+                      金额冲突 {row.debt_scope_review.conflicting_component_count ?? 0} 项；
+                      待补类别 {row.debt_scope_review.missing_components?.length ?? 0} 项。
+                      {row.debt_scope_review.complete_debt_verified
+                        ? ""
+                        : " 未完成完整有息负债正式核验。"}
+                    </p>
+                  )}
                   <details>
                     <summary>四通道初筛依据与未完成事项</summary>
                     <ul>
