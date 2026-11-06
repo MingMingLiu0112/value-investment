@@ -96,3 +96,6 @@ def test_source_bound_value_lane_preserves_real_screen_pagination(tmp_path, monk
     assert lane['items'][0]['company_name'] == '瀚蓝环境'
     assert lane['items'][0]['research_priority_eligible'] is True
     assert lane['formal_eligibility'] is lane['trade_eligible'] is False
+    assert lane['evidence_capability']['no_order'] is True
+    assert lane['evidence_capability']['full_debt_scope_verified_count'] == 0
+    assert lane['evidence_capability']['official_annual_archive_count'] == 0

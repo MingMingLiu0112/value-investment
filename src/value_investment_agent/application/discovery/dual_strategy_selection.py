@@ -110,6 +110,26 @@ def select_source_bound_sse_main_value_candidates(*, root, now, limit=30,
     data_status = ('PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS'
                    if source_status == 'COMPLETE_INPUTS'
                    else source_status)
+    comparison = screen.get('financial_source_comparison') or {}
+    adoptions = comparison.get('official_balance_adoptions') or []
+    # This is deliberately a compact presentation contract.  It describes the
+    # current source-bound screening run; it is not a second evidence store and
+    # cannot upgrade an observation into a formal financial fact.
+    evidence_capability = dict(
+        schema_version='sse-main-ab-capability-v1',
+        official_annual_archive_status=('SOURCE_BOUND_PARTIAL' if adoptions
+                                        else 'NOT_AVAILABLE'),
+        official_annual_archive_count=len(adoptions),
+        financing_observation_count=(comparison.get('debt_companies_with_identified_amount') or 0),
+        formal_fact_admission_count=sum(
+            item.get('status') == 'FACT_ADMITTED' for item in adoptions),
+        full_debt_scope_verified_count=sum(
+            bool((item.get('debt_details') or {}).get('complete_debt_verified'))
+            for item in screen.get('items') or []),
+        source_comparison_status=('PARTIAL' if comparison else 'NOT_AVAILABLE'),
+        error_count=len(comparison.get('errors') or []),
+        no_order=True,
+    )
     return dict(
         schema_version='sse-main-value-selection-projection-v1',
         action='no_order',
@@ -137,6 +157,7 @@ def select_source_bound_sse_main_value_candidates(*, root, now, limit=30,
                              failed_venues=[], scope='SSE_MAIN_A_ONLY',
                              status=screen.get('status')),
         screening_status=screen.get('status'),
+        evidence_capability=evidence_capability,
     )
 
 

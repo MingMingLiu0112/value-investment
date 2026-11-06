@@ -262,6 +262,29 @@ function SelectionPool({ mode }: { mode: "value" | "hotspot" }) {
           队列排序：观察条件满足数优先，再比较不满足数、缺失数及既有初筛通道数；相同条件以证券代码排序，不按预期收益排名。
         </p>
       )}
+      {mode === "value" && lane.evidence_capability && (
+        <Alert
+          type="info"
+          showIcon
+          message="A/B 当前自动运行能力"
+          description={
+            <ul style={{ margin: "4px 0 0", paddingInlineStart: 20 }}>
+              <li>
+                A 公开资料与证据：SSE 主板清单、公开财务观察和限定候选的年度报告归档已接通；每份归档保留来源、报告期、取得时间与 SHA-256，单份解析失败不会中断其他公司。
+              </li>
+              <li>
+                B 四通道初筛：质量、现金回报、价值、周期四条线索共同生成研究优先队列；这是研究排序，不是买入推荐。
+              </li>
+              <li>
+                本次证据：年度报告归档 {lane.evidence_capability.official_annual_archive_count} 份；已识别融资负债的公司 {lane.evidence_capability.financing_observation_count} 家；完整有息负债范围正式核验 {lane.evidence_capability.full_debt_scope_verified_count} 家；已从年报接入的正式余额表事实 {lane.evidence_capability.formal_fact_admission_count} 家。
+              </li>
+              <li>
+                当前边界：完整有息负债范围、当前合格报价及后续公司研究尚未自动完成，因此本页不产生条件买价或交易资格。
+              </li>
+            </ul>
+          }
+        />
+      )}
       <Alert
         type="info"
         showIcon

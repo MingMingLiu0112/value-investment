@@ -71,6 +71,17 @@ export interface SelectionRow {
   };
 }
 export interface SelectionLane {
+  evidence_capability?: {
+    schema_version: string;
+    official_annual_archive_status: string;
+    official_annual_archive_count: number;
+    financing_observation_count: number;
+    formal_fact_admission_count: number;
+    full_debt_scope_verified_count: number;
+    source_comparison_status: string;
+    error_count: number;
+    no_order: boolean;
+  };
   screening_scope?: {
     all_a_complete: boolean;
     covered_venues: string[];
