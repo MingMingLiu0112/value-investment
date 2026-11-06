@@ -29,6 +29,7 @@ from ...infrastructure.screening import sina_financial_statements_v1 as sina_sou
 from ...infrastructure.screening import official_funding_details_v1 as official_funding
 from ..research.value_evidence_enrichment_v1 import _reconcile_official_balance_ratio
 from ...infrastructure.screening.value_evidence_enrichment_v1 import RetainedAnnualSource
+from .official_debt_scope_observation_v1 import review as review_official_debt_scope
 
 POINTER = '.tmp/sse-main-screening-current.json'
 SCOPE = 'SSE_MAIN_A_ONLY'
@@ -209,6 +210,10 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
         debt_view['official_components']=[dict(field=r['field_name'],label=official_labels.get(r['field_name'],r.get('source_label') or r['field_name']),value=r.get('value'),unit=r.get('unit'),page=r.get('page'),excerpt=r.get('excerpt'),source_url=r['source_binding']['source_url'],sha256=r['source_binding']['sha256']) for r in native_official]
         debt_view['official_evidence_count']=len(native_official)
         debt_view['official_summary']=summarize_official_financing(native_official,symbol=symbol,period=period,evaluated_at=now)
+        debt_view['official_scope_review']=review_official_debt_scope(
+            symbol=symbol, period=period,
+            official_summary=debt_view['official_summary'],
+            provider_components=debt_view['components'])
         debt_view['official_financial_observations']=[r for r in official_financial if r['symbol']==symbol]
         row=dict(symbol=symbol,company_name=security['name'],name=security['name'],
             industry=quote.industry if quote else security.get('official_industry'),
@@ -224,6 +229,10 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
         if debt_view['official_evidence_count']:
             row['gaps'].insert(0,'已自动归档年度报告并识别'+str(debt_view['official_evidence_count'])+
                                '项融资负债；仍缺附注覆盖证明，不能合成为完整有息负债。')
+        if debt_view['official_scope_review']['missing_components']:
+            row['gaps'].insert(0,'有息负债范围待补：'+
+                               '、'.join(debt_view['official_scope_review']['missing_components'])+
+                               '；未列报不按零处理。')
         if symbol in official_errors_by_symbol:
             row['gaps'].insert(0,'年度报告已归档但解析未通过：'+official_errors_by_symbol[symbol]['message']+'；该公司保持待补证。')
         row['gaps']+=['财务及分红为初筛来源观察，尚非完整法定事实核验。','尚未完成企业经营、分红持续性和适用估值研究。','行情真实交易日未单独核验，不形成当前条件买价。']
