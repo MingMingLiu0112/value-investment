@@ -2,6 +2,7 @@
 from datetime import datetime
 from copy import deepcopy
 from hashlib import sha256
+import inspect
 import json
 from pathlib import Path
 
@@ -21,9 +22,24 @@ def _no_new_authority(value):
             _no_new_authority(item)
 
 
+def _invoke_selector(selector, *, root, now, limit, offset, query):
+    """Call old selectors unchanged while allowing a source-bound paged reader.
+
+    The SSE main-board reader owns its pagination because it replays and verifies
+    the bounded slice selected from an immutable screen artifact.  Legacy
+    selectors continue to receive their original three arguments.
+    """
+    parameters = inspect.signature(selector).parameters
+    if 'offset' in parameters or any(p.kind is inspect.Parameter.VAR_KEYWORD
+                                    for p in parameters.values()):
+        return selector(root=root, now=now, limit=limit, offset=offset, query=query)
+    return selector(root=root, now=now, limit=limit)
+
+
 def _lane(selector, *, root, now, limit, offset=0, query='', strategy='value'):
     try:
-        value = selector(root=root, now=now, limit=30)
+        value = _invoke_selector(selector, root=root, now=now, limit=30,
+                                 offset=offset, query=query)
         if not isinstance(value, dict) or value.get('action') != 'no_order':
             raise ValueError('Invalid selection envelope')
         _no_new_authority(value)
@@ -32,12 +48,20 @@ def _lane(selector, *, root, now, limit, offset=0, query='', strategy='value'):
         # Keep full-universe coverage, but never ship thousands of evidence rows.
         projected = dict(value)
         rows = list(value.get('items') or [])
-        rows = [r for r in rows if r.get('research_priority_eligible') is True] if strategy == 'value' else [r for r in rows if r.get('selection_status') != 'EXCLUDED']
-        needle = query.strip().casefold()
-        rows = [r for r in rows if not needle or any(needle in str(r.get(k, '')).casefold() for k in ('symbol', 'name', 'company_name', 'industry'))]
+        source_paged = value.get('presentation_pagination_owned') is True
+        if not source_paged:
+            rows = [r for r in rows if r.get('research_priority_eligible') is True] if strategy == 'value' else [r for r in rows if r.get('selection_status') != 'EXCLUDED']
+            needle = query.strip().casefold()
+            rows = [r for r in rows if not needle or any(needle in str(r.get(k, '')).casefold() for k in ('symbol', 'name', 'company_name', 'industry'))]
         unavailable = value.get('status') in {'UNASSESSABLE', 'UNAVAILABLE', 'SOURCE_OR_SELECTION_UNAVAILABLE'} or value.get('data_status') == 'SOURCE_REVALIDATION_FAILED'
-        projected['pagination'] = dict(offset=offset, limit=limit, total=None if unavailable else len(rows))
-        projected['items'] = deepcopy(rows[offset:offset + limit])
+        if source_paged:
+            projected['pagination'] = deepcopy(value.get('pagination') or
+                                               dict(offset=offset, limit=limit,
+                                                    total=None if unavailable else len(rows)))
+            projected['items'] = deepcopy(rows)
+        else:
+            projected['pagination'] = dict(offset=offset, limit=limit, total=None if unavailable else len(rows))
+            projected['items'] = deepcopy(rows[offset:offset + limit])
         projected['shortlist'] = deepcopy(projected['items'])
         projected['presentation_scope'] = 'BOUNDED_RESEARCH_ROWS_FULL_COVERAGE_COUNTS'
         projected.pop('diagnostic', None)
@@ -51,6 +75,69 @@ def _lane(selector, *, root, now, limit, offset=0, query='', strategy='value'):
             blockers=['SELECTION_SOURCE_OR_CONTRACT_NOT_VERIFIED'], action='no_order',
             formal_eligibility=False, trade_eligible=False,
             pagination=dict(offset=offset, limit=limit, total=None))
+
+
+def select_source_bound_sse_main_value_candidates(*, root, now, limit=30,
+                                                   offset=0, query=''):
+    """Present the current verified SSE main-board screen as a value research lane.
+
+    This adapter changes presentation only.  It neither re-screens securities
+    nor upgrades provider observations to formal facts or trade eligibility.
+    """
+    from .sse_main_screening import read_screen
+
+    screen = read_screen(root=root, now=now, offset=offset, limit=limit,
+                         query=query, status='CANDIDATE')
+    counts = screen.get('counts') or {}
+    rows = []
+    for item in screen.get('items') or []:
+        # The screen artifact contains full debt and source-comparison details.
+        # Those remain available through the screening/evidence endpoints, but
+        # sending them for every table row breaches the UI response budget and
+        # previously caused the entire daily lane to fail closed.  Project only
+        # the table and expandable-row contract here.
+        row = {key: deepcopy(item.get(key)) for key in (
+            'symbol', 'company_name', 'name', 'industry', 'profile_status',
+            'cycle_status', 'conditions', 'channel_evaluations', 'blockers',
+            'gaps', 'reference_price', 'quote_date', 'quote_observed_at',
+            'financial_quality_status', 'observation_summary',
+            'research_priority_rank', 'reason', 'status',
+        ) if key in item}
+        row['company_name'] = row.get('company_name') or row.get('name')
+        row['research_priority_eligible'] = True
+        rows.append(row)
+    source_status = screen.get('source_status')
+    data_status = ('PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS'
+                   if source_status == 'COMPLETE_INPUTS'
+                   else source_status)
+    return dict(
+        schema_version='sse-main-value-selection-projection-v1',
+        action='no_order',
+        formal_eligibility=False,
+        trade_eligible=False,
+        status=screen.get('status'),
+        data_status=data_status,
+        rule_version=screen.get('rule_version'),
+        quote_date=screen.get('quote_date'),
+        available_at=screen.get('available_at'),
+        source_refs=deepcopy(screen.get('source_refs') or []),
+        blockers=deepcopy(screen.get('blockers') or []),
+        items=rows,
+        shortlist=deepcopy(rows),
+        pagination=deepcopy(screen.get('pagination') or
+                            dict(offset=offset, limit=limit, total=None)),
+        presentation_pagination_owned=True,
+        coverage=dict(
+            universe_count=counts.get('universe', 0),
+            observation_count=(screen.get('financial_data_summary') or {}).get('available_fields', 0),
+            research_queue_count=counts.get('candidate', 0),
+            official_fact_admission_count=0,
+        ),
+        screening_scope=dict(all_a_complete=False, covered_venues=['SSE'],
+                             failed_venues=[], scope='SSE_MAIN_A_ONLY',
+                             status=screen.get('status')),
+        screening_status=screen.get('status'),
+    )
 
 
 def _research_summaries(lane, *, root, now):
@@ -86,8 +173,12 @@ def build_dual_strategy_selection(*, root: Path, now: datetime, limit: int = 30,
         raise ValueError('Aware evaluation time and bounded research limit required')
     production_value = value_selector is None
     if value_selector is None:
-        from .value_candidate_selection import select_current_value_candidates
-        value_selector = select_current_value_candidates
+        from .sse_main_screening import POINTER as SSE_MAIN_POINTER
+        if (Path(root) / SSE_MAIN_POINTER).is_file():
+            value_selector = select_source_bound_sse_main_value_candidates
+        else:
+            from .value_candidate_selection import select_current_value_candidates
+            value_selector = select_current_value_candidates
     if hotspot_selector is None:
         from ..hotspot.candidate_selection import select_current_hotspot_candidates
         hotspot_selector = select_current_hotspot_candidates

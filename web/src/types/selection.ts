@@ -33,6 +33,7 @@ export interface SelectionRow {
   evidence_refs?: string[];
   channel_evaluations?: { channel: string; status: string; reason: string }[];
   blockers?: string[];
+  gaps?: string[];
   symbol: string;
   company_name?: string;
   name?: string;

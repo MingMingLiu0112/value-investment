@@ -272,7 +272,8 @@ function SelectionPool({ mode }: { mode: "value" | "hotspot" }) {
         }
       />
       <p style={{ overflowWrap: "anywhere" }}>
-        数据日期：{lane.quote_date || lane.trade_date || "未核验"} ·{" "}
+        数据日期：{lane.quote_date || lane.trade_date || "未核验"} · 更新：
+        {lane.available_at || "未提供"} ·{" "}
         {dataStates[lane.data_status || ""] || lane.data_status || lane.status}{" "}
         · 规则：{lane.rule_version}
       </p>
@@ -496,6 +497,7 @@ function SelectionPool({ mode }: { mode: "value" | "hotspot" }) {
                       {row.blockers?.map((reason) => (
                         <li key={reason}>{explain(reason)}</li>
                       ))}
+                      {row.gaps?.map((gap) => <li key={gap}>{gap}</li>)}
                     </ul>
                   </details>
                   <ul>

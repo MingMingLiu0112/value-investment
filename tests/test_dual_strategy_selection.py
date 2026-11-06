@@ -70,3 +70,29 @@ def test_web_route_is_read_only_and_contains_no_private_account_data(tmp_path, m
     assert response.headers['cache-control'] == 'no-store'
     assert response.json()['personal_risk_evaluated'] is False
     assert not list(tmp_path.rglob('*.jsonl'))
+
+
+def test_source_bound_value_lane_preserves_real_screen_pagination(tmp_path, monkeypatch):
+    from value_investment_agent.application.discovery import dual_strategy_selection as selection
+
+    def source_screen(**kwargs):
+        assert kwargs['status'] == 'CANDIDATE'
+        assert kwargs['offset'] == 10
+        assert kwargs['query'] == '环保'
+        return {
+            'action': 'no_order', 'status': 'PARTIAL',
+            'source_status': 'COMPLETE_INPUTS', 'rule_version': 'screen-v1',
+            'counts': {'universe': 1700, 'candidate': 738},
+            'financial_data_summary': {'available_fields': 12},
+            'pagination': {'offset': 10, 'limit': 30, 'total': 738},
+            'items': [{'symbol': '600323', 'name': '瀚蓝环境', 'action': 'no_order'}],
+        }
+
+    monkeypatch.setattr('value_investment_agent.application.discovery.sse_main_screening.read_screen', source_screen)
+    lane = selection.select_source_bound_sse_main_value_candidates(
+        root=tmp_path, now=NOW, offset=10, query='环保')
+    assert lane['presentation_pagination_owned'] is True
+    assert lane['pagination']['total'] == 738
+    assert lane['items'][0]['company_name'] == '瀚蓝环境'
+    assert lane['items'][0]['research_priority_eligible'] is True
+    assert lane['formal_eligibility'] is lane['trade_eligible'] is False
