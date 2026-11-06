@@ -21,7 +21,8 @@ def _missing_observations(retained, public):
         and (p['symbol'], p.get('period_label'), p.get('field_name')) not in fields)]
 
 
-def build_financial_input(*, root: Path, output_dir: Path, collect_public: bool = False) -> dict:
+def build_financial_input(*, root: Path, output_dir: Path, collect_public: bool = False,
+                          public_scope: dict | None = None) -> dict:
     now = datetime.now(timezone.utc)
     points, retained = load_retained_financial_export(
         root / 'runtime/server-export-payload.json', evaluation_at=now)
@@ -35,7 +36,7 @@ def build_financial_input(*, root: Path, output_dir: Path, collect_public: bool 
     period = str(now.year - (1 if now.month >= 5 else 2)) + '-12-31'
     try:
         binding = collect_public_annual_summary(root=root, output_dir=output_dir / 'public-financial-originals',
-                                              period=period, allow_network=True)
+                                              period=period, allow_network=True, scope=public_scope)
         public_points, info = load_public_annual_summary(root=root, binding=binding,
                                                         evaluation_at=datetime.now(timezone.utc))
     except (ValueError, KeyError, OSError) as error:

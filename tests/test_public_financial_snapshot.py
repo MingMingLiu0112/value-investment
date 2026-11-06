@@ -184,6 +184,60 @@ def test_invalid_content_is_not_retried(tmp_path, monkeypatch):
             allow_network=True, session=session)
     assert len(session.calls) == 1
 
+def test_sse_main_board_scope_binds_universe_and_reports_provider_gaps(tmp_path, monkeypatch):
+    scope = adapter.sse_main_board_scope(records=[
+        dict(symbol='600001', exchange='SSE', board='主板', security_type='A股'),
+        dict(symbol='600002', exchange='SSE', board='主板', security_type='A股'),
+        dict(symbol='000333', exchange='SZSE', board='主板', security_type='A股'),
+    ], source_sha256='a' * 64)
+    session = Session([page([row('600001'), row('000333')])])
+    monkeypatch.setattr(adapter.time, 'sleep', lambda _: None)
+    binding = adapter.collect_public_annual_summary(root=tmp_path,
+        output_dir=tmp_path / 'runtime/scoped', period='2025-12-31', allow_network=True,
+        session=session, scope=scope)
+    points, info = load(tmp_path, binding)
+    assert {point['symbol'] for point in points} == {'600001'}
+    manifest = json.loads((tmp_path / binding['path']).read_bytes())
+    assert manifest['scope'] == scope
+    assert manifest['scope_coverage'] == dict(expected_symbol_count=2, observed_symbol_count=1,
+        missing_symbols=['600002'], status='PARTIAL_PROVIDER_COVERAGE')
+    assert info['scope'] == scope and info['scope_coverage'] == manifest['scope_coverage']
+    assert info['provider_rows'] == 2
+    assert load(tmp_path, binding) == (points, info)
+
+
+def test_financial_input_preserves_a_source_scope_through_replay(tmp_path, monkeypatch):
+    scope = adapter.sse_main_board_scope(records=[
+        dict(symbol='600001', exchange='SSE', board='主板', security_type='A股'),
+        dict(symbol='600002', exchange='SSE', board='主板', security_type='A股'),
+    ], source_sha256='b' * 64)
+    observed = {}
+
+    def scoped_collect(**kwargs):
+        observed['scope'] = kwargs['scope']
+        return adapter.collect_public_annual_summary(
+            **dict(kwargs, session=Session([page([row('600001')])]))
+        )
+
+    monkeypatch.setattr(adapter.time, 'sleep', lambda _: None)
+    monkeypatch.setattr(service, 'collect_public_annual_summary', scoped_collect)
+    payload = service.build_financial_input(root=tmp_path, output_dir=tmp_path / 'runtime/new',
+                                            collect_public=True, public_scope=scope)
+    assert observed['scope'] == scope
+    assert payload['public_financial_input']['scope'] == scope
+    assert payload['public_financial_input']['scope_coverage']['missing_symbols'] == ['600002']
+    service.verify_public_supplement(root=tmp_path, payload=payload, evaluation_at=datetime.now(timezone.utc))
+
+
+@pytest.mark.parametrize('records', [
+    [dict(symbol='688001', exchange='SSE', board='主板', security_type='A股')],
+    [dict(symbol='600001', exchange='SSE', board='主板', security_type='境内存托凭证')],
+    [dict(symbol='600001', exchange='SSE', board='主板', security_type='A股')] * 2,
+])
+def test_sse_main_board_scope_rejects_invalid_official_records(records):
+    with pytest.raises(ValueError):
+        adapter.sse_main_board_scope(records=records, source_sha256='a' * 64)
+
 
 @pytest.mark.parametrize('invalid', [None, '--', 'NaN', 'Infinity', True])
 def test_missing_or_invalid_values_never_become_zero(tmp_path, monkeypatch, invalid):

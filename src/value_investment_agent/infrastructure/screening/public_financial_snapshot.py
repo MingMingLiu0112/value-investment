@@ -16,6 +16,7 @@ from urllib.parse import urlencode
 import requests
 
 VERSION = 'public-annual-summary-v1'
+SCOPE_VERSION = 'official-universe-scope-v1'
 ENDPOINT = 'https://datacenter-web.eastmoney.com/api/data/v1/get'
 PAGE_SIZE = 500
 MAX_PAGES = 24
@@ -32,6 +33,53 @@ FIELDS = {
     'YSTZ': ('total_revenue_yoy', 'percent'),
     'SJLTZ': ('parent_net_income_yoy', 'percent'),
 }
+
+
+def sse_main_board_scope(*, records, source_sha256: str) -> dict:
+    """Build a source-bound SSE main-board scope from an official universe snapshot.
+
+    The provider response remains a supplemental observation source.  This helper
+    only makes the requested universe explicit so replay can distinguish a
+    provider row that was absent from a scoped issuer from a row outside scope.
+    """
+    if not isinstance(source_sha256, str) or not re.fullmatch(r'[0-9a-f]{64}', source_sha256):
+        raise ValueError('official universe source hash is invalid')
+    selected = []
+    for record in records:
+        if not isinstance(record, dict):
+            raise ValueError('official universe record is invalid')
+        if record.get('exchange') == 'SSE' and record.get('board') == '主板':
+            if record.get('security_type') != 'A股':
+                raise ValueError('SSE main-board scope contains a non-A-share security')
+            symbol = record.get('symbol')
+            if not isinstance(symbol, str) or not re.fullmatch(r'60[0135]\d{3}', symbol):
+                raise ValueError('SSE main-board scope contains an invalid symbol')
+            selected.append(symbol)
+    symbols = sorted(set(selected))
+    if not symbols or len(symbols) != len(selected):
+        raise ValueError('SSE main-board scope is empty or duplicates an issuer')
+    return dict(schema_version=SCOPE_VERSION, scope_id='SSE_MAIN_BOARD_A',
+                source_sha256=source_sha256, symbols=symbols,
+                expected_symbol_count=len(symbols))
+
+
+def _scope(scope):
+    if scope is None:
+        return None
+    if not isinstance(scope, dict) or scope.get('schema_version') != SCOPE_VERSION:
+        raise ValueError('financial scope contract is invalid')
+    if scope.get('scope_id') != 'SSE_MAIN_BOARD_A':
+        raise ValueError('financial scope is unsupported')
+    source_sha256, symbols = scope.get('source_sha256'), scope.get('symbols')
+    if not isinstance(source_sha256, str) or not re.fullmatch(r'[0-9a-f]{64}', source_sha256):
+        raise ValueError('financial scope source hash is invalid')
+    if (not isinstance(symbols, list) or not symbols or symbols != sorted(set(symbols))
+            or any(not isinstance(symbol, str) or not re.fullmatch(r'6\d{5}', symbol) for symbol in symbols)
+            or scope.get('expected_symbol_count') != len(symbols)):
+        raise ValueError('financial scope symbols are invalid')
+    return dict(schema_version=SCOPE_VERSION, scope_id='SSE_MAIN_BOARD_A',
+                source_sha256=source_sha256, symbols=list(symbols),
+                expected_symbol_count=len(symbols))
 
 
 def _json(value):
@@ -110,7 +158,7 @@ def _read_response(session, url):
 
 
 def collect_public_annual_summary(*, root: Path, output_dir: Path, period: str,
-                                  allow_network: bool = False, session=None) -> dict:
+                                  allow_network: bool = False, session=None, scope: dict | None = None) -> dict:
     """One serial bounded collection; partial responses never become a complete export."""
     if allow_network is not True:
         raise ValueError('explicit public financial collection permission required')
@@ -118,6 +166,7 @@ def collect_public_annual_summary(*, root: Path, output_dir: Path, period: str,
         raise ValueError('requires a completed annual period')
     root = root.resolve()
     output = _path(root, output_dir)
+    scope = _scope(scope)
     if output.exists():
         raise FileExistsError('financial acquisition requires a fresh directory')
     output.mkdir(parents=True)
@@ -126,6 +175,8 @@ def collect_public_annual_summary(*, root: Path, output_dir: Path, period: str,
     manifest = dict(schema_version=VERSION, period=period, source='Eastmoney annual summary',
                     upstream='eastmoney', status='COLLECTING', pages=[], action='no_order',
                     assurance='E1_PROVIDER_OBSERVATIONS', formal_admission=False)
+    if scope is not None:
+        manifest['scope'] = scope
     try:
         count = pages = None
         seen = set()
@@ -158,6 +209,11 @@ def collect_public_annual_summary(*, root: Path, output_dir: Path, period: str,
                 break
         manifest.update(status='COMPLETE', row_count=len(seen), declared_count=count,
                         generated_at=datetime.now(timezone.utc).isoformat())
+        if scope is not None:
+            observed = sorted(seen & set(scope['symbols']))
+            manifest['scope_coverage'] = dict(expected_symbol_count=scope['expected_symbol_count'],
+                observed_symbol_count=len(observed), missing_symbols=sorted(set(scope['symbols']) - set(observed)),
+                status='COMPLETE' if len(observed) == scope['expected_symbol_count'] else 'PARTIAL_PROVIDER_COVERAGE')
     except Exception as error:
         manifest.update(status='FAILED', error_type=type(error).__name__,
                         generated_at=datetime.now(timezone.utc).isoformat())
@@ -200,6 +256,7 @@ def load_public_annual_summary(*, root: Path, binding: dict, evaluation_at: date
             or _clock(manifest['generated_at']) > evaluation_at):
         raise ValueError('financial manifest not eligible at cutoff')
     period, pages = manifest['period'], manifest['pages']
+    scope = _scope(manifest.get('scope'))
     if not re.fullmatch(r'\d{4}-12-31', period) or not 1 <= len(pages) <= MAX_PAGES:
         raise ValueError('invalid annual manifest period/pages')
     points, seen, expected_count, missing, excluded = [], set(), None, 0, 0
@@ -225,6 +282,8 @@ def load_public_annual_summary(*, root: Path, binding: dict, evaluation_at: date
             if symbol in seen:
                 raise ValueError('duplicate financial security identity')
             seen.add(symbol)
+            if scope is not None and symbol not in scope['symbols']:
+                continue
             # Provider notice/update dates do not establish historical availability.
             dates = [row.get('NOTICE_DATE'), row.get('UPDATE_DATE')]
             try:
@@ -263,7 +322,17 @@ def load_public_annual_summary(*, root: Path, binding: dict, evaluation_at: date
                         statement_scope='PROVIDER_SUMMARY_NOT_STATUTORY_VERIFIED', period_basis='FY')))
     if len(seen) != expected_count or expected_count != manifest['row_count'] or expected_count != manifest['declared_count']:
         raise ValueError('financial total coverage mismatch')
+    scope_coverage = None
+    if scope is not None:
+        observed = sorted(seen & set(scope['symbols']))
+        expected_coverage = dict(expected_symbol_count=scope['expected_symbol_count'],
+            observed_symbol_count=len(observed), missing_symbols=sorted(set(scope['symbols']) - set(observed)),
+            status='COMPLETE' if len(observed) == scope['expected_symbol_count'] else 'PARTIAL_PROVIDER_COVERAGE')
+        if manifest.get('scope_coverage') != expected_coverage:
+            raise ValueError('financial scoped coverage differs from retained manifest')
+        scope_coverage = expected_coverage
     return points, dict(status='PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS', period=period,
         provider_rows=len(seen), observation_count=len(points), missing_fields=missing,
         excluded_date_rows=excluded, generated_at=manifest['generated_at'],
-        accepted_official_fact_count=0, action='no_order', manifest=binding)
+        accepted_official_fact_count=0, action='no_order', manifest=binding,
+        scope=scope, scope_coverage=scope_coverage)
