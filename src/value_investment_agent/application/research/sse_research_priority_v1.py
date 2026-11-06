@@ -15,6 +15,51 @@ from ...m2_discovery_engine import _point_available_at
 SCHEMA_VERSION = "sse-value-research-priority-v1"
 
 
+def _screening_decision_register(rows, *, evaluation_at, source_available_at):
+    """Persist every screened issuer's explainable queue decision.
+
+    The research queues intentionally contain candidates only. This compact,
+    source-bound register keeps excluded and data-gap decisions in the same
+    dated artifact without changing four-channel policy or queue membership.
+    """
+    register = []
+    for row in sorted(rows, key=lambda item: item["symbol"]):
+        status = row["status"]
+        if status not in {"CANDIDATE", "EXCLUDED", "UNASSESSABLE"}:
+            raise ValueError("invalid SSE screening outcome status")
+        channels, data_gaps, exclusions = [], [], []
+        for evaluation in row.get("channel_evaluations", []):
+            channel = evaluation.get("channel")
+            channel_status = evaluation.get("status")
+            reason = evaluation.get("reason")
+            if not isinstance(channel, str) or not isinstance(channel_status, str):
+                raise ValueError("invalid SSE channel evaluation")
+            channels.append(dict(channel=channel, status=channel_status, reason=reason))
+            if channel_status in {"DATA_GAP", "UNSUPPORTED"} and isinstance(reason, str):
+                data_gaps.append(reason)
+            if channel_status in {"EXCLUDED", "BUDGET_EXCLUDED"} and isinstance(reason, str):
+                exclusions.append(reason)
+        gaps = [gap for gap in row.get("gaps", []) if isinstance(gap, str)]
+        if status == "CANDIDATE":
+            decision = "INCLUDED_CANDIDATE"
+            reasons = [row.get("reason")] if isinstance(row.get("reason"), str) else []
+        elif status == "UNASSESSABLE":
+            decision, reasons = "DATA_GAP", [*data_gaps, *gaps]
+        else:
+            decision, reasons = "EXCLUDED", [*exclusions, *gaps]
+        register.append(dict(
+            symbol=row["symbol"], company_name=row.get("company_name") or row.get("name"),
+            screening_status=status, queue_decision=decision,
+            reasons=list(dict.fromkeys(reason for reason in reasons if reason)),
+            channels=channels, data_gaps=list(dict.fromkeys(data_gaps)),
+            excluded_reasons=list(dict.fromkeys(exclusions)),
+            observation_date=row.get("updated_at"),
+            evaluation_at=evaluation_at.isoformat(),
+            source_available_at=source_available_at.isoformat(),
+        ))
+    return register
+
+
 def _time(value):
     result = value if isinstance(value, datetime) else datetime.fromisoformat(value)
     if result.tzinfo is None or result.utcoffset() is None:
@@ -67,6 +112,15 @@ def _previous(root, path, digest, now):
                 raise ValueError("inconsistent duplicate previous member")
             if symbol not in members:
                 members[symbol] = deepcopy(row)
+    register = previous.get("screening_decision_register", [])
+    if not isinstance(register, list):
+        raise ValueError("previous screening decision register must be a list")
+    for decision in register:
+        if (not isinstance(decision, dict) or
+                decision.get("queue_decision") not in {"INCLUDED_CANDIDATE", "EXCLUDED", "DATA_GAP"} or
+                _time(decision["evaluation_at"]) > prior_time or
+                _time(decision["source_available_at"]) > prior_time):
+            raise ValueError("invalid previous screening decision register")
     return members, previous
 
 
@@ -237,6 +291,8 @@ def build_sse_research_priority(*, root, manifest_binding, financial_export_path
         as_of=now.isoformat(), evaluation_at=now.isoformat(), source_available_at=source_time.isoformat(),
         run_id=screen["run_id"], budget=budget, enrichment_budget=budget,
         deep_research_priority=deep, evidence_enrichment_work_queue=enrichment,
+        screening_decision_register=_screening_decision_register(
+            rows, evaluation_at=now, source_available_at=source_time),
         tracking_history=history, tracking_count=len(chosen), candidate_count=len(candidates), selected_deep_research_count=sum(r["tracking_selected"] for r in deep),
         selected_enrichment_count=sum(r["tracking_selected"] for r in enrichment),
         timing=dict(evaluation_at=now.isoformat(), source_available_at=source_time.isoformat()),

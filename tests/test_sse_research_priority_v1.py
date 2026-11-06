@@ -46,6 +46,28 @@ def all_rows(result):
     return result["deep_research_priority"] + result["evidence_enrichment_work_queue"]
 
 
+def test_decision_register_keeps_included_excluded_and_data_gap_reasons_dated():
+    rows = [
+        dict(symbol="600003", company_name="gap", status="UNASSESSABLE", updated_at="2026-11-05T03:00:00+00:00",
+             gaps=["missing cash flow"], channel_evaluations=[dict(channel="quality", status="DATA_GAP", reason="missing cash flow")]),
+        dict(symbol="600001", company_name="candidate", status="CANDIDATE", updated_at="2026-11-05T03:00:00+00:00",
+             reason="value observation", gaps=[], channel_evaluations=[dict(channel="value", status="CANDIDATE", reason="value observation")]),
+        dict(symbol="600002", company_name="excluded", status="EXCLUDED", updated_at="2026-11-05T03:00:00+00:00",
+             gaps=[], channel_evaluations=[dict(channel="quality", status="EXCLUDED", reason="quality observation failed")]),
+    ]
+    result = m._screening_decision_register(rows, evaluation_at=NOW, source_available_at=NOW)
+    assert [item["symbol"] for item in result] == ["600001", "600002", "600003"]
+    assert [item["queue_decision"] for item in result] == ["INCLUDED_CANDIDATE", "EXCLUDED", "DATA_GAP"]
+    assert result[1]["excluded_reasons"] == ["quality observation failed"]
+    assert result[2]["data_gaps"] == ["missing cash flow"]
+    assert all(item["evaluation_at"] == NOW.isoformat() for item in result)
+
+
+def test_decision_register_rejects_unknown_status():
+    with pytest.raises(ValueError, match="outcome status"):
+        m._screening_decision_register([dict(symbol="600001", status="BUY")], evaluation_at=NOW, source_available_at=NOW)
+
+
 def test_full_queue_budget_and_native_quality(setup):
     args, capture = setup
     before = deepcopy(capture)
@@ -53,6 +75,8 @@ def test_full_queue_budget_and_native_quality(setup):
     assert len(all_rows(result)) == 36
     assert result["tracking_count"] == 30
     assert result["candidate_count"] == 36
+    assert len(result["screening_decision_register"]) == 36
+    assert {item["queue_decision"] for item in result["screening_decision_register"]} == {"INCLUDED_CANDIDATE"}
     assert len(result["deep_research_priority"]) == 1
     assert result["deep_research_priority"][0]["quality_score"] == "100"
     assert sum(r["tracking_selected"] for r in all_rows(result)) == 30
