@@ -100,6 +100,14 @@ def _issuer_legal_owner(pages: list[str]) -> dict | None:
     for number, page in enumerate(pages[:12], 1):
         for match in re.finditer(r'(?:股票|证券|公司)代码[：:]?(\d{6})(?!\d)', ''.join(page.split())):
             codes.append(dict(page=number, excerpt=_raw_excerpt(page, match[0]), value=match[1]))
+        # Some statutory annual reports omit a labelled code on the cover, but
+        # print one in the issuer's "公司股票简况" A-share listing row.  Accept
+        # only that complete, exchange-labelled row; an email address or an
+        # unlabelled six-digit number is never issuer identity evidence.
+        for line in page.splitlines():
+            match = re.fullmatch(r'\s*A股\s+(?:上海|深圳)证券交易所\s+\S+\s+(\d{6})(?:\s+\S+)?\s*', line)
+            if match:
+                codes.append(dict(page=number, excerpt=line.strip(), value=match[1]))
         for match in re.finditer(r'(?m)^[ \t]*(?:公司的中文名称|公司中文名称|公司中文全称)[：: \t]+([^\r\n]+)', page):
             name = ''.join(match[1].split())
             if not re.fullmatch(r'[\u4e00-\u9fffA-Za-z（）()·]+有限公司', name):

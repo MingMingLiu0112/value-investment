@@ -130,6 +130,17 @@ def test_identity_at_page12_is_bounded_and_retains_all_evidence(source):
     assert parser._issuer_legal_owner(pages) is None
 
 
+def test_a_share_listing_row_is_accepted_but_unlabelled_code_is_not(source):
+    _, pages = source
+    pages[0] = pages[0].replace('公司代码：600519', '公司代码：')
+    pages[1] += '\nA股 上海证券交易所 测试股份 600519 测试股份\n联系邮箱 600519@example.com'
+    owner = parser._issuer_legal_owner(pages)
+    assert owner['security_code'] == '600519'
+    assert owner['security_code_excerpt'] == 'A股 上海证券交易所 测试股份 600519 测试股份'
+    pages[1] = pages[1].replace('A股 上海证券交易所 测试股份 600519 测试股份', '测试股份 600519')
+    assert parser._issuer_legal_owner(pages) is None
+
+
 @pytest.mark.parametrize('prefix', ['归属于\n母公司', '归属\n于\n母公司',
                                     '归\n属\n于\n母\n公\n司'])
 def test_multiline_parent_prefix_rejected_before_arithmetic(tmp_path, source, prefix):
