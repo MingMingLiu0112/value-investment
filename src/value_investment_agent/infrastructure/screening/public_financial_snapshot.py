@@ -331,8 +331,13 @@ def load_public_annual_summary(*, root: Path, binding: dict, evaluation_at: date
         if manifest.get('scope_coverage') != expected_coverage:
             raise ValueError('financial scoped coverage differs from retained manifest')
         scope_coverage = expected_coverage
-    return points, dict(status='PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS', period=period,
+    info = dict(status='PROVIDER_OBSERVATIONS_NOT_FORMAL_FACTS', period=period,
         provider_rows=len(seen), observation_count=len(points), missing_fields=missing,
         excluded_date_rows=excluded, generated_at=manifest['generated_at'],
         accepted_official_fact_count=0, action='no_order', manifest=binding,
-        scope=scope, scope_coverage=scope_coverage)
+    )
+    # Historical, hash-bound manifests predate the scope contract.  Do not add
+    # null fields during replay: that changes the canonical serialized input.
+    if scope is not None:
+        info.update(scope=scope, scope_coverage=scope_coverage)
+    return points, info
