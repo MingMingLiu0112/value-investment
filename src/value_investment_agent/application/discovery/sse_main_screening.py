@@ -294,18 +294,25 @@ def supplement_financial_sources(*,root,inputs,output,comparison_batches=1,offic
     # Archive statutory annual originals for a small, deterministic slice of the
     # current research queue.  This improves evidence quality without turning a
     # daily first-pass screen into an unbounded 1,700-company filing crawl.
-    if not inputs.get('official_funding_supplement'):
-        official_symbols=[row['symbol'] for row in current['rows']
-                          if row['status']=='CANDIDATE' and row['applicability']['kind'] is None]
-        selected=official_symbols[:official_source_budget]
-        if selected:
-            candidate_binding=official_funding.collect_annual_sources(
-                root, output/'official-funding', symbols=selected, period=period, allow_network=True)
-            collected=json.loads((root/candidate_binding['path']).read_bytes())
-            # A failed individual archive is retained in its manifest, but an
-            # empty manifest must not be passed to the strict source parser.
-            if collected.get('sources'):
-                inputs['official_funding_supplement']=candidate_binding
+    official_symbols=[row['symbol'] for row in current['rows']
+                      if row['status']=='CANDIDATE' and row['applicability']['kind'] is None]
+    existing_symbols=set()
+    existing_binding=inputs.get('official_funding_supplement')
+    if existing_binding:
+        existing_symbols={row['symbol'] for row in official_funding.manifest_sources(root, existing_binding)}
+    selected=[symbol for symbol in official_symbols if symbol not in existing_symbols][:official_source_budget]
+    if selected:
+        candidate_binding=official_funding.collect_annual_sources(
+            root, output/'official-funding-next', symbols=selected, period=period, allow_network=True)
+        collected=json.loads((root/candidate_binding['path']).read_bytes())
+        # A failed individual archive remains visible in its own manifest.  A
+        # non-empty next slice is appended rather than replacing earlier proof.
+        if collected.get('sources'):
+            inputs['official_funding_supplement']=(
+                official_funding.merge_annual_source_manifests(
+                    root, output/'official-funding-merged',
+                    existing_binding=existing_binding, new_binding=candidate_binding)
+                if existing_binding else candidate_binding)
     bindings=list(inputs.get('sina_supplements',[]));seen=set()
     for binding in bindings:
         cached=sina_source.load(root,binding,datetime.now(timezone.utc));seen.update(cached['symbols'])

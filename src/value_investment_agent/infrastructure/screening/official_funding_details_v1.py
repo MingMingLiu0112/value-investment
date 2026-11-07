@@ -1,5 +1,6 @@
 """Read-only, source-bound financing observations; never exhaustive debt admission."""
 from datetime import datetime, date, timezone
+from copy import deepcopy
 from decimal import Decimal
 import hashlib
 import json
@@ -165,6 +166,71 @@ def collect_annual_sources(root, output_dir, *, symbols, period, allow_network):
     manifest_path.write_bytes(json.dumps(manifest, ensure_ascii=False, sort_keys=True,
                                          separators=(",", ":")).encode("utf-8"))
     return dict(path=manifest_path.relative_to(root).as_posix(), sha256=_sha(manifest_path))
+
+
+def merge_annual_source_manifests(root, output_dir, *, existing_binding, new_binding):
+    """Append a new bounded collection without rewriting old source bindings.
+
+    The archive itself is the continuation cursor: already archived symbols are
+    excluded by the caller on the next run.  This function only merges two
+    hash-bound manifests and never downloads or reparses a filing.
+    """
+    root = Path(root).resolve()
+    output = (Path(output_dir) if Path(output_dir).is_absolute() else root / output_dir).resolve()
+    if not output.is_relative_to(root) or output.exists():
+        raise ValueError("NEW_PROJECT_RELATIVE_OUTPUT_REQUIRED")
+    _, old_raw = _bound(root, existing_binding)
+    _, new_raw = _bound(root, new_binding)
+    old, new = json.loads(old_raw), json.loads(new_raw)
+    for payload in (old, new):
+        if (not isinstance(payload, dict) or payload.get("schema_version") != VERSION
+                or payload.get("action", "no_order") != "no_order"
+                or not isinstance(payload.get("sources"), list)):
+            raise ValueError("INVALID_ANNUAL_SOURCE_MANIFEST")
+    sources = {item.get("symbol"): item for item in old["sources"]}
+    for item in new["sources"]:
+        symbol = item.get("symbol")
+        if not isinstance(symbol, str) or not re.fullmatch(r"[0-9]{6}", symbol):
+            raise ValueError("INVALID_ANNUAL_SOURCE_SYMBOL")
+        prior = sources.get(symbol)
+        if prior is not None and prior != item:
+            raise ValueError("ARCHIVED_SYMBOL_SOURCE_CONFLICT:" + symbol)
+        sources[symbol] = item
+    failures = []
+    for payload in (old, new):
+        failures.extend((payload.get("collection") or {}).get("failures") or [])
+    requested = []
+    for payload in (old, new):
+        requested.extend((payload.get("collection") or {}).get("requested_symbols") or [])
+    merged = dict(
+        schema_version=VERSION, action="no_order",
+        sources=[sources[key] for key in sorted(sources)],
+        collection=dict(
+            requested_symbols=list(dict.fromkeys(requested)),
+            period=((new.get("collection") or {}).get("period") or
+                    (old.get("collection") or {}).get("period")),
+            status="PARTIAL" if failures else "COMPLETE",
+            failures=failures,
+            merged_at=datetime.now(timezone.utc).isoformat(),
+            prior_manifests=[existing_binding, new_binding],
+        ),
+    )
+    output.mkdir(parents=True)
+    manifest_path = output / "manifest.json"
+    manifest_path.write_bytes(json.dumps(merged, ensure_ascii=False, sort_keys=True,
+                                         separators=(",", ":")).encode("utf-8"))
+    return dict(path=manifest_path.relative_to(root).as_posix(), sha256=_sha(manifest_path))
+
+
+def manifest_sources(root, binding):
+    """Return the pinned source rows only; no parsing or network access."""
+    _, raw = _bound(root, binding)
+    manifest = json.loads(raw)
+    if (not isinstance(manifest, dict) or manifest.get("schema_version") != VERSION
+            or manifest.get("action", "no_order") != "no_order"
+            or not isinstance(manifest.get("sources"), list)):
+        raise ValueError("INVALID_ANNUAL_SOURCE_MANIFEST")
+    return deepcopy(manifest["sources"])
 
 
 def _bound(root, binding):

@@ -282,3 +282,22 @@ def test_continuation_foreign_currency_not_inherited():
 """]
     source = dict(symbol="600887", period="2025-12-31", sha256="a"*64)
     assert not any(r["field_name"] == "group_net_profit" for r in m._financial_rows(texts, source))
+
+
+def test_merge_annual_manifests_preserves_old_sources_and_rejects_conflict(tmp_path):
+    def manifest(name, sources):
+        path = tmp_path / name
+        path.write_text(json.dumps({"schema_version": m.VERSION, "action": "no_order", "sources": sources,
+                                    "collection": {"requested_symbols": [row["symbol"] for row in sources],
+                                                   "period": "2025-12-31", "failures": []}}), encoding="utf-8")
+        return pin(path, tmp_path)
+    common = dict(period="2025-12-31", path="original.pdf", sha256="a" * 64,
+                  source_url="https://static.cninfo.com.cn/finalpage/2026-03-01/a.PDF",
+                  available_at="2026-03-01T00:00:00+00:00")
+    old = manifest("old.json", [dict(common, symbol="600001")])
+    new = manifest("new.json", [dict(common, symbol="600002")])
+    merged = m.merge_annual_source_manifests(tmp_path, "runtime/merged", existing_binding=old, new_binding=new)
+    assert [row["symbol"] for row in m.manifest_sources(tmp_path, merged)] == ["600001", "600002"]
+    conflict = manifest("conflict.json", [dict(common, symbol="600001", sha256="b" * 64)])
+    with pytest.raises(ValueError, match="ARCHIVED_SYMBOL_SOURCE_CONFLICT"):
+        m.merge_annual_source_manifests(tmp_path, "runtime/conflict", existing_binding=old, new_binding=conflict)
