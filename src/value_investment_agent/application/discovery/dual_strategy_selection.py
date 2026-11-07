@@ -129,6 +129,7 @@ def select_source_bound_sse_main_value_candidates(*, root, now, limit=30,
                                         else 'NOT_AVAILABLE'),
         official_annual_archive_count=(comparison.get('official_archive_source_count') or 0),
         official_annual_parsed_count=(comparison.get('official_parsed_source_count') or 0),
+        official_annual_lookup_failure_count=(comparison.get('official_archive_failure_count') or 0),
         annual_archive_remaining_candidates=(comparison.get('annual_archive_remaining_candidates') or 0),
         financing_observation_count=(comparison.get('debt_companies_with_identified_amount') or 0),
         formal_fact_admission_count=sum(

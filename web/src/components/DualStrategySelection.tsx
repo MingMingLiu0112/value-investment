@@ -276,7 +276,7 @@ function SelectionPool({ mode }: { mode: "value" | "hotspot" }) {
                 B 四通道初筛：质量、现金回报、价值、周期四条线索共同生成研究优先队列；这是研究排序，不是买入推荐。
               </li>
               <li>
-                本次证据：年度报告已归档 {lane.evidence_capability.official_annual_archive_count} 份，其中成功解析 {lane.evidence_capability.official_annual_parsed_count} 份；候选池还有 {lane.evidence_capability.annual_archive_remaining_candidates} 家可进入后续补证批次；已识别融资负债的公司 {lane.evidence_capability.financing_observation_count} 家；完整有息负债范围正式核验 {lane.evidence_capability.full_debt_scope_verified_count} 家；已从年报接入的正式余额表事实 {lane.evidence_capability.formal_fact_admission_count} 家。
+                本次证据：年度报告已归档 {lane.evidence_capability.official_annual_archive_count} 份，其中成功解析 {lane.evidence_capability.official_annual_parsed_count} 份；{lane.evidence_capability.official_annual_lookup_failure_count} 家未取得对应年度原件并保留失败原因；候选池还有 {lane.evidence_capability.annual_archive_remaining_candidates} 家可进入后续补证批次；已识别融资负债的公司 {lane.evidence_capability.financing_observation_count} 家；完整有息负债范围正式核验 {lane.evidence_capability.full_debt_scope_verified_count} 家；已从年报接入的正式余额表事实 {lane.evidence_capability.formal_fact_admission_count} 家。
               </li>
               <li>
                 当前边界：完整有息负债范围、当前合格报价及后续公司研究尚未自动完成，因此本页不产生条件买价或交易资格。

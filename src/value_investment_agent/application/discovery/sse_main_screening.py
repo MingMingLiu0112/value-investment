@@ -118,12 +118,13 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
         debt_points.extend(p for p in debt_observations(debt['balance'],period=debt['period']) if p['symbol'] in symbols)
         generated=max(generated,datetime.fromisoformat(debt['available_at']))
         supplement_errors.extend(debt['errors'])
-    official_observations=[];official_financial=[];official_balance_adoptions=[];native_revalidated_points=[];official_errors_by_symbol={};official_archive_source_count=0;official_parsed_source_count=0
+    official_observations=[];official_financial=[];official_balance_adoptions=[];native_revalidated_points=[];official_errors_by_symbol={};official_archive_source_count=0;official_parsed_source_count=0;official_archive_failure_count=0
     if inputs.get('official_funding_supplement'):
         funding=official_funding.load(root,inputs['official_funding_supplement'],now)
         official_archive_source_count=funding['source_count']
         official_parsed_source_count=funding['parsed_source_count']
         collection_failures = list(funding.get('collection_failures', []))
+        official_archive_failure_count = len({row.get('symbol') for row in collection_failures if row.get('symbol')})
         supplement_errors.extend(dict(symbol=row.get('symbol'), role='annual_archive',
                                       message=row.get('reason', 'ANNUAL_ARCHIVE_FAILED'))
                                  for row in collection_failures)
@@ -274,7 +275,8 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
         financial_source_comparison=dict(symbols_attempted=len(seen_secondary & symbols),symbols_checked=sum(r['financial_crosscheck']['matched_count']>0 for r in rows),matched_fields=sum(r['financial_crosscheck']['matched_count'] for r in rows),conflict_fields=sum(r['financial_crosscheck']['conflict_count'] for r in rows),
             official_balance_adoptions=official_balance_adoptions,official_archive_source_count=official_archive_source_count,
             official_parsed_source_count=official_parsed_source_count,
-            annual_archive_remaining_candidates=max(0, sum(r['status']=='CANDIDATE' and r['applicability']['kind'] is None for r in rows)-official_archive_source_count),
+            official_archive_failure_count=official_archive_failure_count,
+            annual_archive_remaining_candidates=max(0, sum(r['status']=='CANDIDATE' and r['applicability']['kind'] is None for r in rows)-official_archive_source_count-official_archive_failure_count),
             debt_companies_with_identified_amount=sum(r['debt_details']['identified_total'] is not None for r in rows),errors=supplement_errors,formal_admission=False),
         financial_data_summary=dict(
             general_company_count=sum(r['applicability']['kind'] is None for r in rows),
