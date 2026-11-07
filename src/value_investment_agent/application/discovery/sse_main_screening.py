@@ -118,11 +118,22 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
         debt_points.extend(p for p in debt_observations(debt['balance'],period=debt['period']) if p['symbol'] in symbols)
         generated=max(generated,datetime.fromisoformat(debt['available_at']))
         supplement_errors.extend(debt['errors'])
-    official_observations=[];official_financial=[];official_balance_adoptions=[];native_revalidated_points=[];official_errors_by_symbol={}
+    official_observations=[];official_financial=[];official_balance_adoptions=[];native_revalidated_points=[];official_errors_by_symbol={};official_archive_source_count=0;official_parsed_source_count=0
     if inputs.get('official_funding_supplement'):
         funding=official_funding.load(root,inputs['official_funding_supplement'],now)
+        official_archive_source_count=funding['source_count']
+        official_parsed_source_count=funding['parsed_source_count']
+        collection_failures = list(funding.get('collection_failures', []))
+        supplement_errors.extend(dict(symbol=row.get('symbol'), role='annual_archive',
+                                      message=row.get('reason', 'ANNUAL_ARCHIVE_FAILED'))
+                                 for row in collection_failures)
         supplement_errors.extend(funding.get('errors', []))
         official_errors_by_symbol={row['symbol']:row for row in funding.get('errors', [])}
+        for row in collection_failures:
+            symbol = row.get('symbol')
+            if symbol:
+                official_errors_by_symbol.setdefault(symbol, dict(
+                    kind='collection', message=row.get('reason', 'ANNUAL_ARCHIVE_FAILED')))
         official_financial=funding.get('financial_observations',[])
         for packet in funding.get('balance_packets',[]):
             source=RetainedAnnualSource(**packet['source'])
@@ -234,7 +245,10 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
                                '、'.join(debt_view['official_scope_review']['missing_components'])+
                                '；未列报不按零处理。')
         if symbol in official_errors_by_symbol:
-            row['gaps'].insert(0,'年度报告已归档但解析未通过：'+official_errors_by_symbol[symbol]['message']+'；该公司保持待补证。')
+            annual_error = official_errors_by_symbol[symbol]
+            prefix = ('年度报告自动补证未完成：' if annual_error.get('kind') == 'collection'
+                      else '年度报告已归档但解析未通过：')
+            row['gaps'].insert(0, prefix + annual_error['message'] + '；该公司保持待补证。')
         row['gaps']+=['财务及分红为初筛来源观察，尚非完整法定事实核验。','尚未完成企业经营、分红持续性和适用估值研究。','行情真实交易日未单独核验，不形成当前条件买价。']
         row.update(reference_price=str(quote.current_price) if quote and quote.current_price is not None else None,
                    quote_date=None,quote_observed_at=payload['tencent'].get('fetched_at'),
@@ -258,7 +272,10 @@ def compile_inputs(*, root, inputs, now, run_id, _research_capture=None):
         blockers=['INITIAL_SCREENING_NOT_BUY_ADVICE','PROVIDER_FINANCIAL_NOT_OFFICIAL_ADMISSION','QUOTE_TRADE_DATE_UNVERIFIED'],
         financial_supplement_status=supplement['status'] if supplement else 'NOT_COLLECTED',
         financial_source_comparison=dict(symbols_attempted=len(seen_secondary & symbols),symbols_checked=sum(r['financial_crosscheck']['matched_count']>0 for r in rows),matched_fields=sum(r['financial_crosscheck']['matched_count'] for r in rows),conflict_fields=sum(r['financial_crosscheck']['conflict_count'] for r in rows),
-            official_balance_adoptions=official_balance_adoptions,debt_companies_with_identified_amount=sum(r['debt_details']['identified_total'] is not None for r in rows),errors=supplement_errors,formal_admission=False),
+            official_balance_adoptions=official_balance_adoptions,official_archive_source_count=official_archive_source_count,
+            official_parsed_source_count=official_parsed_source_count,
+            annual_archive_remaining_candidates=max(0, sum(r['status']=='CANDIDATE' and r['applicability']['kind'] is None for r in rows)-official_archive_source_count),
+            debt_companies_with_identified_amount=sum(r['debt_details']['identified_total'] is not None for r in rows),errors=supplement_errors,formal_admission=False),
         financial_data_summary=dict(
             general_company_count=sum(r['applicability']['kind'] is None for r in rows),
             institutions_by_type=dict(Counter(r['applicability']['label'] for r in rows if r['applicability']['kind'] is not None)),
@@ -300,19 +317,18 @@ def supplement_financial_sources(*,root,inputs,output,comparison_batches=1,offic
     existing_binding=inputs.get('official_funding_supplement')
     if existing_binding:
         existing_symbols={row['symbol'] for row in official_funding.manifest_sources(root, existing_binding)}
+        existing_symbols.update(official_funding.manifest_failed_symbols(root, existing_binding))
     selected=[symbol for symbol in official_symbols if symbol not in existing_symbols][:official_source_budget]
     if selected:
         candidate_binding=official_funding.collect_annual_sources(
             root, output/'official-funding-next', symbols=selected, period=period, allow_network=True)
-        collected=json.loads((root/candidate_binding['path']).read_bytes())
-        # A failed individual archive remains visible in its own manifest.  A
-        # non-empty next slice is appended rather than replacing earlier proof.
-        if collected.get('sources'):
-            inputs['official_funding_supplement']=(
-                official_funding.merge_annual_source_manifests(
-                    root, output/'official-funding-merged',
-                    existing_binding=existing_binding, new_binding=candidate_binding)
-                if existing_binding else candidate_binding)
+        # A failed individual archive is merged too: otherwise the next run
+        # would silently retry the same symbols and hide the evidence gap.
+        inputs['official_funding_supplement']=(
+            official_funding.merge_annual_source_manifests(
+                root, output/'official-funding-merged',
+                existing_binding=existing_binding, new_binding=candidate_binding)
+            if existing_binding else candidate_binding)
     bindings=list(inputs.get('sina_supplements',[]));seen=set()
     for binding in bindings:
         cached=sina_source.load(root,binding,datetime.now(timezone.utc));seen.update(cached['symbols'])

@@ -196,9 +196,16 @@ def merge_annual_source_manifests(root, output_dir, *, existing_binding, new_bin
         if prior is not None and prior != item:
             raise ValueError("ARCHIVED_SYMBOL_SOURCE_CONFLICT:" + symbol)
         sources[symbol] = item
-    failures = []
+    failures_by_symbol = {}
     for payload in (old, new):
-        failures.extend((payload.get("collection") or {}).get("failures") or [])
+        for failure in (payload.get("collection") or {}).get("failures") or []:
+            symbol = failure.get("symbol") if isinstance(failure, dict) else None
+            if not isinstance(symbol, str) or not re.fullmatch(r"[0-9]{6}", symbol):
+                raise ValueError("INVALID_ANNUAL_COLLECTION_FAILURE")
+            prior = failures_by_symbol.get(symbol)
+            if prior is not None and prior != failure:
+                raise ValueError("ANNUAL_COLLECTION_FAILURE_CONFLICT:" + symbol)
+            failures_by_symbol[symbol] = failure
     requested = []
     for payload in (old, new):
         requested.extend((payload.get("collection") or {}).get("requested_symbols") or [])
@@ -209,8 +216,8 @@ def merge_annual_source_manifests(root, output_dir, *, existing_binding, new_bin
             requested_symbols=list(dict.fromkeys(requested)),
             period=((new.get("collection") or {}).get("period") or
                     (old.get("collection") or {}).get("period")),
-            status="PARTIAL" if failures else "COMPLETE",
-            failures=failures,
+            status="PARTIAL" if failures_by_symbol else "COMPLETE",
+            failures=[failures_by_symbol[key] for key in sorted(failures_by_symbol)],
             merged_at=datetime.now(timezone.utc).isoformat(),
             prior_manifests=[existing_binding, new_binding],
         ),
@@ -231,6 +238,23 @@ def manifest_sources(root, binding):
             or not isinstance(manifest.get("sources"), list)):
         raise ValueError("INVALID_ANNUAL_SOURCE_MANIFEST")
     return deepcopy(manifest["sources"])
+
+
+def manifest_failed_symbols(root, binding):
+    """Return pinned failed lookup symbols; these are continuation evidence too."""
+    _, raw = _bound(root, binding)
+    manifest = json.loads(raw)
+    if (not isinstance(manifest, dict) or manifest.get("schema_version") != VERSION
+            or manifest.get("action", "no_order") != "no_order"):
+        raise ValueError("INVALID_ANNUAL_SOURCE_MANIFEST")
+    failures = (manifest.get("collection") or {}).get("failures") or []
+    symbols = set()
+    for row in failures:
+        symbol = row.get("symbol") if isinstance(row, dict) else None
+        if not isinstance(symbol, str) or not re.fullmatch(r"[0-9]{6}", symbol):
+            raise ValueError("INVALID_ANNUAL_COLLECTION_FAILURE")
+        symbols.add(symbol)
+    return symbols
 
 
 def _bound(root, binding):
@@ -320,11 +344,14 @@ def load(root, binding, evaluation_at):
     now = _time(evaluation_at)
     _, raw = _bound(root, binding)
     manifest = json.loads(raw)
+    collection = manifest.get("collection") if isinstance(manifest, dict) else None
+    retained_failures = collection.get("failures") if isinstance(collection, dict) else None
     if (not isinstance(manifest, dict)
             or set(manifest) - {"schema_version", "sources", "action", "collection"}
             or manifest.get("schema_version") != VERSION
             or manifest.get("action", "no_order") != "no_order"
-            or not isinstance(manifest.get("sources"), list) or not manifest["sources"]):
+            or not isinstance(manifest.get("sources"), list)
+            or (not manifest["sources"] and not isinstance(retained_failures, list))):
         raise ValueError("INVALID_MANIFEST")
     observations, financial_observations, seen, errors = [], [], set(), []
     balance_packets=[]
@@ -378,6 +405,9 @@ def load(root, binding, evaluation_at):
                 financial_fact_admitted=False, complete_debt_verified=False,
                 interest_bearing_debt=None, observations=observations,
                 financial_observations=financial_observations,balance_packets=balance_packets,
+                source_count=len(manifest["sources"]),
+                parsed_source_count=len(balance_packets),
+                collection_failures=list((manifest.get("collection") or {}).get("failures") or []),
                 manifest_binding=dict(binding), evaluation_at=now.isoformat(),
                 errors=errors,
                 unknowns=["EXHAUSTIVE_FINANCING_SCOPE_NOT_PROVEN",

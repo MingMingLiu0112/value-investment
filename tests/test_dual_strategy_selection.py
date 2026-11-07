@@ -107,3 +107,4 @@ def test_source_bound_value_lane_preserves_real_screen_pagination(tmp_path, monk
     assert lane['evidence_capability']['no_order'] is True
     assert lane['evidence_capability']['full_debt_scope_verified_count'] == 0
     assert lane['evidence_capability']['official_annual_archive_count'] == 0
+    assert lane['evidence_capability']['official_annual_parsed_count'] == 0

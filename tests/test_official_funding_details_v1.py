@@ -301,3 +301,27 @@ def test_merge_annual_manifests_preserves_old_sources_and_rejects_conflict(tmp_p
     conflict = manifest("conflict.json", [dict(common, symbol="600001", sha256="b" * 64)])
     with pytest.raises(ValueError, match="ARCHIVED_SYMBOL_SOURCE_CONFLICT"):
         m.merge_annual_source_manifests(tmp_path, "runtime/conflict", existing_binding=old, new_binding=conflict)
+
+
+def test_manifest_collection_failures_survive_without_creating_source_rows(tmp_path):
+    path = tmp_path / "failed.json"
+    path.write_text(json.dumps({"schema_version": m.VERSION, "action": "no_order", "sources": [],
+                                "collection": {"requested_symbols": ["600003"], "period": "2025-12-31",
+                                               "failures": [{"symbol": "600003", "reason": "NOT_FOUND"}]}}), encoding="utf-8")
+    result = m.load(tmp_path, pin(path, tmp_path), NOW)
+    assert result["source_count"] == 0
+    assert result["collection_failures"] == [{"symbol": "600003", "reason": "NOT_FOUND"}]
+
+
+def test_empty_manifest_without_retained_collection_failure_is_rejected(tmp_path):
+    path = tmp_path / "empty.json"
+    path.write_text(json.dumps({"schema_version": m.VERSION, "action": "no_order", "sources": []}), encoding="utf-8")
+    with pytest.raises(ValueError, match="INVALID_MANIFEST"):
+        m.load(tmp_path, pin(path, tmp_path), NOW)
+
+
+def test_manifest_failed_symbols_are_a_valid_continuation_cursor(tmp_path):
+    path = tmp_path / "failed.json"
+    path.write_text(json.dumps({"schema_version": m.VERSION, "action": "no_order", "sources": [],
+                                "collection": {"failures": [{"symbol": "600003", "reason": "NOT_FOUND"}]}}), encoding="utf-8")
+    assert m.manifest_failed_symbols(tmp_path, pin(path, tmp_path)) == {"600003"}

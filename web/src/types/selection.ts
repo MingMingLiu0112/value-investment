@@ -82,6 +82,8 @@ export interface SelectionLane {
     schema_version: string;
     official_annual_archive_status: string;
     official_annual_archive_count: number;
+    official_annual_parsed_count: number;
+    annual_archive_remaining_candidates: number;
     financing_observation_count: number;
     formal_fact_admission_count: number;
     full_debt_scope_verified_count: number;
