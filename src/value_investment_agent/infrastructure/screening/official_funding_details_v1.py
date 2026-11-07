@@ -120,7 +120,7 @@ def _sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def collect_annual_sources(root, output_dir, *, symbols, period, allow_network):
+def collect_annual_sources(root, output_dir, *, symbols, period, allow_network, issuer_names=None):
     """Archive a bounded set of exact-period statutory annual reports.
 
     This is an evidence acquisition adapter, not a financial admission decision:
@@ -140,13 +140,16 @@ def collect_annual_sources(root, output_dir, *, symbols, period, allow_network):
     if not output.is_relative_to(root) or output.exists():
         raise ValueError("NEW_PROJECT_RELATIVE_OUTPUT_REQUIRED")
     output.mkdir(parents=True)
-    reports = collect_latest_reports(symbols, output / "originals")
+    names = dict(issuer_names or {})
+    reports = (collect_latest_reports(symbols, output / "originals", names)
+               if names else collect_latest_reports(symbols, output / "originals"))
     sources, failures = [], []
     for symbol in symbols:
         annual = [row for row in reports if row["symbol"] == symbol and row["report_kind"] == "annual"
                   and row["report_period"] == period]
         if len(annual) != 1:
-            failures.append(dict(symbol=symbol, reason="EXACT_PERIOD_ANNUAL_REPORT_NOT_AVAILABLE",
+            failures.append(dict(symbol=symbol, issuer_name=names.get(symbol),
+                                 reason="EXACT_PERIOD_ANNUAL_REPORT_NOT_AVAILABLE",
                                  found_periods=sorted({row["report_period"] for row in reports
                                                        if row["symbol"] == symbol and row["report_kind"] == "annual"})))
             continue
@@ -209,6 +212,10 @@ def merge_annual_source_manifests(root, output_dir, *, existing_binding, new_bin
     requested = []
     for payload in (old, new):
         requested.extend((payload.get("collection") or {}).get("requested_symbols") or [])
+    # A later successful, hash-bound archival supersedes an earlier failed
+    # lookup for the same symbol.  The prior manifest remains hash-linked.
+    for symbol in sources:
+        failures_by_symbol.pop(symbol, None)
     merged = dict(
         schema_version=VERSION, action="no_order",
         sources=[sources[key] for key in sorted(sources)],
@@ -255,6 +262,23 @@ def manifest_failed_symbols(root, binding):
             raise ValueError("INVALID_ANNUAL_COLLECTION_FAILURE")
         symbols.add(symbol)
     return symbols
+
+
+def manifest_retryable_failure_symbols(root, binding):
+    """Legacy failures without the issuer-name resolver may be retried once."""
+    _, raw = _bound(root, binding)
+    manifest = json.loads(raw)
+    if (not isinstance(manifest, dict) or manifest.get("schema_version") != VERSION
+            or manifest.get("action", "no_order") != "no_order"):
+        raise ValueError("INVALID_ANNUAL_SOURCE_MANIFEST")
+    retryable = set()
+    for row in (manifest.get("collection") or {}).get("failures") or []:
+        symbol = row.get("symbol") if isinstance(row, dict) else None
+        if not isinstance(symbol, str) or not re.fullmatch(r"[0-9]{6}", symbol):
+            raise ValueError("INVALID_ANNUAL_COLLECTION_FAILURE")
+        if not row.get("issuer_name"):
+            retryable.add(symbol)
+    return retryable
 
 
 def _bound(root, binding):

@@ -325,3 +325,29 @@ def test_manifest_failed_symbols_are_a_valid_continuation_cursor(tmp_path):
     path.write_text(json.dumps({"schema_version": m.VERSION, "action": "no_order", "sources": [],
                                 "collection": {"failures": [{"symbol": "600003", "reason": "NOT_FOUND"}]}}), encoding="utf-8")
     assert m.manifest_failed_symbols(tmp_path, pin(path, tmp_path)) == {"600003"}
+
+
+def test_legacy_failure_without_issuer_name_is_retryable_but_named_failure_is_not(tmp_path):
+    path = tmp_path / "failed.json"
+    path.write_text(json.dumps({"schema_version": m.VERSION, "action": "no_order", "sources": [],
+                                "collection": {"failures": [
+                                    {"symbol": "600003", "reason": "NOT_FOUND"},
+                                    {"symbol": "600004", "issuer_name": "示例", "reason": "NOT_FOUND"},
+                                ]}}), encoding="utf-8")
+    assert m.manifest_retryable_failure_symbols(tmp_path, pin(path, tmp_path)) == {"600003"}
+
+
+def test_successful_archival_supersedes_prior_lookup_failure(tmp_path):
+    common = dict(period="2025-12-31", path="original.pdf", sha256="a" * 64,
+                  source_url="https://static.cninfo.com.cn/finalpage/2026-03-01/a.PDF",
+                  available_at="2026-03-01T00:00:00+00:00")
+    old_path = tmp_path / "old.json"
+    old_path.write_text(json.dumps({"schema_version": m.VERSION, "action": "no_order", "sources": [],
+                                    "collection": {"failures": [{"symbol": "600003", "reason": "NOT_FOUND"}]}}), encoding="utf-8")
+    new_path = tmp_path / "new.json"
+    new_path.write_text(json.dumps({"schema_version": m.VERSION, "action": "no_order",
+                                    "sources": [dict(common, symbol="600003")],
+                                    "collection": {"failures": []}}), encoding="utf-8")
+    merged = m.merge_annual_source_manifests(tmp_path, "runtime/merged", existing_binding=pin(old_path, tmp_path),
+                                             new_binding=pin(new_path, tmp_path))
+    assert m.manifest_failed_symbols(tmp_path, merged) == set()

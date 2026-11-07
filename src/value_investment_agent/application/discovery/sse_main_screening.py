@@ -315,15 +315,19 @@ def supplement_financial_sources(*,root,inputs,output,comparison_batches=1,offic
     # daily first-pass screen into an unbounded 1,700-company filing crawl.
     official_symbols=[row['symbol'] for row in current['rows']
                       if row['status']=='CANDIDATE' and row['applicability']['kind'] is None]
+    issuer_names={row['symbol']: (row.get('company_name') or row.get('name'))
+                  for row in current['rows'] if row['symbol'] in official_symbols}
     existing_symbols=set()
     existing_binding=inputs.get('official_funding_supplement')
     if existing_binding:
         existing_symbols={row['symbol'] for row in official_funding.manifest_sources(root, existing_binding)}
         existing_symbols.update(official_funding.manifest_failed_symbols(root, existing_binding))
+        existing_symbols.difference_update(official_funding.manifest_retryable_failure_symbols(root, existing_binding))
     selected=[symbol for symbol in official_symbols if symbol not in existing_symbols][:official_source_budget]
     if selected:
         candidate_binding=official_funding.collect_annual_sources(
-            root, output/'official-funding-next', symbols=selected, period=period, allow_network=True)
+            root, output/'official-funding-next', symbols=selected, period=period, allow_network=True,
+            issuer_names={symbol: issuer_names.get(symbol) for symbol in selected})
         # A failed individual archive is merged too: otherwise the next run
         # would silently retry the same symbols and hide the evidence gap.
         inputs['official_funding_supplement']=(
