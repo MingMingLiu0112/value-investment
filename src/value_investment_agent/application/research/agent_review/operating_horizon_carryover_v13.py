@@ -7,6 +7,8 @@ from datetime import datetime
 from pathlib import Path
 
 from . import operating_horizon_task_v12_live as v12
+from . import operating_q3_issuer_wc_loader_v9_600519 as wc_v9
+from . import operating_q3_issuer_plan_loader_v8_600519 as q3_v8
 from . import operating_horizon_request_v13 as request_v13
 from .task_execution_v1 import _bytes, _hash
 from ....infrastructure.agent_runtime.provider import LLMResponse
@@ -21,14 +23,29 @@ def prepare_cash(root, task_id, *, expected_source_binding, expected_context_sha
     All expected values must come from the caller's independent admission pin.
     No disk writes, budget reservations, or model calls occur here.
     """
-    service = v12.OperatingHorizonTaskService(root)
+    # Read only the recorded source-loader version. Never guess a newer
+    # source projection for an old sealed annual response.
+    probe = v12.OperatingHorizonTaskService(root)
+    raw_spec, _, _ = probe._load(task_id)
+    loader_version = raw_spec["source_loader_binding"]["version"]
+    if loader_version == wc_v9.VERSION:
+        service = v12.OperatingHorizonTaskService(root,
+            source_loader=wc_v9.load_current, source_loader_version=wc_v9.VERSION)
+    elif loader_version == q3_v8.VERSION:
+        service = probe
+    else:
+        raise ValueError("V13_CARRYOVER_SOURCE_LOADER_UNSUPPORTED")
     spec, state, head = service._load(task_id)
     if (spec["mode"] != "LIVE_OPERATING" or spec["years"] != [2027]
             or spec["source_binding"] != expected_source_binding
             or spec["context_sha256"] != expected_context_sha256
             or state.get("action") != "no_order"
             or "annual" not in state["stage_validated"]
-            or state.get("new_llm_calls", 0) < 1):
+            or state.get("provider_requests", 0) < 1
+            or state.get("status") != "FAILED"
+            or state.get("error_code") != "V12_TASK_EXECUTION_FAILED"
+            or "cash" in state.get("stage_intents", {})
+            or "cash" in state.get("stage_responses", {})):
         raise ValueError("V13_CARRYOVER_SOURCE_MISMATCH")
     context = service._context(spec)
     result = service._verify_annual_checkpoint(spec, state, context)

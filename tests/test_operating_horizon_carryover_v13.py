@@ -18,7 +18,10 @@ def test_rejects_missing_sealed_task_without_provider_call(tmp_path, monkeypatch
 def test_rejects_unbound_or_unvalidated_annual_before_request(monkeypatch, change):
     spec = {"mode": "LIVE_OPERATING", "years": [2027],
             "source_binding": {"source": "pinned"}, "context_sha256": "a" * 64}
-    state = {"action": "no_order", "stage_validated": ["annual"], "new_llm_calls": 1}
+    state = {"action": "no_order", "stage_validated": ["annual"],
+             "provider_requests": 1, "status": "FAILED",
+             "error_code": "V12_TASK_EXECUTION_FAILED", "stage_intents": {},
+             "stage_responses": {}}
     if change == "source":
         spec["source_binding"] = {"source": "different"}
     elif change == "context":
@@ -26,14 +29,14 @@ def test_rejects_unbound_or_unvalidated_annual_before_request(monkeypatch, chang
     elif change == "annual":
         state["stage_validated"] = []
     else:
-        state["new_llm_calls"] = 0
+        state["provider_requests"] = 0
 
     class Service:
         def __init__(self, root):
             pass
 
         def _load(self, task_id):
-            return spec, state, {"sha256": "pinned"}
+            return {**spec, "source_loader_binding": {"version": carry.q3_v8.VERSION}}, state, {"sha256": "pinned"}
 
         def _context(self, spec):
             pytest.fail("invalid admission reached source replay")

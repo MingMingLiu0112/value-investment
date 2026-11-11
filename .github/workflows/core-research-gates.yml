@@ -548,6 +548,7 @@ jobs:
           tests/test_operating_horizon_task_v11_live.py
           tests/test_operating_horizon_task_v12_live.py
           tests/test_operating_horizon_task_v13_live.py
+          tests/test_operating_horizon_carryover_v13.py
           tests/test_operating_horizon_citation_repair_v1.py
           tests/test_operating_horizon_citation_repair_task_v1.py
           tests/test_operating_horizon_cash_policy_e2_v1.py
