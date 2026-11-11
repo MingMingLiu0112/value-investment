@@ -253,9 +253,10 @@ it("records the current driver bridge arithmetic acceptance without adopting par
       "artifacts/current/d2-operating-driver-20261101.json",
     );
     expect(stage.evidenceSource).not.toContain("待Root");
-    expect(stage.nextStep).toContain("现金阶段接入现有持久任务");
-    expect(stage.nextStep).toContain("旧派息规划不外推");
-    expect(stage.deliveryReview?.gap).toContain("没有真实现金政策");
+    expect(stage.nextStep).toContain("母公司资金、分配能力、维护和营运资金");
+    expect(stage.nextStep).toContain("不对同响应付费重试");
+    expect(stage.deliveryReview?.gap).toContain("原JSON多出一个右括号");
+    expect(stage.deliveryReview?.gap).toContain("6项现金政策UNKNOWN");
     expect(stage.deliveryReview?.gap).toContain("E2/F1/F2正向消费");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }

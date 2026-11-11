@@ -755,7 +755,7 @@ export const catalog: Record<
         implementation:
           "原驱动桥锁定H12026→H12027，按每情景128角点重算；同比FY只对FY、H1只对H1。新增2026Jul–2027Jun滚动全年适配，后续flat，ResearchApplicationService→既有v4计算",
         milestone:
-          "V14独立现金任务已接入现有API/Web和E2版本读取；真实600519任务因JSON格式拒绝。诊断副本虽通过经济结构校验，关键现金政策仍全部UNKNOWN。旧V12/V13失败记录保持原样，估值与条件价未形成。",
+          "V14独立现金任务已接入现有API/Web和E2版本读取；真实600519任务因JSON格式拒绝。诊断副本虽通过经济结构校验，关键现金政策仍全部UNKNOWN。旧V12/V13失败记录保持原样，不同任务不自动合并主预测；现金和估值仍未闭环。",
         existingEvidence:
           "旧D2两公司草案及rt-c40经济拒绝保留为历史，不覆盖旧raw；当前H1第11/14/12页量价成本表构成新驱动桥，不沿用旧直接填利润率路径",
         evidenceSource:
