@@ -16,8 +16,11 @@ def _base(**kwargs):
     binding = kwargs.get("binding")
     if binding is not None and binding != {"path": "old.json", "sha256": "a" * 64}:
         raise ValueError("BASE_BINDING_CHANGED")
-    return dict(symbol="600519", source_binding={"path": "old.json", "sha256": "a" * 64},
-        snapshot_fingerprint="b" * 64, evidence=[{"id": "old"}],
+    return dict(symbol="600519", issuer_name="贵州茅台酒股份有限公司",
+        as_of=NOW.isoformat(), source_binding={"path": "old.json", "sha256": "a" * 64},
+        snapshot_fingerprint="b" * 64, evidence=[dict(id="old", source_id="old-source",
+            pdf_sha256="a" * 64, available_at=NOW.isoformat(), period="2025-12-31",
+            scope="consolidated", unit="CNY", text="reported", field="revenue", value="1")],
         action="no_order", formal_eligibility=False)
 
 
@@ -27,10 +30,14 @@ def test_separate_plan_source_bound_without_changing_old_evidence(monkeypatch):
     replay = loader.load_current(root=ROOT, symbol="600519", now=NOW,
         binding=result["source_binding"])
     assert result == replay
-    assert result["evidence"] == [{"id": "old"}]
+    assert len(result["evidence"]) == 1 and result["evidence"][0]["id"] == "old"
     assert result["issuer_dividend_plan"]["fiscal_years"] == [2024, 2025, 2026]
     assert result["issuer_dividend_plan"]["available_at"] <= NOW.isoformat()
     assert result["formal_eligibility"] is False and result["action"] == "no_order"
+    projected = loader.project_research_context(result)
+    assert projected["source_as_of"] == result["as_of"]
+    assert projected["as_of"] == "2026-11-11"
+    assert projected["issuer_dividend_plan"] == result["issuer_dividend_plan"]
 
 
 def test_changed_plan_binding_rejected(monkeypatch):

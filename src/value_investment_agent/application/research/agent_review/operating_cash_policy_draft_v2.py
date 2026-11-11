@@ -4,12 +4,11 @@ Root supplies the bound source context. This module makes no source or model cal
 """
 from copy import deepcopy
 from dataclasses import replace
-from datetime import date, datetime
+from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
 import re
-from zoneinfo import ZoneInfo
 
 from . import operating_cash_policy_draft_v1 as v1
 from . import operating_driver_draft_v2 as driver_contract
@@ -21,7 +20,6 @@ from .operating_driver_draft_v2 import _exact, _payload
 
 VERSION = "operating-cash-policy-draft-v2-issuer-plan"
 PROMPT_VERSION = "operating-cash-policy-prompts-v2-issuer-plan"
-CHINA = ZoneInfo("Asia/Shanghai")
 
 
 def _binding(value, *, source=False):
@@ -57,18 +55,20 @@ def policy_context_v2(context, years):
     receipt = _binding(anchor.get("receipt_binding"))
     try:
         available = datetime.fromisoformat(anchor["available_at"])
-        as_of = date.fromisoformat(context["as_of"])
+        as_of = datetime.fromisoformat(context["source_as_of"])
     except (KeyError, TypeError, ValueError) as error:
         raise ValueError("D2_V2_PLAN_PIT_INVALID") from error
-    if available.utcoffset() is None or available.astimezone(CHINA).date() > as_of:
+    if as_of.utcoffset() is None or available.utcoffset() is None or available > as_of:
         raise ValueError("D2_V2_PLAN_NOT_AVAILABLE_AS_OF_RESEARCH")
     evidence_id = "issuer-plan-v2:" + source["sha256"][:24]
     original_ids = common._context(driver_contract.legacy_context({
-        key: value for key, value in context.items() if key != "issuer_dividend_plan"}))
+        key: value for key, value in context.items()
+        if key not in {"issuer_dividend_plan", "source_as_of"}}))
     if evidence_id in original_ids:
         raise ValueError("D2_V2_PLAN_EVIDENCE_ID_COLLISION")
     return dict(schema_version="d2-cash-policy-context-v2", symbol=anchor["symbol"],
-        research_as_of=context["as_of"], evidence_id=evidence_id,
+        research_as_of=context["as_of"], source_as_of=as_of.isoformat(),
+        evidence_id=evidence_id,
         source_binding=source, receipt_binding=receipt, available_at=available.isoformat(),
         disclosed_policy_target_2026=dict(minimum_ratio="0.75",
             profit_basis="consolidated_parent_attributable",
@@ -77,7 +77,8 @@ def policy_context_v2(context, years):
 
 def build_request(context, years, max_completion_tokens=2048, prior_hypothesis=None):
     plan = policy_context_v2(context, years)
-    ordinary = {key: value for key, value in context.items() if key != "issuer_dividend_plan"}
+    ordinary = {key: value for key, value in context.items()
+        if key not in {"issuer_dividend_plan", "source_as_of"}}
     base = v1.build_request(ordinary, years, max_completion_tokens, prior_hypothesis)
     schema = deepcopy(base.output_schema)
     for scenario in policy.SCENARIOS:
@@ -102,10 +103,11 @@ def build_request(context, years, max_completion_tokens=2048, prior_hypothesis=N
 
 def validate_response(response, context, years, generated_at):
     plan = policy_context_v2(context, years)
-    ordinary = {key: value for key, value in context.items() if key != "issuer_dividend_plan"}
+    ordinary = {key: value for key, value in context.items()
+        if key not in {"issuer_dividend_plan", "source_as_of"}}
     ids = common._context(driver_contract.legacy_context(ordinary))
     if (not isinstance(generated_at, datetime) or generated_at.utcoffset() is None
-            or generated_at.astimezone(CHINA).date() < date.fromisoformat(plan["research_as_of"])):
+            or generated_at < datetime.fromisoformat(plan["source_as_of"])):
         raise ValueError("D2_V2_GENERATED_BEFORE_RESEARCH")
     text = response.text if hasattr(response, "text") else response
     payload = _payload(text)

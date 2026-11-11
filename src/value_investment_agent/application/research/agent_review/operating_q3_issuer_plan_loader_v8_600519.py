@@ -9,6 +9,7 @@ from pathlib import Path
 
 from . import operating_q3_cash_source_loader_v1 as prior
 from . import issuer_dividend_plan_v2 as plan
+from . import operating_task_v2 as live
 from .task_execution_v1 import _bytes, _hash
 
 VERSION = "operating-q3-issuer-plan-loader-v8-600519"
@@ -48,3 +49,15 @@ def load_current(*, root, symbol, now: datetime, binding=None):
     result["action"] = "no_order"
     result["formal_eligibility"] = False
     return result
+
+
+def project_research_context(source_context):
+    """Keep the model's source-only rows and the exact acquisition cutoff."""
+    if (source_context.get("schema_version") != VERSION
+            or source_context.get("action") != "no_order"
+            or source_context.get("formal_eligibility") is not False):
+        raise ValueError("V8_ISSUER_PLAN_CONTEXT_INVALID")
+    projected = live.research_context(source_context, drivers=True)
+    projected["source_as_of"] = source_context["as_of"]
+    projected["issuer_dividend_plan"] = deepcopy(source_context["issuer_dividend_plan"])
+    return projected

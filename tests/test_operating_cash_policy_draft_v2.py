@@ -15,7 +15,8 @@ NOW = datetime(2026, 11, 13, tzinfo=timezone.utc)
 @pytest.fixture
 def context(base_context):
     result = deepcopy(base_context)
-    result.update(symbol="600519", issuer_name="贵州茅台酒股份有限公司", as_of="2026-11-12")
+    result.update(symbol="600519", issuer_name="贵州茅台酒股份有限公司",
+                  as_of="2026-11-12", source_as_of="2026-11-12T00:00:00+08:00")
     result["issuer_dividend_plan"] = dict(
         schema_version="d2-issuer-dividend-plan-anchor-v2", symbol="600519",
         status="DISCLOSED_CONDITIONAL_ANNUAL_PAYOUT_PLAN",
@@ -58,6 +59,12 @@ def test_request_and_response_keep_plan_target_separate_from_forecast(context):
     assert result["years"]["2026"]["shareholder_cash_paths"]["base"]["terms"]["target_payout_ratio"]["value"] == "0.4"
     assert result["action"] == "no_order" and result["formal_eligibility"] is False
     assert context == original
+
+
+def test_same_day_plan_acquired_after_source_cutoff_is_rejected(context):
+    context["source_as_of"] = "2026-11-11T20:00:00+08:00"
+    with pytest.raises(ValueError, match="NOT_AVAILABLE_AS_OF_RESEARCH"):
+        draft.policy_context_v2(context, [2026])
 
 
 @pytest.mark.parametrize("mutation,match", [
