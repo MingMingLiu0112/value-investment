@@ -40,6 +40,33 @@ describe("private session unlock handling", () => {
     vi.unstubAllGlobals();
   });
 
+  it("exchanges a launch fragment before navigation without loading private data", async () => {
+    const { location, store } = stubWindow("#unlock=" + SECRET);
+    const fetcher = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        json(200, {
+          action: "no_order",
+          status: "AUTHORIZED",
+          token: "launch-session",
+        }),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    await import("../src/services/api");
+    await vi.waitFor(() =>
+      expect(store.get("vi-local-session")).toBe("launch-session"),
+    );
+    expect(location.hash).toBe("");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher.mock.calls[0][0]).toBe(UNLOCK_URL);
+  });
+
+  it("does not exchange a session on an ordinary public page load", async () => {
+    stubWindow("");
+    const fetcher = vi.fn();
+    vi.stubGlobal("fetch", fetcher);
+    await import("../src/services/api");
+    expect(fetcher).not.toHaveBeenCalled();
+  });
   it("requests the independent hotspot detail without changing value or private contracts", async () => {
     stubWindow("").store.set("vi-local-session", "private-session");
     const fetcher = vi.fn(
@@ -61,8 +88,12 @@ describe("private session unlock handling", () => {
 
   it("reads external review handoff with the current private session", async () => {
     stubWindow("").store.set("vi-local-session", "handoff-session");
-    const fetcher = vi.fn(async () =>
-      json(200, { action: "no_order", status: "EXTERNAL_SIGNATURE_REQUIRED" }),
+    const fetcher = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        json(200, {
+          action: "no_order",
+          status: "EXTERNAL_SIGNATURE_REQUIRED",
+        }),
     );
     vi.stubGlobal("fetch", fetcher);
     const { api } = await import("../src/services/api");
@@ -263,8 +294,12 @@ describe("private session unlock handling", () => {
   it("refuses an expired stored token without a fresh launcher link", async () => {
     const { store } = stubWindow("");
     store.set("vi-local-session", "expired-token");
-    const fetcher = vi.fn(async () =>
-      json(401, { action: "no_order", status: "LOCAL_AUTHORIZATION_REQUIRED" }),
+    const fetcher = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        json(401, {
+          action: "no_order",
+          status: "LOCAL_AUTHORIZATION_REQUIRED",
+        }),
     );
     vi.stubGlobal("fetch", fetcher);
     const { api } = await import("../src/services/api");

@@ -267,6 +267,13 @@ async function operatorToken(): Promise<string> {
   return handshake;
 }
 
+//
+// Consume a launcher-provided one-time fragment as soon as the app loads.
+// Client-side navigation otherwise drops it before the first explicit
+// research-task read. No data or model task is requested by this exchange.
+if (fragmentSecret()) {
+  void operatorToken().catch(() => undefined);
+}
 async function post<T>(
   path: string,
   body: Record<string, unknown>,
