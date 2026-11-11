@@ -635,11 +635,11 @@ def test_new_domain_and_application_code_has_no_symbol_literals():
     # Existing source-bound issuer adapters and versioned tasks are immutable:
     # retain their exact bytes and allow no new symbol-specific application code.
     frozen_issuer_code = {
-        "issuer_dividend_plan_v2.py": "3b5cecc0bc915112eb3990bd9814fac9328015018f9c01092f0aacc7d74984fe",
-        "operating_cash_policy_draft_v2.py": "1e6e820674f714c5411501eb78b63b168537dcba9efa847a1e9295024e82f73d",
-        "operating_cash_policy_draft_v3.py": "a3e48fb51caf9b52c9224b6b9150ee7ce38dc096d672846a2026a95daad0500d",
-        "operating_horizon_task_v9_cash.py": "6536401d19423662344ac4949c4bb8bf3aa35f37e284f035c3b9cb5b4c1090c6",
-        "operating_horizon_task_v10_live.py": "0631f794c1c8284bcbfc3bca76e5fb978c00614a2cab9068d7344a5849a3e119",
+        "issuer_dividend_plan_v2.py": "c2f4ba4354735d5e634052f0e8dc325e7504b5ccec2a4ed594656c67f9882e23",
+        "operating_cash_policy_draft_v2.py": "c65b22ba95737419328bff542e991a6a447a8b8e044dfb832eea8e5b01f82517",
+        "operating_cash_policy_draft_v3.py": "13cd4cd57e5bdd2f1e82f7fd71f0b6edf6226a2279dd205f347869173dfaabc2",
+        "operating_horizon_task_v9_cash.py": "1634863dbb1060014c2d3f4501516e931e36137b0ed058ba9ff1e1e8a4302960",
+        "operating_horizon_task_v10_live.py": "5efc652cc4ff621ac74e29060656196a85c49269a96b04e4fc5b0a1a1e3f4be4",
         "operating_q3_issuer_plan_loader_v8_600519.py": "3a92c78a5664f6ee37e6966dec4f0e0750aa33bcea9167e919bb7741c58c737a",
     }
     for layer in ("domain", "application"):
@@ -656,6 +656,9 @@ def test_new_domain_and_application_code_has_no_symbol_literals():
             }
             if path.name in frozen_issuer_code and path.parent.name == "agent_review":
                 assert literals == {"600519"}
-                assert hashlib.sha256(path.read_bytes()).hexdigest() == frozen_issuer_code[path.name]
+                # Git checkouts may use CRLF on Windows and LF in CI. The
+                # protected source content must remain identical after only
+                # that checkout-level newline normalization.
+                assert hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest() == frozen_issuer_code[path.name]
                 continue
             assert not literals, (path, literals)

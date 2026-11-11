@@ -239,6 +239,56 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             return v5
         return horizon_cash_policy
     compact_cash_policy = NoticeAwareTaskService(project, kind="cash")
+    from ...application.research.agent_review.operating_horizon_task_v10_live import (
+        OperatingHorizonTaskService as V10HorizonTaskService, CONTRACT as V10_CONTRACT)
+    from ...application.research.agent_review.operating_horizon_task_v11_live import (
+        OperatingHorizonTaskService as V11HorizonTaskService, CONTRACT as V11_CONTRACT)
+
+    def live_2027_horizon(contract):
+        return (V11HorizonTaskService(project) if contract == V11_CONTRACT
+                else V10HorizonTaskService(project))
+
+    def live_2027_for(task_id):
+        # A damaged newer task must never be read through an older store.
+        for contract in (V11_CONTRACT, V10_CONTRACT):
+            selected = live_2027_horizon(contract)
+            if selected._directory(task_id).exists():
+                raw = json.loads((selected._directory(task_id) / "input.json").read_bytes())
+                if raw.get("mode") != "LIVE_OPERATING":
+                    raise ValueError("V11_TEST_ONLY_NOT_LIVE_RESEARCH")
+                selected._load(task_id)
+                return selected
+        return None
+
+    def list_live_2027(symbol, contract):
+        selected = live_2027_horizon(contract)
+        if not selected.base.exists():
+            return []
+        children = list(islice(selected.base.iterdir(), 101))
+        if len(children) > 100:
+            raise ValueError("RESEARCH_TASK_DISCOVERY_LIMIT_EXCEEDED: max_entries=100")
+        items = []
+        for path in sorted(children):
+            if not path.is_dir() or not path.name.startswith("rt-"):
+                continue
+            if not (path / "input.json").is_file():
+                continue
+            raw = json.loads((path / "input.json").read_bytes())
+            mode = raw.get("mode")
+            if mode == "TEST_ONLY_LIVE_CONTRACT":
+                test_reader = (V11HorizonTaskService(project, test_provider=object())
+                    if contract == V11_CONTRACT else V10HorizonTaskService(project, test_provider=object()))
+                test_reader._load(path.name)
+                continue
+            if mode != "LIVE_OPERATING":
+                raise ValueError("V11_TASK_MODE_INVALID")
+            selected._load(path.name)
+            item = selected.read(path.name)
+            if item["symbol"] == symbol:
+                items.append(item)
+                if len(items) > 20:
+                    raise ValueError("RESEARCH_TASK_RESULT_LIMIT_EXCEEDED: max_results=20")
+        return sorted(items, key=lambda row: (row["updated_at"], row["task_id"]), reverse=True)
 
     @api.get("/api/v1/operating-research/horizon-cash-policy-tasks")
     def list_horizon_cash_policy(request:Request, symbol:str, task_contract:str|None=None):
@@ -247,9 +297,11 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         try:
             if not re.fullmatch(r"[0-9]{6}",symbol):raise ValueError("INVALID_CASH_POLICY_SYMBOL")
             if task_contract not in (None, PARENT_WC_CONTRACT, SPLIT_CONTRACT,
-                                     ANCHORED_SPLIT_CONTRACT):
+                                     ANCHORED_SPLIT_CONTRACT, V10_CONTRACT, V11_CONTRACT):
                 raise ValueError("INVALID_CASH_POLICY_TASK_CONTRACT")
-            items = (list_live_split(symbol, anchored=True) if task_contract == ANCHORED_SPLIT_CONTRACT
+            items = (list_live_2027(symbol, task_contract)
+                if task_contract in (V10_CONTRACT, V11_CONTRACT)
+                else list_live_split(symbol, anchored=True) if task_contract == ANCHORED_SPLIT_CONTRACT
                 else list_live_split(symbol) if task_contract == SPLIT_CONTRACT
                 else list_live_parent_wc(symbol) if task_contract == PARENT_WC_CONTRACT
                 else horizon_cash_policy.list_for_symbol(symbol))
@@ -457,7 +509,9 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     def read_horizon_cash_policy(task_id:str, request:Request):
         error=denied(request)
         if error is not None:return error
-        try:return reply(cash_horizon_for(task_id).read(task_id))
+        try:
+            selected = live_2027_for(task_id) or cash_horizon_for(task_id)
+            return reply(selected.read(task_id))
         except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
         except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
             return reply(dict(action="no_order",status="HORIZON_CASH_POLICY_TASK_UNAVAILABLE",reason=str(error)),422)
@@ -468,6 +522,15 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         error=denied(request)
         if error is not None:return error
         try:
+            selected = live_2027_for(task_id)
+            if selected is not None:
+                if selected.__class__ is V11HorizonTaskService:
+                    from ...application.research.operating_horizon_cash_policy_e2_v3 import read_v11_cash_policy_e2_input
+                    return reply(read_v11_cash_policy_e2_input(root=project, task_id=task_id,
+                        now=datetime.now(timezone.utc), service=selected))
+                from ...application.research.operating_horizon_cash_policy_e2_v2 import read_v10_cash_policy_e2_input
+                return reply(read_v10_cash_policy_e2_input(root=project, task_id=task_id,
+                    now=datetime.now(timezone.utc), service=selected))
             from ...application.research.operating_horizon_cash_policy_e2_v1 import read_d2_cash_policy_e2_input
             return reply(read_d2_cash_policy_e2_input(
                 root=project, task_id=task_id, now=datetime.now(timezone.utc),
@@ -485,7 +548,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         error=denied(request)
         if error is not None:return error
         try:
-            selected = cash_horizon_for(task_id)
+            selected = live_2027_for(task_id) or cash_horizon_for(task_id)
             if operation == "cancel":
                 task = selected.cancel(task_id)
             elif operation == "resume":

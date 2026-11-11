@@ -57,6 +57,55 @@ def api(tmp_path,monkeypatch):
     return client,secret,data,tmp_path
 
 
+def test_v11_history_read_and_e2_dispatch_exclude_test_only(tmp_path, monkeypatch):
+    """The live Web route reads sealed V11 tasks without promoting test artifacts."""
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import operating_horizon_task_v11_live as v11
+    from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v3 as e2
+
+    calls = []
+    class Reader:
+        def __init__(self, root, test_provider=None):
+            self.root = Path(root)
+            self.test_provider = test_provider
+            self.base = self.root / "runtime" / "research-task-execution-v1" / "oh-v11-2027-live"
+        def _directory(self, task_id):
+            return self.base / task_id
+        def _load(self, task_id):
+            mode = __import__("json").loads((self._directory(task_id) / "input.json").read_bytes())["mode"]
+            calls.append(("load", task_id, mode, self.test_provider is not None))
+            return {"mode": mode}, {}, {}
+        def read(self, task_id):
+            calls.append(("read", task_id))
+            return dict(task_id=task_id, symbol="600519", status="FAILED",
+                        updated_at="2026-11-11T12:00:00+00:00", error_code="V9_ANNUAL_RESPONSE_REJECTED",
+                        action="no_order", formal_eligibility=False, condition_price=None)
+    monkeypatch.setattr(v11, "OperatingHorizonTaskService", Reader)
+    monkeypatch.setattr(e2, "read_v11_cash_policy_e2_input", lambda **kwargs: dict(
+        status="UNASSESSABLE", reason="SUCCEEDED_TWO_STAGE_TASK_REQUIRED",
+        action="no_order", formal_eligibility=False, condition_price=None))
+    live_id, test_id = "rt-" + "a" * 32, "rt-" + "b" * 32
+    for task_id, mode in ((live_id, "LIVE_OPERATING"),
+                          (test_id, "TEST_ONLY_LIVE_CONTRACT")):
+        directory = Reader(tmp_path)._directory(task_id)
+        directory.mkdir(parents=True)
+        (directory / "input.json").write_text(__import__("json").dumps({"mode": mode}), encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert client.get(path + "/" + live_id).status_code == 401
+    unlock(client, secret)
+    history = client.get(path + "?symbol=600519&task_contract=" + v11.CONTRACT)
+    assert history.status_code == 200, history.text
+    assert [row["task_id"] for row in history.json()["items"]] == [live_id]
+    assert client.get(path + "/" + live_id).json()["status"] == "FAILED"
+    assert client.get(path + "/" + test_id).status_code == 422
+    projection = client.get(path + "/" + live_id + "/e2-input").json()
+    assert projection["status"] == "UNASSESSABLE" and projection["condition_price"] is None
+    assert projection["formal_eligibility"] is False and projection["action"] == "no_order"
+    assert ("load", test_id, "TEST_ONLY_LIVE_CONTRACT", True) in calls
+    assert ("read", test_id) not in calls
+
+
 def test_unauthorized_post_never_creates_or_calls_provider(api):
     client,_,data,root=api
     before=state(root)

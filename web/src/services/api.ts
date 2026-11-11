@@ -1657,7 +1657,9 @@ export const api = {
     taskContract?:
       | "operating-horizon-task-v5-parent-wc-balance"
       | "operating-horizon-task-v6-split"
-      | "operating-horizon-task-v7-split",
+      | "operating-horizon-task-v7-split"
+      | "operating-horizon-task-v10-2027-live"
+      | "operating-horizon-task-v11-2027-live",
   ) =>
     getPrivate<{
       action: "no_order";

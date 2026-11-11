@@ -12,7 +12,10 @@ const PARENT_WC_CONTRACT =
   "operating-horizon-task-v5-parent-wc-balance" as const;
 const SPLIT_CONTRACT = "operating-horizon-task-v6-split" as const;
 const ANCHORED_SPLIT_CONTRACT = "operating-horizon-task-v7-split" as const;
-type CashKind = "annual" | "compact" | "parentWC" | "split" | "anchoredSplit";
+const V10_CONTRACT = "operating-horizon-task-v10-2027-live" as const;
+const V11_CONTRACT = "operating-horizon-task-v11-2027-live" as const;
+type CashKind =
+  "annual" | "compact" | "parentWC" | "split" | "anchoredSplit" | "v10" | "v11";
 
 function valid(value: HorizonCashPolicyTask | undefined, symbol: string) {
   return Boolean(
@@ -185,7 +188,11 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                   ? SPLIT_CONTRACT
                   : selectedKind === "anchoredSplit"
                     ? ANCHORED_SPLIT_CONTRACT
-                    : undefined,
+                    : selectedKind === "v10"
+                      ? V10_CONTRACT
+                      : selectedKind === "v11"
+                        ? V11_CONTRACT
+                        : undefined,
             );
       if (
         result.action !== "no_order" ||
@@ -338,6 +345,12 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         <Button disabled={busy} onClick={() => loadHistory("anchoredSplit")}>
           读取来源锚定研究历史
         </Button>
+        <Button disabled={busy} onClick={() => loadHistory("v10")}>
+          读取2027两阶段V10封存任务
+        </Button>
+        <Button disabled={busy} onClick={() => loadHistory("v11")}>
+          读取2027两阶段V11封存任务
+        </Button>
         <Button disabled={busy} onClick={loadAnnualHistory}>
           读取独立年度经营历史
         </Button>
@@ -379,7 +392,11 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                   ? "D2分步研究历史"
                   : historyKind === "anchoredSplit"
                     ? "D2来源锚定分步研究历史"
-                    : "D2紧凑研究历史"
+                    : historyKind === "v10"
+                      ? "D2两阶段V10封存任务历史"
+                      : historyKind === "v11"
+                        ? "D2两阶段V11封存任务历史"
+                        : "D2紧凑研究历史"
           }
         >
           {history.length === 0 ? (
@@ -435,10 +452,12 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                 ? "来源绑定母公司资金与年度经营"
                 : kind === "split"
                   ? "先核验年度经营，再研究股东现金"
-                  : "年度经营与现金政策"}{" "}
+                  : kind === "v10" || kind === "v11"
+                    ? `2027两阶段${kind.toUpperCase()}来源绑定研究`
+                    : "年度经营与现金政策"}{" "}
             · 状态：{task.status} · 资格：未批准
           </p>
-          {kind === "split" && (
+          {(kind === "split" || kind === "v10" || kind === "v11") && (
             <p>
               年度经营：{task.annual_status || "待读取"}；股东现金：
               {task.cash_status || "待读取"}。调用结果不明时不会自动重试。
