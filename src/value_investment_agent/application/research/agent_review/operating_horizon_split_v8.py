@@ -150,6 +150,10 @@ def validate_responses(annual_response, cash_response, *, context, years,
     _exact(cash_payload, ("years",))
     _exact(cash_payload["years"], ("2027",))
     combined = deepcopy(annual_payload)
+    # annual-v3 has already verified these source-bound cases. The frozen v3
+    # full validator accepts only its original operating path schema.
+    for path in combined["years"]["2027"]["operating_paths"].values():
+        path.pop("unit_cost_case")
     combined["years"]["2027"]["shareholder_cash_paths"] = deepcopy(
         cash_payload["years"]["2027"]["shareholder_cash_paths"])
     combined_text = common._canonical(combined)
@@ -161,6 +165,8 @@ def validate_responses(annual_response, cash_response, *, context, years,
     result["split_contract"] = deepcopy(binding)
     result["split_response_sha256"] = response_hashes
     result["cash_policy_v3"] = cash_result
+    result["validated_annual_v3"] = annual.validate_response(
+        annual_response, _annual_context(projected), years, annual_generated_at)
     result["action"] = "no_order"
     result["formal_eligibility"] = False
     return result

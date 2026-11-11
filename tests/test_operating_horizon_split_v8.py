@@ -129,17 +129,29 @@ def test_cash_generation_order_and_numeric_mechanism(split_context):
             annual_generated_at=ANNUAL_AT, cash_generated_at=CASH_AT)
 
 
-def test_unknown_cash_is_not_promoted_and_full_annotation_mismatch_fails_closed(split_context):
+def test_unknown_cash_is_not_promoted_after_full_validation(split_context):
     annual = _annual()
     request = _requests(split_context, annual)
-    with pytest.raises(split.FullValidatorBlocked, match="FULL_VALIDATOR_REJECTED_REQUIRED_ANNUAL_ANNOTATIONS_FAIL_CLOSED") as blocked:
-        split.validate_responses(annual, _cash(unknown=True), context=split_context, years=[2027],
-            source_binding=SOURCE, binding=request.binding,
-            annual_generated_at=ANNUAL_AT, cash_generated_at=CASH_AT)
-    assert blocked.value.response_hashes["annual"] == request.binding["annual_response_sha256"]
-    assert blocked.value.response_hashes["cash"]
-    assert blocked.value.cash_policy_status == "INCOMPLETE_UNKNOWN_TERMS"
-    assert blocked.value.full_validator_reason
+    result = split.validate_responses(annual, _cash(unknown=True), context=split_context, years=[2027],
+        source_binding=SOURCE, binding=request.binding,
+        annual_generated_at=ANNUAL_AT, cash_generated_at=CASH_AT)
+    assert result["split_response_sha256"]["annual"] == request.binding["annual_response_sha256"]
+    assert result["cash_policy_appendix_status"] == "INCOMPLETE_UNKNOWN_TERMS"
+    assert result["validated_annual_v3"]["years"]["2027"]["unit_cost_cases"]
+    assert result["valuation_produced"] is False and result["formal_eligibility"] is False
+
+
+def test_numeric_cash_keeps_annual_counterevidence_and_remains_unapproved(split_context):
+    annual = _annual()
+    request = _requests(split_context, annual)
+    result = split.validate_responses(annual, _cash(), context=split_context, years=[2027],
+        source_binding=SOURCE, binding=request.binding,
+        annual_generated_at=ANNUAL_AT, cash_generated_at=CASH_AT)
+    assert result["cash_policy_appendix_status"] == "COMPLETE_UNAPPROVED"
+    assert result["validated_annual_v3"]["historical_cost_counterevidence"]
+    assert result["split_contract"] == request.binding
+    assert result["valuation_produced"] is False
+    assert result["action"] == "no_order" and result["formal_eligibility"] is False
 
 
 def test_cash_v3_direct_numeric_and_unknown_contract(split_context):
