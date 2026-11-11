@@ -74,6 +74,7 @@ def test_v14_budget_blocks_provider_before_intent(task):
     queued = service.create(symbol="600519", request_key="TEST_V14_BUDGET", years=[2027], now=NOW)
     failed = service.run(queued["task_id"], now=NOW)
     assert failed["status"] == "FAILED"
+    assert failed["error_code"] == "V14_TASK_EXECUTION_FAILED"
     assert failed["provider_requests"] == 0 and failed["stage_intents"] == {}
     assert calls == []
 
