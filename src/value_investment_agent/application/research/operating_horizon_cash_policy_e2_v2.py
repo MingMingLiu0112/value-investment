@@ -31,37 +31,55 @@ def _time(value, now):
 
 def _read_bound_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
                                      contract: str, task_service, version: str,
-                                     label: str, service=None) -> dict:
+                                     label: str, service=None, allow_imported_v12=False) -> dict:
     if not isinstance(now, datetime) or now.utcoffset() is None:
         raise ValueError("V10_E2_CUTOFF_REQUIRED")
     root = Path(root).resolve()
     service = service or task_service(root)
     task = service.read(task_id)  # Durable read replays source, requests and both responses.
+    spec, state, _ = service._load(task_id)
+    imported = allow_imported_v12 and "imported_annual" in spec
     if (task.get("workflow") != contract or task.get("status") != "SUCCEEDED"
             or task.get("action") != "no_order" or task.get("formal_eligibility") is not False
-            or task.get("annual_status") != "SETTLED_VALIDATED"
+            or task.get("annual_status") != ("IMPORTED_V12" if imported else "SETTLED_VALIDATED")
             or task.get("cash_status") != "SETTLED_VALIDATED"):
         raise ValueError("V10_E2_SUCCEEDED_TWO_STAGE_TASK_REQUIRED")
     _time(task.get("research_as_of"), now)
     _time(task.get("updated_at"), now)
     pins = task.get("stage_responses")
-    if (not isinstance(pins, dict) or set(pins) != {"annual", "cash"}
+    if (not isinstance(pins, dict) or set(pins) != ({"cash"} if imported else {"annual", "cash"})
             or any(not isinstance(pin, dict) or set(pin) != {"path", "sha256"}
                    or not isinstance(pin["sha256"], str) or len(pin["sha256"]) != 64
                    for pin in pins.values())):
         raise ValueError("V10_E2_RESPONSE_PINS_REQUIRED")
-    spec, state, _ = service._load(task_id)
     mode = spec.get("mode")
     if (mode not in {"LIVE_OPERATING", "TEST_ONLY_LIVE_CONTRACT"}
             or task.get("execution_mode") != mode):
         raise ValueError("V10_E2_EXECUTION_MODE_INVALID")
     if (spec.get("task_contract") != contract or spec.get("source_binding") != task.get("source_binding")
             or state.get("stage_responses") != pins or state.get("cash_binding") != task.get("cash_binding")
-            or set(state.get("stage_validated", [])) != {"annual", "cash"}):
+            or set(state.get("stage_validated", [])) != {"annual", "cash"}
+            or (imported and (state.get("stage_intents", {}).get("annual") is not None
+                              or "annual" in state.get("stage_responses", {})))):
         raise ValueError("V10_E2_TASK_PINS_CHANGED")
     context = service._context(spec)
-    if context.get("snapshot_fingerprint") != spec.get("context_fingerprint"):
+    if (context.get("snapshot_fingerprint") != spec.get("context_fingerprint") if not imported
+            else hashlib.sha256(json.dumps(context, ensure_ascii=False, sort_keys=True,
+                separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
+                != spec.get("context_sha256")):
         raise ValueError("V10_E2_SOURCE_CONTEXT_CHANGED")
+    if imported:
+        from .agent_review.operating_horizon_carryover_v13 import replay_cash
+        pin = spec["imported_annual"]
+        _, lineage, source_context, annual_packet = replay_cash(root, pin["source_task_id"],
+            expected_source_binding=pin["source_binding"],
+            expected_context_sha256=pin["source_context_sha256"],
+            expected_annual_response_sha256=pin["source_annual_response_sha256"],
+            expected_budget_day=pin["source_budget_day"])
+        if (lineage != pin or source_context != context
+                or task.get("imported_annual", {}).get("source_annual_result_sha256")
+                   != pin["source_annual_result_sha256"]):
+            raise ValueError("V10_E2_IMPORTED_LINEAGE_CHANGED")
     research = task.get("research_result")
     if (not isinstance(research, dict) or research.get("cash_policy_appendix_status") != "COMPLETE_UNAPPROVED"
             or research.get("action") != "no_order" or research.get("split_contract") != task.get("cash_binding")):
@@ -70,7 +88,7 @@ def _read_bound_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     if not isinstance(responses, dict) or set(responses) != {"annual", "cash"}:
         raise ValueError("V10_E2_RESPONSE_HASHES_REQUIRED")
     for stage in ("annual", "cash"):
-        packet = service._packet(spec, state, stage)
+        packet = annual_packet if imported and stage == "annual" else service._packet(spec, state, stage)
         _time(packet.get("generated_at"), now)
         actual = hashlib.sha256(packet["response"]["text"].encode("utf-8")).hexdigest()
         if responses[stage] != actual:
@@ -111,10 +129,15 @@ def _read_bound_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     manifest = dict(schema_version=version, task_id=task_id, task_contract=contract,
         symbol=task["symbol"], record_binding=deepcopy(task["record_binding"]),
         source_binding=deepcopy(task["source_binding"]),
-        context_fingerprint=spec["context_fingerprint"], cash_binding=deepcopy(task["cash_binding"]),
+        context_fingerprint=spec.get("context_fingerprint"), cash_binding=deepcopy(task["cash_binding"]),
         stage_responses=deepcopy(pins), split_response_sha256=deepcopy(responses),
         years=["2027"], execution_mode=mode, action="no_order",
         formal_eligibility=False, main_range_adopted=False)
+    if imported:
+        manifest.pop("context_fingerprint")
+        manifest.update(context_sha256=spec["context_sha256"],
+            annual_origin="V12_EXTERNAL", imported_annual=deepcopy(lineage),
+            annual_response_binding=deepcopy(lineage["source_annual_response_binding"]))
     fingerprint = hashlib.sha256(json.dumps(manifest, ensure_ascii=False, sort_keys=True,
         separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
     return dict(status=(f"SOURCE_BOUND_D2_{label}_CASH_POLICY_READY_FOR_E2"
@@ -123,7 +146,7 @@ def _read_bound_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
         formal_eligibility=False, main_range_adopted=False, condition_price=None,
         symbol=task["symbol"], task_id=task_id, research_as_of=task["research_as_of"],
         policy_years=policies, annual_operating_candidates=candidates,
-        annual_operating_status="SAME_TASK_COMPILED", input_manifest=manifest,
+        annual_operating_status=("IMPORTED_V12_COMPILED" if imported else "SAME_TASK_COMPILED"), input_manifest=manifest,
         input_fingerprint=fingerprint,
         blockers=["PARENT_CASH_FACTS_AND_OPENING_CAPITAL_REQUIRED",
                   "MAIN_ECONOMIC_RANGE_ADOPTION_REQUIRED",

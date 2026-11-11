@@ -17,4 +17,4 @@ def read_v13_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     return _read_bound_cash_policy_e2_input(
         root=root, task_id=task_id, now=now, contract=CONTRACT,
         task_service=OperatingHorizonTaskService, version=VERSION,
-        label="V13", service=service)
+        label="V13", service=service, allow_imported_v12=True)
