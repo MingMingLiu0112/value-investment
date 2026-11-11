@@ -29,14 +29,15 @@ def _time(value, now):
     return parsed
 
 
-def read_v10_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
-                                   service=None) -> dict:
+def _read_bound_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
+                                     contract: str, task_service, version: str,
+                                     label: str, service=None) -> dict:
     if not isinstance(now, datetime) or now.utcoffset() is None:
         raise ValueError("V10_E2_CUTOFF_REQUIRED")
     root = Path(root).resolve()
-    service = service or OperatingHorizonTaskService(root)
+    service = service or task_service(root)
     task = service.read(task_id)  # Durable read replays source, requests and both responses.
-    if (task.get("workflow") != CONTRACT or task.get("status") != "SUCCEEDED"
+    if (task.get("workflow") != contract or task.get("status") != "SUCCEEDED"
             or task.get("action") != "no_order" or task.get("formal_eligibility") is not False
             or task.get("annual_status") != "SETTLED_VALIDATED"
             or task.get("cash_status") != "SETTLED_VALIDATED"):
@@ -54,7 +55,7 @@ def read_v10_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     if (mode not in {"LIVE_OPERATING", "TEST_ONLY_LIVE_CONTRACT"}
             or task.get("execution_mode") != mode):
         raise ValueError("V10_E2_EXECUTION_MODE_INVALID")
-    if (spec.get("task_contract") != CONTRACT or spec.get("source_binding") != task.get("source_binding")
+    if (spec.get("task_contract") != contract or spec.get("source_binding") != task.get("source_binding")
             or state.get("stage_responses") != pins or state.get("cash_binding") != task.get("cash_binding")
             or set(state.get("stage_validated", [])) != {"annual", "cash"}):
         raise ValueError("V10_E2_TASK_PINS_CHANGED")
@@ -107,7 +108,7 @@ def read_v10_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
             opening_date=_annual_opening_period(row), asof=task["research_as_of"])
         candidates[year] = dict(scenarios=compiled["scenarios"],
             earnings=earnings["scenarios"], task_id=task_id)
-    manifest = dict(schema_version=VERSION, task_id=task_id, task_contract=CONTRACT,
+    manifest = dict(schema_version=version, task_id=task_id, task_contract=contract,
         symbol=task["symbol"], record_binding=deepcopy(task["record_binding"]),
         source_binding=deepcopy(task["source_binding"]),
         context_fingerprint=spec["context_fingerprint"], cash_binding=deepcopy(task["cash_binding"]),
@@ -116,7 +117,7 @@ def read_v10_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
         formal_eligibility=False, main_range_adopted=False)
     fingerprint = hashlib.sha256(json.dumps(manifest, ensure_ascii=False, sort_keys=True,
         separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
-    return dict(status=("SOURCE_BOUND_D2_V10_CASH_POLICY_READY_FOR_E2"
+    return dict(status=(f"SOURCE_BOUND_D2_{label}_CASH_POLICY_READY_FOR_E2"
                         if mode == "LIVE_OPERATING" else "TEST_ONLY_E2_CONTRACT_REPLAY"),
         execution_mode=mode, action="no_order",
         formal_eligibility=False, main_range_adopted=False, condition_price=None,
@@ -127,5 +128,13 @@ def read_v10_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
         blockers=["PARENT_CASH_FACTS_AND_OPENING_CAPITAL_REQUIRED",
                   "MAIN_ECONOMIC_RANGE_ADOPTION_REQUIRED",
                   "CURRENT_CAPITAL_DISTRIBUTION_EVENT_QUOTE_ALIGNMENT_REQUIRED"],
-        scope=("CONDITIONAL_UNAPPROVED_D2_V10_POLICY_NOT_VALUATION_OR_PRICE"
+        scope=(f"CONDITIONAL_UNAPPROVED_D2_{label}_POLICY_NOT_VALUATION_OR_PRICE"
                if mode == "LIVE_OPERATING" else "TEST_ONLY_NOT_REAL_RESEARCH_OR_VALUATION"))
+
+
+def read_v10_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
+                                   service=None) -> dict:
+    return _read_bound_cash_policy_e2_input(
+        root=root, task_id=task_id, now=now, contract=CONTRACT,
+        task_service=OperatingHorizonTaskService, version=VERSION,
+        label="V10", service=service)
