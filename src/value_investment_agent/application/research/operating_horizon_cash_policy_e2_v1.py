@@ -16,6 +16,7 @@ from .operating_cash_consumption_v2 import compile_verified_annual_candidates
 from ...domain.research.operating_cash_consumption_v1 import consume_operating_earnings
 from .agent_review.operating_horizon_draft_v3 import SCENARIOS, TERMS, VERSION as DRAFT_VERSION
 from .agent_review.operating_horizon_task_v4 import CONTRACT, OperatingHorizonTaskService
+from .agent_review.operating_horizon_task_v5_wc import CONTRACT as WC_CONTRACT
 from .agent_review.operating_horizon_task_v2 import (
     CONTRACT as ANNUAL_CONTRACT,
     OperatingHorizonTaskService as AnnualOperatingTaskService,
@@ -74,7 +75,8 @@ def read_d2_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
         raise ValueError("D2_CASH_POLICY_RESEARCH_TIME_INVALID") from error
     if research_time.utcoffset() is None or research_time > now:
         raise ValueError("D2_CASH_POLICY_NOT_AVAILABLE_AT_E2_CUTOFF")
-    contracts = {CONTRACT: DRAFT_VERSION, FOLLOWUP_CONTRACT: FOLLOWUP_DRAFT_VERSION}
+    contracts = {CONTRACT: DRAFT_VERSION, WC_CONTRACT: DRAFT_VERSION,
+                 FOLLOWUP_CONTRACT: FOLLOWUP_DRAFT_VERSION}
     contract = task.get("workflow")
     if (contract not in contracts or task.get("status") != "SUCCEEDED"
             or task.get("action") != "no_order" or task.get("formal_eligibility") is not False):
@@ -103,7 +105,7 @@ def read_d2_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
             policies[year][scenario] = deepcopy(path)
     annual_candidates = {}
     annual_error = None
-    if contract == CONTRACT:
+    if contract in {CONTRACT, WC_CONTRACT}:
         # The full v4 response carries the operating bridge. Keep it from the
         # same sealed task as the cash policy, instead of reusing a different
         # annual task by symbol or manufacturing an earnings path.
@@ -127,6 +129,12 @@ def read_d2_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     bindings = [deepcopy(task[key]) for key in ("record_binding", "source_binding") if isinstance(task.get(key), dict)]
     if len(bindings) != 2:
         raise ValueError("D2_V4_TASK_BINDINGS_REQUIRED")
+    if contract == WC_CONTRACT:
+        wc_binding = task.get("wc_source_binding")
+        if (not isinstance(wc_binding, dict) or
+                set(wc_binding) != {"registry", "originals", "history_sha256"}):
+            raise ValueError("D2_WC_SOURCE_BINDING_REQUIRED")
+        bindings.append(deepcopy(wc_binding))
     manifest = dict(schema_version=VERSION, task_id=task_id, symbol=task["symbol"],
         task_contract=contract, task_context_fingerprint=task.get("context_fingerprint"),
         source_bindings=bindings, policy_years=sorted(policies),

@@ -102,17 +102,27 @@ function visibleHtml(html: string): string {
 it("shows the real E1 version difference as unapproved conditional research", () => {
   const data = example();
   data.successor_update = {
-    status: "SOURCE_BOUND_CONDITIONAL_SUCCESSOR", symbol: "000568",
-    action: "no_order", formal_eligibility: false,
-    main_range_adopted: false, price_admitted: false,
-    research_as_of: "2026-11-11", financial_basis: "2026-06-30",
+    status: "SOURCE_BOUND_CONDITIONAL_SUCCESSOR",
+    symbol: "000568",
+    action: "no_order",
+    formal_eligibility: false,
+    main_range_adopted: false,
+    price_admitted: false,
+    research_as_of: "2026-11-11",
+    financial_basis: "2026-06-30",
     changed_input_fields: ["assumption_binding"],
-    change_rationale: "TEST_ONLY季度收入压力延续假设", countercase: "TEST_ONLY后续销售恢复须重开",
-    predecessor_input_fingerprint: "old", successor_input_fingerprint: "new",
+    change_rationale: "TEST_ONLY季度收入压力延续假设",
+    countercase: "TEST_ONLY后续销售恢复须重开",
+    predecessor_input_fingerprint: "old",
+    successor_input_fingerprint: "new",
     predecessor_valuation: data.valuation,
     successor_valuation: { ...data.valuation!, bear_value: "9.45" },
   };
-  const visible = visibleHtml(renderToStaticMarkup(<FirstResearchInputView data={data} symbol="000568" />));
+  const visible = visibleHtml(
+    renderToStaticMarkup(
+      <FirstResearchInputView data={data} symbol="000568" />,
+    ),
+  );
   expect(visible).toContain("E1 研究版本更新");
   expect(visible).toContain("11.11");
   expect(visible).toContain("9.45");
@@ -183,9 +193,11 @@ it("shows a verified historical close separately from the unadopted valuation", 
     price_admitted: false,
     comparison_eligible: false,
   };
-  const visible = visibleHtml(renderToStaticMarkup(
-    <FirstResearchInputView data={data} symbol="000568" />,
-  ));
+  const visible = visibleHtml(
+    renderToStaticMarkup(
+      <FirstResearchInputView data={data} symbol="000568" />,
+    ),
+  );
   expect(visible).toContain("收盘价 79.99 元");
   expect(visible).toContain("尚无价格比较资格");
   expect(visible).not.toContain("当前低估");

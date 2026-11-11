@@ -99,6 +99,38 @@ def test_reads_complete_v4_policy_as_source_bound_e2_input(env):
     assert result["condition_price"] is None and result["main_range_adopted"] is False
 
 
+def test_v5_wc_policy_requires_its_independent_source_binding(env):
+    """TEST_ONLY projection: WC evidence must join the E2 input fingerprint."""
+    from types import SimpleNamespace
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v5_wc import (
+        CONTRACT as WC_CONTRACT,
+    )
+    from value_investment_agent.application.research.operating_horizon_cash_policy_e2_v1 import (
+        read_d2_cash_policy_e2_input,
+    )
+
+    service, task_id = _task(env)
+    row = service.read(task_id)
+    row["workflow"] = WC_CONTRACT
+    row["wc_source_binding"] = {
+        "registry": {"path": "config/test-only-wc.json", "sha256": "a" * 64},
+        "originals": [],
+        "history_sha256": "b" * 64,
+    }
+    projected = SimpleNamespace(read=lambda _: row, source_loader=service.source_loader)
+    result = read_d2_cash_policy_e2_input(
+        root=env.root, task_id=task_id, now=datetime.now(timezone.utc), service=projected
+    )
+    assert result["input_manifest"]["task_contract"] == WC_CONTRACT
+    assert result["input_manifest"]["source_bindings"][2] == row["wc_source_binding"]
+    assert result["action"] == "no_order" and result["condition_price"] is None
+    del row["wc_source_binding"]
+    with pytest.raises(ValueError, match="D2_WC_SOURCE_BINDING_REQUIRED"):
+        read_d2_cash_policy_e2_input(
+            root=env.root, task_id=task_id, now=datetime.now(timezone.utc), service=projected
+        )
+
+
 def test_rejects_incomplete_or_future_task_result(env):
     service, task_id = _task(env)
     with pytest.raises(ValueError, match="NOT_AVAILABLE_AT_E2_CUTOFF"):
