@@ -841,6 +841,46 @@ def test_split_v6_dispatch_is_opt_in_and_damaged_task_never_falls_back(api, monk
     assert not data.provider_calls
 
 
+def test_split_v7_dispatch_is_explicit_and_corruption_never_falls_back(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v7_split import (
+        OperatingHorizonTaskService as V7, CONTRACT)
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v4 import (
+        OperatingHorizonTaskService as V4)
+    from value_investment_agent.application.research.agent_review import operating_q3_cash_source_loader_v1 as loader
+
+    client, secret, data, root = api
+    path = BASE + '/horizon-cash-policy-tasks'
+    body = dict(symbol='600519', request_key='TEST_ONLY-v7-route', years=[2027], task_contract=CONTRACT)
+    before = state(root)
+    assert client.post(path, json=body).status_code == 401
+    assert state(root) == before and not data.provider_calls
+    task_id = 'rt-' + '8' * 32
+    calls = []
+    monkeypatch.setattr(V4, 'create', lambda self, **kw: pytest.fail('V7 fell through to V4'))
+    monkeypatch.setattr(V7, 'create', lambda self, **kw: (calls.append(('create', kw)) or
+        dict(task_id=task_id, status='QUEUED', symbol='600519', action='no_order', formal_eligibility=False)))
+    monkeypatch.setattr(V7, 'run', lambda self, id: calls.append(('run', id)))
+    monkeypatch.setattr(V7, 'read', lambda self, id: (calls.append(('read', id)) or
+        dict(task_id=id, symbol='600519', updated_at='2026-11-11T00:00:00+00:00',
+             status='QUEUED', action='no_order', formal_eligibility=False)))
+    monkeypatch.setattr(V7, '_load', lambda self, id: (None, None, None))
+    directory = V7(root, allow_live=True, source_loader=loader.load_current,
+        source_loader_version=loader.VERSION)._directory(task_id)
+    directory.mkdir(parents=True)
+    (directory / 'input.json').write_text('{"mode":"LIVE_OPERATING"}', encoding='utf-8')
+    unlock(client, secret)
+    assert client.post(path, json=body).status_code == 202
+    assert calls[:2] == [('create', {key: body[key] for key in ('symbol', 'request_key', 'years')}),
+                         ('run', task_id)]
+    assert client.get(path + '?symbol=600519&task_contract=' + CONTRACT).json()['items'][0]['task_id'] == task_id
+    assert client.get(path + '/' + task_id).json()['status'] == 'QUEUED'
+    assert not data.provider_calls
+    (directory / 'input.json').unlink()
+    assert client.get(path + '/' + task_id).status_code == 422
+    assert client.get(path + '?symbol=600519&task_contract=' + CONTRACT).status_code == 422
+    assert not data.provider_calls
+
+
 def test_split_v6_test_only_task_is_not_a_live_api_result(api, monkeypatch):
     from value_investment_agent.application.research.agent_review.operating_horizon_task_v6_split import (
         OperatingHorizonTaskService as V6, CONTRACT)

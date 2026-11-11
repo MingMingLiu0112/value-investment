@@ -11,7 +11,8 @@ import { Readable } from "./LiveOperatingResearchPanel";
 const PARENT_WC_CONTRACT =
   "operating-horizon-task-v5-parent-wc-balance" as const;
 const SPLIT_CONTRACT = "operating-horizon-task-v6-split" as const;
-type CashKind = "annual" | "compact" | "parentWC" | "split";
+const ANCHORED_SPLIT_CONTRACT = "operating-horizon-task-v7-split" as const;
+type CashKind = "annual" | "compact" | "parentWC" | "split" | "anchoredSplit";
 
 function valid(value: HorizonCashPolicyTask | undefined, symbol: string) {
   return Boolean(
@@ -87,6 +88,7 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
       | "startCompact"
       | "startParentWC"
       | "startSplit"
+      | "startAnchoredSplit"
       | "refresh"
       | "cancel"
       | "resume",
@@ -107,7 +109,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
               symbol,
               years: [
                 new Date().getFullYear() +
-                  (operation === "startParentWC" || operation === "startSplit"
+                  (operation === "startParentWC" ||
+                  operation === "startSplit" ||
+                  operation === "startAnchoredSplit"
                     ? 1
                     : 0),
               ],
@@ -116,7 +120,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                 ? { task_contract: PARENT_WC_CONTRACT }
                 : operation === "startSplit"
                   ? { task_contract: SPLIT_CONTRACT }
-                  : {}),
+                  : operation === "startAnchoredSplit"
+                    ? { task_contract: ANCHORED_SPLIT_CONTRACT }
+                    : {}),
             })
         : operation === "refresh"
           ? await (kind === "compact"
@@ -143,7 +149,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
               ? "parentWC"
               : operation === "startSplit"
                 ? "split"
-                : "annual",
+                : operation === "startAnchoredSplit"
+                  ? "anchoredSplit"
+                  : "annual",
         );
     } catch (cause) {
       const reason = safeReason(cause);
@@ -175,7 +183,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                 ? PARENT_WC_CONTRACT
                 : selectedKind === "split"
                   ? SPLIT_CONTRACT
-                  : undefined,
+                  : selectedKind === "anchoredSplit"
+                    ? ANCHORED_SPLIT_CONTRACT
+                    : undefined,
             );
       if (
         result.action !== "no_order" ||
@@ -307,6 +317,12 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         <Button disabled={busy || active} onClick={() => run("startSplit")}>
           分步研究下一年度经营与股东现金
         </Button>
+        <Button
+          disabled={busy || active}
+          onClick={() => run("startAnchoredSplit")}
+        >
+          来源锚定分步研究下一年度经营与股东现金
+        </Button>
         <Button disabled={busy} onClick={() => loadHistory("annual")}>
           读取年度研究历史
         </Button>
@@ -318,6 +334,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         </Button>
         <Button disabled={busy} onClick={() => loadHistory("split")}>
           读取分步研究历史
+        </Button>
+        <Button disabled={busy} onClick={() => loadHistory("anchoredSplit")}>
+          读取来源锚定研究历史
         </Button>
         <Button disabled={busy} onClick={loadAnnualHistory}>
           读取独立年度经营历史
@@ -358,7 +377,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                 ? "D2母公司资金研究历史"
                 : historyKind === "split"
                   ? "D2分步研究历史"
-                  : "D2紧凑研究历史"
+                  : historyKind === "anchoredSplit"
+                    ? "D2来源锚定分步研究历史"
+                    : "D2紧凑研究历史"
           }
         >
           {history.length === 0 ? (

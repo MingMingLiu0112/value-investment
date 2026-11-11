@@ -1342,6 +1342,7 @@ export type HorizonCashPolicyTask = {
     | "operating-horizon-task-v4-cash-policy"
     | "operating-horizon-task-v5-parent-wc-balance"
     | "operating-horizon-task-v6-split"
+    | "operating-horizon-task-v7-split"
     | "operating-cash-policy-task-v1"
     | "operating-horizon-task-v2"
     | "operating-horizon-task-v3";
@@ -1638,7 +1639,8 @@ export const api = {
     years: number[];
     task_contract?:
       | "operating-horizon-task-v5-parent-wc-balance"
-      | "operating-horizon-task-v6-split";
+      | "operating-horizon-task-v6-split"
+      | "operating-horizon-task-v7-split";
   }) =>
     post<HorizonCashPolicyTask>(
       "operating-research/horizon-cash-policy-tasks",
@@ -1654,7 +1656,8 @@ export const api = {
     signal?: AbortSignal,
     taskContract?:
       | "operating-horizon-task-v5-parent-wc-balance"
-      | "operating-horizon-task-v6-split",
+      | "operating-horizon-task-v6-split"
+      | "operating-horizon-task-v7-split",
   ) =>
     getPrivate<{
       action: "no_order";

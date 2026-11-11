@@ -72,6 +72,37 @@ def test_v6_same_task_e2_projection_requires_both_sealed_stages_and_wc_pin(monke
             now=wc_now + timedelta(hours=1), service=projected)
 
 
+def test_v7_same_task_e2_input_preserves_unknown_and_requires_sealed_stages(monkeypatch, request):
+    from test_operating_horizon_task_v5_wc import env as wc_env, NOW as wc_now
+    from test_operating_horizon_task_v7_split import service as split_service
+    from types import SimpleNamespace
+
+    environment = wc_env.__wrapped__(request.getfixturevalue("tmp_path"), monkeypatch)
+    runner, calls = split_service(environment, monkeypatch)
+    task = runner.create(symbol="600519", request_key="V7_E2_SAME_TASK", years=[2026], now=wc_now)
+    assert runner.run(task["task_id"], now=wc_now)["status"] == "SUCCEEDED"
+    assert calls == ["annual", "cash"]
+    result = read_d2_cash_policy_e2_input(root=environment.root, task_id=task["task_id"],
+        now=wc_now + timedelta(hours=1), service=runner)
+    assert result["status"] == "SOURCE_BOUND_D2_V7_CASH_POLICY_READY_FOR_E2"
+    assert result["input_manifest"]["task_contract"] == "operating-horizon-task-v7-split"
+    assert result["action"] == "no_order" and result["formal_eligibility"] is False
+    assert result["condition_price"] is None
+    view = runner.read(task["task_id"])
+    projected = SimpleNamespace(read=lambda _: view, source_loader=runner.source_loader,
+        _load=runner._load, _context=runner._context)
+    del view["stage_responses"]
+    with pytest.raises(ValueError, match="D2_V7_SPLIT_RESPONSE_BINDING_REQUIRED"):
+        read_d2_cash_policy_e2_input(root=environment.root, task_id=task["task_id"],
+            now=wc_now + timedelta(hours=1), service=projected)
+    view.update(runner.read(task["task_id"]))
+    term = view["research_result"]["years"]["2026"]["shareholder_cash_paths"]["base"]["terms"]["operating_wc_cash_cny"]
+    term.update(classification="UNKNOWN", value=None, unit="not_quantified")
+    with pytest.raises(ValueError, match="D2_V7_UNKNOWN_CASH_TERM_NOT_E2_INPUT"):
+        read_d2_cash_policy_e2_input(root=environment.root, task_id=task["task_id"],
+            now=wc_now + timedelta(hours=1), service=projected)
+
+
 def test_split_d2_compiles_only_two_successful_same_source_tasks(source_env, monkeypatch):
     """TEST_ONLY source fixture; proves contract joining, not real issuer quality."""
     import json

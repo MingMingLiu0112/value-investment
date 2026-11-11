@@ -74,6 +74,9 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         OperatingHorizonTaskService as ParentWCHorizonTaskService, CONTRACT as PARENT_WC_CONTRACT)
     from ...application.research.agent_review.operating_horizon_task_v6_split import (
         OperatingHorizonTaskService as SplitHorizonTaskService, CONTRACT as SPLIT_CONTRACT)
+    from ...application.research.agent_review.operating_horizon_task_v7_split import (
+        OperatingHorizonTaskService as AnchoredSplitHorizonTaskService,
+        CONTRACT as ANCHORED_SPLIT_CONTRACT)
     from ...application.research.agent_review import operating_q3_cash_source_loader_v1 as q3_cash_loader
 
     def parent_wc_horizon():
@@ -94,6 +97,16 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
 
     def split_test_reader():
         return SplitHorizonTaskService(project, test_provider=object(),
+            source_loader=q3_cash_loader.load_current,
+            source_loader_version=q3_cash_loader.VERSION)
+
+    def anchored_split_horizon():
+        return AnchoredSplitHorizonTaskService(project, allow_live=True,
+            source_loader=q3_cash_loader.load_current,
+            source_loader_version=q3_cash_loader.VERSION)
+
+    def anchored_split_test_reader():
+        return AnchoredSplitHorizonTaskService(project, test_provider=object(),
             source_loader=q3_cash_loader.load_current,
             source_loader_version=q3_cash_loader.VERSION)
 
@@ -131,8 +144,8 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                     raise ValueError("RESEARCH_TASK_RESULT_LIMIT_EXCEEDED: max_results=20")
         return sorted(items, key=lambda row: (row["updated_at"], row["task_id"]), reverse=True)
 
-    def list_live_split(symbol):
-        service = split_horizon()
+    def list_live_split(symbol, *, anchored=False):
+        service = anchored_split_horizon() if anchored else split_horizon()
         if not service.base.exists():
             return []
         children = list(islice(service.base.iterdir(), 101))
@@ -145,8 +158,9 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             raw = json.loads((path / "input.json").read_bytes())
             mode = raw.get("mode")
             if mode not in ("LIVE_OPERATING", "TEST_ONLY_LIVE_CONTRACT"):
-                raise ValueError("V6_SPLIT_MODE_INVALID")
-            validator = service if mode == "LIVE_OPERATING" else split_test_reader()
+                raise ValueError("V7_SPLIT_MODE_INVALID" if anchored else "V6_SPLIT_MODE_INVALID")
+            validator = service if mode == "LIVE_OPERATING" else (
+                anchored_split_test_reader() if anchored else split_test_reader())
             validator._load(path.name)
             if mode != "LIVE_OPERATING":
                 continue
@@ -160,6 +174,16 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     def cash_horizon_for(task_id):
         # Task identity alone is not a version. Never fall back to V4 when a
         # V5 artifact exists but its integrity check rejects it.
+        v7 = anchored_split_horizon()
+        if v7._directory(task_id).exists():
+            raw = json.loads((v7._directory(task_id) / "input.json").read_bytes())
+            mode = raw.get("mode")
+            if mode not in ("LIVE_OPERATING", "TEST_ONLY_LIVE_CONTRACT"):
+                raise ValueError("V7_SPLIT_MODE_INVALID")
+            (v7 if mode == "LIVE_OPERATING" else anchored_split_test_reader())._load(task_id)
+            if mode != "LIVE_OPERATING":
+                raise ValueError("V7_SPLIT_TEST_ONLY_NOT_LIVE_RESEARCH")
+            return v7
         v6 = split_horizon()
         if v6._directory(task_id).exists():
             raw = json.loads((v6._directory(task_id) / "input.json").read_bytes())
@@ -184,9 +208,11 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         if error is not None:return error
         try:
             if not re.fullmatch(r"[0-9]{6}",symbol):raise ValueError("INVALID_CASH_POLICY_SYMBOL")
-            if task_contract not in (None, PARENT_WC_CONTRACT, SPLIT_CONTRACT):
+            if task_contract not in (None, PARENT_WC_CONTRACT, SPLIT_CONTRACT,
+                                     ANCHORED_SPLIT_CONTRACT):
                 raise ValueError("INVALID_CASH_POLICY_TASK_CONTRACT")
-            items = (list_live_split(symbol) if task_contract == SPLIT_CONTRACT
+            items = (list_live_split(symbol, anchored=True) if task_contract == ANCHORED_SPLIT_CONTRACT
+                else list_live_split(symbol) if task_contract == SPLIT_CONTRACT
                 else list_live_parent_wc(symbol) if task_contract == PARENT_WC_CONTRACT
                 else horizon_cash_policy.list_for_symbol(symbol))
             return reply(dict(action="no_order",symbol=symbol,
@@ -362,7 +388,8 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         if fields == {"symbol", "request_key", "years"}:
             return body
         if allow_v5 and fields == {"symbol", "request_key", "years", "task_contract"} \
-                and body["task_contract"] in (PARENT_WC_CONTRACT, SPLIT_CONTRACT):
+                and body["task_contract"] in (PARENT_WC_CONTRACT, SPLIT_CONTRACT,
+                                              ANCHORED_SPLIT_CONTRACT):
             return {key: body[key] for key in ("symbol", "request_key", "years")}
         else:
             raise ValueError("HORIZON_CASH_POLICY_REQUEST_INVALID")
@@ -375,7 +402,9 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         try:
             raw = await request.body()
             body = json.loads(raw) if len(raw) <= 1024 else None
-            selected = (split_horizon() if isinstance(body, dict)
+            selected = (anchored_split_horizon() if isinstance(body, dict)
+                and body.get("task_contract") == ANCHORED_SPLIT_CONTRACT else
+                split_horizon() if isinstance(body, dict)
                 and body.get("task_contract") == SPLIT_CONTRACT else
                 parent_wc_horizon() if isinstance(body, dict)
                 and body.get("task_contract") == PARENT_WC_CONTRACT else horizon_cash_policy)

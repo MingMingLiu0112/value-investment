@@ -13,6 +13,41 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
+it("opts into the evidence anchored V7 task and keeps history version explicit", async () => {
+  const fetcher = vi.fn(
+    async () =>
+      new Response(
+        JSON.stringify({
+          task_id: "rt-" + "8".repeat(32),
+          symbol: "600519",
+          status: "QUEUED",
+          action: "no_order",
+          items: [],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  const { api } = await import("../src/services/api");
+  const contract = "operating-horizon-task-v7-split";
+  await api.createHorizonCashPolicyTask({
+    symbol: "600519",
+    request_key: "TEST_ONLY_v7",
+    years: [2027],
+    task_contract: contract,
+  });
+  await api.horizonCashPolicyHistory("600519", undefined, contract);
+  const calls = fetcher.mock.calls as unknown as [string, RequestInit][];
+  expect(JSON.parse(calls[0][1].body as string)).toEqual({
+    symbol: "600519",
+    request_key: "TEST_ONLY_v7",
+    years: [2027],
+    task_contract: contract,
+  });
+  expect(calls[1][0]).toContain("task_contract=" + contract);
+  expect(calls[1][1].body).toBeUndefined();
+});
+
 it("opts into the source-bound parent WC task without changing legacy task requests", async () => {
   const fetcher = vi.fn(
     async () =>
