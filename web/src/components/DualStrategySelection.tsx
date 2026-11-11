@@ -283,7 +283,9 @@ function SelectionPool({ mode }: { mode: "value" | "hotspot" }) {
                 {lane.evidence_capability.official_annual_archive_count}{" "}
                 份，其中成功解析{" "}
                 {lane.evidence_capability.official_annual_parsed_count} 份；
-                {lane.evidence_capability.official_annual_lookup_failure_count}{" "}
+                {
+                  lane.evidence_capability.official_annual_lookup_failure_count
+                }{" "}
                 家未取得对应年度原件并保留失败原因；候选池还有{" "}
                 {lane.evidence_capability.annual_archive_remaining_candidates}{" "}
                 家可进入后续补证批次；已识别融资负债的公司{" "}
