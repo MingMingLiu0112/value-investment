@@ -21,7 +21,12 @@ def repair(env, monkeypatch):
         return replace(response, text=response.text + '}')
     old.test_provider = SimpleNamespace(complete=malformed)
     task = old.create(symbol='123456',request_key='TEST_ONLY_original',years=[2026],now=NOW)['task_id']
-    out = old.run(task)
+    # Reproduce a failed v2 task from before the exact transport-suffix
+    # normalization was introduced. Current v2 instead retains and verifies a
+    # normalized copy; this legacy repair path is for already failed tasks.
+    with monkeypatch.context() as legacy:
+        legacy.setattr(mod.v2.v1, '_normalize_exact_extra_closing_brace', lambda text: None)
+        out = old.run(task)
     assert out['persisted_status'] == 'FAILED' and out['response_binding']
     calls = []
     def fix(req):

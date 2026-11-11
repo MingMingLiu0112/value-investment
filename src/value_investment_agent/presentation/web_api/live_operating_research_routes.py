@@ -63,6 +63,106 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     # They do not replace the existing three-role task or grant research approval.
     from ...application.research.agent_review.operating_horizon_task_v2 import OperatingHorizonTaskService
     horizon = OperatingHorizonTaskService(project)
+    from ...application.research.agent_review.notice_task_dispatch_v1 import NoticeAwareTaskService
+    anchored_annual = NoticeAwareTaskService(project, kind="annual")
+    # Separate task contract: v2 annual operating research never acquires a
+    # shareholder-cash-policy meaning merely because this API was added.
+    from ...application.research.agent_review.operating_horizon_task_v4 import OperatingHorizonTaskService as CashPolicyHorizonTaskService
+    horizon_cash_policy = CashPolicyHorizonTaskService(project)
+    compact_cash_policy = NoticeAwareTaskService(project, kind="cash")
+
+    @api.get("/api/v1/operating-research/horizon-cash-policy-tasks")
+    def list_horizon_cash_policy(request:Request, symbol:str):
+        error=denied(request)
+        if error is not None:return error
+        try:
+            if not re.fullmatch(r"[0-9]{6}",symbol):raise ValueError("INVALID_CASH_POLICY_SYMBOL")
+            return reply(dict(action="no_order",symbol=symbol,
+                items=horizon_cash_policy.list_for_symbol(symbol)))
+        except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="HORIZON_CASH_POLICY_TASKS_UNAVAILABLE",reason=str(error)),422)
+
+    @api.get("/api/v1/operating-research/cash-policy-tasks")
+    def list_compact_cash_policy(request:Request, symbol:str):
+        error=denied(request)
+        if error is not None:return error
+        try:
+            if not re.fullmatch(r"[0-9]{6}",symbol):raise ValueError("INVALID_CASH_POLICY_SYMBOL")
+            items=compact_cash_policy.list_for_symbol(symbol)
+            return reply(dict(action="no_order",symbol=symbol,items=items))
+        except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="CASH_POLICY_TASKS_UNAVAILABLE",reason=str(error)),422)
+
+    @api.post("/api/v1/operating-research/cash-policy-tasks")
+    async def create_compact_cash_policy(request:Request, background:BackgroundTasks):
+        error=denied(request)
+        if error is not None:return error
+        try:
+            task=compact_cash_policy.create(**_cash_policy_body(await request.body()))
+            if task["status"]=="QUEUED":
+                background.add_task(compact_cash_policy.run,task["task_id"])
+            return reply(task,202)
+        except (PermissionError,ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="CASH_POLICY_TASK_REJECTED",reason=str(error)),422)
+
+    @api.get("/api/v1/operating-research/cash-policy-tasks/{task_id}")
+    def read_compact_cash_policy(task_id:str, request:Request):
+        error=denied(request)
+        if error is not None:return error
+        try:return reply(compact_cash_policy.read(task_id))
+        except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="CASH_POLICY_TASK_UNAVAILABLE",reason=str(error)),422)
+
+    @api.get("/api/v1/operating-research/cash-policy-tasks/{task_id}/e2-input")
+    def read_compact_cash_policy_e2_input(task_id:str, request:Request,
+                                          annual_task_id:str|None=None):
+        error=denied(request)
+        if error is not None:return error
+        try:
+            from ...application.research.operating_horizon_cash_policy_e2_v1 import (
+                read_d2_cash_policy_e2_input, read_split_d2_e2_input)
+            if annual_task_id is not None:
+                return reply(read_split_d2_e2_input(root=project,
+                    annual_task_id=annual_task_id, cash_task_id=task_id,
+                    now=datetime.now(timezone.utc),
+                    annual_service=anchored_annual,
+                    cash_service=compact_cash_policy))
+            return reply(read_d2_cash_policy_e2_input(root=project,task_id=task_id,
+                now=datetime.now(timezone.utc),service=compact_cash_policy))
+        except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="UNASSESSABLE",reason=str(error),
+                formal_eligibility=False,condition_price=None))
+
+    @api.post("/api/v1/operating-research/cash-policy-tasks/{task_id}/{operation}")
+    def control_compact_cash_policy(task_id:str, operation:str, request:Request, background:BackgroundTasks):
+        error=denied(request)
+        if error is not None:return error
+        try:
+            if operation=="cancel":task=compact_cash_policy.cancel(task_id)
+            elif operation=="resume":
+                task=compact_cash_policy.resume(task_id)
+                if task["status"]=="QUEUED":background.add_task(compact_cash_policy.run,task_id)
+            else:raise ValueError("UNSUPPORTED_CASH_POLICY_OPERATION")
+            return reply(task)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="CASH_POLICY_CONTROL_REJECTED",reason=str(error)),409)
+
+    @api.get("/api/v1/operating-research/horizon-tasks")
+    def list_horizon(request:Request, symbol:str):
+        error=denied(request)
+        if error is not None:return error
+        try:
+            if not re.fullmatch(r"[0-9]{6}",symbol):
+                raise ValueError("INVALID_HORIZON_SYMBOL")
+            return reply(dict(action="no_order",symbol=symbol,
+                items=horizon.list_for_symbol(symbol) + anchored_annual.list_for_symbol(symbol)))
+        except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="HORIZON_TASKS_UNAVAILABLE",reason=str(error)),422)
 
     @api.post("/api/v1/operating-research/horizon-tasks")
     async def create_horizon(request:Request,background:BackgroundTasks):
@@ -102,6 +202,110 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             return reply(task)
         except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
             return reply(dict(action="no_order",status="HORIZON_CONTROL_REJECTED",reason=str(error)),409)
+
+    @api.post("/api/v1/operating-research/horizon-v3-tasks")
+    async def create_anchored_annual(request:Request, background:BackgroundTasks):
+        error=denied(request)
+        if error is not None:return error
+        try:
+            raw=await request.body()
+            if len(raw)>1024:raise ValueError("HORIZON_REQUEST_TOO_LARGE")
+            body=json.loads(raw)
+            if not isinstance(body,dict) or set(body)!={"symbol","request_key","years"}:
+                raise ValueError("HORIZON_REQUEST_INVALID")
+            task=anchored_annual.create(**body)
+            if task["status"]=="QUEUED":background.add_task(anchored_annual.run,task["task_id"])
+            return reply(task,202)
+        except (PermissionError,ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="HORIZON_TASK_REJECTED",reason=str(error)),422)
+
+    @api.get("/api/v1/operating-research/horizon-v3-tasks/{task_id}")
+    def read_anchored_annual(task_id:str,request:Request):
+        error=denied(request)
+        if error is not None:return error
+        try:return reply(anchored_annual.read(task_id))
+        except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="HORIZON_TASK_UNAVAILABLE",reason=str(error)),422)
+
+    @api.post("/api/v1/operating-research/horizon-v3-tasks/{task_id}/{operation}")
+    def control_anchored_annual(task_id:str,operation:str,request:Request,background:BackgroundTasks):
+        error=denied(request)
+        if error is not None:return error
+        try:
+            if operation=="cancel":task=anchored_annual.cancel(task_id)
+            elif operation=="resume":
+                task=anchored_annual.resume(task_id)
+                if task["status"]=="QUEUED":background.add_task(anchored_annual.run,task_id)
+            else:raise ValueError("UNSUPPORTED_HORIZON_OPERATION")
+            return reply(task)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="HORIZON_CONTROL_REJECTED",reason=str(error)),409)
+
+    def _cash_policy_body(raw):
+        if len(raw) > 1024:
+            raise ValueError("HORIZON_CASH_POLICY_REQUEST_TOO_LARGE")
+        body = json.loads(raw)
+        if not isinstance(body, dict) or set(body) != {"symbol", "request_key", "years"}:
+            raise ValueError("HORIZON_CASH_POLICY_REQUEST_INVALID")
+        return body
+
+    @api.post("/api/v1/operating-research/horizon-cash-policy-tasks")
+    async def create_horizon_cash_policy(request:Request, background:BackgroundTasks):
+        """Start the v4 D2 cash-policy appendix; task lifecycle is real, never approval."""
+        error=denied(request)
+        if error is not None:return error
+        try:
+            task = horizon_cash_policy.create(**_cash_policy_body(await request.body()))
+            if task["status"] == "QUEUED":
+                background.add_task(horizon_cash_policy.run, task["task_id"])
+            return reply(task, 202)
+        except (PermissionError,ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="HORIZON_CASH_POLICY_TASK_REJECTED",reason=str(error)),422)
+
+    @api.get("/api/v1/operating-research/horizon-cash-policy-tasks/{task_id}")
+    def read_horizon_cash_policy(task_id:str, request:Request):
+        error=denied(request)
+        if error is not None:return error
+        try:return reply(horizon_cash_policy.read(task_id))
+        except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="HORIZON_CASH_POLICY_TASK_UNAVAILABLE",reason=str(error)),422)
+
+    @api.get("/api/v1/operating-research/horizon-cash-policy-tasks/{task_id}/e2-input")
+    def read_horizon_cash_policy_e2_input(task_id:str, request:Request):
+        """Project an immutable D2 policy task into E2 readiness; it never runs a model."""
+        error=denied(request)
+        if error is not None:return error
+        try:
+            from ...application.research.operating_horizon_cash_policy_e2_v1 import read_d2_cash_policy_e2_input
+            return reply(read_d2_cash_policy_e2_input(
+                root=project, task_id=task_id, now=datetime.now(timezone.utc),
+                service=horizon_cash_policy))
+        except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            # E2 readiness is an assessed research state, not an HTTP failure.
+            # The UI must be able to show the exact missing-policy reason without
+            # treating it as a reason to launch another model task.
+            return reply(dict(action="no_order",status="UNASSESSABLE",
+                reason=str(error),formal_eligibility=False,condition_price=None))
+
+    @api.post("/api/v1/operating-research/horizon-cash-policy-tasks/{task_id}/{operation}")
+    def control_horizon_cash_policy(task_id:str, operation:str, request:Request, background:BackgroundTasks):
+        error=denied(request)
+        if error is not None:return error
+        try:
+            if operation == "cancel":
+                task = horizon_cash_policy.cancel(task_id)
+            elif operation == "resume":
+                task = horizon_cash_policy.resume(task_id)
+                if task["status"] == "QUEUED":
+                    background.add_task(horizon_cash_policy.run, task_id)
+            else:
+                raise ValueError("UNSUPPORTED_HORIZON_CASH_POLICY_OPERATION")
+            return reply(task)
+        except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="HORIZON_CASH_POLICY_CONTROL_REJECTED",reason=str(error)),409)
 
     @api.get("/api/v1/operating-research/model-status")
     def availability():

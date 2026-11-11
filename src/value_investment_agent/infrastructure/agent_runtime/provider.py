@@ -17,6 +17,10 @@ class LLMRequest:
     user: str
     output_schema: dict
     max_completion_tokens: int = 512
+    # Some OpenAI-compatible endpoints only offer ``json_object``.  A bounded,
+    # source-controlled description may be supplied for that transport mode;
+    # ``output_schema`` remains the authoritative local validation contract.
+    transport_output_contract: str | None = None
 
 
 @dataclass(frozen=True)
@@ -111,12 +115,22 @@ class OpenAICompatibleChatProvider:
         if self.response_format_mode == "json_object":
             payload["response_format"] = {"type": "json_object"}
             payload["max_tokens"] = payload.pop("max_completion_tokens")
-            # JSON mode transports no schema contract. Carry the same trusted
-            # request schema in the prompt; local validators remain mandatory.
+            # JSON mode transports no schema contract.  Most callers carry the
+            # complete schema.  Large, source-generated schemas may instead
+            # provide a bounded description; local validators remain mandatory
+            # in both cases and no model output is trusted on this basis.
+            contract = request.transport_output_contract
+            if contract is not None:
+                if (not isinstance(contract, str) or not 1 <= len(contract) <= 16000):
+                    raise ValueError("LLM transport output contract must be a bounded string")
+                contract_text = contract
+            else:
+                contract_text = json.dumps(request.output_schema, ensure_ascii=False)
             payload["messages"][1]["content"] += (
                 "\n\nTRUSTED OUTPUT SCHEMA: Return only one JSON object strictly conforming "
-                "to this JSON Schema. Do not add keys or surrounding prose.\n"
-                + json.dumps(request.output_schema, ensure_ascii=False))
+                "to this transport contract. Do not add keys or surrounding prose. "
+                "The server enforces the full local schema after transport.\n"
+                + contract_text)
         if self.thinking_mode is not None:
             payload["thinking"] = {"type": self.thinking_mode}
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -138,7 +152,12 @@ class OpenAICompatibleChatProvider:
         if not isinstance(choice, dict):
             raise ValueError("LLM choice must be an object")
         # Missing finish_reason remains compatible with retained adapter fixtures.
-        if choice.get("finish_reason") not in (None, "stop"):
+        finish_reason = choice.get("finish_reason")
+        if finish_reason == "length":
+            raise ValueError("LLM response incomplete: completion token cap reached")
+        if finish_reason == "content_filter":
+            raise ValueError("LLM response incomplete: provider content filter")
+        if finish_reason not in (None, "stop"):
             raise ValueError("LLM response is truncated, filtered, refused or incomplete")
         message = choice.get("message") or {}
         if not isinstance(message, dict):

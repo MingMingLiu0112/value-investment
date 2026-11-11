@@ -37,6 +37,39 @@ _NOTE = (r"(?:[1-9][0-9]{0,2}|[一二三四五六七八九十百]{1,6}\s*"
 _MAX_TABLE_PAGES = 6
 
 
+def _same_h1_balance_group_owner(pages, income_page, owner, period):
+    """Prove a missing H1 income preparer from its same-report primary balance.
+
+    The balance heading must precede the income table within eight pages and
+    print the exact legal owner, cutoff, comparative date and CNY scope. This
+    verifies identity only; no balance amount enters operating facts.
+    """
+    headings = [(n, i) for n, page in enumerate(pages[:income_page+1])
+                for i, line in enumerate(page.splitlines())
+                if _TITLE.fullmatch(line.strip()) and
+                _TITLE.fullmatch(line.strip())[1] == "合并资产负债表"]
+    if len(headings) != 1:
+        return None
+    page_index, line_index = headings[0]
+    if not 1 <= income_page - page_index <= 8:
+        return None
+    lines = pages[page_index].splitlines()[line_index:]
+    next_table = next((i for i, line in enumerate(lines[1:], 1)
+                       if _TITLE.fullmatch(line.strip())), len(lines))
+    header = "".join("".join(line.split()) for line in lines[:min(next_table, 8)])
+    year = int(period[:4])
+    required = (f"{year}年6月30日", f"项目附注{year}年6月30日{year-1}年12月31日",
+                "单位：元币种：人民币")
+    preparers = re.findall(r"编制单位[：:]([^\r\n]+)", "\n".join(lines[:min(next_table, 8)]))
+    if (any(item not in header for item in required) or len(preparers) != 1
+            or "".join(preparers[0].split()) != owner["legal_name"]):
+        return None
+    return dict(method="SAME_H1_FINANCIAL_STATEMENT_GROUP",
+                owner_evidence=owner, compiler_page=page_index+1,
+                compiler_excerpt="\n".join(lines[:min(next_table, 8)]),
+                table_context_id=f"{period}:consolidated-balance:{page_index+1}")
+
+
 def _parse(pages, source):
     period = source["period"]
     year = int(period[:4])
@@ -105,6 +138,8 @@ def _parse(pages, source):
         if len(preparers) == 1 and "".join(preparers[0].split()) == owner["legal_name"]:
             owner_proof = dict(method="DIRECT_STATEMENT_PREPARER", owner_evidence=owner,
                                compiler_page=first+1, compiler_excerpt=header)
+    elif basis == "H1":
+        owner_proof = _same_h1_balance_group_owner(pages, first, owner, period)
     elif basis == "FY":
         # Identity only: reuse native annual balance evidence, never its financial amounts.
         candidates = extract_debt_balance_candidates(

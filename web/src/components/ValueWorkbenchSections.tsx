@@ -63,6 +63,7 @@ function Content({
   const native = obj(section.data?.native_results),
     live = obj(native.live),
     first = obj(native.first_input),
+    firstUpdate = obj(native.first_input_update),
     main = obj(native.main_revalidation),
     legacy = obj(native.existing_analysis);
   if (section.id === "profile" && usable(obj(native.profile)))
@@ -190,6 +191,46 @@ function Content({
         <p>
           三情景是不同条件的压力研究，不是概率或已采纳主区间。折现和终值由既有模型完成；可展开年度现金账核对，不把数学一致当经济假设已证。
         </p>
+        {firstUpdate.status === "SOURCE_BOUND_CONDITIONAL_SUCCESSOR" ? (
+          <Alert
+            type="info"
+            message="E1 研究版本已更新，仍属未批准条件研究"
+            description={
+              <div>
+                <p>
+                  财务期间：{firstUpdate.financial_basis || "未提供"}
+                  ；变更输入：
+                  {Array.isArray(firstUpdate.changed_input_fields)
+                    ? firstUpdate.changed_input_fields.join("、")
+                    : "未提供"}
+                  。
+                </p>
+                <p>修订理由：{firstUpdate.change_rationale || "未提供"}</p>
+                <p>反证：{firstUpdate.countercase || "未提供"}</p>
+                <details>
+                  <summary>查看前后估值与版本指纹</summary>
+                  <h4>前一版本估值</h4>
+                  <Readable value={firstUpdate.predecessor_valuation} />
+                  <h4>后继版本估值</h4>
+                  <Readable value={firstUpdate.successor_valuation} />
+                  <p>
+                    前一输入指纹：
+                    {firstUpdate.predecessor_input_fingerprint || "未提供"}
+                  </p>
+                  <p>
+                    后继输入指纹：
+                    {firstUpdate.successor_input_fingerprint || "未提供"}
+                  </p>
+                </details>
+              </div>
+            }
+          />
+        ) : firstUpdate.status === "UNASSESSABLE" ? (
+          <Alert
+            type="warning"
+            message={`E1 后继版本不可核验：${firstUpdate.reason || "原因未提供"}`}
+          />
+        ) : null}
         {usable(main) ? (
           <MainValuationRevalidationPanel value={main} symbol={symbol} />
         ) : null}

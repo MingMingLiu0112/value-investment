@@ -535,6 +535,8 @@ def test_research_contract_is_explicit_and_not_an_arbitrary_model(env):
 
 @pytest.mark.parametrize(("message", "expected"), [
     ("LLM response is truncated, filtered, refused or incomplete", "LIVE_PROVIDER_RESPONSE_INCOMPLETE"),
+    ("LLM response incomplete: completion token cap reached", "LIVE_PROVIDER_COMPLETION_CAP_REACHED"),
+    ("LLM response incomplete: provider content filter", "LIVE_PROVIDER_CONTENT_FILTERED"),
     ("LLM response usage must contain integer token counts", "LIVE_PROVIDER_USAGE_INVALID"),
     ("LLM response content is missing", "LIVE_PROVIDER_CONTENT_MISSING"),
     ("LLM credential is absent", "LIVE_PROVIDER_CREDENTIAL_MISSING"),

@@ -10,6 +10,7 @@ import { Workbench } from "../../components/Workbench";
 import { ValueWorkbenchSections } from "../../components/ValueWorkbenchSections";
 import { TransparentTaskControls } from "../../components/TransparentTaskControls";
 import { LiveOperatingResearchPanel } from "../../components/LiveOperatingResearchPanel";
+import { HorizonCashPolicyPanel } from "../../components/HorizonCashPolicyPanel";
 import type { SelectionRow } from "../../types/selection";
 
 export function CandidateChoices({
@@ -101,6 +102,7 @@ export function CompanyWorkbench({ symbol }: { symbol: string }) {
           这里复用原有模型授权、预算与任务流程；打开只读配置与公开结果，启动须再显式点击，不会自动调用模型。
         </p>
         <LiveOperatingResearchPanel key={symbol} symbol={symbol} />
+        <HorizonCashPolicyPanel key={"cash-policy-" + symbol} symbol={symbol} />
       </Card>
     </>
   );

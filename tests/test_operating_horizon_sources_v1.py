@@ -3,6 +3,7 @@ from copy import deepcopy
 from datetime import datetime, timezone, timedelta
 import json
 import socket
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -99,6 +100,30 @@ def test_manifest_cold_replay_ignores_current_selection(source_env):
     assert len(mod._bytes(first).decode('utf-8'))<=48000
     h1=next(r for r in first['evidence'] if r.get('id')=='TEST_ONLY:h1-revenue')
     assert h1['period_basis']=='H1' and h1['period']=='2026-06-30'
+    assert first['parent_cash_observation_receipts'] == env.selection['parent_cash_observation_receipts']
+
+
+def test_v1_annual_task_defaults_to_the_versioned_horizon_source_contract(source_env):
+    """D2 v1 and E2 must bind the same horizon source-manifest shape."""
+    from value_investment_agent.application.research.agent_review import operating_horizon_task_v1 as task
+
+    service = task.OperatingHorizonTaskService(source_env.root, test_provider=object())
+    context = service.source_loader(root=source_env.root, symbol='123456', now=NOW)
+    assert context['source_binding']['path'].startswith('runtime/operating-horizon-sources-v1/')
+    assert service.source_loader is task.sources.build_operating_horizon_source_context
+
+
+def test_source_bound_scope_declaration_is_hashed_into_context(source_env):
+    env=source_env
+    env.selection["scope_decomposition"]={
+        "scope_change_expected":False,
+        "contributions":[{"scope_kind":"LEGACY_ORGANIC","revenue_change_cny":"1",
+            "profit_change_cny":"1","evidence_ids":["TEST_ONLY:interim:horizon-p1"]}],
+    }
+    env.config.write_bytes(mod._bytes(dict(schema_version=mod.VERSION,action='no_order',cases={'123456':env.selection})))
+    first=env.load()
+    assert first["scope_decomposition"]["scope_change_expected"] is False
+    assert env.load(first["source_binding"])["scope_decomposition"]==first["scope_decomposition"]
 
 
 @pytest.mark.parametrize('damage',['original','receipt','base','manifest','implementation'])
@@ -149,5 +174,34 @@ def test_page_config_has_exact_requested_periods_and_pages():
     entry=json.loads((root/mod.CONFIG).read_bytes())['cases']['600323']
     actual={p:{e['physical_page'] for e in entry['excerpts'] if e['period']==p}
             for p in ('2025-12-31','2026-06-30')}
-    assert actual=={'2025-12-31':{24,147,183},'2026-06-30':{13,14,19,135,203}}
+    assert actual=={'2025-12-31':{2,17,18,24,56,147,183},
+                    '2026-06-30':{13,14,19,135,191,203}}
     assert '600323' not in Path(mod.__file__).read_text(encoding='utf-8')
+
+
+def test_supplement_fact_selection_requires_explicit_unique_fields():
+    base = dict(issuer_name='TEST_ONLY', parent_cash_layout='LEGACY_BLANK_SAFE_V3',
+        parent_income_layout='UNNUMBERED_CONTINUATION_V2',
+        parent_cash_observation_receipts=[dict(period='2026-06-30',
+            receipt_binding=dict(path='runtime/receipt.json', sha256='a' * 64))], excerpts=[])
+    for fields in ([], ['parent_cfo', 'parent_cfo'], ['ParentCfo'], ['parent_cfo'] * 31):
+        with pytest.raises(ValueError, match='HORIZON_SUPPLEMENT_FACT_SELECTION_INVALID'):
+            mod._selection(dict(base, supplement_fact_fields=fields))
+    assert mod._selection(dict(base, supplement_fact_fields=['parent_cfo']))['supplement_fact_fields'] == ['parent_cfo']
+
+
+def test_600887_real_official_pair_replays_as_unapproved_source_context():
+    import os
+    root_var = os.environ.get('VALUE_INVESTMENT_REAL_SOURCE_ROOT')
+    if not root_var:
+        pytest.skip('Explicit retained official originals required')
+    root = Path(root_var).resolve()
+    now = datetime.now(timezone.utc)
+    context = mod.build_operating_horizon_source_context(root=root, symbol='600887', now=now)
+    replay = mod.build_operating_horizon_source_context(
+        root=root, symbol='600887', now=now, binding=context['source_binding'])
+    assert replay == context
+    assert context['financial_basis'] == '2026-06-30'
+    assert {'2025-12-31', '2026-06-30'} <= {row['period'] for row in context['evidence']}
+    assert {'revenue', 'parent_profit', 'parent_cfo'} <= {row['field'] for row in context['evidence'] if 'field' in row}
+    assert context['formal_eligibility'] is False and context['action'] == 'no_order'

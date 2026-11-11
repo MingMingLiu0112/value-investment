@@ -10,16 +10,54 @@ from decimal import Decimal
 from pathlib import Path
 import os
 import re
+import json
 from zoneinfo import ZoneInfo
 from urllib.error import HTTPError
 
 from . import operating_horizon_draft_v1 as draft
+from . import operating_horizon_sources_v1 as sources
 from . import operating_task_v2 as live
 from .task_execution_v1 import VERSION, _bytes, _hash, _now
 from ...product.common import require_inside, write_new_bytes
 from ....infrastructure.agent_runtime.provider import LLMResponse
 
 CONTRACT = "operating-horizon-task-v1"
+
+
+def _strict_json_decoder():
+    """Parse only bounded JSON objects without duplicate keys or nonfinite values."""
+    def pairs(items):
+        value = {}
+        for key, item in items:
+            if key in value:
+                raise ValueError("HORIZON_DUPLICATE_JSON_KEY")
+            value[key] = item
+        return value
+
+    def constant(value):
+        raise ValueError("HORIZON_NONFINITE_JSON_CONSTANT")
+
+    return json.JSONDecoder(object_pairs_hook=pairs, parse_constant=constant)
+
+
+def _normalize_exact_extra_closing_brace(text):
+    """Return the unique object span only for one harmless transport suffix.
+
+    The original provider bytes stay in ``response.json``.  This helper does
+    not repair content, add defaults, or make a partial document admissible.
+    """
+    if not isinstance(text, str) or not 1 <= len(text) <= 65536:
+        raise ValueError("HORIZON_BOUNDED_JSON_REQUIRED")
+    leading = len(text) - len(text.lstrip(" \t\r\n"))
+    raw = text[leading:]
+    if not raw.startswith("{"):
+        raise ValueError("HORIZON_JSON_PREFIX_INVALID")
+    _, end = _strict_json_decoder().raw_decode(raw)
+    if raw[end:].strip(" \t\r\n") != "}":
+        raise ValueError("HORIZON_JSON_NOT_EXACT_ONE_EXTRA_CLOSING_BRACE")
+    normalized = text[:leading] + raw[:end]
+    _strict_json_decoder().decode(normalized)
+    return normalized
 
 
 # Only exact, locally defined messages may become persisted error codes.
@@ -45,6 +83,8 @@ VERIFIED_BASELINE_REQUIRED FORECAST_MUST_FOLLOW_BASELINE FORECAST_BASELINE_PERIO
 EXPLICIT_SEVEN_OPERATING_DRIVERS_REQUIRED DRIVER_LOWER_EXCEEDS_UPPER
 NONPOSITIVE_SALES_ACTIVITY_NOT_SUPPORTED NEGATIVE_COST_MULTIPLIER
 INVALID_COST_SHARE_OR_SURCHARGE_RATIO INVALID_THRESHOLD_DIRECTION
+HORIZON_JSON_PREFIX_INVALID HORIZON_JSON_NOT_EXACT_ONE_EXTRA_CLOSING_BRACE
+HORIZON_NORMALIZED_RESPONSE_BINDING_INVALID
 """.split())
 _SAFE_MESSAGES = {
     "Bounded JSON response required": "HORIZON_BOUNDED_JSON_REQUIRED",
@@ -52,6 +92,8 @@ _SAFE_MESSAGES = {
     "Nonfinite JSON constant": "HORIZON_NONFINITE_JSON_CONSTANT",
     "Exact operating driver fields required": "HORIZON_EXACT_FIELDS_REQUIRED",
     "LLM response is truncated, filtered, refused or incomplete": "HORIZON_PROVIDER_RESPONSE_INCOMPLETE",
+    "LLM response incomplete: completion token cap reached": "HORIZON_PROVIDER_COMPLETION_CAP_REACHED",
+    "LLM response incomplete: provider content filter": "HORIZON_PROVIDER_CONTENT_FILTERED",
     "LLM response usage must contain integer token counts": "HORIZON_PROVIDER_USAGE_INVALID",
     "LLM response content is missing": "HORIZON_PROVIDER_CONTENT_MISSING",
     "LLM credential is absent": "MODEL_CREDENTIAL_REQUIRED",
@@ -92,7 +134,8 @@ class OperatingHorizonTaskService(live.LiveOperatingTaskService):
     """Annual supplemental research with one durable provider intent per task."""
 
     def __init__(self, root, *, test_provider=None, source_loader=None):
-        super().__init__(root, test_provider=test_provider, source_loader=source_loader)
+        super().__init__(root, test_provider=test_provider,
+            source_loader=source_loader or sources.build_operating_horizon_source_context)
         self._budget_service = live.LiveOperatingTaskService(root)
         self.base = require_inside(self.root, self.base.parent / CONTRACT, "horizon tasks")
 
@@ -130,7 +173,19 @@ class OperatingHorizonTaskService(live.LiveOperatingTaskService):
             if state["status"] == "SUCCEEDED":
                 raise ValueError("HORIZON_RESPONSE_MISSING")
             return None
-        packet = self._bound(pin)
+        raw_packet = self._bound(pin)
+        packet = raw_packet
+        normalized_pin = state.get("normalized_response_binding")
+        if normalized_pin is not None:
+            packet = self._bound(normalized_pin)
+            transport = packet.get("transport_normalization")
+            raw_response = raw_packet.get("response", {}).get("text")
+            if (not isinstance(transport, dict)
+                    or transport.get("original_response_binding") != pin
+                    or transport.get("original_response_sha256") != _hash(raw_response.encode("utf-8"))
+                    or transport.get("normalized_response_sha256") != _hash(packet.get("response", {}).get("text", "").encode("utf-8"))
+                    or _normalize_exact_extra_closing_brace(raw_response) != packet.get("response", {}).get("text")):
+                raise ValueError("HORIZON_NORMALIZED_RESPONSE_BINDING_INVALID")
         if (packet["request_sha256"] != spec["request_sha256"]
                 or packet["context_sha256"] != spec["context_sha256"]
                 or packet["implementation_sha256"] != spec["implementation_sha256"]
@@ -206,7 +261,12 @@ class OperatingHorizonTaskService(live.LiveOperatingTaskService):
             research_result=None)
         context, status, error = self._check(spec, now)
         if status and state["status"] != "CANCELLED":
-            value.update(status=status, error_code=error)
+            if state["status"] == "FAILED":
+                # Historical failures remain auditable after source or code changes.
+                # The old request still cannot be resumed or treated as research.
+                value["current_replay_error"] = error
+            else:
+                value.update(status=status, error_code=error)
         elif context is not None and state["status"] != "CANCELLED":
             try:
                 value["research_result"] = self._result(spec, state, context)
@@ -249,7 +309,7 @@ class OperatingHorizonTaskService(live.LiveOperatingTaskService):
             write_new_bytes(directory / "input.json", _bytes(spec))
             state = dict(status="QUEUED", attempts=0, provider_requests=0, new_llm_calls=0,
                 usage=dict(prompt_tokens=0, completion_tokens=0), reserved_cost="0", settled_cost="0",
-                reservations={}, response_binding=None, created_at=now.isoformat(),
+                reservations={}, response_binding=None, normalized_response_binding=None, created_at=now.isoformat(),
                 action="no_order", formal_eligibility=False, error_code=None)
             state, pin = self._save(spec, state, None, now)
             return self._view(spec, state, pin, now)
@@ -322,6 +382,28 @@ class OperatingHorizonTaskService(live.LiveOperatingTaskService):
                     path = directory / "response.json"
                     write_new_bytes(path, _bytes(packet))
                     state, pin = self._save(spec, state, pin, generated, response_binding=self._binding(path))
+                    # A provider occasionally appends exactly one closing brace after a
+                    # complete object.  Preserve that raw response and create a separate
+                    # hash-bound view only when strict parsing proves no semantic edit.
+                    try:
+                        _strict_json_decoder().decode(response.text)
+                        normalized = None
+                    except json.JSONDecodeError:
+                        normalized = _normalize_exact_extra_closing_brace(response.text)
+                    if normalized is not None:
+                        normalized_packet = dict(packet,
+                            response=dict(response.__dict__, text=normalized),
+                            transport_normalization=dict(
+                                schema_version="horizon-json-transport-v1",
+                                kind="EXACT_ONE_EXTRA_CLOSING_BRACE",
+                                original_response_binding=self._binding(path),
+                                original_response_sha256=_hash(response.text.encode("utf-8")),
+                                normalized_response_sha256=_hash(normalized.encode("utf-8")),
+                            ))
+                        normalized_path = directory / "normalized-response.json"
+                        write_new_bytes(normalized_path, _bytes(normalized_packet))
+                        state, pin = self._save(spec, state, pin, generated,
+                            normalized_response_binding=self._binding(normalized_path))
                     self._usage(response, request, cfg["model_id"])
                     actual = self._cost(response.prompt_tokens, response.completion_tokens, cfg)
                     self._daily_budget(day, reservation, actual, cfg, settle=True)
