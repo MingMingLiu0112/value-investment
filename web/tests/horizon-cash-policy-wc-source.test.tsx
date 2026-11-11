@@ -171,3 +171,25 @@ it("offers V15 only for validated V12 annual research and keeps its own workflow
   expect(hooks.values[3]).toBe("v15");
   expect(calls.create).not.toHaveBeenCalled();
 });
+
+it("shows a successful V15 task as economically incomplete when cash paths remain unknown", () => {
+  button(render("600519"), "D2 股东现金政策研究").props.onClick();
+  hooks.values[1] = {
+    task_id: "rt-" + "f".repeat(32),
+    symbol: "600519",
+    status: "SUCCEEDED",
+    action: "no_order",
+    annual_status: "IMPORTED_V12",
+    cash_status: "SETTLED_VALIDATED",
+    research_result: {
+      cash_policy_v15: {
+        cash_policy_appendix_status: "INCOMPLETE_UNKNOWN_TERMS",
+      },
+    },
+  };
+  hooks.values[3] = "v15";
+  const alerts = render("600519").filter((row) => row.props.type === "warning");
+  expect(alerts.map((row) => row.props.message)).toContain(
+    "V15任务已完成，股东现金研究尚未准入",
+  );
+});

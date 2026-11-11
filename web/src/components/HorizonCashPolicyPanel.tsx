@@ -55,6 +55,16 @@ function safeReason(cause: unknown) {
     return null;
   return /^[A-Z0-9_:-]{3,160}$/.test(cause.detail) ? cause.detail : null;
 }
+function v15CashIncomplete(task: HorizonCashPolicyTask): boolean {
+  const cash = task.research_result?.cash_policy_v15;
+  return Boolean(
+    cash &&
+    typeof cash === "object" &&
+    !Array.isArray(cash) &&
+    (cash as Record<string, unknown>).cash_policy_appendix_status ===
+      "INCOMPLETE_UNKNOWN_TERMS",
+  );
+}
 export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
   const [opened, setOpened] = useState(false);
   const [task, setTask] = useState<HorizonCashPolicyTask>();
@@ -648,6 +658,13 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
               type="warning"
               message="已读取封存研究，但现金政策尚不能进入估值"
               description={`尚缺 ${[...new Set(task.cash_policy_completeness.missing_terms.map((row) => row.term))].join("、")}；任务原状态为 ${task.persisted_status || task.status}。这些内容仅供诊断，不代表研究准入或交易资格。`}
+            />
+          )}
+          {kind === "v15" && v15CashIncomplete(task) && (
+            <Alert
+              type="warning"
+              message="V15任务已完成，股东现金研究尚未准入"
+              description="三种情景仍有UNKNOWN现金假设。E2不会消费该结果，F1/F2不会据此生成估值或条件价格；请核对原始来源与每项未来机制。"
             />
           )}
           {task.economic_validation?.status === "REJECTED" && (
