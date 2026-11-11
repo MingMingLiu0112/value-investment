@@ -10,7 +10,8 @@ import { Readable } from "./LiveOperatingResearchPanel";
 
 const PARENT_WC_CONTRACT =
   "operating-horizon-task-v5-parent-wc-balance" as const;
-type CashKind = "annual" | "compact" | "parentWC";
+const SPLIT_CONTRACT = "operating-horizon-task-v6-split" as const;
+type CashKind = "annual" | "compact" | "parentWC" | "split";
 
 function valid(value: HorizonCashPolicyTask | undefined, symbol: string) {
   return Boolean(
@@ -85,6 +86,7 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
       | "start"
       | "startCompact"
       | "startParentWC"
+      | "startSplit"
       | "refresh"
       | "cancel"
       | "resume",
@@ -105,12 +107,16 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
               symbol,
               years: [
                 new Date().getFullYear() +
-                  (operation === "startParentWC" ? 1 : 0),
+                  (operation === "startParentWC" || operation === "startSplit"
+                    ? 1
+                    : 0),
               ],
               request_key: "cash_" + crypto.randomUUID().replace(/-/g, ""),
               ...(operation === "startParentWC"
                 ? { task_contract: PARENT_WC_CONTRACT }
-                : {}),
+                : operation === "startSplit"
+                  ? { task_contract: SPLIT_CONTRACT }
+                  : {}),
             })
         : operation === "refresh"
           ? await (kind === "compact"
@@ -135,7 +141,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
             ? "compact"
             : operation === "startParentWC"
               ? "parentWC"
-              : "annual",
+              : operation === "startSplit"
+                ? "split"
+                : "annual",
         );
     } catch (cause) {
       const reason = safeReason(cause);
@@ -163,7 +171,11 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
           : await api.horizonCashPolicyHistory(
               symbol,
               undefined,
-              selectedKind === "parentWC" ? PARENT_WC_CONTRACT : undefined,
+              selectedKind === "parentWC"
+                ? PARENT_WC_CONTRACT
+                : selectedKind === "split"
+                  ? SPLIT_CONTRACT
+                  : undefined,
             );
       if (
         result.action !== "no_order" ||
@@ -292,6 +304,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         <Button disabled={busy || active} onClick={() => run("startParentWC")}>
           启动来源绑定的下一年度母公司资金研究
         </Button>
+        <Button disabled={busy || active} onClick={() => run("startSplit")}>
+          分步研究下一年度经营与股东现金
+        </Button>
         <Button disabled={busy} onClick={() => loadHistory("annual")}>
           读取年度研究历史
         </Button>
@@ -300,6 +315,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         </Button>
         <Button disabled={busy} onClick={() => loadHistory("parentWC")}>
           读取母公司资金研究历史
+        </Button>
+        <Button disabled={busy} onClick={() => loadHistory("split")}>
+          读取分步研究历史
         </Button>
         <Button disabled={busy} onClick={loadAnnualHistory}>
           读取独立年度经营历史
@@ -338,7 +356,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
               ? "D2年度研究历史"
               : historyKind === "parentWC"
                 ? "D2母公司资金研究历史"
-                : "D2紧凑研究历史"
+                : historyKind === "split"
+                  ? "D2分步研究历史"
+                  : "D2紧凑研究历史"
           }
         >
           {history.length === 0 ? (
@@ -392,9 +412,17 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
               ? "紧凑现金政策"
               : kind === "parentWC"
                 ? "来源绑定母公司资金与年度经营"
-                : "年度经营与现金政策"}{" "}
+                : kind === "split"
+                  ? "先核验年度经营，再研究股东现金"
+                  : "年度经营与现金政策"}{" "}
             · 状态：{task.status} · 资格：未批准
           </p>
+          {kind === "split" && (
+            <p>
+              年度经营：{task.annual_status || "待读取"}；股东现金：
+              {task.cash_status || "待读取"}。调用结果不明时不会自动重试。
+            </p>
+          )}
           {task.persisted_status && task.persisted_status !== task.status && (
             <Alert
               type="warning"

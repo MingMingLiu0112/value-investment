@@ -531,6 +531,8 @@ jobs:
           tests/test_parent_wc_balance_request_v1.py
           tests/test_operating_q3_cash_wc_task_v1.py
           tests/test_operating_horizon_task_v5_wc.py
+          tests/test_operating_horizon_split_v6.py
+          tests/test_operating_horizon_task_v6_split.py
           tests/test_operating_horizon_cash_policy_e2_v1.py
           tests/web_api/test_live_operating_research_api.py
           tests/web_api/test_operating_cash_consumption_api.py

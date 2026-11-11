@@ -1341,10 +1341,13 @@ export type HorizonCashPolicyTask = {
   workflow?:
     | "operating-horizon-task-v4-cash-policy"
     | "operating-horizon-task-v5-parent-wc-balance"
+    | "operating-horizon-task-v6-split"
     | "operating-cash-policy-task-v1"
     | "operating-horizon-task-v2"
     | "operating-horizon-task-v3";
   error_code?: string | null;
+  annual_status?: string;
+  cash_status?: string;
   research_result?: Record<string, unknown> | null;
   cash_policy_completeness?: {
     status:
@@ -1633,7 +1636,9 @@ export const api = {
     symbol: string;
     request_key: string;
     years: number[];
-    task_contract?: "operating-horizon-task-v5-parent-wc-balance";
+    task_contract?:
+      | "operating-horizon-task-v5-parent-wc-balance"
+      | "operating-horizon-task-v6-split";
   }) =>
     post<HorizonCashPolicyTask>(
       "operating-research/horizon-cash-policy-tasks",
@@ -1647,7 +1652,9 @@ export const api = {
   horizonCashPolicyHistory: (
     symbol: string,
     signal?: AbortSignal,
-    taskContract?: "operating-horizon-task-v5-parent-wc-balance",
+    taskContract?:
+      | "operating-horizon-task-v5-parent-wc-balance"
+      | "operating-horizon-task-v6-split",
   ) =>
     getPrivate<{
       action: "no_order";
