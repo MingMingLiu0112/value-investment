@@ -396,10 +396,20 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     def public_result(symbol:str):
         if re.fullmatch("[0-9]{6}",symbol) is None:
             return reply(dict(action="no_order",status="INVALID_SYMBOL"),422)
+        # Registered public filing observations remain readable even when no
+        # paid Agent task exists or its latest result is no longer verifiable.
+        try:
+            from ...application.research.current_capital_observation_v1 import read_current_capital_observation
+            capital_observation=read_current_capital_observation(
+                project,symbol,datetime.now(timezone.utc))
+        except (ValueError,OSError,KeyError,TypeError):
+            capital_observation=dict(status="UNASSESSABLE",
+                reason="CURRENT_CAPITAL_SOURCE_NOT_VERIFIED",action="no_order",formal_eligibility=False)
         try:
             tasks=service.list_for_symbol(symbol)
             if not tasks:return reply(dict(action="no_order",symbol=symbol,status="NOT_STARTED",
-                reason="NO_VERIFIED_LIVE_RESEARCH_RESULT",formal_eligibility=False))
+                reason="NO_VERIFIED_LIVE_RESEARCH_RESULT",formal_eligibility=False,
+                current_capital_observation=capital_observation))
             value=tasks[0]
             draft=value.get("research_draft")
             verified_partial=(isinstance(draft,dict) and bool(draft) and set(draft)<=set(ROLES)
@@ -408,7 +418,8 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                     or (value["status"]!="SUCCEEDED" and not verified_partial)):
                 return reply(dict(action="no_order",symbol=symbol,status="UNASSESSABLE",
                     reason=value.get("error_code") or "LATEST_TASK_NOT_VERIFIED_LIVE_RESEARCH",
-                    task_id=value["task_id"],latest_task_status=value["status"],formal_eligibility=False))
+                    task_id=value["task_id"],latest_task_status=value["status"],formal_eligibility=False,
+                    current_capital_observation=capital_observation))
 
             keys=("symbol","status","task_id","scope","model_id","new_llm_calls","research_draft",
                   "context_fingerprint","source_binding","research_as_of","formal_fact_count",
@@ -431,14 +442,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             except (ValueError,OSError,KeyError,TypeError):
                 public["cash_consumption"]=dict(status="UNASSESSABLE",
                     reason="CASH_SOURCE_OR_MAPPING_NOT_VERIFIED",action="no_order",formal_eligibility=False)
-            # Public native observations are independent of approval/private accounts.
-            try:
-                from ...application.research.current_capital_observation_v1 import read_current_capital_observation
-                public["current_capital_observation"] = read_current_capital_observation(
-                    project, symbol, datetime.now(timezone.utc))
-            except (ValueError,OSError,KeyError,TypeError):
-                public["current_capital_observation"] = dict(status="UNASSESSABLE",
-                    reason="CURRENT_CAPITAL_SOURCE_NOT_VERIFIED",action="no_order",formal_eligibility=False)
+            public["current_capital_observation"] = capital_observation
             try:
                 from ...application.research.operating_distribution_review_v1 import read_operating_distribution_review
                 public["fiscal_distribution_review"] = read_operating_distribution_review(
@@ -482,4 +486,5 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             return reply(dict(action="no_order",formal_eligibility=False,**public))
         except (ValueError,OSError,KeyError,RuntimeError,TypeError):
             return reply(dict(action="no_order",symbol=symbol,status="UNASSESSABLE",
-                reason="LIVE_SOURCE_OR_CHECKPOINT_NOT_VERIFIED",formal_eligibility=False))
+                reason="LIVE_SOURCE_OR_CHECKPOINT_NOT_VERIFIED",formal_eligibility=False,
+                current_capital_observation=capital_observation))

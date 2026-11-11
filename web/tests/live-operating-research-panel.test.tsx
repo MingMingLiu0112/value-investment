@@ -545,6 +545,29 @@ it.each(["NOT_STARTED", "UNASSESSABLE"] as const)(
   },
 );
 
+it.each(["NOT_STARTED", "UNASSESSABLE"] as const)(
+  "shows independently verified capital evidence while Agent research is %s",
+  (status) => {
+    const { renderToStaticMarkup } = require("react-dom/server");
+    const html = renderToStaticMarkup(
+      <PublicOperatingResearchView
+        value={{
+          symbol: "600519",
+          action: "no_order",
+          formal_eligibility: false,
+          status,
+          reason: "TEST_ONLY_AGENT_NOT_AVAILABLE",
+          current_capital_observation: capitalObservation(),
+        }}
+        symbol="600519"
+      />,
+    );
+    expect(html).toContain("来源绑定的公开资本观察");
+    expect(html).toContain("当前资本连续性：尚未证明");
+    expect(html).not.toContain("经营基本面草案");
+  },
+);
+
 it.each(["REVIEW_REQUIRED", "INSUFFICIENT_FOR_NUMERIC_SCENARIOS"] as const)(
   "shows optional completeness %s without promoting successful tasks into sufficient research",
   (status) => {

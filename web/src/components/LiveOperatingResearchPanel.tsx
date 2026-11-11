@@ -1716,10 +1716,21 @@ export function PublicOperatingResearchView({
       symbol={symbol}
     />
   ) : null;
+  const independentCapital =
+    value.status !== "SUCCEEDED" &&
+    value.status !== "PARTIAL" &&
+    value.current_capital_observation &&
+    value.current_capital_observation.status !== "NOT_STARTED" ? (
+      <CurrentCapitalObservationView
+        value={value.current_capital_observation}
+        symbol={symbol}
+      />
+    ) : null;
   if (value.status === "NOT_STARTED")
     return (
       <>
         <p>尚无已生成的公开经营研究。</p>
+        {independentCapital}
         {independentRevalidation}
       </>
     );
@@ -1732,6 +1743,7 @@ export function PublicOperatingResearchView({
           message="最新经营研究暂不可核验，不回退展示旧成功结果"
           description={value.reason}
         />
+        {independentCapital}
         {independentRevalidation}
       </>
     );

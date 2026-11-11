@@ -1275,6 +1275,7 @@ export type PublicOperatingResearchResult =
       formal_eligibility: false;
       symbol: string;
       status: "NOT_STARTED" | "UNASSESSABLE";
+      current_capital_observation?: CurrentCapitalObservation;
       main_valuation_revalidation?: MainValuationRevalidationRecord;
       reason?: string;
       task_id?: string;
