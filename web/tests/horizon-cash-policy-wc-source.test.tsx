@@ -3,7 +3,7 @@ import { webcrypto } from "node:crypto";
 import { beforeEach, expect, it, vi } from "vitest";
 
 const hooks = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
-const calls = vi.hoisted(() => ({ create: vi.fn() }));
+const calls = vi.hoisted(() => ({ create: vi.fn(), importV12: vi.fn() }));
 vi.mock("react", async (original) => {
   const actual = await original<typeof import("react")>();
   return {
@@ -33,7 +33,11 @@ vi.mock("../src/services/api", async (original) => {
   const actual = await original<typeof import("../src/services/api")>();
   return {
     ...actual,
-    api: { ...actual.api, createHorizonCashPolicyTask: calls.create },
+    api: {
+      ...actual.api,
+      createHorizonCashPolicyTask: calls.create,
+      importV12HorizonCashPolicyTask: calls.importV12,
+    },
   };
 });
 import { HorizonCashPolicyPanel } from "../src/components/HorizonCashPolicyPanel";
@@ -62,6 +66,7 @@ beforeEach(() => {
   hooks.values = [];
   hooks.cursor = 0;
   calls.create.mockReset();
+  calls.importV12.mockReset();
   vi.stubGlobal("crypto", webcrypto);
 });
 
@@ -100,4 +105,36 @@ it("does not offer the issuer-specific source for another company", () => {
     "启动2027两阶段V13研究（含母公司余额证据，可能计费）",
   );
   expect(calls.create).not.toHaveBeenCalled();
+});
+
+it("continues only a sealed V12 annual stage with a stable idempotency key", async () => {
+  button(render("600519"), "D2 股东现金政策研究").props.onClick();
+  const sourceId = "rt-" + "b".repeat(32);
+  hooks.values[1] = {
+    task_id: sourceId,
+    symbol: "600519",
+    status: "FAILED",
+    workflow: "operating-horizon-task-v12-2027-live",
+    annual_status: "SETTLED_VALIDATED",
+    action: "no_order",
+  };
+  hooks.values[3] = "v12";
+  calls.importV12.mockResolvedValue({
+    task_id: "rt-" + "c".repeat(32),
+    symbol: "600519",
+    status: "QUEUED",
+    workflow: "operating-horizon-task-v13-2027-live",
+    annual_status: "IMPORTED_V12",
+    action: "no_order",
+  });
+  await button(
+    render("600519"),
+    "复用已核验年度研究，继续V13现金政策（可能计费）",
+  ).props.onClick();
+  expect(calls.importV12).toHaveBeenCalledWith({
+    source_task_id: sourceId,
+    request_key: "cash_import_" + "b".repeat(32),
+  });
+  expect(calls.create).not.toHaveBeenCalled();
+  expect(hooks.values[3]).toBe("v13");
 });

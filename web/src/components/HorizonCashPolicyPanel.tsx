@@ -257,6 +257,41 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
       setBusy(false);
     }
   }
+  async function continueV12Cash() {
+    if (
+      lock.current ||
+      !task ||
+      kind !== "v12" ||
+      task.annual_status !== "SETTLED_VALIDATED"
+    )
+      return;
+    lock.current = true;
+    setBusy(true);
+    setError(undefined);
+    try {
+      const result = await api.importV12HorizonCashPolicyTask({
+        source_task_id: task.task_id,
+        request_key: "cash_import_" + task.task_id.slice(3),
+      });
+      if (!valid(result, symbol) || result.workflow !== V13_CONTRACT)
+        throw new Error("INVALID_IMPORTED_CASH_TASK_BOUNDARY");
+      setTask(result);
+      setKind("v13");
+      setE2Input(undefined);
+    } catch (cause) {
+      const reason = safeReason(cause);
+      setError(
+        cause instanceof ApiError && cause.status === 401
+          ? "继续封存年度研究需要本机授权；公开研究仍可阅读。"
+          : reason
+            ? `现金研究续作被拒绝：${reason}；原年度研究仍保持封存。`
+            : "现金研究续作未通过来源或预算预检；原年度研究仍保持封存。",
+      );
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
   async function readE2Input() {
     if (!task || busy || lock.current) return;
     lock.current = true;
@@ -402,6 +437,11 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         <Button disabled={busy} onClick={() => loadHistory("v12")}>
           读取2027两阶段V12封存任务
         </Button>
+        {kind === "v12" && task?.annual_status === "SETTLED_VALIDATED" && (
+          <Button disabled={busy || active} onClick={continueV12Cash}>
+            复用已核验年度研究，继续V13现金政策（可能计费）
+          </Button>
+        )}
         <Button disabled={busy} onClick={() => loadHistory("v13")}>
           读取2027两阶段V13封存任务
         </Button>
@@ -455,7 +495,11 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                       ? "D2两阶段V10封存任务历史"
                       : historyKind === "v11"
                         ? "D2两阶段V11封存任务历史"
-                        : "D2紧凑研究历史"
+                        : historyKind === "v12"
+                          ? "D2两阶段V12封存任务历史"
+                          : historyKind === "v13"
+                            ? "D2两阶段V13封存任务历史"
+                            : "D2紧凑研究历史"
           }
         >
           {history.length === 0 ? (
@@ -516,7 +560,11 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                     : "年度经营与现金政策"}{" "}
             · 状态：{task.status} · 资格：未批准
           </p>
-          {(kind === "split" || kind === "v10" || kind === "v11") && (
+          {(kind === "split" ||
+            kind === "v10" ||
+            kind === "v11" ||
+            kind === "v12" ||
+            kind === "v13") && (
             <p>
               年度经营：{task.annual_status || "待读取"}；股东现金：
               {task.cash_status || "待读取"}。调用结果不明时不会自动重试。
