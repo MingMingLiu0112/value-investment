@@ -151,6 +151,45 @@ def test_dispatch_rejects_unsupported_source_version(tmp_path, monkeypatch):
         service.list_for_symbol("600519")
 
 
+def test_new_q3_cash_task_uses_separate_store_but_existing_dispatch_api(tmp_path, monkeypatch):
+    task_id = "rt-" + "a" * 32
+    calls = []
+
+    class FakeQ3:
+        def __init__(self, root):
+            self.base = root / "runtime/research-task-execution-v1/cp4q3"
+
+        def _directory(self, identity):
+            assert identity == task_id
+            return self.base / identity
+
+        def create(self, **kwargs):
+            calls.append(("create", kwargs["symbol"]))
+            folder = self._directory(task_id)
+            folder.mkdir(parents=True)
+            (folder / "input.json").write_text(json.dumps({
+                "symbol": kwargs["symbol"], "source_binding": {
+                    "path": "runtime/" + mod.q3_ocr_sources.VERSION + "/source.json",
+                }}), encoding="utf-8")
+            return {"task_id": task_id, "symbol": kwargs["symbol"], "status": "QUEUED"}
+
+        def read(self, identity):
+            calls.append(("read", identity))
+            return {"task_id": identity, "symbol": "600519", "status": "QUEUED",
+                    "updated_at": "2026-11-11", "action": "no_order"}
+
+    monkeypatch.setattr(mod, "CashTaskV4", FakeQ3)
+    selection = tmp_path / mod.Q3_TASK_CONFIG
+    selection.parent.mkdir(parents=True)
+    selection.write_text(json.dumps({"schema_version": "operating-q3-ocr-task-selection-v1",
+        "action": "no_order", "cases": {"600519": {}}}), encoding="utf-8")
+    service = mod.NoticeAwareTaskService(tmp_path, kind="cash")
+    assert service.create(symbol="600519", request_key="TEST_ONLY_01", years=[2027])["task_id"] == task_id
+    assert service.read(task_id)["status"] == "QUEUED"
+    assert [row["task_id"] for row in service.list_for_symbol("600519")] == [task_id]
+    assert calls == [("create", "600519"), ("read", task_id), ("read", task_id)]
+
+
 def test_listing_replays_only_requested_issuer_and_preserves_identity_check(tmp_path, monkeypatch):
     base = tmp_path / "tasks"
     base.mkdir()

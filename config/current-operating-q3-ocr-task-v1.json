@@ -1,0 +1,12 @@
+{
+  "schema_version": "operating-q3-ocr-task-selection-v1",
+  "action": "no_order",
+  "cases": {
+    "600519": {
+      "base_binding": {
+        "path": "runtime/operating-horizon-sources-v1/264b1fc273152769519db160dadc33f79a946e21784756b1c4e253d567ca0a07.json",
+        "sha256": "264b1fc273152769519db160dadc33f79a946e21784756b1c4e253d567ca0a07"
+      }
+    }
+  }
+}

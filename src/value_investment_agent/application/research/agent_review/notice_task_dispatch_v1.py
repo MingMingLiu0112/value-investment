@@ -16,10 +16,13 @@ from . import operating_horizon_sources_v6 as approved_plan_sources
 from . import operating_horizon_sources_v7 as return_plan_sources
 from . import operating_horizon_sources_v8 as conditioned_plan_sources
 from . import operating_horizon_sources_v9 as critique_stress_sources
+from . import operating_horizon_sources_v10_q3_ocr as q3_ocr_sources
 from .operating_policy_denominator_review_v1 import review_task_view
 from .operating_annual_task_v3 import OperatingHorizonTaskService as AnnualTask
 from .operating_cash_policy_task_v1 import OperatingCashPolicyTaskService as CashTask
 from .operating_cash_policy_task_v3 import OperatingCashPolicyTaskServiceV3 as CashTaskV3
+from .operating_cash_policy_task_v4_q3_ocr import OperatingCashPolicyTaskServiceV4 as CashTaskV4
+from .operating_cash_policy_task_v4_q3_ocr import CONFIG as Q3_TASK_CONFIG
 
 _CASH_POLICY_TERMS = (
     "target_payout_ratio", "accessible_profit_ratio", "reserve_ratio",
@@ -117,6 +120,7 @@ class NoticeAwareTaskService:
             root, source_loader=conditioned_plan_sources.build_operating_horizon_source_context)
         self.critique_stress = (cls if kind == "annual" else CashTaskV3)(
             root, source_loader=critique_stress_sources.build_operating_horizon_source_context)
+        self.q3_ocr = CashTaskV4(root) if kind == "cash" else None
         self.root = Path(root).resolve()
         self.base = self.legacy.base
 
@@ -125,6 +129,8 @@ class NoticeAwareTaskService:
         path = binding.get("path") if isinstance(binding, dict) else None
         if not isinstance(path, str):
             raise ValueError("NOTICE_TASK_SOURCE_BINDING_INVALID")
+        if path.startswith("runtime/" + q3_ocr_sources.VERSION + "/"):
+            return "v10-q3-ocr"
         if path.startswith("runtime/operating-horizon-sources-v9/"):
             return "v9"
         if path.startswith("runtime/operating-horizon-sources-v8/"):
@@ -155,19 +161,29 @@ class NoticeAwareTaskService:
         directory = self.legacy._directory(task_id)
         input_path = directory / "input.json"
         if not input_path.is_file():
+            if (self.q3_ocr is not None and
+                    (self.q3_ocr._directory(task_id) / "input.json").is_file()):
+                return self.q3_ocr
             raise FileNotFoundError(task_id)
         spec = json.loads(input_path.read_text(encoding="utf-8"))
         return self._by_version(spec.get("source_binding"))
 
     def _by_version(self, binding):
+        version = self._version(binding)
+        if version == "v10-q3-ocr" and self.q3_ocr is None:
+            raise ValueError("NOTICE_TASK_SOURCE_VERSION_UNSUPPORTED")
         return {"v1": self.legacy, "v2": self.notice,
                 "v3": self.implemented, "v4": self.prior_stress,
                 "v5": self.quarterly, "v6": self.approved_plan,
                 "v7": self.return_plan, "v8": self.conditioned_plan,
-                "v9": self.critique_stress}[self._version(binding)]
+                "v9": self.critique_stress,
+                "v10-q3-ocr": self.q3_ocr}[version]
 
     def create(self, *, symbol, request_key, years, now=None):
         if self.kind == "cash" and symbol in self._configured_symbols(
+                Q3_TASK_CONFIG, "operating-q3-ocr-task-selection-v1"):
+            service = self.q3_ocr
+        elif self.kind == "cash" and symbol in self._configured_symbols(
                 critique_stress_sources.CONFIG, "operating-critique-stress-selection-v1"):
             critique_stress_sources._selection(self.root, symbol)
             service = self.critique_stress
@@ -242,14 +258,22 @@ class NoticeAwareTaskService:
     def list_for_symbol(self, symbol):
         if not isinstance(symbol, str) or not re.fullmatch(r"[0-9]{6}", symbol):
             raise ValueError("NOTICE_TASK_SYMBOL_INVALID")
-        if not self.base.exists():
+        stores = [self.base]
+        if self.q3_ocr is not None:
+            stores.append(self.q3_ocr.base)
+        stores = [store for store in stores if store.exists()]
+        if not stores:
             return []
-        children = list(self.base.iterdir())
+        children = [path for store in stores for path in store.iterdir()]
         if len(children) > 100:
             raise ValueError("RESEARCH_TASK_DISCOVERY_LIMIT_EXCEEDED")
         rows = []
+        seen = set()
         for path in sorted(children):
             if path.is_dir() and path.name.startswith("rt-") and (path / "input.json").is_file():
+                if path.name in seen:
+                    raise ValueError("RESEARCH_TASK_ID_COLLISION_ACROSS_STORES")
+                seen.add(path.name)
                 # Discovery reads only the immutable input identity first. A task
                 # for another issuer must not force replay of its PDFs (or make
                 # this issuer's list fail because that other source changed).
