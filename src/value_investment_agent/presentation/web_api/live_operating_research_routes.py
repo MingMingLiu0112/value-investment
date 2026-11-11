@@ -405,6 +405,17 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         except (ValueError,OSError,KeyError,TypeError):
             capital_observation=dict(status="UNASSESSABLE",
                 reason="CURRENT_CAPITAL_SOURCE_NOT_VERIFIED",action="no_order",formal_eligibility=False)
+        # A fixed-source Q3 observation is independent of the paid research task.
+        # It does not change model validity, valuation or current price gates.
+        try:
+            from ...application.research.quarter_financial_read_model_v1 import read_quarter_financial_ocr
+            quarter = read_quarter_financial_ocr(project, symbol, datetime.now(timezone.utc))
+            if quarter['status'] not in {'NOT_STARTED', 'NOT_SUPPORTED'}:
+                capital_observation['quarter_financial_observation'] = quarter
+        except (ValueError, OSError, KeyError, TypeError):
+            capital_observation['quarter_financial_observation'] = dict(
+                status='UNASSESSABLE', reason='QUARTER_SOURCE_BINDING_NOT_VERIFIED',
+                action='no_order', formal_eligibility=False, valuation_admitted=False)
         try:
             tasks=service.list_for_symbol(symbol)
             if not tasks:return reply(dict(action="no_order",symbol=symbol,status="NOT_STARTED",

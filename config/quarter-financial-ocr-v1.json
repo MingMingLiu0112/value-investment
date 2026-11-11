@@ -1,0 +1,17 @@
+{
+  "schema_version": "quarter-financial-ocr-registry-v1",
+  "action": "no_order",
+  "cases": {
+    "600519": {
+      "capital_source_sha256": "96ba51ebf414f841bce79b3ba019927df2f795142392e12e96a9d559e96ebb9b",
+      "receipt": {
+        "path": "runtime/value-q3-pdfium-ocr-600519-20261111/receipt.json",
+        "sha256": "72955918b4c6fc2f297a366a371e40a7f0c9cdf63c3462aac54d568237f18f81"
+      },
+      "registration": {
+        "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/event-scan.json",
+        "sha256": "3754bc057d2e4162f4aeb64285dd2c9cf13aa24ae7f6a961324f68f576ba6851"
+      }
+    }
+  }
+}

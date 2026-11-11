@@ -37,6 +37,18 @@
           "kind": "interim"
         }
       ]
+    },
+    "600519": {
+      "sources": [
+        {
+          "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/600519-1225649896.pdf",
+          "sha256": "96ba51ebf414f841bce79b3ba019927df2f795142392e12e96a9d559e96ebb9b",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649896.PDF",
+          "available_at": "2026-11-11T02:53:26.730420+00:00",
+          "report_period": "2026-09-30",
+          "kind": "q3"
+        }
+      ]
     }
   }
 }

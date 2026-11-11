@@ -95,6 +95,36 @@ def test_public_get_and_model_status_no_account_no_network_no_writes(api):
     assert not data.provider_calls and state(root)==before
 
 
+def test_public_q3_observation_is_visible_without_a_live_task_or_price_admission(api, monkeypatch):
+    from value_investment_agent.application.research import quarter_financial_read_model_v1 as quarter
+
+    client, _, data, root = api
+    before = state(root)
+
+    def fixed_source_read(project, symbol, now):
+        assert project == root and symbol == '600519' and now.utcoffset() is not None
+        return dict(status='VERIFIED_OBSERVATION_ONLY', symbol=symbol,
+                    supported_scope='FIXED_SOURCE_600519_Q3_2026', action='no_order',
+                    formal_eligibility=False, valuation_admitted=False,
+                    current_comparison_changed=False,
+                    ytd_9m_observation=dict(symbol=symbol, report_period='2026-09-30',
+                        period_basis='YTD_9M', currency='CNY',
+                        facts=dict(revenue_ytd_cny='130970743649.04',
+                                   attributable_profit_ytd_cny='64467425981.95'),
+                        source_sha256='a' * 64, formal_eligibility=False,
+                        valuation_admitted=False, action='no_order'))
+
+    monkeypatch.setattr(quarter, 'read_quarter_financial_ocr', fixed_source_read)
+    response = client.get(BASE + '/companies/600519')
+    body = response.json()
+    observed = body['current_capital_observation']['quarter_financial_observation']
+    assert response.status_code == 200 and body['status'] == 'NOT_STARTED'
+    assert observed['status'] == 'VERIFIED_OBSERVATION_ONLY'
+    assert observed['valuation_admitted'] is False
+    assert body['formal_eligibility'] is False and body['action'] == 'no_order'
+    assert data.provider_calls == [] and state(root) == before
+
+
 @pytest.mark.parametrize('extra',[{'endpoint':'https://example.invalid'}, {'key':'TEST_ONLY'},
     {'api_key':'TEST_ONLY'}, {'api_key_env':'VALUE_AGENT_TEST_ONLY'},
     {'sourcepath':'runtime/TEST_ONLY'}, {'source_path':'runtime/TEST_ONLY'},

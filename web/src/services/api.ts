@@ -971,6 +971,26 @@ export type CurrentCapitalObservation = {
   action: "no_order";
   formal_eligibility: false;
   current_capital_continuity?: "NOT_PROVEN";
+  quarter_financial_observation?: {
+    status: "VERIFIED_OBSERVATION_ONLY" | "UNASSESSABLE";
+    supported_scope?: string;
+    reason?: string;
+    action: "no_order";
+    formal_eligibility: false;
+    valuation_admitted: false;
+    current_comparison_changed?: false;
+    ytd_9m_observation?: {
+      symbol: string;
+      report_period: string;
+      period_basis: string;
+      currency: string;
+      facts: { revenue_ytd_cny: string; attributable_profit_ytd_cny: string };
+      source_sha256: string;
+      formal_eligibility: false;
+      valuation_admitted: false;
+      action: "no_order";
+    } | null;
+  };
   source_bound_observations?: {
     source_index: number;
     status: string;

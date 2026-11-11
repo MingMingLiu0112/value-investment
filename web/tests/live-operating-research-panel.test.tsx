@@ -1461,6 +1461,46 @@ it("preserves verified capital sources alongside explicit partial failure and ne
   expect(html).toContain("未提供，不补零");
   expect(html).not.toContain("1,470,000,000");
 });
+it("shows the fixed-source Q3 observation without claiming current valuation admission", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = capitalObservation();
+  value.quarter_financial_observation = {
+    status: "VERIFIED_OBSERVATION_ONLY",
+    supported_scope: "FIXED_SOURCE_600519_Q3_2026",
+    action: "no_order",
+    formal_eligibility: false,
+    valuation_admitted: false,
+    current_comparison_changed: false,
+    ytd_9m_observation: {
+      symbol: "600519",
+      report_period: "2026-09-30",
+      period_basis: "YTD_9M",
+      currency: "CNY",
+      facts: {
+        revenue_ytd_cny: "130970743649.04",
+        attributable_profit_ytd_cny: "64467425981.95",
+      },
+      source_sha256: "a".repeat(64),
+      formal_eligibility: false,
+      valuation_admitted: false,
+      action: "no_order",
+    },
+  };
+  const before = JSON.stringify(value);
+  const html = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(html).toContain("三季报未审计财务观察");
+  expect(html).toContain("1,309.7074");
+  expect(html).toContain("644.6743");
+  expect(html).toContain("该观察未进入当前估值");
+  expect(JSON.stringify(value)).toBe(before);
+  value.quarter_financial_observation.ytd_9m_observation!.symbol = "000568";
+  const mismatched = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(mismatched).not.toContain("1,309.7074");
+});
 it("shows fiscal H1 fact plus exact-derived H2 and CNY-8.5-billion policy target without calling excess earnings a cash deficit or default", () => {
   const { renderToStaticMarkup } = require("react-dom/server");
   const value = fiscalReview(),

@@ -455,6 +455,7 @@ export function CurrentCapitalObservationView({
         message="公开资本观察身份或边界不符，本区停止展示；其他研究保留"
       />
     );
+  const quarter = value.quarter_financial_observation;
   const rows = Array.isArray(value.source_bound_observations)
     ? value.source_bound_observations
     : [];
@@ -467,6 +468,43 @@ export function CurrentCapitalObservationView({
       <p>
         报告期股数与股利方案是原件观察，不证明当前股本连续性；股利计划、财政年度归属、宣告和实际付款必须分开。当前资本连续性：尚未证明。
       </p>
+      {quarter?.status === "VERIFIED_OBSERVATION_ONLY" &&
+        quarter.action === "no_order" &&
+        quarter.formal_eligibility === false &&
+        quarter.valuation_admitted === false &&
+        quarter.supported_scope === "FIXED_SOURCE_600519_Q3_2026" &&
+        quarter.ytd_9m_observation?.symbol === symbol &&
+        quarter.ytd_9m_observation.report_period === "2026-09-30" &&
+        quarter.ytd_9m_observation.period_basis === "YTD_9M" &&
+        quarter.ytd_9m_observation.currency === "CNY" &&
+        observationHash(quarter.ytd_9m_observation.source_sha256) && (
+          <section aria-label="三季报未审计财务观察">
+            <h4>2026年三季报：年初累计九个月观察</h4>
+            <p>
+              营业收入：
+              {observationMoney(
+                quarter.ytd_9m_observation.facts.revenue_ytd_cny,
+              )}
+              亿元；归母净利润：
+              {observationMoney(
+                quarter.ytd_9m_observation.facts.attributable_profit_ytd_cny,
+              )}
+              亿元。来源为固定原件的OCR复核；财报未经审计。
+            </p>
+            <p>
+              原件SHA-256：
+              <code>{quarter.ytd_9m_observation.source_sha256}</code>。
+              该观察未进入当前估值，仍须独立复核模型、股本连续性及重大事件。
+            </p>
+          </section>
+        )}
+      {quarter?.status === "UNASSESSABLE" && (
+        <Alert
+          type="info"
+          message="三季报财务观察暂不可核验"
+          description={quarter.reason}
+        />
+      )}
       {value.status === "NOT_STARTED" && (
         <p>尚无已登记资本原件观察，不推定没有分配或股本变化。</p>
       )}
