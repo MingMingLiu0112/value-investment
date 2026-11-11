@@ -1340,6 +1340,7 @@ export type HorizonCashPolicyTask = {
   formal_eligibility?: false;
   workflow?:
     | "operating-horizon-task-v4-cash-policy"
+    | "operating-horizon-task-v5-parent-wc-balance"
     | "operating-cash-policy-task-v1"
     | "operating-horizon-task-v2"
     | "operating-horizon-task-v3";
@@ -1632,6 +1633,7 @@ export const api = {
     symbol: string;
     request_key: string;
     years: number[];
+    task_contract?: "operating-horizon-task-v5-parent-wc-balance";
   }) =>
     post<HorizonCashPolicyTask>(
       "operating-research/horizon-cash-policy-tasks",
@@ -1642,14 +1644,21 @@ export const api = {
       "operating-research/horizon-cash-policy-tasks/" + encodeURIComponent(id),
       signal,
     ),
-  horizonCashPolicyHistory: (symbol: string, signal?: AbortSignal) =>
+  horizonCashPolicyHistory: (
+    symbol: string,
+    signal?: AbortSignal,
+    taskContract?: "operating-horizon-task-v5-parent-wc-balance",
+  ) =>
     getPrivate<{
       action: "no_order";
       symbol: string;
       items: HorizonCashPolicyTask[];
     }>(
       "operating-research/horizon-cash-policy-tasks?symbol=" +
-        encodeURIComponent(symbol),
+        encodeURIComponent(symbol) +
+        (taskContract
+          ? "&task_contract=" + encodeURIComponent(taskContract)
+          : ""),
       signal,
     ),
   horizonCashPolicyE2Input: (id: string, signal?: AbortSignal) =>

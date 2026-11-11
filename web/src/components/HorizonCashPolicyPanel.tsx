@@ -8,6 +8,10 @@ import {
 } from "../services/api";
 import { Readable } from "./LiveOperatingResearchPanel";
 
+const PARENT_WC_CONTRACT =
+  "operating-horizon-task-v5-parent-wc-balance" as const;
+type CashKind = "annual" | "compact" | "parentWC";
+
 function valid(value: HorizonCashPolicyTask | undefined, symbol: string) {
   return Boolean(
     value &&
@@ -35,11 +39,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
   const [opened, setOpened] = useState(false);
   const [task, setTask] = useState<HorizonCashPolicyTask>();
   const [e2Input, setE2Input] = useState<HorizonCashPolicyE2Input>();
-  const [kind, setKind] = useState<"annual" | "compact">("annual");
+  const [kind, setKind] = useState<CashKind>("annual");
   const [history, setHistory] = useState<HorizonCashPolicyTask[]>();
-  const [historyKind, setHistoryKind] = useState<"annual" | "compact">(
-    "annual",
-  );
+  const [historyKind, setHistoryKind] = useState<CashKind>("annual");
   const [annualHistory, setAnnualHistory] = useState<HorizonCashPolicyTask[]>();
   const [annualTaskId, setAnnualTaskId] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -79,37 +81,62 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
     };
   }, [opened, task, symbol, kind]);
   async function run(
-    operation: "start" | "startCompact" | "refresh" | "cancel" | "resume",
+    operation:
+      | "start"
+      | "startCompact"
+      | "startParentWC"
+      | "refresh"
+      | "cancel"
+      | "resume",
   ) {
     if (lock.current || (!operation.startsWith("start") && !task)) return;
     lock.current = true;
     setBusy(true);
     setError(undefined);
     try {
-      const result =
-        operation === "start" || operation === "startCompact"
-          ? await (
-              operation === "startCompact"
-                ? api.createCompactCashPolicyTask
-                : api.createHorizonCashPolicyTask
-            )({
+      const result = operation.startsWith("start")
+        ? operation === "startCompact"
+          ? await api.createCompactCashPolicyTask({
               symbol,
               years: [new Date().getFullYear()],
               request_key: "cash_" + crypto.randomUUID().replace(/-/g, ""),
             })
-          : operation === "refresh"
-            ? await (kind === "compact"
-                ? api.compactCashPolicyTask(task!.task_id)
-                : api.horizonCashPolicyTask(task!.task_id))
-            : await (kind === "compact"
-                ? api.controlCompactCashPolicyTask(task!.task_id, operation)
-                : api.controlHorizonCashPolicyTask(task!.task_id, operation));
+          : await api.createHorizonCashPolicyTask({
+              symbol,
+              years: [
+                new Date().getFullYear() +
+                  (operation === "startParentWC" ? 1 : 0),
+              ],
+              request_key: "cash_" + crypto.randomUUID().replace(/-/g, ""),
+              ...(operation === "startParentWC"
+                ? { task_contract: PARENT_WC_CONTRACT }
+                : {}),
+            })
+        : operation === "refresh"
+          ? await (kind === "compact"
+              ? api.compactCashPolicyTask(task!.task_id)
+              : api.horizonCashPolicyTask(task!.task_id))
+          : await (kind === "compact"
+              ? api.controlCompactCashPolicyTask(
+                  task!.task_id,
+                  operation === "cancel" ? "cancel" : "resume",
+                )
+              : api.controlHorizonCashPolicyTask(
+                  task!.task_id,
+                  operation === "cancel" ? "cancel" : "resume",
+                ));
       if (!valid(result, symbol))
         throw new Error("Invalid D2 cash-policy task boundary");
       setE2Input(undefined);
       setTask(result);
-      if (operation === "start" || operation === "startCompact")
-        setKind(operation === "startCompact" ? "compact" : "annual");
+      if (operation.startsWith("start"))
+        setKind(
+          operation === "startCompact"
+            ? "compact"
+            : operation === "startParentWC"
+              ? "parentWC"
+              : "annual",
+        );
     } catch (cause) {
       const reason = safeReason(cause);
       setError(
@@ -124,16 +151,20 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
       setBusy(false);
     }
   }
-  async function loadHistory(selectedKind: "annual" | "compact") {
+  async function loadHistory(selectedKind: CashKind) {
     if (lock.current) return;
     lock.current = true;
     setBusy(true);
     setError(undefined);
     try {
       const result =
-        selectedKind === "annual"
-          ? await api.horizonCashPolicyHistory(symbol)
-          : await api.compactCashPolicyHistory(symbol);
+        selectedKind === "compact"
+          ? await api.compactCashPolicyHistory(symbol)
+          : await api.horizonCashPolicyHistory(
+              symbol,
+              undefined,
+              selectedKind === "parentWC" ? PARENT_WC_CONTRACT : undefined,
+            );
       if (
         result.action !== "no_order" ||
         result.symbol !== symbol ||
@@ -258,11 +289,17 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         <Button disabled={busy || active} onClick={() => run("startCompact")}>
           启动紧凑现金政策研究
         </Button>
+        <Button disabled={busy || active} onClick={() => run("startParentWC")}>
+          启动来源绑定的下一年度母公司资金研究
+        </Button>
         <Button disabled={busy} onClick={() => loadHistory("annual")}>
           读取年度研究历史
         </Button>
         <Button disabled={busy} onClick={() => loadHistory("compact")}>
           读取紧凑研究历史
+        </Button>
+        <Button disabled={busy} onClick={() => loadHistory("parentWC")}>
+          读取母公司资金研究历史
         </Button>
         <Button disabled={busy} onClick={loadAnnualHistory}>
           读取独立年度经营历史
@@ -297,7 +334,11 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
       {history && (
         <div
           aria-label={
-            historyKind === "annual" ? "D2年度研究历史" : "D2紧凑研究历史"
+            historyKind === "annual"
+              ? "D2年度研究历史"
+              : historyKind === "parentWC"
+                ? "D2母公司资金研究历史"
+                : "D2紧凑研究历史"
           }
         >
           {history.length === 0 ? (
@@ -347,8 +388,12 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         <>
           <p>
             任务：{task.task_id} · 类型：
-            {kind === "compact" ? "紧凑现金政策" : "年度经营与现金政策"} ·
-            状态：{task.status} · 资格：未批准
+            {kind === "compact"
+              ? "紧凑现金政策"
+              : kind === "parentWC"
+                ? "来源绑定母公司资金与年度经营"
+                : "年度经营与现金政策"}{" "}
+            · 状态：{task.status} · 资格：未批准
           </p>
           {task.persisted_status && task.persisted_status !== task.status && (
             <Alert

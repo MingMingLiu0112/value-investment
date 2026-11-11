@@ -1,6 +1,7 @@
 """Explicit real operating research, existing local authorization and D1 workflow."""
 from datetime import datetime,timezone
 import json,re
+from itertools import islice
 from fastapi import FastAPI,Request,BackgroundTasks
 from fastapi.responses import JSONResponse
 from .local_auth import authorize,LocalAuthorizationError,AUTHORIZATION_REQUIRED
@@ -69,16 +70,78 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     # shareholder-cash-policy meaning merely because this API was added.
     from ...application.research.agent_review.operating_horizon_task_v4 import OperatingHorizonTaskService as CashPolicyHorizonTaskService
     horizon_cash_policy = CashPolicyHorizonTaskService(project)
+    from ...application.research.agent_review.operating_horizon_task_v5_wc import (
+        OperatingHorizonTaskService as ParentWCHorizonTaskService, CONTRACT as PARENT_WC_CONTRACT)
+    from ...application.research.agent_review import operating_q3_cash_source_loader_v1 as q3_cash_loader
+
+    def parent_wc_horizon():
+        return ParentWCHorizonTaskService(project, allow_live=True,
+            source_loader=q3_cash_loader.load_current,
+            source_loader_version=q3_cash_loader.VERSION)
+
+    def parent_wc_test_reader():
+        # Validation only. Never run or return a TEST_ONLY task as live research.
+        return ParentWCHorizonTaskService(project, test_provider=object(),
+            source_loader=q3_cash_loader.load_current,
+            source_loader_version=q3_cash_loader.VERSION)
+
+    def v5_mode(service, task_id):
+        directory = service._directory(task_id)
+        if not (directory / "input.json").is_file():
+            raise ValueError("V5_WC_INPUT_MISSING_OR_DAMAGED")
+        raw = json.loads((directory / "input.json").read_bytes())
+        mode = raw.get("mode")
+        if mode not in ("LIVE_OPERATING", "TEST_ONLY_LIVE_CONTRACT"):
+            raise ValueError("V5_WC_MODE_INVALID")
+        validator = service if mode == "LIVE_OPERATING" else parent_wc_test_reader()
+        validator._load(task_id)  # includes input hash and version-chain checks
+        return mode
+
+    def list_live_parent_wc(symbol):
+        service = parent_wc_horizon()
+        if not service.base.exists():
+            return []
+        children = list(islice(service.base.iterdir(), 101))
+        if len(children) > 100:
+            raise ValueError("RESEARCH_TASK_DISCOVERY_LIMIT_EXCEEDED: max_entries=100")
+        items = []
+        for path in sorted(children):
+            if not path.is_dir() or not path.name.startswith("rt-"):
+                continue
+            if not (path / "input.json").is_file():
+                raise ValueError("V5_WC_INPUT_MISSING_OR_DAMAGED:" + path.name)
+            if v5_mode(service, path.name) != "LIVE_OPERATING":
+                continue
+            item = service.read(path.name)
+            if item["symbol"] == symbol:
+                items.append(item)
+                if len(items) > 20:
+                    raise ValueError("RESEARCH_TASK_RESULT_LIMIT_EXCEEDED: max_results=20")
+        return sorted(items, key=lambda row: (row["updated_at"], row["task_id"]), reverse=True)
+
+    def cash_horizon_for(task_id):
+        # Task identity alone is not a version. Never fall back to V4 when a
+        # V5 artifact exists but its integrity check rejects it.
+        v5 = parent_wc_horizon()
+        if v5._directory(task_id).exists():
+            if v5_mode(v5, task_id) != "LIVE_OPERATING":
+                raise ValueError("V5_WC_TEST_ONLY_NOT_LIVE_RESEARCH")
+            return v5
+        return horizon_cash_policy
     compact_cash_policy = NoticeAwareTaskService(project, kind="cash")
 
     @api.get("/api/v1/operating-research/horizon-cash-policy-tasks")
-    def list_horizon_cash_policy(request:Request, symbol:str):
+    def list_horizon_cash_policy(request:Request, symbol:str, task_contract:str|None=None):
         error=denied(request)
         if error is not None:return error
         try:
             if not re.fullmatch(r"[0-9]{6}",symbol):raise ValueError("INVALID_CASH_POLICY_SYMBOL")
+            if task_contract not in (None, PARENT_WC_CONTRACT):
+                raise ValueError("INVALID_CASH_POLICY_TASK_CONTRACT")
+            items = (list_live_parent_wc(symbol) if task_contract == PARENT_WC_CONTRACT
+                else horizon_cash_policy.list_for_symbol(symbol))
             return reply(dict(action="no_order",symbol=symbol,
-                items=horizon_cash_policy.list_for_symbol(symbol)))
+                items=items))
         except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
         except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
             return reply(dict(action="no_order",status="HORIZON_CASH_POLICY_TASKS_UNAVAILABLE",reason=str(error)),422)
@@ -242,13 +305,18 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
             return reply(dict(action="no_order",status="HORIZON_CONTROL_REJECTED",reason=str(error)),409)
 
-    def _cash_policy_body(raw):
+    def _cash_policy_body(raw, *, allow_v5=False):
         if len(raw) > 1024:
             raise ValueError("HORIZON_CASH_POLICY_REQUEST_TOO_LARGE")
         body = json.loads(raw)
-        if not isinstance(body, dict) or set(body) != {"symbol", "request_key", "years"}:
+        fields = set(body) if isinstance(body, dict) else set()
+        if fields == {"symbol", "request_key", "years"}:
+            return body
+        if allow_v5 and fields == {"symbol", "request_key", "years", "task_contract"} \
+                and body["task_contract"] == PARENT_WC_CONTRACT:
+            return {key: body[key] for key in ("symbol", "request_key", "years")}
+        else:
             raise ValueError("HORIZON_CASH_POLICY_REQUEST_INVALID")
-        return body
 
     @api.post("/api/v1/operating-research/horizon-cash-policy-tasks")
     async def create_horizon_cash_policy(request:Request, background:BackgroundTasks):
@@ -256,9 +324,13 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         error=denied(request)
         if error is not None:return error
         try:
-            task = horizon_cash_policy.create(**_cash_policy_body(await request.body()))
+            raw = await request.body()
+            body = json.loads(raw) if len(raw) <= 1024 else None
+            selected = (parent_wc_horizon() if isinstance(body, dict)
+                and body.get("task_contract") == PARENT_WC_CONTRACT else horizon_cash_policy)
+            task = selected.create(**_cash_policy_body(raw, allow_v5=True))
             if task["status"] == "QUEUED":
-                background.add_task(horizon_cash_policy.run, task["task_id"])
+                background.add_task(selected.run, task["task_id"])
             return reply(task, 202)
         except (PermissionError,ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
             return reply(dict(action="no_order",status="HORIZON_CASH_POLICY_TASK_REJECTED",reason=str(error)),422)
@@ -267,7 +339,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     def read_horizon_cash_policy(task_id:str, request:Request):
         error=denied(request)
         if error is not None:return error
-        try:return reply(horizon_cash_policy.read(task_id))
+        try:return reply(cash_horizon_for(task_id).read(task_id))
         except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
         except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
             return reply(dict(action="no_order",status="HORIZON_CASH_POLICY_TASK_UNAVAILABLE",reason=str(error)),422)
@@ -281,7 +353,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             from ...application.research.operating_horizon_cash_policy_e2_v1 import read_d2_cash_policy_e2_input
             return reply(read_d2_cash_policy_e2_input(
                 root=project, task_id=task_id, now=datetime.now(timezone.utc),
-                service=horizon_cash_policy))
+                service=cash_horizon_for(task_id)))
         except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
         except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
             # E2 readiness is an assessed research state, not an HTTP failure.
@@ -295,12 +367,13 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         error=denied(request)
         if error is not None:return error
         try:
+            selected = cash_horizon_for(task_id)
             if operation == "cancel":
-                task = horizon_cash_policy.cancel(task_id)
+                task = selected.cancel(task_id)
             elif operation == "resume":
-                task = horizon_cash_policy.resume(task_id)
+                task = selected.resume(task_id)
                 if task["status"] == "QUEUED":
-                    background.add_task(horizon_cash_policy.run, task_id)
+                    background.add_task(selected.run, task_id)
             else:
                 raise ValueError("UNSUPPORTED_HORIZON_CASH_POLICY_OPERATION")
             return reply(task)

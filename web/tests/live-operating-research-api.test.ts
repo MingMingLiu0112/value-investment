@@ -13,6 +13,57 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
+it("opts into the source-bound parent WC task without changing legacy task requests", async () => {
+  const fetcher = vi.fn(
+    async () =>
+      new Response(
+        JSON.stringify({
+          task_id: "rt-" + "a".repeat(32),
+          symbol: "600519",
+          status: "QUEUED",
+          action: "no_order",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+  );
+  vi.stubGlobal("fetch", fetcher);
+  const { api } = await import("../src/services/api");
+  const contract = "operating-horizon-task-v5-parent-wc-balance";
+  await api.createHorizonCashPolicyTask({
+    symbol: "600519",
+    request_key: "TEST_ONLY_v5",
+    years: [2027],
+    task_contract: contract,
+  });
+  await api.horizonCashPolicyHistory("600519", undefined, contract);
+  await api.createHorizonCashPolicyTask({
+    symbol: "600887",
+    request_key: "TEST_ONLY_v4",
+    years: [2026],
+  });
+  const calls = fetcher.mock.calls as unknown as [string, RequestInit][];
+  expect(JSON.parse(calls[0][1].body as string)).toEqual({
+    symbol: "600519",
+    request_key: "TEST_ONLY_v5",
+    years: [2027],
+    task_contract: contract,
+  });
+  expect(calls[1][0]).toBe(
+    "/api/v1/operating-research/horizon-cash-policy-tasks?symbol=600519&task_contract=" +
+      contract,
+  );
+  expect(calls[1][1].body).toBeUndefined();
+  expect(JSON.parse(calls[2][1].body as string)).toEqual({
+    symbol: "600887",
+    request_key: "TEST_ONLY_v4",
+    years: [2026],
+  });
+  for (const [, init] of calls)
+    expect(new Headers(init.headers).get("X-Local-Session")).toBe(
+      "TEST_ONLY_SESSION",
+    );
+});
+
 it("sends exact authenticated task create/read/cancel/resume requests only when invoked", async () => {
   const fetcher = vi.fn(
     async () =>
