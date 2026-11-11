@@ -135,6 +135,31 @@ def test_current_pending_inputs_replace_unadmitted_plan_values(registered, monke
     assert prior == original
 
 
+@pytest.mark.parametrize('change', [
+    {'reference_close': 'NaN'}, {'reference_close': '0'},
+    {'market_trade_date': '2099-01-01'}, {'market_trade_date': 'invalid'},
+    {'source_bindings': []},
+])
+def test_pending_analysis_does_not_admit_inconsistent_prior_quote(registered, monkeypatch, change):
+    root, symbol, _, _ = registered
+    prior = current_value_plan.load_current_value_action_plans(root, now=NOW)['items'][0]
+    prior.pop('research_analysis')
+    prior.pop('research_analysis_status')
+    prior.update(verification_scope='HASH_BOUND_PUBLISHED_RESEARCH_NOT_NEW_APPROVAL',
+        current_quote_verified=True, reference_close='27.80', market_trade_date='2026-10-22',
+        source_bindings=[dict(path='runtime/quote.json', sha256='a' * 64)])
+    prior.update(change)
+    monkeypatch.setattr(current_value_plan, 'load_registered_value_action_plans',
+        lambda *args, **kwargs: dict(items=[deepcopy(prior)], blockers=[], source_bindings=[]))
+
+    plan = current_value_plan.load_current_value_action_plans(root, now=NOW, symbols=[symbol])['items'][0]
+
+    assert plan['current_quote_verified'] is False
+    assert plan['reference_close'] is None
+    assert 'VALUE_LATEST_COMPLETED_QUOTE_NOT_VERIFIED' in plan['blockers']
+    assert plan['formal_eligibility'] is plan['price_comparison_eligible'] is False
+
+
 @pytest.mark.parametrize('protected', ['newer', 'approved', 'held-action'])
 def test_pending_analysis_does_not_replace_newer_or_admitted_decisions(registered, monkeypatch, protected):
     root, symbol, _, _ = registered

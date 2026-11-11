@@ -1,5 +1,5 @@
 """Read-time revalidation of a frozen value plan without new approvals."""
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -27,7 +27,7 @@ def _pending_analysis_plan(analysis: dict, prior: dict | None, now: datetime) ->
     prior = prior or {}
     sources = list(analysis['source_bindings'])
     quote = {}
-    if prior.get('current_quote_verified') is True:
+    if prior.get('current_quote_verified') is True and _usable_prior_quote(prior, analysis['symbol'], now):
         quote = dict(symbol=analysis['symbol'], price=prior['reference_close'],
             quote_date=prior['market_trade_date'], status='verified_close', comparison_eligible=False,
             scope='CURRENT_VERIFIED_CLOSE_NOT_VALUATION_COMPARABLE')
@@ -57,6 +57,20 @@ def _pending_analysis_plan(analysis: dict, prior: dict | None, now: datetime) ->
     if not quote:
         plan['reference_price_scope'] = 'NO_VERIFIED_CLOSE'
     return plan
+
+
+def _usable_prior_quote(prior: dict, symbol: str, now: datetime) -> bool:
+    """Preserve an independently verified close only with its basic identity intact."""
+    try:
+        price = Decimal(str(prior['reference_close']))
+        trade_date = date.fromisoformat(prior['market_trade_date'])
+        sources = prior['source_bindings']
+        return (prior.get('symbol') == symbol and price.is_finite() and price > 0
+            and trade_date <= now.astimezone(ZoneInfo('Asia/Shanghai')).date()
+            and isinstance(sources, list) and bool(sources)
+            and all(isinstance(row, dict) and row.get('path') and row.get('sha256') for row in sources))
+    except (KeyError, TypeError, ValueError, InvalidOperation):
+        return False
 
 
 def load_current_value_action_plans(root: Path, *, now: datetime,
