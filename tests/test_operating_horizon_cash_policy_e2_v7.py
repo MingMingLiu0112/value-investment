@@ -124,3 +124,18 @@ def test_v15_e2_cold_read_rejects_source_replay_change(chain):
             now=NOW + timedelta(hours=1), service=service)
     assert len(calls) == 1
 
+
+def test_v15_e2_reports_economic_incompleteness_separately_from_task_success(chain, monkeypatch):
+    service, task_id, result, _, _, calls = chain
+    assert result["status"] == "SUCCEEDED"
+    original = service.read
+    def incomplete(candidate):
+        view = original(candidate)
+        view["research_result"]["cash_policy_v15"]["cash_policy_appendix_status"] = "INCOMPLETE_UNKNOWN_TERMS"
+        return view
+    monkeypatch.setattr(service, "read", incomplete)
+    with pytest.raises(ValueError, match="V15_E2_CASH_POLICY_INCOMPLETE"):
+        read_v15_cash_policy_e2_input(root=service.root, task_id=task_id,
+            now=NOW + timedelta(hours=1), service=service)
+    assert len(calls) == 1
+

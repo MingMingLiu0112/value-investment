@@ -619,7 +619,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
             kind === "v10" ||
             kind === "v11" ||
             kind === "v12" ||
-            kind === "v13") && (
+            kind === "v13" ||
+            kind === "v14" ||
+            kind === "v15") && (
             <p>
               年度经营：{task.annual_status || "待读取"}；股东现金：
               {task.cash_status || "待读取"}。调用结果不明时不会自动重试。

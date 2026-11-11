@@ -25,6 +25,11 @@ def read_v15_cash_policy_e2_input(root: Path, task_id: str,
     request, lineage, context, annual_packet = service._imported(spec)
     cash_packet = service._packet(spec, state, "cash")
     research = task.get("research_result")
+    if (isinstance(research, dict)
+            and isinstance(research.get("cash_policy_v15"), dict)
+            and research["cash_policy_v15"].get("cash_policy_appendix_status")
+                == "INCOMPLETE_UNKNOWN_TERMS"):
+        raise ValueError("V15_E2_CASH_POLICY_INCOMPLETE")
     if (not isinstance(research, dict)
             or research.get("cash_policy_v15", {}).get("cash_policy_appendix_status")
                 != "COMPLETE_UNAPPROVED"
