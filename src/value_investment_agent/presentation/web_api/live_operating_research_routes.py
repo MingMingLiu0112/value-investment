@@ -249,6 +249,26 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         OperatingHorizonTaskService as V13HorizonTaskService, CONTRACT as V13_CONTRACT)
     from ...application.research.agent_review import operating_q3_issuer_plan_loader_v8_600519 as q3_v8
     from ...application.research.agent_review import operating_q3_issuer_wc_loader_v9_600519 as wc_v9
+    from ...application.research.agent_review.task_execution_v1 import _hash
+
+    def sealed_v12_import_pins(task_id):
+        if not isinstance(task_id, str) or re.fullmatch(r"rt-[0-9a-f]{32}", task_id) is None:
+            raise ValueError("V13_IMPORT_SOURCE_TASK_ID_INVALID")
+        probe = V12HorizonTaskService(project)
+        raw = json.loads((probe._directory(task_id) / "input.json").read_bytes())
+        if raw.get("mode") != "LIVE_OPERATING" or raw.get("task_contract") != V12_CONTRACT:
+            raise ValueError("V13_IMPORT_REQUIRES_LIVE_V12")
+        selected = live_2027_reader(V12_CONTRACT, raw)
+        spec, state, _ = selected._load(task_id)
+        packet = selected._packet(spec, state, "annual")
+        if packet is None or "annual" not in state.get("stage_validated", []):
+            raise ValueError("V13_IMPORT_ANNUAL_NOT_SEALED")
+        intent = state["stage_intents"]["annual"]
+        settlement = state["reservations"][intent["reservation"]]
+        return dict(expected_source_binding=spec["source_binding"],
+            expected_context_sha256=spec["context_sha256"],
+            expected_annual_response_sha256=_hash(packet["response"]["text"].encode("utf-8")),
+            expected_budget_day=settlement["budget_day"])
 
     def live_2027_horizon(contract, *, loader_version=None, test_provider=None):
         if contract == V13_CONTRACT:
@@ -549,6 +569,28 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             return {key: body[key] for key in ("symbol", "request_key", "years")}
         else:
             raise ValueError("HORIZON_CASH_POLICY_REQUEST_INVALID")
+
+    @api.post("/api/v1/operating-research/horizon-cash-policy-tasks/import-v12")
+    async def import_v12_horizon_cash_policy(request:Request, background:BackgroundTasks):
+        error=denied(request)
+        if error is not None:return error
+        try:
+            raw = await request.body()
+            body = json.loads(raw) if len(raw) <= 1024 else None
+            if not isinstance(body, dict) or set(body) != {"source_task_id", "request_key"}:
+                raise ValueError("V13_IMPORT_REQUEST_INVALID")
+            source_task_id, request_key = body["source_task_id"], body["request_key"]
+            pins = sealed_v12_import_pins(source_task_id)
+            selected = V13HorizonTaskService(project)
+            task = selected.create_imported(source_task_id=source_task_id,
+                request_key=request_key, **pins)
+            if task["status"] == "QUEUED":
+                background.add_task(selected.run, task["task_id"])
+            return reply(task, 202)
+        except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
+        except (PermissionError,ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
+            return reply(dict(action="no_order",status="HORIZON_CASH_POLICY_IMPORT_REJECTED",
+                reason=str(error)),422)
 
     @api.post("/api/v1/operating-research/horizon-cash-policy-tasks")
     async def create_horizon_cash_policy(request:Request, background:BackgroundTasks):

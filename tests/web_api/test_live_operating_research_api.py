@@ -18,6 +18,78 @@ LIVE='LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED'
 _ORIGINAL_SOCKET_CONNECT = socket.socket.connect
 
 
+def test_v13_import_api_derives_sealed_v12_pins_and_is_idempotent(api, monkeypatch):
+    import hashlib
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v12_live as v12,
+        operating_horizon_task_v13_live as v13,
+        operating_q3_issuer_plan_loader_v8_600519 as q3_v8)
+
+    client, secret, _, root = api
+    source_id = "rt-" + "a" * 32
+    source = root / "runtime" / "research-task-execution-v1" / v12.STORE / source_id
+    source.mkdir(parents=True)
+    (source / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        task_contract=v12.CONTRACT, source_loader_binding=dict(version=q3_v8.VERSION))), encoding="utf-8")
+    calls = []
+
+    class Source:
+        def __init__(self, root):
+            self.base = Path(root) / "runtime" / "research-task-execution-v1" / v12.STORE
+        def _directory(self, task_id):
+            return self.base / task_id
+        def _load(self, task_id):
+            return dict(source_binding={"pinned": True}, context_sha256="b" * 64), dict(
+                stage_validated=["annual"], stage_intents={"annual": {"reservation": "r"}},
+                reservations={"r": {"budget_day": "2026-11-12"}}), {}
+        def _packet(self, spec, state, stage):
+            return {"response": {"text": "sealed annual"}}
+
+    class Target:
+        def __init__(self, root): pass
+        def create_imported(self, **kwargs):
+            calls.append(kwargs)
+            return dict(task_id="rt-" + "c" * 32, status="FAILED", action="no_order",
+                formal_eligibility=False, task_contract=v13.CONTRACT)
+
+    monkeypatch.setattr(v12, "OperatingHorizonTaskService", Source)
+    monkeypatch.setattr(v13, "OperatingHorizonTaskService", Target)
+    path = BASE + "/horizon-cash-policy-tasks/import-v12"
+    body = dict(source_task_id=source_id, request_key="IMPORT_V12_01")
+    assert client.post(path, json=body).status_code == 401
+    unlock(client, secret)
+    for _ in range(2):
+        response = client.post(path, json=body)
+        assert response.status_code == 202, response.text
+        assert response.json()["action"] == "no_order"
+    assert calls[0] == calls[1]
+    assert calls[0]["expected_source_binding"] == {"pinned": True}
+    assert calls[0]["expected_budget_day"] == "2026-11-12"
+    assert calls[0]["expected_annual_response_sha256"] == hashlib.sha256(b"sealed annual").hexdigest()
+    assert client.post(path, json={**body, "expected_context_sha256": "0" * 64}).status_code == 422
+    assert client.post(path, json={**body, "source_task_id": "../outside"}).status_code == 422
+
+
+def test_v13_import_api_rejects_unsealed_source(api, monkeypatch):
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import operating_horizon_task_v12_live as v12
+
+    client, secret, _, root = api
+    source_id = "rt-" + "d" * 32
+    source = root / "runtime" / "research-task-execution-v1" / v12.STORE / source_id
+    source.mkdir(parents=True)
+    (source / "input.json").write_text(json.dumps(dict(mode="TEST_ONLY_LIVE_CONTRACT",
+        task_contract=v12.CONTRACT)), encoding="utf-8")
+    unlock(client, secret)
+    response = client.post(BASE + "/horizon-cash-policy-tasks/import-v12",
+        json=dict(source_task_id=source_id, request_key="IMPORT_V12_02"))
+    assert response.status_code == 422
+    assert response.json()["action"] == "no_order"
+
+
 @pytest.fixture
 def api(tmp_path,monkeypatch):
     data=SimpleNamespace(calls=[],rows=[],failure=None,provider_calls=[],views={})
