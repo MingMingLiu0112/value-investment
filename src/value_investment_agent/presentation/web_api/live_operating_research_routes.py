@@ -399,12 +399,28 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         # Registered public filing observations remain readable even when no
         # paid Agent task exists or its latest result is no longer verifiable.
         try:
-            from ...application.research.current_capital_h1_ocr_overlay_v2 import read_capital_with_h1_shares
-            capital_observation=read_capital_with_h1_shares(
+            from ...application.research.current_capital_observation_v1 import read_current_capital_observation
+            capital_observation=read_current_capital_observation(
                 project,symbol,datetime.now(timezone.utc))
         except (ValueError,OSError,KeyError,TypeError):
             capital_observation=dict(status="UNASSESSABLE",
                 reason="CURRENT_CAPITAL_SOURCE_NOT_VERIFIED",action="no_order",formal_eligibility=False)
+        # Preserve the established capital result for workspaces without an H1
+        # registration. Registered historical shares are an additive observation.
+        if (project / 'config/current-capital-h1-ocr-v2.json').is_file():
+            try:
+                from ...application.research.current_capital_h1_ocr_overlay_v2 import read_capital_with_h1_shares
+                overlay = read_capital_with_h1_shares(
+                    project, symbol, datetime.now(timezone.utc),
+                    base_observation=capital_observation)
+                if overlay['h1_share_observation']['status'] != 'NOT_REGISTERED':
+                    capital_observation = overlay
+            except (ValueError, OSError, KeyError, TypeError):
+                capital_observation['h1_share_observation'] = dict(
+                    status='UNASSESSABLE', error_code='H1_SOURCE_BINDING_NOT_VERIFIED',
+                    report_period_end=None, ordinary_shares=None,
+                    current_continuity='UNPROVEN', formal_eligibility=False,
+                    action='no_order')
         # A fixed-source Q3 observation is independent of the paid research task.
         # It does not change model validity, valuation or current price gates.
         try:

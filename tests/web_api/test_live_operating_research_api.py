@@ -129,10 +129,14 @@ def test_public_h1_share_observation_remains_historical_without_a_live_task(api,
     from value_investment_agent.application.research import current_capital_h1_ocr_overlay_v2 as shares
 
     client, _, data, root = api
+    registration = root / 'config/current-capital-h1-ocr-v2.json'
+    registration.parent.mkdir(parents=True, exist_ok=True)
+    registration.write_text('{}', encoding='utf-8')
     before = state(root)
 
-    def fixed_h1_read(project, symbol, now):
+    def fixed_h1_read(project, symbol, now, *, base_observation):
         assert project == root and symbol == '600519' and now.utcoffset() is not None
+        assert base_observation['action'] == 'no_order'
         return dict(status='PARTIAL', action='no_order', formal_eligibility=False,
                     current_capital_continuity='NOT_PROVEN',
                     h1_share_observation=dict(status='VERIFIED', report_period_end='2026-06-30',

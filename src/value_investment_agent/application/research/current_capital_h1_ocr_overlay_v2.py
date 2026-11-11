@@ -29,10 +29,12 @@ def _digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def read_capital_with_h1_shares(root: Path, symbol: str, as_of: datetime) -> dict:
+def read_capital_with_h1_shares(root: Path, symbol: str, as_of: datetime,
+                                *, base_observation: dict | None = None) -> dict:
     """Return v1 read model plus a separate historical, non-eligible H1 row."""
     root = Path(root).resolve()
-    base = read_current_capital_observation(root, symbol, as_of)
+    base = (read_current_capital_observation(root, symbol, as_of)
+            if base_observation is None else base_observation)
     result = dict(base)
     h1 = {"schema_version": VERSION, "status": "NOT_REGISTERED",
           "report_period_end": None, "ordinary_shares": None,
