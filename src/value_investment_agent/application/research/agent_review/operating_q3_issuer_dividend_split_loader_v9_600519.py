@@ -60,8 +60,9 @@ def _captures(root, directory, aid, pinned=None):
 
 def load_current(*, root, symbol, now: datetime, binding=None):
     root = Path(root).resolve()
-    if (symbol != "600519" or not isinstance(now, datetime)
-            or now.utcoffset() is None):
+    # The pinned V8 source loader owns issuer admission; avoid a second
+    # symbol-specific rule in this source augmentation layer.
+    if (not isinstance(now, datetime) or now.utcoffset() is None):
         raise ValueError("V9_SPLIT_IDENTITY_OR_AS_OF_INVALID")
     if binding is None:
         base = prior.load_current(root=root, symbol=symbol, now=now)
