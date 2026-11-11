@@ -55,9 +55,32 @@ def test_public_positive_view_cold_replays_without_account_or_writes(registered,
         assert body['main_valuation_range'] is None and body['main_range_adopted'] is False
         assert body['formal_eligibility'] is False and body['action']=='no_order'
         assert body['current_price'] is None and body['personal_quantity'] is None
+        assert body['quote_observation']['status']=='POINTER_UNAVAILABLE'
+        assert body['quote_observation']['display_price'] is None
+        assert body['quote_observation']['comparison_eligible'] is False
         assert body['user_acceptance']=='NOT_CONFIRMED'
         assert len(body['annual_ledgers']['base']['rows'])==10
     assert len(calls)==count+2
+    assert snapshot(root)==before
+
+
+def test_verified_quote_is_observation_not_first_input_price(registered,monkeypatch):
+    root,_,_=registered
+    from value_investment_agent.presentation.web_api import first_research_input_routes as routes
+    monkeypatch.setattr(routes,'execute_quote_bridge_for_symbol',lambda *args,**kwargs: {
+        'status':'QUOTE_VERIFIED_WITHOUT_RESEARCH_DISPLAY_ONLY',
+        'price_admitted':False,
+        'quote':{'quote_date':'2026-11-10','display_price':'79.99','bundle_sha256':'a'*64},
+        'compatibility':{'comparison_eligible':{'eligible':False}},
+    })
+    client,_=client_for(root,root/'TEST_ONLY-private-journal.jsonl',monkeypatch)
+    before=snapshot(root)
+    body=client.get(ROUTE+'600887').json()
+    assert body['status']=='SOURCE_BOUND_FIRST_INPUT_COMPILED'
+    assert body['quote_observation']['display_price']=='79.99'
+    assert body['quote_observation']['comparison_eligible'] is False
+    assert body['current_price'] is None and body['condition_price'] is None
+    assert body['formal_eligibility'] is False and body['action']=='no_order'
     assert snapshot(root)==before
 
 
