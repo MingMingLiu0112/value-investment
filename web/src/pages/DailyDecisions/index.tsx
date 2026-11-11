@@ -45,7 +45,7 @@ function unavailableDependencyText(value?: string | null): string {
     code === "VALUE_DISCOVERY_RECEIPT_BINDING_UNAVAILABLE" ||
     code === "VALUE_DISCOVERY_RECEIPT_UNAVAILABLE"
   )
-    return "价值投资初筛的来源回执缺失或未通过核验，补齐并核验后才能展示候选。";
+    return "正式决策快照依赖的价值初筛回执缺失或未通过核验；上方独立候选池按自身来源单独核验，仍可查看历史研究候选。";
   // Only translate the code; backend diagnostics can contain local source paths.
   if (code && /^[A-Za-z][A-Za-z0-9_.]*$/.test(code)) {
     const translated = blockerText(describeCode(code));

@@ -488,7 +488,8 @@ it.each(["gate_code", "blockers", "reason"])(
     } else if (field === "gate_code") state.daily.data.gate_code = code;
     state.packet.data.chain_error = "PUBLICATION_CHAIN_UNAVAILABLE";
     const html = renderToStaticMarkup(<DailyDecisions />);
-    expect(html).toContain("价值投资初筛的来源回执缺失或未通过核验");
+    expect(html).toContain("正式决策快照依赖的价值初筛回执缺失或未通过核验");
+    expect(html).toContain("上方独立候选池按自身来源单独核验");
     expect(html).toContain("正式发布不可核验，已停止展示正式结果。");
     expect(html).not.toContain("判断与快照版本不一致");
     expect(html).not.toContain("发布链不可用（哈希或结构校验未通过）");
