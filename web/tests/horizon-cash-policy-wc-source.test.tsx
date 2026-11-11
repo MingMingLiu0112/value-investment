@@ -78,13 +78,13 @@ it("requires an explicit 600519 action and sends the pinned D2 WC source version
   });
   await button(
     render("600519"),
-    "启动2027两阶段研究（含母公司余额证据，可能计费）",
+    "启动2027两阶段V12研究（含母公司余额证据，可能计费）",
   ).props.onClick();
   expect(calls.create).toHaveBeenCalledWith(
     expect.objectContaining({
       symbol: "600519",
       years: [2027],
-      task_contract: "operating-horizon-task-v11-2027-live",
+      task_contract: "operating-horizon-task-v12-2027-live",
       source_loader_version: "operating-q3-issuer-wc-loader-v9-600519",
     }),
   );
@@ -97,7 +97,7 @@ it("does not offer the issuer-specific source for another company", () => {
     (row) => row.props.children,
   );
   expect(labels).not.toContain(
-    "启动2027两阶段研究（含母公司余额证据，可能计费）",
+    "启动2027两阶段V12研究（含母公司余额证据，可能计费）",
   );
   expect(calls.create).not.toHaveBeenCalled();
 });

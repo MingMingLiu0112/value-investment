@@ -933,6 +933,8 @@ def test_parent_wc_horizon_explicit_v5_dispatch_is_authorized_and_read_only(api,
         assert response.status_code == 401
     assert state(root) == before and not data.provider_calls
 
+
+
     calls = []
     monkeypatch.setattr(V4, 'create', lambda self, **kw: pytest.fail('V5 request fell through to V4'))
     monkeypatch.setattr(V5, 'create', lambda self, **kw: (calls.append(('create', kw)) or
@@ -1350,3 +1352,54 @@ def test_anchored_annual_v3_uses_existing_authorized_task_lifecycle(api, monkeyp
     assert client.get(path + '/' + task_id).json()['workflow'] == 'operating-horizon-task-v3'
     assert client.post(path, json={**body, 'max_run_cost': '100'}).status_code == 422
     assert state(root) == before and not data.provider_calls
+
+
+def test_v12_horizon_api_dispatch_preserves_old_history_and_rejects_test_only(tmp_path, monkeypatch):
+    """The new transport has a separate store and never promotes test tasks."""
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import operating_horizon_task_v12_live as v12
+    from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v4 as e2
+
+    class Reader:
+        def __init__(self, root, *, source_loader=None, source_loader_version=None,
+                     test_provider=None):
+            self.base = Path(root) / "runtime" / "research-task-execution-v1" / "oh-v12-2027-live"
+            self.test_provider = test_provider
+
+        def _directory(self, task_id):
+            return self.base / task_id
+
+        def _load(self, task_id):
+            return {"mode": json.loads((self._directory(task_id) / "input.json").read_bytes())["mode"]}, {}, {}
+
+        def read(self, task_id):
+            return dict(task_id=task_id, symbol="600519", status="FAILED",
+                        updated_at="2026-11-12T01:00:00+08:00",
+                        error_code="V12_ANNUAL_COMPLETION_CAP_REJECTED",
+                        action="no_order", formal_eligibility=False, condition_price=None)
+
+    monkeypatch.setattr(v12, "OperatingHorizonTaskService", Reader)
+    monkeypatch.setattr(e2, "read_v12_cash_policy_e2_input", lambda **kwargs: dict(
+        status="UNASSESSABLE", reason="V10_E2_SUCCEEDED_TWO_STAGE_TASK_REQUIRED",
+        action="no_order", formal_eligibility=False, condition_price=None))
+    live_id, test_id = "rt-" + "c" * 32, "rt-" + "d" * 32
+    for task_id, mode in ((live_id, "LIVE_OPERATING"),
+                          (test_id, "TEST_ONLY_LIVE_CONTRACT")):
+        directory = Reader(tmp_path)._directory(task_id)
+        directory.mkdir(parents=True)
+        (directory / "input.json").write_text(json.dumps({"mode": mode,
+            "source_loader_binding": {"version": "operating-q3-issuer-wc-loader-v9-600519"}}),
+            encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert client.get(path + "/" + live_id).status_code == 401
+    unlock(client, secret)
+    listed = client.get(path + "?symbol=600519&task_contract=" + v12.CONTRACT)
+    assert listed.status_code == 200, listed.text
+    assert [row["task_id"] for row in listed.json()["items"]] == [live_id]
+    assert client.get(path + "/" + live_id).json()["error_code"] == "V12_ANNUAL_COMPLETION_CAP_REJECTED"
+    assert client.get(path + "/" + test_id).status_code == 422
+    e2_response = client.get(path + "/" + live_id + "/e2-input")
+    assert e2_response.status_code == 200
+    assert e2_response.json()["status"] == "UNASSESSABLE"
