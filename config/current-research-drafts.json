@@ -3,8 +3,8 @@
   "action": "no_order",
   "pending_candidates": {
     "600887": {
-      "path": "runtime/600887-current-engine-pending/9bf04c856f66418794341027d365f2c4/pending/candidate.json",
-      "sha256": "53de686178c4ae4e2857758940b8022ebd0adad9dc9171488c0c6490ee380dea"
+      "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600887/candidate.json",
+      "sha256": "96e5894b08dd1342139c6a8dd88867619334f77807f7bf6fc28af64067fd6f42"
     }
   },
   "drafts": {
