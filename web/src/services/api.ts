@@ -1352,6 +1352,7 @@ export type HorizonCashPolicyTask = {
     | "operating-horizon-task-v7-split"
     | "operating-horizon-task-v12-2027-live"
     | "operating-horizon-task-v13-2027-live"
+    | "operating-horizon-task-v14-2027-live"
     | "operating-cash-policy-task-v1"
     | "operating-horizon-task-v2"
     | "operating-horizon-task-v3";
@@ -1652,7 +1653,8 @@ export const api = {
       | "operating-horizon-task-v7-split"
       | "operating-horizon-task-v11-2027-live"
       | "operating-horizon-task-v12-2027-live"
-      | "operating-horizon-task-v13-2027-live";
+      | "operating-horizon-task-v13-2027-live"
+      | "operating-horizon-task-v14-2027-live";
     source_loader_version?: "operating-q3-issuer-wc-loader-v9-600519";
   }) =>
     post<HorizonCashPolicyTask>(
@@ -1662,6 +1664,9 @@ export const api = {
   importV12HorizonCashPolicyTask: (body: {
     source_task_id: string;
     request_key: string;
+    task_contract?:
+      | "operating-horizon-task-v13-2027-live"
+      | "operating-horizon-task-v14-2027-live";
   }) =>
     post<HorizonCashPolicyTask>(
       "operating-research/horizon-cash-policy-tasks/import-v12",
@@ -1688,7 +1693,8 @@ export const api = {
       | "operating-horizon-task-v10-2027-live"
       | "operating-horizon-task-v11-2027-live"
       | "operating-horizon-task-v12-2027-live"
-      | "operating-horizon-task-v13-2027-live",
+      | "operating-horizon-task-v13-2027-live"
+      | "operating-horizon-task-v14-2027-live",
   ) =>
     getPrivate<{
       action: "no_order";

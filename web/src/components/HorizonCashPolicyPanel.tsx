@@ -16,6 +16,7 @@ const V10_CONTRACT = "operating-horizon-task-v10-2027-live" as const;
 const V11_CONTRACT = "operating-horizon-task-v11-2027-live" as const;
 const V12_CONTRACT = "operating-horizon-task-v12-2027-live" as const;
 const V13_CONTRACT = "operating-horizon-task-v13-2027-live" as const;
+const V14_CONTRACT = "operating-horizon-task-v14-2027-live" as const;
 const V11_WC_SOURCE = "operating-q3-issuer-wc-loader-v9-600519" as const;
 type CashKind =
   | "annual"
@@ -26,7 +27,8 @@ type CashKind =
   | "v10"
   | "v11"
   | "v12"
-  | "v13";
+  | "v13"
+  | "v14";
 
 function valid(value: HorizonCashPolicyTask | undefined, symbol: string) {
   return Boolean(
@@ -235,7 +237,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                           ? V12_CONTRACT
                           : selectedKind === "v13"
                             ? V13_CONTRACT
-                            : undefined,
+                            : selectedKind === "v14"
+                              ? V14_CONTRACT
+                              : undefined,
             );
       if (
         result.action !== "no_order" ||
@@ -257,7 +261,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
       setBusy(false);
     }
   }
-  async function continueV12Cash() {
+  async function continueV12Cash(
+    contract: typeof V13_CONTRACT | typeof V14_CONTRACT,
+  ) {
     if (
       lock.current ||
       !task ||
@@ -271,12 +277,14 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
     try {
       const result = await api.importV12HorizonCashPolicyTask({
         source_task_id: task.task_id,
-        request_key: "cash_import_" + task.task_id.slice(3),
+        request_key:
+          "cash_import_" + contract.split("-")[3] + "_" + task.task_id.slice(3),
+        task_contract: contract,
       });
-      if (!valid(result, symbol) || result.workflow !== V13_CONTRACT)
+      if (!valid(result, symbol) || result.workflow !== contract)
         throw new Error("INVALID_IMPORTED_CASH_TASK_BOUNDARY");
       setTask(result);
-      setKind("v13");
+      setKind(contract === V14_CONTRACT ? "v14" : "v13");
       setE2Input(undefined);
     } catch (cause) {
       const reason = safeReason(cause);
@@ -438,12 +446,26 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
           读取2027两阶段V12封存任务
         </Button>
         {kind === "v12" && task?.annual_status === "SETTLED_VALIDATED" && (
-          <Button disabled={busy || active} onClick={continueV12Cash}>
+          <Button
+            disabled={busy || active}
+            onClick={() => continueV12Cash(V13_CONTRACT)}
+          >
             复用已核验年度研究，继续V13现金政策（可能计费）
+          </Button>
+        )}
+        {kind === "v12" && task?.annual_status === "SETTLED_VALIDATED" && (
+          <Button
+            disabled={busy || active}
+            onClick={() => continueV12Cash(V14_CONTRACT)}
+          >
+            复用已核验年度研究，按V14现金合同继续（可能计费）
           </Button>
         )}
         <Button disabled={busy} onClick={() => loadHistory("v13")}>
           读取2027两阶段V13封存任务
+        </Button>
+        <Button disabled={busy} onClick={() => loadHistory("v14")}>
+          读取2027 V14封存任务
         </Button>
         <Button disabled={busy} onClick={loadAnnualHistory}>
           读取独立年度经营历史
@@ -499,7 +521,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                           ? "D2两阶段V12封存任务历史"
                           : historyKind === "v13"
                             ? "D2两阶段V13封存任务历史"
-                            : "D2紧凑研究历史"
+                            : historyKind === "v14"
+                              ? "D2 V14封存任务历史"
+                              : "D2紧凑研究历史"
           }
         >
           {history.length === 0 ? (

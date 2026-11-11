@@ -69,6 +69,42 @@ def test_v13_import_api_derives_sealed_v12_pins_and_is_idempotent(api, monkeypat
     assert client.post(path, json={**body, "source_task_id": "../outside"}).status_code == 422
 
 
+def test_v14_import_api_dispatches_separately_without_extra_provider_call(api, monkeypatch):
+    import json
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v12_live as v12,
+        operating_horizon_task_v14_live as v14,
+        operating_q3_issuer_plan_loader_v8_600519 as q3_v8)
+
+    client, secret, data, root = api
+    source_id = "rt-" + "e" * 32
+    source = root / "runtime" / "research-task-execution-v1" / v12.STORE / source_id
+    source.mkdir(parents=True)
+    (source / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        task_contract=v12.CONTRACT, source_loader_binding=dict(version=q3_v8.VERSION))), encoding="utf-8")
+    monkeypatch.setattr(v12.OperatingHorizonTaskService, "_load", lambda self, task_id: (
+        dict(source_binding={"pinned": True}, context_sha256="b" * 64),
+        dict(stage_validated=["annual"], stage_intents={"annual": {"reservation": "r"}},
+             reservations={"r": {"budget_day": "2026-11-12"}}), {}))
+    monkeypatch.setattr(v12.OperatingHorizonTaskService, "_packet", lambda self, spec, state, stage:
+        {"response": {"text": "sealed annual"}})
+    seen = []
+    def imported(self, **kwargs):
+        seen.append(kwargs)
+        return dict(task_id="rt-" + "f" * 32, symbol="600519", status="FAILED",
+                    workflow=v14.CONTRACT, action="no_order", formal_eligibility=False)
+    monkeypatch.setattr(v14.OperatingHorizonTaskService, "create_imported", imported)
+    unlock(client, secret)
+    path = BASE + "/horizon-cash-policy-tasks/import-v12"
+    body = dict(source_task_id=source_id, request_key="IMPORT_V14_01", task_contract=v14.CONTRACT)
+    response = client.post(path, json=body)
+    assert response.status_code == 202, response.text
+    assert response.json()["workflow"] == v14.CONTRACT
+    assert seen[0]["expected_source_binding"] == {"pinned": True}
+    assert data.provider_calls == []
+    assert client.post(path, json={**body, "task_contract": "unknown"}).status_code == 422
+
+
 def test_v13_import_api_rejects_unsealed_source(api, monkeypatch):
     import json
     from pathlib import Path
