@@ -348,9 +348,7 @@ it("shows actual settlement-schema totals as model-year assumptions separate fro
   expect(live.indexOf("task.main_valuation_revalidation &&")).toBeLessThan(
     live.indexOf("task.cash_consumption &&"),
   );
-  expect(live).toContain(
-    "研究任务不直接生成正式条件价；独立重算可提供明确未批准、带日期的研究草案，不代表当前买价",
-  );
+  expect(live).toContain("无投资批准，主研究区间未采用，不生成条件价。");
 });
 it("shows partial scenario failures without inventing a complete valuation interval", () => {
   const value = fixture();

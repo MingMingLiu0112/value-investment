@@ -39,7 +39,7 @@ describe("versioned strategy architecture", () => {
       catalog.value.stages
         .filter((s) => s.deliveryReview?.status === "COMPLETE")
         .map((s) => s.id),
-    ).toEqual(["C", "F1"]);
+    ).toEqual(["C", "D1", "F1"]);
     expect(
       catalog.value.stages.find((s) => s.id === "C")!.deliveryReview!.scope,
     ).toContain("固定五家");
@@ -243,7 +243,8 @@ describe("versioned strategy architecture", () => {
 it("records the current driver bridge arithmetic acceptance without adopting parameters, capital cash or valuation", () => {
   const d1 = catalog.value.stages.find((stage) => stage.id === "D1")!;
   const d2 = catalog.value.stages.find((stage) => stage.id === "D2")!;
-  for (const stage of [d1, d2]) {
+  expect(d1.evidenceSource).toContain("runtime/research-task-execution-v1/");
+  for (const stage of [d2]) {
     expect(stage.evidenceSource).toContain(
       "rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json",
     );
@@ -257,20 +258,16 @@ it("records the current driver bridge arithmetic acceptance without adopting par
     );
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
-  expect(d1.evidenceStatus).toContain("4次调用含1次反证缺字段拒绝后恢复");
-  expect(d1.evidenceStatus).toContain("不是今日调用总数");
-  expect(d1.evidence).toContain(
-    "历史rt-c40任务峰值费率保守估算0.15066元，非账单",
-  );
-  expect(d1.evidence).toContain("昨日浏览器实际0.158元");
-  expect(d1.evidence).toContain("旧估算7.33345元不是实际费用");
+  expect(d1.evidenceStatus).toContain("当前版本三角色研究");
+  expect(d1.evidenceStatus).toContain("失败回执仍独立保留");
+  expect(d1.evidence).toContain("不能当作供应商账单");
   expect(d2.evidenceStatus).toContain(
     "21项经营驱动范围、6项增长/税前利润率由代码派生、9项资本UNKNOWN",
   );
   expect(d2.implementation).toContain("H12026→H12027");
   expect(d2.implementation).toContain("同比FY只对FY、H1只对H1");
-  expect(d2.milestone).toContain("3×128角点及12条阈值一致");
-  expect(d2.milestone).toContain("等于不触发");
+  expect(d2.milestone).toContain("不同任务不自动合并主预测");
+  expect(d2.milestone).toContain("现金和估值仍未闭环");
   expect(d2.existingEvidence).toContain("rt-c40经济拒绝保留为历史");
   expect(d2.evidence).toContain("typed bridge不消费这些文字");
   expect(d2.progress?.economic).toContain("参数经济适用性未证");
