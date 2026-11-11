@@ -137,6 +137,44 @@ def test_raw_report_issuer_cannot_be_relabelled_by_catalog(package, monkeypatch)
         mod.validate_company_profile_for_package(root=root, package=payload, now=NOW)
 
 
+def test_retained_000568_official_index_binds_undecodable_cover():
+    root = Path(__file__).resolve().parents[1]
+    package_path = root / ('runtime/e2-first-input-000568-20261031/'
+        'compiled-20261031T111006911210Z/package.json')
+    if not package_path.is_file():
+        pytest.skip('Retained real E2 package unavailable')
+    payload = json.loads(package_path.read_bytes())
+    cutoff = datetime(2026, 11, 1, tzinfo=timezone.utc)
+    for source in payload['sources'][:2]:
+        assert mod._official_index_confirms_issuer(
+            root, source, '000568', '泸州老窖股份有限公司', cutoff)
+        wrong = deepcopy(source)
+        wrong['sha256'] = '0' * 64
+        assert not mod._official_index_confirms_issuer(
+            root, wrong, '000568', '泸州老窖股份有限公司', cutoff)
+        wrong = deepcopy(source)
+        wrong['issuer_identity']['organization_id'] = 'gssz0000000'
+        assert not mod._official_index_confirms_issuer(
+            root, wrong, '000568', '泸州老窖股份有限公司', cutoff)
+        assert not mod._official_index_confirms_issuer(
+            root, source, '000568', '别的公司', cutoff)
+
+
+def test_retained_000568_profile_uses_index_only_for_garbled_cover(monkeypatch):
+    root = Path(__file__).resolve().parents[1]
+    package_path = root / ('runtime/e2-first-input-000568-20261031/'
+        'compiled-20261031T111006911210Z/package.json')
+    if not package_path.is_file():
+        pytest.skip('Retained real E2 package unavailable')
+    payload = json.loads(package_path.read_bytes())
+    monkeypatch.setattr(pdf_text, 'extract_pages', lambda *a, **k: [
+        '���� 公司主要从事白酒生产与销售。'])
+    result = mod.validate_company_profile_for_package(
+        root=root, package=payload, now=datetime(2026, 11, 1, tzinfo=timezone.utc))
+    assert result['reported_business_family'] == 'consumer_products'
+    assert result['action'] == 'no_order' and result['formal_eligibility'] is False
+
+
 def test_invalid_current_binding_never_falls_back_to_an_older_candidate(tmp_path, monkeypatch):
     path = tmp_path / 'config/current-research-drafts.json'
     path.parent.mkdir()
@@ -216,3 +254,28 @@ def test_bank_customers_do_not_make_own_manufacturing_a_financial_business(packa
     assert result['template_candidate'] == 'mature_manufacturing'
     assert result['route_qualification']['approved'] is False
     assert result['formal_eligibility'] is False and result['action'] == 'no_order'
+
+
+def test_main_business_section_outweighs_later_cross_reference():
+    pages = [
+        '第三节 管理层讨论与分析\n一、报告期内公司从事的主要业务\n'
+        '公司属白酒细分行业，以白酒产品设计、生产、销售为主要经营模式。\n'
+        '（一）报告期内主要工作举措',
+        '主要销售模式请参见第三节一、报告期内公司主要从事的业务中“经销模式”。',
+    ]
+    rows = mod._reported_activities(pages)
+    assert len(rows) == 1
+    assert rows[0][0] == 1
+    assert rows[0][2] == {'consumer_products'}
+
+
+def test_main_business_section_does_not_hide_unsupported_second_activity():
+    pages = [
+        '一、报告期内公司从事的主要业务\n'
+        '公司属白酒细分行业，以白酒生产销售为主要经营模式。\n'
+        '（一）主要工作',
+        '公司主要从事房地产开发，房地产贡献70%收入。三、核心竞争力分析',
+    ]
+    rows = mod._reported_activities(pages)
+    assert rows[0][2] == {'consumer_products'}
+    assert any(not kinds for _, _, kinds in rows[1:])

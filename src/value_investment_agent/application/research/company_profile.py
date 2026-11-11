@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import hashlib
 import json
+from importlib.resources import files
 
 from ...financial_institutions import provisional_financial_type
 from ...research_profile import PROFILES
@@ -75,18 +76,43 @@ NEGATED_ACTIVITY = re.compile(r'不从事|未从事|不涉及|并非|不再|停�
 
 def _reported_activities(pages):
     """Collect all own-issuer activities in a bounded, demonstrably closed main section."""
+    # Some reports state the activity under the main-business heading as
+    # "公司属...，以...为主要经营模式". A later "请参见" is only a
+    # cross-reference and must not displace the actual issuer statement.
+    primary_rows = []
+    for page_number, page_text in enumerate(pages[:40], 1):
+        heading = re.search(r'报告期内公司从事的主要业务', page_text)
+        if heading is None:
+            continue
+        tail = page_text[heading.end():]
+        next_heading = re.search(r'\n\s*(?:二|三|四)、|\n\s*（[一二三四]）', tail)
+        section = tail[:next_heading.start()] if next_heading else tail
+        own = re.search(r'公司属[^。]{1,300}以[^。]{1,300}为主要经营模式', section)
+        if own is None:
+            continue
+        statement = re.sub(r'\s+', '', own.group(0))
+        if '请参见' in statement or '不适用' in statement:
+            continue
+        kinds = {key for key, terms in BUSINESS_TERMS.items()
+                 if any(term in statement for term in terms)}
+        if kinds:
+            primary_rows.append((page_number, statement, kinds))
     compact_pages = [re.sub(r'\s+', '', page) for page in pages[:40]]
     text = '\n'.join(compact_pages)
     first = OWN_BUSINESS.search(text)
     if first is None:
-        return []
+        return primary_rows
     end = SECTION_END.search(text, first.end())
     if end is None and len(pages) > 40:
         raise ValueError('BUSINESS_SECTION_COMPLETENESS_UNKNOWN')
     section_end = end.start() if end else len(text)
-    rows = []
+    rows = list(primary_rows)
     for match in OWN_BUSINESS.finditer(text, first.start(), section_end):
         statement = match.group(1)
+        # A reference to the actual main-business section is not a second
+        # operating activity. Keep genuine unsupported activities as blockers.
+        if '请参见' in text[max(0, match.start() - 40):match.start()] or '中“' in statement[:4]:
+            continue
         # Separate the issuer's activity before applying financial or product rules.
         role = OTHER_ACTOR.search(statement)
         own = statement[:role.start()] if role else statement
@@ -106,6 +132,47 @@ def _reported_activities(pages):
 def _fingerprint(payload):
     return hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True,
         separators=(',', ':'), allow_nan=False).encode('utf-8')).hexdigest()
+
+
+def _official_index_confirms_issuer(root, source, symbol, issuer_name, cutoff):
+    """Narrow fallback when the bound original's cover has undecodable glyphs."""
+    path = root / source['local_path']
+    receipt_path = path.parent / 'receipt.json'
+    if not receipt_path.is_file():
+        return False
+    receipt = json.loads(receipt_path.read_bytes())
+    original = receipt.get('source') or {}
+    if (original.get('sha256') != source['sha256']
+            or original.get('source_url') != source['location']
+            or original.get('available_at') != source['source_available_at']
+            or receipt.get('source_id') != source['id']):
+        return False
+    _available(original['available_at'], cutoff)
+    registry = json.loads(files('value_investment_agent.domain.research').joinpath(
+        'issuer_identity_registry.json').read_bytes())['cninfo'].get(symbol) or {}
+    identity = source['issuer_identity']
+    if (identity.get('venue') != 'CNINFO' or identity.get('organization_id') != registry.get('organization_id')
+            or issuer_name not in registry.get('issuer_names', [])):
+        return False
+    announcement_id = source['id'].removeprefix('cninfo:')
+    if source['id'] != 'cninfo:' + announcement_id or not announcement_id.isdigit():
+        return False
+    matched = []
+    for binding in receipt.get('index_bindings') or []:
+        index_path = root / binding.get('path', '')
+        if not index_path.is_file():
+            # A retained copy may relocate the original and index together.
+            index_path = path.parent / Path(binding.get('path', '')).name
+        if (not index_path.is_file() or hashlib.sha256(index_path.read_bytes()).hexdigest() != binding.get('sha256')):
+            return False
+        for row in (json.loads(index_path.read_bytes()).get('announcements') or []):
+            if row.get('announcementId') == announcement_id:
+                matched.append(row)
+    expected_url = source['location'].removeprefix('https://static.cninfo.com.cn/')
+    return bool(matched) and all(
+        row.get('secCode') == symbol and row.get('orgId') == registry['organization_id']
+        and row.get('secName') in registry['issuer_names']
+        and row.get('adjunctUrl') == expected_url for row in matched)
 
 
 def validate_company_profile_for_package(*, root: Path, package: dict, now: datetime) -> dict:
@@ -161,7 +228,9 @@ def validate_company_profile_for_package(*, root: Path, package: dict, now: date
         activities = _reported_activities(pages)
         if activities:
             issuer_name = re.sub(r'\s+', '', identity.get('issuer_name') or '')
-            if cover_codes != {symbol} or not issuer_name or issuer_name not in cover:
+            cover_verified = cover_codes == {symbol} and issuer_name and issuer_name in cover
+            if not cover_verified and (cover_codes - {symbol} or not _official_index_confirms_issuer(
+                    root, source, symbol, issuer_name, cutoff)):
                 raise ValueError('Company profile official cover issuer mismatch: ' + source['id'])
         for page, excerpt, kinds in activities:
             observed.update(kinds)
