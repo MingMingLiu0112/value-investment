@@ -67,6 +67,13 @@ def test_imported_v13_e2_uses_external_annual_and_local_cash(task, monkeypatch):
     assert result["action"] == "no_order" and result["condition_price"] is None
     assert result["formal_eligibility"] is False
 
+    original_as_of = view["research_as_of"]
+    view["research_as_of"] = (NOW - timedelta(seconds=1)).isoformat()
+    with pytest.raises(ValueError, match="V13_E2_IMPORTED_ANNUAL_AFTER_RESEARCH_ASOF"):
+        e2.read_v13_cash_policy_e2_input(root=service.root, task_id=created["task_id"],
+            now=cutoff, service=service)
+    view["research_as_of"] = original_as_of
+
     view["annual_status"] = "SETTLED_VALIDATED"
     with pytest.raises(ValueError, match="SUCCEEDED_TWO_STAGE"):
         e2.read_v13_cash_policy_e2_input(root=service.root, task_id=created["task_id"], now=cutoff, service=service)

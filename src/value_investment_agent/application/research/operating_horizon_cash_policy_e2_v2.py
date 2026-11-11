@@ -80,6 +80,8 @@ def _read_bound_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
                 or task.get("imported_annual", {}).get("source_annual_result_sha256")
                    != pin["source_annual_result_sha256"]):
             raise ValueError("V10_E2_IMPORTED_LINEAGE_CHANGED")
+        if _time(annual_packet.get("generated_at"), now) > _time(task["research_as_of"], now):
+            raise ValueError("V13_E2_IMPORTED_ANNUAL_AFTER_RESEARCH_ASOF")
     research = task.get("research_result")
     if (not isinstance(research, dict) or research.get("cash_policy_appendix_status") != "COMPLETE_UNAPPROVED"
             or research.get("action") != "no_order" or research.get("split_contract") != task.get("cash_binding")):
