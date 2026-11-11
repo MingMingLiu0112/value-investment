@@ -7,7 +7,7 @@
     "CURRENT_OPERATIONAL_CLI": 0,
     "CURRENT_PRODUCT_CLI": 26,
     "CURRENT_RESEARCH_CLI": 228,
-    "HISTORICAL_VALIDATION_TOOL": 57,
+    "HISTORICAL_VALIDATION_TOOL": 58,
     "COMPANY_RESEARCH_CASE_TOOL": 218,
     "MIGRATION_TOOL": 13,
     "DIAGNOSTIC_TOOL": 150,
@@ -7935,6 +7935,17 @@
       "risk": "LOW",
       "line_count": 23,
       "sha256": "44ac1a23c1820f6a4fec49b9934d1e2c15e6003968b6029807f0f3d9fa1364c1"
+    },
+    {
+      "path": "scripts/diagnostics/replay_sse_ab_offline_v1.py",
+      "category": "HISTORICAL_VALIDATION_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 103,
+      "sha256": "c64900ea14674047049ac143fc45c43b14ed8b6cbbd73546bdeb438b474eaac4"
     }
   ]
 }

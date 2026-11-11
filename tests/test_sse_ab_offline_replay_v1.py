@@ -5,7 +5,7 @@ import sys
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts.current.replay_sse_ab_offline_v1 import bound_bytes, stage_tree
+from scripts.diagnostics.replay_sse_ab_offline_v1 import bound_bytes, stage_tree
 
 
 def test_stages_only_hash_bound_public_sse_inputs(tmp_path):
