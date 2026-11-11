@@ -86,7 +86,7 @@ class OperatingHorizonTaskService(v7.OperatingHorizonTaskService):
         value.update(record_binding=binding, task_id=spec["task_id"], symbol=spec["symbol"],
             workflow=CONTRACT, execution_mode=spec["mode"], source_binding=spec["source_binding"],
             research_as_of=spec["created_at"], action="no_order", formal_eligibility=False,
-            condition_price=None, research_result=None,
+            condition_price=None, research_result=None, annual_result=None,
             annual_status=self._stage_status(state, "annual"), cash_status="WAITING_FOR_CASH_V2")
         try:
             context = self._context(spec)
@@ -137,6 +137,26 @@ class OperatingHorizonTaskService(v7.OperatingHorizonTaskService):
             return self._view(spec, state, pin, now)
 
     def _drive(self, task_id, now, *, resume):
+        try:
+            return self._drive_once(task_id, now, resume=resume)
+        except Exception:
+            # A provider intent is irreversible. Keep its response and budget
+            # settlement, if present, and never turn failure into a retry.
+            directory = self._directory(task_id)
+            with self._lock(directory):
+                spec, state, pin = self._load(task_id)
+                if state["status"] == "CANCELLED":
+                    return self._view(spec, state, pin, _now())
+                intent = "annual" in state["stage_intents"]
+                returned = "annual" in state["stage_responses"]
+                code = ("V8_ANNUAL_RESPONSE_REJECTED" if returned else
+                        "V8_ANNUAL_PROVIDER_AMBIGUOUS" if intent else
+                        "V8_TASK_EXECUTION_FAILED")
+                state, pin = self._save(spec, state, pin, _now(),
+                    status="FAILED", error_code=code)
+                return self._view(spec, state, pin, _now())
+
+    def _drive_once(self, task_id, now, *, resume):
         directory = self._directory(task_id)
         with self._lock(directory, "execution"):
             with self._lock(directory):

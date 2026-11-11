@@ -105,3 +105,46 @@ def test_response_binding_change_cannot_replay(task):
     replay = service.read(queued["task_id"])
     assert replay["status"] == "FAILED" and replay["annual_result"] is None
     assert len(calls) == 1
+
+
+def test_invalid_citation_after_return_keeps_settlement_and_never_retries(task):
+    service, _, _ = task
+    proposal = valid()
+    for path in proposal["years"]["2026"]["operating_paths"].values():
+        path["unit_cost_case"] = dict(mechanism="条件性投入价格下降，尚待采购合同确认",
+            source_anchor_ids=["test:cost"], contrary_evidence_ids=["test:2026-06-30:cost"],
+            reopen_condition="下期同口径营业成本率继续上升时重新估计")
+    proposal["years"]["2026"]["operating_paths"]["bull"]["unit_cost_case"]["source_anchor_ids"] = ["fabricated"]
+    calls = []
+    def invalid_response(request):
+        calls.append(request)
+        return LLMResponse(json.dumps(proposal, ensure_ascii=False), 100, 50, "TEST_ONLY")
+    service.test_provider.complete = invalid_response
+    queued = service.create(symbol="600519", request_key="TEST_V8_BAD_CITE", years=[2026], now=NOW)
+    failed = service.run(queued["task_id"], now=NOW)
+    assert failed["status"] == "FAILED"
+    assert failed["error_code"] == "V8_ANNUAL_RESPONSE_REJECTED"
+    assert failed["annual_status"] == "RETURNED_UNVERIFIED"
+    assert failed["research_result"] is None and failed["annual_result"] is None
+    assert failed["stage_responses"]["annual"]
+    assert next(iter(failed["reservations"].values()))["status"] == "SETTLED"
+    assert service.read(queued["task_id"])["status"] == "FAILED"
+    assert service.run(queued["task_id"], now=NOW)["status"] == "FAILED"
+    assert len(calls) == 1
+
+
+def test_provider_failure_is_persisted_as_ambiguous(task):
+    service, _, _ = task
+    calls = []
+    def timeout(request):
+        calls.append(request)
+        raise TimeoutError("TEST_ONLY provider interruption")
+    service.test_provider.complete = timeout
+    queued = service.create(symbol="600519", request_key="TEST_V8_TIMEOUT", years=[2026], now=NOW)
+    failed = service.run(queued["task_id"], now=NOW)
+    assert failed["status"] == "FAILED"
+    assert failed["error_code"] == "V8_ANNUAL_PROVIDER_AMBIGUOUS"
+    assert failed["annual_status"] == "AMBIGUOUS_CALL_NO_RETRY"
+    assert failed["stage_responses"] == {}
+    assert service.resume(queued["task_id"], now=NOW)["status"] == "FAILED"
+    assert len(calls) == 1
