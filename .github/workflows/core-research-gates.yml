@@ -37,6 +37,7 @@ jobs:
           tests/test_first_use_value_analysis.py
           tests/test_public_financial_snapshot.py
           tests/test_official_report_acquisition.py
+          tests/test_official_dividend_split_receipt_v2.py
           tests/test_stock_identity_table_v1.py
           tests/test_public_evidence.py
           tests/test_module_run_v1.py
