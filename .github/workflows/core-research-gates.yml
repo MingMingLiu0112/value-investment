@@ -547,6 +547,7 @@ jobs:
           tests/test_operating_horizon_citation_repair_v1.py
           tests/test_operating_horizon_citation_repair_task_v1.py
           tests/test_operating_horizon_cash_policy_e2_v1.py
+          tests/test_operating_horizon_cash_policy_e2_v2.py
           tests/web_api/test_live_operating_research_api.py
           tests/web_api/test_local_research_task_root_binding.py
           tests/web_api/test_operating_cash_consumption_api.py

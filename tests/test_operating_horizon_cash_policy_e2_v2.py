@@ -38,6 +38,9 @@ def test_v10_complete_task_only_and_tamper_fail_closed(task):
     result = read_v10_cash_policy_e2_input(root=service.root, task_id=task_id,
         now=NOW + timedelta(hours=1), service=service)
     assert result["annual_operating_status"] == "SAME_TASK_COMPILED"
+    assert result["status"] == "TEST_ONLY_E2_CONTRACT_REPLAY"
+    assert result["execution_mode"] == "TEST_ONLY_LIVE_CONTRACT"
+    assert result["scope"] == "TEST_ONLY_NOT_REAL_RESEARCH_OR_VALUATION"
     assert result["policy_years"]["2027"]["base"]["complete"] is True
     assert result["action"] == "no_order" and result["formal_eligibility"] is False
     assert result["condition_price"] is None
@@ -60,6 +63,11 @@ def test_v10_complete_task_only_and_tamper_fail_closed(task):
     view.clear(); view.update(deepcopy(original))
     del view["research_result"]["years"]["2027"]["shareholder_cash_paths"]["base"]["terms"]["operating_wc_cash_cny"]
     with pytest.raises(ValueError, match="CASH_TERMS_INCOMPLETE"):
+        read_v10_cash_policy_e2_input(root=service.root, task_id=task_id,
+            now=NOW + timedelta(hours=1), service=projected)
+    view.clear(); view.update(deepcopy(original))
+    view["execution_mode"] = "LIVE_OPERATING"
+    with pytest.raises(ValueError, match="EXECUTION_MODE_INVALID"):
         read_v10_cash_policy_e2_input(root=service.root, task_id=task_id,
             now=NOW + timedelta(hours=1), service=projected)
     view.clear(); view.update(deepcopy(original))

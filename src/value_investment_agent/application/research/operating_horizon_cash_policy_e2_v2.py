@@ -50,6 +50,10 @@ def read_v10_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
                    for pin in pins.values())):
         raise ValueError("V10_E2_RESPONSE_PINS_REQUIRED")
     spec, state, _ = service._load(task_id)
+    mode = spec.get("mode")
+    if (mode not in {"LIVE_OPERATING", "TEST_ONLY_LIVE_CONTRACT"}
+            or task.get("execution_mode") != mode):
+        raise ValueError("V10_E2_EXECUTION_MODE_INVALID")
     if (spec.get("task_contract") != CONTRACT or spec.get("source_binding") != task.get("source_binding")
             or state.get("stage_responses") != pins or state.get("cash_binding") != task.get("cash_binding")
             or set(state.get("stage_validated", [])) != {"annual", "cash"}):
@@ -108,10 +112,13 @@ def read_v10_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
         source_binding=deepcopy(task["source_binding"]),
         context_fingerprint=spec["context_fingerprint"], cash_binding=deepcopy(task["cash_binding"]),
         stage_responses=deepcopy(pins), split_response_sha256=deepcopy(responses),
-        years=["2027"], action="no_order", formal_eligibility=False, main_range_adopted=False)
+        years=["2027"], execution_mode=mode, action="no_order",
+        formal_eligibility=False, main_range_adopted=False)
     fingerprint = hashlib.sha256(json.dumps(manifest, ensure_ascii=False, sort_keys=True,
         separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
-    return dict(status="SOURCE_BOUND_D2_V10_CASH_POLICY_READY_FOR_E2", action="no_order",
+    return dict(status=("SOURCE_BOUND_D2_V10_CASH_POLICY_READY_FOR_E2"
+                        if mode == "LIVE_OPERATING" else "TEST_ONLY_E2_CONTRACT_REPLAY"),
+        execution_mode=mode, action="no_order",
         formal_eligibility=False, main_range_adopted=False, condition_price=None,
         symbol=task["symbol"], task_id=task_id, research_as_of=task["research_as_of"],
         policy_years=policies, annual_operating_candidates=candidates,
@@ -120,4 +127,5 @@ def read_v10_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
         blockers=["PARENT_CASH_FACTS_AND_OPENING_CAPITAL_REQUIRED",
                   "MAIN_ECONOMIC_RANGE_ADOPTION_REQUIRED",
                   "CURRENT_CAPITAL_DISTRIBUTION_EVENT_QUOTE_ALIGNMENT_REQUIRED"],
-        scope="CONDITIONAL_UNAPPROVED_D2_V10_POLICY_NOT_VALUATION_OR_PRICE")
+        scope=("CONDITIONAL_UNAPPROVED_D2_V10_POLICY_NOT_VALUATION_OR_PRICE"
+               if mode == "LIVE_OPERATING" else "TEST_ONLY_NOT_REAL_RESEARCH_OR_VALUATION"))
