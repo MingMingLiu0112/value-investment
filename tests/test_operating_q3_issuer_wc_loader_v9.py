@@ -15,7 +15,7 @@ NOW = datetime(2026, 11, 11, 22, 9, 33, tzinfo=ZoneInfo("Asia/Shanghai"))
 
 
 def test_unsupported_issuer_does_not_read_sources(tmp_path):
-    with pytest.raises(ValueError, match="V9_PARENT_WC_IDENTITY_OR_BINDING_INVALID"):
+    with pytest.raises(ValueError, match="V8_ISSUER_PLAN_SYMBOL_NOT_SUPPORTED"):
         loader.load_current(root=tmp_path, symbol="600887", now=NOW)
 
 

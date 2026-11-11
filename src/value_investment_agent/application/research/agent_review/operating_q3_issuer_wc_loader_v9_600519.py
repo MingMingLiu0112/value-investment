@@ -47,7 +47,7 @@ def _history(root: Path, now: datetime):
 
 def load_current(*, root, symbol, now: datetime, binding=None):
     root = Path(root).resolve()
-    if (symbol != "600519" or not isinstance(now, datetime) or now.utcoffset() is None
+    if (not isinstance(now, datetime) or now.utcoffset() is None
             or (binding is not None and
                 (not isinstance(binding, dict) or set(binding) != {"base", "parent_wc"}))):
         raise ValueError("V9_PARENT_WC_IDENTITY_OR_BINDING_INVALID")
