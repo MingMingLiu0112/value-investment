@@ -1,7 +1,8 @@
 """Explicit real operating research, existing local authorization and D1 workflow."""
 from datetime import datetime,timezone
-import json,re
+import json,os,re,subprocess
 from itertools import islice
+from pathlib import Path
 from fastapi import FastAPI,Request,BackgroundTasks
 from fastapi.responses import JSONResponse
 from .local_auth import authorize,LocalAuthorizationError,AUTHORIZATION_REQUIRED
@@ -10,8 +11,45 @@ from ...application.research.agent_review.operating_task_v2 import LiveOperating
 from ...operations.live_task_controller_v1 import supervise_live_task, read_pending_live_task, finalize_pending_live_task
 from ...application.portfolio.private_journal_lock import LockTimeout
 
+RESEARCH_TASK_ROOT_ENV = "VALUE_INVESTMENT_LOCAL_RESEARCH_TASK_ROOT"
+
+
+def resolve_research_task_root(code_root: Path) -> Path:
+    """Bind only a sibling worktree of this checkout's canonical repository.
+
+    The selected root owns D1/D2 sources, tasks and the shared daily budget.
+    It is never inferred from a task ID or supplied by an HTTP request.
+    """
+    code_root = Path(code_root).resolve(strict=True)
+    configured = os.environ.get(RESEARCH_TASK_ROOT_ENV)
+    if configured is None:
+        return code_root
+    candidate = Path(configured)
+    if not configured or not candidate.is_absolute():
+        raise ValueError("INVALID_LOCAL_RESEARCH_TASK_ROOT")
+    try:
+        candidate = candidate.resolve(strict=True)
+        def common_dir(root: Path) -> Path:
+            result = subprocess.run(
+                ["git", "-C", str(root), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+                capture_output=True, text=True, timeout=5, check=True,
+            )
+            return Path(result.stdout.strip()).resolve(strict=True)
+        common = common_dir(code_root)
+        canonical = common.parent
+        if (common.name != ".git" or candidate == code_root
+                or candidate.parent != canonical / ".tmp"
+                or common_dir(candidate) != common
+                or not (candidate / ".git").is_file()):
+            raise ValueError("INVALID_LOCAL_RESEARCH_TASK_ROOT")
+    except (OSError, subprocess.SubprocessError, ValueError) as error:
+        raise ValueError("INVALID_LOCAL_RESEARCH_TASK_ROOT") from error
+    return candidate
+
 
 def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
+    code_root = Path(project).resolve()
+    project = resolve_research_task_root(code_root)
     service=LiveOperatingTaskService(project)
     def enqueue(background,task_id):
         # Execution resource supervision only; frozen research inputs/providers
@@ -462,7 +500,9 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
 
     @api.get("/api/v1/operating-research/model-status")
     def availability():
-        return reply(model_status(project))
+        return reply({**model_status(project), "code_root": str(code_root),
+            "research_task_root": str(project),
+            "research_task_root_binding": "CONFIGURED_SIBLING_WORKTREE" if project != code_root else "CODE_ROOT"})
 
     @api.get("/api/v1/operating-research/tasks")
     def history(request:Request,symbol:str):
