@@ -284,11 +284,27 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 raise ValueError("V11_TASK_MODE_INVALID")
             selected._load(path.name)
             item = selected.read(path.name)
-            if item["symbol"] == symbol:
+            if symbol is None or item["symbol"] == symbol:
                 items.append(item)
                 if len(items) > 20:
                     raise ValueError("RESEARCH_TASK_RESULT_LIMIT_EXCEEDED: max_results=20")
         return sorted(items, key=lambda row: (row["updated_at"], row["task_id"]), reverse=True)
+
+    @api.get("/api/v1/operating-research/horizon-cash-policy-tasks/recent")
+    def recent_2027_horizon_tasks(request: Request):
+        """Discover bounded source-bound task history, never a current candidate pool."""
+        error = denied(request)
+        if error is not None:
+            return error
+        try:
+            items = list_live_2027(None, V11_CONTRACT) + list_live_2027(None, V10_CONTRACT)
+            return reply(dict(action="no_order", scope="HISTORICAL_D2_TASKS_NOT_CURRENT_CANDIDATES",
+                items=sorted(items, key=lambda row: (row["updated_at"], row["task_id"]), reverse=True)))
+        except LockTimeout:
+            return reply(dict(action="no_order", status="LIVE_STATE_BUSY"), 503)
+        except (ValueError, OSError, KeyError, TypeError, RuntimeError) as error:
+            return reply(dict(action="no_order", status="HORIZON_TASK_DISCOVERY_UNAVAILABLE",
+                reason=str(error)), 422)
 
     @api.get("/api/v1/operating-research/horizon-cash-policy-tasks")
     def list_horizon_cash_policy(request:Request, symbol:str, task_contract:str|None=None):

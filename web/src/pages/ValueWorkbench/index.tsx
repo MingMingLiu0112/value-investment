@@ -4,7 +4,7 @@ import "./workbench.css";
 import { useCallback, useState } from "react";
 import { Link } from "@umijs/max";
 import { Alert, Button, Card, Space, Typography } from "antd";
-import { api } from "../../services/api";
+import { api, type HorizonCashPolicyTask } from "../../services/api";
 import { useApi } from "../../hooks/useApi";
 import { Workbench } from "../../components/Workbench";
 import { ValueWorkbenchSections } from "../../components/ValueWorkbenchSections";
@@ -112,8 +112,10 @@ export function selectWorkbenchCompany(
   registered: SelectionRow[],
   candidates: SelectionRow[],
   waiting: boolean,
+  historicalTaskSymbols: string[] = [],
 ) {
-  return [...registered, ...candidates].some((row) => row.symbol === picked)
+  return [...registered, ...candidates].some((row) => row.symbol === picked) ||
+    historicalTaskSymbols.includes(picked || "")
     ? picked
     : waiting
       ? undefined
@@ -123,6 +125,39 @@ export default function ValueWorkbench() {
   const selection = useApi(api.strategySelection);
   const registered = useApi(api.valueWorkbenchCompanies);
   const [picked, setPicked] = useState<string>();
+  const [historicalTasks, setHistoricalTasks] =
+    useState<HorizonCashPolicyTask[]>();
+  const [historicalError, setHistoricalError] = useState<string>();
+  const [historicalBusy, setHistoricalBusy] = useState(false);
+  async function readHistoricalTasks() {
+    if (historicalBusy) return;
+    setHistoricalBusy(true);
+    setHistoricalError(undefined);
+    try {
+      const result = await api.recentHorizonCashPolicyTasks();
+      if (
+        result.action !== "no_order" ||
+        result.scope !== "HISTORICAL_D2_TASKS_NOT_CURRENT_CANDIDATES" ||
+        !Array.isArray(result.items) ||
+        result.items.some(
+          (row) =>
+            !/^[0-9]{6}$/.test(row.symbol) ||
+            row.action !== "no_order" ||
+            row.formal_eligibility !== false ||
+            !/^rt-[0-9a-f]{32}$/.test(row.task_id),
+        )
+      ) {
+        throw new Error("INVALID_HISTORICAL_D2_TASK_BOUNDARY");
+      }
+      setHistoricalTasks(result.items);
+    } catch {
+      setHistoricalError(
+        "封存研究任务暂不可读；需本机研究权限，不影响公开候选阅读，也不会启动模型。",
+      );
+    } finally {
+      setHistoricalBusy(false);
+    }
+  }
   const valid = selection.data?.action === "no_order";
   const candidates =
     valid && Array.isArray(selection.data?.value.shortlist)
@@ -160,6 +195,7 @@ export default function ValueWorkbench() {
     registeredItems,
     candidates,
     registered.loading,
+    historicalTasks?.map((row) => row.symbol),
   );
   return (
     <Workbench>
@@ -179,6 +215,32 @@ export default function ValueWorkbench() {
         />
         <ValueTrackingResearchPool load={api.sseResearchQueue} />
         <SseMainScreeningPanel load={api.sseMainScreening} />
+        <section aria-label="封存D2研究任务（非当前候选）">
+          <h2>封存D2研究任务（非当前候选）</h2>
+          <p>
+            仅在主动读取后显示已有任务；失败研究也保留，不能据此认定股票值得买入。
+          </p>
+          <Button disabled={historicalBusy} onClick={readHistoricalTasks}>
+            读取封存任务
+          </Button>
+          {historicalError && (
+            <Alert type="warning" message={historicalError} />
+          )}
+          {historicalTasks && historicalTasks.length === 0 && (
+            <p>尚无V10/V11封存任务。</p>
+          )}
+          <Space wrap>
+            {historicalTasks?.map((row) => (
+              <Button
+                key={row.task_id}
+                aria-pressed={symbol === row.symbol}
+                onClick={() => setPicked(row.symbol)}
+              >
+                {row.symbol} · {row.workflow} · {row.status}
+              </Button>
+            ))}
+          </Space>
+        </section>
         {selection.loading && <p role="status">正在读取实际候选列表……</p>}
         {selection.error && (
           <Alert

@@ -1651,6 +1651,12 @@ export const api = {
       "operating-research/horizon-cash-policy-tasks/" + encodeURIComponent(id),
       signal,
     ),
+  recentHorizonCashPolicyTasks: (signal?: AbortSignal) =>
+    getPrivate<{
+      action: "no_order";
+      scope: "HISTORICAL_D2_TASKS_NOT_CURRENT_CANDIDATES";
+      items: HorizonCashPolicyTask[];
+    }>("operating-research/horizon-cash-policy-tasks/recent", signal),
   horizonCashPolicyHistory: (
     symbol: string,
     signal?: AbortSignal,

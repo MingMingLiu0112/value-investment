@@ -857,3 +857,5 @@
 - 下一决定性工作：在不重试不确定供应商请求、不修改已封存响应的条件下，补齐有经济依据的年度成本机制及未来股东现金情景，取得严格通过的真实 D2 任务，再由同一封存版本进入 E2/F1/F2。若真实证据仍不足，保留 UNKNOWN 并转向预登记的证据充分公司；不可通过改校验阈值制造估值。
 - 同包前端在既有 D2 现金政策面板加 V10/V11 只读历史入口，保留原启动按钮语义；失败的年度/现金阶段和错误码直接展示，可调用版本化 E2 读取查看拒绝原因。类型检查、局部 Prettier 和策略页 18 项测试通过；未以此宣称真实 D2 成功。
 - `21ee5ae7` Web CI completed SUCCESS；Core CI 的 PostgreSQL 成功、offline-core 9890 passed/524 skipped/1 failed。唯一失败是冻结文件 SHA 在 Windows CRLF 与 Linux LF 之间的 checkout 差异，非经济测试失败。只将架构测试的固定源码指纹改为规范 LF 后比对，六个冻结文件源码字节和 Git 索引未改变；针对该门禁及本包 API/E2 合计 92 passed、0 skipped。新提交完整 Core/Web CI 待验证。
+- `0471728fa6abaebf8976f450bea64c3f92152622` 已推送并在唯一8001原位更新：运行身份的源码、后端加载和Web构建均匹配该SHA，工作树干净，`/daily`、`/project`、`/strategy/value` 均 HTTP 200；浏览器验证了V10/V11历史按钮。由于本机授权随重启更新，未解锁时只显示授权要求，未发起模型。运行身份总状态仍因历史 `PUBLICATION_REGISTRY_UNAVAILABLE` 为 MISMATCH，报价交易日亦未核验；不得宣称当前投资资格。该SHA的 Web CI SUCCESS，Core CI 查询时仍运行。
+- 后续发现真实600519的V10/V11封存任务存在于绑定研究根，但当前候选与已登记研究入口均不含600519，故普通用户无法从价值页面选择它。新增授权后的有界`/horizon-cash-policy-tasks/recent`只读发现，Web单列“封存D2研究任务（非当前候选）”并允许选择任务公司；TEST_ONLY仍被验证后排除，损坏任务失败关闭，GET不调用模型。Web类型检查与相关20项测试通过；后端API/E2定向91项通过。此包尚待新提交、CI与8001验收，不改变D2经济状态。

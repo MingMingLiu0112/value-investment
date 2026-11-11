@@ -93,7 +93,12 @@ def test_v11_history_read_and_e2_dispatch_exclude_test_only(tmp_path, monkeypatc
     client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
     path = BASE + "/horizon-cash-policy-tasks"
     assert client.get(path + "/" + live_id).status_code == 401
+    assert client.get(path + "/recent").status_code == 401
     unlock(client, secret)
+    recent = client.get(path + "/recent")
+    assert recent.status_code == 200, recent.text
+    assert recent.json()["scope"] == "HISTORICAL_D2_TASKS_NOT_CURRENT_CANDIDATES"
+    assert [row["task_id"] for row in recent.json()["items"]] == [live_id]
     history = client.get(path + "?symbol=600519&task_contract=" + v11.CONTRACT)
     assert history.status_code == 200, history.text
     assert [row["task_id"] for row in history.json()["items"]] == [live_id]
