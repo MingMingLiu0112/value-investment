@@ -12,6 +12,7 @@ from . import operating_horizon_annual_v3 as annual
 from . import operating_horizon_split_v13 as split
 from . import operating_horizon_request_v11 as request_v11
 from . import operating_horizon_request_v13 as request_v13
+from . import operating_horizon_carryover_v13 as carryover
 from . import operating_q3_issuer_plan_loader_v8_600519 as official
 from . import operating_task_v2 as live
 from .task_execution_v1 import VERSION, _bytes, _hash, _now
@@ -31,6 +32,7 @@ def implementation():
             request_v11.__name__: _hash(Path(request_v11.__file__).read_bytes()),
             request_v13.__name__: _hash(Path(request_v13.__file__).read_bytes()),
             annual.__name__: _hash(Path(annual.__file__).read_bytes()),
+            carryover.__name__: _hash(Path(carryover.__file__).read_bytes()),
             __name__: _hash(Path(__file__).read_bytes())}
 
 
@@ -43,6 +45,69 @@ class OperatingHorizonTaskService(v7.OperatingHorizonTaskService):
                          source_loader=source_loader, source_loader_version=source_loader_version)
         self.base = require_inside(self.root, self.base.parent / STORE, "v13 annual tasks")
 
+    def _imported(self, spec):
+        pin = spec["imported_annual"]
+        request, lineage, context, packet = carryover.replay_cash(
+            self.root, pin["source_task_id"],
+            expected_source_binding=pin["source_binding"],
+            expected_context_sha256=pin["source_context_sha256"],
+            expected_annual_response_sha256=pin["source_annual_response_sha256"],
+            expected_budget_day=pin["source_budget_day"])
+        if (lineage != pin or spec["source_binding"] != lineage["source_binding"]
+                or spec["context_sha256"] != lineage["source_context_sha256"]
+                or spec["cash_request_sha256"] != lineage["v13_cash_request_sha256"]
+                or spec["symbol"] != context["symbol"]):
+            raise ValueError("V13_IMPORTED_LINEAGE_CHANGED")
+        return request, lineage, context, packet
+
+    def create_imported(self, *, source_task_id, request_key, expected_source_binding,
+                        expected_context_sha256, expected_annual_response_sha256,
+                        expected_budget_day, now=None):
+        """Create a separate V13 cash task without an annual provider intent."""
+        now = _now(now)
+        if (not isinstance(request_key, str)
+                or re.fullmatch(r"[A-Za-z0-9_-]{8,80}", request_key) is None):
+            raise ValueError("V13_IDENTITY_INVALID")
+        request, lineage, context, _ = carryover.replay_cash(
+            self.root, source_task_id,
+            expected_source_binding=expected_source_binding,
+            expected_context_sha256=expected_context_sha256,
+            expected_annual_response_sha256=expected_annual_response_sha256,
+            expected_budget_day=expected_budget_day)
+        cfg = self._configuration()
+        if self.test_provider is None and cfg["model_id"] != "deepseek-flash":
+            raise PermissionError("V13_EXACT_MODEL_REQUIRED")
+        task_id = "rt-" + _hash(_bytes([CONTRACT, "IMPORTED_V12", source_task_id,
+            lineage["source_record_binding"], context["symbol"]]))[:32]
+        directory = self._directory(task_id)
+        with self._lock(directory):
+            if (directory / "input.json").exists():
+                spec, state, pin = self._load(task_id)
+                if (spec.get("imported_annual") != lineage or spec["config"] != cfg
+                        or spec["request_key_sha256"] != _hash(request_key.encode("utf-8"))):
+                    raise ValueError("V13_IMPORT_REQUEST_CONFLICT")
+                return self._view(spec, state, pin, now)
+            spec = dict(schema_version=VERSION, task_id=task_id, workflow="operating_research",
+                task_contract=CONTRACT,
+                mode="TEST_ONLY_LIVE_CONTRACT" if self.test_provider is not None else "LIVE_OPERATING",
+                symbol=context["symbol"],
+                year=2027, years=[2027], request_key_sha256=_hash(request_key.encode("utf-8")),
+                created_at=now.isoformat(), source_binding=lineage["source_binding"],
+                context_sha256=lineage["source_context_sha256"],
+                cash_request_sha256=lineage["v13_cash_request_sha256"],
+                enriched_context_sha256=_hash(_bytes(official.project_research_context(context))),
+                config=cfg, implementation_sha256=implementation(),
+                imported_annual=lineage, action="no_order")
+            self._imported(spec)
+            write_new_bytes(directory / "input.json", _bytes(spec))
+            state = dict(status="QUEUED", attempts=0, provider_requests=0, new_llm_calls=0,
+                usage=dict(prompt_tokens=0, completion_tokens=0), reserved_cost="0",
+                settled_cost="0", reservations={}, stage_intents={}, stage_responses={},
+                stage_validated=["annual"], cash_binding=None, created_at=now.isoformat(),
+                action="no_order", formal_eligibility=False, error_code=None)
+            state, pin = self._save(spec, state, None, now)
+            return self._view(spec, state, pin, now)
+
     def _load(self, task_id, *, recover=False):
         spec, state, pin = live.LiveOperatingTaskService._load(self, task_id, recover=recover)
         if (spec.get("task_contract") != CONTRACT or spec.get("years") != [spec.get("year")]
@@ -51,8 +116,15 @@ class OperatingHorizonTaskService(v7.OperatingHorizonTaskService):
                 or set(state.get("stage_responses", {})) - set(STAGES)
                 or set(state.get("stage_validated", [])) - set(STAGES)
                 or (state.get("cash_binding") is not None and
-                    not isinstance(state["cash_binding"], dict))):
+                    not isinstance(state["cash_binding"], dict))
+                or ("imported_annual" in spec and
+                    (state.get("stage_validated") not in (["annual"], ["annual", "cash"])
+                     or "annual" in state["stage_intents"]
+                     or "annual" in state["stage_responses"]
+                     or spec["imported_annual"].get("action") != "no_order"))):
             raise ValueError("V8_TASK_BINDING_INVALID")
+        if "imported_annual" in spec:
+            self._imported(spec)
         return spec, state, pin
 
     def _provider(self, spec):
@@ -81,6 +153,9 @@ class OperatingHorizonTaskService(v7.OperatingHorizonTaskService):
     def _context(self, spec):
         if spec["implementation_sha256"] != implementation():
             raise ValueError("V8_IMPLEMENTATION_CHANGED")
+        if "imported_annual" in spec:
+            _, _, context, _ = self._imported(spec)
+            return context
         if spec["source_loader_binding"] != self._loader_binding():
             raise ValueError("V8_SOURCE_LOADER_CHANGED")
         context = self.source_loader(root=self.root, symbol=spec["symbol"],
@@ -100,6 +175,11 @@ class OperatingHorizonTaskService(v7.OperatingHorizonTaskService):
         return context
 
     def _request_for_stage(self, spec, state, context, stage):
+        if "imported_annual" in spec:
+            if stage != "cash":
+                raise ValueError("V13_IMPORTED_ANNUAL_HAS_NO_LOCAL_REQUEST")
+            request, lineage, _, _ = self._imported(spec)
+            return request, lineage["v13_cash_binding"]
         if stage == "annual":
             return request_v13.build_annual_request(context, spec["years"],
                 source_binding=spec["source_binding"]), None
@@ -113,6 +193,13 @@ class OperatingHorizonTaskService(v7.OperatingHorizonTaskService):
             annual_generated_at=datetime.fromisoformat(packet["generated_at"]))
 
     def _verify_annual_checkpoint(self, spec, state, context):
+        if "imported_annual" in spec:
+            _, lineage, imported_context, _ = self._imported(spec)
+            if ("annual" not in state["stage_validated"]
+                    or _hash(_bytes(imported_context)) != _hash(_bytes(context))):
+                raise ValueError("V13_IMPORTED_ANNUAL_CHANGED")
+            return {"origin": "V12_EXTERNAL", "source_task_id": lineage["source_task_id"],
+                    "source_annual_result_sha256": lineage["source_annual_result_sha256"]}
         packet = self._packet(spec, state, "annual")
         if packet is None or "annual" not in state["stage_validated"]:
             raise ValueError("V8_ANNUAL_CHECKPOINT_REQUIRED")
@@ -126,9 +213,14 @@ class OperatingHorizonTaskService(v7.OperatingHorizonTaskService):
                                         spec["years"], datetime.fromisoformat(packet["generated_at"]))
 
     def _result(self, spec, state, context):
-        if not set(STAGES).issubset(state["stage_responses"]):
+        if "imported_annual" in spec:
+            if "cash" not in state["stage_responses"]:
+                return None
+            _, _, _, annual_packet = self._imported(spec)
+        elif not set(STAGES).issubset(state["stage_responses"]):
             return None
-        annual_packet = self._packet(spec, state, "annual")
+        else:
+            annual_packet = self._packet(spec, state, "annual")
         cash_packet = self._packet(spec, state, "cash")
         request, binding = self._request_for_stage(spec, state, context, "cash")
         if (binding != state["cash_binding"] or
@@ -153,7 +245,12 @@ class OperatingHorizonTaskService(v7.OperatingHorizonTaskService):
         try:
             context = self._context(spec)
             if "annual" in state["stage_validated"]:
-                value["annual_result"] = self._verify_annual_checkpoint(spec, state, context)
+                checked = self._verify_annual_checkpoint(spec, state, context)
+                if "imported_annual" in spec:
+                    value["imported_annual"] = checked
+                    value["annual_status"] = "IMPORTED_V12"
+                else:
+                    value["annual_result"] = checked
             if state["status"] in {"SUCCEEDED", "WAITING_EVIDENCE"}:
                 try:
                     value["research_result"] = self._result(spec, state, context)
@@ -307,11 +404,13 @@ class OperatingHorizonTaskService(v7.OperatingHorizonTaskService):
                     self._verify_annual_checkpoint(spec, {**state, "stage_validated": ["annual"]}, context)
                 else:
                   try:
+                    annual_packet = (self._imported(spec)[3] if "imported_annual" in spec
+                                     else self._packet(spec, state, "annual"))
                     split.validate_responses(
-                        LLMResponse(**self._packet(spec, state, "annual")["response"]), response,
+                        LLMResponse(**annual_packet["response"]), response,
                         context=context, years=spec["years"], source_binding=spec["source_binding"],
                         binding=state["cash_binding"],
-                        annual_generated_at=datetime.fromisoformat(self._packet(spec, state, "annual")["generated_at"]),
+                        annual_generated_at=datetime.fromisoformat(annual_packet["generated_at"]),
                         cash_generated_at=generated)
                   except split.FullValidatorBlocked as blocked:
                     state, pin = self._save(spec, state, pin, generated,

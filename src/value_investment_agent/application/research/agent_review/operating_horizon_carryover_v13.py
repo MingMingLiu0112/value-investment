@@ -23,6 +23,17 @@ def prepare_cash(root, task_id, *, expected_source_binding, expected_context_sha
     All expected values must come from the caller's independent admission pin.
     No disk writes, budget reservations, or model calls occur here.
     """
+    request, lineage, _, _ = replay_cash(root, task_id,
+        expected_source_binding=expected_source_binding,
+        expected_context_sha256=expected_context_sha256,
+        expected_annual_response_sha256=expected_annual_response_sha256,
+        expected_budget_day=expected_budget_day)
+    return request, lineage
+
+
+def replay_cash(root, task_id, *, expected_source_binding, expected_context_sha256,
+                expected_annual_response_sha256, expected_budget_day):
+    """Return verified source context and packet for the V13 task runner."""
     # Read only the recorded source-loader version. Never guess a newer
     # source projection for an old sealed annual response.
     probe = v12.OperatingHorizonTaskService(root)
@@ -81,4 +92,4 @@ def prepare_cash(root, task_id, *, expected_source_binding, expected_context_sha
         source_budget_actual_cost=settlement["actual_cost"],
         v13_cash_binding=cash_binding,
         v13_cash_request_sha256=_hash(_bytes(cash_request.__dict__)))
-    return cash_request, lineage
+    return cash_request, lineage, context, packet
