@@ -153,7 +153,7 @@ class OperatingHorizonTaskService(v7.OperatingHorizonTaskService):
 
     def create(self, *, symbol, request_key, years, now=None):
         now = _now(now)
-        if (years != [2027] or symbol != "600519"
+        if (years != [2027]
                 or not isinstance(symbol, str)
                 or re.fullmatch(r"[0-9]{6}", symbol) is None
                 or not isinstance(request_key, str)

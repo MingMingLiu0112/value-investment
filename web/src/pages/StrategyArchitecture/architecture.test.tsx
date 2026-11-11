@@ -255,7 +255,8 @@ it("records the current driver bridge arithmetic acceptance without adopting par
     expect(stage.evidenceSource).not.toContain("待Root");
     expect(stage.nextStep).toContain("现金阶段接入现有持久任务");
     expect(stage.nextStep).toContain("旧派息规划不外推");
-    expect(stage.deliveryReview?.gap).toContain("E2未消费");
+    expect(stage.deliveryReview?.gap).toContain("没有真实现金政策");
+    expect(stage.deliveryReview?.gap).toContain("E2/F1/F2正向消费");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
   expect(d1.evidenceStatus).toContain("当前版本三角色研究");

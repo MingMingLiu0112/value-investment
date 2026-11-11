@@ -544,6 +544,7 @@ jobs:
           tests/test_operating_horizon_task_v8_annual.py
           tests/test_operating_horizon_task_v9_cash.py
           tests/test_operating_horizon_task_v10_live.py
+          tests/test_operating_horizon_task_v11_live.py
           tests/test_operating_horizon_citation_repair_v1.py
           tests/test_operating_horizon_citation_repair_task_v1.py
           tests/test_operating_horizon_cash_policy_e2_v1.py
