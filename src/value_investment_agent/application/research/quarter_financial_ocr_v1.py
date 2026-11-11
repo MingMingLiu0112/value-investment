@@ -11,6 +11,7 @@ from ...infrastructure.filings.pdfium_runtime import serialized_pdfium
 
 VERSION = 'core-value-f2-quarter-financial-ocr-v1'
 SUPPORTED_SCOPE = 'FIXED_SOURCE_600519_Q3_2026'
+SUPPORTED_SYMBOL = SUPPORTED_SCOPE.split('_')[2]
 RECEIPT_SCHEMA = 'official-quarter-pdfium-ocr-receipt-v1'
 OCR_SCHEMA = 'official-quarter-ocr-raw-v1'
 REGISTRATION_SHA256 = '3754bc057d2e4162f4aeb64285dd2c9cf13aa24ae7f6a961324f68f576ba6851'
@@ -135,7 +136,7 @@ def replay_quarter_financial_ocr(*, receipt_path: Path, receipt_sha256: str,
                  data.get('render_engine') == 'pypdfium2' and
                  data.get('render_scale') == 3 and
                  data.get('physical_page') == number and
-                 data.get('symbol') == '600519' and
+                 data.get('symbol') == SUPPORTED_SYMBOL and
                  data.get('report_period') == '2026-09-30' and
                  data.get('original_sha256') == original_sha256 and
                  data.get('image_sha256') == entry['image_sha256'] and
@@ -148,7 +149,7 @@ def replay_quarter_financial_ocr(*, receipt_path: Path, receipt_sha256: str,
         _require(any('贵州茅台酒股份有限公司' in row.get('text', '') for row in data['rows']) and
                  any('2026年第三季度报告' in row.get('text', '') for row in data['rows']),
                  'OCR_ISSUER_PERIOD_INVALID')
-        _require('600519' in native or number == 7, 'ORIGINAL_ISSUER_UNVERIFIED')
+        _require(SUPPORTED_SYMBOL in native or number == 7, 'ORIGINAL_ISSUER_UNVERIFIED')
         ocr[number] = data
     rows = ocr[1]['rows']
     header = _row(rows, '年初至报告期末')
@@ -171,7 +172,7 @@ def replay_quarter_financial_ocr(*, receipt_path: Path, receipt_sha256: str,
         facts[key] = value.replace(',', '')
     return {'version': VERSION, 'supported_scope': SUPPORTED_SCOPE,
             'status': 'VERIFIED_REPORTED_Q3_UNAUDITED_OBSERVATION',
-            'symbol': '600519', 'issuer': '贵州茅台酒股份有限公司',
+            'symbol': SUPPORTED_SYMBOL, 'issuer': '贵州茅台酒股份有限公司',
             'report_period': '2026-09-30', 'period_basis': 'YTD_9M',
             'currency': 'CNY', 'unit': 'yuan', 'facts': facts,
             'source_sha256': original_sha256, 'receipt_sha256': receipt_sha256,

@@ -11,6 +11,12 @@ import pypdfium2 as pdfium
 from .pdfium_runtime import serialized_pdfium
 
 VERSION = "official-halfyear-shares-ocr-v2"
+SEALED_OCR_PACKAGE_SHA256 = {
+    "rapidocr-3.10.0.dist-info/METADATA": "71ff919d40d466dffa8736865649c985d28055e96e9c7eb7a5f09fa1b548ec54",
+    "rapidocr/models/ch_ppocr_mobile_v2.0_cls_mobile.onnx": "e47acedf663230f8863ff1ab0e64dd2d82b838fceb5957146dab185a89d6215c",
+    "rapidocr/models/PP-OCRv6_det_small.onnx": "090f04abcd9d9a7498bc4ebf677e4cb9bdce1fe4197ddb7e529f1ef44e1ff94f",
+    "rapidocr/models/PP-OCRv6_rec_small.onnx": "6f327246b50388f3c176ae304bd95767ea6dc0c9ae92153ef8cbe210b3c14884",
+}
 
 
 def _sha(path):
@@ -22,33 +28,36 @@ def _fail(code):
 
 
 @serialized_pdfium
-def _pdfium_evidence(original, notice):
-    """Read native text and rendered page pixels under PDFium's process lock."""
-    def read(path, pages, renders=()):
-        doc = pdfium.PdfDocument(path)
-        texts, raw_hashes = {}, {}
-        try:
-            for number in pages:
-                page = doc[number - 1]
+def _read_pdfium_pages(path, pages, renders=()):
+    """Keep each native document and its cleanup inside the shared lock."""
+    doc = pdfium.PdfDocument(path)
+    texts, raw_hashes = {}, {}
+    try:
+        for number in pages:
+            page = doc[number - 1]
+            try:
+                text_page = page.get_textpage()
                 try:
-                    text_page = page.get_textpage()
-                    try:
-                        texts[number] = text_page.get_text_range()
-                    finally:
-                        text_page.close()
-                    if number in renders:
-                        bitmap = page.render(scale=3)
-                        try:
-                            raw_hashes[number] = hashlib.sha256(bytes(bitmap.buffer)).hexdigest()
-                        finally:
-                            bitmap.close()
+                    texts[number] = text_page.get_text_range()
                 finally:
-                    page.close()
-        finally:
-            doc.close()
-        return texts, raw_hashes
-    native, images = read(original, (1, 22, 23), (22, 23))
-    cross, _ = read(notice, (1, 2, 3))
+                    text_page.close()
+                if number in renders:
+                    bitmap = page.render(scale=3)
+                    try:
+                        raw_hashes[number] = hashlib.sha256(bytes(bitmap.buffer)).hexdigest()
+                    finally:
+                        bitmap.close()
+            finally:
+                page.close()
+    finally:
+        doc.close()
+    return texts, raw_hashes
+
+
+def _pdfium_evidence(original, notice):
+    """Read native text and rendered page pixels from both bound originals."""
+    native, images = _read_pdfium_pages(original, (1, 22, 23), (22, 23))
+    cross, _ = _read_pdfium_pages(notice, (1, 2, 3))
     return native, images, cross
 
 
@@ -75,10 +84,9 @@ def _availability(manifest, prefix, as_of):
 
 def replay_halfyear_shares(*, root: Path, symbol: str, issuer_name: str,
                            report_year: int, expected_original_sha256: str,
-                           package_dir: Path, as_of: datetime) -> dict:
+                           as_of: datetime) -> dict:
     """Replay sealed PDF/OCR evidence; no network, account, or order access."""
     root = Path(root).resolve()
-    package_dir = Path(package_dir).resolve()
     manifest_path = root / "source-manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     notice_date = manifest.get("cross_notice_url", "").split("/finalpage/")[-1].split("/")[0]
@@ -108,12 +116,7 @@ def replay_halfyear_shares(*, root: Path, symbol: str, issuer_name: str,
         rows = packet.get("rows")
         if (packet.get("schema_version") != "official-halfyear-shares-ocr-artifact-v2"
                 or packet.get("engine") != "rapidocr-3.10.0"
-                or not isinstance(packet.get("package_sha256"), dict)
-                or len(packet["package_sha256"]) < 4
-                or any(not re.fullmatch(r"[0-9a-f]{64}", digest)
-                       or not (package_dir / name).resolve().is_relative_to(package_dir)
-                       or _sha(package_dir / name) != digest
-                       for name, digest in packet["package_sha256"].items())
+                or packet.get("package_sha256") != SEALED_OCR_PACKAGE_SHA256
                 or packet.get("status") != "OCR_REQUIRES_VISUAL_VERIFICATION"
                 or packet.get("render_engine") != "pypdfium2"
                 or packet.get("render_version") != version("pypdfium2")

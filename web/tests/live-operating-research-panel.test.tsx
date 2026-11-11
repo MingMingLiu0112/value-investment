@@ -1501,6 +1501,37 @@ it("shows the fixed-source Q3 observation without claiming current valuation adm
   );
   expect(mismatched).not.toContain("1,309.7074");
 });
+it("shows source-bound H1 share count as history without claiming current price eligibility", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = capitalObservation();
+  value.h1_share_observation = {
+    status: "VERIFIED",
+    report_period_end: "2026-06-30",
+    ordinary_shares: 1250081601,
+    current_continuity: "UNPROVEN",
+    formal_eligibility: false,
+    action: "no_order",
+    source: {
+      original_sha256: "a".repeat(64),
+      source_url:
+        "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+    },
+  };
+  const html = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(html).toContain("1,250,081,601");
+  expect(html).toContain("不能据此形成当前每股估值或操作价格");
+  value.h1_share_observation.current_continuity = "UNPROVEN";
+  value.h1_share_observation.source = {
+    original_sha256: "bad",
+    source_url: "https://example.invalid",
+  };
+  const invalid = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(invalid).not.toContain("1,250,081,601");
+});
 it("shows fiscal H1 fact plus exact-derived H2 and CNY-8.5-billion policy target without calling excess earnings a cash deficit or default", () => {
   const { renderToStaticMarkup } = require("react-dom/server");
   const value = fiscalReview(),

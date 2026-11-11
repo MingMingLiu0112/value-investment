@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 import shutil
+import sys
 
 import pytest
 
@@ -39,28 +40,32 @@ def test_portable_availability_rejects_bad_date_or_timezone(url_date, available)
 @pytest.fixture
 def evidence():
     root = os.environ.get("TEST_H1_OCR_ROOT")
-    package = os.environ.get("TEST_H1_OCR_PACKAGE_DIR")
-    if not root or not package or not Path(root).is_dir() or not Path(package).is_dir():
-        pytest.skip("Set TEST_H1_OCR_ROOT and TEST_H1_OCR_PACKAGE_DIR for sealed cold replay")
-    return Path(root), Path(package)
+    if not root or not Path(root).is_dir():
+        pytest.skip("Set TEST_H1_OCR_ROOT for sealed cold replay")
+    return Path(root)
 
 
-def replay(root, package, **changes):
+def replay(root, **changes):
     args = dict(root=root, symbol="600519", issuer_name="贵州茅台酒股份有限公司",
-                report_year=2026, expected_original_sha256=SHA, package_dir=package,
+                report_year=2026, expected_original_sha256=SHA,
                 as_of=datetime(2026, 11, 11, tzinfo=timezone.utc))
     args.update(changes)
     return replay_halfyear_shares(**args)
 
 
 def test_real_cold_replay(evidence):
-    result = replay(*evidence)
+    result = replay(evidence)
     assert (result["shares_before"], result["cancelled_shares"], result["ordinary_shares"]) == (
         1252270215, 2188614, 1250081601)
     assert result["report_period_end"] == "2026-06-30"
     assert result["current_continuity"] == "UNPROVEN"
     assert result["formal_eligibility"] is False
-    assert replay(*evidence, as_of=datetime.fromisoformat("2026-08-16T00:00:00+08:00"))["ordinary_shares"] == 1250081601
+    assert replay(evidence, as_of=datetime.fromisoformat("2026-08-16T00:00:00+08:00"))["ordinary_shares"] == 1250081601
+
+
+def test_real_replay_without_rapidocr_install(evidence, monkeypatch):
+    monkeypatch.setitem(sys.modules, "rapidocr", None)
+    assert replay(evidence)["ordinary_shares"] == 1250081601
 
 
 @pytest.mark.parametrize("change,code", [
@@ -70,17 +75,18 @@ def test_real_cold_replay(evidence):
     ("image_hash", "H1_OCR_BINDING_INVALID"),
     ("cross_hash", "H1_SOURCE_BINDING_INVALID"),
     ("package_hash", "H1_OCR_BINDING_INVALID"),
+    ("model_hash", "H1_OCR_BINDING_INVALID"),
     ("render_hash", "H1_OCR_BINDING_INVALID"),
 ])
 def test_fail_closed(tmp_path, evidence, change, code):
-    source, package = evidence
+    source = evidence
     if change == "issuer":
         with pytest.raises(ValueError, match=code):
-            replay(source, package, issuer_name="错误发行人")
+            replay(source, issuer_name="错误发行人")
         return
     if change == "source_hash":
         with pytest.raises(ValueError, match=code):
-            replay(source, package, expected_original_sha256="0" * 64)
+            replay(source, expected_original_sha256="0" * 64)
         return
     shutil.copytree(source, tmp_path / "evidence")
     root = tmp_path / "evidence"
@@ -107,8 +113,14 @@ def test_fail_closed(tmp_path, evidence, change, code):
         data = json.loads(path.read_text(encoding="utf-8"))
         data["render_raw_sha256"] = "0" * 64
         path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    elif change == "model_hash":
+        path = root / "page-23.ocr.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        name = next(k for k in data["package_sha256"] if k.endswith(".onnx"))
+        data["package_sha256"][name] = "0" * 64
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     with pytest.raises(ValueError, match=code):
-        replay(root, package)
+        replay(root)
 
 
 @pytest.mark.parametrize("change,code", [
@@ -121,14 +133,14 @@ def test_fail_closed(tmp_path, evidence, change, code):
     ("url_date_mismatch", "H1_SOURCE_AVAILABILITY_INVALID"),
 ])
 def test_availability_gate(tmp_path, evidence, change, code):
-    source, package = evidence
+    source = evidence
     if change == "before_original":
         with pytest.raises(ValueError, match=code):
-            replay(source, package, as_of=datetime.fromisoformat("2026-08-15T23:59:59+08:00"))
+            replay(source, as_of=datetime.fromisoformat("2026-08-15T23:59:59+08:00"))
         return
     if change == "naive_as_of":
         with pytest.raises(ValueError, match=code):
-            replay(source, package, as_of=datetime(2026, 11, 11))
+            replay(source, as_of=datetime(2026, 11, 11))
         return
     shutil.copytree(source, tmp_path / "evidence")
     root = tmp_path / "evidence"
@@ -147,4 +159,4 @@ def test_availability_gate(tmp_path, evidence, change, code):
         manifest["cross_notice_url"] = manifest["cross_notice_url"].replace("2026-05-28", "2026-05-29")
     path.write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
     with pytest.raises(ValueError, match=code):
-        replay(root, package)
+        replay(root)

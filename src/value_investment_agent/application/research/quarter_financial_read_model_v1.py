@@ -6,7 +6,7 @@ from pathlib import Path, PureWindowsPath
 import re
 
 from .current_capital_observation_v1 import REGISTRY as CAPITAL_REGISTRY
-from .quarter_financial_ocr_v1 import SUPPORTED_SCOPE, replay_quarter_financial_ocr
+from .quarter_financial_ocr_v1 import SUPPORTED_SCOPE, SUPPORTED_SYMBOL, replay_quarter_financial_ocr
 
 REGISTRY = 'config/quarter-financial-ocr-v1.json'
 VERSION = 'quarter-financial-ocr-read-model-v1'
@@ -40,7 +40,7 @@ def read_quarter_financial_ocr(root, symbol, now):
                   action='no_order', formal_eligibility=False,
                   valuation_admitted=False, current_comparison_changed=False,
                   ytd_9m_observation=None)
-    if symbol != '600519':
+    if symbol != SUPPORTED_SYMBOL:
         result.update(status='NOT_SUPPORTED', reason='FIXED_SOURCE_SCOPE_ONLY')
         return result
     registry_path = _inside(root, REGISTRY)

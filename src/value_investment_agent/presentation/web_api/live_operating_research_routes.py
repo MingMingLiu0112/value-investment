@@ -399,8 +399,8 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         # Registered public filing observations remain readable even when no
         # paid Agent task exists or its latest result is no longer verifiable.
         try:
-            from ...application.research.current_capital_observation_v1 import read_current_capital_observation
-            capital_observation=read_current_capital_observation(
+            from ...application.research.current_capital_h1_ocr_overlay_v2 import read_capital_with_h1_shares
+            capital_observation=read_capital_with_h1_shares(
                 project,symbol,datetime.now(timezone.utc))
         except (ValueError,OSError,KeyError,TypeError):
             capital_observation=dict(status="UNASSESSABLE",

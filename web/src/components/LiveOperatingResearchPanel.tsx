@@ -456,6 +456,7 @@ export function CurrentCapitalObservationView({
       />
     );
   const quarter = value.quarter_financial_observation;
+  const h1Shares = value.h1_share_observation;
   const rows = Array.isArray(value.source_bound_observations)
     ? value.source_bound_observations
     : [];
@@ -468,6 +469,31 @@ export function CurrentCapitalObservationView({
       <p>
         报告期股数与股利方案是原件观察，不证明当前股本连续性；股利计划、财政年度归属、宣告和实际付款必须分开。当前资本连续性：尚未证明。
       </p>
+      {h1Shares?.status === "VERIFIED" &&
+        h1Shares.action === "no_order" &&
+        h1Shares.formal_eligibility === false &&
+        h1Shares.current_continuity === "UNPROVEN" &&
+        h1Shares.report_period_end === "2026-06-30" &&
+        typeof h1Shares.ordinary_shares === "number" &&
+        observationHash(h1Shares.source?.original_sha256) && (
+          <section aria-label="半年报历史股本观察">
+            <h4>半年报历史普通股股数</h4>
+            <p>
+              截至 {h1Shares.report_period_end}：
+              {h1Shares.ordinary_shares.toLocaleString("zh-CN")} 股。
+              来源为半年报与回购注销公告交叉复核；尚未证明此后股本连续性，不能据此形成当前每股估值或操作价格。
+            </p>
+            <p>
+              原件 SHA-256：<code>{h1Shares.source?.original_sha256}</code>
+            </p>
+          </section>
+        )}
+      {h1Shares?.status === "UNASSESSABLE" && (
+        <p>
+          半年报股本观察暂不可核验：{h1Shares.error_code ?? "来源或版本不一致"}
+          。
+        </p>
+      )}
       {quarter?.status === "VERIFIED_OBSERVATION_ONLY" &&
         quarter.action === "no_order" &&
         quarter.formal_eligibility === false &&

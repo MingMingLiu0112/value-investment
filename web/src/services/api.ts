@@ -971,6 +971,18 @@ export type CurrentCapitalObservation = {
   action: "no_order";
   formal_eligibility: false;
   current_capital_continuity?: "NOT_PROVEN";
+  h1_share_observation?: {
+    status: "NOT_REGISTERED" | "VERIFIED" | "UNASSESSABLE";
+    report_period_end: string | null;
+    ordinary_shares: number | null;
+    shares_before?: number;
+    cancelled_shares?: number;
+    current_continuity: "UNPROVEN";
+    formal_eligibility: false;
+    action: "no_order";
+    source?: { original_sha256: string; source_url: string };
+    error_code?: string;
+  };
   quarter_financial_observation?: {
     status: "VERIFIED_OBSERVATION_ONLY" | "UNASSESSABLE";
     supported_scope?: string;

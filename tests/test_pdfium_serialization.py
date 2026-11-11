@@ -126,5 +126,8 @@ def test_new_native_pdfium_calls_require_shared_serialization():
         ('infrastructure/filings/first_research_fact_replay_v1.py', '_native_column'),
         ('application/product/prospective_baseline.py', '_verify_shenhua_h1_column_geometry'),
         ('application/research/shareholder_cash_evidence.py', '_verify_current_column'),
+        ('infrastructure/filings/official_halfyear_shares_ocr_v2.py', '_read_pdfium_pages'),
+        ('infrastructure/filings/official_halfyear_shares_ocr_sealer_v2.py', 'seal'),
+        ('application/research/quarter_financial_ocr_v1.py', '_render_and_native'),
     }
     assert len(calls) == len(sites)

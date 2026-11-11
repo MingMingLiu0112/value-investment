@@ -6,12 +6,14 @@ from pathlib import Path
 import sys
 
 import pypdfium2 as pdfium
+from .pdfium_runtime import serialized_pdfium
 
 
 def _sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+@serialized_pdfium
 def seal(original, output, package_dir, *, source_url):
     original, output, package_dir = map(Path, (original, output, package_dir))
     sys.path.insert(0, str(package_dir))
@@ -65,3 +67,9 @@ def seal(original, output, package_dir, *, source_url):
             )
     finally:
         doc.close()
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 5:
+        raise SystemExit("usage: python -m value_investment_agent.infrastructure.filings.official_halfyear_shares_ocr_sealer_v2 ORIGINAL OUTPUT PACKAGE_DIR SOURCE_URL")
+    seal(*sys.argv[1:4], source_url=sys.argv[4])

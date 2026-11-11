@@ -125,6 +125,33 @@ def test_public_q3_observation_is_visible_without_a_live_task_or_price_admission
     assert data.provider_calls == [] and state(root) == before
 
 
+def test_public_h1_share_observation_remains_historical_without_a_live_task(api, monkeypatch):
+    from value_investment_agent.application.research import current_capital_h1_ocr_overlay_v2 as shares
+
+    client, _, data, root = api
+    before = state(root)
+
+    def fixed_h1_read(project, symbol, now):
+        assert project == root and symbol == '600519' and now.utcoffset() is not None
+        return dict(status='PARTIAL', action='no_order', formal_eligibility=False,
+                    current_capital_continuity='NOT_PROVEN',
+                    h1_share_observation=dict(status='VERIFIED', report_period_end='2026-06-30',
+                        ordinary_shares=1250081601, current_continuity='UNPROVEN',
+                        formal_eligibility=False, action='no_order',
+                        source=dict(original_sha256='a' * 64)))
+
+    monkeypatch.setattr(shares, 'read_capital_with_h1_shares', fixed_h1_read)
+    response = client.get(BASE + '/companies/600519')
+    body = response.json()
+    observation = body['current_capital_observation']['h1_share_observation']
+    assert response.status_code == 200 and body['status'] == 'NOT_STARTED'
+    assert observation['status'] == 'VERIFIED'
+    assert observation['ordinary_shares'] == 1250081601
+    assert observation['current_continuity'] == 'UNPROVEN'
+    assert body['formal_eligibility'] is False and body['action'] == 'no_order'
+    assert data.provider_calls == [] and state(root) == before
+
+
 @pytest.mark.parametrize('extra',[{'endpoint':'https://example.invalid'}, {'key':'TEST_ONLY'},
     {'api_key':'TEST_ONLY'}, {'api_key_env':'VALUE_AGENT_TEST_ONLY'},
     {'sourcepath':'runtime/TEST_ONLY'}, {'source_path':'runtime/TEST_ONLY'},
