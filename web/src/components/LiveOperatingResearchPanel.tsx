@@ -457,6 +457,7 @@ export function CurrentCapitalObservationView({
     );
   const quarter = value.quarter_financial_observation;
   const h1Shares = value.h1_share_observation;
+  const q3Bridge = value.q3_h1_capital_bridge;
   const rows = Array.isArray(value.source_bound_observations)
     ? value.source_bound_observations
     : [];
@@ -493,6 +494,34 @@ export function CurrentCapitalObservationView({
           半年报股本观察暂不可核验：{h1Shares.error_code ?? "来源或版本不一致"}
           。
         </p>
+      )}
+      {q3Bridge?.status === "MONETARY_CAPITAL_VERIFIED_SHARES_UNKNOWN" &&
+        q3Bridge.symbol === symbol &&
+        q3Bridge.action === "no_order" &&
+        q3Bridge.formal_eligibility === false &&
+        q3Bridge.q3_ordinary_shares === "UNKNOWN" &&
+        q3Bridge.current_continuity === "UNPROVEN" &&
+        observationHash(q3Bridge.q3_source?.original_sha256) && (
+          <section aria-label="三季报股本金额与股数边界">
+            <h4>三季报股本金额：尚不能换算当前股数</h4>
+            <p>
+              三季报合并资产负债表核验到股本金额
+              {observationMoney(q3Bridge.q3_monetary_capital_cny)} 亿元；
+              半年报普通股数为{" "}
+              {typeof q3Bridge.h1_ordinary_shares === "number"
+                ? q3Bridge.h1_ordinary_shares.toLocaleString("zh-CN")
+                : "未知"}{" "}
+              股。
+              缺少三季报每股面值及股数结构的来源绑定证明，当前股本连续性未证明，不能据此生成当前每股价值或买入价。
+            </p>
+            <p>
+              三季报原件 SHA-256：
+              <code>{q3Bridge.q3_source?.original_sha256}</code>
+            </p>
+          </section>
+        )}
+      {q3Bridge?.status === "UNASSESSABLE" && (
+        <p>三季报股本金额暂不可核验：{q3Bridge.error_code ?? "来源未绑定"}。</p>
       )}
       {quarter?.status === "VERIFIED_OBSERVATION_ONLY" &&
         quarter.action === "no_order" &&

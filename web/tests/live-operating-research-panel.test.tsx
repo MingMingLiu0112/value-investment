@@ -1532,6 +1532,39 @@ it("shows source-bound H1 share count as history without claiming current price 
   );
   expect(invalid).not.toContain("1,250,081,601");
 });
+it("keeps Q3 monetary capital separate from current ordinary shares", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = capitalObservation();
+  value.q3_h1_capital_bridge = {
+    status: "MONETARY_CAPITAL_VERIFIED_SHARES_UNKNOWN",
+    symbol: "600519",
+    q3_monetary_capital_cny: "1250081601.00",
+    q3_ordinary_shares: "UNKNOWN",
+    h1_ordinary_shares: 1250081601,
+    current_continuity: "UNPROVEN",
+    q3_source: {
+      original_sha256: "b".repeat(64),
+      source_url:
+        "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649896.PDF",
+    },
+    formal_eligibility: false,
+    action: "no_order",
+  };
+  const html = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(html).toContain("三季报股本金额：尚不能换算当前股数");
+  expect(html).toContain("当前股本连续性未证明");
+  value.q3_h1_capital_bridge.q3_ordinary_shares = "UNKNOWN";
+  value.q3_h1_capital_bridge.q3_source = {
+    original_sha256: "bad",
+    source_url: "https://example.invalid",
+  };
+  const invalid = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(invalid).not.toContain("三季报股本金额：尚不能换算当前股数");
+});
 it("shows fiscal H1 fact plus exact-derived H2 and CNY-8.5-billion policy target without calling excess earnings a cash deficit or default", () => {
   const { renderToStaticMarkup } = require("react-dom/server");
   const value = fiscalReview(),

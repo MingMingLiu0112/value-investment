@@ -156,6 +156,34 @@ def test_public_h1_share_observation_remains_historical_without_a_live_task(api,
     assert data.provider_calls == [] and state(root) == before
 
 
+def test_public_q3_h1_capital_bridge_is_read_only_and_never_grants_price_admission(api, monkeypatch):
+    from value_investment_agent.application.research import current_capital_q3_h1_bridge_v1 as bridge
+
+    client, _, data, root = api
+    registration = root / bridge.REGISTRY
+    registration.parent.mkdir(parents=True, exist_ok=True)
+    registration.write_text('{}', encoding='utf-8')
+    before = state(root)
+
+    def fixed_bridge_read(project, now):
+        assert project == root and now.utcoffset() is not None
+        return dict(status='MONETARY_CAPITAL_VERIFIED_SHARES_UNKNOWN', symbol=bridge.SUPPORTED_SYMBOL,
+                    q3_monetary_capital_cny='1250081601.00', q3_ordinary_shares='UNKNOWN',
+                    h1_ordinary_shares=1250081601, current_continuity='UNPROVEN',
+                    q3_source=dict(original_sha256='a' * 64), formal_eligibility=False,
+                    action='no_order')
+
+    monkeypatch.setattr(bridge, 'read_q3_h1_capital_bridge', fixed_bridge_read)
+    response = client.get(BASE + '/companies/600519')
+    body = response.json()
+    observation = body['current_capital_observation']['q3_h1_capital_bridge']
+    assert response.status_code == 200 and body['status'] == 'NOT_STARTED'
+    assert observation['q3_ordinary_shares'] == 'UNKNOWN'
+    assert observation['current_continuity'] == 'UNPROVEN'
+    assert body['formal_eligibility'] is False and body['action'] == 'no_order'
+    assert data.provider_calls == [] and state(root) == before
+
+
 @pytest.mark.parametrize('extra',[{'endpoint':'https://example.invalid'}, {'key':'TEST_ONLY'},
     {'api_key':'TEST_ONLY'}, {'api_key_env':'VALUE_AGENT_TEST_ONLY'},
     {'sourcepath':'runtime/TEST_ONLY'}, {'source_path':'runtime/TEST_ONLY'},

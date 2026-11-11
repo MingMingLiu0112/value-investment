@@ -983,6 +983,19 @@ export type CurrentCapitalObservation = {
     source?: { original_sha256: string; source_url: string };
     error_code?: string;
   };
+  q3_h1_capital_bridge?: {
+    status: "MONETARY_CAPITAL_VERIFIED_SHARES_UNKNOWN" | "UNASSESSABLE";
+    symbol?: string;
+    q3_monetary_capital_cny?: string;
+    q3_comparison_capital_cny?: string;
+    q3_ordinary_shares: "UNKNOWN";
+    h1_ordinary_shares: number | "UNKNOWN";
+    current_continuity: "UNPROVEN";
+    q3_source?: { original_sha256: string; source_url: string };
+    error_code?: string;
+    action: "no_order";
+    formal_eligibility: false;
+  };
   quarter_financial_observation?: {
     status: "VERIFIED_OBSERVATION_ONLY" | "UNASSESSABLE";
     supported_scope?: string;

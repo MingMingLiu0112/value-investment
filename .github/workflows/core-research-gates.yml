@@ -516,6 +516,7 @@ jobs:
           tests/test_quarter_financial_read_model_v1.py
           tests/test_official_halfyear_shares_ocr_v2.py
           tests/test_current_capital_h1_ocr_overlay_v2.py
+          tests/test_current_capital_q3_h1_bridge_v1.py
           tests/test_native_capital_observation_v1.py
           tests/web_api/test_operating_distribution_api.py
           tests/test_operating_profit_cash_path_v1.py

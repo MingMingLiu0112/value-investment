@@ -432,6 +432,16 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             capital_observation['quarter_financial_observation'] = dict(
                 status='UNASSESSABLE', reason='QUARTER_SOURCE_BINDING_NOT_VERIFIED',
                 action='no_order', formal_eligibility=False, valuation_admitted=False)
+        from ...application.research import current_capital_q3_h1_bridge_v1 as q3_h1_bridge
+        if (symbol == q3_h1_bridge.SUPPORTED_SYMBOL and
+                (project / q3_h1_bridge.REGISTRY).is_file()):
+            try:
+                capital_observation['q3_h1_capital_bridge'] = q3_h1_bridge.read_q3_h1_capital_bridge(
+                    project, datetime.now(timezone.utc))
+            except (ValueError, OSError, KeyError, TypeError):
+                capital_observation['q3_h1_capital_bridge'] = dict(
+                    status='UNASSESSABLE', reason='Q3_H1_CAPITAL_BRIDGE_UNAVAILABLE',
+                    current_continuity='UNPROVEN', formal_eligibility=False, action='no_order')
         try:
             tasks=service.list_for_symbol(symbol)
             if not tasks:return reply(dict(action="no_order",symbol=symbol,status="NOT_STARTED",
