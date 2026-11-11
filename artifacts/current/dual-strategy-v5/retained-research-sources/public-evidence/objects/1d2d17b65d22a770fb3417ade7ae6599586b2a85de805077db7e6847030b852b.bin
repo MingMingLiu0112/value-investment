@@ -1,0 +1,11 @@
+{
+  "inputs": {
+    "runtime\\company-research\\600519-consolidated-parent-equity-model-feasibility-20260914T104237Z\\evidence.json": "fd701df519ec2bb5734e1faa9306b9914fa16f0aa5ee5fefc1b788d2019ba00f",
+    "runtime\\valuation-research\\moutai-discount-basis-20260909T120002401955Z\\evidence.json": "6dea599866140d28b7058d60b7c9a0d235aaed1def4df902011fc46e854de709",
+    "runtime\\valuation-research\\moutai-market-beta-20260912T161052067136Z\\evidence.json": "edb4592aa6a5d81f5f8c5e9c8c48578950d0b59f65b79f9db6f3b173546c7a3c"
+  },
+  "script_sha256": "101ae422674ab2d7b993939aa485ab482eead32684a5741c38f19a1d52534339",
+  "outputs": {
+    "evidence.json": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "schema_version": "current-price-conditions-v1",
+  "action": "no_order",
+  "watch_source_binding": {
+    "path": "runtime/hotspot-daily-selection/561a1e66bf424d4e87426fbf1f080106/report.json",
+    "sha256": "c2ef47a982ea85f04ed4d5e6324f9beda00e0f80f55cd4b19590d1c96d53f4f1"
+  },
+  "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION",
+  "items": [
+    {
+      "symbol": "600150",
+      "company_name": "中国船舶",
+      "case_path": "runtime/hotspot-current-price-cases/600150-2026-10-16-e5c5ad49533d4fc9a28abd698f863d48/case.json",
+      "case_sha256": "c6fb58071b35ef1c710da2bba71f6a46eefd6bb10f2f5b9e0a5ada9752fac140"
+    },
+    {
+      "symbol": "600391",
+      "company_name": "航发科技",
+      "case_path": "runtime/hotspot-current-price-cases/600391-2026-10-16-2ad547c8995149a88d11218322c15a8b/case.json",
+      "case_sha256": "4062df741444b4e7f39c97f94f12a4b9527e3e586607fb704da76204880edba5"
+    },
+    {
+      "symbol": "600967",
+      "company_name": "内蒙一机",
+      "case_path": "runtime/hotspot-current-price-cases/600967-2026-10-16-1c9b9b258534454c9b50e99bcb472250/case.json",
+      "case_sha256": "d10f8665c0cc61fd7c6f27a6da6afd50092ad827591d03b6a78ce4c0fc17a72f"
+    },
+    {
+      "symbol": "600316",
+      "company_name": "洪都航空",
+      "case_path": "runtime/hotspot-current-price-cases/600316-2026-10-16-d585221144934f1fa83ebe25000377f5/case.json",
+      "case_sha256": "51e7cb2e0f5caf54a27c73638764c1fa007d9dfcbd7f2d48b8422a6793d61e92"
+    },
+    {
+      "symbol": "600893",
+      "company_name": "航发动力",
+      "case_path": "runtime/hotspot-current-price-cases/600893-2026-10-16-d9c3d07d9988448db1bfd084b175cd6b/case.json",
+      "case_sha256": "cf879270b1d6cdb1e94758cf1bf4ae3d68a1341cbd00e96e2dd076bdcfe0050e"
+    }
+  ],
+  "failures": [],
+  "selected_symbols": [
+    "600150",
+    "600391",
+    "600967",
+    "600316",
+    "600893"
+  ],
+  "completed_at": "2026-10-16T09:00:27.428228+00:00",
+  "previous_items": [
+    {
+      "symbol": "300059",
+      "company_name": "东方财富",
+      "case_path": "runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/case.json",
+      "case_sha256": "f5a1c3a6021896c073c014b064114713e5dbd397df185c4a86b874fc6b00437e",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
+        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
+    },
+    {
+      "symbol": "601318",
+      "company_name": "中国平安",
+      "case_path": "runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/case.json",
+      "case_sha256": "92ad443d0f6b0d4187b202035e0aba9df7953115c406f0ab72cedca0f6f4d580",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
+        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
+    },
+    {
+      "symbol": "600030",
+      "company_name": "中信证券",
+      "case_path": "runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/case.json",
+      "case_sha256": "6b98c3c625776610acc02fbc1e83a07ccc3861e61ad9498b839caebc5b1c49d3",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
+        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
+    },
+    {
+      "symbol": "601211",
+      "company_name": "国泰海通",
+      "case_path": "runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/case.json",
+      "case_sha256": "c3f589d1f70a77da633e52bf63bf74e65ac262561b19f0d8d206b681fadad2c3",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
+        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
+    },
+    {
+      "symbol": "000712",
+      "company_name": "锦龙股份",
+      "case_path": "runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/case.json",
+      "case_sha256": "846ba8d1ddab43b0e3d22985917161ce3a7236f903ee88262f2ea6410d6d1f9b",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
+        "sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
+    },
+    {
+      "symbol": "300364",
+      "company_name": "中文在线",
+      "case_path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/case.json",
+      "case_sha256": "a385019f1b9097fdd3bc19d6ea08596ecb07df2939efed4cb8ab023b5d4dec49",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/report.json",
+        "sha256": "989aa97241824b61cd3bf3283b4705e846a4d9de78ad4651c5d12bcb00235b8b"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
+    },
+    {
+      "symbol": "300413",
+      "company_name": "芒果超媒",
+      "case_path": "runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/case.json",
+      "case_sha256": "38954bd8c9a43d30bc14a7f915d43def5ddb6c31d88a763823f2d5f9788dfcec",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/report.json",
+        "sha256": "989aa97241824b61cd3bf3283b4705e846a4d9de78ad4651c5d12bcb00235b8b"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
+    },
+    {
+      "symbol": "300418",
+      "company_name": "昆仑万维",
+      "case_path": "runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/case.json",
+      "case_sha256": "055bbfd15f2c6963e2ac07a8b71602a67a6fe6f36211fc871690887a4f133099",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/report.json",
+        "sha256": "989aa97241824b61cd3bf3283b4705e846a4d9de78ad4651c5d12bcb00235b8b"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
+    },
+    {
+      "symbol": "300058",
+      "company_name": "蓝色光标",
+      "case_path": "runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/case.json",
+      "case_sha256": "584ad23ef03881fec209f3860f2b6955100af30b2d84c499b6249635c7f5fa63",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/report.json",
+        "sha256": "989aa97241824b61cd3bf3283b4705e846a4d9de78ad4651c5d12bcb00235b8b"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
+    },
+    {
+      "symbol": "002354",
+      "company_name": "天娱数科",
+      "case_path": "runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/case.json",
+      "case_sha256": "7794a725e534860630d8bbf49957a2fa6436e325f2184da6aab351f2808d3bfb",
+      "watch_source_binding": {
+        "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/report.json",
+        "sha256": "989aa97241824b61cd3bf3283b4705e846a4d9de78ad4651c5d12bcb00235b8b"
+      },
+      "watch_source_scope": "DATED_DAILY_SECTOR_RANKING_OBSERVATION"
+    }
+  ]
+}

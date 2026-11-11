@@ -1,0 +1,246 @@
+{
+  "artifact_kind": "independent_parent_distribution_capital_research",
+  "research_version": "600519-parent-distribution-capital-bridge-v1",
+  "research_date": "2026-10-08",
+  "symbol": "600519",
+  "issuer": "贵州茅台酒股份有限公司",
+  "scope": "REPORTED_PERIOD_CASH_AND_EQUITY_RECONCILIATION_NOT_FORWARD_FORECAST_OR_APPROVAL",
+  "action": "no_order",
+  "unit": "CNY",
+  "amount_encoding": "decimal_string",
+  "sign_convention": "cash_inflow_and_equity_increase_positive; cash_outflow_and_equity_decrease_negative; balances_positive",
+  "pit_scope": "retrospective_research; publication dates are not original-run observation timestamps",
+  "sources": [
+    {
+      "id": "annual",
+      "announcement_id": "1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "published_date": "2026-04-17",
+      "report_period": "2025-01-01/2025-12-31",
+      "physical_page_base": 1,
+      "financial_statements_audit": "standard_unqualified_opinion"
+    },
+    {
+      "id": "interim",
+      "announcement_id": "1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "published_date": "2026-08-15",
+      "report_period": "2026-01-01/2026-06-30",
+      "physical_page_base": 1,
+      "financial_statements_audit": "unaudited"
+    },
+    {
+      "id": "finance_company_risk",
+      "announcement_id": "1225475863",
+      "path": "runtime/d2-source-bound-current-20261008/announcements/1225475863.pdf",
+      "sha256": "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475863.PDF",
+      "published_date": "2026-08-15",
+      "assessment_balance_date": "2026-06-30",
+      "signed_date": "2026-08-13",
+      "physical_page_base": 1,
+      "scope": "issuer_assessment_not_independent_liquidity_assurance"
+    }
+  ],
+  "parent_cash_bridges": [
+    {
+      "period": "FY2025",
+      "entity_scope": "issuer_parent_standalone",
+      "source_id": "annual",
+      "physical_pages": [66, 67],
+      "opening_cash_and_equivalents_cny": "76517140680.50",
+      "cfo_cny": "32618216666.91",
+      "cfi_cny": "46417636870.56",
+      "cff_cny": "-70822236099.32",
+      "fx_effect_reported_cny": null,
+      "fx_effect_reconciliation_residual_cny": "0.00",
+      "fx_limit": "source row is blank; zero is a derived residual, not a printed observation",
+      "reported_net_change_cny": "8213617438.15",
+      "closing_cash_and_equivalents_cny": "84730758118.65",
+      "closing_reconciliation_difference_cny": "0.00",
+      "cfo": {
+        "receipts_cny": "111972347674.02",
+        "payments_signed_cny": "-79354131007.11",
+        "reconciliation_difference_cny": "0.00",
+        "physical_page": 66
+      },
+      "cfi": {
+        "investment_income_cash_received_cny": "49653138761.40",
+        "asset_disposal_cash_received_cny": "124175.50",
+        "other_investment_receipts_cny": "24750303.39",
+        "reported_receipts_cny": "49678013240.29",
+        "long_lived_asset_purchases_signed_cny": "-3104346428.46",
+        "investment_purchases_signed_cny": "-147000000.00",
+        "other_investment_payments_signed_cny": "-9029941.27",
+        "reported_payments_signed_cny": "-3260376369.73",
+        "reconciliation_difference_cny": "0.00",
+        "physical_page": 67,
+        "investment_income_crosscheck": {
+          "cost_method_subsidiary_income_cny": "49653138761.40",
+          "source_physical_pages": [78, 140, 142],
+          "interpretation": "aggregate cash received equals reported cost-method subsidiary-distribution income; no subsidiary-by-subsidiary payment identification"
+        }
+      },
+      "cff": {
+        "reported_dividends_profit_or_interest_paid_signed_cny": "-64671799277.95",
+        "matching_equity_distribution_signed_cny": "-64671799277.95",
+        "other_financing_payments_signed_cny": "-6150436821.37",
+        "buyback_cash_signed_cny": "-6120578572.09",
+        "other_financing_ex_buyback_signed_cny": "-29858249.28",
+        "other_financing_ex_buyback_basis": "derived residual; no parent-specific lease/interest attribution asserted",
+        "physical_pages": [67, 70, 114],
+        "buyback_cash_evidence_scope": "issuer buyback amount matches parent equity decrease and consolidated cash note; not entire consolidated other-financing payment"
+      }
+    },
+    {
+      "period": "H1_2026",
+      "entity_scope": "issuer_parent_standalone",
+      "source_id": "interim",
+      "physical_pages": [35, 36],
+      "opening_cash_and_equivalents_cny": "84730758118.65",
+      "cfo_cny": "15224606455.02",
+      "cfi_cny": "-784318271.33",
+      "cff_cny": "-37915309725.21",
+      "fx_effect_reported_cny": null,
+      "fx_effect_reconciliation_residual_cny": "0.00",
+      "fx_limit": "source row is blank; zero is a derived residual, not a printed observation",
+      "reported_net_change_cny": "-23475021541.52",
+      "closing_cash_and_equivalents_cny": "61255736577.13",
+      "closing_reconciliation_difference_cny": "0.00",
+      "cfo": {
+        "receipts_cny": "59149779166.13",
+        "payments_signed_cny": "-43925172711.11",
+        "reconciliation_difference_cny": "0.00",
+        "physical_page": 35
+      },
+      "cfi": {
+        "investment_principal_received_cny": "136116152.45",
+        "investment_income_cash_received_cny": "101052220.78",
+        "asset_disposal_cash_received_cny": "26136.00",
+        "other_investment_receipts_cny": "12112464.10",
+        "reported_receipts_cny": "249306973.33",
+        "long_lived_asset_purchases_signed_cny": "-828735611.53",
+        "investment_purchases_signed_cny": "-200000000.00",
+        "other_investment_payments_signed_cny": "-4889633.13",
+        "reported_payments_signed_cny": "-1033625244.66",
+        "reconciliation_difference_cny": "0.00",
+        "physical_page": 35,
+        "investment_income_limit": "cash received is not automatically current-period subsidiary distribution income; composition and timing are not independently split"
+      },
+      "cff": {
+        "reported_dividends_profit_or_interest_paid_signed_cny": "-35032574305.20",
+        "matching_equity_distribution_signed_cny": "-35032574305.20",
+        "other_financing_payments_signed_cny": "-2882735420.01",
+        "buyback_cash_signed_cny": "-2880061147.37",
+        "other_financing_ex_buyback_signed_cny": "-2674272.64",
+        "other_financing_ex_buyback_basis": "derived residual; no parent-specific lease/interest attribution asserted",
+        "physical_pages": [35, 39, 80]
+      }
+    }
+  ],
+  "parent_money_vs_cash": [
+    {"date": "2024-12-31", "source_id": "annual", "physical_pages": [59, 67], "money_funds_cny": "77252079198.82", "cash_and_equivalents_cny": "76517140680.50", "difference_cny": "734938518.32"},
+    {"date": "2025-12-31", "source_id": "annual", "physical_pages": [59, 67], "money_funds_cny": "85687080245.45", "cash_and_equivalents_cny": "84730758118.65", "difference_cny": "956322126.80"},
+    {"date": "2026-06-30", "source_id": "interim", "physical_pages": [28, 36], "money_funds_cny": "61596625049.44", "cash_and_equivalents_cny": "61255736577.13", "difference_cny": "340888472.31"}
+  ],
+  "parent_money_vs_cash_limit": "difference quantified; parent-specific components not disclosed in the reviewed pages; consolidated required reserves are not allocated to this difference",
+  "equity_bridges": [
+    {"period": "FY2025", "entity_scope": "issuer_parent_standalone", "source_id": "annual", "physical_pages": [63, 70], "opening_equity_cny": "164486282337.92", "net_profit_cny": "85305341965.73", "oci_reported_cny": null, "oci_and_other_reconciliation_residual_cny": "0.00", "distribution_signed_cny": "-64671799277.95", "net_owner_capital_change_signed_cny": "-6120578572.09", "closing_equity_cny": "178999246453.61", "reconciliation_difference_cny": "0.00"},
+    {"period": "H1_2026", "entity_scope": "issuer_parent_standalone", "source_id": "interim", "physical_pages": [33, 39], "opening_equity_cny": "178999246453.61", "net_profit_cny": "17062381326.67", "oci_reported_cny": null, "oci_and_other_reconciliation_residual_cny": "0.00", "distribution_signed_cny": "-35032574305.20", "net_owner_capital_change_signed_cny": "-2880061147.37", "closing_equity_cny": "158148992327.71", "reconciliation_difference_cny": "0.00"},
+    {"period": "FY2025", "entity_scope": "consolidated_attributable_to_parent", "source_id": "annual", "physical_page": 68, "opening_equity_cny": "233105984399.47", "net_profit_cny": "82320067101.68", "oci_cny": "4137381.07", "distribution_signed_cny": "-64671799277.95", "net_owner_capital_change_signed_cny": "-6120578572.09", "closing_equity_cny": "244637811032.18", "reconciliation_difference_cny": "0.00"},
+    {"period": "H1_2026", "entity_scope": "consolidated_attributable_to_parent", "source_id": "interim", "physical_page": 37, "opening_equity_cny": "244637811032.18", "net_profit_cny": "44516880421.86", "oci_cny": "11538418.03", "distribution_signed_cny": "-35032574305.20", "net_owner_capital_change_signed_cny": "-2880061147.37", "closing_equity_cny": "251253594419.50", "reconciliation_difference_cny": "0.00"}
+  ],
+  "dividends": {
+    "unit": "CNY_gross_tax_inclusive",
+    "evidence_scope": "financial_statement_aggregate_paid_and_equity_distribution_match_not_individual_bank_or_registry_receipts",
+    "fy2025_calendar_paid_cny": "64671799277.95",
+    "fy2025_calendar_paid_sources": [{"source_id": "annual", "physical_pages": [32, 33, 67, 70]}],
+    "fy2024_annual_paid_in_2025_h1_cny": "34671161737.19",
+    "fy2024_annual_execution_month": "2025-06",
+    "fy2024_annual_paid_sources": [{"source_id": "annual", "physical_page": 32}, {"source_id": "interim", "physical_page": 35, "column": "H1_2025_comparative"}],
+    "fy2025_interim_paid_cny": "30000637540.76",
+    "fy2025_interim_amount_basis": "derived from FY2025 calendar total minus H1_2025 paid; independently matches annual distribution-table decomposition",
+    "fy2025_interim_execution_date": "2025-12-19",
+    "fy2025_interim_execution_source": {"source_id": "annual", "physical_page": 33},
+    "fy2025_final_proposal_cny": "35032568759.73",
+    "fy2025_final_proposal_source": {"source_id": "annual", "physical_pages": [33, 136]},
+    "h1_2026_paid_cny": "35032574305.20",
+    "h1_2026_paid_sources": [{"source_id": "interim", "physical_pages": [35, 39, 73]}],
+    "h1_2026_exact_payment_date": null,
+    "h1_2026_paid_minus_fy2025_final_proposal_cny": "5545.47",
+    "proposal_actual_difference_explanation": null,
+    "buybacks_included_in_cash_dividends": false
+  },
+  "buybacks_and_cancellations": [
+    {"period": "FY2025", "source_id": "annual", "physical_pages": [33, 70, 105, 106, 114, 136], "cash_paid_cny": "6120578572.09", "distribution_statistics_buyback_cny": "6120088960.04", "cash_minus_statistics_cny": "489612.05", "difference_attribution": null, "opening_treasury_shares_cost_cny": "0.00", "opening_treasury_shares_cost_basis": "derived from the treasury-stock roll-forward; source opening cell blank", "cancellation_cost_cny": "6000465970.56", "closing_treasury_shares_cost_cny": "120112601.53", "treasury_cost_reconciliation_difference_cny": "0.00", "cancelled_shares": "3927585", "cancelled_program_price_ex_transaction_costs_cny": "5999985966.95", "opening_issued_shares": "1256197800", "closing_issued_shares": "1252270215"},
+    {"period": "H1_2026", "source_id": "interim", "physical_pages": [22, 39, 72, 73, 80, 102], "cash_paid_cny": "2880061147.37", "opening_treasury_shares_cost_cny": "120112601.53", "cancellation_cost_cny": "3000173748.90", "closing_treasury_shares_cost_cny": "0.00", "treasury_cost_reconciliation_difference_cny": "0.00", "cancelled_shares": "2188614", "cancelled_program_price_ex_transaction_costs_cny": "2999933749.57", "cancellation_cost_minus_program_price_cny": "239999.33", "opening_issued_shares": "1252270215", "closing_issued_shares": "1250081601", "limit": "program cumulative amount spans prior-period treasury stock and current-period cash; cancellation is not a second cash payment"}
+  ],
+  "observed_capital_uses": {
+    "fy2025_parent_investment_payment": {"amount_cny": "147000000.00", "cash_source": {"source_id": "annual", "physical_page": 67}, "equity_investment_source": {"source_id": "annual", "physical_pages": [140, 141]}, "investee": "贵州茅台生物科技研发有限责任公司", "scope": "associate_investment"},
+    "h1_2026_parent_investment_payment": {"amount_cny": "200000000.00", "cash_source": {"source_id": "interim", "physical_page": 35}, "equity_investment_source": {"source_id": "interim", "physical_page": 106}, "investee": "贵州爱茅台数字科技有限公司", "scope": "subsidiary_capital_contribution_not_external_group_expense"},
+    "h1_2026_parent_equity_investment_bridge": {"opening_book_cny": "1757717461.22", "subsidiary_addition_cny": "200000000.00", "associate_equity_method_income_cny": "16912.87", "closing_book_cny": "1957734374.09", "difference_cny": "0.00", "source_id": "interim", "physical_pages": [106, 107]},
+    "incremental_future_return": null
+  },
+  "finance_company_boundary": {
+    "deposit_holder_as_written": "公司",
+    "counterparty": "贵州茅台集团财务有限公司",
+    "balance_date": "2026-06-30",
+    "deposit_original_unit": "CNY_100million",
+    "deposit_original_amount": "301.45",
+    "deposit_cny_converted_from_rounded_disclosure": "30145000000",
+    "deposit_sources": [{"source_id": "finance_company_risk", "physical_page": 8}],
+    "issuer_parent_vs_subsidiary_deposit_split": null,
+    "deposit_limit": "issuer wording does not split parent and subsidiaries; cannot assign entire amount to parent cash or add it again to consolidated equity",
+    "issuer_finance_company_equity_investment_cost_cny": "1275000000.00",
+    "equity_investment_cost_source": {"source_id": "interim", "physical_page": 106},
+    "consolidated_required_reserves_excluded_from_cash_and_equivalents": [
+      {"date": "2025-12-31", "amount_cny": "7250789537.15", "source_id": "annual", "physical_page": 116},
+      {"date": "2026-06-30", "amount_cny": "8355337252.97", "source_id": "interim", "physical_page": 82}
+    ],
+    "reserve_limit": "consolidated finance-business restriction already outside reported cash-equivalent balance; no allocation to standalone parent cash difference and no duplicate subtraction"
+  },
+  "fund_commitments": {
+    "commitment_holder": "贵州茅台酒股份有限公司",
+    "investee_names": ["茅台招华（贵州）产业发展基金合伙企业（有限合伙）", "茅台金石（贵州）产业发展基金合伙企业（有限合伙）"],
+    "per_fund_subscription_cny": "5000000000.00",
+    "per_fund_paid_in_2023_cny": "2000000000.00",
+    "per_fund_unpaid_cny": "3000000000.00",
+    "total_unpaid_cny": "6000000000.00",
+    "balance_dates": ["2025-12-31", "2026-06-30"],
+    "source_refs": [{"source_id": "annual", "physical_page": 135}, {"source_id": "interim", "physical_page": 101}],
+    "investment_period_years": 5,
+    "installments": 3,
+    "remaining_payment_dates": null,
+    "expected_return": null,
+    "limit": "known commitment, not observed current-period payment or automatic same-day reserve",
+    "fund_vehicle_scope_check": {"source_id": "interim", "physical_page": 10, "per_vehicle_first_tranche_subscription_and_total_paid_cny": "2204000000.00", "limit": "fund vehicle totals include other contributors; not issuer standalone paid contribution or new H1 issuer cash payment"}
+  },
+  "closed_specific_checks": [
+    "FY2025_parent_CFO_CFI_CFF_and_opening_closing_cash_reconcile",
+    "H1_2026_parent_CFO_CFI_CFF_and_opening_closing_cash_reconcile",
+    "FY2025_closing_cash_equals_H1_2026_opening_cash",
+    "parent_money_funds_and_cash_equivalents_are_distinct_quantified_bases",
+    "FY2025_and_H1_2026_reported_cash_distributions_match_parent_equity_distributions",
+    "FY2025_calendar_dividend_components_reconcile",
+    "parent_and_consolidated_attributable_equity_bridges_reconcile_separately",
+    "current_period_buyback_cash_treasury_stock_and_share_cancellations_reconcile",
+    "observed_parent_equity_investment_use_identified",
+    "issuer_fund_unpaid_commitment_scope_amount_and_known_time_terms_identified"
+  ],
+  "model_binding": {
+    "reviewed_package_path": "runtime/d2-model-bound-followup-20261008/package-v4-financial-evidence-bound.json",
+    "reviewed_package_sha256": "4e74834df9666ea6630045d11d3f3988b1eefcb0ceca6efec15196dd49d291db",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "affected_assumption_names": ["retention", "forecast_roes_0", "forecast_roes_1", "forecast_roes_2", "forecast_roes_3", "forecast_roes_4", "forecast_roes_5", "forecast_roes_6", "forecast_roes_7", "forecast_roes_8", "forecast_roes_9", "terminal_roe", "terminal_growth"],
+    "parameter_changes": [],
+    "forward_distribution_capacity_cny": null,
+    "future_retained_capital_return": null,
+    "disposition": "closed_reported_period_checks; retain_economic_hypothesis_limits_without_requiring_future_to_be_observed"
+  },
+  "approval_scope": "no_human_receipt_no_materiality_or_model_or_investment_admission_created",
+  "report_path": "docs/current/600519-parent-distribution-capital-bridge-20261008.md"
+}

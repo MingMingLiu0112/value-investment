@@ -1,0 +1,308 @@
+{
+  "symbol": "600519",
+  "contract_version": "moutai-consolidated-parent-equity-inputs-v2",
+  "supersedes_contract_version": "moutai-consolidated-parent-equity-inputs-v1",
+  "corrections": [
+    "2025 disclosure date derived from official index instead of April 2",
+    "2025 issued shares extracted from share-count table rather than monetary capital"
+  ],
+  "scope": "consolidated issuer parent-attributable equity, profit, and issued shares; not industrial FCFF",
+  "chain": [
+    {
+      "period_end": "2014-12-31",
+      "available_at": "2015-04-22T00:00:00+08:00",
+      "source_id": "cninfo:1200877315",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2015-04-21/1200877315.PDF",
+      "raw_file_hash": "89145ef5bd12256c4c75c122b1c8d59846a912434f1abd0570f678bdb1a20f24",
+      "parent_equity_cny": "53430402446.09",
+      "parent_profit_cny": "15349804322.27",
+      "ending_issued_shares": "1141998000.00",
+      "reported_basic_eps": "13.44",
+      "validation_status": "verified",
+      "ending_book_value_per_issued_share_cny": "46.78677409775673862826379731",
+      "annual_parent_profit_per_issued_share_cny": "13.44118319145042285538153307",
+      "ending_equity_profit_ratio": "0.2872859574239139591868730830"
+    },
+    {
+      "period_end": "2015-12-31",
+      "available_at": "2016-03-25T00:00:00+08:00",
+      "source_id": "cninfo:1202072290",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2016-03-24/1202072290.PDF",
+      "raw_file_hash": "11a32c1e7f02a54fc2eea3c0d852af59ad37af9a2cbe91857cd93a6208a96d6c",
+      "parent_equity_cny": "63925978438.99",
+      "parent_profit_cny": "15503090276.38",
+      "ending_issued_shares": "1256197800.00",
+      "reported_basic_eps": "12.34",
+      "validation_status": "verified",
+      "ending_book_value_per_issued_share_cny": "50.88846552588294614112522725",
+      "annual_parent_profit_per_issued_share_cny": "12.34128118707101700066661476",
+      "ending_equity_profit_ratio": "0.2425162767148870164322202260"
+    },
+    {
+      "period_end": "2016-12-31",
+      "available_at": "2017-04-16T00:00:00+08:00",
+      "source_id": "cninfo:1203301659",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2017-04-15/1203301659.PDF",
+      "raw_file_hash": "dd26d9e0017a938cb5e1aa0a830bab7502d0de1f85eb7c00abffb4888c8c20ad",
+      "parent_equity_cny": "72894137783.25",
+      "parent_profit_cny": "16718362734.16",
+      "ending_issued_shares": "1256197800.00",
+      "reported_basic_eps": "13.31",
+      "validation_status": "verified",
+      "ending_book_value_per_issued_share_cny": "58.02759548157941368787622459",
+      "annual_parent_profit_per_issued_share_cny": "13.30870244650961815089948414",
+      "ending_equity_profit_ratio": "0.2293512653084928002799870473"
+    },
+    {
+      "period_end": "2017-12-31",
+      "available_at": "2018-03-29T00:00:00+08:00",
+      "source_id": "cninfo:1204526780",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2018-03-28/1204526780.PDF",
+      "raw_file_hash": "b66a4641e5f2313ed7964e5bef0026021ff2164459d0e0615f1b4385ba1a78e3",
+      "parent_equity_cny": "91451522828.96",
+      "parent_profit_cny": "27079360255.74",
+      "ending_issued_shares": "1256197800.00",
+      "reported_basic_eps": "21.56",
+      "validation_status": "verified",
+      "ending_book_value_per_issued_share_cny": "72.80025711632355987249778657",
+      "annual_parent_profit_per_issued_share_cny": "21.55660538152510695369789694",
+      "ending_equity_profit_ratio": "0.2961061709861955987925853921"
+    },
+    {
+      "period_end": "2018-12-31",
+      "available_at": "2019-03-30T00:00:00+08:00",
+      "source_id": "cninfo:1205958206",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2019-03-29/1205958206.PDF",
+      "raw_file_hash": "08728fc937836cfeed8e98aeda932da54c737efa6de4280ae001476c0e393dec",
+      "parent_equity_cny": "112838564332.05",
+      "parent_profit_cny": "35203625263.22",
+      "ending_issued_shares": "1256197800.00",
+      "reported_basic_eps": "28.02",
+      "validation_status": "verified",
+      "ending_book_value_per_issued_share_cny": "89.82547520147702853802163959",
+      "annual_parent_profit_per_issued_share_cny": "28.02395073707341312013124048",
+      "ending_equity_profit_ratio": "0.3119822152258717634358523115"
+    },
+    {
+      "period_end": "2019-12-31",
+      "available_at": "2020-04-23T00:00:00+08:00",
+      "source_id": "cninfo:1207552562",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2020-04-22/1207552562.PDF",
+      "raw_file_hash": "2a2b384ab09a7bc295fd2e33b999acdf4212340b0141031c991060dea2fad03d",
+      "parent_equity_cny": "136010349875.11",
+      "parent_profit_cny": "41206471014.43",
+      "ending_issued_shares": "1256197800.00",
+      "reported_basic_eps": "32.80",
+      "validation_status": "verified",
+      "ending_book_value_per_issued_share_cny": "108.2714440951178230052623878",
+      "annual_parent_profit_per_issued_share_cny": "32.80253397548538932324192894",
+      "ending_equity_profit_ratio": "0.3029657011563266061547053577"
+    },
+    {
+      "period_end": "2020-12-31",
+      "available_at": "2021-04-01T00:00:00+08:00",
+      "source_id": "cninfo:1209495421",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2021-03-31/1209495421.PDF",
+      "raw_file_hash": "464e4c179a18ebea566c5ddc5a4dbcfb83824227e9a10eb1ba0baa23c9d58d2c",
+      "parent_equity_cny": "161322735087.56",
+      "parent_profit_cny": "46697285429.81",
+      "ending_issued_shares": "1256197800.00",
+      "reported_basic_eps": "37.17",
+      "validation_status": "verified",
+      "ending_book_value_per_issued_share_cny": "128.4214437308837827928054006",
+      "annual_parent_profit_per_issued_share_cny": "37.17351314403671141598878775",
+      "ending_equity_profit_ratio": "0.2894649994897770896623784492"
+    },
+    {
+      "period_end": "2021-12-31",
+      "available_at": "2022-04-01T00:00:00+08:00",
+      "source_id": "cninfo:1212755849",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2022-03-31/1212755849.PDF",
+      "raw_file_hash": "f65effdde58bcea99fd6bdb53f61b31d5c432e6dfb2661e5caf05156a433ea5a",
+      "parent_equity_cny": "189539368797.29",
+      "parent_profit_cny": "52460144378.16",
+      "ending_issued_shares": "1256197800.00",
+      "reported_basic_eps": "41.76",
+      "validation_status": "verified",
+      "ending_book_value_per_issued_share_cny": "150.8833790325775128725746853",
+      "annual_parent_profit_per_issued_share_cny": "41.76105417328385704862721460",
+      "ending_equity_profit_ratio": "0.2767770342965817967994823072"
+    },
+    {
+      "period_end": "2022-12-31",
+      "available_at": "2023-04-01T00:00:00+08:00",
+      "source_id": "cninfo:1216281757",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2023-03-31/1216281757.PDF",
+      "raw_file_hash": "de394171306b9f2c7d79f54990de2a9e9c99feb54413150180179e24f0d83358",
+      "parent_equity_cny": "197506672396.00",
+      "parent_profit_cny": "62716443738.27",
+      "ending_issued_shares": "1256197800.00",
+      "reported_basic_eps": "49.93",
+      "validation_status": "verified",
+      "ending_book_value_per_issued_share_cny": "157.2257747911992840617934532",
+      "annual_parent_profit_per_issued_share_cny": "49.92561182504061064268700359",
+      "ending_equity_profit_ratio": "0.3175408859733295954405098791"
+    },
+    {
+      "period_end": "2023-12-31",
+      "available_at": "2024-04-04T00:00:00+08:00",
+      "source_id": "cninfo:1219506510",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2024-04-03/1219506510.PDF",
+      "raw_file_hash": "2125ff97a452ea79b0d784e2432f7d224b6aecc330b644b593477d69e22f4ed1",
+      "parent_equity_cny": "215668571607.43",
+      "parent_profit_cny": "74734071550.75",
+      "ending_issued_shares": "1256197800.00",
+      "reported_basic_eps": "59.49",
+      "validation_status": "verified",
+      "ending_book_value_per_issued_share_cny": "171.6836087496969028285195214",
+      "annual_parent_profit_per_issued_share_cny": "59.49228023703751113081076881",
+      "ending_equity_profit_ratio": "0.3465227733171268232865402244"
+    },
+    {
+      "period_end": "2024-12-31",
+      "available_at": "2025-04-04T00:00:00+08:00",
+      "source_id": "cninfo:1222993920",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2025-04-03/1222993920.PDF",
+      "raw_file_hash": "5299f4940e2ce4e91084b73dc457d558b9d335fa76fbfee6227e4254eb7f4a30",
+      "parent_equity_cny": "233105984399.47",
+      "parent_profit_cny": "86228146421.62",
+      "ending_issued_shares": "1256197800.00",
+      "reported_basic_eps": "68.64",
+      "validation_status": "verified",
+      "ending_book_value_per_issued_share_cny": "185.5647131363149975266633965",
+      "annual_parent_profit_per_issued_share_cny": "68.64217277057800929121194130",
+      "ending_equity_profit_ratio": "0.3699096213413903761593472711"
+    },
+    {
+      "period_end": "2025-12-31",
+      "source_id": "cninfo:1225114741",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "published_date": "2026-04-17",
+      "available_at": "2026-04-18T00:00:00+08:00",
+      "timestamp_precision": "date",
+      "availability_basis": "china_publication_date_upper_bound",
+      "source_index_path": "runtime\\historical-filing-index\\20260909T033444358365Z\\600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+      "source_index_hash": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f",
+      "raw_file_hash": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "parent_equity_cny": "244637811032.18",
+      "parent_profit_cny": "82320067101.68",
+      "reported_share_capital_cny": "1252270215.00",
+      "ending_issued_shares": "1252270215",
+      "reported_basic_eps": "65.66",
+      "validation_status": "verified_two_decoders_same_issuer_original",
+      "physical_page": 6,
+      "share_evidence": {
+        "physical_page": 47,
+        "unit": "shares",
+        "table_label": "三、股份总数 / 1、人民币普通股",
+        "values": {
+          "opening_issued_shares": "1256197800",
+          "share_change": "-3927585",
+          "ending_issued_shares": "1252270215"
+        },
+        "method": "direct_disclosed_counts_and_share_rollforward_two_decoders_same_original",
+        "monetary_capital_used_as_shares": false
+      },
+      "ending_book_value_per_issued_share_cny": "195.3554497279007789864266635",
+      "annual_parent_profit_per_issued_share_cny": "65.73666459173909202975014462",
+      "ending_equity_profit_ratio": "0.3364977259825608199947521310"
+    }
+  ],
+  "chain_count": 12,
+  "latest_period": "2025-12-31",
+  "latest_available_at": "2026-04-18T00:00:00+08:00",
+  "current_disclosed_basis": {
+    "basis_version": "moutai-2026h1-current-disclosure-basis-v1",
+    "period_end": "2026-06-30",
+    "source_id": "cninfo:1225475868",
+    "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+    "published_date": "2026-08-15",
+    "available_at": "2026-08-16T00:00:00+08:00",
+    "timestamp_precision": "date",
+    "availability_basis": "china_publication_date_upper_bound",
+    "source_index_path": "runtime\\historical-filing-index\\20260909T033444358365Z\\600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+    "source_index_hash": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f",
+    "raw_file_hash": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+    "assessment_available_at": "2026-09-14T10:55:50.799832+00:00",
+    "availability_scope": "Report facts use available_at; the subsequent capital inventory is usable only from assessment_available_at.",
+    "parent_equity_cny": "251253594419.50",
+    "parent_profit_h1_cny": "44516880421.86",
+    "parent_oci_h1_cny": "11538418.03",
+    "parent_comprehensive_income_h1_cny": "44528418839.89",
+    "ttm_parent_profit_cny": "81433985225.44",
+    "ttm_ex_nonrecurring_parent_profit_cny": "81367067677.44",
+    "ex_nonrecurring_profit_bridge": {
+      "annual_cny": "82293107655.25",
+      "current_h1_cny": "44464207646.01",
+      "prior_h1_comparative_cny": "45390247623.82",
+      "annual_physical_page": 6,
+      "interim_physical_page": 5,
+      "reported_ttm_minus_ex_nonrecurring_ttm_cny": "66917548.00",
+      "interpretation": "Issuer-defined ex-nonrecurring TTM; not a complete through-cycle earnings normalization."
+    },
+    "ttm_ending_equity_profit_ratio": "0.3241107273055586615621432324",
+    "issued_shares": "1250081601",
+    "share_basis": "Latest disclosed ordinary shares, with unchanged complete subsequent announcement inventory; not a registry certificate.",
+    "share_evidence": {
+      "physical_page": 22,
+      "unit": "shares",
+      "values": {
+        "opening_issued_shares": "1252270215",
+        "share_change": "-2188614",
+        "ending_issued_shares": "1250081601"
+      }
+    },
+    "equity_bridge": {
+      "opening_equity_cny": "244637811032.18",
+      "net_profit_cny": "44516880421.86",
+      "oci_cny": "11538418.03",
+      "repurchase_equity_change_cny": "-2880061147.37",
+      "distribution_equity_change_cny": "-35032574305.20",
+      "closing_equity_cny": "251253594419.50",
+      "physical_page": 37,
+      "deduct_reported_distributions_again": false
+    },
+    "event_query": {
+      "path": "runtime\\historical-filing-index\\20260914T105550116419Z\\600519-1-02d4bb62799a0054b0d916643a52fae9c84d469e020904f636001c6166f91636.json",
+      "sha256": "02d4bb62799a0054b0d916643a52fae9c84d469e020904f636001c6166f91636",
+      "window": "2026-06-01~2026-09-14",
+      "checked_at": "2026-09-14T10:55:50.799832+00:00",
+      "complete": true,
+      "new_or_changed_announcements": 0
+    },
+    "inputs": {
+      "ttm": {
+        "path": "runtime/company-research/600519-ttm-scope-20260909T072356118039Z/evidence.json",
+        "sha256": "2d518b72fc2c9b8a60663c1f64121bfa45247de6262668db44ab656f27b6c57e"
+      },
+      "equity_rollforward": {
+        "path": "runtime/company-research/600519-equity-rollforward-20260909T095644229753Z/evidence.json",
+        "sha256": "ebcc17eae6bb2896fdd7d0dae5ae6c516f1fca1a2996be7a70b37e08e868b621"
+      },
+      "capital_review": {
+        "path": "runtime/company-research/600519-current-share-price-review-20260909T135607541717Z/evidence.json",
+        "sha256": "b4d38f775005c34b3367e85dfb279748b70f2596732c68e6822a2482414d4e16"
+      },
+      "reviewed_index": {
+        "path": "runtime/historical-filing-index/20260909T134257473871Z/600519-1-a77b9723c9927b004ffad1ea2aa7b0e68383aade80744e7307cc56dbeddef802.json",
+        "sha256": "a77b9723c9927b004ffad1ea2aa7b0e68383aade80744e7307cc56dbeddef802"
+      }
+    },
+    "as_of_registry_verified": false,
+    "current_net_assets_observed": false,
+    "limitations": [
+      "TTM is reported profit, not a forecast or a normalized-earnings approval.",
+      "Current valuation still needs explicit post-report earnings/distribution and discount timing assumptions.",
+      "Consolidated finance-subsidiary cash flows are not freely distributable cash."
+    ]
+  },
+  "point_in_time_ready_for_research": true,
+  "valuation_approved": false,
+  "trade_approved": false,
+  "limitations": [
+    "The chain is an issuer-report fact package, not a residual-income or dividend valuation by itself.",
+    "Parent-attributable equity includes the consolidated finance subsidiary and does not validate an industrial FCFF carveout.",
+    "The 2025 report confirms shares at the reporting date, not a current registry or later repurchase/cancellation treatment.",
+    "Cost of equity, forward profitability, payout/reinvestment and accounting-policy continuity remain valuation dependencies; execution is a separate simulation dependency."
+  ]
+}

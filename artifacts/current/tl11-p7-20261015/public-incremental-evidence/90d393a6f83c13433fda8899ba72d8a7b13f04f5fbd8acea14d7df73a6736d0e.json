@@ -1,0 +1,69 @@
+{
+  "schema_version": "cninfo-raw-index-v1",
+  "symbol": "600887",
+  "scan_from": "2026-10-11",
+  "scan_to": "2026-10-15",
+  "action": "no_order",
+  "pagination_complete": true,
+  "responses": [
+    {
+      "url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+      "method": "POST",
+      "request": {
+        "pageNum": "1",
+        "pageSize": "30",
+        "tabName": "fulltext",
+        "column": "sse",
+        "stock": "",
+        "searchkey": "伊利股份",
+        "secid": "",
+        "plate": "",
+        "category": "",
+        "trade": "",
+        "seDate": "",
+        "sortName": "",
+        "sortType": "",
+        "isHLtitle": "true"
+      },
+      "page": 1,
+      "acquired_at": "2026-10-15T10:17:05.792817+00:00",
+      "sha256": "8115a2afb3fe3433141bf1c28df148beecd410000e82b59a3a70ed673c65c977",
+      "size_bytes": 24486,
+      "body_representation": "RECEIVED_RESPONSE_CONTENT_NOT_RESERIALIZED_JSON",
+      "path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/raw-index/response-0001.bin",
+      "request_kind": "issuer_discovery",
+      "metadata_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/raw-index/response-0001.json",
+      "metadata_sha256": "351f258633fd9919564b7c32bcfeb52f512d14476c93cd3b8563f428e66a5200"
+    },
+    {
+      "url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+      "method": "POST",
+      "request": {
+        "pageNum": "1",
+        "pageSize": "30",
+        "tabName": "fulltext",
+        "column": "sse",
+        "stock": "600887,gssh0600887",
+        "searchkey": "",
+        "secid": "",
+        "plate": "",
+        "category": "",
+        "trade": "",
+        "seDate": "2026-10-11~2026-10-15",
+        "sortName": "",
+        "sortType": "",
+        "isHLtitle": "true"
+      },
+      "page": 1,
+      "acquired_at": "2026-10-15T10:17:06.064351+00:00",
+      "sha256": "aa05e1c3daa1d1f2a0af4ebc5ef74a4c5f5ddc83d978ded8fe05e6dda76e87ab",
+      "size_bytes": 1881,
+      "body_representation": "RECEIVED_RESPONSE_CONTENT_NOT_RESERIALIZED_JSON",
+      "path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/raw-index/response-0002.bin",
+      "request_kind": "window",
+      "metadata_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/raw-index/response-0002.json",
+      "metadata_sha256": "8bbe82a22d52d556424e54a182b6d4bf228879f6c4c427564f9f5d0243d26878"
+    }
+  ],
+  "total_bytes": 26367
+}

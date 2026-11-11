@@ -1,0 +1,141 @@
+{
+  "action": "no_order",
+  "evidence_sha256": "7b8b0d4f2a11d100dc396352c6334baaf7b2207cc198ad4c0ba9e41d3d0a731f",
+  "formal_eligibility": false,
+  "future_rule_version_used": true,
+  "outputs": {
+    "report.md": {
+      "path": "artifacts/current/hotspot-structure-validation-20261017-v1/report.md",
+      "sha256": "1af0ee5175e4848f0ba38cd74a1f188e3ed12363700885f1dbefc2cb61beb9c5"
+    },
+    "validation.json": {
+      "path": "artifacts/current/hotspot-structure-validation-20261017-v1/validation.json",
+      "sha256": "e3b4388f743ea0c8f9de2b3a94488e66b95fc1e4eff0f37b5c7efa03ba3aa74e"
+    }
+  },
+  "retained_non_evidence": {
+    "content_sha256": "2e9958ad6235f2219931808676733fb915dc404db7cf704c6bd28958a6ff1373",
+    "file_count": 13,
+    "files": [
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/calendar-anchors.json",
+        "sha256": "bc68f31ea37006aac8c83e4d14e39d7d218c714ad38069ab9d5f35a482c02156",
+        "size_bytes": 46187
+      },
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/classification.json",
+        "sha256": "5576e6aea62dab8d4974c60600f507336d8858be245fb89d4c3d35fa8faebd35",
+        "size_bytes": 5316199
+      },
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/quotes-00000.txt",
+        "sha256": "ce0ed248a285bc3129a958bb510ffddef04dc5b3248e795bab4bac8e474fdf56",
+        "size_bytes": 97909
+      },
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/quotes-00200.txt",
+        "sha256": "1f858fcd07859d588c39ad550012eda78a129b174cc6ce7d9c658b3fe9edfd5a",
+        "size_bytes": 98298
+      },
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/quotes-00400.txt",
+        "sha256": "507697b8a0545d0dbe4861e1d0e83502bb1603613c11a34edefbe3dd74910f34",
+        "size_bytes": 97490
+      },
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/quotes-00600.txt",
+        "sha256": "09d581c9b9fbd1192e8e2ec55fd8888f7b6eb11fa20d2d5618e0378998906502",
+        "size_bytes": 98337
+      },
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/quotes-00800.txt",
+        "sha256": "1e089199234558bee113bcbe2c5688b03c727d2b44af04960cba6fb8bd354c04",
+        "size_bytes": 98067
+      },
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/quotes-01000.txt",
+        "sha256": "208fe52206e0b576098868d6dea4bddc1d73733099cafffd02bf2e9461e73d18",
+        "size_bytes": 97667
+      },
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/quotes-01200.txt",
+        "sha256": "719f97b257166d20b2b7363d6ad5ffd2dd501c8139ef0c59fd0b1df73a6ece6a",
+        "size_bytes": 97462
+      },
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/quotes-01400.txt",
+        "sha256": "bc59967e0302d8f465e5860c52f448dca0fcbf1f3f976e062a49ba9d404d95fd",
+        "size_bytes": 98175
+      },
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/quotes-01600.txt",
+        "sha256": "6374f7870516101f5a3781f6997edef64cb7f22935344662182acada4c6f4838",
+        "size_bytes": 98607
+      },
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/quotes-01800.txt",
+        "sha256": "f835eb93df64d51dd9ad625aabe52a2638b4d8bfe031bf33d4f5a3fa4d6cfe4d",
+        "size_bytes": 98693
+      },
+      {
+        "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97/quotes-02000.txt",
+        "sha256": "3cb5c47950a635db5b9a19f7f76ea45eff2bbcf8cba532a67b5e74426b84d7d2",
+        "size_bytes": 98769
+      }
+    ],
+    "path": "runtime/hotspot-daily-selection/d808f5784a3f40a2ae77542ae5727e97",
+    "reason": "TENCENT_ACQUISITION_HUNG_AND_WAS_INTERRUPTED",
+    "status": "INCOMPLETE_NO_REPORT",
+    "total_bytes": 6441860,
+    "used_as_evidence": false
+  },
+  "rule_extension_status": "RETROSPECTIVE_RESEARCH_EXTENSION",
+  "rule_pit_status": "NOT_PROVEN",
+  "schema_version": "hotspot-structure-validation-manifest-v1",
+  "source_files": {
+    "cases": {
+      "CURRENT_PRICE_CONDITION:600150:c6fb58071b35ef1c710da2bba71f6a46eefd6bb10f2f5b9e0a5ada9752fac140": {
+        "path": "runtime/hotspot-current-price-cases/600150-2026-10-16-e5c5ad49533d4fc9a28abd698f863d48/case.json",
+        "sha256": "c6fb58071b35ef1c710da2bba71f6a46eefd6bb10f2f5b9e0a5ada9752fac140"
+      },
+      "CURRENT_PRICE_CONDITION:600316:51e7cb2e0f5caf54a27c73638764c1fa007d9dfcbd7f2d48b8422a6793d61e92": {
+        "path": "runtime/hotspot-current-price-cases/600316-2026-10-16-d585221144934f1fa83ebe25000377f5/case.json",
+        "sha256": "51e7cb2e0f5caf54a27c73638764c1fa007d9dfcbd7f2d48b8422a6793d61e92"
+      },
+      "CURRENT_PRICE_CONDITION:600391:4062df741444b4e7f39c97f94f12a4b9527e3e586607fb704da76204880edba5": {
+        "path": "runtime/hotspot-current-price-cases/600391-2026-10-16-2ad547c8995149a88d11218322c15a8b/case.json",
+        "sha256": "4062df741444b4e7f39c97f94f12a4b9527e3e586607fb704da76204880edba5"
+      },
+      "CURRENT_PRICE_CONDITION:600893:cf879270b1d6cdb1e94758cf1bf4ae3d68a1341cbd00e96e2dd076bdcfe0050e": {
+        "path": "runtime/hotspot-current-price-cases/600893-2026-10-16-d9c3d07d9988448db1bfd084b175cd6b/case.json",
+        "sha256": "cf879270b1d6cdb1e94758cf1bf4ae3d68a1341cbd00e96e2dd076bdcfe0050e"
+      },
+      "CURRENT_PRICE_CONDITION:600967:d10f8665c0cc61fd7c6f27a6da6afd50092ad827591d03b6a78ce4c0fc17a72f": {
+        "path": "runtime/hotspot-current-price-cases/600967-2026-10-16-1c9b9b258534454c9b50e99bcb472250/case.json",
+        "sha256": "d10f8665c0cc61fd7c6f27a6da6afd50092ad827591d03b6a78ce4c0fc17a72f"
+      },
+      "HISTORICAL_NEGATIVE_CASE:300059:f5a1c3a6021896c073c014b064114713e5dbd397df185c4a86b874fc6b00437e": {
+        "path": "runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/case.json",
+        "sha256": "f5a1c3a6021896c073c014b064114713e5dbd397df185c4a86b874fc6b00437e"
+      },
+      "HISTORICAL_NEGATIVE_CASE:600030:6b98c3c625776610acc02fbc1e83a07ccc3861e61ad9498b839caebc5b1c49d3": {
+        "path": "runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/case.json",
+        "sha256": "6b98c3c625776610acc02fbc1e83a07ccc3861e61ad9498b839caebc5b1c49d3"
+      },
+      "HISTORICAL_NEGATIVE_CASE:601318:92ad443d0f6b0d4187b202035e0aba9df7953115c406f0ab72cedca0f6f4d580": {
+        "path": "runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/case.json",
+        "sha256": "92ad443d0f6b0d4187b202035e0aba9df7953115c406f0ab72cedca0f6f4d580"
+      }
+    },
+    "current_price_conditions": {
+      "path": "config/current-price-conditions.json",
+      "sha256": "e65444f2b42130161d02fb5397c15f09061cc0250f77888966f0b48026eb8a8d"
+    },
+    "selection_report": {
+      "path": "runtime/hotspot-daily-selection/561a1e66bf424d4e87426fbf1f080106/report.json",
+      "sha256": "c2ef47a982ea85f04ed4d5e6324f9beda00e0f80f55cd4b19590d1c96d53f4f1"
+    }
+  },
+  "strategy_validation": "NOT_PROVEN",
+  "trade_intent": "NO_TRADE"
+}

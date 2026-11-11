@@ -1,0 +1,45 @@
+{
+  "schema_version": "v5-held-review-retry-browser-v1",
+  "action": "no_order",
+  "scope": "TEST_ONLY",
+  "observed_on": "2026-10-21",
+  "source_parent": "604709c150f747bced3092c264983884bc0d1b55",
+  "runtime": "SHARED_DIRTY_CHECKOUT_WITH_SCOPED_WEB_FIX",
+  "production_functions_replaced": false,
+  "transport": "READ_ONLY_SELL_REVIEW_RESPONSE_DELAYED_TWO_SECONDS_AFTER_REAL_SERVICE",
+  "desktop": {
+    "old_pending_request_invalidated_on_quantity_change": true,
+    "acknowledgement_reset": true,
+    "replacement_enabled_before_old_response": true,
+    "replacement_result": "UNASSESSABLE",
+    "screenshots": ["held-review-retry-pending-desktop.png", "held-review-retry-result-desktop.png"]
+  },
+  "mobile": {
+    "viewport_width": 390,
+    "document_width": 375,
+    "old_pending_requested_quantity": "100",
+    "replacement_requested_quantity": "50",
+    "acknowledgement_reset": true,
+    "replacement_enabled_before_old_response": true,
+    "replacement_result": "UNASSESSABLE",
+    "screenshots": ["held-review-retry-pending-mobile.png", "held-review-retry-result-mobile.png"]
+  },
+  "local_validation": {
+    "focused_web_tests_passed": 21,
+    "whole_web_tests_passed": 313,
+    "typecheck": "PASS",
+    "targeted_format": "PASS",
+    "build": "PASS",
+    "independent_review": "NO_P0_P1_FOUND_IN_SCOPED_FIX",
+    "race_regression": "SUPERSEDED_RESPONSE_CANNOT_RELEASE_REPLACEMENT_BUSY_OR_RESTORE_OLD_RESULT"
+  },
+  "journal_verification": "held-review-journal-verification.json",
+  "formal_eligibility": false,
+  "real_user_signature": false,
+  "real_trade_recorded": false,
+  "limitations": [
+    "OWNERSHIP_USES_TEST_ONLY_HISTORICAL_RECONSTRUCTION_NOT_ORIGINAL_PIT",
+    "NEGATIVE_REVIEW_RESULT_IS_EXPECTED_NOT_FORMAL_SELL_PERMISSION",
+    "SCOPED_BROWSER_ACCEPTANCE_NOT_WHOLE_PRODUCT_USER_ACCEPTANCE"
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "schema_version": "pending-candidate-basis-reconciliation-v1",
+  "action": "no_order",
+  "candidate_binding": {
+    "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600519/candidate.json",
+    "sha256": "97a83c496feab701fe3f4718d8c09535ce18226729210bc2deac5f625f930086"
+  },
+  "input_descriptor_sha256": "3f9d04f77d6fb04ddfc6eb21f493730ccae90c2f5bfb991da5c4a1660604d417",
+  "valuation_date": "2026-06-30",
+  "comparison_date": "2026-10-29",
+  "currency": "CNY",
+  "share_basis": "ordinary_share_unadjusted",
+  "research_scope": "PUBLIC_RESEARCH_PARTIAL_NOT_APPROVAL",
+  "opening_shares": {
+    "value": "1250081601",
+    "as_of": "2026-06-30",
+    "evidence": [
+      {
+        "binding": {
+          "path": "runtime/public-research/600519-js2-native-input-20261024/compile-20261023T231832356628Z/sources/0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6/bytes.pdf",
+          "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6"
+        },
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+        "physical_page": 22,
+        "excerpt": "贵州茅台酒股份有限公司2026 年半年度报告\r\n22 / 110\r\n第六节 股份变动及股东情况\r\n一、股本变动情况\r\n(一) 股份变动情况表\r\n1、 股份变动情况表\r\n单位：股\r\n本次变动前 本次变动增减（+，-） 本次变动后\r\n数量\r\n比\r\n例\r\n(%)\r\n发\r\n行\r\n新\r\n股\r\n送\r\n股\r\n公\r\n积\r\n金\r\n转\r\n股\r\n其他 小计 数量\r\n比\r\n例\r\n(%) 一、有限售\r\n条件股份\r\n1、国家持\r\n股\r\n2、国有法\r\n人持股\r\n3、其他内\r\n资持股\r\n其中：境内\r\n非国有法人\r\n持股\r\n境内\r\n自然人持股\r\n4、外资持\r\n股\r\n其中：境外\r\n法人持股\r\n境外\r\n自然人持股\r\n二、无限售\r\n条件流通股\r\n份\r\n1,252,270,215 100 -2,188,614 -2,188,614 1,250,081,601 100\r\n1、人民币\r\n普通股\r\n1,252,270,215 100 -2,188,614 -2,188,614 1,250,081,601 100\r\n2、境内上\r\n市的外资股\r\n3、境外上\r\n市的外资股\r\n4、其他\r\n三、股份总\r\n数\r\n1,252,270,215 100 -2,188,614 -2,188,614 1,250,081,601 100\r\n2、 股份变动情况说明\r\n√适用 □不适用",
+        "available_at": "2026-10-29T15:00:13.608977+00:00"
+      },
+      {
+        "binding": {
+          "path": "runtime/public-research/600519-js2-native-input-20261024/compile-20261023T231832356628Z/sources/0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6/bytes.pdf",
+          "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6"
+        },
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+        "physical_page": 4,
+        "excerpt": "报告期 指 2026 年 1 月 1 日至 2026 年 6 月 30 日",
+        "available_at": "2026-10-29T15:00:13.608977+00:00"
+      }
+    ]
+  },
+  "closing_shares": null,
+  "opening_pending_actions": null,
+  "share_actions": [],
+  "distributions": [
+    {
+      "id": "cninfo:1225379934",
+      "record_date": "2026-06-25",
+      "ex_date": "2026-06-26",
+      "cash_payment_date": "2026-06-26",
+      "amount_basis": "implemented_gross_entitlement",
+      "cash_amount": "28.02423",
+      "per_shares": "1",
+      "cash_per_share": "28.02423",
+      "evidence": [
+        {
+          "binding": {
+            "path": "runtime/value-alignment-event-observation/20261029T144556566582Z/600519-1225379934.pdf",
+            "sha256": "6b082b6a00db748f23b6dea166b0296cd69d8c10542d352e23d2e2c344ea516e"
+          },
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-06-22/1225379934.PDF",
+          "physical_page": 2,
+          "excerpt": "2\r\n（二）分派对象：\r\n截至股权登记日下午上海证券交易所收市后，在中国证券登记结算有\r\n限责任公司上海分公司（以下简称“中国结算上海分公司”）登记在册的本\r\n公司全体股东。\r\n（三）分配方案：\r\n本次利润分配以方案实施前的公司总股本扣除回购专用账户内的股\r\n份1,250,081,601股为基数，每股派发现金红利28.02423元（含税），共计派\r\n发现金红利35,032,574,305.19元。\r\n三、相关日期\r\n股份类别 股权登记日 最后交易日\r\n除权（息）\r\n日\r\n现金红利发放日\r\nＡ股 2026/6/25 － 2026/6/26 2026/6/26\r\n四、分配实施办法\r\n（一）实施办法\r\n除公司自行发放现金红利的股东外，其他股东的现金红利委托中国结\r\n算上海分公司通过其资金清算系统，向股权登记日上海证券交易所收市后\r\n登记在册并在上海证券交易所各会员办理了指定交易的股东派发。已办理\r\n指定交易的股东可于红利发放日在其指定的证券营业部领取现金红利，未\r\n办理指定交易的股东红利暂由中国结算上海分公司保管，待办理指定交易\r\n后再进行派发。\r\n（二）自行发放对象",
+          "available_at": "2026-10-29T15:00:13.608977+00:00"
+        }
+      ]
+    }
+  ],
+  "reviewed_documents": [],
+  "limitations": [
+    "所列实施分红发生在估值日前，不再从6月30日模型扣减。",
+    "未取得截至10月29日股本连续性和期初未实施事项的完整对账，空行动列表不是无行动结论。",
+    "公告原件已取得，当前候选的材料性复核尚未完成。历史可得性未由本次重放证明。"
+  ]
+}

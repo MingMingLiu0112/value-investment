@@ -1,0 +1,368 @@
+{
+  "schema_version": "observed-workbench-cutoff-replay-v1",
+  "scope": "OBSERVED_RESULT_AVAILABILITY_ONLY",
+  "symbol": "600887",
+  "workbench_sha256": "d8f7581b3380741d113e9d964ee74bb606d675b26d769778cc3d6508a39f29dd",
+  "result_known_at": "2026-10-01T03:27:11.796057+00:00",
+  "rows": [
+    {
+      "cutoff": "2026-10-01T04:00:00+00:00",
+      "symbol": "600887",
+      "status": "EXISTING_RESEARCH_ONLY",
+      "valuation": {
+        "symbol": "600887",
+        "model_type": "residual_income_or_equity_value",
+        "valuation_date": "2026-06-30",
+        "bear_value": "8.047594047901643105382499412",
+        "base_value": "11.02337489167396119279021126",
+        "bull_value": "13.13345272896486710447382700",
+        "confidence": "低",
+        "assumptions": {
+          "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+          "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+          "status": "conditional_research_only",
+          "disclaimer": "No market price, margin of safety, position or order is produced here."
+        },
+        "sensitivities": [
+          {
+            "scenario": "bear",
+            "cost_of_equity": "0.09",
+            "ordinary_equity_value": "50903934854.5803671834581977728386845171096012738",
+            "per_share_value": "8.047594047901643105382499412",
+            "terminal_residual_contribution_ratio": "-0.1111101820624202513685076270",
+            "dividend_crosscheck_difference": "0E-37",
+            "arithmetic_status": "research_arithmetic_only"
+          },
+          {
+            "scenario": "base",
+            "cost_of_equity": "0.09",
+            "ordinary_equity_value": "69726821957.3898599169596062812475583926059150946",
+            "per_share_value": "11.02337489167396119279021126",
+            "terminal_residual_contribution_ratio": "0E+25",
+            "dividend_crosscheck_difference": "-1E-37",
+            "arithmetic_status": "research_arithmetic_only"
+          },
+          {
+            "scenario": "bull",
+            "cost_of_equity": "0.09",
+            "ordinary_equity_value": "83073825313.6981820075209250126695788388833175835",
+            "per_share_value": "13.13345272896486710447382700",
+            "terminal_residual_contribution_ratio": "0.07570581514865340050409796321",
+            "dividend_crosscheck_difference": "0E-37",
+            "arithmetic_status": "research_arithmetic_only"
+          }
+        ],
+        "evidence_refs": [
+          {
+            "id": "cninfo:1225511409",
+            "kind": "issuer_interim_report",
+            "url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "supports": [
+              "2026-06-30 parent equity",
+              "share capital 6,325,360,667 at period start/end",
+              "H1 weighted ROE 10.09%",
+              "H1 earnings and counterevidence",
+              "impairment and liquidity facts"
+            ],
+            "issuer_identity": {
+              "venue": "CNINFO",
+              "security_code": "600887",
+              "issuer_name": "伊利股份",
+              "organization_id": "gssh0600887"
+            }
+          },
+          {
+            "id": "cninfo:1225259562",
+            "kind": "issuer_audited_annual_report",
+            "url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "supports": [
+              "FY2024-FY2025 audited financial indicators and weighted ROE",
+              "parent cash-flow statement"
+            ],
+            "issuer_identity": {
+              "venue": "CNINFO",
+              "security_code": "600887",
+              "issuer_name": "伊利股份",
+              "organization_id": "gssh0600887"
+            }
+          },
+          {
+            "id": "cninfo:1213169501",
+            "kind": "issuer_audited_annual_report",
+            "url": "https://static.cninfo.com.cn/finalpage/2022-04-28/1213169501.PDF",
+            "sha256": "49935af2e517fe10592bc943f3de4321ecd837d7dda0cf26f86495325b9ed6eb",
+            "supports": [
+              "FY2021 reported weighted ROE"
+            ],
+            "issuer_identity": {
+              "venue": "CNINFO",
+              "security_code": "600887",
+              "issuer_name": "伊利股份",
+              "organization_id": "gssh0600887"
+            }
+          },
+          {
+            "id": "cninfo:1216664083",
+            "kind": "issuer_audited_annual_report",
+            "url": "https://static.cninfo.com.cn/finalpage/2023-04-28/1216664083.PDF",
+            "sha256": "9b555197f8a45f40ea4b9f336aae05345798fe6d96ad116c0c3f2bf4e19edab8",
+            "supports": [
+              "FY2022 reported weighted ROE"
+            ],
+            "issuer_identity": {
+              "venue": "CNINFO",
+              "security_code": "600887",
+              "issuer_name": "伊利股份",
+              "organization_id": "gssh0600887"
+            }
+          },
+          {
+            "id": "cninfo:1219916433",
+            "kind": "issuer_audited_annual_report",
+            "url": "https://static.cninfo.com.cn/finalpage/2024-04-30/1219916433.PDF",
+            "sha256": "d56b0be917eb89a07f092a3ecf1c269aea9f1698c51b648a53f69a0759ef44fe",
+            "supports": [
+              "FY2023 reported weighted ROE"
+            ],
+            "issuer_identity": {
+              "venue": "CNINFO",
+              "security_code": "600887",
+              "issuer_name": "伊利股份",
+              "organization_id": "gssh0600887"
+            }
+          },
+          {
+            "id": "prospective-registration-receipt-v13",
+            "sha256": "8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5"
+          },
+          {
+            "id": "prospective-baseline-snapshot-v13",
+            "sha256": "ded9fb9176d8d302a97aa527a302744083bf5a37448f28efbf50441fb56269e5"
+          },
+          {
+            "id": "yili-readiness-review-20260929",
+            "sha256": "a84281d106df48b90e006d865c5f65315f1ce824faaf8b37f3f4c8c69d7a7da3"
+          },
+          {
+            "id": "yili-prior-shared-valuation-20260929",
+            "sha256": "0ee6b27b220b136b709dd413c5d1d415f1152c1e99df6c12d90e71154306fdce"
+          }
+        ],
+        "blockers": [],
+        "status": "conditional_research_only",
+        "model_version": "residual-income-equity-shared-v1"
+      },
+      "evidence_refs": [
+        {
+          "path": "runtime/company-research/m1-event-scans/20260923T051018Z/600887/announcements/2026-08-27/1225511409.pdf",
+          "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+        },
+        {
+          "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/1225259562.pdf",
+          "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+        },
+        {
+          "path": "runtime/company-research/m1-dividend-lifecycles/20260928T1347Z/600887/yili_fy2021_annual_report.pdf",
+          "sha256": "49935af2e517fe10592bc943f3de4321ecd837d7dda0cf26f86495325b9ed6eb"
+        },
+        {
+          "path": "runtime/company-research/m1-dividend-lifecycles/20260928T1347Z/600887/yili_fy2022_annual_report.pdf",
+          "sha256": "9b555197f8a45f40ea4b9f336aae05345798fe6d96ad116c0c3f2bf4e19edab8"
+        },
+        {
+          "path": "runtime/company-research/m1-dividend-lifecycles/20260928T1347Z/600887/yili_fy2023_annual_report.pdf",
+          "sha256": "d56b0be917eb89a07f092a3ecf1c269aea9f1698c51b648a53f69a0759ef44fe"
+        },
+        {
+          "path": "runtime/prospective-v2-fc1e811/receipt.json",
+          "sha256": "8b76312225712d13f7c5ceffa7e2447d0df2e230a9baed5a9d04748f82608da5"
+        },
+        {
+          "path": "runtime/prospective-baseline-20260927/snapshot-v13-midea-h1-verified.json",
+          "sha256": "ded9fb9176d8d302a97aa527a302744083bf5a37448f28efbf50441fb56269e5"
+        },
+        {
+          "path": "docs/current/600887-valuation-readiness-review-20260929.json",
+          "sha256": "a84281d106df48b90e006d865c5f65315f1ce824faaf8b37f3f4c8c69d7a7da3"
+        },
+        {
+          "path": "docs/current/600887-shared-valuation-result-20260929.json",
+          "sha256": "0ee6b27b220b136b709dd413c5d1d415f1152c1e99df6c12d90e71154306fdce"
+        }
+      ],
+      "blockers": [
+        "Existing-result read does not admit current model validity, price, research or portfolio gates.",
+        "Existing-result read does not include an admitted current quote.",
+        "Existing-result read does not include an admitted current event scan.",
+        "material event scan evidence missing",
+        "等待已验证收盘行情"
+      ],
+      "suggested_state": "NOT_READY",
+      "position_guidance": null,
+      "current_price": null,
+      "action": "no_order",
+      "orders": [],
+      "fills": []
+    }
+  ],
+  "action": "no_order",
+  "strict_pit_admitted": false,
+  "historical_execution_validated": false,
+  "performance_claim_allowed": false,
+  "contemporaneous_rule_proven": false,
+  "limitation": "Replays when this retained result was observed; does not reconstruct earlier public information or validate a trading strategy.",
+  "disclosed_metric_review": {
+    "schema_version": "disclosed-metric-review-v1",
+    "symbol": "600887",
+    "observed_at": "2026-10-01T05:45:24.168869+00:00",
+    "transcription_sha256": "7e608cd597f3d5a3492e488b134cf32ab788d853972c85cabbe27dd26125daf9",
+    "workbench_sha256": "d8f7581b3380741d113e9d964ee74bb606d675b26d769778cc3d6508a39f29dd",
+    "facts": [
+      {
+        "symbol": "600887",
+        "metric_name": "reported_operating_cash_flow",
+        "period": "2025",
+        "value": "14343920490.32",
+        "unit": "CNY",
+        "physical_page": 89,
+        "source_binding": {
+          "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/1225259562.pdf",
+          "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+        },
+        "context_physical_pages": [
+          89
+        ],
+        "statement_scope": "CONSOLIDATED",
+        "evidence_excerpt": "经营活动产生的现金流量净额 14,343,920,490.32 21,739,740,393.38",
+        "verification_status": "TRANSCRIBED_ROW_NUMERIC_MATCH_ONLY",
+        "availability_basis": "CURRENT_REVIEW_OF_LATER_REPORT_NOT_ORIGINAL_PERIOD_AVAILABILITY"
+      },
+      {
+        "symbol": "600887",
+        "metric_name": "reported_operating_cash_flow",
+        "period": "2024",
+        "value": "21739740393.38",
+        "unit": "CNY",
+        "physical_page": 89,
+        "source_binding": {
+          "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/1225259562.pdf",
+          "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+        },
+        "context_physical_pages": [
+          89
+        ],
+        "statement_scope": "CONSOLIDATED",
+        "evidence_excerpt": "经营活动产生的现金流量净额 14,343,920,490.32 21,739,740,393.38",
+        "verification_status": "TRANSCRIBED_ROW_NUMERIC_MATCH_ONLY",
+        "availability_basis": "CURRENT_REVIEW_OF_LATER_REPORT_NOT_ORIGINAL_PERIOD_AVAILABILITY"
+      },
+      {
+        "symbol": "600887",
+        "metric_name": "reported_cash_capex",
+        "period": "2025",
+        "value": "3036644156.68",
+        "unit": "CNY",
+        "physical_page": 90,
+        "source_binding": {
+          "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/1225259562.pdf",
+          "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+        },
+        "context_physical_pages": [
+          89,
+          90
+        ],
+        "statement_scope": "CONSOLIDATED",
+        "evidence_excerpt": "购建固定资产、无形资产和其他长期资产支付的现金 3,036,644,156.68 3,978,318,320.96",
+        "verification_status": "TRANSCRIBED_ROW_NUMERIC_MATCH_ONLY",
+        "availability_basis": "CURRENT_REVIEW_OF_LATER_REPORT_NOT_ORIGINAL_PERIOD_AVAILABILITY"
+      },
+      {
+        "symbol": "600887",
+        "metric_name": "reported_cash_capex",
+        "period": "2024",
+        "value": "3978318320.96",
+        "unit": "CNY",
+        "physical_page": 90,
+        "source_binding": {
+          "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/1225259562.pdf",
+          "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+        },
+        "context_physical_pages": [
+          89,
+          90
+        ],
+        "statement_scope": "CONSOLIDATED",
+        "evidence_excerpt": "购建固定资产、无形资产和其他长期资产支付的现金 3,036,644,156.68 3,978,318,320.96",
+        "verification_status": "TRANSCRIBED_ROW_NUMERIC_MATCH_ONLY",
+        "availability_basis": "CURRENT_REVIEW_OF_LATER_REPORT_NOT_ORIGINAL_PERIOD_AVAILABILITY"
+      }
+    ],
+    "action": "no_order",
+    "financial_gate_admitted": false,
+    "forecast_assumptions_approved": false,
+    "strict_pit_admitted": false,
+    "limitation": "Numeric row correspondence is not independent accounting review, complete FinancialFacts, a forecast or proof of historical availability."
+  },
+  "reported_cash_proxy": {
+    "schema_version": "reported-cash-capex-proxy-v1",
+    "symbol": "600887",
+    "rows": [
+      {
+        "period": "2024",
+        "status": "DESCRIPTIVE_PROXY_ONLY",
+        "cfo_cny": "21739740393.38",
+        "cash_capex_cny": "3978318320.96",
+        "source_binding": {
+          "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/1225259562.pdf",
+          "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+        },
+        "physical_pages": [
+          89,
+          90
+        ],
+        "proxy_cny": "17761422072.42",
+        "formula": "CFO - cash purchases of fixed/intangible/other long-term assets",
+        "fcff": false,
+        "fcfe": false,
+        "distributable_cash_proven": false,
+        "maintenance_capex_identified": false,
+        "limitation": "No separation of maintenance/growth capex, acquisition cash, debt flows, interest, minority interests or financial subsidiaries.",
+        "action": "no_order"
+      },
+      {
+        "period": "2025",
+        "status": "DESCRIPTIVE_PROXY_ONLY",
+        "cfo_cny": "14343920490.32",
+        "cash_capex_cny": "3036644156.68",
+        "source_binding": {
+          "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/1225259562.pdf",
+          "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+        },
+        "physical_pages": [
+          89,
+          90
+        ],
+        "proxy_cny": "11307276333.64",
+        "formula": "CFO - cash purchases of fixed/intangible/other long-term assets",
+        "fcff": false,
+        "fcfe": false,
+        "distributable_cash_proven": false,
+        "maintenance_capex_identified": false,
+        "limitation": "No separation of maintenance/growth capex, acquisition cash, debt flows, interest, minority interests or financial subsidiaries.",
+        "action": "no_order"
+      }
+    ],
+    "financial_gate_admitted": false,
+    "dividend_sustainability_admitted": false,
+    "valuation_model_admitted": false,
+    "action": "no_order"
+  }
+}

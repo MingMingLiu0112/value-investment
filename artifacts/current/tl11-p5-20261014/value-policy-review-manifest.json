@@ -1,0 +1,20 @@
+{
+  "schema_version": "value-policy-review-manifest-v1",
+  "action": "no_order",
+  "items": {
+    "600887": {
+      "model_review": {
+        "path": "artifacts/current/tl11-p5-20261014/value-600887-model-review.json",
+        "sha256": "5bb7c0e959c77f73a28516427eb3410a34ef6eb1d0f02fd73813bc6feb269f9a"
+      },
+      "draft": {
+        "path": "artifacts/current/tl11-p5-20261014/value-600887-policy-draft.json",
+        "sha256": "c0376fb875d6f4e52d509da6d11a5b13c707023a695084122a78bccbadcade57"
+      },
+      "preparation": {
+        "path": "artifacts/current/tl11-p5-20261014/value-600887-policy-preparation.json",
+        "sha256": "bbd55d42c13e1e7ae8f77fe87695863b6a4a1ed828edd720ce312cd1472dd03e"
+      }
+    }
+  }
+}

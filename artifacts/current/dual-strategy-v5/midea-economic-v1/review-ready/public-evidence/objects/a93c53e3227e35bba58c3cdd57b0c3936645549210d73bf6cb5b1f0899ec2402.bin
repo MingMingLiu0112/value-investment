@@ -1,0 +1,60 @@
+{
+  "schema_version": "midea-draft-assumption-memo-v2",
+  "action": "no_order",
+  "symbol": "000333",
+  "name": "美的集团",
+  "status": "DRAFT_NOT_APPROVED",
+  "generated_at": "2026-10-17T10:58:56.033982+00:00",
+  "research_as_of": "2026-10-17",
+  "valuation_date": "2026-10-16",
+  "profile_id": "mature_manufacturing",
+  "model": "residual-income-equity-shared-dated-v2",
+  "human_approved": false,
+  "scenarios": {
+    "bear": {
+      "cost_of_equity": "0.09",
+      "forecast_roes": [
+        "0.15",
+        "0.14",
+        "0.13",
+        "0.12",
+        "0.11"
+      ],
+      "terminal_roe": "0.095",
+      "terminal_growth": "0.015",
+      "retention": "0.40"
+    },
+    "base": {
+      "cost_of_equity": "0.09",
+      "forecast_roes": [
+        "0.18",
+        "0.17",
+        "0.16",
+        "0.155",
+        "0.15"
+      ],
+      "terminal_roe": "0.11",
+      "terminal_growth": "0.02",
+      "retention": "0.35"
+    },
+    "bull": {
+      "cost_of_equity": "0.09",
+      "forecast_roes": [
+        "0.205",
+        "0.20",
+        "0.195",
+        "0.19",
+        "0.185"
+      ],
+      "terminal_roe": "0.13",
+      "terminal_growth": "0.025",
+      "retention": "0.30"
+    }
+  },
+  "limitations": [
+    "Cost of equity is a candidate 9% policy hurdle, not an issuer-specific estimate.",
+    "ROE paths and retention are candidate research judgments and have not been approved.",
+    "The draft is conditional research only and cannot generate a BUY/SELL action.",
+    "Distribution inputs are NOT_ADMITTED."
+  ]
+}

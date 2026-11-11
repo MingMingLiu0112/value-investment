@@ -1,0 +1,829 @@
+{
+  "observed_at": "2026-11-01T08:11:47.263715+00:00",
+  "head": "283c7212d832f52118705bb095e046e0c36dcbfc",
+  "branch": "codex/value-f1-e1-g1-20261027",
+  "local_main": "3e6c5b410ed4acb5ea92806c0caa15d2be86dcee",
+  "remote_main": "73605c7ae6de11e949f6d0d379372147c257c4ed",
+  "worktree": "M config/current-research-drafts.json",
+  "protected_pointer_sha256": "2aba22a9e043d20076c7c40916808aee1bae9ba48f13951b8d0735e6fa077686",
+  "prs": [
+    {
+      "number": 3,
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "mergeable": true,
+      "mergeable_state": "clean",
+      "updated_at": "2026-10-28T10:22:23Z",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/pull/3",
+      "head": "8a9b5fd15afd86fc6ee6de178aeb1dec92c8d45c",
+      "head_ref": "codex/project-control-board-20261028",
+      "base": "1e3f6af10e62fc55cf0141e0c91dddee12310aa3",
+      "base_ref": "codex/value-f1-e1-g1-20261027"
+    },
+    {
+      "number": 2,
+      "state": "open",
+      "draft": false,
+      "merged": false,
+      "mergeable": true,
+      "mergeable_state": "clean",
+      "updated_at": "2026-11-01T07:39:52Z",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/pull/2",
+      "head": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "head_ref": "codex/value-f1-e1-g1-20261027",
+      "base": "73605c7ae6de11e949f6d0d379372147c257c4ed",
+      "base_ref": "main"
+    },
+    {
+      "number": 1,
+      "state": "open",
+      "draft": true,
+      "merged": false,
+      "mergeable": true,
+      "mergeable_state": "clean",
+      "updated_at": "2026-10-26T09:25:17Z",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/pull/1",
+      "head": "707228142d98e059f92ab715a57951e21b06a699",
+      "head_ref": "codex/web-d1-investment-workbench",
+      "base": "3e6c5b410ed4acb5ea92806c0caa15d2be86dcee",
+      "base_ref": "main"
+    }
+  ],
+  "branches": [
+    {
+      "ref": "codex/annual-income-chinese-note-20261024",
+      "sha": "2eb0ad7111a0479c16a2554be9261d8383e51e2f",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t309",
+      "head_left_right": "156\t1",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/infrastructure/screening/value_evidence_enrichment_v1.py",
+        "tests/test_income_chinese_note.py"
+      ]
+    },
+    {
+      "ref": "codex/content-addressed-economic-bridge-20261024",
+      "sha": "1d5db65e3a4007dfc5522d470502516a1c591553",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t262",
+      "head_left_right": "203\t1",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/application/research/economic_review_bundle.py",
+        "tests/test_content_addressed_economic_bridge.py"
+      ]
+    },
+    {
+      "ref": "codex/current-asof-detail-ui-20261024",
+      "sha": "505edd6f7cba0c4932b31e1a5e9bd3ef2edfbf30",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t247",
+      "head_left_right": "218\t1",
+      "branch_changes_since_merge_base": [
+        "web/src/pages/DecisionDetail/index.tsx",
+        "web/src/types/api.ts",
+        "web/src/utils/researchDetail.ts",
+        "web/tests/readiness-detail.test.tsx",
+        "web/tests/research-detail.test.ts"
+      ]
+    },
+    {
+      "ref": "codex/current-asof-snapshot-20261024",
+      "sha": "21f63887897ba05f5d52fd56cd1e83512795590a",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t247",
+      "head_left_right": "222\t5",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/application/product/current_snapshot_validity.py",
+        "src/value_investment_agent/application/product/incremental_validity.py",
+        "src/value_investment_agent/application/product/quote_bridge.py",
+        "tests/test_current_snapshot_quote_bridge.py",
+        "tests/test_current_snapshot_validity.py",
+        "tests/test_incremental_validity.py"
+      ]
+    },
+    {
+      "ref": "codex/current-event-coverage-ui-20261024",
+      "sha": "d3679fe822f2aba15b37e2fcc004d6c42bbe47ea",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t234",
+      "head_left_right": "231\t1",
+      "branch_changes_since_merge_base": [
+        "web/src/pages/DailyDecisions/index.tsx",
+        "web/src/types/api.ts",
+        "web/src/utils/dailyResearchDates.ts",
+        "web/src/utils/researchDetail.ts",
+        "web/tests/daily-research-dates.test.ts",
+        "web/tests/p6-daily-failclosed-ssr.test.tsx",
+        "web/tests/research-detail.test.ts"
+      ]
+    },
+    {
+      "ref": "codex/daily-research-ui-20261023",
+      "sha": "85fb64d54c13722ba3a081a8eb98d51f108620d7",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t181",
+      "head_left_right": "290\t7",
+      "branch_changes_since_merge_base": [
+        "web/src/components/ActionableDecisionResult.tsx",
+        "web/src/components/EconomicReviewMaterials.tsx",
+        "web/src/components/HotspotLifecycleReview.tsx",
+        "web/src/components/JointCapitalReview.tsx",
+        "web/src/components/OwnedHotspotEntryReview.tsx",
+        "web/src/pages/DailyDecisions/index.tsx",
+        "web/src/pages/DecisionDetail/index.tsx",
+        "web/src/services/valuePolicy.ts",
+        "web/src/types/api.ts",
+        "web/src/utils/dailyResearchDates.ts",
+        "web/tests/daily-research-dates.test.ts",
+        "web/tests/economic-review-materials.test.tsx",
+        "web/tests/fixtures/hotspot-lifecycle.ts",
+        "web/tests/hotspot-lifecycle-layout.test.tsx",
+        "web/tests/hotspot-lifecycle-review.test.tsx",
+        "web/tests/owned-hotspot-entry-review.test.tsx",
+        "web/tests/p6-daily-failclosed-ssr.test.tsx",
+        "web/tests/readiness-detail.test.tsx",
+        "web/tests/readiness-layout.test.tsx"
+      ]
+    },
+    {
+      "ref": "codex/dual-independent-validation-20261023",
+      "sha": "7f0a312c87ff68683efc9c6ed9e637836f456ec4",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t166",
+      "head_left_right": "298\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/dual-integration-20261023",
+      "sha": "d8c17d6f572b9547105f5fbb55ef8a723a3cd505",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t396",
+      "head_left_right": "68\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/dual-selection-closure-20261023",
+      "sha": "b32d0fd1602846d6a829cb8d483ea264b5281725",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t165",
+      "head_left_right": "299\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/dual-strategy-first-use-20261022",
+      "sha": "86ceaef96e86719b4491c721dc2101f4a918a8fd",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t364",
+      "head_left_right": "100\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/issuer-identity-fail-closed",
+      "sha": "00cecba51d3a73908af713e328b1c4ee960728eb",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "157\t1",
+      "head_left_right": "620\t1",
+      "branch_changes_since_merge_base": [
+        ".github/workflows/core-research-gates.yml",
+        "src/value_investment_agent/application/product/company_research.py",
+        "src/value_investment_agent/application/product/valuation.py",
+        "src/value_investment_agent/application/valuation/company_valuation_result.py",
+        "src/value_investment_agent/domain/research/issuer_identity.py",
+        "src/value_investment_agent/domain/research/research_run_contract.py",
+        "src/value_investment_agent/m1_valuation_package_builder.py",
+        "src/value_investment_agent/research_application.py",
+        "src/value_investment_agent/research_input.py",
+        "tests/test_issuer_identity_gate.py",
+        "tests/test_research_application.py",
+        "tests/test_research_batch.py",
+        "tests/test_research_input.py"
+      ]
+    },
+    {
+      "ref": "codex/joint-adverse-cash-diagnostic-20261024",
+      "sha": "e252b249c80a830394a01cae70a563c84ed634f5",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t312",
+      "head_left_right": "156\t4",
+      "branch_changes_since_merge_base": [
+        "docs/current/600519-primary-economic-input-proposal-20261024.md",
+        "src/value_investment_agent/application/research/retained_income_financial_input.py",
+        "src/value_investment_agent/domain/valuation/joint_adverse_cash_v1.py",
+        "src/value_investment_agent/infrastructure/screening/value_evidence_enrichment_v1.py",
+        "tests/test_income_chinese_note.py",
+        "tests/test_joint_adverse_cash_v1.py",
+        "tests/test_retained_income_financial_input.py"
+      ]
+    },
+    {
+      "ref": "codex/joint-capital-candidate-20261023",
+      "sha": "32606bcab51101b0e782f37559bc024b22c13deb",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t195",
+      "head_left_right": "275\t6",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/application/product/daily_event_observation.py",
+        "src/value_investment_agent/application/product/incremental_validity.py",
+        "src/value_investment_agent/application/product/neutral_valuation_proposal.py",
+        "src/value_investment_agent/application/product/pending_research_candidate.py",
+        "src/value_investment_agent/application/product/research_validity_review.py",
+        "src/value_investment_agent/domain/valuation/joint_capital_path.py",
+        "tests/test_incremental_quote_bridge.py",
+        "tests/test_incremental_validity.py",
+        "tests/test_joint_capital_path.py",
+        "tests/test_research_validity_review.py",
+        "tests/test_retained_event_coverage.py"
+      ]
+    },
+    {
+      "ref": "codex/m2-official-calendar-20261024",
+      "sha": "3c01bd16aba418872cc019250189558cb367f0b5",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t221",
+      "head_left_right": "246\t3",
+      "branch_changes_since_merge_base": [
+        ".gitattributes",
+        "docs/current/m2-official-list-session-v2-handoff-20261024.md",
+        "docs/evidence/official-list-calendar-2026/BSE.raw",
+        "docs/evidence/official-list-calendar-2026/SSE.raw",
+        "docs/evidence/official-list-calendar-2026/SZSE.raw",
+        "docs/evidence/official-list-calendar-2026/acquisition.json",
+        "scripts/run_m2_opportunity_discovery.py",
+        "src/value_investment_agent/application/discovery/official_universe_collection.py",
+        "src/value_investment_agent/domain/discovery/official_list_calendar.py",
+        "src/value_investment_agent/infrastructure/screening/official_universe_v2.py",
+        "tests/test_m2_opportunity_discovery.py",
+        "tests/test_official_universe.py"
+      ]
+    },
+    {
+      "ref": "codex/m5-actual-event-closure",
+      "sha": "8a5b2c2dad53685c865845c78cdd1c44dafd807e",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "282\t1",
+      "head_left_right": "745\t1",
+      "branch_changes_since_merge_base": [
+        "tests/test_m5_financial_fact_verification.py"
+      ]
+    },
+    {
+      "ref": "codex/m5-synthetic-clock-20261024",
+      "sha": "06e1f5f8e748446703c6ec2d13f410d6c87b329d",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t271",
+      "head_left_right": "194\t1",
+      "branch_changes_since_merge_base": [
+        "tests/m5_actual_authorization_fixture.py",
+        "tests/test_m5_actual_offline_authorization.py",
+        "tests/test_m5_run_request.py"
+      ]
+    },
+    {
+      "ref": "codex/native-byte-canonical-20261024",
+      "sha": "fbaa010ea4f40212ee92b6dd058c420035bf0a4a",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t342",
+      "head_left_right": "122\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/native-cash-review-ui-20261024",
+      "sha": "1e788e92d52d679f0e1da93c75473f9aa653c60d",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t263",
+      "head_left_right": "203\t2",
+      "branch_changes_since_merge_base": [
+        "web/src/components/SourceNativeCashReview.tsx",
+        "web/src/components/ValueResearchAnalysis.tsx",
+        "web/src/services/valuePolicy.ts",
+        "web/src/types/api.ts",
+        "web/tests/value-research-analysis.test.tsx"
+      ]
+    },
+    {
+      "ref": "codex/native-economic-review-v1-20261024",
+      "sha": "e4f14ba9220527a0238e344e3a04794a474c03b9",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t291",
+      "head_left_right": "175\t2",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/application/product/source_native_economic_review_v1.py",
+        "tests/test_source_native_economic_review_v1.py"
+      ]
+    },
+    {
+      "ref": "codex/native-primary-economic-input-20261024",
+      "sha": "2513cf7c21d083a2a148d21f548da6540db068a1",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t311",
+      "head_left_right": "156\t3",
+      "branch_changes_since_merge_base": [
+        "docs/current/600519-primary-economic-input-proposal-20261024.md",
+        "src/value_investment_agent/application/research/retained_income_financial_input.py",
+        "src/value_investment_agent/infrastructure/screening/value_evidence_enrichment_v1.py",
+        "tests/test_income_chinese_note.py",
+        "tests/test_retained_income_financial_input.py"
+      ]
+    },
+    {
+      "ref": "codex/native-signed-review-v2-20261024",
+      "sha": "8e5c1efa951cdf8804b5850c7ce0a5982e18a80c",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t277",
+      "head_left_right": "192\t5",
+      "branch_changes_since_merge_base": [
+        "scripts/current/review_research.py",
+        "src/value_investment_agent/application/product/source_native_signed_review_v2.py",
+        "tests/test_source_native_review_cli.py",
+        "tests/test_source_native_signed_review_v2.py"
+      ]
+    },
+    {
+      "ref": "codex/official-universe-partial-20261024",
+      "sha": "b1aaae341329cb75051b4593495b8fe61f9e528d",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t301",
+      "head_left_right": "165\t2",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/application/discovery/official_universe_collection.py",
+        "src/value_investment_agent/infrastructure/screening/official_universe_v2.py",
+        "tests/test_official_universe.py",
+        "tests/test_official_universe_partial.py"
+      ]
+    },
+    {
+      "ref": "codex/operating-erosion-native-input-20261024",
+      "sha": "13e58b229efe2655af7c3eceaea1322ce0d3ec0a",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t313",
+      "head_left_right": "156\t5",
+      "branch_changes_since_merge_base": [
+        "docs/current/600519-primary-economic-input-proposal-20261024.md",
+        "src/value_investment_agent/application/research/retained_income_financial_input.py",
+        "src/value_investment_agent/application/research/source_native_operating_erosion_v1.py",
+        "src/value_investment_agent/domain/valuation/joint_adverse_cash_v1.py",
+        "src/value_investment_agent/domain/valuation/operating_realization_erosion_v1.py",
+        "src/value_investment_agent/infrastructure/screening/value_evidence_enrichment_v1.py",
+        "tests/test_income_chinese_note.py",
+        "tests/test_joint_adverse_cash_v1.py",
+        "tests/test_operating_realization_erosion_v1.py",
+        "tests/test_retained_income_financial_input.py",
+        "tests/test_source_native_operating_erosion_v1.py"
+      ]
+    },
+    {
+      "ref": "codex/parent-funding-000568-20261101",
+      "sha": "65fce3b0d8fb333d792fd5f023fb33530c25c03c",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t454",
+      "head_left_right": "10\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/parent-obligations-000568-20261101",
+      "sha": "12f12207eb43cbd39be0cb0ce8f025dd916e4f1a",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t461",
+      "head_left_right": "3\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/persistent-simulated-portfolio-ui-20261024",
+      "sha": "0ac9a8444a9b0ec5c27711f2fdcb394cb347073a",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t291",
+      "head_left_right": "175\t2",
+      "branch_changes_since_merge_base": [
+        "web/src/components/PersistentSimulatedPortfolio.tsx",
+        "web/src/components/SimulatedTradeJourney.tsx",
+        "web/src/services/persistentSimulatedPortfolio.ts",
+        "web/src/types/persistentSimulatedPortfolio.ts",
+        "web/tests/persistent-simulated-portfolio.test.tsx"
+      ]
+    },
+    {
+      "ref": "codex/persistent-simulated-portfolio-v1-20261024",
+      "sha": "fce11b8ecbc2cd5f17751025f47776ad4aa37b92",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t289",
+      "head_left_right": "177\t2",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/application/portfolio/personal_entry_thesis.py",
+        "src/value_investment_agent/application/portfolio/private_portfolio_service.py",
+        "src/value_investment_agent/application/portfolio/private_risk_projection.py",
+        "src/value_investment_agent/application/portfolio/simulated_portfolio_service_v1.py",
+        "tests/test_simulated_portfolio_corrections.py",
+        "tests/test_simulated_portfolio_service_v1.py"
+      ]
+    },
+    {
+      "ref": "codex/public-financial-data-20261022",
+      "sha": "412680b4d4f75e5ad5ce1a0b9b8f1d419aab3875",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t157",
+      "head_left_right": "307\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/public-joint-capital-ui-20261024",
+      "sha": "d0d0b07506ca4581e03a9ec77ae8504d8bcbf300",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t215",
+      "head_left_right": "252\t3",
+      "branch_changes_since_merge_base": [
+        "web/src/components/JointCapitalReview.tsx",
+        "web/src/components/ValueResearchAnalysis.tsx",
+        "web/src/services/valuePolicy.ts",
+        "web/src/types/api.ts",
+        "web/tests/value-research-analysis.test.tsx"
+      ]
+    },
+    {
+      "ref": "codex/public-joint-review-20261024",
+      "sha": "06fa500577caf5a93b5931374b7a28e418cf0e20",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t213",
+      "head_left_right": "252\t1",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/application/product/economic_review_materials.py",
+        "src/value_investment_agent/application/research/value_research_analysis.py",
+        "tests/test_first_use_value_analysis.py"
+      ]
+    },
+    {
+      "ref": "codex/retained-income-financial-input-20261024",
+      "sha": "087ff743e8b3f35ccf299f6cb53112d88e2bf4a6",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t310",
+      "head_left_right": "156\t2",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/application/research/retained_income_financial_input.py",
+        "src/value_investment_agent/infrastructure/screening/value_evidence_enrichment_v1.py",
+        "tests/test_income_chinese_note.py",
+        "tests/test_retained_income_financial_input.py"
+      ]
+    },
+    {
+      "ref": "codex/review-governance",
+      "sha": "21aaf156a29d34f8fff4d0663e2b22c0cea85e7f",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "268\t0",
+      "head_left_right": "731\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/second-cleanup-20261010",
+      "sha": "9cd688c215ce9ea667c74da8453fa4d4a3323af8",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "40\t0",
+      "head_left_right": "503\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/simulated-source-reasons-ui-20261024",
+      "sha": "5dbb3392b443e566b4080c30a10621857f57ed18",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t255",
+      "head_left_right": "210\t1",
+      "branch_changes_since_merge_base": [
+        "web/src/components/SimulatedTradeJourney.tsx",
+        "web/tests/simulated-trade-journey.test.tsx"
+      ]
+    },
+    {
+      "ref": "codex/source-bound-dual-sleeve-20261024",
+      "sha": "2cce67c0f65350a006f141a3c829062c6f406cb5",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t264",
+      "head_left_right": "202\t2",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/application/portfolio/simulated_trade_journey.py",
+        "tests/test_source_bound_dual_sleeve_journey.py"
+      ]
+    },
+    {
+      "ref": "codex/source-bound-journey-ui-20261024",
+      "sha": "b0c267e4ab862d2f8873bc095e5939cdaad918b0",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t226",
+      "head_left_right": "242\t4",
+      "branch_changes_since_merge_base": [
+        "web/src/components/SimulatedTradeJourney.tsx",
+        "web/src/services/simulatedJourney.ts",
+        "web/src/types/simulatedJourney.ts",
+        "web/tests/simulated-trade-journey.test.tsx"
+      ]
+    },
+    {
+      "ref": "codex/source-bound-simulated-journey-20261024",
+      "sha": "c489eb6482df10d3cc4675d4546b197f952d61c0",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t217",
+      "head_left_right": "248\t1",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/application/portfolio/simulated_trade_journey.py",
+        "tests/test_simulated_trade_journey.py"
+      ]
+    },
+    {
+      "ref": "codex/source-dual-journey-ui-20261024",
+      "sha": "385c8caa87779a8b17f92de2f92249bc6d00c2ae",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t272",
+      "head_left_right": "193\t1",
+      "branch_changes_since_merge_base": [
+        "web/src/components/SimulatedTradeJourney.tsx",
+        "web/src/components/SourceBoundDualJourney.tsx",
+        "web/src/services/sourceBoundDualJourney.ts",
+        "web/src/types/sourceBoundDualJourney.ts",
+        "web/tests/source-bound-dual-journey.test.tsx"
+      ]
+    },
+    {
+      "ref": "codex/source-native-review-input-20261024",
+      "sha": "9f07080742ba2bfbaacd7938b302428c626ebc5e",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t255",
+      "head_left_right": "211\t2",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/application/product/source_native_candidate_v2.py",
+        "src/value_investment_agent/domain/valuation/source_native_cash_v1.py",
+        "tests/test_source_native_candidate_v2.py"
+      ]
+    },
+    {
+      "ref": "codex/swing-closure-20261023",
+      "sha": "011db17d260ef8fe0b1f1b440e9e74a151db5c6d",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t207",
+      "head_left_right": "298\t41",
+      "branch_changes_since_merge_base": [
+        "docs/current/swing-strategy-specification-20261023.md",
+        "scripts/current/build_hotspot_structure_validation.py",
+        "src/value_investment_agent/application/hotspot/candidate_selection.py",
+        "src/value_investment_agent/application/hotspot/cash_action_window_v2.py",
+        "src/value_investment_agent/application/hotspot/cash_action_window_v3.py",
+        "src/value_investment_agent/application/hotspot/cash_event_mapping.py",
+        "src/value_investment_agent/application/hotspot/cash_execution_exposure.py",
+        "src/value_investment_agent/application/hotspot/cash_related_disclosures.py",
+        "src/value_investment_agent/application/hotspot/corporate_action_coverage.py",
+        "src/value_investment_agent/application/hotspot/daily_channel_comparison.py",
+        "src/value_investment_agent/application/hotspot/daily_selection.py",
+        "src/value_investment_agent/application/hotspot/forward_research.py",
+        "src/value_investment_agent/application/hotspot/independent_validation.py",
+        "src/value_investment_agent/application/hotspot/lifecycle_review.py",
+        "src/value_investment_agent/application/hotspot/observation_continuity.py",
+        "src/value_investment_agent/application/hotspot/public_observation_session.py",
+        "src/value_investment_agent/application/hotspot/quantitative_validation.py",
+        "src/value_investment_agent/application/hotspot/report_text.py",
+        "src/value_investment_agent/application/hotspot/selection_history.py",
+        "src/value_investment_agent/application/hotspot/simulated_lifecycle.py",
+        "src/value_investment_agent/application/hotspot/strategy_execution_replay.py",
+        "src/value_investment_agent/application/hotspot/structure_replay.py",
+        "src/value_investment_agent/domain/hotspot/action_lineage.py",
+        "src/value_investment_agent/domain/hotspot/cash_basis.py",
+        "src/value_investment_agent/domain/hotspot/cash_price_mapping.py",
+        "src/value_investment_agent/domain/hotspot/daily_channel_strategy.py",
+        "src/value_investment_agent/domain/hotspot/price_comparability.py",
+        "src/value_investment_agent/domain/hotspot/quantitative_validation.py",
+        "src/value_investment_agent/domain/hotspot/shadow_observation.py",
+        "src/value_investment_agent/domain/hotspot/strategy_execution_replay.py",
+        "src/value_investment_agent/infrastructure/hotspot/action_lineage.py",
+        "src/value_investment_agent/infrastructure/hotspot/baostock_price_case.py",
+        "src/value_investment_agent/infrastructure/hotspot/capital_disclosure.py",
+        "src/value_investment_agent/infrastructure/hotspot/cash_implementation.py",
+        "src/value_investment_agent/infrastructure/hotspot/cash_implementation_v2.py",
+        "src/value_investment_agent/infrastructure/hotspot/daily_channel_sources.py",
+        "src/value_investment_agent/infrastructure/hotspot/daily_market.py",
+        "src/value_investment_agent/infrastructure/hotspot/price_comparability.py",
+        "src/value_investment_agent/infrastructure/hotspot/related_disclosure_identity.py",
+        "src/value_investment_agent/infrastructure/hotspot/sina_price_case.py",
+        "src/value_investment_agent/infrastructure/hotspot/sse_cash_entitlement.py",
+        "src/value_investment_agent/infrastructure/hotspot/statutory_fee_evidence.py",
+        "tests/test_baostock_price_case.py",
+        "tests/test_hotspot_action_coverage_lifecycle.py",
+        "tests/test_hotspot_action_lineage.py",
+        "tests/test_hotspot_audit_cli.py",
+        "tests/test_hotspot_candidate_selection.py",
+        "tests/test_hotspot_capital_disclosure.py",
+        "tests/test_hotspot_cash_action_window.py",
+        "tests/test_hotspot_cash_basis_v2.py",
+        "tests/test_hotspot_cash_event_mapping.py",
+        "tests/test_hotspot_cash_execution_exposure.py",
+        "tests/test_hotspot_cash_related_disclosures.py",
+        "tests/test_hotspot_daily_channel_comparison.py",
+        "tests/test_hotspot_daily_channel_strategy.py",
+        "tests/test_hotspot_daily_selection.py",
+        "tests/test_hotspot_economic_validation_draft.py",
+        "tests/test_hotspot_entry_reason.py",
+        "tests/test_hotspot_forward_research.py",
+        "tests/test_hotspot_frozen_condition_path.py",
+        "tests/test_hotspot_history_namespace.py",
+        "tests/test_hotspot_independent_validation.py",
+        "tests/test_hotspot_lifecycle_bound_history.py",
+        "tests/test_hotspot_lifecycle_explanation.py",
+        "tests/test_hotspot_lifecycle_explanation_text.py",
+        "tests/test_hotspot_lifecycle_review.py",
+        "tests/test_hotspot_observation_continuity.py",
+        "tests/test_hotspot_official_action_coverage.py",
+        "tests/test_hotspot_paired_portfolio_benchmark.py",
+        "tests/test_hotspot_price_action_case.py",
+        "tests/test_hotspot_price_comparability.py",
+        "tests/test_hotspot_pyramid_inventory.py",
+        "tests/test_hotspot_selection_history.py",
+        "tests/test_hotspot_shared_fill_feedback.py",
+        "tests/test_hotspot_simulated_lifecycle.py",
+        "tests/test_hotspot_statutory_fee_evidence.py",
+        "tests/test_hotspot_strategy_execution_replay.py",
+        "tests/test_public_observation_sealed_path.py"
+      ]
+    },
+    {
+      "ref": "codex/trade-closure-20261023",
+      "sha": "a09e912801be7e9f721d7148052be9b4c0bff6c7",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t162",
+      "head_left_right": "302\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/two-company-earnings-bridge-20261024",
+      "sha": "bd2f6b7fcd017e513c660d29479bd56ef0e6b4e5",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t301",
+      "head_left_right": "165\t2",
+      "branch_changes_since_merge_base": [
+        "docs/current/two-company-earnings-bridge-20261024/README.md",
+        "docs/current/two-company-earnings-bridge-20261024/research-results-v2.json",
+        "docs/current/two-company-earnings-bridge-20261024/research-results.json",
+        "docs/current/two-company-earnings-bridge-20261024/sources.json",
+        "src/value_investment_agent/application/research/operating_earnings_bridge.py",
+        "tests/test_operating_earnings_bridge.py"
+      ]
+    },
+    {
+      "ref": "codex/v5-hotspot-date-consistency",
+      "sha": "63d48ff28f9bc004fb5b0934b091531767659d55",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t148",
+      "head_left_right": "316\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/value-f1-e1-g1-20261027",
+      "sha": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t464",
+      "head_left_right": "0\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "codex/value-operating-center-20261025",
+      "sha": "53fca6f762165424b15d895d57cf7c5c880a63a1",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t364",
+      "head_left_right": "103\t3",
+      "branch_changes_since_merge_base": [
+        "src/value_investment_agent/application/research/product_continuation_candidate.py",
+        "src/value_investment_agent/domain/valuation/product_continuation_cash_path_v1.py",
+        "tests/test_product_continuation_candidate.py",
+        "tests/test_product_continuation_cash_path_v1.py"
+      ]
+    },
+    {
+      "ref": "codex/web-d1-investment-workbench",
+      "sha": "f301fe9a2bdfa53bf009815bc3347f37d658b4f4",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t141",
+      "head_left_right": "323\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "main",
+      "sha": "3e6c5b410ed4acb5ea92806c0caa15d2be86dcee",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t0",
+      "head_left_right": "464\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "origin/codex/dual-integration-20261023",
+      "sha": "d8c17d6f572b9547105f5fbb55ef8a723a3cd505",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t396",
+      "head_left_right": "68\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "origin/codex/m5-actual-event-closure",
+      "sha": "7f3214b849e918593fadc1864d1d3e89988d86c4",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "282\t0",
+      "head_left_right": "745\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "origin/codex/project-control-board-20261028",
+      "sha": "8a9b5fd15afd86fc6ee6de178aeb1dec92c8d45c",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "1\t408",
+      "head_left_right": "57\t1",
+      "branch_changes_since_merge_base": [
+        "AGENTS.md",
+        "docs/current/README.md",
+        "docs/current/project-control-board.md",
+        "docs/current/project-control-evidence/README.md",
+        "docs/current/project-control-evidence/browser-verification.json",
+        "docs/current/project-control-evidence/verification.json",
+        "web/.umirc.ts",
+        "web/src/components/Workbench.tsx",
+        "web/src/data/projectControl.ts",
+        "web/src/pages/ProjectControl/index.tsx",
+        "web/src/pages/ProjectControl/project-control.css",
+        "web/tests/project-control.test.tsx"
+      ]
+    },
+    {
+      "ref": "origin/codex/second-cleanup-20261010",
+      "sha": "9cd688c215ce9ea667c74da8453fa4d4a3323af8",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "40\t0",
+      "head_left_right": "503\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "origin/codex/value-f1-e1-g1-20261027",
+      "sha": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t464",
+      "head_left_right": "0\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "origin/codex/web-d1-investment-workbench",
+      "sha": "707228142d98e059f92ab715a57951e21b06a699",
+      "ancestor_of_audit_head": true,
+      "main_left_right": "1\t377",
+      "head_left_right": "87\t0",
+      "branch_changes_since_merge_base": []
+    },
+    {
+      "ref": "origin/main",
+      "sha": "73605c7ae6de11e949f6d0d379372147c257c4ed",
+      "ancestor_of_audit_head": false,
+      "main_left_right": "0\t0",
+      "head_left_right": "464\t1",
+      "branch_changes_since_merge_base": [
+        "README.md"
+      ]
+    }
+  ],
+  "runtime_identity": {
+    "schema_version": "runtime-identity-v2",
+    "action": "no_order",
+    "checked_at": "2026-11-01T08:11:47.260841+00:00",
+    "status": "MISMATCH",
+    "code_status": "MATCHED",
+    "config_status": "MATCHED",
+    "reasons": [
+      "PUBLICATION_REGISTRY_UNAVAILABLE"
+    ],
+    "current_source_head": "283c7212d832f52118705bb095e046e0c36dcbfc",
+    "source_worktree_dirty": false,
+    "backend_loaded_head": "283c7212d832f52118705bb095e046e0c36dcbfc",
+    "backend_module_sha256_loaded": "7e1197636befb41835abdac563abf7b60f148756a83384669e605e9718098f98",
+    "backend_module_sha256_on_disk": "7e1197636befb41835abdac563abf7b60f148756a83384669e605e9718098f98",
+    "web_build": {
+      "schema_version": "web-build-identity-v1",
+      "commit": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "built_at": "2026-11-01T07:39:47.898Z",
+      "source_dirty": false
+    },
+    "web_index_sha256": "c3180fe0c58bdd50626073210fbb279cac76ca78fa3a6da6f4c0d30e0c00f4b6",
+    "config_changes": {
+      "behavior": [],
+      "data": [
+        "config/current-research-drafts.json"
+      ]
+    },
+    "publication": {
+      "status": "INVALID",
+      "publication_id": "pub-0455405df97dabd92069",
+      "packet_sha256": "b283ecd5d0c3b793825ed183b7d675278dcecf123c880b725dad19698f33afa6",
+      "published_at": "2026-10-23T00:36:54.787051+00:00",
+      "dates": null
+    },
+    "data_freshness": {
+      "status": "UNVERIFIED",
+      "reason": "QUOTE_TRADE_DATE_MISSING"
+    },
+    "publication_registry": {
+      "status": "UNAVAILABLE",
+      "checked_count": 0,
+      "mismatched_roles": []
+    }
+  },
+  "database_runtime": "NOT_VERIFIED_NO_DB_CONNECTION_OR_CREDENTIAL_READ",
+  "action": "no_order"
+}

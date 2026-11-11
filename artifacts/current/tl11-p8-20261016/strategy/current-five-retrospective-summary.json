@@ -1,0 +1,395 @@
+{
+  "action": "no_order",
+  "computed_at": "2026-10-15T17:49:23.058402+00:00",
+  "spec_binding": {
+    "path": "artifacts/current/tl11-p8-20261016/strategy/current-five-retrospective-spec.json",
+    "sha256": "742db87da9961e2a9b96722c886112f96994e767a45e4134643a27a42af31347"
+  },
+  "full_result_binding": {
+    "path": "runtime/p8-current-five-retrospective-replay.json",
+    "sha256": "5fc7c7121424c89f69b6d6333ccfd095cfba4c91051121f856876254a16eaed5"
+  },
+  "partitions": {
+    "start_date": "2026-04-13",
+    "development_end": "2026-06-30",
+    "validation_start": "2026-07-01",
+    "end_date": "2026-10-15"
+  },
+  "results": [
+    {
+      "symbol": "300059",
+      "segments": {
+        "development": {
+          "completed_cutoff_count": 212,
+          "state_counts": {
+            "TRIGGER_OBSERVED": 13,
+            "TRIGGER_REJECTED": 28,
+            "WATCH": 171
+          },
+          "trigger_count": 13,
+          "mature_five_session_count": 13,
+          "right_censored_count": 0,
+          "failure_proxy_count": 5,
+          "failure_proxy_denominator": 13,
+          "failure_proxy_rate": "0.3846153846153846153846153846",
+          "false_breakout_proxy_count": 5,
+          "false_breakout_proxy_denominator": 13,
+          "false_breakout_proxy_rate": "0.3846153846153846153846153846",
+          "mean_fifth_close_change_pct": "0.2024017055914349779391116938",
+          "mean_positive_price_change_pct": "5.747068809688097356379682133",
+          "mean_negative_price_change_pct": "-4.55017009791998991786709154",
+          "worst_signal_close_adverse_excursion_pct": "-9.282296650717703349282296650",
+          "net_return_distribution": null,
+          "average_trade_win": null,
+          "average_trade_loss": null,
+          "verified_fill_count": null,
+          "verified_unfilled_count": null,
+          "independent_trade_sample_count": null,
+          "overlapping_events_are_not_independent": true,
+          "market_environment": "NOT_ASSESSED_BY_FROZEN_V1",
+          "pullback_rule_performance": null
+        },
+        "validation": {
+          "completed_cutoff_count": 284,
+          "state_counts": {
+            "TRIGGER_OBSERVED": 21,
+            "TRIGGER_PENDING": 3,
+            "TRIGGER_REJECTED": 38,
+            "WATCH": 222
+          },
+          "trigger_count": 21,
+          "mature_five_session_count": 19,
+          "right_censored_count": 2,
+          "failure_proxy_count": 11,
+          "failure_proxy_denominator": 19,
+          "failure_proxy_rate": "0.5789473684210526315789473684",
+          "false_breakout_proxy_count": 14,
+          "false_breakout_proxy_denominator": 21,
+          "false_breakout_proxy_rate": "0.6666666666666666666666666667",
+          "mean_fifth_close_change_pct": "-2.690115411181536772620610902",
+          "mean_positive_price_change_pct": "2.017666793499515248028160100",
+          "mean_negative_price_change_pct": "-3.945523999096483978126949836",
+          "worst_signal_close_adverse_excursion_pct": "-7.514983863531581373905025360",
+          "net_return_distribution": null,
+          "average_trade_win": null,
+          "average_trade_loss": null,
+          "verified_fill_count": null,
+          "verified_unfilled_count": null,
+          "independent_trade_sample_count": null,
+          "overlapping_events_are_not_independent": true,
+          "market_environment": "NOT_ASSESSED_BY_FROZEN_V1",
+          "pullback_rule_performance": null
+        }
+      },
+      "case_binding": {
+        "symbol": "300059",
+        "case_path": "runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/case.json",
+        "case_sha256": "f5a1c3a6021896c073c014b064114713e5dbd397df185c4a86b874fc6b00437e"
+      }
+    },
+    {
+      "symbol": "601318",
+      "segments": {
+        "development": {
+          "completed_cutoff_count": 212,
+          "state_counts": {
+            "TRIGGER_OBSERVED": 7,
+            "TRIGGER_PENDING": 3,
+            "TRIGGER_REJECTED": 41,
+            "WATCH": 161
+          },
+          "trigger_count": 7,
+          "mature_five_session_count": 7,
+          "right_censored_count": 0,
+          "failure_proxy_count": 3,
+          "failure_proxy_denominator": 7,
+          "failure_proxy_rate": "0.4285714285714285714285714286",
+          "false_breakout_proxy_count": 4,
+          "false_breakout_proxy_denominator": 7,
+          "false_breakout_proxy_rate": "0.5714285714285714285714285714",
+          "mean_fifth_close_change_pct": "-1.320120433305339773495003723",
+          "mean_positive_price_change_pct": "1.756192631819433969673855050",
+          "mean_negative_price_change_pct": "-2.550645659355249270762547232",
+          "worst_signal_close_adverse_excursion_pct": "-5.783891282731189923765329800",
+          "net_return_distribution": null,
+          "average_trade_win": null,
+          "average_trade_loss": null,
+          "verified_fill_count": null,
+          "verified_unfilled_count": null,
+          "independent_trade_sample_count": null,
+          "overlapping_events_are_not_independent": true,
+          "market_environment": "NOT_ASSESSED_BY_FROZEN_V1",
+          "pullback_rule_performance": null
+        },
+        "validation": {
+          "completed_cutoff_count": 284,
+          "state_counts": {
+            "TRIGGER_OBSERVED": 22,
+            "TRIGGER_PENDING": 12,
+            "TRIGGER_REJECTED": 32,
+            "WATCH": 218
+          },
+          "trigger_count": 22,
+          "mature_five_session_count": 21,
+          "right_censored_count": 1,
+          "failure_proxy_count": 7,
+          "failure_proxy_denominator": 21,
+          "failure_proxy_rate": "0.3333333333333333333333333333",
+          "false_breakout_proxy_count": 11,
+          "false_breakout_proxy_denominator": 21,
+          "false_breakout_proxy_rate": "0.5238095238095238095238095238",
+          "mean_fifth_close_change_pct": "0.1549544867119951578309233424",
+          "mean_positive_price_change_pct": "3.687100940818753056653836889",
+          "mean_negative_price_change_pct": "-2.494155353868073266286261818",
+          "worst_signal_close_adverse_excursion_pct": "-5.784699640595584460037651890",
+          "net_return_distribution": null,
+          "average_trade_win": null,
+          "average_trade_loss": null,
+          "verified_fill_count": null,
+          "verified_unfilled_count": null,
+          "independent_trade_sample_count": null,
+          "overlapping_events_are_not_independent": true,
+          "market_environment": "NOT_ASSESSED_BY_FROZEN_V1",
+          "pullback_rule_performance": null
+        }
+      },
+      "case_binding": {
+        "symbol": "601318",
+        "case_path": "runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/case.json",
+        "case_sha256": "92ad443d0f6b0d4187b202035e0aba9df7953115c406f0ab72cedca0f6f4d580"
+      }
+    },
+    {
+      "symbol": "600030",
+      "segments": {
+        "development": {
+          "completed_cutoff_count": 212,
+          "state_counts": {
+            "TRIGGER_OBSERVED": 17,
+            "TRIGGER_PENDING": 1,
+            "TRIGGER_REJECTED": 23,
+            "WATCH": 171
+          },
+          "trigger_count": 17,
+          "mature_five_session_count": 17,
+          "right_censored_count": 0,
+          "failure_proxy_count": 6,
+          "failure_proxy_denominator": 17,
+          "failure_proxy_rate": "0.3529411764705882352941176471",
+          "false_breakout_proxy_count": 10,
+          "false_breakout_proxy_denominator": 17,
+          "false_breakout_proxy_rate": "0.5882352941176470588235294118",
+          "mean_fifth_close_change_pct": "1.923182014230793960436876235",
+          "mean_positive_price_change_pct": "3.935555405587244007563856783",
+          "mean_negative_price_change_pct": "-2.906514125024686152667877082",
+          "worst_signal_close_adverse_excursion_pct": "-6.595035198221563542052612080",
+          "net_return_distribution": null,
+          "average_trade_win": null,
+          "average_trade_loss": null,
+          "verified_fill_count": null,
+          "verified_unfilled_count": null,
+          "independent_trade_sample_count": null,
+          "overlapping_events_are_not_independent": true,
+          "market_environment": "NOT_ASSESSED_BY_FROZEN_V1",
+          "pullback_rule_performance": null
+        },
+        "validation": {
+          "completed_cutoff_count": 284,
+          "state_counts": {
+            "TRIGGER_OBSERVED": 17,
+            "TRIGGER_PENDING": 4,
+            "TRIGGER_REJECTED": 42,
+            "WATCH": 221
+          },
+          "trigger_count": 17,
+          "mature_five_session_count": 15,
+          "right_censored_count": 2,
+          "failure_proxy_count": 8,
+          "failure_proxy_denominator": 15,
+          "failure_proxy_rate": "0.5333333333333333333333333333",
+          "false_breakout_proxy_count": 12,
+          "false_breakout_proxy_denominator": 16,
+          "false_breakout_proxy_rate": "0.75",
+          "mean_fifth_close_change_pct": "-1.744143822126336048722921353",
+          "mean_positive_price_change_pct": "0.890964779295192599038421500",
+          "mean_negative_price_change_pct": "-2.149545145421955840686204869",
+          "worst_signal_close_adverse_excursion_pct": "-5.175469691598723856788372920",
+          "net_return_distribution": null,
+          "average_trade_win": null,
+          "average_trade_loss": null,
+          "verified_fill_count": null,
+          "verified_unfilled_count": null,
+          "independent_trade_sample_count": null,
+          "overlapping_events_are_not_independent": true,
+          "market_environment": "NOT_ASSESSED_BY_FROZEN_V1",
+          "pullback_rule_performance": null
+        }
+      },
+      "case_binding": {
+        "symbol": "600030",
+        "case_path": "runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/case.json",
+        "case_sha256": "6b98c3c625776610acc02fbc1e83a07ccc3861e61ad9498b839caebc5b1c49d3"
+      }
+    },
+    {
+      "symbol": "601211",
+      "segments": {
+        "development": {
+          "completed_cutoff_count": 212,
+          "state_counts": {
+            "TRIGGER_OBSERVED": 16,
+            "TRIGGER_REJECTED": 27,
+            "WATCH": 169
+          },
+          "trigger_count": 16,
+          "mature_five_session_count": 16,
+          "right_censored_count": 0,
+          "failure_proxy_count": 4,
+          "failure_proxy_denominator": 16,
+          "failure_proxy_rate": "0.25",
+          "false_breakout_proxy_count": 7,
+          "false_breakout_proxy_denominator": 16,
+          "false_breakout_proxy_rate": "0.4375",
+          "mean_fifth_close_change_pct": "2.630578026536938172190987662",
+          "mean_positive_price_change_pct": "4.135666952056417933985324477",
+          "mean_negative_price_change_pct": "-3.89147398404747412891780520",
+          "worst_signal_close_adverse_excursion_pct": "-5.542452830188679245283018870",
+          "net_return_distribution": null,
+          "average_trade_win": null,
+          "average_trade_loss": null,
+          "verified_fill_count": null,
+          "verified_unfilled_count": null,
+          "independent_trade_sample_count": null,
+          "overlapping_events_are_not_independent": true,
+          "market_environment": "NOT_ASSESSED_BY_FROZEN_V1",
+          "pullback_rule_performance": null
+        },
+        "validation": {
+          "completed_cutoff_count": 284,
+          "state_counts": {
+            "TRIGGER_OBSERVED": 18,
+            "TRIGGER_PENDING": 6,
+            "TRIGGER_REJECTED": 35,
+            "WATCH": 225
+          },
+          "trigger_count": 18,
+          "mature_five_session_count": 16,
+          "right_censored_count": 2,
+          "failure_proxy_count": 6,
+          "failure_proxy_denominator": 16,
+          "failure_proxy_rate": "0.375",
+          "false_breakout_proxy_count": 11,
+          "false_breakout_proxy_denominator": 18,
+          "false_breakout_proxy_rate": "0.6111111111111111111111111111",
+          "mean_fifth_close_change_pct": "-1.166841074090798018885419633",
+          "mean_positive_price_change_pct": "1.099504898814126290177705575",
+          "mean_negative_price_change_pct": "-1.922289731725772788573128036",
+          "worst_signal_close_adverse_excursion_pct": "-6.260575296108291032148900170",
+          "net_return_distribution": null,
+          "average_trade_win": null,
+          "average_trade_loss": null,
+          "verified_fill_count": null,
+          "verified_unfilled_count": null,
+          "independent_trade_sample_count": null,
+          "overlapping_events_are_not_independent": true,
+          "market_environment": "NOT_ASSESSED_BY_FROZEN_V1",
+          "pullback_rule_performance": null
+        }
+      },
+      "case_binding": {
+        "symbol": "601211",
+        "case_path": "runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/case.json",
+        "case_sha256": "c3f589d1f70a77da633e52bf63bf74e65ac262561b19f0d8d206b681fadad2c3"
+      }
+    },
+    {
+      "symbol": "000712",
+      "segments": {
+        "development": {
+          "completed_cutoff_count": 212,
+          "state_counts": {
+            "TRIGGER_OBSERVED": 12,
+            "TRIGGER_PENDING": 2,
+            "TRIGGER_REJECTED": 29,
+            "WATCH": 169
+          },
+          "trigger_count": 12,
+          "mature_five_session_count": 11,
+          "right_censored_count": 1,
+          "failure_proxy_count": 3,
+          "failure_proxy_denominator": 11,
+          "failure_proxy_rate": "0.2727272727272727272727272727",
+          "false_breakout_proxy_count": 4,
+          "false_breakout_proxy_denominator": 11,
+          "false_breakout_proxy_rate": "0.3636363636363636363636363636",
+          "mean_fifth_close_change_pct": "-3.448924992621438475514281106",
+          "mean_positive_price_change_pct": "8.961395367790458427948839367",
+          "mean_negative_price_change_pct": "-8.102795127775899814312951284",
+          "worst_signal_close_adverse_excursion_pct": "-21.77700348432055749128919861",
+          "net_return_distribution": null,
+          "average_trade_win": null,
+          "average_trade_loss": null,
+          "verified_fill_count": null,
+          "verified_unfilled_count": null,
+          "independent_trade_sample_count": null,
+          "overlapping_events_are_not_independent": true,
+          "market_environment": "NOT_ASSESSED_BY_FROZEN_V1",
+          "pullback_rule_performance": null
+        },
+        "validation": {
+          "completed_cutoff_count": 284,
+          "state_counts": {
+            "TRIGGER_OBSERVED": 18,
+            "TRIGGER_PENDING": 7,
+            "TRIGGER_REJECTED": 31,
+            "WATCH": 228
+          },
+          "trigger_count": 18,
+          "mature_five_session_count": 15,
+          "right_censored_count": 3,
+          "failure_proxy_count": 3,
+          "failure_proxy_denominator": 15,
+          "failure_proxy_rate": "0.2",
+          "false_breakout_proxy_count": 6,
+          "false_breakout_proxy_denominator": 16,
+          "false_breakout_proxy_rate": "0.375",
+          "mean_fifth_close_change_pct": "4.267852243884568214192377397",
+          "mean_positive_price_change_pct": "14.22761275579458529930390216",
+          "mean_negative_price_change_pct": "-5.082215090327653411748807734",
+          "worst_signal_close_adverse_excursion_pct": "-12.96296296296296296296296296",
+          "net_return_distribution": null,
+          "average_trade_win": null,
+          "average_trade_loss": null,
+          "verified_fill_count": null,
+          "verified_unfilled_count": null,
+          "independent_trade_sample_count": null,
+          "overlapping_events_are_not_independent": true,
+          "market_environment": "NOT_ASSESSED_BY_FROZEN_V1",
+          "pullback_rule_performance": null
+        }
+      },
+      "case_binding": {
+        "symbol": "000712",
+        "case_path": "runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/case.json",
+        "case_sha256": "846ba8d1ddab43b0e3d22985917161ce3a7236f903ee88262f2ea6410d6d1f9b"
+      }
+    }
+  ],
+  "limitations": [
+    "Current candidate selection is retrospective; no historical universe/industry reconstruction.",
+    "Historical bars were acquired now; bar-close chronology is not historical source availability.",
+    "Minute evidence is single provider; corporate-action-adjusted comparability is unproven.",
+    "Five observed-session outcomes are overlapping, not independent trades or certified complete sessions.",
+    "No dated execution limits/liquidity/costs: fills, unfilled counts, trade MAE and net returns are unknown.",
+    "No v1 pullback rule or validated market regime: those performance results are null.",
+    "No earlier archived Shadow judgment: today's real baseline is not an elapsed Shadow session."
+  ],
+  "strict_oos_admitted": false,
+  "strict_pit_admitted": false,
+  "strategy_validation": "NOT_PROVEN",
+  "independent_test_interval": null,
+  "independent_test_missing_reason": "No unseen pre-registered interval for this retrospectively selected sample; validation is descriptive only.",
+  "costs_slippage_and_executability": "UNKNOWN_NOT_SIMULATED_NO_DATED_EXECUTION_EVIDENCE",
+  "formal_eligibility": false,
+  "parameters_changed": false
+}

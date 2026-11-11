@@ -14,6 +14,8 @@ The 2026-10-09 architecture/agent pilot boundary and runbook are in
 
 | Need | Authoritative entry |
 | --- | --- |
+| Value strategy rules, sources and unapproved hypotheses | [Value strategy specification](value-strategy-specification-20261023.md) (fixed historical rule baseline; not strategy or account approval) |
+| Swing strategy rules and independent validation limits | [Swing strategy specification](swing-strategy-specification-20261023.md) (source/coverage evidence is not OOS or Shadow) |
 | Current goal | `docs/current-stage-goal.md` |
 | Current advisory and sentiment-satellite goal contract | `docs/current/advisory-sentiment-satellite-goal-v1.md` |
 | Current execution status | `docs/execution-status.md` |
@@ -64,3 +66,8 @@ The 2026-10-09 architecture/agent pilot boundary and runbook are in
 
 `docs/execution-status.md` is factual history, not a backlog. Historical stage
 acceptance files are read-only context and do not create new work.
+
+
+## 2026-11-01 VALUE-MAINLINE-P0
+
+[真实基线、11模块合同与阶段1](value-mainline-p0-20261101/README.md) · [12项能力矩阵](value-mainline-p0-20261101/capability-matrix.md) · [阶段1调用](value-mainline-p0-20261101/phase1-usage.md)。工程目录不等于实时状态；本轮不发布8001。

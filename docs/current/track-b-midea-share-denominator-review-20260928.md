@@ -212,3 +212,50 @@ valuation date; do not repeat review of the existing filing set.
 
 The model-route record retains only `effective_date=2026-09-30`; an exact
 time-of-day was not recorded. Do not infer or backfill one from file timestamps.
+
+## 2026-10-13 Bounded Re-Check — 2026-06-30 Denominator Closed
+
+**Disposition superseded in part:** the A1/`EVIDENCE_STOP` statement above
+covered only the previously retrieved filing set. A bounded re-check of the
+official channels outside that set found the issuer's 2026-06-30 share
+enumeration in the HKEX monthly returns and closes the target-date
+denominator:
+
+- June 2026 monthly return (submitted 2026-07-07), physical pages 1-2:
+  A 6,962,590,407 + H 650,848,500 = 7,613,438,907 issued; treasury
+  A 149,091,572 / H 0; **issued excluding treasury = 7,464,347,335**.
+  SHA-256 `fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd`.
+- July 2026 monthly return (submitted 2026-08-06) repeats the same June 30
+  balances on its previous-month-carry-in row, SHA-256
+  `2b44a2f088e59c6fcae197da299e1f98a365bd35084bd06333d815c897dbaba9`.
+- The issued total reconciles exactly with the 2026H1 interim report; the
+  treasury count splits as 68,679,031 cancellation-designated shares (H1
+  physical p. 88, cost CNY 5,476,158,082, matching note (41)
+  尚未注销 5,476,600 thousand) plus 80,412,541 plan-designated shares.
+- September 2026 roll-forward: cumulative 2026-program repurchases
+  123,010,307 (2026-09-30, CNINFO `1225596587`) minus 99,797,967
+  (2026-08-31, CNINFO `1225544342`) equals 23,212,340 September buybacks;
+  net of the 2026-09-03 employee-holding-plan transfer of 15,772,385 shares
+  (CNINFO `1225544482`) this equals +7,439,955, exactly the monthly-return
+  treasury delta 187,650,463 − 180,210,508. Repurchase-account shares are
+  treasury; plan transfers out of the account leave treasury.
+
+The alternative denominator that excludes only cancellation-designated
+shares (7,544,759,876) is recorded but not selected: parent equity is stated
+net of the full treasury deduction, so the consistent denominator excludes
+all repurchase-account shares. The 2026-09-29 verified count and the H1
+weighted-average EPS denominators remain not substitutable for 2026-06-30.
+
+The FCFF-scope conclusion (`FCFF_NOT_APPLICABLE_FOR_CURRENT_PUBLIC_SCOPE`) and
+the three FCFF evidence stops are unchanged. The shared applicability record
+is rebuilt as `midea-valuation-applicability-v5`
+(`runtime/company-research/midea-valuation-applicability-20261013-v5/evidence.json`,
+SHA-256 `b69e2fc931a016393ae5d274ad8d7aec8c5aaad52787e92ae377c5ff5ee5f541`)
+with `A_BLOCKING_UNKNOWN = 0`; the residual-income route stays
+`AUTHORIZED_DENOMINATOR_VERIFIED_PENDING_B_SCENARIO_INPUTS` until the
+B-class scenario inputs are registered, so no per-share valuation is emitted
+and `action=no_order` holds.
+
+Full bounded-window evidence and reproduction commands:
+`docs/current/tl8-c-000333-share-denominator-recheck-20261013.md` and
+`docs/current/tl8-c-000333-share-denominator-recheck-receipt-20261013.json`.

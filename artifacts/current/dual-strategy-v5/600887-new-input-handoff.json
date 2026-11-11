@@ -1,0 +1,35 @@
+{
+  "schema_version": "dual-strategy-v5-real-supplement-handoff-v1",
+  "checked_at": "2026-10-21T15:31:57.207583+00:00",
+  "action": "no_order",
+  "symbol": "600887",
+  "source_scope": "REAL_RETAINED_PUBLIC_SOURCES_CURRENT_LOCAL_REOBSERVATION_NOT_HISTORICAL_PIT",
+  "candidate_binding": {
+    "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/pending-candidate/candidate.json",
+    "sha256": "038e1dfae8be45a663456b9d8bad40fe1c5b67c4a011228ea9a641f5bae43e82"
+  },
+  "model_context": {
+    "input_descriptor_sha256": "62102d8324d04285cdaaab1a438f94882f73ec779d13acb9dd6906968f0cb691",
+    "research_case_sha256": "2d841d9a7082ea4f5ac111b7ffb6a9c7f1b17adc042e91824fbaa920d323ebf4",
+    "facts_sha256": "dc444a4e75b2160cca4fd48a5355a05e071e060458c490d26f008694b1e17d0d",
+    "assumptions_sha256": "ec857a29b983ee5fb4dd08a0f75c4dd0d8e4d34cd88da7ef42c71a2be3175d50",
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "profile_id": "quality_compounder",
+    "research_as_of": "2026-10-21"
+  },
+  "handoff_status": "EXTERNAL_SIGNATURE_REQUIRED",
+  "authorization": {
+    "pinned_root_count": 0,
+    "status": "AUTHORIZED_IDENTITY_REQUIRED"
+  },
+  "materiality_status": "MATERIALITY_HANDOFF_BLOCKED",
+  "materiality_reason": "原研究包尚未绑定完整公告扫描；须先按对应模型版本补齐并核验后，再办理事件审核。",
+  "approval_changed": false,
+  "research_admitted": false,
+  "price_admitted": false,
+  "current_public_price_policy_changed": false,
+  "source_bytes_unchanged": true,
+  "pending_group_count": 4,
+  "position_guidance": null
+}

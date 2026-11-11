@@ -1,0 +1,75 @@
+{
+  "schema_version": "operating-horizon-sources-v1",
+  "action": "no_order",
+  "cases": {
+    "600323": {
+      "issuer_name": "瀚蓝环境股份有限公司",
+      "parent_cash_observation_receipts": [
+        {
+          "period": "2025-12-31",
+          "receipt_binding": {
+            "path": "runtime/e2-600323-public-followup/20261104T095722709545Z/receipt.json",
+            "sha256": "93337cb3a76d0ceafee6b60ede8a4207bc3f9e9b38ba75e3e457a8e96c6f874a"
+          }
+        },
+        {
+          "period": "2026-06-30",
+          "receipt_binding": {
+            "path": "runtime/e2-600323-public-followup/20261104T015250940833Z/receipt.json",
+            "sha256": "a9a9d47257528372d0ef8fc23f9a8191e187544828fcd4ba2468f26e801ca02c"
+          }
+        }
+      ],
+      "excerpts": [
+        {
+          "period": "2026-06-30",
+          "physical_page": 13,
+          "start_marker": "2026 年上半年实现营业收入",
+          "end_marker": "（2）业务拓展情况"
+        },
+        {
+          "period": "2026-06-30",
+          "physical_page": 14,
+          "start_marker": "在供热方面",
+          "end_marker": "2、能源业务"
+        },
+        {
+          "period": "2026-06-30",
+          "physical_page": 19,
+          "start_marker": "四、报告期内主要经营情况",
+          "end_marker": "（2）能源业务："
+        },
+        {
+          "period": "2026-06-30",
+          "physical_page": 135,
+          "start_marker": "PPP是指政府",
+          "end_marker": null
+        },
+        {
+          "period": "2026-06-30",
+          "physical_page": 203,
+          "start_marker": "7、 其他对投资者决策有影响的重要交易和事项",
+          "end_marker": "十九、母公司财务报表主要项目注释"
+        },
+        {
+          "period": "2025-12-31",
+          "physical_page": 24,
+          "start_marker": "五、报告期内主要经营情况",
+          "end_marker": "2、能源业务："
+        },
+        {
+          "period": "2025-12-31",
+          "physical_page": 147,
+          "start_marker": "1. PPP项目合同",
+          "end_marker": "（9）"
+        },
+        {
+          "period": "2025-12-31",
+          "physical_page": 183,
+          "start_marker": "PPP是指政府",
+          "end_marker": "20、 商誉"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "stage": "S4",
+  "status": "PARTIAL",
+  "captured_at": "2026-10-18T10:35:58.500067+00:00",
+  "action": "no_order",
+  "private_journal_opened": false,
+  "rows": [
+    {
+      "symbol": "000333",
+      "plan_available": true,
+      "market_trade_date": "2026-10-16",
+      "announcement_coverage_status": "UNKNOWN",
+      "coverage": null,
+      "coverage_gap": {
+        "code": "RETAINED_COVERAGE_NOT_VERIFIED",
+        "reason": "registered research package requires explicit path and SHA-256"
+      },
+      "formal_eligibility": false,
+      "action": "no_order"
+    },
+    {
+      "symbol": "000651",
+      "plan_available": true,
+      "market_trade_date": null,
+      "announcement_coverage_status": "UNKNOWN",
+      "coverage": null,
+      "coverage_gap": {
+        "code": "RETAINED_COVERAGE_NOT_VERIFIED",
+        "reason": "Plan has no verified completed-session date for announcement coverage"
+      },
+      "formal_eligibility": false,
+      "action": "no_order"
+    },
+    {
+      "symbol": "600519",
+      "plan_available": true,
+      "market_trade_date": "2026-10-16",
+      "announcement_coverage_status": "COMPLETE",
+      "coverage": {
+        "symbol": "600519",
+        "scan_from": "2026-10-11",
+        "scan_to": "2026-10-16",
+        "coverage_status": "COMPLETE",
+        "scan_binding": {
+          "path": "runtime/web-first-event-coverage/600519-20261018/event-scan.json",
+          "sha256": "134a4006427cc9f0fef63686921c540ae8f05d8c305b9ef184051c590b3d6708"
+        },
+        "action": "no_order",
+        "materiality_approved": false,
+        "model_revalidated": false,
+        "scope": "RESEARCH_CUTOFF_TO_PLAN_COMPLETED_SESSION_ONLY",
+        "observation_binding": {
+          "path": "runtime/web-first-event-coverage/600519-20261018/observation.json",
+          "sha256": "e9bc0c95c029d71602401237cba78cde381610e236b269d367303aaca6fec0a9"
+        },
+        "earlier_event_reviews_replaced": false
+      },
+      "coverage_gap": null,
+      "formal_eligibility": false,
+      "action": "no_order"
+    },
+    {
+      "symbol": "600741",
+      "plan_available": true,
+      "market_trade_date": null,
+      "announcement_coverage_status": "UNKNOWN",
+      "coverage": null,
+      "coverage_gap": {
+        "code": "RETAINED_COVERAGE_NOT_VERIFIED",
+        "reason": "Plan has no verified completed-session date for announcement coverage"
+      },
+      "formal_eligibility": false,
+      "action": "no_order"
+    },
+    {
+      "symbol": "600887",
+      "plan_available": true,
+      "market_trade_date": "2026-10-16",
+      "announcement_coverage_status": "COMPLETE",
+      "coverage": {
+        "symbol": "600887",
+        "scan_from": "2026-10-11",
+        "scan_to": "2026-10-16",
+        "coverage_status": "COMPLETE",
+        "scan_binding": {
+          "path": "runtime/web-first-event-coverage/600887-20261018/event-scan.json",
+          "sha256": "90e2367ad9170b2d8aa8590ba0ea723005740a7fcfce5adcf48c8323d439baae"
+        },
+        "action": "no_order",
+        "materiality_approved": false,
+        "model_revalidated": false,
+        "scope": "RESEARCH_CUTOFF_TO_PLAN_COMPLETED_SESSION_ONLY",
+        "observation_binding": {
+          "path": "runtime/web-first-event-coverage/600887-20261018/observation.json",
+          "sha256": "560c1dd6bd42c461985e1fe1880fb50de0f2ed82d628baa9e1a0c255ff5d9f58"
+        },
+        "earlier_event_reviews_replaced": false
+      },
+      "coverage_gap": null,
+      "formal_eligibility": false,
+      "action": "no_order"
+    },
+    {
+      "symbol": "601088",
+      "plan_available": true,
+      "market_trade_date": null,
+      "announcement_coverage_status": "UNKNOWN",
+      "coverage": null,
+      "coverage_gap": {
+        "code": "RETAINED_COVERAGE_NOT_VERIFIED",
+        "reason": "Plan has no verified completed-session date for announcement coverage"
+      },
+      "formal_eligibility": false,
+      "action": "no_order"
+    }
+  ],
+  "actual_browser_evidence": "NOT_VERIFIED"
+}

@@ -1,0 +1,3563 @@
+{
+  "schema_version": "value-mainline-modules-v1",
+  "action": "no_order",
+  "source_baseline": "283c7212d832f52118705bb095e046e0c36dcbfc",
+  "scope": "VALUE-MAINLINE-P0",
+  "purpose": "唯一机器能力目录；登记既有能力、合同和证据边界，不存运行状态、不执行业务、不新建队列。",
+  "source_reports": [
+    "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+    "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+    "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+    "docs/current/value-mainline-p0-20261101/g1-web-audit.md"
+  ],
+  "source_report_location_note": "四份审计报告已归入docs/current/value-mainline-p0-20261101；source_baseline为修改前审计身份。",
+  "standard_contract_schema": "schemas/value-mainline-v1.json",
+  "standard_contract_status": "ROOT_OWNED_WRAPPER_REFERENCES_NOT_NATIVE_IMPLEMENTATION",
+  "method_status_vocabulary": [
+    "EXISTING_NATIVE",
+    "PARTIAL",
+    "DESIGN_ONLY"
+  ],
+  "method_status_semantics": {
+    "EXISTING_NATIVE": "审计定位的原生函数/类/route已实现该有限操作；不等于统一wrapper已存在或本轮经济采用。",
+    "PARTIAL": "只覆盖特定入口/样本/嵌入式结果，统一方法或端到端范围不完整。",
+    "DESIGN_ONLY": "审计范围没有可复用原生操作；不得映射为已完成。"
+  },
+  "criteria_definitions": {
+    "domain": "领域合同、经济算术及职责边界",
+    "application": "实际编排入口与消费者",
+    "input_output_schema": "原生输入输出与标准wrapper之间的区别",
+    "independent_run": "独立调用/隔离与真实运行证据",
+    "tests": "直接测试及本次执行/留存/仅源码的证据级别",
+    "real_case": "有确切来源/回执的真实样本范围",
+    "errors": "实际拒绝、缺口、partial及恢复边界",
+    "provenance": "来源、时点、字段、代码与实际消费绑定",
+    "web": "真实路由/组件与部署验收的区别",
+    "hardcoded": "样本/路径/版式/策略硬编码边界",
+    "defaults": "默认行为和显式研究假设，未知不得默认为事实",
+    "dependencies": "必要合同、替代路径及非强制关联"
+  },
+  "dependency_semantics": {
+    "all_of": "必要合同能力，不是要求每个上游模块先有独立SUCCEEDED记录；允许既有已验证原件/包满足合同。",
+    "any_of": "每个内层数组至少一条替代路径满足；F1的[E1,E2]为OR，不能解释成AND。",
+    "optional_dependencies": "关联能力，非强前置；B不是C前置，G2是横切生命周期而非业务顺序门。",
+    "external": "非本目录模块ID的已有合同/来源/授权条件。",
+    "graph_kind": "CAPABILITY_RELATIONSHIPS_NOT_NEW_EXECUTION_QUEUE"
+  },
+  "axis_semantics": {
+    "engineering": "已有实现与实测范围，不以代码/CI替代业务充分性。",
+    "business": "来源/条件计算/经济采用/当前决策各自限定，不把SUCCEEDED等同批准。",
+    "user": "本轮P0用户尚未确认；历史验收不得替代本轮确认。"
+  },
+  "execution_boundaries": {
+    "writes_business_state": false,
+    "creates_queue": false,
+    "performs_network_or_paid_calls": false,
+    "runtime_status_source": "ONLY_EXPLICIT_NATIVE_READER_RESPONSE",
+    "deployment_verified_by_this_catalog": false,
+    "shared_modules_note": "仅11主模块；S1/S2/S3/S4/W1不复制成主前置。私有前提只限制相应个性化决定，不阻公开研究读取。",
+    "validation_required": "wrapper引用只约束包装层；每模块仍须执行原生主体/来源/时点/数值/作用域/实际消费验证。目录存在不代表验证执行。"
+  },
+  "modules": [
+    {
+      "module_id": "A",
+      "title": "公开资料与来源证据",
+      "purpose": "取得并冷核请求范围内的官方原件与有限财务字段，保留来源缺口。",
+      "action": "no_order",
+      "source_baseline": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "source_report": "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+      "input_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Input_A"
+      },
+      "output_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Output_A"
+      },
+      "native_schema_is_general_json_schema": false,
+      "validation_required": {
+        "required": true,
+        "wrapper_validation_sufficient": false,
+        "description": "标准wrapper引用不替代原生校验。PARTIAL保留健康项；已登记原件损坏拒绝；无核验来源不能入队。 PDF/index/receipt/facts/export闭包及原fetched保留；取得时间不是历史PIT。",
+        "native_validation_refs": [
+          "src/value_investment_agent/application/research/public_evidence.py:run_public_evidence",
+          "src/value_investment_agent/application/research/public_evidence.py:load_bundle",
+          "src/value_investment_agent/application/research/public_evidence.py:validate_queue_public_evidence"
+        ]
+      },
+      "native_inputs": [
+        {
+          "type": "native_request_list",
+          "path": "src/value_investment_agent/application/research/public_evidence.py",
+          "entrypoint": "run_public_evidence(requests, root, output_dir, allow_network=False)"
+        }
+      ],
+      "native_outputs": [
+        {
+          "type": "public-evidence-bundle-v1",
+          "path": "src/value_investment_agent/application/research/public_evidence.py",
+          "entrypoint": "load_bundle"
+        },
+        {
+          "type": "public-evidence-status-v1",
+          "path": "src/value_investment_agent/application/research/public_evidence.py",
+          "entrypoint": "public_evidence_status"
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/public_evidence.py",
+          "entrypoint": "run_public_evidence"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/public_evidence.py",
+          "entrypoint": "load_bundle"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/public_evidence.py",
+          "entrypoint": "validate_queue_public_evidence"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/infrastructure/filings/official_report_acquisition.py",
+          "entrypoint": "acquire_official_report"
+        },
+        {
+          "type": "cli",
+          "path": "scripts/current/collect_public_evidence.py",
+          "entrypoint": "main"
+        }
+      ],
+      "method_status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "EXISTING_NATIVE",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "PARTIAL"
+      },
+      "method_evidence": {
+        "input_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/public_evidence.py:run_public_evidence"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "output_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/public_evidence.py:run_public_evidence"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "validate": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/public_evidence.py:run_public_evidence"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "run": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/public_evidence.py:run_public_evidence"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "get_run": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/app.py:GET /api/v1/public-evidence"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "replay": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/public_evidence.py:run_public_evidence"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "explain": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/public_evidence.py:run_public_evidence"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "health_check": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/public_evidence.py:run_public_evidence"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        }
+      },
+      "runtime_reader": {
+        "method": "GET",
+        "path": "/api/v1/public-evidence",
+        "authorization": "public",
+        "source_ref": {
+          "type": "python_function",
+          "path": "src/value_investment_agent/presentation/web_api/app.py",
+          "entrypoint": "GET /api/v1/public-evidence"
+        },
+        "scope": "请求范围证据状态；不表示全市场完整",
+        "may_compute": true,
+        "verification_level": "AUDIT_VERIFIED_ROUTE_SOURCE_NOT_DEPLOYMENT",
+        "automatic_fetch": false,
+        "starts_paid_execution": false
+      },
+      "tests": [
+        "tests/test_public_evidence_consumer.py",
+        "tests/test_public_evidence_status_fields.py",
+        "web/tests/public-evidence-panel.test.tsx"
+      ],
+      "real_samples": [
+        {
+          "symbols": [
+            "600519",
+            "600887"
+          ],
+          "path": "artifacts/current/public-evidence-a-20261030.json",
+          "result": "各1项debt_ratio原件验证；不是完整事实包",
+          "evidence_kind": "AUDITED_RETAINED_ARTIFACT"
+        },
+        {
+          "symbols": [
+            "600519",
+            "600887"
+          ],
+          "path": "runtime/public-evidence/20261030T110724-accepted/bundle.json",
+          "sha256": "ab4d528f7f30144ac451a33d2326e9d143d7496f4d376a22a8a12800f877034a",
+          "result": "限定请求bundle",
+          "evidence_kind": "AUDITED_RETAINED_ARTIFACT"
+        }
+      ],
+      "errors": {
+        "description": "PARTIAL保留健康项；已登记原件损坏拒绝；无核验来源不能入队。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/research/public_evidence.py"
+        ]
+      },
+      "provenance": {
+        "description": "PDF/index/receipt/facts/export闭包及原fetched保留；取得时间不是历史PIT。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/research/public_evidence.py"
+        ]
+      },
+      "hardcoded_or_defaults": {
+        "hardcoded": "支持有限期间、版式及1–6请求；不是任意报告通用解析。",
+        "defaults": "allow_network=False；采集需显式选择，不由GET触发。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/research/public_evidence.py"
+        ]
+      },
+      "required_dependencies": {
+        "all_of": [],
+        "any_of": [],
+        "external": [
+          "官方来源取得能力或已留存官方原件",
+          "身份/期间/时间/币种校验"
+        ]
+      },
+      "optional_dependencies": [
+        "B",
+        "G2"
+      ],
+      "crosscutting": false,
+      "axes": {
+        "engineering": {
+          "status": "BOUNDED_NATIVE_CAPABILITY",
+          "scope": "可按root/request独立调用；load与采集分离，无统一ModuleRun。 两个真实请求各1字段；不涵盖000568此A验收。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md"
+          ]
+        },
+        "business": {
+          "status": "NO_ECONOMIC_OR_CURRENT_DECISION_ADMISSION_GRANTED",
+          "scope": "本模块能力/来源验证不授经济、价格、执行或其他下游资格。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md"
+          ]
+        },
+        "user": {
+          "status": "NOT_CONFIRMED",
+          "scope": "本轮VALUE-MAINLINE-P0用户未确认；不继承历史人审为本轮确认。"
+        }
+      },
+      "criteria": {
+        "domain": {
+          "description": "复用原件身份与字段合同；主要编排在application，不是完整财报理解引擎。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/public_evidence.py"
+          ]
+        },
+        "application": {
+          "description": "run_public_evidence；取得并冷核请求范围内的官方原件与有限财务字段，保留来源缺口。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/public_evidence.py"
+          ]
+        },
+        "input_output_schema": {
+          "description": "原生合同见native_inputs/native_outputs。不是已通用JSON Schema；wrapper只引用Root拥有的Input_A/Output_A。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/public_evidence.py"
+          ]
+        },
+        "independent_run": {
+          "description": "可按root/request独立调用；load与采集分离，无统一ModuleRun。 两个真实请求各1字段；不涵盖000568此A验收。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/public_evidence.py"
+          ]
+        },
+        "tests": {
+          "description": "直接测试：tests/test_public_evidence_consumer.py、tests/test_public_evidence_status_fields.py、web/tests/public-evidence-panel.test.tsx。执行范围以source_report为准；D2/F审计仅4项本轮真实测试，其他不得继承该passed。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "tests/test_public_evidence_consumer.py"
+          ]
+        },
+        "real_case": {
+          "description": "600519/600887：各1项debt_ratio原件验证；不是完整事实包；600519/600887：限定请求bundle",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "artifacts/current/public-evidence-a-20261030.json"
+          ]
+        },
+        "errors": {
+          "description": "PARTIAL保留健康项；已登记原件损坏拒绝；无核验来源不能入队。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/public_evidence.py"
+          ]
+        },
+        "provenance": {
+          "description": "PDF/index/receipt/facts/export闭包及原fetched保留；取得时间不是历史PIT。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/public_evidence.py"
+          ]
+        },
+        "web": {
+          "description": "SystemStatus/PublicEvidencePanel消费实际GET；目录节点不负责采集。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "hardcoded": {
+          "description": "支持有限期间、版式及1–6请求；不是任意报告通用解析。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/public_evidence.py"
+          ]
+        },
+        "defaults": {
+          "description": "allow_network=False；采集需显式选择，不由GET触发。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/public_evidence.py"
+          ]
+        },
+        "dependencies": {
+          "description": "all_of=；any_of=[]；官方来源取得能力或已留存官方原件；身份/期间/时间/币种校验。关联非共同前置。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/public_evidence.py"
+          ]
+        }
+      }
+    },
+    {
+      "module_id": "B",
+      "title": "四通道筛选与研究队列",
+      "purpose": "按明确scope、四通道理由和预算形成候选与有限补证队列。",
+      "action": "no_order",
+      "source_baseline": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "source_report": "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+      "input_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Input_B"
+      },
+      "output_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Output_B"
+      },
+      "native_schema_is_general_json_schema": false,
+      "validation_required": {
+        "required": true,
+        "wrapper_validation_sufficient": false,
+        "description": "标准wrapper引用不替代原生校验。CONFLICT不被预算覆盖；字段缺失/不适用/预算排除分开；不可把来源不可用当0候选。 scope/日期/report/receipt/export绑定；不是默认全A覆盖。",
+        "native_validation_refs": [
+          "src/value_investment_agent/application/research/value_research_priority_v2.py:build_value_research_priority_v2"
+        ]
+      },
+      "native_inputs": [
+        {
+          "type": "bound_discovery_receipt_and_financial_export",
+          "path": "src/value_investment_agent/application/research/value_research_priority_v2.py",
+          "entrypoint": "build_value_research_priority_v2"
+        }
+      ],
+      "native_outputs": [
+        {
+          "type": "value-research-priority-v2",
+          "path": "src/value_investment_agent/application/research/value_research_priority_v2.py",
+          "entrypoint": "build_value_research_priority_v2"
+        },
+        {
+          "type": "research_queue",
+          "path": "src/value_investment_agent/application/research/value_research_queue.py",
+          "entrypoint": "build_value_research_queue"
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/value_research_priority_v2.py",
+          "entrypoint": "build_value_research_priority_v2"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/discovery/scoped_screening.py",
+          "entrypoint": "scoped_inputs"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/discovery/scoped_screening.py",
+          "entrypoint": "build_discovery_receipt"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/value_enrichment_batch.py",
+          "entrypoint": "execute_value_enrichment_batch"
+        },
+        {
+          "type": "cli",
+          "path": "scripts/current/build_value_research_queue.py",
+          "entrypoint": "main"
+        }
+      ],
+      "method_status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "EXISTING_NATIVE",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "DESIGN_ONLY"
+      },
+      "method_evidence": {
+        "input_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/value_research_priority_v2.py:build_value_research_priority_v2"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "output_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/value_research_priority_v2.py:build_value_research_priority_v2"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "validate": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/value_research_priority_v2.py:build_value_research_priority_v2"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "run": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/value_research_priority_v2.py:build_value_research_priority_v2"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "get_run": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/app.py:GET /api/v1/strategy-selection"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "replay": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/value_research_priority_v2.py:build_value_research_priority_v2"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "explain": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/value_research_priority_v2.py:build_value_research_priority_v2"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "health_check": {
+          "native_refs": [],
+          "scope": "无已证原生接口；不虚构。"
+        }
+      },
+      "runtime_reader": {
+        "method": "GET",
+        "path": "/api/v1/strategy-selection",
+        "authorization": "public",
+        "source_ref": {
+          "type": "python_function",
+          "path": "src/value_investment_agent/presentation/web_api/app.py",
+          "entrypoint": "GET /api/v1/strategy-selection"
+        },
+        "scope": "已登记候选选择/分页读模型，不重跑筛选",
+        "may_compute": true,
+        "verification_level": "AUDIT_VERIFIED_ROUTE_SOURCE_NOT_DEPLOYMENT",
+        "automatic_fetch": false,
+        "starts_paid_execution": false
+      },
+      "tests": [
+        "tests/test_value_research_priority_v2.py",
+        "tests/test_scoped_screening.py",
+        "tests/test_value_enrichment_batch.py",
+        "tests/test_m2_opportunity_discovery.py",
+        "tests/test_value_candidate_selection.py"
+      ],
+      "real_samples": [
+        {
+          "symbols": [
+            "600519",
+            "600887",
+            "000568"
+          ],
+          "path": "runtime/daily-marketwide/g1-restored-20261028-v4/receipt.json",
+          "result": "四通道分别含DATA_GAP/REJECTED/BUDGET_EXCLUDED/PASS；000568现金PASS不等批准",
+          "evidence_kind": "AUDITED_RETAINED_ARTIFACT"
+        },
+        {
+          "symbols": [
+            "000151",
+            "000498"
+          ],
+          "path": "artifacts/current/value-screening-b-20261030.json",
+          "result": "补证成功样本；不可归到另三家",
+          "evidence_kind": "AUDITED_RETAINED_ARTIFACT"
+        }
+      ],
+      "errors": {
+        "description": "CONFLICT不被预算覆盖；字段缺失/不适用/预算排除分开；不可把来源不可用当0候选。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/research/value_research_priority_v2.py"
+        ]
+      },
+      "provenance": {
+        "description": "scope/日期/report/receipt/export绑定；不是默认全A覆盖。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/research/value_research_priority_v2.py"
+        ]
+      },
+      "hardcoded_or_defaults": {
+        "hardcoded": "通道及策略阈值显式；有限scope与排序预算，不做全市场估值。",
+        "defaults": "CLI默认v1，v2需显式；下载另开关；durable reuse可能写新export，不统称只读。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/research/value_research_priority_v2.py"
+        ]
+      },
+      "required_dependencies": {
+        "all_of": [
+          "A"
+        ],
+        "any_of": [],
+        "external": [
+          "绑定的筛选scope与原始报价/财务观察"
+        ]
+      },
+      "optional_dependencies": [
+        "C",
+        "D1",
+        "G2"
+      ],
+      "crosscutting": false,
+      "axes": {
+        "engineering": {
+          "status": "BOUNDED_NATIVE_CAPABILITY",
+          "scope": "可按绑定receipt/export执行；不需要LLM或先跑C。 三家公司有筛选观察，不均为候选；补证成功另为000151/000498。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md"
+          ]
+        },
+        "business": {
+          "status": "NO_ECONOMIC_OR_CURRENT_DECISION_ADMISSION_GRANTED",
+          "scope": "本模块能力/来源验证不授经济、价格、执行或其他下游资格。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md"
+          ]
+        },
+        "user": {
+          "status": "NOT_CONFIRMED",
+          "scope": "本轮VALUE-MAINLINE-P0用户未确认；不继承历史人审为本轮确认。"
+        }
+      },
+      "criteria": {
+        "domain": {
+          "description": "M2ScreeningPolicy/ChannelEvaluation/DiscoveryRunReceipt为既有legacy领域合同。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/value_research_priority_v2.py"
+          ]
+        },
+        "application": {
+          "description": "build_value_research_priority_v2；按明确scope、四通道理由和预算形成候选与有限补证队列。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/value_research_priority_v2.py"
+          ]
+        },
+        "input_output_schema": {
+          "description": "原生合同见native_inputs/native_outputs。不是已通用JSON Schema；wrapper只引用Root拥有的Input_B/Output_B。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/value_research_priority_v2.py"
+          ]
+        },
+        "independent_run": {
+          "description": "可按绑定receipt/export执行；不需要LLM或先跑C。 三家公司有筛选观察，不均为候选；补证成功另为000151/000498。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/value_research_priority_v2.py"
+          ]
+        },
+        "tests": {
+          "description": "直接测试：tests/test_value_research_priority_v2.py、tests/test_scoped_screening.py、tests/test_value_enrichment_batch.py、tests/test_m2_opportunity_discovery.py、tests/test_value_candidate_selection.py。执行范围以source_report为准；D2/F审计仅4项本轮真实测试，其他不得继承该passed。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "tests/test_value_research_priority_v2.py"
+          ]
+        },
+        "real_case": {
+          "description": "600519/600887/000568：四通道分别含DATA_GAP/REJECTED/BUDGET_EXCLUDED/PASS；000568现金PASS不等批准；000151/000498：补证成功样本；不可归到另三家",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "runtime/daily-marketwide/g1-restored-20261028-v4/receipt.json"
+          ]
+        },
+        "errors": {
+          "description": "CONFLICT不被预算覆盖；字段缺失/不适用/预算排除分开；不可把来源不可用当0候选。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/value_research_priority_v2.py"
+          ]
+        },
+        "provenance": {
+          "description": "scope/日期/report/receipt/export绑定；不是默认全A覆盖。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/value_research_priority_v2.py"
+          ]
+        },
+        "web": {
+          "description": "daily/DualStrategySelection实际消费strategy-selection。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "hardcoded": {
+          "description": "通道及策略阈值显式；有限scope与排序预算，不做全市场估值。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/value_research_priority_v2.py"
+          ]
+        },
+        "defaults": {
+          "description": "CLI默认v1，v2需显式；下载另开关；durable reuse可能写新export，不统称只读。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/value_research_priority_v2.py"
+          ]
+        },
+        "dependencies": {
+          "description": "all_of=A；any_of=[]；绑定的筛选scope与原始报价/财务观察。关联非共同前置。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/value_research_priority_v2.py"
+          ]
+        }
+      }
+    },
+    {
+      "module_id": "C",
+      "title": "企业画像与模型适用性",
+      "purpose": "验证来源绑定画像、经济类型与模型必需输入；拒绝未知、混合或不适用。",
+      "action": "no_order",
+      "source_baseline": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "source_report": "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+      "input_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Input_C"
+      },
+      "output_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Output_C"
+      },
+      "native_schema_is_general_json_schema": false,
+      "validation_required": {
+        "required": true,
+        "wrapper_validation_sufficient": false,
+        "description": "标准wrapper引用不替代原生校验。UNKNOWN/mixed/financial拒绝；坏current package不回退source-only；validator不得递归analysis证明自身。 身份/原件hash/完整主营section/时点与actual descriptor绑定；reviewed section不冒通用classifier。",
+        "native_validation_refs": [
+          "src/value_investment_agent/application/research/company_profile.py:load_company_profile",
+          "src/value_investment_agent/domain/research/profile_applicability_v1.py:contract_for_profile",
+          "src/value_investment_agent/application/research/company_profile.py:validate_company_profile_for_package",
+          "src/value_investment_agent/application/research/company_profile_sources_v1.py:load_source_company_profile"
+        ]
+      },
+      "native_inputs": [
+        {
+          "type": "source_bound_package_or_source_only_profile",
+          "path": "src/value_investment_agent/application/research/company_profile.py",
+          "entrypoint": "validate_company_profile_for_package"
+        },
+        {
+          "type": "fixed_source_section_binding",
+          "path": "src/value_investment_agent/application/research/company_profile_sources_v1.py",
+          "entrypoint": "load_source_company_profile"
+        }
+      ],
+      "native_outputs": [
+        {
+          "type": "company-research-profile-v1",
+          "path": "src/value_investment_agent/application/research/company_profile.py",
+          "entrypoint": "project_company_profile"
+        },
+        {
+          "type": "source-company-profile-v1",
+          "path": "src/value_investment_agent/application/research/company_profile_sources_v1.py",
+          "entrypoint": "load_source_company_profile"
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/company_profile.py",
+          "entrypoint": "load_company_profile"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/domain/research/research_profile.py",
+          "entrypoint": "ResearchProfile"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/domain/research/profile_applicability_v1.py",
+          "entrypoint": "contract_for_profile"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/company_profile.py",
+          "entrypoint": "validate_company_profile_for_package"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/company_profile_sources_v1.py",
+          "entrypoint": "load_source_company_profile"
+        }
+      ],
+      "method_status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "PARTIAL",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "EXISTING_NATIVE",
+        "health_check": "DESIGN_ONLY"
+      },
+      "method_evidence": {
+        "input_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/company_profile.py:load_company_profile"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "output_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/company_profile.py:load_company_profile"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "validate": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/company_profile.py:load_company_profile"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "run": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/company_profile.py:load_company_profile"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "get_run": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/app.py:GET /api/v1/research-profiles/{symbol}"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "replay": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/company_profile.py:load_company_profile"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "explain": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/company_profile.py:load_company_profile"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "health_check": {
+          "native_refs": [],
+          "scope": "无已证原生接口；不虚构。"
+        }
+      },
+      "runtime_reader": {
+        "method": "GET",
+        "path": "/api/v1/research-profiles/{symbol}",
+        "authorization": "public",
+        "source_ref": {
+          "type": "python_function",
+          "path": "src/value_investment_agent/presentation/web_api/app.py",
+          "entrypoint": "GET /api/v1/research-profiles/{symbol}"
+        },
+        "scope": "固定来源画像/适用性，非经济质量批准",
+        "may_compute": true,
+        "verification_level": "AUDIT_VERIFIED_ROUTE_SOURCE_NOT_DEPLOYMENT",
+        "automatic_fetch": false,
+        "starts_paid_execution": false
+      },
+      "tests": [
+        "tests/test_company_profile.py",
+        "tests/test_company_profile_sources_v1.py",
+        "tests/test_company_profile_api.py"
+      ],
+      "real_samples": [
+        {
+          "symbols": [
+            "600519",
+            "600887",
+            "000333",
+            "601088",
+            "600036"
+          ],
+          "path": "runtime/c-closeout-20261031/api-acceptance/receipt.json",
+          "sha256": "64646bfad728b3d0942458fb48aa37d4b9936683712291fec208a2a415e5b661",
+          "result": "固定五家：旧2保留、新2route-only缺必需输入、金融有据拒绝；000568不在本验收",
+          "evidence_kind": "AUDITED_RETAINED_ARTIFACT"
+        }
+      ],
+      "errors": {
+        "description": "UNKNOWN/mixed/financial拒绝；坏current package不回退source-only；validator不得递归analysis证明自身。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/research/company_profile.py"
+        ]
+      },
+      "provenance": {
+        "description": "身份/原件hash/完整主营section/时点与actual descriptor绑定；reviewed section不冒通用classifier。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/research/company_profile.py"
+        ]
+      },
+      "hardcoded_or_defaults": {
+        "hardcoded": "三段FIXED_SECTION_POLICIES及固定五家边界；不是通用质量模型。",
+        "defaults": "permits_valuation_without_inputs=false、permits_approval=false；不默认FCFF。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/research/company_profile.py"
+        ]
+      },
+      "required_dependencies": {
+        "all_of": [
+          "A"
+        ],
+        "any_of": [],
+        "external": [
+          "合法主体/来源画像与profile合同；可来自既有包或source-only"
+        ]
+      },
+      "optional_dependencies": [
+        "B",
+        "E1",
+        "E2"
+      ],
+      "crosscutting": false,
+      "axes": {
+        "engineering": {
+          "status": "BOUNDED_NATIVE_CAPABILITY",
+          "scope": "validator不读registry/router/model；load层可能重验实际analysis。 固定五家真实验收；不借E2把000568升级为第六家。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md"
+          ]
+        },
+        "business": {
+          "status": "NO_ECONOMIC_OR_CURRENT_DECISION_ADMISSION_GRANTED",
+          "scope": "本模块能力/来源验证不授经济、价格、执行或其他下游资格。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md"
+          ]
+        },
+        "user": {
+          "status": "NOT_CONFIRMED",
+          "scope": "本轮VALUE-MAINLINE-P0用户未确认；不继承历史人审为本轮确认。"
+        }
+      },
+      "criteria": {
+        "domain": {
+          "description": "ResearchProfile与profile_applicability_v1定义条件/拒绝/必需输入，不授质量批准。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/company_profile.py"
+          ]
+        },
+        "application": {
+          "description": "load_company_profile；验证来源绑定画像、经济类型与模型必需输入；拒绝未知、混合或不适用。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/company_profile.py"
+          ]
+        },
+        "input_output_schema": {
+          "description": "原生合同见native_inputs/native_outputs。不是已通用JSON Schema；wrapper只引用Root拥有的Input_C/Output_C。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/company_profile.py"
+          ]
+        },
+        "independent_run": {
+          "description": "validator不读registry/router/model；load层可能重验实际analysis。 固定五家真实验收；不借E2把000568升级为第六家。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/company_profile.py"
+          ]
+        },
+        "tests": {
+          "description": "直接测试：tests/test_company_profile.py、tests/test_company_profile_sources_v1.py、tests/test_company_profile_api.py。执行范围以source_report为准；D2/F审计仅4项本轮真实测试，其他不得继承该passed。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "tests/test_company_profile.py"
+          ]
+        },
+        "real_case": {
+          "description": "600519/600887/000333/601088/600036：固定五家：旧2保留、新2route-only缺必需输入、金融有据拒绝；000568不在本验收",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "runtime/c-closeout-20261031/api-acceptance/receipt.json"
+          ]
+        },
+        "errors": {
+          "description": "UNKNOWN/mixed/financial拒绝；坏current package不回退source-only；validator不得递归analysis证明自身。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/company_profile.py"
+          ]
+        },
+        "provenance": {
+          "description": "身份/原件hash/完整主营section/时点与actual descriptor绑定；reviewed section不冒通用classifier。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/company_profile.py"
+          ]
+        },
+        "web": {
+          "description": "CompanyProfilePanel挂载GET。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "hardcoded": {
+          "description": "三段FIXED_SECTION_POLICIES及固定五家边界；不是通用质量模型。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/company_profile.py"
+          ]
+        },
+        "defaults": {
+          "description": "permits_valuation_without_inputs=false、permits_approval=false；不默认FCFF。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/company_profile.py"
+          ]
+        },
+        "dependencies": {
+          "description": "all_of=A；any_of=[]；合法主体/来源画像与profile合同；可来自既有包或source-only。关联非共同前置。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/company_profile.py"
+          ]
+        }
+      }
+    },
+    {
+      "module_id": "D1",
+      "title": "受限研究执行",
+      "purpose": "按显式授权、来源快照及预算运行saved/mock或live研究，保留checkpoint与失败。",
+      "action": "no_order",
+      "source_baseline": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "source_report": "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+      "input_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Input_D1"
+      },
+      "output_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Output_D1"
+      },
+      "native_schema_is_general_json_schema": false,
+      "validation_required": {
+        "required": true,
+        "wrapper_validation_sufficient": false,
+        "description": "标准wrapper引用不替代原生校验。预算预留不明不清零；source/implementation漂移拒绝；锁忙/有界attempts/取消与partial保留。 input/hash chain/request/context/config/implementation/response pin；整链非外部不可篡改签名。",
+        "native_validation_refs": [
+          "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService",
+          "src/value_investment_agent/application/research/agent_review/llm_pilot.py:verify_llm_packet"
+        ]
+      },
+      "native_inputs": [
+        {
+          "type": "bound_snapshot_and_saved_responses",
+          "path": "src/value_investment_agent/application/research/agent_review/task_execution_v1.py",
+          "entrypoint": "ResearchTaskService.create"
+        },
+        {
+          "type": "live_source_context_and_provider_config",
+          "path": "src/value_investment_agent/application/research/agent_review/operating_task_v2.py",
+          "entrypoint": "LiveOperatingTaskService.create"
+        }
+      ],
+      "native_outputs": [
+        {
+          "type": "versioned_task_checkpoint",
+          "path": "runtime/research-task-execution-v1",
+          "entrypoint": "input.json / versions / current.json"
+        },
+        {
+          "type": "live_role_responses",
+          "path": "runtime/research-task-execution-v1/live-operating-v1",
+          "entrypoint": "verified roles / returned_responses"
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/agent_review/task_execution_v1.py",
+          "entrypoint": "ResearchTaskService"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/agent_review/operating_task_v2.py",
+          "entrypoint": "LiveOperatingTaskService"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/agent_review/llm_pilot.py",
+          "entrypoint": "run_llm_research_pilot"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/agent_review/llm_pilot.py",
+          "entrypoint": "verify_llm_packet"
+        }
+      ],
+      "method_status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "EXISTING_NATIVE",
+        "get_run": "EXISTING_NATIVE",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "PARTIAL"
+      },
+      "method_evidence": {
+        "input_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "output_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "validate": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "run": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "get_run": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/research_task_routes.py:GET /api/v1/research-tasks/{task_id}"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "replay": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "explain": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "health_check": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        }
+      },
+      "runtime_reader": {
+        "method": "GET",
+        "path": "/api/v1/research-tasks/{task_id}",
+        "authorization": "local_auth",
+        "source_ref": {
+          "type": "python_function",
+          "path": "src/value_investment_agent/presentation/web_api/research_task_routes.py",
+          "entrypoint": "GET /api/v1/research-tasks/{task_id}"
+        },
+        "scope": "指定saved/mock任务；live另有operating-research/tasks/{task_id}",
+        "may_compute": true,
+        "verification_level": "AUDIT_VERIFIED_ROUTE_SOURCE_NOT_DEPLOYMENT",
+        "automatic_fetch": false,
+        "starts_paid_execution": false
+      },
+      "tests": [
+        "tests/test_research_task_execution_v1.py",
+        "tests/test_operating_task_v2.py"
+      ],
+      "real_samples": [
+        {
+          "symbols": [
+            "000568"
+          ],
+          "path": "runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json",
+          "sha256": "a67e83372f41f5a3ea5c084691f3e1c08856d324b3d6c76c5f37a74931bd15ed",
+          "result": "真实4calls含一次C缺字段拒绝，最终三role；非经济批准",
+          "evidence_kind": "INDEPENDENT_COLD_READ_D2_F_AUDIT"
+        }
+      ],
+      "errors": {
+        "description": "预算预留不明不清零；source/implementation漂移拒绝；锁忙/有界attempts/取消与partial保留。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+          "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+        ]
+      },
+      "provenance": {
+        "description": "input/hash chain/request/context/config/implementation/response pin；整链非外部不可篡改签名。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+          "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+        ]
+      },
+      "hardcoded_or_defaults": {
+        "hardcoded": "SAVED_RESPONSE/MOCK与LIVE/TEST_ONLY命名空间分开；预算/调用上限为显式配置。",
+        "defaults": "不自动paid；BackgroundTasks同进程调度，崩溃无自动worker续跑、不承诺provider exactly-once。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+          "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+        ]
+      },
+      "required_dependencies": {
+        "all_of": [
+          "A"
+        ],
+        "any_of": [],
+        "external": [
+          "显式任务授权",
+          "live需provider配置/凭证与预算；saved无需新付费"
+        ]
+      },
+      "optional_dependencies": [
+        "D2",
+        "G2"
+      ],
+      "crosscutting": false,
+      "axes": {
+        "engineering": {
+          "status": "BOUNDED_NATIVE_CAPABILITY",
+          "scope": "原service已有create/read/list/cancel/run/resume；不是11模块统一执行器。 真实live样本由D2/F审计冷读；D1/G2审计本身只读源码。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md"
+          ]
+        },
+        "business": {
+          "status": "NO_ECONOMIC_OR_CURRENT_DECISION_ADMISSION_GRANTED",
+          "scope": "本模块能力/来源验证不授经济、价格、执行或其他下游资格。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md"
+          ]
+        },
+        "user": {
+          "status": "NOT_CONFIRMED",
+          "scope": "本轮VALUE-MAINLINE-P0用户未确认；不继承历史人审为本轮确认。"
+        }
+      },
+      "criteria": {
+        "domain": {
+          "description": "复用ResearchSnapshot/LLMRequest/Response及受限任务状态，不是第二研究引擎。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "application": {
+          "description": "ResearchTaskService；按显式授权、来源快照及预算运行saved/mock或live研究，保留checkpoint与失败。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "input_output_schema": {
+          "description": "原生合同见native_inputs/native_outputs。不是已通用JSON Schema；wrapper只引用Root拥有的Input_D1/Output_D1。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "independent_run": {
+          "description": "原service已有create/read/list/cancel/run/resume；不是11模块统一执行器。 真实live样本由D2/F审计冷读；D1/G2审计本身只读源码。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "tests": {
+          "description": "直接测试：tests/test_research_task_execution_v1.py、tests/test_operating_task_v2.py。执行范围以source_report为准；D2/F审计仅4项本轮真实测试，其他不得继承该passed。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "tests/test_research_task_execution_v1.py"
+          ]
+        },
+        "real_case": {
+          "description": "000568：真实4calls含一次C缺字段拒绝，最终三role；非经济批准",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json"
+          ]
+        },
+        "errors": {
+          "description": "预算预留不明不清零；source/implementation漂移拒绝；锁忙/有界attempts/取消与partial保留。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "provenance": {
+          "description": "input/hash chain/request/context/config/implementation/response pin；整链非外部不可篡改签名。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "web": {
+          "description": "ResearchTaskPanel与LiveOperatingResearchPanel显式操作；public结果与私有控制分开。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/presentation/web_api/research_task_routes.py"
+          ]
+        },
+        "hardcoded": {
+          "description": "SAVED_RESPONSE/MOCK与LIVE/TEST_ONLY命名空间分开；预算/调用上限为显式配置。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "defaults": {
+          "description": "不自动paid；BackgroundTasks同进程调度，崩溃无自动worker续跑、不承诺provider exactly-once。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "dependencies": {
+          "description": "all_of=A；any_of=[]；显式任务授权；live需provider配置/凭证与预算；saved无需新付费。关联非共同前置。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        }
+      }
+    },
+    {
+      "module_id": "D2",
+      "title": "经营假设与反证",
+      "purpose": "基于来源事实形成并核验经营假设、三情景驱动和反证，不生成批准或事实。",
+      "action": "no_order",
+      "source_baseline": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "source_report": "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+      "input_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Input_D2"
+      },
+      "output_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Output_D2"
+      },
+      "native_schema_is_general_json_schema": false,
+      "validation_required": {
+        "required": true,
+        "wrapper_validation_sufficient": false,
+        "description": "标准wrapper引用不替代原生校验。错hash/主体/期间/未来/实际场景不一致拒绝；NORMALIZATION_NOT_ESTABLISHED不是参数不存在。 原件逐字段重算、source_id/hash/date/scope绑定；引用合法不证明AI句义正确。",
+        "native_validation_refs": [
+          "src/value_investment_agent/application/research/operating_assumption_draft_v1.py:load_operating_assumption_draft",
+          "src/value_investment_agent/application/research/agent_review/operating_driver_draft_v2.py:validate_response",
+          "src/value_investment_agent/domain/research/operating_driver_bridge_v1.py:calculate_path"
+        ]
+      },
+      "native_inputs": [
+        {
+          "type": "joint-capital-cash-path-inputs-v4",
+          "path": "config/research-assumptions",
+          "entrypoint": "{symbol}-joint-capital-cash-path-v4.json"
+        },
+        {
+          "type": "operating-source-context-v1",
+          "path": "src/value_investment_agent/application/research/agent_review/operating_sources_v1.py",
+          "entrypoint": "build_operating_source_context"
+        }
+      ],
+      "native_outputs": [
+        {
+          "type": "operating-assumption-draft-v1",
+          "path": "src/value_investment_agent/application/research/operating_assumption_draft_v1.py",
+          "entrypoint": "load_operating_assumption_draft"
+        },
+        {
+          "type": "operating_driver_bridge",
+          "path": "src/value_investment_agent/domain/research/operating_driver_bridge_v1.py",
+          "entrypoint": "calculate_path / build_thresholds"
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/operating_assumption_draft_v1.py",
+          "entrypoint": "load_operating_assumption_draft"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/operating_earnings_bridge.py",
+          "entrypoint": "research_from_retained_sources"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/agent_review/operating_driver_draft_v2.py",
+          "entrypoint": "build_request"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/agent_review/operating_driver_draft_v2.py",
+          "entrypoint": "validate_response"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/domain/research/operating_driver_bridge_v1.py",
+          "entrypoint": "calculate_path"
+        }
+      ],
+      "method_status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "PARTIAL",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "DESIGN_ONLY"
+      },
+      "method_evidence": {
+        "input_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py:load_operating_assumption_draft"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "output_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py:load_operating_assumption_draft"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "validate": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py:load_operating_assumption_draft"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "run": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py:load_operating_assumption_draft"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "get_run": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/operating_assumption_routes.py:register_operating_assumption_routes"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "replay": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py:load_operating_assumption_draft"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "explain": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py:load_operating_assumption_draft"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "health_check": {
+          "native_refs": [],
+          "scope": "无已证原生接口；不虚构。"
+        }
+      },
+      "runtime_reader": {
+        "method": "GET",
+        "path": "/api/v1/research-assumption-drafts/{symbol}",
+        "authorization": "public",
+        "source_ref": {
+          "type": "python_function",
+          "path": "src/value_investment_agent/presentation/web_api/operating_assumption_routes.py",
+          "entrypoint": "register_operating_assumption_routes"
+        },
+        "scope": "旧source-bound假设adapter；000568新role结果在live公开公司reader，不可混称",
+        "may_compute": true,
+        "verification_level": "AUDIT_VERIFIED_ROUTE_SOURCE_NOT_DEPLOYMENT",
+        "automatic_fetch": false,
+        "starts_paid_execution": false
+      },
+      "tests": [
+        "tests/test_operating_assumption_draft_v1.py",
+        "tests/test_operating_driver_draft_v2.py",
+        "tests/test_operating_driver_bridge_v1.py",
+        "tests/web_api/test_operating_assumption_api.py"
+      ],
+      "real_samples": [
+        {
+          "symbols": [
+            "600519",
+            "600887"
+          ],
+          "path": "runtime/d2-assumption-acceptance/1efced4b306e/receipt.json",
+          "sha256": "2830c5a705117554578d3e89d50a3a82cdc3e900068e883776d30bb6de8f2d6b",
+          "result": "本轮独立两家公司3branch/52及50anchors；是既有假设adapter非新LLM",
+          "evidence_kind": "INDEPENDENT_REPLAY"
+        },
+        {
+          "symbols": [
+            "000568"
+          ],
+          "path": "runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json",
+          "sha256": "a67e83372f41f5a3ea5c084691f3e1c08856d324b3d6c76c5f37a74931bd15ed",
+          "result": "真实F/C/Event、21drivers/6derived；同一新F进入C/Event反证；原文字错误保留",
+          "evidence_kind": "INDEPENDENT_COLD_READ"
+        }
+      ],
+      "errors": {
+        "description": "错hash/主体/期间/未来/实际场景不一致拒绝；NORMALIZATION_NOT_ESTABLISHED不是参数不存在。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+          "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
+        ]
+      },
+      "provenance": {
+        "description": "原件逐字段重算、source_id/hash/date/scope绑定；引用合法不证明AI句义正确。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+          "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
+        ]
+      },
+      "hardcoded_or_defaults": {
+        "hardcoded": "旧两公司配置adapter与000568新链不同；不能声称所有公司已自动研究。",
+        "defaults": "FORECAST显式，capital/funding/terminal UNKNOWN不补0；calendar/4096tokens是工程限制。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+          "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
+        ]
+      },
+      "required_dependencies": {
+        "all_of": [
+          "A"
+        ],
+        "any_of": [],
+        "external": [
+          "已冷核来源事实/摘录；新LLM分支需D1执行合同"
+        ]
+      },
+      "optional_dependencies": [
+        "C",
+        "D1",
+        "G2"
+      ],
+      "crosscutting": false,
+      "axes": {
+        "engineering": {
+          "status": "BOUNDED_NATIVE_CAPABILITY",
+          "scope": "build/load adapter可独立；新role生成经D1，GET仅读取/冷校验不发LLM。 本次D2 real两项通过；000568旧adapter缺源但其新live链真实成功。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md"
+          ]
+        },
+        "business": {
+          "status": "NO_ECONOMIC_OR_CURRENT_DECISION_ADMISSION_GRANTED",
+          "scope": "条件研究与主区间采用/当前决定分开；具体缺口见criteria和source_report。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md"
+          ]
+        },
+        "user": {
+          "status": "NOT_CONFIRMED",
+          "scope": "本轮VALUE-MAINLINE-P0用户未确认；不继承历史人审为本轮确认。"
+        }
+      },
+      "criteria": {
+        "domain": {
+          "description": "原件历史bridge与七维driver角点/阈值；假设不等正常化已证。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
+          ]
+        },
+        "application": {
+          "description": "load_operating_assumption_draft；基于来源事实形成并核验经营假设、三情景驱动和反证，不生成批准或事实。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
+          ]
+        },
+        "input_output_schema": {
+          "description": "原生合同见native_inputs/native_outputs。不是已通用JSON Schema；wrapper只引用Root拥有的Input_D2/Output_D2。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
+          ]
+        },
+        "independent_run": {
+          "description": "build/load adapter可独立；新role生成经D1，GET仅读取/冷校验不发LLM。 本次D2 real两项通过；000568旧adapter缺源但其新live链真实成功。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
+          ]
+        },
+        "tests": {
+          "description": "直接测试：tests/test_operating_assumption_draft_v1.py、tests/test_operating_driver_draft_v2.py、tests/test_operating_driver_bridge_v1.py、tests/web_api/test_operating_assumption_api.py。执行范围以source_report为准；D2/F审计仅4项本轮真实测试，其他不得继承该passed。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "tests/test_operating_assumption_draft_v1.py"
+          ]
+        },
+        "real_case": {
+          "description": "600519/600887：本轮独立两家公司3branch/52及50anchors；是既有假设adapter非新LLM；000568：真实F/C/Event、21drivers/6derived；同一新F进入C/Event反证；原文字错误保留",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "runtime/d2-assumption-acceptance/1efced4b306e/receipt.json"
+          ]
+        },
+        "errors": {
+          "description": "错hash/主体/期间/未来/实际场景不一致拒绝；NORMALIZATION_NOT_ESTABLISHED不是参数不存在。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
+          ]
+        },
+        "provenance": {
+          "description": "原件逐字段重算、source_id/hash/date/scope绑定；引用合法不证明AI句义正确。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
+          ]
+        },
+        "web": {
+          "description": "OperatingAssumptionDraftPanel及Live公开research_draft/driver_bridge。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/presentation/web_api/operating_assumption_routes.py"
+          ]
+        },
+        "hardcoded": {
+          "description": "旧两公司配置adapter与000568新链不同；不能声称所有公司已自动研究。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
+          ]
+        },
+        "defaults": {
+          "description": "FORECAST显式，capital/funding/terminal UNKNOWN不补0；calendar/4096tokens是工程限制。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
+          ]
+        },
+        "dependencies": {
+          "description": "all_of=A；any_of=[]；已冷核来源事实/摘录；新LLM分支需D1执行合同。关联非共同前置。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
+          ]
+        }
+      }
+    },
+    {
+      "module_id": "E1",
+      "title": "已有研究更新与重放",
+      "purpose": "从明确旧package及source-bound policy/choice生成并校验新候选。",
+      "action": "no_order",
+      "source_baseline": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "source_report": "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+      "input_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Input_E1"
+      },
+      "output_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Output_E1"
+      },
+      "native_schema_is_general_json_schema": false,
+      "validation_required": {
+        "required": true,
+        "wrapper_validation_sufficient": false,
+        "description": "标准wrapper引用不替代原生校验。package/policy/choice/实现/source错配拒绝，不授materiality/当前价格资格。 旧包身份、原件、假设字段、实际choice、实现与descriptor绑定。",
+        "native_validation_refs": [
+          "src/value_investment_agent/application/product/pending_research_candidate.py:prepare_pending_research_candidate",
+          "src/value_investment_agent/application/product/pending_research_candidate.py:verify_pending_research_candidate"
+        ]
+      },
+      "native_inputs": [
+        {
+          "type": "bound_predecessor_package",
+          "path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+          "entrypoint": "prepare_pending_research_candidate(package_path, package_sha256, policy_path, policy_sha256, choice_id, ...)"
+        }
+      ],
+      "native_outputs": [
+        {
+          "type": "pending-research-candidate-v1",
+          "path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+          "entrypoint": "prepare_pending_research_candidate"
+        },
+        {
+          "type": "m1-valuation-package-v2_and_workbench",
+          "path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+          "entrypoint": "verify_pending_research_candidate"
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+          "entrypoint": "prepare_pending_research_candidate"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/product/neutral_valuation_proposal.py",
+          "entrypoint": "build_neutral_valuation_proposal"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+          "entrypoint": "verify_pending_research_candidate"
+        },
+        {
+          "type": "cli",
+          "path": "scripts/current/build_joint_cash_v4_candidates.py",
+          "entrypoint": "main / CASES"
+        }
+      ],
+      "method_status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "EXISTING_NATIVE",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "DESIGN_ONLY"
+      },
+      "method_evidence": {
+        "input_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/product/pending_research_candidate.py:prepare_pending_research_candidate"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "output_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/product/pending_research_candidate.py:prepare_pending_research_candidate"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "validate": {
+          "native_refs": [
+            "src/value_investment_agent/application/product/pending_research_candidate.py:prepare_pending_research_candidate"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "run": {
+          "native_refs": [
+            "src/value_investment_agent/application/product/pending_research_candidate.py:prepare_pending_research_candidate"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "get_run": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/app.py:GET /api/v1/decisions/{decision_id}"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "replay": {
+          "native_refs": [
+            "src/value_investment_agent/application/product/pending_research_candidate.py:prepare_pending_research_candidate"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "explain": {
+          "native_refs": [
+            "src/value_investment_agent/application/product/pending_research_candidate.py:prepare_pending_research_candidate"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "health_check": {
+          "native_refs": [],
+          "scope": "无已证原生接口；不虚构。"
+        }
+      },
+      "runtime_reader": {
+        "method": "GET",
+        "path": "/api/v1/decisions/{decision_id}",
+        "query": {
+          "strategy": "value"
+        },
+        "authorization": "public_readmodel",
+        "source_ref": {
+          "type": "python_function",
+          "path": "src/value_investment_agent/presentation/web_api/app.py",
+          "entrypoint": "GET /api/v1/decisions/{decision_id}"
+        },
+        "scope": "research_analysis字段；不是通用独立E1运行路由",
+        "may_compute": true,
+        "verification_level": "AUDIT_VERIFIED_ROUTE_SOURCE_NOT_DEPLOYMENT",
+        "automatic_fetch": false,
+        "starts_paid_execution": false
+      },
+      "tests": [
+        "tests/test_joint_cash_v4_two_company_real_replay.py"
+      ],
+      "real_samples": [
+        {
+          "symbols": [
+            "600519"
+          ],
+          "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600519/candidate.json",
+          "sha256": "97a83c496feab701fe3f4718d8c09535ce18226729210bc2deac5f625f930086",
+          "result": "ACTUALLY_CONSUMED / conditional_research_only；本轮verify成功",
+          "evidence_kind": "INDEPENDENT_REPLAY_D2_F_AUDIT"
+        },
+        {
+          "symbols": [
+            "600887"
+          ],
+          "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600887/candidate.json",
+          "sha256": "96e5894b08dd1342139c6a8dd88867619334f77807f7bf6fc28af64067fd6f42",
+          "result": "同共享v4消费；不是无旧包",
+          "evidence_kind": "INDEPENDENT_REPLAY_D2_F_AUDIT"
+        }
+      ],
+      "errors": {
+        "description": "package/policy/choice/实现/source错配拒绝，不授materiality/当前价格资格。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/product/pending_research_candidate.py"
+        ]
+      },
+      "provenance": {
+        "description": "旧包身份、原件、假设字段、实际choice、实现与descriptor绑定。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/product/pending_research_candidate.py"
+        ]
+      },
+      "hardcoded_or_defaults": {
+        "hardcoded": "CLI CASES固定600519/600887及路径/choice；底层函数可参数化。",
+        "defaults": "发布/写pointer需独立显式动作；候选默认待审而非批准。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/product/pending_research_candidate.py"
+        ]
+      },
+      "required_dependencies": {
+        "all_of": [],
+        "any_of": [],
+        "external": [
+          "已绑定旧package",
+          "source-bound policy与choice",
+          "兼容F1内核；不是另一个F1实现"
+        ]
+      },
+      "optional_dependencies": [
+        "A",
+        "C",
+        "D2",
+        "G2"
+      ],
+      "crosscutting": false,
+      "axes": {
+        "engineering": {
+          "status": "BOUNDED_NATIVE_CAPABILITY",
+          "scope": "prepare与verify可独立传参；需要旧包，不能替代E2。 两个真实旧包候选被独立verify及public analysis重算。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md"
+          ]
+        },
+        "business": {
+          "status": "NO_ECONOMIC_OR_CURRENT_DECISION_ADMISSION_GRANTED",
+          "scope": "本模块能力/来源验证不授经济、价格、执行或其他下游资格。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md"
+          ]
+        },
+        "user": {
+          "status": "NOT_CONFIRMED",
+          "scope": "本轮VALUE-MAINLINE-P0用户未确认；不继承历史人审为本轮确认。"
+        }
+      },
+      "criteria": {
+        "domain": {
+          "description": "复用F1 v4内核，不增公式；不是无前驱首编。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/product/pending_research_candidate.py"
+          ]
+        },
+        "application": {
+          "description": "prepare_pending_research_candidate；从明确旧package及source-bound policy/choice生成并校验新候选。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/product/pending_research_candidate.py"
+          ]
+        },
+        "input_output_schema": {
+          "description": "原生合同见native_inputs/native_outputs。不是已通用JSON Schema；wrapper只引用Root拥有的Input_E1/Output_E1。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/product/pending_research_candidate.py"
+          ]
+        },
+        "independent_run": {
+          "description": "prepare与verify可独立传参；需要旧包，不能替代E2。 两个真实旧包候选被独立verify及public analysis重算。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/product/pending_research_candidate.py"
+          ]
+        },
+        "tests": {
+          "description": "直接测试：tests/test_joint_cash_v4_two_company_real_replay.py。执行范围以source_report为准；D2/F审计仅4项本轮真实测试，其他不得继承该passed。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "tests/test_joint_cash_v4_two_company_real_replay.py"
+          ]
+        },
+        "real_case": {
+          "description": "600519：ACTUALLY_CONSUMED / conditional_research_only；本轮verify成功；600887：同共享v4消费；不是无旧包",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "runtime/joint-cash-v4-current/20261028T044953763337Z/600519/candidate.json"
+          ]
+        },
+        "errors": {
+          "description": "package/policy/choice/实现/source错配拒绝，不授materiality/当前价格资格。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/product/pending_research_candidate.py"
+          ]
+        },
+        "provenance": {
+          "description": "旧包身份、原件、假设字段、实际choice、实现与descriptor绑定。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/product/pending_research_candidate.py"
+          ]
+        },
+        "web": {
+          "description": "既有DecisionDetail research_analysis / JointCapitalReview。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "hardcoded": {
+          "description": "CLI CASES固定600519/600887及路径/choice；底层函数可参数化。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/product/pending_research_candidate.py"
+          ]
+        },
+        "defaults": {
+          "description": "发布/写pointer需独立显式动作；候选默认待审而非批准。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/product/pending_research_candidate.py"
+          ]
+        },
+        "dependencies": {
+          "description": "all_of=；any_of=[]；已绑定旧package；source-bound policy与choice；兼容F1内核；不是另一个F1实现。关联非共同前置。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/product/pending_research_candidate.py"
+          ]
+        }
+      }
+    },
+    {
+      "module_id": "E2",
+      "title": "无前驱包首次编译",
+      "purpose": "将来源绑定事实及显式假设首编为proposal/package并冷重放共享模型。",
+      "action": "no_order",
+      "source_baseline": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "source_report": "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+      "input_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Input_E2"
+      },
+      "output_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Output_E2"
+      },
+      "native_schema_is_general_json_schema": false,
+      "validation_required": {
+        "required": true,
+        "wrapper_validation_sufficient": false,
+        "description": "标准wrapper引用不替代原生校验。错源/主体/时点/列/单位/历史运算拒绝；existing output不覆盖；缺base为缺口不造主估值。 native原页冷重放→严格source contract→独立proposal/package→descriptor/spec/service；实现及identity hash绑定。",
+        "native_validation_refs": [
+          "src/value_investment_agent/application/research/first_research_input_v1.py:build_first_research_input",
+          "src/value_investment_agent/application/research/first_research_input_v1.py:replay_first_research_input",
+          "src/value_investment_agent/infrastructure/filings/first_research_fact_replay_v1.py:replay_first_research_facts"
+        ]
+      },
+      "native_inputs": [
+        {
+          "type": "versioned_first_research_input_spec",
+          "path": "src/value_investment_agent/application/research/first_research_input_v1.py",
+          "entrypoint": "_prepare"
+        },
+        {
+          "type": "native_facts_binding",
+          "path": "src/value_investment_agent/infrastructure/filings/first_research_fact_replay_v1.py",
+          "entrypoint": "replay_first_research_facts"
+        }
+      ],
+      "native_outputs": [
+        {
+          "type": "first_research_input_receipt_package_proposal",
+          "path": "src/value_investment_agent/application/research/first_research_input_v1.py",
+          "entrypoint": "build_first_research_input"
+        },
+        {
+          "type": "first-research-input-view-v1",
+          "path": "src/value_investment_agent/application/product/first_research_input_view_v1.py",
+          "entrypoint": "read_first_research_input"
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/first_research_input_v1.py",
+          "entrypoint": "build_first_research_input"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/first_research_input_v1.py",
+          "entrypoint": "replay_first_research_input"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/infrastructure/filings/first_research_fact_replay_v1.py",
+          "entrypoint": "replay_first_research_facts"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/product/first_research_input_view_v1.py",
+          "entrypoint": "read_first_research_input"
+        }
+      ],
+      "method_status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "EXISTING_NATIVE",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "DESIGN_ONLY"
+      },
+      "method_evidence": {
+        "input_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/first_research_input_v1.py:build_first_research_input"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "output_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/first_research_input_v1.py:build_first_research_input"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "validate": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/first_research_input_v1.py:build_first_research_input"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "run": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/first_research_input_v1.py:build_first_research_input"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "get_run": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/first_research_input_routes.py:register_first_research_input_routes"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "replay": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/first_research_input_v1.py:build_first_research_input"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "explain": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/first_research_input_v1.py:build_first_research_input"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "health_check": {
+          "native_refs": [],
+          "scope": "无已证原生接口；不虚构。"
+        }
+      },
+      "runtime_reader": {
+        "method": "GET",
+        "path": "/api/v1/first-research-inputs/{symbol}",
+        "authorization": "public",
+        "source_ref": {
+          "type": "python_function",
+          "path": "src/value_investment_agent/presentation/web_api/first_research_input_routes.py",
+          "entrypoint": "register_first_research_input_routes"
+        },
+        "scope": "已注册first input冷重放，不是GET首编写入",
+        "may_compute": true,
+        "verification_level": "AUDIT_VERIFIED_ROUTE_SOURCE_NOT_DEPLOYMENT",
+        "automatic_fetch": false,
+        "starts_paid_execution": false
+      },
+      "tests": [
+        "tests/test_first_research_input_v1.py",
+        "tests/test_first_research_fact_replay_v1.py",
+        "tests/web_api/test_first_research_input_api.py",
+        "web/tests/first-research-input-panel.test.tsx"
+      ],
+      "real_samples": [
+        {
+          "symbols": [
+            "000568"
+          ],
+          "path": "runtime/e2-first-input-000568-20261031/compiled-20261031T111006911210Z/receipt.json",
+          "sha256": "b3c3b1eec045381779156dc150d57a67c21a9c0c92fedd94403c42f390e92b48",
+          "result": "FIRST_INPUT_COMPILED；84native facts；无前驱包条件研究，非C第六家",
+          "evidence_kind": "AUDITED_RETAINED_BINDINGS"
+        },
+        {
+          "symbols": [
+            "000568"
+          ],
+          "path": "runtime/e2-first-input-000568-20261031/api-acceptance-final/receipt.json",
+          "result": "留存API SOURCE_BOUND_FIRST_INPUT_COMPILED / conditional_research_only；非本次实时API",
+          "evidence_kind": "AUDITED_RETAINED_ARTIFACT"
+        }
+      ],
+      "errors": {
+        "description": "错源/主体/时点/列/单位/历史运算拒绝；existing output不覆盖；缺base为缺口不造主估值。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/research/first_research_input_v1.py"
+        ]
+      },
+      "provenance": {
+        "description": "native原页冷重放→严格source contract→独立proposal/package→descriptor/spec/service；实现及identity hash绑定。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/research/first_research_input_v1.py"
+        ]
+      },
+      "hardcoded_or_defaults": {
+        "hardcoded": "具体原页locators及假设在manifest/spec；一例不证明通用所有版式。",
+        "defaults": "不接受任意手填金融事实；cash/capacity/floor须显式假设；不默认FCFF。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+          "src/value_investment_agent/application/research/first_research_input_v1.py"
+        ]
+      },
+      "required_dependencies": {
+        "all_of": [],
+        "any_of": [],
+        "external": [
+          "冷核native事实manifest与主体身份",
+          "显式假设/叙事/source contract及兼容profile/F1合同"
+        ]
+      },
+      "optional_dependencies": [
+        "A",
+        "C",
+        "D2",
+        "G2"
+      ],
+      "crosscutting": false,
+      "axes": {
+        "engineering": {
+          "status": "BOUNDED_NATIVE_CAPABILITY",
+          "scope": "build/replay独立；不依赖E1旧包；尚无通用首编CLI。 留存000568真实首编及API消费；不是任意新公司自动成功。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md"
+          ]
+        },
+        "business": {
+          "status": "NO_ECONOMIC_OR_CURRENT_DECISION_ADMISSION_GRANTED",
+          "scope": "本模块能力/来源验证不授经济、价格、执行或其他下游资格。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md"
+          ]
+        },
+        "user": {
+          "status": "NOT_CONFIRMED",
+          "scope": "本轮VALUE-MAINLINE-P0用户未确认；不继承历史人审为本轮确认。"
+        }
+      },
+      "criteria": {
+        "domain": {
+          "description": "使用F1 typed现金/估值合同；不复用旧候选种子、不新估值内核。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/first_research_input_v1.py"
+          ]
+        },
+        "application": {
+          "description": "build_first_research_input；将来源绑定事实及显式假设首编为proposal/package并冷重放共享模型。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/first_research_input_v1.py"
+          ]
+        },
+        "input_output_schema": {
+          "description": "原生合同见native_inputs/native_outputs。不是已通用JSON Schema；wrapper只引用Root拥有的Input_E2/Output_E2。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/first_research_input_v1.py"
+          ]
+        },
+        "independent_run": {
+          "description": "build/replay独立；不依赖E1旧包；尚无通用首编CLI。 留存000568真实首编及API消费；不是任意新公司自动成功。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/first_research_input_v1.py"
+          ]
+        },
+        "tests": {
+          "description": "直接测试：tests/test_first_research_input_v1.py、tests/test_first_research_fact_replay_v1.py、tests/web_api/test_first_research_input_api.py、web/tests/first-research-input-panel.test.tsx。执行范围以source_report为准；D2/F审计仅4项本轮真实测试，其他不得继承该passed。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "tests/test_first_research_input_v1.py"
+          ]
+        },
+        "real_case": {
+          "description": "000568：FIRST_INPUT_COMPILED；84native facts；无前驱包条件研究，非C第六家；000568：留存API SOURCE_BOUND_FIRST_INPUT_COMPILED / conditional_research_only；非本次实时API",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "runtime/e2-first-input-000568-20261031/compiled-20261031T111006911210Z/receipt.json"
+          ]
+        },
+        "errors": {
+          "description": "错源/主体/时点/列/单位/历史运算拒绝；existing output不覆盖；缺base为缺口不造主估值。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/first_research_input_v1.py"
+          ]
+        },
+        "provenance": {
+          "description": "native原页冷重放→严格source contract→独立proposal/package→descriptor/spec/service；实现及identity hash绑定。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/first_research_input_v1.py"
+          ]
+        },
+        "web": {
+          "description": "FirstResearchInputPanel挂载公开GET。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/presentation/web_api/first_research_input_routes.py"
+          ]
+        },
+        "hardcoded": {
+          "description": "具体原页locators及假设在manifest/spec；一例不证明通用所有版式。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/first_research_input_v1.py"
+          ]
+        },
+        "defaults": {
+          "description": "不接受任意手填金融事实；cash/capacity/floor须显式假设；不默认FCFF。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/first_research_input_v1.py"
+          ]
+        },
+        "dependencies": {
+          "description": "all_of=；any_of=[]；冷核native事实manifest与主体身份；显式假设/叙事/source contract及兼容profile/F1合同。关联非共同前置。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
+            "src/value_investment_agent/application/research/first_research_input_v1.py"
+          ]
+        }
+      }
+    },
+    {
+      "module_id": "F1",
+      "title": "经营—股东现金—估值内核",
+      "purpose": "将来源绑定年度经营与资本约束消费为条件股东现金、权益及估值。",
+      "action": "no_order",
+      "source_baseline": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "source_report": "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+      "input_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Input_F1"
+      },
+      "output_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Output_F1"
+      },
+      "native_schema_is_general_json_schema": false,
+      "validation_required": {
+        "required": true,
+        "wrapper_validation_sufficient": false,
+        "description": "标准wrapper引用不替代原生校验。不适用/缺输入/not_ready/partial scenario显式；正利润及retention[0,1]限制保留。 原件/假设/实际descriptor→spec→service→v4；source-LF-v2源码口径不扩及原件raw bytes。",
+        "native_validation_refs": [
+          "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py:run_explicit_cash_research",
+          "src/value_investment_agent/domain/valuation/joint_capital_cash_path_v4.py:_step",
+          "src/value_investment_agent/domain/valuation/joint_capital_cash_path_v4.py:value_terminal_economic_contract"
+        ]
+      },
+      "native_inputs": [
+        {
+          "type": "typed_cash_scenarios_and_source_descriptor",
+          "path": "src/value_investment_agent/domain/valuation/operating_profit_cash_path_v1.py",
+          "entrypoint": "compile_operating_profit_cash_path"
+        },
+        {
+          "type": "v4_research_run_spec",
+          "path": "src/value_investment_agent/research_application.py",
+          "entrypoint": "ResearchRunSpec"
+        }
+      ],
+      "native_outputs": [
+        {
+          "type": "annual_cash_ledgers_and_typed_scenario",
+          "path": "src/value_investment_agent/domain/valuation/joint_capital_cash_path_v4.py",
+          "entrypoint": "compile_joint_capital_cash_path"
+        },
+        {
+          "type": "conditional_valuation_outcome",
+          "path": "src/value_investment_agent/research_application.py",
+          "entrypoint": "CompanyResearchRunOutcome"
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py",
+          "entrypoint": "run_explicit_cash_research"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/domain/valuation/joint_capital_cash_path_v4.py",
+          "entrypoint": "_step"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/domain/valuation/joint_capital_cash_path_v4.py",
+          "entrypoint": "value_terminal_economic_contract"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/research_application.py",
+          "entrypoint": "ResearchApplicationService.run_company_research"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/main_valuation_revalidation_v1.py",
+          "entrypoint": "read_main_valuation_revalidation"
+        }
+      ],
+      "method_status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "EXISTING_NATIVE",
+        "get_run": "PARTIAL",
+        "replay": "EXISTING_NATIVE",
+        "explain": "PARTIAL",
+        "health_check": "DESIGN_ONLY"
+      },
+      "method_evidence": {
+        "input_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py:run_explicit_cash_research"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "output_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py:run_explicit_cash_research"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "validate": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py:run_explicit_cash_research"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "run": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py:run_explicit_cash_research"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "get_run": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/live_operating_research_routes.py:GET /api/v1/operating-research/companies/{symbol}"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "replay": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py:run_explicit_cash_research"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "explain": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py:run_explicit_cash_research"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "health_check": {
+          "native_refs": [],
+          "scope": "无已证原生接口；不虚构。"
+        }
+      },
+      "runtime_reader": {
+        "method": "GET",
+        "path": "/api/v1/operating-research/companies/{symbol}",
+        "authorization": "public",
+        "source_ref": {
+          "type": "python_function",
+          "path": "src/value_investment_agent/presentation/web_api/live_operating_research_routes.py",
+          "entrypoint": "GET /api/v1/operating-research/companies/{symbol}"
+        },
+        "scope": "main_valuation_revalidation/cash_consumption子结果；不是通用F1 run路由",
+        "may_compute": true,
+        "verification_level": "AUDIT_VERIFIED_ROUTE_SOURCE_NOT_DEPLOYMENT",
+        "automatic_fetch": false,
+        "starts_paid_execution": false
+      },
+      "tests": [
+        "tests/test_terminal_economic_contract_v4.py",
+        "tests/test_joint_cash_v4_two_company_real_replay.py",
+        "tests/test_main_valuation_revalidation_v1.py",
+        "tests/test_explicit_cash_research_runner_v1.py"
+      ],
+      "real_samples": [
+        {
+          "symbols": [
+            "600519",
+            "600887"
+          ],
+          "path": "runtime/joint-cash-v4-current/20261028T044953763337Z",
+          "result": "本轮共享模型重算：600519 675.10/799.20/930.01；600887 13.00/16.09/20.24；不是当前价",
+          "evidence_kind": "INDEPENDENT_REPLAY"
+        },
+        {
+          "symbols": [
+            "000568"
+          ],
+          "path": "runtime/value-main-revalidation-20261101/acceptance-source-lf-v2.json",
+          "sha256": "982cde55d1d56ff42ed9ba8adef7e80683b31f6f9c820ee4f55818d4bbd055ea",
+          "input_fingerprint": "2924150ad1eae2ab65e09bd9676a38ae961dcb9dd931aa0a2d4a7819d01c3487",
+          "result": "本轮重算6.19516/16.85149/27.22284；Jun30基准用Sept30实际、LOW未主采用",
+          "evidence_kind": "INDEPENDENT_REPLAY"
+        }
+      ],
+      "errors": {
+        "description": "不适用/缺输入/not_ready/partial scenario显式；正利润及retention[0,1]限制保留。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+          "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py"
+        ]
+      },
+      "provenance": {
+        "description": "原件/假设/实际descriptor→spec→service→v4；source-LF-v2源码口径不扩及原件raw bytes。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+          "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py"
+        ]
+      },
+      "hardcoded_or_defaults": {
+        "hardcoded": "母义务case locators有限；无内核三公司结果常量。000568单次carrying settlement非本金事实。",
+        "defaults": "access/payout/reserve/6bn floor/维护代理/WC/十年冻结/terminal均显式条件；不赠新资本回报或解锁。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+          "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py"
+        ]
+      },
+      "required_dependencies": {
+        "all_of": [],
+        "any_of": [
+          [
+            "E1",
+            "E2"
+          ]
+        ],
+        "external": [
+          "合法profile、必需财务/假设/资本源合同",
+          "E1/E2是替代输入路径，不要求二者均执行"
+        ]
+      },
+      "optional_dependencies": [
+        "A",
+        "C",
+        "D2",
+        "G2"
+      ],
+      "crosscutting": false,
+      "axes": {
+        "engineering": {
+          "status": "BOUNDED_NATIVE_CAPABILITY",
+          "scope": "显式runner可冷算但默认InMemory repository；返回artifact_id不证明跨进程持久化。 三公司条件计算真实贯通；不证明长期利润/政策履约/主采用。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md"
+          ]
+        },
+        "business": {
+          "status": "NO_ECONOMIC_OR_CURRENT_DECISION_ADMISSION_GRANTED",
+          "scope": "条件研究与主区间采用/当前决定分开；具体缺口见criteria和source_report。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md"
+          ]
+        },
+        "user": {
+          "status": "NOT_CONFIRMED",
+          "scope": "本轮VALUE-MAINLINE-P0用户未确认；不继承历史人审为本轮确认。"
+        }
+      },
+      "criteria": {
+        "domain": {
+          "description": "v4 _step / TerminalEconomicContract / residual-income dispatcher为实际共享金融内核。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py"
+          ]
+        },
+        "application": {
+          "description": "run_explicit_cash_research；将来源绑定年度经营与资本约束消费为条件股东现金、权益及估值。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py"
+          ]
+        },
+        "input_output_schema": {
+          "description": "原生合同见native_inputs/native_outputs。不是已通用JSON Schema；wrapper只引用Root拥有的Input_F1/Output_F1。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py"
+          ]
+        },
+        "independent_run": {
+          "description": "显式runner可冷算但默认InMemory repository；返回artifact_id不证明跨进程持久化。 三公司条件计算真实贯通；不证明长期利润/政策履约/主采用。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py"
+          ]
+        },
+        "tests": {
+          "description": "直接测试：tests/test_terminal_economic_contract_v4.py、tests/test_joint_cash_v4_two_company_real_replay.py、tests/test_main_valuation_revalidation_v1.py、tests/test_explicit_cash_research_runner_v1.py。执行范围以source_report为准；D2/F审计仅4项本轮真实测试，其他不得继承该passed。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "tests/test_terminal_economic_contract_v4.py"
+          ]
+        },
+        "real_case": {
+          "description": "600519/600887：本轮共享模型重算：600519 675.10/799.20/930.01；600887 13.00/16.09/20.24；不是当前价；000568：本轮重算6.19516/16.85149/27.22284；Jun30基准用Sept30实际、LOW未主采用",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "runtime/joint-cash-v4-current/20261028T044953763337Z"
+          ]
+        },
+        "errors": {
+          "description": "不适用/缺输入/not_ready/partial scenario显式；正利润及retention[0,1]限制保留。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py"
+          ]
+        },
+        "provenance": {
+          "description": "原件/假设/实际descriptor→spec→service→v4；source-LF-v2源码口径不扩及原件raw bytes。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py"
+          ]
+        },
+        "web": {
+          "description": "JointCapitalReview及MainValuationRevalidationPanel只展示后端账与条件值。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/presentation/web_api/live_operating_research_routes.py"
+          ]
+        },
+        "hardcoded": {
+          "description": "母义务case locators有限；无内核三公司结果常量。000568单次carrying settlement非本金事实。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py"
+          ]
+        },
+        "defaults": {
+          "description": "access/payout/reserve/6bn floor/维护代理/WC/十年冻结/terminal均显式条件；不赠新资本回报或解锁。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py"
+          ]
+        },
+        "dependencies": {
+          "description": "all_of=；any_of=[[\"E1\",\"E2\"]]；合法profile、必需财务/假设/资本源合同；E1/E2是替代输入路径，不要求二者均执行。关联非共同前置。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/explicit_cash_research_runner_v1.py"
+          ]
+        }
+      }
+    },
+    {
+      "module_id": "F2",
+      "title": "价格对齐与条件决策",
+      "purpose": "核对同一研究候选的报价、股本、分配、事件和财务更新，再判断条件价格资格。",
+      "action": "no_order",
+      "source_baseline": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "source_report": "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+      "input_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Input_F2"
+      },
+      "output_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Output_F2"
+      },
+      "native_schema_is_general_json_schema": false,
+      "validation_required": {
+        "required": true,
+        "wrapper_validation_sufficient": false,
+        "description": "标准wrapper引用不替代原生校验。stale quote、资本连续性/股利语义/材料性/财务更新不足均拒绝；不机械减分红或变估值日期。 必须同candidate/descriptor与原生quote/action有效日/实际股利字段；检查点不等完整行动链。",
+        "native_validation_refs": [
+          "src/value_investment_agent/application/research/pending_candidate_alignment.py:load_pending_candidate_alignment",
+          "src/value_investment_agent/domain/decision/value_price_policy.py:draft_value_price_policy"
+        ]
+      },
+      "native_inputs": [
+        {
+          "type": "exact_candidate_quote_actions_events_financial_bindings",
+          "path": "src/value_investment_agent/application/research/pending_candidate_alignment.py",
+          "entrypoint": "load_pending_candidate_alignment"
+        }
+      ],
+      "native_outputs": [
+        {
+          "type": "pending-candidate-alignment-v1",
+          "path": "src/value_investment_agent/application/research/pending_candidate_alignment.py",
+          "entrypoint": "attach_pending_candidate_alignment"
+        },
+        {
+          "type": "unregistered_conditional_price_draft",
+          "path": "src/value_investment_agent/application/research/pending_candidate_price_proposal.py",
+          "entrypoint": "load_pending_candidate_price_proposal"
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/pending_candidate_alignment.py",
+          "entrypoint": "load_pending_candidate_alignment"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/pending_candidate_price_proposal.py",
+          "entrypoint": "project_pending_candidate_price_proposal"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/domain/decision/value_price_policy.py",
+          "entrypoint": "draft_value_price_policy"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/product/quote_bridge.py",
+          "entrypoint": "quote_compatibility_ladder"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/model_validity.py",
+          "entrypoint": "evaluate_model_validity"
+        }
+      ],
+      "method_status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "PARTIAL",
+        "get_run": "PARTIAL",
+        "replay": "PARTIAL",
+        "explain": "EXISTING_NATIVE",
+        "health_check": "DESIGN_ONLY"
+      },
+      "method_evidence": {
+        "input_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py:load_pending_candidate_alignment"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "output_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py:load_pending_candidate_alignment"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "validate": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py:load_pending_candidate_alignment"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "run": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py:load_pending_candidate_alignment"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "get_run": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/app.py:GET /api/v1/decisions/{decision_id}"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "replay": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py:load_pending_candidate_alignment"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "explain": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py:load_pending_candidate_alignment"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "health_check": {
+          "native_refs": [],
+          "scope": "无已证原生接口；不虚构。"
+        }
+      },
+      "runtime_reader": {
+        "method": "GET",
+        "path": "/api/v1/decisions/{decision_id}",
+        "query": {
+          "strategy": "value"
+        },
+        "authorization": "public_readmodel",
+        "source_ref": {
+          "type": "python_function",
+          "path": "src/value_investment_agent/presentation/web_api/app.py",
+          "entrypoint": "GET /api/v1/decisions/{decision_id}"
+        },
+        "scope": "research_analysis.current_alignment及conditional_price；不是F2独立健康状态",
+        "may_compute": true,
+        "verification_level": "AUDIT_VERIFIED_ROUTE_SOURCE_NOT_DEPLOYMENT",
+        "automatic_fetch": false,
+        "starts_paid_execution": false
+      },
+      "tests": [
+        "tests/test_pending_candidate_alignment.py",
+        "tests/test_current_snapshot_quote_bridge.py",
+        "tests/test_incremental_quote_bridge.py",
+        "tests/test_main_valuation_revalidation_v1.py"
+      ],
+      "real_samples": [
+        {
+          "symbols": [
+            "600519"
+          ],
+          "path": ".tmp/value-followup-acceptance/real-business-receipt.json",
+          "sha256": "77dd113fbccfaab8638cd0fffa50cfa797176ebbd0c6e03acfa0863fa5cab7ab",
+          "result": "真实partial；本轮alignment BLOCKED，旧10/29报价非最新10/30、资本/分配/材料性/更新未闭合",
+          "evidence_kind": "RETAINED_ARTIFACT_AND_INDEPENDENT_REPLAY"
+        },
+        {
+          "symbols": [
+            "600887"
+          ],
+          "path": "config/current-research-drafts.json",
+          "result": "独立analysis：EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING；不等当前决策成功",
+          "evidence_kind": "INDEPENDENT_REPLAY"
+        },
+        {
+          "symbols": [
+            "000568"
+          ],
+          "path": "runtime/value-main-revalidation-20261101/acceptance-source-lf-v2.json",
+          "result": "current_comparable=false/main_range_adopted=false/quantity=null；rules空、threshold NOT_PREPARED",
+          "evidence_kind": "INDEPENDENT_REPLAY"
+        }
+      ],
+      "errors": {
+        "description": "stale quote、资本连续性/股利语义/材料性/财务更新不足均拒绝；不机械减分红或变估值日期。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+          "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+        ]
+      },
+      "provenance": {
+        "description": "必须同candidate/descriptor与原生quote/action有效日/实际股利字段；检查点不等完整行动链。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+          "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+        ]
+      },
+      "hardcoded_or_defaults": {
+        "hardcoded": "600519 reconciliation有限；源码跨日期有效行动链消费者仍有明确缺口。",
+        "defaults": "不默认20/30/40%阈值；相同日期豁免仅空区间，其他门禁不免；无规则无数字买价。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+          "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+        ]
+      },
+      "required_dependencies": {
+        "all_of": [
+          "F1"
+        ],
+        "any_of": [
+          [
+            "E1",
+            "E2"
+          ]
+        ],
+        "external": [
+          "确切经济研究选择",
+          "合格最新报价",
+          "资本/分配/材料性/财务更新五维",
+          "相应授权；个性化决定另需私有前提"
+        ]
+      },
+      "optional_dependencies": [
+        "G2"
+      ],
+      "crosscutting": false,
+      "axes": {
+        "engineering": {
+          "status": "BOUNDED_NATIVE_CAPABILITY",
+          "scope": "可读exact候选alignment；跨日期原生有效行动链与当前正例尚未完成。 三家本范围没有已证明当前决策联合正例；真实拒绝是能力证据不是成功投资。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md"
+          ]
+        },
+        "business": {
+          "status": "NO_ECONOMIC_OR_CURRENT_DECISION_ADMISSION_GRANTED",
+          "scope": "条件研究与主区间采用/当前决定分开；具体缺口见criteria和source_report。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md"
+          ]
+        },
+        "user": {
+          "status": "NOT_CONFIRMED",
+          "scope": "本轮VALUE-MAINLINE-P0用户未确认；不继承历史人审为本轮确认。"
+        }
+      },
+      "criteria": {
+        "domain": {
+          "description": "现有model_validity/价格政策/五维合同，不改变内在价值或默认安全边际。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+          ]
+        },
+        "application": {
+          "description": "load_pending_candidate_alignment；核对同一研究候选的报价、股本、分配、事件和财务更新，再判断条件价格资格。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+          ]
+        },
+        "input_output_schema": {
+          "description": "原生合同见native_inputs/native_outputs。不是已通用JSON Schema；wrapper只引用Root拥有的Input_F2/Output_F2。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+          ]
+        },
+        "independent_run": {
+          "description": "可读exact候选alignment；跨日期原生有效行动链与当前正例尚未完成。 三家本范围没有已证明当前决策联合正例；真实拒绝是能力证据不是成功投资。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+          ]
+        },
+        "tests": {
+          "description": "直接测试：tests/test_pending_candidate_alignment.py、tests/test_current_snapshot_quote_bridge.py、tests/test_incremental_quote_bridge.py、tests/test_main_valuation_revalidation_v1.py。执行范围以source_report为准；D2/F审计仅4项本轮真实测试，其他不得继承该passed。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "tests/test_pending_candidate_alignment.py"
+          ]
+        },
+        "real_case": {
+          "description": "600519：真实partial；本轮alignment BLOCKED，旧10/29报价非最新10/30、资本/分配/材料性/更新未闭合；600887：独立analysis：EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING；不等当前决策成功；000568：current_comparable=false/main_range_adopted=false/quantity=null；rules空、threshold NOT_PREPARED",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            ".tmp/value-followup-acceptance/real-business-receipt.json"
+          ]
+        },
+        "errors": {
+          "description": "stale quote、资本连续性/股利语义/材料性/财务更新不足均拒绝；不机械减分红或变估值日期。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+          ]
+        },
+        "provenance": {
+          "description": "必须同candidate/descriptor与原生quote/action有效日/实际股利字段；检查点不等完整行动链。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+          ]
+        },
+        "web": {
+          "description": "CandidatePriceDraft及main价格政策分清dated未批准与当前资格。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "hardcoded": {
+          "description": "600519 reconciliation有限；源码跨日期有效行动链消费者仍有明确缺口。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+          ]
+        },
+        "defaults": {
+          "description": "不默认20/30/40%阈值；相同日期豁免仅空区间，其他门禁不免；无规则无数字买价。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+          ]
+        },
+        "dependencies": {
+          "description": "all_of=F1；any_of=[[\"E1\",\"E2\"]]；确切经济研究选择；合格最新报价；资本/分配/材料性/财务更新五维；相应授权；个性化决定另需私有前提。关联非共同前置。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+          ]
+        }
+      }
+    },
+    {
+      "module_id": "G1",
+      "title": "公司研究API与页面",
+      "purpose": "聚合已有公开研究消费者，分开展示工程、来源、经济及价格边界。",
+      "action": "no_order",
+      "source_baseline": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "source_report": "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+      "input_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Input_G1"
+      },
+      "output_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Output_G1"
+      },
+      "native_schema_is_general_json_schema": false,
+      "validation_required": {
+        "required": true,
+        "wrapper_validation_sufficient": false,
+        "description": "标准wrapper引用不替代原生校验。局部NOT_STARTED/UNASSESSABLE/PARTIAL隔离；误绑review隐藏；public不被private401遮蔽。 显示来源/hash/date是后端校验结果，不是浏览器独立原件验证。",
+        "native_validation_refs": [
+          "src/value_investment_agent/presentation/web_api/app.py:GET /api/v1/decisions/{decision_id}"
+        ]
+      },
+      "native_inputs": [
+        {
+          "type": "public_company_readmodels",
+          "path": "web/src/services/api.ts",
+          "entrypoint": "detail / researchProfile / operatingAssumptionDraft / firstResearchInput / live operating APIs"
+        }
+      ],
+      "native_outputs": [
+        {
+          "type": "company_detail_readmodel",
+          "path": "src/value_investment_agent/presentation/web_api/app.py",
+          "entrypoint": "GET /api/v1/decisions/{decision_id}"
+        },
+        {
+          "type": "react_company_research_view",
+          "path": "web/src/pages/DecisionDetail/index.tsx",
+          "entrypoint": "DecisionDetail"
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/presentation/web_api/app.py",
+          "entrypoint": "GET /api/v1/decisions/{decision_id}"
+        },
+        {
+          "type": "react_component",
+          "path": "web/src/components/LiveOperatingResearchPanel.tsx",
+          "entrypoint": "LiveOperatingResearchPanel"
+        },
+        {
+          "type": "react_component",
+          "path": "web/src/components/MainValuationRevalidationPanel.tsx",
+          "entrypoint": "MainValuationRevalidationPanel"
+        },
+        {
+          "type": "react_component",
+          "path": "web/src/pages/StrategyArchitecture/index.tsx",
+          "entrypoint": "ArchitectureView"
+        }
+      ],
+      "method_status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "PARTIAL",
+        "run": "PARTIAL",
+        "get_run": "PARTIAL",
+        "replay": "DESIGN_ONLY",
+        "explain": "PARTIAL",
+        "health_check": "DESIGN_ONLY"
+      },
+      "method_evidence": {
+        "input_schema": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/app.py:GET /api/v1/decisions/{decision_id}"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "output_schema": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/app.py:GET /api/v1/decisions/{decision_id}"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "validate": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/app.py:GET /api/v1/decisions/{decision_id}"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "run": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/app.py:GET /api/v1/decisions/{decision_id}"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "get_run": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/app.py:GET /api/v1/decisions/{decision_id}"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "replay": {
+          "native_refs": [],
+          "scope": "无已证原生接口；不虚构。"
+        },
+        "explain": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/app.py:GET /api/v1/decisions/{decision_id}"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "health_check": {
+          "native_refs": [],
+          "scope": "无已证原生接口；不虚构。"
+        }
+      },
+      "runtime_reader": {
+        "method": "GET",
+        "path": "/api/v1/decisions/{decision_id}",
+        "query": {
+          "strategy": "value"
+        },
+        "authorization": "public_readmodel",
+        "source_ref": {
+          "type": "python_function",
+          "path": "src/value_investment_agent/presentation/web_api/app.py",
+          "entrypoint": "GET /api/v1/decisions/{decision_id}"
+        },
+        "scope": "既有公司详情，不是11模块统一状态接口",
+        "may_compute": true,
+        "verification_level": "AUDIT_VERIFIED_ROUTE_SOURCE_NOT_DEPLOYMENT",
+        "automatic_fetch": false,
+        "starts_paid_execution": false
+      },
+      "tests": [
+        "web/src/pages/StrategyArchitecture/architecture.test.tsx",
+        "web/tests/main-valuation-revalidation-panel.test.tsx",
+        "web/tests/first-research-input-panel.test.tsx",
+        "tests/web_api/test_main_valuation_revalidation_api.py"
+      ],
+      "real_samples": [
+        {
+          "symbols": [
+            "000568"
+          ],
+          "path": "runtime/value-main-revalidation-20261101/acceptance-source-lf-v2.json",
+          "result": "API/readmodel留存链可复用；本次G1审计未调用浏览器或8001，不授部署/用户PASS",
+          "evidence_kind": "RETAINED_BACKEND_EVIDENCE_NOT_BROWSER_ACCEPTANCE"
+        }
+      ],
+      "errors": {
+        "description": "局部NOT_STARTED/UNASSESSABLE/PARTIAL隔离；误绑review隐藏；public不被private401遮蔽。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+          "src/value_investment_agent/presentation/web_api/app.py"
+        ]
+      },
+      "provenance": {
+        "description": "显示来源/hash/date是后端校验结果，不是浏览器独立原件验证。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+          "src/value_investment_agent/presentation/web_api/app.py"
+        ]
+      },
+      "hardcoded_or_defaults": {
+        "hardcoded": "旧catalog人工状态/固定000568链接；本目录仅承接能力定义不提供latest状态。",
+        "defaults": "live显式展开后才读，不自动发模型请求；其他公开panel挂载会GET，不称整页零请求。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+          "src/value_investment_agent/presentation/web_api/app.py"
+        ]
+      },
+      "required_dependencies": {
+        "all_of": [],
+        "any_of": [],
+        "external": [
+          "已有公开readmodel及schema；无私有账户强前置"
+        ]
+      },
+      "optional_dependencies": [
+        "A",
+        "B",
+        "C",
+        "D1",
+        "D2",
+        "E1",
+        "E2",
+        "F1",
+        "F2",
+        "G2"
+      ],
+      "crosscutting": false,
+      "axes": {
+        "engineering": {
+          "status": "BOUNDED_NATIVE_CAPABILITY",
+          "scope": "公开panel可独立渲染；整页仍有detail/packet/daily依赖；目录点击只选节点不运行。 审计核源码/DTO/路由及测试源码，不证明本轮浏览器/部署。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md"
+          ]
+        },
+        "business": {
+          "status": "NO_ECONOMIC_OR_CURRENT_DECISION_ADMISSION_GRANTED",
+          "scope": "本模块能力/来源验证不授经济、价格、执行或其他下游资格。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md"
+          ]
+        },
+        "user": {
+          "status": "NOT_CONFIRMED",
+          "scope": "本轮VALUE-MAINLINE-P0用户未确认；不继承历史人审为本轮确认。"
+        }
+      },
+      "criteria": {
+        "domain": {
+          "description": "Web不重算金融公式；消费既有application结果，不是旧ResearchGate G1审批。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "application": {
+          "description": "GET /api/v1/decisions/{decision_id}；聚合已有公开研究消费者，分开展示工程、来源、经济及价格边界。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "input_output_schema": {
+          "description": "原生合同见native_inputs/native_outputs。不是已通用JSON Schema；wrapper只引用Root拥有的Input_G1/Output_G1。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "independent_run": {
+          "description": "公开panel可独立渲染；整页仍有detail/packet/daily依赖；目录点击只选节点不运行。 审计核源码/DTO/路由及测试源码，不证明本轮浏览器/部署。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "tests": {
+          "description": "直接测试：web/src/pages/StrategyArchitecture/architecture.test.tsx、web/tests/main-valuation-revalidation-panel.test.tsx、web/tests/first-research-input-panel.test.tsx、tests/web_api/test_main_valuation_revalidation_api.py。执行范围以source_report为准；D2/F审计仅4项本轮真实测试，其他不得继承该passed。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "web/src/pages/StrategyArchitecture/architecture.test.tsx"
+          ]
+        },
+        "real_case": {
+          "description": "000568：API/readmodel留存链可复用；本次G1审计未调用浏览器或8001，不授部署/用户PASS",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "runtime/value-main-revalidation-20261101/acceptance-source-lf-v2.json"
+          ]
+        },
+        "errors": {
+          "description": "局部NOT_STARTED/UNASSESSABLE/PARTIAL隔离；误绑review隐藏；public不被private401遮蔽。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "provenance": {
+          "description": "显示来源/hash/date是后端校验结果，不是浏览器独立原件验证。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "web": {
+          "description": "/strategy/value与/project同组件；旧公司页承载实际读者，不新平台。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "hardcoded": {
+          "description": "旧catalog人工状态/固定000568链接；本目录仅承接能力定义不提供latest状态。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "defaults": {
+          "description": "live显式展开后才读，不自动发模型请求；其他公开panel挂载会GET，不称整页零请求。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        },
+        "dependencies": {
+          "description": "all_of=；any_of=[]；已有公开readmodel及schema；无私有账户强前置。关联非共同前置。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/g1-web-audit.md",
+            "src/value_investment_agent/presentation/web_api/app.py"
+          ]
+        }
+      }
+    },
+    {
+      "module_id": "G2",
+      "title": "研究任务操作与产物关联",
+      "purpose": "横切复用现有task/artifact生命周期与读取，不新队列或写库。",
+      "action": "no_order",
+      "source_baseline": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "source_report": "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+      "input_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Input_G2"
+      },
+      "output_schema": {
+        "$ref": "schemas/value-mainline-v1.json#/$defs/Output_G2"
+      },
+      "native_schema_is_general_json_schema": false,
+      "validation_required": {
+        "required": true,
+        "wrapper_validation_sufficient": false,
+        "description": "标准wrapper引用不替代原生校验。锁忙/链损坏/source变更/列表100项检查20项返回上限明确；不fallback旧success；不能撤回已发远程请求。 保留原task_id/record binding/artifact hash；previous hash不是业务parent_run_id；历史不补造事件。",
+        "native_validation_refs": [
+          "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService",
+          "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService.list_for_symbol",
+          "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService.cancel",
+          "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService.resume"
+        ]
+      },
+      "native_inputs": [
+        {
+          "type": "existing_task_id_or_artifact_binding",
+          "path": "src/value_investment_agent/application/research/agent_review/task_execution_v1.py",
+          "entrypoint": "read / list_for_symbol"
+        }
+      ],
+      "native_outputs": [
+        {
+          "type": "verified_task_view",
+          "path": "src/value_investment_agent/application/research/agent_review/task_execution_v1.py",
+          "entrypoint": "read"
+        },
+        {
+          "type": "artifact_envelope_or_readonly_bundle",
+          "path": "src/value_investment_agent/research_artifact_repository.py",
+          "entrypoint": "ResearchArtifactRepository"
+        }
+      ],
+      "entrypoints": [
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/agent_review/task_execution_v1.py",
+          "entrypoint": "ResearchTaskService"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/agent_review/task_execution_v1.py",
+          "entrypoint": "ResearchTaskService.list_for_symbol"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/agent_review/task_execution_v1.py",
+          "entrypoint": "ResearchTaskService.cancel"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/agent_review/task_execution_v1.py",
+          "entrypoint": "ResearchTaskService.resume"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/decision/artifact_bundle.py",
+          "entrypoint": "ReadOnlyArtifactBundleRepository"
+        }
+      ],
+      "method_status": {
+        "input_schema": "PARTIAL",
+        "output_schema": "PARTIAL",
+        "validate": "EXISTING_NATIVE",
+        "run": "PARTIAL",
+        "get_run": "EXISTING_NATIVE",
+        "replay": "PARTIAL",
+        "explain": "PARTIAL",
+        "health_check": "PARTIAL"
+      },
+      "method_evidence": {
+        "input_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "output_schema": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "validate": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "run": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "get_run": {
+          "native_refs": [
+            "src/value_investment_agent/presentation/web_api/research_task_routes.py:GET /api/v1/research-tasks"
+          ],
+          "scope": "登记原生有限操作；非业务批准。"
+        },
+        "replay": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "explain": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        },
+        "health_check": {
+          "native_refs": [
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py:ResearchTaskService"
+          ],
+          "scope": "仅原生有限合同；非通用标准wrapper。"
+        }
+      },
+      "runtime_reader": {
+        "method": "GET",
+        "path": "/api/v1/research-tasks",
+        "query_parameters": [
+          "symbol"
+        ],
+        "authorization": "local_auth",
+        "source_ref": {
+          "type": "python_function",
+          "path": "src/value_investment_agent/presentation/web_api/research_task_routes.py",
+          "entrypoint": "GET /api/v1/research-tasks"
+        },
+        "scope": "saved/mock任务列表；live独立namespace，不是所有模块运行历史",
+        "may_compute": true,
+        "verification_level": "AUDIT_VERIFIED_ROUTE_SOURCE_NOT_DEPLOYMENT",
+        "automatic_fetch": false,
+        "starts_paid_execution": false
+      },
+      "tests": [
+        "tests/test_research_task_execution_v1.py",
+        "tests/test_operating_task_v2.py",
+        "tests/test_research_artifacts.py",
+        "tests/test_research_artifact_repository.py",
+        "tests/test_research_batch.py"
+      ],
+      "real_samples": [
+        {
+          "symbols": [
+            "000568"
+          ],
+          "path": "runtime/research-task-execution-v1/live-operating-v1/rt-eac1c74997d17510398ce1fe1e5bea9e",
+          "result": "版本/checkpoint真实留存由D2审计冷读；不是每个模块都有独立ModuleRun",
+          "evidence_kind": "CROSS_AUDIT_COLD_READ"
+        }
+      ],
+      "errors": {
+        "description": "锁忙/链损坏/source变更/列表100项检查20项返回上限明确；不fallback旧success；不能撤回已发远程请求。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+          "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+        ]
+      },
+      "provenance": {
+        "description": "保留原task_id/record binding/artifact hash；previous hash不是业务parent_run_id；历史不补造事件。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+          "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+        ]
+      },
+      "hardcoded_or_defaults": {
+        "hardcoded": "saved/live两store，256版本上限；无通用history/diff/11模块run API。",
+        "defaults": "默认内存repo不等跨进程持久化；Postgres实现存在但本轮未连库验收。GET锁文件可能写锁，不写正式状态。",
+        "source_refs": [
+          "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+          "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+        ]
+      },
+      "required_dependencies": {
+        "all_of": [],
+        "any_of": [],
+        "external": [
+          "既有task/artifact binding及相应local_auth"
+        ]
+      },
+      "optional_dependencies": [
+        "A",
+        "B",
+        "C",
+        "D1",
+        "D2",
+        "E1",
+        "E2",
+        "F1",
+        "F2",
+        "G1"
+      ],
+      "crosscutting": true,
+      "axes": {
+        "engineering": {
+          "status": "BOUNDED_NATIVE_CAPABILITY",
+          "scope": "create/read/list/cancel/run/resume原生存在；统一ModuleRun/history/diff只设计，不另建task store。 生命周期审计本身静态；不授DB实机持久化或provider exactly-once。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md"
+          ]
+        },
+        "business": {
+          "status": "NO_ECONOMIC_OR_CURRENT_DECISION_ADMISSION_GRANTED",
+          "scope": "本模块能力/来源验证不授经济、价格、执行或其他下游资格。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md"
+          ]
+        },
+        "user": {
+          "status": "NOT_CONFIRMED",
+          "scope": "本轮VALUE-MAINLINE-P0用户未确认；不继承历史人审为本轮确认。"
+        }
+      },
+      "criteria": {
+        "domain": {
+          "description": "Task版本快照与ResearchArtifact identity/envelope是两层；不从SUCCEEDED推经济批准。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "application": {
+          "description": "ResearchTaskService；横切复用现有task/artifact生命周期与读取，不新队列或写库。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "input_output_schema": {
+          "description": "原生合同见native_inputs/native_outputs。不是已通用JSON Schema；wrapper只引用Root拥有的Input_G2/Output_G2。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "independent_run": {
+          "description": "create/read/list/cancel/run/resume原生存在；统一ModuleRun/history/diff只设计，不另建task store。 生命周期审计本身静态；不授DB实机持久化或provider exactly-once。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "tests": {
+          "description": "直接测试：tests/test_research_task_execution_v1.py、tests/test_operating_task_v2.py、tests/test_research_artifacts.py、tests/test_research_artifact_repository.py、tests/test_research_batch.py。执行范围以source_report为准；D2/F审计仅4项本轮真实测试，其他不得继承该passed。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "tests/test_research_task_execution_v1.py"
+          ]
+        },
+        "real_case": {
+          "description": "000568：版本/checkpoint真实留存由D2审计冷读；不是每个模块都有独立ModuleRun",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "runtime/research-task-execution-v1/live-operating-v1/rt-eac1c74997d17510398ce1fe1e5bea9e"
+          ]
+        },
+        "errors": {
+          "description": "锁忙/链损坏/source变更/列表100项检查20项返回上限明确；不fallback旧success；不能撤回已发远程请求。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "provenance": {
+          "description": "保留原task_id/record binding/artifact hash；previous hash不是业务parent_run_id；历史不补造事件。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "web": {
+          "description": "ResearchTaskPanel及Live控件已有开始/刷新/取消/恢复；不因旧目录NOT_CONNECTED否认实现。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/presentation/web_api/research_task_routes.py"
+          ]
+        },
+        "hardcoded": {
+          "description": "saved/live两store，256版本上限；无通用history/diff/11模块run API。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "defaults": {
+          "description": "默认内存repo不等跨进程持久化；Postgres实现存在但本轮未连库验收。GET锁文件可能写锁，不写正式状态。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        },
+        "dependencies": {
+          "description": "all_of=；any_of=[]；既有task/artifact binding及相应local_auth。关联非共同前置。",
+          "source_refs": [
+            "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
+            "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
+          ]
+        }
+      }
+    }
+  ],
+  "method_descriptions": {
+    "input_schema": "已有原生输入合同不等于Root统一JSON wrapper实现。",
+    "output_schema": "已有原生输出DTO/dataclass/JSON不等于通用JSON Schema。",
+    "validate": "原生主体/源/时点/数值/作用域验证；wrapper不足以替代。",
+    "run": "仅复用登记原生入口；PARTIAL不等于通用ModuleRun执行。",
+    "get_run": "原生GET或reader不是统一模块运行身份。",
+    "replay": "仅登记已实现的有界冷重放；无接口为DESIGN_ONLY。",
+    "explain": "既有reason/blockers/limitations；PARTIAL表示嵌入式解释。",
+    "health_check": "原生状态/配置只提供有限诊断；不从历史成功推断当前健康。"
+  },
+  "standard_wrapper_implementation_status": "PARTIAL_SEE_PHASE1_IMPLEMENTATION_DELTA",
+  "phase1_implementation_delta": {
+    "scope": "SOURCE_ONLY_PENDING_FINAL_COMMIT_AND_ISOLATED_ACCEPTANCE",
+    "action": "no_order",
+    "A": {
+      "implementation": [
+        "application/research/public_evidence.py:public_evidence_closure/archive_public_evidence/restore_public_evidence",
+        "infrastructure/public_evidence_archive_v2.py",
+        "scripts/current/collect_public_evidence.py --mode archive/restore"
+      ],
+      "boundary": "精确依赖闭包归档/隔离恢复；无current发布；有限事实非完整财报"
+    },
+    "B": {
+      "implementation": [
+        "application/discovery/value_module_adapter_v1.py:ValueModuleAdapter"
+      ],
+      "methods": [
+        "input_schema",
+        "output_schema",
+        "validate",
+        "run",
+        "get_run",
+        "replay",
+        "explain",
+        "health_check"
+      ],
+      "boundary": "原生批量筛选重放；symbol=null；覆盖及财务来源缺口保留PARTIAL；无current发布"
+    },
+    "ModuleRun": {
+      "implementation": [
+        "domain/research/module_run_v1.py",
+        "research_artifacts.py",
+        "research_artifact_codecs.py",
+        "application/research/module_run_projection_v1.py"
+      ],
+      "boundary": "复用现有Repository codec和原生任务；projection不产生投资批准或另一队列"
+    },
+    "remaining_modules": "基线原生能力继续有效；11个统一wrapper并未全部完成，不从接口设计推断可执行。",
+    "deployment": "NOT_DEPLOYED_8001_UNCHANGED"
+  }
+}

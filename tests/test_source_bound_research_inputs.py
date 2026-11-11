@@ -9,7 +9,8 @@ def source(tmp_path):
     path = tmp_path / 'issuer.pdf'
     path.write_bytes(b'synthetic issuer original')
     return {'id': 'synthetic-official', 'location': 'https://static.cninfo.com.cn/test.pdf',
-        'local_path': 'issuer.pdf', 'sha256': sha256(path.read_bytes()).hexdigest()}
+        'local_path': 'issuer.pdf', 'sha256': sha256(path.read_bytes()).hexdigest(),
+        'retrieved_at': '2026-09-22T13:00:00+08:00'}
 
 
 def test_source_url_remains_distinct_from_verified_local_original(tmp_path):

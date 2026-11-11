@@ -13,6 +13,7 @@ from value_investment_agent.valuation_models.residual_income import (
     QualityCompounderFacts,
     ResidualIncomeEquityValuationModel,
 )
+from value_investment_agent.valuation_models.residual_income_path_v2 import ResidualIncomeContractDispatcher
 from value_investment_agent.valuation_router import (
     ROUTE_MODEL_NOT_APPLICABLE,
     ROUTE_SUPPORTED,
@@ -59,7 +60,8 @@ def test_quality_compounder_routes_to_the_shared_residual_income_contract():
 
     assert route.status == ROUTE_SUPPORTED
     assert route.model_type == "residual_income_or_equity_value"
-    assert route.model_factory is ResidualIncomeEquityValuationModel
+    assert route.model_factory is ResidualIncomeContractDispatcher
+    assert isinstance(route.build_model(), ResidualIncomeEquityValuationModel)
     assert route.facts_contract is QualityCompounderFacts
     assert route.blockers == []
 
@@ -72,7 +74,8 @@ def test_mature_manufacturing_can_explicitly_select_shared_residual_income():
     assert route.status == ROUTE_SUPPORTED
     assert route.selected_model == "residual_income_or_equity_value"
     assert route.model_type == "residual_income_or_equity_value"
-    assert route.model_factory is ResidualIncomeEquityValuationModel
+    assert route.model_factory is ResidualIncomeContractDispatcher
+    assert isinstance(route.build_model(), ResidualIncomeEquityValuationModel)
     assert route.facts_contract is QualityCompounderFacts
     assert route.as_policy()["requested_model"] == route.selected_model
     assert route.blockers == []

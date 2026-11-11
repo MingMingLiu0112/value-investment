@@ -1,0 +1,49 @@
+{
+  "schema_version": "closure-visual-review-v1",
+  "action": "no_order",
+  "reviewed_at": "2026-10-17T22:06:00+08:00",
+  "head": "4a56ab357322122079400a0fed33fd023fceeff3",
+  "publication_id": "pub-cb73f09b88c4150ecf0d",
+  "browser": "ChatGPT in-app browser",
+  "desktop": {
+    "viewport": [1440, 1000],
+    "pages": [
+      "/daily",
+      "/decisions/000333",
+      "/portfolio",
+      "/history",
+      "/system"
+    ],
+    "page_level_horizontal_overflow": false,
+    "confirmation_read_failures": 0,
+    "primary_pages_expose_raw_state_codes": false
+  },
+  "mobile": {
+    "viewport": [390, 844],
+    "pages": [
+      "/daily",
+      "/decisions/000333",
+      "/portfolio",
+      "/history",
+      "/system"
+    ],
+    "page_level_horizontal_overflow": false,
+    "contained_table_scroll": ["/history"],
+    "confirmation_read_failures": 0
+  },
+  "checks": {
+    "chinese_text_wrapped_without_observed_overlap": true,
+    "navigation_reachable": true,
+    "real_private_positions_invented": false,
+    "canonical_excel_written": false
+  },
+  "screenshot": {
+    "path": "artifacts/current/closure-final-daily-20261017.png",
+    "sha256": "c35663d01b2c144977ba9eff6bcc1c91464bd88439229794553af5611089a160"
+  },
+  "viewport_override_reset": true,
+  "limitations": [
+    "This is not a substitute for formal investment approval.",
+    "Only the local Web product surface was visually reviewed."
+  ]
+}

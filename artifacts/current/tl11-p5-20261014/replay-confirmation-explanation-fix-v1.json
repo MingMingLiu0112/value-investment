@@ -1,0 +1,56 @@
+{
+  "schema_version": "hotspot-replay-explanation-successor-receipt-v1",
+  "verification_date": "2026-10-14",
+  "timezone": "Asia/Shanghai",
+  "scope": "ADDITIVE_CONFIRMATION_EXPLANATION_ONLY",
+  "rule_version": "hotspot-confirmed-structure-v1",
+  "changes": ["breakout.confirmation_level", "breakout.breakout_at", "breakout.confirmed_at", "registration.confirmation_explanation"],
+  "semantics": "confirmation_level is the previous breakout's frozen threshold; existing level remains the current rolling threshold. The new three fields are null when next-bar confirmation is not observed.",
+  "version_bindings": [
+    {
+      "path": "src/value_investment_agent/domain/hotspot/confirmed_price_structure.py",
+      "report_generation_sha256": "bd544db9e79a9646d84867f47f78bfd0adbe541b923d7abae5683ae86810e676",
+      "explanation_successor_sha256": "c8628005ef10491af40b435d6be8548fd8384ad6f61de7135b025262986dfb5c"
+    },
+    {
+      "path": "config/hotspot-confirmed-structure-v1.json",
+      "report_generation_sha256": "86d10acc7373b22765c3d6afd8bf1782ff0d441a16fc0f0616752d244b0283eb",
+      "explanation_successor_sha256": "8d399e996cfdb0f57b377e8d905fb08e9de959ecadd56c3b0d3b1467923d3a01"
+    }
+  ],
+  "verification_method": {
+    "source": "Remove exactly the three additive confirmation-output keyword lines from current bytes; reconstructed bytes hash exactly equals report_generation_sha256.",
+    "registration": "Remove only confirmation_explanation from current bytes; reconstructed bytes hash exactly equals report_generation_sha256.",
+    "reconstructed_old_source_hash_matches": true,
+    "reconstructed_old_registration_hash_matches": true,
+    "whole_real_replay_rerun": false,
+    "trigger_and_retest_logic_changed": false,
+    "parameters_or_thresholds_changed": false,
+    "original_rolling_level_changed": false
+  },
+  "preserved_reports": [
+    {"path": "artifacts/current/tl11-p5-20261014/replay-results-v1.json", "sha256": "9ea23276ae58d853541915e84adf3e0894fed01e3fa57aee65672c98ead011f0"},
+    {"path": "artifacts/current/tl11-p5-20261014/replay-structure-results-v1.json", "sha256": "97e2d27d54c15ddbf32896057cd64629766caf966708a5eb8d6f642a58796e84"}
+  ],
+  "preserved_observation_counts": {
+    "prefixes": 2460,
+    "development_v1_triggers": 65,
+    "validation_v1_triggers": 117,
+    "validation_complete_five_session_paths": 100,
+    "validation_failure_proxy_count": 35,
+    "validation_failure_proxy_denominator": 100,
+    "validation_false_breakout_proxy_count": 56,
+    "validation_false_breakout_proxy_denominator": 113,
+    "validation_next_bar_confirmation_observations": 96,
+    "validation_pullback_recovery_observations": 15,
+    "inherited_price_condition_mismatches": 0
+  },
+  "historical_binding_policy": "Old report hashes identify code/config at generation time, not current bytes after this additive successor. This receipt does not replace old bindings, waive hash mismatches or authorize old strict builders to consume changed current rule files. Historical reproduction still requires the original bound version.",
+  "checks": {"related_tests_passed": 65, "focused_confirmation_assertions_passed": true},
+  "original_reports_rewritten": false,
+  "formal_eligibility": false,
+  "portfolio_eligibility": null,
+  "prospective_oos_admitted": false,
+  "elapsed_real_shadow_sessions": 0,
+  "action": "no_order"
+}

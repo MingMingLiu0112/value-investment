@@ -1,0 +1,44 @@
+{
+  "schema_version": "hotspot-event-replay-spec-v1",
+  "action": "no_order",
+  "registered_at": "2026-10-14T20:57:43.066407+08:00",
+  "baseline_head": "b8971a318427be3dd0b1111b48a060ce60cd2385",
+  "rule_version": "hotspot-prior-five-completed-bars-v1",
+  "rule_bindings": [
+    {"path": "src/value_investment_agent/domain/hotspot/price_action_plan.py", "sha256": "45804be98e7f05135befc5f14c1e57bb69fa14aaef57e41d1dbee45b359adc80"},
+    {"path": "src/value_investment_agent/domain/hotspot/current_price.py", "sha256": "123ca42eaa208959c3ff145f7fc7617db35aafe9d259412adfb7a3c23b99b26d"}
+  ],
+  "selection_binding": {"path": "config/current-price-conditions.json", "sha256": "19355933210b67430b7e023634403db7634f0144985adde708f067656d5badaa"},
+  "selection_scope": "CURRENT_FIVE_SELECTED_RETROSPECTIVELY_NOT_HISTORICAL_UNIVERSE",
+  "start_date": "2026-04-13",
+  "development_end": "2026-06-30",
+  "validation_start": "2026-07-01",
+  "end_date": "2026-10-14",
+  "primary_period": "60m",
+  "forward_sessions": 5,
+  "false_breakout_proxy": "Any subsequent completed 60m close <= frozen trigger through the next observed session close",
+  "failure_proxy": "Any subsequent completed 60m close < frozen invalidation through five subsequent observed session closes",
+  "outcome_boundary": "No development outcome may consume validation bars; incomplete horizons are censored, not losses or successes",
+  "execution": {
+    "scope": "NOT_SIMULATED_WITHOUT_EXECUTION_EVIDENCE",
+    "quantity": null,
+    "fee_assumptions": null,
+    "slippage_assumptions": null,
+    "required": ["DATED_TRADABILITY_AND_SUSPENSION", "DATED_PRICE_LIMITS", "KNOWN_AT_LIQUIDITY_BUDGET", "EXPLICIT_QUANTITY_CASH_AND_LIMIT", "DATED_COST_AND_SLIPPAGE_BASIS", "CORPORATE_ACTION_REVIEW"]
+  },
+  "cases": [
+    {"symbol": "300364", "case_path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/case.json", "case_sha256": "a385019f1b9097fdd3bc19d6ea08596ecb07df2939efed4cb8ab023b5d4dec49"},
+    {"symbol": "300413", "case_path": "runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/case.json", "case_sha256": "38954bd8c9a43d30bc14a7f915d43def5ddb6c31d88a763823f2d5f9788dfcec"},
+    {"symbol": "300418", "case_path": "runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/case.json", "case_sha256": "055bbfd15f2c6963e2ac07a8b71602a67a6fe6f36211fc871690887a4f133099"},
+    {"symbol": "300058", "case_path": "runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/case.json", "case_sha256": "584ad23ef03881fec209f3860f2b6955100af30b2d84c499b6249635c7f5fa63"},
+    {"symbol": "002354", "case_path": "runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/case.json", "case_sha256": "7794a725e534860630d8bbf49957a2fa6436e325f2184da6aab351f2808d3bfb"}
+  ],
+  "assurance": {
+    "strict_pit_admitted": false,
+    "strict_oos_admitted": false,
+    "historical_classification_used": false,
+    "performance_claim_allowed": false,
+    "formal_eligibility": false,
+    "portfolio_eligibility": null
+  }
+}

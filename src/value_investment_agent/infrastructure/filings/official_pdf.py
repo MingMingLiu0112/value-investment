@@ -1,12 +1,27 @@
 """Bounded official PDF acquisition without trusting redirects or HTML bodies."""
 import hashlib
+import logging
 from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
 import pypdfium2 as pdfium
 
+from .pdfium_runtime import serialized_pdfium
 
+
+_LOG = logging.getLogger(__name__)
+
+
+def is_transient_evidence_failure(error: Exception) -> bool:
+    """Classify transport failures without leaking the HTTP client into use cases."""
+    return isinstance(error, (OSError, TimeoutError, ConnectionError,
+        requests.Timeout, requests.ConnectionError)) or (
+        isinstance(error, requests.HTTPError) and error.response is not None
+        and (error.response.status_code == 429 or error.response.status_code >= 500))
+
+
+@serialized_pdfium
 def validate_pdf_original(path: Path) -> None:
     raw = path.read_bytes()
     if not raw.startswith(b"%PDF-") or b"%%EOF" not in raw[-4096:]:
@@ -19,6 +34,9 @@ def validate_pdf_original(path: Path) -> None:
         finally:
             document.close()
     except Exception as error:
+        code = getattr(error, "err_code", None)
+        _LOG.warning("OFFICIAL_PDF_PARSE_FAILED exception=%s pdfium_code=%s",
+            type(error).__name__, code if type(code) is int else None)
         raise ValueError("Official original PDF cannot be parsed") from error
 
 

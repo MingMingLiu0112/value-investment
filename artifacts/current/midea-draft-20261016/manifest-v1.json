@@ -1,0 +1,39 @@
+{
+  "schema_version": "research-draft-publication-manifest-v1",
+  "status": "DRAFT_NOT_APPROVED",
+  "symbol": "000333",
+  "run_id": "midea-draft-20261016-v1",
+  "public_draft": {
+    "path": "artifacts/current/midea-draft-20261016/public-draft-v1.json",
+    "sha256": "ee781a8119baa1f7b00469f82f073b1b56604955e295a5b32c3c11a64e0d7490"
+  },
+  "pointer": {
+    "path": "config/current-research-drafts.json",
+    "sha256": "548eb7a9730db5d6ce14f8d0903875405ca88023bd703490ccd0bef41e8786e8"
+  },
+  "artifacts": {
+    "research-result.json": "9c90a7d051b0c65bf57a78999ced9dd9a4e737688eaf15500fac074c60b0b39f",
+    "package.json": "cefbf68b4d8c4f5eb8fa7e888e27bc31ace38d271c9207e335da817bb260cb54",
+    "research-report.md": "0bb2d33704462633e3629359e4eb12e318f893b4d409ff31416df2b995aa60bb",
+    "research-version-comparison.json": "5e612a1446c1004ada5001a8755d1e9975e41a502746346e8a7e505351b49344"
+  },
+  "source_result": {
+    "path": "runtime/company-research/midea-draft-20261016-v1/research-result.json",
+    "sha256": "9c90a7d051b0c65bf57a78999ced9dd9a4e737688eaf15500fac074c60b0b39f"
+  },
+  "source_package": {
+    "path": "runtime/company-research/midea-draft-20261016-v1/package.json",
+    "sha256": "cefbf68b4d8c4f5eb8fa7e888e27bc31ace38d271c9207e335da817bb260cb54"
+  },
+  "schedule_chain": {
+    "request_sha256": "a89c8b7ab82f973e0f88d2846e7c170352564be6fd2c4bad68bad2bfba5d3db8",
+    "admission_sha256": "7ced270c8fd47d462b288bb4beba30a68e75591c9e3a073241fee859e0046457",
+    "recovery_sha256": "dda65dcf7b5e56ba56483cf1d9af975fb9898c49f5d5f2010eca462d775293aa",
+    "resume_sha256": "7c983de869e935d33348c7dd5ad4fe4b41066e8d10a334bb1b0a0bad6f778728"
+  },
+  "formal_admission": false,
+  "price_admitted": false,
+  "position_guidance": null,
+  "human_approval": false,
+  "action": "no_order"
+}

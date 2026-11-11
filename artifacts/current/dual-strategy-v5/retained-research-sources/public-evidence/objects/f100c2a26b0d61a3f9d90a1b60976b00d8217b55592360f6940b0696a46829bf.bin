@@ -1,0 +1,3795 @@
+{
+  "schema_version": "m1-valuation-package-v2",
+  "package_version": "pending-600519-2026-10-11-B_CONTINUITY_ALTERNATIVE-91daee7dc978",
+  "descriptor_version": "pending-600519-2026-10-11-B_CONTINUITY_ALTERNATIVE-91daee7dc978",
+  "symbol": "600519",
+  "name": "贵州茅台",
+  "profile_id": "quality_compounder",
+  "requested_model": null,
+  "run_id": "pending-600519-2026-10-11-B_CONTINUITY_ALTERNATIVE-91daee7dc978",
+  "point_in_time": {
+    "report_period": "2026-06-30",
+    "research_as_of": "2026-10-11",
+    "valuation_date": "2026-10-11",
+    "available_at": "2026-10-11T08:21:50.762534+00:00",
+    "computed_at": "2026-10-11T08:21:50.762534+00:00"
+  },
+  "dependencies": {
+    "rule_version": "m1-valuation-rules-v1",
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "parser_version": "explicit-source-package-v1",
+    "scan_watermark": null
+  },
+  "sources": [
+    {
+      "id": "cninfo:1225114741",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "local_path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "published_at": "2026-04-16T16:00:00+00:00",
+      "retrieved_at": "2026-09-09T03:34:45.548072+00:00",
+      "parser_version": "pypdf-source-anchor-check-20261008",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-04-17T16:00:00+00:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "cninfo:1225475868",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "local_path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "published_at": "2026-08-14T16:00:00+00:00",
+      "retrieved_at": "2026-09-09T03:34:45.548072+00:00",
+      "parser_version": "pypdf-source-anchor-check-20261008",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-08-15T16:00:00+00:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "current_model",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+      "local_path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+      "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a",
+      "retrieved_at": "2026-10-08T09:53:54.376542+00:00",
+      "parser_version": "explicit-source-package-v1",
+      "source_available_at": "2026-10-08T09:53:54.376542+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "timing_policy",
+      "kind": "research_artifact",
+      "location": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+      "local_path": "runtime/company-research/600519-current-equity-policy-staged-20261008T090506Z/policy.json",
+      "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88",
+      "retrieved_at": "2026-10-08T09:53:54.376542+00:00",
+      "parser_version": "explicit-source-package-v1",
+      "source_available_at": "2026-10-08T09:53:54.376542+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "scope_review",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+      "local_path": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+      "sha256": "cca8b43c6069ffda329e940a4be96d27d7af4c3387ec08f4d24a5c9f42da4069",
+      "retrieved_at": "2026-10-08T09:53:54.376542+00:00",
+      "parser_version": "explicit-source-package-v1",
+      "source_available_at": "2026-10-08T09:53:54.376542+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "assumption_diagnostic",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+      "local_path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+      "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688",
+      "retrieved_at": "2026-10-08T09:53:54.376542+00:00",
+      "parser_version": "explicit-source-package-v1",
+      "source_available_at": "2026-10-08T09:53:54.376542+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "source_index",
+      "kind": "research_artifact",
+      "location": "runtime\\historical-filing-index\\20260909T033444358365Z\\600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+      "local_path": "runtime/historical-filing-index/20260909T033444358365Z/600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+      "sha256": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f",
+      "retrieved_at": "2026-10-08T09:53:54.376542+00:00",
+      "parser_version": "explicit-source-package-v1",
+      "source_available_at": "2026-10-08T09:53:54.376542+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "current_quote",
+      "kind": "research_artifact",
+      "location": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+      "local_path": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+      "sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5",
+      "retrieved_at": "2026-10-08T09:53:54.376542+00:00",
+      "parser_version": "explicit-source-package-v1",
+      "source_available_at": "2026-10-08T09:53:54.376542+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "cninfo:1225475864",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475864.PDF",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475864.pdf",
+      "sha256": "1a12378ed0e4a803eae00e73c74bc20eb2d73821fc960d746d52476dbf80df1d",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "retrieved_at": "2026-10-08T10:14:43.800305+00:00",
+      "parser_version": "cninfo-original-download-v1",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-08-16T00:00:00+08:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "cninfo:1225475863",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475863.PDF",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475863.pdf",
+      "sha256": "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "retrieved_at": "2026-10-08T10:14:43.957676+00:00",
+      "parser_version": "cninfo-original-download-v1",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-08-16T00:00:00+08:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "cninfo:1225475862",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475862.PDF",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475862.pdf",
+      "sha256": "c22571b28d92addc54fed9a75e56b0ffb5c2abbf834000d5c3ea77e02df129cd",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "retrieved_at": "2026-10-08T10:14:44.106517+00:00",
+      "parser_version": "cninfo-original-download-v1",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-08-16T00:00:00+08:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "cninfo:1225475860",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475860.PDF",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475860.pdf",
+      "sha256": "9ba031b34a7f05caec0e71a154257b8b449fb0b18a58badd7e346fe66bc90313",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "retrieved_at": "2026-10-08T10:14:44.272982+00:00",
+      "parser_version": "cninfo-original-download-v1",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-08-16T00:00:00+08:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "cninfo:1225475856",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475856.PDF",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475856.pdf",
+      "sha256": "fc78904a1a1babaea6e31838d5a8c3fc7933c6d1925fd3101942c130d21c66fc",
+      "published_at": "2026-08-15T00:00:00+08:00",
+      "retrieved_at": "2026-10-08T10:14:44.423693+00:00",
+      "parser_version": "cninfo-original-download-v1",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-08-16T00:00:00+08:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "cninfo:1225431263",
+      "kind": "official_issuer_filing",
+      "location": "https://static.cninfo.com.cn/finalpage/2026-07-18/1225431263.PDF",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225431263.pdf",
+      "sha256": "24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873",
+      "published_at": "2026-07-18T00:00:00+08:00",
+      "retrieved_at": "2026-10-08T10:14:44.603791+00:00",
+      "parser_version": "cninfo-original-download-v1",
+      "issuer_identity": {
+        "venue": "CNINFO",
+        "security_code": "600519",
+        "issuer_name": "贵州茅台",
+        "organization_id": "gssh0600519"
+      },
+      "source_available_at": "2026-07-19T00:00:00+08:00",
+      "availability_basis": "date_only_conservative_next_day_bound"
+    },
+    {
+      "id": "current_event_scan",
+      "kind": "research_artifact",
+      "location": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+      "local_path": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+      "sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9",
+      "retrieved_at": "2026-10-08T10:14:44.604408+00:00",
+      "parser_version": "cninfo-full-category-originals-v1",
+      "source_available_at": "2026-10-08T10:14:44.604408+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "full_window_index",
+      "kind": "official_issuer_index",
+      "location": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+      "local_path": "runtime/d2-source-bound-current-20261008/cninfo-full-window-index.json",
+      "sha256": "f97ae2b3b8d5991d58d6297ae6b090be37efd447a53552367c61de66e86b5e1a",
+      "retrieved_at": "2026-10-08T10:12:56.127674+00:00",
+      "parser_version": "cninfo-full-category-window-v1",
+      "source_available_at": "2026-10-08T10:12:56.127674+00:00",
+      "availability_basis": "observed_artifact_acquisition_not_contemporaneous_history"
+    },
+    {
+      "id": "independent-announcement-research-20261008",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-full-window-materiality-review-20261008.md",
+      "local_path": "docs/current/600519-full-window-materiality-review-20261008.md",
+      "sha256": "aa7a70c94dcde08a9fef7f6207139a5fcb4527cbbee9adb775c19699a34a7d54",
+      "retrieved_at": "2026-10-08T11:26:46.259941+00:00",
+      "source_available_at": "2026-10-08T11:26:46.259941+00:00",
+      "availability_basis": "actual_local_independent_review_observation",
+      "parser_version": "independent-original-review-v1"
+    },
+    {
+      "id": "independent-normalized-profit-research-20261008",
+      "path": "docs/current/600519-normalized-assumption-research-20261008.md",
+      "sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-normalized-assumption-research-20261008.md",
+      "local_path": "docs/current/600519-normalized-assumption-research-20261008.md",
+      "retrieved_at": "2026-10-08T11:57:51.425128+00:00",
+      "source_available_at": "2026-10-08T11:57:51.425128+00:00",
+      "availability_basis": "actual_current_independent_research_observation",
+      "parser_version": "historical-profit-reconciliation-v1"
+    },
+    {
+      "id": "historical-profit-reconciliation-20261008",
+      "path": "runtime/d2-model-bound-followup-20261008/historical-profit-reconciliation-v1.json",
+      "sha256": "6f9e4334a5f5be4526c99f2b60fe345ff4935bb1e0c1ec925915b42e3d98559e",
+      "kind": "research_artifact",
+      "location": "runtime/d2-model-bound-followup-20261008/historical-profit-reconciliation-v1.json",
+      "local_path": "runtime/d2-model-bound-followup-20261008/historical-profit-reconciliation-v1.json",
+      "retrieved_at": "2026-10-08T11:57:51.425128+00:00",
+      "source_available_at": "2026-10-08T11:57:51.425128+00:00",
+      "availability_basis": "actual_current_independent_research_observation",
+      "parser_version": "historical-profit-reconciliation-v1"
+    },
+    {
+      "id": "profit-adjustment-bridge-20261008",
+      "path": "runtime/d2-economic-research-20261008/profit-adjustment-bridge-v1.json",
+      "sha256": "b11db869bacf07bcbed428b4ed8f61be1733ee5b63a111eaf3cb9d2d239ed188",
+      "kind": "research_artifact",
+      "location": "runtime/d2-economic-research-20261008/profit-adjustment-bridge-v1.json",
+      "local_path": "runtime/d2-economic-research-20261008/profit-adjustment-bridge-v1.json",
+      "retrieved_at": "2026-10-08T13:13:40.344274+00:00",
+      "source_available_at": "2026-10-08T13:13:40.344274+00:00",
+      "availability_basis": "actual_current_official_accounting_research_not_historical_observation",
+      "parser_version": "d2-accounting-research-v1"
+    },
+    {
+      "id": "profit-adjustment-research-20261008",
+      "path": "docs/current/600519-profit-adjustment-bridge-20261008.md",
+      "sha256": "8d9ff9e6fb94e9f18a62108992a91b7c8f2a438da6e8d32df424e55ffc176260",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-profit-adjustment-bridge-20261008.md",
+      "local_path": "docs/current/600519-profit-adjustment-bridge-20261008.md",
+      "retrieved_at": "2026-10-08T13:13:40.344274+00:00",
+      "source_available_at": "2026-10-08T13:13:40.344274+00:00",
+      "availability_basis": "actual_current_official_accounting_research_not_historical_observation",
+      "parser_version": "d2-accounting-research-v1"
+    },
+    {
+      "id": "parent-distribution-capital-bridge-20261008",
+      "path": "runtime/d2-economic-research-20261008/parent-distribution-capital-bridge-v1.json",
+      "sha256": "34cf0f4ac76a6fd2e2b6bd0cfe56500c270371fd4b9e6a25767a247b1ad25d78",
+      "kind": "research_artifact",
+      "location": "runtime/d2-economic-research-20261008/parent-distribution-capital-bridge-v1.json",
+      "local_path": "runtime/d2-economic-research-20261008/parent-distribution-capital-bridge-v1.json",
+      "retrieved_at": "2026-10-08T13:13:40.344274+00:00",
+      "source_available_at": "2026-10-08T13:13:40.344274+00:00",
+      "availability_basis": "actual_current_official_accounting_research_not_historical_observation",
+      "parser_version": "d2-accounting-research-v1"
+    },
+    {
+      "id": "parent-distribution-capital-research-20261008",
+      "path": "docs/current/600519-parent-distribution-capital-bridge-20261008.md",
+      "sha256": "ac1477ab886a7ee02ca621b06a8af66a518c638858bc042c7da293b029d69573",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-parent-distribution-capital-bridge-20261008.md",
+      "local_path": "docs/current/600519-parent-distribution-capital-bridge-20261008.md",
+      "retrieved_at": "2026-10-08T13:13:40.344274+00:00",
+      "source_available_at": "2026-10-08T13:13:40.344274+00:00",
+      "availability_basis": "actual_current_official_accounting_research_not_historical_observation",
+      "parser_version": "d2-accounting-research-v1"
+    },
+    {
+      "id": "operating-mechanism-evidence-20261008",
+      "path": "runtime/d2-economic-research-20261008/operating-mechanism-evidence-v1.json",
+      "sha256": "4234aaaa2e2b580d89cabee665f59571e29f58b8714f99409e5f362b95ee7bae",
+      "kind": "research_artifact",
+      "location": "runtime/d2-economic-research-20261008/operating-mechanism-evidence-v1.json",
+      "local_path": "runtime/d2-economic-research-20261008/operating-mechanism-evidence-v1.json",
+      "retrieved_at": "2026-10-08T14:00:52.163459+00:00",
+      "source_available_at": "2026-10-08T14:00:52.163459+00:00",
+      "availability_basis": "actual_current_operating_mechanism_research_not_historical_observation",
+      "parser_version": "d2-operating-research-v1"
+    },
+    {
+      "id": "operating-mechanism-research-20261008",
+      "path": "docs/current/600519-operating-mechanism-research-20261008.md",
+      "sha256": "567b9fa1114a766e76f88ba491ef4449c13163ec1d4f973b8abf2b9fe43763aa",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-operating-mechanism-research-20261008.md",
+      "local_path": "docs/current/600519-operating-mechanism-research-20261008.md",
+      "retrieved_at": "2026-10-08T14:00:52.163459+00:00",
+      "source_available_at": "2026-10-08T14:00:52.163459+00:00",
+      "availability_basis": "actual_current_operating_mechanism_research_not_historical_observation",
+      "parser_version": "d2-operating-research-v1"
+    },
+    {
+      "id": "forward-path-independent-review-20261008",
+      "path": "docs/current/600519-forward-path-independent-review-20261008-v2.md",
+      "sha256": "37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-forward-path-independent-review-20261008-v2.md",
+      "local_path": "docs/current/600519-forward-path-independent-review-20261008-v2.md",
+      "retrieved_at": "2026-10-08T14:00:52.163459+00:00",
+      "source_available_at": "2026-10-08T14:00:52.163459+00:00",
+      "availability_basis": "actual_current_operating_mechanism_research_not_historical_observation",
+      "parser_version": "d2-operating-research-v1"
+    },
+    {
+      "id": "financial-scope-independent-review-20261008",
+      "path": "docs/current/600519-financial-scope-independent-review-20261008.md",
+      "sha256": "17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-financial-scope-independent-review-20261008.md",
+      "local_path": "docs/current/600519-financial-scope-independent-review-20261008.md",
+      "retrieved_at": "2026-10-08T14:31:10.657078+00:00",
+      "source_available_at": "2026-10-08T14:31:10.657078+00:00",
+      "availability_basis": "actual_current_independent_research_not_historical_observation",
+      "parser_version": "d2-financial-scope-research-v1"
+    },
+    {
+      "id": "equity-cost-independent-review-20261008",
+      "path": "docs/current/600519-equity-cost-independent-review-20261008.md",
+      "sha256": "c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-equity-cost-independent-review-20261008.md",
+      "local_path": "docs/current/600519-equity-cost-independent-review-20261008.md",
+      "retrieved_at": "2026-10-08T14:31:10.657078+00:00",
+      "source_available_at": "2026-10-08T14:31:10.657078+00:00",
+      "availability_basis": "actual_current_independent_research_not_historical_observation",
+      "parser_version": "d2-financial-scope-research-v1"
+    },
+    {
+      "id": "candidate-lineage-0",
+      "kind": "research_artifact",
+      "location": "runtime/d2-model-bound-followup-20261008/package-v8-financial-scope-bound.json",
+      "local_path": "runtime/d2-model-bound-followup-20261008/package-v8-financial-scope-bound.json",
+      "sha256": "c48e3dbfbe8b643cc71a609a2277f726246a1f32b1ac5dcb4b2da47055ec3d04",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-1",
+      "kind": "research_artifact",
+      "location": "config/research-proposals/600519-20261011-v3.json",
+      "local_path": "config/research-proposals/600519-20261011-v3.json",
+      "sha256": "91daee7dc97830c1644b0f4c5838bc774127c658b309e9397c93bc073e618d9e",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-2",
+      "kind": "research_artifact",
+      "location": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "local_path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-3",
+      "kind": "research_artifact",
+      "location": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "local_path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-4",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+      "local_path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+      "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-5",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/600519-current-equity-policy-staged-20261008T090506Z/policy.json",
+      "local_path": "runtime/company-research/600519-current-equity-policy-staged-20261008T090506Z/policy.json",
+      "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-6",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+      "local_path": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+      "sha256": "cca8b43c6069ffda329e940a4be96d27d7af4c3387ec08f4d24a5c9f42da4069",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-7",
+      "kind": "research_artifact",
+      "location": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+      "local_path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+      "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-8",
+      "kind": "research_artifact",
+      "location": "runtime/historical-filing-index/20260909T033444358365Z/600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+      "local_path": "runtime/historical-filing-index/20260909T033444358365Z/600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+      "sha256": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-9",
+      "kind": "research_artifact",
+      "location": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+      "local_path": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+      "sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-10",
+      "kind": "research_artifact",
+      "location": "runtime/d2-source-bound-current-20261008/announcements/1225475864.pdf",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475864.pdf",
+      "sha256": "1a12378ed0e4a803eae00e73c74bc20eb2d73821fc960d746d52476dbf80df1d",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-11",
+      "kind": "research_artifact",
+      "location": "runtime/d2-source-bound-current-20261008/announcements/1225475863.pdf",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475863.pdf",
+      "sha256": "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-12",
+      "kind": "research_artifact",
+      "location": "runtime/d2-source-bound-current-20261008/announcements/1225475862.pdf",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475862.pdf",
+      "sha256": "c22571b28d92addc54fed9a75e56b0ffb5c2abbf834000d5c3ea77e02df129cd",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-13",
+      "kind": "research_artifact",
+      "location": "runtime/d2-source-bound-current-20261008/announcements/1225475860.pdf",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475860.pdf",
+      "sha256": "9ba031b34a7f05caec0e71a154257b8b449fb0b18a58badd7e346fe66bc90313",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-14",
+      "kind": "research_artifact",
+      "location": "runtime/d2-source-bound-current-20261008/announcements/1225475856.pdf",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225475856.pdf",
+      "sha256": "fc78904a1a1babaea6e31838d5a8c3fc7933c6d1925fd3101942c130d21c66fc",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-15",
+      "kind": "research_artifact",
+      "location": "runtime/d2-source-bound-current-20261008/announcements/1225431263.pdf",
+      "local_path": "runtime/d2-source-bound-current-20261008/announcements/1225431263.pdf",
+      "sha256": "24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-16",
+      "kind": "research_artifact",
+      "location": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+      "local_path": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+      "sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-17",
+      "kind": "research_artifact",
+      "location": "runtime/d2-source-bound-current-20261008/cninfo-full-window-index.json",
+      "local_path": "runtime/d2-source-bound-current-20261008/cninfo-full-window-index.json",
+      "sha256": "f97ae2b3b8d5991d58d6297ae6b090be37efd447a53552367c61de66e86b5e1a",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-18",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-full-window-materiality-review-20261008.md",
+      "local_path": "docs/current/600519-full-window-materiality-review-20261008.md",
+      "sha256": "aa7a70c94dcde08a9fef7f6207139a5fcb4527cbbee9adb775c19699a34a7d54",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-19",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-normalized-assumption-research-20261008.md",
+      "local_path": "docs/current/600519-normalized-assumption-research-20261008.md",
+      "sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-20",
+      "kind": "research_artifact",
+      "location": "runtime/d2-model-bound-followup-20261008/historical-profit-reconciliation-v1.json",
+      "local_path": "runtime/d2-model-bound-followup-20261008/historical-profit-reconciliation-v1.json",
+      "sha256": "6f9e4334a5f5be4526c99f2b60fe345ff4935bb1e0c1ec925915b42e3d98559e",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-21",
+      "kind": "research_artifact",
+      "location": "runtime/d2-economic-research-20261008/profit-adjustment-bridge-v1.json",
+      "local_path": "runtime/d2-economic-research-20261008/profit-adjustment-bridge-v1.json",
+      "sha256": "b11db869bacf07bcbed428b4ed8f61be1733ee5b63a111eaf3cb9d2d239ed188",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-22",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-profit-adjustment-bridge-20261008.md",
+      "local_path": "docs/current/600519-profit-adjustment-bridge-20261008.md",
+      "sha256": "8d9ff9e6fb94e9f18a62108992a91b7c8f2a438da6e8d32df424e55ffc176260",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-23",
+      "kind": "research_artifact",
+      "location": "runtime/d2-economic-research-20261008/parent-distribution-capital-bridge-v1.json",
+      "local_path": "runtime/d2-economic-research-20261008/parent-distribution-capital-bridge-v1.json",
+      "sha256": "34cf0f4ac76a6fd2e2b6bd0cfe56500c270371fd4b9e6a25767a247b1ad25d78",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-24",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-parent-distribution-capital-bridge-20261008.md",
+      "local_path": "docs/current/600519-parent-distribution-capital-bridge-20261008.md",
+      "sha256": "ac1477ab886a7ee02ca621b06a8af66a518c638858bc042c7da293b029d69573",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-25",
+      "kind": "research_artifact",
+      "location": "runtime/d2-economic-research-20261008/operating-mechanism-evidence-v1.json",
+      "local_path": "runtime/d2-economic-research-20261008/operating-mechanism-evidence-v1.json",
+      "sha256": "4234aaaa2e2b580d89cabee665f59571e29f58b8714f99409e5f362b95ee7bae",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-26",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-operating-mechanism-research-20261008.md",
+      "local_path": "docs/current/600519-operating-mechanism-research-20261008.md",
+      "sha256": "567b9fa1114a766e76f88ba491ef4449c13163ec1d4f973b8abf2b9fe43763aa",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-27",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-forward-path-independent-review-20261008-v2.md",
+      "local_path": "docs/current/600519-forward-path-independent-review-20261008-v2.md",
+      "sha256": "37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-28",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-financial-scope-independent-review-20261008.md",
+      "local_path": "docs/current/600519-financial-scope-independent-review-20261008.md",
+      "sha256": "17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-29",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-equity-cost-independent-review-20261008.md",
+      "local_path": "docs/current/600519-equity-cost-independent-review-20261008.md",
+      "sha256": "c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-30",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-primary-earnings-assumption-research-20261009.md",
+      "local_path": "docs/current/600519-primary-earnings-assumption-research-20261009.md",
+      "sha256": "70028ada50bc3c50d897087451b5b18f6387fc4e8af4fa16d09679ef7da6ce1a",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-31",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-neutral-model-review-20261011.md",
+      "local_path": "docs/current/600519-neutral-model-review-20261011.md",
+      "sha256": "fe862b41296adf239c006f0fa2b7c44902c5b83c623e3c7c99fe83cb306fa14d",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-32",
+      "kind": "research_artifact",
+      "location": "src/value_investment_agent/valuation_models/residual_income.py",
+      "local_path": "src/value_investment_agent/valuation_models/residual_income.py",
+      "sha256": "090bb42f00300662ed4f626ee0df19c58c0e6049edd612021d8ccd4b7925a0f7",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-33",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-bounded-research-preference-20261011.md",
+      "local_path": "docs/current/600519-bounded-research-preference-20261011.md",
+      "sha256": "f86dc7b2197775f2e697925fa6fddc7d6077ed4ea06bd1e4ee675e78d2b2ee0e",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "candidate-lineage-34",
+      "kind": "research_artifact",
+      "location": "docs/current/600519-economic-candidate-closure-20261011.md",
+      "local_path": "docs/current/600519-economic-candidate-closure-20261011.md",
+      "sha256": "2027ab44826ff28903a29d449fe1abe016da039d9c90e3d20746c2328415e71a",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "retrieved_at": "2026-10-11T08:21:50.762534+00:00",
+      "parser_version": "pending-finite-research-candidate-v1"
+    },
+    {
+      "id": "pending-economic-proposal",
+      "kind": "research_artifact",
+      "location": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+      "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33",
+      "source_available_at": "2026-10-11T08:21:50.762534+00:00",
+      "availability_basis": "current_candidate_acquisition",
+      "local_path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json"
+    }
+  ],
+  "research_case": {
+    "symbol": "600519",
+    "name": "贵州茅台",
+    "as_of": "2026-10-11",
+    "run_id": "pending-600519-2026-10-11-B_CONTINUITY_ALTERNATIVE-91daee7dc978",
+    "generated_at": "2026-10-11T08:21:50.762534+00:00",
+    "research_version": "pending-600519-2026-10-11-B_CONTINUITY_ALTERNATIVE-91daee7dc978",
+    "industry": "食品饮料-白酒",
+    "investment_path": "有界权益研究",
+    "thesis": "茅台酒高已实现毛利、核心产品收入韧性及直营触达支持有条件的经营价值；系列酒、成本和市场费用提供相反机制。历史扣非利润和母公司现金/权益已核对。现有五年盈利路径与后五年全资本ROE衰减是压力研究，不是中性主估值；未来资本用途、优势期及分配仍需有界假设审阅。 本候选实际消费既有有限方案：核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。",
+    "return_driver": "核心产品盈利与渠道实现、成本及市场维护费用共同决定归母利润；股东回报依赖可持续分配和留存资本用途，而非高毛利或低估值标签本身。",
+    "mispricing_hypothesis": "待检验的预期分歧是渠道/预收政策变化是否被混同为消费需求恶化，以及现有全资本强衰减是否夸大存量盈利侵蚀；当前没有经批准的中性估值或价格隐含预期结论，不能认定市场误定价。",
+    "financial_summary": {
+      "period_end": "2026-06-30",
+      "parent_equity_cny": "251253594419.50",
+      "ordinary_shares": "1250081601",
+      "ttm_ex_nonrecurring_parent_profit_cny": "81367067677.44",
+      "historical_profit_reconciliation": {
+        "symbol": "600519",
+        "observed_at": "2026-10-08T11:57:51.425128+00:00",
+        "report_period": "2026-06-30",
+        "scope": "HISTORICAL_PROFIT_RECONCILIATION_NOT_NORMALIZED_FORECAST_OR_INVESTMENT_APPROVAL",
+        "source_rows": [
+          {
+            "period": "FY2025",
+            "currency": "CNY",
+            "statement_scope": "consolidated",
+            "profit_basis": "attributable_to_parent",
+            "reported_profit_cny": "82320067101.68",
+            "ex_nonrecurring_profit_cny": "82293107655.25",
+            "source_id": "cninfo:1225114741",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "physical_page": 6,
+            "reviewed_at": "2026-10-08T11:57:51.425128+00:00",
+            "validation_method": "official_page_amount_match_and_independent_report_reconciliation"
+          },
+          {
+            "period": "H1_2026",
+            "currency": "CNY",
+            "statement_scope": "consolidated",
+            "profit_basis": "attributable_to_parent",
+            "reported_profit_cny": "44516880421.86",
+            "ex_nonrecurring_profit_cny": "44464207646.01",
+            "source_id": "cninfo:1225475868",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "physical_page": 5,
+            "reviewed_at": "2026-10-08T11:57:51.425128+00:00",
+            "validation_method": "official_page_amount_match_and_independent_report_reconciliation"
+          },
+          {
+            "period": "H1_2025",
+            "currency": "CNY",
+            "statement_scope": "consolidated",
+            "profit_basis": "attributable_to_parent",
+            "reported_profit_cny": "45402962298.10",
+            "ex_nonrecurring_profit_cny": "45390247623.82",
+            "source_id": "cninfo:1225475868",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "physical_page": 5,
+            "reviewed_at": "2026-10-08T11:57:51.425128+00:00",
+            "validation_method": "official_page_amount_match_and_independent_report_reconciliation"
+          }
+        ],
+        "review_report": {
+          "id": "independent-normalized-profit-research-20261008",
+          "path": "docs/current/600519-normalized-assumption-research-20261008.md",
+          "sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a"
+        },
+        "formula": "FY2025 + H1_2026 - H1_2025",
+        "ttm_reported_parent_profit_cny": "81433985225.44",
+        "ttm_ex_nonrecurring_parent_profit_cny": "81367067677.44",
+        "ttm_nonrecurring_parent_profit_cny": "66917548.00",
+        "forward_normalized_profit_cny": null,
+        "future_roe_bounds": null,
+        "financial_quality_approved": false,
+        "forecast_approved": false,
+        "action": "no_order"
+      },
+      "profit_adjustment_research": {
+        "schema_version": "issuer-profit-adjustment-research-v1",
+        "symbol": "600519",
+        "observed_at": "2026-10-08T13:07:40.430632+00:00",
+        "report_period": "2026-06-30",
+        "scope": "HISTORICAL_ACCOUNTING_CLASSIFICATION_NOT_FORWARD_NORMALIZATION_APPROVAL",
+        "official_amount_observations": [
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 7,
+            "label": "asset_disposal",
+            "amount_cny": "-2384586.28",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 7,
+            "label": "government_grants",
+            "amount_cny": "4271947.79",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 7,
+            "label": "financial_nonrecurring",
+            "amount_cny": "76162597.66",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 7,
+            "label": "other_nonoperating_net",
+            "amount_cny": "-48197347.69",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 7,
+            "label": "other_qualifying",
+            "amount_cny": "7138800.00",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 7,
+            "label": "tax_effect_to_subtract",
+            "amount_cny": "9247852.87",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 7,
+            "label": "after_tax_nci_to_subtract",
+            "amount_cny": "784112.18",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 7,
+            "label": "net_parent_nonrecurring",
+            "amount_cny": "26959446.43",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 6,
+            "label": "reported_parent_profit",
+            "amount_cny": "82320067101.68",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 6,
+            "label": "ex_nonrecurring_parent_profit",
+            "amount_cny": "82293107655.25",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 5,
+            "label": "asset_disposal",
+            "amount_cny": "-1864170.69",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 5,
+            "label": "government_grants",
+            "amount_cny": "20012654.88",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 6,
+            "label": "financial_nonrecurring",
+            "amount_cny": "22537102.09",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 6,
+            "label": "other_nonoperating_net",
+            "amount_cny": "29131392.76",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 6,
+            "label": "other_qualifying",
+            "amount_cny": "418450.00",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 6,
+            "label": "tax_effect_to_subtract",
+            "amount_cny": "17558857.26",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 6,
+            "label": "after_tax_nci_to_subtract",
+            "amount_cny": "3795.93",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 6,
+            "label": "net_parent_nonrecurring",
+            "amount_cny": "52672775.85",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 5,
+            "label": "reported_parent_profit",
+            "amount_cny": "44516880421.86",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 5,
+            "label": "ex_nonrecurring_parent_profit",
+            "amount_cny": "44464207646.01",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 7,
+            "label": "Q1_2025_parent",
+            "amount_cny": "26847474238.76",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 7,
+            "label": "Q2_2025_parent",
+            "amount_cny": "18555488059.34",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 7,
+            "label": "Q1_2025_ex_nonrecurring_parent",
+            "amount_cny": "26849883702.90",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+            "physical_page": 7,
+            "label": "Q2_2025_ex_nonrecurring_parent",
+            "amount_cny": "18540363920.92",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 5,
+            "label": "H1_2025_comparative_parent",
+            "amount_cny": "45402962298.10",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 5,
+            "label": "H1_2025_comparative_ex_parent",
+            "amount_cny": "45390247623.82",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 77,
+            "label": "other_noncurrent_financial_fair_value_gain",
+            "amount_cny": "22082651.62",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 76,
+            "label": "other_noncurrent_financial_holding_return",
+            "amount_cny": "454300.43",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 76,
+            "label": "other_noncurrent_financial_disposal_return",
+            "amount_cny": "150.04",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 77,
+            "label": "other_receivables",
+            "amount_cny": "-44171.06",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 77,
+            "label": "debt_investment",
+            "amount_cny": "6378602.03",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 77,
+            "label": "loans_advances",
+            "amount_cny": "34348863.07",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 77,
+            "label": "interbank_lending",
+            "amount_cny": "-8203078.19",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 77,
+            "label": "repo_assets",
+            "amount_cny": "-6453.94",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 31,
+            "label": "credit_impairment_loss_negative_convention",
+            "amount_cny": "32473761.91",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 78,
+            "label": "statutory_applicable_rate_expense",
+            "amount_cny": "15359604794.32",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 78,
+            "label": "subsidiary_rate_difference",
+            "amount_cny": "-653592.63",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 78,
+            "label": "prior_period_adjustment",
+            "amount_cny": "-137159711.51",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 78,
+            "label": "nontaxable_income",
+            "amount_cny": "-6750063.57",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 78,
+            "label": "nondeductible_items",
+            "amount_cny": "190047183.89",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 78,
+            "label": "total_tax_expense",
+            "amount_cny": "15405088610.51",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 31,
+            "label": "profit_before_tax",
+            "amount_cny": "61438419177.29",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 31,
+            "label": "consolidated_net_profit",
+            "amount_cny": "46033330566.78",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          },
+          {
+            "source_id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+            "physical_page": 31,
+            "label": "nci_profit",
+            "amount_cny": "1516450144.92",
+            "unit": "CNY",
+            "scope": "consolidated_unless_label_specifies_parent"
+          }
+        ],
+        "nonrecurring_to_parent_bridges": [
+          {
+            "period": "FY2025",
+            "items_cny": {
+              "asset_disposal": "-2384586.28",
+              "government_grants": "4271947.79",
+              "financial_nonrecurring": "76162597.66",
+              "other_nonoperating_net": "-48197347.69",
+              "other_qualifying": "7138800.00",
+              "tax_effect_to_subtract": "9247852.87",
+              "after_tax_nci_to_subtract": "784112.18"
+            },
+            "pretax_total_cny": "36991411.48",
+            "parent_net_cny": "26959446.43",
+            "reconciliation_residual_cny": "0.00",
+            "additional_adjustment_from_ex_nonrecurring_basis_cny": "0.00",
+            "zero_basis": "same_disclosed_category_already_excluded_not_an_unknown_allocation"
+          },
+          {
+            "period": "H1_2026",
+            "items_cny": {
+              "asset_disposal": "-1864170.69",
+              "government_grants": "20012654.88",
+              "financial_nonrecurring": "22537102.09",
+              "other_nonoperating_net": "29131392.76",
+              "other_qualifying": "418450.00",
+              "tax_effect_to_subtract": "17558857.26",
+              "after_tax_nci_to_subtract": "3795.93"
+            },
+            "pretax_total_cny": "70235429.04",
+            "parent_net_cny": "52672775.85",
+            "reconciliation_residual_cny": "0.00",
+            "additional_adjustment_from_ex_nonrecurring_basis_cny": "0.00",
+            "zero_basis": "same_disclosed_category_already_excluded_not_an_unknown_allocation"
+          }
+        ],
+        "prior_h1_cross_check": {
+          "annual_q1_plus_q2_parent_cny": "45402962298.10",
+          "annual_q1_plus_q2_ex_parent_cny": "45390247623.82",
+          "residual_cny": "0.00"
+        },
+        "financial_category_overlap": {
+          "components_cny": [
+            "22082651.62",
+            "454300.43",
+            "150.04"
+          ],
+          "sum_cny": "22537102.09",
+          "disclosed_category_cny": "22537102.09",
+          "arithmetic_match": true,
+          "issuer_item_level_attribution_explicit": false,
+          "interpretation": "Supports category reconciliation; do not subtract the already excluded category again. Does not identify every subsidiary, tax or NCI allocation, or all recurring finance-company income."
+        },
+        "credit_impairment": {
+          "components_cny": {
+            "other_receivables": "-44171.06",
+            "debt_investment": "6378602.03",
+            "loans_advances": "34348863.07",
+            "interbank_lending": "-8203078.19",
+            "repo_assets": "-6453.94"
+          },
+          "pretax_profit_contribution_cny": "32473761.91",
+          "loss_negative_convention": true,
+          "recurring_classification": "UNRESOLVED",
+          "overlap_with_ex_nonrecurring": "UNKNOWN",
+          "tax_after_parent_adjustment_cny": null
+        },
+        "tax_expense_bridge": {
+          "components_cny": {
+            "statutory_applicable_rate_expense": "15359604794.32",
+            "subsidiary_rate_difference": "-653592.63",
+            "prior_period_adjustment": "-137159711.51",
+            "nontaxable_income": "-6750063.57",
+            "nondeductible_items": "190047183.89"
+          },
+          "printed_component_sum_cny": "15405088610.50",
+          "expense_cny": "15405088610.51",
+          "printed_reconciliation_residual_cny": "0.01",
+          "residual_classification": "ONE_CENT_PRINTED_DISCREPANCY_NOT_REWRITTEN_OR_PROVEN_ROUNDING",
+          "consolidated_profit_benefit_from_prior_period_adjustment_cny": "137159711.51",
+          "already_tax_expense_item_do_not_tax_again": true,
+          "parent_allocation_cny": null,
+          "overlap_with_ex_nonrecurring": "UNKNOWN"
+        },
+        "magnitude_comparison": {
+          "combined_group_disclosed_magnitude_cny": "169633473.42",
+          "h1_ex_parent_benchmark_cny": "44464207646.01",
+          "ratio": "0.003815056702921413157008240053",
+          "scope": "size_comparison_only_not_parent_normalized_adjustment_or_materiality_approval"
+        },
+        "closed_questions": [
+          "FY/H1 disclosed nonrecurring parent bridges reconcile exactly",
+          "prior H1 compares independently with annual quarterly figures",
+          "financial nonrecurring category must not be deducted twice",
+          "credit impairment line is net positive profit contribution",
+          "prior tax adjustment benefits net profit and is not pretax income"
+        ],
+        "open_questions": [
+          "item-level after-tax parent allocation and ex-nonrecurring overlap for tax/credit",
+          "forward operating profit path",
+          "capital-return and competitive-advantage fade assumptions"
+        ],
+        "forward_normalized_profit_cny": null,
+        "additional_parent_normalization_adjustment_cny": null,
+        "forecast_approved": false,
+        "action": "no_order"
+      },
+      "parent_distribution_capital_research_binding": {
+        "id": "parent-distribution-capital-bridge-20261008",
+        "path": "runtime/d2-economic-research-20261008/parent-distribution-capital-bridge-v1.json",
+        "sha256": "34cf0f4ac76a6fd2e2b6bd0cfe56500c270371fd4b9e6a25767a247b1ad25d78"
+      },
+      "operating_mechanism_research": {
+        "schema_version": "case-operating-mechanism-evidence-v1",
+        "symbol": "600519",
+        "generated_at": "2026-10-08T13:50:01.329172+00:00",
+        "sources": [
+          {
+            "id": "cninfo:1225114741",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF"
+          },
+          {
+            "id": "cninfo:1225475868",
+            "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF"
+          }
+        ],
+        "official_observations": [
+          {
+            "id": "fy_revenue",
+            "period": "FY2025",
+            "scope": "consolidated",
+            "value": "168838102514.79",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 9,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_prior_revenue",
+            "period": "FY2024_comparative",
+            "scope": "consolidated",
+            "value": "170899152276.34",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 9,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_cost",
+            "period": "FY2025",
+            "scope": "consolidated",
+            "value": "14892277570.91",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 9,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_prior_cost",
+            "period": "FY2024_comparative",
+            "scope": "consolidated",
+            "value": "13789482367.98",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 9,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_selling",
+            "period": "FY2025",
+            "scope": "consolidated",
+            "value": "7253499600.68",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 9,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_prior_selling",
+            "period": "FY2024_comparative",
+            "scope": "consolidated",
+            "value": "5639300059.49",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 9,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_admin",
+            "period": "FY2025",
+            "scope": "consolidated",
+            "value": "8320061659.66",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 9,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_prior_admin",
+            "period": "FY2024_comparative",
+            "scope": "consolidated",
+            "value": "9315650060.38",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 9,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_research",
+            "period": "FY2025",
+            "scope": "consolidated",
+            "value": "190112246.58",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 9,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_prior_research",
+            "period": "FY2024_comparative",
+            "scope": "consolidated",
+            "value": "218375472.87",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 9,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_revenue",
+            "period": "H12026",
+            "scope": "consolidated",
+            "value": "90703260964.48",
+            "unit": "CNY",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 7,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_prior_revenue",
+            "period": "H12025_comparative",
+            "scope": "consolidated",
+            "value": "89389354416.84",
+            "unit": "CNY",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 7,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_cost",
+            "period": "H12026",
+            "scope": "consolidated",
+            "value": "9473762565.88",
+            "unit": "CNY",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 7,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_prior_cost",
+            "period": "H12025_comparative",
+            "scope": "consolidated",
+            "value": "7777491083.93",
+            "unit": "CNY",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 7,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_selling",
+            "period": "H12026",
+            "scope": "consolidated",
+            "value": "3206308341.53",
+            "unit": "CNY",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 7,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_prior_selling",
+            "period": "H12025_comparative",
+            "scope": "consolidated",
+            "value": "3260462949.46",
+            "unit": "CNY",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 7,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_admin",
+            "period": "H12026",
+            "scope": "consolidated",
+            "value": "3635355263.82",
+            "unit": "CNY",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 7,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_prior_admin",
+            "period": "H12025_comparative",
+            "scope": "consolidated",
+            "value": "3694704172.74",
+            "unit": "CNY",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 7,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_research",
+            "period": "H12026",
+            "scope": "consolidated",
+            "value": "114926219.60",
+            "unit": "CNY",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 7,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_prior_research",
+            "period": "H12025_comparative",
+            "scope": "consolidated",
+            "value": "73901545.96",
+            "unit": "CNY",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 7,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_alcohol_revenue",
+            "period": "FY2025",
+            "scope": "alcohol_alcohol",
+            "value": "168774585187.65",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_alcohol_cost",
+            "period": "FY2025",
+            "scope": "alcohol_alcohol",
+            "value": "14805900139.59",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_moutai_revenue",
+            "period": "FY2025",
+            "scope": "alcohol_moutai",
+            "value": "146499906480.49",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_moutai_cost",
+            "period": "FY2025",
+            "scope": "alcohol_moutai",
+            "value": "9484757825.54",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_series_revenue",
+            "period": "FY2025",
+            "scope": "alcohol_series",
+            "value": "22274678707.16",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_series_cost",
+            "period": "FY2025",
+            "scope": "alcohol_series",
+            "value": "5321142314.05",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_wholesale_revenue",
+            "period": "FY2025",
+            "scope": "alcohol_wholesale",
+            "value": "84231553333.02",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_wholesale_cost",
+            "period": "FY2025",
+            "scope": "alcohol_wholesale",
+            "value": "10226331441.18",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_direct_revenue",
+            "period": "FY2025",
+            "scope": "alcohol_direct",
+            "value": "84543031854.63",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_direct_cost",
+            "period": "FY2025",
+            "scope": "alcohol_direct",
+            "value": "4579568698.41",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_cost_materials",
+            "period": "FY2025",
+            "scope": "alcohol_cost",
+            "value": "7607858939.76",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 11,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_cost_labor",
+            "period": "FY2025",
+            "scope": "alcohol_cost",
+            "value": "5499482112.67",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 11,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_cost_manufacturing",
+            "period": "FY2025",
+            "scope": "alcohol_cost",
+            "value": "902282395.06",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 11,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_cost_fuel",
+            "period": "FY2025",
+            "scope": "alcohol_cost",
+            "value": "469410305.65",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 11,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_cost_transport",
+            "period": "FY2025",
+            "scope": "alcohol_cost",
+            "value": "326866386.45",
+            "unit": "CNY",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 11,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_moutai_revenue",
+            "period": "H12026",
+            "scope": "alcohol_moutai",
+            "value": "7772443.79",
+            "unit": "CNY_10000",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 8,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_series_revenue",
+            "period": "H12026",
+            "scope": "alcohol_series",
+            "value": "1293418.65",
+            "unit": "CNY_10000",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 8,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_direct_revenue",
+            "period": "H12026",
+            "scope": "alcohol_direct",
+            "value": "5196204.70",
+            "unit": "CNY_10000",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 8,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_wholesale_revenue",
+            "period": "H12026",
+            "scope": "alcohol_wholesale",
+            "value": "3869657.74",
+            "unit": "CNY_10000",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 8,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_domestic_revenue",
+            "period": "H12026",
+            "scope": "alcohol_domestic",
+            "value": "8962212.26",
+            "unit": "CNY_10000",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 8,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_foreign_revenue",
+            "period": "H12026",
+            "scope": "alcohol_foreign",
+            "value": "103650.18",
+            "unit": "CNY_10000",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 8,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_imoutai_revenue",
+            "period": "H12026",
+            "scope": "alcohol_imoutai",
+            "value": "4026356.42",
+            "unit": "CNY_10000",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 8,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_sales_tonnes",
+            "period": "FY2025",
+            "scope": "alcohol",
+            "value": "85104.14",
+            "unit": "tonnes",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_production_tonnes",
+            "period": "FY2025",
+            "scope": "alcohol",
+            "value": "116123.73",
+            "unit": "tonnes",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_inventory_tonnes",
+            "period": "FY2025",
+            "scope": "alcohol",
+            "value": "339977.86",
+            "unit": "tonnes",
+            "source_id": "cninfo:1225114741",
+            "physical_page": 10,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "h1_contract_liabilities",
+            "period": "H12026_end",
+            "scope": "consolidated",
+            "value": "3177561597.07",
+            "unit": "CNY",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 9,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          },
+          {
+            "id": "fy_contract_liabilities",
+            "period": "FY2025_end",
+            "scope": "consolidated",
+            "value": "8006739780.94",
+            "unit": "CNY",
+            "source_id": "cninfo:1225475868",
+            "physical_page": 9,
+            "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+          }
+        ],
+        "calculated": {
+          "fy_revenue_growth": "-0.0120600350212231007573121740049614396885",
+          "h1_revenue_growth": "0.014698691541198490124079220627087400965",
+          "h1_cost_growth": "0.218100086987546459280406196882196057273",
+          "fy_consolidated_gross_margin": "0.9117955168348006298282894922065331693139",
+          "h1_consolidated_gross_margin": "0.8955521282791586908487856539022215135860",
+          "h1_comparative_gross_margin": "0.9129930948190760876917884830732179663784",
+          "h1_gross_margin_change_percentage_points": "-1.744096653991739684300282917099645279240",
+          "fy_selling_expense_ratio": "0.04296127173097436812936753476820585661805",
+          "fy_comparative_selling_expense_ratio": "0.03299782347879281144631071361270708587404",
+          "h1_selling_expense_ratio": "0.03534942743442941552532419798511450996708",
+          "fy_moutai_share_of_alcohol_revenue": "0.8680211319589725822042388369633649654290",
+          "fy_direct_share_of_alcohol_revenue": "0.5009227648856718751179490243398724137442",
+          "h1_direct_share_of_alcohol_revenue": "0.5731616527814865013548562071497744896293",
+          "h1_imoutai_share_of_direct_revenue": "0.7748648585764914149744716562070774463523",
+          "h1_other_revenue_cny": "44636564.48",
+          "fy_other_revenue_cny": "63517327.14",
+          "fy_alcohol_revenue_per_sold_tonne_mix_proxy_cny": "1983153.641969121596199667842245982392866",
+          "contract_liability_change": "-0.6031391447697391264433531048442850832160",
+          "fy_cost_component_shares": {
+            "materials": "0.5138396766176402340245172351912169567306",
+            "labor": "0.3714385522542292255676549485685467097114",
+            "manufacturing": "0.06094073217793468787997331596421189016241",
+            "fuel": "0.03170427337915293761298140866843117702900",
+            "transport": "0.02207676557104291491487309160759326636652"
+          },
+          "fy_partition_gross_margins": {
+            "alcohol": "0.9122741132906459976838946369479573679693",
+            "moutai": "0.9352575844353653254538696753339224647612",
+            "series": "0.7611124998027663807070847991238263220503",
+            "wholesale": "0.8785926290501978833716042357617264566715",
+            "direct": "0.9458315061815564652757292092047604247515"
+          },
+          "ttm_comparable_consolidated_selected_lines_cny": {
+            "revenue": "170152009062.43",
+            "cost": "16588549052.86",
+            "selling": "7199344992.75",
+            "admin": "8260712750.74",
+            "research": "231136920.22"
+          },
+          "ttm_consolidated_gross_margin": "0.9025074746735811879607505923459906989393"
+        },
+        "reconciliations": {
+          "fy_product_partition": true,
+          "fy_channel_partition": true,
+          "fy_cost_components": true,
+          "h1_product_channel_geography": true
+        },
+        "scope_limits": [
+          "Product and channel partitions describe the same total; no product-by-channel matrix is disclosed.",
+          "H1 amounts in CNY_10000 are multiplied by 10000; other consolidated revenue is kept separate.",
+          "H1 direct share versus FY direct share is a period comparison, not a channel year-on-year growth rate.",
+          "Revenue per tonne is an aggregate mix proxy, not SKU realized price or immediate saleable aged inventory.",
+          "TTM selected lines are not EBIT, NOPAT or normalized parent profit: taxes/surcharges, finance and other lines are absent.",
+          "Contract liabilities reflect disclosed prepayment-policy and sales-mode changes, not a direct demand measurement.",
+          "July SKU/channel price changes cannot be applied to all revenue without net-realization and volume evidence.",
+          "Historical margins and channel changes support bounded hypotheses, not certain future pricing power or moat duration."
+        ],
+        "research_approved": false,
+        "real_data_admitted": false,
+        "canonical_written": false,
+        "action": "no_order"
+      },
+      "forward_path_independent_review_binding": {
+        "id": "forward-path-independent-review-20261008",
+        "path": "docs/current/600519-forward-path-independent-review-20261008-v2.md",
+        "sha256": "37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37"
+      },
+      "financial_scope_review": {
+        "scope": "historical_financial_basis_and_conditional_residual_income_research_only",
+        "review_binding": {
+          "id": "financial-scope-independent-review-20261008",
+          "path": "docs/current/600519-financial-scope-independent-review-20261008.md",
+          "sha256": "17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c"
+        },
+        "reviewer_id": "01a11ae2-348c-7f11-8317-875589e870c1",
+        "integrator_id": "root-current-goal",
+        "accepted_at": "2026-10-08T14:31:10.657078+00:00",
+        "symbol": "600519",
+        "currency": "CNY",
+        "equity_scope": "consolidated_parent_ordinary_equity",
+        "balance_as_of": "2026-06-30",
+        "research_as_of": "2026-10-08",
+        "model_version": "residual-income-equity-shared-dated-v2",
+        "profit_basis": "reported_and_ex_nonrecurring_parent_TTM; not_verified_normalized_profit",
+        "normalized_parent_profit_cny": null,
+        "five_dimensions": {
+          "profitability": {
+            "assessment": "历史毛利强；追加正常化未知",
+            "reason": "核心酒高毛利、历史扣非TTM可核；H1成本压力和费用反证不支持高ROE机械外推"
+          },
+          "cash": {
+            "assessment": "历史资金桥可解释；持续分配未知",
+            "reason": "母公司CFO、子公司上划和现金缓冲已核；合并财务公司现金不能当母公司可分红资金"
+          },
+          "balance_sheet": {
+            "assessment": "披露偿付结构正常；金融和存货尾部未知",
+            "reason": "合并负债含吸收存款，金融资产净额与义务分开；陈酿存货不是立即可售现金"
+          },
+          "growth": {
+            "assessment": "近期盈利增长弱；未来路径是假设",
+            "reason": "年度及H1利润承压、产品与渠道分化；允许有界条件，不把高毛利视为必然恢复"
+          },
+          "capital_allocation": {
+            "assessment": "历史执行与资本桥可核；增量回报未知",
+            "reason": "已付股息、回购、注销和基金承诺分别核对；留存不自动赚历史品牌ROE"
+          }
+        },
+        "restricted_fund_discrepancies": [
+          {
+            "period": "H12026_end",
+            "asset_note_cny": "8358830124.37",
+            "cash_note_cny": "8355337252.97",
+            "difference_cny": "3492871.40"
+          },
+          {
+            "period": "FY2025_end",
+            "asset_note_cny": "7254499309.26",
+            "cash_note_cny": "7250789537.15",
+            "difference_cny": "3709772.11"
+          }
+        ],
+        "not_accepted": [
+          "verified_normalized_parent_profit",
+          "sustainable_future_distribution",
+          "financial_tail_materiality_approval",
+          "neutral_primary_valuation",
+          "model_validity",
+          "price_or_investment_admission"
+        ],
+        "reopen_condition": "Changing to a primary valuation or claiming precise freely distributable cash requires review of affected scope and assumptions; this limited acceptance cannot be carried forward as full approval.",
+        "action": "no_order"
+      },
+      "equity_cost_review_binding": {
+        "id": "equity-cost-independent-review-20261008",
+        "path": "docs/current/600519-equity-cost-independent-review-20261008.md",
+        "sha256": "c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214"
+      },
+      "normalized_parent_profit_cny": null,
+      "pending_model_choice": "B_CONTINUITY_ALTERNATIVE",
+      "pending_model_limits": [
+        "有限提案计算保留旧财务基准；完整待审包实际生成日更新，不声称历史PIT或完整当前事件准入。",
+        "增长、成本、期限是假设；B为低置信研究候选，未获模型、材料性或G3批准。",
+        "三档同时改变增长、成本和衰减，不是统计置信区间；终段利润可能倒序。",
+        "合并权益不等于母公司可分配现金；金融损失和维护投入上界未知。",
+        "当前NO_ACTION，无价格准入和私人仓位；不替换登记研究或正式Excel。"
+      ]
+    },
+    "positives": [
+      {
+        "kind": "fact",
+        "text": "半年报有归母权益、归母盈利和普通股分母原文；输入范围可追溯。",
+        "evidence_refs": [
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "FY茅台酒占酒类收入86.80%、毛利率93.53%，核心产品收入同比+0.39%而系列酒-9.76%；支持分开评价核心产品韧性与系列酒压力，不证明永久定价权。",
+        "evidence_refs": [
+          "operating-mechanism-evidence-20261008",
+          "operating-mechanism-research-20261008",
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "FY直营酒类收入占50.09%、分区毛利率94.58%，H1直营占当期酒类收入57.32%；存在直接触达与收益获取渠道，但期间差异不是渠道同比增速，也不证明新增消费。",
+        "evidence_refs": [
+          "operating-mechanism-evidence-20261008",
+          "operating-mechanism-research-20261008",
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "H1营收同比+1.47%、合并毛利率89.56%，保有较高已实现盈利缓冲；该韧性须与成本增速和费用压力同时研究，不能直接外推归母利润增长。",
+        "evidence_refs": [
+          "operating-mechanism-evidence-20261008",
+          "operating-mechanism-research-20261008",
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      }
+    ],
+    "counter_evidence": [
+      {
+        "kind": "interpretation",
+        "text": "现有假设诊断将路径限定为强衰减压力情景，不能代替中性主估值。",
+        "evidence_refs": [
+          "assumption_diagnostic"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "扣非TTM使用年报加本期半年报减上年同期；不是跨周期正常化盈利批准。",
+        "evidence_refs": [
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      },
+      {
+        "kind": "fact",
+        "text": "7月18日限定产品渠道提价在H1期末之后，前瞻盈利影响尚未量化。",
+        "evidence_refs": [
+          "cninfo:1225431263",
+          "independent-announcement-research-20261008"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "财务公司存款与合并现金流不能直接视为普通股可分配现金；分配假设仍未批准。",
+        "evidence_refs": [
+          "cninfo:1225475863",
+          "cninfo:1225475868",
+          "independent-announcement-research-20261008"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "非经常性归母桥已对平，扣非基准不能再扣同一金融收益；信用减值本期为正利润贡献，以前期间所得税调整为净利增益，逐项税后归母及重叠仍未知。税桥打印分项与披露合计差0.01元，原数与差额均保留。",
+        "evidence_refs": [
+          "profit-adjustment-bridge-20261008",
+          "profit-adjustment-research-20261008"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "H1母公司现金及等价物下降234.75亿元，期初847.31亿元、期末612.56亿元；已执行派息350.33亿元及回购28.80亿元分别核对，不把库存股注销再算现金支出。历史现金缓冲不能证明未来75%派息；两只基金未实缴合计60亿元，付款时点未知。",
+        "evidence_refs": [
+          "parent-distribution-capital-bridge-20261008",
+          "parent-distribution-capital-research-20261008"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "H1成本同比+21.81%高于营收+1.47%，合并毛利率下降1.7441个百分点；FY销售费率4.2961%高于比较期3.2998%。收入韧性没有自动变成利润增长。",
+        "evidence_refs": [
+          "operating-mechanism-evidence-20261008",
+          "operating-mechanism-research-20261008",
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "FY直营收入+12.96%而直营成本+31.07%，披露直营毛利率下降0.75个百分点；H1预收款下降60.31%含营销和预付款政策变化，既不能用渠道迁移证明增量需求，也不能将预收下降机械当成需求崩塌。",
+        "evidence_refs": [
+          "operating-mechanism-evidence-20261008",
+          "operating-mechanism-research-20261008",
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "独立重算确认：后五年全资本ROE衰减使第五年利润再下降52.65%/65.84%/75.35%，不是仅新增资本低回报；75%分配只适用于显式十年，终端实际约74.03%/70.40%/65.60%。压力路径不能用作中性合理价。",
+        "evidence_refs": [
+          "forward-path-independent-review-20261008"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "受限准备金两表期末/期初分别差349.29万元/370.98万元，原因未识别；原值分别保留，不重复扣现金，不能据此认证精确可分配自由现金。财务范围认可只支持历史及条件研究，不批准金融尾部、未来分配或中性主估值。",
+        "evidence_refs": [
+          "financial-scope-independent-review-20261008"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "evidence_refs": [
+          "pending-economic-proposal"
+        ]
+      }
+    ],
+    "thesis_breakers": [
+      {
+        "kind": "hypothesis",
+        "text": "盈利、普通股资本桥接或资金分配发生实质变化时，重新研究并撤销旧结果的适用性。",
+        "evidence_refs": [
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "下一可比披露若继续成本增长快于收入且无已核对的组合/成本解释，重做利润路径并撤销盈利韧性假设适用性；单期压力不自动变成卖出。",
+        "evidence_refs": [
+          "operating-mechanism-evidence-20261008",
+          "operating-mechanism-research-20261008",
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "若直营迁移同时伴随持续毛利恶化和市场维护费用上升，撤销渠道净获益假设；核对同口径收入、成本、销售费用及政策而非只看直营占比。",
+        "evidence_refs": [
+          "operating-mechanism-evidence-20261008",
+          "operating-mechanism-research-20261008",
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      },
+      {
+        "kind": "hypothesis",
+        "text": "若核心产品收入与毛利亦持续恶化、系列酒压力未改善，重开核心品牌优势期及增长假设；若主情景只支持新增资本低回报，不应沿用全体利润强侵蚀解释。",
+        "evidence_refs": [
+          "operating-mechanism-evidence-20261008",
+          "operating-mechanism-research-20261008",
+          "cninfo:1225114741",
+          "cninfo:1225475868",
+          "forward-path-independent-review-20261008"
+        ]
+      }
+    ],
+    "next_events": [
+      {
+        "kind": "gap",
+        "text": "现在可继续：依既有共享模型审阅压力用途与中性前瞻路径，明确利润口径、存量/新增资本机制、优势期及敏感性，不等待未来事实，不调参制造买入。",
+        "evidence_refs": [
+          "operating-mechanism-evidence-20261008",
+          "operating-mechanism-research-20261008",
+          "forward-path-independent-review-20261008"
+        ]
+      },
+      {
+        "kind": "gap",
+        "text": "下一可比财报/已生效政策变化：核对核心与系列酒收入、同口径毛利、直营成本和费用、预收政策及母公司分配资金；只重开受影响假设。",
+        "evidence_refs": [
+          "operating-mechanism-evidence-20261008",
+          "operating-mechanism-research-20261008",
+          "cninfo:1225114741",
+          "cninfo:1225475868"
+        ]
+      }
+    ],
+    "evidence_status": "verified",
+    "valuation_status": "CONDITIONAL_RESEARCH_PENDING_REVIEW",
+    "research_status": "financial_scope_approved",
+    "blockers": [
+      "仅认可历史财务与条件剩余收益范围；中性主估值、正常化盈利及金融尾部审阅未获准入",
+      "本候选优势期和全资本衰减未获主模型批准",
+      "原文独立解释已形成；重大性、当前模型有效性和估值批准仍未准入",
+      "pending_economic_model_review",
+      "pending_complete_event_materiality_review"
+    ],
+    "evidence_refs": [
+      {
+        "id": "cninfo:1225114741",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+        "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+        "available_at": "2026-04-17T16:00:00+00:00",
+        "availability_basis": "date_only_conservative_next_day_bound",
+        "timestamp_precision": "date"
+      },
+      {
+        "id": "cninfo:1225475868",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+        "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+        "available_at": "2026-08-15T16:00:00+00:00",
+        "availability_basis": "date_only_conservative_next_day_bound",
+        "timestamp_precision": "date"
+      },
+      {
+        "id": "current_model",
+        "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+        "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+      },
+      {
+        "id": "timing_policy",
+        "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+        "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+      },
+      {
+        "id": "scope_review",
+        "path": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+        "sha256": "cca8b43c6069ffda329e940a4be96d27d7af4c3387ec08f4d24a5c9f42da4069"
+      },
+      {
+        "id": "assumption_diagnostic",
+        "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+        "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+      },
+      {
+        "id": "source_index",
+        "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+        "sha256": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f"
+      },
+      {
+        "id": "current_quote",
+        "path": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+        "sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5"
+      },
+      {
+        "id": "current_event_scan",
+        "path": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+        "sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9"
+      },
+      {
+        "id": "independent-announcement-research-20261008",
+        "path": "docs/current/600519-full-window-materiality-review-20261008.md",
+        "sha256": "aa7a70c94dcde08a9fef7f6207139a5fcb4527cbbee9adb775c19699a34a7d54"
+      },
+      {
+        "id": "cninfo:1225475863",
+        "path": "runtime/d2-source-bound-current-20261008/announcements/1225475863.pdf",
+        "sha256": "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b"
+      },
+      {
+        "id": "cninfo:1225431263",
+        "path": "runtime/d2-source-bound-current-20261008/announcements/1225431263.pdf",
+        "sha256": "24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873"
+      },
+      {
+        "id": "independent-normalized-profit-research-20261008",
+        "path": "docs/current/600519-normalized-assumption-research-20261008.md",
+        "sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a"
+      },
+      {
+        "id": "historical-profit-reconciliation-20261008",
+        "path": "runtime/d2-model-bound-followup-20261008/historical-profit-reconciliation-v1.json",
+        "sha256": "6f9e4334a5f5be4526c99f2b60fe345ff4935bb1e0c1ec925915b42e3d98559e"
+      },
+      {
+        "id": "profit-adjustment-bridge-20261008",
+        "path": "runtime/d2-economic-research-20261008/profit-adjustment-bridge-v1.json",
+        "sha256": "b11db869bacf07bcbed428b4ed8f61be1733ee5b63a111eaf3cb9d2d239ed188"
+      },
+      {
+        "id": "profit-adjustment-research-20261008",
+        "path": "docs/current/600519-profit-adjustment-bridge-20261008.md",
+        "sha256": "8d9ff9e6fb94e9f18a62108992a91b7c8f2a438da6e8d32df424e55ffc176260"
+      },
+      {
+        "id": "parent-distribution-capital-bridge-20261008",
+        "path": "runtime/d2-economic-research-20261008/parent-distribution-capital-bridge-v1.json",
+        "sha256": "34cf0f4ac76a6fd2e2b6bd0cfe56500c270371fd4b9e6a25767a247b1ad25d78"
+      },
+      {
+        "id": "parent-distribution-capital-research-20261008",
+        "path": "docs/current/600519-parent-distribution-capital-bridge-20261008.md",
+        "sha256": "ac1477ab886a7ee02ca621b06a8af66a518c638858bc042c7da293b029d69573"
+      },
+      {
+        "id": "operating-mechanism-evidence-20261008",
+        "path": "runtime/d2-economic-research-20261008/operating-mechanism-evidence-v1.json",
+        "sha256": "4234aaaa2e2b580d89cabee665f59571e29f58b8714f99409e5f362b95ee7bae"
+      },
+      {
+        "id": "operating-mechanism-research-20261008",
+        "path": "docs/current/600519-operating-mechanism-research-20261008.md",
+        "sha256": "567b9fa1114a766e76f88ba491ef4449c13163ec1d4f973b8abf2b9fe43763aa"
+      },
+      {
+        "id": "forward-path-independent-review-20261008",
+        "path": "docs/current/600519-forward-path-independent-review-20261008-v2.md",
+        "sha256": "37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37"
+      },
+      {
+        "id": "financial-scope-independent-review-20261008",
+        "path": "docs/current/600519-financial-scope-independent-review-20261008.md",
+        "sha256": "17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c"
+      },
+      {
+        "id": "equity-cost-independent-review-20261008",
+        "path": "docs/current/600519-equity-cost-independent-review-20261008.md",
+        "sha256": "c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214"
+      },
+      {
+        "id": "pending-economic-proposal",
+        "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+        "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+      }
+    ],
+    "quote_date": null,
+    "financial_period": "2026-06-30",
+    "missing_date_reasons": {
+      "quote_date": "New pending model has no admitted quote."
+    }
+  },
+  "facts": {
+    "kind": "quality_compounder",
+    "symbol": "600519",
+    "as_of": "2026-10-11",
+    "verified": true,
+    "confidence": "低",
+    "evidence_refs": [
+      {
+        "id": "cninfo:1225114741",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+        "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+        "available_at": "2026-04-17T16:00:00+00:00",
+        "availability_basis": "date_only_conservative_next_day_bound",
+        "timestamp_precision": "date"
+      },
+      {
+        "id": "cninfo:1225475868",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+        "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+        "available_at": "2026-08-15T16:00:00+00:00",
+        "availability_basis": "date_only_conservative_next_day_bound",
+        "timestamp_precision": "date"
+      },
+      {
+        "id": "current_model",
+        "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+        "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+      },
+      {
+        "id": "timing_policy",
+        "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+        "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+      },
+      {
+        "id": "scope_review",
+        "path": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+        "sha256": "cca8b43c6069ffda329e940a4be96d27d7af4c3387ec08f4d24a5c9f42da4069"
+      },
+      {
+        "id": "assumption_diagnostic",
+        "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+        "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+      },
+      {
+        "id": "source_index",
+        "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+        "sha256": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f"
+      },
+      {
+        "id": "current_quote",
+        "path": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+        "sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5"
+      },
+      {
+        "id": "current_event_scan",
+        "path": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+        "sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9"
+      },
+      {
+        "id": "pending-economic-proposal",
+        "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+        "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+      }
+    ],
+    "blockers": [],
+    "operating_inputs": {
+      "start_book_equity": "251253594419.50",
+      "ordinary_shares": "1250081601"
+    },
+    "scenario_inputs": {
+      "bear": {
+        "cost_of_equity": "0.07700613218071982829471266996",
+        "terminal_roe": "0.07700613218071982829471266996",
+        "terminal_growth": "0.02",
+        "retention": "0.25",
+        "forecast_roes": [
+          "0.307652172985465487242332653366309466255169981393",
+          "0.271395695473371140200250749861735507233491788845",
+          "0.241444182727378439399905802865105238423705224233",
+          "0.216314975474713254269584591714713888791381723284",
+          "0.194956238228232001556036748062286093659354816821",
+          "0.176601056887348533341870008302015778033792976155",
+          "0.160677068992568838058273865045132767226131225852",
+          "0.146748438306364529833014706610554879940226180941",
+          "0.134477428245428110845023565449789617426793508337",
+          "0.123598262707045146091234756689847831733654577150",
+          "0.114279836601780082531930339343878265386923661720",
+          "0.104961410496515018972625921997908699040192746290",
+          "0.095642984391249955413321504651939132693461830860",
+          "0.086324558285984891854017087305969566346730915430",
+          "0.077006132180719828294712669960000000000000000000"
+        ]
+      },
+      "base": {
+        "cost_of_equity": "0.06757227028801867310",
+        "terminal_roe": "0.06757227028801867310",
+        "terminal_growth": "0.02",
+        "retention": "0.25",
+        "forecast_roes": [
+          "0.323844392616279460255087003543483648689652611993",
+          "0.299589312852516525298074771746540924334739069346",
+          "0.278714352514526278047439805198707351473258953560",
+          "0.260558971272041736542941297472903138057926907752",
+          "0.244624212953211333565067864978881922762053748806",
+          "0.230526143828419834043007327290064010085254588487",
+          "0.217964514096872987832670404907942727361620749311",
+          "0.206701135932664272458238486294334017450478835090",
+          "0.196544636049441370606503149347540422407669111603",
+          "0.187339492935278565955557040164713701498485188587",
+          "0.163386048405826587384445632131770961198788150870",
+          "0.139432603876374608813334224098828220899091113152",
+          "0.115479159346922630242222816065885480599394075435",
+          "0.0915257148174706516711114080329427402996970377174",
+          "0.067572270288018673100000000000000000000000000000"
+        ]
+      },
+      "bull": {
+        "cost_of_equity": "0.05813840839531752869806524586",
+        "terminal_roe": "0.05813840839531752869806524586",
+        "terminal_growth": "0.02",
+        "retention": "0.25",
+        "forecast_roes": [
+          "0.340036612247093433267841353720657831124135242592",
+          "0.329064913279234484147891597899726482386452250830",
+          "0.319254310909806868170251941340859141373639193498",
+          "0.310439721605266779358894819862096225541721633988",
+          "0.302485805382414687543605868143732147379528086421",
+          "0.295280551772377565749901955448617869311387198614",
+          "0.288730457183348917986069143874500660594595962287",
+          "0.282756851305244500424318921567675926007094869249",
+          "0.277293065358144638357795156340074435962394333401",
+          "0.272282225395442026359546023728865302054099951036",
+          "0.229453461995417126827249868155092241643279960829",
+          "0.186624698595392227294953712581319181232459970622",
+          "0.143795935195367327762657557007546120821639980414",
+          "0.100967171795342428230361401433773060410819990207",
+          "0.058138408395317528698065245860000000000000000000"
+        ]
+      }
+    },
+    "valuation_timing": {
+      "basis_at": "2026-06-30T23:59:59+08:00",
+      "valuation_at": "2026-10-11T08:21:50.762534+00:00",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ],
+      "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+    }
+  },
+  "assumptions": {
+    "assumptions": [
+      {
+        "name": "cost_of_equity",
+        "unit": "ratio",
+        "bear": "0.07700613218071982829471266996",
+        "base": "0.06757227028801867310",
+        "bull": "0.05813840839531752869806524586",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "descending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "terminal_roe",
+        "unit": "ratio",
+        "bear": "0.07700613218071982829471266996",
+        "base": "0.06757227028801867310",
+        "bull": "0.05813840839531752869806524586",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "descending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "terminal_growth",
+        "unit": "ratio",
+        "bear": "0.02",
+        "base": "0.02",
+        "bull": "0.02",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "retention",
+        "unit": "ratio",
+        "bear": "0.25",
+        "base": "0.25",
+        "bull": "0.25",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_0",
+        "unit": "ratio",
+        "bear": "0.307652172985465487242332653366309466255169981393",
+        "base": "0.323844392616279460255087003543483648689652611993",
+        "bull": "0.340036612247093433267841353720657831124135242592",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_1",
+        "unit": "ratio",
+        "bear": "0.271395695473371140200250749861735507233491788845",
+        "base": "0.299589312852516525298074771746540924334739069346",
+        "bull": "0.329064913279234484147891597899726482386452250830",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_2",
+        "unit": "ratio",
+        "bear": "0.241444182727378439399905802865105238423705224233",
+        "base": "0.278714352514526278047439805198707351473258953560",
+        "bull": "0.319254310909806868170251941340859141373639193498",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_3",
+        "unit": "ratio",
+        "bear": "0.216314975474713254269584591714713888791381723284",
+        "base": "0.260558971272041736542941297472903138057926907752",
+        "bull": "0.310439721605266779358894819862096225541721633988",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_4",
+        "unit": "ratio",
+        "bear": "0.194956238228232001556036748062286093659354816821",
+        "base": "0.244624212953211333565067864978881922762053748806",
+        "bull": "0.302485805382414687543605868143732147379528086421",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_5",
+        "unit": "ratio",
+        "bear": "0.176601056887348533341870008302015778033792976155",
+        "base": "0.230526143828419834043007327290064010085254588487",
+        "bull": "0.295280551772377565749901955448617869311387198614",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_6",
+        "unit": "ratio",
+        "bear": "0.160677068992568838058273865045132767226131225852",
+        "base": "0.217964514096872987832670404907942727361620749311",
+        "bull": "0.288730457183348917986069143874500660594595962287",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_7",
+        "unit": "ratio",
+        "bear": "0.146748438306364529833014706610554879940226180941",
+        "base": "0.206701135932664272458238486294334017450478835090",
+        "bull": "0.282756851305244500424318921567675926007094869249",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_8",
+        "unit": "ratio",
+        "bear": "0.134477428245428110845023565449789617426793508337",
+        "base": "0.196544636049441370606503149347540422407669111603",
+        "bull": "0.277293065358144638357795156340074435962394333401",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_9",
+        "unit": "ratio",
+        "bear": "0.123598262707045146091234756689847831733654577150",
+        "base": "0.187339492935278565955557040164713701498485188587",
+        "bull": "0.272282225395442026359546023728865302054099951036",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_10",
+        "unit": "ratio",
+        "bear": "0.114279836601780082531930339343878265386923661720",
+        "base": "0.163386048405826587384445632131770961198788150870",
+        "bull": "0.229453461995417126827249868155092241643279960829",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_11",
+        "unit": "ratio",
+        "bear": "0.104961410496515018972625921997908699040192746290",
+        "base": "0.139432603876374608813334224098828220899091113152",
+        "bull": "0.186624698595392227294953712581319181232459970622",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_12",
+        "unit": "ratio",
+        "bear": "0.095642984391249955413321504651939132693461830860",
+        "base": "0.115479159346922630242222816065885480599394075435",
+        "bull": "0.143795935195367327762657557007546120821639980414",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_13",
+        "unit": "ratio",
+        "bear": "0.086324558285984891854017087305969566346730915430",
+        "base": "0.0915257148174706516711114080329427402996970377174",
+        "bull": "0.100967171795342428230361401433773060410819990207",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "ascending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      },
+      {
+        "name": "forecast_roes_14",
+        "unit": "ratio",
+        "bear": "0.077006132180719828294712669960000000000000000000",
+        "base": "0.067572270288018673100000000000000000000000000000",
+        "bull": "0.058138408395317528698065245860000000000000000000",
+        "basis": "pending_finite_shared_model_choice_not_official_forecast",
+        "rationale": "核心产品、品牌和渠道支持研究存量盈利持续性；十年是待审期限，不是已识别寿命。 反证：毛利和扣非已走弱；财报不证明十年稳定盈利，全资本衰减仍未分账识别。",
+        "confidence": "low",
+        "sensitivity": "high",
+        "ordering": "descending",
+        "evidence_refs": [
+          {
+            "id": "pending-economic-proposal",
+            "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "blockers": []
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "pending-economic-proposal",
+        "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+        "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+      }
+    ],
+    "blockers": [
+      "Selected finite model assumptions remain pending economic approval."
+    ]
+  },
+  "assumption_bindings": [
+    {
+      "assumption_name": "cost_of_equity",
+      "scenario": "bear",
+      "field_path": "cost_of_equity",
+      "expected_value": "0.07700613218071982829471266996",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "cost_of_equity",
+      "scenario": "base",
+      "field_path": "cost_of_equity",
+      "expected_value": "0.06757227028801867310",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "cost_of_equity",
+      "scenario": "bull",
+      "field_path": "cost_of_equity",
+      "expected_value": "0.05813840839531752869806524586",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roe",
+      "scenario": "bear",
+      "field_path": "terminal_roe",
+      "expected_value": "0.07700613218071982829471266996",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roe",
+      "scenario": "base",
+      "field_path": "terminal_roe",
+      "expected_value": "0.06757227028801867310",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_roe",
+      "scenario": "bull",
+      "field_path": "terminal_roe",
+      "expected_value": "0.05813840839531752869806524586",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "bear",
+      "field_path": "terminal_growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "base",
+      "field_path": "terminal_growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "terminal_growth",
+      "scenario": "bull",
+      "field_path": "terminal_growth",
+      "expected_value": "0.02",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "retention",
+      "scenario": "bear",
+      "field_path": "retention",
+      "expected_value": "0.25",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "retention",
+      "scenario": "base",
+      "field_path": "retention",
+      "expected_value": "0.25",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "retention",
+      "scenario": "bull",
+      "field_path": "retention",
+      "expected_value": "0.25",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_0",
+      "scenario": "bear",
+      "field_path": "forecast_roes.0",
+      "expected_value": "0.307652172985465487242332653366309466255169981393",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_0",
+      "scenario": "base",
+      "field_path": "forecast_roes.0",
+      "expected_value": "0.323844392616279460255087003543483648689652611993",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_0",
+      "scenario": "bull",
+      "field_path": "forecast_roes.0",
+      "expected_value": "0.340036612247093433267841353720657831124135242592",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_1",
+      "scenario": "bear",
+      "field_path": "forecast_roes.1",
+      "expected_value": "0.271395695473371140200250749861735507233491788845",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_1",
+      "scenario": "base",
+      "field_path": "forecast_roes.1",
+      "expected_value": "0.299589312852516525298074771746540924334739069346",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_1",
+      "scenario": "bull",
+      "field_path": "forecast_roes.1",
+      "expected_value": "0.329064913279234484147891597899726482386452250830",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_2",
+      "scenario": "bear",
+      "field_path": "forecast_roes.2",
+      "expected_value": "0.241444182727378439399905802865105238423705224233",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_2",
+      "scenario": "base",
+      "field_path": "forecast_roes.2",
+      "expected_value": "0.278714352514526278047439805198707351473258953560",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_2",
+      "scenario": "bull",
+      "field_path": "forecast_roes.2",
+      "expected_value": "0.319254310909806868170251941340859141373639193498",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_3",
+      "scenario": "bear",
+      "field_path": "forecast_roes.3",
+      "expected_value": "0.216314975474713254269584591714713888791381723284",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_3",
+      "scenario": "base",
+      "field_path": "forecast_roes.3",
+      "expected_value": "0.260558971272041736542941297472903138057926907752",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_3",
+      "scenario": "bull",
+      "field_path": "forecast_roes.3",
+      "expected_value": "0.310439721605266779358894819862096225541721633988",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_4",
+      "scenario": "bear",
+      "field_path": "forecast_roes.4",
+      "expected_value": "0.194956238228232001556036748062286093659354816821",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_4",
+      "scenario": "base",
+      "field_path": "forecast_roes.4",
+      "expected_value": "0.244624212953211333565067864978881922762053748806",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_4",
+      "scenario": "bull",
+      "field_path": "forecast_roes.4",
+      "expected_value": "0.302485805382414687543605868143732147379528086421",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_5",
+      "scenario": "bear",
+      "field_path": "forecast_roes.5",
+      "expected_value": "0.176601056887348533341870008302015778033792976155",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_5",
+      "scenario": "base",
+      "field_path": "forecast_roes.5",
+      "expected_value": "0.230526143828419834043007327290064010085254588487",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_5",
+      "scenario": "bull",
+      "field_path": "forecast_roes.5",
+      "expected_value": "0.295280551772377565749901955448617869311387198614",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_6",
+      "scenario": "bear",
+      "field_path": "forecast_roes.6",
+      "expected_value": "0.160677068992568838058273865045132767226131225852",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_6",
+      "scenario": "base",
+      "field_path": "forecast_roes.6",
+      "expected_value": "0.217964514096872987832670404907942727361620749311",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_6",
+      "scenario": "bull",
+      "field_path": "forecast_roes.6",
+      "expected_value": "0.288730457183348917986069143874500660594595962287",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_7",
+      "scenario": "bear",
+      "field_path": "forecast_roes.7",
+      "expected_value": "0.146748438306364529833014706610554879940226180941",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_7",
+      "scenario": "base",
+      "field_path": "forecast_roes.7",
+      "expected_value": "0.206701135932664272458238486294334017450478835090",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_7",
+      "scenario": "bull",
+      "field_path": "forecast_roes.7",
+      "expected_value": "0.282756851305244500424318921567675926007094869249",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_8",
+      "scenario": "bear",
+      "field_path": "forecast_roes.8",
+      "expected_value": "0.134477428245428110845023565449789617426793508337",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_8",
+      "scenario": "base",
+      "field_path": "forecast_roes.8",
+      "expected_value": "0.196544636049441370606503149347540422407669111603",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_8",
+      "scenario": "bull",
+      "field_path": "forecast_roes.8",
+      "expected_value": "0.277293065358144638357795156340074435962394333401",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_9",
+      "scenario": "bear",
+      "field_path": "forecast_roes.9",
+      "expected_value": "0.123598262707045146091234756689847831733654577150",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_9",
+      "scenario": "base",
+      "field_path": "forecast_roes.9",
+      "expected_value": "0.187339492935278565955557040164713701498485188587",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_9",
+      "scenario": "bull",
+      "field_path": "forecast_roes.9",
+      "expected_value": "0.272282225395442026359546023728865302054099951036",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_10",
+      "scenario": "bear",
+      "field_path": "forecast_roes.10",
+      "expected_value": "0.114279836601780082531930339343878265386923661720",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_10",
+      "scenario": "base",
+      "field_path": "forecast_roes.10",
+      "expected_value": "0.163386048405826587384445632131770961198788150870",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_10",
+      "scenario": "bull",
+      "field_path": "forecast_roes.10",
+      "expected_value": "0.229453461995417126827249868155092241643279960829",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_11",
+      "scenario": "bear",
+      "field_path": "forecast_roes.11",
+      "expected_value": "0.104961410496515018972625921997908699040192746290",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_11",
+      "scenario": "base",
+      "field_path": "forecast_roes.11",
+      "expected_value": "0.139432603876374608813334224098828220899091113152",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_11",
+      "scenario": "bull",
+      "field_path": "forecast_roes.11",
+      "expected_value": "0.186624698595392227294953712581319181232459970622",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_12",
+      "scenario": "bear",
+      "field_path": "forecast_roes.12",
+      "expected_value": "0.095642984391249955413321504651939132693461830860",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_12",
+      "scenario": "base",
+      "field_path": "forecast_roes.12",
+      "expected_value": "0.115479159346922630242222816065885480599394075435",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_12",
+      "scenario": "bull",
+      "field_path": "forecast_roes.12",
+      "expected_value": "0.143795935195367327762657557007546120821639980414",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_13",
+      "scenario": "bear",
+      "field_path": "forecast_roes.13",
+      "expected_value": "0.086324558285984891854017087305969566346730915430",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_13",
+      "scenario": "base",
+      "field_path": "forecast_roes.13",
+      "expected_value": "0.0915257148174706516711114080329427402996970377174",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_13",
+      "scenario": "bull",
+      "field_path": "forecast_roes.13",
+      "expected_value": "0.100967171795342428230361401433773060410819990207",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_14",
+      "scenario": "bear",
+      "field_path": "forecast_roes.14",
+      "expected_value": "0.077006132180719828294712669960000000000000000000",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_14",
+      "scenario": "base",
+      "field_path": "forecast_roes.14",
+      "expected_value": "0.067572270288018673100000000000000000000000000000",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    },
+    {
+      "assumption_name": "forecast_roes_14",
+      "scenario": "bull",
+      "field_path": "forecast_roes.14",
+      "expected_value": "0.058138408395317528698065245860000000000000000000",
+      "evidence_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+          "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+        }
+      ]
+    }
+  ],
+  "quote": null,
+  "model_validity_input": {
+    "model_id": "residual-income-equity-shared-dated-v2",
+    "valid_from": "2026-10-11",
+    "events": [],
+    "blockers": [
+      "pending_complete_event_materiality_review"
+    ]
+  },
+  "blockers": [],
+  "source_contract": {
+    "schema_version": "source-bound-research-inputs-v1",
+    "cutoff_at": "2026-10-11T08:21:50.762534+00:00",
+    "distribution_input_status": "NOT_ADMITTED",
+    "strict_contemporaneous_pit": "NOT_PROVEN",
+    "fact_semantics_scope": "source_anchored_capital_and_historical_profit_not_normalized_forecast",
+    "fact_anchors": [
+      {
+        "field": "start_book_equity",
+        "source_id": "cninfo:1225475868",
+        "physical_page": 28,
+        "source_value": "251253594419.50",
+        "unit": "CNY",
+        "scope": "consolidated_parent_equity",
+        "period_end": "2026-06-30"
+      },
+      {
+        "field": "ordinary_shares",
+        "source_id": "cninfo:1225475868",
+        "physical_page": 22,
+        "source_value": "1250081601",
+        "unit": "shares",
+        "scope": "issued_ordinary_shares",
+        "period_end": "2026-06-30"
+      }
+    ]
+  },
+  "supersedes": {
+    "path": "runtime/d2-model-bound-followup-20261008/package-v8-financial-scope-bound.json",
+    "sha256": "c48e3dbfbe8b643cc71a609a2277f726246a1f32b1ac5dcb4b2da47055ec3d04",
+    "reason": "new pending finite research candidate, not approved/current admission"
+  },
+  "recommendation_schema_version": "advisory-decision-recommendation-v3"
+}

@@ -1,0 +1,14 @@
+{
+  "endpoint": "https://REPLACE_WITH_AUTHORIZED_PROVIDER/v1/chat/completions",
+  "model_id": "REPLACE_WITH_AUTHORIZED_MODEL",
+  "api_key_env": "VALUE_AGENT_API_KEY",
+  "timeout_seconds": 60,
+  "max_completion_tokens_cap": 4096,
+  "currency": "CNY",
+  "max_run_cost": "10",
+  "daily_cost_limit": "10",
+  "input_cost_per_million": null,
+  "output_cost_per_million": null,
+  "authorized": false,
+  "authorization_reference": ""
+}

@@ -538,7 +538,7 @@ class ResearchBatchService:
                 ):
                     verified_ids = verified_official_package_source_ids(
                         self.evidence_root,
-                        [asdict(source) for source in company.research_spec.input_sources],
+                        [source.as_policy() for source in company.research_spec.input_sources],
                         company.schedule_request.new_evidence_ids,
                         symbol=company.schedule_request.symbol,
                     )

@@ -1,0 +1,80 @@
+{
+  "binding_ref": {
+    "path": "runtime/incremental-validity/p8-600519-20261015/incremental-binding.json",
+    "sha256": "368b315cf22c1d0b2d80d7901128e8688f0c96d783f4bceb60c65cee2cdaf259"
+  },
+  "observation": {
+    "schema_version": "daily-event-observation-v1",
+    "symbol": "600519",
+    "action": "no_order",
+    "scan_from": "2026-10-11",
+    "scan_to": "2026-10-15",
+    "acquired_at": "2026-10-15T18:03:06.591341+00:00",
+    "announcement_count": 0,
+    "collection_status": "OFFICIAL_QUERY_ARCHIVED",
+    "index_representation": "PARSED_OFFICIAL_QUERY_WITH_RECEIVED_RESPONSE_CONTENT",
+    "timestamp_assurance": "PROVIDER_DATE_METADATA_NOT_INTRADAY_AVAILABILITY",
+    "full_calendar_window_elapsed": true,
+    "reused_original_count": 0,
+    "pagination_complete": true,
+    "materiality_approved": false,
+    "model_revalidated": false,
+    "research_date_advanced": false,
+    "earlier_reviews_preserved": true,
+    "scan_binding": {
+      "path": "runtime/incremental-validity/p8-600519-20261015/event-scan.json",
+      "sha256": "7b43d5b67af37c0024beee6bed1e85247fae056dbd2482ac85d0a8e392185af7"
+    },
+    "source_bindings": [
+      {
+        "id": "daily-index-600519",
+        "path": "runtime/incremental-validity/p8-600519-20261015/cninfo-index.json",
+        "sha256": "156b5ce2e809fe62229722bf466075598aa951c510b82055b403ba00d4716ef9",
+        "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+      },
+      {
+        "id": "daily-raw-index-manifest-600519",
+        "path": "runtime/incremental-validity/p8-600519-20261015/raw-index-manifest.json",
+        "sha256": "b0714314e9f41698468e1c568a3124fb72b6a49ba4a309e3f7b06e554377fc86",
+        "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+      },
+      {
+        "id": "daily-raw-600519-1",
+        "path": "runtime/incremental-validity/p8-600519-20261015/raw-index/response-0001.bin",
+        "sha256": "f84373a938eca9bd8dc8317d73a347f4336ab5d4136d82acd093fbbeae20306d",
+        "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+      },
+      {
+        "id": "daily-raw-metadata-600519-1",
+        "path": "runtime/incremental-validity/p8-600519-20261015/raw-index/response-0001.json",
+        "sha256": "6b0fb73f511bfd5335dd70aa28e9ffff55f6fec3a15802eb041f8ff49a9ff19e",
+        "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+      },
+      {
+        "id": "daily-raw-600519-2",
+        "path": "runtime/incremental-validity/p8-600519-20261015/raw-index/response-0002.bin",
+        "sha256": "c2a890bbf3a6a53ab02ddc6c1794bf1c72ba45799fe9f59dcc5ba2cc18467114",
+        "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+      },
+      {
+        "id": "daily-raw-metadata-600519-2",
+        "path": "runtime/incremental-validity/p8-600519-20261015/raw-index/response-0002.json",
+        "sha256": "e8e49e25ce0163c40defb6ff41bdc2f4bc1e2ac17c221858eb5908883936d587",
+        "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+      }
+    ],
+    "next_step": "Bind the full earlier and incremental event windows to exact model/assumptions, then review; do not advance research date automatically."
+  },
+  "action": "no_order",
+  "registration": {
+    "symbol": "600519",
+    "binding_ref": {
+      "path": "runtime/incremental-validity/p8-600519-20261015/incremental-binding.json",
+      "sha256": "368b315cf22c1d0b2d80d7901128e8688f0c96d783f4bceb60c65cee2cdaf259"
+    },
+    "pointer_sha256": "fcb868a83b04a21beab4e586e9e23f050a6660f95863cbe3a62e1c2559f3a370",
+    "model_validity_status": "UNKNOWN",
+    "action": "no_order",
+    "g3_approval_granted": false
+  }
+}

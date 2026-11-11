@@ -1,0 +1,1454 @@
+{
+  "schema_version": "joint-capital-cash-path-proposal-v2",
+  "action": "no_order",
+  "symbol": "600519",
+  "source_package_sha256": "6af35ae4b060cf97dfe04d4735c02b54196aa86f98e55c7228ee8322b9bd4401",
+  "generated_at": "2026-10-26T10:43:53.560538+00:00",
+  "assumption_scope": "RESEARCH_ASSUMPTIONS_NOT_OFFICIAL_FORECAST",
+  "profit_anchor_field": "ttm_ex_nonrecurring_parent_profit_cny",
+  "profit_basis": "来源核验的历史扣非归母TTM代理；真实报表与研究现金映射分开，正常化盈利仍未知。",
+  "rationale_bindings": [
+    {
+      "path": "config/research-assumptions/600519-joint-capital-cash-path-v2.json",
+      "sha256": "4269ac0044cd7d4a31e5a781f626c616eadff2a5a1e6770876b751323b28f4cf",
+      "id": "600519-joint-cash-inputs",
+      "available_at": "2026-10-26T10:43:53.560538+00:00"
+    }
+  ],
+  "joint_historical": {
+    "scope": "ordinary_owner_equivalent_cash_mapping",
+    "currency": "CNY",
+    "revenue": {
+      "value": "170152009062.43",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "rationale": "同口径FY2025+H12026-H12025；历史披露桥，不是正常化盈利。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "revenue"
+      ]
+    },
+    "cost": {
+      "value": "16588549052.86",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "rationale": "同口径FY2025+H12026-H12025；历史披露桥，不是正常化盈利。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "cost"
+      ]
+    },
+    "surcharges": {
+      "value": "28094002556.87",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "rationale": "同口径FY2025+H12026-H12025；历史披露桥，不是正常化盈利。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "surcharges"
+      ]
+    },
+    "selling": {
+      "value": "7199344992.75",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "rationale": "同口径FY2025+H12026-H12025；历史披露桥，不是正常化盈利。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "selling"
+      ]
+    },
+    "admin": {
+      "value": "8260712750.74",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "rationale": "同口径FY2025+H12026-H12025；历史披露桥，不是正常化盈利。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "admin"
+      ]
+    },
+    "research": {
+      "value": "231136920.22",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "rationale": "同口径FY2025+H12026-H12025；历史披露桥，不是正常化盈利。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "research"
+      ]
+    },
+    "pre_tax_profit": {
+      "value": "113415680015.55",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "rationale": "同口径FY2025+H12026-H12025；历史披露桥，不是正常化盈利。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "pre_tax_profit"
+      ]
+    },
+    "tax": {
+      "value": "29058706064.34",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "rationale": "同口径FY2025+H12026-H12025；历史披露桥，不是正常化盈利。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "tax"
+      ]
+    },
+    "parent_profit": {
+      "value": "81433985225.44",
+      "unit": "CNY",
+      "scope": "consolidated_parent",
+      "rationale": "同口径FY2025+H12026-H12025；历史披露桥，不是正常化盈利。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "parent_profit"
+      ]
+    },
+    "nonrecurring": {
+      "value": "66917548.00",
+      "unit": "CNY",
+      "scope": "consolidated_parent",
+      "rationale": "同口径FY2025+H12026-H12025；历史披露桥，不是正常化盈利。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "nonrecurring"
+      ]
+    },
+    "da": {
+      "value": "2349791950.51",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "rationale": "合并现金流量补充资料四项D&A的TTM和，仅作披露锚；不加到母公司现金，不等于维护现金。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "da"
+      ]
+    },
+    "opening_cash": {
+      "value": "61255736577.13",
+      "unit": "CNY",
+      "scope": "ordinary_owner_equivalent_cash_mapping",
+      "rationale": "继承最新真实现金账本的母公司期末现金映射；金额为历史观察，映射到owner-equivalent资本为研究假设，不是自由分配现金。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "opening_cash"
+      ]
+    },
+    "opening_distribution_capacity": {
+      "value": "107646565355.82",
+      "unit": "CNY",
+      "scope": "ordinary_owner_equivalent_cash_mapping",
+      "rationale": "继承最新真实包中母公司未分配利润作为能力代理；不证明公积、决议、法律限制或未来支付。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "opening_distribution_capacity"
+      ]
+    },
+    "cash_floor": {
+      "value": "39677065503.555",
+      "unit": "CNY",
+      "scope": "ordinary_owner_equivalent_cash_mapping",
+      "rationale": "继承真实包的经营缓冲研究假设；不把基金/数字科技承诺再计入底线。",
+      "source_id": "600519-joint-cash-inputs",
+      "field_path": [
+        "observations",
+        "cash_floor"
+      ]
+    }
+  },
+  "choices": [
+    {
+      "id": "ADVANTAGE_CONTINUITY",
+      "rationale": "品牌、产品和渠道支持研究盈利延续，前五年温和增长后保持名义销售；新资本回报独立于历史品牌回报。",
+      "countercase": "销量及实现价格承压、维护/WC和永续利润均可能否定持续性。",
+      "joint_drivers": {
+        "bear": {
+          "operating_allocation": "0.10",
+          "new_operating_return": "0.06",
+          "new_liquidity_return": "0.01",
+          "years": [
+            {
+              "year": 1,
+              "revenue_growth": "0.010",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "6200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 2,
+              "revenue_growth": "0.010",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 3,
+              "revenue_growth": "0.010",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 4,
+              "revenue_growth": "0.010",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 5,
+              "revenue_growth": "0.010",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 6,
+              "revenue_growth": "-0.005",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 7,
+              "revenue_growth": "-0.005",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 8,
+              "revenue_growth": "-0.005",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 9,
+              "revenue_growth": "-0.005",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 10,
+              "revenue_growth": "-0.005",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            }
+          ]
+        },
+        "base": {
+          "operating_allocation": "0.10",
+          "new_operating_return": "0.06",
+          "new_liquidity_return": "0.01",
+          "years": [
+            {
+              "year": 1,
+              "revenue_growth": "0.015",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "6200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 2,
+              "revenue_growth": "0.015",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 3,
+              "revenue_growth": "0.015",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 4,
+              "revenue_growth": "0.015",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 5,
+              "revenue_growth": "0.015",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 6,
+              "revenue_growth": "0.000",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 7,
+              "revenue_growth": "0.000",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 8,
+              "revenue_growth": "0.000",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 9,
+              "revenue_growth": "0.000",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 10,
+              "revenue_growth": "0.000",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            }
+          ]
+        },
+        "bull": {
+          "operating_allocation": "0.10",
+          "new_operating_return": "0.06",
+          "new_liquidity_return": "0.01",
+          "years": [
+            {
+              "year": 1,
+              "revenue_growth": "0.020",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "6200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 2,
+              "revenue_growth": "0.020",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 3,
+              "revenue_growth": "0.020",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 4,
+              "revenue_growth": "0.020",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 5,
+              "revenue_growth": "0.020",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 6,
+              "revenue_growth": "0.005",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 7,
+              "revenue_growth": "0.005",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 8,
+              "revenue_growth": "0.005",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 9,
+              "revenue_growth": "0.005",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 10,
+              "revenue_growth": "0.005",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1000000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            }
+          ]
+        }
+      },
+      "terminal_policy": {
+        "bear": {
+          "target_payout_ratio": "0.85",
+          "accessible_profit_ratio": "0.93",
+          "net_maintenance_cash_cny": "1000000000",
+          "operating_wc_cash_cny": "200000000",
+          "commitment_cash_cny": "0",
+          "reserve_ratio": "0.10",
+          "profit_scale": "1",
+          "rationale": "净维护与WC持续、可达比例/目标分配/公积显式沿年十条件，年度一次性承诺不滚入终端；零新增承诺仅研究假设，不代表无维护、无债务或永久品牌已证实。"
+        },
+        "base": {
+          "target_payout_ratio": "0.85",
+          "accessible_profit_ratio": "0.95",
+          "net_maintenance_cash_cny": "1000000000",
+          "operating_wc_cash_cny": "200000000",
+          "commitment_cash_cny": "0",
+          "reserve_ratio": "0.10",
+          "profit_scale": "1",
+          "rationale": "净维护与WC持续、可达比例/目标分配/公积显式沿年十条件，年度一次性承诺不滚入终端；零新增承诺仅研究假设，不代表无维护、无债务或永久品牌已证实。"
+        },
+        "bull": {
+          "target_payout_ratio": "0.85",
+          "accessible_profit_ratio": "0.97",
+          "net_maintenance_cash_cny": "1000000000",
+          "operating_wc_cash_cny": "200000000",
+          "commitment_cash_cny": "0",
+          "reserve_ratio": "0.10",
+          "profit_scale": "1",
+          "rationale": "净维护与WC持续、可达比例/目标分配/公积显式沿年十条件，年度一次性承诺不滚入终端；零新增承诺仅研究假设，不代表无维护、无债务或永久品牌已证实。"
+        }
+      },
+      "cost_of_equity": {
+        "bear": "0.085",
+        "base": "0.075",
+        "bull": "0.0675"
+      },
+      "scenario_bindings": {
+        "bear": {
+          "source_id": "600519-joint-cash-inputs",
+          "field_path": [
+            "scenarios",
+            "ADVANTAGE_CONTINUITY",
+            "bear"
+          ]
+        },
+        "base": {
+          "source_id": "600519-joint-cash-inputs",
+          "field_path": [
+            "scenarios",
+            "ADVANTAGE_CONTINUITY",
+            "base"
+          ]
+        },
+        "bull": {
+          "source_id": "600519-joint-cash-inputs",
+          "field_path": [
+            "scenarios",
+            "ADVANTAGE_CONTINUITY",
+            "bull"
+          ]
+        }
+      }
+    },
+    {
+      "id": "GRADUAL_EROSION",
+      "rationale": "通过销售减速和成本比率逐年上升表达优势减弱，不强制全部账面资本ROE衰减。",
+      "countercase": "产品组合或费用效率改善可能使衰减过重；不是已校准中心。",
+      "joint_drivers": {
+        "bear": {
+          "operating_allocation": "0.10",
+          "new_operating_return": "0.06",
+          "new_liquidity_return": "0.01",
+          "years": [
+            {
+              "year": 1,
+              "revenue_growth": "0.000",
+              "cost_ratio": "0.104",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "6200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 2,
+              "revenue_growth": "-0.002",
+              "cost_ratio": "0.106",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 3,
+              "revenue_growth": "-0.004",
+              "cost_ratio": "0.108",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 4,
+              "revenue_growth": "-0.006",
+              "cost_ratio": "0.110",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 5,
+              "revenue_growth": "-0.008",
+              "cost_ratio": "0.112",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 6,
+              "revenue_growth": "-0.010",
+              "cost_ratio": "0.114",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 7,
+              "revenue_growth": "-0.012",
+              "cost_ratio": "0.116",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 8,
+              "revenue_growth": "-0.014",
+              "cost_ratio": "0.118",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 9,
+              "revenue_growth": "-0.016",
+              "cost_ratio": "0.120",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 10,
+              "revenue_growth": "-0.018",
+              "cost_ratio": "0.122",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.93",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            }
+          ]
+        },
+        "base": {
+          "operating_allocation": "0.10",
+          "new_operating_return": "0.06",
+          "new_liquidity_return": "0.01",
+          "years": [
+            {
+              "year": 1,
+              "revenue_growth": "0.005",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "6200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 2,
+              "revenue_growth": "0.003",
+              "cost_ratio": "0.104",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 3,
+              "revenue_growth": "0.001",
+              "cost_ratio": "0.106",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 4,
+              "revenue_growth": "-0.001",
+              "cost_ratio": "0.108",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 5,
+              "revenue_growth": "-0.003",
+              "cost_ratio": "0.110",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 6,
+              "revenue_growth": "-0.005",
+              "cost_ratio": "0.112",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 7,
+              "revenue_growth": "-0.007",
+              "cost_ratio": "0.114",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 8,
+              "revenue_growth": "-0.009",
+              "cost_ratio": "0.116",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 9,
+              "revenue_growth": "-0.011",
+              "cost_ratio": "0.118",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 10,
+              "revenue_growth": "-0.013",
+              "cost_ratio": "0.120",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.95",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            }
+          ]
+        },
+        "bull": {
+          "operating_allocation": "0.10",
+          "new_operating_return": "0.06",
+          "new_liquidity_return": "0.01",
+          "years": [
+            {
+              "year": 1,
+              "revenue_growth": "0.010",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "6200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 2,
+              "revenue_growth": "0.008",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 3,
+              "revenue_growth": "0.006",
+              "cost_ratio": "0.104",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 4,
+              "revenue_growth": "0.004",
+              "cost_ratio": "0.106",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 5,
+              "revenue_growth": "0.002",
+              "cost_ratio": "0.108",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "500000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 6,
+              "revenue_growth": "0.000",
+              "cost_ratio": "0.110",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 7,
+              "revenue_growth": "-0.002",
+              "cost_ratio": "0.112",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 8,
+              "revenue_growth": "-0.004",
+              "cost_ratio": "0.114",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 9,
+              "revenue_growth": "-0.006",
+              "cost_ratio": "0.116",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 10,
+              "revenue_growth": "-0.008",
+              "cost_ratio": "0.118",
+              "target_payout_ratio": "0.85",
+              "accessible_profit_ratio": "0.97",
+              "net_maintenance_cash_cny": "1500000000",
+              "operating_wc_cash_cny": "200000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            }
+          ]
+        }
+      },
+      "terminal_policy": {
+        "bear": {
+          "target_payout_ratio": "0.85",
+          "accessible_profit_ratio": "0.93",
+          "net_maintenance_cash_cny": "1500000000",
+          "operating_wc_cash_cny": "200000000",
+          "commitment_cash_cny": "0",
+          "reserve_ratio": "0.10",
+          "profit_scale": "0.85",
+          "rationale": "净维护与WC持续、可达比例/目标分配/公积显式沿年十条件，年度一次性承诺不滚入终端；零新增承诺仅研究假设，不代表无维护、无债务或永久品牌已证实。"
+        },
+        "base": {
+          "target_payout_ratio": "0.85",
+          "accessible_profit_ratio": "0.95",
+          "net_maintenance_cash_cny": "1500000000",
+          "operating_wc_cash_cny": "200000000",
+          "commitment_cash_cny": "0",
+          "reserve_ratio": "0.10",
+          "profit_scale": "0.85",
+          "rationale": "净维护与WC持续、可达比例/目标分配/公积显式沿年十条件，年度一次性承诺不滚入终端；零新增承诺仅研究假设，不代表无维护、无债务或永久品牌已证实。"
+        },
+        "bull": {
+          "target_payout_ratio": "0.85",
+          "accessible_profit_ratio": "0.97",
+          "net_maintenance_cash_cny": "1500000000",
+          "operating_wc_cash_cny": "200000000",
+          "commitment_cash_cny": "0",
+          "reserve_ratio": "0.10",
+          "profit_scale": "0.85",
+          "rationale": "净维护与WC持续、可达比例/目标分配/公积显式沿年十条件，年度一次性承诺不滚入终端；零新增承诺仅研究假设，不代表无维护、无债务或永久品牌已证实。"
+        }
+      },
+      "cost_of_equity": {
+        "bear": "0.085",
+        "base": "0.075",
+        "bull": "0.0675"
+      },
+      "scenario_bindings": {
+        "bear": {
+          "source_id": "600519-joint-cash-inputs",
+          "field_path": [
+            "scenarios",
+            "GRADUAL_EROSION",
+            "bear"
+          ]
+        },
+        "base": {
+          "source_id": "600519-joint-cash-inputs",
+          "field_path": [
+            "scenarios",
+            "GRADUAL_EROSION",
+            "base"
+          ]
+        },
+        "bull": {
+          "source_id": "600519-joint-cash-inputs",
+          "field_path": [
+            "scenarios",
+            "GRADUAL_EROSION",
+            "bull"
+          ]
+        }
+      }
+    },
+    {
+      "id": "FUNDING_PRESSURE",
+      "rationale": "保留经营基础，降低可达比例、提高净维护与WC并前置承诺；现金限制可降低实际分配。",
+      "countercase": "上划和资金安排可能优于压力条件，未披露到期日不能当作已到期债务。",
+      "joint_drivers": {
+        "bear": {
+          "operating_allocation": "0.10",
+          "new_operating_return": "0.06",
+          "new_liquidity_return": "0.01",
+          "years": [
+            {
+              "year": 1,
+              "revenue_growth": "0.010",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.72",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "11200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 2,
+              "revenue_growth": "0.010",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.72",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "5200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 3,
+              "revenue_growth": "0.010",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.72",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 4,
+              "revenue_growth": "0.010",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.72",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 5,
+              "revenue_growth": "0.010",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.72",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 6,
+              "revenue_growth": "-0.005",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.72",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 7,
+              "revenue_growth": "-0.005",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.72",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 8,
+              "revenue_growth": "-0.005",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.72",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 9,
+              "revenue_growth": "-0.005",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.72",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 10,
+              "revenue_growth": "-0.005",
+              "cost_ratio": "0.102",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.72",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            }
+          ]
+        },
+        "base": {
+          "operating_allocation": "0.10",
+          "new_operating_return": "0.06",
+          "new_liquidity_return": "0.01",
+          "years": [
+            {
+              "year": 1,
+              "revenue_growth": "0.015",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.75",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "11200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 2,
+              "revenue_growth": "0.015",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.75",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "5200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 3,
+              "revenue_growth": "0.015",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.75",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 4,
+              "revenue_growth": "0.015",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.75",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 5,
+              "revenue_growth": "0.015",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.75",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 6,
+              "revenue_growth": "0.000",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.75",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 7,
+              "revenue_growth": "0.000",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.75",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 8,
+              "revenue_growth": "0.000",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.75",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 9,
+              "revenue_growth": "0.000",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.75",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 10,
+              "revenue_growth": "0.000",
+              "cost_ratio": "0.100",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.75",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            }
+          ]
+        },
+        "bull": {
+          "operating_allocation": "0.10",
+          "new_operating_return": "0.06",
+          "new_liquidity_return": "0.01",
+          "years": [
+            {
+              "year": 1,
+              "revenue_growth": "0.020",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.78",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "11200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 2,
+              "revenue_growth": "0.020",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.78",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "5200000000",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 3,
+              "revenue_growth": "0.020",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.78",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 4,
+              "revenue_growth": "0.020",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.78",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 5,
+              "revenue_growth": "0.020",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.78",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 6,
+              "revenue_growth": "0.005",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.78",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 7,
+              "revenue_growth": "0.005",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.78",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 8,
+              "revenue_growth": "0.005",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.78",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 9,
+              "revenue_growth": "0.005",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.78",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            },
+            {
+              "year": 10,
+              "revenue_growth": "0.005",
+              "cost_ratio": "0.098",
+              "target_payout_ratio": "0.90",
+              "accessible_profit_ratio": "0.78",
+              "net_maintenance_cash_cny": "3000000000",
+              "operating_wc_cash_cny": "2000000000",
+              "commitment_cash_cny": "0",
+              "reserve_ratio": "0.10"
+            }
+          ]
+        }
+      },
+      "terminal_policy": {
+        "bear": {
+          "target_payout_ratio": "0.90",
+          "accessible_profit_ratio": "0.72",
+          "net_maintenance_cash_cny": "3000000000",
+          "operating_wc_cash_cny": "2000000000",
+          "commitment_cash_cny": "0",
+          "reserve_ratio": "0.10",
+          "profit_scale": "1",
+          "rationale": "净维护与WC持续、可达比例/目标分配/公积显式沿年十条件，年度一次性承诺不滚入终端；零新增承诺仅研究假设，不代表无维护、无债务或永久品牌已证实。"
+        },
+        "base": {
+          "target_payout_ratio": "0.90",
+          "accessible_profit_ratio": "0.75",
+          "net_maintenance_cash_cny": "3000000000",
+          "operating_wc_cash_cny": "2000000000",
+          "commitment_cash_cny": "0",
+          "reserve_ratio": "0.10",
+          "profit_scale": "1",
+          "rationale": "净维护与WC持续、可达比例/目标分配/公积显式沿年十条件，年度一次性承诺不滚入终端；零新增承诺仅研究假设，不代表无维护、无债务或永久品牌已证实。"
+        },
+        "bull": {
+          "target_payout_ratio": "0.90",
+          "accessible_profit_ratio": "0.78",
+          "net_maintenance_cash_cny": "3000000000",
+          "operating_wc_cash_cny": "2000000000",
+          "commitment_cash_cny": "0",
+          "reserve_ratio": "0.10",
+          "profit_scale": "1",
+          "rationale": "净维护与WC持续、可达比例/目标分配/公积显式沿年十条件，年度一次性承诺不滚入终端；零新增承诺仅研究假设，不代表无维护、无债务或永久品牌已证实。"
+        }
+      },
+      "cost_of_equity": {
+        "bear": "0.085",
+        "base": "0.075",
+        "bull": "0.0675"
+      },
+      "scenario_bindings": {
+        "bear": {
+          "source_id": "600519-joint-cash-inputs",
+          "field_path": [
+            "scenarios",
+            "FUNDING_PRESSURE",
+            "bear"
+          ]
+        },
+        "base": {
+          "source_id": "600519-joint-cash-inputs",
+          "field_path": [
+            "scenarios",
+            "FUNDING_PRESSURE",
+            "base"
+          ]
+        },
+        "bull": {
+          "source_id": "600519-joint-cash-inputs",
+          "field_path": [
+            "scenarios",
+            "FUNDING_PRESSURE",
+            "bull"
+          ]
+        }
+      }
+    }
+  ],
+  "economic_review_items": [
+    "审查经营/归属、费用与其他PBT恒定桥，不因负NCI或减值改写历史。",
+    "分别审查维护、WC、资金可达、能力代理、公积与承诺时点；正净维护持续至终端。",
+    "权益成本、新资本回报及终端持续性均为LOW研究假设；不能用现价反调。"
+  ],
+  "assurance_limits": [
+    "所有预测、cash可达、能力及底线映射均为低置信研究假设；没有BUY、G3、现价比较或仓位。",
+    "研究年1-10不是财政年预测；保留历史财务/股本及原模型日期桥，不推定当前报价对齐。",
+    "分红政策不是现金能力；目标分配率可被现金/能力上限压低；不重复添加DA或现金。",
+    "税率、费用比、非经常差额及归属桥沿历史代理延续是简化假设，不认证正常化利润。",
+    "600887负NCI事实必须保留：归母高于集团净利；不得为迎合内核限制夹断归属比例。",
+    "终端是独立的条件RI持续分配；未证明永久优势或法律分配能力。"
+  ]
+}

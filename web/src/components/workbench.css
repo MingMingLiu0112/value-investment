@@ -1,0 +1,35 @@
+.workbench-system {
+  white-space: nowrap;
+  font-size: 12px;
+  color: #687981;
+}
+.portfolio-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin-bottom: 16px;
+}
+[id^="portfolio-"] {
+  scroll-margin-top: 20px;
+}
+@media (max-width: 700px) {
+  .workbench-header {
+    height: auto !important;
+    min-height: 86px;
+    flex-wrap: wrap;
+    gap: 0 !important;
+    padding: 8px 12px !important;
+  }
+  .workbench-header > .ant-typography {
+    width: calc(100% - 74px);
+  }
+  .workbench-header > .ant-menu {
+    order: 3;
+    width: 100%;
+    flex: 0 0 100% !important;
+    border-bottom: 0;
+  }
+  .workbench-system {
+    margin-left: auto;
+  }
+}

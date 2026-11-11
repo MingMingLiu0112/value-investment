@@ -14,9 +14,12 @@ from ...domain.research.evidence_stop import (
 )
 from ...infrastructure.evidence.evidence_stop_schedule import (
     claim_research_schedule_once,
+    record_admitted_schedule_resume,
+    recover_admitted_schedule,
+    resolved_evidence_stop_ids,
     verified_official_package_source_ids,
 )
-from ...m1_valuation_package_builder import build_descriptor
+from ..research.v4_input_adapter import build_descriptor_for_package
 from ...research_application import ResearchApplicationService
 from ...research_artifact_repository import InMemoryResearchArtifactRepository
 from ...research_input import build_research_run_spec
@@ -35,6 +38,33 @@ from .source_bound_inputs import SOURCE_BOUND_PACKAGE_SCHEMA, verify_package_loc
 
 class ResearchInputValidationError(ValueError):
     """Known descriptor rejection before any one-shot request consumption."""
+
+
+def run_continuation_request(*, root: Path, args: Any) -> dict[str, Any]:
+    """Validate the explicit refresh mode before reading or producing artifacts."""
+    incompatible = (
+        args.package, args.schedule_request, args.existing_manifest, args.existing_manifest_sha256,
+        args.arithmetic_input, args.arithmetic_input_sha256, args.quote, args.quote_sha256,
+        args.event, args.event_sha256, args.research_reviews, args.research_reviews_sha256,
+        args.pending_review_candidate, args.signed_review_response, args.review_trust_root,
+        args.previous_review_response, args.pending_review_candidate_sha256,
+        args.signed_review_response_sha256, args.review_trust_root_sha256,
+        args.previous_review_response_sha256, args.recommendation_schema_version, args.interrupted_run_id,
+    )
+    if (args.continuation_request is None or not args.continuation_request_sha256 or args.output is None
+            or any(value is not None for value in incompatible) or args.prepare_review_response
+            or args.resume_interrupted_after_consumption):
+        raise ValueError('continuation refresh requires request/hash/output and excludes market/approval modes')
+    root = root.resolve()
+    request_path = require_inside(root, root / args.continuation_request, 'continuation request')
+    if load_json_object(request_path, 'continuation request')['symbol'] != args.symbol:
+        raise ValueError('continuation request differs from selected symbol')
+    from ..research.product_continuation_candidate import refresh_product_continuation_candidate
+    return refresh_product_continuation_candidate(
+        root=root,
+        request_binding=dict(path=request_path.relative_to(root).as_posix(), sha256=args.continuation_request_sha256),
+        output_dir=require_inside(root, root / args.output, 'continuation output'),
+    )
 
 
 def _json_value(value: Any) -> Any:
@@ -110,6 +140,17 @@ def _verified_source_ids(
     )
 
 
+def load_schedule_request(
+    root: Path, path: Path | None,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Load a project-bound schedule request and its immutable byte hash."""
+
+    if path is None:
+        return None, None
+    request_path = require_inside(root, path, "schedule request")
+    return load_json_object(request_path, "schedule request"), sha256_file(request_path)
+
+
 def _blocked_result(
     *, root: Path, symbol: str, decision: Mapping[str, Any],
     ledger_sha256: str, schedule_request_sha256: str | None,
@@ -158,6 +199,10 @@ def run_company_research_for_symbol(
     reviews_path: Path | None = None,
     reviews_sha256: str | None = None,
     recommendation_schema_version: str | None = None,
+    resume_interrupted_after_consumption: bool = False,
+    interrupted_run_id: str | None = None,
+    allow_unsigned_legacy_frozen_replay: bool = False,
+    valuation_router=None,
 ) -> dict[str, Any]:
     normalized = normalize_symbol(symbol)
     explicit_inputs = {}
@@ -181,14 +226,19 @@ def run_company_research_for_symbol(
     stops = evidence_stops_from_payload(
         load_json_object(ledger_path, "evidence-stop ledger")
     )
+    resolved_stop_ids = resolved_evidence_stop_ids(root)
     request = (
         None if schedule_request is None
         else schedule_request_from_payload(schedule_request)
     )
-    active_stops = tuple(stop for stop in stops if stop.symbol == normalized)
+    active_stops = tuple(
+        stop for stop in stops
+        if stop.symbol == normalized and stop.stop_id not in resolved_stop_ids
+    )
     if not active_stops:
         decision = evaluate_research_schedule(
             symbol=normalized, stops=stops, request=request,
+            resolved_stop_ids=resolved_stop_ids,
         )
         if not decision["allowed"]:
             return _blocked_result(
@@ -200,6 +250,7 @@ def run_company_research_for_symbol(
     if active_stops and request is None:
         decision = evaluate_research_schedule(
             symbol=normalized, stops=stops, request=None,
+            resolved_stop_ids=resolved_stop_ids,
         )
         return _blocked_result(
             root=root, symbol=normalized, decision=decision,
@@ -211,7 +262,13 @@ def run_company_research_for_symbol(
     package = _package_for_symbol(root, normalized, package_path)
     package_sha256 = sha256_file(package)
     package_payload = load_json_object(package, "valuation package")
-    local_source_bindings = verify_package_local_sources(root, package_payload)
+    if (package_payload.get('dependencies') or {}).get('model_version') in {
+            'residual-income-equity-path-v3', 'residual-income-equity-path-v4'}:
+        from .historical_source_restore import verify_or_restore_package_sources
+        local_source_bindings = verify_or_restore_package_sources(
+            root, package_payload, restore_dir=package.parent / 'historical-source-code')
+    else:
+        local_source_bindings = verify_package_local_sources(root, package_payload)
     verified_ids = (
         _verified_source_ids(root, package_payload, request)
         if request is not None else frozenset()
@@ -219,6 +276,7 @@ def run_company_research_for_symbol(
     decision = evaluate_research_schedule(
         symbol=normalized, stops=stops, request=request,
         verified_evidence_ids=verified_ids,
+        resolved_stop_ids=resolved_stop_ids,
     )
     if not decision["allowed"]:
         return _blocked_result(
@@ -246,14 +304,15 @@ def run_company_research_for_symbol(
         effective_package['model_validity_input'] = dict(validity,
             event_scan_ref=ref, event_scan_evidence_refs=[ref])
     try:
-        descriptor = build_descriptor(effective_package, root=root)
+        descriptor = build_descriptor_for_package(effective_package, root=root)
         spec = build_research_run_spec(descriptor)
         if reviews_path is not None:
             scan_ref = (effective_package.get('model_validity_input') or {}).get('event_scan_ref') or {}
             spec = attach_research_reviews(root=root, spec=spec, descriptor=descriptor,
                 path=explicit_inputs['research_reviews'][0], expected_sha256=reviews_sha256,
                 event_sha256=event_sha256 or scan_ref.get('sha256'),
-                require_model_binding=(effective_package.get('schema_version') == SOURCE_BOUND_PACKAGE_SCHEMA))
+                require_model_binding=(effective_package.get('schema_version') == SOURCE_BOUND_PACKAGE_SCHEMA),
+                allow_unsigned_legacy_frozen_replay=allow_unsigned_legacy_frozen_replay)
     except (ValueError, FileNotFoundError) as error:
         raise ResearchInputValidationError(str(error)) from error
     for path, digest in explicit_inputs.values():
@@ -271,28 +330,53 @@ def run_company_research_for_symbol(
 
     verify_consumed_inputs()
     consumption = None
+    recovery = None
     if active_stops:
-        consumption = claim_research_schedule_once(
-            root=root,
-            request=request,
-            decision=decision,
-            ledger_sha256=sha256_file(ledger_path),
-            request_sha256=schedule_request_sha256,
-        )
-        if not consumption["created"]:
-            blocked_decision = {
-                **decision,
-                "allowed": False,
-                "status": "BLOCKED_EVIDENCE_ALREADY_CONSUMED",
-                "consumption_schedule_id": consumption["schedule_id"],
-            }
-            return _blocked_result(
-                root=root, symbol=normalized, decision=blocked_decision,
-                ledger_sha256=sha256_file(ledger_path),
-                schedule_request_sha256=schedule_request_sha256,
-                output_path=output_path,
+        if resume_interrupted_after_consumption:
+            if request is None or not interrupted_run_id or not interrupted_run_id.strip():
+                raise ValueError(
+                    "explicit resume requires a schedule request and interrupted run id"
+                )
+            recovery = recover_admitted_schedule(
+                root=root,
+                request=request,
+                evidence_sources=package_payload.get("sources") or (),
+                ledger_sha256=ledger_sha256,
+                request_sha256=schedule_request_sha256,
+                interrupted_run_id=interrupted_run_id,
             )
-    outcome = ResearchApplicationService(InMemoryResearchArtifactRepository()).run_company_research(
+            consumption = {
+                "created": True,
+                "consumed": False,
+                "status": "EXPLICIT_RESUME_OF_ADMITTED_SCHEDULE",
+                "schedule_id": recovery["schedule_id"],
+                "recovery_receipt_path": recovery["receipt_path"],
+                "automatic_retry": False,
+            }
+        else:
+            consumption = claim_research_schedule_once(
+                root=root,
+                request=request,
+                decision=decision,
+                ledger_sha256=sha256_file(ledger_path),
+                request_sha256=schedule_request_sha256,
+            )
+            if not consumption["created"]:
+                blocked_decision = {
+                    **decision,
+                    "allowed": False,
+                    "status": "BLOCKED_EVIDENCE_ALREADY_CONSUMED",
+                    "consumption_schedule_id": consumption["schedule_id"],
+                }
+                return _blocked_result(
+                    root=root, symbol=normalized, decision=blocked_decision,
+                    ledger_sha256=sha256_file(ledger_path),
+                    schedule_request_sha256=schedule_request_sha256,
+                    output_path=output_path,
+                )
+    outcome = ResearchApplicationService(
+        InMemoryResearchArtifactRepository(), router=valuation_router,
+    ).run_company_research(
         spec
     )
     verify_consumed_inputs()
@@ -301,6 +385,8 @@ def run_company_research_for_symbol(
         'status': 'LOCAL_BYTES_VERIFIED' if local_source_bindings else 'NO_LOCAL_BINDING_METADATA',
         'scope': 'byte_integrity_not_fact_semantics_or_investment_approval',
         'source_contract_status': (
+            'SOURCE_CUTOFF_VALIDATED_NO_SCENARIOS_OR_FACT_ADMISSION'
+            if spec.research_mode == 'research_only_v1' else
             'SOURCE_CUTOFF_AND_SCENARIO_BINDINGS_VALIDATED'
             if package_payload.get('schema_version') == 'm1-valuation-package-v2'
             else 'LEGACY_CONTRACT_NOT_REAL_INPUT_ADMISSION'
@@ -323,8 +409,25 @@ def run_company_research_for_symbol(
         output_hash = sha256_file(target)
     else:
         output_hash = None
+    resume_completion = None
+    if recovery is not None and target is not None and output_hash is not None:
+        recovery_path = require_inside(
+            root, Path(recovery["receipt_path"]), "recovery receipt"
+        )
+        recovery_sha = (
+            recovery.get("receipt_sha256") or sha256_file(recovery_path)
+        )
+        resume_completion = record_admitted_schedule_resume(
+            root=root,
+            schedule_id=str(recovery["schedule_id"]),
+            recovery_receipt_sha256=str(recovery_sha),
+            interrupted_run_id=str(interrupted_run_id),
+            research_run_id=str(payload["run_id"]),
+            output_sha256=output_hash,
+        )
     return {
         "result": payload,
+        "schedule_resume_completion": resume_completion,
         "receipt": receipt(
             command="company_research",
             symbol=normalized,

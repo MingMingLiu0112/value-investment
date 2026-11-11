@@ -1,0 +1,28 @@
+{
+  "schema_version": "web-first-scoped-cli-validation-v1",
+  "date": "2026-10-18",
+  "action": "no_order",
+  "scope": "S6_BOUNDED_MOCK_CLI_NOT_FULL_DAILY_INTEGRATION",
+  "original_source_scope": "RETAINED_REAL_600519_FILINGS_HISTORICAL_CUTOFF_2026_10_08",
+  "mode": "MOCK",
+  "event_status": "MOCK_DRAFT_PENDING_HUMAN_REVIEW",
+  "event_finding_count": 3,
+  "replay_identical": true,
+  "financial_status": "BLOCKED_MISSING_COMPARABLE_FINANCIAL_INPUTS",
+  "financial_gaps": [
+    "SNAPSHOT_HAS_NO_COMPARABLE_PERIOD_CONTRACT",
+    "REQUIRES_DISCLOSED_METRIC_TRANSCRIPTION_AND_HASH"
+  ],
+  "financial_packet_created": false,
+  "provider_calls": 0,
+  "formal_fact_count": 0,
+  "approval_count": 0,
+  "decision_changed": false,
+  "registered_or_published": false,
+  "local_output_directory": "runtime/agent-research-s6-cli-20261018-v2",
+  "remaining": [
+    "Four-workflow daily orchestration and current Web registration",
+    "Live provider execution under separate credential/cost requirements",
+    "Full S6 product acceptance"
+  ]
+}

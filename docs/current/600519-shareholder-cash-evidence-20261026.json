@@ -1,0 +1,80 @@
+{
+  "schema_version": "public-research-evidence-manifest-v1",
+  "symbol": "600519",
+  "action": "no_order",
+  "scope": "PARTIAL_HISTORICAL_PARENT_CASH_NOT_NORMALIZED_OR_DISTRIBUTABLE",
+  "sources": [
+    {
+      "source_id": "cninfo:1225114741",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "physical_pages": [66, 67],
+      "periods": ["FY2025", "FY2024"],
+      "currency": "CNY",
+      "statement_scope": "listed_parent_only",
+      "original_acquired_at": null
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "physical_pages": [35, 36],
+      "periods": ["H12026", "H12025"],
+      "currency": "CNY",
+      "statement_scope": "listed_parent_only",
+      "original_acquired_at": null
+    }
+  ],
+  "acquisition_boundary": "Retained originals revalidated now; no acquisition timestamp or contemporaneous PIT invented.",
+  "actual_run": {
+    "directory": "runtime/product-ten-year-consumer/20261026T063521645211Z",
+    "candidate_sha256": "9ba9a9512e87880c6a8c0c25b6f102e779df8b18c133f156582a31f79bdaf3d9",
+    "api_sha256": "f1aba1f8d27eeab9103022b7849af5cf2564a376f21d2689c96ccf29f90c205b",
+    "review_handoff_sha256": "bb8ea65299a085fa0f76132ab8346be2a99aee06c13b4f051f39e7762eb0c750",
+    "refresh_receipt_sha256": "9c3553850a77b970c5139b9de0e69c870ba271cf6c393e528e1372d5f2791da2",
+    "api_route": "/api/v1/decisions/600519",
+    "selection": "ISOLATED_PUBLIC_INPUT_REGISTRY_NOT_CURRENT_PUBLICATION",
+    "private_access": "HARD_BLOCKED"
+  },
+  "commands": {
+    "actual_research_refresh": "python -B scripts/current/run_company_research.py --symbol 600519 --continuation-request runtime/product-ten-year-consumer/20261026T063521645211Z/request.json --continuation-request-sha256 707cb0c7da5016d6e087b96922f4f0f329c730519d0b97e5331353bb250d4a74 --output runtime/product-ten-year-consumer/NEW_UNIQUE_DIRECTORY/candidate",
+    "real_source_tests": "Set PYTHONPATH=src, TEMP/TMP=<checkout>/.tmp, PARENT_CASH_REPLAY_ROOT=<public-original-root>, PRODUCT_CANDIDATE_REAL_ROOT=<public-original-root>; python -B -m pytest tests/test_parent_cash_research.py tests/test_product_continuation_candidate.py --basetemp=.tmp/value-cash -q",
+    "real_web_render": "Set PRODUCT_CONTINUATION_API_FIXTURE=<public-original-root>/runtime/product-ten-year-consumer/20261026T063521645211Z/api.json; node node_modules/vitest/vitest.mjs run tests/product-continuation-candidate.test.tsx --maxWorkers=1 --minWorkers=1"
+  },
+  "real_change": "Actual research-policy revision binds retained parent cash evidence; not a new announcement. Old candidate bytes remain historical; changed dependency is recorded by hash.",
+  "economic_conclusion": "PARTIAL: zero net maintenance/WC, parent remittance and lawful terminal full payout are not jointly established. Historical partial receipts are not sustainable future distribution capacity.",
+  "price_draft": null,
+  "production_published": false,
+  "latest_economic_review_run": {
+    "directory": "runtime/product-cash-allocation-consumer/20261026T090212419386Z",
+    "candidate_sha256": "5ff0fbab48a97ed72d1ca06f08bf721b454f96c947edf2fcafa0faa15681ef32",
+    "api_sha256": "e4f3a441a6a0751f9633cb7e50bf656931c4d4b276f978a06fc91ebe1be2ae7a",
+    "review_handoff_sha256": "b4ef13b22688e46da8e8330ec7d26d65888904d6338911b68144a93a7d06b03a",
+    "economic_decision": "ACCEPT_CONDITIONAL_BRANCH_REJECT_AS_UNIQUE_PRIMARY: permanent excess earnings, rather than missing G3, is the decisive unsupported model selection; finite advantage and equity-cost alternatives remain material.",
+    "arithmetic_changed": false,
+    "action": "no_order",
+    "production_published": false
+  },
+  "cash_allocation_v2_run": {
+    "directory": "runtime/product-cash-allocation-consumer/20261026T084128520759Z",
+    "candidate_sha256": "cd052a3354d3dc54b46e0a64dd25dd2a9d659c6b80b2416733196d80a4733d46",
+    "api_sha256": "c68762bd12505a2b3140d80918f8998b9f6eae71bffab3830bffa9fc2e3f223c",
+    "review_handoff_sha256": "7120502058ae015c5d1f7eb3a37aca7241fb144d5c62a3801fd5ebc2defb854e",
+    "policy": "config/research-assumptions/600519-product-cash-allocation-v2.json",
+    "valuation_date": "2026-06-30",
+    "model_version": "residual-income-equity-path-v2",
+    "conditional_values_cny": ["790.7053567337", "945.9334111404", "1003.5883956560"],
+    "scope": "UNAPPROVED_CONDITIONAL_RESEARCH_NOT_CURRENT_PRICE_COMPARISON",
+    "verified_observations": {
+      "fund_uncalled_cny": "6000000000",
+      "digital_registered_less_paid_cny": "400000000",
+      "interim_investment_cash_cny": "101052220.78",
+      "interim_investment_cash_comparative_cny": null
+    },
+    "allocation": "Target distributions capped annually by cash and conditional owner-equivalent capacity; uncalled funds and digital investment counted once. Timing remains a scenario, not a disclosed due date.",
+    "acceptance": "Actual originals, CLI, model, review and isolated API pass; actual API Web component 43 tests pass. Final commit CI pending.",
+    "economic_boundary": "Historical upstream channel supported; maintenance/WC, future remittance and terminal full payout remain conditional. No primary approval or current-price draft.",
+    "private_access": "HARD_BLOCKED",
+    "production_published": false
+  }
+}

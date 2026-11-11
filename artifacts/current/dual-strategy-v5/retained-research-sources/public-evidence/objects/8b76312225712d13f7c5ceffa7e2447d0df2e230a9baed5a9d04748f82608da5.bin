@@ -1,0 +1,118 @@
+{
+  "schema_version": "prospective-research-registration-receipt-v2",
+  "registration": {
+    "registration_id": "public-research-observation-20260927-v2",
+    "declared_registered_at": "2026-09-27T08:45:00+08:00",
+    "action": "no_order",
+    "cases": [
+      {
+        "case_id": "prospective-000333-20260927-v2",
+        "symbol": "000333",
+        "name": "美的集团",
+        "profile_id": "mature_manufacturing",
+        "valuation_model": "fcff",
+        "observation_start_at": "2026-09-27T08:45:00+08:00",
+        "baseline_cutoff_at": "2026-09-27T08:45:00+08:00",
+        "required_sources": [
+          {
+            "id": "000333-cninfo",
+            "role": "official filing locator",
+            "source_url": "https://www.cninfo.com.cn/"
+          },
+          {
+            "id": "000333-ir",
+            "role": "company investor-relations locator",
+            "source_url": "https://www.midea.com/cn/investor/"
+          }
+        ],
+        "required_assumptions": [
+          "fcff operating cash conversion",
+          "maintenance and growth capex",
+          "ordinary-share denominator",
+          "cost of capital"
+        ],
+        "pit_rules": [
+          "Every observed fact records published_at or available_at before its evaluation timestamp.",
+          "No later filing or market observation may be used when evaluating an earlier prospective checkpoint."
+        ]
+      },
+      {
+        "case_id": "prospective-600887-20260927-v2",
+        "symbol": "600887",
+        "name": "伊利股份",
+        "profile_id": "quality_compounder",
+        "valuation_model": "residual_income_or_equity_value",
+        "observation_start_at": "2026-09-27T08:45:00+08:00",
+        "baseline_cutoff_at": "2026-09-27T08:45:00+08:00",
+        "required_sources": [
+          {
+            "id": "600887-cninfo",
+            "role": "official filing locator",
+            "source_url": "https://www.cninfo.com.cn/"
+          },
+          {
+            "id": "600887-ir",
+            "role": "company investor-relations locator",
+            "source_url": "https://www.yili.com/investor-relations/"
+          }
+        ],
+        "required_assumptions": [
+          "sustainable return on equity",
+          "distributable cash",
+          "reinvestment runway",
+          "equity return requirement"
+        ],
+        "pit_rules": [
+          "Every observed fact records published_at or available_at before its evaluation timestamp.",
+          "No later filing or market observation may be used when evaluating an earlier prospective checkpoint."
+        ]
+      },
+      {
+        "case_id": "prospective-601088-20260927-v2",
+        "symbol": "601088",
+        "name": "中国神华",
+        "profile_id": "cyclical_cash_return",
+        "valuation_model": "cyclical_normalized",
+        "observation_start_at": "2026-09-27T08:45:00+08:00",
+        "baseline_cutoff_at": "2026-09-27T08:45:00+08:00",
+        "required_sources": [
+          {
+            "id": "601088-cninfo",
+            "role": "official filing locator",
+            "source_url": "https://www.cninfo.com.cn/"
+          },
+          {
+            "id": "601088-ir",
+            "role": "company investor-relations locator",
+            "source_url": "https://www.shenhuachina.com/"
+          }
+        ],
+        "required_assumptions": [
+          "normalized commodity and unit cost range",
+          "maintenance capex",
+          "ordinary-share denominator",
+          "sustainable ordinary dividend"
+        ],
+        "pit_rules": [
+          "Every observed fact records published_at or available_at before its evaluation timestamp.",
+          "No later filing or market observation may be used when evaluating an earlier prospective checkpoint."
+        ]
+      }
+    ],
+    "exclusions": [
+      "600519 is excluded by its evidence stop rule unless new material evidence arrives.",
+      "No current price, market outcome, portfolio position, order, or performance result is used to select these cases."
+    ]
+  },
+  "registration_sha256": "7a81cdad9eeff2294cc0f7e695818dcfef8390fc8f75bc2ffdc064701be3612c",
+  "plan_sha256": "f98304dbfb73276073d57537e90aee37b6233821d8b0200df944718bf23a2c7a",
+  "git_commit": "fc1e8116c50d62a0cbd71ded6bc81a1a195bc94e",
+  "receipt_created_at": "2026-09-27T00:24:16.082830+00:00",
+  "declared_time_independently_proven": false,
+  "pit_time_anchor": "receipt_created_at",
+  "action": "no_order",
+  "outcomes_observed": false,
+  "valuation_executed": false,
+  "decision_signal_created": false,
+  "portfolio_data_used": false
+}

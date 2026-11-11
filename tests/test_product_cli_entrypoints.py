@@ -86,6 +86,8 @@ def test_v2_cli_split_preserves_every_v1_path_and_bounds_product_surface():
 
     assert v1["action"] == v2["action"] == "no_order"
     assert 10 <= len(product) <= 26
+    assert "scripts/current/collect_public_evidence.py" in engineering
+    assert "scripts/current/collect_public_evidence.py" not in product
     assert len(all_paths) == len(set(all_paths))
     assert set(v1_paths) <= set(all_paths)
     assert GENERIC_PRODUCT_PATHS <= set(product)

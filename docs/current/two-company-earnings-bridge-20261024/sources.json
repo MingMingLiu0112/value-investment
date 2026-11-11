@@ -1,0 +1,52 @@
+{
+  "schema_version": "two-company-earnings-source-spec-v1",
+  "scope": "RETAINED_PUBLIC_ORIGINALS_NOT_RESEARCH_ADMISSION",
+  "action": "no_order",
+  "common_fields": ["total_revenue", "operating_revenue", "interest_income", "total_cost", "cost_of_sales", "taxes_surcharges", "selling", "administration", "research", "finance", "other_income", "investment", "fair_value", "credit_impairment", "disposal", "operating_profit", "nonoperating_income", "nonoperating_expense", "profit_before_tax", "income_tax", "net_profit", "parent_profit", "minority_profit", "ex_parent_profit"],
+  "companies": {
+    "600519": [
+      {
+        "symbol": "600519", "issuer": "贵州茅台", "source_id": "cninfo:1225114741",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+        "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+        "published_date": "2026-04-17", "original_acquired_at": null,
+        "statement_pages": [61, 62], "summary_page": 6,
+        "periods": ["FY2025", "FY2024"], "column_labels": ["2025年度", "2024年度"],
+        "extra_fields": ["interest_expense", "commission_expense"]
+      },
+      {
+        "symbol": "600519", "issuer": "贵州茅台", "source_id": "cninfo:1225475868",
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+        "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+        "published_date": "2026-08-15", "original_acquired_at": null,
+        "statement_pages": [30, 31], "summary_page": 5,
+        "periods": ["H12026", "H12025"], "column_labels": ["2026年半年度", "2025年半年度"],
+        "extra_fields": ["interest_expense", "commission_expense"]
+      }
+    ],
+    "600887": [
+      {
+        "symbol": "600887", "issuer": "伊利", "source_id": "cninfo:1225259562",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+        "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF",
+        "published_date": "2026-04-30", "original_acquired_at": null,
+        "statement_pages": [86, 87], "summary_page": 7,
+        "periods": ["FY2025", "FY2024"], "column_labels": ["2025年度", "2024年度"],
+        "extra_fields": ["asset_impairment"]
+      },
+      {
+        "symbol": "600887", "issuer": "伊利", "source_id": "cninfo:1225511409",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+        "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+        "published_date": "2026-08-27", "original_acquired_at": null,
+        "statement_pages": [52, 53], "summary_page": 6,
+        "periods": ["H12026", "H12025"], "column_labels": ["2026年半年度", "2025年半年度"],
+        "extra_fields": ["asset_impairment"]
+      }
+    ]
+  }
+}

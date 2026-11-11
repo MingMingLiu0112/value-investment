@@ -1,0 +1,43 @@
+{
+  "schema_version": "web-first-private-browser-rehearsal-v1",
+  "date": "2026-10-18",
+  "action": "no_order",
+  "scope": "TEST_ONLY_BROWSER_TWO_SLEEVES",
+  "real_account_used": false,
+  "real_signatures_created": false,
+  "test_harness": ".tmp/web_first_private_browser.py",
+  "production_private_root_guard_changed": false,
+  "browser_operations": [
+    "initialize virtual cash 10000 and confirm TEST_ONLY IPS",
+    "buy 100 shares 000333 HOTSPOT_SATELLITE at 10 with fee 1",
+    "buy 100 shares 000333 CORE_VALUE at 10 with fee 1",
+    "reject same-day HOTSPOT sell by T+1",
+    "sell 100 HOTSPOT shares next day at 11 with fee 1",
+    "confirm internal-only reconciliation",
+    "read three confirmed fills in history",
+    "restart isolated service and reread same ledger"
+  ],
+  "after_two_buys": {"cash_cny": "7998", "quantity": "200", "cost_cny": "2002"},
+  "after_sell_and_restart": {
+    "cash_cny": "9097", "quantity": "100", "remaining_sleeve": "CORE_VALUE",
+    "cost_cny": "1001", "realized_pnl_cny": "98", "confirmed_fills": 3, "revision": 10
+  },
+  "journal_sha256_before_and_after_restart": "f85c8d493a29c54a442b420ed8fd3fadd1a72ac8a73f0704061cd5c4a0a0d950",
+  "reconciliation_scope": "INTERNAL_ONLY_NOT_BROKER_RECONCILIATION",
+  "formal_trade_eligible": false,
+  "remaining_gaps": ["ADMITTED_POSITION_MARKET_VALUE_MISSING", "EXTERNAL_ACCOUNT_RECONCILIATION_MISSING"],
+  "repaired_findings": [
+    "confirmation input accessible name",
+    "stable request reuse after response loss and synchronous duplicate-submit lock",
+    "hotspot exit alert must match an actually held hotspot sleeve"
+  ],
+  "screenshots": ["test-only-history-desktop.png", "test-only-portfolio-restarted-top.png"],
+  "limitations": [
+    "Synthetic fills test bookkeeping only; not strategy returns or actual executions.",
+    "Real quote valuation of synthetic low-cost fills is not achieved performance.",
+    "No original research version selected: history correctly shows unlinked.",
+    "S4 risk-scenario and full positive approved-research E2E remain incomplete.",
+    "Normal port 8001 browser tab is still blocked by browser URL policy; HTTP returned 200."
+  ],
+  "stage_status": "IN_PROGRESS"
+}

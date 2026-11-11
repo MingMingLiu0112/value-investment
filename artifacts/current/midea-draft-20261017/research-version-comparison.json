@@ -1,0 +1,71 @@
+{
+  "schema_version": "research-version-comparison-v2",
+  "action": "no_order",
+  "symbol": "000333",
+  "from": {
+    "status": "DRAFT_NOT_APPROVED",
+    "research_version": "midea-draft-20261016-v1",
+    "result": {
+      "path": "runtime/company-research/midea-draft-20261016-v1/research-result.json",
+      "sha256": "9c90a7d051b0c65bf57a78999ced9dd9a4e737688eaf15500fac074c60b0b39f"
+    },
+    "package": {
+      "path": "runtime/company-research/midea-draft-20261016-v1/package.json",
+      "sha256": "cefbf68b4d8c4f5eb8fa7e888e27bc31ace38d271c9207e335da817bb260cb54"
+    },
+    "valuation": {
+      "model_version": "residual-income-equity-shared-dated-v2",
+      "bear": "36.0121866604528720800629631840921914063801838080",
+      "base": "45.7417037044192281574936570926129861357849631511",
+      "bull": "58.1686744055803340295467634666441075299523416697",
+      "confidence": "低"
+    }
+  },
+  "to": {
+    "status": "RESEARCH_DRAFT_NOT_APPROVED",
+    "research_version": "midea-draft-20261017-v2",
+    "research_as_of": "2026-10-17",
+    "valuation": {
+      "model_version": "residual-income-equity-shared-dated-v2",
+      "bear": "36.0121866604528720800629631840921914063801838080",
+      "base": "45.7417037044192281574936570926129861357849631511",
+      "bull": "58.1686744055803340295467634666441075299523416697",
+      "confidence": "低"
+    },
+    "model_validity": "UNKNOWN",
+    "price_bridge": "INVALID"
+  },
+  "changed": [
+    "research_inputs_migrated_to_source_bound_v2_contract",
+    "nine_financial_facts_now_have_physical_page_anchors",
+    "all_nine_scenario_assumptions_now_bind_to_the_hash_bound_memo",
+    "four_announcements_covered_including_2026_10_17_buyback_progress",
+    "event_coverage_is_honestly_incomplete",
+    "evidence_stop_resolution_is_now_append_only_and_reusable_for_normal_research"
+  ],
+  "unchanged": [
+    "bear_base_bull_values_unchanged",
+    "human_research_approval_absent",
+    "formal_G3_absent",
+    "event_materiality_pending_human_review",
+    "strict_contemporaneous_pit_not_proven",
+    "price_admitted_false",
+    "position_guidance_null",
+    "action_no_order"
+  ],
+  "numeric_delta": {
+    "bear": {
+      "from": "36.0121866604528720800629631840921914063801838080",
+      "to": "36.0121866604528720800629631840921914063801838080"
+    },
+    "base": {
+      "from": "45.7417037044192281574936570926129861357849631511",
+      "to": "45.7417037044192281574936570926129861357849631511"
+    },
+    "bull": {
+      "from": "58.1686744055803340295467634666441075299523416697",
+      "to": "58.1686744055803340295467634666441075299523416697"
+    }
+  },
+  "next_gate": "Human materiality review of the four retained announcements and model-validity closure."
+}

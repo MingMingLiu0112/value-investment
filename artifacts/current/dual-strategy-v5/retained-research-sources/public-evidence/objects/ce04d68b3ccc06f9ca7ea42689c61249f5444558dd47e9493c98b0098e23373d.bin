@@ -1,0 +1,17 @@
+{
+  "symbol": "600519",
+  "refresh_version": "moutai-current-capital-refresh-v1",
+  "query_index": {
+    "path": "runtime\\historical-filing-index\\20261008T064505231961Z\\600519-1-2f4fa1d8546bf40bb03d37cb06eeb46f4e445ff57c97367062a6a8e3785cb34b.json",
+    "sha256": "2f4fa1d8546bf40bb03d37cb06eeb46f4e445ff57c97367062a6a8e3785cb34b"
+  },
+  "query_window": "2026-09-14~2026-10-08",
+  "fetched_at": "2026-10-08T06:45:06.352481+00:00",
+  "complete": true,
+  "new_or_changed_announcements": 0,
+  "conclusion": "No CNINFO announcement was returned in this bounded window; previously verified ordinary shares and capital facts may be carried only through the stated date.",
+  "limitations": [
+    "A zero-result index is not a shareholder-register confirmation.",
+    "Later dates require a new bounded query."
+  ]
+}

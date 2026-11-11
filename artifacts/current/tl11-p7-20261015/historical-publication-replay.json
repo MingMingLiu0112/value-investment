@@ -1,0 +1,75 @@
+{
+  "action": "no_order",
+  "observations": [
+    {
+      "path": "artifacts/current/tl11-p5-20261014/daily-public-packet-v9-r2.json",
+      "sha256": "4dbd6781c7138f67b22f302ca54af13231f90b3eea57598456ba2b19267767b2",
+      "publication_id": "pub-fe046ccec02162d3cb04",
+      "engine": "daily-public-packet-engine-v9",
+      "dates": {
+        "current_natural_date": "2026-10-14",
+        "latest_completed_trade_session": "2026-10-14",
+        "quote_trade_date": "2026-10-14",
+        "quote_observed_at": "2026-10-14T09:02:40.643954+00:00",
+        "research_as_of": "2026-10-11",
+        "model_validity": {
+          "status": "UNKNOWN",
+          "valid_through": null
+        },
+        "decision_published_on": "2026-10-12",
+        "excel_published_as_of": "2026-10-01",
+        "excel_quote_observation_as_of": "2026-10-09"
+      },
+      "content_hash_verified": true,
+      "action": "no_order",
+      "readonly": true
+    },
+    {
+      "path": "artifacts/current/tl11-p6-20261014/daily-public-packet.json",
+      "sha256": "1c020b6aa88fbf09fc18b25d14314182e1adce9167cc42e0bce7d2f5a43bd0be",
+      "publication_id": "pub-fe046ccec02162d3cb04",
+      "engine": "daily-public-packet-engine-v9",
+      "dates": {
+        "current_natural_date": "2026-10-14",
+        "latest_completed_trade_session": "2026-10-14",
+        "quote_trade_date": "2026-10-14",
+        "quote_observed_at": "2026-10-14T09:02:40.643954+00:00",
+        "research_as_of": "2026-10-11",
+        "model_validity": {
+          "status": "UNKNOWN",
+          "valid_through": null
+        },
+        "decision_published_on": "2026-10-12",
+        "excel_published_as_of": "2026-10-01",
+        "excel_quote_observation_as_of": "2026-10-09"
+      },
+      "content_hash_verified": true,
+      "action": "no_order",
+      "readonly": true
+    },
+    {
+      "path": "artifacts/current/tl11-p62-20261015/daily-public-packet-pub-e9c8a7f4241058926f01.json",
+      "sha256": "1078cbbe530346ebb741c3871a0f8d73811529da637abbe53e3be11f4a1cd892",
+      "publication_id": "pub-e9c8a7f4241058926f01",
+      "engine": "daily-public-packet-engine-v10",
+      "dates": {
+        "current_natural_date": "2026-10-15",
+        "latest_completed_trade_session": "2026-10-15",
+        "quote_trade_date": "2026-10-15",
+        "quote_observed_at": "2026-10-15T07:11:20.641464+00:00",
+        "research_as_of": "2026-10-11",
+        "model_validity": {
+          "status": "UNKNOWN",
+          "valid_through": null
+        },
+        "decision_published_on": "2026-10-12",
+        "excel_published_as_of": "2026-10-01",
+        "excel_quote_observation_as_of": "2026-10-09"
+      },
+      "content_hash_verified": true,
+      "action": "no_order",
+      "readonly": true
+    }
+  ],
+  "scope": "Read-only historical public packet verification, not real shadow sessions or strategy performance."
+}

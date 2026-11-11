@@ -1,0 +1,16 @@
+{
+  "schema_version": "public-research-only-draft-v1",
+  "research_mode": "research_only_v1",
+  "symbol": "000544",
+  "status": "RESEARCH_DRAFT_NOT_APPROVED",
+  "action": "no_order",
+  "research_as_of": "2026-10-24",
+  "available_at": "2026-10-24T21:52:26.902417+08:00",
+  "research_input_binding": {
+    "package": {
+      "path": "runtime/screened-candidate-research/000544-20261024T131028035625Z-cc87470a/research-only-v1-20261024T135225901761Z-1dfc0ba3/package.json",
+      "sha256": "8b3d1b33603f477278f478be10b28dc1c3ebdf9e953b8d51569a1d97e1b53545"
+    },
+    "input_sha256": "858deecde7ca24cc5025054859382ea192ddcac04c3956f164933f76bdf88b0e"
+  }
+}

@@ -61,6 +61,7 @@ from value_investment_agent.research_artifacts import (
 from value_investment_agent.research_case import ResearchCase
 from value_investment_agent.research_run_contract import valuation_result_sha256
 from value_investment_agent.valuation_models.base import ValuationResult
+from approval_transport_fixture import mint_fixture_approval
 
 
 SYMBOL = "600887"
@@ -230,12 +231,13 @@ def _approval_bundle() -> tuple[
         reviewed_at=datetime(2026, 9, 22, tzinfo=timezone.utc),
         review_as_of=AS_OF,
         reviewer_type="human_research_lead",
+        reviewer_id="TEST_ONLY-HUMAN-RESEARCH-LEAD",
         decision=DECISION_APPROVED_RESEARCH_ONLY,
         price_assessment_eligible=True,
         remaining_blockers=(),
         evidence_refs=({"id": "approval-source"},),
     )
-    return receipt, case_payload, facts_payload, assumptions_payload
+    return mint_fixture_approval(receipt), case_payload, facts_payload, assumptions_payload
 
 
 def _dependencies() -> dict:
@@ -700,6 +702,7 @@ def _conditional_recommendation(*, stale_approval=False, missing_approval=False)
     )
     if stale_approval:
         approval = replace(approval, facts_artifact_sha256="f" * 64)
+    approval = mint_fixture_approval(approval)
     dependencies = _dependencies() | {
         "research_case": case, "valuation": valuation, "human_approval": approval,
     }

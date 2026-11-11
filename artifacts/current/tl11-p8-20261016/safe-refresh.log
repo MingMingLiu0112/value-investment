@@ -1,0 +1,46 @@
+================ TL9 每日工作台 ================
+运行模式 : SAFE_REFRESH
+Python   : D:\APP\Python313\python.exe
+  价格结构 : 复用已核验最近完成交易日 2026-10-15 的完整已选候选；未重新采集。
+  价格结构状态 : UNCHANGED
+[SAFE_REFRESH] 采集已授权的公开行情来源（腾讯/新浪，只读页面）...
+  行情 : 复用已核验最近完成交易日的登记；未重新采集。
+  600887: 正式公告增量证据已绑定；未授予材料性或估值批准。
+  600519: 正式公告增量证据已绑定；未授予材料性或估值批准。
+  增量有效性 : 已写入逐证券审计；未改研究截止日或授予任何批准。
+  000333 : UNKNOWN / NO_REGISTERED_RESEARCH 仅登记展示行情，尚无完整研究包；不进行模型有效性批准。
+  000651 : UNKNOWN / NO_REGISTERED_RESEARCH 仅登记展示行情，尚无完整研究包；不进行模型有效性批准。
+  600519 : UNKNOWN / BLOCKED_ON_HUMAN_EVENT_REVIEW 
+  600741 : UNKNOWN / NO_REGISTERED_RESEARCH 仅登记展示行情，尚无完整研究包；不进行模型有效性批准。
+  600887 : UNKNOWN / REQUIRES_MATERIALITY_REVIEW 
+  601088 : UNKNOWN / NO_REGISTERED_RESEARCH 仅登记展示行情，尚无完整研究包；不进行模型有效性批准。
+---------------- 本次运行 ----------------
+运行结果 : SUCCESS
+数据版本 : pub-6167d094c68f6d8105c1
+研究版本 : canonical-reviewed-research-20261012T113935Z-362d7928
+内容摘要 : 0ceafb0a38b3d8416e33367d32561030a008ccb2030d0682bca2b8fa91f5feb5
+公开快照 : VERIFIED - pub-6167d094c68f6d8105c1（Web 只读这一份已校验快照）
+日期边界 : 自然日 2026-10-16 | 最近完成交易日 2026-10-15 | 已登记行情 2026-10-15 | 研究截止 2026-10-11 | 决策发布 2026-10-12 | Excel 快照 2026-10-01
+行情新鲜度 : FRESH - 已登记行情 2026-10-15 即最近已完成交易日。
+研究新鲜度 : INCREMENTAL_REVIEW_PENDING - 已接入增量公告复核；按具体材料性、模型及证据缺口处理，日期推进本身不要求重做整份研究。
+准入计数 : 正式准入 0 | 待人工复核 2 | 需重新研究 0 | 观察线索 114
+价格结构 : CURRENT_OBSERVATION
+  300059 东方财富: 收盘 18.320 | 突破观察 18.480 | 失效 17.680 | WATCH | 正式资格 False
+  601318 中国平安: 收盘 51.780 | 突破观察 51.600 | 失效 50.850 | TRIGGER_OBSERVED | 正式资格 False
+  600030 中信证券: 收盘 26.230 | 突破观察 26.210 | 失效 25.510 | TRIGGER_OBSERVED | 正式资格 False
+  601211 国泰海通: 收盘 16.950 | 突破观察 17.000 | 失效 16.700 | WATCH | 正式资格 False
+  000712 锦龙股份: 收盘 10.610 | 突破观察 11.020 | 失效 9.740 | WATCH | 正式资格 False
+下一步   :
+  - 复核截至 2026-10-15 的 0 份公告及原模型适用性；不预支 G3。
+  - 估值与决策仍待人工门（G3）批准
+  - 事件材料性复核未完成
+  - 复核截至 2026-10-15 的 2 份公告及原模型适用性；不预支 G3。
+阻止事项 : PRICE_NOT_ADMITTED:000333; PRICE_NOT_ADMITTED:000651; INCREMENTAL_VALIDITY:600519:pending_complete_event_materiality_review; INCREMENTAL_VALIDITY:600519:event scan is pending human review; INCREMENTAL_VALIDITY:600519:This acquired query window does not replace earlier event/model/G3 reviews.; INCREMENTAL_VALIDITY:600519:展示收盘已通过双源及最近完成交易日核验，但未满足 B1 同交易日收盘后采集要求；仅供事实展示，不准入正式价格比较。; PRICE_NOT_ADMITTED:600519; MODEL_VALIDITY_UNKNOWN:600519; PRICE_NOT_ADMITTED:600741; INCREMENTAL_VALIDITY:600887:pending_complete_event_materiality_review; INCREMENTAL_VALIDITY:600887:event scan is pending human review; INCREMENTAL_VALIDITY:600887:This acquired query window does not replace earlier event/model/G3 reviews.; INCREMENTAL_VALIDITY:600887:展示收盘已通过双源及最近完成交易日核验，但未满足 B1 同交易日收盘后采集要求；仅供事实展示，不准入正式价格比较。; PRICE_NOT_ADMITTED:600887; MODEL_VALIDITY_UNKNOWN:600887; PRICE_NOT_ADMITTED:601088; RESEARCH_ASSESSMENT_NOT_BOUND:000333; VALUATION_NOT_ADMITTED:000333; RESEARCH_ASSESSMENT_NOT_BOUND:000651; VALUATION_NOT_ADMITTED:000651; pending_complete_event_materiality_review:600519; event scan is pending human review:600519; This acquired query window does not replace earlier event/model/G3 reviews.:600519; 展示收盘已通过双源及最近完成交易日核验，但未满足 B1 同交易日收盘后采集要求；仅供事实展示，不准入正式价格比较。:600519; RESEARCH_ASSESSMENT_NOT_BOUND:600741; VALUATION_NOT_ADMITTED:600741; pending_complete_event_materiality_review:600887; event scan is pending human review:600887; This acquired query window does not replace earlier event/model/G3 reviews.:600887; 展示收盘已通过双源及最近完成交易日核验，但未满足 B1 同交易日收盘后采集要求；仅供事实展示，不准入正式价格比较。:600887; RESEARCH_ASSESSMENT_NOT_BOUND:601088; VALUATION_NOT_ADMITTED:601088; NO_FORMAL_ADMISSION
+来源绑定 : 全部哈希校验通过
+产物     : runtime/daily-public-packet/daily-public-packet-pub-6167d094c68f6d8105c1.json
+产物哈希 : 5d51b564d4212634d720d54c9315520763055a2de14abdae39e8b42b5b5acda3
+能力边界 : 已完成行情和价格结构计算不代表触发、研究批准或正式操作准入；事件、风险、G3 等门禁独立。
+说明     : 仅按验证结果更新本地公开快照引用；正式 Excel 与私人数据均未被触碰（action=no_order）。
+已按 -NoServer 跳过 Web 启动。
+Web 服务 : 未启动
+整体结果 : 退出码 0（仅代表数据更新结果）

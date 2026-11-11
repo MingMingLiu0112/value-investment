@@ -1,0 +1,67 @@
+{
+  "symbol": "600519",
+  "observed_at": "2026-10-08T11:57:51.425128+00:00",
+  "report_period": "2026-06-30",
+  "scope": "HISTORICAL_PROFIT_RECONCILIATION_NOT_NORMALIZED_FORECAST_OR_INVESTMENT_APPROVAL",
+  "source_rows": [
+    {
+      "period": "FY2025",
+      "currency": "CNY",
+      "statement_scope": "consolidated",
+      "profit_basis": "attributable_to_parent",
+      "reported_profit_cny": "82320067101.68",
+      "ex_nonrecurring_profit_cny": "82293107655.25",
+      "source_id": "cninfo:1225114741",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "physical_page": 6,
+      "reviewed_at": "2026-10-08T11:57:51.425128+00:00",
+      "validation_method": "official_page_amount_match_and_independent_report_reconciliation"
+    },
+    {
+      "period": "H1_2026",
+      "currency": "CNY",
+      "statement_scope": "consolidated",
+      "profit_basis": "attributable_to_parent",
+      "reported_profit_cny": "44516880421.86",
+      "ex_nonrecurring_profit_cny": "44464207646.01",
+      "source_id": "cninfo:1225475868",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "physical_page": 5,
+      "reviewed_at": "2026-10-08T11:57:51.425128+00:00",
+      "validation_method": "official_page_amount_match_and_independent_report_reconciliation"
+    },
+    {
+      "period": "H1_2025",
+      "currency": "CNY",
+      "statement_scope": "consolidated",
+      "profit_basis": "attributable_to_parent",
+      "reported_profit_cny": "45402962298.10",
+      "ex_nonrecurring_profit_cny": "45390247623.82",
+      "source_id": "cninfo:1225475868",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "physical_page": 5,
+      "reviewed_at": "2026-10-08T11:57:51.425128+00:00",
+      "validation_method": "official_page_amount_match_and_independent_report_reconciliation"
+    }
+  ],
+  "review_report": {
+    "id": "independent-normalized-profit-research-20261008",
+    "path": "docs/current/600519-normalized-assumption-research-20261008.md",
+    "sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a"
+  },
+  "formula": "FY2025 + H1_2026 - H1_2025",
+  "ttm_reported_parent_profit_cny": "81433985225.44",
+  "ttm_ex_nonrecurring_parent_profit_cny": "81367067677.44",
+  "ttm_nonrecurring_parent_profit_cny": "66917548.00",
+  "forward_normalized_profit_cny": null,
+  "future_roe_bounds": null,
+  "financial_quality_approved": false,
+  "forecast_approved": false,
+  "action": "no_order"
+}

@@ -1,0 +1,3964 @@
+{
+  "schema_version": "research-review-packet-v1",
+  "symbol": "600887",
+  "action": "no_order",
+  "research_as_of": "2026-10-22",
+  "generated_at": "2026-10-21T16:39:11.494875+00:00",
+  "scope": "CONSUMED_RESEARCH_REVIEW_NOT_NEW_FACT_OR_APPROVAL",
+  "input_descriptor_sha256": "d431e3b6aa4162f95b6ecb8a1ecdbabd3f8187315f01acc6654ad1b439b66c18",
+  "source_contract_status": "SOURCE_CUTOFF_AND_SCENARIO_BINDINGS_VALIDATED",
+  "official_fact_anchors": [
+    {
+      "field": "start_book_equity",
+      "source_id": "cninfo:1225511409",
+      "physical_page": 49,
+      "source_value": "53711364981.99",
+      "unit": "CNY",
+      "scope": "consolidated_parent_equity",
+      "period_end": "2026-06-30"
+    },
+    {
+      "field": "ordinary_shares",
+      "source_id": "cninfo:1225511409",
+      "physical_page": 66,
+      "source_value": "6325360667",
+      "unit": "shares",
+      "scope": "issued_ordinary_shares",
+      "period_end": "2026-06-30"
+    }
+  ],
+  "consumed_operating_inputs": {
+    "ordinary_shares": "6325360667",
+    "start_book_equity": "53711364981.99"
+  },
+  "financial_summary": {
+    "financial_equity_bridge": {
+      "action": "no_order",
+      "future_clean_surplus_assumption_approved": false,
+      "header_page": 58,
+      "naive_profit_distribution_equity_cny": "54721493973.38",
+      "normalized_profit_approved": false,
+      "outside_profit_adjustment_cny": "-1010128991.39",
+      "ownership_amounts": {
+        "change": {
+          "minority": "-323570552.79",
+          "parent": "-944325493.90",
+          "total": "-1267896046.69"
+        },
+        "closing": {
+          "minority": "3565015649.48",
+          "parent": "53711364981.99",
+          "total": "57276380631.47"
+        },
+        "comprehensive": {
+          "minority": "-288426476.70",
+          "parent": "4769763605.51",
+          "total": "4481337128.81"
+        },
+        "contribution": {
+          "minority": "12460000.00",
+          "parent": "0.00",
+          "total": "12460000.00"
+        },
+        "distribution": {
+          "minority": "-45212091.14",
+          "parent": "-5692824600.30",
+          "total": "-5738036691.44"
+        },
+        "opening": {
+          "minority": "3888586202.27",
+          "parent": "54655690475.89",
+          "total": "58544276678.16"
+        },
+        "other": {
+          "minority": "-2696626.68",
+          "parent": "-21626981.75",
+          "total": "-24323608.43"
+        },
+        "reserve": {
+          "minority": "304641.73",
+          "parent": "362482.64",
+          "total": "667124.37"
+        }
+      },
+      "parent_oci_cny": "-988864492.28",
+      "parent_profit_cny": "5758628097.79",
+      "period_end": "2026-06-30",
+      "reconciled_closing_parent_equity_cny": "53711364981.99",
+      "schema_version": "consolidated-equity-statement-bridge-result-v1",
+      "scope": "consolidated_parent_attributable",
+      "source_id": "cninfo:1225511409",
+      "source_rows": {
+        "change": {
+          "evidence_excerpt": "三、本期增减变动金额（减少以“-”号填列） -21,626,981.75 -988,864,492.28 362,482.64 65,803,497.49 -944,325,493.90 -323,570,552.79 -1,267,896,046.69",
+          "parent_value": "-944325493.90",
+          "physical_page": 58
+        },
+        "closing": {
+          "evidence_excerpt": "四、本期期末余额 6,325,360,667.00 12,240,717,240.54 -1,162,028,076.08 362,482.64 3,200,065,459.00 33,106,887,208.89 53,711,364,981.99 3,565,015,649.48 57,276,380,631.47",
+          "parent_value": "53711364981.99",
+          "physical_page": 59
+        },
+        "comprehensive": {
+          "evidence_excerpt": "（一）综合收益总额 -988,864,492.28 5,758,628,097.79 4,769,763,605.51 -288,426,476.70 4,481,337,128.81",
+          "parent_value": "4769763605.51",
+          "physical_page": 58
+        },
+        "contribution": {
+          "evidence_excerpt": "（二）所有者投入和减少资本 12,460,000.00 12,460,000.00",
+          "parent_value": "0",
+          "physical_page": 58
+        },
+        "distribution": {
+          "evidence_excerpt": "（三）利润分配 -5,692,824,600.30 -5,692,824,600.30 -45,212,091.14 -5,738,036,691.44",
+          "parent_value": "-5692824600.30",
+          "physical_page": 59
+        },
+        "opening": {
+          "evidence_excerpt": "二、本年期初余额 6,325,360,667.00 12,262,344,222.29 -173,163,583.80 3,200,065,459.00 33,041,083,711.40 54,655,690,475.89 3,888,586,202.27 58,544,276,678.16",
+          "parent_value": "54655690475.89",
+          "physical_page": 58
+        },
+        "other": {
+          "evidence_excerpt": "（六）其他 -21,626,981.75 -21,626,981.75 -2,696,626.68 -24,323,608.43",
+          "parent_value": "-21626981.75",
+          "physical_page": 59
+        },
+        "reserve": {
+          "evidence_excerpt": "（五）专项储备 362,482.64 362,482.64 304,641.73 667,124.37",
+          "parent_value": "362482.64",
+          "physical_page": 59
+        }
+      },
+      "status": "ACCOUNTING_RECONCILED_NOT_MODEL_APPROVAL",
+      "sustainable_distribution_approved": false,
+      "treasury_disclosure": {
+        "evidence_excerpt": "56、库存股 □适用 √不适用",
+        "period_end": "2026-06-30",
+        "physical_page": 159,
+        "status": "H1_DISCLOSED_NOT_APPLICABLE_NOT_CURRENT_DILUTION_APPROVAL"
+      },
+      "unexplained_difference_cny": "0",
+      "unit": "CNY"
+    },
+    "h1_2026_parent_profit_yoy": "-0.2002",
+    "normalized_parent_profit_cny": null,
+    "ordinary_shares": "6325360667",
+    "parent_equity_2025_cny": "54655690475.89",
+    "parent_equity_cny": "53711364981.99",
+    "parent_profit_2025_cny": "11565166497.81",
+    "pending_model_choice": "short-advantage",
+    "pending_model_limits": [
+      "Conditional mathematical alternatives only; not approved fair value or entry prices.",
+      "Self-funded model does not enforce the issuer DPS floor or financing-funded distributions.",
+      "No G3, materiality, strict PIT, current price or private portfolio approval."
+    ],
+    "period_end": "2026-06-30",
+    "revenue_2025_cny": "115636231250.05",
+    "ttm_ex_nonrecurring_parent_profit_cny": "9647734710.01",
+    "verified_financial_review": {
+      "action": "no_order",
+      "calculations": {
+        "calendar2025_paid_dividends": {
+          "formula": "FY2024_final+FY2025_interim",
+          "input_column_indices": [
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "prior_final_dividend",
+            "interim_dividend"
+          ],
+          "scope": "listed_parent_external_shareholders",
+          "unit": "CNY",
+          "value": "10753113133.90"
+        },
+        "calendar2025_parent_partial_cash_proxy": {
+          "formula": "parent_CFO+investment_income_cash-gross_capex",
+          "input_column_indices": [
+            0,
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "fy_parent_cfo",
+            "fy_parent_investment_income_cash",
+            "fy_parent_capex"
+          ],
+          "scope": "partial_cash_proxy_not_distributable_cash",
+          "unit": "CNY",
+          "value": "11553421326.62"
+        },
+        "fy2025_plan_dividends": {
+          "formula": "FY2025_interim+FY2025_final; different payment calendar years",
+          "input_column_indices": [
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "interim_dividend",
+            "final_dividend"
+          ],
+          "scope": "listed_parent_external_shareholders",
+          "unit": "CNY",
+          "value": "8728997720.46"
+        },
+        "fy_consolidated_FY2024_cash_capex_proxy": {
+          "formula": "CFO-gross_long_lived_asset_cash_purchases",
+          "input_column_indices": [
+            1,
+            1
+          ],
+          "input_fact_ids": [
+            "fy_consolidated_cfo",
+            "fy_consolidated_capex"
+          ],
+          "scope": "consolidated_not_FCFF_FCFE_or_distributable_cash",
+          "unit": "CNY",
+          "value": "17761422072.42"
+        },
+        "fy_consolidated_FY2024_cash_residual": {
+          "formula": "opening+CFO+CFI+CFF+FX-closing",
+          "input_column_indices": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "input_fact_ids": [
+            "fy_consolidated_cfo",
+            "fy_consolidated_cfi",
+            "fy_consolidated_cff",
+            "fy_consolidated_fx",
+            "fy_consolidated_movement",
+            "fy_consolidated_opening_cash_equivalents",
+            "fy_consolidated_closing_cash_equivalents"
+          ],
+          "scope": "consolidated",
+          "unit": "CNY",
+          "value": "0.00"
+        },
+        "fy_consolidated_FY2025_cash_capex_proxy": {
+          "formula": "CFO-gross_long_lived_asset_cash_purchases",
+          "input_column_indices": [
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "fy_consolidated_cfo",
+            "fy_consolidated_capex"
+          ],
+          "scope": "consolidated_not_FCFF_FCFE_or_distributable_cash",
+          "unit": "CNY",
+          "value": "11307276333.64"
+        },
+        "fy_consolidated_FY2025_cash_residual": {
+          "formula": "opening+CFO+CFI+CFF+FX-closing",
+          "input_column_indices": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "fy_consolidated_cfo",
+            "fy_consolidated_cfi",
+            "fy_consolidated_cff",
+            "fy_consolidated_fx",
+            "fy_consolidated_movement",
+            "fy_consolidated_opening_cash_equivalents",
+            "fy_consolidated_closing_cash_equivalents"
+          ],
+          "scope": "consolidated",
+          "unit": "CNY",
+          "value": "0.00"
+        },
+        "fy_parent_FY2024_cash_capex_proxy": {
+          "formula": "CFO-gross_long_lived_asset_cash_purchases",
+          "input_column_indices": [
+            1,
+            1
+          ],
+          "input_fact_ids": [
+            "fy_parent_cfo",
+            "fy_parent_capex"
+          ],
+          "scope": "listed_parent_only_not_FCFF_FCFE_or_distributable_cash",
+          "unit": "CNY",
+          "value": "17141368789.67"
+        },
+        "fy_parent_FY2024_cash_residual": {
+          "formula": "opening+CFO+CFI+CFF+FX-closing",
+          "input_column_indices": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "input_fact_ids": [
+            "fy_parent_cfo",
+            "fy_parent_cfi",
+            "fy_parent_cff",
+            "fy_parent_fx",
+            "fy_parent_movement",
+            "fy_parent_opening_cash_equivalents",
+            "fy_parent_closing_cash_equivalents"
+          ],
+          "scope": "listed_parent_only",
+          "unit": "CNY",
+          "value": "0.00"
+        },
+        "fy_parent_FY2025_cash_capex_proxy": {
+          "formula": "CFO-gross_long_lived_asset_cash_purchases",
+          "input_column_indices": [
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "fy_parent_cfo",
+            "fy_parent_capex"
+          ],
+          "scope": "listed_parent_only_not_FCFF_FCFE_or_distributable_cash",
+          "unit": "CNY",
+          "value": "6518474579.02"
+        },
+        "fy_parent_FY2025_cash_residual": {
+          "formula": "opening+CFO+CFI+CFF+FX-closing",
+          "input_column_indices": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "fy_parent_cfo",
+            "fy_parent_cfi",
+            "fy_parent_cff",
+            "fy_parent_fx",
+            "fy_parent_movement",
+            "fy_parent_opening_cash_equivalents",
+            "fy_parent_closing_cash_equivalents"
+          ],
+          "scope": "listed_parent_only",
+          "unit": "CNY",
+          "value": "0.00"
+        },
+        "fy_profit_minus_ex_profit": {
+          "formula": "reported_parent_profit-ex_nonrecurring_parent_profit",
+          "input_column_indices": [
+            0,
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "fy_parent_profit",
+            "fy_ex_nonrecurring_parent_profit",
+            "fy_nonrecurring"
+          ],
+          "scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "value": "496844802.69"
+        },
+        "h1_consolidated_H12025_cash_capex_proxy": {
+          "formula": "CFO-gross_long_lived_asset_cash_purchases",
+          "input_column_indices": [
+            1,
+            1
+          ],
+          "input_fact_ids": [
+            "h1_consolidated_cfo",
+            "h1_consolidated_capex"
+          ],
+          "scope": "consolidated_not_FCFF_FCFE_or_distributable_cash",
+          "unit": "CNY",
+          "value": "1511499321.75"
+        },
+        "h1_consolidated_H12025_cash_residual": {
+          "formula": "opening+CFO+CFI+CFF+FX-closing",
+          "input_column_indices": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "input_fact_ids": [
+            "h1_consolidated_cfo",
+            "h1_consolidated_cfi",
+            "h1_consolidated_cff",
+            "h1_consolidated_fx",
+            "h1_consolidated_movement",
+            "h1_consolidated_opening_cash_equivalents",
+            "h1_consolidated_closing_cash_equivalents"
+          ],
+          "scope": "consolidated",
+          "unit": "CNY",
+          "value": "0.00"
+        },
+        "h1_consolidated_H12026_cash_capex_proxy": {
+          "formula": "CFO-gross_long_lived_asset_cash_purchases",
+          "input_column_indices": [
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "h1_consolidated_cfo",
+            "h1_consolidated_capex"
+          ],
+          "scope": "consolidated_not_FCFF_FCFE_or_distributable_cash",
+          "unit": "CNY",
+          "value": "8454885438.50"
+        },
+        "h1_consolidated_H12026_cash_residual": {
+          "formula": "opening+CFO+CFI+CFF+FX-closing",
+          "input_column_indices": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "h1_consolidated_cfo",
+            "h1_consolidated_cfi",
+            "h1_consolidated_cff",
+            "h1_consolidated_fx",
+            "h1_consolidated_movement",
+            "h1_consolidated_opening_cash_equivalents",
+            "h1_consolidated_closing_cash_equivalents"
+          ],
+          "scope": "consolidated",
+          "unit": "CNY",
+          "value": "0.00"
+        },
+        "h1_parent_H12025_cash_capex_proxy": {
+          "formula": "CFO-gross_long_lived_asset_cash_purchases",
+          "input_column_indices": [
+            1,
+            1
+          ],
+          "input_fact_ids": [
+            "h1_parent_cfo",
+            "h1_parent_capex"
+          ],
+          "scope": "listed_parent_only_not_FCFF_FCFE_or_distributable_cash",
+          "unit": "CNY",
+          "value": "-3128496478.42"
+        },
+        "h1_parent_H12025_cash_residual": {
+          "formula": "opening+CFO+CFI+CFF+FX-closing",
+          "input_column_indices": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "input_fact_ids": [
+            "h1_parent_cfo",
+            "h1_parent_cfi",
+            "h1_parent_cff",
+            "h1_parent_fx",
+            "h1_parent_movement",
+            "h1_parent_opening_cash_equivalents",
+            "h1_parent_closing_cash_equivalents"
+          ],
+          "scope": "listed_parent_only",
+          "unit": "CNY",
+          "value": "0.00"
+        },
+        "h1_parent_H12026_cash_capex_proxy": {
+          "formula": "CFO-gross_long_lived_asset_cash_purchases",
+          "input_column_indices": [
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "h1_parent_cfo",
+            "h1_parent_capex"
+          ],
+          "scope": "listed_parent_only_not_FCFF_FCFE_or_distributable_cash",
+          "unit": "CNY",
+          "value": "34315751329.11"
+        },
+        "h1_parent_H12026_cash_residual": {
+          "formula": "opening+CFO+CFI+CFF+FX-closing",
+          "input_column_indices": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "h1_parent_cfo",
+            "h1_parent_cfi",
+            "h1_parent_cff",
+            "h1_parent_fx",
+            "h1_parent_movement",
+            "h1_parent_opening_cash_equivalents",
+            "h1_parent_closing_cash_equivalents"
+          ],
+          "scope": "listed_parent_only",
+          "unit": "CNY",
+          "value": "0.00"
+        },
+        "h1_parent_purchase_cash_change": {
+          "formula": "H12026-H12025; not a complete explanation of CFO",
+          "input_column_indices": [
+            0,
+            1
+          ],
+          "input_fact_ids": [
+            "h1_parent_purchase_cash",
+            "h1_parent_purchase_cash"
+          ],
+          "scope": "listed_parent_only",
+          "unit": "CNY",
+          "value": "-31435783028.13"
+        },
+        "h1_parent_vs_consolidated_cfo_gap": {
+          "formula": "listed_parent_CFO-consolidated_CFO; not incremental external cash",
+          "input_column_indices": [
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "h1_parent_cfo",
+            "h1_consolidated_cfo"
+          ],
+          "scope": "cross_scope_difference_not_cash_entitlement",
+          "unit": "CNY",
+          "value": "25792506818.51"
+        },
+        "h1_profit_minus_ex_profit": {
+          "formula": "reported_parent_profit-ex_nonrecurring_parent_profit",
+          "input_column_indices": [
+            0,
+            0,
+            0
+          ],
+          "input_fact_ids": [
+            "h1_parent_profit",
+            "h1_ex_nonrecurring_parent_profit",
+            "h1_nonrecurring"
+          ],
+          "scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "value": "162865580.03"
+        },
+        "ttm_consolidated_capex": {
+          "formula": "FY2025+H12026-H12025; same statement scope",
+          "input_column_indices": [
+            0,
+            0,
+            1
+          ],
+          "input_fact_ids": [
+            "fy_consolidated_capex",
+            "h1_consolidated_capex",
+            "h1_consolidated_capex"
+          ],
+          "scope": "consolidated",
+          "unit": "CNY",
+          "value": "2888190159.84"
+        },
+        "ttm_consolidated_cfo": {
+          "formula": "FY2025+H12026-H12025; same statement scope",
+          "input_column_indices": [
+            0,
+            0,
+            1
+          ],
+          "input_fact_ids": [
+            "fy_consolidated_cfo",
+            "h1_consolidated_cfo",
+            "h1_consolidated_cfo"
+          ],
+          "scope": "consolidated",
+          "unit": "CNY",
+          "value": "21138852610.23"
+        },
+        "ttm_ex_nonrecurring_parent_profit": {
+          "formula": "FY2025+H12026-H12025; 2025-07-01..2026-06-30",
+          "input_column_indices": [
+            0,
+            0,
+            1
+          ],
+          "input_fact_ids": [
+            "fy_ex_nonrecurring_parent_profit",
+            "h1_ex_nonrecurring_parent_profit",
+            "h1_ex_nonrecurring_parent_profit"
+          ],
+          "scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "value": "9647734710.01"
+        },
+        "ttm_parent_capex": {
+          "formula": "FY2025+H12026-H12025; same statement scope",
+          "input_column_indices": [
+            0,
+            0,
+            1
+          ],
+          "input_fact_ids": [
+            "fy_parent_capex",
+            "h1_parent_capex",
+            "h1_parent_capex"
+          ],
+          "scope": "parent",
+          "unit": "CNY",
+          "value": "1630305033.08"
+        },
+        "ttm_parent_cfo": {
+          "formula": "FY2025+H12026-H12025; same statement scope",
+          "input_column_indices": [
+            0,
+            0,
+            1
+          ],
+          "input_fact_ids": [
+            "fy_parent_cfo",
+            "h1_parent_cfo",
+            "h1_parent_cfo"
+          ],
+          "scope": "parent",
+          "unit": "CNY",
+          "value": "45593027419.63"
+        },
+        "ttm_parent_profit": {
+          "formula": "FY2025+H12026-H12025; 2025-07-01..2026-06-30",
+          "input_column_indices": [
+            0,
+            0,
+            1
+          ],
+          "input_fact_ids": [
+            "fy_parent_profit",
+            "h1_parent_profit",
+            "h1_parent_profit"
+          ],
+          "scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "value": "10123316983.69"
+        },
+        "ttm_reported_minus_ex_parent_profit": {
+          "formula": "TTM_reported-TTM_ex_nonrecurring",
+          "input_column_indices": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            1
+          ],
+          "input_fact_ids": [
+            "fy_parent_profit",
+            "h1_parent_profit",
+            "h1_parent_profit",
+            "fy_ex_nonrecurring_parent_profit",
+            "h1_ex_nonrecurring_parent_profit",
+            "h1_ex_nonrecurring_parent_profit"
+          ],
+          "scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "value": "475582273.68"
+        },
+        "ttm_single_parent_profit": {
+          "formula": "FY2025+H12026-H12025; 2025-07-01..2026-06-30",
+          "input_column_indices": [
+            0,
+            0,
+            1
+          ],
+          "input_fact_ids": [
+            "fy_single_parent_profit",
+            "h1_single_parent_profit",
+            "h1_single_parent_profit"
+          ],
+          "scope": "listed_parent_only",
+          "unit": "CNY",
+          "value": "11892393582.60"
+        }
+      },
+      "facts": [
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "115636231250.05"
+            },
+            {
+              "period": "FY2024",
+              "value": "115393310976.69"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "营业收入115,636,231,250.05115,393,310,976.69",
+          "id": "fy_revenue",
+          "label": "营业收入",
+          "physical_page": 7,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "11565166497.81"
+            },
+            {
+              "period": "FY2024",
+              "value": "8452859993.18"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "归属于上市公司股东的净利润11,565,166,497.818,452,859,993.18",
+          "id": "fy_parent_profit",
+          "label": "归属于上市公司股东的净利润",
+          "physical_page": 7,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "11068321695.12"
+            },
+            {
+              "period": "FY2024",
+              "value": "6011274945.92"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "归属于上市公司股东的扣除非经常性损益的净利润11,068,321,695.126,011,274,945.92",
+          "id": "fy_ex_nonrecurring_parent_profit",
+          "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+          "physical_page": 7,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "64330936547.38"
+            },
+            {
+              "period": "H12025",
+              "value": "61776746682.68"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "营业收入64,330,936,547.3861,776,746,682.68",
+          "id": "h1_revenue",
+          "label": "营业收入",
+          "physical_page": 6,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "5758628097.79"
+            },
+            {
+              "period": "H12025",
+              "value": "7200477611.91"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "归属于上市公司股东的净利润5,758,628,097.797,200,477,611.91",
+          "id": "h1_parent_profit",
+          "label": "归属于上市公司股东的净利润",
+          "physical_page": 6,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "5595762517.76"
+            },
+            {
+              "period": "H12025",
+              "value": "7016349502.87"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "归属于上市公司股东的扣除非经常性损益的净利润5,595,762,517.767,016,349,502.87",
+          "id": "h1_ex_nonrecurring_parent_profit",
+          "label": "归属于上市公司股东的扣除非经常性损益的净利润",
+          "physical_page": 6,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "496844802.69"
+            },
+            {
+              "period": "FY2024",
+              "value": "2441585047.26"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "合计496,844,802.692,441,585,047.26",
+          "id": "fy_nonrecurring",
+          "label": "合计",
+          "physical_page": 9,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "162865580.03"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "合计162,865,580.03",
+          "id": "h1_nonrecurring",
+          "label": "合计",
+          "physical_page": 7,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "2025Q1",
+              "value": "4874104242.93"
+            },
+            {
+              "period": "2025Q2",
+              "value": "2326373368.98"
+            },
+            {
+              "period": "2025Q3",
+              "value": "3225625005.13"
+            },
+            {
+              "period": "2025Q4",
+              "value": "1139063880.77"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "归属于上市公司股东的净利润4,874,104,242.932,326,373,368.983,225,625,005.131,139,063,880.77",
+          "id": "fy_quarter_profit",
+          "label": "归属于上市公司股东的净利润",
+          "physical_page": 8,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "2025Q1",
+              "value": "4629303049.44"
+            },
+            {
+              "period": "2025Q2",
+              "value": "2387046453.43"
+            },
+            {
+              "period": "2025Q3",
+              "value": "3086431987.78"
+            },
+            {
+              "period": "2025Q4",
+              "value": "965540204.47"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "归属于上市公司股东的扣除非经常性损益后的净利润4,629,303,049.442,387,046,453.433,086,431,987.78965,540,204.47",
+          "id": "fy_quarter_ex_profit",
+          "label": "归属于上市公司股东的扣除非经常性损益后的净利润",
+          "physical_page": 8,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated_parent_attributable",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "11200348776.89"
+            },
+            {
+              "period": "FY2024",
+              "value": "13325341479.69"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "四、净利润（净亏损以“－”号填列）11,200,348,776.8913,325,341,479.69",
+          "id": "fy_single_parent_profit",
+          "label": "四、净利润",
+          "physical_page": 88,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "9246690145.31"
+            },
+            {
+              "period": "H12025",
+              "value": "8554645339.60"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "四、净利润（净亏损以“-”号填列）9,246,690,145.318,554,645,339.60",
+          "id": "h1_single_parent_profit",
+          "label": "四、净利润",
+          "physical_page": 54,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "14343920490.32"
+            },
+            {
+              "period": "FY2024",
+              "value": "21739740393.38"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "经营活动产生的现金流量净额14,343,920,490.3221,739,740,393.38",
+          "id": "fy_consolidated_cfo",
+          "label": "经营活动产生的现金流量净额",
+          "physical_page": 89,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "3036644156.68"
+            },
+            {
+              "period": "FY2024",
+              "value": "3978318320.96"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "购建固定资产、无形资产和其他长期资产支付的现金3,036,644,156.683,978,318,320.96",
+          "id": "fy_consolidated_capex",
+          "label": "购建固定资产、无形资产和其他长期资产支付的现金",
+          "physical_page": 90,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "-7796324355.55"
+            },
+            {
+              "period": "FY2024",
+              "value": "-32709427280.73"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "投资活动产生的现金流量净额-7,796,324,355.55-32,709,427,280.73",
+          "id": "fy_consolidated_cfi",
+          "label": "投资活动产生的现金流量净额",
+          "physical_page": 90,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "-13472893729.48"
+            },
+            {
+              "period": "FY2024",
+              "value": "-7277915908.33"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "筹资活动产生的现金流量净额-13,472,893,729.48-7,277,915,908.33",
+          "id": "fy_consolidated_cff",
+          "label": "筹资活动产生的现金流量净额",
+          "physical_page": 90,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "56365507.71"
+            },
+            {
+              "period": "FY2024",
+              "value": "-17957048.45"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "汇率变动对现金及现金等价物的影响56,365,507.71-17,957,048.45",
+          "id": "fy_consolidated_fx",
+          "label": "汇率变动对现金及现金等价物的影响",
+          "physical_page": 90,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "-6868932087.00"
+            },
+            {
+              "period": "FY2024",
+              "value": "-18265559844.13"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "现金及现金等价物净增加额-6,868,932,087.00-18,265,559,844.13",
+          "id": "fy_consolidated_movement",
+          "label": "现金及现金等价物净增加额",
+          "physical_page": 90,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "24546520007.54"
+            },
+            {
+              "period": "FY2024",
+              "value": "42812079851.67"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "期初现金及现金等价物余额24,546,520,007.5442,812,079,851.67",
+          "id": "fy_consolidated_opening_cash_equivalents",
+          "label": "期初现金及现金等价物余额",
+          "physical_page": 90,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "17677587920.54"
+            },
+            {
+              "period": "FY2024",
+              "value": "24546520007.54"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "期末现金及现金等价物余额17,677,587,920.5424,546,520,007.54",
+          "id": "fy_consolidated_closing_cash_equivalents",
+          "label": "期末现金及现金等价物余额",
+          "physical_page": 90,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "9759147483.18"
+            },
+            {
+              "period": "H12025",
+              "value": "2964215363.27"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "经营活动产生的现金流量净额9,759,147,483.182,964,215,363.27",
+          "id": "h1_consolidated_cfo",
+          "label": "经营活动产生的现金流量净额",
+          "physical_page": 55,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "1304262044.68"
+            },
+            {
+              "period": "H12025",
+              "value": "1452716041.52"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "购建固定资产、无形资产和其他长期资产支付的现金1,304,262,044.681,452,716,041.52",
+          "id": "h1_consolidated_capex",
+          "label": "购建固定资产、无形资产和其他长期资产支付的现金",
+          "physical_page": 56,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "-13195068088.81"
+            },
+            {
+              "period": "H12025",
+              "value": "-7482038254.51"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "投资活动产生的现金流量净额-13,195,068,088.81-7,482,038,254.51",
+          "id": "h1_consolidated_cfi",
+          "label": "投资活动产生的现金流量净额",
+          "physical_page": 56,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "-241598720.31"
+            },
+            {
+              "period": "H12025",
+              "value": "-3894225979.78"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "筹资活动产生的现金流量净额-241,598,720.31-3,894,225,979.78",
+          "id": "h1_consolidated_cff",
+          "label": "筹资活动产生的现金流量净额",
+          "physical_page": 56,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "-85791022.96"
+            },
+            {
+              "period": "H12025",
+              "value": "86434720.96"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "汇率变动对现金及现金等价物的影响-85,791,022.9686,434,720.96",
+          "id": "h1_consolidated_fx",
+          "label": "汇率变动对现金及现金等价物的影响",
+          "physical_page": 56,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "-3763310348.90"
+            },
+            {
+              "period": "H12025",
+              "value": "-8325614150.06"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "现金及现金等价物净增加额-3,763,310,348.90-8,325,614,150.06",
+          "id": "h1_consolidated_movement",
+          "label": "现金及现金等价物净增加额",
+          "physical_page": 56,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "17677587920.54"
+            },
+            {
+              "period": "H12025",
+              "value": "24546520007.54"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "期初现金及现金等价物余额17,677,587,920.5424,546,520,007.54",
+          "id": "h1_consolidated_opening_cash_equivalents",
+          "label": "期初现金及现金等价物余额",
+          "physical_page": 56,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "13914277571.64"
+            },
+            {
+              "period": "H12025",
+              "value": "16220905857.48"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "期末现金及现金等价物余额13,914,277,571.6416,220,905,857.48",
+          "id": "h1_consolidated_closing_cash_equivalents",
+          "label": "期末现金及现金等价物余额",
+          "physical_page": 56,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "7150459122.43"
+            },
+            {
+              "period": "FY2024",
+              "value": "17916866506.69"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "经营活动产生的现金流量净额7,150,459,122.4317,916,866,506.69",
+          "id": "fy_parent_cfo",
+          "label": "经营活动产生的现金流量净额",
+          "physical_page": 91,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "631984543.41"
+            },
+            {
+              "period": "FY2024",
+              "value": "775497717.02"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "购建固定资产、无形资产和其他长期资产支付的现金631,984,543.41775,497,717.02",
+          "id": "fy_parent_capex",
+          "label": "购建固定资产、无形资产和其他长期资产支付的现金",
+          "physical_page": 91,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "6936945467.12"
+            },
+            {
+              "period": "FY2024",
+              "value": "-26710795490.24"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "投资活动产生的现金流量净额6,936,945,467.12-26,710,795,490.24",
+          "id": "fy_parent_cfi",
+          "label": "投资活动产生的现金流量净额",
+          "physical_page": 91,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "-9154464812.27"
+            },
+            {
+              "period": "FY2024",
+              "value": "-6247691096.85"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "筹资活动产生的现金流量净额-9,154,464,812.27-6,247,691,096.85",
+          "id": "fy_parent_cff",
+          "label": "筹资活动产生的现金流量净额",
+          "physical_page": 91,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "65113.83"
+            },
+            {
+              "period": "FY2024",
+              "value": "158057.52"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "汇率变动对现金及现金等价物的影响65,113.83158,057.52",
+          "id": "fy_parent_fx",
+          "label": "汇率变动对现金及现金等价物的影响",
+          "physical_page": 91,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "4933004891.11"
+            },
+            {
+              "period": "FY2024",
+              "value": "-15041462022.88"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "现金及现金等价物净增加额4,933,004,891.11-15,041,462,022.88",
+          "id": "fy_parent_movement",
+          "label": "现金及现金等价物净增加额",
+          "physical_page": 91,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "8471582485.64"
+            },
+            {
+              "period": "FY2024",
+              "value": "23513044508.52"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "期初现金及现金等价物余额8,471,582,485.6423,513,044,508.52",
+          "id": "fy_parent_opening_cash_equivalents",
+          "label": "期初现金及现金等价物余额",
+          "physical_page": 91,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "13404587376.75"
+            },
+            {
+              "period": "FY2024",
+              "value": "8471582485.64"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "期末现金及现金等价物余额13,404,587,376.758,471,582,485.64",
+          "id": "fy_parent_closing_cash_equivalents",
+          "label": "期末现金及现金等价物余额",
+          "physical_page": 91,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "35551654301.69"
+            },
+            {
+              "period": "H12025",
+              "value": "-2890913995.51"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "经营活动产生的现金流量净额35,551,654,301.69-2,890,913,995.51",
+          "id": "h1_parent_cfo",
+          "label": "经营活动产生的现金流量净额",
+          "physical_page": 57,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "1235902972.58"
+            },
+            {
+              "period": "H12025",
+              "value": "237582482.91"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "购建固定资产、无形资产和其他长期资产支付的现金1,235,902,972.58237,582,482.91",
+          "id": "h1_parent_capex",
+          "label": "购建固定资产、无形资产和其他长期资产支付的现金",
+          "physical_page": 57,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "-9125896231.66"
+            },
+            {
+              "period": "H12025",
+              "value": "1544381443.71"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "投资活动产生的现金流量净额-9,125,896,231.661,544,381,443.71",
+          "id": "h1_parent_cfi",
+          "label": "投资活动产生的现金流量净额",
+          "physical_page": 57,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "-24890894675.89"
+            },
+            {
+              "period": "H12025",
+              "value": "1623504544.86"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "筹资活动产生的现金流量净额-24,890,894,675.891,623,504,544.86",
+          "id": "h1_parent_cff",
+          "label": "筹资活动产生的现金流量净额",
+          "physical_page": 57,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "-22976.75"
+            },
+            {
+              "period": "H12025",
+              "value": "51410.90"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "汇率变动对现金及现金等价物的影响-22,976.7551,410.90",
+          "id": "h1_parent_fx",
+          "label": "汇率变动对现金及现金等价物的影响",
+          "physical_page": 57,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "1534840417.39"
+            },
+            {
+              "period": "H12025",
+              "value": "277023403.96"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "现金及现金等价物净增加额1,534,840,417.39277,023,403.96",
+          "id": "h1_parent_movement",
+          "label": "现金及现金等价物净增加额",
+          "physical_page": 57,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "13404587376.75"
+            },
+            {
+              "period": "H12025",
+              "value": "8471582485.64"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "期初现金及现金等价物余额13,404,587,376.758,471,582,485.64",
+          "id": "h1_parent_opening_cash_equivalents",
+          "label": "期初现金及现金等价物余额",
+          "physical_page": 57,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "14939427794.14"
+            },
+            {
+              "period": "H12025",
+              "value": "8748605889.60"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "期末现金及现金等价物余额14,939,427,794.148,748,605,889.60",
+          "id": "h1_parent_closing_cash_equivalents",
+          "label": "期末现金及现金等价物余额",
+          "physical_page": 57,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "2026-06-30",
+              "value": "16616742290.33"
+            },
+            {
+              "period": "2025-12-31",
+              "value": "19494920358.00"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "货币资金七（1）16,616,742,290.3319,494,920,358.00",
+          "id": "h1_monetary_cash",
+          "label": "货币资金",
+          "physical_page": 48,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "2026-06-30",
+              "value": "14941770919.14"
+            },
+            {
+              "period": "2025-12-31",
+              "value": "13406727376.75"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "货币资金14,941,770,919.1413,406,727,376.75",
+          "id": "h1_parent_monetary_cash",
+          "label": "货币资金",
+          "physical_page": 50,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "2026-06-30",
+              "value": "64677193034.15"
+            },
+            {
+              "period": "2025-12-31",
+              "value": "45630626027.83"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "短期借款七（32）64,677,193,034.1545,630,626,027.83",
+          "id": "short_debt",
+          "label": "短期借款",
+          "physical_page": 49,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "2026-06-30",
+              "value": "48141014262.49"
+            },
+            {
+              "period": "2025-12-31",
+              "value": "36614614803.03"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "票据贴现借款48,141,014,262.4936,614,614,803.03",
+          "id": "bill_discount_debt",
+          "label": "票据贴现借款",
+          "physical_page": 148,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated_external_bank_obligation",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "-2455875173.02"
+            },
+            {
+              "period": "H12025",
+              "value": "-337447486.85"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "资产减值损失（损失以“-”号填列）七（73）-2,455,875,173.02-337,447,486.85",
+          "id": "h1_asset_impairment",
+          "label": "资产减值损失",
+          "physical_page": 52,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated_pre_tax",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "-907520836.34"
+            },
+            {
+              "period": "H12025",
+              "value": "-315591928.82"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "存货跌价损失及合同履约成本减值损失-907,520,836.34-315,591,928.82",
+          "id": "h1_inventory_impairment",
+          "label": "存货跌价损失及合同履约成本减值损失",
+          "physical_page": 167,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated_pre_tax",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "-1546544866.49"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "商誉减值损失-1,546,544,866.49",
+          "id": "h1_goodwill_impairment",
+          "label": "商誉减值损失",
+          "physical_page": 167,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated_pre_tax",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "450448607.55"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "调整以前期间所得税的影响450,448,607.55",
+          "id": "h1_prior_tax_adjustment",
+          "label": "调整以前期间所得税的影响",
+          "physical_page": 169,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated_tax_expense_not_parent_adjustment",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "58600086377.25"
+            },
+            {
+              "period": "H12025",
+              "value": "51741383133.15"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "销售商品、提供劳务收到的现金58,600,086,377.2551,741,383,133.15",
+          "id": "h1_parent_sales_cash",
+          "label": "销售商品、提供劳务收到的现金",
+          "physical_page": 57,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "16440348197.41"
+            },
+            {
+              "period": "H12025",
+              "value": "47876131225.54"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "购买商品、接受劳务支付的现金16,440,348,197.4147,876,131,225.54",
+          "id": "h1_parent_purchase_cash",
+          "label": "购买商品、接受劳务支付的现金",
+          "physical_page": 57,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "42391803459.23"
+            },
+            {
+              "period": "H12025",
+              "value": "45485531733.20"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "购买商品、接受劳务支付的现金42,391,803,459.2345,485,531,733.20",
+          "id": "h1_consolidated_purchase_cash",
+          "label": "购买商品、接受劳务支付的现金",
+          "physical_page": 55,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "6287065552.99"
+            },
+            {
+              "period": "H12025",
+              "value": "8142842953.25"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "分配股利、利润或偿付利息支付的现金6,287,065,552.998,142,842,953.25",
+          "id": "h1_mixed_distribution_interest",
+          "label": "分配股利、利润或偿付利息支付的现金",
+          "physical_page": 56,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "consolidated_mixed_category",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "6186835910.21"
+            },
+            {
+              "period": "H12025",
+              "value": "8155287516.89"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "分配股利、利润或偿付利息支付的现金6,186,835,910.218,155,287,516.89",
+          "id": "h1_parent_mixed_distribution_interest",
+          "label": "分配股利、利润或偿付利息支付的现金",
+          "physical_page": 57,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_mixed_category",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025",
+              "value": "5034946747.60"
+            },
+            {
+              "period": "FY2024",
+              "value": "8502296479.35"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "取得投资收益收到的现金5,034,946,747.608,502,296,479.35",
+          "id": "fy_parent_investment_income_cash",
+          "label": "取得投资收益收到的现金",
+          "physical_page": 91,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-01T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225259562",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "published_date": "2026-04-30",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+          },
+          "source_id": "cninfo:1225259562",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "4783985308.29"
+            },
+            {
+              "period": "H12025",
+              "value": "4131426485.74"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "取得投资收益收到的现金4,783,985,308.294,131,426,485.74",
+          "id": "h1_parent_investment_income_cash",
+          "label": "取得投资收益收到的现金",
+          "physical_page": 57,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025_final_paid_2026-06-05",
+              "value": "5692824600.30"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "共计派发现金红利5,692,824,600.30",
+          "id": "final_dividend",
+          "label": "共计派发现金红利",
+          "physical_page": 1,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-05-30T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225335436",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-dividend-followup-20260928/600887/yili-fy2025-final-dividend-implementation.pdf",
+            "published_date": "2026-05-29",
+            "sha256": "c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-05-29/1225335436.PDF"
+          },
+          "source_id": "cninfo:1225335436",
+          "statement_scope": "listed_parent_external_shareholders_gross_tax",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2025_interim_paid_2025-12-17",
+              "value": "3036173120.16"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "共计派发现金红利3,036,173,120.16",
+          "id": "interim_dividend",
+          "label": "共计派发现金红利",
+          "physical_page": 1,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2025-12-10T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1224859455",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2025_interim_implementation.pdf",
+            "published_date": "2025-12-09",
+            "sha256": "cb0f2870dd2ed48799ec5c3403c402dc09129270b030b533818ba7b9662f0322",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2025-12-09/1224859455.PDF"
+          },
+          "source_id": "cninfo:1224859455",
+          "statement_scope": "listed_parent_external_shareholders_gross_tax",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "FY2024_final_paid_2025-06-06",
+              "value": "7716940013.74"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "共计派发现金红利7,716,940,013.74",
+          "id": "prior_final_dividend",
+          "label": "共计派发现金红利",
+          "physical_page": 1,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2025-05-31T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1223718270",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2024_final_implementation.pdf",
+            "published_date": "2025-05-30",
+            "sha256": "94999a4f3f922ab372895488f872b8be864e1f3d5f8c9c78e34d3c3dc6ae0b3f",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2025-05-30/1223718270.PDF"
+          },
+          "source_id": "cninfo:1223718270",
+          "statement_scope": "listed_parent_external_shareholders_gross_tax",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "H12026",
+              "value": "-5692824600.30"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "对所有者（或股东）的分配-5,692,824,600.30",
+          "id": "h1_parent_equity_distribution",
+          "label": "对所有者（或股东）的分配",
+          "physical_page": 62,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-08-28T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225511409",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "published_date": "2026-08-27",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+          },
+          "source_id": "cninfo:1225511409",
+          "statement_scope": "listed_parent_only",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        },
+        {
+          "columns": [
+            {
+              "period": "SCP010_paid_2026-09-29",
+              "value": "10031454794.52"
+            },
+            {
+              "period": "SCP011_paid_2026-09-29",
+              "value": "10031454794.52"
+            }
+          ],
+          "currency": "CNY",
+          "evidence_excerpt": "本息兑付总额分别为人民币10,031,454,794.52元、10,031,454,794.52",
+          "id": "settlement_two_issue_amounts",
+          "label": "本息兑付总额分别为人民币",
+          "physical_page": 1,
+          "source_binding": {
+            "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+            "available_at_conservative": "2026-10-02T00:00:00+08:00",
+            "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+            "id": "cninfo:1225591152",
+            "original_retrieved_at": null,
+            "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+            "path": "D:/GPTProject/value-investment/runtime/public-event-followup-20261002/1225591152.pdf",
+            "published_date": "2026-10-01",
+            "sha256": "f59267675689f0d77cc142d91e910e2e839adfc0282a260483e0858cc82a1ba3",
+            "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-01/1225591152.PDF"
+          },
+          "source_id": "cninfo:1225591152",
+          "statement_scope": "issuer_disclosed_completed_not_bank_statement",
+          "unit": "CNY",
+          "verification": "ORIGINAL_LABEL_ORDERED_CURRENT_AND_COMPARATIVE_COLUMNS_MATCH"
+        }
+      ],
+      "financial_period_end": "2026-06-30",
+      "generated_at": "2026-10-11T03:00:50.263465+00:00",
+      "generated_at_role": "ARTIFACT_GENERATION_NOT_RESEARCH_CUTOFF",
+      "limitations": [
+        "历史扣非不是正常化盈利；商誉/存货减值及税费不直接按税前数加回归母利润。",
+        "母公司与合并CFO差异可观察，具体内部结算/融资及现金可取性贡献未建立归属桥。",
+        "货币资金与现金等价物差额不全部解释为受限现金；资产负债表现金不净掉外部银行义务。",
+        "实施公告与权益减少支持披露层已执行股息，未获得逐笔银行到账凭证；普通/特别分类未知。",
+        "75%/1.22元政策已获股东会通过，不是未来可分配现金证明。",
+        "6/30余额不能减9/29兑付金额推算期末现金；资金来源和兑付后债务/现金仍未知。",
+        "原件可用日与今天核验时点分开；不证明完整事件覆盖或历史同期运行。",
+        "未消费旧8%盈利增长/ROE路径，未产生新估值、报价、模型审批或仓位。"
+      ],
+      "manifest_binding": {
+        "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/manifest.json",
+        "sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384"
+      },
+      "model_approved": false,
+      "price_admitted": false,
+      "scope": "NOT_ADMITTED",
+      "source_bindings": [
+        {
+          "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+          "available_at_conservative": "2026-05-01T00:00:00+08:00",
+          "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+          "id": "cninfo:1225259562",
+          "original_retrieved_at": null,
+          "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+          "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+          "published_date": "2026-04-30",
+          "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF"
+        },
+        {
+          "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+          "available_at_conservative": "2026-08-28T00:00:00+08:00",
+          "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+          "id": "cninfo:1225511409",
+          "original_retrieved_at": null,
+          "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+          "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+          "published_date": "2026-08-27",
+          "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF"
+        },
+        {
+          "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+          "available_at_conservative": "2026-05-30T00:00:00+08:00",
+          "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+          "id": "cninfo:1225335436",
+          "original_retrieved_at": null,
+          "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+          "path": "D:/GPTProject/value-investment/runtime/company-research/m1-dividend-followup-20260928/600887/yili-fy2025-final-dividend-implementation.pdf",
+          "published_date": "2026-05-29",
+          "sha256": "c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-05-29/1225335436.PDF"
+        },
+        {
+          "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+          "available_at_conservative": "2025-12-10T00:00:00+08:00",
+          "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+          "id": "cninfo:1224859455",
+          "original_retrieved_at": null,
+          "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+          "path": "D:/GPTProject/value-investment/runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2025_interim_implementation.pdf",
+          "published_date": "2025-12-09",
+          "sha256": "cb0f2870dd2ed48799ec5c3403c402dc09129270b030b533818ba7b9662f0322",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2025-12-09/1224859455.PDF"
+        },
+        {
+          "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+          "available_at_conservative": "2025-05-31T00:00:00+08:00",
+          "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+          "id": "cninfo:1223718270",
+          "original_retrieved_at": null,
+          "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+          "path": "D:/GPTProject/value-investment/runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2024_final_implementation.pdf",
+          "published_date": "2025-05-30",
+          "sha256": "94999a4f3f922ab372895488f872b8be864e1f3d5f8c9c78e34d3c3dc6ae0b3f",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2025-05-30/1223718270.PDF"
+        },
+        {
+          "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+          "available_at_conservative": "2026-05-22T00:00:00+08:00",
+          "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+          "id": "cninfo:1225321219",
+          "original_retrieved_at": null,
+          "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+          "path": "D:/GPTProject/value-investment/runtime/company-research/yili-dividend-approval-202605/1225321219.pdf",
+          "published_date": "2026-05-21",
+          "sha256": "bda5690cbb6f81b591c7b731f9091d157071abed3054269000b8c690d68a8934",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-05-21/1225321219.PDF"
+        },
+        {
+          "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+          "available_at_conservative": "2026-10-02T00:00:00+08:00",
+          "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+          "id": "cninfo:1225591152",
+          "original_retrieved_at": null,
+          "parser_version": "existing_infrastructure.filings.pdf_text/PDFium",
+          "path": "D:/GPTProject/value-investment/runtime/public-event-followup-20261002/1225591152.pdf",
+          "published_date": "2026-10-01",
+          "sha256": "f59267675689f0d77cc142d91e910e2e839adfc0282a260483e0858cc82a1ba3",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-01/1225591152.PDF"
+        }
+      ],
+      "status": "SOURCE_VERIFIED_RESEARCH_SUPPLEMENT_NOT_ADMITTED",
+      "strict_pit_admitted": false,
+      "symbol": "600887",
+      "verification_scope": "LOCAL_SOURCE_BYTES_ONLY_NOT_FINANCIAL_APPROVAL"
+    },
+    "weighted_roe_2025": "0.2087"
+  },
+  "financial_summary_scope": "REPORTED_DERIVED_AND_RESEARCH_FIELDS_RETAIN_ORIGINAL_CLASSIFICATION",
+  "assumptions": [
+    {
+      "name": "cost_of_equity",
+      "classification": "VALUATION_ASSUMPTION_NOT_OFFICIAL_FACT",
+      "values": {
+        "bear": "0.10",
+        "base": "0.09",
+        "bull": "0.08",
+        "unit": "ratio"
+      },
+      "basis": "pending_finite_shared_model_choice_not_official_forecast",
+      "rationale_and_countercase": "盈利条件保留一年，再用三年全资本ROE衰减至权益成本；不假定永久超额回报。 反证：盈利下降、减值及融资约束可能使短期持续性也无法成立。",
+      "as_of": "2026-10-21",
+      "valuation_impact": "high",
+      "confidence": "low",
+      "consumption_bindings": [
+        {
+          "assumption_name": "cost_of_equity",
+          "scenario": "bear",
+          "field_path": "cost_of_equity",
+          "expected_value": "0.10",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "cost_of_equity",
+          "scenario": "base",
+          "field_path": "cost_of_equity",
+          "expected_value": "0.09",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "cost_of_equity",
+          "scenario": "bull",
+          "field_path": "cost_of_equity",
+          "expected_value": "0.08",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3",
+          "source_kind": "research_artifact",
+          "public_available_at": "2026-10-21T16:39:10.949988+00:00",
+          "published_at": null,
+          "source_url": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "locator_status": "LOCATOR_NOT_IN_REFERENCE",
+          "semantic_approval": "NOT_GRANTED_BY_FILE_VERIFICATION"
+        }
+      ],
+      "review_status": "CONDITIONAL_RESEARCH_REQUIRES_EXACT_VERSION_APPROVAL",
+      "blockers": []
+    },
+    {
+      "name": "terminal_roe",
+      "classification": "VALUATION_ASSUMPTION_NOT_OFFICIAL_FACT",
+      "values": {
+        "bear": "0.10",
+        "base": "0.09",
+        "bull": "0.08",
+        "unit": "ratio"
+      },
+      "basis": "pending_finite_shared_model_choice_not_official_forecast",
+      "rationale_and_countercase": "盈利条件保留一年，再用三年全资本ROE衰减至权益成本；不假定永久超额回报。 反证：盈利下降、减值及融资约束可能使短期持续性也无法成立。",
+      "as_of": "2026-10-21",
+      "valuation_impact": "high",
+      "confidence": "low",
+      "consumption_bindings": [
+        {
+          "assumption_name": "terminal_roe",
+          "scenario": "bear",
+          "field_path": "terminal_roe",
+          "expected_value": "0.10",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "terminal_roe",
+          "scenario": "base",
+          "field_path": "terminal_roe",
+          "expected_value": "0.09",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "terminal_roe",
+          "scenario": "bull",
+          "field_path": "terminal_roe",
+          "expected_value": "0.08",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3",
+          "source_kind": "research_artifact",
+          "public_available_at": "2026-10-21T16:39:10.949988+00:00",
+          "published_at": null,
+          "source_url": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "locator_status": "LOCATOR_NOT_IN_REFERENCE",
+          "semantic_approval": "NOT_GRANTED_BY_FILE_VERIFICATION"
+        }
+      ],
+      "review_status": "CONDITIONAL_RESEARCH_REQUIRES_EXACT_VERSION_APPROVAL",
+      "blockers": []
+    },
+    {
+      "name": "terminal_growth",
+      "classification": "VALUATION_ASSUMPTION_NOT_OFFICIAL_FACT",
+      "values": {
+        "bear": "0",
+        "base": "0",
+        "bull": "0",
+        "unit": "ratio"
+      },
+      "basis": "pending_finite_shared_model_choice_not_official_forecast",
+      "rationale_and_countercase": "盈利条件保留一年，再用三年全资本ROE衰减至权益成本；不假定永久超额回报。 反证：盈利下降、减值及融资约束可能使短期持续性也无法成立。",
+      "as_of": "2026-10-21",
+      "valuation_impact": "high",
+      "confidence": "low",
+      "consumption_bindings": [
+        {
+          "assumption_name": "terminal_growth",
+          "scenario": "bear",
+          "field_path": "terminal_growth",
+          "expected_value": "0",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "terminal_growth",
+          "scenario": "base",
+          "field_path": "terminal_growth",
+          "expected_value": "0",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "terminal_growth",
+          "scenario": "bull",
+          "field_path": "terminal_growth",
+          "expected_value": "0",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3",
+          "source_kind": "research_artifact",
+          "public_available_at": "2026-10-21T16:39:10.949988+00:00",
+          "published_at": null,
+          "source_url": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "locator_status": "LOCATOR_NOT_IN_REFERENCE",
+          "semantic_approval": "NOT_GRANTED_BY_FILE_VERIFICATION"
+        }
+      ],
+      "review_status": "CONDITIONAL_RESEARCH_REQUIRES_EXACT_VERSION_APPROVAL",
+      "blockers": []
+    },
+    {
+      "name": "retention",
+      "classification": "VALUATION_ASSUMPTION_NOT_OFFICIAL_FACT",
+      "values": {
+        "bear": "0.20",
+        "base": "0.15",
+        "bull": "0.10",
+        "unit": "ratio"
+      },
+      "basis": "pending_finite_shared_model_choice_not_official_forecast",
+      "rationale_and_countercase": "盈利条件保留一年，再用三年全资本ROE衰减至权益成本；不假定永久超额回报。 反证：盈利下降、减值及融资约束可能使短期持续性也无法成立。",
+      "as_of": "2026-10-21",
+      "valuation_impact": "high",
+      "confidence": "low",
+      "consumption_bindings": [
+        {
+          "assumption_name": "retention",
+          "scenario": "bear",
+          "field_path": "retention",
+          "expected_value": "0.20",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "retention",
+          "scenario": "base",
+          "field_path": "retention",
+          "expected_value": "0.15",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "retention",
+          "scenario": "bull",
+          "field_path": "retention",
+          "expected_value": "0.10",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3",
+          "source_kind": "research_artifact",
+          "public_available_at": "2026-10-21T16:39:10.949988+00:00",
+          "published_at": null,
+          "source_url": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "locator_status": "LOCATOR_NOT_IN_REFERENCE",
+          "semantic_approval": "NOT_GRANTED_BY_FILE_VERIFICATION"
+        }
+      ],
+      "review_status": "CONDITIONAL_RESEARCH_REQUIRES_EXACT_VERSION_APPROVAL",
+      "blockers": []
+    },
+    {
+      "name": "forecast_roes_0",
+      "classification": "VALUATION_ASSUMPTION_NOT_OFFICIAL_FACT",
+      "values": {
+        "bear": "0.170640756897217935751938067909694803009634988837",
+        "base": "0.179621849365492563949408492536520845273299988250",
+        "bull": "0.185010504846457340867890747312616470631498987897",
+        "unit": "ratio"
+      },
+      "basis": "pending_finite_shared_model_choice_not_official_forecast",
+      "rationale_and_countercase": "盈利条件保留一年，再用三年全资本ROE衰减至权益成本；不假定永久超额回报。 反证：盈利下降、减值及融资约束可能使短期持续性也无法成立。",
+      "as_of": "2026-10-21",
+      "valuation_impact": "high",
+      "confidence": "low",
+      "consumption_bindings": [
+        {
+          "assumption_name": "forecast_roes_0",
+          "scenario": "bear",
+          "field_path": "forecast_roes.0",
+          "expected_value": "0.170640756897217935751938067909694803009634988837",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "forecast_roes_0",
+          "scenario": "base",
+          "field_path": "forecast_roes.0",
+          "expected_value": "0.179621849365492563949408492536520845273299988250",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "forecast_roes_0",
+          "scenario": "bull",
+          "field_path": "forecast_roes.0",
+          "expected_value": "0.185010504846457340867890747312616470631498987897",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3",
+          "source_kind": "research_artifact",
+          "public_available_at": "2026-10-21T16:39:10.949988+00:00",
+          "published_at": null,
+          "source_url": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "locator_status": "LOCATOR_NOT_IN_REFERENCE",
+          "semantic_approval": "NOT_GRANTED_BY_FILE_VERIFICATION"
+        }
+      ],
+      "review_status": "CONDITIONAL_RESEARCH_REQUIRES_EXACT_VERSION_APPROVAL",
+      "blockers": []
+    },
+    {
+      "name": "forecast_roes_1",
+      "classification": "VALUATION_ASSUMPTION_NOT_OFFICIAL_FACT",
+      "values": {
+        "bear": "0.147093837931478623834625378606463202006423325891",
+        "base": "0.149747899576995042632938995024347230182199992167",
+        "bull": "0.150007003230971560578593831541744313754332658598",
+        "unit": "ratio"
+      },
+      "basis": "pending_finite_shared_model_choice_not_official_forecast",
+      "rationale_and_countercase": "盈利条件保留一年，再用三年全资本ROE衰减至权益成本；不假定永久超额回报。 反证：盈利下降、减值及融资约束可能使短期持续性也无法成立。",
+      "as_of": "2026-10-21",
+      "valuation_impact": "high",
+      "confidence": "low",
+      "consumption_bindings": [
+        {
+          "assumption_name": "forecast_roes_1",
+          "scenario": "bear",
+          "field_path": "forecast_roes.1",
+          "expected_value": "0.147093837931478623834625378606463202006423325891",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "forecast_roes_1",
+          "scenario": "base",
+          "field_path": "forecast_roes.1",
+          "expected_value": "0.149747899576995042632938995024347230182199992167",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "forecast_roes_1",
+          "scenario": "bull",
+          "field_path": "forecast_roes.1",
+          "expected_value": "0.150007003230971560578593831541744313754332658598",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3",
+          "source_kind": "research_artifact",
+          "public_available_at": "2026-10-21T16:39:10.949988+00:00",
+          "published_at": null,
+          "source_url": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "locator_status": "LOCATOR_NOT_IN_REFERENCE",
+          "semantic_approval": "NOT_GRANTED_BY_FILE_VERIFICATION"
+        }
+      ],
+      "review_status": "CONDITIONAL_RESEARCH_REQUIRES_EXACT_VERSION_APPROVAL",
+      "blockers": []
+    },
+    {
+      "name": "forecast_roes_2",
+      "classification": "VALUATION_ASSUMPTION_NOT_OFFICIAL_FACT",
+      "values": {
+        "bear": "0.123546918965739311917312689303231601003211662946",
+        "base": "0.119873949788497521316469497512173615091099996083",
+        "bull": "0.115003501615485780289296915770872156877166329299",
+        "unit": "ratio"
+      },
+      "basis": "pending_finite_shared_model_choice_not_official_forecast",
+      "rationale_and_countercase": "盈利条件保留一年，再用三年全资本ROE衰减至权益成本；不假定永久超额回报。 反证：盈利下降、减值及融资约束可能使短期持续性也无法成立。",
+      "as_of": "2026-10-21",
+      "valuation_impact": "high",
+      "confidence": "low",
+      "consumption_bindings": [
+        {
+          "assumption_name": "forecast_roes_2",
+          "scenario": "bear",
+          "field_path": "forecast_roes.2",
+          "expected_value": "0.123546918965739311917312689303231601003211662946",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "forecast_roes_2",
+          "scenario": "base",
+          "field_path": "forecast_roes.2",
+          "expected_value": "0.119873949788497521316469497512173615091099996083",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "forecast_roes_2",
+          "scenario": "bull",
+          "field_path": "forecast_roes.2",
+          "expected_value": "0.115003501615485780289296915770872156877166329299",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3",
+          "source_kind": "research_artifact",
+          "public_available_at": "2026-10-21T16:39:10.949988+00:00",
+          "published_at": null,
+          "source_url": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "locator_status": "LOCATOR_NOT_IN_REFERENCE",
+          "semantic_approval": "NOT_GRANTED_BY_FILE_VERIFICATION"
+        }
+      ],
+      "review_status": "CONDITIONAL_RESEARCH_REQUIRES_EXACT_VERSION_APPROVAL",
+      "blockers": []
+    },
+    {
+      "name": "forecast_roes_3",
+      "classification": "VALUATION_ASSUMPTION_NOT_OFFICIAL_FACT",
+      "values": {
+        "bear": "0.100000000000000000000000000000000000000000000000",
+        "base": "0.090000000000000000000000000000000000000000000000",
+        "bull": "0.080000000000000000000000000000000000000000000000",
+        "unit": "ratio"
+      },
+      "basis": "pending_finite_shared_model_choice_not_official_forecast",
+      "rationale_and_countercase": "盈利条件保留一年，再用三年全资本ROE衰减至权益成本；不假定永久超额回报。 反证：盈利下降、减值及融资约束可能使短期持续性也无法成立。",
+      "as_of": "2026-10-21",
+      "valuation_impact": "high",
+      "confidence": "low",
+      "consumption_bindings": [
+        {
+          "assumption_name": "forecast_roes_3",
+          "scenario": "bear",
+          "field_path": "forecast_roes.3",
+          "expected_value": "0.100000000000000000000000000000000000000000000000",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "forecast_roes_3",
+          "scenario": "base",
+          "field_path": "forecast_roes.3",
+          "expected_value": "0.090000000000000000000000000000000000000000000000",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        },
+        {
+          "assumption_name": "forecast_roes_3",
+          "scenario": "bull",
+          "field_path": "forecast_roes.3",
+          "expected_value": "0.080000000000000000000000000000000000000000000000",
+          "evidence_refs": [
+            {
+              "id": "pending-economic-proposal",
+              "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+              "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+            }
+          ]
+        }
+      ],
+      "source_refs": [
+        {
+          "id": "pending-economic-proposal",
+          "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3",
+          "source_kind": "research_artifact",
+          "public_available_at": "2026-10-21T16:39:10.949988+00:00",
+          "published_at": null,
+          "source_url": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+          "locator_status": "LOCATOR_NOT_IN_REFERENCE",
+          "semantic_approval": "NOT_GRANTED_BY_FILE_VERIFICATION"
+        }
+      ],
+      "review_status": "CONDITIONAL_RESEARCH_REQUIRES_EXACT_VERSION_APPROVAL",
+      "blockers": []
+    }
+  ],
+  "model_validity": null,
+  "gate": {
+    "symbol": "600887",
+    "results": {
+      "G0_证据门": true,
+      "G1_财务门": true,
+      "G2_商业论点门": true,
+      "G3_估值门": false
+    },
+    "blockers": [
+      "formal G3 human valuation approval not present",
+      "issuer-specific beta evidence missing; generic beta=1 assumption used",
+      "ROIC and incremental ROIC remain unverified",
+      "H1 2026 interim report is unaudited",
+      "pending_economic_model_review",
+      "pending_complete_event_materiality_review",
+      "G3_估值门"
+    ],
+    "conclusion": "估值未就绪"
+  },
+  "human_review_items": [],
+  "limited_financial_acceptance": {},
+  "strongest_counterevidence": [
+    {
+      "evidence_refs": [
+        "yili_2026h1"
+      ],
+      "kind": "fact",
+      "text": "2026H1 收入 +4.13%，归母净利润 -20.02%，扣非归母净利润 -20.25%；加权平均 ROE 10.09%。"
+    },
+    {
+      "evidence_refs": [
+        "yili_2026h1"
+      ],
+      "kind": "fact",
+      "text": "2026H1 计提商誉减值 15.47 亿元、资产减值合计 24.56 亿元；合同负债较期初下降 53.15%。"
+    },
+    {
+      "evidence_refs": [
+        "yili_2026h1",
+        "yili_fy2025_annual"
+      ],
+      "kind": "interpretation",
+      "text": "利润下行与减值说明历史 ROE 不能机械外推；模型必须使用更低的预测 ROE 和显式品牌再投资风险。"
+    },
+    {
+      "evidence_refs": [
+        "prior-3ec6e2c95534-pending-economic-proposal"
+      ],
+      "kind": "hypothesis",
+      "text": "盈利下降、减值及融资约束可能使短期持续性也无法成立。"
+    },
+    {
+      "evidence_refs": [
+        "pending-economic-proposal"
+      ],
+      "kind": "hypothesis",
+      "text": "盈利下降、减值及融资约束可能使短期持续性也无法成立。"
+    }
+  ],
+  "next_triggers": [
+    {
+      "evidence_refs": [
+        "yili_2026h1"
+      ],
+      "kind": "fact",
+      "text": "观察下一份法定财务报告的收入、分产品毛利率、经营现金流、合同负债、应收和短期借款。"
+    },
+    {
+      "kind": "gap",
+      "text": "补充普通股分母、可分配现金和回购/分红执行情况后再做正式人工批准。"
+    }
+  ],
+  "decision_blockers": [
+    "formal G3 human valuation approval not present",
+    "issuer-specific beta evidence missing; generic beta=1 assumption used",
+    "ROIC and incremental ROIC remain unverified",
+    "H1 2026 interim report is unaudited",
+    "pending_economic_model_review",
+    "pending_complete_event_materiality_review",
+    "G3_估值门",
+    "等待已验证收盘行情",
+    "price_bridge_pending_external_data",
+    "research_case:formal G3 human valuation approval not present",
+    "research_case:issuer-specific beta evidence missing; generic beta=1 assumption used",
+    "research_case:ROIC and incremental ROIC remain unverified",
+    "research_case:H1 2026 interim report is unaudited",
+    "research_case:pending_economic_model_review",
+    "research_case:pending_complete_event_materiality_review",
+    "research_case_valuation_not_approved",
+    "valuation_status_not_approved_for_research",
+    "model_validity_unavailable",
+    "event_materiality_review_unavailable",
+    "decision_dependency_artifacts_unavailable",
+    "predecision_eligibility_unavailable",
+    "human_research_approval_not_resolved"
+  ],
+  "valuation_status": "conditional_research_only",
+  "research_admitted": false,
+  "approval_changed": false,
+  "position_guidance": null,
+  "canonical_written": false,
+  "source_bindings": [
+    {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/package.json",
+      "sha256": "32ae408776c9efd2ab7a492926db035af85a3ce86d93229ea1a0e2c93479a91c"
+    },
+    {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/workbench.json",
+      "sha256": "8f833e5c130db25facee6b8256ba6a50f6a6b1e77c071f554d2bf1ae1224ed72"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+    },
+    {
+      "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+      "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+    },
+    {
+      "path": "runtime/quote-sessions/20260923T005634211464Z/bundle.json",
+      "sha256": "5e49dc79bbc0132b040175e993e2f5dd5a3813c7167ade7aa2afc5c51cea19c0"
+    },
+    {
+      "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/600887-page-1.raw.json",
+      "sha256": "39d77daaf05127dd8e9628c5579d061999df88f430226c197cd3c9e342f0d6a5"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index/response-0002.bin",
+      "sha256": "4e24e0ad3a1ed1e3060d485c10964d41a3c7cf493b47bbf554e280a5ab8c9107"
+    },
+    {
+      "path": "config/m1-valuation-packages-v1/600887-quality-compounder.json",
+      "sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803"
+    },
+    {
+      "path": "config/research-proposals/600887-20261011-v3.json",
+      "sha256": "fc7dba372686f7fefb17364546046ae9bc8b2cd9eef29431a3ad2d83e6aa0edb"
+    },
+    {
+      "path": "docs/current/600887-current-financial-review-20261011.md",
+      "sha256": "5241cd6420eb497bf5450d43bced4c35703d562db0e8762460b2af93bd0a7427"
+    },
+    {
+      "path": "docs/current/600887-economic-closure-review-20261011.md",
+      "sha256": "6bc1bb2886e7c783119a51ad57bc5a7c146a105164db42c3f6e66176c27d45e6"
+    },
+    {
+      "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/index.json",
+      "sha256": "172808bcfe7069e5e30017136089764804a7edb4b2370422703ef79b3d10f54a"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index-manifest.json",
+      "sha256": "2378d8dac7ef431ab416944b850a2565382f41170cce86fd2153a3ed99c0bd3f"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/manifest.json",
+      "sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/facts.json",
+      "sha256": "fb07bf552d84dc41ddd58fd2088aafb33a3196d9679baaaa85c029739ac335f7"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/report.md",
+      "sha256": "f6ced418424cdfec55e4d92f01121abfbe117b4a6c20fe1d920fecf95b49a2e3"
+    },
+    {
+      "path": "scripts/research_cases/yili/build_yili_current_fact_review.py",
+      "sha256": "5c89272af435024ef17e742906f559a801c621f9b3f38dfb87323af9289e7529"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+    },
+    {
+      "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+      "sha256": "76ab1d93a88c8d5955ecded565b7fb79fcbcc731a48efac8928f503c37ec04c1"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+    },
+    {
+      "path": "runtime/company-research/m1-dividend-followup-20260928/600887/yili-fy2025-final-dividend-implementation.pdf",
+      "sha256": "c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70"
+    },
+    {
+      "path": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2025_interim_implementation.pdf",
+      "sha256": "cb0f2870dd2ed48799ec5c3403c402dc09129270b030b533818ba7b9662f0322"
+    },
+    {
+      "path": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2024_final_implementation.pdf",
+      "sha256": "94999a4f3f922ab372895488f872b8be864e1f3d5f8c9c78e34d3c3dc6ae0b3f"
+    },
+    {
+      "path": "runtime/company-research/yili-dividend-approval-202605/1225321219.pdf",
+      "sha256": "bda5690cbb6f81b591c7b731f9091d157071abed3054269000b8c690d68a8934"
+    },
+    {
+      "path": "runtime/public-event-followup-20261002/1225591152.pdf",
+      "sha256": "f59267675689f0d77cc142d91e910e2e839adfc0282a260483e0858cc82a1ba3"
+    },
+    {
+      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/acquisition-receipt.json",
+      "sha256": "1e045e881c96f42fff410610c1d7170a1f04890e8459842a1b1af6f106f32657"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/source_reobservation.py",
+      "sha256": "d2e5e61585321f6f10a07a5d31937dd37363c670264d8ed039d9c251598d8555"
+    },
+    {
+      "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
+      "sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5"
+    },
+    {
+      "path": "config/research-proposals/600887-20261011-v3.json",
+      "sha256": "fc7dba372686f7fefb17364546046ae9bc8b2cd9eef29431a3ad2d83e6aa0edb"
+    },
+    {
+      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/prior-case-registry.json",
+      "sha256": "bcd27349fb18aa17dd4f17820e642d7d07c8865a1652abe0b1a78e9f4aed2996"
+    },
+    {
+      "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/manifest.json",
+      "sha256": "1d2d17b65d22a770fb3417ade7ae6599586b2a85de805077db7e6847030b852b"
+    },
+    {
+      "path": "scripts/build_moutai_consolidated_equity_discount_range.py",
+      "sha256": "101ae422674ab2d7b993939aa485ab482eead32684a5741c38f19a1d52534339"
+    },
+    {
+      "path": "runtime/company-research/600519-consolidated-parent-equity-model-feasibility-20260914T104237Z/evidence.json",
+      "sha256": "fd701df519ec2bb5734e1faa9306b9914fa16f0aa5ee5fefc1b788d2019ba00f"
+    },
+    {
+      "path": "runtime/valuation-research/moutai-discount-basis-20260909T120002401955Z/evidence.json",
+      "sha256": "6dea599866140d28b7058d60b7c9a0d235aaed1def4df902011fc46e854de709"
+    },
+    {
+      "path": "runtime/valuation-research/moutai-market-beta-20260912T161052067136Z/evidence.json",
+      "sha256": "edb4592aa6a5d81f5f8c5e9c8c48578950d0b59f65b79f9db6f3b173546c7a3c"
+    },
+    {
+      "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/600887-page-1.raw.json",
+      "sha256": "39d77daaf05127dd8e9628c5579d061999df88f430226c197cd3c9e342f0d6a5"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index/response-0002.bin",
+      "sha256": "4e24e0ad3a1ed1e3060d485c10964d41a3c7cf493b47bbf554e280a5ab8c9107"
+    },
+    {
+      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/package.json",
+      "sha256": "3cdc95e1c08dfa09ed19a8ae056cc4331cb020483aa841a381539df4148b7e98"
+    },
+    {
+      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/policy.json",
+      "sha256": "215d53e30e3ffc5c19fe26d6f631cb41506d8e24ef7b32bf11d4ba55645ef96f"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+    },
+    {
+      "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+      "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+    },
+    {
+      "path": "runtime/quote-sessions/20260923T005634211464Z/bundle.json",
+      "sha256": "5e49dc79bbc0132b040175e993e2f5dd5a3813c7167ade7aa2afc5c51cea19c0"
+    },
+    {
+      "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/600887-page-1.raw.json",
+      "sha256": "39d77daaf05127dd8e9628c5579d061999df88f430226c197cd3c9e342f0d6a5"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index/response-0002.bin",
+      "sha256": "4e24e0ad3a1ed1e3060d485c10964d41a3c7cf493b47bbf554e280a5ab8c9107"
+    },
+    {
+      "path": "config/m1-valuation-packages-v1/600887-quality-compounder.json",
+      "sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803"
+    },
+    {
+      "path": "config/research-proposals/600887-20261011-v3.json",
+      "sha256": "fc7dba372686f7fefb17364546046ae9bc8b2cd9eef29431a3ad2d83e6aa0edb"
+    },
+    {
+      "path": "docs/current/600887-current-financial-review-20261011.md",
+      "sha256": "5241cd6420eb497bf5450d43bced4c35703d562db0e8762460b2af93bd0a7427"
+    },
+    {
+      "path": "docs/current/600887-economic-closure-review-20261011.md",
+      "sha256": "6bc1bb2886e7c783119a51ad57bc5a7c146a105164db42c3f6e66176c27d45e6"
+    },
+    {
+      "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/index.json",
+      "sha256": "172808bcfe7069e5e30017136089764804a7edb4b2370422703ef79b3d10f54a"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index-manifest.json",
+      "sha256": "2378d8dac7ef431ab416944b850a2565382f41170cce86fd2153a3ed99c0bd3f"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/manifest.json",
+      "sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/facts.json",
+      "sha256": "fb07bf552d84dc41ddd58fd2088aafb33a3196d9679baaaa85c029739ac335f7"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/report.md",
+      "sha256": "f6ced418424cdfec55e4d92f01121abfbe117b4a6c20fe1d920fecf95b49a2e3"
+    },
+    {
+      "path": "scripts/research_cases/yili/build_yili_current_fact_review.py",
+      "sha256": "5c89272af435024ef17e742906f559a801c621f9b3f38dfb87323af9289e7529"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+    },
+    {
+      "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+      "sha256": "76ab1d93a88c8d5955ecded565b7fb79fcbcc731a48efac8928f503c37ec04c1"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+    },
+    {
+      "path": "runtime/company-research/m1-dividend-followup-20260928/600887/yili-fy2025-final-dividend-implementation.pdf",
+      "sha256": "c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70"
+    },
+    {
+      "path": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2025_interim_implementation.pdf",
+      "sha256": "cb0f2870dd2ed48799ec5c3403c402dc09129270b030b533818ba7b9662f0322"
+    },
+    {
+      "path": "runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2024_final_implementation.pdf",
+      "sha256": "94999a4f3f922ab372895488f872b8be864e1f3d5f8c9c78e34d3c3dc6ae0b3f"
+    },
+    {
+      "path": "runtime/company-research/yili-dividend-approval-202605/1225321219.pdf",
+      "sha256": "bda5690cbb6f81b591c7b731f9091d157071abed3054269000b8c690d68a8934"
+    },
+    {
+      "path": "runtime/public-event-followup-20261002/1225591152.pdf",
+      "sha256": "f59267675689f0d77cc142d91e910e2e839adfc0282a260483e0858cc82a1ba3"
+    },
+    {
+      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/acquisition-receipt.json",
+      "sha256": "1e045e881c96f42fff410610c1d7170a1f04890e8459842a1b1af6f106f32657"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/source_reobservation.py",
+      "sha256": "d2e5e61585321f6f10a07a5d31937dd37363c670264d8ed039d9c251598d8555"
+    },
+    {
+      "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
+      "sha256": "3ec6e2c955343ccf287dcbeafc4beff7ac49f114f5ddc85679845e69422a25b5"
+    },
+    {
+      "path": "config/research-proposals/600887-20261011-v3.json",
+      "sha256": "fc7dba372686f7fefb17364546046ae9bc8b2cd9eef29431a3ad2d83e6aa0edb"
+    },
+    {
+      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/prior-case-registry.json",
+      "sha256": "bcd27349fb18aa17dd4f17820e642d7d07c8865a1652abe0b1a78e9f4aed2996"
+    },
+    {
+      "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/manifest.json",
+      "sha256": "1d2d17b65d22a770fb3417ade7ae6599586b2a85de805077db7e6847030b852b"
+    },
+    {
+      "path": "scripts/build_moutai_consolidated_equity_discount_range.py",
+      "sha256": "101ae422674ab2d7b993939aa485ab482eead32684a5741c38f19a1d52534339"
+    },
+    {
+      "path": "runtime/company-research/600519-consolidated-parent-equity-model-feasibility-20260914T104237Z/evidence.json",
+      "sha256": "fd701df519ec2bb5734e1faa9306b9914fa16f0aa5ee5fefc1b788d2019ba00f"
+    },
+    {
+      "path": "runtime/valuation-research/moutai-discount-basis-20260909T120002401955Z/evidence.json",
+      "sha256": "6dea599866140d28b7058d60b7c9a0d235aaed1def4df902011fc46e854de709"
+    },
+    {
+      "path": "runtime/valuation-research/moutai-market-beta-20260912T161052067136Z/evidence.json",
+      "sha256": "edb4592aa6a5d81f5f8c5e9c8c48578950d0b59f65b79f9db6f3b173546c7a3c"
+    },
+    {
+      "path": "docs/current/600887-current-financial-review-20261011.md",
+      "sha256": "5241cd6420eb497bf5450d43bced4c35703d562db0e8762460b2af93bd0a7427"
+    },
+    {
+      "path": "docs/current/600887-economic-closure-review-20261011.md",
+      "sha256": "6bc1bb2886e7c783119a51ad57bc5a7c146a105164db42c3f6e66176c27d45e6"
+    },
+    {
+      "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/index.json",
+      "sha256": "172808bcfe7069e5e30017136089764804a7edb4b2370422703ef79b3d10f54a"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index-manifest.json",
+      "sha256": "2378d8dac7ef431ab416944b850a2565382f41170cce86fd2153a3ed99c0bd3f"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/manifest.json",
+      "sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/facts.json",
+      "sha256": "fb07bf552d84dc41ddd58fd2088aafb33a3196d9679baaaa85c029739ac335f7"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/report.md",
+      "sha256": "f6ced418424cdfec55e4d92f01121abfbe117b4a6c20fe1d920fecf95b49a2e3"
+    },
+    {
+      "path": "scripts/research_cases/yili/build_yili_current_fact_review.py",
+      "sha256": "5c89272af435024ef17e742906f559a801c621f9b3f38dfb87323af9289e7529"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+    },
+    {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/valuation-proposal.json",
+      "sha256": "00fcb5519b35f40a7af1b6194589cd75ba2126387a3ad1014e5ef095453337b3"
+    },
+    {
+      "path": "runtime/quote-sessions/20261021T071245186709Z/bundle.json",
+      "sha256": "24bad37225ee06786cea3d8b3d7c2db0aca7881816060bb7164b5beca2ac8dad"
+    },
+    {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/event-scan.json",
+      "sha256": "fbe2e916a74c04e36be11b062c7fbcfdd54319d37604d5a4a56289a4c7f47ae9"
+    }
+  ],
+  "assurance_limits": [
+    "File hashes do not verify economic explanations.",
+    "Missing page/table locators remain explicit; no locator or approval is fabricated.",
+    "Assumption values are consumed model conditions, not disclosed forecasts or buying prices."
+  ]
+}
