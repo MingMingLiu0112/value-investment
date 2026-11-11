@@ -527,6 +527,11 @@ jobs:
           tests/test_notice_task_dispatch_v1.py
           tests/test_operating_horizon_sources_v10_q3_ocr.py
           tests/test_operating_cash_policy_task_v4_q3_ocr.py
+          tests/test_parent_wc_history_600519_v1.py
+          tests/test_parent_wc_balance_request_v1.py
+          tests/test_operating_q3_cash_wc_task_v1.py
+          tests/test_operating_horizon_task_v5_wc.py
+          tests/test_operating_horizon_cash_policy_e2_v1.py
           tests/web_api/test_live_operating_research_api.py
           tests/web_api/test_operating_cash_consumption_api.py
           tests/test_first_research_input_v1.py
