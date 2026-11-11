@@ -35,27 +35,24 @@ def test_v13_import_api_derives_sealed_v12_pins_and_is_idempotent(api, monkeypat
         task_contract=v12.CONTRACT, source_loader_binding=dict(version=q3_v8.VERSION))), encoding="utf-8")
     calls = []
 
-    class Source:
-        def __init__(self, root):
-            self.base = Path(root) / "runtime" / "research-task-execution-v1" / v12.STORE
-        def _directory(self, task_id):
-            return self.base / task_id
-        def _load(self, task_id):
-            return dict(source_binding={"pinned": True}, context_sha256="b" * 64), dict(
-                stage_validated=["annual"], stage_intents={"annual": {"reservation": "r"}},
-                reservations={"r": {"budget_day": "2026-11-12"}}), {}
-        def _packet(self, spec, state, stage):
-            return {"response": {"text": "sealed annual"}}
+    def sealed_source(self, task_id):
+        return dict(source_binding={"pinned": True}, context_sha256="b" * 64), dict(
+            stage_validated=["annual"], stage_intents={"annual": {"reservation": "r"}},
+            reservations={"r": {"budget_day": "2026-11-12"}}), {}
 
-    class Target:
-        def __init__(self, root): pass
-        def create_imported(self, **kwargs):
-            calls.append(kwargs)
-            return dict(task_id="rt-" + "c" * 32, status="FAILED", action="no_order",
-                formal_eligibility=False, task_contract=v13.CONTRACT)
+    def sealed_packet(self, spec, state, stage):
+        return {"response": {"text": "sealed annual"}}
 
-    monkeypatch.setattr(v12, "OperatingHorizonTaskService", Source)
-    monkeypatch.setattr(v13, "OperatingHorizonTaskService", Target)
+    def imported_target(self, **kwargs):
+        calls.append(kwargs)
+        return dict(task_id="rt-" + "c" * 32, status="FAILED", action="no_order",
+            formal_eligibility=False, task_contract=v13.CONTRACT)
+
+    # Routes capture the service classes at registration time. Patch the actual
+    # methods used by those captured classes rather than swapping module names.
+    monkeypatch.setattr(v12.OperatingHorizonTaskService, "_load", sealed_source)
+    monkeypatch.setattr(v12.OperatingHorizonTaskService, "_packet", sealed_packet)
+    monkeypatch.setattr(v13.OperatingHorizonTaskService, "create_imported", imported_target)
     path = BASE + "/horizon-cash-policy-tasks/import-v12"
     body = dict(source_task_id=source_id, request_key="IMPORT_V12_01")
     assert client.post(path, json=body).status_code == 401
