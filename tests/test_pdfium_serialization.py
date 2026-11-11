@@ -129,5 +129,6 @@ def test_new_native_pdfium_calls_require_shared_serialization():
         ('infrastructure/filings/official_halfyear_shares_ocr_v2.py', '_read_pdfium_pages'),
         ('infrastructure/filings/official_halfyear_shares_ocr_sealer_v2.py', 'seal'),
         ('application/research/quarter_financial_ocr_v1.py', '_render_and_native'),
+        ('application/research/current_capital_q3_h1_bridge_v1.py', '_pdf_evidence'),
     }
     assert len(calls) == len(sites)
