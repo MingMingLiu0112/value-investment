@@ -86,7 +86,16 @@ def public_get(case):
         assert body['research_draft'] == original[0]['research_draft']
         assert body['independent_review'] == original[0]['independent_review']
         for key, value in siblings.items():
-            assert body[key] == value
+            if key == 'cash_consumption':
+                for field, expected in value.items():
+                    assert body[key][field] == expected
+                assert body[key]['annual_research_supplement'] == {
+                    'status': 'NOT_STARTED', 'action': 'no_order', 'years': {},
+                }
+                assert body[key]['preceding_consumption_fingerprint'] is None
+                assert len(body[key]['consumption_fingerprint']) == 64
+            else:
+                assert body[key] == value
     return responses[-1].json()
 
 
