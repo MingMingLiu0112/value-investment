@@ -14,6 +14,7 @@ const SPLIT_CONTRACT = "operating-horizon-task-v6-split" as const;
 const ANCHORED_SPLIT_CONTRACT = "operating-horizon-task-v7-split" as const;
 const V10_CONTRACT = "operating-horizon-task-v10-2027-live" as const;
 const V11_CONTRACT = "operating-horizon-task-v11-2027-live" as const;
+const V11_WC_SOURCE = "operating-q3-issuer-wc-loader-v9-600519" as const;
 type CashKind =
   "annual" | "compact" | "parentWC" | "split" | "anchoredSplit" | "v10" | "v11";
 
@@ -92,6 +93,7 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
       | "startParentWC"
       | "startSplit"
       | "startAnchoredSplit"
+      | "startV11WC"
       | "refresh"
       | "cancel"
       | "resume",
@@ -111,12 +113,14 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
           : await api.createHorizonCashPolicyTask({
               symbol,
               years: [
-                new Date().getFullYear() +
-                  (operation === "startParentWC" ||
-                  operation === "startSplit" ||
-                  operation === "startAnchoredSplit"
-                    ? 1
-                    : 0),
+                operation === "startV11WC"
+                  ? 2027
+                  : new Date().getFullYear() +
+                    (operation === "startParentWC" ||
+                    operation === "startSplit" ||
+                    operation === "startAnchoredSplit"
+                      ? 1
+                      : 0),
               ],
               request_key: "cash_" + crypto.randomUUID().replace(/-/g, ""),
               ...(operation === "startParentWC"
@@ -125,7 +129,12 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                   ? { task_contract: SPLIT_CONTRACT }
                   : operation === "startAnchoredSplit"
                     ? { task_contract: ANCHORED_SPLIT_CONTRACT }
-                    : {}),
+                    : operation === "startV11WC"
+                      ? {
+                          task_contract: V11_CONTRACT,
+                          source_loader_version: V11_WC_SOURCE,
+                        }
+                      : {}),
             })
         : operation === "refresh"
           ? await (kind === "compact"
@@ -154,7 +163,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                 ? "split"
                 : operation === "startAnchoredSplit"
                   ? "anchoredSplit"
-                  : "annual",
+                  : operation === "startV11WC"
+                    ? "v11"
+                    : "annual",
         );
     } catch (cause) {
       const reason = safeReason(cause);
@@ -321,6 +332,11 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         <Button disabled={busy || active} onClick={() => run("startParentWC")}>
           启动来源绑定的下一年度母公司资金研究
         </Button>
+        {symbol === "600519" && (
+          <Button disabled={busy || active} onClick={() => run("startV11WC")}>
+            启动2027两阶段研究（含母公司余额证据，可能计费）
+          </Button>
+        )}
         <Button disabled={busy || active} onClick={() => run("startSplit")}>
           分步研究下一年度经营与股东现金
         </Button>
@@ -381,6 +397,11 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
           恢复
         </Button>
       </Space>
+      {symbol === "600519" && (
+        <p>
+          母公司应收、存货、应付的历史余额变化只是研究风险证据，不等于未来营运资金现金流；研究成功也不授予估值或交易资格。
+        </p>
+      )}
       {history && (
         <div
           aria-label={

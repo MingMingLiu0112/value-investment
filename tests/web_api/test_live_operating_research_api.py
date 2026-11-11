@@ -111,6 +111,75 @@ def test_v11_history_read_and_e2_dispatch_exclude_test_only(tmp_path, monkeypatc
     assert ("read", test_id) not in calls
 
 
+def test_v11_parent_wc_source_dispatch_and_old_reader_remain_distinct(tmp_path, monkeypatch):
+    """TEST_ONLY transport: opt-in source cannot reinterpret historical V11 tasks."""
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v11_live as v11,
+        operating_q3_issuer_wc_loader_v9_600519 as wc,
+    )
+
+    seen = []
+    old_id, new_id = "rt-" + "c" * 32, "rt-" + "d" * 32
+
+    class Reader:
+        def __init__(self, root, *, source_loader=None, source_loader_version=None,
+                     test_provider=None):
+            self.root = Path(root)
+            self.base = self.root / "runtime" / "research-task-execution-v1" / "oh-v11-2027-live"
+            self.version = source_loader_version or v11.official.VERSION
+            self.source_loader = source_loader
+            seen.append(("init", self.version, test_provider is not None))
+
+        def _directory(self, task_id):
+            return self.base / task_id
+
+        def _load(self, task_id):
+            raw = json.loads((self._directory(task_id) / "input.json").read_bytes())
+            expected = raw.get("source_loader_binding", {}).get("version")
+            if expected != self.version:
+                raise ValueError("TEST_ONLY_LOADER_VERSION_MISMATCH")
+            return raw, {}, {}
+
+        def read(self, task_id):
+            self._load(task_id)
+            seen.append(("read", task_id, self.version))
+            return dict(task_id=task_id, symbol="600519", status="WAITING_EVIDENCE",
+                        updated_at="2026-11-11T12:00:00+00:00", action="no_order",
+                        formal_eligibility=False, condition_price=None)
+
+        def create(self, **kwargs):
+            assert self.source_loader is wc.load_current
+            seen.append(("create", self.version, kwargs["symbol"]))
+            return dict(task_id=new_id, symbol=kwargs["symbol"], status="WAITING_EVIDENCE",
+                        action="no_order", formal_eligibility=False)
+
+    monkeypatch.setattr(v11, "OperatingHorizonTaskService", Reader)
+    for task_id, version in ((old_id, v11.official.VERSION), (new_id, wc.VERSION)):
+        path = Reader(tmp_path)._directory(task_id)
+        path.mkdir(parents=True)
+        (path / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+            source_loader_binding=dict(version=version))), encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert client.get(path + "/" + new_id).status_code == 401
+    unlock(client, secret)
+    assert client.get(path + "/" + old_id).json()["task_id"] == old_id
+    assert client.get(path + "/" + new_id).json()["task_id"] == new_id
+    listed = client.get(path + "/recent").json()["items"]
+    assert {row["task_id"] for row in listed} == {old_id, new_id}
+    created = client.post(path, json=dict(symbol="600519", years=[2027],
+        request_key="TEST_ONLY_WC", task_contract=v11.CONTRACT,
+        source_loader_version=wc.VERSION))
+    assert created.status_code == 202 and created.json()["action"] == "no_order"
+    assert ("create", wc.VERSION, "600519") in seen
+    bad = client.post(path, json=dict(symbol="600519", years=[2027],
+        request_key="TEST_ONLY_WC", task_contract=v11.CONTRACT,
+        source_loader_version="unregistered-source"))
+    assert bad.status_code == 422
+
+
 def test_unauthorized_post_never_creates_or_calls_provider(api):
     client,_,data,root=api
     before=state(root)

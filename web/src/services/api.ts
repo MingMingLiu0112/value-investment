@@ -1640,7 +1640,9 @@ export const api = {
     task_contract?:
       | "operating-horizon-task-v5-parent-wc-balance"
       | "operating-horizon-task-v6-split"
-      | "operating-horizon-task-v7-split";
+      | "operating-horizon-task-v7-split"
+      | "operating-horizon-task-v11-2027-live";
+    source_loader_version?: "operating-q3-issuer-wc-loader-v9-600519";
   }) =>
     post<HorizonCashPolicyTask>(
       "operating-research/horizon-cash-policy-tasks",

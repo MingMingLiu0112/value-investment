@@ -539,6 +539,7 @@ jobs:
           tests/test_operating_horizon_annual_v3.py
           tests/test_issuer_dividend_plan_v2.py
           tests/test_operating_q3_issuer_plan_loader_v8_600519.py
+          tests/test_operating_q3_issuer_wc_loader_v9.py
           tests/test_operating_cash_policy_draft_v2.py
           tests/test_operating_horizon_split_v8.py
           tests/test_operating_horizon_task_v8_annual.py

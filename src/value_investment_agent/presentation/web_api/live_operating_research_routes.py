@@ -243,10 +243,30 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         OperatingHorizonTaskService as V10HorizonTaskService, CONTRACT as V10_CONTRACT)
     from ...application.research.agent_review.operating_horizon_task_v11_live import (
         OperatingHorizonTaskService as V11HorizonTaskService, CONTRACT as V11_CONTRACT)
+    from ...application.research.agent_review import operating_q3_issuer_wc_loader_v9_600519 as wc_v9
 
-    def live_2027_horizon(contract):
-        return (V11HorizonTaskService(project) if contract == V11_CONTRACT
-                else V10HorizonTaskService(project))
+    def live_2027_horizon(contract, *, loader_version=None, test_provider=None):
+        if contract == V11_CONTRACT:
+            if loader_version is None or loader_version == "operating-q3-issuer-plan-loader-v8-600519":
+                return V11HorizonTaskService(project, **({"test_provider": test_provider}
+                    if test_provider is not None else {}))
+            if loader_version == wc_v9.VERSION:
+                return V11HorizonTaskService(project, source_loader=wc_v9.load_current,
+                    source_loader_version=wc_v9.VERSION,
+                    **({"test_provider": test_provider} if test_provider is not None else {}))
+            raise ValueError("V11_SOURCE_LOADER_VERSION_UNSUPPORTED")
+        if loader_version is not None:
+            raise ValueError("V10_SOURCE_LOADER_VERSION_UNSUPPORTED")
+        return V10HorizonTaskService(project, **({"test_provider": test_provider}
+            if test_provider is not None else {}))
+
+    def live_2027_reader(contract, raw, *, test_provider=None):
+        binding = raw.get("source_loader_binding")
+        if binding is not None and not isinstance(binding, dict):
+            raise ValueError("V11_SOURCE_LOADER_BINDING_INVALID")
+        version = binding.get("version") if binding else None
+        return live_2027_horizon(contract, loader_version=version,
+                                 test_provider=test_provider)
 
     def live_2027_for(task_id):
         # A damaged newer task must never be read through an older store.
@@ -256,6 +276,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 raw = json.loads((selected._directory(task_id) / "input.json").read_bytes())
                 if raw.get("mode") != "LIVE_OPERATING":
                     raise ValueError("V11_TEST_ONLY_NOT_LIVE_RESEARCH")
+                selected = live_2027_reader(contract, raw)
                 selected._load(task_id)
                 return selected
         return None
@@ -276,12 +297,12 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             raw = json.loads((path / "input.json").read_bytes())
             mode = raw.get("mode")
             if mode == "TEST_ONLY_LIVE_CONTRACT":
-                test_reader = (V11HorizonTaskService(project, test_provider=object())
-                    if contract == V11_CONTRACT else V10HorizonTaskService(project, test_provider=object()))
+                test_reader = live_2027_reader(contract, raw, test_provider=object())
                 test_reader._load(path.name)
                 continue
             if mode != "LIVE_OPERATING":
                 raise ValueError("V11_TASK_MODE_INVALID")
+            selected = live_2027_reader(contract, raw)
             selected._load(path.name)
             item = selected.read(path.name)
             if symbol is None or item["symbol"] == symbol:
@@ -497,6 +518,10 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 and body["task_contract"] in (PARENT_WC_CONTRACT, SPLIT_CONTRACT,
                                               ANCHORED_SPLIT_CONTRACT):
             return {key: body[key] for key in ("symbol", "request_key", "years")}
+        if allow_v5 and fields == {"symbol", "request_key", "years", "task_contract", "source_loader_version"} \
+                and body["task_contract"] == V11_CONTRACT \
+                and body["source_loader_version"] == wc_v9.VERSION:
+            return {key: body[key] for key in ("symbol", "request_key", "years")}
         else:
             raise ValueError("HORIZON_CASH_POLICY_REQUEST_INVALID")
 
@@ -513,7 +538,10 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 split_horizon() if isinstance(body, dict)
                 and body.get("task_contract") == SPLIT_CONTRACT else
                 parent_wc_horizon() if isinstance(body, dict)
-                and body.get("task_contract") == PARENT_WC_CONTRACT else horizon_cash_policy)
+                and body.get("task_contract") == PARENT_WC_CONTRACT else
+                live_2027_horizon(V11_CONTRACT, loader_version=wc_v9.VERSION)
+                if isinstance(body, dict) and body.get("task_contract") == V11_CONTRACT
+                and body.get("source_loader_version") == wc_v9.VERSION else horizon_cash_policy)
             task = selected.create(**_cash_policy_body(raw, allow_v5=True))
             if task["status"] == "QUEUED":
                 background.add_task(selected.run, task["task_id"])
