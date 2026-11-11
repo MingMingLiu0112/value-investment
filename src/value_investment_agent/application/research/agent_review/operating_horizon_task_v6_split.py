@@ -38,7 +38,9 @@ class OperatingHorizonTaskService(v5.OperatingHorizonTaskService):
 
     def _load(self, task_id, *, recover=False):
         spec, state, pin = live.LiveOperatingTaskService._load(self, task_id, recover=recover)
+        expected_mode = "TEST_ONLY_LIVE_CONTRACT" if self.test_provider is not None else "LIVE_OPERATING"
         if (spec.get("task_contract") != CONTRACT or spec.get("years") != [spec.get("year")]
+                or spec.get("mode") != expected_mode
                 or set(state.get("stage_intents", {})) - set(STAGES)
                 or set(state.get("stage_responses", {})) - set(STAGES)):
             raise ValueError("V6_SPLIT_TASK_INVALID")

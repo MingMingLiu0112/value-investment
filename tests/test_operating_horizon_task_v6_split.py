@@ -79,6 +79,18 @@ def test_cancelled_task_never_calls_provider(env, monkeypatch):
     assert calls == []
 
 
+def test_test_only_artifact_cannot_be_read_as_live_research(env, monkeypatch):
+    import pytest
+    runner, calls = service(env, monkeypatch)
+    task = runner.create(symbol="600519", request_key="V6_MODE_ISOLATION", years=[2026], now=NOW)
+    live_reader = mod.OperatingHorizonTaskService(env.root, allow_live=True,
+        source_loader=runner.source_loader,
+        source_loader_version=runner.source_loader_version)
+    with pytest.raises(ValueError, match="V6_SPLIT_TASK_INVALID"):
+        live_reader._load(task["task_id"])
+    assert calls == []
+
+
 def test_cancel_during_annual_call_never_starts_cash(env, monkeypatch):
     runner, calls = service(env, monkeypatch)
     task = runner.create(symbol="600519", request_key="V6_CANCEL_AFTER_ANNUAL", years=[2026], now=NOW)
