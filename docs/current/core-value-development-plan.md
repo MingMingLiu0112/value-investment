@@ -878,5 +878,5 @@
 #### 2026-11-12 D2封存任务来源版本读取修复
 
 - b2cf5f0b修复V10只读历史分发：封存输入明确绑定V8来源版本时按原V10服务读取；未知版本仍返回422，不回退或重签。V11新旧来源分发不变。受影响API与架构121 passed、0 skipped；真实vf1任务根的认证只读TestClient返回HTTP200，两条600519封存任务分别保持FAILED/V9_ANNUAL_PROVIDER_AMBIGUOUS和FAILED/V9_ANNUAL_RESPONSE_REJECTED。GET未发起模型调用，不能据此称D2/E2/F1/F2成功。
-- 本机8001运行源码、后端加载和Web构建均为b2cf5f0b，action=no_order；历史发布注册表仍不可用、行情交易日未核验。旧浏览器会话在重启后失效，受保护任务列表的真实浏览器展开验收尚未完成；本机HTTP200及TestClient不可替代该项。Core/Web CI对b2cf5f0b运行中，未标绿。
+- 本机8001运行源码、后端加载和Web构建均为aa414628，action=no_order；历史发布注册表仍不可用、行情交易日未核验。真实Chrome浏览器以本机一次性解锁后，主动点击读取封存任务，8001返回并显示两条600519失败任务卡片，action=no_order；截图仅存本机 .tmp/d2-history-browser-20261112.png。Web CI成功，Core CI仍运行中；此验收仅证明历史读取，不证明D2经济研究成功。
 - 下一业务断点：在每日合计10元deepseek-flash预算和旧V11不明预留可核算之前，不继续付费重试；先解决V11供应商响应歧义与年度阶段证据，确认母公司现金政策有来源支撑，再进入E2。不得将两条FAILED历史任务解释成条件估值或买价。
