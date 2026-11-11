@@ -243,11 +243,12 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         OperatingHorizonTaskService as V10HorizonTaskService, CONTRACT as V10_CONTRACT)
     from ...application.research.agent_review.operating_horizon_task_v11_live import (
         OperatingHorizonTaskService as V11HorizonTaskService, CONTRACT as V11_CONTRACT)
+    from ...application.research.agent_review import operating_q3_issuer_plan_loader_v8_600519 as q3_v8
     from ...application.research.agent_review import operating_q3_issuer_wc_loader_v9_600519 as wc_v9
 
     def live_2027_horizon(contract, *, loader_version=None, test_provider=None):
         if contract == V11_CONTRACT:
-            if loader_version is None or loader_version == "operating-q3-issuer-plan-loader-v8-600519":
+            if loader_version is None or loader_version == q3_v8.VERSION:
                 return V11HorizonTaskService(project, **({"test_provider": test_provider}
                     if test_provider is not None else {}))
             if loader_version == wc_v9.VERSION:
@@ -255,7 +256,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                     source_loader_version=wc_v9.VERSION,
                     **({"test_provider": test_provider} if test_provider is not None else {}))
             raise ValueError("V11_SOURCE_LOADER_VERSION_UNSUPPORTED")
-        if loader_version is not None:
+        if loader_version not in (None, q3_v8.VERSION):
             raise ValueError("V10_SOURCE_LOADER_VERSION_UNSUPPORTED")
         return V10HorizonTaskService(project, **({"test_provider": test_provider}
             if test_provider is not None else {}))

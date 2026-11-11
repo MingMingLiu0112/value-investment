@@ -180,6 +180,53 @@ def test_v11_parent_wc_source_dispatch_and_old_reader_remain_distinct(tmp_path, 
     assert bad.status_code == 422
 
 
+def test_v10_history_accepts_its_sealed_v8_source_version(tmp_path, monkeypatch):
+    """A version-bound V10 task remains readable; unknown loaders fail closed."""
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v10_live as v10,
+        operating_q3_issuer_plan_loader_v8_600519 as q3_v8,
+    )
+
+    class Reader:
+        def __init__(self, root, *, test_provider=None):
+            self.base = Path(root) / "runtime" / "research-task-execution-v1" / "oh-v10-2027-live"
+
+        def _directory(self, task_id):
+            return self.base / task_id
+
+        def _load(self, task_id):
+            raw = json.loads((self._directory(task_id) / "input.json").read_bytes())
+            assert raw["source_loader_binding"]["version"] == q3_v8.VERSION
+            return raw, {}, {}
+
+        def read(self, task_id):
+            self._load(task_id)
+            return dict(task_id=task_id, symbol="600519", status="FAILED",
+                        updated_at="2026-11-11T12:00:00+00:00", action="no_order",
+                        formal_eligibility=False, condition_price=None)
+
+    monkeypatch.setattr(v10, "OperatingHorizonTaskService", Reader)
+    task_id = "rt-" + "e" * 32
+    directory = Reader(tmp_path)._directory(task_id)
+    directory.mkdir(parents=True)
+    (directory / "input.json").write_text(json.dumps(dict(
+        mode="LIVE_OPERATING",
+        source_loader_binding=dict(version=q3_v8.VERSION))), encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    unlock(client, secret)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert [row["task_id"] for row in client.get(path + "/recent").json()["items"]] == [task_id]
+    assert client.get(path + "/" + task_id).json()["status"] == "FAILED"
+    (directory / "input.json").write_text(json.dumps(dict(
+        mode="LIVE_OPERATING",
+        source_loader_binding=dict(version="unknown-loader"))), encoding="utf-8")
+    response = client.get(path + "/recent")
+    assert response.status_code == 422
+    assert response.json()["reason"] == "V10_SOURCE_LOADER_VERSION_UNSUPPORTED"
+
+
 def test_unauthorized_post_never_creates_or_calls_provider(api):
     client,_,data,root=api
     before=state(root)
