@@ -4,7 +4,7 @@ import "./workbench.css";
 import { useCallback, useState } from "react";
 import { Link } from "@umijs/max";
 import { Alert, Button, Card, Space, Typography } from "antd";
-import { api, type HorizonCashPolicyTask } from "../../services/api";
+import { api, ApiError, type HorizonCashPolicyTask } from "../../services/api";
 import { useApi } from "../../hooks/useApi";
 import { Workbench } from "../../components/Workbench";
 import { ValueWorkbenchSections } from "../../components/ValueWorkbenchSections";
@@ -13,6 +13,19 @@ import { LiveOperatingResearchPanel } from "../../components/LiveOperatingResear
 import { HorizonCashPolicyPanel } from "../../components/HorizonCashPolicyPanel";
 import type { SelectionRow } from "../../types/selection";
 
+export function historicalTaskReadError(cause: unknown): string {
+  if (cause instanceof ApiError && cause.status === 401)
+    return "本机研究会话未解锁或已过期；请用启动脚本的一次性链接重新打开。";
+  if (cause instanceof ApiError && cause.status === 422) {
+    const reason =
+      typeof cause.detail === "string" &&
+      /^[A-Z0-9_:-]{3,160}$/.test(cause.detail)
+        ? cause.detail
+        : cause.code;
+    return "封存任务来源或版本校验未通过：" + reason + "；没有回退旧结果。";
+  }
+  return "封存研究任务暂不可读；不影响公开候选阅读，也不会启动模型。";
+}
 export function CandidateChoices({
   items,
   selected,
@@ -150,10 +163,8 @@ export default function ValueWorkbench() {
         throw new Error("INVALID_HISTORICAL_D2_TASK_BOUNDARY");
       }
       setHistoricalTasks(result.items);
-    } catch {
-      setHistoricalError(
-        "封存研究任务暂不可读；需本机研究权限，不影响公开候选阅读，也不会启动模型。",
-      );
+    } catch (cause) {
+      setHistoricalError(historicalTaskReadError(cause));
     } finally {
       setHistoricalBusy(false);
     }
