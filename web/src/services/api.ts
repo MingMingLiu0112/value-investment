@@ -1649,7 +1649,8 @@ export const api = {
       | "operating-horizon-task-v6-split"
       | "operating-horizon-task-v7-split"
       | "operating-horizon-task-v11-2027-live"
-      | "operating-horizon-task-v12-2027-live";
+      | "operating-horizon-task-v12-2027-live"
+      | "operating-horizon-task-v13-2027-live";
     source_loader_version?: "operating-q3-issuer-wc-loader-v9-600519";
   }) =>
     post<HorizonCashPolicyTask>(
@@ -1676,7 +1677,8 @@ export const api = {
       | "operating-horizon-task-v7-split"
       | "operating-horizon-task-v10-2027-live"
       | "operating-horizon-task-v11-2027-live"
-      | "operating-horizon-task-v12-2027-live",
+      | "operating-horizon-task-v12-2027-live"
+      | "operating-horizon-task-v13-2027-live",
   ) =>
     getPrivate<{
       action: "no_order";

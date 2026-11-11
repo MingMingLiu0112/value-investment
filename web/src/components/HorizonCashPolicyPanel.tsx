@@ -15,6 +15,7 @@ const ANCHORED_SPLIT_CONTRACT = "operating-horizon-task-v7-split" as const;
 const V10_CONTRACT = "operating-horizon-task-v10-2027-live" as const;
 const V11_CONTRACT = "operating-horizon-task-v11-2027-live" as const;
 const V12_CONTRACT = "operating-horizon-task-v12-2027-live" as const;
+const V13_CONTRACT = "operating-horizon-task-v13-2027-live" as const;
 const V11_WC_SOURCE = "operating-q3-issuer-wc-loader-v9-600519" as const;
 type CashKind =
   | "annual"
@@ -24,7 +25,8 @@ type CashKind =
   | "anchoredSplit"
   | "v10"
   | "v11"
-  | "v12";
+  | "v12"
+  | "v13";
 
 function valid(value: HorizonCashPolicyTask | undefined, symbol: string) {
   return Boolean(
@@ -103,6 +105,7 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
       | "startAnchoredSplit"
       | "startV11WC"
       | "startV12WC"
+      | "startV13WC"
       | "refresh"
       | "cancel"
       | "resume",
@@ -122,7 +125,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
           : await api.createHorizonCashPolicyTask({
               symbol,
               years: [
-                operation === "startV11WC" || operation === "startV12WC"
+                operation === "startV11WC" ||
+                operation === "startV12WC" ||
+                operation === "startV13WC"
                   ? 2027
                   : new Date().getFullYear() +
                     (operation === "startParentWC" ||
@@ -148,7 +153,12 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                             task_contract: V12_CONTRACT,
                             source_loader_version: V11_WC_SOURCE,
                           }
-                        : {}),
+                        : operation === "startV13WC"
+                          ? {
+                              task_contract: V13_CONTRACT,
+                              source_loader_version: V11_WC_SOURCE,
+                            }
+                          : {}),
             })
         : operation === "refresh"
           ? await (kind === "compact"
@@ -181,7 +191,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                     ? "v11"
                     : operation === "startV12WC"
                       ? "v12"
-                      : "annual",
+                      : operation === "startV13WC"
+                        ? "v13"
+                        : "annual",
         );
     } catch (cause) {
       const reason = safeReason(cause);
@@ -221,7 +233,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                         ? V11_CONTRACT
                         : selectedKind === "v12"
                           ? V12_CONTRACT
-                          : undefined,
+                          : selectedKind === "v13"
+                            ? V13_CONTRACT
+                            : undefined,
             );
       if (
         result.action !== "no_order" ||
@@ -351,8 +365,8 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
           启动来源绑定的下一年度母公司资金研究
         </Button>
         {symbol === "600519" && (
-          <Button disabled={busy || active} onClick={() => run("startV12WC")}>
-            启动2027两阶段V12研究（含母公司余额证据，可能计费）
+          <Button disabled={busy || active} onClick={() => run("startV13WC")}>
+            启动2027两阶段V13研究（含母公司余额证据，可能计费）
           </Button>
         )}
         <Button disabled={busy || active} onClick={() => run("startSplit")}>
@@ -387,6 +401,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         </Button>
         <Button disabled={busy} onClick={() => loadHistory("v12")}>
           读取2027两阶段V12封存任务
+        </Button>
+        <Button disabled={busy} onClick={() => loadHistory("v13")}>
+          读取2027两阶段V13封存任务
         </Button>
         <Button disabled={busy} onClick={loadAnnualHistory}>
           读取独立年度经营历史
