@@ -253,11 +253,11 @@ it("records the current driver bridge arithmetic acceptance without adopting par
       "artifacts/current/d2-operating-driver-20261101.json",
     );
     expect(stage.evidenceSource).not.toContain("待Root");
-    expect(stage.nextStep).toContain("母公司资金、分配能力、维护和营运资金");
-    expect(stage.nextStep).toContain("不对同响应付费重试");
-    expect(stage.deliveryReview?.gap).toContain("原JSON多出一个右括号");
-    expect(stage.deliveryReview?.gap).toContain("6项现金政策UNKNOWN");
-    expect(stage.deliveryReview?.gap).toContain("E2/F1/F2正向消费");
+    expect(stage.nextStep).toContain("母公司资金、分配、维持投入和营运资金条件桥");
+    expect(stage.nextStep).toContain("不再对同资料付费重试");
+    expect(stage.deliveryReview?.gap).toContain("真实V15现金调用结算¥0.087694");
+    expect(stage.deliveryReview?.gap).toContain("INCOMPLETE_UNKNOWN_TERMS");
+    expect(stage.deliveryReview?.gap).toContain("F1/F2没有真实正向结果");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
   expect(d1.evidenceStatus).toContain("当前版本三角色研究");
@@ -268,7 +268,7 @@ it("records the current driver bridge arithmetic acceptance without adopting par
   );
   expect(d2.implementation).toContain("H12026→H12027");
   expect(d2.implementation).toContain("同比FY只对FY、H1只对H1");
-  expect(d2.milestone).toContain("不同任务不自动合并主预测");
+  expect(d2.milestone).toContain("旧V12/V13/V14失败记录保持原样");
   expect(d2.milestone).toContain("现金和估值仍未闭环");
   expect(d2.existingEvidence).toContain("rt-c40经济拒绝保留为历史");
   expect(d2.evidence).toContain("typed bridge不消费这些文字");
