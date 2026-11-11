@@ -204,3 +204,7 @@ config/research-assumptions/600519-joint-capital-cash-path-v4.json -text whitesp
 config/research-assumptions/600887-joint-capital-cash-path-v4.json -text whitespace=cr-at-eol
 config/research-proposals/600519-joint-capital-cash-path-v4.json -text whitespace=cr-at-eol
 config/research-proposals/600887-joint-capital-cash-path-v4.json -text whitespace=cr-at-eol
+
+# V7 research tasks pin these implementation bytes; preserve LF on Windows.
+src/value_investment_agent/application/research/agent_review/operating_horizon_split_v7.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_horizon_task_v7_split.py -text whitespace=cr-at-eol
