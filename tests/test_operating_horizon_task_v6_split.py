@@ -111,3 +111,22 @@ def test_resume_after_annual_checkpoint_calls_only_cash(env, monkeypatch):
     assert runner.resume(task["task_id"], now=NOW)["status"] == "QUEUED"
     completed = runner.run(task["task_id"], now=NOW)
     assert completed["status"] == "SUCCEEDED" and calls == ["annual", "cash"]
+
+
+def test_changed_annual_checkpoint_blocks_cash_stage(env, monkeypatch):
+    runner, calls = service(env, monkeypatch)
+    task = runner.create(symbol="600519", request_key="V6_CHANGED_ANNUAL", years=[2026], now=NOW)
+    original = runner._request_for_stage
+    def interrupt(spec, state, context, stage):
+        if stage == "cash":
+            raise ValueError("V6_SPLIT_TEST_ONLY_STAGE_INTERRUPT")
+        return original(spec, state, context, stage)
+    monkeypatch.setattr(runner, "_request_for_stage", interrupt)
+    assert runner.run(task["task_id"], now=NOW)["annual_status"] == "SETTLED_VALIDATED"
+    response = runner._directory(task["task_id"]) / "response-annual.json"
+    response.write_bytes(response.read_bytes() + b" ")
+    assert runner.read(task["task_id"])["error_code"] == "V6_SPLIT_REPLAY_INVALID"
+    runner.resume(task["task_id"], now=NOW)
+    monkeypatch.setattr(runner, "_request_for_stage", original)
+    assert runner.run(task["task_id"], now=NOW)["status"] == "FAILED"
+    assert calls == ["annual"]

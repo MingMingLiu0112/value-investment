@@ -96,12 +96,30 @@ class OperatingHorizonTaskService(v5.OperatingHorizonTaskService):
         annual_packet = self._packet(spec, state, "annual")
         if annual_packet is None:
             raise ValueError("V6_SPLIT_ANNUAL_CHECKPOINT_REQUIRED")
+        self._verify_annual_checkpoint(spec, state, context)
         requests = split.build_requests(context, spec["years"],
             source_binding=self._source_binding(spec),
             annual_response=LLMResponse(**annual_packet["response"]),
             annual_generated_at=datetime.fromisoformat(annual_packet["generated_at"]),
             max_completion_tokens=spec["config"]["max_completion_tokens_cap"])
         return requests.cash, requests.binding
+
+    def _verify_annual_checkpoint(self, spec, state, context):
+        if "annual" not in state.get("stage_validated", []):
+            raise ValueError("V6_SPLIT_ANNUAL_CHECKPOINT_UNVERIFIED")
+        packet = self._packet(spec, state, "annual")
+        if packet is None:
+            raise ValueError("V6_SPLIT_ANNUAL_CHECKPOINT_MISSING")
+        request = split.build_annual_request(context, spec["years"],
+            source_binding=self._source_binding(spec),
+            max_completion_tokens=spec["config"]["max_completion_tokens_cap"])
+        if _hash(_bytes(request.__dict__)) != packet["request_sha256"]:
+            raise ValueError("V6_SPLIT_ANNUAL_REQUEST_CHANGED")
+        response = LLMResponse(**packet["response"])
+        self._usage(response, request, spec["config"]["model_id"])
+        self._verify_stage_settlement(spec, state, "annual", packet)
+        split.annual.validate_response(response, context, spec["years"],
+            datetime.fromisoformat(packet["generated_at"]))
 
     def _verify_stage_settlement(self, spec, state, stage, packet):
         intent = state["stage_intents"][stage]
@@ -174,6 +192,8 @@ class OperatingHorizonTaskService(v5.OperatingHorizonTaskService):
             return value
         try:
             context = self._context(spec)
+            if "annual" in state.get("stage_validated", []):
+                self._verify_annual_checkpoint(spec, state, context)
             if state["status"] == "SUCCEEDED":
                 value["research_result"] = self._result(spec, state, context)
         except (ValueError, OSError, KeyError, TypeError):
