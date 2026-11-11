@@ -133,7 +133,8 @@ it("continues only a sealed V12 annual stage with a stable idempotency key", asy
   ).props.onClick();
   expect(calls.importV12).toHaveBeenCalledWith({
     source_task_id: sourceId,
-    request_key: "cash_import_" + "b".repeat(32),
+    request_key: "cash_import_v13_" + "b".repeat(32),
+    task_contract: "operating-horizon-task-v13-2027-live",
   });
   expect(calls.create).not.toHaveBeenCalled();
   expect(hooks.values[3]).toBe("v13");
