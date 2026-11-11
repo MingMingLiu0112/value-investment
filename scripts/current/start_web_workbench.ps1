@@ -39,7 +39,7 @@ function Test-WorkbenchIdentity {
     } catch { return $false }
 }
 function Wait-WorkbenchReady {
-    param([int]$ServerPid, [int]$ServerPort, [int]$TimeoutSeconds = 30)
+    param([int]$ServerPid, [int]$ServerPort, [int]$TimeoutSeconds = 300)
     $timer = [System.Diagnostics.Stopwatch]::StartNew()
     while ($timer.Elapsed.TotalSeconds -lt $TimeoutSeconds) {
         if (-not (Get-Process -Id $ServerPid -ErrorAction SilentlyContinue)) { return $false }
@@ -75,7 +75,7 @@ if (Test-Path -LiteralPath $statePath) {
                 Write-Host "已核验本入口工作台进程，复用 $url 。"
                 Write-Host '若授权过期或丢失链接，请运行唯一日常入口：pwsh -NoProfile -File scripts/current/run_daily_workbench.ps1 -Mode READ_ONLY -Reauthorize -Open'
                 if (-not (Wait-WorkbenchReady -ServerPid $state.pid -ServerPort $state.port)) {
-                    Write-Host '工作台健康检查未在30秒内通过；未打开页面。'; exit 4
+                    Write-Host '工作台健康检查未在300秒内通过；未打开页面。'; exit 4
                 }
                 if ($Open) { Start-Process $url }
                 exit 0
@@ -112,7 +112,7 @@ if (-not $process) {
 @{ root = $root; pid = $server.Id; port = $Port; created_at = $process.CreationDate.ToUniversalTime().ToString('o') } |
     ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding utf8
 if (-not (Wait-WorkbenchReady -ServerPid $server.Id -ServerPort $Port)) {
-    Write-Host '工作台健康检查未在30秒内通过；未打开页面，也未提供不可用授权链接。'
+    Write-Host '工作台健康检查未在300秒内通过；未打开页面，也未提供不可用授权链接。'
     Write-Host '如需重新启动本入口进程：pwsh -NoProfile -File scripts/current/run_daily_workbench.ps1 -Mode READ_ONLY -Reauthorize -Open'
     exit 4
 }
