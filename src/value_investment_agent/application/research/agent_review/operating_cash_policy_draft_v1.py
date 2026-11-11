@@ -18,7 +18,7 @@ from .operating_driver_draft_v2 import _exact, _payload
 
 
 VERSION = "operating-cash-policy-draft-v1"
-PROMPT_VERSION = "operating-cash-policy-prompts-v2-evidence-anchored-assumptions"
+PROMPT_VERSION = "operating-cash-policy-prompts-v3-conditional-economics"
 
 
 def build_request(context, years, max_completion_tokens=2048, prior_hypothesis=None):
@@ -79,7 +79,12 @@ def build_request(context, years, max_completion_tokens=2048, prior_hypothesis=N
             "accessible_profit_ratio, reserve_ratio, net_maintenance_cash_cny, operating_wc_cash_cny and "
             "commitment_cash_cny. Each of bear, base and bull must include all six. Use FORECAST_ASSUMPTION only "
             "when its rationale identifies a sealed historical anchor, scenario rationale and counter-evidence; "
-            "otherwise return UNKNOWN/null/not_quantified for that exact legal term. Do not repeat operating forecasts, "
+            "a forecast assumption need not be an issuer-announced forward policy. Historical distributions, "
+            "parent-only cash observations and dated commitments can support challengeable scenario bounds, "
+            "but never prove the selected future number. Explain the economic mechanism, denominator or cash "
+            "scope, how the scenario differs from the historical anchor, and what evidence would overturn it. "
+            "UNKNOWN is required when even a conditional bound lacks an economic mechanism or the supplied "
+            "evidence cannot distinguish the term from a different cash flow. Do not repeat operating forecasts, "
             "valuation, prices, recommendations or approvals. Assess only shareholder-cash policy from sealed "
             "sources. Do not infer parent distributable cash from consolidated cash. Missing evidence remains "
             "UNKNOWN, never zero or one. For EVERY term, evidence_ids must contain at least one supplied sealed "

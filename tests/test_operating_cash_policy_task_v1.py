@@ -30,6 +30,8 @@ def test_policy_only_task_uses_existing_source_task_engine(source_env, monkeypat
     assert result["scope"] == "SOURCE_BOUND_CASH_POLICY_ONLY_NOT_VALUATION_OR_PRICE"
     assert result["action"] == "no_order" and result["formal_eligibility"] is False
     assert len(calls) == 1 and "Do not repeat operating forecasts" in calls[0].system
+    assert "need not be an issuer-announced forward policy" in calls[0].system
+    assert "UNKNOWN is required when even a conditional bound lacks an economic mechanism" in calls[0].system
     assert "FORECAST_ASSUMPTION" in calls[0].system
     assert "historical evidence anchors" in calls[0].transport_output_contract
     assert "1-240 characters" in calls[0].transport_output_contract
