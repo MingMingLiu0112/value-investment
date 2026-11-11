@@ -253,9 +253,9 @@ it("records the current driver bridge arithmetic acceptance without adopting par
       "artifacts/current/d2-operating-driver-20261101.json",
     );
     expect(stage.evidenceSource).not.toContain("待Root");
-    expect(stage.nextStep).toContain(
-      "验证参数经济适用性及资本/现金资料，不重试模型凑通过",
-    );
+    expect(stage.nextStep).toContain("现金阶段接入现有持久任务");
+    expect(stage.nextStep).toContain("旧派息规划不外推");
+    expect(stage.deliveryReview?.gap).toContain("E2未消费");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
   expect(d1.evidenceStatus).toContain("当前版本三角色研究");
