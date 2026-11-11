@@ -193,3 +193,34 @@ it("shows a successful V15 task as economically incomplete when cash paths remai
     "V15任务已完成，股东现金研究尚未准入",
   );
 });
+
+it("starts source-bound V15 with three historical dividend notices only on explicit click", async () => {
+  const label = "用已核验历史分红原件启动2027经营与现金研究（可能计费）";
+  button(render("600519"), "D2 股东现金政策研究").props.onClick();
+  expect(calls.create).not.toHaveBeenCalled();
+  calls.create.mockResolvedValue({
+    task_id: "rt-" + "e".repeat(32),
+    symbol: "600519",
+    status: "WAITING_EVIDENCE",
+    action: "no_order",
+    formal_eligibility: false,
+  });
+  await button(render("600519"), label).props.onClick();
+  expect(calls.create).toHaveBeenCalledWith(
+    expect.objectContaining({
+      symbol: "600519",
+      years: [2027],
+      task_contract: "operating-horizon-task-v15-2027-live",
+      source_loader_version:
+        "operating-q3-issuer-dividend-split-loader-v9-600519",
+    }),
+  );
+  expect(button(render("600519"), "读取当前任务")).toBeDefined();
+  hooks.values = [];
+  button(render("600887"), "D2 股东现金政策研究").props.onClick();
+  expect(
+    nodes(HorizonCashPolicyPanel({ symbol: "600887" })).map(
+      (row) => row.props.children,
+    ),
+  ).not.toContain(label);
+});

@@ -19,6 +19,8 @@ const V13_CONTRACT = "operating-horizon-task-v13-2027-live" as const;
 const V14_CONTRACT = "operating-horizon-task-v14-2027-live" as const;
 const V15_CONTRACT = "operating-horizon-task-v15-2027-live" as const;
 const V11_WC_SOURCE = "operating-q3-issuer-wc-loader-v9-600519" as const;
+const V15_DIVIDEND_SOURCE =
+  "operating-q3-issuer-dividend-split-loader-v9-600519" as const;
 type CashKind =
   | "annual"
   | "compact"
@@ -120,6 +122,7 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
       | "startV11WC"
       | "startV12WC"
       | "startV13WC"
+      | "startV15Dividend"
       | "refresh"
       | "cancel"
       | "resume",
@@ -141,7 +144,8 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
               years: [
                 operation === "startV11WC" ||
                 operation === "startV12WC" ||
-                operation === "startV13WC"
+                operation === "startV13WC" ||
+                operation === "startV15Dividend"
                   ? 2027
                   : new Date().getFullYear() +
                     (operation === "startParentWC" ||
@@ -172,7 +176,12 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                               task_contract: V13_CONTRACT,
                               source_loader_version: V11_WC_SOURCE,
                             }
-                          : {}),
+                          : operation === "startV15Dividend"
+                            ? {
+                                task_contract: V15_CONTRACT,
+                                source_loader_version: V15_DIVIDEND_SOURCE,
+                              }
+                            : {}),
             })
         : operation === "refresh"
           ? await (kind === "compact"
@@ -207,7 +216,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                       ? "v12"
                       : operation === "startV13WC"
                         ? "v13"
-                        : "annual",
+                        : operation === "startV15Dividend"
+                          ? "v15"
+                          : "annual",
         );
     } catch (cause) {
       const reason = safeReason(cause);
@@ -501,6 +512,14 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
             onClick={() => continueV12Cash(V15_CONTRACT)}
           >
             复用已核验年度研究，按V15条件现金合同继续（可能计费）
+          </Button>
+        )}
+        {symbol === "600519" && (
+          <Button
+            disabled={busy || active}
+            onClick={() => run("startV15Dividend")}
+          >
+            用已核验历史分红原件启动2027经营与现金研究（可能计费）
           </Button>
         )}
         <Button disabled={busy} onClick={() => loadHistory("v15")}>

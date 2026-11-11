@@ -19,7 +19,7 @@ SUFFIXES = ("-cninfo-response.json", "-index-receipt.json", ".pdf", "-pdf-receip
 KEYS = ("index_response", "index_receipt", "pdf", "pdf_receipt")
 CAPTURE_DIR = Path("runtime/operating-dividend-split-v9")
 MAX_EVIDENCE = 100
-MAX_CONTEXT_BYTES = 80000
+MAX_CONTEXT_BYTES = 96000
 
 
 def implementation():
@@ -130,14 +130,13 @@ def load_current(*, root, symbol, now: datetime, binding=None):
             period=period_end, period_basis=report["report_period"],
             scope="ISSUER_HISTORICAL_DISTRIBUTION_SCHEDULE", unit="TEXT", text=text,
             text_sha256=_hash(text.encode("utf-8")), physical_pages=report["physical_pages"],
-            kind=report["status"], capture_binding=deepcopy(item["files"])))
+            kind=report["status"]))
     # V15 calls the V8 projector directly. Preserve its schema and old fields;
     # the new source identity lives in the loader version and source binding.
     result["schema_version"] = prior.VERSION
     result["source_binding"] = observed
     result["historical_dividend_source_version"] = VERSION
     result["implementation_sha256"] = implementation()
-    result["historical_dividend_implementations"] = reports
     result["snapshot_fingerprint"] = sha256(_bytes([
         VERSION, base["snapshot_fingerprint"], observed, reports])).hexdigest()
     if len(_bytes(result)) > MAX_CONTEXT_BYTES:

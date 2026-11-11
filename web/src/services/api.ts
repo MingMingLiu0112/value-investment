@@ -1657,7 +1657,9 @@ export const api = {
       | "operating-horizon-task-v13-2027-live"
       | "operating-horizon-task-v14-2027-live"
       | "operating-horizon-task-v15-2027-live";
-    source_loader_version?: "operating-q3-issuer-wc-loader-v9-600519";
+    source_loader_version?:
+      | "operating-q3-issuer-wc-loader-v9-600519"
+      | "operating-q3-issuer-dividend-split-loader-v9-600519";
   }) =>
     post<HorizonCashPolicyTask>(
       "operating-research/horizon-cash-policy-tasks",

@@ -1564,3 +1564,68 @@ def test_v13_horizon_api_dispatch_preserves_old_history_and_rejects_test_only(tm
     e2_response = client.get(path + "/" + live_id + "/e2-input")
     assert e2_response.status_code == 200
     assert e2_response.json()["status"] == "UNASSESSABLE"
+
+
+def test_v15_historical_dividend_loader_dispatch(tmp_path, monkeypatch):
+    """TEST_ONLY transport: new historical sources do not reinterpret old V15 tasks."""
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v15_live as v15,
+        operating_q3_issuer_dividend_split_loader_v9_600519 as dividend,
+    )
+
+    seen = []
+    old_id, new_id = "rt-" + "a" * 32, "rt-" + "b" * 32
+
+    class Reader:
+        def __init__(self, root, *, source_loader=None, source_loader_version=None,
+                     test_provider=None):
+            self.root = Path(root)
+            self.base = self.root / "runtime" / "research-task-execution-v1" / "oh-v15-2027-live"
+            self.version = source_loader_version or v15.official.VERSION
+            self.source_loader = source_loader
+            seen.append(("init", self.version))
+
+        def _directory(self, task_id):
+            return self.base / task_id
+
+        def _load(self, task_id):
+            raw = json.loads((self._directory(task_id) / "input.json").read_bytes())
+            if raw["source_loader_binding"]["version"] != self.version:
+                raise ValueError("TEST_ONLY_LOADER_VERSION_MISMATCH")
+            return raw, {}, {}
+
+        def read(self, task_id):
+            self._load(task_id)
+            return dict(task_id=task_id, symbol="600519", status="WAITING_EVIDENCE",
+                        updated_at="2026-11-12T12:00:00+00:00", action="no_order",
+                        formal_eligibility=False, condition_price=None)
+
+        def create(self, **kwargs):
+            assert self.source_loader is dividend.load_current
+            seen.append(("create", self.version, kwargs["symbol"]))
+            return dict(task_id=new_id, symbol=kwargs["symbol"], status="WAITING_EVIDENCE",
+                        action="no_order", formal_eligibility=False)
+
+    monkeypatch.setattr(v15, "OperatingHorizonTaskService", Reader)
+    for task_id, version in ((old_id, v15.official.VERSION), (new_id, dividend.VERSION)):
+        path = Reader(tmp_path)._directory(task_id)
+        path.mkdir(parents=True)
+        (path / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+            source_loader_binding=dict(version=version))), encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert client.get(path + "/" + new_id).status_code == 401
+    unlock(client, secret)
+    assert client.get(path + "/" + old_id).json()["task_id"] == old_id
+    assert client.get(path + "/" + new_id).json()["task_id"] == new_id
+    created = client.post(path, json=dict(symbol="600519", years=[2027],
+        request_key="TEST_ONLY_DIVIDEND", task_contract=v15.CONTRACT,
+        source_loader_version=dividend.VERSION))
+    assert created.status_code == 202 and created.json()["action"] == "no_order"
+    assert ("create", dividend.VERSION, "600519") in seen
+    bad = client.post(path, json=dict(symbol="600519", years=[2027],
+        request_key="TEST_ONLY_DIVIDEND", task_contract=v15.CONTRACT,
+        source_loader_version="unregistered-source"))
+    assert bad.status_code == 422
