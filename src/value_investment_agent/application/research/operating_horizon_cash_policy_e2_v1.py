@@ -17,6 +17,7 @@ from ...domain.research.operating_cash_consumption_v1 import consume_operating_e
 from .agent_review.operating_horizon_draft_v3 import SCENARIOS, TERMS, VERSION as DRAFT_VERSION
 from .agent_review.operating_horizon_task_v4 import CONTRACT, OperatingHorizonTaskService
 from .agent_review.operating_horizon_task_v5_wc import CONTRACT as WC_CONTRACT
+from .agent_review.operating_horizon_task_v6_split import CONTRACT as SPLIT_V6_CONTRACT
 from .agent_review.operating_horizon_task_v2 import (
     CONTRACT as ANNUAL_CONTRACT,
     OperatingHorizonTaskService as AnnualOperatingTaskService,
@@ -76,6 +77,7 @@ def read_d2_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     if research_time.utcoffset() is None or research_time > now:
         raise ValueError("D2_CASH_POLICY_NOT_AVAILABLE_AT_E2_CUTOFF")
     contracts = {CONTRACT: DRAFT_VERSION, WC_CONTRACT: DRAFT_VERSION,
+                 SPLIT_V6_CONTRACT: DRAFT_VERSION,
                  FOLLOWUP_CONTRACT: FOLLOWUP_DRAFT_VERSION}
     contract = task.get("workflow")
     if (contract not in contracts or task.get("status") != "SUCCEEDED"
@@ -86,6 +88,20 @@ def read_d2_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
             or research.get("cash_policy_appendix_status") != "COMPLETE_UNAPPROVED"
             or research.get("action") != "no_order"):
         raise ValueError("COMPLETE_UNAPPROVED_D2_CASH_POLICY_REQUIRED")
+    if contract == SPLIT_V6_CONTRACT:
+        responses = task.get("stage_responses")
+        split_binding = research.get("split_contract")
+        if (task.get("annual_status") != "SETTLED_VALIDATED"
+                or task.get("cash_status") != "SETTLED_VALIDATED"
+                or not isinstance(responses, dict) or set(responses) != {"annual", "cash"}
+                or any(not isinstance(pin, dict) or set(pin) != {"path", "sha256"}
+                       for pin in responses.values())
+                or not isinstance(split_binding, dict)
+                or split_binding != task.get("cash_binding")
+                or split_binding.get("action") != "no_order"
+                or not isinstance(research.get("split_response_sha256"), dict)
+                or set(research["split_response_sha256"]) != {"annual", "cash"}):
+            raise ValueError("D2_V6_SPLIT_RESPONSE_BINDING_REQUIRED")
     years = research.get("years")
     if not isinstance(years, dict) or not years:
         raise ValueError("D2_V4_POLICY_YEARS_REQUIRED")
@@ -102,16 +118,30 @@ def read_d2_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
             if (not isinstance(path, dict) or path.get("complete") is not True
                     or not isinstance(path.get("terms"), dict) or set(path["terms"]) != set(TERMS)):
                 raise ValueError("D2_V4_POLICY_TERM_COMPLETENESS_REQUIRED")
+            if contract == SPLIT_V6_CONTRACT and any(
+                    not isinstance(term, dict)
+                    or term.get("classification") != "FORECAST_ASSUMPTION"
+                    or term.get("value") is None
+                    for term in path["terms"].values()):
+                raise ValueError("D2_V6_UNKNOWN_CASH_TERM_NOT_E2_INPUT")
             policies[year][scenario] = deepcopy(path)
     annual_candidates = {}
     annual_error = None
-    if contract in {CONTRACT, WC_CONTRACT}:
+    task_fingerprint = task.get("context_fingerprint")
+    if contract in {CONTRACT, WC_CONTRACT, SPLIT_V6_CONTRACT}:
         # The full v4 response carries the operating bridge. Keep it from the
         # same sealed task as the cash policy, instead of reusing a different
         # annual task by symbol or manufacturing an earnings path.
         context = service.source_loader(root=root, symbol=task["symbol"],
             binding=task["source_binding"], now=research_time)
-        if context["snapshot_fingerprint"] != task["context_fingerprint"]:
+        if contract == SPLIT_V6_CONTRACT:
+            spec, _, _ = service._load(task_id)
+            service._context(spec)
+            task_fingerprint = spec["context_fingerprint"]
+            if (spec["source_binding"] != task["source_binding"]
+                    or spec["wc_source_binding"] != task["wc_source_binding"]):
+                raise ValueError("D2_V6_TASK_SOURCE_PIN_CHANGED")
+        if context["snapshot_fingerprint"] != task_fingerprint:
             raise ValueError("D2_V4_OPERATING_SOURCE_CONTEXT_CHANGED")
         for year, row in years.items():
             bridge = dict(paths=row["calculated_paths"], inputs=row["operating_paths"], action="no_order")
@@ -129,21 +159,31 @@ def read_d2_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     bindings = [deepcopy(task[key]) for key in ("record_binding", "source_binding") if isinstance(task.get(key), dict)]
     if len(bindings) != 2:
         raise ValueError("D2_V4_TASK_BINDINGS_REQUIRED")
-    if contract == WC_CONTRACT:
+    if contract in {WC_CONTRACT, SPLIT_V6_CONTRACT}:
         wc_binding = task.get("wc_source_binding")
         if (not isinstance(wc_binding, dict) or
                 set(wc_binding) != {"registry", "originals", "history_sha256"}):
             raise ValueError("D2_WC_SOURCE_BINDING_REQUIRED")
         bindings.append(deepcopy(wc_binding))
+    if contract == SPLIT_V6_CONTRACT:
+        if (len(task["wc_source_binding"]["originals"]) < 2
+                or not isinstance(task["wc_source_binding"]["history_sha256"], str)
+                or len(task["wc_source_binding"]["history_sha256"]) != 64):
+            raise ValueError("D2_V6_WC_SOURCE_PIN_INCOMPLETE")
+        bindings.extend(deepcopy(task["stage_responses"][stage]) for stage in ("annual", "cash"))
     manifest = dict(schema_version=VERSION, task_id=task_id, symbol=task["symbol"],
-        task_contract=contract, task_context_fingerprint=task.get("context_fingerprint"),
+        task_contract=contract, task_context_fingerprint=task_fingerprint,
         source_bindings=bindings, policy_years=sorted(policies),
         annual_operating_years=sorted(annual_candidates), action="no_order",
         formal_eligibility=False, main_range_adopted=False)
-    return dict(status="SOURCE_BOUND_D2_V4_CASH_POLICY_READY_FOR_E2", action="no_order",
+    if contract == SPLIT_V6_CONTRACT:
+        manifest["split_contract"] = deepcopy(research["split_contract"])
+        manifest["split_response_sha256"] = deepcopy(research["split_response_sha256"])
+    return dict(status=("SOURCE_BOUND_D2_V6_CASH_POLICY_READY_FOR_E2" if contract == SPLIT_V6_CONTRACT
+                        else "SOURCE_BOUND_D2_V4_CASH_POLICY_READY_FOR_E2"), action="no_order",
         formal_eligibility=False, main_range_adopted=False, condition_price=None,
         symbol=task["symbol"], task_id=task_id, task_binding=bindings[0], source_binding=bindings[1],
-        research_as_of=research_as_of, context_fingerprint=task.get("context_fingerprint"),
+        research_as_of=research_as_of, context_fingerprint=task_fingerprint,
         policy_years=policies, annual_operating_candidates=annual_candidates,
         annual_operating_status=("ANNUAL_OPERATING_INPUT_UNASSESSABLE" if annual_error else
                                  "SAME_TASK_COMPILED" if annual_candidates else "SEPARATE_ANNUAL_INPUT_REQUIRED"),
@@ -154,7 +194,9 @@ def read_d2_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
         blockers=(["ANNUAL_OPERATING_INPUT_UNASSESSABLE"] if annual_error else []) + [
                   "PARENT_CASH_FACTS_AND_OPENING_CAPITAL_REQUIRED", "MAIN_ECONOMIC_RANGE_ADOPTION_REQUIRED",
                   "CURRENT_CAPITAL_DISTRIBUTION_EVENT_QUOTE_ALIGNMENT_REQUIRED"],
-        scope="CONDITIONAL_UNAPPROVED_D2_V4_POLICY_NOT_VALUATION_OR_PRICE")
+        scope=("CONDITIONAL_UNAPPROVED_D2_V6_POLICY_NOT_VALUATION_OR_PRICE"
+               if contract == SPLIT_V6_CONTRACT
+               else "CONDITIONAL_UNAPPROVED_D2_V4_POLICY_NOT_VALUATION_OR_PRICE"))
 
 
 def read_v4_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,

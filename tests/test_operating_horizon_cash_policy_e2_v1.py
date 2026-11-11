@@ -6,10 +6,70 @@ import pytest
 from test_operating_horizon_task_v4 import env
 from test_operating_horizon_sources_v1 import source_env  # noqa: F401 - dependency of shared v4 fixture
 from test_operating_horizon_draft_v1 import NOW, context  # noqa: F401 - dependency of source fixture
+from test_operating_horizon_task_v5_wc import wps_hardlink_fallback  # noqa: F401
 from value_investment_agent.application.research.operating_horizon_cash_policy_e2_v1 import (
+    read_d2_cash_policy_e2_input,
     read_v4_cash_policy_e2_input,
     read_split_d2_e2_input,
 )
+
+
+def test_v6_same_task_e2_projection_requires_both_sealed_stages_and_wc_pin(monkeypatch, request):
+    """TEST_ONLY with explicit real public WC originals; no model/network call."""
+    from test_operating_horizon_task_v5_wc import env as wc_env, NOW as wc_now
+    from test_operating_horizon_task_v6_split import service as split_service
+
+    environment = wc_env.__wrapped__(request.getfixturevalue("tmp_path"), monkeypatch)
+    runner, calls = split_service(environment, monkeypatch)
+    original = runner.source_loader
+
+    def enriched_source(**kwargs):
+        context = original(**kwargs)
+        context["action"] = "no_order"
+        for row in context["evidence"]:
+            if row.get("unit") == "CNY":
+                row["kind"] = "VERIFIED_REPORTED_FACT"
+                row["physical_page"] = 1
+        pbt = next(row for row in context["evidence"] if row.get("field") == "pre_tax_profit")
+        for field, amount, scope in (("tax", "91", "consolidated"),
+                                     ("parent_profit", "346", "consolidated_parent")):
+            row = deepcopy(pbt)
+            row.update(id="TEST_ONLY:" + field, field=field, value=amount, scope=scope)
+            context["evidence"].append(row)
+        return context
+
+    runner.source_loader = enriched_source
+    task = runner.create(symbol="600519", request_key="V6_E2_SAME_TASK", years=[2026], now=wc_now)
+    assert runner.run(task["task_id"], now=wc_now)["status"] == "SUCCEEDED"
+    assert calls == ["annual", "cash"]
+    result = read_d2_cash_policy_e2_input(root=environment.root, task_id=task["task_id"],
+        now=wc_now + timedelta(hours=1), service=runner)
+    assert result["annual_operating_status"] == "SAME_TASK_COMPILED", result["annual_operating_error"]
+    assert result["annual_operating_candidates"]["2026"]["task_id"] == task["task_id"]
+    assert result["input_manifest"]["split_contract"]["action"] == "no_order"
+    assert len(result["input_manifest"]["source_bindings"]) == 5
+    assert result["action"] == "no_order" and result["formal_eligibility"] is False
+    assert result["condition_price"] is None
+
+    from types import SimpleNamespace
+    view = runner.read(task["task_id"])
+    projected = SimpleNamespace(read=lambda _: view, source_loader=runner.source_loader,
+        _load=runner._load, _context=runner._context)
+    del view["stage_responses"]
+    with pytest.raises(ValueError, match="D2_V6_SPLIT_RESPONSE_BINDING_REQUIRED"):
+        read_d2_cash_policy_e2_input(root=environment.root, task_id=task["task_id"],
+            now=wc_now + timedelta(hours=1), service=projected)
+    view.update(runner.read(task["task_id"]))
+    term = view["research_result"]["years"]["2026"]["shareholder_cash_paths"]["base"]["terms"]["operating_wc_cash_cny"]
+    term.update(classification="UNKNOWN", value=None, unit="not_quantified")
+    with pytest.raises(ValueError, match="D2_V6_UNKNOWN_CASH_TERM_NOT_E2_INPUT"):
+        read_d2_cash_policy_e2_input(root=environment.root, task_id=task["task_id"],
+            now=wc_now + timedelta(hours=1), service=projected)
+    view.update(runner.read(task["task_id"]))
+    view["wc_source_binding"] = {**view["wc_source_binding"], "originals": []}
+    with pytest.raises(ValueError, match="D2_V6_TASK_SOURCE_PIN_CHANGED"):
+        read_d2_cash_policy_e2_input(root=environment.root, task_id=task["task_id"],
+            now=wc_now + timedelta(hours=1), service=projected)
 
 
 def test_split_d2_compiles_only_two_successful_same_source_tasks(source_env, monkeypatch):
