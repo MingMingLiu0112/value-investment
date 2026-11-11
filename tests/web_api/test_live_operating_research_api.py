@@ -69,12 +69,17 @@ def test_v13_import_api_derives_sealed_v12_pins_and_is_idempotent(api, monkeypat
     assert client.post(path, json={**body, "source_task_id": "../outside"}).status_code == 422
 
 
-def test_v14_import_api_dispatches_separately_without_extra_provider_call(api, monkeypatch):
+@pytest.mark.parametrize("version", ["v14", "v15"])
+def test_versioned_import_api_dispatches_separately_without_extra_provider_call(api, monkeypatch, version):
     import json
     from value_investment_agent.application.research.agent_review import (
         operating_horizon_task_v12_live as v12,
-        operating_horizon_task_v14_live as v14,
         operating_q3_issuer_plan_loader_v8_600519 as q3_v8)
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v14_live as v14,
+        operating_horizon_task_v15_live as v15)
+
+    selected = {"v14": v14, "v15": v15}[version]
 
     client, secret, data, root = api
     source_id = "rt-" + "e" * 32
@@ -92,14 +97,14 @@ def test_v14_import_api_dispatches_separately_without_extra_provider_call(api, m
     def imported(self, **kwargs):
         seen.append(kwargs)
         return dict(task_id="rt-" + "f" * 32, symbol="600519", status="FAILED",
-                    workflow=v14.CONTRACT, action="no_order", formal_eligibility=False)
-    monkeypatch.setattr(v14.OperatingHorizonTaskService, "create_imported", imported)
+                    workflow=selected.CONTRACT, action="no_order", formal_eligibility=False)
+    monkeypatch.setattr(selected.OperatingHorizonTaskService, "create_imported", imported)
     unlock(client, secret)
     path = BASE + "/horizon-cash-policy-tasks/import-v12"
-    body = dict(source_task_id=source_id, request_key="IMPORT_V14_01", task_contract=v14.CONTRACT)
+    body = dict(source_task_id=source_id, request_key="IMPORT_VERSIONED_01", task_contract=selected.CONTRACT)
     response = client.post(path, json=body)
     assert response.status_code == 202, response.text
-    assert response.json()["workflow"] == v14.CONTRACT
+    assert response.json()["workflow"] == selected.CONTRACT
     assert seen[0]["expected_source_binding"] == {"pinned": True}
     assert data.provider_calls == []
     assert client.post(path, json={**body, "task_contract": "unknown"}).status_code == 422

@@ -139,3 +139,35 @@ it("continues only a sealed V12 annual stage with a stable idempotency key", asy
   expect(calls.create).not.toHaveBeenCalled();
   expect(hooks.values[3]).toBe("v13");
 });
+
+it("offers V15 only for validated V12 annual research and keeps its own workflow", async () => {
+  button(render("600519"), "D2 股东现金政策研究").props.onClick();
+  const sourceId = "rt-" + "d".repeat(32);
+  hooks.values[1] = {
+    task_id: sourceId,
+    symbol: "600519",
+    status: "FAILED",
+    workflow: "operating-horizon-task-v12-2027-live",
+    annual_status: "SETTLED_VALIDATED",
+    action: "no_order",
+  };
+  hooks.values[3] = "v12";
+  calls.importV12.mockResolvedValue({
+    task_id: "rt-" + "e".repeat(32),
+    symbol: "600519",
+    status: "QUEUED",
+    workflow: "operating-horizon-task-v15-2027-live",
+    action: "no_order",
+  });
+  await button(
+    render("600519"),
+    "复用已核验年度研究，按V15条件现金合同继续（可能计费）",
+  ).props.onClick();
+  expect(calls.importV12).toHaveBeenCalledWith({
+    source_task_id: sourceId,
+    request_key: "cash_import_v15_" + "d".repeat(32),
+    task_contract: "operating-horizon-task-v15-2027-live",
+  });
+  expect(hooks.values[3]).toBe("v15");
+  expect(calls.create).not.toHaveBeenCalled();
+});
