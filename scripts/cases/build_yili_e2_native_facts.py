@@ -151,6 +151,112 @@ for source_id, pdf, first_page, header, periods in (
                 "scope_marker": "合并利润表",
                 "number_kind": "money",
             })
+manifest["facts"].extend([
+    {
+        "id": "start_book_equity-2026-06-30-1225511409",
+        "field": "start_book_equity",
+        "source_id": "cninfo:1225511409",
+        "physical_page": 49,
+        "label": "归属于母公司所有者权益（或股东权益）合计",
+        "excerpt": "归属于母公司所有者权益（或股东权益）合计 53,711,364,981.99 54,655,690,475.89",
+        "value": "53711364981.99",
+        "unit": "CNY",
+        "scope": "consolidated_parent_equity",
+        "period_end": "2026-06-30",
+        "column_index": 0,
+        "column_periods": ["2026-06-30", "2025-12-31"],
+        "column_header": "2026 年 6 月 30 日 2025 年 12 月 31 日",
+        "header_pages": [48, 49],
+        "scope_marker": "合并资产负债表",
+        "number_kind": "money",
+    },
+    {
+        "id": "ordinary_shares-2026-06-30-1225511409",
+        "field": "ordinary_shares",
+        "source_id": "cninfo:1225511409",
+        "physical_page": 66,
+        "label": "总股本",
+        "excerpt": "总股本变为\n6,325,360,667 股。",
+        "value": "6325360667",
+        "unit": "shares",
+        "scope": "issued_ordinary_shares",
+        "period_end": "2026-06-30",
+        "column_index": 0,
+        "column_periods": ["2026-06-30"],
+        "column_header": "2026 年半年度报告",
+        "header_pages": [66],
+        "scope_marker": "2025 年，公司根据",
+        "number_kind": "shares",
+    },
+])
+for source_id, pdf, page, periods in (
+    ("cninfo:1225511409", original, 173, ("2026-06-30", "2025-06-30")),
+    ("cninfo:1225259562", annual, 210, ("2025-12-31", "2024-12-31")),
+):
+    text = extract_pages(pdf)[page - 1]
+    for field, label in (
+        ("depreciation", "固定资产折旧、油气资产折耗、生产性生物资产折旧"),
+        ("amortization", "使用权资产摊销"),
+        ("amortization", "无形资产摊销"),
+        ("amortization", "长期待摊费用摊销"),
+    ):
+        matching = [line.strip() for line in text.splitlines() if line.strip().startswith(label)]
+        if len(matching) != 1:
+            raise ValueError((source_id, label, matching))
+        line = matching[0]
+        values = re.findall(r"(?<![\d.])-?(?:\d{1,3}(?:,\d{3})+|\d+)\.\d{2}(?!\d)", line)
+        if len(values) != 2:
+            raise ValueError((source_id, label, line, values))
+        for column, period in enumerate(periods[:2 if source_id.endswith("11409") else 1]):
+            manifest["facts"].append({
+                "id": f"{field}-{label[:4]}-{period}-{source_id.split(':')[1]}",
+                "field": field,
+                "source_id": source_id,
+                "physical_page": page,
+                "label": label,
+                "excerpt": line,
+                "value": values[column].replace(",", ""),
+                "unit": "CNY",
+                "scope": "consolidated",
+                "period_end": period,
+                "column_index": column,
+                "column_periods": list(periods),
+                "column_header": "补充资料 本期金额 上期金额",
+                "header_pages": [page],
+                "scope_marker": "现金流量表补充资料",
+                "number_kind": "money",
+            })
+for source_id, page, label, excerpt, header, periods, values in (
+    ("cninfo:1225511409", 6,
+        "归属于上市公司股东的扣除非经常性损益的净利润",
+        "归属于上市公司股东的扣除非经常性损益的净利润 5,595,762,517.76 7,016,349,502.87",
+        "本报告期（1－6月） 上年同期",
+        ("2026-06-30", "2025-06-30"), ("5595762517.76", "7016349502.87")),
+    ("cninfo:1225259562", 7,
+        "归属于上市公司股东的扣除非\n经常性损益的净利润",
+        "归属于上市公司股东的扣除非\n经常性损益的净利润\n11,068,321,695.12 6,011,274,945.92",
+        "2025年 2024年",
+        ("2025-12-31", "2024-12-31"), ("11068321695.12", "6011274945.92")),
+):
+    for column, period in enumerate(periods[:2 if source_id.endswith("11409") else 1]):
+        manifest["facts"].append({
+            "id": f"ex_parent_profit-{period}-{source_id.split(':')[1]}",
+            "field": "ex_parent_profit",
+            "source_id": source_id,
+            "physical_page": page,
+            "label": label,
+            "excerpt": excerpt,
+            "value": values[column],
+            "unit": "CNY",
+            "scope": "consolidated_parent",
+            "period_end": period,
+            "column_index": column,
+            "column_periods": list(periods),
+            "column_header": header,
+            "header_pages": [page],
+            "scope_marker": "七、公司主要会计数据和财务指标" if page == 6 else "七、近三年主要会计数据和财务指标",
+            "number_kind": "money",
+        })
 output = root / "runtime/e2-first-input-600887-20261112" / f"native-facts-{created_at.strftime('%Y%m%dT%H%M%S%fZ')}.json"
 output.parent.mkdir(parents=True, exist_ok=True)
 with output.open("x", encoding="utf-8") as stream:
