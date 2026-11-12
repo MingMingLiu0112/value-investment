@@ -257,10 +257,16 @@ it("records the current driver bridge arithmetic acceptance without adopting par
       "母公司资金、分配、维持投入和营运资金条件桥",
     );
     expect(stage.nextStep).toContain("相同资料不再付费重试");
-    expect(stage.deliveryReview?.gap).toContain("真实V18 deepseek-flash任务结算¥0.080792");
+    expect(stage.deliveryReview?.gap).toContain(
+      "真实V18 deepseek-flash任务结算¥0.080792",
+    );
     expect(stage.deliveryReview?.gap).toContain("18项未来现金政策均为UNKNOWN");
-    expect(stage.deliveryReview?.gap).toContain("V18_E2_CASH_POLICY_INCOMPLETE");
-    expect(stage.deliveryReview?.gap).toContain("F1/F2没有新正向估值或条件价格");
+    expect(stage.deliveryReview?.gap).toContain(
+      "V18_E2_CASH_POLICY_INCOMPLETE",
+    );
+    expect(stage.deliveryReview?.gap).toContain(
+      "F1/F2没有新正向估值或条件价格",
+    );
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
   expect(d1.evidenceStatus).toContain("当前版本三角色研究");
