@@ -355,8 +355,14 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
     }
   }
   async function continueFailedV16Cash() {
-    if (lock.current || !task || kind !== "v16" || task.status !== "FAILED" ||
-        task.error_code !== "V16_ANNUAL_RESPONSE_REJECTED") return;
+    if (
+      lock.current ||
+      !task ||
+      kind !== "v16" ||
+      task.status !== "FAILED" ||
+      task.error_code !== "V16_ANNUAL_RESPONSE_REJECTED"
+    )
+      return;
     lock.current = true;
     setBusy(true);
     setError(undefined);
@@ -372,8 +378,11 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
       setE2Input(undefined);
     } catch (cause) {
       const reason = safeReason(cause);
-      setError(reason ? `V16封存响应续作被拒绝：${reason}；原任务未修改。`
-        : "V16封存响应未通过来源、修复或预算校验；未继续调用模型。");
+      setError(
+        reason
+          ? `V16封存响应续作被拒绝：${reason}；原任务未修改。`
+          : "V16封存响应未通过来源、修复或预算校验；未继续调用模型。",
+      );
     } finally {
       lock.current = false;
       setBusy(false);
@@ -576,12 +585,13 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         <Button disabled={busy} onClick={() => loadHistory("v16")}>
           读取2027 V16封存任务
         </Button>
-        {kind === "v16" && task?.status === "FAILED" &&
+        {kind === "v16" &&
+          task?.status === "FAILED" &&
           task.error_code === "V16_ANNUAL_RESPONSE_REJECTED" && (
-          <Button disabled={busy || active} onClick={continueFailedV16Cash}>
-            封存V16年度响应结构修复后仅继续现金研究（可能计费）
-          </Button>
-        )}
+            <Button disabled={busy || active} onClick={continueFailedV16Cash}>
+              封存V16年度响应结构修复后仅继续现金研究（可能计费）
+            </Button>
+          )}
         <Button disabled={busy} onClick={() => loadHistory("v17")}>
           读取2027 V17现金续作历史
         </Button>

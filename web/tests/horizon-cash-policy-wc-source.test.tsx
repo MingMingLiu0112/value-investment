@@ -3,7 +3,11 @@ import { webcrypto } from "node:crypto";
 import { beforeEach, expect, it, vi } from "vitest";
 
 const hooks = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
-const calls = vi.hoisted(() => ({ create: vi.fn(), importV12: vi.fn(), repairV16: vi.fn() }));
+const calls = vi.hoisted(() => ({
+  create: vi.fn(),
+  importV12: vi.fn(),
+  repairV16: vi.fn(),
+}));
 vi.mock("react", async (original) => {
   const actual = await original<typeof import("react")>();
   return {
@@ -232,15 +236,21 @@ it("continues only an explicitly selected failed V16 task as V17 cash-only", asy
   button(render("600519"), "D2 股东现金政策研究").props.onClick();
   const sourceId = "rt-" + "a".repeat(32);
   hooks.values[1] = {
-    task_id: sourceId, symbol: "600519", status: "FAILED",
-    error_code: "V16_ANNUAL_RESPONSE_REJECTED", action: "no_order",
+    task_id: sourceId,
+    symbol: "600519",
+    status: "FAILED",
+    error_code: "V16_ANNUAL_RESPONSE_REJECTED",
+    action: "no_order",
   };
   hooks.values[3] = "v16";
   const label = "封存V16年度响应结构修复后仅继续现金研究（可能计费）";
   calls.repairV16.mockResolvedValue({
-    task_id: "rt-" + "b".repeat(32), symbol: "600519", status: "QUEUED",
+    task_id: "rt-" + "b".repeat(32),
+    symbol: "600519",
+    status: "QUEUED",
     workflow: "operating-horizon-task-v17-2027-cash-repair",
-    action: "no_order", formal_eligibility: false,
+    action: "no_order",
+    formal_eligibility: false,
   });
   await button(render("600519"), label).props.onClick();
   expect(calls.repairV16).toHaveBeenCalledWith({
