@@ -574,6 +574,7 @@ jobs:
           tests/web_api/test_local_research_task_root_binding.py
           tests/web_api/test_operating_cash_consumption_api.py
           tests/test_first_research_input_v1.py
+          tests/test_first_input_parent_cash_observation_v1.py
           tests/test_first_research_fact_replay_v1.py
           tests/web_api/test_first_research_input_api.py
           tests/web_api/test_operating_assumption_api.py

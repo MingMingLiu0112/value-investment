@@ -392,6 +392,22 @@ export type FirstResearchInputResponse = {
   };
   condition_price: null;
   personal_quantity: null;
+  parent_cash_observation?: {
+    status: string;
+    reason?: string;
+    whole_statement_reconciled?: boolean;
+    periods?: {
+      period: string;
+      flows: Record<string, string>;
+      closing_cash_and_equivalents_cny?: string;
+      physical_pages?: Record<string, number>;
+      source_sha256?: string;
+    }[];
+    ttm_flows?: Record<string, string>;
+    limitations?: string[];
+    action?: "no_order";
+    future_cash_proven?: false;
+  };
   company_name?: string;
   financial_basis?: string;
   research_as_of?: string;

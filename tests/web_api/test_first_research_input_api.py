@@ -50,6 +50,10 @@ def test_public_positive_view_cold_replays_without_account_or_writes(registered,
         body=response.json()
         assert body['status']=='SOURCE_BOUND_FIRST_INPUT_COMPILED',body.get('reason')
         assert body['native_fact_count']>0 and body['sources'] and body['operating_assumptions']
+        cash = body['parent_cash_observation']
+        assert cash['status'] == 'UNASSESSABLE' and cash['reason']
+        assert cash['future_cash_proven'] is False and cash['formal_eligibility'] is False
+        assert cash['periods'] == [] and cash['ttm_flows'] == {} and cash['action'] == 'no_order'
         assert body['input_fingerprint']==compiled['cold_recompile']['input_fingerprint']
         assert body['valuation_status']=='conditional_research_only'
         assert body['main_valuation_range'] is None and body['main_range_adopted'] is False

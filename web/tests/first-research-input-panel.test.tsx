@@ -374,3 +374,83 @@ it("rounds grouped amounts for display while preserving exact raw ledger values 
   expect(html).toContain("1234567.126789012345678901234567890123456789");
   expect(JSON.stringify(data)).toBe(before);
 });
+
+it("shows source-bound parent cash flows without turning closing cash into TTM or dividends", () => {
+  const data = example();
+  data.parent_cash_observation = {
+    status: "OBSERVED",
+    whole_statement_reconciled: true,
+    action: "no_order",
+    future_cash_proven: false,
+    periods: [
+      {
+        period: "H12026",
+        flows: {
+          cfo_cny: "35551654301.69",
+          gross_capex_cny: "1235902972.58",
+          borrowings_received_cny: "124697925031.54",
+          debt_repaid_cny: "143377489906.35",
+          mixed_distribution_interest_paid_cny: "6186835910.21",
+        },
+        closing_cash_and_equivalents_cny: "14939427794.14",
+        source_sha256: "a".repeat(64),
+        physical_pages: { cfo_cny: 57 },
+      },
+    ],
+    ttm_flows: {
+      cfo_cny: "45593027419.63",
+      gross_capex_cny: "1630305033.08",
+      borrowings_received_cny: "216451046343.17",
+      debt_repaid_cny: "242137138123.11",
+      mixed_distribution_interest_paid_cny: "9933808505.42",
+    },
+    limitations: ["TEST_ONLY历史观察不能推断未来分配"],
+  };
+  const visible = visibleHtml(
+    renderToStaticMarkup(
+      <FirstResearchInputView data={data} symbol="000568" />,
+    ),
+  );
+  expect(visible).toContain("母公司历史现金观察");
+  expect(visible).toContain("余额与现金变动已完整勾稽");
+  expect(visible).toContain("455.93");
+  expect(visible).toContain("149.39");
+  expect(visible).toContain("不适用（期末存量）");
+  expect(visible).toContain("混合科目，不等于股息");
+  expect(visible).toContain("REJECTED");
+});
+
+it("does not display unverified parent cash amounts", () => {
+  const data = example();
+  data.parent_cash_observation = {
+    status: "UNASSESSABLE",
+    reason: "TEST_ONLY_SOURCE_HASH_MISMATCH",
+  };
+  const visible = visibleHtml(
+    renderToStaticMarkup(
+      <FirstResearchInputView data={data} symbol="000568" />,
+    ),
+  );
+  expect(visible).toContain("母公司现金原件尚未完成独立核验");
+  expect(visible).toContain("TEST_ONLY_SOURCE_HASH_MISMATCH");
+  expect(visible).not.toContain("455.93");
+});
+
+it("does not display a parsed statement without full cash reconciliation", () => {
+  const data = example();
+  data.parent_cash_observation = {
+    status: "OBSERVED",
+    whole_statement_reconciled: false,
+    action: "no_order",
+    future_cash_proven: false,
+    periods: [{ period: "FY2025", flows: { cfo_cny: "45593027419.63" } }],
+    ttm_flows: { cfo_cny: "45593027419.63" },
+  };
+  const visible = visibleHtml(
+    renderToStaticMarkup(
+      <FirstResearchInputView data={data} symbol="000568" />,
+    ),
+  );
+  expect(visible).toContain("母公司现金原件尚未完成独立核验");
+  expect(visible).not.toContain("455.93");
+});
