@@ -4,8 +4,8 @@
   "cases": {
     "000568": {
       "receipt": {
-        "path": "runtime/e2-first-input-000568-20261111/recompile-v8-02/receipt.json",
-        "sha256": "a92b95c82a6abafefc5dbe36088153ae17787304c4f5ad467abae9bfe4ce115a"
+        "path": "runtime/e2-first-input-000568-20261112/recompile-20261112T113845341076Z/receipt.json",
+        "sha256": "5cf2e0668e51f6fbb01c82f4ff432d80aa473eda417cbf71c65d1e343531cd38"
       }
     },
     "600887": {

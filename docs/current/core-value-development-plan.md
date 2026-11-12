@@ -1014,3 +1014,9 @@
 - 最新提交 `48912191f0d8fca67b1684662181ae6b5467ca59` 的 GitHub Core Research Gates #823、Web Workbench #499 均为 completed/success；这是工程门禁，不证明经济假设或投资策略有效。
 - 本机8001后端与Web构建身份均为该提交；真实浏览器 `/strategy/value` 选择已登记研究600887后展示首编44项原生事实、三情景十年账与条件压力值。API `/api/v1/first-research-inputs/600887` 返回 `SOURCE_BOUND_FIRST_INPUT_COMPILED`，`main_range_adopted=false`、`condition_price=null`、`action=no_order`。
 - E2首编是同一内核的第二家公司正例，当前D2自动现金政策、主经济区间采纳和F2当前价格联合正例仍未完成。`/project` 的人工维护E2进度据此更新，不宣称Goal完成。下一段应独立复核母公司可达现金与终端分配假设，并接入合格报价/分配/事件同版本核验；不可用条件压力数值绕过F2。
+
+#### 2026-11-12 000568现行E2指针恢复
+
+- 实际8001 API `/api/v1/first-research-inputs/000568` 曾返回 `UNASSESSABLE: First compilation implementation changed; create a new version`。这是旧回执实现指纹保护生效；不能把历史首编成功写成当前可消费。
+- 复用原有84项事实的原始spec与来源原件，调用既有 `build_first_research_input` 在全新目录创建 `runtime/e2-first-input-000568-20261112/recompile-20261112T113845341076Z/receipt.json`，SHA256 `5cf2e0668e51f6fbb01c82f4ff432d80aa473eda417cbf71c65d1e343531cd38`；旧版本与原件均未改写。现行只读指针仅切换000568这一项。
+- 两家公司当前 `read_first_research_input` 冷读均返回 `SOURCE_BOUND_FIRST_INPUT_COMPILED`、`conditional_research_only`、`main_range_adopted=false`、`condition_price=null`、`action=no_order`。首编/API定向44 passed、1 skipped；skipped不计通过。000568的新回执使用历史已封存原件与现行实现重算，**不是**新的同期公告或独立新D2模型研究；两家均尚未经济采纳或通过F2当前资格。
