@@ -975,8 +975,10 @@ export const catalog: Record<
           "src/value_investment_agent/infrastructure/filings/first_research_fact_replay_v1.py",
           "src/value_investment_agent/application/product/first_research_input_view_v1.py",
         ],
-        engineeringStatus: "两家公司首编工程与真实来源重算通过／8001已展示600887",
-        evidenceStatus: "000568的84项及600887的44项官方原件事实冷重放；经济采纳待审",
+        engineeringStatus:
+          "两家公司首编工程与真实来源重算通过／8001已展示600887",
+        evidenceStatus:
+          "000568的84项及600887的44项官方原件事实冷重放；经济采纳待审",
         shortStatus: "两家原生事实首编进入共享v4；主研究区间均未采纳",
         implementation:
           "同一入口读取自身经营假设、现金约束，形成三条十年路径及共享模型条件压力计算",
@@ -993,9 +995,11 @@ export const catalog: Record<
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer: "来源→首输入→共享v4→ResearchCase→公开API与现有公司页面",
-          realData: "000568两份原件84事实；600887两份原件44事实及三情景年度账冷重算",
+          realData:
+            "000568两份原件84事实；600887两份原件44事实及三情景年度账冷重算",
           economic: "条件研究／未批准",
-          deployment: "600887首编在8001真实浏览器已展示；页面发布不等于经济采纳或F2资格",
+          deployment:
+            "600887首编在8001真实浏览器已展示；页面发布不等于经济采纳或F2资格",
           acceptance: "用户尚未确认此版本",
         },
       },
