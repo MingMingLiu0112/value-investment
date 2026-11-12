@@ -1020,3 +1020,9 @@
 - 实际8001 API `/api/v1/first-research-inputs/000568` 曾返回 `UNASSESSABLE: First compilation implementation changed; create a new version`。这是旧回执实现指纹保护生效；不能把历史首编成功写成当前可消费。
 - 复用原有84项事实的原始spec与来源原件，调用既有 `build_first_research_input` 在全新目录创建 `runtime/e2-first-input-000568-20261112/recompile-20261112T113845341076Z/receipt.json`，SHA256 `5cf2e0668e51f6fbb01c82f4ff432d80aa473eda417cbf71c65d1e343531cd38`；旧版本与原件均未改写。现行只读指针仅切换000568这一项。
 - 两家公司当前 `read_first_research_input` 冷读均返回 `SOURCE_BOUND_FIRST_INPUT_COMPILED`、`conditional_research_only`、`main_range_adopted=false`、`condition_price=null`、`action=no_order`。首编/API定向44 passed、1 skipped；skipped不计通过。000568的新回执使用历史已封存原件与现行实现重算，**不是**新的同期公告或独立新D2模型研究；两家均尚未经济采纳或通过F2当前资格。
+
+#### 2026-11-12 600887 E2条件路径独立经济复核
+
+- 只读复核已将首编spec/assumptions/receipt、原v4条件提案与两份官方PDF原件的SHA重新对齐；不改历史输入。结论维持 `main_range_adopted=false`：现行三情景仅为可复算条件压力，不足以成为主经济区间。
+- 决定性缺口：H1报告物理页57母公司期末现金等价物约149.39亿元，但页51短期借款约103.65亿元、应付票据约504.03亿元；50亿元现金底线和未来85%/60%利润可达比例缺融资、结算、子公司上划的逐年桥。FY2025＋H1 2026－H1 2025同口径购建付现约合并28.88亿元、母公司16.30亿元，不能据此直接把维持投入等同购建总额，也不足以证明稳定情景持续净维护仅5亿元。H1母公司经营现金同比波动大，应付及票据变动远大于2–4亿元年度WC假设。年1/2承诺10+5亿元及终端新增承诺归零缺逐项付款依据。
+- 下一实质工程/取证工作是复用已有母公司现金观察合同，逐页绑定FY2025、H1 2025、H1 2026经营现金、购建、投资收付、借还、股息和票据/受限资金，建立同口径现金及到期义务桥；不能从两份报表推出的维护/增长拆分或未来上划仍保留UNKNOWN。只读复核不构成批准、F2合格报价或实盘建议，`action=no_order`。
