@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from test_operating_horizon_task_v10_live import task, NOW
+from test_operating_horizon_task_v10_live import task, NOW, e2_read_time
 from test_operating_horizon_split_v8 import split_context, _annual, _cash
 from test_operating_horizon_draft_v1 import context as base_context
 from test_operating_horizon_cash_policy_e2_v7 import chain
@@ -53,7 +53,7 @@ def test_native_v16_compiles_to_e2_without_new_provider_call(native):
     assert result["status"] == "SUCCEEDED", result
     assert len(calls) == 2
     admitted = read_v16_cash_policy_e2_input(root=service.root, task_id=task_id,
-        now=NOW + timedelta(hours=1), service=service)
+        now=e2_read_time(), service=service)
     assert admitted["status"] == "TEST_ONLY_E2_CONTRACT_REPLAY"
     assert admitted["input_manifest"]["task_contract"] == v16.CONTRACT
     assert admitted["action"] == "no_order" and admitted["formal_eligibility"] is False
@@ -67,7 +67,7 @@ def test_native_v16_rejects_changed_sealed_cash_response(native):
     packet.write_text("{}", encoding="utf-8")
     with pytest.raises((ValueError, OSError)):
         read_v16_cash_policy_e2_input(root=service.root, task_id=task_id,
-            now=NOW + timedelta(hours=1), service=service)
+            now=e2_read_time(), service=service)
     assert len(calls) == 2
 
 
@@ -97,7 +97,7 @@ def test_imported_v12_v16_cash_stays_separate_from_old_v15(chain):
     result = service.run(created["task_id"], now=NOW)
     assert result["status"] == "SUCCEEDED", result
     admitted = read_v16_cash_policy_e2_input(root=service.root, task_id=created["task_id"],
-        now=NOW + timedelta(hours=1), service=service)
+        now=e2_read_time(), service=service)
     assert admitted["status"] == "TEST_ONLY_E2_CONTRACT_REPLAY"
     assert admitted["input_manifest"]["imported_annual"]["source_task_id"] == annual_task_id
     assert admitted["action"] == "no_order" and admitted["formal_eligibility"] is False

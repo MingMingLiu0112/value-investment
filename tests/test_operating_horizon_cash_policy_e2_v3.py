@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from test_operating_horizon_task_v10_live import task, NOW  # noqa: F401
+from test_operating_horizon_task_v10_live import task, NOW, e2_read_time  # noqa: F401
 from test_operating_horizon_task_v11_live import _service
 from test_operating_horizon_split_v8 import split_context  # noqa: F401
 from test_operating_horizon_draft_v1 import context as base_context  # noqa: F401
@@ -30,13 +30,13 @@ def test_v11_admission_and_fail_closed(task, monkeypatch):
     queued = service.create(symbol="600519", request_key="TEST_V11_E2", years=[2027], now=NOW)
     task_id = queued["task_id"]
     completed = service.run(task_id, now=NOW)
+    cutoff = e2_read_time()
     assert len(calls) == 2
     if completed["status"] != "SUCCEEDED":
         with pytest.raises(ValueError, match="SUCCEEDED_TWO_STAGE"):
             read_v11_cash_policy_e2_input(root=service.root, task_id=task_id,
-                                           now=NOW + timedelta(hours=1), service=service)
+                                           now=cutoff, service=service)
         return
-    cutoff = NOW + timedelta(hours=1)
     result = read_v11_cash_policy_e2_input(root=service.root, task_id=task_id,
                                            now=cutoff, service=service)
     assert result["status"] == "TEST_ONLY_E2_CONTRACT_REPLAY"
@@ -54,7 +54,7 @@ def test_v11_admission_and_fail_closed(task, monkeypatch):
         (lambda v: v.update(workflow="wrong-version"), "SUCCEEDED_TWO_STAGE"),
         (lambda v: v["stage_responses"].pop("cash"), "RESPONSE_PINS_REQUIRED"),
         (lambda v: v.update(source_binding={"path": "changed", "sha256": "0" * 64}), "TASK_PINS_CHANGED"),
-        (lambda v: v.update(updated_at=(NOW + timedelta(hours=2)).isoformat()), "TIME_INVALID"),
+        (lambda v: v.update(updated_at=(cutoff + timedelta(hours=1)).isoformat()), "TIME_INVALID"),
         (lambda v: v["research_result"]["years"]["2027"]["shareholder_cash_paths"]["base"]["terms"]["operating_wc_cash_cny"].update(value=None, classification="UNKNOWN"), "UNKNOWN_CASH_TERM"),
         (lambda v: v["research_result"]["years"]["2027"]["shareholder_cash_paths"]["base"]["terms"]["operating_wc_cash_cny"].update(value="not-a-number"), "CASH_TERM_INVALID"),
     ):

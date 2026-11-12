@@ -1,6 +1,6 @@
 """TEST_ONLY 2027 cash durability checks."""
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import os
 import shutil
@@ -14,6 +14,15 @@ from value_investment_agent.application.research.agent_review import operating_h
 from value_investment_agent.infrastructure.agent_runtime.provider import LLMResponse
 
 NOW = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+
+
+def e2_read_time():
+    """Observe a completed test task after its real persisted update time.
+
+    Task creation uses a fixed research as-of, while provider checkpoints use
+    the actual wall clock. A fixed 13:00 read cutoff becomes invalid as CI runs.
+    """
+    return max(NOW + timedelta(hours=1), datetime.now(timezone.utc) + timedelta(seconds=10))
 
 
 @pytest.fixture

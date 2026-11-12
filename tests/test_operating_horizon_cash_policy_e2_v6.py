@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from test_operating_horizon_task_v10_live import task, NOW
+from test_operating_horizon_task_v10_live import task, NOW, e2_read_time
 from test_operating_horizon_split_v8 import split_context, _annual, _cash
 from test_operating_horizon_draft_v1 import context as base_context
 from value_investment_agent.application.research.agent_review import operating_horizon_task_v12_live as v12
@@ -78,7 +78,7 @@ def test_real_services_offline_v12_v14_e2_cold_read(chain):
     service, task_id, result, _, _, calls = chain
     assert result["status"] == "SUCCEEDED", result
     admitted = read_v14_cash_policy_e2_input(root=service.root, task_id=task_id,
-        now=NOW + timedelta(hours=1), service=service)
+        now=e2_read_time(), service=service)
     assert admitted["status"] == "TEST_ONLY_E2_CONTRACT_REPLAY"
     assert admitted["annual_operating_status"] == "VERIFIED_V12_ANNUAL_COMPILED"
     assert admitted["input_manifest"]["imported_annual"]["source_task_id"]
@@ -95,7 +95,7 @@ def test_v14_e2_cold_read_rejects_tampered_v12_or_v14_packet(chain):
     source_packet.write_text("{}", encoding="utf-8")
     with pytest.raises((ValueError, OSError)):
         read_v14_cash_policy_e2_input(root=service.root, task_id=task_id,
-            now=NOW + timedelta(hours=1), service=service)
+            now=e2_read_time(), service=service)
     assert len(calls) == 1
 
 
@@ -106,7 +106,7 @@ def test_v14_e2_cold_read_rejects_tampered_local_cash(chain):
     cash_packet.write_text("{}", encoding="utf-8")
     with pytest.raises((ValueError, OSError)):
         read_v14_cash_policy_e2_input(root=service.root, task_id=task_id,
-            now=NOW + timedelta(hours=1), service=service)
+            now=e2_read_time(), service=service)
     assert len(calls) == 1
 
 
@@ -121,5 +121,5 @@ def test_v14_e2_cold_read_rejects_source_replay_change(chain):
     source.source_loader = changed
     with pytest.raises((ValueError, OSError)):
         read_v14_cash_policy_e2_input(root=service.root, task_id=task_id,
-            now=NOW + timedelta(hours=1), service=service)
+            now=e2_read_time(), service=service)
     assert len(calls) == 1
