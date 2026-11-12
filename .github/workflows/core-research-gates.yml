@@ -37,6 +37,7 @@ jobs:
           tests/test_first_use_value_analysis.py
           tests/test_public_financial_snapshot.py
           tests/test_official_report_acquisition.py
+          tests/test_official_dividend_split_receipt_v2.py
           tests/test_stock_identity_table_v1.py
           tests/test_public_evidence.py
           tests/test_module_run_v1.py
@@ -117,6 +118,7 @@ jobs:
           tests/test_held_decision_code_gap.py
           tests/test_value_research_priority_v2.py
           tests/test_sse_research_replay.py
+          tests/test_sse_ab_offline_replay_v1.py
           tests/test_sse_research_priority_v1.py
           tests/test_sse_research_pipeline_v1.py
           tests/test_sse_value_refresh_v1.py
@@ -512,6 +514,11 @@ jobs:
           tests/web_api/test_main_valuation_revalidation_api.py
           tests/test_operating_distribution_review_v1.py
           tests/test_current_capital_observation_v1.py
+          tests/test_quarter_financial_ocr_v1.py
+          tests/test_quarter_financial_read_model_v1.py
+          tests/test_official_halfyear_shares_ocr_v2.py
+          tests/test_current_capital_h1_ocr_overlay_v2.py
+          tests/test_current_capital_q3_h1_bridge_v1.py
           tests/test_native_capital_observation_v1.py
           tests/web_api/test_operating_distribution_api.py
           tests/test_operating_profit_cash_path_v1.py
@@ -519,9 +526,58 @@ jobs:
           tests/test_operating_statement_basis_v1.py
           tests/test_operating_provider_contract.py
           tests/test_operating_task_v2.py
+          tests/test_notice_task_dispatch_v1.py
+          tests/test_operating_horizon_sources_v10_q3_ocr.py
+          tests/test_operating_cash_policy_task_v4_q3_ocr.py
+          tests/test_parent_wc_history_600519_v1.py
+          tests/test_parent_wc_balance_request_v1.py
+          tests/test_operating_q3_cash_wc_task_v1.py
+          tests/test_operating_horizon_task_v5_wc.py
+          tests/test_operating_horizon_split_v6.py
+          tests/test_operating_horizon_task_v6_split.py
+          tests/test_operating_horizon_split_v7.py
+          tests/test_operating_horizon_task_v7_split.py
+          tests/test_operating_horizon_annual_v3.py
+          tests/test_issuer_dividend_plan_v2.py
+          tests/test_operating_q3_issuer_plan_loader_v8_600519.py
+          tests/test_operating_q3_issuer_wc_loader_v9.py
+          tests/test_operating_cash_policy_draft_v2.py
+          tests/test_operating_horizon_split_v8.py
+          tests/test_operating_horizon_task_v8_annual.py
+          tests/test_operating_horizon_task_v9_cash.py
+          tests/test_operating_horizon_task_v10_live.py
+          tests/test_operating_horizon_task_v11_live.py
+          tests/test_operating_horizon_task_v12_live.py
+          tests/test_operating_horizon_task_v13_live.py
+          tests/test_operating_cash_policy_draft_v14.py
+          tests/test_operating_horizon_task_v14_live.py
+          tests/test_operating_cash_policy_draft_v15.py
+          tests/test_operating_cash_policy_draft_v16_generic.py
+          tests/test_operating_horizon_task_v15_live.py
+          tests/test_operating_horizon_task_v16_live.py
+          tests/test_operating_horizon_annual_response_repair_v1.py
+          tests/test_operating_horizon_task_v17_cash.py
+          tests/test_operating_horizon_task_v18_cash.py
+          tests/test_operating_horizon_task_v19_generic.py
+          tests/test_operating_horizon_task_v20_staged.py
+          tests/test_parent_cash_reach_anchor_v1.py
+          tests/test_operating_horizon_carryover_v13.py
+          tests/test_operating_horizon_import_v13.py
+          tests/test_operating_horizon_citation_repair_v1.py
+          tests/test_operating_horizon_citation_repair_task_v1.py
+          tests/test_operating_horizon_cash_policy_e2_v1.py
+          tests/test_operating_horizon_cash_policy_e2_v2.py
+          tests/test_operating_horizon_cash_policy_e2_v3.py
+          tests/test_operating_horizon_cash_policy_e2_v6.py
+          tests/test_operating_horizon_cash_policy_e2_v7.py
+          tests/test_operating_horizon_cash_policy_e2_v8.py
+          tests/test_operating_horizon_cash_policy_e2_v9.py
+          tests/test_operating_horizon_cash_policy_e2_v10.py
           tests/web_api/test_live_operating_research_api.py
+          tests/web_api/test_local_research_task_root_binding.py
           tests/web_api/test_operating_cash_consumption_api.py
           tests/test_first_research_input_v1.py
+          tests/test_first_input_parent_cash_observation_v1.py
           tests/test_first_research_fact_replay_v1.py
           tests/web_api/test_first_research_input_api.py
           tests/web_api/test_operating_assumption_api.py
@@ -546,6 +602,7 @@ jobs:
           tests/test_joint_capital_path.py
           tests/test_terminal_economic_contract_v4.py
           tests/test_joint_cash_v4_two_company_real_replay.py
+          tests/test_v4_policy_bound_bytes.py
           tests/test_hotspot_price_comparability.py
           tests/test_hotspot_official_action_coverage.py
           tests/test_hotspot_action_coverage_lifecycle.py

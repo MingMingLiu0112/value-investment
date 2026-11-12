@@ -115,7 +115,7 @@ async function read(response: Response): Promise<Record<string, unknown>> {
     throw new ApiError(
       response.status,
       String(record.status ?? "HTTP_ERROR"),
-      record.detail ?? null,
+      record.detail ?? record.reason ?? null,
     );
   }
   return record;
@@ -267,6 +267,13 @@ async function operatorToken(): Promise<string> {
   return handshake;
 }
 
+//
+// Consume a launcher-provided one-time fragment as soon as the app loads.
+// Client-side navigation otherwise drops it before the first explicit
+// research-task read. No data or model task is requested by this exchange.
+if (fragmentSecret()) {
+  void operatorToken().catch(() => undefined);
+}
 async function post<T>(
   path: string,
   body: Record<string, unknown>,
@@ -351,12 +358,56 @@ export type FirstResearchInputResponse = {
   status: "NOT_STARTED" | "SOURCE_BOUND_FIRST_INPUT_COMPILED" | "UNASSESSABLE";
   scope: "CONDITIONAL_STRESS_RESEARCH_NOT_ADOPTED_MAIN_RANGE";
   action: "no_order";
+  successor_update?: {
+    status:
+      "NOT_STARTED" | "SOURCE_BOUND_CONDITIONAL_SUCCESSOR" | "UNASSESSABLE";
+    reason?: string;
+    symbol: string;
+    action: "no_order";
+    formal_eligibility: false;
+    main_range_adopted: false;
+    price_admitted: false;
+    changed_input_fields?: string[];
+    change_rationale?: string;
+    countercase?: string;
+    research_as_of?: string;
+    financial_basis?: string;
+    predecessor_input_fingerprint?: string;
+    successor_input_fingerprint?: string;
+    predecessor_valuation?: FirstResearchInputResponse["valuation"];
+    successor_valuation?: FirstResearchInputResponse["valuation"];
+    valuation_changed?: boolean;
+  };
   formal_eligibility: false;
   main_range_adopted: false;
   main_valuation_range: null;
   current_price: null;
+  quote_observation?: {
+    status: string;
+    quote_date: string | null;
+    display_price: string | number | null;
+    bundle_sha256: string | null;
+    price_admitted: boolean;
+    comparison_eligible: boolean;
+  };
   condition_price: null;
   personal_quantity: null;
+  parent_cash_observation?: {
+    status: string;
+    reason?: string;
+    whole_statement_reconciled?: boolean;
+    periods?: {
+      period: string;
+      flows: Record<string, string>;
+      closing_cash_and_equivalents_cny?: string;
+      physical_pages?: Record<string, number>;
+      source_sha256?: string;
+    }[];
+    ttm_flows?: Record<string, string>;
+    limitations?: string[];
+    action?: "no_order";
+    future_cash_proven?: false;
+  };
   company_name?: string;
   financial_basis?: string;
   research_as_of?: string;
@@ -943,6 +994,51 @@ export type CurrentCapitalObservation = {
   action: "no_order";
   formal_eligibility: false;
   current_capital_continuity?: "NOT_PROVEN";
+  h1_share_observation?: {
+    status: "NOT_REGISTERED" | "VERIFIED" | "UNASSESSABLE";
+    report_period_end: string | null;
+    ordinary_shares: number | null;
+    shares_before?: number;
+    cancelled_shares?: number;
+    current_continuity: "UNPROVEN";
+    formal_eligibility: false;
+    action: "no_order";
+    source?: { original_sha256: string; source_url: string };
+    error_code?: string;
+  };
+  q3_h1_capital_bridge?: {
+    status: "MONETARY_CAPITAL_VERIFIED_SHARES_UNKNOWN" | "UNASSESSABLE";
+    symbol?: string;
+    q3_monetary_capital_cny?: string;
+    q3_comparison_capital_cny?: string;
+    q3_ordinary_shares: "UNKNOWN";
+    h1_ordinary_shares: number | "UNKNOWN";
+    current_continuity: "UNPROVEN";
+    q3_source?: { original_sha256: string; source_url: string };
+    error_code?: string;
+    action: "no_order";
+    formal_eligibility: false;
+  };
+  quarter_financial_observation?: {
+    status: "VERIFIED_OBSERVATION_ONLY" | "UNASSESSABLE";
+    supported_scope?: string;
+    reason?: string;
+    action: "no_order";
+    formal_eligibility: false;
+    valuation_admitted: false;
+    current_comparison_changed?: false;
+    ytd_9m_observation?: {
+      symbol: string;
+      report_period: string;
+      period_basis: string;
+      currency: string;
+      facts: { revenue_ytd_cny: string; attributable_profit_ytd_cny: string };
+      source_sha256: string;
+      formal_eligibility: false;
+      valuation_admitted: false;
+      action: "no_order";
+    } | null;
+  };
   source_bound_observations?: {
     source_index: number;
     status: string;
@@ -1247,6 +1343,7 @@ export type PublicOperatingResearchResult =
       formal_eligibility: false;
       symbol: string;
       status: "NOT_STARTED" | "UNASSESSABLE";
+      current_capital_observation?: CurrentCapitalObservation;
       main_valuation_revalidation?: MainValuationRevalidationRecord;
       reason?: string;
       task_id?: string;
@@ -1256,6 +1353,86 @@ export type PublicOperatingResearchResult =
 export type LiveOperatingResearchHistory = {
   symbol?: string;
   items: LiveOperatingResearchTask[];
+};
+export type HorizonCashPolicyTask = {
+  task_id: string;
+  symbol: string;
+  status: string;
+  persisted_status?: string;
+  action: "no_order";
+  formal_eligibility?: false;
+  workflow?:
+    | "operating-horizon-task-v4-cash-policy"
+    | "operating-horizon-task-v5-parent-wc-balance"
+    | "operating-horizon-task-v6-split"
+    | "operating-horizon-task-v7-split"
+    | "operating-horizon-task-v12-2027-live"
+    | "operating-horizon-task-v13-2027-live"
+    | "operating-horizon-task-v14-2027-live"
+    | "operating-horizon-task-v15-2027-live"
+    | "operating-horizon-task-v16-2027-live"
+    | "operating-horizon-task-v17-2027-cash-repair"
+    | "operating-horizon-task-v18-2027-cash-anchors"
+    | "operating-cash-policy-task-v1"
+    | "operating-horizon-task-v2"
+    | "operating-horizon-task-v3";
+  error_code?: string | null;
+  annual_status?: string;
+  cash_status?: string;
+  research_result?: Record<string, unknown> | null;
+  cash_policy_completeness?: {
+    status:
+      | "INCOMPLETE_UNKNOWN_TERMS"
+      | "COMPLETE_UNAPPROVED_RESEARCH"
+      | "NO_VALIDATED_RESULT";
+    missing_terms: { year: string; scenario: string; term: string }[];
+    source_scope: "SEALED_RESPONSE_READ_ONLY";
+    task_accepted: boolean;
+    formal_eligibility: false;
+    action: "no_order";
+  };
+  sealed_response_diagnostic?: {
+    status: "REJECTED_RESPONSE_DIAGNOSTIC_ONLY";
+    response_binding: { path: string; sha256: string };
+    missing_terms: {
+      year: string;
+      scenario: string;
+      term: string;
+      reason: "ABSENT" | "NOT_QUANTIFIED";
+    }[];
+    action: "no_order";
+    formal_eligibility: false;
+    e2_usable: false;
+  };
+  economic_validation?: {
+    status: "REJECTED" | "NO_DETECTED_DENOMINATOR_CONFLICT";
+    reason: string | null;
+    actual_plan_denominator: string;
+    conflicts: {
+      year: string;
+      scenario: string;
+      term: string;
+      source_id: string;
+    }[];
+    action: "no_order";
+  };
+  source_binding?: unknown;
+  context_fingerprint?: string;
+  usage?: Record<string, unknown>;
+};
+
+export type HorizonCashPolicyE2Input = {
+  status: string;
+  annual_operating_status?: string;
+  annual_operating_error?: string | null;
+  action: "no_order";
+  formal_eligibility: false;
+  condition_price: null;
+  symbol?: string;
+  task_id?: string;
+  blockers?: string[];
+  reason?: string;
+  scope?: string;
 };
 
 export type ValueWorkbenchSection = {
@@ -1486,10 +1663,180 @@ export const api = {
       "operating-research/tasks/" + encodeURIComponent(id) + "/resume",
       {},
     ),
+  createHorizonCashPolicyTask: (body: {
+    symbol: string;
+    request_key: string;
+    years: number[];
+    task_contract?:
+      | "operating-horizon-task-v5-parent-wc-balance"
+      | "operating-horizon-task-v6-split"
+      | "operating-horizon-task-v7-split"
+      | "operating-horizon-task-v11-2027-live"
+      | "operating-horizon-task-v12-2027-live"
+      | "operating-horizon-task-v13-2027-live"
+      | "operating-horizon-task-v14-2027-live"
+      | "operating-horizon-task-v15-2027-live"
+      | "operating-horizon-task-v16-2027-live";
+    source_loader_version?:
+      | "operating-q3-issuer-wc-loader-v9-600519"
+      | "operating-q3-issuer-dividend-split-loader-v9-600519";
+  }) =>
+    post<HorizonCashPolicyTask>(
+      "operating-research/horizon-cash-policy-tasks",
+      body,
+    ),
+  importV12HorizonCashPolicyTask: (body: {
+    source_task_id: string;
+    request_key: string;
+    task_contract?:
+      | "operating-horizon-task-v13-2027-live"
+      | "operating-horizon-task-v14-2027-live"
+      | "operating-horizon-task-v15-2027-live"
+      | "operating-horizon-task-v16-2027-live";
+  }) =>
+    post<HorizonCashPolicyTask>(
+      "operating-research/horizon-cash-policy-tasks/import-v12",
+      body,
+    ),
+  repairV16HorizonCashPolicyTask: (body: {
+    source_task_id: string;
+    request_key: string;
+  }) =>
+    post<HorizonCashPolicyTask>(
+      "operating-research/horizon-cash-policy-tasks/repair-v16-cash",
+      body,
+    ),
+  researchV18HorizonCashPolicyTask: (body: {
+    source_task_id: string;
+    request_key: string;
+  }) =>
+    post<HorizonCashPolicyTask>(
+      "operating-research/horizon-cash-policy-tasks/research-v18-cash",
+      body,
+    ),
+  horizonCashPolicyTask: (id: string, signal?: AbortSignal) =>
+    getPrivate<HorizonCashPolicyTask>(
+      "operating-research/horizon-cash-policy-tasks/" + encodeURIComponent(id),
+      signal,
+    ),
+  recentHorizonCashPolicyTasks: (signal?: AbortSignal) =>
+    getPrivate<{
+      action: "no_order";
+      scope: "HISTORICAL_D2_TASKS_NOT_CURRENT_CANDIDATES";
+      items: HorizonCashPolicyTask[];
+    }>("operating-research/horizon-cash-policy-tasks/recent", signal),
+  horizonCashPolicyHistory: (
+    symbol: string,
+    signal?: AbortSignal,
+    taskContract?:
+      | "operating-horizon-task-v5-parent-wc-balance"
+      | "operating-horizon-task-v6-split"
+      | "operating-horizon-task-v7-split"
+      | "operating-horizon-task-v10-2027-live"
+      | "operating-horizon-task-v11-2027-live"
+      | "operating-horizon-task-v12-2027-live"
+      | "operating-horizon-task-v13-2027-live"
+      | "operating-horizon-task-v14-2027-live"
+      | "operating-horizon-task-v15-2027-live"
+      | "operating-horizon-task-v16-2027-live"
+      | "operating-horizon-task-v17-2027-cash-repair"
+      | "operating-horizon-task-v18-2027-cash-anchors",
+  ) =>
+    getPrivate<{
+      action: "no_order";
+      symbol: string;
+      items: HorizonCashPolicyTask[];
+    }>(
+      "operating-research/horizon-cash-policy-tasks?symbol=" +
+        encodeURIComponent(symbol) +
+        (taskContract
+          ? "&task_contract=" + encodeURIComponent(taskContract)
+          : ""),
+      signal,
+    ),
+  horizonCashPolicyE2Input: (id: string, signal?: AbortSignal) =>
+    getPrivate<HorizonCashPolicyE2Input>(
+      "operating-research/horizon-cash-policy-tasks/" +
+        encodeURIComponent(id) +
+        "/e2-input",
+      signal,
+    ),
+  controlHorizonCashPolicyTask: (id: string, operation: "cancel" | "resume") =>
+    post<HorizonCashPolicyTask>(
+      "operating-research/horizon-cash-policy-tasks/" +
+        encodeURIComponent(id) +
+        "/" +
+        operation,
+      {},
+    ),
+  compactCashPolicyHistory: (symbol: string, signal?: AbortSignal) =>
+    getPrivate<{
+      action: "no_order";
+      symbol: string;
+      items: HorizonCashPolicyTask[];
+    }>(
+      "operating-research/cash-policy-tasks?symbol=" +
+        encodeURIComponent(symbol),
+      signal,
+    ),
+  createCompactCashPolicyTask: (body: {
+    symbol: string;
+    request_key: string;
+    years: number[];
+  }) =>
+    post<HorizonCashPolicyTask>("operating-research/cash-policy-tasks", body),
+  compactCashPolicyTask: (id: string, signal?: AbortSignal) =>
+    getPrivate<HorizonCashPolicyTask>(
+      "operating-research/cash-policy-tasks/" + encodeURIComponent(id),
+      signal,
+    ),
+  compactCashPolicyE2Input: (id: string, signal?: AbortSignal) =>
+    getPrivate<HorizonCashPolicyE2Input>(
+      "operating-research/cash-policy-tasks/" +
+        encodeURIComponent(id) +
+        "/e2-input",
+      signal,
+    ),
+  annualOperatingHistory: (symbol: string, signal?: AbortSignal) =>
+    getPrivate<{
+      action: "no_order";
+      symbol: string;
+      items: HorizonCashPolicyTask[];
+    }>(
+      "operating-research/horizon-tasks?symbol=" + encodeURIComponent(symbol),
+      signal,
+    ),
+  splitD2E2Input: (cashId: string, annualId: string, signal?: AbortSignal) =>
+    getPrivate<HorizonCashPolicyE2Input>(
+      "operating-research/cash-policy-tasks/" +
+        encodeURIComponent(cashId) +
+        "/e2-input?annual_task_id=" +
+        encodeURIComponent(annualId),
+      signal,
+    ),
+  controlCompactCashPolicyTask: (id: string, operation: "cancel" | "resume") =>
+    post<HorizonCashPolicyTask>(
+      "operating-research/cash-policy-tasks/" +
+        encodeURIComponent(id) +
+        "/" +
+        operation,
+      {},
+    ),
 
   firstResearchInput: (symbol: string, signal?: AbortSignal) =>
     get<FirstResearchInputResponse>(
       "first-research-inputs/" + encodeURIComponent(symbol),
+      signal,
+    ),
+  createAnchoredAnnualTask: (body: {
+    symbol: string;
+    request_key: string;
+    years: number[];
+  }) =>
+    post<HorizonCashPolicyTask>("operating-research/horizon-v3-tasks", body),
+  anchoredAnnualTask: (id: string, signal?: AbortSignal) =>
+    getPrivate<HorizonCashPolicyTask>(
+      "operating-research/horizon-v3-tasks/" + encodeURIComponent(id),
       signal,
     ),
   researchAssumptionDraft: (symbol: string, signal?: AbortSignal) =>

@@ -159,7 +159,7 @@ describe("versioned strategy architecture", () => {
     ).not.toContain("E1");
     expect(
       catalog.value.stages.find((s) => s.id === "E2")?.engineeringStatus,
-    ).toBe("工程首编与真实来源重算完成／部署待验收");
+    ).toContain("8001已展示600887");
     expect(catalog.value.stages.find((s) => s.id === "B")?.evidence).toContain(
       "CONFLICT",
     );
@@ -254,8 +254,16 @@ it("records the current driver bridge arithmetic acceptance without adopting par
     );
     expect(stage.evidenceSource).not.toContain("待Root");
     expect(stage.nextStep).toContain(
-      "验证参数经济适用性及资本/现金资料，不重试模型凑通过",
+      "母公司资金、分配、维持投入和营运资金条件桥",
     );
+    expect(stage.nextStep).toContain("相同资料不再付费重试");
+    expect(stage.deliveryReview?.gap).toContain(
+      "V19、V20年度响应均已封存且校验失败",
+    );
+    expect(stage.deliveryReview?.gap).toContain("V20仅调用Bear阶段");
+    expect(stage.deliveryReview?.gap).toContain("Base/Bull及现金均未调用");
+    expect(stage.deliveryReview?.gap).toContain("未来现金政策仍UNKNOWN");
+    expect(stage.deliveryReview?.gap).toContain("E2/F1/F2没有新真实正例");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
   expect(d1.evidenceStatus).toContain("当前版本三角色研究");
@@ -266,8 +274,8 @@ it("records the current driver bridge arithmetic acceptance without adopting par
   );
   expect(d2.implementation).toContain("H12026→H12027");
   expect(d2.implementation).toContain("同比FY只对FY、H1只对H1");
-  expect(d2.milestone).toContain("不同任务不自动合并主预测");
-  expect(d2.milestone).toContain("现金和估值仍未闭环");
+  expect(d2.milestone).toContain("历史失败任务保持原样");
+  expect(d2.milestone).toContain("现金和估值链未闭环");
   expect(d2.existingEvidence).toContain("rt-c40经济拒绝保留为历史");
   expect(d2.evidence).toContain("typed bridge不消费这些文字");
   expect(d2.progress?.economic).toContain("参数经济适用性未证");
@@ -292,7 +300,7 @@ it("records the current driver bridge arithmetic acceptance without adopting par
   ).toContain("用户尚未确认");
   expect(
     catalog.value.stages.find((stage) => stage.id === "E2")?.engineeringStatus,
-  ).toBe("工程首编与真实来源重算完成／部署待验收");
+  ).toContain("8001已展示600887");
 });
 
 it("separates the actual capital blocker and vertical acceptance from future platform expansion", () => {

@@ -1,0 +1,11 @@
+{
+  "document_date": "2024-08-09",
+  "sha256": "31a299d0d492960f3bd709822c27cce12e5364f8a9c6d7a551f4f48a479e8ae9",
+  "schema_version": "d2-issuer-dividend-plan-source-v2",
+  "published_date_basis": "PDF_PAGE_2_BOARD_DATE_NOT_INDEPENDENT_POSTING_TIME",
+  "issuer_name": "贵州茅台酒股份有限公司",
+  "fetched_at": "2026-11-11T13:09:16Z",
+  "symbol": "600519",
+  "source_url": "https://www.moutaichina.com/eportal/attachDir/mtgf/2024/08/2024080910064576661.pdf",
+  "path": "artifacts/current/d2-issuer-dividend-plan-v2/600519-2024-2026-dividend-plan.pdf"
+}

@@ -63,7 +63,19 @@ class OperatingHorizonTaskService(v1.OperatingHorizonTaskService):
             if state["status"] == "SUCCEEDED":
                 raise ValueError("HORIZON_RESPONSE_MISSING")
             return None
-        packet = self._bound(pin)
+        raw_packet = self._bound(pin)
+        packet = raw_packet
+        normalized_pin = state.get("normalized_response_binding")
+        if normalized_pin is not None:
+            packet = self._bound(normalized_pin)
+            transport = packet.get("transport_normalization")
+            raw_response = raw_packet.get("response", {}).get("text")
+            if (not isinstance(transport, dict)
+                    or transport.get("original_response_binding") != pin
+                    or transport.get("original_response_sha256") != _hash(raw_response.encode("utf-8"))
+                    or transport.get("normalized_response_sha256") != _hash(packet.get("response", {}).get("text", "").encode("utf-8"))
+                    or v1._normalize_exact_extra_closing_brace(raw_response) != packet.get("response", {}).get("text")):
+                raise ValueError("HORIZON_NORMALIZED_RESPONSE_BINDING_INVALID")
         if (packet["request_sha256"] != spec["request_sha256"]
                 or packet["context_sha256"] != spec["context_sha256"]
                 or packet["implementation_sha256"] != spec["implementation_sha256"]

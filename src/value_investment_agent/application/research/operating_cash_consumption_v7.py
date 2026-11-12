@@ -21,6 +21,18 @@ from . import operating_cash_consumption_v2 as annual_compiler
 VERSION = "operating-cash-consumption-v7"
 
 
+def _scope_decomposition_status(scope_decomposition, *, known_evidence_ids):
+    """Return an explicit, non-valuation status for supplied D2 scope evidence."""
+    if scope_decomposition is None:
+        return "SCOPE_CHANGE_APPLICABILITY_NOT_DECLARED"
+    contributions = validate_scope_decomposition(
+        scope_decomposition, known_evidence_ids=known_evidence_ids,
+    )
+    return ("SCOPE_CHANGE_VERIFIED" if any(
+        item.scope_kind == "NEWLY_CONSOLIDATED" for item in contributions
+    ) else "STABLE_SCOPE_VERIFIED")
+
+
 def _failed_repair(root, symbol):
     service = repair.OperatingHorizonTaskService(root)
     directory = service._directory(repair.SINGLE_TASK_ID)
@@ -49,12 +61,10 @@ def _compile(*, root, symbol, now, admitted):
     # The retained v2 provider response predates the scope contract.  Its annual
     # drivers remain readable, but cannot become a shareholder-cash input until
     # a source-bound legacy/new-consolidation bridge is supplied.
-    scope_decomposition = admitted.get("scope_decomposition")
-    if scope_decomposition is not None:
-        validate_scope_decomposition(
-            scope_decomposition,
-            known_evidence_ids={item["id"] for item in context["evidence"]},
-        )
+    scope_status = _scope_decomposition_status(
+        admitted.get("scope_decomposition"),
+        known_evidence_ids={item["id"] for item in context["evidence"]},
+    )
     result = dict(
         task_id=binding["original_task_id"],
         transport_admission=deepcopy(binding),
@@ -64,8 +74,7 @@ def _compile(*, root, symbol, now, admitted):
         independent_review="REQUIRED_NOT_APPROVED", years={},
         source_binding=spec["source_binding"], context_fingerprint=spec["context_fingerprint"],
         research_as_of=spec["created_at"], cash_model_ready=False, condition_price=None,
-        scope_decomposition_status=("VERIFIED" if scope_decomposition is not None
-                                    else "LEGACY_AND_NEW_SCOPE_SEPARATION_REQUIRED"),
+        scope_decomposition_status=scope_status,
         limitation=("Provider transport formatting was normalized under a retained-byte contract. "
                     "Economic evidence remains conditional: no selected main path, cash policy, "
                     "terminal value or approval is supplied."),

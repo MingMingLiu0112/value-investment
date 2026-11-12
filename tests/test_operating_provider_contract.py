@@ -197,6 +197,30 @@ def test_json_object_carries_exact_trusted_schema_within_existing_prompt_reserve
     assert sum(row[0]=='open' for row in calls)==1
 
 
+def test_json_object_can_carry_a_bounded_transport_contract_without_replacing_local_schema(transport):
+    schema={'type':'object','additionalProperties':False,'required':['LOCAL_ONLY_SCHEMA_SENTINEL'],
+        'properties':{'LOCAL_ONLY_SCHEMA_SENTINEL':{'type':'string'}}}
+    req=mod.LLMRequest('TEST_ONLY','system','user',schema,512,
+        transport_output_contract='D2 compact exact fields: years,bear,base,bull.')
+    provider(response_format_mode='json_object').complete(req)
+    _,calls=transport
+    body=calls[0][1]
+    transmitted=body['messages'][1]['content']
+    assert req.output_schema==schema
+    assert req.transport_output_contract in transmitted
+    assert 'LOCAL_ONLY_SCHEMA_SENTINEL' not in transmitted
+    assert body['response_format']=={'type':'json_object'}
+
+
+@pytest.mark.parametrize('contract',["", "x"*16001, 3, {}])
+def test_invalid_transport_contract_rejected_before_network(transport,contract):
+    _,calls=transport
+    req=mod.LLMRequest('TEST_ONLY','system','user',{'type':'object'},512,contract)
+    with pytest.raises(ValueError,match='transport output contract'):
+        provider(response_format_mode='json_object').complete(req)
+    assert calls==[]
+
+
 def test_old_schema_mode_does_not_change_messages_or_token_key(transport):
     req=request()
     provider().complete(req)

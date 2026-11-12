@@ -170,6 +170,39 @@ def test_rejected_response_retained_without_second_call(env):
     assert len(env.provider.calls) == 1
 
 
+def test_exact_extra_brace_creates_immutable_transport_view_without_rewriting_raw(env):
+    env.provider.behavior = lambda req: LLMResponse(json.dumps(payload([2026])) + '}', 100, 50, 'TEST_ONLY')
+    task = create(env)
+    out = env.service().run(task)
+    assert out['status'] == 'SUCCEEDED', out
+    assert out['response_binding'] and out['normalized_response_binding']
+    raw = env.service()._bound(out['response_binding'])
+    normalized = env.service()._bound(out['normalized_response_binding'])
+    assert raw['response']['text'].endswith('}')
+    assert normalized['response']['text'] == raw['response']['text'][:-1]
+    assert normalized['transport_normalization']['kind'] == 'EXACT_ONE_EXTRA_CLOSING_BRACE'
+    assert normalized['transport_normalization']['original_response_binding'] == out['response_binding']
+    assert env.service().read(task)['research_result'] == out['research_result']
+    assert len(env.provider.calls) == 1
+
+
+@pytest.mark.parametrize('suffix', ['}}', ' trailing', '}{"extra":1}'])
+def test_non_exact_transport_suffix_is_not_normalized(env, suffix):
+    env.provider.behavior = lambda req: LLMResponse(json.dumps(payload([2026])) + suffix, 100, 50, 'TEST_ONLY')
+    task = create(env)
+    out = env.service().run(task)
+    assert out['status'] == 'FAILED'
+    assert out['normalized_response_binding'] is None
+    assert env.service()._bound(out['response_binding'])['response']['text'].endswith(suffix)
+
+
+def test_multiple_trailing_braces_have_a_precise_fail_closed_code(env):
+    env.provider.behavior = lambda req: LLMResponse(json.dumps(payload([2026])) + '}}', 100, 50, 'TEST_ONLY')
+    out = env.service().run(create(env))
+    assert out['status'] == 'FAILED'
+    assert out['error_code'] == 'HORIZON_JSON_NOT_EXACT_ONE_EXTRA_CLOSING_BRACE'
+
+
 def test_cancel_before_and_during_provider(env):
     first = create(env)
     assert env.service().cancel(first)['status'] == 'CANCELLED'
@@ -281,12 +314,18 @@ def test_wrong_model_rejected_and_reservation_retained(env):
     ('citation', 'UNKNOWN_MISSING_DUPLICATE_HORIZON_CITATION'),
     ('fields', 'HORIZON_EXACT_FIELDS_REQUIRED'),
     ('incomplete', 'HORIZON_PROVIDER_RESPONSE_INCOMPLETE'),
+    ('cap', 'HORIZON_PROVIDER_COMPLETION_CAP_REACHED'),
+    ('filter', 'HORIZON_PROVIDER_CONTENT_FILTERED'),
     ('unknown', 'HORIZON_STRUCTURED_RESPONSE_OR_SOURCE_REJECTED'),
 ])
 def test_safe_error_classification(env, kind, code):
     def response(req):
         if kind == 'incomplete':
             raise ValueError('LLM response is truncated, filtered, refused or incomplete')
+        if kind == 'cap':
+            raise ValueError('LLM response incomplete: completion token cap reached')
+        if kind == 'filter':
+            raise ValueError('LLM response incomplete: provider content filter')
         if kind == 'unknown':
             raise ValueError('SECRET_PROVIDER_TEXT_MUST_NOT_BE_PERSISTED')
         value = payload([2026])
@@ -301,6 +340,22 @@ def test_safe_error_classification(env, kind, code):
     assert out['status'] == 'FAILED' and out['error_code'] == code
     assert env.service().read(task)['error_code'] == code
     assert 'SECRET_PROVIDER_TEXT' not in ''.join(p.read_text(encoding='utf-8') for p in env.service()._directory(task).rglob('*.json'))
+
+
+def test_failed_task_keeps_original_error_when_source_becomes_unreplayable(env):
+    def incomplete(_request):
+        raise ValueError('LLM response is truncated, filtered, refused or incomplete')
+    env.provider.behavior = incomplete
+    task = create(env)
+    failed = env.service().run(task)
+    assert failed['error_code'] == 'HORIZON_PROVIDER_RESPONSE_INCOMPLETE'
+    env.original.write_text(env.original.read_text(encoding='utf-8') + ' ', encoding='utf-8')
+    historical = env.service().read(task)
+    assert historical['status'] == historical['persisted_status'] == 'FAILED'
+    assert historical['error_code'] == failed['error_code']
+    assert historical['current_replay_error'] == 'SOURCE_OR_IMPLEMENTATION_CHANGED'
+    assert historical['research_result'] is None
+    assert historical['reserved_cost'] == failed['reserved_cost']
 
 
 def test_response_published_but_budget_settlement_failure_never_recovers_success(env, monkeypatch):

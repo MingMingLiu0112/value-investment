@@ -343,6 +343,18 @@ def test_symbol_discovery_missing_store_is_zero_write(task):
     assert not service.base.exists()
 
 
+def test_symbol_discovery_ignores_uncommitted_lock_only_directory(task):
+    service,_,_ = task
+    orphan = service.base / ('rt-' + 'f' * 32)
+    orphan.mkdir(parents=True)
+    (orphan / 'state.lock').write_bytes(b'\0')
+    before = {p.relative_to(service.root).as_posix(): p.read_bytes()
+              for p in service.root.rglob('*') if p.is_file()}
+    assert service.list_for_symbol('600519') == []
+    assert before == {p.relative_to(service.root).as_posix(): p.read_bytes()
+                      for p in service.root.rglob('*') if p.is_file()}
+
+
 def test_symbol_discovery_rejects_instead_of_silently_truncating_directories(task):
     service,_,_ = task
     for number in range(101):

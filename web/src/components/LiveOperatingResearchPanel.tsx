@@ -455,6 +455,9 @@ export function CurrentCapitalObservationView({
         message="公开资本观察身份或边界不符，本区停止展示；其他研究保留"
       />
     );
+  const quarter = value.quarter_financial_observation;
+  const h1Shares = value.h1_share_observation;
+  const q3Bridge = value.q3_h1_capital_bridge;
   const rows = Array.isArray(value.source_bound_observations)
     ? value.source_bound_observations
     : [];
@@ -467,6 +470,96 @@ export function CurrentCapitalObservationView({
       <p>
         报告期股数与股利方案是原件观察，不证明当前股本连续性；股利计划、财政年度归属、宣告和实际付款必须分开。当前资本连续性：尚未证明。
       </p>
+      {h1Shares?.status === "VERIFIED" &&
+        h1Shares.action === "no_order" &&
+        h1Shares.formal_eligibility === false &&
+        h1Shares.current_continuity === "UNPROVEN" &&
+        h1Shares.report_period_end === "2026-06-30" &&
+        typeof h1Shares.ordinary_shares === "number" &&
+        observationHash(h1Shares.source?.original_sha256) && (
+          <section aria-label="半年报历史股本观察">
+            <h4>半年报历史普通股股数</h4>
+            <p>
+              截至 {h1Shares.report_period_end}：
+              {h1Shares.ordinary_shares.toLocaleString("zh-CN")} 股。
+              来源为半年报与回购注销公告交叉复核；尚未证明此后股本连续性，不能据此形成当前每股估值或操作价格。
+            </p>
+            <p>
+              原件 SHA-256：<code>{h1Shares.source?.original_sha256}</code>
+            </p>
+          </section>
+        )}
+      {h1Shares?.status === "UNASSESSABLE" && (
+        <p>
+          半年报股本观察暂不可核验：{h1Shares.error_code ?? "来源或版本不一致"}
+          。
+        </p>
+      )}
+      {q3Bridge?.status === "MONETARY_CAPITAL_VERIFIED_SHARES_UNKNOWN" &&
+        q3Bridge.symbol === symbol &&
+        q3Bridge.action === "no_order" &&
+        q3Bridge.formal_eligibility === false &&
+        q3Bridge.q3_ordinary_shares === "UNKNOWN" &&
+        q3Bridge.current_continuity === "UNPROVEN" &&
+        observationHash(q3Bridge.q3_source?.original_sha256) && (
+          <section aria-label="三季报股本金额与股数边界">
+            <h4>三季报股本金额：尚不能换算当前股数</h4>
+            <p>
+              三季报合并资产负债表核验到股本金额
+              {observationMoney(q3Bridge.q3_monetary_capital_cny)} 亿元；
+              半年报普通股数为{" "}
+              {typeof q3Bridge.h1_ordinary_shares === "number"
+                ? q3Bridge.h1_ordinary_shares.toLocaleString("zh-CN")
+                : "未知"}{" "}
+              股。
+              缺少三季报每股面值及股数结构的来源绑定证明，当前股本连续性未证明，不能据此生成当前每股价值或买入价。
+            </p>
+            <p>
+              三季报原件 SHA-256：
+              <code>{q3Bridge.q3_source?.original_sha256}</code>
+            </p>
+          </section>
+        )}
+      {q3Bridge?.status === "UNASSESSABLE" && (
+        <p>三季报股本金额暂不可核验：{q3Bridge.error_code ?? "来源未绑定"}。</p>
+      )}
+      {quarter?.status === "VERIFIED_OBSERVATION_ONLY" &&
+        quarter.action === "no_order" &&
+        quarter.formal_eligibility === false &&
+        quarter.valuation_admitted === false &&
+        quarter.supported_scope === "FIXED_SOURCE_600519_Q3_2026" &&
+        quarter.ytd_9m_observation?.symbol === symbol &&
+        quarter.ytd_9m_observation.report_period === "2026-09-30" &&
+        quarter.ytd_9m_observation.period_basis === "YTD_9M" &&
+        quarter.ytd_9m_observation.currency === "CNY" &&
+        observationHash(quarter.ytd_9m_observation.source_sha256) && (
+          <section aria-label="三季报未审计财务观察">
+            <h4>2026年三季报：年初累计九个月观察</h4>
+            <p>
+              营业收入：
+              {observationMoney(
+                quarter.ytd_9m_observation.facts.revenue_ytd_cny,
+              )}
+              亿元；归母净利润：
+              {observationMoney(
+                quarter.ytd_9m_observation.facts.attributable_profit_ytd_cny,
+              )}
+              亿元。来源为固定原件的OCR复核；财报未经审计。
+            </p>
+            <p>
+              原件SHA-256：
+              <code>{quarter.ytd_9m_observation.source_sha256}</code>。
+              该观察未进入当前估值，仍须独立复核模型、股本连续性及重大事件。
+            </p>
+          </section>
+        )}
+      {quarter?.status === "UNASSESSABLE" && (
+        <Alert
+          type="info"
+          message="三季报财务观察暂不可核验"
+          description={quarter.reason}
+        />
+      )}
       {value.status === "NOT_STARTED" && (
         <p>尚无已登记资本原件观察，不推定没有分配或股本变化。</p>
       )}
@@ -1716,10 +1809,21 @@ export function PublicOperatingResearchView({
       symbol={symbol}
     />
   ) : null;
+  const independentCapital =
+    value.status !== "SUCCEEDED" &&
+    value.status !== "PARTIAL" &&
+    value.current_capital_observation &&
+    value.current_capital_observation.status !== "NOT_STARTED" ? (
+      <CurrentCapitalObservationView
+        value={value.current_capital_observation}
+        symbol={symbol}
+      />
+    ) : null;
   if (value.status === "NOT_STARTED")
     return (
       <>
         <p>尚无已生成的公开经营研究。</p>
+        {independentCapital}
         {independentRevalidation}
       </>
     );
@@ -1732,6 +1836,7 @@ export function PublicOperatingResearchView({
           message="最新经营研究暂不可核验，不回退展示旧成功结果"
           description={value.reason}
         />
+        {independentCapital}
         {independentRevalidation}
       </>
     );

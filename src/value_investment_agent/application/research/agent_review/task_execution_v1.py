@@ -292,6 +292,12 @@ class ResearchTaskService:
         for path in sorted(children):
             if not path.is_dir() or not path.name.startswith('rt-'):
                 continue
+            # A lock file can be created before source/request validation. Until
+            # the immutable input record is written, it is not a task and must
+            # neither appear as one nor poison discovery of committed tasks.
+            # Keep it on disk for diagnosis; do not delete or rewrite it here.
+            if not (path / 'input.json').is_file():
+                continue
             try:
                 view = self.read(path.name)
             except LockTimeout as error:

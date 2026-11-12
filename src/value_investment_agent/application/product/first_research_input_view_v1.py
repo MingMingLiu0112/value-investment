@@ -4,6 +4,7 @@ import json
 import re
 
 from ..research.first_research_input_v1 import replay_first_research_input
+from ..research.first_input_parent_cash_observation_v1 import observe_first_input_parent_cash
 from ..research.agent_review.web_research import _binding, _raw, MAX_JSON, _json
 
 REGISTRY="config/current-first-research-inputs-v1.json"
@@ -57,6 +58,10 @@ def read_first_research_input(*,root,symbol,now:datetime):
         spec=bound_json(receipt["spec_binding"])
         assumptions=bound_json(spec["assumption_binding"])
         native=bound_json(spec["native_facts_binding"])
+        parent_cash=observe_first_input_parent_cash(root=root,
+            native_facts_binding=spec["native_facts_binding"],now=now)
+        if parent_cash.get("symbol") != symbol or parent_cash.get("action") != "no_order":
+            raise ValueError("Parent cash observation issuer boundary changed")
         if (result["research_case"]["symbol"]!=symbol or result["action"]!="no_order"
                 or result["formal_eligibility"] is not False or result["main_range_adopted"] is not False):
             raise ValueError("First-input result changes formal research boundaries")
@@ -70,6 +75,7 @@ def read_first_research_input(*,root,symbol,now:datetime):
             compilation_scope=result["compilation_scope"],scenario_label_scope=result["scenario_label_scope"],
             sources=package["sources"],operating_assumptions=assumptions,
             native_fact_count=len(native["facts"]),
+            parent_cash_observation=parent_cash,
             source_review="NATIVE_FACT_ROWS_COLD_REPLAYED_NOT_ECONOMIC_APPROVAL",
             investment_conclusion="PRIMARY_RANGE_REJECTED_CONDITIONAL_PRESSURE_RESEARCH_ONLY")
     except (ValueError,OSError,KeyError,TypeError,OverflowError) as error:

@@ -4,8 +4,14 @@
   "cases": {
     "000568": {
       "receipt": {
-        "path": "runtime/e2-first-input-000568-20261031/compiled-20261031T111006911210Z/receipt.json",
-        "sha256": "b3c3b1eec045381779156dc150d57a67c21a9c0c92fedd94403c42f390e92b48"
+        "path": "runtime/e2-first-input-000568-20261112/recompile-20261112T113845341076Z/receipt.json",
+        "sha256": "5cf2e0668e51f6fbb01c82f4ff432d80aa473eda417cbf71c65d1e343531cd38"
+      }
+    },
+    "600887": {
+      "receipt": {
+        "path": "runtime/e2-first-input-600887-20261112/compile-20261112T110216618107Z/receipt.json",
+        "sha256": "61597b8ab43005eabcc79ee310fbac987acd624fc8793d53152e54e4c76c5f18"
       }
     }
   }

@@ -417,3 +417,24 @@ def test_optional_organization_requires_matching_bound_index(native, mode):
                                               else 'organization differs from official index')):
             replay(native)
         assert native['calls'] == []
+
+
+@pytest.mark.parametrize('declared_short_name,accepted', [('测股', True), ('伪造简称', False)])
+def test_official_short_name_is_checked_against_bound_index_not_legal_name_substring(
+    native, declared_short_name, accepted
+):
+    source = native['spec']['sources'][0]
+    index = native['root'] / 'runtime/TEST_ONLY-first-research/alias-index.json'
+    raw = json.dumps(dict(TEST_ONLY=True, announcements=[
+        dict(secCode='000001', orgId='TEST_ONLY-org', secName='测股')
+    ]), ensure_ascii=False).encode('utf-8')
+    index.write_bytes(raw)
+    source.update(organization_id='TEST_ONLY-org', issuer_short_name=declared_short_name,
+        identity_available_at='2026-04-20T00:00:00+00:00',
+        identity_index_binding=dict(path=index.relative_to(native['root']).as_posix(), sha256=digest(raw)))
+    if accepted:
+        assert replay(native)['sources'][0]['issuer_short_name'] == '测股'
+    else:
+        with pytest.raises(ValueError, match='official index name differs'):
+            replay(native)
+        assert native['calls'] == []

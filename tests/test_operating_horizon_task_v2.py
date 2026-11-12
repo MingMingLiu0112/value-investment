@@ -1,6 +1,7 @@
 """V2 dispatch/storage integration with frozen v1 runner, no paid calls."""
 from copy import deepcopy
 import json
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pytest
@@ -52,6 +53,13 @@ def test_v2_result_draft_and_storage_isolation(env):
     assert result['research_result']['schema_version']=='operating-horizon-draft-v2'
     assert result['research_result']['years']['2026']['unit_cost_mechanisms']['base']=='UNRESOLVED_SENSITIVITY'
     assert 'unit_cost_mechanism' in env.calls[0].output_schema['properties']['years']['properties']['2026']['properties']['operating_paths']['properties']['base']['required']
+    contract=env.calls[0].transport_output_contract
+    assert contract and len(contract)<16000
+    for required in ('2026','bear,base,bull','unit_cost_mechanism','volume_change',
+                     'other_pretax_cny','investment,funding_access,terminal',
+                     'counter_evidence and reopen_condition are nonempty Chinese strings',
+                     'INPUT_PRICE,INDEPENDENT_EFFICIENCY,UNRESOLVED_SENSITIVITY'):
+        assert required in contract
     assert len(env.calls)==1 and not result['d2_three_role_complete']
     env.source.config.write_bytes(b'{}')
     assert env.service().read(task)['research_result']==result['research_result']
@@ -63,6 +71,24 @@ def test_v2_result_draft_and_storage_isolation(env):
     assert mod.v1.implementation()==old
     assert mod.__name__ not in old and mod.draft.__name__ not in old
     with pytest.raises(FileNotFoundError):mod.v1.OperatingHorizonTaskService(env.root).read(task)
+
+
+def test_v2_consumes_only_the_hash_bound_exact_extra_brace_transport_view(env):
+    provider=env.service().test_provider
+    complete=provider.complete
+    def malformed(request):
+        response=complete(request)
+        return replace(response,text=response.text+'}')
+    provider.complete=malformed
+    task=create(env)
+    out=env.service().run(task)
+    assert out['status']=='SUCCEEDED',out
+    assert out['normalized_response_binding']
+    raw=env.service()._bound(out['response_binding'])
+    normalized=env.service()._bound(out['normalized_response_binding'])
+    assert normalized['response']['text']==raw['response']['text'][:-1]
+    assert normalized['transport_normalization']['original_response_binding']==out['response_binding']
+    assert len(env.calls)==1
 
 
 def test_v2_source_original_change_blocks_provider(env):

@@ -545,6 +545,29 @@ it.each(["NOT_STARTED", "UNASSESSABLE"] as const)(
   },
 );
 
+it.each(["NOT_STARTED", "UNASSESSABLE"] as const)(
+  "shows independently verified capital evidence while Agent research is %s",
+  (status) => {
+    const { renderToStaticMarkup } = require("react-dom/server");
+    const html = renderToStaticMarkup(
+      <PublicOperatingResearchView
+        value={{
+          symbol: "600519",
+          action: "no_order",
+          formal_eligibility: false,
+          status,
+          reason: "TEST_ONLY_AGENT_NOT_AVAILABLE",
+          current_capital_observation: capitalObservation(),
+        }}
+        symbol="600519"
+      />,
+    );
+    expect(html).toContain("来源绑定的公开资本观察");
+    expect(html).toContain("当前资本连续性：尚未证明");
+    expect(html).not.toContain("经营基本面草案");
+  },
+);
+
 it.each(["REVIEW_REQUIRED", "INSUFFICIENT_FOR_NUMERIC_SCENARIOS"] as const)(
   "shows optional completeness %s without promoting successful tasks into sufficient research",
   (status) => {
@@ -1437,6 +1460,110 @@ it("preserves verified capital sources alongside explicit partial failure and ne
   expect(html).toContain("2026-08-29");
   expect(html).toContain("未提供，不补零");
   expect(html).not.toContain("1,470,000,000");
+});
+it("shows the fixed-source Q3 observation without claiming current valuation admission", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = capitalObservation();
+  value.quarter_financial_observation = {
+    status: "VERIFIED_OBSERVATION_ONLY",
+    supported_scope: "FIXED_SOURCE_600519_Q3_2026",
+    action: "no_order",
+    formal_eligibility: false,
+    valuation_admitted: false,
+    current_comparison_changed: false,
+    ytd_9m_observation: {
+      symbol: "600519",
+      report_period: "2026-09-30",
+      period_basis: "YTD_9M",
+      currency: "CNY",
+      facts: {
+        revenue_ytd_cny: "130970743649.04",
+        attributable_profit_ytd_cny: "64467425981.95",
+      },
+      source_sha256: "a".repeat(64),
+      formal_eligibility: false,
+      valuation_admitted: false,
+      action: "no_order",
+    },
+  };
+  const before = JSON.stringify(value);
+  const html = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(html).toContain("三季报未审计财务观察");
+  expect(html).toContain("1,309.7074");
+  expect(html).toContain("644.6743");
+  expect(html).toContain("该观察未进入当前估值");
+  expect(JSON.stringify(value)).toBe(before);
+  value.quarter_financial_observation.ytd_9m_observation!.symbol = "000568";
+  const mismatched = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(mismatched).not.toContain("1,309.7074");
+});
+it("shows source-bound H1 share count as history without claiming current price eligibility", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = capitalObservation();
+  value.h1_share_observation = {
+    status: "VERIFIED",
+    report_period_end: "2026-06-30",
+    ordinary_shares: 1250081601,
+    current_continuity: "UNPROVEN",
+    formal_eligibility: false,
+    action: "no_order",
+    source: {
+      original_sha256: "a".repeat(64),
+      source_url:
+        "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+    },
+  };
+  const html = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(html).toContain("1,250,081,601");
+  expect(html).toContain("不能据此形成当前每股估值或操作价格");
+  value.h1_share_observation.current_continuity = "UNPROVEN";
+  value.h1_share_observation.source = {
+    original_sha256: "bad",
+    source_url: "https://example.invalid",
+  };
+  const invalid = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(invalid).not.toContain("1,250,081,601");
+});
+it("keeps Q3 monetary capital separate from current ordinary shares", () => {
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const value = capitalObservation();
+  value.q3_h1_capital_bridge = {
+    status: "MONETARY_CAPITAL_VERIFIED_SHARES_UNKNOWN",
+    symbol: "600519",
+    q3_monetary_capital_cny: "1250081601.00",
+    q3_ordinary_shares: "UNKNOWN",
+    h1_ordinary_shares: 1250081601,
+    current_continuity: "UNPROVEN",
+    q3_source: {
+      original_sha256: "b".repeat(64),
+      source_url:
+        "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649896.PDF",
+    },
+    formal_eligibility: false,
+    action: "no_order",
+  };
+  const html = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(html).toContain("三季报股本金额：尚不能换算当前股数");
+  expect(html).toContain("当前股本连续性未证明");
+  value.q3_h1_capital_bridge.q3_ordinary_shares = "UNKNOWN";
+  value.q3_h1_capital_bridge.q3_source = {
+    original_sha256: "bad",
+    source_url: "https://example.invalid",
+  };
+  const invalid = renderToStaticMarkup(
+    <CurrentCapitalObservationView value={value} symbol="600519" />,
+  );
+  expect(invalid).not.toContain("三季报股本金额：尚不能换算当前股数");
 });
 it("shows fiscal H1 fact plus exact-derived H2 and CNY-8.5-billion policy target without calling excess earnings a cash deficit or default", () => {
   const { renderToStaticMarkup } = require("react-dom/server");

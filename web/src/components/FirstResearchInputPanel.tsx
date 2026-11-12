@@ -166,9 +166,184 @@ export function FirstResearchInputView({
         {data.research_as_of || "未提供"}
         {data.available_at ? " · 输入可用时间：" + data.available_at : ""}
       </p>
+      {data.parent_cash_observation && (
+        <section aria-label="母公司历史现金观察">
+          <h4>母公司历史现金观察</h4>
+          {data.parent_cash_observation.status === "OBSERVED" &&
+          data.parent_cash_observation.whole_statement_reconciled === true &&
+          data.parent_cash_observation.action === "no_order" &&
+          data.parent_cash_observation.future_cash_proven === false &&
+          data.parent_cash_observation.periods?.length ? (
+            <>
+              <p>
+                母公司现金表各期间余额与现金变动已完整勾稽。以下仅是历史观察，
+                只核对历史母公司现金流量表。经营现金和投资收付会受结算、借还款影响，
+                不能据此推定未来可分配现金；“股利、利润或利息支付”是混合科目，不等于股息。
+              </p>
+              <div style={{ overflowX: "auto" }}>
+                <table>
+                  <caption>
+                    历史原件金额（亿元；四舍五入显示，原值保留在来源记录）
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th>期间</th>
+                      <th>经营现金净额</th>
+                      <th>购建长期资产付现</th>
+                      <th>借款取得</th>
+                      <th>偿还债务</th>
+                      <th>股利、利润或利息支付</th>
+                      <th>期末现金等价物</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.parent_cash_observation.periods.map((row) => (
+                      <tr key={row.period}>
+                        <td>{row.period}</td>
+                        {[
+                          "cfo_cny",
+                          "gross_capex_cny",
+                          "borrowings_received_cny",
+                          "debt_repaid_cny",
+                          "mixed_distribution_interest_paid_cny",
+                        ].map((field) => (
+                          <td key={field}>
+                            {amount(Number(row.flows[field]) / 1e8)}
+                          </td>
+                        ))}
+                        <td>
+                          {amount(
+                            Number(row.closing_cash_and_equivalents_cny) / 1e8,
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {data.parent_cash_observation.ttm_flows && (
+                      <tr>
+                        <th>TTM流量（FY＋当期H1－同期H1）</th>
+                        {[
+                          "cfo_cny",
+                          "gross_capex_cny",
+                          "borrowings_received_cny",
+                          "debt_repaid_cny",
+                          "mixed_distribution_interest_paid_cny",
+                        ].map((field) => (
+                          <td key={field}>
+                            {amount(
+                              Number(
+                                data.parent_cash_observation!.ttm_flows![field],
+                              ) / 1e8,
+                            )}
+                          </td>
+                        ))}
+                        <td>不适用（期末存量）</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <details>
+                <summary>原件页码、来源Hash与现金观察限制</summary>
+                <DetailSection
+                  title="现金观察原稿"
+                  value={data.parent_cash_observation}
+                />
+              </details>
+            </>
+          ) : (
+            <Alert
+              type="info"
+              message="母公司现金原件尚未完成独立核验"
+              description={
+                data.parent_cash_observation.reason ||
+                "现金观察来源或期间不完整"
+              }
+            />
+          )}
+        </section>
+      )}
+      {data.quote_observation && (
+        <p aria-label="独立行情观察">
+          行情观察：{data.quote_observation.quote_date || "未登记日期"}
+          {data.quote_observation.display_price !== null
+            ? ` · 收盘价 ${data.quote_observation.display_price} 元`
+            : " · 无可核验报价"}
+          {` · ${data.quote_observation.status}`}
+          {data.quote_observation.comparison_eligible
+            ? " · 行情比较资格须以正式研究和F2复核为准"
+            : " · 尚无价格比较资格，不得据此认定低估或生成买价"}
+        </p>
+      )}
       <p>
         本页只读重放已登记输入，不发起新LLM或自动任务；不新增C第六家验收，也不授予正式画像准入或交易资格。
       </p>
+      {data.successor_update?.status === "SOURCE_BOUND_CONDITIONAL_SUCCESSOR" &&
+        data.successor_update.symbol === symbol &&
+        data.successor_update.action === "no_order" &&
+        data.successor_update.formal_eligibility === false &&
+        data.successor_update.main_range_adopted === false &&
+        data.successor_update.price_admitted === false && (
+          <section aria-label="研究版本更新">
+            <h4>E1 研究版本更新</h4>
+            <p>
+              新增来源或假设后，旧版与新版均已按各自绑定输入冷重算。新版仍是未批准的条件压力研究，不是当前可比较的主估值或买价。
+            </p>
+            <p>
+              新版研究截止：{data.successor_update.research_as_of || "未提供"} ·
+              财务依据：{data.successor_update.financial_basis || "未提供"}
+            </p>
+            <p>
+              变化输入：
+              {data.successor_update.changed_input_fields?.join("、") ||
+                "未提供"}
+            </p>
+            {data.successor_update.change_rationale && (
+              <p>
+                <strong>变更依据与性质：</strong>
+                {data.successor_update.change_rationale}
+              </p>
+            )}
+            {data.successor_update.countercase && (
+              <p>
+                <strong>需要重开的反证：</strong>
+                {data.successor_update.countercase}
+              </p>
+            )}
+            <ul>
+              {SCENARIOS.map(([name, label]) => {
+                const key =
+                  name === "bear"
+                    ? "bear_value"
+                    : name === "base"
+                      ? "base_value"
+                      : "bull_value";
+                return (
+                  <li key={name}>
+                    {label}：旧版{" "}
+                    {amount(
+                      data.successor_update?.predecessor_valuation?.[key],
+                    )}{" "}
+                    元 → 新版{" "}
+                    {amount(data.successor_update?.successor_valuation?.[key])}{" "}
+                    元
+                  </li>
+                );
+              })}
+            </ul>
+            <details>
+              <summary>新旧输入指纹</summary>
+              <p>旧版：{data.successor_update.predecessor_input_fingerprint}</p>
+              <p>新版：{data.successor_update.successor_input_fingerprint}</p>
+            </details>
+          </section>
+        )}
+      {data.successor_update?.status === "UNASSESSABLE" && (
+        <Alert
+          type="warning"
+          message="后继研究版本无法核验"
+          description={data.successor_update.reason || "来源或版本校验失败"}
+        />
+      )}
       <h4>条件研究论点</h4>
       <p>{data.research_case.thesis}</p>
       {SCENARIOS.map(([name, label]) => {

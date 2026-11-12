@@ -218,3 +218,65 @@ def test_h1_does_not_inherit_annual_balance_owner():
     p[-1] = pages()[1].replace("编制单位："+NAME+"\n","")
     r = parse(p)
     assert any(g["reason"] == "STATEMENT_PREPARER_NOT_EXACT_LEGAL_OWNER" for g in r["gaps"])
+
+
+def _h1_adjacent_balance_pages():
+    p = pages()
+    p[1] = p[1].replace("编制单位：" + NAME + "\n", "")
+    p.insert(1, f"合并资产负债表\n2025年6月30日\n编制单位：{NAME}\n"
+              "单位：元 币种：人民币\n项目 附注 2025年6月30日 2024年12月31日\n"
+              "货币资金 100.00 90.00\n")
+    return p
+
+
+def test_h1_exact_same_report_balance_preparer_can_prove_owner():
+    result = parse(_h1_adjacent_balance_pages())
+    assert result["gaps"] == []
+    assert len(result["evidence"]) == 18
+    assert result["owner_proof"]["method"] == "SAME_H1_FINANCIAL_STATEMENT_GROUP"
+    assert result["owner_proof"]["compiler_page"] == 2
+
+
+@pytest.mark.parametrize("mutation", ["wrong_owner", "wrong_date", "wrong_prior", "wrong_currency", "parent", "duplicate", "too_far"])
+def test_h1_adjacent_balance_proof_stays_strict(mutation):
+    p = _h1_adjacent_balance_pages()
+    if mutation == "wrong_owner":
+        p[1] = p[1].replace("编制单位：" + NAME, "编制单位：" + NAME + "子公司")
+    elif mutation == "wrong_date":
+        p[1] = p[1].replace("2025年6月30日", "2024年6月30日")
+    elif mutation == "wrong_prior":
+        p[1] = p[1].replace("2024年12月31日", "2023年12月31日")
+    elif mutation == "wrong_currency":
+        p[1] = p[1].replace("币种：人民币", "币种：美元")
+    elif mutation == "parent":
+        p[1] = p[1].replace("合并资产负债表", "母公司资产负债表")
+    elif mutation == "duplicate":
+        p.insert(2, p[1])
+    elif mutation == "too_far":
+        p[2:2] = ["空页"] * 8
+    result = parse(p)
+    assert any(g["reason"] == "STATEMENT_PREPARER_NOT_EXACT_LEGAL_OWNER" for g in result["gaps"])
+    assert result["evidence"] == []
+
+
+def test_real_600519_h1_same_report_owner_and_operating_rows():
+    root_name = os.environ.get("VALUE_REAL_SOURCE_ROOT")
+    if not root_name:
+        pytest.skip("Set VALUE_REAL_SOURCE_ROOT for official H1 replay")
+    from value_investment_agent.infrastructure.filings.official_report_acquisition import load_retained_official_report
+    root = Path(root_name).resolve()
+    rel = "runtime/value-d2-600519-20261110/h12026-20261110T131035Z/receipt.json"
+    path = root / rel
+    receipt = load_retained_official_report(root=root,
+        receipt_binding={"path": rel, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()},
+        symbol="600519", issuer_name="贵州茅台酒股份有限公司", period="2026-06-30")
+    result = m.load_operating_statement_basis(root=root, source=receipt["source"],
+        evaluation_at=datetime.now(timezone.utc))
+    assert result["gaps"] == []
+    assert result["owner_proof"]["method"] == "SAME_H1_FINANCIAL_STATEMENT_GROUP"
+    assert result["owner_proof"]["compiler_page"] < 30
+    assert len(result["evidence"]) == 22
+    assert any(row["field"] == "revenue" and row["period"] == "2026-06-30"
+               and row["value"] == "90703260964.48" for row in result["evidence"])
+    assert result["action"] == "no_order"
+    assert result["formal_eligibility"] is False

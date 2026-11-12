@@ -5,20 +5,52 @@ import hashlib
 from . import operating_horizon_draft_v1 as prior
 from . import operating_draft_v1 as common
 from .operating_driver_draft_v2 import _payload, _exact
+from ....domain.research.operating_driver_bridge_v1 import DRIVERS
 from ....infrastructure.agent_runtime.provider import LLMResponse
 
 VERSION="operating-horizon-draft-v2"
 MECHANISMS=("INPUT_PRICE", "INDEPENDENT_EFFICIENCY", "UNRESOLVED_SENSITIVITY")
 
 
+def _transport_contract(plans):
+    """Small deterministic instruction for json-object-only providers.
+
+    The full JSON Schema is deliberately *not* duplicated here: it is large
+    because every evidence-id enum is source-bound.  The local v2 validator
+    still checks that full schema and every citation after the response is
+    received.  This text only describes the exact shape required on the wire.
+    """
+    years = ",".join(plans)
+    periods = "; ".join(
+        f"{year}=estimate_kind:{plan['estimate_kind']},baseline_period:{plan['baseline_period']},"
+        f"period_start:{plan['period_start']},period_end:{plan['period_end']}"
+        for year, plan in plans.items())
+    drivers = ",".join(DRIVERS)
+    return (
+        "D2-HORIZON-V2-TRANSPORT. Return one JSON object only. Exact top keys: years. "
+        f"years exact keys: {years}. Per year exact keys: estimate_kind,operating_paths,"
+        "counter_evidence,reopen_condition. counter_evidence and reopen_condition are nonempty Chinese strings, "
+        "never objects or arrays. operating_paths exact keys: bear,base,bull. "
+        "Each path exact keys: baseline_period,period_start,period_end,drivers,capital_assumptions,"
+        "unit_cost_mechanism. drivers exact keys: " + drivers + ". "
+        "Each driver exact keys: lower,upper,rationale,evidence_ids; bounds are decimal strings and "
+        "evidence_ids are nonempty IDs supplied in SOURCE_CONTEXT. capital_assumptions is exactly three "
+        "objects with dimensions investment,funding_access,terminal; each exact keys: dimension,period_start,"
+        "period_end,classification,lower,upper,unit,rationale,evidence_ids. classification is FORECAST or "
+        "UNKNOWN; UNKNOWN requires lower:null,upper:null,unit:not_quantified. unit_cost_mechanism is one of "
+        + ",".join(MECHANISMS) + ". No extra keys. Locked values: " + periods
+    )
+
+
 def build_request(context, years, max_completion_tokens=4096):
+    _, plans=prior.annual_plan(context,years)
     request=prior.build_request(context,years,max_completion_tokens)
     schema=deepcopy(request.output_schema)
     for row in schema["properties"]["years"]["properties"].values():
         for path in row["properties"]["operating_paths"]["properties"].values():
             path["required"].append("unit_cost_mechanism")
             path["properties"]["unit_cost_mechanism"]={"type":"string","enum":list(MECHANISMS)}
-    return replace(request,output_schema=schema,system=request.system+" " + VERSION +
+    return replace(request,output_schema=schema,transport_output_contract=_transport_contract(plans),system=request.system+" " + VERSION +
         ": Use the bound interim report and acquisition/consolidation period excerpts when supplied. "
         "Do not request documents already in this context as future events. Separate consolidation "
         "coverage from same-scope volume and price/mix; never annualize H1 mechanically. "

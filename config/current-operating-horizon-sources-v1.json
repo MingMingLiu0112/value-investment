@@ -2,6 +2,71 @@
   "schema_version": "operating-horizon-sources-v1",
   "action": "no_order",
   "cases": {
+    "600887": {
+      "issuer_name": "内蒙古伊利实业集团股份有限公司",
+      "parent_cash_layout": "LEGACY_BLANK_SAFE_V3",
+      "parent_income_layout": "UNNUMBERED_CONTINUATION_V2",
+      "supplement_fact_fields": ["revenue", "cost", "surcharges", "selling", "admin", "research", "pre_tax_profit", "tax", "parent_profit", "parent_cfo", "parent_capex", "parent_cash_balance", "parent_net_profit", "parent_ordinary_share_capital", "parent_retained_earnings", "parent_surplus_reserve", "parent_investment_cash", "gross_capex_cny", "investment_income_cash_cny", "mixed_distribution_interest_paid_cny"],
+      "parent_cash_observation_receipts": [
+        {
+          "period": "2025-12-31",
+          "receipt_binding": {
+            "path": "runtime/public-evidence/20261030-a-first/1/acquisition/receipt.json",
+            "sha256": "791a264c3076fe1c177426a88c580453d1c26166eb89d235bd51d8d24b31b7b7"
+          }
+        },
+        {
+          "period": "2026-06-30",
+          "receipt_binding": {
+            "path": "runtime/value-d2-600887-20261111/h12026-20261110T204227Z/receipt.json",
+            "sha256": "0a999a9f5822c061ef73aa911db9ae6928a53fafc973f545370fe82595f0c2c3"
+          }
+        }
+      ],
+      "excerpts": [
+        {
+          "period": "2025-12-31",
+          "physical_page": 49,
+          "start_marker": "2025 年 11 月 17 日，公司第十一届董事会临时会议审议并通过了",
+          "end_marker": "(二)现金分红政策的专项说明"
+        }
+      ]
+    },
+    "600519": {
+      "issuer_name": "贵州茅台酒股份有限公司",
+      "parent_cash_layout": "LEGACY_BLANK_SAFE_V3",
+      "parent_income_layout": "UNNUMBERED_CONTINUATION_V2",
+      "parent_cash_observation_receipts": [
+        {
+          "period": "2025-12-31",
+          "receipt_binding": {
+            "path": "runtime/public-evidence/20261030-a-first/0/acquisition/receipt.json",
+            "sha256": "bd62d0b376f349d0ed92969644c766d4e41e2ea4a91c7ceaf0e8d95c847fa9f4"
+          }
+        },
+        {
+          "period": "2026-06-30",
+          "receipt_binding": {
+            "path": "runtime/value-d2-600519-20261110/h12026-20261110T131035Z/receipt.json",
+            "sha256": "f2def6214d0aa60fcf61ef6b9803087e2e48413bdfd2b1def21cc5a7c3baec6a"
+          }
+        }
+      ],
+      "excerpts": [
+        {
+          "period": "2025-12-31",
+          "physical_page": 135,
+          "start_marker": "1、 重要承诺事项",
+          "end_marker": null
+        },
+        {
+          "period": "2026-06-30",
+          "physical_page": 101,
+          "start_marker": "1、 重要承诺事项",
+          "end_marker": null
+        }
+      ]
+    },
     "600323": {
       "issuer_name": "瀚蓝环境股份有限公司",
       "parent_cash_observation_receipts": [
@@ -21,6 +86,12 @@
         }
       ],
       "excerpts": [
+        {
+          "period": "2025-12-31",
+          "physical_page": 17,
+          "start_marker": "（二）公司经营情况",
+          "end_marker": null
+        },
         {
           "period": "2026-06-30",
           "physical_page": 13,
@@ -68,6 +139,77 @@
           "physical_page": 183,
           "start_marker": "PPP是指政府",
           "end_marker": "20、 商誉"
+        },
+        {"period":"2025-12-31","physical_page":2,"start_marker":"五、董事会决议通过的本报告期利润分配预案或公积金转增股本预案","end_marker":"截至报告期末，母公司存在未弥补亏损的相关情况及其对公司分红等事项的影响"},
+        {"period":"2025-12-31","physical_page":18,"start_marker":"2025 年公司剔除解释第 14 号影响后的固定资产类资本性支出约为 15.45 亿元（其中粤丰环","end_marker":"1、固废处理业务"},
+        {"period":"2025-12-31","physical_page":56,"start_marker":"制定了《股东回报规划（2024 年-2026 年)》，建立了对投资者持续、稳定、科学的回报机制，保","end_marker":"2、公司利润分配政策执行情况"},
+        {"period":"2026-06-30","physical_page":191,"start_marker":"―流动性风险","end_marker":"―汇率风险"}
+      ],
+      "scope_decomposition": {
+        "scope_change_expected": true,
+        "contributions": [
+          {
+            "scope_kind": "LEGACY_ORGANIC",
+            "revenue_change_cny": "-670000000",
+            "profit_change_cny": "340000000",
+            "evidence_ids": ["cninfo:1225167256:horizon-p17"],
+            "measurement_basis": "DERIVED_FROM_REPORTED",
+            "calculation": "2025 reported total year-on-year increase less the reported Yuefeng consolidation contribution; figures are disclosed in rounded 100m CNY units."
+          },
+          {
+            "scope_kind": "NEWLY_CONSOLIDATED",
+            "revenue_change_cny": "2721000000",
+            "profit_change_cny": "270000000",
+            "evidence_ids": ["cninfo:1225167256:horizon-p17"],
+            "measurement_basis": "REPORTED_APPROXIMATE"
+          }
+        ]
+      }
+    },
+    "000568": {
+      "issuer_name": "泸州老窖股份有限公司",
+      "parent_cash_layout": "NUMBERED_CNINFO_V2",
+      "parent_balance_layout": "NUMBERED_CNINFO_V2",
+      "parent_income_layout": "NUMBERED_CNINFO_V1",
+      "prior_conditional_assumption_binding": {
+        "path": "runtime/e2-first-input-000568-20261031/assumptions-20261031T111006911210Z.json",
+        "sha256": "c1ef378b37b81809cc9fd3c3532c96aaa89be1be5f24e2bd526fe1295a1d932c"
+      },
+      "base_fact_fields": ["revenue", "cost", "surcharges", "selling", "admin", "research", "pre_tax_profit", "tax", "parent_profit", "parent_cfo", "parent_capex", "parent_cash", "ordinary_shares", "start_book_equity"],
+      "parent_cash_observation_receipts": [
+        {
+          "period": "2025-12-31",
+          "receipt_binding": {
+            "path": "runtime/value-d2-000568-20261110/fy2025/receipt.json",
+            "sha256": "103b6b091097bb5d571e24041696c9adf145273bf2f4b47c18f8c33263fb5e1b"
+          }
+        },
+        {
+          "period": "2026-06-30",
+          "receipt_binding": {
+            "path": "runtime/value-d2-000568-20261110/h12026/receipt.json",
+            "sha256": "a129db0bd80e1c84f20132c4334c84d1af6c2d02c08764c7fed3952fa6a14d1c"
+          }
+        }
+      ],
+      "excerpts": [
+        {
+          "period": "2025-12-31",
+          "physical_page": 31,
+          "start_marker": "六、提高投资回报水平，维护股东合法权益",
+          "end_marker": "七、控股股东积极开展增持工作，维护资本市场稳定"
+        },
+        {
+          "period": "2026-06-30",
+          "physical_page": 130,
+          "start_marker": "1、利润分配情况",
+          "end_marker": "2、销售退回"
+        },
+        {
+          "period": "2026-06-30",
+          "physical_page": 129,
+          "start_marker": "1、重要承诺事项",
+          "end_marker": "2、或有事项"
         }
       ]
     }

@@ -1,16 +1,286 @@
 """TEST_ONLY service transport fixtures; never evidence of a real LIVE model run."""
 from copy import deepcopy
+import socket
 from types import SimpleNamespace
 
 import pytest
 
 from web_api.test_held_continuity_api import client_for,unlock
 from test_web_agent_research import state
+from test_operating_horizon_task_v4 import env  # noqa: F401 - full bound task fixture
+from test_operating_horizon_sources_v1 import source_env  # noqa: F401 - fixture dependency
+from test_operating_horizon_draft_v1 import context  # noqa: F401 - fixture dependency
 from value_investment_agent.presentation.web_api import live_operating_research_routes as routes
 from value_investment_agent.infrastructure.agent_runtime import provider
 
 BASE='/api/v1/operating-research'
 LIVE='LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED'
+_ORIGINAL_SOCKET_CONNECT = socket.socket.connect
+
+
+def test_v19_generic_task_api_dispatch_is_explicit_and_unapproved(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review import operating_horizon_task_v19_generic as v19
+
+    client, secret, data, _ = api
+    seen = []
+    def created(self, **kwargs):
+        seen.append(kwargs)
+        return dict(task_id="rt-" + "a" * 32, symbol=kwargs["symbol"], status="FAILED",
+            workflow=v19.CONTRACT, action="no_order", formal_eligibility=False,
+            condition_price=None)
+    monkeypatch.setattr(v19.OperatingHorizonTaskService, "create", created)
+    path = BASE + "/horizon-cash-policy-tasks"
+    body = dict(symbol="600887", request_key="TEST_V19_ROUTE", years=[2027],
+                task_contract=v19.CONTRACT)
+    assert client.post(path, json=body).status_code == 401
+    unlock(client, secret)
+    response = client.post(path, json=body)
+    assert response.status_code == 202, response.text
+    assert response.json()["workflow"] == v19.CONTRACT
+    assert seen == [dict(symbol="600887", request_key="TEST_V19_ROUTE", years=[2027])]
+    assert data.provider_calls == []
+    assert client.post(path, json={**body, "source_loader_version": "wrong"}).status_code == 422
+
+
+def test_v20_staged_task_api_dispatch_is_explicit_and_unapproved(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review import operating_horizon_task_v20_staged as v20
+
+    client, secret, data, _ = api
+    seen = []
+    def created(self, **kwargs):
+        seen.append(kwargs)
+        return dict(task_id="rt-" + "b" * 32, symbol=kwargs["symbol"], status="FAILED",
+            workflow=v20.CONTRACT, action="no_order", formal_eligibility=False,
+            condition_price=None)
+    monkeypatch.setattr(v20.OperatingHorizonTaskService, "create", created)
+    path = BASE + "/horizon-cash-policy-tasks"
+    body = dict(symbol="600887", request_key="TEST_V20_ROUTE", years=[2027],
+                task_contract=v20.CONTRACT)
+    assert client.post(path, json=body).status_code == 401
+    unlock(client, secret)
+    response = client.post(path, json=body)
+    assert response.status_code == 202, response.text
+    assert response.json()["workflow"] == v20.CONTRACT
+    assert seen == [dict(symbol="600887", request_key="TEST_V20_ROUTE", years=[2027])]
+    assert data.provider_calls == []
+    assert client.post(path, json={**body, "source_loader_version": "wrong"}).status_code == 422
+
+
+def test_v17_failed_v16_cash_repair_route_keeps_source_and_no_annual_call(api, monkeypatch):
+    import json
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v16_live as v16,
+        operating_horizon_task_v17_cash as v17,
+        operating_q3_issuer_plan_loader_v8_600519 as q3_v8,
+    )
+
+    client, secret, data, root = api
+    source_id = "rt-" + "d" * 32
+    source = root / "runtime" / "research-task-execution-v1" / v16.STORE / source_id
+    source.mkdir(parents=True)
+    (source / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        task_contract=v16.CONTRACT, source_loader_binding=dict(version=q3_v8.VERSION))), encoding="utf-8")
+    monkeypatch.setattr(v16.OperatingHorizonTaskService, "_load", lambda self, task_id:
+        (dict(task_contract=v16.CONTRACT), dict(status="FAILED"), {}) if task_id == source_id
+        else (_ for _ in ()).throw(ValueError("SOURCE_CHANGED")))
+    seen = []
+    def imported(self, **kwargs):
+        seen.append(kwargs)
+        return dict(task_id="rt-" + "e" * 32, symbol="600519", status="FAILED",
+            workflow=v17.CONTRACT, action="no_order", formal_eligibility=False)
+    monkeypatch.setattr(v17.OperatingHorizonTaskService, "create_imported", imported)
+    path = BASE + "/horizon-cash-policy-tasks/repair-v16-cash"
+    body = dict(source_task_id=source_id, request_key="V17_REPAIR_01")
+    assert client.post(path, json=body).status_code == 401
+    unlock(client, secret)
+    response = client.post(path, json=body)
+    assert response.status_code == 202, response.text
+    assert response.json()["workflow"] == v17.CONTRACT
+    assert seen == [body]
+    assert data.provider_calls == []
+    assert client.post(path, json={**body, "extra": True}).status_code == 422
+
+
+def test_v18_cash_research_route_binds_existing_v16_without_annual_call(api, monkeypatch):
+    import json
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v16_live as v16,
+        operating_horizon_task_v18_cash as v18,
+        operating_q3_issuer_dividend_split_loader_v9_600519 as dividend,
+    )
+
+    client, secret, data, root = api
+    source_id = "rt-" + "d" * 32
+    source = root / "runtime" / "research-task-execution-v1" / v16.STORE / source_id
+    source.mkdir(parents=True)
+    (source / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        task_contract=v16.CONTRACT, source_loader_binding=dict(version=dividend.VERSION))), encoding="utf-8")
+    monkeypatch.setattr(v16.OperatingHorizonTaskService, "_load", lambda self, task_id:
+        (dict(task_contract=v16.CONTRACT), dict(status="FAILED"), {}) if task_id == source_id
+        else (_ for _ in ()).throw(ValueError("SOURCE_CHANGED")))
+    seen = []
+    def imported(self, **kwargs):
+        seen.append(kwargs)
+        return dict(task_id="rt-" + "e" * 32, symbol="600519", status="FAILED",
+            workflow=v18.CONTRACT, action="no_order", formal_eligibility=False)
+    monkeypatch.setattr(v18.OperatingHorizonTaskService, "create_imported", imported)
+    path = BASE + "/horizon-cash-policy-tasks/research-v18-cash"
+    body = dict(source_task_id=source_id, request_key="V18_RESEARCH_01")
+    assert client.post(path, json=body).status_code == 401
+    unlock(client, secret)
+    response = client.post(path, json=body)
+    assert response.status_code == 202, response.text
+    assert response.json()["workflow"] == v18.CONTRACT
+    assert seen == [body]
+    assert data.provider_calls == []
+    assert client.post(path, json={**body, "extra": True}).status_code == 422
+
+
+def test_v18_source_bound_task_is_discoverable_without_reinterpreting_v17(api, monkeypatch):
+    import json
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v16_live as v16,
+        operating_horizon_task_v18_cash as v18,
+        operating_q3_issuer_dividend_split_loader_v9_600519 as dividend,
+    )
+
+    client, secret, data, root = api
+    source_id, task_id = "rt-" + "d" * 32, "rt-" + "e" * 32
+    source = root / "runtime" / "research-task-execution-v1" / v16.STORE / source_id
+    source.mkdir(parents=True)
+    (source / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        task_contract=v16.CONTRACT, source_loader_binding=dict(version=dividend.VERSION))), encoding="utf-8")
+    target = root / "runtime" / "research-task-execution-v1" / v18.STORE / task_id
+    target.mkdir(parents=True)
+    (target / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        task_contract=v18.CONTRACT, imported_annual=dict(source_task_id=source_id))), encoding="utf-8")
+    monkeypatch.setattr(v16.OperatingHorizonTaskService, "_load", lambda self, candidate:
+        (dict(task_contract=v16.CONTRACT), {}, {}) if candidate == source_id
+        else (_ for _ in ()).throw(ValueError("SOURCE_CHANGED")))
+    monkeypatch.setattr(v18.OperatingHorizonTaskService, "_load", lambda self, candidate:
+        (dict(task_contract=v18.CONTRACT), {}, {}) if candidate == task_id
+        else (_ for _ in ()).throw(ValueError("V18_TASK_CHANGED")))
+    monkeypatch.setattr(v18.OperatingHorizonTaskService, "read", lambda self, candidate:
+        dict(task_id=candidate, symbol="600519", status="SUCCEEDED", workflow=v18.CONTRACT,
+             updated_at="2026-11-12T09:00:00+00:00", action="no_order",
+             formal_eligibility=False, research_result=None))
+    path = BASE + "/horizon-cash-policy-tasks"
+    unlock(client, secret)
+    read = client.get(path + "/" + task_id)
+    assert read.status_code == 200 and read.json()["workflow"] == v18.CONTRACT
+    listed = client.get(path + "?symbol=600519&task_contract=" + v18.CONTRACT)
+    assert listed.status_code == 200 and [x["task_id"] for x in listed.json()["items"]] == [task_id]
+    assert data.provider_calls == []
+
+
+def test_v13_import_api_derives_sealed_v12_pins_and_is_idempotent(api, monkeypatch):
+    import hashlib
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v12_live as v12,
+        operating_horizon_task_v13_live as v13,
+        operating_q3_issuer_plan_loader_v8_600519 as q3_v8)
+
+    client, secret, _, root = api
+    source_id = "rt-" + "a" * 32
+    source = root / "runtime" / "research-task-execution-v1" / v12.STORE / source_id
+    source.mkdir(parents=True)
+    (source / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        task_contract=v12.CONTRACT, source_loader_binding=dict(version=q3_v8.VERSION))), encoding="utf-8")
+    calls = []
+
+    def sealed_source(self, task_id):
+        return dict(source_binding={"pinned": True}, context_sha256="b" * 64), dict(
+            stage_validated=["annual"], stage_intents={"annual": {"reservation": "r"}},
+            reservations={"r": {"budget_day": "2026-11-12"}}), {}
+
+    def sealed_packet(self, spec, state, stage):
+        return {"response": {"text": "sealed annual"}}
+
+    def imported_target(self, **kwargs):
+        calls.append(kwargs)
+        return dict(task_id="rt-" + "c" * 32, status="FAILED", action="no_order",
+            formal_eligibility=False, task_contract=v13.CONTRACT)
+
+    # Routes capture the service classes at registration time. Patch the actual
+    # methods used by those captured classes rather than swapping module names.
+    monkeypatch.setattr(v12.OperatingHorizonTaskService, "_load", sealed_source)
+    monkeypatch.setattr(v12.OperatingHorizonTaskService, "_packet", sealed_packet)
+    monkeypatch.setattr(v13.OperatingHorizonTaskService, "create_imported", imported_target)
+    path = BASE + "/horizon-cash-policy-tasks/import-v12"
+    body = dict(source_task_id=source_id, request_key="IMPORT_V12_01")
+    assert client.post(path, json=body).status_code == 401
+    unlock(client, secret)
+    for _ in range(2):
+        response = client.post(path, json=body)
+        assert response.status_code == 202, response.text
+        assert response.json()["action"] == "no_order"
+    assert calls[0] == calls[1]
+    assert calls[0]["expected_source_binding"] == {"pinned": True}
+    assert calls[0]["expected_budget_day"] == "2026-11-12"
+    assert calls[0]["expected_annual_response_sha256"] == hashlib.sha256(b"sealed annual").hexdigest()
+    assert client.post(path, json={**body, "expected_context_sha256": "0" * 64}).status_code == 422
+    assert client.post(path, json={**body, "source_task_id": "../outside"}).status_code == 422
+
+
+@pytest.mark.parametrize("version", ["v14", "v15"])
+def test_versioned_import_api_dispatches_separately_without_extra_provider_call(api, monkeypatch, version):
+    import json
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v12_live as v12,
+        operating_q3_issuer_plan_loader_v8_600519 as q3_v8)
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v14_live as v14,
+        operating_horizon_task_v15_live as v15)
+
+    selected = {"v14": v14, "v15": v15}[version]
+
+    client, secret, data, root = api
+    source_id = "rt-" + "e" * 32
+    source = root / "runtime" / "research-task-execution-v1" / v12.STORE / source_id
+    source.mkdir(parents=True)
+    (source / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        task_contract=v12.CONTRACT, source_loader_binding=dict(version=q3_v8.VERSION))), encoding="utf-8")
+    monkeypatch.setattr(v12.OperatingHorizonTaskService, "_load", lambda self, task_id: (
+        dict(source_binding={"pinned": True}, context_sha256="b" * 64),
+        dict(stage_validated=["annual"], stage_intents={"annual": {"reservation": "r"}},
+             reservations={"r": {"budget_day": "2026-11-12"}}), {}))
+    monkeypatch.setattr(v12.OperatingHorizonTaskService, "_packet", lambda self, spec, state, stage:
+        {"response": {"text": "sealed annual"}})
+    seen = []
+    def imported(self, **kwargs):
+        seen.append(kwargs)
+        return dict(task_id="rt-" + "f" * 32, symbol="600519", status="FAILED",
+                    workflow=selected.CONTRACT, action="no_order", formal_eligibility=False)
+    monkeypatch.setattr(selected.OperatingHorizonTaskService, "create_imported", imported)
+    unlock(client, secret)
+    path = BASE + "/horizon-cash-policy-tasks/import-v12"
+    body = dict(source_task_id=source_id, request_key="IMPORT_VERSIONED_01", task_contract=selected.CONTRACT)
+    response = client.post(path, json=body)
+    assert response.status_code == 202, response.text
+    assert response.json()["workflow"] == selected.CONTRACT
+    assert seen[0]["expected_source_binding"] == {"pinned": True}
+    assert data.provider_calls == []
+    assert client.post(path, json={**body, "task_contract": "unknown"}).status_code == 422
+
+
+def test_v13_import_api_rejects_unsealed_source(api, monkeypatch):
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import operating_horizon_task_v12_live as v12
+
+    client, secret, _, root = api
+    source_id = "rt-" + "d" * 32
+    source = root / "runtime" / "research-task-execution-v1" / v12.STORE / source_id
+    source.mkdir(parents=True)
+    (source / "input.json").write_text(json.dumps(dict(mode="TEST_ONLY_LIVE_CONTRACT",
+        task_contract=v12.CONTRACT)), encoding="utf-8")
+    unlock(client, secret)
+    response = client.post(BASE + "/horizon-cash-policy-tasks/import-v12",
+        json=dict(source_task_id=source_id, request_key="IMPORT_V12_02"))
+    assert response.status_code == 422
+    assert response.json()["action"] == "no_order"
 
 
 @pytest.fixture
@@ -52,6 +322,176 @@ def api(tmp_path,monkeypatch):
     return client,secret,data,tmp_path
 
 
+def test_v11_history_read_and_e2_dispatch_exclude_test_only(tmp_path, monkeypatch):
+    """The live Web route reads sealed V11 tasks without promoting test artifacts."""
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import operating_horizon_task_v11_live as v11
+    from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v3 as e2
+
+    calls = []
+    class Reader:
+        def __init__(self, root, test_provider=None):
+            self.root = Path(root)
+            self.test_provider = test_provider
+            self.base = self.root / "runtime" / "research-task-execution-v1" / "oh-v11-2027-live"
+        def _directory(self, task_id):
+            return self.base / task_id
+        def _load(self, task_id):
+            mode = __import__("json").loads((self._directory(task_id) / "input.json").read_bytes())["mode"]
+            calls.append(("load", task_id, mode, self.test_provider is not None))
+            return {"mode": mode}, {}, {}
+        def read(self, task_id):
+            calls.append(("read", task_id))
+            return dict(task_id=task_id, symbol="600519", status="FAILED",
+                        updated_at="2026-11-11T12:00:00+00:00", error_code="V9_ANNUAL_RESPONSE_REJECTED",
+                        action="no_order", formal_eligibility=False, condition_price=None)
+    monkeypatch.setattr(v11, "OperatingHorizonTaskService", Reader)
+    monkeypatch.setattr(e2, "read_v11_cash_policy_e2_input", lambda **kwargs: dict(
+        status="UNASSESSABLE", reason="SUCCEEDED_TWO_STAGE_TASK_REQUIRED",
+        action="no_order", formal_eligibility=False, condition_price=None))
+    live_id, test_id = "rt-" + "a" * 32, "rt-" + "b" * 32
+    for task_id, mode in ((live_id, "LIVE_OPERATING"),
+                          (test_id, "TEST_ONLY_LIVE_CONTRACT")):
+        directory = Reader(tmp_path)._directory(task_id)
+        directory.mkdir(parents=True)
+        (directory / "input.json").write_text(__import__("json").dumps({"mode": mode}), encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert client.get(path + "/" + live_id).status_code == 401
+    assert client.get(path + "/recent").status_code == 401
+    unlock(client, secret)
+    recent = client.get(path + "/recent")
+    assert recent.status_code == 200, recent.text
+    assert recent.json()["scope"] == "HISTORICAL_D2_TASKS_NOT_CURRENT_CANDIDATES"
+    assert [row["task_id"] for row in recent.json()["items"]] == [live_id]
+    history = client.get(path + "?symbol=600519&task_contract=" + v11.CONTRACT)
+    assert history.status_code == 200, history.text
+    assert [row["task_id"] for row in history.json()["items"]] == [live_id]
+    assert client.get(path + "/" + live_id).json()["status"] == "FAILED"
+    assert client.get(path + "/" + test_id).status_code == 422
+    projection = client.get(path + "/" + live_id + "/e2-input").json()
+    assert projection["status"] == "UNASSESSABLE" and projection["condition_price"] is None
+    assert projection["formal_eligibility"] is False and projection["action"] == "no_order"
+    assert ("load", test_id, "TEST_ONLY_LIVE_CONTRACT", True) in calls
+    assert ("read", test_id) not in calls
+
+
+def test_v11_parent_wc_source_dispatch_and_old_reader_remain_distinct(tmp_path, monkeypatch):
+    """TEST_ONLY transport: opt-in source cannot reinterpret historical V11 tasks."""
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v11_live as v11,
+        operating_q3_issuer_wc_loader_v9_600519 as wc,
+    )
+
+    seen = []
+    old_id, new_id = "rt-" + "c" * 32, "rt-" + "d" * 32
+
+    class Reader:
+        def __init__(self, root, *, source_loader=None, source_loader_version=None,
+                     test_provider=None):
+            self.root = Path(root)
+            self.base = self.root / "runtime" / "research-task-execution-v1" / "oh-v11-2027-live"
+            self.version = source_loader_version or v11.official.VERSION
+            self.source_loader = source_loader
+            seen.append(("init", self.version, test_provider is not None))
+
+        def _directory(self, task_id):
+            return self.base / task_id
+
+        def _load(self, task_id):
+            raw = json.loads((self._directory(task_id) / "input.json").read_bytes())
+            expected = raw.get("source_loader_binding", {}).get("version")
+            if expected != self.version:
+                raise ValueError("TEST_ONLY_LOADER_VERSION_MISMATCH")
+            return raw, {}, {}
+
+        def read(self, task_id):
+            self._load(task_id)
+            seen.append(("read", task_id, self.version))
+            return dict(task_id=task_id, symbol="600519", status="WAITING_EVIDENCE",
+                        updated_at="2026-11-11T12:00:00+00:00", action="no_order",
+                        formal_eligibility=False, condition_price=None)
+
+        def create(self, **kwargs):
+            assert self.source_loader is wc.load_current
+            seen.append(("create", self.version, kwargs["symbol"]))
+            return dict(task_id=new_id, symbol=kwargs["symbol"], status="WAITING_EVIDENCE",
+                        action="no_order", formal_eligibility=False)
+
+    monkeypatch.setattr(v11, "OperatingHorizonTaskService", Reader)
+    for task_id, version in ((old_id, v11.official.VERSION), (new_id, wc.VERSION)):
+        path = Reader(tmp_path)._directory(task_id)
+        path.mkdir(parents=True)
+        (path / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+            source_loader_binding=dict(version=version))), encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert client.get(path + "/" + new_id).status_code == 401
+    unlock(client, secret)
+    assert client.get(path + "/" + old_id).json()["task_id"] == old_id
+    assert client.get(path + "/" + new_id).json()["task_id"] == new_id
+    listed = client.get(path + "/recent").json()["items"]
+    assert {row["task_id"] for row in listed} == {old_id, new_id}
+    created = client.post(path, json=dict(symbol="600519", years=[2027],
+        request_key="TEST_ONLY_WC", task_contract=v11.CONTRACT,
+        source_loader_version=wc.VERSION))
+    assert created.status_code == 202 and created.json()["action"] == "no_order"
+    assert ("create", wc.VERSION, "600519") in seen
+    bad = client.post(path, json=dict(symbol="600519", years=[2027],
+        request_key="TEST_ONLY_WC", task_contract=v11.CONTRACT,
+        source_loader_version="unregistered-source"))
+    assert bad.status_code == 422
+
+
+def test_v10_history_accepts_its_sealed_v8_source_version(tmp_path, monkeypatch):
+    """A version-bound V10 task remains readable; unknown loaders fail closed."""
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v10_live as v10,
+        operating_q3_issuer_plan_loader_v8_600519 as q3_v8,
+    )
+
+    class Reader:
+        def __init__(self, root, *, test_provider=None):
+            self.base = Path(root) / "runtime" / "research-task-execution-v1" / "oh-v10-2027-live"
+
+        def _directory(self, task_id):
+            return self.base / task_id
+
+        def _load(self, task_id):
+            raw = json.loads((self._directory(task_id) / "input.json").read_bytes())
+            assert raw["source_loader_binding"]["version"] == q3_v8.VERSION
+            return raw, {}, {}
+
+        def read(self, task_id):
+            self._load(task_id)
+            return dict(task_id=task_id, symbol="600519", status="FAILED",
+                        updated_at="2026-11-11T12:00:00+00:00", action="no_order",
+                        formal_eligibility=False, condition_price=None)
+
+    monkeypatch.setattr(v10, "OperatingHorizonTaskService", Reader)
+    task_id = "rt-" + "e" * 32
+    directory = Reader(tmp_path)._directory(task_id)
+    directory.mkdir(parents=True)
+    (directory / "input.json").write_text(json.dumps(dict(
+        mode="LIVE_OPERATING",
+        source_loader_binding=dict(version=q3_v8.VERSION))), encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    unlock(client, secret)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert [row["task_id"] for row in client.get(path + "/recent").json()["items"]] == [task_id]
+    assert client.get(path + "/" + task_id).json()["status"] == "FAILED"
+    (directory / "input.json").write_text(json.dumps(dict(
+        mode="LIVE_OPERATING",
+        source_loader_binding=dict(version="unknown-loader"))), encoding="utf-8")
+    response = client.get(path + "/recent")
+    assert response.status_code == 422
+    assert response.json()["reason"] == "V10_SOURCE_LOADER_VERSION_UNSUPPORTED"
+
+
 def test_unauthorized_post_never_creates_or_calls_provider(api):
     client,_,data,root=api
     before=state(root)
@@ -88,6 +528,95 @@ def test_public_get_and_model_status_no_account_no_network_no_writes(api):
     assert client.get(BASE+'/tasks?symbol=600519').status_code==401
     assert client.get(BASE+'/companies/bad').status_code==422
     assert not data.provider_calls and state(root)==before
+
+
+def test_public_q3_observation_is_visible_without_a_live_task_or_price_admission(api, monkeypatch):
+    from value_investment_agent.application.research import quarter_financial_read_model_v1 as quarter
+
+    client, _, data, root = api
+    before = state(root)
+
+    def fixed_source_read(project, symbol, now):
+        assert project == root and symbol == '600519' and now.utcoffset() is not None
+        return dict(status='VERIFIED_OBSERVATION_ONLY', symbol=symbol,
+                    supported_scope='FIXED_SOURCE_600519_Q3_2026', action='no_order',
+                    formal_eligibility=False, valuation_admitted=False,
+                    current_comparison_changed=False,
+                    ytd_9m_observation=dict(symbol=symbol, report_period='2026-09-30',
+                        period_basis='YTD_9M', currency='CNY',
+                        facts=dict(revenue_ytd_cny='130970743649.04',
+                                   attributable_profit_ytd_cny='64467425981.95'),
+                        source_sha256='a' * 64, formal_eligibility=False,
+                        valuation_admitted=False, action='no_order'))
+
+    monkeypatch.setattr(quarter, 'read_quarter_financial_ocr', fixed_source_read)
+    response = client.get(BASE + '/companies/600519')
+    body = response.json()
+    observed = body['current_capital_observation']['quarter_financial_observation']
+    assert response.status_code == 200 and body['status'] == 'NOT_STARTED'
+    assert observed['status'] == 'VERIFIED_OBSERVATION_ONLY'
+    assert observed['valuation_admitted'] is False
+    assert body['formal_eligibility'] is False and body['action'] == 'no_order'
+    assert data.provider_calls == [] and state(root) == before
+
+
+def test_public_h1_share_observation_remains_historical_without_a_live_task(api, monkeypatch):
+    from value_investment_agent.application.research import current_capital_h1_ocr_overlay_v2 as shares
+
+    client, _, data, root = api
+    registration = root / 'config/current-capital-h1-ocr-v2.json'
+    registration.parent.mkdir(parents=True, exist_ok=True)
+    registration.write_text('{}', encoding='utf-8')
+    before = state(root)
+
+    def fixed_h1_read(project, symbol, now, *, base_observation):
+        assert project == root and symbol == '600519' and now.utcoffset() is not None
+        assert base_observation['action'] == 'no_order'
+        return dict(status='PARTIAL', action='no_order', formal_eligibility=False,
+                    current_capital_continuity='NOT_PROVEN',
+                    h1_share_observation=dict(status='VERIFIED', report_period_end='2026-06-30',
+                        ordinary_shares=1250081601, current_continuity='UNPROVEN',
+                        formal_eligibility=False, action='no_order',
+                        source=dict(original_sha256='a' * 64)))
+
+    monkeypatch.setattr(shares, 'read_capital_with_h1_shares', fixed_h1_read)
+    response = client.get(BASE + '/companies/600519')
+    body = response.json()
+    observation = body['current_capital_observation']['h1_share_observation']
+    assert response.status_code == 200 and body['status'] == 'NOT_STARTED'
+    assert observation['status'] == 'VERIFIED'
+    assert observation['ordinary_shares'] == 1250081601
+    assert observation['current_continuity'] == 'UNPROVEN'
+    assert body['formal_eligibility'] is False and body['action'] == 'no_order'
+    assert data.provider_calls == [] and state(root) == before
+
+
+def test_public_q3_h1_capital_bridge_is_read_only_and_never_grants_price_admission(api, monkeypatch):
+    from value_investment_agent.application.research import current_capital_q3_h1_bridge_v1 as bridge
+
+    client, _, data, root = api
+    registration = root / bridge.REGISTRY
+    registration.parent.mkdir(parents=True, exist_ok=True)
+    registration.write_text('{}', encoding='utf-8')
+    before = state(root)
+
+    def fixed_bridge_read(project, now):
+        assert project == root and now.utcoffset() is not None
+        return dict(status='MONETARY_CAPITAL_VERIFIED_SHARES_UNKNOWN', symbol=bridge.SUPPORTED_SYMBOL,
+                    q3_monetary_capital_cny='1250081601.00', q3_ordinary_shares='UNKNOWN',
+                    h1_ordinary_shares=1250081601, current_continuity='UNPROVEN',
+                    q3_source=dict(original_sha256='a' * 64), formal_eligibility=False,
+                    action='no_order')
+
+    monkeypatch.setattr(bridge, 'read_q3_h1_capital_bridge', fixed_bridge_read)
+    response = client.get(BASE + '/companies/600519')
+    body = response.json()
+    observation = body['current_capital_observation']['q3_h1_capital_bridge']
+    assert response.status_code == 200 and body['status'] == 'NOT_STARTED'
+    assert observation['q3_ordinary_shares'] == 'UNKNOWN'
+    assert observation['current_continuity'] == 'UNPROVEN'
+    assert body['formal_eligibility'] is False and body['action'] == 'no_order'
+    assert data.provider_calls == [] and state(root) == before
 
 
 @pytest.mark.parametrize('extra',[{'endpoint':'https://example.invalid'}, {'key':'TEST_ONLY'},
@@ -629,3 +1158,687 @@ def test_horizon_authorized_start_reads_and_cancels_real_service_boundary(api,mo
     assert client.get(BASE+'/horizon-tasks/'+task).json()['formal_eligibility'] is False
     assert client.post(BASE+'/horizon-tasks/'+task+'/cancel').json()['status']=='CANCELLED'
     assert not data.provider_calls
+
+
+def test_cash_policy_horizon_uses_distinct_v4_service_and_real_lifecycle(api,monkeypatch):
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v4 import OperatingHorizonTaskService
+    client,secret,data,root=api
+    unlock(client,secret)
+    seen=[]; task='rt-'+'e'*32
+    def create(self,**kw):
+        seen.append(('create',kw));return dict(task_id=task,status='QUEUED',action='no_order')
+    monkeypatch.setattr(OperatingHorizonTaskService,'create',create)
+    monkeypatch.setattr(OperatingHorizonTaskService,'run',lambda self,id:seen.append(('run',id)))
+    monkeypatch.setattr(OperatingHorizonTaskService,'read',lambda self,id:dict(task_id=id,status='SUCCEEDED',action='no_order',formal_eligibility=False,workflow='operating-horizon-task-v4-cash-policy'))
+    monkeypatch.setattr(OperatingHorizonTaskService,'cancel',lambda self,id:dict(task_id=id,status='CANCELLED',action='no_order'))
+    body=dict(symbol='600323',request_key='TEST_ONLY-cash-policy',years=[2026])
+    result=client.post(BASE+'/horizon-cash-policy-tasks',json=body)
+    assert result.status_code==202 and seen==[('create',body),('run',task)]
+    assert client.get(BASE+'/horizon-cash-policy-tasks/'+task).json()['workflow']=='operating-horizon-task-v4-cash-policy'
+    assert client.post(BASE+'/horizon-cash-policy-tasks/'+task+'/cancel').json()['status']=='CANCELLED'
+    assert not data.provider_calls
+
+
+def test_parent_wc_horizon_explicit_v5_dispatch_is_authorized_and_read_only(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v5_wc import (
+        OperatingHorizonTaskService as V5, CONTRACT)
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v4 import (
+        OperatingHorizonTaskService as V4)
+    from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v1 as e2
+
+    client, secret, data, root = api
+    path = BASE + '/horizon-cash-policy-tasks'
+    task_id = 'rt-' + '9' * 32
+    body = dict(symbol='600519', request_key='TEST_ONLY-v5-route', years=[2027], task_contract=CONTRACT)
+    before = state(root)
+    for method, url in [('post', path), ('get', path + '?symbol=600519&task_contract=' + CONTRACT),
+                        ('get', path + '/' + task_id), ('get', path + '/' + task_id + '/e2-input'),
+                        ('post', path + '/' + task_id + '/cancel')]:
+        response = client.post(url, json=body) if method == 'post' else client.get(url)
+        assert response.status_code == 401
+    assert state(root) == before and not data.provider_calls
+
+
+
+    calls = []
+    monkeypatch.setattr(V4, 'create', lambda self, **kw: pytest.fail('V5 request fell through to V4'))
+    monkeypatch.setattr(V5, 'create', lambda self, **kw: (calls.append(('create', kw)) or
+        dict(task_id=task_id, status='QUEUED', action='no_order', formal_eligibility=False)))
+    monkeypatch.setattr(V5, 'run', lambda self, id: calls.append(('run', id)))
+    monkeypatch.setattr(V5, 'read', lambda self, id: (calls.append(('read', id)) or
+        dict(task_id=id, symbol='600519', updated_at='2026-11-11T00:00:00+00:00',
+             status='WAITING_EVIDENCE', action='no_order', formal_eligibility=False)))
+    monkeypatch.setattr(V5, '_load', lambda self, id: (None, None, None))
+    monkeypatch.setattr(V5, 'cancel', lambda self, id: (calls.append(('cancel', id)) or
+        dict(task_id=id, status='CANCELLED', action='no_order')))
+    monkeypatch.setattr(V5, 'resume', lambda self, id: (calls.append(('resume', id)) or
+        dict(task_id=id, status='QUEUED', action='no_order')))
+    monkeypatch.setattr(e2, 'read_d2_cash_policy_e2_input', lambda **kw:
+        (calls.append(('e2', kw['service'].__class__)) or
+         dict(status='UNASSESSABLE', action='no_order', formal_eligibility=False)))
+    # Only task-store identity is needed by the route; mocked methods make no
+    # provider call and cannot turn this fixture into a real research result.
+    from value_investment_agent.application.research.agent_review import operating_q3_cash_source_loader_v1 as loader
+    store = V5(root, allow_live=True, source_loader=loader.load_current,
+               source_loader_version=loader.VERSION)._directory(task_id)
+    store.mkdir(parents=True)
+    (store / 'input.json').write_text('{"mode":"LIVE_OPERATING"}', encoding='utf-8')
+    unlock(client, secret)
+    assert client.post(path, json=body).status_code == 202
+    assert calls[:2] == [('create', {key: body[key] for key in ('symbol', 'request_key', 'years')}),
+                         ('run', task_id)]
+    assert client.get(path + '?symbol=600519&task_contract=' + CONTRACT).json()['items'][0]['task_id'] == task_id
+    assert client.get(path + '?symbol=600519&task_contract=unknown').status_code == 422
+    assert client.get(path + '/' + task_id).json()['status'] == 'WAITING_EVIDENCE'
+    assert client.get(path + '/' + task_id + '/e2-input').json()['status'] == 'UNASSESSABLE'
+    assert ('e2', V5) in calls
+    assert client.post(path + '/' + task_id + '/cancel').json()['status'] == 'CANCELLED'
+    assert client.post(path + '/' + task_id + '/resume').json()['status'] == 'QUEUED'
+    assert calls[-2:] == [('resume', task_id), ('run', task_id)]
+    assert not data.provider_calls
+
+
+def test_split_v6_dispatch_is_opt_in_and_damaged_task_never_falls_back(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v6_split import (
+        OperatingHorizonTaskService as V6, CONTRACT)
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v4 import (
+        OperatingHorizonTaskService as V4)
+    from value_investment_agent.application.research.agent_review import operating_q3_cash_source_loader_v1 as loader
+
+    client, secret, data, root = api
+    path = BASE + '/horizon-cash-policy-tasks'
+    body = dict(symbol='600519', request_key='TEST_ONLY-v6-route', years=[2027], task_contract=CONTRACT)
+    before = state(root)
+    assert client.post(path, json=body).status_code == 401
+    assert state(root) == before and not data.provider_calls
+    task_id = 'rt-' + '6' * 32
+    calls = []
+    monkeypatch.setattr(V4, 'create', lambda self, **kw: pytest.fail('V6 fell through to V4'))
+    monkeypatch.setattr(V6, 'create', lambda self, **kw: (calls.append(('create', kw)) or
+        dict(task_id=task_id, status='QUEUED', symbol='600519', action='no_order', formal_eligibility=False)))
+    monkeypatch.setattr(V6, 'run', lambda self, id: calls.append(('run', id)))
+    monkeypatch.setattr(V6, 'read', lambda self, id: (calls.append(('read', id)) or
+        dict(task_id=id, symbol='600519', updated_at='2026-11-11T00:00:00+00:00',
+             status='QUEUED', action='no_order', formal_eligibility=False)))
+    monkeypatch.setattr(V6, '_load', lambda self, id: (None, None, None))
+    directory = V6(root, allow_live=True, source_loader=loader.load_current,
+        source_loader_version=loader.VERSION)._directory(task_id)
+    directory.mkdir(parents=True)
+    (directory / 'input.json').write_text('{"mode":"LIVE_OPERATING"}', encoding='utf-8')
+    unlock(client, secret)
+    assert client.post(path, json=body).status_code == 202
+    assert calls[:2] == [('create', {key: body[key] for key in ('symbol', 'request_key', 'years')}),
+                         ('run', task_id)]
+    assert client.get(path + '?symbol=600519&task_contract=' + CONTRACT).json()['items'][0]['task_id'] == task_id
+    assert client.get(path + '/' + task_id).json()['status'] == 'QUEUED'
+    assert not data.provider_calls
+    (directory / 'input.json').unlink()
+    assert client.get(path + '/' + task_id).status_code == 422
+    assert client.get(path + '?symbol=600519&task_contract=' + CONTRACT).status_code == 422
+    assert not data.provider_calls
+
+
+def test_split_v7_dispatch_is_explicit_and_corruption_never_falls_back(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v7_split import (
+        OperatingHorizonTaskService as V7, CONTRACT)
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v4 import (
+        OperatingHorizonTaskService as V4)
+    from value_investment_agent.application.research.agent_review import operating_q3_cash_source_loader_v1 as loader
+
+    client, secret, data, root = api
+    path = BASE + '/horizon-cash-policy-tasks'
+    body = dict(symbol='600519', request_key='TEST_ONLY-v7-route', years=[2027], task_contract=CONTRACT)
+    before = state(root)
+    assert client.post(path, json=body).status_code == 401
+    assert state(root) == before and not data.provider_calls
+    task_id = 'rt-' + '8' * 32
+    calls = []
+    monkeypatch.setattr(V4, 'create', lambda self, **kw: pytest.fail('V7 fell through to V4'))
+    monkeypatch.setattr(V7, 'create', lambda self, **kw: (calls.append(('create', kw)) or
+        dict(task_id=task_id, status='QUEUED', symbol='600519', action='no_order', formal_eligibility=False)))
+    monkeypatch.setattr(V7, 'run', lambda self, id: calls.append(('run', id)))
+    monkeypatch.setattr(V7, 'read', lambda self, id: (calls.append(('read', id)) or
+        dict(task_id=id, symbol='600519', updated_at='2026-11-11T00:00:00+00:00',
+             status='QUEUED', action='no_order', formal_eligibility=False)))
+    monkeypatch.setattr(V7, '_load', lambda self, id: (None, None, None))
+    directory = V7(root, allow_live=True, source_loader=loader.load_current,
+        source_loader_version=loader.VERSION)._directory(task_id)
+    directory.mkdir(parents=True)
+    (directory / 'input.json').write_text('{"mode":"LIVE_OPERATING"}', encoding='utf-8')
+    unlock(client, secret)
+    assert client.post(path, json=body).status_code == 202
+    assert calls[:2] == [('create', {key: body[key] for key in ('symbol', 'request_key', 'years')}),
+                         ('run', task_id)]
+    assert client.get(path + '?symbol=600519&task_contract=' + CONTRACT).json()['items'][0]['task_id'] == task_id
+    assert client.get(path + '/' + task_id).json()['status'] == 'QUEUED'
+    assert not data.provider_calls
+    (directory / 'input.json').unlink()
+    assert client.get(path + '/' + task_id).status_code == 422
+    assert client.get(path + '?symbol=600519&task_contract=' + CONTRACT).status_code == 422
+    assert not data.provider_calls
+
+
+def test_split_v6_test_only_task_is_not_a_live_api_result(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v6_split import (
+        OperatingHorizonTaskService as V6, CONTRACT)
+    from value_investment_agent.application.research.agent_review import operating_q3_cash_source_loader_v1 as loader
+
+    client, secret, data, root = api
+    task_id = 'rt-' + '7' * 32
+    service = V6(root, allow_live=True, source_loader=loader.load_current,
+        source_loader_version=loader.VERSION)
+    directory = service._directory(task_id)
+    directory.mkdir(parents=True)
+    (directory / 'input.json').write_text('{"mode":"TEST_ONLY_LIVE_CONTRACT"}', encoding='utf-8')
+    monkeypatch.setattr(V6, '_load', lambda self, id: (None, None, None))
+    monkeypatch.setattr(V6, 'read', lambda self, id: pytest.fail('TEST_ONLY V6 returned as LIVE'))
+    unlock(client, secret)
+    path = BASE + '/horizon-cash-policy-tasks'
+    listing = client.get(path + '?symbol=600519&task_contract=' + CONTRACT)
+    assert listing.status_code == 200 and listing.json()['items'] == []
+    direct = client.get(path + '/' + task_id)
+    assert direct.status_code == 422
+    assert direct.json()['reason'] == 'V6_SPLIT_TEST_ONLY_NOT_LIVE_RESEARCH'
+    assert not data.provider_calls
+
+
+def test_parent_wc_mixed_modes_list_excludes_verified_test_only_and_rejects_direct_read(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v5_wc import (
+        OperatingHorizonTaskService as V5, CONTRACT)
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v4 import (
+        OperatingHorizonTaskService as V4)
+    from value_investment_agent.application.research.agent_review import operating_q3_cash_source_loader_v1 as loader
+    from value_investment_agent.application.research.agent_review.task_execution_v1 import VERSION, _bytes, _hash
+
+    client, secret, data, root = api
+    service = V5(root, allow_live=True, source_loader=loader.load_current,
+                 source_loader_version=loader.VERSION)
+    test_id, live_id = 'rt-' + '2' * 32, 'rt-' + '3' * 32
+
+    def artifact(task_id, mode):
+        directory = service._directory(task_id)
+        (directory / 'versions').mkdir(parents=True)
+        spec = dict(schema_version=VERSION, task_id=task_id, workflow='operating_research',
+                    action='no_order', mode=mode, task_contract=CONTRACT, years=[2027])
+        raw = _bytes(spec)
+        (directory / 'input.json').write_bytes(raw)
+        row = dict(schema_version=VERSION, task_id=task_id, input_sha256=_hash(raw),
+                   version=1, previous=None, status='QUEUED', action='no_order',
+                   formal_eligibility=False, new_llm_calls=0)
+        data_bytes = _bytes(row)
+        record = directory / 'versions' / ('0001-' + _hash(data_bytes) + '.json')
+        record.write_bytes(data_bytes)
+        (directory / 'current.json').write_bytes(_bytes(service._binding(record)))
+        return directory
+
+    test_dir = artifact(test_id, 'TEST_ONLY_LIVE_CONTRACT')
+    artifact(live_id, 'LIVE_OPERATING')
+    seen = []
+    monkeypatch.setattr(V5, 'read', lambda self, id: (seen.append(id) or
+        dict(task_id=id, symbol='600519', updated_at='2026-11-11T00:00:00+00:00',
+             status='QUEUED', action='no_order', formal_eligibility=False)))
+    monkeypatch.setattr(V4, 'read', lambda self, id: pytest.fail('V5 artifact fell through to V4'))
+    unlock(client, secret)
+    path = BASE + '/horizon-cash-policy-tasks'
+    listing = client.get(path + '?symbol=600519&task_contract=' + CONTRACT)
+    assert listing.status_code == 200
+    assert [item['task_id'] for item in listing.json()['items']] == [live_id]
+    assert seen == [live_id] and not data.provider_calls
+    for suffix in ('', '/e2-input'):
+        result = client.get(path + '/' + test_id + suffix)
+        assert result.status_code == (200 if suffix else 422)
+        assert result.json()['reason'] == 'V5_WC_TEST_ONLY_NOT_LIVE_RESEARCH'
+        if suffix:
+            assert result.json()['status'] == 'UNASSESSABLE'
+    assert client.post(path + '/' + test_id + '/cancel').status_code == 409
+    assert seen == [live_id] and not data.provider_calls
+
+    # A missing input in an existing V5 directory is corruption, not V4.
+    (test_dir / 'input.json').unlink()
+    damaged = client.get(path + '/' + test_id)
+    assert damaged.status_code == 422
+    assert damaged.json()['reason'] == 'V5_WC_INPUT_MISSING_OR_DAMAGED'
+    assert client.get(path + '?symbol=600519&task_contract=' + CONTRACT).status_code == 422
+    assert not data.provider_calls
+
+
+def test_parent_wc_version_chain_tamper_fails_closed_without_v4_fallback(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v5_wc import (
+        OperatingHorizonTaskService as V5)
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v4 import (
+        OperatingHorizonTaskService as V4)
+    from value_investment_agent.application.research.agent_review import operating_q3_cash_source_loader_v1 as loader
+    client, secret, data, root = api
+    service = V5(root, allow_live=True, source_loader=loader.load_current,
+                 source_loader_version=loader.VERSION)
+    task_id = 'rt-' + '4' * 32
+    directory = service._directory(task_id)
+    directory.mkdir(parents=True)
+    (directory / 'input.json').write_text('{"mode":"LIVE_OPERATING"}', encoding='utf-8')
+    monkeypatch.setattr(V4, 'read', lambda self, id: pytest.fail('corrupt V5 fell through to V4'))
+    unlock(client, secret)
+    response = client.get(BASE + '/horizon-cash-policy-tasks/' + task_id)
+    assert response.status_code == 422
+    assert 'INVALID_LIVE_TASK' in response.json()['reason']
+    assert not data.provider_calls
+
+
+def test_cash_policy_horizon_requires_authorization_and_exact_request(api):
+    client,_,data,root=api
+    before=state(root)
+    unauthorized=client.post(BASE+'/horizon-cash-policy-tasks',json=dict(symbol='600323',request_key='TEST_ONLY-cash-policy',years=[2026]))
+    assert unauthorized.status_code==401 and state(root)==before and not data.provider_calls
+
+
+def test_cash_policy_horizon_history_recovers_failed_task_without_model_call(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v4 import OperatingHorizonTaskService
+    client, secret, data, root = api
+    path = BASE + '/horizon-cash-policy-tasks?symbol=600323'
+    before = state(root)
+    assert client.get(path).status_code == 401
+    unlock(client, secret)
+    task_id = 'rt-' + 'f' * 32
+    failed = dict(task_id=task_id, symbol='600323', status='FAILED',
+                  error_code='HORIZON_PROVIDER_RESPONSE_INCOMPLETE', action='no_order',
+                  formal_eligibility=False)
+    monkeypatch.setattr(OperatingHorizonTaskService, 'list_for_symbol',
+                        lambda self, symbol: [failed] if symbol == '600323' else [])
+    result = client.get(path)
+    assert result.status_code == 200
+    assert result.json() == dict(action='no_order', symbol='600323', items=[failed])
+    assert client.get(BASE + '/horizon-cash-policy-tasks?symbol=bad').status_code == 422
+    assert not data.provider_calls and state(root) == before
+
+
+def test_cash_policy_e2_read_projects_ready_or_unassessable_without_provider(api,monkeypatch):
+    from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v1 as e2
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v4 import OperatingHorizonTaskService
+    client,secret,data,root=api
+    unlock(client,secret)
+    before=state(root)
+    task_id='rt-'+'a'*32
+    ready=dict(status='SOURCE_BOUND_D2_V4_CASH_POLICY_READY_FOR_E2',action='no_order',
+        formal_eligibility=False,condition_price=None,symbol='600323',task_id=task_id,
+        blockers=['MAIN_ECONOMIC_RANGE_ADOPTION_REQUIRED'])
+    seen=[]
+    def project(**kwargs):
+        seen.append(kwargs)
+        return ready
+    monkeypatch.setattr(e2,'read_d2_cash_policy_e2_input',project)
+    response=client.get(BASE+'/horizon-cash-policy-tasks/'+task_id+'/e2-input')
+    assert response.status_code==200 and response.json()==ready
+    assert len(seen)==1 and isinstance(seen[0]['service'],OperatingHorizonTaskService)
+    monkeypatch.setattr(e2,'read_d2_cash_policy_e2_input',lambda **kwargs:(_ for _ in ()).throw(
+        ValueError('COMPLETE_UNAPPROVED_D2_CASH_POLICY_REQUIRED')))
+    rejected=client.get(BASE+'/horizon-cash-policy-tasks/'+task_id+'/e2-input')
+    assert rejected.status_code==200
+    assert rejected.json()['status']=='UNASSESSABLE'
+    assert rejected.json()['reason']=='COMPLETE_UNAPPROVED_D2_CASH_POLICY_REQUIRED'
+    assert rejected.json()['action']=='no_order' and not data.provider_calls and state(root)==before
+
+
+def test_full_cash_policy_e2_route_reads_its_own_bound_task(env, monkeypatch):
+    service = env.service()
+    created = service.create(symbol='123456', request_key='TEST_ONLY_BOUND_FULL_E2', years=[2026])
+    assert service.run(created['task_id'])['status'] == 'SUCCEEDED'
+    # The source fixture blocks all sockets; Starlette's local event-loop pipe
+    # needs loopback. Never grant an external connection to this route test.
+    def local_event_loop_only(sock, address):
+        if not isinstance(address, tuple) or address[0] != '127.0.0.1':
+            pytest.fail('Network forbidden')
+        return _ORIGINAL_SOCKET_CONNECT(sock, address)
+    monkeypatch.setattr(socket.socket, 'connect', local_event_loop_only)
+    client, secret = client_for(env.root, env.root/'TEST_ONLY-full-e2-journal.jsonl', monkeypatch)
+    unlock(client, secret)
+    before = state(env.root)
+    response = client.get(BASE+'/horizon-cash-policy-tasks/'+created['task_id']+'/e2-input')
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result['status'] == 'SOURCE_BOUND_D2_V4_CASH_POLICY_READY_FOR_E2'
+    assert result['task_id'] == created['task_id']
+    assert result['policy_years']['2026']['base']['complete'] is True
+    assert result['main_range_adopted'] is False
+    assert result['condition_price'] is None
+    assert result['formal_eligibility'] is False and result['action'] == 'no_order'
+    assert state(env.root) == before
+
+
+def test_compact_cash_policy_auth_lifecycle_list_and_read_only_e2(api,monkeypatch):
+    from value_investment_agent.application.research.agent_review.notice_task_dispatch_v1 import NoticeAwareTaskService
+    from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v1 as e2
+    client,secret,data,root=api
+    task_id='rt-'+'b'*32
+    path=BASE+'/cash-policy-tasks'
+    calls=[]
+    body=dict(symbol='600323',request_key='TEST_ONLY-compact',years=[2026])
+    for method,url in [('get',path+'?symbol=600323'),('get',path+'/'+task_id),
+                       ('get',path+'/'+task_id+'/e2-input'),('post',path),
+                       ('post',path+'/'+task_id+'/cancel'),('post',path+'/'+task_id+'/resume')]:
+        response=getattr(client,method)(url,json=body) if method=='post' else client.get(url)
+        assert response.status_code==401
+    assert not calls and not data.provider_calls
+    unlock(client,secret)
+    monkeypatch.setattr(NoticeAwareTaskService,'create',lambda self,**kw:(calls.append(('create',kw)) or
+        dict(task_id=task_id,status='QUEUED',action='no_order')))
+    monkeypatch.setattr(NoticeAwareTaskService,'run',lambda self,id:calls.append(('run',id)))
+    monkeypatch.setattr(NoticeAwareTaskService,'read',lambda self,id:(calls.append(('read',id)) or
+        dict(task_id=id,symbol='600323',status='WAITING_EVIDENCE',action='no_order',formal_eligibility=False,
+             research_as_of='2026-01-01T00:00:00+00:00',workflow='operating-cash-policy-task-v1')))
+    monkeypatch.setattr(NoticeAwareTaskService,'cancel',lambda self,id:(calls.append(('cancel',id)) or
+        dict(task_id=id,status='CANCELLED',action='no_order')))
+    monkeypatch.setattr(NoticeAwareTaskService,'resume',lambda self,id:(calls.append(('resume',id)) or
+        dict(task_id=id,status='QUEUED',action='no_order')))
+    created=client.post(path,json=body)
+    assert created.status_code==202 and calls[:2]==[('create',body),('run',task_id)]
+    assert client.get(path+'/'+task_id).json()['status']=='WAITING_EVIDENCE'
+    # Reuse bounded task-store discovery; do not scan the directory ad hoc.
+    service=NoticeAwareTaskService(root,kind='cash')
+    monkeypatch.setattr(NoticeAwareTaskService,'list_for_symbol',
+        lambda self,symbol:[self.read(task_id)] if symbol=='600323' else [])
+    listed=client.get(path+'?symbol=600323')
+    assert listed.status_code==200 and listed.json()==dict(action='no_order',symbol='600323',
+        items=[dict(task_id=task_id,symbol='600323',status='WAITING_EVIDENCE',action='no_order',formal_eligibility=False,
+                    research_as_of='2026-01-01T00:00:00+00:00',workflow='operating-cash-policy-task-v1')])
+    assert client.get(path+'?symbol=bad').status_code==422
+    incomplete=client.get(path+'/'+task_id+'/e2-input')
+    assert incomplete.status_code==200 and incomplete.json()['status']=='UNASSESSABLE'
+    assert incomplete.json()['reason']=='SUCCEEDED_BOUND_D2_CASH_POLICY_TASK_REQUIRED'
+    seen=[]
+    def project(**kwargs):
+        seen.append(kwargs)
+        return dict(action='no_order',status='D2_CASH_POLICY_INCOMPLETE',formal_eligibility=False)
+    monkeypatch.setattr(e2,'read_d2_cash_policy_e2_input',project)
+    before=list(calls)
+    response=client.get(path+'/'+task_id+'/e2-input')
+    assert response.status_code==200 and response.json()['status']=='D2_CASH_POLICY_INCOMPLETE'
+    assert seen[0]['service'].base==service.base and calls==before
+    assert client.post(path+'/'+task_id+'/cancel').json()['status']=='CANCELLED'
+    assert client.post(path+'/'+task_id+'/resume').json()['status']=='QUEUED'
+    assert calls[-2:]==[('resume',task_id),('run',task_id)]
+    assert not data.provider_calls
+
+
+def test_split_d2_e2_read_and_annual_history_are_explicit_and_read_only(api, monkeypatch):
+    from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v1 as e2
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v2 import OperatingHorizonTaskService
+    client, secret, data, root = api
+    cash_id = 'rt-' + 'a' * 32
+    annual_id = 'rt-' + 'b' * 32
+    history = BASE + '/horizon-tasks?symbol=600323'
+    joined = BASE + '/cash-policy-tasks/' + cash_id + '/e2-input?annual_task_id=' + annual_id
+    before = state(root)
+    assert client.get(history).status_code == 401
+    assert client.get(joined).status_code == 401
+    unlock(client, secret)
+    monkeypatch.setattr(OperatingHorizonTaskService, 'list_for_symbol',
+                        lambda self, symbol: [dict(task_id=annual_id, symbol=symbol,
+                            status='SUCCEEDED', action='no_order', formal_eligibility=False)])
+    listed = client.get(history)
+    assert listed.status_code == 200 and listed.json()['items'][0]['task_id'] == annual_id
+    assert client.get(BASE + '/horizon-tasks?symbol=bad').status_code == 422
+    seen = []
+    def project(**kwargs):
+        seen.append(kwargs)
+        return dict(status='SOURCE_BOUND_SPLIT_D2_READY_FOR_E2', action='no_order',
+            formal_eligibility=False, condition_price=None)
+    monkeypatch.setattr(e2, 'read_split_d2_e2_input', project)
+    response = client.get(joined)
+    assert response.status_code == 200
+    assert response.json()['formal_eligibility'] is False
+    assert seen[0]['annual_task_id'] == annual_id and seen[0]['cash_task_id'] == cash_id
+    assert seen[0]['root'] == root
+    assert not data.provider_calls and state(root) == before
+
+
+def test_anchored_annual_v3_uses_existing_authorized_task_lifecycle(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review.notice_task_dispatch_v1 import NoticeAwareTaskService
+    client, secret, data, root = api
+    task_id = 'rt-' + 'c' * 32
+    path = BASE + '/horizon-v3-tasks'
+    body = dict(symbol='600323', request_key='TEST_ONLY_annual_v3', years=[2026])
+    before = state(root)
+    assert client.post(path, json=body).status_code == 401
+    assert client.get(path + '/' + task_id).status_code == 401
+    assert state(root) == before
+    unlock(client, secret)
+    calls = []
+    monkeypatch.setattr(NoticeAwareTaskService, 'create',
+        lambda self, **kw: (calls.append(('create', kw)) or
+            dict(task_id=task_id, symbol='600323', status='QUEUED', action='no_order',
+                 formal_eligibility=False, workflow='operating-horizon-task-v3')))
+    monkeypatch.setattr(NoticeAwareTaskService, 'run',
+                        lambda self, id: calls.append(('run', id)))
+    monkeypatch.setattr(NoticeAwareTaskService, 'read',
+                        lambda self, id: dict(task_id=id, symbol='600323',
+                            status='SUCCEEDED', action='no_order', formal_eligibility=False,
+                            workflow='operating-horizon-task-v3'))
+    created = client.post(path, json=body)
+    assert created.status_code == 202 and calls == [('create', body), ('run', task_id)]
+    assert client.get(path + '/' + task_id).json()['workflow'] == 'operating-horizon-task-v3'
+    assert client.post(path, json={**body, 'max_run_cost': '100'}).status_code == 422
+    assert state(root) == before and not data.provider_calls
+
+
+def test_v12_horizon_api_dispatch_preserves_old_history_and_rejects_test_only(tmp_path, monkeypatch):
+    """The new transport has a separate store and never promotes test tasks."""
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import operating_horizon_task_v12_live as v12
+    from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v4 as e2
+
+    class Reader:
+        def __init__(self, root, *, source_loader=None, source_loader_version=None,
+                     test_provider=None):
+            self.base = Path(root) / "runtime" / "research-task-execution-v1" / "oh-v12-2027-live"
+            self.test_provider = test_provider
+
+        def _directory(self, task_id):
+            return self.base / task_id
+
+        def _load(self, task_id):
+            return {"mode": json.loads((self._directory(task_id) / "input.json").read_bytes())["mode"]}, {}, {}
+
+        def read(self, task_id):
+            return dict(task_id=task_id, symbol="600519", status="FAILED",
+                        updated_at="2026-11-12T01:00:00+08:00",
+                        error_code="V12_ANNUAL_COMPLETION_CAP_REJECTED",
+                        action="no_order", formal_eligibility=False, condition_price=None)
+
+    monkeypatch.setattr(v12, "OperatingHorizonTaskService", Reader)
+    monkeypatch.setattr(e2, "read_v12_cash_policy_e2_input", lambda **kwargs: dict(
+        status="UNASSESSABLE", reason="V10_E2_SUCCEEDED_TWO_STAGE_TASK_REQUIRED",
+        action="no_order", formal_eligibility=False, condition_price=None))
+    live_id, test_id = "rt-" + "c" * 32, "rt-" + "d" * 32
+    for task_id, mode in ((live_id, "LIVE_OPERATING"),
+                          (test_id, "TEST_ONLY_LIVE_CONTRACT")):
+        directory = Reader(tmp_path)._directory(task_id)
+        directory.mkdir(parents=True)
+        (directory / "input.json").write_text(json.dumps({"mode": mode,
+            "source_loader_binding": {"version": "operating-q3-issuer-wc-loader-v9-600519"}}),
+            encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert client.get(path + "/" + live_id).status_code == 401
+    unlock(client, secret)
+    listed = client.get(path + "?symbol=600519&task_contract=" + v12.CONTRACT)
+    assert listed.status_code == 200, listed.text
+    assert [row["task_id"] for row in listed.json()["items"]] == [live_id]
+    assert client.get(path + "/" + live_id).json()["error_code"] == "V12_ANNUAL_COMPLETION_CAP_REJECTED"
+    assert client.get(path + "/" + test_id).status_code == 422
+    e2_response = client.get(path + "/" + live_id + "/e2-input")
+    assert e2_response.status_code == 200
+    assert e2_response.json()["status"] == "UNASSESSABLE"
+
+
+def test_v13_horizon_api_dispatch_preserves_old_history_and_rejects_test_only(tmp_path, monkeypatch):
+    """The new transport has a separate store and never promotes test tasks."""
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import operating_horizon_task_v13_live as v13
+    from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v5 as e2
+
+    class Reader:
+        def __init__(self, root, *, source_loader=None, source_loader_version=None,
+                     test_provider=None):
+            self.base = Path(root) / "runtime" / "research-task-execution-v1" / "oh-v13-2027-live"
+            self.test_provider = test_provider
+
+        def _directory(self, task_id):
+            return self.base / task_id
+
+        def _load(self, task_id):
+            return {"mode": json.loads((self._directory(task_id) / "input.json").read_bytes())["mode"]}, {}, {}
+
+        def read(self, task_id):
+            return dict(task_id=task_id, symbol="600519", status="FAILED",
+                        updated_at="2026-11-12T01:00:00+08:00",
+                        error_code="V13_ANNUAL_COMPLETION_CAP_REJECTED",
+                        action="no_order", formal_eligibility=False, condition_price=None)
+
+    monkeypatch.setattr(v13, "OperatingHorizonTaskService", Reader)
+    monkeypatch.setattr(e2, "read_v13_cash_policy_e2_input", lambda **kwargs: dict(
+        status="UNASSESSABLE", reason="V10_E2_SUCCEEDED_TWO_STAGE_TASK_REQUIRED",
+        action="no_order", formal_eligibility=False, condition_price=None))
+    live_id, test_id = "rt-" + "c" * 32, "rt-" + "d" * 32
+    for task_id, mode in ((live_id, "LIVE_OPERATING"),
+                          (test_id, "TEST_ONLY_LIVE_CONTRACT")):
+        directory = Reader(tmp_path)._directory(task_id)
+        directory.mkdir(parents=True)
+        (directory / "input.json").write_text(json.dumps({"mode": mode,
+            "source_loader_binding": {"version": "operating-q3-issuer-wc-loader-v9-600519"}}),
+            encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert client.get(path + "/" + live_id).status_code == 401
+    unlock(client, secret)
+    listed = client.get(path + "?symbol=600519&task_contract=" + v13.CONTRACT)
+    assert listed.status_code == 200, listed.text
+    assert [row["task_id"] for row in listed.json()["items"]] == [live_id]
+    assert client.get(path + "/" + live_id).json()["error_code"] == "V13_ANNUAL_COMPLETION_CAP_REJECTED"
+    assert client.get(path + "/" + test_id).status_code == 422
+    e2_response = client.get(path + "/" + live_id + "/e2-input")
+    assert e2_response.status_code == 200
+    assert e2_response.json()["status"] == "UNASSESSABLE"
+
+
+def test_v15_historical_dividend_loader_dispatch(tmp_path, monkeypatch):
+    """TEST_ONLY transport: new historical sources do not reinterpret old V15 tasks."""
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v15_live as v15,
+        operating_q3_issuer_dividend_split_loader_v9_600519 as dividend,
+    )
+
+    seen = []
+    old_id, new_id = "rt-" + "a" * 32, "rt-" + "b" * 32
+
+    class Reader:
+        def __init__(self, root, *, source_loader=None, source_loader_version=None,
+                     test_provider=None):
+            self.root = Path(root)
+            self.base = self.root / "runtime" / "research-task-execution-v1" / "oh-v15-2027-live"
+            self.version = source_loader_version or v15.official.VERSION
+            self.source_loader = source_loader
+            seen.append(("init", self.version))
+
+        def _directory(self, task_id):
+            return self.base / task_id
+
+        def _load(self, task_id):
+            raw = json.loads((self._directory(task_id) / "input.json").read_bytes())
+            if raw["source_loader_binding"]["version"] != self.version:
+                raise ValueError("TEST_ONLY_LOADER_VERSION_MISMATCH")
+            return raw, {}, {}
+
+        def read(self, task_id):
+            self._load(task_id)
+            return dict(task_id=task_id, symbol="600519", status="WAITING_EVIDENCE",
+                        updated_at="2026-11-12T12:00:00+00:00", action="no_order",
+                        formal_eligibility=False, condition_price=None)
+
+        def create(self, **kwargs):
+            assert self.source_loader is dividend.load_current
+            seen.append(("create", self.version, kwargs["symbol"]))
+            return dict(task_id=new_id, symbol=kwargs["symbol"], status="WAITING_EVIDENCE",
+                        action="no_order", formal_eligibility=False)
+
+    monkeypatch.setattr(v15, "OperatingHorizonTaskService", Reader)
+    for task_id, version in ((old_id, v15.official.VERSION), (new_id, dividend.VERSION)):
+        path = Reader(tmp_path)._directory(task_id)
+        path.mkdir(parents=True)
+        (path / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+            source_loader_binding=dict(version=version))), encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert client.get(path + "/" + new_id).status_code == 401
+    unlock(client, secret)
+    assert client.get(path + "/" + old_id).json()["task_id"] == old_id
+    assert client.get(path + "/" + new_id).json()["task_id"] == new_id
+    created = client.post(path, json=dict(symbol="600519", years=[2027],
+        request_key="TEST_ONLY_DIVIDEND", task_contract=v15.CONTRACT,
+        source_loader_version=dividend.VERSION))
+    assert created.status_code == 202 and created.json()["action"] == "no_order"
+    assert ("create", dividend.VERSION, "600519") in seen
+    bad = client.post(path, json=dict(symbol="600519", years=[2027],
+        request_key="TEST_ONLY_DIVIDEND", task_contract=v15.CONTRACT,
+        source_loader_version="unregistered-source"))
+    assert bad.status_code == 422
+
+
+def test_v16_historical_dividend_task_dispatch_is_separate(tmp_path, monkeypatch):
+    """V16 selection stays in its own store and does not reinterpret a V15 task."""
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v16_live as v16,
+        operating_q3_issuer_dividend_split_loader_v9_600519 as dividend,
+    )
+
+    task_id = "rt-" + "c" * 32
+    seen = []
+
+    class Reader:
+        def __init__(self, root, *, source_loader=None, source_loader_version=None,
+                     test_provider=None):
+            self.root = Path(root)
+            self.base = self.root / "runtime" / "research-task-execution-v1" / "oh-v16-2027-live"
+            self.version = source_loader_version or v16.official.VERSION
+            self.source_loader = source_loader
+
+        def _directory(self, candidate):
+            return self.base / candidate
+
+        def _load(self, candidate):
+            raw = json.loads((self._directory(candidate) / "input.json").read_bytes())
+            if raw["source_loader_binding"]["version"] != self.version:
+                raise ValueError("TEST_ONLY_V16_LOADER_CHANGED")
+            return raw, {}, {}
+
+        def read(self, candidate):
+            self._load(candidate)
+            return dict(task_id=candidate, symbol="600519", status="FAILED",
+                updated_at="2026-11-12T12:00:00+00:00", action="no_order",
+                formal_eligibility=False, error_code="V16_ANNUAL_RESPONSE_REJECTED")
+
+        def create(self, **kwargs):
+            assert self.source_loader is dividend.load_current
+            seen.append((self.version, kwargs["symbol"]))
+            return dict(task_id=task_id, symbol=kwargs["symbol"], status="WAITING_EVIDENCE",
+                action="no_order", formal_eligibility=False)
+
+    monkeypatch.setattr(v16, "OperatingHorizonTaskService", Reader)
+    directory = Reader(tmp_path)._directory(task_id)
+    directory.mkdir(parents=True)
+    (directory / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        source_loader_binding=dict(version=dividend.VERSION))), encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert client.get(path + "/" + task_id).status_code == 401
+    unlock(client, secret)
+    assert client.get(path + "/" + task_id).json()["error_code"] == "V16_ANNUAL_RESPONSE_REJECTED"
+    result = client.post(path, json=dict(symbol="600519", years=[2027],
+        request_key="TEST_ONLY_V16_DIVIDEND", task_contract=v16.CONTRACT,
+        source_loader_version=dividend.VERSION))
+    assert result.status_code == 202 and result.json()["action"] == "no_order"
+    assert seen == [(dividend.VERSION, "600519")]

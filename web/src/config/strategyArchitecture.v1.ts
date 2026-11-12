@@ -299,14 +299,14 @@ export const catalog: Record<
             },
           ],
           outputDetails: [
-            "本次留存结果：1700只中候选736、排除142、无法评价822；官方名单均有记录不代表资料完整。",
+            "隔离分支重新按来源重放：1700只中候选738、排除142、无法评价820；资料截至2026-11-10，尚未发布到8001。官方名单均有记录不代表资料完整。",
             "1618家普通企业至少比对一项，4844项一致、2项冲突、1581家有已识别融资金额；冲突不择源消除。",
             "可搜索分页股票池、逐通道理由、字段值差异、融资分项与原件页链接；初筛不是买入。",
           ],
           acceptanceChecks: [
             "检查项：未来来源/错币种/混合单位/同源镜像不能记双源一致；跨表倍率未声明不放行。",
             "检查项：重复债务不重加，null与0区分；已识别小计不替代完整有息负债，双源MATCHED不升级质量门。",
-            "局部真实验收：final-delivery-receipt记录上述覆盖及API结果；完整有息负债NOT_PROVEN、full_financial_quality NOT_GRANTED，行情交易日仍未独立核验。",
+            "局部真实验收：旧final-delivery-receipt属于历史实现；新实现按142份Hash绑定来源重新计算，并由隔离API读取。完整有息负债NOT_PROVEN、full_financial_quality NOT_GRANTED，行情交易日仍未独立核验。",
           ],
           implementationRefs: [
             {
@@ -352,7 +352,7 @@ export const catalog: Record<
           why: "避免只研究事先指定的股票。",
           how: "复用四通道筛选，将入池理由和缺口送入队列。",
           scope: "沪市主板公开观察初筛；模块长期能力和完整经济研究仍未完成。",
-          done: "1700只逐股初筛可查；1618家参与双源比对，4844项一致、2项冲突，1581家有已识别融资。",
+          done: "隔离分支1700只逐股初筛已重算：738候选、142排除、820无法评价；旧双源与融资统计是历史回执，须与新版重放分开查看。",
           gap: "完整债务和全量质量资格仍未通过；新队列接线不等于批量经营研究、估值及持续自动监控已完成。",
           acceptance: "来源与交易日核验通过，候选、排除理由及覆盖范围可复算。",
           evidence: [
@@ -369,19 +369,20 @@ export const catalog: Record<
         modules: [
           "src/value_investment_agent/application/discovery/value_candidate_selection.py",
         ],
-        engineeringStatus: "初筛、调度与限定事实消费已验证",
-        evidenceStatus: "真实来源重放、公开获取与接口验收已完成",
+        engineeringStatus:
+          "初筛、调度与限定事实消费已验证；新版来源重放已接隔离API",
+        evidenceStatus: "142份公开来源经Hash核对并重算；8001待发布验收",
         shortStatus:
-          "四通道初筛与排序已验；两条离线调度失败、新增事实0；公开获取后重试成功消费2项资产负债率事实",
+          "四通道初筛与排序已验；新版1700只重算后738候选，仍有820只无法评价；历史离线调度和限定事实消费须分开核对",
         implementation:
-          "保留日期原件重放→四通道初筛→排序→预算队列→官方获取→限定事实冷读消费；现有接口透传已核验市场范围",
+          "Hash绑定公开来源→当前实现重算→四通道排序与诊断→现有只读API分页；补证队列与正式事实消费沿用原合同，不自动授予投资资格",
         milestone: "初筛与限定事实消费已验证；经济研究与正式资格未完成。",
         existingEvidence:
-          "5224家沪深观察范围；质量0／现金回报50／价值50／周期50；补证111条、预算2；000151/000498各消费1项资产负债率，深度研究0",
+          "历史沪深观察范围5224家及限定补证结果另存；新版沪市主板1700只重放为738候选、142排除、820无法评价，深度研究不因入池自动完成",
         evidenceSource:
-          "runtime/b-real-acceptance-20261030/receipt.json；runtime/b-real-acceptance-20261030-public-retry/consumer-acceptance.json（限定事实冷读消费）；现有接口验收",
+          "历史回执见runtime/b-real-acceptance-20261030；新版隔离清单runtime/sse-main-screening/sse-main-ab-v8-20261111T091228/manifest.json，隔离API已消费，8001仍待验收",
         evidence:
-          "行情2026-10-23（供应商交易日未独立核验），筛选2026-10-25；历史保留研究，非当前刷新；北交所缺失、非全A；报价CONFLICT按原始来源保留并阻断入队",
+          "新版资料截至2026-11-10，读取时标为历史快照；沪市主板1700只并非全A，报价交易日未独立核验；报价CONFLICT保留原始来源，不冒充当前有效行情",
         nextStep:
           "继续核验各通道经营与经济证据；新增资产负债率不代表完整债务、企业质量或估值准入",
         ruleWhy: "不同企业的价值线索不同；低PE和高股息都可能是陷阱。",
@@ -389,12 +390,13 @@ export const catalog: Record<
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer:
-            "初筛、排序及预算调度已验；两条离线任务失败；官方获取后限定事实消费2项成功",
+            "当前实现重算已进入隔离API并保持738条候选分页；历史补证队列仅在原合同内消费，不等于批量深研",
           realData:
-            "历史初筛5224家、非全A；离线失败新增事实0；公开获取后新增2项限定事实，保留实际获取时间",
+            "新版142份公开来源Hash核对，沪市主板1700只历史时点重算；旧5224家沪深观察与两项限定事实另属历史回执",
           economic:
             "初筛线索不证明ROIC、正常化盈利或分红持续性；资产负债率仅按窄方法核验",
-          deployment: "发布身份与浏览器验收单独记录；历史数据日期不随发布滚动",
+          deployment:
+            "隔离源码、API与构建已验；8001进程归属记录不一致，尚未切换，历史数据日期不随发布滚动",
           acceptance: "用户尚未确认最终验收；action=no_order",
         },
         channels: [
@@ -717,6 +719,16 @@ export const catalog: Record<
               description: "季度经营到实际共享现金模型的后续消费者。",
             },
             {
+              path: "src/value_investment_agent/application/research/agent_review/operating_horizon_task_v20_staged.py",
+              symbol: "OperatingHorizonTaskService",
+              description: "年度三情景逐段封存并共享费用预算；失败不续跑。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/operating_horizon_cash_policy_e2_v12.py",
+              symbol: "read_v20_cash_policy_e2_input",
+              description: "完整响应核验后才交E2编译，旧版本保持原入口。",
+            },
+            {
               path: "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
               description: "三家公司分路径审计及真实复算边界。",
             },
@@ -726,8 +738,8 @@ export const catalog: Record<
           why: "估值参数需要经济理由，而不是AI直接报价格。",
           how: "区分事实与预测，推导量价成本及资金路径，保留反例。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "11月5日：原2027三角色研究保留；新增真实2026年度补研，通过来源校验、税费归属及年度输入编译，API/Web可读。失败响应仅在原文与修复文逐值一致、且恰好多一个右花括号时生成派生读取视图；不改原件、不改任务成功状态。",
-          gap: "34条官方证据已接入；最新研究仍缺存量经营与新增并表贡献及成本/利润桥。BOT无偿移交不得扩大为BOO；未引用的补贴退坡不采纳。传输归一化不等于经济通过；现金、主估值和条件价未闭环。",
+          done: "既有真实经营研究、来源绑定年度任务和E2只读消费者可用；V20新增Bear/Base/Bull分段执行与封存，三段齐全才进入原经济校验及现金阶段。真实模型结果仍须独立验收。",
+          gap: "600887真实V19、V20年度响应均已封存且校验失败；V20仅调用Bear阶段、结算¥0.053504，Base/Bull及现金均未调用。旧V18的未来现金政策仍UNKNOWN；E2/F1/F2没有新真实正例。",
           acceptance:
             "来源绑定的经营假设、三情景、反证和重开条件可被模型消费。",
           evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
@@ -749,29 +761,31 @@ export const catalog: Record<
         evidenceStatus:
           "96条官方来源；21项经营驱动范围、6项增长/税前利润率由代码派生、9项资本UNKNOWN；不是模型直接填利润率；新增30行现金账与v4条件估值真实消费",
         shortStatus:
-          "600323三角色成功；FY2025→2027全年经营已编译年度归属利润输入。税费事实已补齐；仍缺连续现金路径、适用终端和主区间，尚无F1/F2价格结论",
+          "年度研究分段执行已接线；600887真实V20首段输出结构不合格，任务停止。连续股东现金、适用终端和新F1/F2条件价格尚未形成。",
         implementation:
           "原驱动桥锁定H12026→H12027，按每情景128角点重算；同比FY只对FY、H1只对H1。新增2026Jul–2027Jun滚动全年适配，后续flat，ResearchApplicationService→既有v4计算",
         milestone:
-          "2026-11-05新增rt-3702a415真实2026年度补研并进入税后归属/年度编译；原rt-cc3d的2027研究保留。不同任务不自动合并主预测，后续年份、现金和估值仍未闭环。",
+          "V20按情景逐段封存并接现有API/E2；真实任务rt-817f3156cc765c2f28edf3871ae8f6fa在Bear结构校验失败，后续调用未发生。旧V19/V18历史失败任务保持原样，现金和估值链未闭环。",
         existingEvidence:
           "旧D2两公司草案及rt-c40经济拒绝保留为历史，不覆盖旧raw；当前H1第11/14/12页量价成本表构成新驱动桥，不沿用旧直接填利润率路径",
         evidenceSource:
-          "runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json；runtime/d2-operating-driver-20261101/independent-acceptance.json；artifacts/current/d2-cash-consumption-20261101/index.json；源码版本见实际运行身份；验收索引 artifacts/current/d2-operating-driver-20261101.json",
+          "runtime/research-task-execution-v1/oh-v20-2027/rt-817f3156cc765c2f28edf3871ae8f6fa（真实Bear失败）；runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json；runtime/d2-operating-driver-20261101/independent-acceptance.json；artifacts/current/d2-cash-consumption-20261101/index.json；验收索引 artifacts/current/d2-operating-driver-20261101.json",
         evidence:
           "仅拒绝两类AI文字：产品结构向高档集中误述、Event母现金23.93亿元少10倍；不作为事实摘要，typed bridge不消费这些文字，算术验收不受其替代。Event仍限FY/H1；未来参数适用性未证，原9项资本UNKNOWN不升级已证；新现金/估值仅复用另行绑定的条件政策。",
         nextStep:
-          "首要决定性缺口：验证参数经济适用性及资本/现金资料，不重试模型凑通过；重点为季节性/持续盈利与资金政策经济采纳、当前资本/分配/事件/报价对齐，无阈值理由不出条件价；原9项资本UNKNOWN不升级，不授予投资批准",
+          "核对母公司资金、分配、维持投入和营运资金条件桥；审查年度输出层级错位的原始原因，冻结下一版明确合同。相同资料不再付费重试。",
         ruleWhy: "价格上涨不直接等于净利上涨；预测必须明确为假设。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer:
-            "D2研究产物 → 现金消费读取器；只有同发行人年度现金政策、主经济区间和模型适用性齐备时，才可进入ResearchApplicationService → v4 → 条件价格",
+            "V12封存年度→V18真实现金任务→E2只读版本接线已验证；干净检出可冷读同一封存任务。E2因18项未来现金政策未知而拒绝，不能进入共享估值。",
           realData:
-            "600323当前任务SUCCEEDED，共4次调用（事件拒答后恢复）；三情景各4个年度输入角点由真实来源重算。没有新增模型调用，不把年度利润当股东现金",
-          economic: "条件现金/估值工程已接待终验／参数经济适用性未证／非主区间",
-          deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
+            "人工维护进度：600519真实V12年度通过；V18一次deepseek-flash现金调用已结算¥0.080792，任务SUCCEEDED，研究经济状态INCOMPLETE_UNKNOWN_TERMS。原响应封存，不作为合格E2输入。",
+          economic:
+            "历史派息和未缴基金承诺可作条件锚点；参数经济适用性未证，母公司资金可达、维持投入及经营营运现金缺乏可审阅的未来桥，不能补零或把余额变动当现金。E2/F1/F2正向路径仍未通过。",
+          deployment:
+            "V18源码、后端和Web构建已在本机唯一8001对齐；/project文案同步本次真实结果。GitHub Web CI通过、Core CI仍待最终结果；发布注册表不可用，不能标为最终全绿。",
           acceptance: "用户尚未确认此版本",
         },
       },
@@ -914,7 +928,7 @@ export const catalog: Record<
           ],
           outputDetails: [
             "首版proposal、package、receipt、三条十年现金账及条件压力估值，或字段级拒绝。",
-            "000568两份自身官方原件84项事实首编有留存API验收；main_range_adopted=false，主经济区间REJECTED。",
+            "000568两份自身官方原件84项事实、600887两份自身官方原件44项事实均经同一首编入口冷重算并由公开API消费；主经济区间仍未采纳。",
           ],
           acceptanceChecks: [
             "检查项：无旧包仍可首编，输出已存在拒覆盖；来源变化、未来日期或descriptor不一致拒绝。",
@@ -952,8 +966,8 @@ export const catalog: Record<
           why: "不能永远依赖预先准备好的公司研究。",
           how: "核验事实和假设，经画像路由编译为共享模型输入。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "000568以84项事实完成首编；11月5日新增600323全年经营→年度利润输入的实际API消费，缺年不填充。",
-          gap: "600323尚缺连续现金路径、适用终端及模型输入；年度利润编译不等于完整股东现金或估值。通用独立首编仍未完成。",
+          done: "000568的84项及600887的44项原生事实分别完成首次编译；同一共享v4内核生成不同年度现金账与条件压力值。600887已在8001价值页面实测可读；600323年度利润输入仍属部分链路。",
+          gap: "两家公司首编已通过共享模型，但未来母公司现金与终值假设仍待经济采纳；当前D2自动现金政策尚无完整正例，首编尚未批量化。不能将条件压力值写成主估值或当前买价。",
           acceptance: "无旧研究包的真实公司经同一入口形成可消费的完整输入。",
           evidence: [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
@@ -971,9 +985,11 @@ export const catalog: Record<
           "src/value_investment_agent/infrastructure/filings/first_research_fact_replay_v1.py",
           "src/value_investment_agent/application/product/first_research_input_view_v1.py",
         ],
-        engineeringStatus: "工程首编与真实来源重算完成／部署待验收",
-        evidenceStatus: "000568自身两份官方原件、84项事实冷重放",
-        shortStatus: "无旧包首编已实际消费共享v4；主研究区间未采纳",
+        engineeringStatus:
+          "两家公司首编工程与真实来源重算通过／8001已展示600887",
+        evidenceStatus:
+          "000568的84项及600887的44项官方原件事实冷重放；经济采纳待审",
+        shortStatus: "两家原生事实首编进入共享v4；主研究区间均未采纳",
         implementation:
           "同一入口读取自身经营假设、现金约束，形成三条十年路径及共享模型条件压力计算",
         milestone: "首输入条件研究闭环；不代表经济质量、主估值采用或投资准入。",
@@ -989,9 +1005,11 @@ export const catalog: Record<
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer: "来源→首输入→共享v4→ResearchCase→公开API与现有公司页面",
-          realData: "000568两份原件84事实；三情景每年账与RI/分配折现核对",
+          realData:
+            "000568两份原件84事实；600887两份原件44事实及三情景年度账冷重算",
           economic: "条件研究／未批准",
-          deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
+          deployment:
+            "600887首编在8001真实浏览器已展示；页面发布不等于经济采纳或F2资格",
           acceptance: "用户尚未确认此版本",
         },
       },

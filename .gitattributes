@@ -197,3 +197,50 @@ artifacts/current/value-main-revalidation-20261101/research-spec-source-lf-v2.js
 
 # Retained live-driver tasks bind this original LF source byte-for-byte.
 src/value_investment_agent/application/research/agent_review/operating_driver_draft_v2.py -text whitespace=cr-at-eol
+
+# Frozen v4 economic policies bind the exact Git LF bytes; Windows autocrlf
+# must not turn their source hashes into different worktree bytes.
+config/research-assumptions/600519-joint-capital-cash-path-v4.json -text whitespace=cr-at-eol
+config/research-assumptions/600887-joint-capital-cash-path-v4.json -text whitespace=cr-at-eol
+config/research-proposals/600519-joint-capital-cash-path-v4.json -text whitespace=cr-at-eol
+config/research-proposals/600887-joint-capital-cash-path-v4.json -text whitespace=cr-at-eol
+
+# V7 research tasks pin these implementation bytes; preserve LF on Windows.
+src/value_investment_agent/application/research/agent_review/operating_horizon_split_v7.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_horizon_task_v7_split.py -text whitespace=cr-at-eol
+
+# V18 live cash research pins both source files by byte hash.
+src/value_investment_agent/application/research/agent_review/operating_horizon_request_v18_cash.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_horizon_task_v18_cash.py -text whitespace=cr-at-eol
+
+# V18 imported research also pins inherited implementation bytes. Match the
+# historical running checkout, including two CRLF originals.
+src/value_investment_agent/application/research/agent_review/dividend_policy_anchor_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_cash_policy_draft_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_cash_policy_draft_v15.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_cash_policy_task_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_cash_policy_task_v2.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_cash_policy_task_v3.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_cash_policy_task_v4_q3_ocr.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_horizon_annual_response_repair_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_horizon_draft_v3.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_horizon_request_v16.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_horizon_sources_v10_q3_ocr.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_horizon_task_v4.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_horizon_task_v5_wc.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_horizon_task_v7_split.py text eol=crlf
+src/value_investment_agent/application/research/agent_review/operating_horizon_v17_source.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_q3_cash_source_loader_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_q3_issuer_plan_loader_v8_600519.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_task_v2.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/parent_cash_conversion_anchor_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/parent_wc_balance_request_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/parent_cash_observation_v2.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/parent_cash_observation_v3.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/quarter_financial_ocr_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/quarter_financial_read_model_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/infrastructure/filings/parent_balance_basis_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/infrastructure/filings/parent_balance_basis_v2.py -text whitespace=cr-at-eol
+src/value_investment_agent/infrastructure/filings/parent_income_basis_v1.py -text whitespace=cr-at-eol
+src/value_investment_agent/infrastructure/filings/parent_income_basis_v2.py -text whitespace=cr-at-eol
+src/value_investment_agent/infrastructure/filings/parent_wc_history_600519_v1.py -text whitespace=cr-at-eol
