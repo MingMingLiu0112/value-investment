@@ -104,6 +104,27 @@ def _printed_cash_row(*, text: str, key: str, label: str):
     return matches[0]
 
 
+def _cover_owner(*, pages: list[str], symbol: str, issuer: str, report: str) -> str:
+    """Recognize the printed full-report or split cover without inferring table scope."""
+    header = '\n'.join(pages[:8])
+    codes = set(re.findall(r'(?:公司|证券|股票)\s*代码\s*[:：]?\s*([0-9]{6})(?!\d)', header))
+    owners = set()
+    for page in pages[:8]:
+        lines_on_page = [_compact(line) for line in page.splitlines() if line.strip()]
+        for index, text in enumerate(lines_on_page):
+            for suffix in (report, report + '全文'):
+                if text.endswith(suffix):
+                    owner = text[:-len(suffix)]
+                    if owner.endswith('股份有限公司'):
+                        owners.add(owner)
+            if (text.endswith('股份有限公司') and index + 1 < len(lines_on_page)
+                    and lines_on_page[index + 1] == report):
+                owners.add(text)
+    if codes != {symbol} or len(owners) != 1 or issuer not in next(iter(owners)):
+        raise ValueError('PARENT_CASH_ISSUER_OR_REPORT_MISMATCH')
+    return next(iter(owners))
+
+
 def extract_parent_cash_statement(*, pages: list[str], spec: dict, observation_fields=None) -> dict:
     """Parse printed columns; the caller must separately authenticate PDF bytes."""
     periods = tuple(spec['periods'])
@@ -112,20 +133,7 @@ def extract_parent_cash_statement(*, pages: list[str], spec: dict, observation_f
     report, interval, columns = PERIODS[periods]
     if ''.join(spec['column_labels']) != columns:
         raise ValueError('PARENT_CASH_SPEC_COLUMN_MISMATCH')
-    header = '\n'.join(pages[:8])
-    codes = set(re.findall(r'(?:公司|证券|股票)\s*代码\s*[:：]?\s*([0-9]{6})(?!\d)', header))
-    owners = set()
-    for page in pages[:8]:
-        for line in page.splitlines():
-            text = _compact(line)
-            if text.endswith(report):
-                owner = text[:-len(report)]
-                if owner.endswith('股份有限公司'):
-                    owners.add(owner)
-    if (codes != {spec['symbol']} or len(owners) != 1
-            or spec['issuer'] not in next(iter(owners))):
-        raise ValueError('PARENT_CASH_ISSUER_OR_REPORT_MISMATCH')
-    owner = next(iter(owners))
+    owner = _cover_owner(pages=pages, symbol=spec['symbol'], issuer=spec['issuer'], report=report)
     lines = [(n, line.strip()) for n, page in enumerate(pages, 1)
              for line in page.splitlines() if line.strip()]
     starts = [i for i, (_, line) in enumerate(lines) if _compact(line) == '母公司现金流量表']
@@ -148,7 +156,7 @@ def extract_parent_cash_statement(*, pages: list[str], spec: dict, observation_f
             compiler = re.fullmatch(r'编制单位[:：](.+?)(?:单位[:：].*)?', text)
             if not compiler or compiler[1] != owner:
                 raise ValueError('PARENT_CASH_COMPILER_CHANGED')
-        if re.search(r'\d{4}年(?:半年度|年度)报告$', text) and text != owner+report:
+        if re.search(r'\d{4}年(?:半年度|年度)报告(?:全文)?$', text) and text not in {owner+report, owner+report+'全文'}:
             raise ValueError('PARENT_CASH_REPORT_OWNER_CHANGED')
         units = re.findall(r'(?<!编制)单位[:：]([^:：]+?)(?=币种[:：]|$)', text)
         currencies = re.findall(r'币种[:：](.+)$', text)
