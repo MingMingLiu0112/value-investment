@@ -53,6 +53,78 @@ def test_v17_failed_v16_cash_repair_route_keeps_source_and_no_annual_call(api, m
     assert client.post(path, json={**body, "extra": True}).status_code == 422
 
 
+def test_v18_cash_research_route_binds_existing_v16_without_annual_call(api, monkeypatch):
+    import json
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v16_live as v16,
+        operating_horizon_task_v18_cash as v18,
+        operating_q3_issuer_dividend_split_loader_v9_600519 as dividend,
+    )
+
+    client, secret, data, root = api
+    source_id = "rt-" + "d" * 32
+    source = root / "runtime" / "research-task-execution-v1" / v16.STORE / source_id
+    source.mkdir(parents=True)
+    (source / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        task_contract=v16.CONTRACT, source_loader_binding=dict(version=dividend.VERSION))), encoding="utf-8")
+    monkeypatch.setattr(v16.OperatingHorizonTaskService, "_load", lambda self, task_id:
+        (dict(task_contract=v16.CONTRACT), dict(status="FAILED"), {}) if task_id == source_id
+        else (_ for _ in ()).throw(ValueError("SOURCE_CHANGED")))
+    seen = []
+    def imported(self, **kwargs):
+        seen.append(kwargs)
+        return dict(task_id="rt-" + "e" * 32, symbol="600519", status="FAILED",
+            workflow=v18.CONTRACT, action="no_order", formal_eligibility=False)
+    monkeypatch.setattr(v18.OperatingHorizonTaskService, "create_imported", imported)
+    path = BASE + "/horizon-cash-policy-tasks/research-v18-cash"
+    body = dict(source_task_id=source_id, request_key="V18_RESEARCH_01")
+    assert client.post(path, json=body).status_code == 401
+    unlock(client, secret)
+    response = client.post(path, json=body)
+    assert response.status_code == 202, response.text
+    assert response.json()["workflow"] == v18.CONTRACT
+    assert seen == [body]
+    assert data.provider_calls == []
+    assert client.post(path, json={**body, "extra": True}).status_code == 422
+
+
+def test_v18_source_bound_task_is_discoverable_without_reinterpreting_v17(api, monkeypatch):
+    import json
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v16_live as v16,
+        operating_horizon_task_v18_cash as v18,
+        operating_q3_issuer_dividend_split_loader_v9_600519 as dividend,
+    )
+
+    client, secret, data, root = api
+    source_id, task_id = "rt-" + "d" * 32, "rt-" + "e" * 32
+    source = root / "runtime" / "research-task-execution-v1" / v16.STORE / source_id
+    source.mkdir(parents=True)
+    (source / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        task_contract=v16.CONTRACT, source_loader_binding=dict(version=dividend.VERSION))), encoding="utf-8")
+    target = root / "runtime" / "research-task-execution-v1" / v18.STORE / task_id
+    target.mkdir(parents=True)
+    (target / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        task_contract=v18.CONTRACT, imported_annual=dict(source_task_id=source_id))), encoding="utf-8")
+    monkeypatch.setattr(v16.OperatingHorizonTaskService, "_load", lambda self, candidate:
+        (dict(task_contract=v16.CONTRACT), {}, {}) if candidate == source_id
+        else (_ for _ in ()).throw(ValueError("SOURCE_CHANGED")))
+    monkeypatch.setattr(v18.OperatingHorizonTaskService, "_load", lambda self, candidate:
+        (dict(task_contract=v18.CONTRACT), {}, {}) if candidate == task_id
+        else (_ for _ in ()).throw(ValueError("V18_TASK_CHANGED")))
+    monkeypatch.setattr(v18.OperatingHorizonTaskService, "read", lambda self, candidate:
+        dict(task_id=candidate, symbol="600519", status="SUCCEEDED", workflow=v18.CONTRACT,
+             updated_at="2026-11-12T09:00:00+00:00", action="no_order",
+             formal_eligibility=False, research_result=None))
+    path = BASE + "/horizon-cash-policy-tasks"
+    unlock(client, secret)
+    read = client.get(path + "/" + task_id)
+    assert read.status_code == 200 and read.json()["workflow"] == v18.CONTRACT
+    listed = client.get(path + "?symbol=600519&task_contract=" + v18.CONTRACT)
+    assert listed.status_code == 200 and [x["task_id"] for x in listed.json()["items"]] == [task_id]
+    assert data.provider_calls == []
+
+
 def test_v13_import_api_derives_sealed_v12_pins_and_is_idempotent(api, monkeypatch):
     import hashlib
     import json

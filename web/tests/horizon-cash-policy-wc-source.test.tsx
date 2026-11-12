@@ -7,6 +7,7 @@ const calls = vi.hoisted(() => ({
   create: vi.fn(),
   importV12: vi.fn(),
   repairV16: vi.fn(),
+  researchV18: vi.fn(),
 }));
 vi.mock("react", async (original) => {
   const actual = await original<typeof import("react")>();
@@ -42,6 +43,7 @@ vi.mock("../src/services/api", async (original) => {
       createHorizonCashPolicyTask: calls.create,
       importV12HorizonCashPolicyTask: calls.importV12,
       repairV16HorizonCashPolicyTask: calls.repairV16,
+      researchV18HorizonCashPolicyTask: calls.researchV18,
     },
   };
 });
@@ -73,6 +75,7 @@ beforeEach(() => {
   calls.create.mockReset();
   calls.importV12.mockReset();
   calls.repairV16.mockReset();
+  calls.researchV18.mockReset();
   vi.stubGlobal("crypto", webcrypto);
 });
 
@@ -196,7 +199,7 @@ it("shows a successful V15 task as economically incomplete when cash paths remai
   hooks.values[3] = "v15";
   const alerts = render("600519").filter((row) => row.props.type === "warning");
   expect(alerts.map((row) => row.props.message)).toContain(
-    "V15任务已完成，股东现金研究尚未准入",
+    "任务执行完成，股东现金研究尚未准入",
   );
 });
 
@@ -259,4 +262,49 @@ it("continues only an explicitly selected failed V16 task as V17 cash-only", asy
   });
   expect(calls.create).not.toHaveBeenCalled();
   expect(hooks.values[3]).toBe("v17");
+});
+
+it("starts V18 only from a selected failed V16 and labels unknown cash as unadmitted", async () => {
+  button(render("600519"), "D2 股东现金政策研究").props.onClick();
+  const sourceId = "rt-" + "a".repeat(32);
+  hooks.values[1] = {
+    task_id: sourceId,
+    symbol: "600519",
+    status: "FAILED",
+    error_code: "V16_ANNUAL_RESPONSE_REJECTED",
+    action: "no_order",
+  };
+  hooks.values[3] = "v16";
+  calls.researchV18.mockResolvedValue({
+    task_id: "rt-" + "c".repeat(32),
+    symbol: "600519",
+    status: "QUEUED",
+    workflow: "operating-horizon-task-v18-2027-cash-anchors",
+    action: "no_order",
+  });
+  await button(
+    render("600519"),
+    "用封存V16来源研究2027现金条件（可能计费）",
+  ).props.onClick();
+  expect(calls.researchV18).toHaveBeenCalledWith({
+    source_task_id: sourceId,
+    request_key: "cash_research_v18_" + "a".repeat(32),
+  });
+  expect(hooks.values[3]).toBe("v18");
+  hooks.values[1] = {
+    task_id: "rt-" + "c".repeat(32),
+    symbol: "600519",
+    status: "SUCCEEDED",
+    action: "no_order",
+    research_result: {
+      cash_policy_v15: {
+        cash_policy_appendix_status: "INCOMPLETE_UNKNOWN_TERMS",
+      },
+    },
+  };
+  expect(
+    render("600519")
+      .filter((row) => row.props.type === "warning")
+      .map((row) => row.props.message),
+  ).toContain("任务执行完成，股东现金研究尚未准入");
 });

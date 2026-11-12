@@ -556,6 +556,8 @@ jobs:
           tests/test_operating_horizon_task_v16_live.py
           tests/test_operating_horizon_annual_response_repair_v1.py
           tests/test_operating_horizon_task_v17_cash.py
+          tests/test_operating_horizon_task_v18_cash.py
+          tests/test_parent_cash_reach_anchor_v1.py
           tests/test_operating_horizon_carryover_v13.py
           tests/test_operating_horizon_import_v13.py
           tests/test_operating_horizon_citation_repair_v1.py
@@ -567,6 +569,7 @@ jobs:
           tests/test_operating_horizon_cash_policy_e2_v7.py
           tests/test_operating_horizon_cash_policy_e2_v8.py
           tests/test_operating_horizon_cash_policy_e2_v9.py
+          tests/test_operating_horizon_cash_policy_e2_v10.py
           tests/web_api/test_live_operating_research_api.py
           tests/web_api/test_local_research_task_root_binding.py
           tests/web_api/test_operating_cash_consumption_api.py

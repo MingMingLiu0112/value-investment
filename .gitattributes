@@ -208,3 +208,7 @@ config/research-proposals/600887-joint-capital-cash-path-v4.json -text whitespac
 # V7 research tasks pin these implementation bytes; preserve LF on Windows.
 src/value_investment_agent/application/research/agent_review/operating_horizon_split_v7.py -text whitespace=cr-at-eol
 src/value_investment_agent/application/research/agent_review/operating_horizon_task_v7_split.py -text whitespace=cr-at-eol
+
+# V18 live cash research pins both source files by byte hash.
+src/value_investment_agent/application/research/agent_review/operating_horizon_request_v18_cash.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/operating_horizon_task_v18_cash.py -text whitespace=cr-at-eol
