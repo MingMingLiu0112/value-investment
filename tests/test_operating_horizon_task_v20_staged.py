@@ -47,6 +47,9 @@ def test_three_scenarios_then_cash_durable_replay(setup):
     assert result["formal_eligibility"] is False
     assert service.read(created["task_id"])["status"] == "WAITING_EVIDENCE"
     assert service.resume(created["task_id"], now=NOW)["provider_requests"] == 4
+    with pytest.raises(ValueError, match="SUCCEEDED_TWO_STAGE"):
+        read_v20_cash_policy_e2_input(root=service.root,
+            task_id=created["task_id"], now=NOW, service=service)
 
 
 def test_malformed_scenario_is_sealed_and_never_retried(setup):
