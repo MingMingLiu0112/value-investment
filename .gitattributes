@@ -232,7 +232,7 @@ src/value_investment_agent/application/research/agent_review/operating_horizon_t
 src/value_investment_agent/application/research/agent_review/operating_horizon_v17_source.py -text whitespace=cr-at-eol
 src/value_investment_agent/application/research/agent_review/operating_q3_cash_source_loader_v1.py -text whitespace=cr-at-eol
 src/value_investment_agent/application/research/agent_review/operating_q3_issuer_plan_loader_v8_600519.py -text whitespace=cr-at-eol
-src/value_investment_agent/application/research/agent_review/operating_task_v2.py text eol=crlf
+src/value_investment_agent/application/research/agent_review/operating_task_v2.py -text whitespace=cr-at-eol
 src/value_investment_agent/application/research/agent_review/parent_cash_conversion_anchor_v1.py -text whitespace=cr-at-eol
 src/value_investment_agent/application/research/agent_review/parent_wc_balance_request_v1.py -text whitespace=cr-at-eol
 src/value_investment_agent/application/research/parent_cash_observation_v2.py -text whitespace=cr-at-eol
