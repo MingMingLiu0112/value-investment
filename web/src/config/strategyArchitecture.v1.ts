@@ -918,7 +918,7 @@ export const catalog: Record<
           ],
           outputDetails: [
             "首版proposal、package、receipt、三条十年现金账及条件压力估值，或字段级拒绝。",
-            "000568两份自身官方原件84项事实首编有留存API验收；main_range_adopted=false，主经济区间REJECTED。",
+            "000568两份自身官方原件84项事实、600887两份自身官方原件44项事实均经同一首编入口冷重算并由公开API消费；主经济区间仍未采纳。",
           ],
           acceptanceChecks: [
             "检查项：无旧包仍可首编，输出已存在拒覆盖；来源变化、未来日期或descriptor不一致拒绝。",
@@ -956,8 +956,8 @@ export const catalog: Record<
           why: "不能永远依赖预先准备好的公司研究。",
           how: "核验事实和假设，经画像路由编译为共享模型输入。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "000568以84项事实完成首编；11月5日新增600323全年经营→年度利润输入的实际API消费，缺年不填充。",
-          gap: "通用入口仍缺一条由当前D2完整现金政策驱动、可冷重放并进入共享估值模型的真实正向首编；只有年度利润或历史候选不算完成。",
+          done: "000568的84项及600887的44项原生事实分别完成首次编译；同一共享v4内核生成不同年度现金账与条件压力值。600887已在8001价值页面实测可读；600323年度利润输入仍属部分链路。",
+          gap: "两家公司首编已通过共享模型，但未来母公司现金与终值假设仍待经济采纳；当前D2自动现金政策尚无完整正例，首编尚未批量化。不能将条件压力值写成主估值或当前买价。",
           acceptance: "无旧研究包的真实公司经同一入口形成可消费的完整输入。",
           evidence: [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
@@ -975,9 +975,9 @@ export const catalog: Record<
           "src/value_investment_agent/infrastructure/filings/first_research_fact_replay_v1.py",
           "src/value_investment_agent/application/product/first_research_input_view_v1.py",
         ],
-        engineeringStatus: "工程首编与真实来源重算完成／部署待验收",
-        evidenceStatus: "000568自身两份官方原件、84项事实冷重放",
-        shortStatus: "无旧包首编已实际消费共享v4；主研究区间未采纳",
+        engineeringStatus: "两家公司首编工程与真实来源重算通过／8001已展示600887",
+        evidenceStatus: "000568的84项及600887的44项官方原件事实冷重放；经济采纳待审",
+        shortStatus: "两家原生事实首编进入共享v4；主研究区间均未采纳",
         implementation:
           "同一入口读取自身经营假设、现金约束，形成三条十年路径及共享模型条件压力计算",
         milestone: "首输入条件研究闭环；不代表经济质量、主估值采用或投资准入。",
@@ -993,9 +993,9 @@ export const catalog: Record<
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer: "来源→首输入→共享v4→ResearchCase→公开API与现有公司页面",
-          realData: "000568两份原件84事实；三情景每年账与RI/分配折现核对",
+          realData: "000568两份原件84事实；600887两份原件44事实及三情景年度账冷重算",
           economic: "条件研究／未批准",
-          deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
+          deployment: "600887首编在8001真实浏览器已展示；页面发布不等于经济采纳或F2资格",
           acceptance: "用户尚未确认此版本",
         },
       },

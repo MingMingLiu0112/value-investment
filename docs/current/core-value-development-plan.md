@@ -1008,3 +1008,9 @@
 - 最新事实包 `runtime/e2-first-input-600887-20261112/native-facts-20261112T110158481972Z.json`，SHA256 `8ac502f7a9e9564336ee79bef13e1bb1f9e162f68d9250f8ffd08b191fda3aa8`；spec SHA256 `fe6bf2dbfbf8f8696446939dc8c5e8829257322eab4c3f4b7d8e8328c9b1a87b`。现有 `build_first_research_input` 返回 `FIRST_INPUT_COMPILED`，冷重放 `issuer_identity_status=VERIFIED`、`valuation_status=conditional_research_only`，三情景每股 Bear/Base/Bull 约 12.62/15.67/19.77 元。回执位于 `runtime/e2-first-input-600887-20261112/compile-20261112T110216618107Z/receipt.json`，SHA256 `61597b8ab43005eabcc79ee310fbac987acd624fc8793d53152e54e4c76c5f18`。原三情景属于条件路径；`main_valuation_range=null`、`formal_eligibility=false`、`action=no_order`，不得写成当前买价。
 - 身份原件、E2 和发行人门禁定向回归 `113 passed, 1 skipped`；1 skipped 属既有可选来源测试，不计通过。首编成功只证明相同内核可消费第二家公司真实来源与条件假设；尚需独立经济复核、F2时点与价格对齐、API/Web消费和最终CI验收。下一步优先将该不可变首编版本接入既有研究读模型，在 8001 真实展示条件研究与未批准边界，不把它升级为主估值。
 - 随后将不可变 600887 回执加入现有 `config/current-first-research-inputs-v1.json`，原000568指针不变。生产 `read_first_research_input` 用绝对项目根目录冷重放返回 `SOURCE_BOUND_FIRST_INPUT_COMPILED`、44个原件事实、上述三情景及 `main_range_adopted=false`；相应 API/首编定向回归 `44 passed, 1 skipped`。本项尚待准确提交CI和8001浏览器验收；独立假设尚未完成正式经济审查，也未形成当前合格报价的 F2 条件价格。
+
+#### 2026-11-12 600887 E2公开消费与最新门禁实测
+
+- 最新提交 `48912191f0d8fca67b1684662181ae6b5467ca59` 的 GitHub Core Research Gates #823、Web Workbench #499 均为 completed/success；这是工程门禁，不证明经济假设或投资策略有效。
+- 本机8001后端与Web构建身份均为该提交；真实浏览器 `/strategy/value` 选择已登记研究600887后展示首编44项原生事实、三情景十年账与条件压力值。API `/api/v1/first-research-inputs/600887` 返回 `SOURCE_BOUND_FIRST_INPUT_COMPILED`，`main_range_adopted=false`、`condition_price=null`、`action=no_order`。
+- E2首编是同一内核的第二家公司正例，当前D2自动现金政策、主经济区间采纳和F2当前价格联合正例仍未完成。`/project` 的人工维护E2进度据此更新，不宣称Goal完成。下一段应独立复核母公司可达现金与终端分配假设，并接入合格报价/分配/事件同版本核验；不可用条件压力数值绕过F2。
