@@ -31,7 +31,8 @@ def _time(value, now):
 
 def _read_bound_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
                                      contract: str, task_service, version: str,
-                                     label: str, service=None, allow_imported_v12=False) -> dict:
+                                     label: str, service=None, allow_imported_v12=False,
+                                     staged_annual=False) -> dict:
     if not isinstance(now, datetime) or now.utcoffset() is None:
         raise ValueError("V10_E2_CUTOFF_REQUIRED")
     root = Path(root).resolve()
@@ -39,15 +40,20 @@ def _read_bound_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     task = service.read(task_id)  # Durable read replays source, requests and both responses.
     spec, state, _ = service._load(task_id)
     imported = allow_imported_v12 and "imported_annual" in spec
+    annual_ready = (task.get("annual_status") == {name: "SETTLED_VALIDATED"
+        for name in ("bear", "base", "bull")} if staged_annual else
+        task.get("annual_status") == ("IMPORTED_V12" if imported else "SETTLED_VALIDATED"))
     if (task.get("workflow") != contract or task.get("status") != "SUCCEEDED"
             or task.get("action") != "no_order" or task.get("formal_eligibility") is not False
-            or task.get("annual_status") != ("IMPORTED_V12" if imported else "SETTLED_VALIDATED")
+            or not annual_ready
             or task.get("cash_status") != "SETTLED_VALIDATED"):
         raise ValueError("V10_E2_SUCCEEDED_TWO_STAGE_TASK_REQUIRED")
     _time(task.get("research_as_of"), now)
     _time(task.get("updated_at"), now)
     pins = task.get("stage_responses")
-    if (not isinstance(pins, dict) or set(pins) != ({"cash"} if imported else {"annual", "cash"})
+    expected_stages = ({"bear", "base", "bull", "cash"} if staged_annual else
+        {"cash"} if imported else {"annual", "cash"})
+    if (not isinstance(pins, dict) or set(pins) != expected_stages
             or any(not isinstance(pin, dict) or set(pin) != {"path", "sha256"}
                    or not isinstance(pin["sha256"], str) or len(pin["sha256"]) != 64
                    for pin in pins.values())):
@@ -58,7 +64,7 @@ def _read_bound_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
         raise ValueError("V10_E2_EXECUTION_MODE_INVALID")
     if (spec.get("task_contract") != contract or spec.get("source_binding") != task.get("source_binding")
             or state.get("stage_responses") != pins or state.get("cash_binding") != task.get("cash_binding")
-            or set(state.get("stage_validated", [])) != {"annual", "cash"}
+            or set(state.get("stage_validated", [])) != expected_stages
             or (imported and (state.get("stage_intents", {}).get("annual") is not None
                               or "annual" in state.get("stage_responses", {})))):
         raise ValueError("V10_E2_TASK_PINS_CHANGED")
@@ -89,7 +95,16 @@ def _read_bound_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     responses = research.get("split_response_sha256")
     if not isinstance(responses, dict) or set(responses) != {"annual", "cash"}:
         raise ValueError("V10_E2_RESPONSE_HASHES_REQUIRED")
-    for stage in ("annual", "cash"):
+    if staged_annual:
+        # The V20 annual response is a deterministic assembly of three sealed,
+        # separately settled packets. The original stage pins remain in the
+        # manifest; an aggregate alone cannot substitute for any one packet.
+        for stage in ("bear", "base", "bull"):
+            _time(service._packet(spec, state, stage).get("generated_at"), now)
+        aggregate, _ = service._annual_checkpoint(spec, state, context)
+        if responses["annual"] != hashlib.sha256(aggregate.text.encode("utf-8")).hexdigest():
+            raise ValueError("V20_E2_AGGREGATE_RESPONSE_HASH_CHANGED")
+    for stage in (("cash",) if staged_annual else ("annual", "cash")):
         packet = annual_packet if imported and stage == "annual" else service._packet(spec, state, stage)
         _time(packet.get("generated_at"), now)
         actual = hashlib.sha256(packet["response"]["text"].encode("utf-8")).hexdigest()

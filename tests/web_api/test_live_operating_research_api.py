@@ -42,6 +42,30 @@ def test_v19_generic_task_api_dispatch_is_explicit_and_unapproved(api, monkeypat
     assert client.post(path, json={**body, "source_loader_version": "wrong"}).status_code == 422
 
 
+def test_v20_staged_task_api_dispatch_is_explicit_and_unapproved(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review import operating_horizon_task_v20_staged as v20
+
+    client, secret, data, _ = api
+    seen = []
+    def created(self, **kwargs):
+        seen.append(kwargs)
+        return dict(task_id="rt-" + "b" * 32, symbol=kwargs["symbol"], status="FAILED",
+            workflow=v20.CONTRACT, action="no_order", formal_eligibility=False,
+            condition_price=None)
+    monkeypatch.setattr(v20.OperatingHorizonTaskService, "create", created)
+    path = BASE + "/horizon-cash-policy-tasks"
+    body = dict(symbol="600887", request_key="TEST_V20_ROUTE", years=[2027],
+                task_contract=v20.CONTRACT)
+    assert client.post(path, json=body).status_code == 401
+    unlock(client, secret)
+    response = client.post(path, json=body)
+    assert response.status_code == 202, response.text
+    assert response.json()["workflow"] == v20.CONTRACT
+    assert seen == [dict(symbol="600887", request_key="TEST_V20_ROUTE", years=[2027])]
+    assert data.provider_calls == []
+    assert client.post(path, json={**body, "source_loader_version": "wrong"}).status_code == 422
+
+
 def test_v17_failed_v16_cash_repair_route_keeps_source_and_no_annual_call(api, monkeypatch):
     import json
     from value_investment_agent.application.research.agent_review import (
