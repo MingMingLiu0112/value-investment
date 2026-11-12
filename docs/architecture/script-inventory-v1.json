@@ -8,7 +8,7 @@
     "CURRENT_PRODUCT_CLI": 26,
     "CURRENT_RESEARCH_CLI": 228,
     "HISTORICAL_VALIDATION_TOOL": 58,
-    "COMPANY_RESEARCH_CASE_TOOL": 218,
+    "COMPANY_RESEARCH_CASE_TOOL": 220,
     "MIGRATION_TOOL": 13,
     "DIAGNOSTIC_TOOL": 150,
     "SUPERSEDED": 0,
@@ -7946,6 +7946,28 @@
       "risk": "LOW",
       "line_count": 103,
       "sha256": "c64900ea14674047049ac143fc45c43b14ed8b6cbbd73546bdeb438b474eaac4"
+    },
+    {
+      "path": "scripts/cases/build_yili_e2_first_input.py",
+      "category": "COMPANY_RESEARCH_CASE_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 86,
+      "sha256": "56d3f4ba60c6f73304c89706028f7aa04377ff582e7f869d0a052705cb9174e9"
+    },
+    {
+      "path": "scripts/cases/build_yili_e2_native_facts.py",
+      "category": "COMPANY_RESEARCH_CASE_TOOL",
+      "current_consumers": [],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CLASSIFIED",
+      "risk": "LOW",
+      "line_count": 287,
+      "sha256": "024d604cdefedd3165811facd7cc7b034b96d974089876dde3ea846e72f79c92"
     }
   ]
 }
