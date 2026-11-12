@@ -162,7 +162,15 @@ def replay_first_research_facts(*, root: Path, binding: dict, now: datetime) -> 
             if not matches or {row.get("orgId") for row in matches}!={source["organization_id"]}:
                 raise ValueError("Native issuer organization differs from official index")
             short_names={re.sub(r"<[^>]*>","",row.get("secName","")).strip() for row in matches}
-            if any(not name or name not in source["issuer_name"] for name in short_names):
+            declared_short_name = source.get("issuer_short_name")
+            if declared_short_name is not None and (
+                not isinstance(declared_short_name, str) or not declared_short_name.strip()
+            ):
+                raise ValueError("Native issuer short name must be explicit")
+            expected_names = {declared_short_name} if declared_short_name else {
+                name for name in short_names if name and name in source["issuer_name"]
+            }
+            if not short_names or short_names != expected_names:
                 raise ValueError("Native official index name differs from original issuer")
         path,_=_raw(root,source)
         pages=extract_pages(path)

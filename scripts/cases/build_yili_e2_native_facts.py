@@ -21,6 +21,21 @@ assert annual_hash == "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041c
 assert review_sources["cninfo:1225511409"]["sha256"] == source_hash
 assert review_sources["cninfo:1225259562"]["sha256"] == annual_hash
 created_at = datetime.now(timezone.utc)
+identity_indexes = {
+    "cninfo:1225511409": root / "runtime/d2-full-event-window-20261011/600887-v1/raw-index/response-0002.bin",
+    "cninfo:1225259562": root / "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/index.json",
+}
+identity_available = {
+    "cninfo:1225511409": "2026-10-11T08:09:58.384433+00:00",
+    "cninfo:1225259562": "2026-09-28T11:14:56.994521+00:00",
+}
+for source_id, index_path in identity_indexes.items():
+    index = json.loads(index_path.read_bytes())
+    announcement_id = source_id.split(":", 1)[1]
+    matches = [row for row in index["announcements"] if row.get("announcementId") == announcement_id]
+    assert len(matches) == 1 and matches[0]["secCode"] == "600887"
+    assert matches[0]["orgId"] == "gssh0600887"
+    assert matches[0]["secName"] == "伊利股份"
 manifest = {
     "schema_version": "first-research-native-facts-v1",
     "symbol": "600887",
@@ -34,24 +49,32 @@ manifest = {
         "sha256": source_hash,
         "symbol": "600887",
         "issuer_name": "内蒙古伊利实业集团股份有限公司",
+        "issuer_short_name": "伊利股份",
         "report_period": "2026-06-30",
         "published_date": "2026-08-27",
         "available_at": review_sources["cninfo:1225511409"]["current_local_verified_at"],
         "availability_basis": "CURRENT_LOCAL_VERIFICATION_NOT_HISTORICAL_PIT",
         "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
         "report_title": "2026年半年度报告",
+        "organization_id": "gssh0600887",
+        "identity_index_binding": {"path": identity_indexes["cninfo:1225511409"].relative_to(root).as_posix(), "sha256": hashlib.sha256(identity_indexes["cninfo:1225511409"].read_bytes()).hexdigest()},
+        "identity_available_at": identity_available["cninfo:1225511409"],
     }, {
         "id": "cninfo:1225259562",
         "path": annual.relative_to(root).as_posix(),
         "sha256": annual_hash,
         "symbol": "600887",
         "issuer_name": "内蒙古伊利实业集团股份有限公司",
+        "issuer_short_name": "伊利股份",
         "report_period": "2025-12-31",
         "published_date": "2026-04-30",
         "available_at": review_sources["cninfo:1225259562"]["current_local_verified_at"],
         "availability_basis": "CURRENT_LOCAL_VERIFICATION_NOT_HISTORICAL_PIT",
         "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF",
         "report_title": "2025年年度报告",
+        "organization_id": "gssh0600887",
+        "identity_index_binding": {"path": identity_indexes["cninfo:1225259562"].relative_to(root).as_posix(), "sha256": hashlib.sha256(identity_indexes["cninfo:1225259562"].read_bytes()).hexdigest()},
+        "identity_available_at": identity_available["cninfo:1225259562"],
     }],
     "facts": [{
         "id": "revenue-2026-06-30-1225511409",

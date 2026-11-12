@@ -1000,3 +1000,10 @@
 - 实际产物`runtime/e2-first-input-600887-20261112/native-facts-20261112T103838365510Z.json`，SHA256 `28aa7f5ba5ce6926fe0703cdb3729d7551c56fb9534355265cd68c2e6f1d54ec`。现有`replay_first_research_facts`冷读通过27行、9类历史利润字段；FY2025+H12026-H12025收入算术为118,190,421,114.75元。来源可用时间取2026-10-11本地复核时间，明确`strict_historical_pit=false`，不倒填官方发布日期或猜测原始抓取时间。
 - 此增量**尚未**形成E2首次编译：扣非归母、折旧摊销、期初归母权益、普通股股本、母公司资金与完整条件假设仍待逐行核验；不能将27行历史收入/利润事实称为D2完整、F1估值或F2买价。下一步扩展同一manifest规则至这些必需字段并执行现有`build_first_research_input`，保留真实拒绝或成功回执。`action=no_order`。
 - 后续同日扩展为44行，原生冷回放已覆盖扣非归母、折旧摊销、期初归母权益及普通股股数。最新只读manifest `runtime/e2-first-input-600887-20261112/native-facts-20261112T104630384002Z.json`，SHA256 `5023c4d1e135e120d1b5d6da251eba4ae7bf74623a5732cff849a81e990d157c`；前两版manifest保留为历史，不覆盖。股数来自中报股份变化叙述，需结合“报告期股份总数未变化”核对，不把人民币股本金额当股数。下一工程断点是建立独立条件假设及E2 spec并实际调用首编；44行原件事实仍不证明未来现金可达或正式主估值。
+
+#### 2026-11-12 600887 首编真实原件冷重放
+
+- 以44行原件事实和已有 `600887-joint-capital-cash-path-v4` 条件研究为输入，由 `scripts/cases/build_yili_e2_first_input.py` 建立独立假设与 E2 spec；收入、利润、税、折旧摊销和权益直接取财报行或透明 TTM 算术，母公司现金映射、分配能力及现金底线仍明确标为**研究假设**，并非已验证的未来事实。没有复用旧估值结果、市场价格或个人账户。
+- 首次 E2 编译虽产出年度账，但共享模型因两个 CNINFO 来源缺 `org_id` 而正确拒绝估值。随后以既有官方公告索引绑定 FY2025 和 H1 2026 报告的相同证券代码、`gssh0600887` 与简称；PDF 内法定全名继续独立核验。原生重放合同增加显式证券简称与索引原文相等的分支，旧全名子串分支保留。未改发行人注册表、原件或历史候选。
+- 最新事实包 `runtime/e2-first-input-600887-20261112/native-facts-20261112T110158481972Z.json`，SHA256 `8ac502f7a9e9564336ee79bef13e1bb1f9e162f68d9250f8ffd08b191fda3aa8`；spec SHA256 `fe6bf2dbfbf8f8696446939dc8c5e8829257322eab4c3f4b7d8e8328c9b1a87b`。现有 `build_first_research_input` 返回 `FIRST_INPUT_COMPILED`，冷重放 `issuer_identity_status=VERIFIED`、`valuation_status=conditional_research_only`，三情景每股 Bear/Base/Bull 约 12.62/15.67/19.77 元。回执位于 `runtime/e2-first-input-600887-20261112/compile-20261112T110216618107Z/receipt.json`，SHA256 `61597b8ab43005eabcc79ee310fbac987acd624fc8793d53152e54e4c76c5f18`。原三情景属于条件路径；`main_valuation_range=null`、`formal_eligibility=false`、`action=no_order`，不得写成当前买价。
+- 身份原件、E2 和发行人门禁定向回归 `113 passed, 1 skipped`；1 skipped 属既有可选来源测试，不计通过。首编成功只证明相同内核可消费第二家公司真实来源与条件假设；尚需独立经济复核、F2时点与价格对齐、API/Web消费和最终CI验收。下一步优先将该不可变首编版本接入既有研究读模型，在 8001 真实展示条件研究与未批准边界，不把它升级为主估值。
