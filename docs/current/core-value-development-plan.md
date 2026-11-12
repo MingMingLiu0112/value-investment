@@ -987,3 +987,9 @@
 - 已授权`deepseek-flash`仅调用一次，结算人民币`0.080792`，任务执行`SUCCEEDED`且`action=no_order`。独立冷读表明2027年Bear/Base/Bull六项现金政策共18项仍全部`UNKNOWN`，`cash_policy_appendix_status=INCOMPLETE_UNKNOWN_TERMS`；V18 E2读取器明确拒绝`V18_E2_CASH_POLICY_INCOMPLETE`。这是真实经济研究未完成，不是模型服务故障，也不代表F1/F2可算或当前价格有吸引力；不对同一资料继续付费重试。
 - V18任务发现、启动、历史和E2读取已接现有API，Web研究面板可读取V18历史和说明状态。关联后端127项通过；Web全量1723项通过、30项跳过，类型检查及生产构建通过。上述是源码与构建验收；CI、8001运行版本和真实浏览器仍须独立核对，不能将源码状态写成已部署。下一项业务动作：对现有适用公司核对能否形成可辩护的母公司现金政策条件情景；若仍无完整输入，保留UNKNOWN，推进其他不依赖该公司的模块联调。永久`action=no_order`。
 - 干净Git检出暴露Windows换行转换导致V18继承的29份旧源码Hash与真实运行包不符，其中`operating_task_v2.py`原运行文件为混合换行，不能仅用统一CRLF修复。已按逐文件原始字节设置检出属性并将该旧文件运行字节原样入库；全新`61a41fdf`检出与封存任务实现Hash全一致，真实任务冷读得到`SUCCEEDED/INCOMPLETE_UNKNOWN_TERMS/no_order`，新增Core/API16项通过。未改任务Hash、未重签旧证据，也未把此结果当作投资资格。
+
+#### 2026-11-12 V18本机交付与CI纠错
+
+- `6dbfe3a5`已在唯一8001发布：源码、后端加载和Web构建提交一致，`/project`浏览器实测显示V18真实费用、18项UNKNOWN及E2拒绝；`action=no_order`。运行身份仍因旧发布注册表不可用显示MISMATCH，不能称全站验收通过。
+- GitHub Web run 43198853857 在Frontend tests失败；本地复现为`architecture.test.tsx`仍断言旧V15页面文案。更新该测试为V18真实结果及历史失败任务保留后，定向18项通过。此前完整Web运行1722 passed、1 failed、30 skipped；须以新提交的CI复核，不能把定向结果称为Web全绿。Core run 43198853796仍在执行。
+- 600519同资料已连续三次现金研究返回UNKNOWN，不继续付费重复。备用600887现有v4条件研究配置及2026Q3官方分红原件已找到，但它们尚不等于当前D2完整来源输入；先核对母公司现金、资本需求、期间与PIT闭包，再决定是否具备真实正向D2→E2条件。不得复制旧估值结果冒充首次编译。
