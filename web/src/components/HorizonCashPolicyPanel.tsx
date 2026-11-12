@@ -18,6 +18,7 @@ const V12_CONTRACT = "operating-horizon-task-v12-2027-live" as const;
 const V13_CONTRACT = "operating-horizon-task-v13-2027-live" as const;
 const V14_CONTRACT = "operating-horizon-task-v14-2027-live" as const;
 const V15_CONTRACT = "operating-horizon-task-v15-2027-live" as const;
+const V16_CONTRACT = "operating-horizon-task-v16-2027-live" as const;
 const V11_WC_SOURCE = "operating-q3-issuer-wc-loader-v9-600519" as const;
 const V15_DIVIDEND_SOURCE =
   "operating-q3-issuer-dividend-split-loader-v9-600519" as const;
@@ -32,7 +33,8 @@ type CashKind =
   | "v12"
   | "v13"
   | "v14"
-  | "v15";
+  | "v15"
+  | "v16";
 
 function valid(value: HorizonCashPolicyTask | undefined, symbol: string) {
   return Boolean(
@@ -123,6 +125,7 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
       | "startV12WC"
       | "startV13WC"
       | "startV15Dividend"
+      | "startV16Dividend"
       | "refresh"
       | "cancel"
       | "resume",
@@ -145,7 +148,8 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                 operation === "startV11WC" ||
                 operation === "startV12WC" ||
                 operation === "startV13WC" ||
-                operation === "startV15Dividend"
+                operation === "startV15Dividend" ||
+                operation === "startV16Dividend"
                   ? 2027
                   : new Date().getFullYear() +
                     (operation === "startParentWC" ||
@@ -181,7 +185,12 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                                 task_contract: V15_CONTRACT,
                                 source_loader_version: V15_DIVIDEND_SOURCE,
                               }
-                            : {}),
+                            : operation === "startV16Dividend"
+                              ? {
+                                  task_contract: V16_CONTRACT,
+                                  source_loader_version: V15_DIVIDEND_SOURCE,
+                                }
+                              : {}),
             })
         : operation === "refresh"
           ? await (kind === "compact"
@@ -218,7 +227,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                         ? "v13"
                         : operation === "startV15Dividend"
                           ? "v15"
-                          : "annual",
+                          : operation === "startV16Dividend"
+                            ? "v16"
+                            : "annual",
         );
     } catch (cause) {
       const reason = safeReason(cause);
@@ -264,7 +275,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                               ? V14_CONTRACT
                               : selectedKind === "v15"
                                 ? V15_CONTRACT
-                                : undefined,
+                                : selectedKind === "v16"
+                                  ? V16_CONTRACT
+                                  : undefined,
             );
       if (
         result.action !== "no_order" ||
@@ -287,7 +300,11 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
     }
   }
   async function continueV12Cash(
-    contract: typeof V13_CONTRACT | typeof V14_CONTRACT | typeof V15_CONTRACT,
+    contract:
+      | typeof V13_CONTRACT
+      | typeof V14_CONTRACT
+      | typeof V15_CONTRACT
+      | typeof V16_CONTRACT,
   ) {
     if (
       lock.current ||
@@ -310,11 +327,13 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         throw new Error("INVALID_IMPORTED_CASH_TASK_BOUNDARY");
       setTask(result);
       setKind(
-        contract === V15_CONTRACT
-          ? "v15"
-          : contract === V14_CONTRACT
-            ? "v14"
-            : "v13",
+        contract === V16_CONTRACT
+          ? "v16"
+          : contract === V15_CONTRACT
+            ? "v15"
+            : contract === V14_CONTRACT
+              ? "v14"
+              : "v13",
       );
       setE2Input(undefined);
     } catch (cause) {
@@ -495,9 +514,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         {kind === "v12" && task?.annual_status === "SETTLED_VALIDATED" && (
           <Button
             disabled={busy || active}
-            onClick={() => continueV12Cash(V15_CONTRACT)}
+            onClick={() => continueV12Cash(V16_CONTRACT)}
           >
-            复用已核验年度研究，按V15条件现金合同继续（可能计费）
+            复用已核验年度研究，按V16现金合同继续（可能计费）
           </Button>
         )}
         <Button disabled={busy} onClick={() => loadHistory("v13")}>
@@ -517,13 +536,16 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         {symbol === "600519" && (
           <Button
             disabled={busy || active}
-            onClick={() => run("startV15Dividend")}
+            onClick={() => run("startV16Dividend")}
           >
-            用已核验历史分红原件启动2027经营与现金研究（可能计费）
+            用已核验历史分红原件启动V16年度与现金研究（可能计费）
           </Button>
         )}
         <Button disabled={busy} onClick={() => loadHistory("v15")}>
           读取2027 V15封存任务
+        </Button>
+        <Button disabled={busy} onClick={() => loadHistory("v16")}>
+          读取2027 V16封存任务
         </Button>
         <Button disabled={busy} onClick={loadAnnualHistory}>
           读取独立年度经营历史
@@ -583,7 +605,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                               ? "D2 V14封存任务历史"
                               : historyKind === "v15"
                                 ? "D2 V15封存任务历史"
-                                : "D2紧凑研究历史"
+                                : historyKind === "v16"
+                                  ? "D2 V16封存任务历史"
+                                  : "D2紧凑研究历史"
           }
         >
           {history.length === 0 ? (
@@ -650,7 +674,8 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
             kind === "v12" ||
             kind === "v13" ||
             kind === "v14" ||
-            kind === "v15") && (
+            kind === "v15" ||
+            kind === "v16") && (
             <p>
               年度经营：{task.annual_status || "待读取"}；股东现金：
               {task.cash_status || "待读取"}。调用结果不明时不会自动重试。
@@ -679,7 +704,7 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
               description={`尚缺 ${[...new Set(task.cash_policy_completeness.missing_terms.map((row) => row.term))].join("、")}；任务原状态为 ${task.persisted_status || task.status}。这些内容仅供诊断，不代表研究准入或交易资格。`}
             />
           )}
-          {kind === "v15" && v15CashIncomplete(task) && (
+          {(kind === "v15" || kind === "v16") && v15CashIncomplete(task) && (
             <Alert
               type="warning"
               message="V15任务已完成，股东现金研究尚未准入"

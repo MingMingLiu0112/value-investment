@@ -194,8 +194,8 @@ it("shows a successful V15 task as economically incomplete when cash paths remai
   );
 });
 
-it("starts source-bound V15 with three historical dividend notices only on explicit click", async () => {
-  const label = "用已核验历史分红原件启动2027经营与现金研究（可能计费）";
+it("starts source-bound V16 while preserving V15 history on explicit click", async () => {
+  const label = "用已核验历史分红原件启动V16年度与现金研究（可能计费）";
   button(render("600519"), "D2 股东现金政策研究").props.onClick();
   expect(calls.create).not.toHaveBeenCalled();
   calls.create.mockResolvedValue({
@@ -210,12 +210,13 @@ it("starts source-bound V15 with three historical dividend notices only on expli
     expect.objectContaining({
       symbol: "600519",
       years: [2027],
-      task_contract: "operating-horizon-task-v15-2027-live",
+      task_contract: "operating-horizon-task-v16-2027-live",
       source_loader_version:
         "operating-q3-issuer-dividend-split-loader-v9-600519",
     }),
   );
   expect(button(render("600519"), "读取当前任务")).toBeDefined();
+  expect(button(render("600519"), "读取2027 V15封存任务")).toBeDefined();
   hooks.values = [];
   button(render("600887"), "D2 股东现金政策研究").props.onClick();
   expect(

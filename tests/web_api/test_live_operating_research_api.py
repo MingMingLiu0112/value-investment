@@ -1629,3 +1629,61 @@ def test_v15_historical_dividend_loader_dispatch(tmp_path, monkeypatch):
         request_key="TEST_ONLY_DIVIDEND", task_contract=v15.CONTRACT,
         source_loader_version="unregistered-source"))
     assert bad.status_code == 422
+
+
+def test_v16_historical_dividend_task_dispatch_is_separate(tmp_path, monkeypatch):
+    """V16 selection stays in its own store and does not reinterpret a V15 task."""
+    import json
+    from pathlib import Path
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v16_live as v16,
+        operating_q3_issuer_dividend_split_loader_v9_600519 as dividend,
+    )
+
+    task_id = "rt-" + "c" * 32
+    seen = []
+
+    class Reader:
+        def __init__(self, root, *, source_loader=None, source_loader_version=None,
+                     test_provider=None):
+            self.root = Path(root)
+            self.base = self.root / "runtime" / "research-task-execution-v1" / "oh-v16-2027-live"
+            self.version = source_loader_version or v16.official.VERSION
+            self.source_loader = source_loader
+
+        def _directory(self, candidate):
+            return self.base / candidate
+
+        def _load(self, candidate):
+            raw = json.loads((self._directory(candidate) / "input.json").read_bytes())
+            if raw["source_loader_binding"]["version"] != self.version:
+                raise ValueError("TEST_ONLY_V16_LOADER_CHANGED")
+            return raw, {}, {}
+
+        def read(self, candidate):
+            self._load(candidate)
+            return dict(task_id=candidate, symbol="600519", status="FAILED",
+                updated_at="2026-11-12T12:00:00+00:00", action="no_order",
+                formal_eligibility=False, error_code="V16_ANNUAL_RESPONSE_REJECTED")
+
+        def create(self, **kwargs):
+            assert self.source_loader is dividend.load_current
+            seen.append((self.version, kwargs["symbol"]))
+            return dict(task_id=task_id, symbol=kwargs["symbol"], status="WAITING_EVIDENCE",
+                action="no_order", formal_eligibility=False)
+
+    monkeypatch.setattr(v16, "OperatingHorizonTaskService", Reader)
+    directory = Reader(tmp_path)._directory(task_id)
+    directory.mkdir(parents=True)
+    (directory / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        source_loader_binding=dict(version=dividend.VERSION))), encoding="utf-8")
+    client, secret = client_for(tmp_path, tmp_path / "TEST_ONLY-journal.jsonl", monkeypatch)
+    path = BASE + "/horizon-cash-policy-tasks"
+    assert client.get(path + "/" + task_id).status_code == 401
+    unlock(client, secret)
+    assert client.get(path + "/" + task_id).json()["error_code"] == "V16_ANNUAL_RESPONSE_REJECTED"
+    result = client.post(path, json=dict(symbol="600519", years=[2027],
+        request_key="TEST_ONLY_V16_DIVIDEND", task_contract=v16.CONTRACT,
+        source_loader_version=dividend.VERSION))
+    assert result.status_code == 202 and result.json()["action"] == "no_order"
+    assert seen == [(dividend.VERSION, "600519")]
