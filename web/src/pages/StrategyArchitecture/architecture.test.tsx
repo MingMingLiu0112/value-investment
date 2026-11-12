@@ -257,7 +257,9 @@ it("records the current driver bridge arithmetic acceptance without adopting par
       "母公司资金、分配、维持投入和营运资金条件桥",
     );
     expect(stage.nextStep).toContain("相同资料不再付费重试");
-    expect(stage.deliveryReview?.gap).toContain("V19、V20年度响应均已封存且校验失败");
+    expect(stage.deliveryReview?.gap).toContain(
+      "V19、V20年度响应均已封存且校验失败",
+    );
     expect(stage.deliveryReview?.gap).toContain("V20仅调用Bear阶段");
     expect(stage.deliveryReview?.gap).toContain("Base/Bull及现金均未调用");
     expect(stage.deliveryReview?.gap).toContain("未来现金政策仍UNKNOWN");
