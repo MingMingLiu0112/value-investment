@@ -19,6 +19,7 @@ const V13_CONTRACT = "operating-horizon-task-v13-2027-live" as const;
 const V14_CONTRACT = "operating-horizon-task-v14-2027-live" as const;
 const V15_CONTRACT = "operating-horizon-task-v15-2027-live" as const;
 const V16_CONTRACT = "operating-horizon-task-v16-2027-live" as const;
+const V17_CONTRACT = "operating-horizon-task-v17-2027-cash-repair" as const;
 const V11_WC_SOURCE = "operating-q3-issuer-wc-loader-v9-600519" as const;
 const V15_DIVIDEND_SOURCE =
   "operating-q3-issuer-dividend-split-loader-v9-600519" as const;
@@ -34,7 +35,8 @@ type CashKind =
   | "v13"
   | "v14"
   | "v15"
-  | "v16";
+  | "v16"
+  | "v17";
 
 function valid(value: HorizonCashPolicyTask | undefined, symbol: string) {
   return Boolean(
@@ -277,7 +279,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                                 ? V15_CONTRACT
                                 : selectedKind === "v16"
                                   ? V16_CONTRACT
-                                  : undefined,
+                                  : selectedKind === "v17"
+                                    ? V17_CONTRACT
+                                    : undefined,
             );
       if (
         result.action !== "no_order" ||
@@ -345,6 +349,31 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
             ? `现金研究续作被拒绝：${reason}；原年度研究仍保持封存。`
             : "现金研究续作未通过来源或预算预检；原年度研究仍保持封存。",
       );
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
+  async function continueFailedV16Cash() {
+    if (lock.current || !task || kind !== "v16" || task.status !== "FAILED" ||
+        task.error_code !== "V16_ANNUAL_RESPONSE_REJECTED") return;
+    lock.current = true;
+    setBusy(true);
+    setError(undefined);
+    try {
+      const result = await api.repairV16HorizonCashPolicyTask({
+        source_task_id: task.task_id,
+        request_key: "cash_repair_v17_" + task.task_id.slice(3),
+      });
+      if (!valid(result, symbol) || result.workflow !== V17_CONTRACT)
+        throw new Error("INVALID_V17_REPAIR_BOUNDARY");
+      setTask(result);
+      setKind("v17");
+      setE2Input(undefined);
+    } catch (cause) {
+      const reason = safeReason(cause);
+      setError(reason ? `V16封存响应续作被拒绝：${reason}；原任务未修改。`
+        : "V16封存响应未通过来源、修复或预算校验；未继续调用模型。");
     } finally {
       lock.current = false;
       setBusy(false);
@@ -547,6 +576,15 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         <Button disabled={busy} onClick={() => loadHistory("v16")}>
           读取2027 V16封存任务
         </Button>
+        {kind === "v16" && task?.status === "FAILED" &&
+          task.error_code === "V16_ANNUAL_RESPONSE_REJECTED" && (
+          <Button disabled={busy || active} onClick={continueFailedV16Cash}>
+            封存V16年度响应结构修复后仅继续现金研究（可能计费）
+          </Button>
+        )}
+        <Button disabled={busy} onClick={() => loadHistory("v17")}>
+          读取2027 V17现金续作历史
+        </Button>
         <Button disabled={busy} onClick={loadAnnualHistory}>
           读取独立年度经营历史
         </Button>
@@ -607,7 +645,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                                 ? "D2 V15封存任务历史"
                                 : historyKind === "v16"
                                   ? "D2 V16封存任务历史"
-                                  : "D2紧凑研究历史"
+                                  : historyKind === "v17"
+                                    ? "D2 V17现金续作历史"
+                                    : "D2紧凑研究历史"
           }
         >
           {history.length === 0 ? (

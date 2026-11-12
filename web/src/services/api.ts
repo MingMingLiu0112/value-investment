@@ -1355,6 +1355,7 @@ export type HorizonCashPolicyTask = {
     | "operating-horizon-task-v14-2027-live"
     | "operating-horizon-task-v15-2027-live"
     | "operating-horizon-task-v16-2027-live"
+    | "operating-horizon-task-v17-2027-cash-repair"
     | "operating-cash-policy-task-v1"
     | "operating-horizon-task-v2"
     | "operating-horizon-task-v3";
@@ -1680,6 +1681,14 @@ export const api = {
       "operating-research/horizon-cash-policy-tasks/import-v12",
       body,
     ),
+  repairV16HorizonCashPolicyTask: (body: {
+    source_task_id: string;
+    request_key: string;
+  }) =>
+    post<HorizonCashPolicyTask>(
+      "operating-research/horizon-cash-policy-tasks/repair-v16-cash",
+      body,
+    ),
   horizonCashPolicyTask: (id: string, signal?: AbortSignal) =>
     getPrivate<HorizonCashPolicyTask>(
       "operating-research/horizon-cash-policy-tasks/" + encodeURIComponent(id),
@@ -1704,7 +1713,8 @@ export const api = {
       | "operating-horizon-task-v13-2027-live"
       | "operating-horizon-task-v14-2027-live"
       | "operating-horizon-task-v15-2027-live"
-      | "operating-horizon-task-v16-2027-live",
+      | "operating-horizon-task-v16-2027-live"
+      | "operating-horizon-task-v17-2027-cash-repair",
   ) =>
     getPrivate<{
       action: "no_order";

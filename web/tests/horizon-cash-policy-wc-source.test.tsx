@@ -3,7 +3,7 @@ import { webcrypto } from "node:crypto";
 import { beforeEach, expect, it, vi } from "vitest";
 
 const hooks = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
-const calls = vi.hoisted(() => ({ create: vi.fn(), importV12: vi.fn() }));
+const calls = vi.hoisted(() => ({ create: vi.fn(), importV12: vi.fn(), repairV16: vi.fn() }));
 vi.mock("react", async (original) => {
   const actual = await original<typeof import("react")>();
   return {
@@ -37,6 +37,7 @@ vi.mock("../src/services/api", async (original) => {
       ...actual.api,
       createHorizonCashPolicyTask: calls.create,
       importV12HorizonCashPolicyTask: calls.importV12,
+      repairV16HorizonCashPolicyTask: calls.repairV16,
     },
   };
 });
@@ -67,6 +68,7 @@ beforeEach(() => {
   hooks.cursor = 0;
   calls.create.mockReset();
   calls.importV12.mockReset();
+  calls.repairV16.mockReset();
   vi.stubGlobal("crypto", webcrypto);
 });
 
@@ -224,4 +226,27 @@ it("starts source-bound V16 while preserving V15 history on explicit click", asy
       (row) => row.props.children,
     ),
   ).not.toContain(label);
+});
+
+it("continues only an explicitly selected failed V16 task as V17 cash-only", async () => {
+  button(render("600519"), "D2 股东现金政策研究").props.onClick();
+  const sourceId = "rt-" + "a".repeat(32);
+  hooks.values[1] = {
+    task_id: sourceId, symbol: "600519", status: "FAILED",
+    error_code: "V16_ANNUAL_RESPONSE_REJECTED", action: "no_order",
+  };
+  hooks.values[3] = "v16";
+  const label = "封存V16年度响应结构修复后仅继续现金研究（可能计费）";
+  calls.repairV16.mockResolvedValue({
+    task_id: "rt-" + "b".repeat(32), symbol: "600519", status: "QUEUED",
+    workflow: "operating-horizon-task-v17-2027-cash-repair",
+    action: "no_order", formal_eligibility: false,
+  });
+  await button(render("600519"), label).props.onClick();
+  expect(calls.repairV16).toHaveBeenCalledWith({
+    source_task_id: sourceId,
+    request_key: "cash_repair_v17_" + "a".repeat(32),
+  });
+  expect(calls.create).not.toHaveBeenCalled();
+  expect(hooks.values[3]).toBe("v17");
 });

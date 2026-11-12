@@ -18,6 +18,41 @@ LIVE='LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED'
 _ORIGINAL_SOCKET_CONNECT = socket.socket.connect
 
 
+def test_v17_failed_v16_cash_repair_route_keeps_source_and_no_annual_call(api, monkeypatch):
+    import json
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v16_live as v16,
+        operating_horizon_task_v17_cash as v17,
+        operating_q3_issuer_plan_loader_v8_600519 as q3_v8,
+    )
+
+    client, secret, data, root = api
+    source_id = "rt-" + "d" * 32
+    source = root / "runtime" / "research-task-execution-v1" / v16.STORE / source_id
+    source.mkdir(parents=True)
+    (source / "input.json").write_text(json.dumps(dict(mode="LIVE_OPERATING",
+        task_contract=v16.CONTRACT, source_loader_binding=dict(version=q3_v8.VERSION))), encoding="utf-8")
+    monkeypatch.setattr(v16.OperatingHorizonTaskService, "_load", lambda self, task_id:
+        (dict(task_contract=v16.CONTRACT), dict(status="FAILED"), {}) if task_id == source_id
+        else (_ for _ in ()).throw(ValueError("SOURCE_CHANGED")))
+    seen = []
+    def imported(self, **kwargs):
+        seen.append(kwargs)
+        return dict(task_id="rt-" + "e" * 32, symbol="600519", status="FAILED",
+            workflow=v17.CONTRACT, action="no_order", formal_eligibility=False)
+    monkeypatch.setattr(v17.OperatingHorizonTaskService, "create_imported", imported)
+    path = BASE + "/horizon-cash-policy-tasks/repair-v16-cash"
+    body = dict(source_task_id=source_id, request_key="V17_REPAIR_01")
+    assert client.post(path, json=body).status_code == 401
+    unlock(client, secret)
+    response = client.post(path, json=body)
+    assert response.status_code == 202, response.text
+    assert response.json()["workflow"] == v17.CONTRACT
+    assert seen == [body]
+    assert data.provider_calls == []
+    assert client.post(path, json={**body, "extra": True}).status_code == 422
+
+
 def test_v13_import_api_derives_sealed_v12_pins_and_is_idempotent(api, monkeypatch):
     import hashlib
     import json

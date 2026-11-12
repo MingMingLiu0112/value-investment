@@ -253,6 +253,9 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         OperatingHorizonTaskService as V15HorizonTaskService, CONTRACT as V15_CONTRACT)
     from ...application.research.agent_review.operating_horizon_task_v16_live import (
         OperatingHorizonTaskService as V16HorizonTaskService, CONTRACT as V16_CONTRACT)
+    from ...application.research.agent_review.operating_horizon_task_v17_cash import (
+        OperatingHorizonTaskService as V17HorizonTaskService, CONTRACT as V17_CONTRACT,
+        STORE as V17_STORE)
     from ...application.research.agent_review import operating_q3_issuer_plan_loader_v8_600519 as q3_v8
     from ...application.research.agent_review import operating_q3_issuer_wc_loader_v9_600519 as wc_v9
     from ...application.research.agent_review import operating_q3_issuer_dividend_split_loader_v9_600519 as dividend_v9
@@ -346,6 +349,15 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             if test_provider is not None else {}))
 
     def live_2027_reader(contract, raw, *, test_provider=None):
+        if contract == V17_CONTRACT:
+            source_id = raw.get("imported_annual", {}).get("source_task_id")
+            if not isinstance(source_id, str) or re.fullmatch(r"rt-[0-9a-f]{32}", source_id) is None:
+                raise ValueError("V17_SOURCE_TASK_ID_INVALID")
+            probe = live_2027_horizon(V16_CONTRACT)
+            source_raw = json.loads((probe._directory(source_id) / "input.json").read_bytes())
+            source = live_2027_reader(V16_CONTRACT, source_raw, test_provider=test_provider)
+            return V17HorizonTaskService(project, source_service=source,
+                **({"test_provider": test_provider} if test_provider is not None else {}))
         binding = raw.get("source_loader_binding")
         if binding is not None and not isinstance(binding, dict):
             raise ValueError("V11_SOURCE_LOADER_BINDING_INVALID")
@@ -355,8 +367,13 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
 
     def live_2027_for(task_id):
         # A damaged newer task must never be read through an older store.
-        for contract in (V16_CONTRACT, V15_CONTRACT, V14_CONTRACT, V13_CONTRACT, V12_CONTRACT, V11_CONTRACT, V10_CONTRACT):
-            selected = live_2027_horizon(contract)
+        for contract in (V17_CONTRACT, V16_CONTRACT, V15_CONTRACT, V14_CONTRACT, V13_CONTRACT, V12_CONTRACT, V11_CONTRACT, V10_CONTRACT):
+            if contract == V17_CONTRACT:
+                probe = live_2027_horizon(V16_CONTRACT)
+                if not (probe.base.parent / V17_STORE / task_id).exists():
+                    continue
+            selected = (V17HorizonTaskService(project, source_service=live_2027_horizon(V16_CONTRACT))
+                if contract == V17_CONTRACT else live_2027_horizon(contract))
             if selected._directory(task_id).exists():
                 raw = json.loads((selected._directory(task_id) / "input.json").read_bytes())
                 if raw.get("mode") != "LIVE_OPERATING":
@@ -367,7 +384,12 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         return None
 
     def list_live_2027(symbol, contract):
-        selected = live_2027_horizon(contract)
+        if contract == V17_CONTRACT:
+            probe = live_2027_horizon(V16_CONTRACT)
+            if not (probe.base.parent / V17_STORE).exists():
+                return []
+        selected = (V17HorizonTaskService(project, source_service=live_2027_horizon(V16_CONTRACT))
+            if contract == V17_CONTRACT else live_2027_horizon(contract))
         if not selected.base.exists():
             return []
         children = list(islice(selected.base.iterdir(), 101))
@@ -403,7 +425,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         if error is not None:
             return error
         try:
-            items = (list_live_2027(None, V16_CONTRACT) + list_live_2027(None, V15_CONTRACT) + list_live_2027(None, V14_CONTRACT) + list_live_2027(None, V13_CONTRACT) + list_live_2027(None, V12_CONTRACT) +
+            items = (list_live_2027(None, V17_CONTRACT) + list_live_2027(None, V16_CONTRACT) + list_live_2027(None, V15_CONTRACT) + list_live_2027(None, V14_CONTRACT) + list_live_2027(None, V13_CONTRACT) + list_live_2027(None, V12_CONTRACT) +
                 list_live_2027(None, V11_CONTRACT) + list_live_2027(None, V10_CONTRACT))
             return reply(dict(action="no_order", scope="HISTORICAL_D2_TASKS_NOT_CURRENT_CANDIDATES",
                 items=sorted(items, key=lambda row: (row["updated_at"], row["task_id"]), reverse=True)))
@@ -421,10 +443,10 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             if not re.fullmatch(r"[0-9]{6}",symbol):raise ValueError("INVALID_CASH_POLICY_SYMBOL")
             if task_contract not in (None, PARENT_WC_CONTRACT, SPLIT_CONTRACT,
                                      ANCHORED_SPLIT_CONTRACT, V10_CONTRACT, V11_CONTRACT,
-                                     V12_CONTRACT, V13_CONTRACT, V14_CONTRACT, V15_CONTRACT, V16_CONTRACT):
+                                     V12_CONTRACT, V13_CONTRACT, V14_CONTRACT, V15_CONTRACT, V16_CONTRACT, V17_CONTRACT):
                 raise ValueError("INVALID_CASH_POLICY_TASK_CONTRACT")
             items = (list_live_2027(symbol, task_contract)
-                if task_contract in (V10_CONTRACT, V11_CONTRACT, V12_CONTRACT, V13_CONTRACT, V14_CONTRACT, V15_CONTRACT, V16_CONTRACT)
+                if task_contract in (V10_CONTRACT, V11_CONTRACT, V12_CONTRACT, V13_CONTRACT, V14_CONTRACT, V15_CONTRACT, V16_CONTRACT, V17_CONTRACT)
                 else list_live_split(symbol, anchored=True) if task_contract == ANCHORED_SPLIT_CONTRACT
                 else list_live_split(symbol) if task_contract == SPLIT_CONTRACT
                 else list_live_parent_wc(symbol) if task_contract == PARENT_WC_CONTRACT
@@ -612,6 +634,30 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         else:
             raise ValueError("HORIZON_CASH_POLICY_REQUEST_INVALID")
 
+    @api.post("/api/v1/operating-research/horizon-cash-policy-tasks/repair-v16-cash")
+    async def repair_v16_cash(request: Request, background: BackgroundTasks):
+        """Continue only a source-verified failed V16 annual response; no annual model call."""
+        error = denied(request)
+        if error is not None:
+            return error
+        try:
+            raw = await request.body()
+            body = json.loads(raw) if len(raw) <= 1024 else None
+            if not isinstance(body, dict) or set(body) != {"source_task_id", "request_key"}:
+                raise ValueError("V17_REPAIR_REQUEST_INVALID")
+            source = live_2027_for(body["source_task_id"])
+            if source is None or source.__class__ is not V16HorizonTaskService:
+                raise ValueError("V17_EXACT_V16_SOURCE_REQUIRED")
+            selected = V17HorizonTaskService(project, source_service=source)
+            task = selected.create_imported(**body)
+            if task["status"] == "QUEUED":
+                background.add_task(selected.run, task["task_id"])
+            return reply(task, 202)
+        except LockTimeout:
+            return reply(dict(action="no_order", status="LIVE_STATE_BUSY"), 503)
+        except (PermissionError, ValueError, OSError, KeyError, TypeError, RuntimeError) as error:
+            return reply(dict(action="no_order", status="V17_REPAIR_REJECTED", reason=str(error)), 422)
+
     @api.post("/api/v1/operating-research/horizon-cash-policy-tasks/import-v12")
     async def import_v12_horizon_cash_policy(request:Request, background:BackgroundTasks):
         error=denied(request)
@@ -681,6 +727,10 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         try:
             selected = live_2027_for(task_id)
             if selected is not None:
+                if selected.__class__ is V17HorizonTaskService:
+                    from ...application.research.operating_horizon_cash_policy_e2_v9 import read_v17_cash_policy_e2_input
+                    return reply(read_v17_cash_policy_e2_input(root=project, task_id=task_id,
+                        now=datetime.now(timezone.utc), service=selected))
                 if selected.__class__ is V16HorizonTaskService:
                     from ...application.research.operating_horizon_cash_policy_e2_v8 import read_v16_cash_policy_e2_input
                     return reply(read_v16_cash_policy_e2_input(root=project, task_id=task_id,
