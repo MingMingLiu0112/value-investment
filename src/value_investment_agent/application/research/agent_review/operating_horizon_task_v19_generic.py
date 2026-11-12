@@ -33,10 +33,26 @@ class OperatingHorizonTaskService(v16.OperatingHorizonTaskService):
         super().__init__(root, source_loader=source_loader,
                          source_loader_version=source_loader_version, test_provider=test_provider)
         self.base = require_inside(self.root, self.base.parent / STORE, "v19 generic tasks")
+        shared = os.environ.get("VALUE_AGENT_SHARED_RESEARCH_ROOT")
+        self.shared_budget_root = Path(shared).resolve() if shared and Path(shared).is_absolute() else None
+
+    def _configuration(self):
+        if self.test_provider is not None:
+            return super()._configuration()
+        if self.shared_budget_root is None or not self.shared_budget_root.is_dir():
+            raise PermissionError("V19_SHARED_BUDGET_ROOT_REQUIRED")
+        cfg = live.model_configuration(self.shared_budget_root)
+        if cfg["model_id"] != "deepseek-flash" or cfg["max_completion_tokens_cap"] != 4096:
+            raise PermissionError("V19_SHARED_MODEL_CONFIGURATION_INVALID")
+        return {**cfg, "max_completion_tokens_cap": 8192}
 
     def _daily_budget(self, day, reservation, amount, cfg, *, settle=False):
-        # The D1 ledger is shared across research task versions.
-        return live.LiveOperatingTaskService(self.root)._daily_budget(
+        # Real tasks charge the explicitly selected existing D1 ledger, even
+        # when code and source artifacts live in another isolated worktree.
+        root = self.root if self.test_provider is not None else self.shared_budget_root
+        if root is None:
+            raise PermissionError("V19_SHARED_BUDGET_ROOT_REQUIRED")
+        return live.LiveOperatingTaskService(root)._daily_budget(
             day, reservation, amount, cfg, settle=settle)
 
     def _load(self, task_id, *, recover=False):
@@ -53,7 +69,9 @@ class OperatingHorizonTaskService(v16.OperatingHorizonTaskService):
 
     def _context(self, spec):
         if (spec["implementation_sha256"] != implementation()
-                or spec["source_loader_binding"] != self._loader_binding()):
+                or spec["source_loader_binding"] != self._loader_binding()
+                or spec.get("shared_budget_root") != (str(self.root) if self.test_provider is not None
+                    else str(self.shared_budget_root))):
             raise ValueError("V19_IMPLEMENTATION_OR_LOADER_CHANGED")
         context = self.source_loader(root=self.root, symbol=spec["symbol"],
             binding=spec["source_binding"], now=datetime.fromisoformat(spec["created_at"]))
@@ -154,6 +172,7 @@ class OperatingHorizonTaskService(v16.OperatingHorizonTaskService):
                 request_key_sha256=_hash(request_key.encode("utf-8")), created_at=now.isoformat(),
                 source_binding=context["source_binding"], context_sha256=_hash(_bytes(context)),
                 context_fingerprint=context["snapshot_fingerprint"],
+                shared_budget_root=str(self.root if self.test_provider is not None else self.shared_budget_root),
                 enriched_context_sha256=_hash(_bytes(context)), source_loader_binding=self._loader_binding(),
                 config=cfg, annual_request_sha256=_hash(_bytes(request.__dict__)),
                 implementation_sha256=implementation(), action="no_order")

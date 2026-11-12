@@ -184,3 +184,35 @@ def test_existing_d1_budget_blocks_new_v19_provider(setup):
     assert result["provider_requests"] == 0
     assert result["error_code"] == "V19_TASK_EXECUTION_FAILED"
     assert calls == []
+
+
+def test_live_budget_uses_explicit_shared_root_without_model_call(tmp_path, monkeypatch):
+    def loader(*, root, symbol, now, binding=None):
+        raise AssertionError("NO_SOURCE_OR_PROVIDER_CALL_EXPECTED")
+    code_root = tmp_path / "code"
+    shared_root = tmp_path / "shared"
+    code_root.mkdir()
+    config_path = shared_root / task.live.CONFIG
+    config_path.parent.mkdir(parents=True)
+    config = dict(endpoint="https://test-only.invalid/v1/chat/completions",
+        model_id="deepseek-flash", api_key_env="VALUE_AGENT_TEST_ONLY_KEY",
+        timeout_seconds=1, max_completion_tokens_cap=4096,
+        max_run_cost="10", input_cost_per_million="0.01",
+        output_cost_per_million="0.02", authorized=True,
+        authorization_reference="TEST_ONLY_NO_LIVE_CALL", currency="CNY",
+        daily_cost_limit="10")
+    config_path.write_bytes(task._bytes(config))
+    monkeypatch.delenv("VALUE_AGENT_SHARED_RESEARCH_ROOT", raising=False)
+    service = task.OperatingHorizonTaskService(code_root, source_loader=loader,
+        source_loader_version="TEST_ONLY_SOURCE")
+    with pytest.raises(PermissionError, match="V19_SHARED_BUDGET_ROOT_REQUIRED"):
+        service._configuration()
+    monkeypatch.setenv("VALUE_AGENT_SHARED_RESEARCH_ROOT", str(shared_root))
+    service = task.OperatingHorizonTaskService(code_root, source_loader=loader,
+        source_loader_version="TEST_ONLY_SOURCE")
+    cfg = service._configuration()
+    assert cfg["model_id"] == "deepseek-flash"
+    service._daily_budget("2026-11-12", "TEST_ONLY_SHARED_RESERVATION", Decimal("10"), cfg)
+    existing = task.live.LiveOperatingTaskService(shared_root)
+    with pytest.raises(ValueError, match="DAILY_BUDGET_EXHAUSTED_BEFORE_CALL"):
+        existing._daily_budget("2026-11-12", "TEST_ONLY_NEXT_RESERVATION", Decimal(".01"), cfg)
