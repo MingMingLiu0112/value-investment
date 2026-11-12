@@ -7,6 +7,12 @@
         "path": "runtime/e2-first-input-000568-20261111/recompile-v8-02/receipt.json",
         "sha256": "a92b95c82a6abafefc5dbe36088153ae17787304c4f5ad467abae9bfe4ce115a"
       }
+    },
+    "600887": {
+      "receipt": {
+        "path": "runtime/e2-first-input-600887-20261112/compile-20261112T110216618107Z/receipt.json",
+        "sha256": "61597b8ab43005eabcc79ee310fbac987acd624fc8793d53152e54e4c76c5f18"
+      }
     }
   }
 }
