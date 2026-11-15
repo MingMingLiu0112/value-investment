@@ -7,6 +7,7 @@ from pathlib import Path
 
 from ...product.common import require_inside, write_new_bytes
 from ..sse_research_pipeline_v1 import read_sse_research_pool
+from ..parent_cash_layout_observation import observe_parent_cash_rows
 from . import operating_horizon_sources_v1 as horizon
 from .task_execution_v1 import _bytes, _hash
 
@@ -34,12 +35,46 @@ def prepare_receipt_selection(*, root: Path, symbol: str, issuer_name: str,
         "excerpts": [],
     })
     base = horizon._receipt_operating_base(root, symbol, selection, as_of)
-    evidence, _, gaps = horizon._supplement(root, symbol, selection, as_of)
+    try:
+        evidence, _, gaps = horizon._supplement(root, symbol, selection, as_of)
+    except ValueError as error:
+        if not (str(error) == "PARENT_CASH_ISSUER_OR_REPORT_MISMATCH"
+                or str(error).startswith("PARENT_CASH_ROW_MISSING_OR_AMBIGUOUS:")):
+            raise
+        return _observe_alternate_layout(root, symbol, selection, as_of)
     if not evidence:
         raise ValueError("HORIZON_SELECTION_HAS_NO_VERIFIED_EVIDENCE")
     return dict(selection=selection, base_source_binding=base["source_binding"],
                 evidence_ids=[row["id"] for row in evidence], statement_basis_gaps=gaps,
                 status="SOURCE_REPLAYED_SELECTION_PROPOSAL", formal_eligibility=False,
+                action="no_order")
+
+
+def _observe_alternate_layout(root, symbol, selection, as_of):
+    """Preserve verified source observations pending a versioned model adapter."""
+    statements = []
+    for item in selection["parent_cash_observation_receipts"]:
+        pin, period = item["receipt_binding"], item["period"]
+        query = horizon.cash._receipt_issuer_query(root=root, receipt_binding=pin)
+        packet = horizon.receipts.load_retained_official_report(
+            root=root, receipt_binding=pin, symbol=symbol, issuer_name=query, period=period)
+        source = packet["source"]
+        for stamp in (packet["fetched_at"], packet["completed_at"], source["available_at"]):
+            horizon._clock(stamp, as_of)
+        original = require_inside(root / "runtime", root / source["path"], "parent cash original")
+        observed = observe_parent_cash_rows(pages=horizon.pdf_text.extract_pages(original),
+            symbol=symbol, issuer_name=selection["issuer_name"], period=period)
+        if _hash(original.read_bytes()) != source["sha256"]:
+            raise ValueError("HORIZON_ORIGINAL_CHANGED_DURING_EXTRACTION")
+        statements.append(dict(period=period, receipt_binding=deepcopy(pin),
+                               source_binding=deepcopy(source), **observed))
+    first, second = statements
+    closing = first["rows"]["closing_cash_and_equivalents_cny"]["columns"][0]["value"]
+    opened = second["rows"].get("opening_cash_and_equivalents_cny")
+    if not opened or opened["columns"][0]["value"] != closing:
+        raise ValueError("PARENT_CASH_LAYOUT_PERIOD_CONTINUITY_NOT_PROVEN")
+    return dict(status="PARENT_CASH_LAYOUT_REPLAYED_D2_ADAPTER_REQUIRED",
+                historical_parent_cash=statements, formal_eligibility=False,
                 action="no_order")
 
 
@@ -149,4 +184,5 @@ def read_queue_receipt_batch(*, research_root: Path, queue_binding: dict,
     _, digest, result = latest
     return dict(as_of=result["as_of"], sha256=digest,
                 items=[dict(symbol=row["symbol"], status=row["status"],
-                            evidence_count=len(row.get("evidence_ids", []))) for row in result["items"]])
+                            evidence_count=len(row.get("evidence_ids", [])) or
+                            sum(len(statement["rows"]) for statement in row.get("historical_parent_cash", []))) for row in result["items"]])
