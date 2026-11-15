@@ -223,6 +223,9 @@ jobs:
           tests/test_industrial_earnings_paths.py
           tests/test_industrial_earnings_research.py
           tests/test_parent_cash_policy.py
+          tests/test_parent_direct_operating_cash.py
+          tests/test_parent_direct_cash_research.py
+          tests/test_parent_direct_cash_alternative.py
           tests/test_parent_cash_research.py
           tests/test_fiscal_industrial_earnings_paths_v1.py
           tests/test_fiscal_earnings_research.py
