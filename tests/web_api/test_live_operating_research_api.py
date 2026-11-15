@@ -2079,8 +2079,8 @@ def test_v25_read_projects_cash_evidence_from_pinned_source(api, monkeypatch, va
     assert data.provider_calls == []
 
 
-@pytest.mark.parametrize("registered", [False, True])
-def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, registered):
+@pytest.mark.parametrize("registered,missing", [(False, False), (True, False), (True, True)])
+def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, registered, missing):
     from value_investment_agent.application.research.agent_review import (
         operating_horizon_sources_v1 as source,
         operating_horizon_sources_compact as compact_sources,
@@ -2088,7 +2088,13 @@ def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, regis
         operating_horizon_task_v25_compact_cash as compact,
     )
 
+    from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v17 as e2
+
     client, secret, _, root = api
+    monkeypatch.setattr(compact_sources, "build_operating_horizon_source_context",
+                        lambda **kwargs: {"symbol": kwargs["symbol"]})
+    monkeypatch.setattr(e2, "cash_constraint_anchor_ids",
+                        lambda context: {"operating_wc_cash_cny": [] if missing else ["source:id"]})
     if registered:
         config = root / compact_sources.CONFIG
         config.parent.mkdir(exist_ok=True)
@@ -2097,8 +2103,7 @@ def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, regis
     seen = []
 
     def create(self, **kwargs):
-        binding = self._loader_binding()
-        seen.append((kwargs["symbol"], binding["version"], bool(binding.get("cash_transport"))))
+        seen.append((kwargs["symbol"], self.source_loader_version, isinstance(self, compact.CompactCashTaskService)))
         return {"status": "WAITING_EVIDENCE", "action": "no_order"}
 
     monkeypatch.setattr(compact.CompactCashTaskService, "create", create)
@@ -2106,5 +2111,11 @@ def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, regis
         "symbol": "000568", "years": [2027], "request_key": "TEST_ONLY_COMPACT_BASE",
         "task_contract": v25.CONTRACT,
     })
+    if missing:
+        assert response.status_code == 422
+        assert response.json()["missing_e2_anchors"] == ["operating_wc_cash_cny"]
+        assert response.json()["action"] == "no_order"
+        assert seen == []
+        return
     assert response.status_code == 202, response.json()
     assert seen == [("000568", compact_sources.VERSION if registered else source.VERSION, True)]

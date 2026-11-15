@@ -839,7 +839,23 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 live_2027_horizon(body["task_contract"], loader_version=body["source_loader_version"])
                 if isinstance(body, dict) and body.get("task_contract") in (V11_CONTRACT, V12_CONTRACT, V13_CONTRACT, V14_CONTRACT, V15_CONTRACT, V16_CONTRACT)
                 and body.get("source_loader_version") in (wc_v9.VERSION, dividend_v9.VERSION) else horizon_cash_policy)
-            task = selected.create(**_cash_policy_body(raw, allow_v5=True))
+            inputs = _cash_policy_body(raw, allow_v5=True)
+            if (body.get("task_contract") == V25_CONTRACT
+                    and selected.source_loader_version == compact_sources.VERSION):
+                from ...application.research.operating_horizon_cash_policy_e2_v17 import (
+                    cash_constraint_anchor_ids,
+                )
+
+                now = datetime.now(timezone.utc)
+                context = selected.source_loader(root=selected.root, symbol=inputs["symbol"], now=now)
+                missing = sorted(term for term, ids in cash_constraint_anchor_ids(context).items()
+                                 if not ids)
+                if missing:
+                    return reply(dict(action="no_order", status="HORIZON_CASH_POLICY_TASK_REJECTED",
+                        reason="V25_E2_CASH_ANCHORS_MISSING:" + ",".join(missing),
+                        missing_e2_anchors=missing, formal_eligibility=False), 422)
+                inputs["now"] = now
+            task = selected.create(**inputs)
             if task["status"] == "QUEUED":
                 background.add_task(selected.run, task["task_id"])
             return reply(task, 202)
