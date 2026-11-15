@@ -28,7 +28,11 @@ def build_candidate_event_impact(analysis, events):
             continue
         for fact in event["facts"]:
             parsed = fact["terms"]
+            kind = parsed.get("event_type")
             affected = set(parsed.get("affected_model_fields", []))
+            reference_fields = affected
+            if kind == "REPORTED_BUYBACK_PROGRESS" and "cash" in affected:
+                reference_fields = (affected - {"cash"}) | {"opening_cash", "closing_cash"}
             references = []
             for scenario in economic.get("scenarios", []):
                 for year in scenario.get("years", []):
@@ -36,12 +40,24 @@ def build_candidate_event_impact(analysis, events):
                         if step.get("status") != "available":
                             continue
                         for field, value in step.get("values", {}).items():
-                            if field in affected:
+                            if field in reference_fields:
                                 references.append(dict(scenario=scenario["scenario"],
                                     model_year=year["model_year"], field=field, value=value,
                                     classification=step.get("classification"), unit=step.get("unit"),
                                     input_path=f"economic_path.scenarios[{scenario['scenario']}].years[{year['model_year']}].{step['id']}.{field}"))
-            kind = parsed.get("event_type")
+            mapped_fields = {r["field"] for r in references}
+            if kind == "REPORTED_BUYBACK_PROGRESS":
+                if mapped_fields & {"opening_cash", "closing_cash"}:
+                    mapped_fields.add("cash")
+                shares = (analysis.get("consumed_operating_inputs") or {}).get("ordinary_shares")
+                if "ordinary_shares" in affected and shares is not None:
+                    verified_shares = Decimal(shares)
+                    if not verified_shares.is_finite() or verified_shares <= 0 or verified_shares != verified_shares.to_integral_value():
+                        raise ValueError("EVENT_IMPACT_CONSUMED_SHARES_INVALID")
+                    references.append(dict(field="ordinary_shares", value=str(shares), unit="shares",
+                        classification="CANDIDATE_VALUATION_SHARE_BASIS_NOT_CURRENT",
+                        input_path="consumed_operating_inputs.ordinary_shares"))
+                    mapped_fields.add("ordinary_shares")
             calculations = []
             if kind == "OPERATING_PRICE_CHANGE":
                 terms = parsed["terms"]
@@ -87,7 +103,7 @@ def build_candidate_event_impact(analysis, events):
                 source_url=fact["source_url"], source_available_at=fact["source_available_at"],
                 status=judgement, rationale=rationale,
                 affected_model_fields=sorted(affected),
-                unmapped_model_fields=sorted(affected - {r["field"] for r in references}),
+                unmapped_model_fields=sorted(affected - mapped_fields),
                 consumed_model_values=references, derived_price_changes=calculations,
                 unresolved_inputs=missing, quantified_profit_effect=None,
                 model_inputs_changed=False, model_recalculation_completed=False,

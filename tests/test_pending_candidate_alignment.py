@@ -848,7 +848,10 @@ def test_event_review_drafts_do_not_approve_materiality(reconciliation):
     from value_investment_agent.application.research.candidate_event_impact import build_candidate_event_impact
     a=reconciliation["analysis"]
     candidate=a["review_binding"]["candidate_binding"]
-    a["joint_capital_review"]["economic_path"].update(candidate_binding=candidate,scenarios=[])
+    a["joint_capital_review"]["economic_path"].update(candidate_binding=candidate,
+        scenarios=[dict(scenario="base", years=[dict(model_year=1, steps=[
+            dict(id="access", status="available", unit="CNY",
+                 values=dict(opening_cash="1000", closing_cash="900"))])])])
     for kind,status in [
         ("ACCOUNTING_POLICY_IMPACT_STATEMENT","ISSUER_NO_MATERIAL_IMPACT_REQUIRES_REVIEW"),
         ("INTERNAL_ASSET_TRANSFER_RESOLUTION","CASH_ACCESS_AND_CAPITAL_REVIEW_REQUIRED"),
@@ -858,9 +861,15 @@ def test_event_review_drafts_do_not_approve_materiality(reconciliation):
             announcement_id="TEST_ONLY",title="TEST_ONLY",published_at="2020-01-02",
             facts=[dict(binding=reconciliation["anchor"]["binding"],source_url=reconciliation["anchor"]["source_url"],
                 source_available_at=reconciliation["anchor"]["available_at"],terms=dict(event_type=kind,
-                affected_model_fields=["profit"],terms={}))])
+                affected_model_fields=["cash", "ordinary_shares"] if kind == "REPORTED_BUYBACK_PROGRESS"
+                else ["profit"],terms={}))])
         result=build_candidate_event_impact(a,[event])
         assert result["items"][0]["status"]==status
+        if kind == "REPORTED_BUYBACK_PROGRESS":
+            references = result["items"][0]["consumed_model_values"]
+            assert [r["field"] for r in references] == ["opening_cash", "closing_cash", "ordinary_shares"]
+            assert references[-1]["classification"] == "CANDIDATE_VALUATION_SHARE_BASIS_NOT_CURRENT"
+            assert not result["items"][0]["unmapped_model_fields"]
         assert result["items"][0]["quantified_profit_effect"] is None
         assert not result["materiality_approved"]
 
