@@ -844,14 +844,15 @@ def test_event_impact_binds_consumed_years_not_profit_uplift(reconciliation):
         build_candidate_event_impact(a,[event])
 
 
-def test_issuer_statement_and_transfer_do_not_approve_materiality(reconciliation):
+def test_event_review_drafts_do_not_approve_materiality(reconciliation):
     from value_investment_agent.application.research.candidate_event_impact import build_candidate_event_impact
     a=reconciliation["analysis"]
     candidate=a["review_binding"]["candidate_binding"]
     a["joint_capital_review"]["economic_path"].update(candidate_binding=candidate,scenarios=[])
     for kind,status in [
         ("ACCOUNTING_POLICY_IMPACT_STATEMENT","ISSUER_NO_MATERIAL_IMPACT_REQUIRES_REVIEW"),
-        ("INTERNAL_ASSET_TRANSFER_RESOLUTION","CASH_ACCESS_AND_CAPITAL_REVIEW_REQUIRED")]:
+        ("INTERNAL_ASSET_TRANSFER_RESOLUTION","CASH_ACCESS_AND_CAPITAL_REVIEW_REQUIRED"),
+        ("REPORTED_BUYBACK_PROGRESS","BUYBACK_CASH_AND_SHARE_BASIS_REVIEW_REQUIRED")]:
         event=dict(status="SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW",
             candidate_binding=candidate,input_descriptor_sha256=a["input_descriptor_sha256"],
             announcement_id="TEST_ONLY",title="TEST_ONLY",published_at="2020-01-02",

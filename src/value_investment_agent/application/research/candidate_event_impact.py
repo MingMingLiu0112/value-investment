@@ -67,6 +67,12 @@ def build_candidate_event_impact(analysis, events):
                 judgement = "RECALCULATION_REVIEW_REQUIRED"
                 rationale = "前三季度实际收入和归母利润用于检验原预测，需按同期和经营口径核对后再重算。"
                 missing = ["原候选同期间经营基线", "剩余月份及成本税费假设", "候选现金路径的独立复核"]
+            elif kind == "REPORTED_BUYBACK_PROGRESS":
+                judgement = "BUYBACK_CASH_AND_SHARE_BASIS_REVIEW_REQUIRED"
+                rationale = "公告披露的是同一回购计划的累计股数和付款。只将同计划两个截止日的差额用于期间现金核对；实购股数不等于已注销股数。"
+                missing = ["估值截止日前同计划累计付款及原模型是否已计入",
+                           "报价日前回购增量与实际现金限制",
+                           "注销生效文件和报价日精确普通股股数"]
             elif kind == "ACCOUNTING_POLICY_IMPACT_STATEMENT":
                 judgement = "ISSUER_NO_MATERIAL_IMPACT_REQUIRES_REVIEW"
                 rationale = "发行人的无重大影响表述作为证据保留，不能替代对当前利润、权益和现金口径的独立复核。"
