@@ -1018,6 +1018,13 @@ def load_pending_candidate_alignment(*, root, analysis, now):
         # neither changes frozen assumptions nor signs the materiality review.
         operating_events = _operating_events(analysis, windows, now, read)
         checks[3]["details"]["operating_event_research"] = operating_events
+        financial_events = []
+        for event in operating_events:
+            facts = [fact for fact in event["facts"]
+                     if fact["terms"].get("event_type") == "REPORTED_QUARTERLY_FINANCIAL_UPDATE"]
+            if facts:
+                financial_events.append({**event, "facts": facts})
+        checks[4]["details"]["financial_update_research"] = financial_events
         from .candidate_event_impact import build_candidate_event_impact
         checks[3]["details"]["candidate_event_impact"] = build_candidate_event_impact(analysis, operating_events)
         from ...infrastructure.filings.opening_action_terms import parse_opening_action_terms

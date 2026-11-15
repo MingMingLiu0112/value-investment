@@ -358,6 +358,11 @@ function CandidateAlignment({ review }: { review: Review }) {
               <BasisFollowup value={check.details.basis_followup} />
             )}
             <CheckInputSources id={check.id} details={check.details} />
+            {check.id === "financial_updates" && object(check.details) && (
+              <OperatingEventResearch
+                value={check.details.financial_update_research}
+              />
+            )}
             {check.id === "material_events" && object(check.details) && (
               <OperatingEventResearch
                 value={check.details.operating_event_research}
