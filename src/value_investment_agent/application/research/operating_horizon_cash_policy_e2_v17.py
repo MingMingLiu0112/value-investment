@@ -8,6 +8,8 @@ from .agent_review.operating_horizon_task_v25_canonical import (
 )
 
 from .agent_review.operating_horizon_sources_v2_return_plan import VERSION as RETURN_PLAN_LOADER
+from .agent_review.operating_horizon_sources_v3_parent_quarter import VERSION as PARENT_QUARTER_LOADER
+from .agent_review.operating_horizon_sources_v4_cash_constraints import VERSION as CASH_CONSTRAINT_LOADER
 
 VERSION = "operating-horizon-cash-policy-e2-input-v17"
 
@@ -17,7 +19,7 @@ def read_v25_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     return read_generic_cash_policy_e2_input(root=root, task_id=task_id, now=now,
         contract=CONTRACT, service_type=OperatingHorizonTaskService,
         version=VERSION, label="V25", service=service, staged_annual=True,
-        additional_reported_fact_loaders=(RETURN_PLAN_LOADER,))
+        additional_reported_fact_loaders=(RETURN_PLAN_LOADER, PARENT_QUARTER_LOADER, CASH_CONSTRAINT_LOADER))
 
 
 

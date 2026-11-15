@@ -184,11 +184,21 @@ def test_v25_canonical_task_dispatch_is_explicit_and_unapproved(api, monkeypatch
     assert data.provider_calls == []
 
 
-def test_v25_uses_configured_official_plan_source_without_changing_old_reader(api, monkeypatch):
+@pytest.mark.parametrize("source_kind", ["plan", "quarter", "constraints"])
+def test_v25_uses_configured_official_plan_source_without_changing_old_reader(api, monkeypatch, source_kind):
     from value_investment_agent.application.research.agent_review import operating_horizon_task_v25_canonical as v25
     from value_investment_agent.application.research.agent_review import operating_horizon_sources_v2_return_plan as plan_source
 
-    client, secret, _, _ = api
+    from value_investment_agent.application.research.agent_review import operating_horizon_sources_v3_parent_quarter as quarter_source
+
+    from value_investment_agent.application.research.agent_review import operating_horizon_sources_v4_cash_constraints as constraints_source
+
+    client, secret, _, root = api
+    selected = {"plan": plan_source, "quarter": quarter_source, "constraints": constraints_source}[source_kind]
+    if source_kind != "plan":
+        (root / selected.CONFIG).parent.mkdir(parents=True, exist_ok=True)
+        (root / quarter_source.CONFIG).write_text('{"600887": {}}', encoding="utf-8")
+        (root / selected.CONFIG).write_text('{"600887": {}}', encoding="utf-8")
     monkeypatch.setattr(plan_source, "configured_for", lambda root, symbol: symbol == "600887")
     seen = []
     def created(self, **kwargs):
@@ -201,7 +211,7 @@ def test_v25_uses_configured_official_plan_source_without_changing_old_reader(ap
     response = client.post(BASE + "/horizon-cash-policy-tasks", json=dict(
         symbol="600887", request_key="TEST_V25_PLAN_ROUTE", years=[2027], task_contract=v25.CONTRACT))
     assert response.status_code == 202
-    assert seen == [plan_source.VERSION]
+    assert seen == [selected.VERSION]
 
 
 def test_v17_failed_v16_cash_repair_route_keeps_source_and_no_annual_call(api, monkeypatch):
@@ -320,6 +330,8 @@ def test_v13_import_api_derives_sealed_v12_pins_and_is_idempotent(api, monkeypat
         operating_horizon_task_v13_live as v13,
         operating_q3_issuer_plan_loader_v8_600519 as q3_v8)
 
+    from value_investment_agent.application.research.agent_review import operating_horizon_sources_v4_cash_constraints as constraints_source
+
     client, secret, _, root = api
     source_id = "rt-" + "a" * 32
     source = root / "runtime" / "research-task-execution-v1" / v12.STORE / source_id
@@ -407,6 +419,8 @@ def test_v13_import_api_rejects_unsealed_source(api, monkeypatch):
     import json
     from pathlib import Path
     from value_investment_agent.application.research.agent_review import operating_horizon_task_v12_live as v12
+
+    from value_investment_agent.application.research.agent_review import operating_horizon_sources_v4_cash_constraints as constraints_source
 
     client, secret, _, root = api
     source_id = "rt-" + "d" * 32
