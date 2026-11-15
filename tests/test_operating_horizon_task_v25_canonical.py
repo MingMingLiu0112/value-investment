@@ -330,3 +330,49 @@ def test_cash_diagnostic_transcription_only_removes_single_extra_closing_brace()
     for text in ('{"years":{}}', '{"years":{}}}}', '{"years":{}}{"other":1}', '[1]}', '{"years":'):
         with pytest.raises(ValueError):
             remove_single_extra_object_close(text)
+
+
+
+def test_v25_charter_source_is_bound_and_replays_independently_of_current_registry(tmp_path, monkeypatch):
+    from hashlib import sha256
+
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_charter_sources_v1 as charter,
+    )
+
+    corpus = {"issuer_name": "样本股份有限公司", "evidence": [{"id": "existing-fact"}],
+              "source_binding": {"path": "runtime/base.json", "sha256": "a" * 64}}
+    monkeypatch.setattr(charter.base, "build_operating_horizon_source_context", lambda **_: corpus)
+    monkeypatch.setattr(charter.charter, "extract_pages", lambda _: [
+        "样本股份有限公司章程",
+        "公司分配当年税后利润时，应当提取利润的10%列入公司法定公积金。"
+        "公司法定公积金累计额为公司注册资本的50%以上的，可以不再提取。",
+    ])
+
+    pdf = tmp_path / "runtime" / "charter.pdf"
+    pdf.parent.mkdir()
+    pdf.write_bytes(b"TEST_ONLY charter layout")
+    selection = {"path": "runtime/charter.pdf", "sha256": sha256(pdf.read_bytes()).hexdigest(),
+                 "url": "https://static.cninfo.com.cn/finalpage/2026-07-01/12345.PDF",
+                 "available_at": "2026-07-02T09:00:00+08:00"}
+    config = tmp_path / charter.CONFIG
+    config.parent.mkdir()
+    config.write_text(json.dumps({"000568": selection}), encoding="utf-8")
+    request = dict(root=tmp_path, symbol="000568", now=NOW)
+
+    first = charter.build_operating_horizon_source_context(**request)
+    row, prior = first["evidence"]
+    assert row["id"] == "cninfo:12345:statutory_reserve_rule" and row["physical_page"] == 2
+    assert row["scope"] == "ISSUER_ARTICLES_RULE_TEXT" and row["unit"] == "TEXT"
+    assert row["pdf_sha256"] == selection["sha256"] and "value" not in row
+    assert corpus["evidence"] == [prior]
+
+    config.write_text(json.dumps({"000568": {**selection, "available_at": "2027-01-01T00:00:00Z"}}),
+                      encoding="utf-8")
+    with pytest.raises(ValueError, match="CHARTER_SOURCE_URL_OR_AVAILABILITY_INVALID"):
+        charter.build_operating_horizon_source_context(**request)
+    assert charter.build_operating_horizon_source_context(**request, binding=first["source_binding"]) == first
+
+    pdf.write_bytes(b"tampered")
+    with pytest.raises(ValueError, match="RESERVE_CHARTER_HASH_CHANGED"):
+        charter.build_operating_horizon_source_context(**request, binding=first["source_binding"])
