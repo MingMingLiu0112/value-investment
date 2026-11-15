@@ -595,6 +595,31 @@ def _event_windows(root, analysis, refs, now, read):
 
 
 
+def _explicit_quarterly_financial_update(pages, symbol, binding):
+    from ...infrastructure.filings.native_capital_observation_v1 import _compact
+    from ...infrastructure.filings.quarterly_operating_facts_explicit_columns import (
+        parse_explicit_columns_quarterly_facts,
+    )
+
+    currency_refs = [
+        dict(binding, physical_page=index, excerpt=line.strip())
+        for index, page in enumerate(pages, 1)
+        for line in page.splitlines()
+        if _compact(line) == "单位:元币种:人民币审计类型:未经审计"
+    ]
+    reported = parse_explicit_columns_quarterly_facts(
+        pages, symbol=symbol, currency_basis=dict(currency="CNY", evidence_refs=currency_refs),
+    )
+    fields = {}
+    for name in ("revenue", "parent_profit"):
+        row = reported["fields"][name]
+        fields[name + "_cny"] = dict(value=row["current"], unit=row["currency"], scope=row["scope"],
+            physical_page=row["physical_page"], excerpt=row["excerpt"])
+    return dict(status="VERIFIED", period_start=reported["period_start"],
+                period_end=reported["period_end"], period_basis="YEAR_TO_DATE_9M_NOT_SINGLE_QUARTER",
+                fields=fields)
+
+
 def _operating_events(analysis, windows, now, read, *, parser=None):
     """Read official originals into research facts, never grant materiality."""
     from ...infrastructure.filings.pdf_text import extract_pages
@@ -637,9 +662,14 @@ def _operating_events(analysis, windows, now, read, *, parser=None):
                     quarter_title = re.search(r"(20[0-9]{2})年第三季度报告$", event["title"]) if allow_quarterly_report else None
                     if quarter_title:
                         from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
-                        observation = parse_native_capital_observation(pages, symbol=analysis["symbol"])
+                        try:
+                            observation = parse_native_capital_observation(pages, symbol=analysis["symbol"])
+                        except ValueError:
+                            observation = {}
                         update = observation.get("financial_update") or {}
-                        if (observation.get("kind") != "q3" or update.get("status") != "VERIFIED"
+                        if observation.get("kind") != "q3" or update.get("status") != "VERIFIED":
+                            update = _explicit_quarterly_financial_update(pages, analysis["symbol"], binding)
+                        if (update.get("status") != "VERIFIED"
                                 or _day(update["period_end"]) > published
                                 or quarter_title[1] != update["period_end"][:4]):
                             raise ValueError("QUARTERLY_ORIGINAL_NOT_VERIFIED_FOR_EVENT")
