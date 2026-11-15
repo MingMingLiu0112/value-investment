@@ -12,8 +12,31 @@ from ...product.common import require_inside, write_new_bytes
 def run_cash_only_continuation(service, task_id):
     """Persist an intent before sending and never automatically resend it."""
     request, lineage = prepare_cash_only_continuation(service, task_id)
+    return _run_prepared_cash(service, task_id, request, lineage)
+
+
+def run_transcribed_cash_continuation(service, task_id):
+    """Spend one cash call after replaying and verifying the repaired annual draft."""
+    from .operating_horizon_v25_citation_transcription import prepare_transcribed_annual
+
+    with service._lock(service._directory(task_id)):
+        request, receipt = prepare_transcribed_annual(service, task_id)
+    lineage = {
+        **receipt["next_cash_binding"],
+        "source_task_id": task_id,
+        "source_task_state": receipt["original_state_binding"],
+        "source_binding": receipt["source_binding"],
+        "annual_stage_responses": receipt["original_response_bindings"],
+        "transcription_receipt_sha256": _hash(_bytes(receipt)),
+    }
+    return _run_prepared_cash(service, task_id, request, lineage)
+
+
+def _run_prepared_cash(service, task_id, request, lineage):
     spec, state, record = service._load(task_id)
-    if record != lineage["source_task_state"]:
+    if (record != lineage["source_task_state"]
+            or "cash" in state["stage_intents"] or "cash" in state["stage_responses"]
+            or state.get("cash_binding") is not None):
         raise ValueError("CASH_CONTINUATION_TASK_CHANGED")
     cfg = spec["config"]
     if service.test_provider is None and cfg["model_id"] != "deepseek-flash":

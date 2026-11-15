@@ -15,6 +15,11 @@ VERSION = "v25-annual-citation-transcription-v1"
 
 def replay_annual_citation_transcription(service, task_id):
     """Return a separately bound research draft; leave the original task immutable."""
+    _, receipt = prepare_transcribed_annual(service, task_id)
+    return receipt
+
+
+def prepare_transcribed_annual(service, task_id):
     spec, state, pin = service._load(task_id)
     if (
         spec["task_contract"] != v25.CONTRACT
@@ -78,7 +83,7 @@ def replay_annual_citation_transcription(service, task_id):
     from .operating_cash_request_compact import build_compact_cash_request
     cash_request, cash_binding = build_compact_cash_request(
         context, spec["source_binding"], annual_response, generated)
-    return {
+    return cash_request, {
         "next_cash_request_sha256": _hash(_bytes(cash_request.__dict__)),
         "next_cash_binding": cash_binding,
         "version": VERSION, "task_id": task_id, "source_binding": spec["source_binding"],

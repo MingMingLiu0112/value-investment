@@ -268,3 +268,20 @@ def test_sealed_bull_citation_transcription_is_bounded_and_read_only(setup, extr
             replay_annual_citation_transcription(service, task_id)
     assert before == {p: p.read_bytes() for p in service._directory(task_id).rglob("*.json")}
     assert len(calls) == 3
+    if extra == 1:
+        from value_investment_agent.application.research.agent_review.operating_cash_continuation import (
+            run_transcribed_cash_continuation,
+        )
+
+        def cash_response(request):
+            calls.append(request)
+            return LLMResponse(_cash(unknown=True), 100, 50, "TEST_ONLY")
+
+        service.test_provider.complete = cash_response
+        followup = run_transcribed_cash_continuation(service, task_id)
+        assert followup["action"] == "no_order" and followup["formal_eligibility"] is False
+        assert followup["economic_review"]["cash_policy_appendix_status"] != "COMPLETE_UNAPPROVED"
+        assert all(path.read_bytes() == data for path, data in before.items())
+        with pytest.raises(ValueError, match="CASH_CONTINUATION_ALREADY_ATTEMPTED"):
+            run_transcribed_cash_continuation(service, task_id)
+        assert len(calls) == 4
