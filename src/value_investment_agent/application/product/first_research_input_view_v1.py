@@ -74,7 +74,7 @@ def read_first_research_input(*,root,symbol,now:datetime):
             shares=share_fact["value"], share_basis=spec["share_basis"],
             period_end=share_fact["period_end"], fact_id=share_id,
             physical_page=share_fact["physical_page"],
-            source_url=share_source["source_url"], source_sha256=share_source["sha256"],
+            source_url=share_source.get("source_url"), source_sha256=share_source["sha256"],
         )
         return dict(base,status="SOURCE_BOUND_FIRST_INPUT_COMPILED",reason=None,
             input_descriptor_sha256=result["input_descriptor_sha256"],

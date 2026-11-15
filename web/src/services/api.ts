@@ -389,7 +389,7 @@ export type FirstResearchInputResponse = {
     period_end: string;
     fact_id: string;
     physical_page: number;
-    source_url: string;
+    source_url: string | null;
     source_sha256: string;
   };
   quote_observation?: {
