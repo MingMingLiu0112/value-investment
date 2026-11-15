@@ -960,8 +960,12 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                         try:
                             annual = replay_v25_annual_e2_candidates(
                                 service=selected, task_id=task_id, now=now)
-                        except (ValueError, OSError, KeyError, TypeError, RuntimeError):
-                            raise error
+                        except LockTimeout:
+                            raise
+                        except (ValueError, OSError, KeyError, TypeError, RuntimeError) as annual_error:
+                            return reply(dict(action="no_order", status="UNASSESSABLE", reason=str(error),
+                                annual_operating_error=str(annual_error),
+                                formal_eligibility=False, condition_price=None))
                         return reply(dict(action="no_order", status="UNASSESSABLE", reason=str(error),
                             annual_operating_status=annual["status"], sealed_annual_candidates=annual,
                             formal_eligibility=False, condition_price=None))
