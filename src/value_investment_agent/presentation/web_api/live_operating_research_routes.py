@@ -274,6 +274,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     from ...application.research.agent_review.operating_horizon_task_v25_canonical import (
         OperatingHorizonTaskService as V25HorizonTaskService, CONTRACT as V25_CONTRACT)
     from ...application.research.agent_review import operating_horizon_sources_v1 as generic_horizon_sources
+    from ...application.research.agent_review import operating_horizon_sources_v2_return_plan as return_plan_sources
     from ...application.research.agent_review import operating_q3_issuer_plan_loader_v8_600519 as q3_v8
     from ...application.research.agent_review import operating_q3_issuer_wc_loader_v9_600519 as wc_v9
     from ...application.research.agent_review import operating_q3_issuer_dividend_split_loader_v9_600519 as dividend_v9
@@ -300,6 +301,11 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
 
     def live_2027_horizon(contract, *, loader_version=None, test_provider=None):
         if contract == V25_CONTRACT:
+            if loader_version == return_plan_sources.VERSION:
+                return V25HorizonTaskService(project,
+                    source_loader=return_plan_sources.build_operating_horizon_source_context,
+                    source_loader_version=return_plan_sources.VERSION,
+                    **({"test_provider": test_provider} if test_provider is not None else {}))
             if loader_version not in (None, generic_horizon_sources.VERSION):
                 raise ValueError("V25_SOURCE_LOADER_VERSION_UNSUPPORTED")
             return V25HorizonTaskService(project, **({"test_provider": test_provider}
@@ -789,7 +795,8 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 and body.get("task_contract") == SPLIT_CONTRACT else
                 parent_wc_horizon() if isinstance(body, dict)
                 and body.get("task_contract") == PARENT_WC_CONTRACT else
-                live_2027_horizon(V25_CONTRACT) if isinstance(body, dict)
+                live_2027_horizon(V25_CONTRACT, loader_version=(return_plan_sources.VERSION
+                    if return_plan_sources.configured_for(project, body.get("symbol")) else None)) if isinstance(body, dict)
                 and body.get("task_contract") == V25_CONTRACT else
                 live_2027_horizon(V24_CONTRACT) if isinstance(body, dict)
                 and body.get("task_contract") == V24_CONTRACT else

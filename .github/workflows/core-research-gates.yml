@@ -567,6 +567,7 @@ jobs:
           tests/test_operating_horizon_task_v24_shared_budget.py
           tests/test_operating_horizon_native_transport_v2.py
           tests/test_operating_horizon_task_v25_canonical.py
+          tests/test_operating_horizon_sources_v2_return_plan.py
           tests/test_parent_cash_reach_anchor_v1.py
           tests/test_operating_horizon_carryover_v13.py
           tests/test_operating_horizon_import_v13.py
