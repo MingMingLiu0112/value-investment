@@ -178,3 +178,48 @@ def test_v25_cash_constraints_require_applicable_primary_anchor(monkeypatch, ter
     else:
         with pytest.raises(ValueError, match="V25_E2_CASH_TERM_REQUIRES_APPLICABLE_ANCHOR:" + term):
             e2._validate_cash_constraint_citations(policy, context)
+
+@pytest.mark.parametrize("unknown", [True, False])
+def test_compact_cash_stage_settles_and_replays(setup, unknown):
+    from value_investment_agent.application.research.agent_review.operating_horizon_task_v25_compact_cash import (
+        CompactCashTaskService,
+    )
+
+    old, source, calls = setup
+    from value_investment_agent.application.research.agent_review import operating_cash_policy_draft_v16_generic as draft
+
+    source["evidence"].append(dict(source["evidence"][0], id="test:cash-fields",
+        field="historical_cash_policy",
+        text="TEST_ONLY dividend parent CFO capex working capital commitment"))
+    payload = json.loads(_cash(unknown=unknown))
+    anchors = draft.candidates(source, source["source_binding"])
+    for path in payload["years"]["2027"]["shareholder_cash_paths"].values():
+        for name, term in path.items():
+            if name in anchors and term["classification"] != "UNKNOWN":
+                term["evidence_ids"] = anchors[name][:1]
+
+    service = CompactCashTaskService(old.root, source_loader=old.source_loader,
+        source_loader_version=old.source_loader_version, test_provider=old.test_provider)
+    annual_provider = service.test_provider.complete
+
+    def complete(request):
+        if len(calls) < 3:
+            return annual_provider(request)
+        calls.append(request)
+        return LLMResponse(json.dumps(payload), 100, 50, "TEST_ONLY")
+
+    service.test_provider.complete = complete
+    created = service.create(symbol="600887", request_key="TEST_V25_COMPACT", years=[2027], now=NOW)
+    task_id = created["task_id"]
+    result = service.run(task_id, now=NOW)
+    if result["status"] == "FAILED":
+        spec, state, _ = service._load(task_id)
+        service._result(spec, state, service._context(spec))
+    assert result["status"] == ("WAITING_EVIDENCE" if unknown else "SUCCEEDED"), result
+    assert result["stage_validated"] == ["bear", "base", "bull", "cash"]
+    assert len(calls) == 4
+    assert "VALIDATED_ANNUAL_CALCULATIONS=" in calls[-1].user
+    assert service.read(task_id)["research_result"] == result["research_result"]
+    assert len(calls) == 4
+    with pytest.raises(ValueError, match="V25_IMPLEMENTATION_OR_LOADER_CHANGED"):
+        old.read(task_id)

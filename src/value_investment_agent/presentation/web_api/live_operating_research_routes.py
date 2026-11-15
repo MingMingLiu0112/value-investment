@@ -312,11 +312,14 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                     return loader.VERSION
         return return_plan_sources.VERSION if return_plan_sources.configured_for(project, symbol) else None
 
-    def live_2027_horizon(contract, *, loader_version=None, test_provider=None):
+    def live_2027_horizon(contract, *, loader_version=None, test_provider=None, compact_cash=False):
+        from ...application.research.agent_review.operating_horizon_task_v25_compact_cash import CompactCashTaskService
         if contract == V25_CONTRACT:
             for loader in (cash_constraint_sources, parent_quarter_sources, return_plan_sources):
                 if loader_version == loader.VERSION:
-                    return V25HorizonTaskService(project,
+                    service_type = (CompactCashTaskService
+                                    if compact_cash and loader is cash_constraint_sources else V25HorizonTaskService)
+                    return service_type(project,
                         source_loader=loader.build_operating_horizon_source_context,
                         source_loader_version=loader.VERSION,
                         **({"test_provider": test_provider} if test_provider is not None else {}))
@@ -437,7 +440,8 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             raise ValueError("V11_SOURCE_LOADER_BINDING_INVALID")
         version = binding.get("version") if binding else None
         return live_2027_horizon(contract, loader_version=version,
-                                 test_provider=test_provider)
+                                 test_provider=test_provider,
+                                 compact_cash=bool(binding and "cash_transport" in binding))
 
     def live_2027_for(task_id):
         # A damaged newer task must never be read through an older store.
@@ -809,7 +813,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 and body.get("task_contract") == SPLIT_CONTRACT else
                 parent_wc_horizon() if isinstance(body, dict)
                 and body.get("task_contract") == PARENT_WC_CONTRACT else
-                live_2027_horizon(V25_CONTRACT, loader_version=selected_v25_loader(body.get("symbol"))) if isinstance(body, dict)
+                live_2027_horizon(V25_CONTRACT, loader_version=selected_v25_loader(body.get("symbol")), compact_cash=True) if isinstance(body, dict)
                 and body.get("task_contract") == V25_CONTRACT else
                 live_2027_horizon(V24_CONTRACT) if isinstance(body, dict)
                 and body.get("task_contract") == V24_CONTRACT else
@@ -860,7 +864,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         try:
             selected = live_2027_for(task_id)
             if selected is not None:
-                if selected.__class__ is V25HorizonTaskService:
+                if isinstance(selected, V25HorizonTaskService):
                     from ...application.research.operating_horizon_cash_policy_e2_v17 import read_v25_cash_policy_e2_input
                     return reply(read_v25_cash_policy_e2_input(root=project, task_id=task_id,
                         now=datetime.now(timezone.utc), service=selected))

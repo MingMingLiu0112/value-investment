@@ -202,7 +202,7 @@ def test_v25_uses_configured_official_plan_source_without_changing_old_reader(ap
     monkeypatch.setattr(plan_source, "configured_for", lambda root, symbol: symbol == "600887")
     seen = []
     def created(self, **kwargs):
-        seen.append(self.source_loader_version)
+        seen.append((self.source_loader_version, type(self).__name__))
         return dict(task_id="rt-" + "b" * 32, symbol=kwargs["symbol"], status="WAITING_EVIDENCE",
             workflow=v25.CONTRACT, action="no_order", formal_eligibility=False,
             condition_price=None)
@@ -211,7 +211,8 @@ def test_v25_uses_configured_official_plan_source_without_changing_old_reader(ap
     response = client.post(BASE + "/horizon-cash-policy-tasks", json=dict(
         symbol="600887", request_key="TEST_V25_PLAN_ROUTE", years=[2027], task_contract=v25.CONTRACT))
     assert response.status_code == 202
-    assert seen == [selected.VERSION]
+    expected_service = "CompactCashTaskService" if source_kind == "constraints" else "OperatingHorizonTaskService"
+    assert seen == [(selected.VERSION, expected_service)]
 
 
 def test_v17_failed_v16_cash_repair_route_keeps_source_and_no_annual_call(api, monkeypatch):
