@@ -2,6 +2,7 @@
 import re
 
 from . import parent_cash_research as legacy
+from ...infrastructure.filings.stock_identity_table_v1 import labelled_security_codes
 
 OPTIONAL_FINANCING = {"borrowings_received_cny", "debt_repaid_cny"}
 
@@ -21,6 +22,26 @@ def observe_parent_cash_rows(*, pages: list[str], symbol: str,
         normalized[index] = cover_pattern.sub(
             lambda match: match["title"] if legacy._compact(match["title"])
                 in {owner + report, owner + report + "全文"} else match[0], page)
+    if labelled_security_codes(pages[:8], symbol=symbol) != {symbol}:
+        raise ValueError("PARENT_CASH_ISSUER_OR_REPORT_MISMATCH")
+    # Adapt the authenticated table code to the older parser's labelled input.
+    # This projection adds no page and does not touch source files or table rows.
+    normalized[0] += f"\n股票代码：{symbol}\n"
+    for index, page in enumerate(normalized):
+        lines = page.splitlines()
+        for pos, line in enumerate(lines):
+            title = legacy._compact(line)
+            if (title == "母公司现金流量表" and pos >= 2
+                    and legacy._compact(lines[pos - 2]) == legacy.PERIODS[periods][1]
+                    and legacy._compact(lines[pos - 1]) in {"编制单位：" + owner, "编制单位:" + owner}):
+                # Same-page title and its original two preceding header lines.
+                lines[pos - 2:pos + 1] = [line, lines[pos - 2], lines[pos - 1]]
+            elif title == "合并所有者权益变动表" and pos:
+                previous = legacy._compact(lines[pos - 1]).replace("：", ":")
+                if previous == "财务报告编制单位:" + owner + legacy.PERIODS[periods][1]:
+                    # The exact next table's header cannot belong to parent cash.
+                    lines[pos - 1:pos + 1] = [line, lines[pos - 1]]
+        normalized[index] = "\n".join(lines)
     spec = dict(symbol=symbol, issuer=issuer_name, periods=list(periods),
                 column_labels=legacy._column_labels(periods))
     rows, unknown = {}, {}
