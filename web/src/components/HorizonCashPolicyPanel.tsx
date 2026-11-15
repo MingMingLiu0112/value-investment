@@ -23,6 +23,14 @@ const V17_CONTRACT = "operating-horizon-task-v17-2027-cash-repair" as const;
 const V18_CONTRACT = "operating-horizon-task-v18-2027-cash-anchors" as const;
 const V25_CONTRACT =
   "operating-horizon-task-v25-full-schema-canonical-2027" as const;
+const CASH_TERM_LABELS = new Map([
+  ["target_payout_ratio", "目标分配比例"],
+  ["accessible_profit_ratio", "母公司资金可达比例"],
+  ["reserve_ratio", "盈余公积计提比例"],
+  ["net_maintenance_cash_cny", "维持性净现金投入"],
+  ["operating_wc_cash_cny", "母公司营运资金现金"],
+  ["commitment_cash_cny", "已承诺现金支出"],
+]);
 const V11_WC_SOURCE = "operating-q3-issuer-wc-loader-v9-600519" as const;
 const V15_DIVIDEND_SOURCE =
   "operating-q3-issuer-dividend-split-loader-v9-600519" as const;
@@ -840,7 +848,7 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
             <Alert
               type="warning"
               message="已读取封存研究，但现金政策尚不能进入估值"
-              description={`尚缺 ${[...new Set(task.cash_policy_completeness.missing_terms.map((row) => row.term))].join("、")}；任务原状态为 ${task.persisted_status || task.status}。这些内容仅供诊断，不代表研究准入或交易资格。`}
+              description={`尚缺 ${[...new Set(task.cash_policy_completeness.missing_terms.map(({ term }) => CASH_TERM_LABELS.get(term) ?? term))].join("、")}；任务原状态为 ${task.persisted_status || task.status}。这些内容仅供诊断，不代表研究准入或交易资格。`}
             />
           )}
           {(["v15", "v16", "v17", "v18"] as CashKind[]).includes(kind) &&

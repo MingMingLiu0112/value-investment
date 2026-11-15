@@ -851,6 +851,23 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 context = selected.source_loader(root=selected.root, symbol=task["symbol"],
                     binding=task["source_binding"], now=datetime.fromisoformat(task["research_as_of"]))
                 task = {**task, "cash_evidence_coverage": describe_cash_evidence(context)}
+                research = task.get("research_result") or {}
+                cash = research.get("cash_result") or research.get("cash_policy_result") or {}
+                years = cash.get("years") or {}
+                if task.get("cash_status") == "SETTLED_VALIDATED" and years:
+                    missing = [
+                        dict(year=year, scenario=scenario, term=term)
+                        for year, row in years.items()
+                        for scenario, path in row["shareholder_cash_paths"].items()
+                        for term, value in path["terms"].items()
+                        if value["classification"] == "UNKNOWN"
+                    ]
+                    accepted = task["status"] == "SUCCEEDED" and not missing
+                    task["cash_policy_completeness"] = dict(
+                        status=("INCOMPLETE_UNKNOWN_TERMS" if missing else
+                                "COMPLETE_UNAPPROVED_RESEARCH" if accepted else "NO_VALIDATED_RESULT"),
+                        missing_terms=missing, source_scope="SEALED_RESPONSE_READ_ONLY",
+                        task_accepted=accepted, formal_eligibility=False, action="no_order")
             return reply(task)
         except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
         except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:

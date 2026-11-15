@@ -1997,7 +1997,8 @@ def test_v16_historical_dividend_task_dispatch_is_separate(tmp_path, monkeypatch
     assert seen == [(dividend.VERSION, "600519")]
 
 
-def test_v25_read_projects_cash_evidence_from_pinned_source(api, monkeypatch):
+@pytest.mark.parametrize("validated_cash", [False, True])
+def test_v25_read_projects_cash_evidence_from_pinned_source(api, monkeypatch, validated_cash):
     from datetime import datetime
     from value_investment_agent.application.research.agent_review import (
         operating_horizon_task_v25_canonical as v25,
@@ -2017,6 +2018,18 @@ def test_v25_read_projects_cash_evidence_from_pinned_source(api, monkeypatch):
     as_of = "2026-11-15T10:00:00+08:00"
     task = dict(workflow=v25.CONTRACT, source_binding=binding, symbol="600887",
                 research_as_of=as_of, status="FAILED", action="no_order")
+    if validated_cash:
+        paths = {
+            scenario: {"terms": {
+                "operating_wc_cash_cny": {"classification": "UNKNOWN"},
+                "target_payout_ratio": {"classification": "FORECAST_ASSUMPTION"},
+            }}
+            for scenario in ("bear", "base", "bull")
+        }
+        task.update(status="WAITING_EVIDENCE", cash_status="SETTLED_VALIDATED",
+                    research_result={"cash_result": {"years": {
+                        "2027": {"shareholder_cash_paths": paths},
+                    }}})
     monkeypatch.setattr(v25.OperatingHorizonTaskService, "_load", lambda *_: None)
     monkeypatch.setattr(v25.OperatingHorizonTaskService, "read", lambda *_: task)
     def replay(**kwargs):
@@ -2033,7 +2046,17 @@ def test_v25_read_projects_cash_evidence_from_pinned_source(api, monkeypatch):
     response = client.get(path)
     assert response.status_code == 200
     payload = response.json()
-    assert payload["status"] == "FAILED"
+    assert payload["status"] == task["status"]
+    if validated_cash:
+        review = payload["cash_policy_completeness"]
+        assert review["status"] == "INCOMPLETE_UNKNOWN_TERMS"
+        assert review["missing_terms"] == [
+            dict(year="2027", scenario=scenario, term="operating_wc_cash_cny")
+            for scenario in ("bear", "base", "bull")
+        ]
+        assert not review["task_accepted"] and not review["formal_eligibility"]
+    else:
+        assert "cash_policy_completeness" not in payload
     coverage = payload["cash_evidence_coverage"]
     assert coverage["conditional_return_plan_ids"] == ["plan"]
     assert coverage["standalone_parent_historical_anchor_ids"]["net_maintenance_cash_cny"] == ["parent_capex"]

@@ -308,3 +308,30 @@ it("starts V18 only from a selected failed V16 and labels unknown cash as unadmi
       .map((row) => row.props.message),
   ).toContain("任务执行完成，股东现金研究尚未准入");
 });
+
+it("shows distinct Chinese explanations for validated cash gaps", () => {
+  button(render("600887"), "D2 股东现金政策研究").props.onClick();
+  hooks.values[1] = {
+    task_id: "rt-" + "f".repeat(32),
+    symbol: "600887",
+    status: "WAITING_EVIDENCE",
+    action: "no_order",
+    formal_eligibility: false,
+    cash_policy_completeness: {
+      status: "INCOMPLETE_UNKNOWN_TERMS",
+      missing_terms: [
+        { year: "2027", scenario: "bear", term: "operating_wc_cash_cny" },
+        { year: "2027", scenario: "base", term: "operating_wc_cash_cny" },
+        { year: "2027", scenario: "base", term: "commitment_cash_cny" },
+      ],
+    },
+  };
+  const alert = nodes(render("600887")).find(
+    ({ props }) =>
+      typeof props.description === "string" &&
+      props.description.includes("母公司营运资金现金"),
+  );
+  expect(alert?.props.description).toContain(
+    "母公司营运资金现金、已承诺现金支出",
+  );
+});
