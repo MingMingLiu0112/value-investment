@@ -62,9 +62,10 @@ def _read_bound_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     if (mode not in {"LIVE_OPERATING", "TEST_ONLY_LIVE_CONTRACT"}
             or task.get("execution_mode") != mode):
         raise ValueError("V10_E2_EXECUTION_MODE_INVALID")
+    expected_validated_stages = expected_stages | {"annual"} if imported else expected_stages
     if (spec.get("task_contract") != contract or spec.get("source_binding") != task.get("source_binding")
             or state.get("stage_responses") != pins or state.get("cash_binding") != task.get("cash_binding")
-            or set(state.get("stage_validated", [])) != expected_stages
+            or set(state.get("stage_validated", [])) != expected_validated_stages
             or (imported and (state.get("stage_intents", {}).get("annual") is not None
                               or "annual" in state.get("stage_responses", {})))):
         raise ValueError("V10_E2_TASK_PINS_CHANGED")

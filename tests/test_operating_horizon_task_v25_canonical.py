@@ -144,3 +144,37 @@ def test_v25_return_plan_applies_reported_fact_provenance(tmp_path, monkeypatch,
     result = e2.read_v25_cash_policy_e2_input(root=tmp_path, task_id="test", now=NOW, service=service)
     assert result["input_manifest"]["source_kind_projection"]["evidence_ids"] == ["filing-row"]
     assert original["evidence"][0]["kind"] == "SOURCE_BOUND_REPORTED_STATEMENT_ROW"
+
+
+@pytest.mark.parametrize(("term", "citations", "accepted"), [
+    ("reserve_ratio", ["charter"], True),
+    ("accessible_profit_ratio", ["charter"], False),
+    ("accessible_profit_ratio", ["charter", "parent-cfo"], True),
+    ("commitment_cash_cny", ["financing"], False),
+    ("commitment_cash_cny", ["financing", "capex-contract"], True),
+    ("commitment_cash_cny", ["financing", "parent-cfo"], False),
+])
+def test_v25_cash_constraints_require_applicable_primary_anchor(monkeypatch, term, citations, accepted):
+    from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v17 as e2
+    from value_investment_agent.application.research.agent_review import (
+        operating_cash_policy_draft_v16_generic as cash,
+    )
+
+    evidence = [
+        {"id": "charter", "scope": "ISSUER_ARTICLES_RULE_TEXT"},
+        {"id": "financing", "scope": "ISSUER_FINANCING_DISCLOSURE"},
+        {"id": "parent-cfo", "scope": "parent"},
+        {"id": "capex-contract", "scope": "parent"},
+    ]
+    context = {"evidence": evidence, "source_binding": {}}
+    monkeypatch.setattr(cash, "candidates", lambda *_: {
+        "reserve_ratio": ["charter"],
+        "accessible_profit_ratio": ["charter", "parent-cfo"],
+        "commitment_cash_cny": ["financing", "capex-contract"],
+    })
+    policy = {"2027": {"base": {"terms": {term: {"evidence_ids": citations}}}}}
+    if accepted:
+        e2._validate_cash_constraint_citations(policy, context)
+    else:
+        with pytest.raises(ValueError, match="V25_E2_CASH_TERM_REQUIRES_APPLICABLE_ANCHOR:" + term):
+            e2._validate_cash_constraint_citations(policy, context)
