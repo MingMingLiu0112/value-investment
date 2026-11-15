@@ -11,6 +11,9 @@ HISTORICAL_ANCHORS = {
 
 def describe_cash_evidence(context):
     """Report historical anchors without turning them into forecast assumptions."""
+    from ..operating_horizon_cash_policy_e2_v17 import cash_constraint_anchor_ids
+
+    anchors = cash_constraint_anchor_ids(context)
     rows = context["evidence"]
     historical = {
         term: [
@@ -26,6 +29,8 @@ def describe_cash_evidence(context):
             if row.get("scope") == "DISCLOSED_CONDITIONAL_RETURN_PLAN"
         ],
         "standalone_parent_historical_anchor_ids": historical,
+        "e2_applicable_anchor_ids": anchors,
+        "e2_terms_without_applicable_anchor": [term for term, ids in anchors.items() if not ids],
         "terms_not_classified": ["operating_wc_cash_cny", "commitment_cash_cny"],
         "action": "no_order",
     }

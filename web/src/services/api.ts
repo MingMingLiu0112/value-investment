@@ -1392,6 +1392,8 @@ export type HorizonCashPolicyTask = {
     conditional_return_plan_ids: string[];
     standalone_parent_historical_anchor_ids: Record<string, string[]>;
     terms_not_classified: string[];
+    e2_applicable_anchor_ids?: Record<string, string[]>;
+    e2_terms_without_applicable_anchor?: string[];
   };
   cash_status?: string;
   research_result?: Record<string, unknown> | null;

@@ -181,6 +181,13 @@ def test_v25_cash_constraints_require_applicable_primary_anchor(monkeypatch, ter
         "commitment_cash_cny": ["financing", "fund-bound", "capex-contract", "historical-capex"],
         "operating_wc_cash_cny": ["parent-cfo", "working-capital"],
     })
+    from value_investment_agent.application.research.agent_review.operating_cash_evidence_coverage import (
+        describe_cash_evidence,
+    )
+
+    coverage = describe_cash_evidence(context)
+    assert coverage["e2_applicable_anchor_ids"]["operating_wc_cash_cny"] == ["working-capital"]
+    assert coverage["e2_applicable_anchor_ids"]["commitment_cash_cny"] == ["capex-contract"]
     policy = {"2027": {"base": {"terms": {term: {"evidence_ids": citations}}}}}
     if accepted:
         e2._validate_cash_constraint_citations(policy, context)

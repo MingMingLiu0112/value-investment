@@ -822,10 +822,21 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                   </li>
                 ))}
               </ul>
-              <p>
-                尚未自动分类：
-                {task.cash_evidence_coverage.terms_not_classified.join("、")}。
-              </p>
+              {task.cash_evidence_coverage.e2_applicable_anchor_ids && (
+                <>
+                  <p>以下是当前来源中可引用的材料，现金政策仍须逐情景核验。</p>
+                  <ul>
+                    {Object.entries(
+                      task.cash_evidence_coverage.e2_applicable_anchor_ids,
+                    ).map(([term, ids]) => (
+                      <li key={term}>
+                        {CASH_TERM_LABELS.get(term) || term}：
+                        {ids.join("、") || "缺少可交给估值编译的证据"}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </details>
           )}
           {task.persisted_status && task.persisted_status !== task.status && (

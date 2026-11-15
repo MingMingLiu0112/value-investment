@@ -2045,6 +2045,14 @@ def test_v25_read_projects_cash_evidence_from_pinned_source(api, monkeypatch, va
             dict(id="group_capex", field="parent_capex", scope="consolidated"),
             dict(id="plan", scope="DISCLOSED_CONDITIONAL_RETURN_PLAN"),
         ])
+    from value_investment_agent.application.research.agent_review import (
+        operating_cash_policy_draft_v16_generic as cash,
+    )
+
+    monkeypatch.setattr(cash, "candidates", lambda *_: {
+        "operating_wc_cash_cny": [],
+        "net_maintenance_cash_cny": ["parent_capex"],
+    })
     monkeypatch.setattr(source, "build_operating_horizon_source_context", replay)
     assert client.get(path).status_code == 401
     unlock(client, secret)
@@ -2065,6 +2073,8 @@ def test_v25_read_projects_cash_evidence_from_pinned_source(api, monkeypatch, va
     coverage = payload["cash_evidence_coverage"]
     assert coverage["conditional_return_plan_ids"] == ["plan"]
     assert coverage["standalone_parent_historical_anchor_ids"]["net_maintenance_cash_cny"] == ["parent_capex"]
+    assert coverage["e2_terms_without_applicable_anchor"] == ["operating_wc_cash_cny"]
+    assert coverage["e2_applicable_anchor_ids"]["net_maintenance_cash_cny"] == ["parent_capex"]
     assert "cash_evidence_coverage" not in task
     assert data.provider_calls == []
 
