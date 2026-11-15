@@ -461,6 +461,14 @@ def test_parent_wc_loader_keeps_e2_eligible_anchor_in_bounded_cash_request(setup
     assert eligible == [verified["id"]]
     assert terms["operating_wc_cash_cny"][0] == verified["id"]
     assert len(terms["operating_wc_cash_cny"]) == 8
+
+    from value_investment_agent.application.research.agent_review.operating_cash_term_evidence import (
+        build_cash_term_evidence,
+    )
+
+    guide = build_cash_term_evidence(source, binding)["operating_wc_cash_cny"]
+    assert guide["validator_candidate_ids"] == [verified["id"]]
+    assert guide["evidence"][0]["id"] == verified["id"]
     assert loader.build_operating_horizon_source_context(
         root=service.root, symbol="600887", now=NOW, binding=binding,
     ) == source

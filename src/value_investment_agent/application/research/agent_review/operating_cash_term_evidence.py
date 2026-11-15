@@ -26,9 +26,9 @@ TERM_INPUTS = {
         "Use actual historical gross payments to test sensitivity; separate growth and any noncash offsets. A historical gross payment cannot identify future net maintenance.",
     ),
     "operating_wc_cash_cny": (
-        ("parent_customer_cash", "parent_supplier_cash", "parent_cfo"),
+        ("working_capital_cash_component", "parent_customer_cash", "parent_supplier_cash", "parent_cfo"),
         ("ISSUER_PARENT_STANDALONE_BALANCE_PROXY",),
-        "Compare same-length historical parent receipts and payments. Balance movements are a cross-check, never the cash-component forecast.",
+        "Anchor the conditional forecast to verified standalone parent working-capital cash adjustments. Check same-length receipts, payments and balance movements separately; those proxies are not cash-component anchors.",
     ),
     "commitment_cash_cny": (
         (), ("ISSUER_PARENT_UNDATED_COMMITMENT_BOUND",),
@@ -40,7 +40,11 @@ TYPED_SCOPES = {"parent", "ISSUER_PARENT_STANDALONE", "consolidated_parent"}
 
 def build_cash_term_evidence(context, source_binding):
     """Keep typed parent fields ahead of broad text matches from other scopes."""
+    from ..operating_horizon_cash_policy_e2_v17 import cash_constraint_anchor_ids
+
     eligible = candidates(context, source_binding)
+    wc_term = "operating_wc_cash_cny"
+    eligible[wc_term] = cash_constraint_anchor_ids(context)[wc_term]
     evidence = context["evidence"]
     output = {}
     for term, (fields, scopes, mechanism) in TERM_INPUTS.items():
@@ -49,6 +53,9 @@ def build_cash_term_evidence(context, source_binding):
                  and row.get("unit") == "CNY")
                 or row.get("scope") in scopes]
         rows.sort(key=lambda row: row["period"], reverse=True)
+        if term == wc_term:
+            anchors = set(eligible[term])
+            rows.sort(key=lambda row: row["id"] not in anchors)
         output[term] = {
             "mechanism_to_test": mechanism,
             "validator_candidate_ids": [row["id"] for row in rows[:12] if row["id"] in eligible[term]],
