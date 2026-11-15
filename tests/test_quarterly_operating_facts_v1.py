@@ -144,3 +144,28 @@ def test_real_report_and_original_two_period_counterexamples(real_pages):
             changed[0] += "\n2025年第三季度报告"
         with pytest.raises(ValueError, match="QUARTERLY_TITLE"):
             parse(changed, "000568", basis)
+
+
+
+def test_explicit_quarterly_table_retains_source_rows_and_rejects_reversed_columns():
+    from value_investment_agent.infrastructure.filings.quarterly_operating_facts_explicit_columns import (
+        parse_explicit_columns_quarterly_facts,
+    )
+
+    original = sample()
+    headings = ["2、合并年初到报告期末利润表", "3、合并年初到报告期末现金流量表"]
+    labels = ["合并利润表", "合并现金流量表"]
+    columns = "项目 2026 年前三季度（1-9 月） 2025 年前三季度（1-9 月）"
+    table_header = "\n2026 年 1—9 月\n编制单位：测试股份有限公司\n单位：元 币种：人民币 审计类型：未经审计\n"
+    pages = original[:2] + [
+        page.replace(heading + " 单位：元 项目本期发生额上期发生额", label + table_header + columns + "\n")
+        for page, heading, label in zip(original[2:], headings, labels, strict=True)
+    ] + ["母公司资产负债表\n"]
+    basis = {"currency": "CNY", "evidence_refs": ["TEST_ONLY"]}
+    result = parse_explicit_columns_quarterly_facts(pages, symbol="123456", currency_basis=basis)
+    assert set(result["fields"]) == set(FIELDS) | set(CASH_FIELDS)
+    for row in result["fields"].values():
+        assert row["excerpt"] in pages[row["physical_page"] - 1]
+    pages[3] = pages[3].replace(columns, "项目 2025 年前三季度（1-9 月） 2026 年前三季度（1-9 月）")
+    with pytest.raises(ValueError, match="EXPLICIT_QUARTERLY_YTD_COLUMNS_NOT_VERIFIED"):
+        parse_explicit_columns_quarterly_facts(pages, symbol="123456", currency_basis=basis)
