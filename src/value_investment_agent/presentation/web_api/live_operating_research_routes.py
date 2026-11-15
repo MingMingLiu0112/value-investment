@@ -328,7 +328,8 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                         **({"test_provider": test_provider} if test_provider is not None else {}))
             if loader_version not in (None, generic_horizon_sources.VERSION):
                 raise ValueError("V25_SOURCE_LOADER_VERSION_UNSUPPORTED")
-            return V25HorizonTaskService(project, **({"test_provider": test_provider}
+            service_type = CompactCashTaskService if compact_cash else V25HorizonTaskService
+            return service_type(project, **({"test_provider": test_provider}
                 if test_provider is not None else {}))
         if contract == V24_CONTRACT:
             if loader_version not in (None, generic_horizon_sources.VERSION):

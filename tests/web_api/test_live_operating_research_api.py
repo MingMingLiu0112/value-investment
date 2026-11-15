@@ -2067,3 +2067,28 @@ def test_v25_read_projects_cash_evidence_from_pinned_source(api, monkeypatch, va
     assert coverage["standalone_parent_historical_anchor_ids"]["net_maintenance_cash_cny"] == ["parent_capex"]
     assert "cash_evidence_coverage" not in task
     assert data.provider_calls == []
+
+
+def test_v25_base_source_creates_compact_cash_task(api, monkeypatch):
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_sources_v1 as source,
+        operating_horizon_task_v25_canonical as v25,
+        operating_horizon_task_v25_compact_cash as compact,
+    )
+
+    client, secret, _, _ = api
+    unlock(client, secret)
+    seen = []
+
+    def create(self, **kwargs):
+        binding = self._loader_binding()
+        seen.append((kwargs["symbol"], binding["version"], bool(binding.get("cash_transport"))))
+        return {"status": "WAITING_EVIDENCE", "action": "no_order"}
+
+    monkeypatch.setattr(compact.CompactCashTaskService, "create", create)
+    response = client.post(BASE + "/horizon-cash-policy-tasks", json={
+        "symbol": "000568", "years": [2027], "request_key": "TEST_ONLY_COMPACT_BASE",
+        "task_contract": v25.CONTRACT,
+    })
+    assert response.status_code == 202, response.json()
+    assert seen == [("000568", source.VERSION, True)]
