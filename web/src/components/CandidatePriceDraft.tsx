@@ -1016,12 +1016,29 @@ function OpeningActionChain({ value }: { value: unknown }) {
   const links = Array.isArray(value.distribution_links)
     ? value.distribution_links.filter(object)
     : [];
+  const purchases = Array.isArray(value.purchase_links)
+    ? value.purchase_links.filter(object)
+    : [];
   const pending = Array.isArray(value.outstanding_authorizations)
     ? value.outstanding_authorizations.filter(object)
     : [];
   return (
     <section aria-label="已知期初行动对账">
       <h6>已知期初行动对账 · 不等于当前完整股本链</h6>
+      {purchases.map((row, i) => (
+        <div key={i}>
+          <p>
+            截至 {text(row.purchase_through)}，累计回购{" "}
+            {text(row.purchased_shares)} 股，支付 {text(row.paid_cny)} 元。
+            {row.status === "MATCHED_COMPLETED_BEFORE_VALUATION"
+              ? "已与后续原件核对，确认该笔注销在估值日前完成。"
+              : "注销尚未从后续原件唯一确认。"}
+          </p>
+          <AlignmentEvidence
+            value={[row.purchase_binding, row.cancellation_binding]}
+          />
+        </div>
+      ))}
       {confirmations.map((row, i) => (
         <p key={i}>
           原件确认注销日期：{text(row.effective_date)}； 注销{" "}
@@ -1051,9 +1068,10 @@ function OpeningActionChain({ value }: { value: unknown }) {
           </p>
         </div>
       ))}
-      {!confirmations.length && !links.length && !pending.length && (
-        <p>尚无受支持原件可以完成该项对账。</p>
-      )}
+      {!purchases.length &&
+        !confirmations.length &&
+        !links.length &&
+        !pending.length && <p>尚无受支持原件可以完成该项对账。</p>}
     </section>
   );
 }

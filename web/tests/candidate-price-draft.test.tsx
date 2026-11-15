@@ -877,3 +877,39 @@ it("shows consumed model fields and never turns event price change into profit f
   expect(html).toContain("原件第 8 页。");
   expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
 });
+
+it.each([
+  [
+    "MATCHED_COMPLETED_BEFORE_VALUATION",
+    "已与后续原件核对，确认该笔注销在估值日前完成。",
+  ],
+  ["CANCELLATION_NOT_UNIQUELY_RECONCILED", "注销尚未从后续原件唯一确认。"],
+])(
+  "renders historical purchase linkage %s and preserves the current gate",
+  (status, expected) => {
+    const review = alignmentFixture();
+    const distribution = review.conditional_price!.alignment!.checks!.find(
+      (check) => check.id === "distributions",
+    )!;
+    distribution.details = {
+      opening_action_chain: {
+        purchase_links: [
+          {
+            status,
+            purchase_through: "2026-05-27",
+            purchased_shares: 2188614,
+            paid_cny: "2999933749.57",
+            purchase_binding: {
+              path: "runtime/purchase.pdf",
+              sha256: "a".repeat(64),
+            },
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+    expect(html).toContain(expected);
+    expect(html).toContain("runtime/purchase.pdf");
+    expect(candidateResearchComparisonMatches(review)).toBe(false);
+  },
+);
