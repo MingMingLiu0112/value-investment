@@ -1,10 +1,11 @@
 """Bounded original-announcement terms; not a materiality or capital gate.
 
-Only the three explicit prose layouts below are supported. Callers own PDF/hash
+Only bounded, explicitly recognized prose layouts are supported. Callers own PDF/hash
 verification and must compare published_date with the source index/URL date.
 No title-only inference, model recalculation, completion or approval is produced.
 """
 
+from calendar import monthrange
 from datetime import date
 from decimal import Decimal
 import re
@@ -285,6 +286,46 @@ def _accounting(body, issuer, published):
     }
 
 
+def _buyback_progress(body, published):
+    quantity = r"[1-9][0-9]{0,2}(?:,[0-9]{3})*|[1-9][0-9]*"
+    amount = r"[0-9]+(?:,[0-9]{3})*\.[0-9]{2}"
+    summary_rows = list(re.finditer(
+        rf"累计已回购股数(?P<shares>{quantity})股累计已回购股数占总股本比例"
+        rf"(?P<ratio>{_MONEY})%累计已回购金额(?P<total>{amount})元", body))
+    _, boundary, progress = body.partition("二、回购股份的进展情况")
+    progress, ending, _ = progress.partition("三、其他事项")
+    rows = list(re.finditer(
+        rf"截至(?P<year>20[0-9]{{2}})年(?P<month>[0-9]{{1,2}})月底,公司已累计回购股份"
+        rf"(?P<shares>{quantity})股,占公司总股本的比例为(?P<ratio>{_MONEY})%,"
+        rf"购买的最高价为(?P<high>{_MONEY})元/股、最低价为(?P<low>{_MONEY})元/股,"
+        rf"已支付的总金额为(?P<total>{amount})元人民币\(不含交易费用\)。", progress))
+    if not boundary or not ending or len(summary_rows) != 1 or len(rows) != 1:
+        _reject("BUYBACK_PROGRESS_TERMS_MISSING_OR_AMBIGUOUS")
+    row = rows[0]
+    number = lambda match, key: Decimal(match[key].replace(",", ""))
+    shares, ratio, total = (number(row, key) for key in ("shares", "ratio", "total"))
+    if any(number(summary_rows[0], key) != number(row, key) for key in ("shares", "ratio", "total")):
+        _reject("BUYBACK_PROGRESS_SUMMARY_MISMATCH")
+    low, high = number(row, "low"), number(row, "high")
+    year, month = int(row["year"]), int(row["month"])
+    if not 1 <= month <= 12:
+        _reject("INVALID_DATE")
+    through = date(year, month, monthrange(year, month)[1]).isoformat()
+    if through >= published or not 0 < ratio <= 100 or not 0 < low <= total / shares <= high:
+        _reject("BUYBACK_PROGRESS_ARITHMETIC_OR_DATE_INVALID")
+    return dict(
+        event_type="REPORTED_BUYBACK_PROGRESS", effective_date=None,
+        terms=dict(through=through, cumulative_purchased_shares=int(shares),
+                   cumulative_paid_cny=str(total), disclosed_share_percent=str(ratio),
+                   completed_cancellation_shares=None),
+        affected_model_fields=["cash", "ordinary_shares"],
+        summary=f"截至{through}累计购回{int(shares)}股，已支付{total}元（不含交易费用）。",
+        implication="核对累计金额的期间增量及后续注销生效公告，当前资料不改变估值股数。",
+        limitations=["购回进展不能证明注销生效；累计数不能重复计为各期现金支出。"],
+        _evidence=[(summary_rows[0][0], "buyback_summary"), (row[0], "buyback_progress")],
+    )
+
+
 def parse_operating_event_terms(pages, *, symbol):
     """Extract bounded source terms; ValueError rejects unsupported prose.
 
@@ -301,8 +342,8 @@ def parse_operating_event_terms(pages, *, symbol):
         r"证券简称:(?P<short_b>[^:]{1,30})证券代码:(?P<code_b>[0-9]{6})编号:临)"
         r"(?P<year>20[0-9]{2})-(?P<number>[0-9]{3})"
         r"(?P<issuer>[\u4e00-\u9fffA-Za-z()]{2,80}股份有限公司)"
-        r"(?P<title>重大事项公告|" + _MEETING + r"决议公告|关于会计政策变更的公告)"
-        + re.escape(_GUARANTEE) + r"(?P<body>.+)特此公告。"
+        r"(?P<title>重大事项公告|" + _MEETING + r"决议公告|关于会计政策变更的公告|(?P<buyback>关于股份回购进展公告))"
+        + re.escape(_GUARANTEE) + r"(?P<body>.+)特此公告(?(buyback)。?|。)"
         r"(?P=issuer)董事会" + _DATE.format(name="published"), text,
     )
     if (header["code_a"] or header["code_b"]) != symbol or len(re.findall(r"证券代码:", text)) != 1:
@@ -315,6 +356,8 @@ def parse_operating_event_terms(pages, *, symbol):
         result = _price(body, published)
     elif title == "关于会计政策变更的公告":
         result = _accounting(body, issuer, published)
+    elif header["buyback"]:
+        result = _buyback_progress(body, published)
     else:
         result = _board(body, title, issuer, published)
     heading = text.split(unicodedata.normalize("NFKC", _GUARANTEE), 1)[0]

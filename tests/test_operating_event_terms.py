@@ -237,3 +237,26 @@ def test_asserted_passage_requires_supported_unanimous_votes(votes):
     assert "议案获得通过" in pages[1]
     with pytest.raises(ValueError, match="BOARD_UNANIMOUS_PASSAGE_NOT_VERIFIED"):
         parse(pages)
+
+def test_buyback_progress_is_cash_observation_and_does_not_change_shares():
+    page = (
+        "证券代码：000777 证券简称：示例 公告编号：临2026-090 "
+        "示例股份有限公司关于股份回购进展公告"
+        "本公司董事会及全体董事保证本公告内容不存在任何虚假记载、误导性陈述或者"
+        "重大遗漏，并对其内容的真实性、准确性和完整性承担法律责任。"
+        "累计已回购股数1,000股累计已回购股数占总股本比例0.1%累计已回购金额22,000.00元"
+        "二、回购股份的进展情况截至2026年10月底，公司已累计回购股份1,000股，"
+        "占公司总股本的比例为0.1%，购买的最高价为25元/股、最低价为20元/股，"
+        "已支付的总金额为22,000.00元人民币（不含交易费用）。"
+        "三、其他事项特此公告示例股份有限公司董事会2026年11月3日"
+    )
+    result = parse([page])
+    assert result["event_type"] == "REPORTED_BUYBACK_PROGRESS"
+    assert result["effective_date"] is None
+    assert result["terms"] == dict(through="2026-10-31", cumulative_purchased_shares=1000,
+        cumulative_paid_cny="22000.00", disclosed_share_percent="0.1",
+        completed_cancellation_shares=None)
+    with pytest.raises(ValueError, match="SUMMARY_MISMATCH"):
+        parse([page.replace("公司已累计回购股份1,000股", "公司已累计回购股份2,000股")])
+    with pytest.raises(ValueError, match="ARITHMETIC_OR_DATE_INVALID"):
+        parse([page.replace("22,000.00", "30,000.00")])
