@@ -1134,6 +1134,18 @@ function CandidateEventImpact({ value }: { value: unknown }) {
         const changes = Array.isArray(item.derived_price_changes)
           ? item.derived_price_changes.filter(object)
           : [];
+        const financialChanges = Array.isArray(item.derived_financial_changes)
+          ? item.derived_financial_changes.filter(
+              (change) =>
+                object(change) &&
+                change.classification ===
+                  "REPORTED_YTD_COMPARISON_NOT_FORECAST_CHANGE" &&
+                ["revenue_cny", "parent_profit_cny"].includes(
+                  String(change.field),
+                ) &&
+                change.unit === "CNY",
+            )
+          : [];
         const values = Array.isArray(item.consumed_model_values)
           ? item.consumed_model_values.filter(object)
           : [];
@@ -1152,6 +1164,20 @@ function CandidateEventImpact({ value }: { value: unknown }) {
                   ? (Number(change.relative_change) * 100).toFixed(2) + "%"
                   : text(change.relative_change)}
                 。 不是整体收入或利润增幅。
+              </p>
+            ))}
+            {financialChanges.map((change, key) => (
+              <p key={key}>
+                {change.field === "revenue_cny" ? "合并营业收入" : "归母净利润"}
+                ：{text(change.period_start)} 至 {text(change.period_end)}累计
+                {text(change.current)} 元；去年同期（
+                {text(change.comparative_start)}至{" "}
+                {text(change.comparative_end)}）{text(change.comparative)} 元
+                {numberText(change.relative_change)
+                  ? `，同比 ${(Number(change.relative_change) * 100).toFixed(2)}%`
+                  : ""}
+                。原件第 {text(change.physical_page)}{" "}
+                页。累计数据用于复核原预测。
               </p>
             ))}
             <p>
