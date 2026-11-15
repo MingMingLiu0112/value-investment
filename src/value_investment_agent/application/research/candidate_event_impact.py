@@ -105,6 +105,10 @@ def build_candidate_event_impact(analysis, events):
                 missing = ["估值截止日前同计划累计付款及原模型是否已计入",
                            "报价日前回购增量与实际现金限制",
                            "注销生效文件和报价日精确普通股股数"]
+            elif kind == "PARENT_SUBSIDIARY_GUARANTEE":
+                judgement = "CONTINGENT_PARENT_GUARANTEE_REVIEW_REQUIRED"
+                rationale = parsed["summary"] + " 担保上限不能直接视为新增债务或现金支出。"
+                missing = ["贷款提用及保证范围是否与原模型负债重叠", "是否存在代偿、现金限制或后续义务变化"]
             elif kind == "ACCOUNTING_POLICY_IMPACT_STATEMENT":
                 judgement = "ISSUER_NO_MATERIAL_IMPACT_REQUIRES_REVIEW"
                 rationale = "发行人的无重大影响表述作为证据保留，不能替代对当前利润、权益和现金口径的独立复核。"

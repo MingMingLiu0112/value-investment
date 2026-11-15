@@ -683,7 +683,12 @@ def _operating_events(analysis, windows, now, read, *, parser=None):
                             financial_update=update, affected_model_fields=["revenue_cny", "parent_profit_cny"],
                             limitations=["前三季度累计披露，不视为单季、全年或预测。"], action="no_order")
                     else:
-                        terms = parser(pages, symbol=analysis["symbol"])
+                        from ...infrastructure.filings.parent_guarantee_event import TITLE, parse_parent_guarantee_event
+
+                        if allow_quarterly_report and event["title"].endswith(TITLE):
+                            terms = parse_parent_guarantee_event(pages, symbol=analysis["symbol"])
+                        else:
+                            terms = parser(pages, symbol=analysis["symbol"])
                     if terms["published_date"] != published.isoformat():
                         raise ValueError("OPERATING_EVENT_DOCUMENT_DATE_MISMATCH")
                     facts.append(dict(binding=binding, source_url=source["source_url"],
