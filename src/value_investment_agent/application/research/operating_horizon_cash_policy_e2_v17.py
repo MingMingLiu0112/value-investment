@@ -16,14 +16,15 @@ from .agent_review.operating_horizon_sources_v6_industry_cost import VERSION as 
 VERSION = "operating-horizon-cash-policy-e2-input-v17"
 
 
-def _validate_cash_constraint_citations(policy_years, context):
-    """Require a term-specific anchor apart from supplemental funding constraints."""
+def missing_cash_constraint_citations(policy_years, context):
+    """Identify terms whose cited sources cannot anchor a condition for E2."""
     from .agent_review.operating_cash_policy_draft_v16_generic import candidates
 
     scopes = {row["id"]: row.get("scope") for row in context["evidence"]}
     eligible_ids = candidates(context, context["source_binding"])
-    for scenarios in policy_years.values():
-        for path in scenarios.values():
+    missing = []
+    for year, scenarios in policy_years.items():
+        for scenario, path in scenarios.items():
             for term_name, term in path["terms"].items():
                 anchors = {
                     evidence_id
@@ -36,7 +37,14 @@ def _validate_cash_constraint_citations(policy_years, context):
                          or term_name == "reserve_ratio")
                 }
                 if anchors.isdisjoint(term["evidence_ids"]):
-                    raise ValueError("V25_E2_CASH_TERM_REQUIRES_APPLICABLE_ANCHOR:" + term_name)
+                    missing.append(dict(year=year, scenario=scenario, term=term_name))
+    return missing
+
+
+def _validate_cash_constraint_citations(policy_years, context):
+    missing = missing_cash_constraint_citations(policy_years, context)
+    if missing:
+        raise ValueError("V25_E2_CASH_TERM_REQUIRES_APPLICABLE_ANCHOR:" + missing[0]["term"])
 
 
 def read_v25_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,

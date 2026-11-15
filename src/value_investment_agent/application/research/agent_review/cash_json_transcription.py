@@ -73,6 +73,11 @@ def replay_guided_cash_diagnostic(service, task_id):
     generated = datetime.fromisoformat(packet["generated_at"])
     diagnostic = validate_response(corrected, context, spec["source_binding"], generated)
     scenarios = diagnostic["years"]["2027"]["shareholder_cash_paths"]
+    from ..operating_horizon_cash_policy_e2_v17 import missing_cash_constraint_citations
+    quantified = {name: {"terms": {key: term for key, term in path["terms"].items()
+                                   if term["classification"] == "FORECAST_ASSUMPTION"}}
+                  for name, path in scenarios.items()}
+    missing_anchors = missing_cash_constraint_citations({"2027": quantified}, context)
     return {
         "version": "guided-cash-diagnostic-v1", "task_id": task_id,
         "original_task_status": state["status"], "original_cash_status": result["status"],
@@ -81,6 +86,7 @@ def replay_guided_cash_diagnostic(service, task_id):
         "unknown_terms": {name: [key for key, value in path["terms"].items()
                                  if value["classification"] == "UNKNOWN"]
                           for name, path in scenarios.items()},
+        "missing_e2_anchors": missing_anchors,
         "observed_cost_cny": cost, "normalized_response_sha256": _hash(corrected.encode("utf-8")),
         "e2_eligible": False, "formal_eligibility": False, "action": "no_order",
     }

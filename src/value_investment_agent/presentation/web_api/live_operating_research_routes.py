@@ -886,6 +886,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                                 missing_terms=[dict(year="2027", scenario=scenario, term=term)
                                     for scenario, terms in diagnostic["unknown_terms"].items()
                                     for term in terms],
+                                missing_e2_anchors=diagnostic["missing_e2_anchors"],
                                 source_scope="SEALED_CONTINUATION_DIAGNOSTIC_ONLY",
                                 task_accepted=False, formal_eligibility=False, action="no_order")
             return reply(task)

@@ -851,6 +851,13 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
               description={`尚缺 ${[...new Set(task.cash_policy_completeness.missing_terms.map(({ term }) => CASH_TERM_LABELS.get(term) ?? term))].join("、")}；任务原状态为 ${task.persisted_status || task.status}。这些内容仅供诊断，不代表研究准入或交易资格。`}
             />
           )}
+          {!!task.cash_policy_completeness?.missing_e2_anchors?.length && (
+            <Alert
+              type="warning"
+              message="部分已量化假设缺少 E2 可采用的依据"
+              description={`${[...new Set(task.cash_policy_completeness.missing_e2_anchors.map(({ term }) => CASH_TERM_LABELS.get(term) ?? term))].join("、")}。模型虽提出条件数值，但现有引文不足以支持该现金假设，E2 仍不会接收。`}
+            />
+          )}
           {(["v15", "v16", "v17", "v18"] as CashKind[]).includes(kind) &&
             v15CashIncomplete(task) && (
               <Alert
