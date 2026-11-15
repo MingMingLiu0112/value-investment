@@ -105,6 +105,10 @@ def build_candidate_event_impact(analysis, events):
                 missing = ["估值截止日前同计划累计付款及原模型是否已计入",
                            "报价日前回购增量与实际现金限制",
                            "注销生效文件和报价日精确普通股股数"]
+            elif kind == "REPORTED_Q3_OPERATING_BREAKDOWN":
+                judgement = "OPERATING_MIX_REVIEW_REQUIRED"
+                rationale = "来源披露本年产品、渠道和地区的主营收入结构。需核对与原预测口径及持续性，不能据此推断同比或量价。"
+                missing = ["对应口径的上年同期及量价分拆", "与原模型营业收入相同范围的经营基线"]
             elif kind == "PARENT_SUBSIDIARY_GUARANTEE":
                 judgement = "CONTINGENT_PARENT_GUARANTEE_REVIEW_REQUIRED"
                 rationale = parsed["summary"] + " 担保上限不能直接视为新增债务或现金支出。"

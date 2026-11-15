@@ -685,7 +685,13 @@ def _operating_events(analysis, windows, now, read, *, parser=None):
                     else:
                         from ...infrastructure.filings.parent_guarantee_event import TITLE, parse_parent_guarantee_event
 
-                        if allow_quarterly_report and event["title"].endswith(TITLE):
+                        from ...infrastructure.filings.quarter_operating_breakdown import (
+                            TITLE_PATTERN, parse_quarter_operating_breakdown,
+                        )
+
+                        if allow_quarterly_report and re.search(TITLE_PATTERN + "$", event["title"]):
+                            terms = parse_quarter_operating_breakdown(pages, symbol=analysis["symbol"])
+                        elif allow_quarterly_report and event["title"].endswith(TITLE):
                             terms = parse_parent_guarantee_event(pages, symbol=analysis["symbol"])
                         else:
                             terms = parser(pages, symbol=analysis["symbol"])
