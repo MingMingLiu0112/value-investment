@@ -382,6 +382,16 @@ export type FirstResearchInputResponse = {
   main_range_adopted: false;
   main_valuation_range: null;
   current_price: null;
+  input_descriptor_sha256?: string;
+  opening_capital?: {
+    shares: string;
+    share_basis: string;
+    period_end: string;
+    fact_id: string;
+    physical_page: number;
+    source_url: string;
+    source_sha256: string;
+  };
   quote_observation?: {
     status: string;
     quote_date: string | null;

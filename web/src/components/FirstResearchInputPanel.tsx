@@ -262,6 +262,25 @@ export function FirstResearchInputView({
           )}
         </section>
       )}
+      {data.opening_capital && (
+        <p aria-label="已消费的估值基准股本">
+          估值基准股本：{data.opening_capital.shares} 股（
+          {data.opening_capital.period_end}）。此股数用于复算历史条件估值。
+          当前股本连续性仍需核验。
+          {officialUrl(data.opening_capital.source_url) && (
+            <>
+              {" "}
+              <a
+                href={officialUrl(data.opening_capital.source_url)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                原件第 {data.opening_capital.physical_page} 页
+              </a>
+            </>
+          )}
+        </p>
+      )}
       {data.quote_observation && (
         <p aria-label="独立行情观察">
           行情观察：{data.quote_observation.quote_date || "未登记日期"}

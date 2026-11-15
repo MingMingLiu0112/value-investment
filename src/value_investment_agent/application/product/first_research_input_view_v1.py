@@ -65,7 +65,20 @@ def read_first_research_input(*,root,symbol,now:datetime):
         if (result["research_case"]["symbol"]!=symbol or result["action"]!="no_order"
                 or result["formal_eligibility"] is not False or result["main_range_adopted"] is not False):
             raise ValueError("First-input result changes formal research boundaries")
+        # Reuse the exact fact consumed by the cold compiler, not the latest
+        # reported share count or an independently rounded balance-sheet line.
+        share_id=spec["capital_bindings"]["ordinary_shares"]
+        share_fact,=(row for row in native["facts"] if row["id"]==share_id)
+        share_source,=(row for row in native["sources"] if row["id"]==share_fact["source_id"])
+        opening_capital=dict(
+            shares=share_fact["value"], share_basis=spec["share_basis"],
+            period_end=share_fact["period_end"], fact_id=share_id,
+            physical_page=share_fact["physical_page"],
+            source_url=share_source["source_url"], source_sha256=share_source["sha256"],
+        )
         return dict(base,status="SOURCE_BOUND_FIRST_INPUT_COMPILED",reason=None,
+            input_descriptor_sha256=result["input_descriptor_sha256"],
+            opening_capital=opening_capital,
             input_fingerprint=result["input_fingerprint"],receipt_binding=ref,
             financial_basis=result["research_case"]["financial_period"],
             research_as_of=result["research_case"]["as_of"],

@@ -55,6 +55,11 @@ def test_real_source_environment_acceptance(monkeypatch):
     public = read_first_research_input(root=root, symbol='000568', now=now)
     assert public['status'] == 'SOURCE_BOUND_FIRST_INPUT_COMPILED'
     assert public['native_fact_count'] == 84
+    opening = public['opening_capital']
+    assert opening['shares'] == '1471901463'
+    assert opening['period_end'] == public['financial_basis'] == '2026-06-30'
+    assert opening['physical_page'] == 30 and opening['source_url'].endswith('/1225501255.PDF')
+    assert public['input_descriptor_sha256'] == cold['input_descriptor_sha256']
     assert public['main_range_adopted'] is False and public['main_valuation_range'] is None
     assert public['current_price'] is None and public['condition_price'] is None
 
