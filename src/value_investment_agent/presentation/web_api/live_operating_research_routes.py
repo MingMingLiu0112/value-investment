@@ -318,7 +318,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 if not isinstance(selection, dict):
                     raise ValueError("V25_SOURCE_SELECTION_INVALID")
                 if symbol in selection:
-                    if loader in (compact_sources, parent_income_sources, parent_wc_sources) and selection[symbol] is not True:
+                    if loader in (compact_sources, parent_income_sources) and selection[symbol] is not True:
                         raise ValueError("V25_COMPACT_SOURCE_REQUIRES_EXPLICIT_OPT_IN")
                     return loader.VERSION
         return return_plan_sources.VERSION if return_plan_sources.configured_for(project, symbol) else None

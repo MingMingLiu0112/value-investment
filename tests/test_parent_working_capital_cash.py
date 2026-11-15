@@ -65,3 +65,41 @@ def test_source_overlay_rejects_changed_file_and_checks_direct_statement(tmp_pat
     pdf.write_bytes(b"TEST_ONLY_CHANGED")
     with pytest.raises(ValueError, match="PARENT_WC_ORIGINAL_HASH_MISMATCH"):
         source._cash_rows(tmp_path, context)
+
+def test_annual_scan_is_bound_to_registered_original_and_real_availability(tmp_path, monkeypatch):
+    from hashlib import sha256
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_sources_parent_wc as source,
+    )
+
+    def artifact(name, data):
+        path = tmp_path / "runtime" / name
+        path.parent.mkdir(exist_ok=True)
+        path.write_bytes(data)
+        return {"path": f"runtime/{name}", "sha256": sha256(data).hexdigest()}
+
+    original = artifact("source.pdf", b"TEST_ONLY_PDF")
+    observation = {**original, "source_id": "cninfo:TEST_ONLY", "period": "2025-12-31",
+        "available_at": "2026-03-30T00:00:00+00:00", "receipt_binding": {"sha256": "a" * 64}}
+    context = {"symbol": "600001", "issuer_name": "测试", "as_of": "2026-04-03T00:00:00+00:00",
+        "supplemental_sources": [observation]}
+    scan = {"source_id": observation["source_id"], "original_sha256": original["sha256"],
+        "image": artifact("page.png", b"TEST_ONLY_IMAGE"), "ocr": artifact("page.json", b"TEST_ONLY_OCR"),
+        "physical_page": 3, "acquired_at": "2026-04-02T00:00:00+00:00"}
+    monkeypatch.setattr(source.base.legacy.pdf_text, "extract_pages", lambda _: [NOTE])
+    monkeypatch.setattr(source.cfo_scan, "replay_annual_parent_cfo_scan", lambda **_: CFO)
+    monkeypatch.setattr(source.numbered, "read_numbered_annual_parent_wc",
+                        lambda pages, **kw: read_parent_working_capital_cash(
+                            pages, verified_parent_cfo_cny=kw["verified_parent_cfo_cny"]))
+    evidence, = source._cash_rows(tmp_path, context, scan)
+    assert evidence["scan_source"] == scan
+    assert evidence["available_at"] == scan["acquired_at"]
+    assert evidence["value"] == "10.00"
+    assert evidence["receipt_binding"] == observation["receipt_binding"]
+    with pytest.raises(ValueError, match="NOT_YET_ACQUIRED"):
+        source._cash_rows(tmp_path, context, {**scan, "acquired_at": "2026-04-04T00:00:00+00:00"})
+    with pytest.raises(ValueError, match="SOURCE_MISMATCH"):
+        source._cash_rows(tmp_path, context, {**scan, "original_sha256": "b" * 64})
+    (tmp_path / scan["ocr"]["path"]).write_bytes(b"CHANGED_OCR")
+    with pytest.raises(ValueError, match="ARTIFACT_HASH_MISMATCH"):
+        source._cash_rows(tmp_path, context, scan)

@@ -569,6 +569,8 @@ jobs:
           tests/test_operating_horizon_native_transport_v2.py
           tests/test_operating_horizon_task_v25_canonical.py
           tests/test_parent_working_capital_cash.py
+          tests/test_annual_parent_cfo_scan.py
+          tests/test_numbered_annual_parent_wc.py
           tests/test_operating_horizon_sources_v2_return_plan.py
           tests/test_parent_cash_reach_anchor_v1.py
           tests/test_operating_horizon_carryover_v13.py
