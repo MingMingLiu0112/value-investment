@@ -104,7 +104,38 @@ def _bindings(root, value):
     return [dict(path=p, sha256=h) for p, h in sorted(result.items())]
 
 
-def _call(root, symbol, operation):
+def _project_retained_financial_review(value):
+    # Historical packets retain their original absolute locators. Only the
+    # public projection can use the matching project-relative native binding.
+    # Never resolve or read the historical absolute path.
+    closure = {(ref['path'], ref['sha256']) for ref in value.get('source_bindings', [])
+               if isinstance(ref, dict) and isinstance(ref.get('path'), str)
+               and isinstance(ref.get('sha256'), str)
+               and ref['path'].startswith('runtime/')
+               and not any(part in {'', '.', '..'} for part in ref['path'].split('/'))}
+    reviews = [(value.get('financial_summary') or {}).get('verified_financial_review')]
+    reviews.extend(row['value'] for row in value.get('economic_evidence', [])
+                   if row.get('field') == 'research_case.financial_summary.verified_financial_review')
+    for review in reviews:
+        if not isinstance(review, dict):
+            continue
+        refs = list(review.get('source_bindings', []))
+        refs.extend(fact.get('source_binding') for fact in review.get('facts', []))
+        for ref in refs:
+            if not isinstance(ref, dict) or not isinstance(ref.get('path'), str):
+                continue
+            name = ref['path'].replace(chr(92), '/')
+            if not (PureWindowsPath(name).is_absolute() or PurePosixPath(name).is_absolute()):
+                continue
+            if any(part in {'.', '..'} for part in name.split('/')):
+                raise ValueError('PUBLIC_RETAINED_SOURCE_INVALID_PATH')
+            matches = {path for path, digest in closure
+                       if digest == ref.get('sha256') and name.endswith('/' + path)}
+            if len(matches) == 1:
+                ref['path'] = matches.pop()
+
+
+def _call(root, symbol, operation, *, retained_financial_review=False):
     try:
         value = operation()
         if value is None:
@@ -115,8 +146,11 @@ def _call(root, symbol, operation):
             raise ValueError('NATIVE_PUBLIC_RESULT_SYMBOL_MISMATCH')
         if value.get('action', 'no_order') != 'no_order':
             raise ValueError('NATIVE_PUBLIC_RESULT_ACTION_MISMATCH')
+        value = deepcopy(value)
+        if retained_financial_review:
+            _project_retained_financial_review(value)
         _bindings(root, value)
-        return deepcopy(value)
+        return value
     except ERRORS as error:
         return dict(status='UNASSESSABLE', reason=str(error), error_type=type(error).__name__)
 
@@ -265,8 +299,9 @@ def read_value_transparent_workbench(*, root, symbol, now):
                     context={k: value[k] for k in ('coverage', 'screening_scope', 'as_of', 'quote_date',
                         'available_at', 'snapshot_status', 'refresh_status', 'source_bindings', 'blockers') if k in value})
     selected = read(selection)
-    profile = read(lambda: _profile(root, symbol, now))
-    legacy = read(lambda: load_current_value_research_analysis(root=root, symbol=symbol, now=now))
+    profile = _call(root, symbol, lambda: _profile(root, symbol, now), retained_financial_review=True)
+    legacy = _call(root, symbol, lambda: load_current_value_research_analysis(root=root, symbol=symbol, now=now),
+                   retained_financial_review=True)
     first = read(lambda: read_first_research_input(root=root, symbol=symbol, now=now))
     main = read(lambda: read_main_valuation_revalidation(root=root, symbol=symbol, now=now))
     old_draft = read(lambda: load_operating_assumption_draft(root=root, symbol=symbol, now=now))

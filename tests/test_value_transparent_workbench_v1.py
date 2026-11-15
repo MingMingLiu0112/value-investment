@@ -241,3 +241,30 @@ def test_invalid_identity_clock_rejected_before_consumers(tmp_path, consumers, s
     with pytest.raises(ValueError):
         app.read_value_transparent_workbench(root=tmp_path, symbol=symbol, now=now)
     assert calls == []
+
+@pytest.mark.parametrize('damage', [None, 'locator', 'digest', 'bytes'])
+def test_retained_financial_review_requires_exact_native_closure(tmp_path, damage):
+    relative = 'runtime/filings/report.pdf'
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b'TEST_ONLY original')
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    old = {'path': 'D:/retired-checkout/' + relative, 'sha256': digest}
+    value = dict(symbol=SYMBOL, status='CONDITIONAL_ANALYSIS_VERIFIED',
+                 source_bindings=[dict(path=relative, sha256=digest)],
+                 financial_summary={'verified_financial_review': {'facts': [{'source_binding': old}]}})
+    if damage == 'locator':
+        old['path'] = 'D:/retired-checkout/runtime/different/report.pdf'
+    if damage == 'digest':
+        old['sha256'] = '0' * 64
+    if damage == 'bytes':
+        path.write_bytes(b'TEST_ONLY changed')
+    before = deepcopy(value)
+    result = app._call(tmp_path.resolve(), SYMBOL, lambda: value, retained_financial_review=True)
+    assert value == before
+    if damage:
+        assert result['status'] == 'UNASSESSABLE'
+    else:
+        assert result['status'] == value['status']
+        ref = result['financial_summary']['verified_financial_review']['facts'][0]['source_binding']
+        assert ref == {'path': relative, 'sha256': digest}
