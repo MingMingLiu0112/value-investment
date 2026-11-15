@@ -172,7 +172,9 @@ def test_v25_canonical_task_dispatch_is_explicit_and_unapproved(api, monkeypatch
         return dict(task_id="rt-" + "a" * 32, symbol=kwargs["symbol"], status="WAITING_EVIDENCE",
             workflow=v25.CONTRACT, action="no_order", formal_eligibility=False,
             condition_price=None)
-    monkeypatch.setattr(v25.OperatingHorizonTaskService, "create", created)
+    from value_investment_agent.application.research.agent_review import v25_submission
+    monkeypatch.setattr(v25_submission, "submit_bound_v25", lambda service, inputs:
+                        (created(service, **inputs), False, []))
     path = BASE + "/horizon-cash-policy-tasks"
     body = dict(symbol="600887", request_key="TEST_V25_ROUTE", years=[2027], task_contract=v25.CONTRACT)
     assert client.post(path, json=body).status_code == 401
@@ -211,7 +213,9 @@ def test_v25_uses_configured_official_plan_source_without_changing_old_reader(ap
         return dict(task_id="rt-" + "b" * 32, symbol=kwargs["symbol"], status="WAITING_EVIDENCE",
             workflow=v25.CONTRACT, action="no_order", formal_eligibility=False,
             condition_price=None)
-    monkeypatch.setattr(v25.OperatingHorizonTaskService, "create", created)
+    from value_investment_agent.application.research.agent_review import v25_submission
+    monkeypatch.setattr(v25_submission, "submit_bound_v25", lambda service, inputs:
+                        (created(service, **inputs), False, []))
     unlock(client, secret)
     response = client.post(BASE + "/horizon-cash-policy-tasks", json=dict(
         symbol="600887", request_key="TEST_V25_PLAN_ROUTE", years=[2027], task_contract=v25.CONTRACT))
@@ -2079,7 +2083,7 @@ def test_v25_read_projects_cash_evidence_from_pinned_source(api, monkeypatch, va
     assert data.provider_calls == []
 
 
-@pytest.mark.parametrize("registered,missing", [(False, False), (True, False), (True, True)])
+@pytest.mark.parametrize("registered,missing", [(False, False), (False, True), (True, False), (True, True)])
 def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, registered, missing):
     from value_investment_agent.application.research.agent_review import (
         operating_horizon_sources_v1 as source,
@@ -2096,6 +2100,14 @@ def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, regis
     client, secret, _, root = api
     monkeypatch.setattr(compact_sources, "build_operating_horizon_source_context",
                         lambda **kwargs: {"symbol": kwargs["symbol"], "source_binding": binding})
+    original_init = compact.CompactCashTaskService.__init__
+
+    def init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        if self.source_loader_version == source.VERSION:
+            self.source_loader = lambda **req: {"symbol": req["symbol"], "source_binding": binding}
+
+    monkeypatch.setattr(compact.CompactCashTaskService, "__init__", init)
     monkeypatch.setattr(e2, "cash_constraint_anchor_ids",
                         lambda context: {"operating_wc_cash_cny": [] if missing else ["source:id"]})
     if registered:
@@ -2109,7 +2121,8 @@ def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, regis
 
     def create(self, **kwargs):
         seen.append((kwargs["symbol"], self.source_loader_version, isinstance(self, compact.CompactCashTaskService)))
-        result = {"status": "WAITING_EVIDENCE", "action": "no_order"}
+        result = {"status": "WAITING_EVIDENCE", "action": "no_order",
+                  "task_id": "rt-" + _hash(_bytes([v25.CONTRACT, "LIVE_OPERATING", kwargs["symbol"], [2027], binding]))[:32]}
         if registered:
             task_id = "rt-" + _hash(_bytes([v25.CONTRACT, "LIVE_OPERATING",
                                            kwargs["symbol"], [2027], binding]))[:32]

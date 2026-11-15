@@ -844,8 +844,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 if isinstance(body, dict) and body.get("task_contract") in (V11_CONTRACT, V12_CONTRACT, V13_CONTRACT, V14_CONTRACT, V15_CONTRACT, V16_CONTRACT)
                 and body.get("source_loader_version") in (wc_v9.VERSION, dividend_v9.VERSION) else horizon_cash_policy)
             inputs = _cash_policy_body(raw, allow_v5=True)
-            if (body.get("task_contract") == V25_CONTRACT
-                    and selected.source_loader_version in (compact_sources.VERSION, parent_cost_sources.VERSION, parent_income_sources.VERSION, parent_layout_sources.VERSION, parent_wc_sources.VERSION)):
+            if body.get("task_contract") == V25_CONTRACT:
                 from ...application.research.agent_review.v25_submission import submit_bound_v25
 
                 task, dispatch, missing = submit_bound_v25(selected, inputs)
