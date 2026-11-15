@@ -2,6 +2,7 @@ import type {
   DecisionItem,
   ValueResearchAnalysis as Analysis,
 } from "../types/api";
+import { publicJointCapitalReviewMatches } from "../services/valuePolicy";
 import { readinessNumber, readinessStrategy } from "../utils/strategyReadiness";
 import { normalizeEvidenceLines } from "../utils/researchDetail";
 import {
@@ -11,7 +12,10 @@ import {
 import "./value-research-analysis.css";
 import { AccountingBridgeReview } from "./AccountingBridgeReview";
 import { PublicJointCapitalReview } from "./JointCapitalReview";
-import { CandidateAlignmentPanel } from "./CandidatePriceDraft";
+import {
+  CandidateAlignmentPanel,
+  candidateResearchComparisonMatches,
+} from "./CandidatePriceDraft";
 import { SourceNativeCashReview } from "./SourceNativeCashReview";
 import { OperatingEarningsBridge } from "./OperatingEarningsBridge";
 import { IndustrialEarningsResearch } from "./IndustrialEarningsResearch";
@@ -89,6 +93,11 @@ export function ValueResearchAnalysis({
     decision.research_analysis ?? decision.price_action_plan?.research_analysis;
   if (!analysis || readinessStrategy(decision.strategy) !== "CORE_VALUE")
     return null;
+  const jointComparison =
+    analysis.current_alignment?.currentpricecomparison === true &&
+    !!analysis.joint_capital_review &&
+    publicJointCapitalReviewMatches(analysis, analysis.symbol) &&
+    candidateResearchComparisonMatches(analysis.joint_capital_review);
   const verified =
     (decision.price_action_plan?.action === "no_order" ||
       (!decision.price_action_plan && decision.action === "no_order")) &&
@@ -391,9 +400,13 @@ export function ValueResearchAnalysis({
           );
         })}
       </div>
-      <PublicJointCapitalReview analysis={analysis} symbol={analysis.symbol} />
+      <PublicJointCapitalReview
+        analysis={analysis}
+        symbol={analysis.symbol}
+        showAlignment={!analysis.current_alignment || jointComparison}
+      />
       <SourceNativeCashReview analysis={analysis} symbol={decision.symbol!} />
-      {!analysis.joint_capital_review && analysis.current_alignment && (
+      {analysis.current_alignment && !jointComparison && (
         <CandidateAlignmentPanel
           alignment={analysis.current_alignment}
           matches={

@@ -79,7 +79,13 @@ export function candidatePriceMatches(review: Review): boolean {
   }
 }
 
-export function CandidatePriceDraft({ review }: { review: Review }) {
+export function CandidatePriceDraft({
+  review,
+  showAlignment = true,
+}: {
+  review: Review;
+  showAlignment?: boolean;
+}) {
   const price = review.conditional_price;
   if (!price) return null;
   const valid = candidatePriceMatches(review);
@@ -165,7 +171,7 @@ export function CandidatePriceDraft({ review }: { review: Review }) {
       ) : price.status === "researcher_proposal" ? (
         <p role="alert">价格草案与当前候选不一致，不显示参考价。</p>
       ) : null}
-      <CandidateAlignment review={review} />
+      {showAlignment && <CandidateAlignment review={review} />}
       <p>未注册、未批准，不生成正式操作计划；action=no_order。</p>
     </section>
   );

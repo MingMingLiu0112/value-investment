@@ -212,9 +212,11 @@ export function JointCapitalReview({
 export function PublicJointCapitalReview({
   analysis,
   symbol,
+  showAlignment = true,
 }: {
   analysis: ValueResearchAnalysis;
   symbol: string;
+  showAlignment?: boolean;
 }) {
   if (analysis.joint_capital_review == null) return null;
   if (!publicJointCapitalReviewMatches(analysis, symbol))
@@ -229,7 +231,11 @@ export function PublicJointCapitalReview({
         前瞻假设 ·
         LOW／低置信度，未批准。仅供公开条件研究，不是正常化事实、当前可交易价值或已证实现金。
       </p>
-      <JointCapitalLedger review={analysis.joint_capital_review!} publicView />
+      <JointCapitalLedger
+        review={analysis.joint_capital_review!}
+        publicView
+        showAlignment={showAlignment}
+      />
     </section>
   );
 }
@@ -237,11 +243,14 @@ export function PublicJointCapitalReview({
 function JointCapitalLedger({
   review,
   publicView = false,
+  showAlignment = true,
 }: {
   review: Readonly<JointReview>;
   publicView?: boolean;
+  showAlignment?: boolean;
 }) {
-  if (isJointCashReview(review)) return <CashCapitalLedger review={review} />;
+  if (isJointCashReview(review))
+    return <CashCapitalLedger review={review} showAlignment={showAlignment} />;
   return (
     <section
       aria-label="联合资本路径待审"
@@ -675,7 +684,13 @@ function DistributionDiagnosticsPanel({
   );
 }
 
-function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
+function CashCapitalLedger({
+  review,
+  showAlignment,
+}: {
+  review: Readonly<JointReview>;
+  showAlignment: boolean;
+}) {
   const path = review.economic_path;
   const pathMatches = economicPathMatches(review);
   const v4 = review.schema_version === "joint-capital-cash-review-v4";
@@ -784,7 +799,7 @@ function CashCapitalLedger({ review }: { review: Readonly<JointReview> }) {
             ))}
         </details>
       )}
-      <CandidatePriceDraft review={review} />
+      <CandidatePriceDraft review={review} showAlignment={showAlignment} />
       <DistributionDiagnosticsPanel review={review} />
       {path && !pathMatches && (
         <p role="alert">经济路径投影与已消费年度账不一致，暂不展示该投影。</p>
