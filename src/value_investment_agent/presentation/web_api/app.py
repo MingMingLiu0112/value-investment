@@ -983,7 +983,19 @@ def create_app(
     @api.get("/api/v1/value-screening/sse-main/research-queue")
     def sse_main_research_queue():
         from ...application.research.sse_research_pipeline_v1 import read_sse_research_pool
-        return JSONResponse(read_sse_research_pool(root=project,now=datetime.now(timezone.utc)),
+        from ...application.research.agent_review.horizon_receipt_selection import read_queue_receipt_batch
+        from .live_operating_research_routes import resolve_research_task_root
+        now = datetime.now(timezone.utc)
+        view = read_sse_research_pool(root=project, now=now)
+        if view["status"] == "AVAILABLE":
+            try:
+                batch = read_queue_receipt_batch(research_root=resolve_research_task_root(project),
+                    queue_binding=view["queue_binding"], as_of=now)
+                if batch is not None:
+                    view["source_receipt_batch"] = batch
+            except (ValueError, OSError, TypeError, KeyError):
+                view["source_receipt_batch_unavailable"] = True
+        return JSONResponse(view,
             headers={"Cache-Control":"no-store"})
 
     @api.get("/api/v1/value-screening/sse-main")

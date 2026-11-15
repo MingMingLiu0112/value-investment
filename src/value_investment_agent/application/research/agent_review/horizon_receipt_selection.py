@@ -2,6 +2,7 @@
 from copy import deepcopy
 from datetime import datetime
 import json
+from itertools import islice
 from pathlib import Path
 
 from ...product.common import require_inside, write_new_bytes
@@ -110,3 +111,42 @@ def persist_current_queue_receipt_batch(*, queue_root: Path, research_root: Path
         if output.read_bytes() != raw:
             raise ValueError("HORIZON_SELECTION_BATCH_OUTPUT_CHANGED")
     return dict(result=result, binding=dict(path=relative.as_posix(), sha256=_hash(raw)))
+
+def read_queue_receipt_batch(*, research_root: Path, queue_binding: dict,
+                             as_of: datetime) -> dict | None:
+    """Return a public summary of the latest verified archive for this exact queue."""
+    research_root = research_root.resolve()
+    directory = require_inside(research_root, research_root / "runtime/horizon-queue-receipt-selection-v1",
+                               "receipt batch directory")
+    candidates = list(islice(directory.glob("*.json"), 257))
+    if len(candidates) > 256:
+        raise ValueError("HORIZON_SELECTION_BATCH_ARCHIVE_LIMIT")
+    registry_path = require_inside(research_root, research_root / horizon.CONFIG, "source registry")
+    if not candidates:
+        return None
+    registry_sha = _hash(registry_path.read_bytes())
+    latest = None
+    for path in candidates:
+        path = require_inside(directory, path, "receipt batch")
+        if path.stat().st_size > 1_000_000:
+            raise ValueError("HORIZON_SELECTION_BATCH_RESULT_TOO_LARGE")
+        raw = path.read_bytes()
+        result = json.loads(raw)
+        if (result.get("queue_binding") != queue_binding
+                or result.get("registry_sha256") != registry_sha):
+            continue
+        if (_hash(raw) != path.stem or result.get("schema_version") != "horizon-queue-receipt-selection-v1"
+                or result.get("action") != "no_order" or result.get("formal_eligibility") is not False
+                or result.get("new_llm_calls") != 0):
+            raise ValueError("HORIZON_SELECTION_BATCH_INTEGRITY_FAILED")
+        stamp = datetime.fromisoformat(result["as_of"])
+        if stamp.utcoffset() is None or stamp > as_of:
+            raise ValueError("HORIZON_SELECTION_BATCH_CUTOFF_INVALID")
+        if latest is None or (stamp, path.stem) > latest[:2]:
+            latest = stamp, path.stem, result
+    if latest is None:
+        return None
+    _, digest, result = latest
+    return dict(as_of=result["as_of"], sha256=digest,
+                items=[dict(symbol=row["symbol"], status=row["status"],
+                            evidence_count=len(row.get("evidence_ids", []))) for row in result["items"]])

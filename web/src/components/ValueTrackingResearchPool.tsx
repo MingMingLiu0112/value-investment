@@ -29,6 +29,12 @@ export interface TrackingPoolView {
   blockers: string[];
   queue_binding: { path: string; sha256: string } | null;
   history_available: boolean;
+  source_receipt_batch_unavailable?: boolean;
+  source_receipt_batch?: {
+    as_of: string;
+    sha256: string;
+    items: { symbol: string; status: string; evidence_count: number }[];
+  };
 }
 export interface ValueTrackingResearchPoolProps {
   load: (signal: AbortSignal) => Promise<TrackingPoolView>;
@@ -55,6 +61,20 @@ export function validTrackingPoolView(v: unknown): v is TrackingPoolView {
     (v.tracking_count === null || count(v.tracking_count)) &&
     typeof v.history_available === "boolean" &&
     strings(v.blockers) &&
+    (v.source_receipt_batch === undefined ||
+      (record(v.source_receipt_batch) &&
+        typeof v.source_receipt_batch.as_of === "string" &&
+        /^[a-f0-9]{64}$/.test(v.source_receipt_batch.sha256) &&
+        Array.isArray(v.source_receipt_batch.items) &&
+        v.source_receipt_batch.items.length <= 30 &&
+        v.source_receipt_batch.items.every(
+          (item: unknown) =>
+            record(item) &&
+            typeof item.symbol === "string" &&
+            /^\d{6}$/.test(item.symbol) &&
+            typeof item.status === "string" &&
+            count(item.evidence_count),
+        ))) &&
     (v.queue_binding === null ||
       (record(v.queue_binding) &&
         typeof v.queue_binding.path === "string" &&
@@ -142,6 +162,10 @@ export function ValueTrackingResearchPool({
     data?.loader === load && validTrackingPoolView(data.view)
       ? data.view
       : undefined;
+  const batch = view?.source_receipt_batch;
+  const batchRows = new Map(
+    (batch?.items ?? []).map((item) => [item.symbol, item]),
+  );
   return (
     <section aria-label="长期跟踪研究池">
       <h3>长期跟踪研究池</h3>
@@ -184,6 +208,15 @@ export function ValueTrackingResearchPool({
                 {display(view.tracking_count)}；本页展示：
                 {Math.min(view.items.length, 30)}。
               </p>
+              {batch && (
+                <p>
+                  最近封存的财报收据批次：{batch.as_of}（{batch.items.length}{" "}
+                  家）
+                </p>
+              )}
+              {view.source_receipt_batch_unavailable && (
+                <p role="status">财报收据批次暂不可核验，跟踪队列仍可阅读。</p>
+              )}
               {view.items.length === 0 ? (
                 <p>
                   {view.tracking_count === 0
@@ -221,6 +254,18 @@ export function ValueTrackingResearchPool({
                           "未提供"}
                       </p>
                       <p>入池理由：{row.reason}</p>
+                      {batchRows.has(row.symbol) && (
+                        <p>
+                          财报收据：
+                          {batchRows.get(row.symbol)?.status ===
+                          "SOURCE_REPLAYED_SELECTION_PROPOSAL"
+                            ? `已重放 ${batchRows.get(row.symbol)?.evidence_count} 条证据，待核验现金政策`
+                            : batchRows.get(row.symbol)?.status ===
+                                "OFFICIAL_RECEIPT_PAIR_REQUIRED"
+                              ? "待补齐两期报告收据"
+                              : "来源重放未通过"}
+                        </p>
+                      )}
                       <p>
                         当前阶段：
                         <strong title={row.tracking_status}>
