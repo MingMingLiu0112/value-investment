@@ -258,6 +258,10 @@ it("records the current driver bridge arithmetic acceptance without adopting par
     );
     expect(stage.nextStep).toContain("相同资料不再付费重试");
     expect(stage.deliveryReview?.done).toContain("通过年度三情景的结构校验");
+    expect(stage.deliveryReview?.done).toContain("扫描版支持核验页图");
+    expect(stage.deliveryReview?.done).toContain(
+      "优先带入已核对的营运资金证据",
+    );
     expect(stage.deliveryReview?.gap).toContain(
       "仍缺可对账的母公司营运资金现金附注",
     );
