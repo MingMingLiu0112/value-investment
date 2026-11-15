@@ -286,7 +286,7 @@ def _accounting(body, issuer, published):
     }
 
 
-def _buyback_progress(body, published):
+def _buyback_progress(body, published, *, first_execution=False):
     quantity = r"[1-9][0-9]{0,2}(?:,[0-9]{3})*|[1-9][0-9]*"
     amount = r"[0-9]+(?:,[0-9]{3})*\.[0-9]{2}"
     summary_rows = list(re.finditer(
@@ -298,7 +298,7 @@ def _buyback_progress(body, published):
     no_execution = list(re.finditer(
         r"截至" + _DATE.format(name="through") + r",公司尚未实施股份回购。", progress))
     if no_execution:
-        if (not boundary or not ending or len(no_execution) != 1
+        if (first_execution or not boundary or not ending or len(no_execution) != 1
                 or body.count(zero_summary) != 1 or summary_rows
                 or "公司已累计回购股份" in progress):
             _reject("BUYBACK_PROGRESS_SUMMARY_MISMATCH")
@@ -317,11 +317,16 @@ def _buyback_progress(body, published):
             limitations=["该结论限于所述回购计划及截止日。"],
             _evidence=[(zero_summary, "buyback_summary"), (no_execution[0][0], "buyback_progress")],
         )
+    if first_execution:
+        opening = (_DATE.format(name="through") + r",公司通过集中竞价交易方式首次回购股份数量为"
+                   rf"(?P<shares>{quantity})股,已回购股份占公司总股本的比例为(?P<ratio>{_MONEY})%,"
+                   rf"购买的最高价为(?P<high>{_MONEY})元/股,最低价为(?P<low>{_MONEY})元/股,")
+    else:
+        opening = (rf"截至(?P<year>20[0-9]{{2}})年(?P<month>[0-9]{{1,2}})月底,公司已累计回购股份"
+                   rf"(?P<shares>{quantity})股,占公司总股本的比例为(?P<ratio>{_MONEY})%,"
+                   rf"购买的最高价为(?P<high>{_MONEY})元/股、最低价为(?P<low>{_MONEY})元/股,")
     rows = list(re.finditer(
-        rf"截至(?P<year>20[0-9]{{2}})年(?P<month>[0-9]{{1,2}})月底,公司已累计回购股份"
-        rf"(?P<shares>{quantity})股,占公司总股本的比例为(?P<ratio>{_MONEY})%,"
-        rf"购买的最高价为(?P<high>{_MONEY})元/股、最低价为(?P<low>{_MONEY})元/股,"
-        rf"已支付的总金额为(?P<total>{amount})元人民币\(不含交易费用\)。", progress))
+        opening + rf"已支付的总金额为(?P<total>{amount})元人民币\(不含交易费用\)。", progress))
     if not boundary or not ending or len(summary_rows) != 1 or len(rows) != 1:
         _reject("BUYBACK_PROGRESS_TERMS_MISSING_OR_AMBIGUOUS")
     row = rows[0]
@@ -330,17 +335,23 @@ def _buyback_progress(body, published):
     if any(number(summary_rows[0], key) != number(row, key) for key in ("shares", "ratio", "total")):
         _reject("BUYBACK_PROGRESS_SUMMARY_MISMATCH")
     low, high = number(row, "low"), number(row, "high")
-    year, month = int(row["year"]), int(row["month"])
-    if not 1 <= month <= 12:
-        _reject("INVALID_DATE")
-    through = date(year, month, monthrange(year, month)[1]).isoformat()
+    if first_execution:
+        through = _day(row["through"])
+    else:
+        year, month = int(row["year"]), int(row["month"])
+        if not 1 <= month <= 12:
+            _reject("INVALID_DATE")
+        through = date(year, month, monthrange(year, month)[1]).isoformat()
     if through >= published or not 0 < ratio <= 100 or not 0 < low <= total / shares <= high:
         _reject("BUYBACK_PROGRESS_ARITHMETIC_OR_DATE_INVALID")
+    terms = dict(through=through, cumulative_purchased_shares=int(shares),
+                 cumulative_paid_cny=str(total), disclosed_share_percent=str(ratio),
+                 completed_cancellation_shares=None)
+    if first_execution:
+        terms["first_purchase_date"] = through
     return dict(
         event_type="REPORTED_BUYBACK_PROGRESS", effective_date=None,
-        terms=dict(through=through, cumulative_purchased_shares=int(shares),
-                   cumulative_paid_cny=str(total), disclosed_share_percent=str(ratio),
-                   completed_cancellation_shares=None),
+        terms=terms,
         affected_model_fields=["cash", "ordinary_shares"],
         summary=f"截至{through}累计购回{int(shares)}股，已支付{total}元（不含交易费用）。",
         implication="核对累计金额的期间增量及后续注销生效公告，当前资料不改变估值股数。",
@@ -365,7 +376,7 @@ def parse_operating_event_terms(pages, *, symbol):
         r"证券简称:(?P<short_b>[^:]{1,30})证券代码:(?P<code_b>[0-9]{6})编号:临)"
         r"(?P<year>20[0-9]{2})-(?P<number>[0-9]{3})"
         r"(?P<issuer>[\u4e00-\u9fffA-Za-z()]{2,80}股份有限公司)"
-        r"(?P<title>重大事项公告|" + _MEETING + r"决议公告|关于会计政策变更的公告|(?P<buyback>关于股份回购进展公告))"
+        r"(?P<title>重大事项公告|" + _MEETING + r"决议公告|关于会计政策变更的公告|(?P<buyback>关于股份回购进展公告|关于以集中竞价交易方式首次回购公司股份的公告))"
         + re.escape(_GUARANTEE) + r"(?P<body>.+)特此公告(?(buyback)。?|。)"
         r"(?P=issuer)董事会" + _DATE.format(name="published"), text,
     )
@@ -380,7 +391,7 @@ def parse_operating_event_terms(pages, *, symbol):
     elif title == "关于会计政策变更的公告":
         result = _accounting(body, issuer, published)
     elif header["buyback"]:
-        result = _buyback_progress(body, published)
+        result = _buyback_progress(body, published, first_execution="首次回购" in title)
     else:
         result = _board(body, title, issuer, published)
     heading = text.split(unicodedata.normalize("NFKC", _GUARANTEE), 1)[0]

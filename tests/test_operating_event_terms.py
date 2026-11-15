@@ -261,6 +261,18 @@ def test_buyback_progress_is_cash_observation_and_does_not_change_shares():
     with pytest.raises(ValueError, match="ARITHMETIC_OR_DATE_INVALID"):
         parse([page.replace("22,000.00", "30,000.00")])
 
+    first = page.replace("关于股份回购进展公告", "关于以集中竞价交易方式首次回购公司股份的公告")
+    first = first.replace("截至2026年10月底，公司已累计回购股份1,000股，"
+        "占公司总股本的比例为0.1%，购买的最高价为25元/股、最低价为20元/股，",
+        "2026年10月22日，公司通过集中竞价交易方式首次回购股份数量为1,000股，"
+        "已回购股份占公司总股本的比例为0.1%，购买的最高价为25元/股，最低价为20元/股，")
+    first_result = parse([first])
+    assert first_result["terms"]["first_purchase_date"] == "2026-10-22"
+    assert first_result["terms"]["completed_cancellation_shares"] is None
+    assert first_result["effective_date"] is None
+    with pytest.raises(ValueError, match="ARITHMETIC_OR_DATE_INVALID"):
+        parse([first.replace("2026年10月22日", "2026年11月4日")])
+
 def test_buyback_zero_requires_matching_explicit_summary_and_body():
     page = (
         "证券代码：000777 证券简称：示例 公告编号：临2026-090 "
