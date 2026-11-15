@@ -21,6 +21,8 @@ const V15_CONTRACT = "operating-horizon-task-v15-2027-live" as const;
 const V16_CONTRACT = "operating-horizon-task-v16-2027-live" as const;
 const V17_CONTRACT = "operating-horizon-task-v17-2027-cash-repair" as const;
 const V18_CONTRACT = "operating-horizon-task-v18-2027-cash-anchors" as const;
+const V25_CONTRACT =
+  "operating-horizon-task-v25-full-schema-canonical-2027" as const;
 const V11_WC_SOURCE = "operating-q3-issuer-wc-loader-v9-600519" as const;
 const V15_DIVIDEND_SOURCE =
   "operating-q3-issuer-dividend-split-loader-v9-600519" as const;
@@ -38,7 +40,8 @@ type CashKind =
   | "v15"
   | "v16"
   | "v17"
-  | "v18";
+  | "v18"
+  | "v25";
 
 function valid(value: HorizonCashPolicyTask | undefined, symbol: string) {
   return Boolean(
@@ -285,7 +288,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                                     ? V18_CONTRACT
                                     : selectedKind === "v17"
                                       ? V17_CONTRACT
-                                      : undefined,
+                                      : selectedKind === "v25"
+                                        ? V25_CONTRACT
+                                        : undefined,
             );
       if (
         result.action !== "no_order" ||
@@ -640,6 +645,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         </Button>
         <Button disabled={busy} onClick={() => loadHistory("v18")}>
           读取2027 V18现金条件研究历史
+        </Button>
+        <Button disabled={busy} onClick={() => loadHistory("v25")}>
+          读取2027 V25三情景与股东现金历史
         </Button>
         <Button disabled={busy} onClick={loadAnnualHistory}>
           读取独立年度经营历史

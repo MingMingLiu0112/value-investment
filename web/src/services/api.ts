@@ -1745,7 +1745,8 @@ export const api = {
       | "operating-horizon-task-v15-2027-live"
       | "operating-horizon-task-v16-2027-live"
       | "operating-horizon-task-v17-2027-cash-repair"
-      | "operating-horizon-task-v18-2027-cash-anchors",
+      | "operating-horizon-task-v18-2027-cash-anchors"
+      | "operating-horizon-task-v25-full-schema-canonical-2027",
   ) =>
     getPrivate<{
       action: "no_order";
