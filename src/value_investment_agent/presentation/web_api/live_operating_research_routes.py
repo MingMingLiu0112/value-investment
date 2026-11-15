@@ -501,7 +501,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             if mode != "LIVE_OPERATING":
                 raise ValueError("V11_TASK_MODE_INVALID")
             selected = live_2027_reader(contract, raw)
-            selected._load(path.name)
+            # read() checks the immutable state and source under the task lock.
             item = selected.read(path.name)
             if symbol is None or item["symbol"] == symbol:
                 items.append(item)
