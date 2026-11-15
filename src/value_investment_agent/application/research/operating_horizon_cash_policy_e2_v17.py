@@ -14,6 +14,7 @@ from .agent_review.operating_horizon_sources_v5_parent_trade import VERSION as P
 from .agent_review.operating_horizon_sources_v6_industry_cost import VERSION as INDUSTRY_COST_LOADER
 from .agent_review.operating_horizon_charter_sources_v1 import VERSION as CHARTER_LOADER
 from .agent_review.operating_horizon_charter_distribution_sources import VERSION as CHARTER_DISTRIBUTION_LOADER
+from .agent_review.operating_horizon_sources_compact import VERSION as COMPACT_LOADER
 
 VERSION = "operating-horizon-cash-policy-e2-input-v17"
 
@@ -73,12 +74,12 @@ def read_v25_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
         version=VERSION, label="V25", service=service, staged_annual=True,
         additional_reported_fact_loaders=(RETURN_PLAN_LOADER, PARENT_QUARTER_LOADER,
                                           CASH_CONSTRAINT_LOADER, PARENT_TRADE_LOADER, INDUSTRY_COST_LOADER, CHARTER_LOADER,
-                                          CHARTER_DISTRIBUTION_LOADER))
+                                          CHARTER_DISTRIBUTION_LOADER, COMPACT_LOADER))
     bound_service = service or OperatingHorizonTaskService(root)
     spec, _, _ = bound_service._load(task_id)
     binding = spec["source_loader_binding"]
     if "cash_transport" in binding or binding["version"] in (
-        CASH_CONSTRAINT_LOADER, PARENT_TRADE_LOADER, INDUSTRY_COST_LOADER, CHARTER_DISTRIBUTION_LOADER,
+        CASH_CONSTRAINT_LOADER, PARENT_TRADE_LOADER, INDUSTRY_COST_LOADER, CHARTER_DISTRIBUTION_LOADER, COMPACT_LOADER,
     ):
         _validate_cash_constraint_citations(result["policy_years"], bound_service._context(spec))
     return result

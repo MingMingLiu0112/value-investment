@@ -2079,14 +2079,20 @@ def test_v25_read_projects_cash_evidence_from_pinned_source(api, monkeypatch, va
     assert data.provider_calls == []
 
 
-def test_v25_base_source_creates_compact_cash_task(api, monkeypatch):
+@pytest.mark.parametrize("registered", [False, True])
+def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, registered):
     from value_investment_agent.application.research.agent_review import (
         operating_horizon_sources_v1 as source,
+        operating_horizon_sources_compact as compact_sources,
         operating_horizon_task_v25_canonical as v25,
         operating_horizon_task_v25_compact_cash as compact,
     )
 
-    client, secret, _, _ = api
+    client, secret, _, root = api
+    if registered:
+        config = root / compact_sources.CONFIG
+        config.parent.mkdir(exist_ok=True)
+        config.write_text('{"000568": true}', encoding="utf-8")
     unlock(client, secret)
     seen = []
 
@@ -2101,4 +2107,4 @@ def test_v25_base_source_creates_compact_cash_task(api, monkeypatch):
         "task_contract": v25.CONTRACT,
     })
     assert response.status_code == 202, response.json()
-    assert seen == [("000568", source.VERSION, True)]
+    assert seen == [("000568", compact_sources.VERSION if registered else source.VERSION, True)]
