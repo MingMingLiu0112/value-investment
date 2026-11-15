@@ -705,7 +705,7 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
           disabled={
             busy ||
             !task ||
-            active ||
+            (active && !(task.status === "QUEUED" && kind === "v25")) ||
             ["SUCCEEDED", "CANCELLED"].includes(task.status)
           }
           onClick={() => run("resume")}

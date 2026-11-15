@@ -54,3 +54,15 @@ def submit_bound_v25(service, inputs):
         if task["task_id"] != task_id:
             raise ValueError("V25_REQUEST_SOURCE_CHANGED")
         return task, task["status"] == "QUEUED", []
+
+
+def dispatch_v25_web_task(service, task_id):
+    """Serialize Web workers without marking a concurrent resume as failed."""
+    from ...portfolio.private_journal_lock import LockTimeout
+
+    try:
+        with service._lock(service._directory(task_id), "web-dispatch"):
+            if service.read(task_id)["status"] == "QUEUED":
+                service.run(task_id)
+    except LockTimeout:
+        return

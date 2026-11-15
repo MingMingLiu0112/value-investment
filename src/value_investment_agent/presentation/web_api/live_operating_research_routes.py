@@ -857,7 +857,12 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 task = selected.create(**inputs)
                 dispatch = task["status"] == "QUEUED"
             if dispatch:
-                background.add_task(selected.run, task["task_id"])
+                if body.get("task_contract") == V25_CONTRACT:
+                    from ...application.research.agent_review.v25_submission import dispatch_v25_web_task
+
+                    background.add_task(dispatch_v25_web_task, selected, task["task_id"])
+                else:
+                    background.add_task(selected.run, task["task_id"])
             return reply(task, 202)
         except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
         except (PermissionError,ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
@@ -1040,12 +1045,23 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             if operation == "cancel":
                 task = selected.cancel(task_id)
             elif operation == "resume":
-                task = selected.resume(task_id)
-                if task["status"] == "QUEUED":
-                    background.add_task(selected.run, task_id)
+                if isinstance(selected, V25HorizonTaskService):
+                    task = selected.read(task_id)
+                    if task["status"] == "RUNNING":
+                        return reply(task)
+                    if task["status"] != "QUEUED":
+                        return reply(selected.resume(task_id))
+                    from ...application.research.agent_review.v25_submission import dispatch_v25_web_task
+
+                    background.add_task(dispatch_v25_web_task, selected, task_id)
+                else:
+                    task = selected.resume(task_id)
+                    if task["status"] == "QUEUED":
+                        background.add_task(selected.run, task_id)
             else:
                 raise ValueError("UNSUPPORTED_HORIZON_CASH_POLICY_OPERATION")
             return reply(task)
+        except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
         except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
             return reply(dict(action="no_order",status="HORIZON_CASH_POLICY_CONTROL_REJECTED",reason=str(error)),409)
 

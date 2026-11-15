@@ -2144,3 +2144,27 @@ def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, regis
         assert repeated.json()["task_id"] == response.json()["task_id"]
         assert dispatched == [response.json()["task_id"]]
     assert seen == [("000568", compact_sources.VERSION if registered else source.VERSION, True)]
+
+
+def test_v25_web_dispatch_replays_queued_task_without_rerunning_terminal_task(tmp_path):
+    from value_investment_agent.application.research.agent_review.v25_submission import dispatch_v25_web_task
+    from value_investment_agent.application.research.agent_review.task_execution_v1 import ResearchTaskService
+
+    service = ResearchTaskService(tmp_path)
+    task_id = "rt-" + "a" * 32
+    service._directory(task_id).mkdir(parents=True)
+    state = {"status": "QUEUED"}
+    calls = []
+    service.read = lambda _: state
+
+    def run(task):
+        calls.append(task)
+        state["status"] = "SUCCEEDED"
+
+    service.run = run
+    with service._lock(service._directory(task_id), "web-dispatch"):
+        dispatch_v25_web_task(service, task_id)
+    assert calls == []
+    dispatch_v25_web_task(service, task_id)
+    dispatch_v25_web_task(service, task_id)
+    assert calls == [task_id]
