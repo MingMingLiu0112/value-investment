@@ -8,6 +8,7 @@ const calls = vi.hoisted(() => ({
   importV12: vi.fn(),
   repairV16: vi.fn(),
   researchV18: vi.fn(),
+  e2: vi.fn(),
 }));
 vi.mock("react", async (original) => {
   const actual = await original<typeof import("react")>();
@@ -44,6 +45,7 @@ vi.mock("../src/services/api", async (original) => {
       importV12HorizonCashPolicyTask: calls.importV12,
       repairV16HorizonCashPolicyTask: calls.repairV16,
       researchV18HorizonCashPolicyTask: calls.researchV18,
+      horizonCashPolicyE2Input: calls.e2,
     },
   };
 });
@@ -77,6 +79,7 @@ beforeEach(() => {
   calls.importV12.mockReset();
   calls.repairV16.mockReset();
   calls.researchV18.mockReset();
+  calls.e2.mockReset();
   vi.stubGlobal("crypto", webcrypto);
 });
 
@@ -365,6 +368,40 @@ it("starts the pinned V25 contract only on click and explains missing anchors", 
         typeof node.props.message === "string" &&
         node.props.message.includes("母公司营运资金现金、盈余公积计提比例") &&
         node.props.message.includes("本次未创建任务或调用模型"),
+    ),
+  ).toBe(true);
+});
+
+it("allows read-only E2 review of sealed V25 annual evidence after cash failure", async () => {
+  const symbol = "600887";
+  const taskId = "rt-" + "a".repeat(32);
+  button(render(symbol), "D2 股东现金政策研究").props.onClick();
+  calls.create.mockResolvedValueOnce({
+    task_id: taskId,
+    symbol,
+    status: "FAILED",
+    action: "no_order",
+  });
+  await button(
+    render(symbol),
+    "启动2027三情景与股东现金研究（可能计费）",
+  ).props.onClick();
+  expect(calls.e2).not.toHaveBeenCalled();
+  calls.e2.mockResolvedValueOnce({
+    action: "no_order",
+    condition_price: null,
+    formal_eligibility: false,
+    status: "UNASSESSABLE",
+    annual_operating_status: "SEALED_ANNUAL_CANDIDATES_ONLY",
+  });
+  const check = button(render(symbol), "检查E2接线");
+  expect(check.props.disabled).toBe(false);
+  await check.props.onClick();
+  expect(calls.e2).toHaveBeenCalledWith(taskId);
+  expect(calls.create).toHaveBeenCalledTimes(1);
+  expect(
+    render(symbol).some((node) =>
+      JSON.stringify(node.props.children)?.includes("完整现金路径仍待补齐"),
     ),
   ).toBe(true);
 });

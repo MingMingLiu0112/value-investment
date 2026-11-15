@@ -693,7 +693,15 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
           读取当前任务
         </Button>
         <Button
-          disabled={busy || task?.status !== "SUCCEEDED"}
+          disabled={
+            busy ||
+            !task ||
+            (task.status !== "SUCCEEDED" &&
+              !(
+                kind === "v25" &&
+                ["FAILED", "WAITING_EVIDENCE"].includes(task.status)
+              ))
+          }
           onClick={readE2Input}
         >
           检查E2接线
