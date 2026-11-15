@@ -270,7 +270,7 @@ def test_sealed_bull_citation_transcription_is_bounded_and_read_only(setup, extr
     assert len(calls) == 3
     if extra == 1:
         from value_investment_agent.application.research.agent_review.operating_cash_continuation import (
-            run_transcribed_cash_continuation,
+            run_term_guided_cash_continuation, run_transcribed_cash_continuation,
         )
 
         def cash_response(request):
@@ -285,3 +285,31 @@ def test_sealed_bull_citation_transcription_is_bounded_and_read_only(setup, extr
         with pytest.raises(ValueError, match="CASH_CONTINUATION_ALREADY_ATTEMPTED"):
             run_transcribed_cash_continuation(service, task_id)
         assert len(calls) == 4
+        revised = run_term_guided_cash_continuation(service, task_id)
+        assert revised["action"] == "no_order" and revised["formal_eligibility"] is False
+        assert "TERM_EVIDENCE_GUIDE=" in calls[-1].user and calls[-1].user != calls[-2].user
+        with pytest.raises(ValueError, match="CASH_CONTINUATION_ALREADY_ATTEMPTED"):
+            run_term_guided_cash_continuation(service, task_id)
+        assert len(calls) == 5
+        assert all(path.read_bytes() == data for path, data in before.items())
+
+
+def test_cash_guide_pairs_exact_report_hash_and_period_across_source_aliases(setup):
+    from value_investment_agent.application.research.agent_review.operating_cash_term_evidence import (
+        build_cash_term_evidence,
+    )
+
+    _, context, _ = setup
+    consolidated = next(row for row in context["evidence"] if
+                        row.get("field") == "parent_profit" and row["period"] == "2025-12-31")
+    standalone = dict(consolidated, id="TEST_ONLY:standalone-profit", field="parent_net_profit",
+                      scope="parent", source_id="TEST_ONLY:report-alias", value="25")
+    context["evidence"].append(standalone)
+    guide = build_cash_term_evidence(context, context["source_binding"])
+    comparisons = guide["accessible_profit_ratio"]["historical_comparisons"]
+    assert any(row["evidence_ids"] == [standalone["id"], consolidated["id"]] for row in comparisons)
+    assert all(row["scope"] == "HISTORICAL_PROFIT_COMPARISON_NOT_CASH_CONVERSION"
+               for row in comparisons)
+    standalone["pdf_sha256"] = ("b" if consolidated["pdf_sha256"][0] != "b" else "c") * 64
+    guide = build_cash_term_evidence(context, context["source_binding"])
+    assert not guide["accessible_profit_ratio"]["historical_comparisons"]
