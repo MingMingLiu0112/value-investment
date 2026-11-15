@@ -20,7 +20,7 @@ def missing_cash_constraint_citations(policy_years, context):
     """Identify terms whose cited sources cannot anchor a condition for E2."""
     from .agent_review.operating_cash_policy_draft_v16_generic import candidates
 
-    scopes = {row["id"]: row.get("scope") for row in context["evidence"]}
+    evidence = {row["id"]: row for row in context["evidence"]}
     eligible_ids = candidates(context, context["source_binding"])
     missing = []
     for year, scenarios in policy_years.items():
@@ -29,12 +29,18 @@ def missing_cash_constraint_citations(policy_years, context):
                 anchors = {
                     evidence_id
                     for evidence_id in eligible_ids[term_name]
-                    if scopes[evidence_id] not in {
+                    if evidence[evidence_id].get("scope") not in {
                         "ISSUER_FINANCING_DISCLOSURE", "ISSUER_PARENT_STANDALONE_BALANCE_PROXY",
                         "ISSUER_PARENT_UNDATED_COMMITMENT_BOUND", "ISSUER_INDUSTRY_COST_COMPOSITION",
                     }
-                    and (scopes[evidence_id] != "ISSUER_ARTICLES_RULE_TEXT"
+                    and (evidence[evidence_id].get("scope") != "ISSUER_ARTICLES_RULE_TEXT"
                          or term_name == "reserve_ratio")
+                    and not (term_name == "operating_wc_cash_cny"
+                             and evidence[evidence_id].get("field") in {"parent_cfo", "cfo_cny"})
+                    and not (term_name == "commitment_cash_cny"
+                             and evidence[evidence_id].get("field") in {
+                                 "parent_capex", "gross_capex_cny", "investment_income_cash_cny",
+                             })
                 }
                 if anchors.isdisjoint(term["evidence_ids"]):
                     missing.append(dict(year=year, scenario=scenario, term=term_name))

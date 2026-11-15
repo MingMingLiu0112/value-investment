@@ -155,6 +155,9 @@ def test_v25_return_plan_applies_reported_fact_provenance(tmp_path, monkeypatch,
     ("commitment_cash_cny", ["fund-bound", "capex-contract"], True),
     ("commitment_cash_cny", ["financing", "capex-contract"], True),
     ("commitment_cash_cny", ["financing", "parent-cfo"], False),
+    ("commitment_cash_cny", ["historical-capex"], False),
+    ("operating_wc_cash_cny", ["parent-cfo"], False),
+    ("operating_wc_cash_cny", ["parent-cfo", "working-capital"], True),
 ])
 def test_v25_cash_constraints_require_applicable_primary_anchor(monkeypatch, term, citations, accepted):
     from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v17 as e2
@@ -166,14 +169,17 @@ def test_v25_cash_constraints_require_applicable_primary_anchor(monkeypatch, ter
         {"id": "charter", "scope": "ISSUER_ARTICLES_RULE_TEXT"},
         {"id": "financing", "scope": "ISSUER_FINANCING_DISCLOSURE"},
         {"id": "fund-bound", "scope": "ISSUER_PARENT_UNDATED_COMMITMENT_BOUND"},
-        {"id": "parent-cfo", "scope": "parent"},
+        {"id": "parent-cfo", "scope": "parent", "field": "parent_cfo"},
+        {"id": "historical-capex", "scope": "parent", "field": "gross_capex_cny"},
+        {"id": "working-capital", "scope": "parent", "field": "working_capital_cash_component"},
         {"id": "capex-contract", "scope": "parent"},
     ]
     context = {"evidence": evidence, "source_binding": {}}
     monkeypatch.setattr(cash, "candidates", lambda *_: {
         "reserve_ratio": ["charter"],
         "accessible_profit_ratio": ["charter", "parent-cfo"],
-        "commitment_cash_cny": ["financing", "fund-bound", "capex-contract"],
+        "commitment_cash_cny": ["financing", "fund-bound", "capex-contract", "historical-capex"],
+        "operating_wc_cash_cny": ["parent-cfo", "working-capital"],
     })
     policy = {"2027": {"base": {"terms": {term: {"evidence_ids": citations}}}}}
     if accepted:
