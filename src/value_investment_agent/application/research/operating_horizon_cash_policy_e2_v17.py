@@ -40,9 +40,8 @@ def cash_constraint_anchor_ids(context):
             and (evidence[evidence_id].get("scope") != "ISSUER_ARTICLES_RULE_TEXT"
                  or term_name == "reserve_ratio")
             and (term_name != "operating_wc_cash_cny"
-                 or evidence[evidence_id].get("scope") in {"parent", "ISSUER_PARENT_STANDALONE"})
-            and not (term_name == "operating_wc_cash_cny"
-                     and evidence[evidence_id].get("field") in {"parent_cfo", "cfo_cny"})
+                 or (evidence[evidence_id].get("scope") in {"parent", "ISSUER_PARENT_STANDALONE"}
+                     and evidence[evidence_id].get("field") == "working_capital_cash_component"))
             and not (term_name == "commitment_cash_cny"
                      and evidence[evidence_id].get("field") in {
                          "parent_capex", "gross_capex_cny", "investment_income_cash_cny",
