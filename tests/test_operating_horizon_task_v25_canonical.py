@@ -226,3 +226,45 @@ def test_compact_cash_stage_settles_and_replays(setup, unknown):
     assert len(calls) == 4
     with pytest.raises(ValueError, match="V25_IMPLEMENTATION_OR_LOADER_CHANGED"):
         old.read(task_id)
+
+
+@pytest.mark.parametrize("extra", [1, 2])
+def test_sealed_bull_citation_transcription_is_bounded_and_read_only(setup, extra):
+    from value_investment_agent.application.research.agent_review.operating_horizon_v25_citation_transcription import (
+        replay_annual_citation_transcription,
+    )
+
+    service, source, calls = setup
+    evidence = next(row for row in source["evidence"]
+                    if row.get("field") == "cost" and row.get("period") == "2025-06-30")
+    previous = evidence["id"]
+    correct = "operating-statement:" + "b" * 64
+    evidence["id"] = correct
+    malformed = "operating-statement:" + "a" * extra + "b" * 64
+
+    def response(request):
+        name = task.SCENARIOS[len(calls)]
+        calls.append(request)
+        value = json.loads(json.dumps(native_row(name)).replace(json.dumps(previous), json.dumps(correct)))
+        if name == "bull":
+            driver = next(row for row in value["drivers"] if row["driver_id"] == "unit_cost_change")
+            anchors = [item for item in driver["baseline_anchor_ids"] if item != correct]
+            driver["baseline_anchor_ids"] = [*anchors, malformed]
+        return LLMResponse(json.dumps(value), 100, 50, "TEST_ONLY")
+
+    service.test_provider.complete = response
+    task_id = service.create(symbol="600887", request_key="TEST_V25_TRANSCRIPTION", years=[2027], now=NOW)["task_id"]
+    failed = service.run(task_id, now=NOW)
+    assert failed["error_code"] == "V25_BULL_RESPONSE_REJECTED"
+    before = {p: p.read_bytes() for p in service._directory(task_id).rglob("*.json")}
+    if extra == 1:
+        receipt = replay_annual_citation_transcription(service, task_id)
+        assert receipt["replayed_citation"] == correct
+        assert receipt["original_citation"] == malformed
+        assert receipt["formal_eligibility"] is False and receipt["action"] == "no_order"
+        assert len(receipt["next_cash_request_sha256"]) == 64
+    else:
+        with pytest.raises(ValueError, match="V25_TRANSCRIPTION_REQUIRES_ONE_EXTRA_HEX_CHARACTER"):
+            replay_annual_citation_transcription(service, task_id)
+    assert before == {p: p.read_bytes() for p in service._directory(task_id).rglob("*.json")}
+    assert len(calls) == 3
