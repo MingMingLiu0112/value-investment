@@ -257,13 +257,12 @@ it("records the current driver bridge arithmetic acceptance without adopting par
       "母公司资金、分配、维持投入和营运资金条件桥",
     );
     expect(stage.nextStep).toContain("相同资料不再付费重试");
+    expect(stage.deliveryReview?.done).toContain("真实模型形成并通过严格校验");
+    expect(stage.deliveryReview?.gap).toContain("现金响应结构错位被拒绝");
+    expect(stage.deliveryReview?.gap).toContain("五项现金政策仍UNKNOWN");
     expect(stage.deliveryReview?.gap).toContain(
-      "V19、V20年度响应均已封存且校验失败",
+      "F1/F2未形成这条链的估值或条件价",
     );
-    expect(stage.deliveryReview?.gap).toContain("V20仅调用Bear阶段");
-    expect(stage.deliveryReview?.gap).toContain("Base/Bull及现金均未调用");
-    expect(stage.deliveryReview?.gap).toContain("未来现金政策仍UNKNOWN");
-    expect(stage.deliveryReview?.gap).toContain("E2/F1/F2没有新真实正例");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
   expect(d1.evidenceStatus).toContain("当前版本三角色研究");
@@ -274,11 +273,12 @@ it("records the current driver bridge arithmetic acceptance without adopting par
   );
   expect(d2.implementation).toContain("H12026→H12027");
   expect(d2.implementation).toContain("同比FY只对FY、H1只对H1");
-  expect(d2.milestone).toContain("历史失败任务保持原样");
-  expect(d2.milestone).toContain("现金和估值链未闭环");
+  expect(d2.milestone).toContain("V25任务与API/E2读取已接线");
+  expect(d2.milestone).toContain("现金响应因字段层级错误被拒绝");
   expect(d2.existingEvidence).toContain("rt-c40经济拒绝保留为历史");
   expect(d2.evidence).toContain("typed bridge不消费这些文字");
-  expect(d2.progress?.economic).toContain("参数经济适用性未证");
+  expect(d2.progress?.economic).toContain("资金可达");
+  expect(d2.progress?.economic).toContain("E2/F1/F2正向路径仍未通过");
   const html = renderToStaticMarkup(<ArchitectureView strategy="value" />);
   for (const text of [
     "21项经营驱动范围",

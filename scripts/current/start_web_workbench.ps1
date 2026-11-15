@@ -15,6 +15,18 @@ $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 Set-Location -LiteralPath $root
 $env:PYTHONPATH = Join-Path $root 'src'
 $env:PYTHONIOENCODING = 'utf-8'
+if ($env:VALUE_INVESTMENT_LOCAL_RESEARCH_TASK_ROOT) {
+    $researchRoot = [System.IO.Path]::GetFullPath($env:VALUE_INVESTMENT_LOCAL_RESEARCH_TASK_ROOT).TrimEnd('\', '/')
+    if ($env:VALUE_AGENT_SHARED_RESEARCH_ROOT -and
+        -not [string]::Equals(
+            [System.IO.Path]::GetFullPath($env:VALUE_AGENT_SHARED_RESEARCH_ROOT).TrimEnd('\', '/'),
+            $researchRoot, [StringComparison]::OrdinalIgnoreCase)) {
+        throw '研究任务根目录与共享模型预算根目录不一致；拒绝启动。'
+    }
+    # The API validates the sibling worktree identity before registering routes.
+    # D1 and V19+ D2 then charge the same existing daily model-budget ledger.
+    $env:VALUE_AGENT_SHARED_RESEARCH_ROOT = $researchRoot
+}
 $python = 'D:\APP\Python313\python.exe'
 if (-not (Test-Path -LiteralPath $python)) { throw '未找到工作台 Python 解释器。' }
 $requestedPort = $Port

@@ -719,14 +719,22 @@ export const catalog: Record<
               description: "季度经营到实际共享现金模型的后续消费者。",
             },
             {
-              path: "src/value_investment_agent/application/research/agent_review/operating_horizon_task_v20_staged.py",
+              path: "src/value_investment_agent/application/research/agent_review/operating_horizon_task_v25_canonical.py",
               symbol: "OperatingHorizonTaskService",
-              description: "年度三情景逐段封存并共享费用预算；失败不续跑。",
+              description:
+                "三情景年度研究逐段封存，现金阶段独立校验并计入共享每日费用预算；失败不续跑。",
             },
             {
-              path: "src/value_investment_agent/application/research/operating_horizon_cash_policy_e2_v12.py",
-              symbol: "read_v20_cash_policy_e2_input",
-              description: "完整响应核验后才交E2编译，旧版本保持原入口。",
+              path: "src/value_investment_agent/application/research/agent_review/operating_horizon_sources_v2_return_plan.py",
+              symbol: "build_operating_horizon_source_context",
+              description:
+                "仅对明确配置的证券，把官方回报规划原件加入财务事实并单独绑定来源版本。",
+            },
+            {
+              path: "src/value_investment_agent/application/research/operating_horizon_cash_policy_e2_v17.py",
+              symbol: "read_v25_cash_policy_e2_input",
+              description:
+                "严格核验完整现金政策后才交E2；历史任务仍按原版本读取。",
             },
             {
               path: "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
@@ -738,8 +746,8 @@ export const catalog: Record<
           why: "估值参数需要经济理由，而不是AI直接报价格。",
           how: "区分事实与预测，推导量价成本及资金路径，保留反例。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "既有真实经营研究、来源绑定年度任务和E2只读消费者可用；V20新增Bear/Base/Bull分段执行与封存，三段齐全才进入原经济校验及现金阶段。真实模型结果仍须独立验收。",
-          gap: "600887真实V19、V20年度响应均已封存且校验失败；V20仅调用Bear阶段、结算¥0.053504，Base/Bull及现金均未调用。旧V18的未来现金政策仍UNKNOWN；E2/F1/F2没有新真实正例。",
+          done: "通用年度三情景已经由真实模型形成并通过严格校验；官方回报规划可与原财务事实共同封存，旧任务不重写。现金阶段、费用和失败原因逐段留存。",
+          gap: "最新真实现金响应结构错位被拒绝；除条件派息比例外五项现金政策仍UNKNOWN。E2没有可消费的完整新输入，F1/F2未形成这条链的估值或条件价。",
           acceptance:
             "来源绑定的经营假设、三情景、反证和重开条件可被模型消费。",
           evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
@@ -761,31 +769,31 @@ export const catalog: Record<
         evidenceStatus:
           "96条官方来源；21项经营驱动范围、6项增长/税前利润率由代码派生、9项资本UNKNOWN；不是模型直接填利润率；新增30行现金账与v4条件估值真实消费",
         shortStatus:
-          "年度研究分段执行已接线；600887真实V20首段输出结构不合格，任务停止。连续股东现金、适用终端和新F1/F2条件价格尚未形成。",
+          "年度三情景真实校验通过；现金政策仍缺资金可达、维持投入等五项依据，结构错误响应已封存拒绝，未进入E2/F1/F2。",
         implementation:
           "原驱动桥锁定H12026→H12027，按每情景128角点重算；同比FY只对FY、H1只对H1。新增2026Jul–2027Jun滚动全年适配，后续flat，ResearchApplicationService→既有v4计算",
         milestone:
-          "V20按情景逐段封存并接现有API/E2；真实任务rt-817f3156cc765c2f28edf3871ae8f6fa在Bear结构校验失败，后续调用未发生。旧V19/V18历史失败任务保持原样，现金和估值链未闭环。",
+          "V25任务与API/E2读取已接线。新增官方规划原件后的真实任务三段经营均通过，现金响应因字段层级错误被拒绝；旧结果和费用记录保留。",
         existingEvidence:
           "旧D2两公司草案及rt-c40经济拒绝保留为历史，不覆盖旧raw；当前H1第11/14/12页量价成本表构成新驱动桥，不沿用旧直接填利润率路径",
         evidenceSource:
-          "runtime/research-task-execution-v1/oh-v20-2027/rt-817f3156cc765c2f28edf3871ae8f6fa（真实Bear失败）；runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json；runtime/d2-operating-driver-20261101/independent-acceptance.json；artifacts/current/d2-cash-consumption-20261101/index.json；验收索引 artifacts/current/d2-operating-driver-20261101.json",
+          "隔离工作树 runtime/research-task-execution-v1/oh-v25-full-schema-canonical-2027/rt-a52deda6310c6fd4ec7efbfd439c20d6；官方规划cninfo:1224808850及原财报Hash；历史驱动复算 runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-recovered.json、runtime/d2-operating-driver-20261101/independent-acceptance.json、artifacts/current/d2-operating-driver-20261101.json；唯一计划docs/current/core-value-development-plan.md。新任务尚不在8001选定的历史任务根目录，页面运行记录不可冒充已接入。",
         evidence:
           "仅拒绝两类AI文字：产品结构向高档集中误述、Event母现金23.93亿元少10倍；不作为事实摘要，typed bridge不消费这些文字，算术验收不受其替代。Event仍限FY/H1；未来参数适用性未证，原9项资本UNKNOWN不升级已证；新现金/估值仅复用另行绑定的条件政策。",
         nextStep:
-          "核对母公司资金、分配、维持投入和营运资金条件桥；审查年度输出层级错位的原始原因，冻结下一版明确合同。相同资料不再付费重试。",
+          "从官方年报核对母公司资金、分配、维持投入和营运资金条件桥及到期承诺；修复现金响应结构合同并通过独立经济复核后才交E2，相同资料不再付费重试。",
         ruleWhy: "价格上涨不直接等于净利上涨；预测必须明确为假设。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer:
-            "V12封存年度→V18真实现金任务→E2只读版本接线已验证；干净检出可冷读同一封存任务。E2因18项未来现金政策未知而拒绝，不能进入共享估值。",
+            "V25三情景→独立现金阶段→E2只读版本接线已验证；旧任务按各自来源绑定读取。新现金响应未通过，E2继续拒绝。",
           realData:
-            "人工维护进度：600519真实V12年度通过；V18一次deepseek-flash现金调用已结算¥0.080792，任务SUCCEEDED，研究经济状态INCOMPLETE_UNKNOWN_TERMS。原响应封存，不作为合格E2输入。",
+            "人工维护进度：最新官方规划来源冷重放64条事实；真实deepseek-flash任务经营三情景通过，现金结构失败，实际结算¥0.319198。旧任务仍留存；此处不是实时任务状态。",
           economic:
-            "历史派息和未缴基金承诺可作条件锚点；参数经济适用性未证，母公司资金可达、维持投入及经营营运现金缺乏可审阅的未来桥，不能补零或把余额变动当现金。E2/F1/F2正向路径仍未通过。",
+            "回报规划75%以合并归母利润为分母，且受生产经营资金需求约束；不能当母公司可达现金。资金可达、储备、净维持投入、营运现金和承诺付款尚无完整条件桥，E2/F1/F2正向路径仍未通过。",
           deployment:
-            "V18源码、后端和Web构建已在本机唯一8001对齐；/project文案同步本次真实结果。GitHub Web CI通过、Core CI仍待最终结果；发布注册表不可用，不能标为最终全绿。",
+            "本条为待发布的人工维护进度。新代码和页面尚未在8001验收，不能把旧页面或GitHub CI视为本机发布。",
           acceptance: "用户尚未确认此版本",
         },
       },
