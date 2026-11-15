@@ -47,6 +47,7 @@ vi.mock("../src/services/api", async (original) => {
     },
   };
 });
+import { ApiError } from "../src/services/api";
 import { HorizonCashPolicyPanel } from "../src/components/HorizonCashPolicyPanel";
 
 function nodes(value: any): any[] {
@@ -334,4 +335,36 @@ it("shows distinct Chinese explanations for validated cash gaps", () => {
   expect(alert?.props.description).toContain(
     "母公司营运资金现金、已承诺现金支出",
   );
+});
+
+it("starts the pinned V25 contract only on click and explains missing anchors", async () => {
+  button(render("600323"), "D2 股东现金政策研究").props.onClick();
+  expect(calls.create).not.toHaveBeenCalled();
+  calls.create.mockRejectedValue(
+    new ApiError(
+      422,
+      "HORIZON_CASH_POLICY_TASK_REJECTED",
+      "V25_E2_CASH_ANCHORS_MISSING:operating_wc_cash_cny,reserve_ratio",
+    ),
+  );
+  await button(
+    render("600323"),
+    "启动2027三情景与股东现金研究（可能计费）",
+  ).props.onClick();
+  expect(calls.create).toHaveBeenCalledTimes(1);
+  expect(calls.create).toHaveBeenCalledWith(
+    expect.objectContaining({
+      symbol: "600323",
+      years: [2027],
+      task_contract: "operating-horizon-task-v25-full-schema-canonical-2027",
+    }),
+  );
+  expect(
+    render("600323").some(
+      (node) =>
+        typeof node.props.message === "string" &&
+        node.props.message.includes("母公司营运资金现金、盈余公积计提比例") &&
+        node.props.message.includes("本次未创建任务或调用模型"),
+    ),
+  ).toBe(true);
 });

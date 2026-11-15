@@ -1697,7 +1697,8 @@ export const api = {
       | "operating-horizon-task-v13-2027-live"
       | "operating-horizon-task-v14-2027-live"
       | "operating-horizon-task-v15-2027-live"
-      | "operating-horizon-task-v16-2027-live";
+      | "operating-horizon-task-v16-2027-live"
+      | "operating-horizon-task-v25-full-schema-canonical-2027";
     source_loader_version?:
       | "operating-q3-issuer-wc-loader-v9-600519"
       | "operating-q3-issuer-dividend-split-loader-v9-600519";

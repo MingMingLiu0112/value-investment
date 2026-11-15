@@ -141,6 +141,7 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
       | "startV13WC"
       | "startV15Dividend"
       | "startV16Dividend"
+      | "startV25"
       | "refresh"
       | "cancel"
       | "resume",
@@ -160,6 +161,7 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
           : await api.createHorizonCashPolicyTask({
               symbol,
               years: [
+                operation === "startV25" ||
                 operation === "startV11WC" ||
                 operation === "startV12WC" ||
                 operation === "startV13WC" ||
@@ -174,38 +176,40 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                       : 0),
               ],
               request_key: "cash_" + crypto.randomUUID().replace(/-/g, ""),
-              ...(operation === "startParentWC"
-                ? { task_contract: PARENT_WC_CONTRACT }
-                : operation === "startSplit"
-                  ? { task_contract: SPLIT_CONTRACT }
-                  : operation === "startAnchoredSplit"
-                    ? { task_contract: ANCHORED_SPLIT_CONTRACT }
-                    : operation === "startV11WC"
-                      ? {
-                          task_contract: V11_CONTRACT,
-                          source_loader_version: V11_WC_SOURCE,
-                        }
-                      : operation === "startV12WC"
+              ...(operation === "startV25"
+                ? { task_contract: V25_CONTRACT }
+                : operation === "startParentWC"
+                  ? { task_contract: PARENT_WC_CONTRACT }
+                  : operation === "startSplit"
+                    ? { task_contract: SPLIT_CONTRACT }
+                    : operation === "startAnchoredSplit"
+                      ? { task_contract: ANCHORED_SPLIT_CONTRACT }
+                      : operation === "startV11WC"
                         ? {
-                            task_contract: V12_CONTRACT,
+                            task_contract: V11_CONTRACT,
                             source_loader_version: V11_WC_SOURCE,
                           }
-                        : operation === "startV13WC"
+                        : operation === "startV12WC"
                           ? {
-                              task_contract: V13_CONTRACT,
+                              task_contract: V12_CONTRACT,
                               source_loader_version: V11_WC_SOURCE,
                             }
-                          : operation === "startV15Dividend"
+                          : operation === "startV13WC"
                             ? {
-                                task_contract: V15_CONTRACT,
-                                source_loader_version: V15_DIVIDEND_SOURCE,
+                                task_contract: V13_CONTRACT,
+                                source_loader_version: V11_WC_SOURCE,
                               }
-                            : operation === "startV16Dividend"
+                            : operation === "startV15Dividend"
                               ? {
-                                  task_contract: V16_CONTRACT,
+                                  task_contract: V15_CONTRACT,
                                   source_loader_version: V15_DIVIDEND_SOURCE,
                                 }
-                              : {}),
+                              : operation === "startV16Dividend"
+                                ? {
+                                    task_contract: V16_CONTRACT,
+                                    source_loader_version: V15_DIVIDEND_SOURCE,
+                                  }
+                                : {}),
             })
         : operation === "refresh"
           ? await (kind === "compact"
@@ -244,10 +248,29 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
                           ? "v15"
                           : operation === "startV16Dividend"
                             ? "v16"
-                            : "annual",
+                            : operation === "startV25"
+                              ? "v25"
+                              : "annual",
         );
     } catch (cause) {
       const reason = safeReason(cause);
+      const prefix = "V25_E2_CASH_ANCHORS_MISSING:";
+      const missing =
+        cause instanceof ApiError &&
+        cause.status === 422 &&
+        typeof cause.detail === "string" &&
+        cause.detail.startsWith(prefix)
+          ? cause.detail
+              .slice(prefix.length)
+              .split(",")
+              .map((term) => CASH_TERM_LABELS.get(term))
+          : [];
+      if (missing.length && missing.every(Boolean)) {
+        setError(
+          `现有公开资料缺少：${missing.join("、")}。尚不能编译股东现金路径，本次未创建任务或调用模型。`,
+        );
+        return;
+      }
       setError(
         cause instanceof ApiError && cause.status === 401
           ? "启动或读取D2现金政策研究需要本机授权；不会影响公开研究阅读。"
@@ -653,6 +676,9 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
         </Button>
         <Button disabled={busy} onClick={() => loadHistory("v18")}>
           读取2027 V18现金条件研究历史
+        </Button>
+        <Button disabled={busy || active} onClick={() => run("startV25")}>
+          启动2027三情景与股东现金研究（可能计费）
         </Button>
         <Button disabled={busy} onClick={() => loadHistory("v25")}>
           读取2027 V25三情景与股东现金历史
