@@ -938,6 +938,19 @@ def test_quarter_event_keeps_candidate_review_separate(reconciliation, monkeypat
     if verified:
         assert row["facts"][0]["terms"]["event_type"] == "REPORTED_QUARTERLY_FINANCIAL_UPDATE"
         assert row["facts"][0]["terms"]["effective_date"] is None
+        from value_investment_agent.application.research.candidate_event_impact import build_candidate_event_impact
+
+        analysis = case["analysis"]
+        descriptor = analysis["input_descriptor_sha256"]
+        analysis["source_native_cash_review"] = dict(candidate_binding=row["candidate_binding"],
+            model_context=dict(input_descriptor_sha256=descriptor))
+        draft = build_candidate_event_impact(analysis, [row])
+        impact, = draft["items"]
+        assert impact["status"] == "RECALCULATION_REVIEW_REQUIRED"
+        assert impact["consumed_model_values"] == []
+        assert impact["quantified_profit_effect"] is None
+        analysis["source_native_cash_review"]["model_context"]["input_descriptor_sha256"] = "b" * 64
+        assert not build_candidate_event_impact(analysis, [row])["items"]
     else:
         assert not row["facts"]
         assert row["unresolved"][0]["reason"] == "QUARTERLY_ORIGINAL_NOT_VERIFIED_FOR_EVENT"

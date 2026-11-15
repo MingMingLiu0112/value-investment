@@ -6,9 +6,20 @@ from decimal import Decimal, localcontext
 def build_candidate_event_impact(analysis, events):
     candidate = analysis["review_binding"]["candidate_binding"]
     economic = (analysis.get("joint_capital_review") or {}).get("economic_path") or {}
-    if economic.get("candidate_binding") != candidate:
-        return dict(status="CANDIDATE_ECONOMIC_PATH_UNAVAILABLE", items=[],
-            candidate_binding=deepcopy(candidate), action="no_order", materiality_approved=False)
+    native = analysis.get("source_native_cash_review") or {}
+    mapped = economic.get("candidate_binding") == candidate
+    native_bound = (native.get("candidate_binding") == candidate
+        and (native.get("model_context") or {}).get("input_descriptor_sha256")
+        == analysis.get("input_descriptor_sha256")
+        and analysis.get("input_descriptor_sha256") is not None)
+    if not mapped:
+        if not native_bound:
+            return dict(status="CANDIDATE_ECONOMIC_PATH_UNAVAILABLE", items=[],
+                candidate_binding=deepcopy(candidate), action="no_order", materiality_approved=False)
+        # A replayed native cash ledger is bound to the candidate but does not
+        # expose comparable quarterly operating fields. Keep the review facts
+        # and leave all scenario mappings empty instead of equating FY and YTD.
+        economic = {}
     items = []
     for event in events:
         if (event.get("status") != "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
@@ -80,4 +91,5 @@ def build_candidate_event_impact(analysis, events):
         candidate_binding=deepcopy(candidate), input_descriptor_sha256=analysis["input_descriptor_sha256"],
         assumption_binding=deepcopy(economic.get("assumption_binding")),
         period_basis=economic.get("period_basis"), items=items,
+        model_field_mapping="JOINT_ECONOMIC_PATH" if mapped else "NATIVE_CASH_LEDGER_NO_COMPARABLE_OPERATING_FIELDS",
         materiality_approved=False, model_validity_granted=False, action="no_order")
