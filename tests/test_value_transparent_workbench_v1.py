@@ -268,3 +268,21 @@ def test_retained_financial_review_requires_exact_native_closure(tmp_path, damag
         assert result['status'] == value['status']
         ref = result['financial_summary']['verified_financial_review']['facts'][0]['source_binding']
         assert ref == {'path': relative, 'sha256': digest}
+
+@pytest.mark.parametrize('state', ['CANDIDATE', 'EXCLUDED', 'UNASSESSABLE', 'ABSENT', 'UNAVAILABLE'])
+def test_sse_selection_preserves_membership_and_status(tmp_path, monkeypatch, state):
+    items = [] if state in {'ABSENT', 'UNAVAILABLE'} else [
+        dict(symbol=SYMBOL, status=state, reason='TEST_ONLY reason', gaps=['TEST_ONLY gap'])
+    ]
+    def screen(**kwargs):
+        assert kwargs['query'] == SYMBOL and kwargs['status'] == 'ALL'
+        return dict(status='UNAVAILABLE' if state == 'UNAVAILABLE' else 'PARTIAL',
+                    source_status='HISTORICAL_SNAPSHOT_SOURCE_REVALIDATED',
+                    scope='SSE_MAIN_A_ONLY', items=items, blockers=[], source_refs=[],
+                    pagination={'total': len(items)}, coverage_complete=True)
+    monkeypatch.setattr(app, 'read_screen', screen)
+    result = app._scoped_selection(tmp_path, SYMBOL, NOW)
+    assert result['context']['scope'] == 'SSE_MAIN_A_ONLY'
+    assert result['items'] == items
+    membership = {'ABSENT': 'NOT_IN_OBSERVED_SCOPE', 'UNAVAILABLE': 'SCOPE_SOURCE_UNAVAILABLE'}
+    assert result['observed_scope_status'] == membership.get(state, 'IN_OBSERVED_SCOPE')

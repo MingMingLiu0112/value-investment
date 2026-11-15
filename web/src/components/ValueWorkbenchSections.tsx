@@ -75,8 +75,43 @@ function Content({
     );
   if (section.id === "selection") {
     const selected = obj(native.selection);
+    const scoped = obj(native.sse_main_selection);
+    const scopedContext = obj(scoped.context);
+    const scopedRow = obj(Array.isArray(scoped.items) ? scoped.items[0] : null);
+    const scopedStatus: Record<string, string> = {
+      CANDIDATE: "已进入研究候选池",
+      EXCLUDED: "本轮初筛排除",
+      UNASSESSABLE: "资料不足，暂无法评价",
+    };
+    const scopedCoverage: Record<string, string> = {
+      NOT_IN_OBSERVED_SCOPE: "本公司不在该沪市主板快照范围内",
+      SCOPE_MEMBERSHIP_UNKNOWN: "覆盖不完整，暂无法确认是否在范围内",
+      SCOPE_SOURCE_UNAVAILABLE: "快照来源不可用，结果未知",
+    };
     return (
       <>
+        {Object.keys(scoped).length > 0 && (
+          <section>
+            <h3>沪市主板初筛</h3>
+            <p>
+              {scopedStatus[scopedRow.status] ||
+                scopedCoverage[scoped.observed_scope_status] ||
+                "暂无法核验筛选结果"}
+            </p>
+            {scopedContext.source_status ===
+              "HISTORICAL_SNAPSHOT_SOURCE_REVALIDATED" && (
+              <p>已核验的历史快照 · {scopedContext.available_at}</p>
+            )}
+            {scopedRow.reason && <p>{scopedRow.reason}</p>}
+            {Object.keys(scopedRow).length > 0 && (
+              <details>
+                <summary>各通道依据与资料缺口</summary>
+                <Readable value={scopedRow.channel_evaluations} />
+                <Readable value={scopedRow.gaps} />
+              </details>
+            )}
+          </section>
+        )}
         <p>
           观察范围：
           {selected.observed_scope_status === "IN_OBSERVED_SCOPE"

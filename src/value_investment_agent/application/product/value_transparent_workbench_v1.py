@@ -9,6 +9,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
 
 from .common import require_inside
+from ..discovery.sse_main_screening import read_screen
 from ..discovery.value_candidate_selection import select_current_value_candidates
 from ..research.company_profile import load_company_profile
 from ..research.company_profile_sources_v1 import load_source_company_profile
@@ -155,6 +156,33 @@ def _call(root, symbol, operation, *, retained_financial_review=False):
         return dict(status='UNASSESSABLE', reason=str(error), error_type=type(error).__name__)
 
 
+def _scoped_selection(root, symbol, now):
+    screen = read_screen(root=root, now=now, query=symbol, status='ALL', limit=100)
+    context = {key: screen[key] for key in (
+        'scope', 'counts', 'coverage_complete', 'source_status', 'available_at',
+        'observation_date', 'quote_date', 'quote_date_verified', 'rule_version',
+    ) if key in screen}
+    result = dict(symbol=symbol, status=screen['status'], context=context,
+                  blockers=screen['blockers'], source_bindings=screen['source_refs'])
+    if screen['status'] == 'UNAVAILABLE':
+        return dict(result, observed_scope_status='SCOPE_SOURCE_UNAVAILABLE', items=[])
+    if screen['pagination']['total'] > len(screen['items']):
+        raise ValueError('SCOPED_SCREEN_SYMBOL_LOOKUP_INCOMPLETE')
+    exact = [row for row in screen['items'] if row['symbol'] == symbol]
+    if len(exact) > 1:
+        raise ValueError('SCOPED_SCREEN_SYMBOL_NOT_UNIQUE')
+    if not exact:
+        return dict(result, observed_scope_status=(
+            'NOT_IN_OBSERVED_SCOPE' if screen['coverage_complete'] else 'SCOPE_MEMBERSHIP_UNKNOWN'
+        ), items=[])
+    row = exact[0]
+    return dict(result, observed_scope_status='IN_OBSERVED_SCOPE', items=[{
+        key: row[key] for key in ('symbol', 'name', 'status', 'reason', 'gaps',
+                                  'channels', 'channel_evaluations', 'updated_at')
+        if key in row
+    }])
+
+
 def _profile(root, symbol, now):
     value = load_company_profile(root=root, symbol=symbol, now=now)
     # Exactly the existing public API fallback: damaged current research never falls back.
@@ -299,6 +327,7 @@ def read_value_transparent_workbench(*, root, symbol, now):
                     context={k: value[k] for k in ('coverage', 'screening_scope', 'as_of', 'quote_date',
                         'available_at', 'snapshot_status', 'refresh_status', 'source_bindings', 'blockers') if k in value})
     selected = read(selection)
+    scoped_selection = read(lambda: _scoped_selection(root, symbol, now))
     profile = _call(root, symbol, lambda: _profile(root, symbol, now), retained_financial_review=True)
     legacy = _call(root, symbol, lambda: load_current_value_research_analysis(root=root, symbol=symbol, now=now),
                    retained_financial_review=True)
@@ -325,7 +354,7 @@ def read_value_transparent_workbench(*, root, symbol, now):
     sections = []
     def add(ident, title, summary, results, kinds):
         sections.append(_section(root, ident, title, summary, results, kinds))
-    add('selection', '为何进入研究范围', '四通道原始理由、排除与范围；未出现于观察范围不等于全市场不合格。', {'selection': selected}, [facts, unknown])
+    add('selection', '为何进入研究范围', '四通道原始理由、排除与范围；未出现于观察范围不等于全市场不合格。', {'selection': selected, 'sse_main_selection': scoped_selection}, [facts, unknown])
     add('profile', '企业画像与模型适用性', '来源主营与条件路由不等于护城河、质量或估值批准。', {'profile': profile}, [facts, assumption, unknown])
     existing_research = _project_native(legacy, ('thesis', 'return_driver', 'supporting_evidence',
         'counter_evidence', 'thesis_breakers', 'next_events', 'human_review_items', 'assurance_limits'))
