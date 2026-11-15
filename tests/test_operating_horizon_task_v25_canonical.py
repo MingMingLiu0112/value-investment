@@ -429,3 +429,38 @@ def test_v25_charter_floor_is_not_payout_anchor_in_either_transport(monkeypatch,
         e2.read_v25_cash_policy_e2_input(root=tmp_path, task_id="test", now=NOW, service=service)
     term["evidence_ids"].append("policy")
     assert e2.read_v25_cash_policy_e2_input(root=tmp_path, task_id="test", now=NOW, service=service) is result
+
+def test_parent_wc_loader_keeps_e2_eligible_anchor_in_bounded_cash_request(setup, monkeypatch):
+    from value_investment_agent.application.research.agent_review import (
+        operating_cash_policy_draft_v16_generic as draft,
+        operating_horizon_sources_parent_wc as loader,
+    )
+    from value_investment_agent.application.research.operating_horizon_cash_policy_e2_v17 import (
+        cash_constraint_anchor_ids,
+    )
+
+    service, context, _ = setup
+    context["snapshot_fingerprint"] = "f" * 64
+    template = context["evidence"][0]
+    context["evidence"].extend(
+        dict(template, id=f"TEST_ONLY:unusable-wc:{i}", field="parent_customer_cash",
+             scope="parent", text="TEST_ONLY working capital proxy")
+        for i in range(9)
+    )
+    verified = dict(template, id="TEST_ONLY:verified-parent-wc", field="working_capital_cash_component",
+                    scope="parent", text="TEST_ONLY verified working capital cash component")
+    registry = service.root / loader.CONFIG
+    registry.write_text(json.dumps({"600887": True}), encoding="utf-8")
+    monkeypatch.setattr(loader.base, "build_operating_horizon_source_context", lambda **_: deepcopy(context))
+    monkeypatch.setattr(loader, "_cash_rows", lambda *_: [verified])
+    source = loader.build_operating_horizon_source_context(root=service.root, symbol="600887", now=NOW)
+    binding = source["source_binding"]
+    request = draft.build_request(source, binding)
+    terms = json.loads(request.user.split("\nTERM_HISTORICAL_CANDIDATE_IDS=", 1)[1])
+    eligible = cash_constraint_anchor_ids(source)["operating_wc_cash_cny"]
+    assert eligible == [verified["id"]]
+    assert terms["operating_wc_cash_cny"][0] == verified["id"]
+    assert len(terms["operating_wc_cash_cny"]) == 8
+    assert loader.build_operating_horizon_source_context(
+        root=service.root, symbol="600887", now=NOW, binding=binding,
+    ) == source

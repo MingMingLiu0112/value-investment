@@ -122,7 +122,9 @@ def build_operating_horizon_source_context(*, root, symbol, now, binding=None):
         context = base.build_operating_horizon_source_context(
             root=root, symbol=symbol, now=now, binding=manifest["base_binding"],
         )
-    evidence = [*context["evidence"], *_cash_rows(root, context, manifest.get("annual_scan"))]
+    # The cash request limits each term to eight candidate IDs in source order.
+    # Keep reconciled cash components ahead of unqualified historical proxies.
+    evidence = [*_cash_rows(root, context, manifest.get("annual_scan")), *context["evidence"]]
     if len(evidence) > 100 or len({row["id"] for row in evidence}) != len(evidence):
         raise ValueError("HORIZON_EVIDENCE_LIMIT_OR_DUPLICATE")
     raw = _bytes(manifest)
