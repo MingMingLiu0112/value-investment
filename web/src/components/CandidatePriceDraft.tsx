@@ -1,4 +1,7 @@
-import type { JointCapitalReview } from "../services/valuePolicy";
+import type {
+  CandidatePriceAlignment,
+  JointCapitalReview,
+} from "../services/valuePolicy";
 
 type Review = Readonly<JointCapitalReview>;
 const numberText = (value: unknown) =>
@@ -238,15 +241,31 @@ export function candidateAlignmentMatches(review: Review): boolean {
   );
 }
 function CandidateAlignment({ review }: { review: Review }) {
-  const price = review.conditional_price;
-  const alignment = price?.alignment;
+  return (
+    <CandidateAlignmentPanel
+      alignment={review.conditional_price?.alignment}
+      matches={candidateAlignmentMatches(review)}
+      researchComparison={candidateResearchComparisonMatches(review)}
+    />
+  );
+}
+
+export function CandidateAlignmentPanel({
+  alignment,
+  matches,
+  researchComparison = false,
+}: {
+  alignment?: CandidatePriceAlignment | null;
+  matches: boolean;
+  researchComparison?: boolean;
+}) {
   if (!alignment)
     return (
       <p>
         尚未进行当前行情比较；未提供当前对齐检查，历史草案仍按原估值日阅读。
       </p>
     );
-  if (!candidateAlignmentMatches(review))
+  if (!matches)
     return (
       <section aria-label="当前对齐检查">
         <p role="alert">
@@ -265,7 +284,6 @@ function CandidateAlignment({ review }: { review: Review }) {
     numberText(quote.current_price) &&
     typeof quote.quote_date === "string" &&
     quote.quote_date === quote.latest_completed_session;
-  const researchComparison = candidateResearchComparisonMatches(review);
   const missing = Object.keys(alignmentChecks).filter(
     (id) => !checks.some((item) => item.id === id),
   );

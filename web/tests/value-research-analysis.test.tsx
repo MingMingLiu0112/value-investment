@@ -1292,3 +1292,30 @@ it.skipIf(!process.env.READINESS_PLAYWRIGHT_MODULE)(
   },
   90000,
 );
+
+it("renders the exact native candidate alignment without inventing a price draft", () => {
+  const decision = nativeDecision();
+  const analysis = decision.price_action_plan!.research_analysis!;
+  analysis.joint_capital_review = null;
+  const binding = analysis.review_binding!.candidate_binding;
+  analysis.current_alignment = {
+    schema_version: "pending-candidate-alignment-v1",
+    action: "no_order",
+    formal_eligibility: false,
+    status: "BLOCKED",
+    candidate_binding: binding,
+    input_descriptor_sha256: analysis.input_descriptor_sha256,
+    valuation_date: analysis.valuation_date,
+    currentpricecomparison: false,
+    checks: [],
+  } as typeof analysis.current_alignment;
+
+  const render = () =>
+    renderToStaticMarkup(<ValueResearchAnalysis decision={decision} />);
+  expect(render()).toContain("口径待核，不能进行当前价值比较");
+  analysis.current_alignment!.candidate_binding = {
+    ...binding,
+    sha256: "f".repeat(64),
+  };
+  expect(render()).toContain("当前对齐证据与候选/输入/估值日期不匹配");
+});

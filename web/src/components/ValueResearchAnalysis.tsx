@@ -11,6 +11,7 @@ import {
 import "./value-research-analysis.css";
 import { AccountingBridgeReview } from "./AccountingBridgeReview";
 import { PublicJointCapitalReview } from "./JointCapitalReview";
+import { CandidateAlignmentPanel } from "./CandidatePriceDraft";
 import { SourceNativeCashReview } from "./SourceNativeCashReview";
 import { OperatingEarningsBridge } from "./OperatingEarningsBridge";
 import { IndustrialEarningsResearch } from "./IndustrialEarningsResearch";
@@ -392,6 +393,28 @@ export function ValueResearchAnalysis({
       </div>
       <PublicJointCapitalReview analysis={analysis} symbol={analysis.symbol} />
       <SourceNativeCashReview analysis={analysis} symbol={decision.symbol!} />
+      {!analysis.joint_capital_review && analysis.current_alignment && (
+        <CandidateAlignmentPanel
+          alignment={analysis.current_alignment}
+          matches={
+            analysis.current_alignment.schema_version ===
+              "pending-candidate-alignment-v1" &&
+            analysis.current_alignment.action === "no_order" &&
+            analysis.current_alignment.formal_eligibility === false &&
+            !!analysis.review_binding?.candidate_binding &&
+            analysis.current_alignment.candidate_binding?.sha256 ===
+              analysis.review_binding.candidate_binding.sha256 &&
+            analysis.current_alignment.candidate_binding?.path ===
+              analysis.review_binding.candidate_binding.path &&
+            !!analysis.input_descriptor_sha256 &&
+            analysis.current_alignment.input_descriptor_sha256 ===
+              analysis.input_descriptor_sha256 &&
+            !!analysis.valuation_date &&
+            analysis.current_alignment.valuation_date ===
+              analysis.valuation_date
+          }
+        />
+      )}
       <h3>单因素敏感性</h3>
       <p>
         只改变一项已登记端点，其余输入固定在

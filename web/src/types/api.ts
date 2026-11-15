@@ -549,6 +549,8 @@ export interface FiscalEarningsResearch {
 }
 
 export interface ValueResearchAnalysis {
+  current_alignment?:
+    import("../services/valuePolicy").CandidatePriceAlignment | null;
   finite_advantage_research?: FiniteAdvantageResearch;
   fiscal_earnings_research?: FiscalEarningsResearch;
   parent_cash_research?: ParentCashResearch;
