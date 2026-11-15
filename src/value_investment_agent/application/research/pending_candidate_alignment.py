@@ -613,11 +613,12 @@ def _explicit_quarterly_financial_update(pages, symbol, binding):
     fields = {}
     for name in ("revenue", "parent_profit"):
         row = reported["fields"][name]
-        fields[name + "_cny"] = dict(value=row["current"], unit=row["currency"], scope=row["scope"],
-            physical_page=row["physical_page"], excerpt=row["excerpt"])
+        fields[name + "_cny"] = dict(value=row["current"], comparative_value=row["comparative"],
+            unit=row["currency"], scope=row["scope"], physical_page=row["physical_page"], excerpt=row["excerpt"])
     return dict(status="VERIFIED", period_start=reported["period_start"],
-                period_end=reported["period_end"], period_basis="YEAR_TO_DATE_9M_NOT_SINGLE_QUARTER",
-                fields=fields)
+                period_end=reported["period_end"], comparative_start=reported["comparative_start"],
+                comparative_end=reported["comparative_end"],
+                period_basis="YEAR_TO_DATE_9M_NOT_SINGLE_QUARTER", fields=fields)
 
 
 def _operating_events(analysis, windows, now, read, *, parser=None):
@@ -663,12 +664,12 @@ def _operating_events(analysis, windows, now, read, *, parser=None):
                     if quarter_title:
                         from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
                         try:
-                            observation = parse_native_capital_observation(pages, symbol=analysis["symbol"])
-                        except ValueError:
-                            observation = {}
-                        update = observation.get("financial_update") or {}
-                        if observation.get("kind") != "q3" or update.get("status") != "VERIFIED":
                             update = _explicit_quarterly_financial_update(pages, analysis["symbol"], binding)
+                        except ValueError:
+                            observation = parse_native_capital_observation(pages, symbol=analysis["symbol"])
+                            update = observation.get("financial_update") or {}
+                            if observation.get("kind") != "q3":
+                                raise ValueError("QUARTERLY_ORIGINAL_NOT_VERIFIED_FOR_EVENT")
                         if (update.get("status") != "VERIFIED"
                                 or _day(update["period_end"]) > published
                                 or quarter_title[1] != update["period_end"][:4]):

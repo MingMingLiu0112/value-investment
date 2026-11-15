@@ -59,6 +59,7 @@ def build_candidate_event_impact(analysis, events):
                         input_path="consumed_operating_inputs.ordinary_shares"))
                     mapped_fields.add("ordinary_shares")
             calculations = []
+            financial_changes = []
             if kind == "OPERATING_PRICE_CHANGE":
                 terms = parsed["terms"]
                 for key in ("retail_price", "sales_contract_price"):
@@ -81,6 +82,21 @@ def build_candidate_event_impact(analysis, events):
                 missing = ["划转实施/完成原件及金额", "母公司与子公司收入、成本和资金上划安排", "模型资金可达假设是否仍适用"]
             elif kind == "REPORTED_QUARTERLY_FINANCIAL_UPDATE":
                 judgement = "RECALCULATION_REVIEW_REQUIRED"
+                update = parsed.get("financial_update", {})
+                if (update.get("period_basis") == "YEAR_TO_DATE_9M_NOT_SINGLE_QUARTER"
+                        and update.get("comparative_start") and update.get("comparative_end")):
+                    for name, row in update["fields"].items():
+                        current, prior = Decimal(row["value"]), Decimal(row["comparative_value"])
+                        if not current.is_finite() or not prior.is_finite():
+                            raise ValueError("EVENT_FINANCIAL_AMOUNT_NONFINITE")
+                        with localcontext() as arithmetic:
+                            arithmetic.prec = 40
+                            financial_changes.append(dict(field=name, current=str(current), comparative=str(prior),
+                                absolute_change=str(current-prior), relative_change=str(current/prior-1) if prior > 0 else None,
+                                scope=row["scope"], unit=row["unit"], physical_page=row["physical_page"],
+                                period_start=update["period_start"], period_end=update["period_end"],
+                                comparative_start=update["comparative_start"], comparative_end=update["comparative_end"],
+                                classification="REPORTED_YTD_COMPARISON_NOT_FORECAST_CHANGE"))
                 rationale = "前三季度实际收入和归母利润用于检验原预测，需按同期和经营口径核对后再重算。"
                 missing = ["原候选同期间经营基线", "剩余月份及成本税费假设", "候选现金路径的独立复核"]
             elif kind == "REPORTED_BUYBACK_PROGRESS":
@@ -105,6 +121,7 @@ def build_candidate_event_impact(analysis, events):
                 affected_model_fields=sorted(affected),
                 unmapped_model_fields=sorted(affected - mapped_fields),
                 consumed_model_values=references, derived_price_changes=calculations,
+                derived_financial_changes=financial_changes,
                 unresolved_inputs=missing, quantified_profit_effect=None,
                 model_inputs_changed=False, model_recalculation_completed=False,
                 formal_decision=False, action="no_order"))
