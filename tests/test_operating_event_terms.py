@@ -260,3 +260,23 @@ def test_buyback_progress_is_cash_observation_and_does_not_change_shares():
         parse([page.replace("公司已累计回购股份1,000股", "公司已累计回购股份2,000股")])
     with pytest.raises(ValueError, match="ARITHMETIC_OR_DATE_INVALID"):
         parse([page.replace("22,000.00", "30,000.00")])
+
+def test_buyback_zero_requires_matching_explicit_summary_and_body():
+    page = (
+        "证券代码：000777 证券简称：示例 公告编号：临2026-090 "
+        "示例股份有限公司关于股份回购进展公告"
+        "本公司董事会及全体董事保证本公告内容不存在任何虚假记载、误导性陈述或者"
+        "重大遗漏，并对其内容的真实性、准确性和完整性承担法律责任。"
+        "累计已回购股数0万股累计已回购股数占总股本比例0%累计已回购金额0万元"
+        "二、回购股份的进展情况截至2026年9月30日，公司尚未实施股份回购。"
+        "三、其他事项特此公告示例股份有限公司董事会2026年10月10日"
+    )
+    terms = parse([page])["terms"]
+    assert terms["through"] == "2026-09-30"
+    assert terms["cumulative_purchased_shares"] == 0
+    assert terms["cumulative_paid_cny"] == "0"
+    assert terms["completed_cancellation_shares"] is None
+    with pytest.raises(ValueError, match="SUMMARY_MISMATCH"):
+        parse([page.replace("0万股", "1万股")])
+    with pytest.raises(ValueError, match="ARITHMETIC_OR_DATE_INVALID"):
+        parse([page.replace("9月30日", "9月29日")])

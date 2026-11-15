@@ -294,6 +294,29 @@ def _buyback_progress(body, published):
         rf"(?P<ratio>{_MONEY})%累计已回购金额(?P<total>{amount})元", body))
     _, boundary, progress = body.partition("二、回购股份的进展情况")
     progress, ending, _ = progress.partition("三、其他事项")
+    zero_summary = "累计已回购股数0万股累计已回购股数占总股本比例0%累计已回购金额0万元"
+    no_execution = list(re.finditer(
+        r"截至" + _DATE.format(name="through") + r",公司尚未实施股份回购。", progress))
+    if no_execution:
+        if (not boundary or not ending or len(no_execution) != 1
+                or body.count(zero_summary) != 1 or summary_rows
+                or "公司已累计回购股份" in progress):
+            _reject("BUYBACK_PROGRESS_SUMMARY_MISMATCH")
+        through = _day(no_execution[0]["through"])
+        day = date.fromisoformat(through)
+        if through >= published or day.day != monthrange(day.year, day.month)[1]:
+            _reject("BUYBACK_PROGRESS_ARITHMETIC_OR_DATE_INVALID")
+        return dict(
+            event_type="REPORTED_BUYBACK_PROGRESS", effective_date=None,
+            terms=dict(through=through, cumulative_purchased_shares=0,
+                       cumulative_paid_cny="0", disclosed_share_percent="0",
+                       completed_cancellation_shares=None),
+            affected_model_fields=["cash", "ordinary_shares"],
+            summary=f"公告确认截至{through}尚未实施股份回购。",
+            implication="仅作为本回购计划已披露累计数据的期初对照。",
+            limitations=["该结论限于所述回购计划及截止日。"],
+            _evidence=[(zero_summary, "buyback_summary"), (no_execution[0][0], "buyback_progress")],
+        )
     rows = list(re.finditer(
         rf"截至(?P<year>20[0-9]{{2}})年(?P<month>[0-9]{{1,2}})月底,公司已累计回购股份"
         rf"(?P<shares>{quantity})股,占公司总股本的比例为(?P<ratio>{_MONEY})%,"
