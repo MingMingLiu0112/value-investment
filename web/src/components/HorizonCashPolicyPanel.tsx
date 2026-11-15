@@ -890,7 +890,11 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
               {annualTaskId && kind === "compact"
                 ? "同源独立年度经营编译"
                 : "同任务年度经营编译"}
-              ：{e2Input.annual_operating_status}
+              ：
+              {e2Input.annual_operating_status ===
+              "SEALED_ANNUAL_CANDIDATES_ONLY"
+                ? "年度经营情景已核验并编译；完整现金路径仍待补齐"
+                : e2Input.annual_operating_status}
             </p>
           )}
           {e2Input.annual_operating_error && (

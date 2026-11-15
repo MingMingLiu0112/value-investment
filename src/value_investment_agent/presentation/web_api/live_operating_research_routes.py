@@ -921,9 +921,24 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             selected = live_2027_for(task_id)
             if selected is not None:
                 if isinstance(selected, V25HorizonTaskService):
-                    from ...application.research.operating_horizon_cash_policy_e2_v17 import read_v25_cash_policy_e2_input
-                    return reply(read_v25_cash_policy_e2_input(root=project, task_id=task_id,
-                        now=datetime.now(timezone.utc), service=selected))
+                    from ...application.research.operating_horizon_cash_policy_e2_v17 import (
+                        read_v25_cash_policy_e2_input, replay_v25_annual_e2_candidates,
+                    )
+                    now = datetime.now(timezone.utc)
+                    try:
+                        return reply(read_v25_cash_policy_e2_input(
+                            root=project, task_id=task_id, now=now, service=selected))
+                    except ValueError as error:
+                        if str(error) != "V10_E2_SUCCEEDED_TWO_STAGE_TASK_REQUIRED":
+                            raise
+                        try:
+                            annual = replay_v25_annual_e2_candidates(
+                                service=selected, task_id=task_id, now=now)
+                        except (ValueError, OSError, KeyError, TypeError, RuntimeError):
+                            raise error
+                        return reply(dict(action="no_order", status="UNASSESSABLE", reason=str(error),
+                            annual_operating_status=annual["status"], sealed_annual_candidates=annual,
+                            formal_eligibility=False, condition_price=None))
                 if selected.__class__ is V24HorizonTaskService:
                     from ...application.research.operating_horizon_cash_policy_e2_v16 import read_v24_cash_policy_e2_input
                     return reply(read_v24_cash_policy_e2_input(root=project, task_id=task_id,

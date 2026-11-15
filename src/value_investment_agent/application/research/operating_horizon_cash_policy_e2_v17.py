@@ -72,3 +72,40 @@ def read_v25_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
 
 
 
+
+
+
+def replay_v25_annual_e2_candidates(*, service, task_id: str, now: datetime) -> dict:
+    """Compile sealed annual candidates independently of shareholder cash admission."""
+    from .operating_cash_consumption_v2 import compile_verified_annual_candidates
+    from .operating_horizon_cash_policy_e2_v1 import _annual_opening_period
+    from .operating_horizon_cash_policy_e2_v2 import _time
+    from .operating_horizon_cash_policy_e2_v11 import project_reported_facts_for_e2
+    from .agent_review.operating_horizon_task_v25_canonical import SCENARIOS
+    from ...domain.research.operating_cash_consumption_v1 import consume_operating_earnings
+
+    if not isinstance(service, OperatingHorizonTaskService) or now.utcoffset() is None:
+        raise ValueError("V25_ANNUAL_E2_BOUND_SERVICE_AND_CUTOFF_REQUIRED")
+    with service._lock(service._directory(task_id)):
+        spec, state, record_binding = service._load(task_id)
+        if spec["mode"] != "LIVE_OPERATING" or not set(SCENARIOS) <= set(state["stage_validated"]):
+            raise ValueError("V25_ANNUAL_E2_LIVE_CHECKPOINT_REQUIRED")
+        _time(spec["created_at"], now)
+        for stage in SCENARIOS:
+            _time(service._packet(spec, state, stage)["generated_at"], now)
+        source = service._context(spec)
+        _, annual = service._annual_checkpoint(spec, state, source)
+        stage_bindings = {stage: state["stage_responses"][stage] for stage in SCENARIOS}
+
+    projected, projected_ids = project_reported_facts_for_e2(source, "V25_ANNUAL")
+    row = annual["years"]["2027"]
+    earnings = consume_operating_earnings(context=projected,
+        bridge=dict(paths=row["calculated_paths"], inputs=row["operating_paths"], action="no_order"))
+    earnings["task_id"] = task_id
+    compiled = compile_verified_annual_candidates(consumed=earnings,
+        opening_date=_annual_opening_period(row), asof=spec["created_at"])
+    return dict(compiled, status="SEALED_ANNUAL_CANDIDATES_ONLY", task_status=state["status"],
+                source_binding=spec["source_binding"], task_record_binding=record_binding,
+                annual_stage_bindings=stage_bindings, projected_reported_fact_ids=projected_ids,
+                counter_evidence=row["counter_evidence"], reopen_condition=row["reopen_condition"],
+                formal_eligibility=False, action="no_order")

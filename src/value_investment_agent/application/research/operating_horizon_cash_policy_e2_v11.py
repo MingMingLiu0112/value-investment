@@ -12,6 +12,25 @@ from .agent_review import operating_horizon_sources_v1 as generic_sources
 VERSION = "operating-horizon-cash-policy-e2-input-v11"
 
 
+def project_reported_facts_for_e2(original, label):
+    """Project already cold-verified rows into the existing E2 fact contract."""
+    projected = deepcopy(original)
+    changed = []
+    for row in projected["evidence"]:
+        if row.get("kind") != "SOURCE_BOUND_REPORTED_STATEMENT_ROW":
+            continue
+        digest = row.get("pdf_sha256")
+        if (not isinstance(digest, str) or len(digest) != 64
+                or row.get("source_id") != "official:" + digest
+                or not isinstance(row.get("physical_page"), int)
+                or row["physical_page"] < 1 or row.get("unit") != "CNY"
+                or not row.get("available_at") or not row.get("period")):
+            raise ValueError(label + "_E2_REPORTED_FACT_PROVENANCE_INVALID")
+        row["kind"] = "VERIFIED_REPORTED_FACT"
+        changed.append(row["id"])
+    return projected, changed
+
+
 def read_generic_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
                                        contract: str, service_type, version: str,
                                        label: str, service=None, staged_annual=False,
@@ -27,20 +46,7 @@ def read_generic_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime
         projection = None
     else:
         original = service._context(spec)  # Exact source bytes and loader are replayed first.
-        projected = deepcopy(original)
-        changed = []
-        for row in projected["evidence"]:
-            if row.get("kind") != "SOURCE_BOUND_REPORTED_STATEMENT_ROW":
-                continue
-            digest = row.get("pdf_sha256")
-            if (not isinstance(digest, str) or len(digest) != 64
-                    or row.get("source_id") != "official:" + digest
-                    or not isinstance(row.get("physical_page"), int)
-                    or row["physical_page"] < 1 or row.get("unit") != "CNY"
-                    or not row.get("available_at") or not row.get("period")):
-                raise ValueError(label + "_E2_REPORTED_FACT_PROVENANCE_INVALID")
-            row["kind"] = "VERIFIED_REPORTED_FACT"
-            changed.append(row["id"])
+        projected, changed = project_reported_facts_for_e2(original, label)
 
         class Replay:
             def read(self, candidate):
