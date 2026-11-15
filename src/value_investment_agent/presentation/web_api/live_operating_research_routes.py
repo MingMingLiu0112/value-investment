@@ -846,23 +846,20 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             inputs = _cash_policy_body(raw, allow_v5=True)
             if (body.get("task_contract") == V25_CONTRACT
                     and selected.source_loader_version in (compact_sources.VERSION, parent_cost_sources.VERSION, parent_income_sources.VERSION, parent_layout_sources.VERSION, parent_wc_sources.VERSION)):
-                from ...application.research.operating_horizon_cash_policy_e2_v17 import (
-                    cash_constraint_anchor_ids,
-                )
+                from ...application.research.agent_review.v25_submission import submit_bound_v25
 
-                now = datetime.now(timezone.utc)
-                context = selected.source_loader(root=selected.root, symbol=inputs["symbol"], now=now)
-                missing = sorted(term for term, ids in cash_constraint_anchor_ids(context).items()
-                                 if not ids)
+                task, dispatch, missing = submit_bound_v25(selected, inputs)
                 if missing:
                     return reply(dict(action="no_order", status="HORIZON_CASH_POLICY_TASK_REJECTED",
                         reason="V25_E2_CASH_ANCHORS_MISSING:" + ",".join(missing),
                         missing_e2_anchors=missing, formal_eligibility=False), 422)
-                inputs["now"] = now
-            task = selected.create(**inputs)
-            if task["status"] == "QUEUED":
+            else:
+                task = selected.create(**inputs)
+                dispatch = task["status"] == "QUEUED"
+            if dispatch:
                 background.add_task(selected.run, task["task_id"])
             return reply(task, 202)
+        except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
         except (PermissionError,ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
             return reply(dict(action="no_order",status="HORIZON_CASH_POLICY_TASK_REJECTED",reason=str(error)),422)
 

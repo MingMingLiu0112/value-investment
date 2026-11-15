@@ -2090,9 +2090,12 @@ def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, regis
 
     from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v17 as e2
 
+    from value_investment_agent.application.research.agent_review.task_execution_v1 import _hash, _bytes
+
+    binding = {"path": "runtime/TEST_ONLY.json", "sha256": "a" * 64}
     client, secret, _, root = api
     monkeypatch.setattr(compact_sources, "build_operating_horizon_source_context",
-                        lambda **kwargs: {"symbol": kwargs["symbol"]})
+                        lambda **kwargs: {"symbol": kwargs["symbol"], "source_binding": binding})
     monkeypatch.setattr(e2, "cash_constraint_anchor_ids",
                         lambda context: {"operating_wc_cash_cny": [] if missing else ["source:id"]})
     if registered:
@@ -2101,10 +2104,24 @@ def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, regis
         config.write_text('{"000568": true}', encoding="utf-8")
     unlock(client, secret)
     seen = []
+    dispatched = []
+    monkeypatch.setattr(compact.CompactCashTaskService, "run", lambda _, task_id: dispatched.append(task_id))
 
     def create(self, **kwargs):
         seen.append((kwargs["symbol"], self.source_loader_version, isinstance(self, compact.CompactCashTaskService)))
-        return {"status": "WAITING_EVIDENCE", "action": "no_order"}
+        result = {"status": "WAITING_EVIDENCE", "action": "no_order"}
+        if registered:
+            task_id = "rt-" + _hash(_bytes([v25.CONTRACT, "LIVE_OPERATING",
+                                           kwargs["symbol"], [2027], binding]))[:32]
+            task_dir = self._directory(task_id)
+            task_dir.mkdir(parents=True)
+            (task_dir / "input.json").write_text("{}", encoding="utf-8")
+            result.update(task_id=task_id, status="QUEUED")
+            monkeypatch.setattr(type(self), "_load", lambda *_: (
+                {"request_key_sha256": _hash(kwargs["request_key"].encode()),
+                 "symbol": kwargs["symbol"], "source_binding": binding}, {}, {}))
+            monkeypatch.setattr(type(self), "read", lambda *_: result)
+        return result
 
     monkeypatch.setattr(compact.CompactCashTaskService, "create", create)
     response = client.post(BASE + "/horizon-cash-policy-tasks", json={
@@ -2118,4 +2135,12 @@ def test_v25_selects_compact_source_only_when_registered(api, monkeypatch, regis
         assert seen == []
         return
     assert response.status_code == 202, response.json()
+    if registered:
+        repeated = client.post(BASE + "/horizon-cash-policy-tasks", json={
+            "symbol": "000568", "years": [2027], "request_key": "TEST_ONLY_COMPACT_BASE",
+            "task_contract": v25.CONTRACT,
+        })
+        assert repeated.status_code == 202
+        assert repeated.json()["task_id"] == response.json()["task_id"]
+        assert dispatched == [response.json()["task_id"]]
     assert seen == [("000568", compact_sources.VERSION if registered else source.VERSION, True)]
