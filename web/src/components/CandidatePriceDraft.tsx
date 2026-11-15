@@ -1166,20 +1166,35 @@ function CandidateEventImpact({ value }: { value: unknown }) {
                 。 不是整体收入或利润增幅。
               </p>
             ))}
-            {financialChanges.map((change, key) => (
-              <p key={key}>
-                {change.field === "revenue_cny" ? "合并营业收入" : "归母净利润"}
-                ：{text(change.period_start)} 至 {text(change.period_end)}累计
-                {text(change.current)} 元；去年同期（
-                {text(change.comparative_start)}至{" "}
-                {text(change.comparative_end)}）{text(change.comparative)} 元
-                {numberText(change.relative_change)
-                  ? `，同比 ${(Number(change.relative_change) * 100).toFixed(2)}%`
-                  : ""}
-                。原件第 {text(change.physical_page)}{" "}
-                页。累计数据用于复核原预测。
-              </p>
-            ))}
+            {financialChanges.map((change, key) => {
+              const relative = change.relative_change;
+              const percent =
+                typeof relative === "string" && /^-?\d+(\.\d+)?$/.test(relative)
+                  ? Number(relative) * 100
+                  : NaN;
+              const page = change.physical_page;
+              return (
+                <p key={key}>
+                  {change.field === "revenue_cny"
+                    ? "合并营业收入"
+                    : "归母净利润"}
+                  ：{text(change.period_start)} 至 {text(change.period_end)}累计
+                  {text(change.current)} 元；去年同期（
+                  {text(change.comparative_start)}至{" "}
+                  {text(change.comparative_end)}）{text(change.comparative)} 元
+                  {Number.isFinite(percent)
+                    ? `，同比 ${percent.toFixed(2)}%`
+                    : ""}
+                  。
+                  {typeof page === "number" &&
+                  Number.isInteger(page) &&
+                  page > 0
+                    ? `原件第 ${page} 页。`
+                    : "原件页码待核。"}
+                  累计数据用于复核原预测。
+                </p>
+              );
+            })}
             <p>
               已定位 {values.length}{" "}
               项模型年度字段；未量化盈利影响，不改写原估值。

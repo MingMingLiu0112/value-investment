@@ -846,6 +846,21 @@ it("shows consumed model fields and never turns event price change into profit f
               unit: "CNY/bottle",
             },
           ],
+          derived_financial_changes: [
+            {
+              classification: "REPORTED_YTD_COMPARISON_NOT_FORECAST_CHANGE",
+              field: "parent_profit_cny",
+              unit: "CNY",
+              current: "8444",
+              comparative: "10000",
+              relative_change: "-0.1556",
+              physical_page: 8,
+              period_start: "2026-01-01",
+              period_end: "2026-09-30",
+              comparative_start: "2025-01-01",
+              comparative_end: "2025-09-30",
+            },
+          ],
           consumed_model_values: [
             { field: "revenue", value: "100", model_year: 1 },
           ],
@@ -858,5 +873,7 @@ it("shows consumed model fields and never turns event price change into profit f
   expect(html).toContain("10.00%");
   expect(html).toContain("不是整体收入或利润增幅");
   expect(html).toContain("实际销量未知");
+  expect(html).toContain("同比 -15.56%");
+  expect(html).toContain("原件第 8 页。");
   expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
 });
