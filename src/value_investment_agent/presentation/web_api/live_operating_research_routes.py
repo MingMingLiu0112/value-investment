@@ -283,6 +283,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     from ...application.research.agent_review import operating_horizon_charter_distribution_sources as charter_distribution
     from ...application.research.agent_review import operating_horizon_sources_compact as compact_sources
     from ...application.research.agent_review import operating_horizon_sources_parent_layout as parent_layout_sources
+    from ...application.research.agent_review import operating_horizon_sources_parent_layout_cost as parent_cost_sources
     from ...application.research.agent_review import operating_q3_issuer_plan_loader_v8_600519 as q3_v8
     from ...application.research.agent_review import operating_q3_issuer_wc_loader_v9_600519 as wc_v9
     from ...application.research.agent_review import operating_q3_issuer_dividend_split_loader_v9_600519 as dividend_v9
@@ -308,14 +309,14 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             expected_budget_day=settlement["budget_day"])
 
     def selected_v25_loader(symbol):
-        for loader in (industry_cost_sources, trade_sources, cash_constraint_sources, parent_quarter_sources, charter_distribution, compact_sources, parent_layout_sources):
+        for loader in (industry_cost_sources, trade_sources, cash_constraint_sources, parent_quarter_sources, charter_distribution, compact_sources, parent_cost_sources, parent_layout_sources):
             path = project / loader.CONFIG
             if path.is_file():
                 selection = json.loads(path.read_bytes())
                 if not isinstance(selection, dict):
                     raise ValueError("V25_SOURCE_SELECTION_INVALID")
                 if symbol in selection:
-                    if loader is compact_sources and selection[symbol] is not True:
+                    if loader in (compact_sources, parent_cost_sources) and selection[symbol] is not True:
                         raise ValueError("V25_COMPACT_SOURCE_REQUIRES_EXPLICIT_OPT_IN")
                     return loader.VERSION
         return return_plan_sources.VERSION if return_plan_sources.configured_for(project, symbol) else None
@@ -323,10 +324,10 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     def live_2027_horizon(contract, *, loader_version=None, test_provider=None, compact_cash=False):
         from ...application.research.agent_review.operating_horizon_task_v25_compact_cash import CompactCashTaskService
         if contract == V25_CONTRACT:
-            for loader in (industry_cost_sources, trade_sources, cash_constraint_sources, parent_quarter_sources, charter_sources, charter_distribution, compact_sources, parent_layout_sources, return_plan_sources):
+            for loader in (industry_cost_sources, trade_sources, cash_constraint_sources, parent_quarter_sources, charter_sources, charter_distribution, compact_sources, parent_cost_sources, parent_layout_sources, return_plan_sources):
                 if loader_version == loader.VERSION:
                     service_type = (CompactCashTaskService
-                                    if compact_cash and loader in (industry_cost_sources, trade_sources, cash_constraint_sources, charter_sources, charter_distribution, compact_sources, parent_layout_sources)
+                                    if compact_cash and loader in (industry_cost_sources, trade_sources, cash_constraint_sources, charter_sources, charter_distribution, compact_sources, parent_cost_sources, parent_layout_sources)
                                     else V25HorizonTaskService)
                     return service_type(project,
                         source_loader=loader.build_operating_horizon_source_context,
@@ -842,7 +843,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 and body.get("source_loader_version") in (wc_v9.VERSION, dividend_v9.VERSION) else horizon_cash_policy)
             inputs = _cash_policy_body(raw, allow_v5=True)
             if (body.get("task_contract") == V25_CONTRACT
-                    and selected.source_loader_version in (compact_sources.VERSION, parent_layout_sources.VERSION)):
+                    and selected.source_loader_version in (compact_sources.VERSION, parent_cost_sources.VERSION, parent_layout_sources.VERSION)):
                 from ...application.research.operating_horizon_cash_policy_e2_v17 import (
                     cash_constraint_anchor_ids,
                 )
