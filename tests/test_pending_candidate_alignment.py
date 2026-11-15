@@ -917,3 +917,27 @@ def test_mixed_payment_ledger_does_not_claim_issuer_payment(reconciliation, monk
     terms["clearing_house_scheduled_payment_date"] = "2020-01-03"
     with pytest.raises(ValueError, match="CASH_LEDGER_DIFFERS_FROM_NATIVE_IMPLEMENTATION_FIELDS"):
         reconcile(case)
+
+
+@pytest.mark.parametrize("report_end,verified", [("2020-09-30", True), ("2021-09-30", False)])
+def test_quarter_event_keeps_candidate_review_separate(reconciliation, monkeypatch, report_end, verified):
+    from value_investment_agent.infrastructure.filings import native_capital_observation_v1
+
+    case = reconciliation
+    source = dict(case["anchor"]["binding"], source_url="https://static.cninfo.com.cn/finalpage/2020-10-29/123.PDF")
+    monkeypatch.setattr(native_capital_observation_v1, "parse_native_capital_observation",
+        lambda pages, symbol: dict(kind="q3", financial_update=dict(status="VERIFIED",
+            period_start=report_end[:4] + "-01-01", period_end=report_end,
+            fields=dict(revenue_cny={"value": "200"}, parent_profit_cny={"value": "20"}))))
+    window = dict(acquired_at="2020-10-30T00:00:00+08:00", announcements=[dict(
+        announcement_id="123", title="TEST_ONLY 2020年第三季度报告",
+        published_at="2020-10-29T00:00:00+08:00", source_url=source["source_url"], evidence_refs=[source])])
+    row, = service._operating_events(case["analysis"], [window], case["now"],
+        lambda ref: _bound(case["root"], ref))
+    assert not row["materiality_approved"] and not row["model_inputs_changed"]
+    if verified:
+        assert row["facts"][0]["terms"]["event_type"] == "REPORTED_QUARTERLY_FINANCIAL_UPDATE"
+        assert row["facts"][0]["terms"]["effective_date"] is None
+    else:
+        assert not row["facts"]
+        assert row["unresolved"][0]["reason"] == "QUARTERLY_ORIGINAL_NOT_VERIFIED_FOR_EVENT"

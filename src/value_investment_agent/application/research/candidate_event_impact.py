@@ -52,6 +52,10 @@ def build_candidate_event_impact(analysis, events):
                 judgement = "CASH_ACCESS_AND_CAPITAL_REVIEW_REQUIRED"
                 rationale = "内部无偿划转不直接创造合并利润，但可能改变母公司资产和资金可达路径；完成日期和金额尚未证实，不能认定零影响。"
                 missing = ["划转实施/完成原件及金额", "母公司与子公司收入、成本和资金上划安排", "模型资金可达假设是否仍适用"]
+            elif kind == "REPORTED_QUARTERLY_FINANCIAL_UPDATE":
+                judgement = "RECALCULATION_REVIEW_REQUIRED"
+                rationale = "前三季度实际收入和归母利润用于检验原预测，需按同期和经营口径核对后再重算。"
+                missing = ["原候选同期间经营基线", "剩余月份及成本税费假设", "候选现金路径的独立复核"]
             elif kind == "ACCOUNTING_POLICY_IMPACT_STATEMENT":
                 judgement = "ISSUER_NO_MATERIAL_IMPACT_REQUIRES_REVIEW"
                 rationale = "发行人的无重大影响表述作为证据保留，不能替代对当前利润、权益和现金口径的独立复核。"

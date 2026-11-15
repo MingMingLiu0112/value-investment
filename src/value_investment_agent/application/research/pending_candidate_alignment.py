@@ -601,6 +601,7 @@ def _operating_events(analysis, windows, now, read, *, parser=None):
     from ...infrastructure.filings.official_pdf import validate_pdf_original
     from ...infrastructure.filings.operating_event_terms import parse_operating_event_terms
     from ...quote_sessions import CHINA
+    allow_quarterly_report = parser is None
     parser = parser or parse_operating_event_terms
     rows = []
     seen = {}
@@ -632,7 +633,26 @@ def _operating_events(analysis, windows, now, read, *, parser=None):
                         raise ValueError("OPERATING_EVENT_PUBLICATION_MISMATCH")
                     original = read(binding)
                     validate_pdf_original(original)
-                    terms = parser(extract_pages(original), symbol=analysis["symbol"])
+                    pages = extract_pages(original)
+                    quarter_title = re.search(r"(20[0-9]{2})年第三季度报告$", event["title"]) if allow_quarterly_report else None
+                    if quarter_title:
+                        from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
+                        observation = parse_native_capital_observation(pages, symbol=analysis["symbol"])
+                        update = observation.get("financial_update") or {}
+                        if (observation.get("kind") != "q3" or update.get("status") != "VERIFIED"
+                                or _day(update["period_end"]) > published
+                                or quarter_title[1] != update["period_end"][:4]):
+                            raise ValueError("QUARTERLY_ORIGINAL_NOT_VERIFIED_FOR_EVENT")
+                        revenue = update["fields"]["revenue_cny"]["value"]
+                        profit = update["fields"]["parent_profit_cny"]["value"]
+                        terms = dict(event_type="REPORTED_QUARTERLY_FINANCIAL_UPDATE",
+                            published_date=published.isoformat(), effective_date=None,
+                            summary=f"{update['period_start']}至{update['period_end']}累计营业收入{revenue}元、归母净利润{profit}元。",
+                            implication="核对该候选的收入、利润及预测基期是否需要更新。",
+                            financial_update=update, affected_model_fields=["revenue_cny", "parent_profit_cny"],
+                            limitations=["前三季度累计披露，不视为单季、全年或预测。"], action="no_order")
+                    else:
+                        terms = parser(pages, symbol=analysis["symbol"])
                     if terms["published_date"] != published.isoformat():
                         raise ValueError("OPERATING_EVENT_DOCUMENT_DATE_MISMATCH")
                     facts.append(dict(binding=binding, source_url=source["source_url"],
