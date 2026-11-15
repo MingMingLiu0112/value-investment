@@ -157,6 +157,8 @@ def test_v25_return_plan_applies_reported_fact_provenance(tmp_path, monkeypatch,
     ("commitment_cash_cny", ["financing", "parent-cfo"], False),
     ("commitment_cash_cny", ["historical-capex"], False),
     ("operating_wc_cash_cny", ["parent-cfo"], False),
+    ("operating_wc_cash_cny", ["group-wc"], False),
+    ("operating_wc_cash_cny", ["ambiguous-wc"], False),
     ("operating_wc_cash_cny", ["parent-cfo", "working-capital"], True),
 ])
 def test_v25_cash_constraints_require_applicable_primary_anchor(monkeypatch, term, citations, accepted):
@@ -172,6 +174,8 @@ def test_v25_cash_constraints_require_applicable_primary_anchor(monkeypatch, ter
         {"id": "parent-cfo", "scope": "parent", "field": "parent_cfo"},
         {"id": "historical-capex", "scope": "parent", "field": "gross_capex_cny"},
         {"id": "working-capital", "scope": "parent", "field": "working_capital_cash_component"},
+        {"id": "group-wc", "scope": "consolidated", "field": "working_capital_cash_component"},
+        {"id": "ambiguous-wc", "field": "working_capital_cash_component"},
         {"id": "capex-contract", "scope": "parent"},
     ]
     context = {"evidence": evidence, "source_binding": {}}
@@ -179,7 +183,7 @@ def test_v25_cash_constraints_require_applicable_primary_anchor(monkeypatch, ter
         "reserve_ratio": ["charter"],
         "accessible_profit_ratio": ["charter", "parent-cfo"],
         "commitment_cash_cny": ["financing", "fund-bound", "capex-contract", "historical-capex"],
-        "operating_wc_cash_cny": ["parent-cfo", "working-capital"],
+        "operating_wc_cash_cny": ["parent-cfo", "working-capital", "group-wc", "ambiguous-wc"],
     })
     from value_investment_agent.application.research.agent_review.operating_cash_evidence_coverage import (
         describe_cash_evidence,
