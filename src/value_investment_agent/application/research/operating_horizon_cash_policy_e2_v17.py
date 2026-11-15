@@ -68,7 +68,7 @@ def read_v25_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     spec, _, _ = bound_service._load(task_id)
     binding = spec["source_loader_binding"]
     if "cash_transport" in binding or binding["version"] in (
-        CASH_CONSTRAINT_LOADER, PARENT_TRADE_LOADER, INDUSTRY_COST_LOADER,
+        CASH_CONSTRAINT_LOADER, PARENT_TRADE_LOADER, INDUSTRY_COST_LOADER, CHARTER_DISTRIBUTION_LOADER,
     ):
         _validate_cash_constraint_citations(result["policy_years"], bound_service._context(spec))
     return result

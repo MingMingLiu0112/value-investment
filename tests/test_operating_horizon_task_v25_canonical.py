@@ -376,3 +376,37 @@ def test_v25_charter_source_is_bound_and_replays_independently_of_current_regist
     pdf.write_bytes(b"tampered")
     with pytest.raises(ValueError, match="RESERVE_CHARTER_HASH_CHANGED"):
         charter.build_operating_horizon_source_context(**request, binding=first["source_binding"])
+
+
+
+@pytest.mark.parametrize("compact", [False, True])
+def test_v25_charter_floor_is_not_payout_anchor_in_either_transport(monkeypatch, tmp_path, compact):
+    from types import SimpleNamespace
+
+    from value_investment_agent.application.research import operating_horizon_cash_policy_e2_v17 as e2
+    from value_investment_agent.application.research.agent_review import (
+        operating_cash_policy_draft_v16_generic as cash,
+    )
+
+    binding = {"version": e2.CHARTER_DISTRIBUTION_LOADER}
+    if compact:
+        binding["cash_transport"] = "compact"
+    context = {
+        "source_binding": binding,
+        "evidence": [
+            {"id": "floor", "scope": "ISSUER_ARTICLES_DISTRIBUTABLE_PROFIT_FLOOR"},
+            {"id": "policy", "scope": "ISSUER_RETURN_PLAN"},
+        ],
+    }
+    service = SimpleNamespace(
+        _load=lambda _: ({"source_loader_binding": binding}, None, None),
+        _context=lambda _: context,
+    )
+    term = {"evidence_ids": ["floor"]}
+    result = {"policy_years": {"2027": {"base": {"terms": {"target_payout_ratio": term}}}}}
+    monkeypatch.setattr(e2, "read_generic_cash_policy_e2_input", lambda **_: result)
+    monkeypatch.setattr(cash, "candidates", lambda *_: {"target_payout_ratio": ["floor", "policy"]})
+    with pytest.raises(ValueError, match="V25_E2_CASH_TERM_REQUIRES_APPLICABLE_ANCHOR:target_payout_ratio"):
+        e2.read_v25_cash_policy_e2_input(root=tmp_path, task_id="test", now=NOW, service=service)
+    term["evidence_ids"].append("policy")
+    assert e2.read_v25_cash_policy_e2_input(root=tmp_path, task_id="test", now=NOW, service=service) is result
