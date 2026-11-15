@@ -1029,7 +1029,12 @@ function OpeningActionChain({ value }: { value: unknown }) {
         <div key={i}>
           <p>
             截至 {text(row.purchase_through)}，累计回购{" "}
-            {text(row.purchased_shares)} 股，支付 {text(row.paid_cny)} 元。
+            {typeof row.purchased_shares === "number" &&
+            Number.isSafeInteger(row.purchased_shares) &&
+            row.purchased_shares > 0
+              ? String(row.purchased_shares)
+              : "未提供"}{" "}
+            股，支付 {text(row.paid_cny)} 元。
             {row.status === "MATCHED_COMPLETED_BEFORE_VALUATION"
               ? "已与后续原件核对，确认该笔注销在估值日前完成。"
               : "注销尚未从后续原件唯一确认。"}

@@ -909,6 +909,7 @@ it.each([
     };
     const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
     expect(html).toContain(expected);
+    expect(html).toContain("2188614 股");
     expect(html).toContain("runtime/purchase.pdf");
     expect(candidateResearchComparisonMatches(review)).toBe(false);
   },
