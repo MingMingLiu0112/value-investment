@@ -49,7 +49,11 @@ def build_operating_horizon_source_context(*, root, symbol, now, binding=None):
         raise ValueError("CASH_CONSTRAINT_BASE_CONTEXT_CHANGED")
     rows = constraints.replay_parent_cash_constraint_evidence(root=root, binding=selection, symbol=symbol, now=now)
     result = deepcopy(original)
-    result["evidence"].extend(rows)
+    # The cash request lists only the first few candidate citations per term.
+    # Give the direct charter evidence priority over indirect cash balance rows.
+    charter = [row for row in rows if row["scope"] == "ISSUER_ARTICLES_RULE_TEXT"]
+    financing = [row for row in rows if row["scope"] != "ISSUER_ARTICLES_RULE_TEXT"]
+    result["evidence"] = charter + result["evidence"] + financing
     if len(result["evidence"]) > 100 or len({row["id"] for row in result["evidence"]}) != len(result["evidence"]):
         raise ValueError("CASH_CONSTRAINT_EVIDENCE_LIMIT_OR_DUPLICATE")
     result["limitations"].append(
