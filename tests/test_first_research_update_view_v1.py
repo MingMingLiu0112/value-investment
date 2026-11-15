@@ -68,3 +68,20 @@ def test_e1_projection_rejects_mismatched_replay(tmp_path, monkeypatch):
     monkeypatch.setattr(view, "replay_first_research_input", lambda **_: {
         "research_case": {"symbol": "000568"}, "input_fingerprint": "wrong", "valuation": {}})
     assert view.read_first_research_update(root=tmp_path, symbol="000568", now=NOW)["status"] == "UNASSESSABLE"
+
+
+
+def test_e1_projection_rejects_unrelated_displayed_predecessor_before_replay(tmp_path, monkeypatch):
+    _registered(tmp_path)
+
+    def unexpected_replay(**_):
+        raise AssertionError("Mismatched predecessor reached cold replay")
+
+    monkeypatch.setattr(view, "replay_first_research_input", unexpected_replay)
+    result = view.read_first_research_update(
+        root=tmp_path, symbol="000568", now=NOW,
+        predecessor_binding={"path": "runtime/TEST_ONLY-other.json", "sha256": "c"},
+    )
+    assert result["status"] == "UNASSESSABLE"
+    assert "currently displayed first input" in result["reason"]
+    assert result["condition_price"] is None and result["action"] == "no_order"

@@ -17,7 +17,7 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                 status_code=422,headers={"Cache-Control":"no-store"})
         if result.get("status") == "SOURCE_BOUND_FIRST_INPUT_COMPILED":
             result["successor_update"] = read_first_research_update(
-                root=project, symbol=symbol, now=clock())
+                root=project, symbol=symbol, now=clock(), predecessor_binding=result["receipt_binding"])
             # A verified close is a separate observation. It must not populate
             # current_price or turn this historical conditional study into F2.
             try:

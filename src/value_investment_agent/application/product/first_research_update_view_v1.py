@@ -23,7 +23,8 @@ def _bound(root: Path, ref: dict, label: str) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def read_first_research_update(*, root: Path, symbol: str, now: datetime) -> dict:
+def read_first_research_update(*, root: Path, symbol: str, now: datetime,
+                               predecessor_binding: dict | None = None) -> dict:
     if not isinstance(symbol, str) or len(symbol) != 6 or not symbol.isascii() or not symbol.isdigit():
         raise ValueError("Invalid E1 update symbol")
     base = dict(schema_version="first-research-update-view-v1", action="no_order",
@@ -48,6 +49,8 @@ def read_first_research_update(*, root: Path, symbol: str, now: datetime) -> dic
                 or any(update.get(key) is not False for key in
                        ("formal_eligibility", "main_range_adopted", "price_admitted"))):
             raise ValueError("E1 update boundary invalid")
+        if predecessor_binding is not None and predecessor_binding != update["predecessor_binding"]:
+            raise ValueError("E1 predecessor differs from the currently displayed first input")
         old = replay_first_research_input(root=root, receipt_binding=update["predecessor_binding"], now=now)
         new = replay_first_research_input(root=root, receipt_binding=update["successor_binding"], now=now)
         if (old["research_case"]["symbol"] != symbol or new["research_case"]["symbol"] != symbol
