@@ -184,7 +184,7 @@ def test_v25_canonical_task_dispatch_is_explicit_and_unapproved(api, monkeypatch
     assert data.provider_calls == []
 
 
-@pytest.mark.parametrize("source_kind", ["plan", "quarter", "constraints", "trade"])
+@pytest.mark.parametrize("source_kind", ["plan", "quarter", "constraints", "trade", "industry_cost"])
 def test_v25_uses_configured_official_plan_source_without_changing_old_reader(api, monkeypatch, source_kind):
     from value_investment_agent.application.research.agent_review import operating_horizon_task_v25_canonical as v25
     from value_investment_agent.application.research.agent_review import operating_horizon_sources_v2_return_plan as plan_source
@@ -195,9 +195,11 @@ def test_v25_uses_configured_official_plan_source_without_changing_old_reader(ap
 
     from value_investment_agent.application.research.agent_review import operating_horizon_sources_v5_parent_trade as trade_source
 
+    from value_investment_agent.application.research.agent_review import operating_horizon_sources_v6_industry_cost as industry_source
+
     client, secret, _, root = api
     selected = {"plan": plan_source, "quarter": quarter_source, "constraints": constraints_source,
-                "trade": trade_source}[source_kind]
+                "trade": trade_source, "industry_cost": industry_source}[source_kind]
     if source_kind != "plan":
         (root / selected.CONFIG).parent.mkdir(parents=True, exist_ok=True)
         (root / quarter_source.CONFIG).write_text('{"600887": {}}', encoding="utf-8")
@@ -214,7 +216,7 @@ def test_v25_uses_configured_official_plan_source_without_changing_old_reader(ap
     response = client.post(BASE + "/horizon-cash-policy-tasks", json=dict(
         symbol="600887", request_key="TEST_V25_PLAN_ROUTE", years=[2027], task_contract=v25.CONTRACT))
     assert response.status_code == 202
-    expected_service = "CompactCashTaskService" if source_kind in {"constraints", "trade"} else "OperatingHorizonTaskService"
+    expected_service = "CompactCashTaskService" if source_kind in {"constraints", "trade", "industry_cost"} else "OperatingHorizonTaskService"
     assert seen == [(selected.VERSION, expected_service)]
 
 
