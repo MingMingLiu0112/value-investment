@@ -13,6 +13,7 @@ from .agent_review.operating_horizon_sources_v4_cash_constraints import VERSION 
 from .agent_review.operating_horizon_sources_v5_parent_trade import VERSION as PARENT_TRADE_LOADER
 from .agent_review.operating_horizon_sources_v6_industry_cost import VERSION as INDUSTRY_COST_LOADER
 from .agent_review.operating_horizon_charter_sources_v1 import VERSION as CHARTER_LOADER
+from .agent_review.operating_horizon_charter_distribution_sources import VERSION as CHARTER_DISTRIBUTION_LOADER
 
 VERSION = "operating-horizon-cash-policy-e2-input-v17"
 
@@ -33,6 +34,7 @@ def missing_cash_constraint_citations(policy_years, context):
                     if evidence[evidence_id].get("scope") not in {
                         "ISSUER_FINANCING_DISCLOSURE", "ISSUER_PARENT_STANDALONE_BALANCE_PROXY",
                         "ISSUER_PARENT_UNDATED_COMMITMENT_BOUND", "ISSUER_INDUSTRY_COST_COMPOSITION",
+                        "ISSUER_ARTICLES_DISTRIBUTABLE_PROFIT_FLOOR",
                     }
                     and (evidence[evidence_id].get("scope") != "ISSUER_ARTICLES_RULE_TEXT"
                          or term_name == "reserve_ratio")
@@ -60,7 +62,8 @@ def read_v25_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
         contract=CONTRACT, service_type=OperatingHorizonTaskService,
         version=VERSION, label="V25", service=service, staged_annual=True,
         additional_reported_fact_loaders=(RETURN_PLAN_LOADER, PARENT_QUARTER_LOADER,
-                                          CASH_CONSTRAINT_LOADER, PARENT_TRADE_LOADER, INDUSTRY_COST_LOADER, CHARTER_LOADER))
+                                          CASH_CONSTRAINT_LOADER, PARENT_TRADE_LOADER, INDUSTRY_COST_LOADER, CHARTER_LOADER,
+                                          CHARTER_DISTRIBUTION_LOADER))
     bound_service = service or OperatingHorizonTaskService(root)
     spec, _, _ = bound_service._load(task_id)
     binding = spec["source_loader_binding"]
