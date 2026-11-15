@@ -773,11 +773,44 @@ export function HorizonCashPolicyPanel({ symbol }: { symbol: string }) {
             kind === "v13" ||
             kind === "v14" ||
             kind === "v15" ||
-            kind === "v16") && (
+            kind === "v16" ||
+            typeof task.annual_status === "object") && (
             <p>
-              年度经营：{task.annual_status || "待读取"}；股东现金：
+              年度经营：
+              {typeof task.annual_status === "object"
+                ? Object.entries(task.annual_status)
+                    .map(([scenario, status]) => `${scenario} ${status}`)
+                    .join("、")
+                : task.annual_status || "待读取"}
+              ；股东现金：
               {task.cash_status || "待读取"}。调用结果不明时不会自动重试。
             </p>
+          )}
+          {task.cash_evidence_coverage && (
+            <details>
+              <summary>股东现金研究的来源覆盖</summary>
+              <p>
+                条件回报规划：
+                {task.cash_evidence_coverage.conditional_return_plan_ids.join(
+                  "、",
+                ) || "无引用"}
+                。
+              </p>
+              <ul>
+                {Object.entries(
+                  task.cash_evidence_coverage
+                    .standalone_parent_historical_anchor_ids,
+                ).map(([term, ids]) => (
+                  <li key={term}>
+                    {term}：{ids.join("、") || "无引用"}
+                  </li>
+                ))}
+              </ul>
+              <p>
+                尚未自动分类：
+                {task.cash_evidence_coverage.terms_not_classified.join("、")}。
+              </p>
+            </details>
           )}
           {task.persisted_status && task.persisted_status !== task.status && (
             <Alert

@@ -1377,7 +1377,12 @@ export type HorizonCashPolicyTask = {
     | "operating-horizon-task-v2"
     | "operating-horizon-task-v3";
   error_code?: string | null;
-  annual_status?: string;
+  annual_status?: string | Record<string, string>;
+  cash_evidence_coverage?: {
+    conditional_return_plan_ids: string[];
+    standalone_parent_historical_anchor_ids: Record<string, string[]>;
+    terms_not_classified: string[];
+  };
   cash_status?: string;
   research_result?: Record<string, unknown> | null;
   cash_policy_completeness?: {
