@@ -39,6 +39,15 @@ def parse_opening_action_terms(pages, *, symbol):
         raise ValueError("OPENING_CHANGED_DOCUMENT_REQUIRES_REVIEW")
     if re.findall(r"证券代码:([0-9]{6})", text) != [symbol]:
         raise ValueError("OPENING_ISSUER_MISMATCH")
+    # The bounded purchase-result original reports a scheduled cancellation.
+    # Preserve that status until the caller reconciles a separate confirmation.
+    heading = text.partition("本公司董事会")[0]
+    if len(pages) == 3 and heading.endswith("关于股份回购实施结果暨股份变动的公告"):
+        from .operating_event_terms import parse_operating_event_terms
+
+        result = parse_operating_event_terms(pages, symbol=symbol)
+        if result["terms"].get("purchase_state") == "COMPLETED":
+            return result
     term_pages = {}
 
     def find(pattern, field):
@@ -128,6 +137,7 @@ def _adjustment(find, published):
                 or len(changed[2].split('.')[-1]) != 5):
             raise ValueError("OPENING_DISTRIBUTION_ARITHMETIC_OR_PRECISION_CONFLICT")
     return effective, dict(confirmed_cancellation_date=effective.isoformat(), cancelled_shares=str(cancelled),
+        completion_notice_on=_day(cancel[1]).isoformat(),
         issued_shares=str(issued), treasury_shares=str(treasury), treasury_zero=True,
         capital_as_of=published.isoformat(), annual_distribution_year=fiscal,
         eligible_distribution_shares=str(eligible), previous_cash_per_share=str(old_dps),

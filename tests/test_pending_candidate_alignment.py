@@ -997,3 +997,22 @@ def test_szse_interim_entitlement_reconciles_declared_total_and_payment_scope():
         parse_mixed_cash_entitlement(
             [*pages[:2], pages[2].replace("1月30日", "1月28日")], symbol="000001"
         )
+
+@pytest.mark.parametrize("confirmed_quantity,expected", [
+    ("2", "MATCHED_COMPLETED_BEFORE_VALUATION"),
+    ("3", "CANCELLATION_NOT_UNIQUELY_RECONCILED"),
+])
+def test_opening_purchase_link_needs_exact_later_confirmation(reconciliation, confirmed_quantity, expected):
+    purchase = dict(binding={"sha256": "a" * 64}, terms=dict(published_date="2019-12-29",
+        terms=dict(purchase_state="COMPLETED", cancellation_state="SCHEDULED_UNCONFIRMED",
+            through="2019-12-28", scheduled_cancellation_date="2019-12-30",
+            cumulative_purchased_shares=2, cumulative_paid_cny="20", planned_post_cancellation_shares=100)))
+    confirmation = dict(binding={"sha256": "b" * 64}, terms=dict(published_date="2019-12-31",
+        terms=dict(completion_notice_on="2019-12-29", confirmed_cancellation_date="2019-12-30",
+            capital_as_of="2019-12-31", cancelled_shares=confirmed_quantity, issued_shares="100", treasury_shares="0")))
+    result = service._opening_chain_research(reconciliation["analysis"],
+        [{"facts": [purchase, confirmation]}], None)
+    assert result["purchase_links"][0]["status"] == expected
+    assert (result["purchase_links"][0]["cancellation_binding"] == confirmation["binding"]) == (confirmed_quantity == "2")
+    assert not result["complete_opening_action_coverage"]
+    assert not result["comparison_date_capital_proven"]

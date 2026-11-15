@@ -716,17 +716,20 @@ def _opening_chain_research(analysis, rows, reconciliation):
     """Reconcile named observed actions only; never certify an empty universe."""
     start = _day(analysis["valuation_date"])
     shares = Decimal(analysis["consumed_operating_inputs"]["ordinary_shares"])
-    confirmations, authorizations, annual = [], [], []
+    confirmations, authorizations, annual, purchases = [], [], [], []
     for row in rows:
         for fact in row["facts"]:
             parsed = fact["terms"]
             terms = parsed["terms"]
             if _day(parsed["published_date"]) > start:
                 continue
+            if terms.get("purchase_state") == "COMPLETED" and terms.get("cancellation_state") == "SCHEDULED_UNCONFIRMED":
+                purchases.append(dict(binding=fact["binding"], terms=terms, published_date=parsed["published_date"]))
             if "confirmed_cancellation_date" in terms:
                 confirmations.append(dict(evidence_binding=fact["binding"],
                     effective_date=terms["confirmed_cancellation_date"],
                     capital_as_of=terms["capital_as_of"], cancelled_shares=terms["cancelled_shares"],
+                    completion_notice_on=terms.get("completion_notice_on"),
                     issued_shares=terms["issued_shares"], treasury_shares=terms["treasury_shares"],
                     matches_consumed_opening_shares=Decimal(terms["issued_shares"]) == shares,
                     completed_before_valuation=_day(terms["confirmed_cancellation_date"]) <= start))
@@ -763,10 +766,27 @@ def _opening_chain_research(analysis, rows, reconciliation):
                         status="MATCHED_PREVALUATION_IMPLEMENTATION_TERMS" if matches else "TERMS_NOT_MATCHED",
                         price_deduction_applied="0", payment_receipt_proven=False,
                         accounting_one_cent_difference_resolved=False))
-    return dict(status="KNOWN_ACTIONS_PARTIALLY_RECONCILED" if confirmations or annual or authorizations else "NO_SUPPORTED_OPENING_ACTION",
+    purchase_links = []
+    for purchase in purchases:
+        terms = purchase["terms"]
+        matches = [confirmation for confirmation in confirmations
+                   if confirmation["completion_notice_on"] == purchase["published_date"]
+                   and confirmation["effective_date"] == terms["scheduled_cancellation_date"]
+                   and Decimal(confirmation["cancelled_shares"]) == terms["cumulative_purchased_shares"]
+                   and Decimal(confirmation["issued_shares"]) == terms["planned_post_cancellation_shares"]
+                   and confirmation["matches_consumed_opening_shares"]
+                   and confirmation["completed_before_valuation"]]
+        purchase_links.append(dict(purchase_binding=purchase["binding"],
+            cancellation_binding=matches[0]["evidence_binding"] if len(matches) == 1 else None,
+            status="MATCHED_COMPLETED_BEFORE_VALUATION" if len(matches) == 1 else "CANCELLATION_NOT_UNIQUELY_RECONCILED",
+            purchase_through=terms["through"], scheduled_cancellation_date=terms["scheduled_cancellation_date"],
+            purchased_shares=terms["cumulative_purchased_shares"], paid_cny=terms["cumulative_paid_cny"],
+            planned_post_cancellation_shares=terms["planned_post_cancellation_shares"],
+            action="no_order"))
+    return dict(status="KNOWN_ACTIONS_PARTIALLY_RECONCILED" if confirmations or annual or authorizations or purchases else "NO_SUPPORTED_OPENING_ACTION",
         candidate_binding=deepcopy(analysis["review_binding"]["candidate_binding"]),
         valuation_date=start.isoformat(), confirmations=confirmations,
-        distribution_links=annual, outstanding_authorizations=authorizations,
+        distribution_links=annual, outstanding_authorizations=authorizations, purchase_links=purchase_links,
         complete_opening_action_coverage=False, comparison_date_capital_proven=False,
         formal_eligibility=False, action="no_order")
 

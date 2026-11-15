@@ -292,3 +292,36 @@ def test_buyback_zero_requires_matching_explicit_summary_and_body():
         parse([page.replace("0万股", "1万股")])
     with pytest.raises(ValueError, match="ARITHMETIC_OR_DATE_INVALID"):
         parse([page.replace("9月30日", "9月29日")])
+
+def test_completed_buyback_keeps_planned_cancellation_out_of_effective_shares():
+    page = (
+        "证券代码：000777 证券简称：示例 公告编号：临2026-090 "
+        "示例股份有限公司关于股份回购实施结果暨股份变动的公告"
+        "本公司董事会及全体董事保证本公告内容不存在任何虚假记载、误导性陈述或者"
+        "重大遗漏，并对其内容的真实性、准确性和完整性承担法律责任。"
+        "实际回购股数1,000股实际回购股数占总股本比例0.1%实际回购金额22,000.00元"
+        "实际回购价格区间20.00元/股~25.00元/股一、回购审批情况和回购方案内容"
+        "二、回购实施情况2026年10月22日，公司回购股份实施完成，实际回购公司股份1,000股，"
+        "占公司总股本的0.1%，回购最高价格25.00元/股，回购最低价格20.00元/股，"
+        "回购均价22.00元/股，使用资金总额22,000.00元（不含交易费用）。"
+        "三、回购期间相关主体买卖股票情况"
+        "四、股份注销安排经申请，预计公司将于2026年10月23日在中国证券登记结算有限责任公司"
+        "上海分公司注销本次所回购的股份1,000股，并及时办理变更登记手续等相关事宜。"
+        "五、股份变动表股份总数 1,000,000 100.00 1,000 0 999,000 100.00"
+        "六、已回购股份的处理安排特此公告。示例股份有限公司董事会2026年10月23日"
+    )
+    result = parse([page])
+    assert result["event_type"] == "REPORTED_BUYBACK_PROGRESS"
+    assert result["effective_date"] is None
+    terms = result["terms"]
+    assert terms["purchase_state"] == "COMPLETED"
+    assert terms["cumulative_paid_cny"] == "22000.00"
+    assert terms["planned_post_cancellation_shares"] == 999000
+    assert terms["cancellation_state"] == "SCHEDULED_UNCONFIRMED"
+    assert terms["completed_cancellation_shares"] is None
+    with pytest.raises(ValueError, match="ARITHMETIC_OR_DATE_INVALID"):
+        parse([page.replace("999,000", "998,000")])
+    with pytest.raises(ValueError, match="ARITHMETIC_OR_DATE_INVALID"):
+        parse([page.replace("10月22日", "10月24日")])
+    with pytest.raises(ValueError, match="ISSUER_CODE_MISMATCH"):
+        parse([page.replace("000777", "000778")])

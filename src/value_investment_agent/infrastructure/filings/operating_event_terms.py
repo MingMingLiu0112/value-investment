@@ -360,6 +360,68 @@ def _buyback_progress(body, published, *, first_execution=False):
     )
 
 
+def _buyback_completion(body, published):
+    quantity = r"[1-9][0-9]{0,2}(?:,[0-9]{3})+|[1-9][0-9]*"
+    money = r"[0-9]+(?:,[0-9]{3})*\.[0-9]{2}"
+    _, start, execution = body.partition("二、回购实施情况")
+    execution, end, _ = execution.partition("三、回购期间")
+    completed = list(re.finditer(
+        _DATE.format(name="through") + r",公司回购股份实施完成,实际回购公司股份"
+        + rf"(?P<shares>{quantity})股,占公司总股本的(?P<ratio>{_MONEY})%,"
+        + rf"回购最高价格(?P<high>{money})元/股,回购最低价格(?P<low>{money})元/股,"
+        + rf"回购均价{money}元/股,使用资金总额(?P<total>{money})元\(不含交易费用\)。",
+        execution,
+    ))
+    _, cancel_start, cancellation = body.partition("四、股份注销安排")
+    cancellation, cancel_end, table = cancellation.partition("五、股份变动表")
+    scheduled = _match(
+        r"经申请,预计公司将于" + _DATE.format(name="scheduled")
+        + rf"在中国证券登记结算有限责任公司(?:上海|深圳)分公司注销本次所回购的股份(?P<shares>{quantity})股,"
+        + r"并及时办理变更登记手续等相关事宜。", cancellation,
+    )
+    table, table_end, _ = table.partition("六、已回购股份的处理安排")
+    totals = list(re.finditer(
+        rf"股份总数(?P<opening>{quantity})100\.00(?P<cancel>{quantity})0(?P<closing>{quantity})100\.00$",
+        table,
+    ))
+    if not all((start, end, cancel_start, cancel_end, table_end)) or len(completed) != 1 or len(totals) != 1:
+        _reject("BUYBACK_COMPLETION_TERMS_MISSING_OR_AMBIGUOUS")
+    row, counts = completed[0], totals[0]
+
+    def number(match, key):
+        return Decimal(match[key].replace(",", ""))
+
+    overview = list(re.finditer(
+        rf"实际回购股数(?P<shares>{quantity})股实际回购股数占总股本比例(?P<ratio>{_MONEY})%"
+        + rf"实际回购金额(?P<total>{money})元实际回购价格区间(?P<low>{money})元/股~(?P<high>{money})元/股",
+        body.partition("一、回购审批情况")[0],
+    ))
+    if len(overview) != 1 or any(number(overview[0], field) != number(row, field)
+                                  for field in ("shares", "ratio", "total", "low", "high")):
+        _reject("BUYBACK_COMPLETION_SUMMARY_MISMATCH")
+    shares, total, ratio = (number(row, key) for key in ("shares", "total", "ratio"))
+    opening, cancelled, closing = (number(counts, key) for key in ("opening", "cancel", "closing"))
+    through, scheduled_date = _day(row["through"]), _day(scheduled["scheduled"])
+    if (not through <= published <= scheduled_date or through >= scheduled_date
+            or not 0 < ratio <= 100 or not 0 < number(row, "low") <= total / shares <= number(row, "high")
+            or shares != cancelled or shares != number(scheduled, "shares") or opening - cancelled != closing):
+        _reject("BUYBACK_COMPLETION_ARITHMETIC_OR_DATE_INVALID")
+    return dict(
+        event_type="REPORTED_BUYBACK_PROGRESS", effective_date=None,
+        terms=dict(through=through, cumulative_purchased_shares=int(shares),
+                   cumulative_paid_cny=str(total), disclosed_share_percent=str(ratio),
+                   purchase_state="COMPLETED", cancellation_state="SCHEDULED_UNCONFIRMED",
+                   scheduled_cancellation_date=scheduled_date, planned_post_cancellation_shares=int(closing),
+                   completed_cancellation_shares=None),
+        affected_model_fields=["cash", "ordinary_shares"],
+        summary=f"截至{through}回购完成，共购回{int(shares)}股，支付{total}元（不含交易费用）。",
+        implication="期内现金支出须与基期和其他累计回执去重；只有后续登记完成证据才能确认股份注销。",
+        limitations=["公告中注销为预计安排，拟注销后股数不可当作已经生效的股数。"],
+        _evidence=[(overview[0][0], "buyback_summary"), (row[0], "buyback_completion"), (scheduled[0], "planned_cancellation"),
+                   (counts[0], "planned_share_count_reconciliation")],
+    )
+
+
 def parse_operating_event_terms(pages, *, symbol):
     """Extract bounded source terms; ValueError rejects unsupported prose.
 
@@ -376,7 +438,7 @@ def parse_operating_event_terms(pages, *, symbol):
         r"证券简称:(?P<short_b>[^:]{1,30})证券代码:(?P<code_b>[0-9]{6})编号:临)"
         r"(?P<year>20[0-9]{2})-(?P<number>[0-9]{3})"
         r"(?P<issuer>[\u4e00-\u9fffA-Za-z()]{2,80}股份有限公司)"
-        r"(?P<title>重大事项公告|" + _MEETING + r"决议公告|关于会计政策变更的公告|(?P<buyback>关于股份回购进展公告|关于以集中竞价交易方式首次回购公司股份的公告))"
+        r"(?P<title>重大事项公告|" + _MEETING + r"决议公告|关于会计政策变更的公告|(?P<buyback>关于股份回购进展公告|关于以集中竞价交易方式首次回购公司股份的公告|关于股份回购实施结果暨股份变动的公告))"
         + re.escape(_GUARANTEE) + r"(?P<body>.+)特此公告(?(buyback)。?|。)"
         r"(?P=issuer)董事会" + _DATE.format(name="published"), text,
     )
@@ -390,6 +452,8 @@ def parse_operating_event_terms(pages, *, symbol):
         result = _price(body, published)
     elif title == "关于会计政策变更的公告":
         result = _accounting(body, issuer, published)
+    elif title == "关于股份回购实施结果暨股份变动的公告":
+        result = _buyback_completion(body, published)
     elif header["buyback"]:
         result = _buyback_progress(body, published, first_execution="首次回购" in title)
     else:
