@@ -230,21 +230,44 @@ def parse_native_capital_observation(pages, *, symbol):
 
 
 def _quarter_update(pages, normalized, period):
-    header = "本报告期本报告期比上年同期增减年初至报告期末年初至报告期末比上年同期增减"
+    inline_header = "本报告期本报告期比上年同期增减年初至报告期末年初至报告期末比上年同期增减"
+    table_header = ("单位:元币种:人民币项目本报告期本报告期比上年同期增减变动幅度(%)"
+                    "年初至报告期末年初至报告期末比上年同期增减变动幅度(%)")
     rows = []
-    rate = r"-?[0-9]+(?:\.[0-9]+)?%"
     for page, text in enumerate(normalized, 1):
-        if "主要会计数据和财务指标" not in text or header not in text:
+        if "主要会计数据和财务指标" not in text:
+            continue
+        table_wide_units = table_header in text
+        if table_wide_units:
+            labels = ("营业收入", "归属于上市公司股东的净利润")
+            table = text.split(table_header, 1)[1]
+            rate = r"-?[0-9]+\.[0-9]{2}"
+            # Bare percentage cells are adjacent in the normalized text. The
+            # stated yuan rows have two decimals and comma-grouped amounts.
+            amount = r"(-?[0-9]{1,3}(?:,[0-9]{3})+\.[0-9]{2})"
+        elif inline_header in text:
+            labels = ("营业收入(元)", "归属于上市公司股东的净利润(元)")
+            table = text
+            rate = r"-?[0-9]+(?:\.[0-9]+)?%"
+            amount = MONEY
+        else:
             continue
         found = {}
-        for field, label, scope in (("revenue_cny", "营业收入(元)", "consolidated"),
-                ("parent_profit_cny", "归属于上市公司股东的净利润(元)", "consolidated_parent")):
-            matches = list(re.finditer(re.escape(label)+MONEY+rate+MONEY+rate, text))
+        for (field, scope), label in zip((
+                ("revenue_cny", "consolidated"),
+                ("parent_profit_cny", "consolidated_parent")), labels, strict=True):
+            matches = list(re.finditer(re.escape(label)+amount+rate+amount+rate, table))
             if len(matches) != 1:
                 return dict(status=UNKNOWN)
             match = matches[0]
+            excerpt = _raw_excerpt(pages[page-1], match[0])
+            if table_wide_units:
+                cells = excerpt.split()[-4:]
+                if (len(cells) != 4 or cells[::2] != [match[1], match[2]]
+                        or any(not re.fullmatch(rate, cell) for cell in cells[1::2])):
+                    return dict(status=UNKNOWN)
             found[field] = dict(value=str(_decimal(match[2])), unit="CNY", scope=scope,
-                physical_page=page, excerpt=_raw_excerpt(pages[page-1], match[0]))
+                physical_page=page, excerpt=excerpt)
         rows.append(found)
     if len(rows) > 1:
         raise ValueError("NATIVE_QUARTER_COLUMNS_AMBIGUOUS")

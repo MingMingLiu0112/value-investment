@@ -221,3 +221,22 @@ def test_real_implementation_wrong_total_is_not_rescued_by_rounding(real_sources
     pages=[p.replace('6,501,567,650.57','650,156,765.05') for p in real_sources['1225481717']]
     with pytest.raises(ValueError,match='AMOUNT_OUTSIDE_DISCLOSED_PRECISION'):
         mod.parse_native_capital_observation(pages,symbol='000568')
+
+
+@pytest.mark.parametrize("unit,expected", [("人民币", "VERIFIED"), ("美元", "UNKNOWN")])
+def test_q3_table_wide_unit_and_ytd_columns(unit, expected):
+    pages = sample(label="第三季度报告")[:2] + [
+        "主要会计数据和财务指标\n单位：元 币种：" + unit
+        + "\n项目 本报告期 本报告期比上年同期增减变动幅度(%)"
+          " 年初至报告期末 年初至报告期末比上年同期增减变动幅度(%)\n"
+          "营业收入 40,267.56 3.08 130,970.04 1.96\n"
+          "归属于上市公司股东的净利润 19,950.09 3.78 64,467.95 -0.25"
+    ]
+    result = mod.parse_native_capital_observation(pages, symbol="000001")
+    update = result["financial_update"]
+    assert update["status"] == expected
+    assert result["ordinary_shares"] == "UNKNOWN"
+    if expected == "VERIFIED":
+        assert update["period_basis"] == "YEAR_TO_DATE_9M_NOT_SINGLE_QUARTER"
+        assert update["fields"]["revenue_cny"]["value"] == "130970.04"
+        assert update["fields"]["parent_profit_cny"]["value"] == "64467.95"
