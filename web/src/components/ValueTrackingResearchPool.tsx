@@ -263,7 +263,10 @@ export function ValueTrackingResearchPool({
                             : batchRows.get(row.symbol)?.status ===
                                 "OFFICIAL_RECEIPT_PAIR_REQUIRED"
                               ? "待补齐两期报告收据"
-                              : "来源重放未通过"}
+                              : batchRows.get(row.symbol)?.status ===
+                                  "PARENT_CASH_LAYOUT_REPLAYED_D2_ADAPTER_REQUIRED"
+                                ? `已核验两期母公司现金表（${batchRows.get(row.symbol)?.evidence_count} 项），此批次尚未核验 D2 现金政策`
+                                : "来源重放未通过"}
                         </p>
                       )}
                       <p>

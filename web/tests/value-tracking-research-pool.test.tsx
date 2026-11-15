@@ -268,3 +268,23 @@ it("distinguishes obtained source observations from admitted facts", () => {
   view.items[0].observed_fields = -1;
   expect(validTrackingPoolView(view)).toBe(false);
 });
+
+it("distinguishes replayed alternate parent cash statements from a rejected source", () => {
+  const view = fixture();
+  view.source_receipt_batch = {
+    as_of: "2026-11-02T01:00:00+08:00",
+    sha256: "b".repeat(64),
+    items: [
+      {
+        symbol: "600001",
+        status: "PARENT_CASH_LAYOUT_REPLAYED_D2_ADAPTER_REQUIRED",
+        evidence_count: 17,
+      },
+    ],
+  };
+  expect(validTrackingPoolView(view)).toBe(true);
+  const html = render(view);
+  expect(html).toContain("已核验两期母公司现金表（17 项）");
+  expect(html).toContain("此批次尚未核验 D2 现金政策");
+  expect(html).not.toContain("来源重放未通过");
+});
