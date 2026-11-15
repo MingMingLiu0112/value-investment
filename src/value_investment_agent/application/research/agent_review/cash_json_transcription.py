@@ -90,3 +90,48 @@ def replay_guided_cash_diagnostic(service, task_id):
         "observed_cost_cny": cost, "normalized_response_sha256": _hash(corrected.encode("utf-8")),
         "e2_eligible": False, "formal_eligibility": False, "action": "no_order",
     }
+
+
+
+def replay_compact_cash_diagnostic(service, task_id):
+    """Read a malformed primary cash response without promoting its task state."""
+    from datetime import datetime
+
+    from .operating_horizon_task_v25_compact_cash import CompactCashTaskService
+    from .operating_horizon_task_v25_canonical import SCENARIOS
+    from .operating_cash_policy_draft_v16_generic import validate_response
+    from .task_execution_v1 import _bytes, _hash
+    from ....infrastructure.agent_runtime.provider import LLMResponse
+    from ..operating_horizon_cash_policy_e2_v17 import missing_cash_constraint_citations
+
+    if not isinstance(service, CompactCashTaskService):
+        raise ValueError("CASH_DIAGNOSTIC_COMPACT_SERVICE_REQUIRED")
+    with service._lock(service._directory(task_id)):
+        spec, state, _ = service._load(task_id)
+        if (state["status"] != "FAILED" or state["error_code"] != "V25_CASH_RESPONSE_REJECTED"
+                or state["stage_validated"] != list(SCENARIOS)):
+            raise ValueError("CASH_DIAGNOSTIC_FAILED_PRIMARY_REQUIRED")
+        context = service._context(spec)
+        packet = service._packet(spec, state, "cash")
+        request, binding = service._request_for_stage(spec, state, context, "cash")
+        if binding != state["cash_binding"] or packet["request_sha256"] != _hash(_bytes(request.__dict__)):
+            raise ValueError("CASH_DIAGNOSTIC_REQUEST_CHANGED")
+        response = LLMResponse(**packet["response"])
+        service._usage(response, request, spec["config"]["model_id"])
+        service._verify_stage_settlement(spec, state, "cash", packet)
+        generated = datetime.fromisoformat(packet["generated_at"])
+        if generated.utcoffset() is None or generated < service._annual_generated_at(spec, state):
+            raise ValueError("CASH_DIAGNOSTIC_GENERATED_TIME_INVALID")
+
+    corrected = remove_single_extra_object_close(response.text)
+    result = validate_response(corrected, context, spec["source_binding"], generated)
+    paths = result["years"]["2027"]["shareholder_cash_paths"]
+    quantified = {name: {"terms": {key: value for key, value in path["terms"].items()
+                                  if value["classification"] == "FORECAST_ASSUMPTION"}}
+                  for name, path in paths.items()}
+    return {
+        "economic_status": result["cash_policy_appendix_status"],
+        "unknown_terms": {name: [key for key in path["terms"] if key not in quantified[name]["terms"]]
+                          for name, path in paths.items()},
+        "missing_e2_anchors": missing_cash_constraint_citations({"2027": quantified}, context),
+    }

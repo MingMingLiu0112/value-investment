@@ -890,6 +890,22 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                                 missing_e2_anchors=diagnostic["missing_e2_anchors"],
                                 source_scope="SEALED_CONTINUATION_DIAGNOSTIC_ONLY",
                                 task_accepted=False, formal_eligibility=False, action="no_order")
+                elif task.get("error_code") == "V25_CASH_RESPONSE_REJECTED":
+                    from ...application.research.agent_review.cash_json_transcription import replay_compact_cash_diagnostic
+
+                    try:
+                        diagnostic = replay_compact_cash_diagnostic(selected, task_id)
+                    except (ValueError, OSError, KeyError, TypeError, RuntimeError):
+                        pass  # The original failed response remains authoritative.
+                    else:
+                        task["cash_policy_completeness"] = dict(
+                            status=diagnostic["economic_status"],
+                            missing_terms=[dict(year="2027", scenario=scenario, term=term)
+                                           for scenario, terms in diagnostic["unknown_terms"].items()
+                                           for term in terms],
+                            missing_e2_anchors=diagnostic["missing_e2_anchors"],
+                            source_scope="SEALED_PRIMARY_DIAGNOSTIC_ONLY",
+                            task_accepted=False, formal_eligibility=False, action="no_order")
             return reply(task)
         except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
         except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
