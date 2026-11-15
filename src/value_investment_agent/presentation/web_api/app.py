@@ -983,7 +983,7 @@ def create_app(
     @api.get("/api/v1/value-screening/sse-main/research-queue")
     def sse_main_research_queue():
         from ...application.research.sse_research_pipeline_v1 import read_sse_research_pool
-        from ...application.research.agent_review.horizon_receipt_selection import read_queue_receipt_batch
+        from ...application.research.agent_review.horizon_queue_receipts_v2 import read_queue_receipt_batch
         from .live_operating_research_routes import resolve_research_task_root
         now = datetime.now(timezone.utc)
         view = read_sse_research_pool(root=project, now=now)
