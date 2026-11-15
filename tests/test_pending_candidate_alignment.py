@@ -954,3 +954,36 @@ def test_quarter_event_keeps_candidate_review_separate(reconciliation, monkeypat
     else:
         assert not row["facts"]
         assert row["unresolved"][0]["reason"] == "QUARTERLY_ORIGINAL_NOT_VERIFIED_FOR_EVENT"
+
+
+
+def test_szse_interim_entitlement_reconciles_declared_total_and_payment_scope():
+    from value_investment_agent.infrastructure.filings.szse_cash_entitlement import (
+        parse_mixed_cash_entitlement,
+    )
+
+    pages = [
+        "证券代码：000001 证券简称：示例 2025 年中期分红派息实施公告"
+        "以公司现有总股本100股为基数，向全体股东每10股派1.25元人民币现金"
+        "（含税），现金分红金额12.50元（含税）"
+        "本次利润分配公司不送红股，不进行资本公积金转增股本。",
+        "现有总股本剔除已回购股份0股后的100股为基数，"
+        "向全体股东每10股派1.25元人民币现金（含税；扣税条款）"
+        "股权登记日：2026年1月29日。除权除息日：2026年1月30日。",
+        "代派的A股股东现金红利将于2026年1月30日通过托管机构划入。"
+        "以下A股股东的现金红利由我公司自行派发：董事会2026年1月24日",
+    ]
+    result = parse_mixed_cash_entitlement(pages, symbol="000001")
+    assert result["cash_per_share"] == "0.125"
+    assert result["gross_declared_cash_cny"] == "12.50"
+    assert result["fiscal_year"] == 2025
+    assert result["ex_date"] == "2026-01-30"
+    assert result["issuer_direct_payment_date"] is None
+    with pytest.raises(ValueError, match="DOES_NOT_RECONCILE"):
+        parse_mixed_cash_entitlement(
+            [pages[0].replace("12.50", "12.51"), *pages[1:]], symbol="000001"
+        )
+    with pytest.raises(ValueError, match="DATE_ORDER_INVALID"):
+        parse_mixed_cash_entitlement(
+            [*pages[:2], pages[2].replace("1月30日", "1月28日")], symbol="000001"
+        )
