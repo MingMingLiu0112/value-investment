@@ -1055,3 +1055,8 @@
 - GitHub Core Research Gates在`e930f630`首次显式纳入新测试后为红：`10040 passed, 525 skipped, 5 failed`，失败集中旧E2测试固定`NOW+1h`，而D1持久任务更新时间取运行墙钟，CI运行跨过该截止。生产E2未来时间拒绝保持不变；TEST_ONLY读取时点改为实际完成后的观察时间，负例改为相对观察时间，相关`13 passed`。修复已提交，需以其后Core原始回执确认；不可将先前Web绿色代替Core通过。
 - 修复后的`87e6de8c`对应GitHub Core run `43230959015`与Web run `43230958808`均为success；Core原始offline-core日志确认显式执行V19和V16新增测试，`10045 passed, 525 skipped`。这证明CI清单与代码回归，不证明V20真实模型输出或经济研究可用；V20对应提交`bd6e8908`仍须看自身Core/Web回执。
 - 已提交版本`bd6e8908`的真实600887来源冷读63行，V20单情景请求仍用43,084字符原始事实摘要，输出Schema从三情景约175,173字符缩为单情景约58,837字符；这只减少一次响应的结构复杂度，不改变来源、经济校验或费用合同。新真实V20任务`rt-817f3156cc765c2f28edf3871ae8f6fa`只运行一次Bear阶段，结算人民币0.053504元，封存响应SHA`74bb52212779a738f40e965829a30547d20cf33cc47cf310b42c6dfb223b245c`；状态`FAILED/V20_BEAR_RESPONSE_REJECTED`，Base/Bull/现金均未调用。原文虽是合法JSON，但年度层多`period_start/period_end/baseline_period`，缺`counter_evidence/reopen_condition`，路径层多`label/thesis`且把单位成本机制放在`drivers`下，不能无歧义移植为合格研究。保留失败与费用记录、不再对同一资料付费碰运气；E2/F1/F2无新真实正例，`action=no_order`。
+### 2026-11-15 D2 V25真实研究与E2交接
+
+- 600887的V25真实任务`rt-baa6294c5cbd97569c86d0e012a35cf5`使用封存公开来源及deepseek-flash，Bear/Base/Bull均通过年度校验；现金政策阶段完成且结算总费用人民币0.322410元。最终`WAITING_EVIDENCE/CASH_POLICY_INCOMPLETE`，`action=no_order`。
+- 现金政策仍缺2027目标派息、维持性净投入、营运资本现金与到期承诺的可量化依据。E2按`V10_E2_SUCCEEDED_TWO_STAGE_TASK_REQUIRED`拒绝；不能生成新的F1估值和F2条件价。此为真实经济输入缺口，不能补零。
+- V25已接入现有任务发现、读取与E2 API分发；相关API/任务/传输定向`115 passed`。这证明工程接线，不证明E2正向、当前价资格或8001部署。封存上下文实际63条事实，派息候选只有2条分配与利息混合支付记录，无法直接推出普通股派息率；下一步先核对公开原件是否已有未传入的分红与现金桥事实，再以可核对事实锚点建立可挑战的条件现金假设，完成正向E2后进入F1/F2。

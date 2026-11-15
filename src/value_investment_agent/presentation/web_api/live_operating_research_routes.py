@@ -271,6 +271,8 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         OperatingHorizonTaskService as V23HorizonTaskService, CONTRACT as V23_CONTRACT)
     from ...application.research.agent_review.operating_horizon_task_v24_shared_budget import (
         OperatingHorizonTaskService as V24HorizonTaskService, CONTRACT as V24_CONTRACT)
+    from ...application.research.agent_review.operating_horizon_task_v25_canonical import (
+        OperatingHorizonTaskService as V25HorizonTaskService, CONTRACT as V25_CONTRACT)
     from ...application.research.agent_review import operating_horizon_sources_v1 as generic_horizon_sources
     from ...application.research.agent_review import operating_q3_issuer_plan_loader_v8_600519 as q3_v8
     from ...application.research.agent_review import operating_q3_issuer_wc_loader_v9_600519 as wc_v9
@@ -297,6 +299,11 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             expected_budget_day=settlement["budget_day"])
 
     def live_2027_horizon(contract, *, loader_version=None, test_provider=None):
+        if contract == V25_CONTRACT:
+            if loader_version not in (None, generic_horizon_sources.VERSION):
+                raise ValueError("V25_SOURCE_LOADER_VERSION_UNSUPPORTED")
+            return V25HorizonTaskService(project, **({"test_provider": test_provider}
+                if test_provider is not None else {}))
         if contract == V24_CONTRACT:
             if loader_version not in (None, generic_horizon_sources.VERSION):
                 raise ValueError("V24_SOURCE_LOADER_VERSION_UNSUPPORTED")
@@ -414,7 +421,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
 
     def live_2027_for(task_id):
         # A damaged newer task must never be read through an older store.
-        for contract in (V24_CONTRACT, V23_CONTRACT, V22_CONTRACT, V21_CONTRACT, V20_CONTRACT, V19_CONTRACT, V18_CONTRACT, V17_CONTRACT, V16_CONTRACT, V15_CONTRACT, V14_CONTRACT, V13_CONTRACT, V12_CONTRACT, V11_CONTRACT, V10_CONTRACT):
+        for contract in (V25_CONTRACT, V24_CONTRACT, V23_CONTRACT, V22_CONTRACT, V21_CONTRACT, V20_CONTRACT, V19_CONTRACT, V18_CONTRACT, V17_CONTRACT, V16_CONTRACT, V15_CONTRACT, V14_CONTRACT, V13_CONTRACT, V12_CONTRACT, V11_CONTRACT, V10_CONTRACT):
             if contract in (V17_CONTRACT, V18_CONTRACT):
                 probe = live_2027_horizon(V16_CONTRACT)
                 store = V18_STORE if contract == V18_CONTRACT else V17_STORE
@@ -485,7 +492,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         if error is not None:
             return error
         try:
-            items = (list_live_2027(None, V24_CONTRACT) + list_live_2027(None, V23_CONTRACT) + list_live_2027(None, V22_CONTRACT) + list_live_2027(None, V21_CONTRACT) + list_live_2027(None, V20_CONTRACT) + list_live_2027(None, V19_CONTRACT) + list_live_2027(None, V18_CONTRACT) + list_live_2027(None, V17_CONTRACT) + list_live_2027(None, V16_CONTRACT) + list_live_2027(None, V15_CONTRACT) + list_live_2027(None, V14_CONTRACT) + list_live_2027(None, V13_CONTRACT) + list_live_2027(None, V12_CONTRACT) +
+            items = (list_live_2027(None, V25_CONTRACT) + list_live_2027(None, V24_CONTRACT) + list_live_2027(None, V23_CONTRACT) + list_live_2027(None, V22_CONTRACT) + list_live_2027(None, V21_CONTRACT) + list_live_2027(None, V20_CONTRACT) + list_live_2027(None, V19_CONTRACT) + list_live_2027(None, V18_CONTRACT) + list_live_2027(None, V17_CONTRACT) + list_live_2027(None, V16_CONTRACT) + list_live_2027(None, V15_CONTRACT) + list_live_2027(None, V14_CONTRACT) + list_live_2027(None, V13_CONTRACT) + list_live_2027(None, V12_CONTRACT) +
                 list_live_2027(None, V11_CONTRACT) + list_live_2027(None, V10_CONTRACT))
             return reply(dict(action="no_order", scope="HISTORICAL_D2_TASKS_NOT_CURRENT_CANDIDATES",
                 items=sorted(items, key=lambda row: (row["updated_at"], row["task_id"]), reverse=True)))
@@ -503,10 +510,10 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             if not re.fullmatch(r"[0-9]{6}",symbol):raise ValueError("INVALID_CASH_POLICY_SYMBOL")
             if task_contract not in (None, PARENT_WC_CONTRACT, SPLIT_CONTRACT,
                                      ANCHORED_SPLIT_CONTRACT, V10_CONTRACT, V11_CONTRACT,
-                                     V12_CONTRACT, V13_CONTRACT, V14_CONTRACT, V15_CONTRACT, V16_CONTRACT, V17_CONTRACT, V18_CONTRACT, V19_CONTRACT, V20_CONTRACT, V21_CONTRACT, V22_CONTRACT, V23_CONTRACT, V24_CONTRACT):
+                                     V12_CONTRACT, V13_CONTRACT, V14_CONTRACT, V15_CONTRACT, V16_CONTRACT, V17_CONTRACT, V18_CONTRACT, V19_CONTRACT, V20_CONTRACT, V21_CONTRACT, V22_CONTRACT, V23_CONTRACT, V24_CONTRACT, V25_CONTRACT):
                 raise ValueError("INVALID_CASH_POLICY_TASK_CONTRACT")
             items = (list_live_2027(symbol, task_contract)
-                if task_contract in (V10_CONTRACT, V11_CONTRACT, V12_CONTRACT, V13_CONTRACT, V14_CONTRACT, V15_CONTRACT, V16_CONTRACT, V17_CONTRACT, V18_CONTRACT, V19_CONTRACT, V20_CONTRACT, V21_CONTRACT, V22_CONTRACT, V23_CONTRACT, V24_CONTRACT)
+                if task_contract in (V10_CONTRACT, V11_CONTRACT, V12_CONTRACT, V13_CONTRACT, V14_CONTRACT, V15_CONTRACT, V16_CONTRACT, V17_CONTRACT, V18_CONTRACT, V19_CONTRACT, V20_CONTRACT, V21_CONTRACT, V22_CONTRACT, V23_CONTRACT, V24_CONTRACT, V25_CONTRACT)
                 else list_live_split(symbol, anchored=True) if task_contract == ANCHORED_SPLIT_CONTRACT
                 else list_live_split(symbol) if task_contract == SPLIT_CONTRACT
                 else list_live_parent_wc(symbol) if task_contract == PARENT_WC_CONTRACT
@@ -685,7 +692,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             return body
         if allow_v5 and fields == {"symbol", "request_key", "years", "task_contract"} \
                 and body["task_contract"] in (PARENT_WC_CONTRACT, SPLIT_CONTRACT,
-                                              ANCHORED_SPLIT_CONTRACT, V19_CONTRACT, V20_CONTRACT, V21_CONTRACT, V22_CONTRACT, V23_CONTRACT, V24_CONTRACT):
+                                              ANCHORED_SPLIT_CONTRACT, V19_CONTRACT, V20_CONTRACT, V21_CONTRACT, V22_CONTRACT, V23_CONTRACT, V24_CONTRACT, V25_CONTRACT):
             return {key: body[key] for key in ("symbol", "request_key", "years")}
         if allow_v5 and fields == {"symbol", "request_key", "years", "task_contract", "source_loader_version"} \
                 and body["task_contract"] in (V11_CONTRACT, V12_CONTRACT, V13_CONTRACT, V14_CONTRACT, V15_CONTRACT, V16_CONTRACT) \
@@ -782,6 +789,8 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                 and body.get("task_contract") == SPLIT_CONTRACT else
                 parent_wc_horizon() if isinstance(body, dict)
                 and body.get("task_contract") == PARENT_WC_CONTRACT else
+                live_2027_horizon(V25_CONTRACT) if isinstance(body, dict)
+                and body.get("task_contract") == V25_CONTRACT else
                 live_2027_horizon(V24_CONTRACT) if isinstance(body, dict)
                 and body.get("task_contract") == V24_CONTRACT else
                 live_2027_horizon(V23_CONTRACT) if isinstance(body, dict)
@@ -823,6 +832,10 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         try:
             selected = live_2027_for(task_id)
             if selected is not None:
+                if selected.__class__ is V25HorizonTaskService:
+                    from ...application.research.operating_horizon_cash_policy_e2_v17 import read_v25_cash_policy_e2_input
+                    return reply(read_v25_cash_policy_e2_input(root=project, task_id=task_id,
+                        now=datetime.now(timezone.utc), service=selected))
                 if selected.__class__ is V24HorizonTaskService:
                     from ...application.research.operating_horizon_cash_policy_e2_v16 import read_v24_cash_policy_e2_input
                     return reply(read_v24_cash_policy_e2_input(root=project, task_id=task_id,
