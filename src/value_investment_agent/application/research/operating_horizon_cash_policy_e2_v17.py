@@ -10,6 +10,7 @@ from .agent_review.operating_horizon_task_v25_canonical import (
 from .agent_review.operating_horizon_sources_v2_return_plan import VERSION as RETURN_PLAN_LOADER
 from .agent_review.operating_horizon_sources_v3_parent_quarter import VERSION as PARENT_QUARTER_LOADER
 from .agent_review.operating_horizon_sources_v4_cash_constraints import VERSION as CASH_CONSTRAINT_LOADER
+from .agent_review.operating_horizon_sources_v5_parent_trade import VERSION as PARENT_TRADE_LOADER
 
 VERSION = "operating-horizon-cash-policy-e2-input-v17"
 
@@ -26,7 +27,10 @@ def _validate_cash_constraint_citations(policy_years, context):
                 anchors = {
                     evidence_id
                     for evidence_id in eligible_ids[term_name]
-                    if scopes[evidence_id] != "ISSUER_FINANCING_DISCLOSURE"
+                    if scopes[evidence_id] not in {
+                        "ISSUER_FINANCING_DISCLOSURE", "ISSUER_PARENT_STANDALONE_BALANCE_PROXY",
+                        "ISSUER_PARENT_UNDATED_COMMITMENT_BOUND",
+                    }
                     and (scopes[evidence_id] != "ISSUER_ARTICLES_RULE_TEXT"
                          or term_name == "reserve_ratio")
                 }
@@ -39,10 +43,11 @@ def read_v25_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
     result = read_generic_cash_policy_e2_input(root=root, task_id=task_id, now=now,
         contract=CONTRACT, service_type=OperatingHorizonTaskService,
         version=VERSION, label="V25", service=service, staged_annual=True,
-        additional_reported_fact_loaders=(RETURN_PLAN_LOADER, PARENT_QUARTER_LOADER, CASH_CONSTRAINT_LOADER))
+        additional_reported_fact_loaders=(RETURN_PLAN_LOADER, PARENT_QUARTER_LOADER,
+                                          CASH_CONSTRAINT_LOADER, PARENT_TRADE_LOADER))
     bound_service = service or OperatingHorizonTaskService(root)
     spec, _, _ = bound_service._load(task_id)
-    if spec["source_loader_binding"]["version"] == CASH_CONSTRAINT_LOADER:
+    if spec["source_loader_binding"]["version"] in (CASH_CONSTRAINT_LOADER, PARENT_TRADE_LOADER):
         _validate_cash_constraint_citations(result["policy_years"], bound_service._context(spec))
     return result
 

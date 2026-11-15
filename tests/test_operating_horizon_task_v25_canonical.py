@@ -151,6 +151,8 @@ def test_v25_return_plan_applies_reported_fact_provenance(tmp_path, monkeypatch,
     ("accessible_profit_ratio", ["charter"], False),
     ("accessible_profit_ratio", ["charter", "parent-cfo"], True),
     ("commitment_cash_cny", ["financing"], False),
+    ("commitment_cash_cny", ["fund-bound"], False),
+    ("commitment_cash_cny", ["fund-bound", "capex-contract"], True),
     ("commitment_cash_cny", ["financing", "capex-contract"], True),
     ("commitment_cash_cny", ["financing", "parent-cfo"], False),
 ])
@@ -163,6 +165,7 @@ def test_v25_cash_constraints_require_applicable_primary_anchor(monkeypatch, ter
     evidence = [
         {"id": "charter", "scope": "ISSUER_ARTICLES_RULE_TEXT"},
         {"id": "financing", "scope": "ISSUER_FINANCING_DISCLOSURE"},
+        {"id": "fund-bound", "scope": "ISSUER_PARENT_UNDATED_COMMITMENT_BOUND"},
         {"id": "parent-cfo", "scope": "parent"},
         {"id": "capex-contract", "scope": "parent"},
     ]
@@ -170,7 +173,7 @@ def test_v25_cash_constraints_require_applicable_primary_anchor(monkeypatch, ter
     monkeypatch.setattr(cash, "candidates", lambda *_: {
         "reserve_ratio": ["charter"],
         "accessible_profit_ratio": ["charter", "parent-cfo"],
-        "commitment_cash_cny": ["financing", "capex-contract"],
+        "commitment_cash_cny": ["financing", "fund-bound", "capex-contract"],
     })
     policy = {"2027": {"base": {"terms": {term: {"evidence_ids": citations}}}}}
     if accepted:

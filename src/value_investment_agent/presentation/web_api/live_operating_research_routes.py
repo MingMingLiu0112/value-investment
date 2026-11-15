@@ -277,6 +277,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     from ...application.research.agent_review import operating_horizon_sources_v2_return_plan as return_plan_sources
     from ...application.research.agent_review import operating_horizon_sources_v3_parent_quarter as parent_quarter_sources
     from ...application.research.agent_review import operating_horizon_sources_v4_cash_constraints as cash_constraint_sources
+    from ...application.research.agent_review import operating_horizon_sources_v5_parent_trade as trade_sources
     from ...application.research.agent_review import operating_q3_issuer_plan_loader_v8_600519 as q3_v8
     from ...application.research.agent_review import operating_q3_issuer_wc_loader_v9_600519 as wc_v9
     from ...application.research.agent_review import operating_q3_issuer_dividend_split_loader_v9_600519 as dividend_v9
@@ -302,7 +303,7 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
             expected_budget_day=settlement["budget_day"])
 
     def selected_v25_loader(symbol):
-        for loader in (cash_constraint_sources, parent_quarter_sources):
+        for loader in (trade_sources, cash_constraint_sources, parent_quarter_sources):
             path = project / loader.CONFIG
             if path.is_file():
                 selection = json.loads(path.read_bytes())
@@ -315,10 +316,11 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
     def live_2027_horizon(contract, *, loader_version=None, test_provider=None, compact_cash=False):
         from ...application.research.agent_review.operating_horizon_task_v25_compact_cash import CompactCashTaskService
         if contract == V25_CONTRACT:
-            for loader in (cash_constraint_sources, parent_quarter_sources, return_plan_sources):
+            for loader in (trade_sources, cash_constraint_sources, parent_quarter_sources, return_plan_sources):
                 if loader_version == loader.VERSION:
                     service_type = (CompactCashTaskService
-                                    if compact_cash and loader is cash_constraint_sources else V25HorizonTaskService)
+                                    if compact_cash and loader in (trade_sources, cash_constraint_sources)
+                                    else V25HorizonTaskService)
                     return service_type(project,
                         source_loader=loader.build_operating_horizon_source_context,
                         source_loader_version=loader.VERSION,

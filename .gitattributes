@@ -244,3 +244,9 @@ src/value_investment_agent/infrastructure/filings/parent_balance_basis_v2.py -te
 src/value_investment_agent/infrastructure/filings/parent_income_basis_v1.py -text whitespace=cr-at-eol
 src/value_investment_agent/infrastructure/filings/parent_income_basis_v2.py -text whitespace=cr-at-eol
 src/value_investment_agent/infrastructure/filings/parent_wc_history_600519_v1.py -text whitespace=cr-at-eol
+
+# Preserve the exact implementation bytes bound by the V5 parent evidence manifests.
+src/value_investment_agent/application/research/agent_review/operating_horizon_sources_v5_parent_trade.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/parent_fund_evidence.py -text whitespace=cr-at-eol
+src/value_investment_agent/application/research/agent_review/parent_trade_evidence.py -text whitespace=cr-at-eol
+src/value_investment_agent/infrastructure/filings/parent_trade_balances.py -text whitespace=cr-at-eol
