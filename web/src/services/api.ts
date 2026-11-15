@@ -1401,7 +1401,8 @@ export type HorizonCashPolicyTask = {
       | "COMPLETE_UNAPPROVED_RESEARCH"
       | "NO_VALIDATED_RESULT";
     missing_terms: { year: string; scenario: string; term: string }[];
-    source_scope: "SEALED_RESPONSE_READ_ONLY";
+    source_scope:
+      "SEALED_RESPONSE_READ_ONLY" | "SEALED_CONTINUATION_DIAGNOSTIC_ONLY";
     task_accepted: boolean;
     formal_eligibility: false;
     action: "no_order";

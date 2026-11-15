@@ -871,6 +871,23 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
                                 "COMPLETE_UNAPPROVED_RESEARCH" if accepted else "NO_VALIDATED_RESULT"),
                         missing_terms=missing, source_scope="SEALED_RESPONSE_READ_ONLY",
                         task_accepted=accepted, formal_eligibility=False, action="no_order")
+                elif (task["status"] == "FAILED" and
+                      (selected._directory(task_id) / "cash-term-guided-v1" / "result.json").is_file()):
+                    from ...application.research.agent_review.cash_json_transcription import replay_guided_cash_diagnostic
+                    try:
+                        diagnostic = replay_guided_cash_diagnostic(selected, task_id)
+                    except (ValueError, OSError, KeyError, TypeError, RuntimeError):
+                        task["guided_cash_diagnostic_status"] = "SEALED_CONTINUATION_REVALIDATION_FAILED"
+                    else:
+                        task["guided_cash_diagnostic_status"] = diagnostic["economic_status"]
+                        if diagnostic["economic_status"] == "INCOMPLETE_UNKNOWN_TERMS":
+                            task["cash_policy_completeness"] = dict(
+                                status="INCOMPLETE_UNKNOWN_TERMS",
+                                missing_terms=[dict(year="2027", scenario=scenario, term=term)
+                                    for scenario, terms in diagnostic["unknown_terms"].items()
+                                    for term in terms],
+                                source_scope="SEALED_CONTINUATION_DIAGNOSTIC_ONLY",
+                                task_accepted=False, formal_eligibility=False, action="no_order")
             return reply(task)
         except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
         except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:

@@ -313,3 +313,14 @@ def test_cash_guide_pairs_exact_report_hash_and_period_across_source_aliases(set
     standalone["pdf_sha256"] = ("b" if consolidated["pdf_sha256"][0] != "b" else "c") * 64
     guide = build_cash_term_evidence(context, context["source_binding"])
     assert not guide["accessible_profit_ratio"]["historical_comparisons"]
+
+
+def test_cash_diagnostic_transcription_only_removes_single_extra_closing_brace():
+    from value_investment_agent.application.research.agent_review.cash_json_transcription import (
+        remove_single_extra_object_close,
+    )
+
+    assert remove_single_extra_object_close(' {"years":{"2027":{}}}} ') == '{"years":{"2027":{}}}'
+    for text in ('{"years":{}}', '{"years":{}}}}', '{"years":{}}{"other":1}', '[1]}', '{"years":'):
+        with pytest.raises(ValueError):
+            remove_single_extra_object_close(text)
