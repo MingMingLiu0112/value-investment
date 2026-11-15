@@ -14,13 +14,15 @@ VERSION = "operating-horizon-cash-policy-e2-input-v11"
 
 def read_generic_cash_policy_e2_input(*, root: Path, task_id: str, now: datetime,
                                        contract: str, service_type, version: str,
-                                       label: str, service=None, staged_annual=False) -> dict:
+                                       label: str, service=None, staged_annual=False,
+                                       additional_reported_fact_loaders=()) -> dict:
     if service is not None and (not isinstance(service, service_type)
             or Path(root).resolve() != service.root.resolve()):
         raise ValueError(label + "_E2_BOUND_SERVICE_REQUIRED")
     service = service or service_type(root)
     spec, _, _ = service._load(task_id)
-    if spec["source_loader_binding"]["version"] != generic_sources.VERSION:
+    if spec["source_loader_binding"]["version"] not in (
+            generic_sources.VERSION, *additional_reported_fact_loaders):
         replay = service
         projection = None
     else:

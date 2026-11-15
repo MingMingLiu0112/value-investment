@@ -106,3 +106,41 @@ def test_v25_uses_full_local_schema_for_json_object_transport(setup):
 
 
 
+
+
+@pytest.mark.parametrize("valid_source", [True, False])
+def test_v25_return_plan_applies_reported_fact_provenance(tmp_path, monkeypatch, valid_source):
+    from value_investment_agent.application.research import (
+        operating_horizon_cash_policy_e2_v11 as shared,
+        operating_horizon_cash_policy_e2_v17 as e2,
+    )
+
+    digest = "a" * 64
+    original = {"evidence": [{
+        "id": "filing-row", "kind": "SOURCE_BOUND_REPORTED_STATEMENT_ROW",
+        "pdf_sha256": digest, "source_id": "official:" + digest,
+        "physical_page": 83 if valid_source else 0, "unit": "CNY",
+        "available_at": "2026-04-25T08:00:00+08:00", "period": "2025-12-31",
+    }]}
+    spec = {
+        "source_loader_binding": {"version": e2.RETURN_PLAN_LOADER},
+        "context_sha256": "b" * 64,
+    }
+    service = object.__new__(task.OperatingHorizonTaskService)
+    service.root = tmp_path
+    monkeypatch.setattr(service, "_load", lambda _: (spec, {}, {}))
+    monkeypatch.setattr(service, "_context", lambda _: original)
+
+    def consume(**kwargs):
+        projected = kwargs["service"]._context(spec)
+        assert projected["evidence"][0]["kind"] == "VERIFIED_REPORTED_FACT"
+        return {"input_manifest": {}}
+
+    monkeypatch.setattr(shared, "_read_bound_cash_policy_e2_input", consume)
+    if not valid_source:
+        with pytest.raises(ValueError, match="V25_E2_REPORTED_FACT_PROVENANCE_INVALID"):
+            e2.read_v25_cash_policy_e2_input(root=tmp_path, task_id="test", now=NOW, service=service)
+        return
+    result = e2.read_v25_cash_policy_e2_input(root=tmp_path, task_id="test", now=NOW, service=service)
+    assert result["input_manifest"]["source_kind_projection"]["evidence_ids"] == ["filing-row"]
+    assert original["evidence"][0]["kind"] == "SOURCE_BOUND_REPORTED_STATEMENT_ROW"
