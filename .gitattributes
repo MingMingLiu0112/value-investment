@@ -250,3 +250,7 @@ src/value_investment_agent/application/research/agent_review/operating_horizon_s
 src/value_investment_agent/application/research/agent_review/parent_fund_evidence.py -text whitespace=cr-at-eol
 src/value_investment_agent/application/research/agent_review/parent_trade_evidence.py -text whitespace=cr-at-eol
 src/value_investment_agent/infrastructure/filings/parent_trade_balances.py -text whitespace=cr-at-eol
+
+# Preserve V6 industry cost replay hashes across Windows and Linux checkouts.
+src/value_investment_agent/application/research/agent_review/operating_horizon_sources_v6_industry_cost.py text eol=lf
+src/value_investment_agent/infrastructure/filings/industry_cost_composition.py text eol=lf
