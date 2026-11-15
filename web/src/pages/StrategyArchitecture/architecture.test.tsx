@@ -257,11 +257,15 @@ it("records the current driver bridge arithmetic acceptance without adopting par
       "母公司资金、分配、维持投入和营运资金条件桥",
     );
     expect(stage.nextStep).toContain("相同资料不再付费重试");
-    expect(stage.deliveryReview?.done).toContain("真实模型形成并通过严格校验");
-    expect(stage.deliveryReview?.gap).toContain("现金响应结构错位被拒绝");
-    expect(stage.deliveryReview?.gap).toContain("五项现金政策仍UNKNOWN");
+    expect(stage.deliveryReview?.done).toContain("通过年度三情景的结构校验");
     expect(stage.deliveryReview?.gap).toContain(
-      "F1/F2未形成这条链的估值或条件价",
+      "仍缺可对账的母公司营运资金现金附注",
+    );
+    expect(stage.deliveryReview?.gap).toContain(
+      "尚无完整现金政策经E2消费的真实正例",
+    );
+    expect(stage.deliveryReview?.gap).toContain(
+      "合并口径、期末余额及借款收现不能替代",
     );
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
