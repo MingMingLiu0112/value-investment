@@ -826,7 +826,15 @@ def register_live_operating_routes(api:FastAPI,*,project,sessions,port):
         if error is not None:return error
         try:
             selected = live_2027_for(task_id) or cash_horizon_for(task_id)
-            return reply(selected.read(task_id))
+            task = selected.read(task_id)
+            if task.get("workflow") == V25_CONTRACT:
+                from ...application.research.agent_review.operating_cash_evidence_coverage import (
+                    describe_cash_evidence,
+                )
+                context = selected.source_loader(root=selected.root, symbol=task["symbol"],
+                    binding=task["source_binding"], now=datetime.fromisoformat(task["research_as_of"]))
+                task = {**task, "cash_evidence_coverage": describe_cash_evidence(context)}
+            return reply(task)
         except LockTimeout:return reply(dict(action="no_order",status="LIVE_STATE_BUSY"),503)
         except (ValueError,OSError,KeyError,TypeError,RuntimeError) as error:
             return reply(dict(action="no_order",status="HORIZON_CASH_POLICY_TASK_UNAVAILABLE",reason=str(error)),422)

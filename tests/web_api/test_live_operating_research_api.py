@@ -1980,3 +1980,47 @@ def test_v16_historical_dividend_task_dispatch_is_separate(tmp_path, monkeypatch
         source_loader_version=dividend.VERSION))
     assert result.status_code == 202 and result.json()["action"] == "no_order"
     assert seen == [(dividend.VERSION, "600519")]
+
+
+def test_v25_read_projects_cash_evidence_from_pinned_source(api, monkeypatch):
+    from datetime import datetime
+    from value_investment_agent.application.research.agent_review import (
+        operating_horizon_task_v25_canonical as v25,
+        operating_horizon_sources_v2_return_plan as source,
+    )
+
+    client, secret, data, root = api
+    task_id = "rt-" + "f" * 32
+    path = BASE + "/horizon-cash-policy-tasks/" + task_id
+    task_dir = root / "runtime" / "research-task-execution-v1" / v25.STORE / task_id
+    task_dir.mkdir(parents=True)
+    (task_dir / "input.json").write_text(
+        '{"mode":"LIVE_OPERATING","source_loader_binding":{"version":"'
+        + source.VERSION + '"}}', encoding="utf-8",
+    )
+    binding = {"path": "runtime/source.json", "sha256": "a" * 64}
+    as_of = "2026-11-15T10:00:00+08:00"
+    task = dict(workflow=v25.CONTRACT, source_binding=binding, symbol="600887",
+                research_as_of=as_of, status="FAILED", action="no_order")
+    monkeypatch.setattr(v25.OperatingHorizonTaskService, "_load", lambda *_: None)
+    monkeypatch.setattr(v25.OperatingHorizonTaskService, "read", lambda *_: task)
+    def replay(**kwargs):
+        assert kwargs == dict(root=root, symbol="600887", binding=binding,
+                              now=datetime.fromisoformat(as_of))
+        return dict(source_binding=binding, evidence=[
+            dict(id="parent_capex", field="parent_capex", scope="parent"),
+            dict(id="group_capex", field="parent_capex", scope="consolidated"),
+            dict(id="plan", scope="DISCLOSED_CONDITIONAL_RETURN_PLAN"),
+        ])
+    monkeypatch.setattr(source, "build_operating_horizon_source_context", replay)
+    assert client.get(path).status_code == 401
+    unlock(client, secret)
+    response = client.get(path)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "FAILED"
+    coverage = payload["cash_evidence_coverage"]
+    assert coverage["conditional_return_plan_ids"] == ["plan"]
+    assert coverage["standalone_parent_historical_anchor_ids"]["net_maintenance_cash_cny"] == ["parent_capex"]
+    assert "cash_evidence_coverage" not in task
+    assert data.provider_calls == []
