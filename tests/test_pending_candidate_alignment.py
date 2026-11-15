@@ -893,3 +893,27 @@ def test_shenzhen_clearing_date_does_not_verify_issuer_direct_payment():
         parse_mixed_cash_entitlement(pages, symbol="000002")
     with pytest.raises(ValueError):
         parse_mixed_cash_entitlement([*pages, "更正"], symbol="000001")
+
+
+def test_mixed_payment_ledger_does_not_claim_issuer_payment(reconciliation, monkeypatch):
+    from value_investment_agent.infrastructure.filings import szse_cash_entitlement
+
+    case = reconciliation
+    case["ledger"]["distributions"] = [cash(case, in_period=True)]
+    terms = dict(cash_per_share="2", record_date="2020-01-01", ex_date="2020-01-02",
+                 published_date="2020-01-01", clearing_house_scheduled_payment_date="2020-01-02",
+                 issuer_direct_payment_date=None, cash_payment_status="ISSUER_DIRECT_PAYMENT_UNVERIFIED")
+    monkeypatch.setattr(szse_cash_entitlement, "parse_mixed_cash_entitlement", lambda *a, **k: terms)
+    result = reconcile(case)
+    row = result["distributions"][0]
+    assert row["field_semantics_status"] == "NATIVE_ENTITLEMENT_ONLY_VERIFIED"
+    assert row["verified_cash_per_share"] == "2"
+    assert row["period_treatment"] == "MIXED_PAYMENT_SCOPE_REQUIRES_REVIEW"
+    assert row["payment_pending_at_comparison"] is None
+    assert row["native_entitlement_only"]["issuer_direct_payment_date"] is None
+    assert row["price_deduction_applied"] == "0"
+    assert "ISSUER_DIRECT_PAYMENT_UNVERIFIED" in result["reason_codes"]
+    assert not result["current_price_basis_compatible"]
+    terms["clearing_house_scheduled_payment_date"] = "2020-01-03"
+    with pytest.raises(ValueError, match="CASH_LEDGER_DIFFERS_FROM_NATIVE_IMPLEMENTATION_FIELDS"):
+        reconcile(case)

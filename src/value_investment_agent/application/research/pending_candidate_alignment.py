@@ -369,6 +369,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         if entitlement is not None:
             if (Decimal(entitlement["cash_per_share"]) != amount
                     or any(entitlement[k] != row[k] for k in ("record_date", "ex_date"))
+                    or entitlement["clearing_house_scheduled_payment_date"] != row["cash_payment_date"]
                     or any("/finalpage/" + entitlement["published_date"] + "/" not in e["source_url"]
                            for e in row["evidence"])):
                 raise ValueError("CASH_LEDGER_DIFFERS_FROM_NATIVE_IMPLEMENTATION_FIELDS")
@@ -386,7 +387,9 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
             with localcontext() as context:
                 context.prec = 80
                 period_cash += amount
-        if payment > end:
+        if entitlement is not None:
+            treatment = "MIXED_PAYMENT_SCOPE_REQUIRES_REVIEW"
+        elif payment > end:
             treatment = "PENDING_PAYMENT_REQUIRES_REVIEW"
             gaps.append("PENDING_DISTRIBUTION_PAYMENT")
         elif ex <= start and payment <= start:
@@ -397,9 +400,12 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
             treatment = "OPENING_EX_ENTITLEMENT_PAID_IN_PERIOD_REQUIRES_REVIEW"
             gaps.append("OPENING_DISTRIBUTION_ENTITLEMENT_UNRECONCILED")
         cash_rows.append(dict(**deepcopy(row), period_treatment=treatment,
-            ex_entitlement_in_period=ex_in_period, payment_pending_at_comparison=payment > end,
-            arithmetic_cash_per_share=str(amount), verified_cash_per_share=str(amount) if parsed else None,
-            field_semantics_status="NATIVE_IMPLEMENTATION_FIELDS_VERIFIED" if parsed else "PUBLIC_RESEARCH_ARITHMETIC_NOT_NATIVE_FIELD_VERIFIED",
+            ex_entitlement_in_period=ex_in_period,
+            payment_pending_at_comparison=None if entitlement is not None else payment > end,
+            arithmetic_cash_per_share=str(amount), verified_cash_per_share=str(amount) if parsed or entitlement else None,
+            field_semantics_status=("NATIVE_IMPLEMENTATION_FIELDS_VERIFIED" if parsed else
+                "NATIVE_ENTITLEMENT_ONLY_VERIFIED" if entitlement else
+                "PUBLIC_RESEARCH_ARITHMETIC_NOT_NATIVE_FIELD_VERIFIED"),
             native_terms=parsed, field_semantics_reason=parse_error,
             **({"native_entitlement_only": entitlement} if entitlement is not None else {}),
             price_deduction_applied="0", model_inclusion=treatment if parsed and ex <= start and payment <= start else "NOT_NATIVE_VERIFIED"))

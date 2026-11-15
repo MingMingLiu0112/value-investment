@@ -814,6 +814,7 @@ function CheckReconciliation({
       "公告列示的除息日、现金发放日均在估值日前；不重复扣减，未验证个人实际到账",
     IN_PERIOD_MODEL_INCLUSION_REQUIRES_RECOMPUTATION:
       "区间内分配，是否已内含需重新核验",
+    MIXED_PAYMENT_SCOPE_REQUIRES_REVIEW: "代派与自行派发分开核验，实际到账待核",
     PENDING_PAYMENT_REQUIRES_REVIEW: "尚待支付，需要复核",
     OPENING_EX_ENTITLEMENT_PAID_IN_PERIOD_REQUIRES_REVIEW:
       "期初已除息、区间内支付，需复核权利归属",
@@ -837,11 +838,31 @@ function CheckReconciliation({
                     ? "（含税权益口径）"
                     : ""}
                 </dd>
-                <dt>登记 / 除息 / 支付日期</dt>
-                <dd>
-                  {text(row.record_date)} / {text(row.ex_date)} /{" "}
-                  {text(row.cash_payment_date)}
-                </dd>
+                {object(row.native_entitlement_only) ? (
+                  <>
+                    <dt>登记 / 除息日期</dt>
+                    <dd>
+                      {text(row.record_date)} / {text(row.ex_date)}
+                    </dd>
+                    <dt>中国结算计划代派日</dt>
+                    <dd>
+                      {text(
+                        row.native_entitlement_only
+                          .clearing_house_scheduled_payment_date,
+                      )}
+                    </dd>
+                    <dt>发行人自行派发</dt>
+                    <dd>支付日期及实际到账未核验</dd>
+                  </>
+                ) : (
+                  <>
+                    <dt>登记 / 除息 / 支付日期</dt>
+                    <dd>
+                      {text(row.record_date)} / {text(row.ex_date)} /{" "}
+                      {text(row.cash_payment_date)}
+                    </dd>
+                  </>
+                )}
                 <dt>区间处理</dt>
                 <dd>
                   {treatments[text(row.period_treatment)] ||

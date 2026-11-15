@@ -94,6 +94,10 @@ export type CandidateBasisReconciliation = {
     record_date?: string;
     ex_date?: string;
     cash_payment_date?: string;
+    native_entitlement_only?: {
+      clearing_house_scheduled_payment_date?: string;
+      issuer_direct_payment_date?: string | null;
+    };
     amount_basis?: string;
     verified_cash_per_share?: string | null;
     price_deduction_applied?: string | null;
