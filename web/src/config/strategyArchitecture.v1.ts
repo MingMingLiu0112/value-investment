@@ -54,7 +54,7 @@ export interface DeliveryReview {
   runHref: string;
 }
 export const deliveryReviewMeta = {
-  reviewedAt: "2026-11-02",
+  reviewedAt: "2026-11-16",
   baseline: "f9aadce0",
   kind: "人工交付复核，不是实时运行状态",
 } as const;
@@ -746,8 +746,8 @@ export const catalog: Record<
           why: "估值参数需要经济理由，而不是AI直接报价格。",
           how: "区分事实与预测，推导量价成本及资金路径，保留反例。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "通用年度三情景已经由真实模型形成并通过严格校验；官方回报规划可与原财务事实共同封存，旧任务不重写。现金阶段、费用和失败原因逐段留存。",
-          gap: "最新真实现金响应结构错位被拒绝；除条件派息比例外五项现金政策仍UNKNOWN。E2没有可消费的完整新输入，F1/F2未形成这条链的估值或条件价。",
+          done: "真实模型已形成并通过年度三情景的结构校验；已接入母公司现金附注与同原件直接法现金流的双列对账，历史任务可按原来源重放。",
+          gap: "现有样本仍缺可对账的母公司营运资金现金附注；合并口径、期末余额及借款收现不能替代。D2尚无完整现金政策经E2消费的真实正例。",
           acceptance:
             "来源绑定的经营假设、三情景、反证和重开条件可被模型消费。",
           evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
@@ -1202,7 +1202,7 @@ export const catalog: Record<
           why: "历史估值不能直接当作今天的买入依据。",
           how: "核对股本、期间分配、事件、模型有效性和合格报价。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "对齐、拒绝和精确缺口展示已接通。",
+          done: "现有候选可复核原件绑定的回购、担保及季度经营数据；页面分开显示已核事实和对齐缺口。",
           gap: "同一候选的全部当前对齐条件尚缺联合成功样本。",
           acceptance: "完整对齐正例能产未批准条件价；不齐时准确拒绝。",
           evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
