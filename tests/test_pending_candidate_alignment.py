@@ -862,3 +862,32 @@ def test_issuer_statement_and_transfer_do_not_approve_materiality(reconciliation
         assert result["items"][0]["status"]==status
         assert result["items"][0]["quantified_profit_effect"] is None
         assert not result["materiality_approved"]
+
+
+def test_shenzhen_clearing_date_does_not_verify_issuer_direct_payment():
+    from value_investment_agent.infrastructure.filings.szse_cash_entitlement import (
+        parse_mixed_cash_entitlement,
+    )
+
+    pages = [
+        "证券代码：000001 证券简称：样本 2025年度分红派息实施公告"
+        "本次利润分配不送红股，不以资本公积金转增股本。",
+        "二、本次实施的利润分配方案公司2025年度利润分配方案以固定总额的方式分配："
+        "以公司现有总股本剔除已回购股份0股后的100股为基数，"
+        "向全体股东每10股派44.171215元人民币现金（含税；其他说明）。"
+        "三、分红派息日期1.股权登记日：2026年8月27日。"
+        "2.除权除息日：2026年8月28日。四、分红派息对象",
+        "五、分配方法1.公司此次委托中国结算深圳分公司代派的A股股东现金红利"
+        "将于2026年8月28日通过股东托管证券公司（或其他托管机构）直接划入其资金账户。"
+        "2.以下A股股东的现金红利由我公司自行派发：",
+        "董事会2026年8月20日",
+    ]
+    result = parse_mixed_cash_entitlement(pages, symbol="000001")
+    assert result["cash_per_share"] == "4.4171215"
+    assert result["clearing_house_scheduled_payment_date"] == "2026-08-28"
+    assert result["issuer_direct_payment_date"] is None
+    assert "cash_payment_date" not in result
+    with pytest.raises(ValueError):
+        parse_mixed_cash_entitlement(pages, symbol="000002")
+    with pytest.raises(ValueError):
+        parse_mixed_cash_entitlement([*pages, "更正"], symbol="000001")

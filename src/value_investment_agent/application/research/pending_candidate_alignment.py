@@ -354,13 +354,26 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         amount = validate_cash_distribution(row)
         ex, payment, record = (_day(row[key]) for key in ("ex_date", "cash_payment_date", "record_date"))
         anchors(row["evidence"], numbers=[_number(row["cash_amount"])], dates=[record, ex, payment])
-        parsed, parse_error = None, None
+        parsed, parse_error, entitlement = None, None, None
         hashes = {e["binding"]["sha256"] for e in row["evidence"]}
         if len(hashes) == 1:
             try:
                 parsed = _cash_terms(cache[next(iter(hashes))], analysis["symbol"])
             except ValueError as error:
                 parse_error = str(error)
+                from ...infrastructure.filings.szse_cash_entitlement import parse_mixed_cash_entitlement
+                try:
+                    entitlement = parse_mixed_cash_entitlement(cache[next(iter(hashes))], symbol=analysis["symbol"])
+                except ValueError:
+                    pass
+        if entitlement is not None:
+            if (Decimal(entitlement["cash_per_share"]) != amount
+                    or any(entitlement[k] != row[k] for k in ("record_date", "ex_date"))
+                    or any("/finalpage/" + entitlement["published_date"] + "/" not in e["source_url"]
+                           for e in row["evidence"])):
+                raise ValueError("CASH_LEDGER_DIFFERS_FROM_NATIVE_IMPLEMENTATION_FIELDS")
+            parse_error = entitlement["cash_payment_status"]
+            gaps.append(parse_error)
         if parsed is not None:
             if (Decimal(parsed["cash_per_share"]) != amount
                     or any(parsed[k] != row[k] for k in ("record_date", "ex_date", "cash_payment_date"))
@@ -388,6 +401,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
             arithmetic_cash_per_share=str(amount), verified_cash_per_share=str(amount) if parsed else None,
             field_semantics_status="NATIVE_IMPLEMENTATION_FIELDS_VERIFIED" if parsed else "PUBLIC_RESEARCH_ARITHMETIC_NOT_NATIVE_FIELD_VERIFIED",
             native_terms=parsed, field_semantics_reason=parse_error,
+            **({"native_entitlement_only": entitlement} if entitlement is not None else {}),
             price_deduction_applied="0", model_inclusion=treatment if parsed and ex <= start and payment <= start else "NOT_NATIVE_VERIFIED"))
     pending = ledger.get("opening_pending_actions")
     if pending is None:
