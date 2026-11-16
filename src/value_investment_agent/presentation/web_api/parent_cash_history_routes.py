@@ -1,0 +1,76 @@
+"""Bounded, read-only projection of existing parent cash task checkpoints."""
+import re
+from itertools import islice
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+from .live_operating_research_routes import resolve_research_task_root
+from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
+from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
+
+
+def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port):
+    root = resolve_research_task_root(project)
+    service = ParentCashTaskServiceV2(root)
+
+    def reply(value, status=200):
+        return JSONResponse(value, status_code=status, headers={"Cache-Control": "no-store"})
+
+    @api.get("/api/v1/operating-research/parent-cash-tasks/history")
+    def history(request: Request, symbol: str):
+        try:
+            authorize(request, session=sessions, port=port)
+        except LocalAuthorizationError as error:
+            return reply({"action": "no_order", "status": error.code},
+                         401 if error.code == AUTHORIZATION_REQUIRED else 403)
+        if not re.fullmatch(r"[0-9]{6}", symbol):
+            return reply({"action": "no_order", "status": "INVALID_SYMBOL"}, 422)
+        try:
+            if not service.base.exists():
+                return reply({"action": "no_order", "symbol": symbol, "items": [], "formal": False})
+            children = list(islice(service.base.iterdir(), 101))
+            if len(children) > 100:
+                raise ValueError("PARENT_TASK_DISCOVERY_LIMIT_EXCEEDED")
+            items = []
+            for directory in sorted(children):
+                if not directory.is_dir() or not re.fullmatch(r"rt-[0-9a-f]{32}", directory.name):
+                    continue
+                if not (directory / "input.json").is_file():
+                    continue
+                spec, state, binding = service._load(directory.name)
+                source_path = spec["spec_binding"]["path"]
+                if not source_path.startswith("runtime/"):
+                    raise ValueError("PARENT_TASK_SOURCE_OUTSIDE_RUNTIME")
+                source = service._bound(spec["spec_binding"])
+                if source.get("action") != "no_order":
+                    raise ValueError("PARENT_TASK_SOURCE_INVALID")
+                if source.get("symbol") != symbol:
+                    continue
+                if state["status"] == "SUCCEEDED" and len(state.get("responses", {})) == 9:
+                    continue
+                years = sorted({ref["period_end"][:4] for ref in source.get("fact_anchors", {}).values()
+                                if isinstance(ref, dict) and re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}",
+                                                                         str(ref.get("period_end", "")))})
+                reservations = state.get("reservations", {})
+                if len(reservations) > 32 or len(state.get("responses", {})) > 9:
+                    raise ValueError("PARENT_TASK_PROJECTION_LIMIT_EXCEEDED")
+                error_code = state.get("error_code")
+                error_stage = next((stage for stage in STAGE_ORDER
+                                    if isinstance(error_code, str) and error_code.startswith(
+                                        stage.upper().replace(".", "_") + "_")), None)
+                items.append({"task_id": directory.name, "status": state["status"],
+                    "stage": next((row.get("scenario") for row in reservations.values()
+                                   if row.get("status") == "RESERVED"), error_stage),
+                    "completed_stages": sorted(state.get("responses", {})),
+                    "error_code": state.get("error_code"), "source_years": years,
+                    "source_binding": spec["spec_binding"], "record_binding": binding,
+                    "reserved_cost_cny": state.get("reserved_cost"),
+                    "settled_cost_cny": state.get("settled_cost"),
+                    "charges": [{"stage": row.get("scenario"), "status": row.get("status"),
+                                 "reserved_cny": row.get("cost"), "settled_cny": row.get("actual_cost")}
+                                for row in reservations.values()],
+                    "e2_consumption": "UNVERIFIED", "formal": False, "action": "no_order"})
+            return reply({"action": "no_order", "symbol": symbol, "items": items, "formal": False})
+        except (ValueError, OSError, KeyError, TypeError, RuntimeError):
+            return reply({"action": "no_order", "status": "PARENT_TASK_HISTORY_UNAVAILABLE"}, 422)

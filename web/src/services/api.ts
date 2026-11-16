@@ -1685,6 +1685,25 @@ export type ValueWorkbenchTaskHistory = {
     record: Record<string, unknown>;
   }[];
 };
+export interface ParentCashTaskHistory {
+  action: "no_order";
+  symbol: string;
+  formal: false;
+  items: Array<{
+    task_id: string;
+    status: string;
+    stage: string | null;
+    completed_stages: string[];
+    error_code: string | null;
+    source_years: string[];
+    reserved_cost_cny: string;
+    settled_cost_cny: string;
+    charges: Array<{ stage: string; status: string; reserved_cny: string; settled_cny?: string }>;
+    e2_consumption: "UNVERIFIED";
+    formal: false;
+  }>;
+}
+
 export const api = {
   sseResearchQueue: (signal?: AbortSignal) =>
     get<TrackingPoolView>("value-screening/sse-main/research-queue", signal),
@@ -1993,6 +2012,11 @@ export const api = {
   researchTasksForSymbol: (symbol: string, signal?: AbortSignal) =>
     getPrivate<ResearchTaskHistoryResponse>(
       "research-tasks?symbol=" + encodeURIComponent(symbol),
+      signal,
+    ),
+  parentCashTaskHistory: (symbol: string, signal?: AbortSignal) =>
+    getPrivate<ParentCashTaskHistory>(
+      "operating-research/parent-cash-tasks/history?symbol=" + encodeURIComponent(symbol),
       signal,
     ),
   researchTask: (taskId: string, signal?: AbortSignal) =>

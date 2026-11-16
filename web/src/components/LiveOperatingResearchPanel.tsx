@@ -18,7 +18,41 @@ import {
   type CurrentCapitalObservation,
   type FiscalDistributionReview,
   type FiscalDistributionScenario,
+  type ParentCashTaskHistory,
 } from "../services/api";
+
+function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
+  const [history, setHistory] = useState<ParentCashTaskHistory>();
+  const [error, setError] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setHistory(undefined);
+    setError(false);
+    void api.parentCashTaskHistory(symbol).then(
+      (value) => { if (active) setHistory(value); },
+      () => { if (active) setError(true); },
+    );
+    return () => { active = false; };
+  }, [symbol]);
+  return <section aria-label="母公司现金任务历史">
+    <h4>母公司现金任务历史 · 非正式研究</h4>
+    <p>仅展示已有失败或部分任务；费用为任务记录，E2 使用情况未经证实。不构成正式结论或下单依据。</p>
+    {error && <p>任务历史暂不可读取。</p>}
+    {history?.items.length === 0 && <p>暂无相关记录。</p>}
+    {history?.items.map((item) => <div key={item.task_id}>
+      <strong>{item.task_id}</strong> · {item.status} · 当前阶段：{item.stage || "未记录"}
+      · 来源年份：{item.source_years.join("、") || "未记录"}
+      · 错误：{item.error_code || "无"}
+      · 完成阶段：{item.completed_stages.join("、") || "无"}
+      · 预留 ¥{item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}
+      · E2 实际使用：未核实
+      <ul>{item.charges.map((charge, index) => <li key={index}>
+        {charge.stage} {charge.status} · 预留 ¥{charge.reserved_cny}
+        {charge.settled_cny != null && ` · 已结算 ¥${charge.settled_cny}`}
+      </li>)}</ul>
+    </div>)}
+  </section>;
+}
 
 const LABELS: Record<string, string> = {
   PROJECTED_YOY_SAME_PERIOD: "与历史基线相邻年份的同期间投影同比",
@@ -2111,11 +2145,13 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
     }
   }
   if (!opened)
-    return <Button onClick={() => perform("status")}>新Agent经营研究</Button>;
+    return <><Button onClick={() => perform("status")}>新Agent经营研究</Button>
+      <ParentCashTaskHistoryView symbol={symbol} /></>;
   const ready = model?.status === "READY";
   const active = task?.status === "QUEUED" || task?.status === "RUNNING";
   return (
     <section aria-label="新Agent经营研究" style={{ marginBlock: 20 }}>
+      <ParentCashTaskHistoryView symbol={symbol} />
       <h3>新Agent经营研究 · {symbol}</h3>
       <p>
         打开此区仅读取模型状态与已生成公开研究，不发起模型调用；点击启动才可能产生新调用费用。运行中每3秒读取一次真实任务状态，失败时暂停读取；刷新页面后点击读取已有任务即可恢复跟踪，不重复启动研究。研究结果仍需复核，不审批、不下单。
