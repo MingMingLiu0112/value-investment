@@ -69,6 +69,19 @@ def test_compiler_recalculates_cfo_owner_distribution_and_shared_service(monkeyp
     assert outcome.decision_recommendation.action=="no_order"
     assert outcome.decision_recommendation.position_guidance is None
     assert descriptor.as_policy()["facts"]["scenario_inputs"]["base"]["years"][0]["policy"]["operating_cash"]=="100"
+
+
+def test_compiler_rejects_uncovered_issued_financing_even_with_new_borrowing(monkeypatch,tmp_path):
+    spec=sample(monkeypatch)
+    source_reader=compiler.read_parent_direct_owner_cash_sources
+    issue=dict(code="CP1",maturity="2026-12-30",principal_cny="100",
+        actual_settlement_verified=False,outstanding_at_evaluation_cny=None,
+        classification="FACT",scope="ISSUER_FINANCING_DISCLOSURE",currency="CNY")
+    monkeypatch.setattr(compiler,"read_parent_direct_owner_cash_sources",lambda **kw:
+        {**source_reader(**kw),"constraints":{"issued_financing":[issue]}})
+    spec["scenarios"]["base"]["years"][0]["policy"]["new_borrowing"]=assumption("100")
+    with pytest.raises(ValueError,match="DIRECT_INPUT_FINANCING_MATURITY_UNCOVERED"):
+        compiler.compile_source_bound_owner_cash(root=tmp_path,spec=spec,now=NOW)
 @pytest.mark.parametrize("fault",["unknown","wrong_opening_date","source_issuer","missing_policy","future_year","missing_anchor","unsupported_scope","skipped_year","money_as_shares","interim_basis"])
 def test_exact_economic_and_source_boundaries(monkeypatch,tmp_path,fault):
     spec=sample(monkeypatch)

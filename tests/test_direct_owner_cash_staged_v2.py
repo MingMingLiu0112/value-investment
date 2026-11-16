@@ -20,8 +20,8 @@ def term(count):
                 reopen_condition="Reopen on new filing")
 
 
-def fixture(monkeypatch):
-    monkeypatch.setattr(v2, "read_parent_cash_agent_facts", lambda **_: context())
+def fixture(monkeypatch, source_context=None):
+    monkeypatch.setattr(v2, "read_parent_cash_agent_facts", lambda **_: source_context or context())
     requests, responses = {}, {}
     for stage in v2.STAGES:
         request = v2.staged_parent_cash_request(root=".", spec_binding={}, scenario="base",
@@ -184,6 +184,23 @@ def test_other_json_trailing_data_is_not_repaired(monkeypatch, suffix):
     with pytest.raises(ValueError, match="PARENT_V2_INVALID_JSON"):
         v2.parse_staged_parent_cash_response(response,
             request=requests["terminal"], source_fingerprint="a" * 64)
+
+
+def test_policy_gross_maturity_cannot_be_netted_against_new_borrowing(monkeypatch):
+    source = context()
+    source["constraints"] = {"issued_financing": [dict(code="CP1", maturity="2026-12-30",
+        principal_cny="100", actual_settlement_verified=False,
+        outstanding_at_evaluation_cny=None, classification="FACT",
+        scope="ISSUER_FINANCING_DISCLOSURE", currency="CNY")]}
+    requests, responses = fixture(monkeypatch, source)
+    body = json.loads(responses["policy"].text)
+    body["series"]["new_borrowing"]["values"][0] = "100"
+    with pytest.raises(ValueError, match="PARENT_V2_FINANCING_MATURITY_UNCOVERED"):
+        v2.parse_staged_parent_cash_response(LLMResponse(json.dumps(body), 100, 100, "MOCK"),
+            request=requests["policy"], source_fingerprint="a" * 64)
+    body["series"]["debt_repayment"]["values"][0] = "100"
+    assert v2.parse_staged_parent_cash_response(LLMResponse(json.dumps(body), 100, 100, "MOCK"),
+        request=requests["policy"], source_fingerprint="a" * 64)["series"]["debt_repayment"]["values"][0] == "100"
 
 
 @pytest.mark.parametrize("mutation", ["alias", "missing", "year", "source", "numeric"])

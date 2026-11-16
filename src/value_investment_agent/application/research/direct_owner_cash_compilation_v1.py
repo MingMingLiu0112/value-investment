@@ -12,6 +12,33 @@ from ...domain.valuation.direct_parent_owner_cash_v1 import compile_direct_owner
 SCHEMA = "direct-owner-cash-research-spec-v1"
 
 
+def financing_maturity_floor(constraints, year):
+    """Gross admitted issuer maturities due in a forecast year, before refinancing."""
+    issues = (constraints or {}).get("issued_financing", [])
+    if not isinstance(issues, list):
+        raise ValueError("DIRECT_INPUT_FINANCING_CONSTRAINT_INVALID")
+    total = Decimal(0)
+    seen = set()
+    for issue in issues:
+        if (not isinstance(issue, dict) or issue.get("classification") != "FACT"
+                or issue.get("scope") != "ISSUER_FINANCING_DISCLOSURE"
+                or issue.get("currency") != "CNY" or not issue.get("code")
+                or issue["code"] in seen):
+            raise ValueError("DIRECT_INPUT_FINANCING_CONSTRAINT_INVALID")
+        seen.add(issue["code"])
+        if date.fromisoformat(issue["maturity"]).year == year:
+            if issue.get("actual_settlement_verified") is True:
+                continue
+            amount = issue.get("outstanding_at_evaluation_cny")
+            if amount is None:
+                amount = issue["principal_cny"]
+            amount = _number(amount) if isinstance(amount, str) else Decimal(str(amount))
+            if not amount.is_finite() or amount < 0:
+                raise ValueError("DIRECT_INPUT_FINANCING_CONSTRAINT_INVALID")
+            total += amount
+    return total
+
+
 def _number(value):
     if not isinstance(value, str):
         raise ValueError("DIRECT_INPUT_DECIMAL_STRING_REQUIRED")
@@ -143,6 +170,9 @@ def compile_source_bound_owner_cash(*, root, spec, now):
                 if set(item["policy"]) != FLOW_KEYS - {"operating_cash"}:
                     raise ValueError("DIRECT_INPUT_EXACT_OWNER_POLICY_REQUIRED")
                 policy = {key: str(resolve(value)) for key,value in item["policy"].items()}
+                if (Decimal(policy["debt_repayment"])
+                        < financing_maturity_floor(evidence.get("constraints"), year)):
+                    raise ValueError("DIRECT_INPUT_FINANCING_MATURITY_UNCOVERED")
                 policy["operating_cash"] = prediction["operating_cash"]
                 rows.append(dict(year=year,policy=policy)); operating.append(prediction)
             terminal = scenario["terminal"]

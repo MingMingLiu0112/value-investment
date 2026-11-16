@@ -283,10 +283,14 @@ class ParentCashTaskServiceV2(ResearchTaskService):
             view.update(status="FAILED", error_code="PARENT_SOURCE_OR_CHECKPOINT_INVALID")
         return view
 
-    def create(self, *, spec_binding, request_key, now=None, seed_task_id=None):
+    def create(self, *, spec_binding, request_key, now=None, seed_task_id=None,
+               replay_from_stage=None):
         now = _now(now)
         if not isinstance(request_key, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,80}", request_key):
             raise ValueError("PARENT_REQUEST_KEY_INVALID")
+        if replay_from_stage is not None and (seed_task_id is None
+                                               or replay_from_stage not in STAGE_ORDER):
+            raise ValueError("PARENT_REPLAY_STAGE_INVALID")
         cfg = self._configuration()
         if cfg["model_id"] != "deepseek-flash" or cfg["max_completion_tokens_cap"] < 1024:
             raise ValueError("PARENT_MODEL_CONTRACT_INVALID")
@@ -315,6 +319,8 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                               shared_budget_root=str(self.shared_budget_root),
                               implementation_sha256=_implementation())
             for stage_id in STAGE_ORDER:
+                if stage_id == replay_from_stage:
+                    break
                 binding = old_state["responses"].get(stage_id)
                 if binding is None:
                     candidates = [item for item in old_state.get("returned_responses", [])
@@ -346,7 +352,8 @@ class ParentCashTaskServiceV2(ResearchTaskService):
             implementation_sha256=_implementation(),
             created_at=seed_created_at, action="no_order")
         if seed is not None:
-            spec.update(forked_at=now.isoformat(), seed=seed)
+            spec.update(forked_at=now.isoformat(), seed=seed,
+                        replay_from_stage=replay_from_stage)
         directory = self._directory(task_id)
         with self._lock(directory):
             if (directory / "input.json").exists():

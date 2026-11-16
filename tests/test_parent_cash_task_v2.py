@@ -213,3 +213,20 @@ def test_nested_fork_revalidates_original_provenance_chain(task):
     assert second["completed_stages"] == ["bear.operating", "bear.policy"]
     service.cancel(original["task_id"], now=NOW)
     assert service.read(second["task_id"])["error_code"] == "PARENT_SOURCE_OR_CHECKPOINT_INVALID"
+
+
+def test_replay_from_later_stage_reuses_unchanged_prefix(task, monkeypatch):
+    service, provider = task
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
+                        (_ for _ in ()).throw(ValueError("DIRECT_OWNER_UNCONSUMED_FUTURE_EVENTS")))
+    original = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+        request_key="parentcashfork011", now=NOW)
+    assert service.run(original["task_id"], now=NOW)["status"] == "FAILED"
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
+        dict(action="no_order", formal_eligibility=False, main_range_adopted=False))
+    fork = service.create(spec_binding=original["spec_binding"],
+        request_key="parentcashfork012", now=NOW, seed_task_id=original["task_id"],
+        replay_from_stage="bull.policy")
+    assert fork["completed_stages"] == list(target.STAGE_ORDER[:7])
+    assert service.run(fork["task_id"], now=NOW)["status"] == "SUCCEEDED"
+    assert len(provider.calls) == 11 and service.read(original["task_id"])["status"] == "FAILED"

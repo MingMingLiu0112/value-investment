@@ -10,6 +10,7 @@ from .direct_owner_cash_agent_draft_v1 import (DRIVERS, HORIZON, POLICY,
     SCENARIOS, TERMINAL_POLICY, VERSION as DRAFT_VERSION, _explanation)
 from .direct_owner_cash_agent_facts_v1 import read_parent_cash_agent_facts
 from .direct_owner_cash_agent_request_v1 import _term_schema, _unique
+from .direct_owner_cash_compilation_v1 import financing_maturity_floor
 from ...infrastructure.agent_runtime.provider import LLMRequest, LLMResponse
 
 VERSION = "direct-owner-cash-staged-v2"
@@ -170,6 +171,13 @@ def staged_parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
             "For operating stage annual_notes is a JSON ARRAY of exactly ten strings "
             "in required_years order, never an object keyed by year."
         )
+        if stage == "policy":
+            output_contract += (
+                " For every source_context.constraints.issued_financing item maturing in a "
+                "forecast year, include its gross principal in that year's debt_repayment. "
+                "New borrowing is a separate inflow and never cancels the repayment outflow. "
+                "Actual settlement and refinancing are unverified unless source facts say so."
+            )
     return LLMRequest(role="FUNDAMENTAL", system=(
         "Return only the requested JSON fields. Use exact field names and explicit decimal "
         "strings for every value. evidence_anchors must be an array of exact source_context.facts "
@@ -236,6 +244,12 @@ def parse_staged_parent_cash_response(response: LLMResponse, *, request: LLMRequ
             raise ValueError("PARENT_V2_YEARS_OR_SERIES_INVALID")
         for term in value["series"].values():
             _term(term, anchors, HORIZON, years=packet["required_years"])
+        if stage == "policy":
+            constraints = packet["source_context"].get("constraints")
+            for index, year in enumerate(packet["required_years"]):
+                repayment = Decimal(value["series"]["debt_repayment"]["values"][index])
+                if repayment < financing_maturity_floor(constraints, year):
+                    raise ValueError("PARENT_V2_FINANCING_MATURITY_UNCOVERED")
         if stage == "operating":
             notes = value["annual_notes"]
             # Some JSON-object providers preserve the ten notes under exact
