@@ -21,7 +21,7 @@ import {
   type ParentCashTaskHistory,
 } from "../services/api";
 
-function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
+export function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
   const [history, setHistory] = useState<ParentCashTaskHistory>();
   const [error, setError] = useState(false);
   useEffect(() => {
@@ -2145,8 +2145,7 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
     }
   }
   if (!opened)
-    return <><Button onClick={() => perform("status")}>新Agent经营研究</Button>
-      <ParentCashTaskHistoryView symbol={symbol} /></>;
+    return <Button onClick={() => perform("status")}>新Agent经营研究</Button>;
   const ready = model?.status === "READY";
   const active = task?.status === "QUEUED" || task?.status === "RUNNING";
   return (

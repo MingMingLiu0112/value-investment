@@ -21,6 +21,7 @@ const calls = vi.hoisted(() => ({
   publicRead: vi.fn(),
   start: vi.fn(),
   history: vi.fn(),
+  parentCashHistory: vi.fn(),
   refresh: vi.fn(),
   cancel: vi.fn(),
   resume: vi.fn(),
@@ -68,6 +69,7 @@ vi.mock("../src/services/api", async (importOriginal) => {
       createOperatingResearchTask: calls.start,
       operatingResearchTask: calls.refresh,
       operatingResearchTasks: calls.history,
+      parentCashTaskHistory: calls.parentCashHistory,
       cancelOperatingResearchTask: calls.cancel,
       resumeOperatingResearchTask: calls.resume,
     },
@@ -81,6 +83,7 @@ import {
   OperatingDriverBridgeView,
   CurrentCapitalObservationView,
   FiscalDistributionReviewView,
+  ParentCashTaskHistoryView,
 } from "../src/components/LiveOperatingResearchPanel";
 
 function task(
@@ -153,6 +156,9 @@ beforeEach(() => {
     formal_eligibility: false,
     status: "NOT_STARTED",
   });
+  calls.parentCashHistory.mockResolvedValue({
+    action: "no_order", symbol: "600519", formal: false, items: [],
+  });
 });
 afterEach(() => {
   for (const effect of hooks.effects) effect?.cleanup?.();
@@ -173,6 +179,15 @@ it("has no first-screen request, opens status only on click and never polls", as
   expect(shown()).toContain("每日费用上限（人民币元）");
   expect(shown()).toContain("非账单");
   vi.useRealTimers();
+});
+it("reads parent cash history only when its panel is mounted", () => {
+  render();
+  expect(calls.parentCashHistory).not.toHaveBeenCalled();
+  hooks.values = [];
+  hooks.effects = [];
+  hooks.cursor = 0;
+  ParentCashTaskHistoryView({ symbol: "600519" });
+  expect(calls.parentCashHistory).toHaveBeenCalledTimes(1);
 });
 it.each(["MODEL_AUTHORIZATION_REQUIRED", "MODEL_CREDENTIAL_REQUIRED"])(
   "blocks start and resume when %s",
