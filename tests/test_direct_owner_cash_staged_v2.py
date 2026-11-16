@@ -117,6 +117,35 @@ def test_prose_list_rejects_missing_or_nonprose_counterpoint(monkeypatch, points
             request=requests["operating"], source_fingerprint="a" * 64)
 
 
+def test_exact_year_keyed_values_preserve_all_decimals_in_order(monkeypatch):
+    requests, responses = fixture(monkeypatch)
+    body = json.loads(responses["operating"].text)
+    years = body["years"]
+    body["series"]["cost"]["values"] = {str(year): str(i + 1)
+        for i, year in reversed(list(enumerate(years)))}
+    raw = json.dumps(body)
+    response = LLMResponse(raw, 100, 100, "MOCK")
+    result = v2.parse_staged_parent_cash_response(response,
+        request=requests["operating"], source_fingerprint="a" * 64)
+    assert result["series"]["cost"]["values"] == [str(i + 1) for i in range(10)]
+    assert response.text == raw
+
+
+@pytest.mark.parametrize("extra", [True, False])
+def test_year_keyed_values_reject_missing_or_extra_year(monkeypatch, extra):
+    requests, responses = fixture(monkeypatch)
+    body = json.loads(responses["operating"].text)
+    row = {str(year): "1.25" for year in body["years"]}
+    del row[str(body["years"][0])]
+    if extra:
+        row["2036"] = "1.25"
+    body["series"]["cost"]["values"] = row
+    response = LLMResponse(json.dumps(body), 100, 100, "MOCK")
+    with pytest.raises(ValueError, match="PARENT_V2_VALUES_REQUIRED"):
+        v2.parse_staged_parent_cash_response(response,
+            request=requests["operating"], source_fingerprint="a" * 64)
+
+
 @pytest.mark.parametrize("mutation", ["alias", "missing", "year", "source", "numeric"])
 def test_rejects_invalid_operating_stage(monkeypatch, mutation):
     requests, responses = fixture(monkeypatch)

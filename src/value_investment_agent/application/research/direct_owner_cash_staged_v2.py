@@ -34,7 +34,13 @@ def _prose(value):
     return value
 
 
-def _term(value, anchors, count):
+def _term(value, anchors, count, *, years=None):
+    if isinstance(value, dict) and isinstance(value.get("values"), dict) and years is not None:
+        expected = [str(year) for year in years]
+        raw_values = value["values"]
+        if set(raw_values) != set(expected) or len(raw_values) != count:
+            raise ValueError("PARENT_V2_VALUES_REQUIRED")
+        value["values"] = [raw_values[year] for year in expected]
     _explanation(value, anchors)
     if not isinstance(value["values"], list) or len(value["values"]) != count:
         raise ValueError("PARENT_V2_VALUES_REQUIRED")
@@ -121,7 +127,7 @@ def staged_parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
         "KEYS such as ['revenue','cost']; never put a fact description, URL, PDF page, "
         "hash or source sentence in evidence_anchors. Put explanations in mechanism. "
         "counter_evidence, rationale and reopen_condition must each be one JSON STRING, "
-        "not a list. Forecasts are "
+        "not a list. Each evidence_anchors list must contain 1 to 8 distinct allowed IDs. Forecasts are "
         "conditional assumptions, never an order or approval. Prior stage values are "
         "unapproved forecast assumptions, not verified facts. Keep operating_cash "
         "distinct from the required other_operating_cash component. Consume scheduled events "
@@ -133,6 +139,7 @@ def staged_parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
             "mechanism, counter_evidence, reopen_condition. Years must equal required_years; "
             "no aliases, missing keys, defaults, or identity metadata in response. "
             "Allowed evidence_anchors IDs only: " + ", ".join(ids) + ". "
+            "Each values field is a JSON ARRAY, not a year-keyed object. "
             "For operating stage annual_notes is a JSON ARRAY of exactly ten strings "
             "in required_years order, never an object keyed by year."))
 
@@ -177,7 +184,7 @@ def parse_staged_parent_cash_response(response: LLMResponse, *, request: LLMRequ
         if value["years"] != packet["required_years"] or set(value["series"]) != set(packet["required_fields"]):
             raise ValueError("PARENT_V2_YEARS_OR_SERIES_INVALID")
         for term in value["series"].values():
-            _term(term, anchors, HORIZON)
+            _term(term, anchors, HORIZON, years=packet["required_years"])
         if stage == "operating":
             notes = value["annual_notes"]
             # Some JSON-object providers preserve the ten notes under exact
