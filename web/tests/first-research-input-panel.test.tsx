@@ -156,6 +156,29 @@ function directFixture(): FirstResearchInputResponse {
   };
 }
 
+it("shows dated financing issuance only when a source-bound review exists", () => {
+  const data = directFixture();
+  const render = () => {
+    state.value = { loading: false, data };
+    return visibleHtml(
+      renderToStaticMarkup(<FirstResearchInputPanel symbol="000568" />),
+    );
+  };
+  expect(render()).not.toContain("融资条件仍待核实");
+  data.direct_owner_cash!.financing_review = {
+    basis_date: "2025-12-31",
+    post_basis_issuance_cny: "41500000000",
+    post_basis_issue_codes: ["TEST_ONLY_ISSUE"],
+    opening_debt_verified: false,
+    outstanding_or_refinancing_verified: false,
+    reason: "POST_BASIS_ISSUANCE_IS_NOT_OPENING_DEBT_OR_CONFIRMED_REFINANCING",
+    source_refs: [{ path: "runtime/TEST_ONLY/financing.pdf" }],
+  };
+  expect(render()).toContain("融资条件仍待核实");
+  expect(render()).toContain("41,500,000,000.00");
+  expect(render()).toContain("不能证明基准日母公司期初债务");
+});
+
 it("renders direct cash fixture through the existing panel with visible historical valuations and conditional prices", () => {
   const data = directFixture();
   const before = JSON.stringify(data);

@@ -353,6 +353,15 @@ export type FirstResearchAnnualLedger = {
 };
 
 export type DirectOwnerCash = {
+  financing_review?: {
+    basis_date: string;
+    post_basis_issuance_cny: string;
+    post_basis_issue_codes: string[];
+    opening_debt_verified: boolean;
+    outstanding_or_refinancing_verified: boolean;
+    reason: string;
+    source_refs: Array<Record<string, unknown>>;
+  };
   method: string;
   valuation_basis: string;
   scope: string;

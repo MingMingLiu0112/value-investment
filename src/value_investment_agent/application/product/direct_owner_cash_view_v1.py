@@ -1,4 +1,6 @@
 """Projection of a cold-recomputed direct-owner candidate into existing E2 view."""
+from datetime import date
+from decimal import Decimal
 from zoneinfo import ZoneInfo
 from ..research.agent_review.web_research import _binding
 from ..research.direct_owner_cash_research_v1 import replay_direct_owner_cash_receipt, _read
@@ -7,6 +9,15 @@ from ..decision.direct_owner_cash_price_draft_v1 import draft_direct_owner_cash_
 def read_direct_owner_cash_view(*,root,receipt_binding,now):
     if now.utcoffset() is None:raise ValueError("DIRECT_OWNER_AWARE_PUBLIC_CLOCK_REQUIRED")
     result=replay_direct_owner_cash_receipt(root=root,receipt_binding=receipt_binding,now=now)
+    basis=date.fromisoformat(result["compiled"]["valuation_date"])
+    issues=(result["compiled"]["evidence"].get("constraints") or {}).get("issued_financing") or []
+    after_basis=[row for row in issues if date.fromisoformat(row["issue_date"]) > basis]
+    financing_review=dict(basis_date=basis.isoformat(),
+        post_basis_issuance_cny=str(sum((Decimal(row["principal_cny"]) for row in after_basis), Decimal(0))),
+        post_basis_issue_codes=[row["code"] for row in after_basis],
+        opening_debt_verified=False,outstanding_or_refinancing_verified=False,
+        reason="POST_BASIS_ISSUANCE_IS_NOT_OPENING_DEBT_OR_CONFIRMED_REFINANCING",
+        source_refs=[row["source_refs"] for row in after_basis]) if after_basis else None
     for binding in result["source_bindings"]:_binding(root,binding,runtime_only=False)
     receipt=_read(root,receipt_binding)
     spec=_read(root,receipt["spec_binding"])
@@ -44,4 +55,4 @@ def read_direct_owner_cash_view(*,root,receipt_binding,now):
         direct_owner_cash=dict(method="DIRECT_CFO_LESS_EXPLICIT_CAPITAL_DEBT_AND_CONSTRAINED_DISTRIBUTIONS",
             valuation_basis=spec["valuation_date"],scope="ISSUER_PARENT_STANDALONE",
             annual_rows=annual,assumptions=assumptions,conditional_price=price,
-            source_refs=result["source_bindings"]))
+            source_refs=result["source_bindings"],financing_review=financing_review))

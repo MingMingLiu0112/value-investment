@@ -131,6 +131,20 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
       {data.main_range_adopted === true && (
         <p>主估值区间（原稿）：{supplied(data.main_valuation_range)}</p>
       )}
+      {cash.financing_review && (
+        <Alert
+          type="warning"
+          message="融资条件仍待核实"
+          description={
+            <span>
+              {cash.financing_review.basis_date}之后披露的融资发行额：
+              {amount(cash.financing_review.post_basis_issuance_cny)}元。
+              这不能证明基准日母公司期初债务、当前未偿余额或未来续借能力；
+              未核实前，三情景仅为条件研究。
+            </span>
+          }
+        />
+      )}
       <h4>三情景历史条件估值（元/股）</h4>
       <ul>
         {(["bear", "base", "bull"] as const).map((name) => (
