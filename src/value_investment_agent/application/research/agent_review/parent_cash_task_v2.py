@@ -137,9 +137,17 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                     or old_spec["mode"] != spec["mode"]):
                 raise ValueError("PARENT_SEED_CHANGED")
             self._verify_charges(old_state)
-            # A predecessor may itself reuse older responses. Revalidate its
-            # complete provenance chain before accepting its published stages.
-            self._stage_outputs(old_spec, old_state, now, verified_context=context)
+            # Revalidate only the inherited stage bindings. A predecessor may
+            # contain rejected stages that this new task deliberately re-runs.
+            inherited = deepcopy(old_state)
+            inherited["responses"] = {stage: binding for stage, binding in
+                old_state["responses"].items() if stage in seed["responses"]}
+            inherited_spec = deepcopy(old_spec)
+            if inherited_spec.get("seed") is not None:
+                inherited_spec["seed"]["responses"] = {stage: binding for stage, binding in
+                    inherited_spec["seed"]["responses"].items()
+                    if stage in inherited["responses"]}
+            self._stage_outputs(inherited_spec, inherited, now, verified_context=context)
             for stage, binding in seed["responses"].items():
                 if old_state["responses"].get(stage) == binding:
                     continue
@@ -308,7 +316,6 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                                                 else "LIVE_PARENT_CASH_V2")):
                 raise ValueError("PARENT_SEED_INCOMPATIBLE")
             self._verify_charges(old_state)
-            self._stage_outputs(old_spec, old_state, now, verified_context=context)
             seed_created_at = old_spec["created_at"]
             seed = dict(task_id=seed_task_id, head=old_head, responses={})
             # Only a continuous prefix with unchanged request bytes is reusable.
@@ -319,8 +326,12 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                               shared_budget_root=str(self.shared_budget_root),
                               implementation_sha256=_implementation())
             for stage_id in STAGE_ORDER:
-                if stage_id == replay_from_stage:
-                    break
+                if replay_from_stage is not None:
+                    replay_scenario, replay_stage = replay_from_stage.split(".")
+                    scenario, stage = stage_id.split(".")
+                    if (scenario == replay_scenario and
+                            STAGES.index(stage) >= STAGES.index(replay_stage)):
+                        continue
                 binding = old_state["responses"].get(stage_id)
                 if binding is None:
                     candidates = [item for item in old_state.get("returned_responses", [])
@@ -329,21 +340,25 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                                       + "/response-")
                                   and self._bound(item).get("scenario") == stage_id]
                     if len(candidates) != 1:
-                        break
+                        continue
                     binding = candidates[0]
                     reservation = Path(binding["path"]).stem.removeprefix("response-")
                     charge = old_state["reservations"].get(reservation)
                     if (not charge or charge["scenario"] != stage_id
                             or charge["status"] != "SETTLED"):
-                        break
+                        continue
                 trial["responses"][stage_id] = binding
                 try:
                     # Validate the original packet against the current request/parser.
                     self._stage_outputs(trial_spec, trial, now, verified_context=context)
                 except (ValueError, KeyError, TypeError, OSError):
                     del trial["responses"][stage_id]
-                    break
+                    continue
                 seed["responses"][stage_id] = binding
+            # Check the predecessor head, ledger and all selected lineage now,
+            # before publishing a new task or permitting another model call.
+            trial_spec.update(task_id="new-task-preview", mode=old_spec["mode"], seed=seed)
+            self._stage_outputs(trial_spec, trial, now, verified_context=context)
         task_id = "rt-" + _hash(request_key.encode("utf-8"))[:32]
         spec = dict(schema_version=VERSION, task_id=task_id, mode="TEST_ONLY_PARENT_CASH_V2"
             if self.test_provider is not None else "LIVE_PARENT_CASH_V2", spec_binding=spec_binding,

@@ -230,3 +230,21 @@ def test_replay_from_later_stage_reuses_unchanged_prefix(task, monkeypatch):
     assert fork["completed_stages"] == list(target.STAGE_ORDER[:7])
     assert service.run(fork["task_id"], now=NOW)["status"] == "SUCCEEDED"
     assert len(provider.calls) == 11 and service.read(original["task_id"])["status"] == "FAILED"
+
+
+def test_terminal_replay_keeps_independent_scenarios(task, monkeypatch):
+    service, provider = task
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
+                        (_ for _ in ()).throw(ValueError("DIRECT_OWNER_TERMINAL_DEBT_POLICY_UNSUPPORTED")))
+    original = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+        request_key="parentcashfork013", now=NOW)
+    assert service.run(original["task_id"], now=NOW)["status"] == "FAILED"
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
+        dict(action="no_order", formal_eligibility=False, main_range_adopted=False))
+    fork = service.create(spec_binding=original["spec_binding"],
+        request_key="parentcashfork014", now=NOW, seed_task_id=original["task_id"],
+        replay_from_stage="bear.terminal")
+    assert fork["completed_stages"] == [item for item in target.STAGE_ORDER
+                                         if item != "bear.terminal"]
+    assert service.run(fork["task_id"], now=NOW)["status"] == "SUCCEEDED"
+    assert fork["provider_requests"] == 0 and len(provider.calls) == 10
