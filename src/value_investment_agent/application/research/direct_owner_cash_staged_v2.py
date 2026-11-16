@@ -86,6 +86,13 @@ def staged_parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
     # promoted into a later instruction or factual source.
     prior_values = {name: {field: row["values"] for field, row in prior[name]["series"].items()}
                     for name in required_prior}
+    # Terminal policy concerns the stable year after the verified annual path.
+    # Passing all annual arrays again made the model copy the legacy ten-year
+    # response shape. Keep the complete prior drafts in the sealed task, but
+    # project only their final-year assumptions into this one-year request.
+    if stage == "terminal":
+        prior_values = {name: {field: values[-1] for field, values in rows.items()}
+                        for name, rows in prior_values.items()}
     string = dict(type="string", minLength=12)
     if stage != "terminal":
         fields = sorted(FIELDS[stage])
@@ -115,10 +122,14 @@ def staged_parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
                   required=sorted(properties), properties=properties)
     source_context = {key: value for key, value in context.items()
                       if key not in {"action", "formal_eligibility"}}
-    user = json.dumps(dict(source_context=source_context, scenario=scenario, stage=stage,
-        required_years=years, required_fields=fields,
-        prior_forecast_assumptions_not_facts=prior_values), ensure_ascii=False,
-        sort_keys=True, separators=(",", ":"))
+    payload = dict(source_context=source_context, scenario=scenario, stage=stage,
+                   required_fields=fields,
+                   prior_forecast_assumptions_not_facts=prior_values)
+    if stage == "terminal":
+        payload["terminal_reference_year"] = years[-1]
+    else:
+        payload["required_years"] = years
+    user = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     if len(user.encode("utf-8")) > 64000:
         raise ValueError("PARENT_V2_CONTEXT_OVER_BUDGET")
     if stage == "terminal":

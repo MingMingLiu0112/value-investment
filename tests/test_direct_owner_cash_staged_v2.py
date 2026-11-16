@@ -63,6 +63,11 @@ def test_stages_merge_exact_contract(monkeypatch):
     assert "exactly two top-level keys: terminal, cost_of_equity" in terminal_instruction
     assert "No years, annual_notes, series" in terminal_instruction
     assert "exactly ONE decimal string" in terminal_instruction
+    terminal_context = json.loads(requests["terminal"].user)
+    assert "required_years" not in terminal_context
+    assert terminal_context["terminal_reference_year"] == 2035
+    assert terminal_context["prior_forecast_assumptions_not_facts"]["operating"]["revenue"] == "1.25"
+    assert terminal_context["prior_forecast_assumptions_not_facts"]["policy"]["payout_ratio"] == "1.25"
 
 
 def test_year_keyed_notes_are_losslessly_ordered_without_changing_raw(monkeypatch):
