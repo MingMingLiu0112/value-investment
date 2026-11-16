@@ -157,7 +157,10 @@ beforeEach(() => {
     status: "NOT_STARTED",
   });
   calls.parentCashHistory.mockResolvedValue({
-    action: "no_order", symbol: "600519", formal: false, items: [],
+    action: "no_order",
+    symbol: "600519",
+    formal: false,
+    items: [],
   });
 });
 afterEach(() => {

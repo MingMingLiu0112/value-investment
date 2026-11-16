@@ -29,29 +29,48 @@ export function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
     setHistory(undefined);
     setError(false);
     void api.parentCashTaskHistory(symbol).then(
-      (value) => { if (active) setHistory(value); },
-      () => { if (active) setError(true); },
+      (value) => {
+        if (active) setHistory(value);
+      },
+      () => {
+        if (active) setError(true);
+      },
     );
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [symbol]);
-  return <section aria-label="母公司现金任务历史">
-    <h4>母公司现金任务历史 · 非正式研究</h4>
-    <p>仅展示已有失败或部分任务；费用为任务记录，E2 使用情况未经证实。不构成正式结论或下单依据。</p>
-    {error && <p>任务历史暂不可读取。</p>}
-    {history?.items.length === 0 && <p>暂无相关记录。</p>}
-    {history?.items.map((item) => <div key={item.task_id}>
-      <strong>{item.task_id}</strong> · {item.status} · 当前阶段：{item.stage || "未记录"}
-      · 来源年份：{item.source_years.join("、") || "未记录"}
-      · 错误：{item.error_code || "无"}
-      · 完成阶段：{item.completed_stages.join("、") || "无"}
-      · 预留 ¥{item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}
-      · E2 实际使用：未核实
-      <ul>{item.charges.map((charge, index) => <li key={index}>
-        {charge.stage} {charge.status} · 预留 ¥{charge.reserved_cny}
-        {charge.settled_cny != null && ` · 已结算 ¥${charge.settled_cny}`}
-      </li>)}</ul>
-    </div>)}
-  </section>;
+  return (
+    <section aria-label="母公司现金任务历史">
+      <h4>母公司现金任务历史 · 非正式研究</h4>
+      <p>
+        仅展示已有失败或部分任务；费用为任务记录，E2
+        使用情况未经证实。不构成正式结论或下单依据。
+      </p>
+      {error && <p>任务历史暂不可读取。</p>}
+      {history?.items.length === 0 && <p>暂无相关记录。</p>}
+      {history?.items.map((item) => (
+        <div key={item.task_id}>
+          <strong>{item.task_id}</strong> · {item.status} · 当前阶段：
+          {item.stage || "未记录"}· 来源年份：
+          {item.source_years.join("、") || "未记录"}· 错误：
+          {item.error_code || "无"}· 完成阶段：
+          {item.completed_stages.join("、") || "无"}· 预留 ¥
+          {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
+          实际使用：未核实
+          <ul>
+            {item.charges.map((charge, index) => (
+              <li key={index}>
+                {charge.stage} {charge.status} · 预留 ¥{charge.reserved_cny}
+                {charge.settled_cny != null &&
+                  ` · 已结算 ¥${charge.settled_cny}`}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </section>
+  );
 }
 
 const LABELS: Record<string, string> = {

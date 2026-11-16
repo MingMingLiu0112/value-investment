@@ -1698,7 +1698,12 @@ export interface ParentCashTaskHistory {
     source_years: string[];
     reserved_cost_cny: string;
     settled_cost_cny: string;
-    charges: Array<{ stage: string; status: string; reserved_cny: string; settled_cny?: string }>;
+    charges: Array<{
+      stage: string;
+      status: string;
+      reserved_cny: string;
+      settled_cny?: string;
+    }>;
     e2_consumption: "UNVERIFIED";
     formal: false;
   }>;
@@ -2016,7 +2021,8 @@ export const api = {
     ),
   parentCashTaskHistory: (symbol: string, signal?: AbortSignal) =>
     getPrivate<ParentCashTaskHistory>(
-      "operating-research/parent-cash-tasks/history?symbol=" + encodeURIComponent(symbol),
+      "operating-research/parent-cash-tasks/history?symbol=" +
+        encodeURIComponent(symbol),
       signal,
     ),
   researchTask: (taskId: string, signal?: AbortSignal) =>
