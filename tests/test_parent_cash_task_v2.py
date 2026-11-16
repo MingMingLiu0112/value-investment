@@ -123,6 +123,20 @@ def test_economic_rejection_keeps_all_raw_responses(task, monkeypatch):
     assert "candidate" not in result
 
 
+def test_economic_cash_rejection_preserves_the_year(task, monkeypatch):
+    service, _ = task
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
+                        (_ for _ in ()).throw(ValueError(
+                            "DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2026")))
+    created = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+        request_key="parentcashyear001", now=NOW)
+    result = service.run(created["task_id"], now=NOW)
+    assert result["status"] == "FAILED"
+    assert result["error_code"] == (
+        "PARENT_V2_ECONOMIC_DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2026")
+    assert "candidate" not in result
+
+
 def test_budget_head_tamper_invalidates_completed_view(task):
     service, _ = task
     created = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),

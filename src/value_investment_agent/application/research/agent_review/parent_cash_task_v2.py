@@ -560,7 +560,7 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                     detail = str(error)
                     code = ("PARENT_V2_ECONOMIC_" + detail
                             if isinstance(error, ValueError)
-                            and re.fullmatch(r"(?:DIRECT_OWNER|DIRECT_INPUT|PARENT_V2)_[A-Z0-9_]{1,90}", detail)
+                            and re.fullmatch(r"(?:DIRECT_OWNER|DIRECT_INPUT|PARENT_V2)_[A-Z0-9_]{1,90}(?::20[0-9]{2})?", detail)
                             else "PARENT_V2_ECONOMIC_CONTRACT_REJECTED")
                     state, binding = self._save(spec, state, binding, _now(),
                         status="FAILED", error_code=code)
