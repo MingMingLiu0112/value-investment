@@ -35,6 +35,12 @@ def _prose(value):
 
 
 def _term(value, anchors, count, *, years=None):
+    if isinstance(value, dict) and isinstance(value.get("evidence_anchors"), list):
+        refs = value["evidence_anchors"]
+        if refs and all(isinstance(ref, str) and ref in anchors for ref in refs):
+            # Repeating the same valid fact ID adds no evidence. Preserve the
+            # first occurrence, while the sealed response retains the raw list.
+            value["evidence_anchors"] = list(dict.fromkeys(refs))
     if isinstance(value, dict) and isinstance(value.get("values"), dict) and years is not None:
         expected = [str(year) for year in years]
         raw_values = value["values"]

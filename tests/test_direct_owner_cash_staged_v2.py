@@ -155,6 +155,18 @@ def test_year_keyed_values_reject_missing_or_extra_year(monkeypatch, extra):
             request=requests["operating"], source_fingerprint="a" * 64)
 
 
+def test_duplicate_existing_fact_id_does_not_create_new_evidence(monkeypatch):
+    requests, responses = fixture(monkeypatch)
+    body = json.loads(responses["operating"].text)
+    body["series"]["cost"]["evidence_anchors"] = ["parent_revenue", "parent_revenue"]
+    raw = json.dumps(body)
+    response = LLMResponse(raw, 100, 100, "MOCK")
+    result = v2.parse_staged_parent_cash_response(response,
+        request=requests["operating"], source_fingerprint="a" * 64)
+    assert result["series"]["cost"]["evidence_anchors"] == ["parent_revenue"]
+    assert response.text == raw
+
+
 @pytest.mark.parametrize("mutation", ["alias", "missing", "year", "source", "numeric"])
 def test_rejects_invalid_operating_stage(monkeypatch, mutation):
     requests, responses = fixture(monkeypatch)
