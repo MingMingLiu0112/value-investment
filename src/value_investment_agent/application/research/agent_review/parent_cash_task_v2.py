@@ -137,12 +137,15 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                     or old_spec["mode"] != spec["mode"]):
                 raise ValueError("PARENT_SEED_CHANGED")
             self._verify_charges(old_state)
+            # A predecessor may itself reuse older responses. Revalidate its
+            # complete provenance chain before accepting its published stages.
+            self._stage_outputs(old_spec, old_state, now, verified_context=context)
             for stage, binding in seed["responses"].items():
+                if old_state["responses"].get(stage) == binding:
+                    continue
                 if not binding["path"].startswith(
                     self._directory(seed["task_id"]).relative_to(self.root).as_posix() + "/response-"):
                     raise ValueError("PARENT_SEED_RESPONSE_PATH_INVALID")
-                if old_state["responses"].get(stage) == binding:
-                    continue
                 if binding not in old_state.get("returned_responses", []):
                     raise ValueError("PARENT_SEED_RESPONSE_CHANGED")
                 reservation = Path(binding["path"]).stem.removeprefix("response-")
@@ -301,6 +304,7 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                                                 else "LIVE_PARENT_CASH_V2")):
                 raise ValueError("PARENT_SEED_INCOMPATIBLE")
             self._verify_charges(old_state)
+            self._stage_outputs(old_spec, old_state, now, verified_context=context)
             seed_created_at = old_spec["created_at"]
             seed = dict(task_id=seed_task_id, head=old_head, responses={})
             # Only a continuous prefix with unchanged request bytes is reusable.

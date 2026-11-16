@@ -167,6 +167,25 @@ def test_duplicate_existing_fact_id_does_not_create_new_evidence(monkeypatch):
     assert response.text == raw
 
 
+def test_single_trailing_brace_repair_preserves_sealed_response(monkeypatch):
+    requests, responses = fixture(monkeypatch)
+    raw = responses["terminal"].text + "}"
+    response = LLMResponse(raw, 100, 100, "MOCK")
+    result = v2.parse_staged_parent_cash_response(response,
+        request=requests["terminal"], source_fingerprint="a" * 64)
+    assert result["terminal"]["max_transition_years"] == 10
+    assert response.text == raw
+
+
+@pytest.mark.parametrize("suffix", ["}}", "{}", "garbage"])
+def test_other_json_trailing_data_is_not_repaired(monkeypatch, suffix):
+    requests, responses = fixture(monkeypatch)
+    response = LLMResponse(responses["terminal"].text + suffix, 100, 100, "MOCK")
+    with pytest.raises(ValueError, match="PARENT_V2_INVALID_JSON"):
+        v2.parse_staged_parent_cash_response(response,
+            request=requests["terminal"], source_fingerprint="a" * 64)
+
+
 @pytest.mark.parametrize("mutation", ["alias", "missing", "year", "source", "numeric"])
 def test_rejects_invalid_operating_stage(monkeypatch, mutation):
     requests, responses = fixture(monkeypatch)

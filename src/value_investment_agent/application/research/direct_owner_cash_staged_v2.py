@@ -193,9 +193,19 @@ def parse_staged_parent_cash_response(response: LLMResponse, *, request: LLMRequ
     packet = json.loads(request.user)
     if packet["source_context"]["input_fingerprint"] != source_fingerprint:
         raise ValueError("PARENT_V2_SOURCE_BINDING_INVALID")
-    try:
-        value = json.loads(response.text, object_pairs_hook=_unique,
+    def decode(raw):
+        return json.loads(raw, object_pairs_hook=_unique,
             parse_constant=lambda _: (_ for _ in ()).throw(ValueError("PARENT_V2_NONFINITE_JSON")))
+    try:
+        try:
+            value = decode(response.text)
+        except json.JSONDecodeError as error:
+            # One redundant final brace is a transport syntax defect; the
+            # complete preceding object is still subject to every local gate.
+            tail = response.text[error.pos:]
+            if error.msg != "Extra data" or tail.strip() != "}" or len(tail.strip()) != 1:
+                raise
+            value = decode(response.text[:error.pos])
     except (TypeError, json.JSONDecodeError) as error:
         raise ValueError("PARENT_V2_INVALID_JSON") from error
     if not isinstance(value, dict) or set(value) != set(request.output_schema["required"]):

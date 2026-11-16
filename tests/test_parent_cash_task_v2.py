@@ -196,3 +196,20 @@ def test_fork_recovers_settled_raw_response_rejected_by_old_parser(task):
     assert len(provider.calls) == 3
     assert service.create(spec_binding=original["spec_binding"],
         request_key="parentcashfork007", now=NOW, seed_task_id=original["task_id"])["task_id"] == fork["task_id"]
+
+
+def test_nested_fork_revalidates_original_provenance_chain(task):
+    service, provider = task
+    provider.fail_at = 3
+    original = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+        request_key="parentcashfork008", now=NOW)
+    service.run(original["task_id"], now=NOW)
+    first = service.create(spec_binding=original["spec_binding"],
+        request_key="parentcashfork009", now=NOW, seed_task_id=original["task_id"])
+    provider.fail_at = 4
+    assert service.run(first["task_id"], now=NOW)["status"] == "FAILED"
+    second = service.create(spec_binding=original["spec_binding"],
+        request_key="parentcashfork010", now=NOW, seed_task_id=first["task_id"])
+    assert second["completed_stages"] == ["bear.operating", "bear.policy"]
+    service.cancel(original["task_id"], now=NOW)
+    assert service.read(second["task_id"])["error_code"] == "PARENT_SOURCE_OR_CHECKPOINT_INVALID"
