@@ -254,3 +254,11 @@ src/value_investment_agent/infrastructure/filings/parent_trade_balances.py -text
 # Preserve V6 industry cost replay hashes across Windows and Linux checkouts.
 src/value_investment_agent/application/research/agent_review/operating_horizon_sources_v6_industry_cost.py text eol=lf
 src/value_investment_agent/infrastructure/filings/industry_cost_composition.py text eol=lf
+
+# Direct-owner cash receipts bind LF bytes for these new implementations.
+# Explicit checkout/archive line endings preserve the reviewed source hashes.
+src/value_investment_agent/application/research/direct_owner_cash_input_adapter_v1.py text eol=lf
+src/value_investment_agent/application/research/parent_direct_owner_cash_sources.py text eol=lf
+src/value_investment_agent/application/decision/direct_owner_cash_price_draft_v1.py text eol=lf
+src/value_investment_agent/domain/valuation/direct_parent_owner_cash_v1.py text eol=lf
+src/value_investment_agent/valuation_models/direct_owner_cash_v1.py text eol=lf
