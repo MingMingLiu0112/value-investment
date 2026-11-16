@@ -78,14 +78,19 @@ def parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
                       rationale=string, counter_evidence=string, reopen_condition=string))
     context = {key: value for key, value in context.items()
                if key not in {"action", "formal_eligibility"}}
-    user = json.dumps(dict(scenario=scenario, source_context=context,
+    user = json.dumps(dict(scenario=scenario,
+                           schema_version=VERSION,
+                           source_fingerprint=context["input_fingerprint"],
+                           source_context=context,
                            required_years=list(range(int(context["valuation_date"][:4]) + 1,
                                                      int(context["valuation_date"][:4]) + HORIZON + 1)),
                            annual_fields=sorted(SERIES), terminal_fields=sorted(TERMINAL_POLICY)),
                       ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     if len(user.encode("utf-8")) > 64000:
         raise ValueError("PARENT_DRAFT_CONTEXT_OVER_BUDGET")
-    transport = ("Return one JSON object with schema_version, scenario, source_fingerprint, "
+    transport = (f"Return one JSON object; schema_version must be exactly '{VERSION}'. "
+        "scenario and source_fingerprint must equal the values supplied in the user message. "
+        "Do not invent or rename contract identifiers. Fields: "
         "years, annual_notes, series, terminal, cost_of_equity, rationale, "
         "counter_evidence, reopen_condition. years has exactly ten consecutive years; "
         "annual_notes has ten explanations. series has exactly the annual_fields listed "
@@ -95,11 +100,15 @@ def parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
         "using the same term shape but one decimal string, plus "
         "remaining_scheduled_events (array), max_transition_years (integer), "
         "financing (object or null), rationale, counter_evidence, reopen_condition. "
-        "cost_of_equity is one-value term. No extra keys, unknown source IDs or approvals.")
+        "cost_of_equity is one-value term. Every rationale, counter_evidence, "
+        "reopen_condition and mechanism must be a substantive string of at least "
+        "12 characters; none may be null, empty or a numeric value. "
+        "No extra keys, unknown source IDs or approvals.")
     return LLMRequest(role="FUNDAMENTAL", system=(
         "Research one conditional parent-company shareholder cash scenario. "
         "Use only the provided verified facts and cite existing fact IDs. "
-        "Forecast values are assumptions, not facts. Return exactly the JSON schema. "
+        f"Forecast values are assumptions, not facts. Schema version is exactly {VERSION}. "
+        "Return all named fields with substantive explanations. "
         "Do not copy a prior valuation, infer missing refinancing as assured, "
         "treat consolidated cash as parent cash, or issue an order or approval. "
         "For unsupported inputs, report uncertainty in rationale; never fabricate evidence."),
