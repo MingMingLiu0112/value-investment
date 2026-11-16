@@ -20,7 +20,7 @@ PATTERNS = {
 PREFERRED_IDS = {
     "target_payout_ratio": ("historical-split-implementation",),
     "accessible_profit_ratio": ("parent-cash-v2:investment_income_cash_cny", "parent-cash-v2:cfo_cny"),
-    "reserve_ratio": ("parent-cash-v2:closing_cash_and_equivalents_cny", "parent-cash-v2:gross_capex_cny"),
+    "reserve_ratio": ("parent-cash-v2:cash_end_cny", "parent-cash-v2:gross_capex_cny"),
     "net_maintenance_cash_cny": ("parent-cash-v2:gross_capex_cny", "parent_capex"),
     "operating_wc_cash_cny": ("parent-cash-v2:cfo_cny",),
     "commitment_cash_cny": ("horizon-p135", "horizon-p101"),
