@@ -132,3 +132,67 @@ def test_budget_head_tamper_invalidates_completed_view(task):
     reopened = service.read(created["task_id"])
     assert reopened["status"] == "FAILED"
     assert reopened["error_code"] == "PARENT_SOURCE_OR_CHECKPOINT_INVALID"
+
+
+def test_failed_task_fork_reuses_verified_prefix_without_recharge(task):
+    service, provider = task
+    provider.fail_at = 3
+    original = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+        request_key="parentcashfork001", now=NOW)
+    failed = service.run(original["task_id"], now=NOW)
+    assert failed["status"] == "FAILED"
+    assert failed["completed_stages"] == ["bear.operating", "bear.policy"]
+    provider.fail_at = None
+    fork = service.create(spec_binding=original["spec_binding"],
+        request_key="parentcashfork002", now=NOW, seed_task_id=original["task_id"])
+    assert fork["completed_stages"] == ["bear.operating", "bear.policy"]
+    result = service.run(fork["task_id"], now=NOW)
+    assert result["status"] == "SUCCEEDED", result.get("error_code")
+    assert result["provider_requests"] == 7
+    assert len(provider.calls) == 10  # 3 original attempts plus 7 new calls
+    assert service.read(original["task_id"])["status"] == "FAILED"
+    assert result["action"] == "no_order" and result["formal_eligibility"] is False
+
+
+def test_fork_rejects_changed_source_and_old_checkpoint(task, monkeypatch):
+    service, provider = task
+    provider.fail_at = 3
+    original = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+        request_key="parentcashfork003", now=NOW)
+    service.run(original["task_id"], now=NOW)
+    fork = service.create(spec_binding=original["spec_binding"],
+        request_key="parentcashfork004", now=NOW, seed_task_id=original["task_id"])
+    service.cancel(original["task_id"], now=NOW)
+    assert service.read(fork["task_id"])["error_code"] == "PARENT_SOURCE_OR_CHECKPOINT_INVALID"
+    context = dict(input_fingerprint="c" * 64, symbol="600887",
+        valuation_date="2025-12-31", facts={"profit": {"period_end": "2025-12-31"}})
+    monkeypatch.setattr(target, "read_parent_cash_agent_facts", lambda **_: context)
+    with pytest.raises(ValueError, match="PARENT_SEED_INCOMPATIBLE"):
+        service.create(spec_binding=original["spec_binding"],
+            request_key="parentcashfork005", now=NOW, seed_task_id=original["task_id"])
+
+
+def test_fork_recovers_settled_raw_response_rejected_by_old_parser(task):
+    service, provider = task
+    provider.fail_at = 3
+    original = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+        request_key="parentcashfork006", now=NOW)
+    service.run(original["task_id"], now=NOW)
+    with service._lock(service._directory(original["task_id"])):
+        spec, state, head = service._load(original["task_id"])
+        # Stand in for a response sealed and settled before an older parser rejected it.
+        policy_binding = state["responses"]["bear.policy"]
+        responses = dict(state["responses"])
+        del responses["bear.policy"]
+        service._save(spec, state, head, NOW, responses=responses,
+            status="FAILED", error_code="BEAR_POLICY_PARENT_V2_OLD_PARSER_REJECTED")
+    fork = service.create(spec_binding=original["spec_binding"],
+        request_key="parentcashfork007", now=NOW, seed_task_id=original["task_id"])
+    assert fork["completed_stages"] == ["bear.operating", "bear.policy"]
+    fork_spec, fork_state, _ = service._load(fork["task_id"])
+    assert fork_state["responses"]["bear.policy"] == policy_binding
+    assert fork_spec["seed"]["task_id"] == original["task_id"]
+    assert fork["provider_requests"] == 0
+    assert len(provider.calls) == 3
+    assert service.create(spec_binding=original["spec_binding"],
+        request_key="parentcashfork007", now=NOW, seed_task_id=original["task_id"])["task_id"] == fork["task_id"]

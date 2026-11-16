@@ -126,6 +126,33 @@ class ParentCashTaskServiceV2(ResearchTaskService):
     def _stage_outputs(self, spec, state, now, *, verified_context=None):
         context = verified_context if verified_context is not None else self._context(spec, now)
         self._verify_charges(state)
+        seed = spec.get("seed")
+        if seed is not None:
+            if seed["task_id"] == spec.get("task_id"):
+                raise ValueError("PARENT_SEED_SELF_REFERENCE")
+            old_spec, old_state, old_head = self._load(seed["task_id"])
+            if (old_head != seed["head"] or old_state["status"] != "FAILED"
+                    or old_spec["source_fingerprint"] != spec["source_fingerprint"]
+                    or old_spec["spec_binding"] != spec["spec_binding"]
+                    or old_spec["mode"] != spec["mode"]):
+                raise ValueError("PARENT_SEED_CHANGED")
+            self._verify_charges(old_state)
+            for stage, binding in seed["responses"].items():
+                if not binding["path"].startswith(
+                    self._directory(seed["task_id"]).relative_to(self.root).as_posix() + "/response-"):
+                    raise ValueError("PARENT_SEED_RESPONSE_PATH_INVALID")
+                if old_state["responses"].get(stage) == binding:
+                    continue
+                if binding not in old_state.get("returned_responses", []):
+                    raise ValueError("PARENT_SEED_RESPONSE_CHANGED")
+                reservation = Path(binding["path"]).stem.removeprefix("response-")
+                charge = old_state["reservations"].get(reservation)
+                if (not charge or charge["scenario"] != stage
+                        or charge["status"] != "SETTLED"):
+                    raise ValueError("PARENT_SEED_RESPONSE_NOT_SETTLED")
+            if any(state["responses"].get(stage) != binding
+                   for stage, binding in seed["responses"].items()):
+                raise ValueError("PARENT_SEED_BINDING_CHANGED")
         outputs = {scenario: {} for scenario in SCENARIOS}
         if set(state["responses"]) - set(STAGE_ORDER):
             raise ValueError("PARENT_V2_UNKNOWN_STAGE")
@@ -233,8 +260,12 @@ class ParentCashTaskServiceV2(ResearchTaskService):
         view = deepcopy(state)
         view.update(record_binding=binding, mode=spec["mode"],
             spec_binding=spec["spec_binding"], source_fingerprint=spec["source_fingerprint"],
-            recovery_boundary="PUBLISHED_RESPONSES_ONLY_NO_AUTOMATIC_RESEND",
+            recovery_boundary=("SOURCE_AND_REQUEST_VERIFIED_SEED_NO_AUTOMATIC_RESEND"
+                if spec.get("seed") is not None else "PUBLISHED_RESPONSES_ONLY_NO_AUTOMATIC_RESEND"),
             approval_changed=False, main_range_adopted=False)
+        if spec.get("seed") is not None:
+            view["reused_stages"] = list(spec["seed"]["responses"])
+            view["reused_from_task_id"] = spec["seed"]["task_id"]
         try:
             drafts = self._drafts(spec, state, now)
             view["completed_stages"] = [stage for stage in STAGE_ORDER
@@ -249,7 +280,7 @@ class ParentCashTaskServiceV2(ResearchTaskService):
             view.update(status="FAILED", error_code="PARENT_SOURCE_OR_CHECKPOINT_INVALID")
         return view
 
-    def create(self, *, spec_binding, request_key, now=None):
+    def create(self, *, spec_binding, request_key, now=None, seed_task_id=None):
         now = _now(now)
         if not isinstance(request_key, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,80}", request_key):
             raise ValueError("PARENT_REQUEST_KEY_INVALID")
@@ -259,22 +290,70 @@ class ParentCashTaskServiceV2(ResearchTaskService):
         if self.test_provider is None and not os.environ.get(cfg["api_key_env"]):
             raise PermissionError("MODEL_CREDENTIAL_REQUIRED")
         context = read_parent_cash_agent_facts(root=self.root, spec_binding=spec_binding, now=now)
+        seed = None
+        seed_created_at = now.isoformat()
+        if seed_task_id is not None:
+            old_spec, old_state, old_head = self._load(seed_task_id)
+            if (old_state["status"] != "FAILED" or old_spec["spec_binding"] != spec_binding
+                    or old_spec["source_fingerprint"] != context["input_fingerprint"]
+                    or old_spec["config"] != cfg
+                    or old_spec["mode"] != ("TEST_ONLY_PARENT_CASH_V2" if self.test_provider is not None
+                                                else "LIVE_PARENT_CASH_V2")):
+                raise ValueError("PARENT_SEED_INCOMPATIBLE")
+            self._verify_charges(old_state)
+            seed_created_at = old_spec["created_at"]
+            seed = dict(task_id=seed_task_id, head=old_head, responses={})
+            # Only a continuous prefix with unchanged request bytes is reusable.
+            # A changed prompt or source requires a new model response.
+            trial = dict(responses={}, reservations={}, reserved_cost="0", settled_cost="0")
+            trial_spec = dict(spec_binding=spec_binding, source_fingerprint=context["input_fingerprint"],
+                              config=cfg, created_at=seed_created_at,
+                              shared_budget_root=str(self.shared_budget_root),
+                              implementation_sha256=_implementation())
+            for stage_id in STAGE_ORDER:
+                binding = old_state["responses"].get(stage_id)
+                if binding is None:
+                    candidates = [item for item in old_state.get("returned_responses", [])
+                                  if item["path"].startswith(
+                                      self._directory(seed_task_id).relative_to(self.root).as_posix()
+                                      + "/response-")
+                                  and self._bound(item).get("scenario") == stage_id]
+                    if len(candidates) != 1:
+                        break
+                    binding = candidates[0]
+                    reservation = Path(binding["path"]).stem.removeprefix("response-")
+                    charge = old_state["reservations"].get(reservation)
+                    if (not charge or charge["scenario"] != stage_id
+                            or charge["status"] != "SETTLED"):
+                        break
+                trial["responses"][stage_id] = binding
+                try:
+                    # Validate the original packet against the current request/parser.
+                    self._stage_outputs(trial_spec, trial, now, verified_context=context)
+                except (ValueError, KeyError, TypeError, OSError):
+                    del trial["responses"][stage_id]
+                    break
+                seed["responses"][stage_id] = binding
         task_id = "rt-" + _hash(request_key.encode("utf-8"))[:32]
         spec = dict(schema_version=VERSION, task_id=task_id, mode="TEST_ONLY_PARENT_CASH_V2"
             if self.test_provider is not None else "LIVE_PARENT_CASH_V2", spec_binding=spec_binding,
             source_fingerprint=context["input_fingerprint"], config=cfg,
             shared_budget_root=str(self.shared_budget_root),
             implementation_sha256=_implementation(),
-            created_at=now.isoformat(), action="no_order")
+            created_at=seed_created_at, action="no_order")
+        if seed is not None:
+            spec.update(forked_at=now.isoformat(), seed=seed)
         directory = self._directory(task_id)
         with self._lock(directory):
             if (directory / "input.json").exists():
                 old, state, binding = self._load(task_id)
-                if {k:v for k,v in old.items() if k != "created_at"} != {k:v for k,v in spec.items() if k != "created_at"}:
+                if ({k:v for k,v in old.items() if k not in {"created_at", "forked_at"}}
+                        != {k:v for k,v in spec.items() if k not in {"created_at", "forked_at"}}):
                     raise ValueError("PARENT_REQUEST_KEY_CONFLICT")
                 return self._view(old, state, binding, now)
             write_new_bytes(directory / "input.json", _bytes(spec))
-            state = dict(status="QUEUED", responses={}, reservations={}, provider_requests=0,
+            state = dict(status="QUEUED", responses=seed["responses"] if seed else {},
+                reservations={}, provider_requests=0,
                 usage=dict(prompt_tokens=0, completion_tokens=0), reserved_cost="0",
                 settled_cost="0", action="no_order", formal_eligibility=False,
                 error_code=None, new_llm_calls=0)
