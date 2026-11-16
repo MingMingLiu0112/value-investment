@@ -121,6 +121,32 @@ def staged_parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
         sort_keys=True, separators=(",", ":"))
     if len(user.encode("utf-8")) > 64000:
         raise ValueError("PARENT_V2_CONTEXT_OVER_BUDGET")
+    if stage == "terminal":
+        output_contract = (
+            "TERMINAL STAGE ONLY. Output exactly two top-level keys: terminal, cost_of_equity. "
+            "terminal has exactly policy, remaining_scheduled_events, max_transition_years, "
+            "financing, rationale, counter_evidence, reopen_condition. "
+            "policy has exactly these keys: " + ", ".join(fields) + ". "
+            "Each policy term and cost_of_equity term has exactly values, evidence_anchors, "
+            "mechanism, counter_evidence, reopen_condition. Each values is a JSON array "
+            "with exactly ONE decimal string for the stable terminal year. "
+            "No years, annual_notes, series, reconciliation, breach_action, scheduled_events "
+            "or ten-year arrays in this response. "
+            "Allowed evidence_anchors IDs only: " + ", ".join(ids) + ". "
+            "Return one valid JSON object with no text or extra closing brace."
+        )
+    else:
+        output_contract = (
+            "Return one JSON object with exactly these keys: "
+            + ", ".join(sorted(properties)) + ". series keys exactly: "
+            + ", ".join(fields) + ". Each term has values, evidence_anchors, "
+            "mechanism, counter_evidence, reopen_condition. Years must equal required_years; "
+            "no aliases, missing keys, defaults, or identity metadata in response. "
+            "Allowed evidence_anchors IDs only: " + ", ".join(ids) + ". "
+            "Each values field is a JSON ARRAY, not a year-keyed object. "
+            "For operating stage annual_notes is a JSON ARRAY of exactly ten strings "
+            "in required_years order, never an object keyed by year."
+        )
     return LLMRequest(role="FUNDAMENTAL", system=(
         "Return only the requested JSON fields. Use exact field names and explicit decimal "
         "strings for every value. evidence_anchors must be an array of exact source_context.facts "
@@ -133,15 +159,7 @@ def staged_parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
         "distinct from the required other_operating_cash component. Consume scheduled events "
         "explicitly in the terminal policy and explain any remaining events."),
         user=user, output_schema=schema, max_completion_tokens=max_completion_tokens,
-        transport_output_contract=("Return one JSON object with exactly these keys: "
-            + ", ".join(sorted(properties)) + ". series/policy keys exactly: "
-            + ", ".join(fields) + ". Each term has values, evidence_anchors, "
-            "mechanism, counter_evidence, reopen_condition. Years must equal required_years; "
-            "no aliases, missing keys, defaults, or identity metadata in response. "
-            "Allowed evidence_anchors IDs only: " + ", ".join(ids) + ". "
-            "Each values field is a JSON ARRAY, not a year-keyed object. "
-            "For operating stage annual_notes is a JSON ARRAY of exactly ten strings "
-            "in required_years order, never an object keyed by year."))
+        transport_output_contract=output_contract)
 
 
 def parse_staged_parent_cash_response(response: LLMResponse, *, request: LLMRequest,

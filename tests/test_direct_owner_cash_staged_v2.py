@@ -59,6 +59,10 @@ def test_stages_merge_exact_contract(monkeypatch):
     assert "Explicit cash mechanism" not in requests["policy"].user
     assert "Allowed evidence_anchors IDs only:" in requests["operating"].transport_output_contract
     assert "parent_revenue" in requests["operating"].transport_output_contract
+    terminal_instruction = requests["terminal"].transport_output_contract
+    assert "exactly two top-level keys: terminal, cost_of_equity" in terminal_instruction
+    assert "No years, annual_notes, series" in terminal_instruction
+    assert "exactly ONE decimal string" in terminal_instruction
 
 
 def test_year_keyed_notes_are_losslessly_ordered_without_changing_raw(monkeypatch):
