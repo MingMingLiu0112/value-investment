@@ -9,7 +9,7 @@ from pathlib import Path
 from .direct_owner_cash_agent_draft_v1 import (DRIVERS, HORIZON, POLICY,
     SCENARIOS, TERMINAL_POLICY, VERSION as DRAFT_VERSION, _explanation)
 from .direct_owner_cash_agent_facts_v1 import read_parent_cash_agent_facts
-from .direct_owner_cash_agent_request_v1 import _term_schema, _unique
+from .direct_owner_cash_agent_request_v1 import _term_schema
 from .direct_owner_cash_compilation_v1 import financing_maturity_floor
 from ...infrastructure.agent_runtime.provider import LLMRequest, LLMResponse
 
@@ -33,6 +33,17 @@ def _prose(value):
         value = "\n".join(value)
     _text(value)
     return value
+
+
+def _identical_prose_duplicate_only(pairs):
+    """Permit only an identical repeat of two prose fields; never merge values."""
+    result = {}
+    for key, value in pairs:
+        if key in result and (key not in {"counter_evidence", "reopen_condition"}
+                              or not isinstance(value, str) or result[key] != value):
+            raise ValueError("PARENT_V2_CONFLICTING_JSON_KEY")
+        result[key] = value
+    return result
 
 
 def _term(value, anchors, count, *, years=None):
@@ -202,7 +213,7 @@ def parse_staged_parent_cash_response(response: LLMResponse, *, request: LLMRequ
     if packet["source_context"]["input_fingerprint"] != source_fingerprint:
         raise ValueError("PARENT_V2_SOURCE_BINDING_INVALID")
     def decode(raw):
-        return json.loads(raw, object_pairs_hook=_unique,
+        return json.loads(raw, object_pairs_hook=_identical_prose_duplicate_only,
             parse_constant=lambda _: (_ for _ in ()).throw(ValueError("PARENT_V2_NONFINITE_JSON")))
     try:
         try:

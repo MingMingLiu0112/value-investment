@@ -203,6 +203,29 @@ def test_policy_gross_maturity_cannot_be_netted_against_new_borrowing(monkeypatc
         request=requests["policy"], source_fingerprint="a" * 64)["series"]["debt_repayment"]["values"][0] == "100"
 
 
+@pytest.mark.parametrize("replacement,accepted", [
+    ('"counter_evidence": "Evidence can change", "counter_evidence": "Evidence can change"', True),
+    ('"counter_evidence": "Evidence can change", "counter_evidence": "Different concern"', False),
+    ('"values": ["1.25"], "values": ["1.25"]', False),
+])
+def test_only_identical_duplicate_prose_can_be_recovered(monkeypatch,replacement,accepted):
+    requests,responses=fixture(monkeypatch)
+    raw=responses["terminal"].text
+    original=('"values": ["1.25"]' if replacement.startswith('"values"') else
+              '"counter_evidence": "Evidence can change"')
+    assert original in raw
+    raw=raw.replace(original,replacement,1)
+    response=LLMResponse(raw,100,100,"MOCK")
+    if accepted:
+        assert v2.parse_staged_parent_cash_response(response,
+            request=requests["terminal"],source_fingerprint="a"*64)["terminal"]
+        assert response.text==raw
+    else:
+        with pytest.raises(ValueError,match="PARENT_V2_CONFLICTING_JSON_KEY"):
+            v2.parse_staged_parent_cash_response(response,
+                request=requests["terminal"],source_fingerprint="a"*64)
+
+
 @pytest.mark.parametrize("mutation", ["alias", "missing", "year", "source", "numeric"])
 def test_rejects_invalid_operating_stage(monkeypatch, mutation):
     requests, responses = fixture(monkeypatch)
