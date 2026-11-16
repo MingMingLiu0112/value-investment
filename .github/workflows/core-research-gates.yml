@@ -226,6 +226,13 @@ jobs:
           tests/test_parent_direct_operating_cash.py
           tests/test_parent_direct_cash_research.py
           tests/test_parent_direct_cash_alternative.py
+          tests/test_direct_parent_owner_cash_v1.py
+          tests/test_direct_owner_cash_terminal_financing_v1.py
+          tests/test_parent_direct_owner_cash_sources.py
+          tests/test_direct_owner_cash_v1.py
+          tests/test_direct_owner_cash_input_adapter_v1.py
+          tests/test_direct_owner_cash_compilation_v1.py
+          tests/test_direct_owner_cash_price_draft_v1.py
           tests/test_parent_cash_research.py
           tests/test_fiscal_industrial_earnings_paths_v1.py
           tests/test_fiscal_earnings_research.py

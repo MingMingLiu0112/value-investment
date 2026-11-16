@@ -352,11 +352,44 @@ export type FirstResearchAnnualLedger = {
   [key: string]: unknown;
 };
 
+export type DirectOwnerCash = {
+  method: string;
+  valuation_basis: string;
+  scope: string;
+  annual_rows: Record<
+    FirstResearchScenarioKey,
+    Array<{
+      year: number;
+      direct_operating_cash_cny: string;
+      conditional_distribution_cny: string;
+      closing_cash_cny: string;
+      closing_book_equity_cny: string;
+      closing_debt_cny: string;
+      retention_assumption: string;
+    }>
+  >;
+  assumptions: Array<{
+    name: string;
+    rationale: string;
+    counter_evidence: string;
+  }>;
+  conditional_price: {
+    status: string;
+    draft_prices: unknown;
+    reason_codes: string[];
+    expires_at?: string;
+    currentpricecomparison: false;
+    action: "no_order";
+  };
+  source_refs: Array<Record<string, unknown>>;
+};
+
 export type FirstResearchInputResponse = {
+  direct_owner_cash?: DirectOwnerCash;
   schema_version?: string;
   symbol: string;
   status: "NOT_STARTED" | "SOURCE_BOUND_FIRST_INPUT_COMPILED" | "UNASSESSABLE";
-  scope: "CONDITIONAL_STRESS_RESEARCH_NOT_ADOPTED_MAIN_RANGE";
+  scope: string;
   action: "no_order";
   successor_update?: {
     status:
@@ -379,8 +412,8 @@ export type FirstResearchInputResponse = {
     valuation_changed?: boolean;
   };
   formal_eligibility: false;
-  main_range_adopted: false;
-  main_valuation_range: null;
+  main_range_adopted: boolean;
+  main_valuation_range: unknown;
   current_price: null;
   input_descriptor_sha256?: string;
   opening_capital?: {

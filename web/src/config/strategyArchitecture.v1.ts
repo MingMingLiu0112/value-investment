@@ -974,7 +974,7 @@ export const catalog: Record<
           why: "不能永远依赖预先准备好的公司研究。",
           how: "核验事实和假设，经画像路由编译为共享模型输入。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "000568的84项及600887的44项原生事实分别完成首次编译；同一共享v4内核生成不同年度现金账与条件压力值。600887已在8001价值页面实测可读；600323年度利润输入仍属部分链路。",
+          done: "原生事实首编保留；新增直接经营现金首编：重读母公司原件和同日普通股数，逐年推导分配与留存，送入原ResearchApplicationService并完整保存版本化输入；已有公开详情接口消费结果。",
           gap: "两家公司首编已通过共享模型，但未来母公司现金与终值假设仍待经济采纳；当前D2自动现金政策尚无完整正例，首编尚未批量化。不能将条件压力值写成主估值或当前买价。",
           acceptance: "无旧研究包的真实公司经同一入口形成可消费的完整输入。",
           evidence: [
@@ -994,15 +994,15 @@ export const catalog: Record<
           "src/value_investment_agent/application/product/first_research_input_view_v1.py",
         ],
         engineeringStatus:
-          "两家公司首编工程与真实来源重算通过／8001已展示600887",
+          "首编与直接现金适配已通过真实来源重算；本次8001部署须单独验收",
         evidenceStatus:
           "000568的84项及600887的44项官方原件事实冷重放；经济采纳待审",
         shortStatus: "两家原生事实首编进入共享v4；主研究区间均未采纳",
         implementation:
-          "同一入口读取自身经营假设、现金约束，形成三条十年路径及共享模型条件压力计算",
+          "版本化适配同时支持既有经营路径和直接收付款预测；事实、融资及税款假设分别绑定，逐年消费实际受限分配，不改写旧实现",
         milestone: "首输入条件研究闭环；不代表经济质量、主估值采用或投资准入。",
         existingEvidence:
-          "同一入口读取自身经营假设、现金约束，形成三条十年路径及共享模型条件压力计算",
+          "版本化适配同时支持既有经营路径和直接收付款预测；事实、融资及税款假设分别绑定，逐年消费实际受限分配，不改写旧实现",
         evidenceSource:
           "artifacts/current/first-research-input-e2-20261031.json；官方FY2025/H12026原件与独立冷重算回执",
         evidence: "无旧包首编已实际消费共享v4；主研究区间未采纳",
@@ -1096,7 +1096,7 @@ export const catalog: Record<
           why: "让估值算术可以独立复算，而非接受自然语言报价。",
           how: "逐年计算利润、现金、分配和权益，按合同处理终值与折现。",
           scope: "既有模型、有界合法输入的计算合同；不含假设采用与投资批准。",
-          done: "两家真实输入通过共享现金、权益、终值与独立重算。",
+          done: "既有共享内核保留；新增直接经营收付→gross资本支出、现金利息与债务滚动→现金及利润约束分配→年度RI/DDM和解析尾部，真实原件重算已通过。",
           gap: "不证明未来假设必然实现；不等于当前买价或经济批准。",
           acceptance:
             "既有模型及有界输入内，年度账、现金约束和终值合同可独立验证。",
@@ -1116,9 +1116,11 @@ export const catalog: Record<
         engineeringStatus: "有限贯通",
         evidenceStatus: "真实样本部分验证",
         shortStatus: "算术通过不证明长期利润或全额分配可持续",
-        implementation: "两公司v4条件研究与真实来源重算已交付",
+        implementation:
+          "既有v4与直接现金年度RI/DDM复用共享算术；有息终端只在显式等额续借、付息和稳定现金条件下计算",
         milestone: "有限贯通；不代表正式研究准入或实盘资格。",
-        existingEvidence: "两公司v4条件研究与真实来源重算已交付",
+        existingEvidence:
+          "既有v4与直接现金年度RI/DDM复用共享算术；有息终端只在显式等额续借、付息和稳定现金条件下计算",
         evidenceSource:
           "d01923cd；docs/current/web-first-full-product-execution-ledger.md；.tmp/value-followup-acceptance/real-business-receipt.json（本机留存，不公开私人文件）",
         evidence: "算术通过不证明长期利润或全额分配可持续",
@@ -1202,8 +1204,8 @@ export const catalog: Record<
           why: "历史估值不能直接当作今天的买入依据。",
           how: "核对股本、期间分配、事件、模型有效性和合格报价。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "现有候选可复核原件绑定的回购、担保及季度经营数据；页面分开显示已核事实和对齐缺口。",
-          gap: "同一候选的全部当前对齐条件尚缺联合成功样本。",
+          done: "现有当前对齐校验保留；新增直接股东现金候选消费既有价格政策，生成未批准的历史条件端点草案，按上海日期检查有效期；与当前买卖资格分开。",
+          gap: "本次直接现金结果是历史条件研究，主区间未采用；当前股本、期间分配、事件与报价联合资格未由这份草案取得，不输出当前买价。",
           acceptance: "完整对齐正例能产未批准条件价；不齐时准确拒绝。",
           evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
           runHref: "/strategy/value",

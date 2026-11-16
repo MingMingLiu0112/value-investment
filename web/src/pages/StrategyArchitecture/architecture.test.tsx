@@ -159,7 +159,7 @@ describe("versioned strategy architecture", () => {
     ).not.toContain("E1");
     expect(
       catalog.value.stages.find((s) => s.id === "E2")?.engineeringStatus,
-    ).toContain("8001已展示600887");
+    ).toContain("真实来源重算");
     expect(catalog.value.stages.find((s) => s.id === "B")?.evidence).toContain(
       "CONFLICT",
     );
@@ -308,7 +308,7 @@ it("records the current driver bridge arithmetic acceptance without adopting par
   ).toContain("用户尚未确认");
   expect(
     catalog.value.stages.find((stage) => stage.id === "E2")?.engineeringStatus,
-  ).toContain("8001已展示600887");
+  ).toContain("真实来源重算");
 });
 
 it("separates the actual capital blocker and vertical acceptance from future platform expansion", () => {

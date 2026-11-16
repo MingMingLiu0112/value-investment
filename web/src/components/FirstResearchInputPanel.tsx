@@ -88,6 +88,129 @@ function officialUrl(value: unknown) {
   }
 }
 
+// Preserve backend decimal strings and unknown price structures without arithmetic.
+function supplied(value: unknown): string {
+  if (value === undefined || value === null || value === "") return "未提供";
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
+  const cash = data.direct_owner_cash!;
+  const price = cash.conditional_price;
+  if (
+    price &&
+    (price.action !== "no_order" || price.currentpricecomparison !== false)
+  )
+    return (
+      <Alert type="warning" message="直接经营现金条件价边界不符，停止展示" />
+    );
+
+  return (
+    <section aria-label="直接母公司经营现金研究">
+      <h3>直接母公司经营现金→资本/债务支付→约束分配→RI/DDM</h3>
+      <p>
+        历史估值时点：{supplied(data.valuation?.valuation_date)} · 研究截止：
+        {supplied(data.research_as_of)}
+      </p>
+      <p>条件研究 / 未批准 / 不是当前买价；不比较当前报价；action=no_order。</p>
+      <p>
+        方法：{supplied(cash.method)} · 估值依据：
+        {supplied(cash.valuation_basis)} · 范围：{supplied(cash.scope)}
+      </p>
+      <p>
+        主区间采用状态：
+        {data.main_range_adopted === true
+          ? "已采用（研究字段，不代表批准）"
+          : data.main_range_adopted === false
+            ? "未采用"
+            : "未提供"}
+      </p>
+      {data.main_range_adopted === true && (
+        <p>主估值区间（原稿）：{supplied(data.main_valuation_range)}</p>
+      )}
+      <h4>三情景历史条件估值（元/股）</h4>
+      <ul>
+        {(["bear", "base", "bull"] as const).map((name) => (
+          <li key={name}>
+            {name}：{supplied(data.valuation?.[`${name}_value`])}
+          </li>
+        ))}
+      </ul>
+      <h4>条件价草稿（不是当前买价）</h4>
+      <p>状态：{supplied(price?.status)}</p>
+      <p>条件价：{supplied(price?.draft_prices)}</p>
+      <p>
+        原因代码：
+        {price?.reason_codes?.length ? price.reason_codes.join("、") : "未提供"}
+      </p>
+      <p>有效期至：{supplied(price?.expires_at)}</p>
+      <h4>经营与留存假设、反证</h4>
+      {cash.assumptions?.length ? (
+        <ul>
+          {cash.assumptions.map((item, index) => (
+            <li key={index}>
+              {supplied(item.name)}：{supplied(item.rationale)}；反证：
+              {supplied(item.counter_evidence)}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>未提供</p>
+      )}
+      <details>
+        <summary>三情景年度现金账（元，原值；条件分配不是分红承诺）</summary>
+        <p>资本/债务支付仅按后端原稿解释；本组件不由余额倒算支付或分配。</p>
+        {(["bear", "base", "bull"] as const).map((name) => (
+          <div key={name} style={{ overflowX: "auto" }}>
+            <table>
+              <caption>{name} 年度现金账</caption>
+              <thead>
+                <tr>
+                  {[
+                    "年度",
+                    "直接经营现金",
+                    "约束条件分配",
+                    "期末现金",
+                    "期末账面权益",
+                    "期末债务",
+                    "留存假设",
+                  ].map((label) => (
+                    <th key={label}>{label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {cash.annual_rows?.[name]?.map((row, index) => (
+                  <tr key={index}>
+                    {[
+                      row.year,
+                      row.direct_operating_cash_cny,
+                      row.conditional_distribution_cny,
+                      row.closing_cash_cny,
+                      row.closing_book_equity_cny,
+                      row.closing_debt_cny,
+                      row.retention_assumption,
+                    ].map((value, column) => (
+                      <td key={column}>{supplied(value)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!cash.annual_rows?.[name]?.length && <p>年度现金账未提供</p>}
+          </div>
+        ))}
+      </details>
+      <details>
+        <summary>来源引用与输入绑定原稿</summary>
+        <p>输入指纹：{supplied(data.input_fingerprint)}</p>
+        <pre>{supplied(cash.source_refs)}</pre>
+        <DetailSection title="输入来源绑定" value={data.source_bindings} />
+      </details>
+    </section>
+  );
+}
+
 export function FirstResearchInputView({
   data,
   symbol,
@@ -100,9 +223,10 @@ export function FirstResearchInputView({
     data.symbol !== symbol ||
     data.action !== "no_order" ||
     data.formal_eligibility !== false ||
-    data.scope !== "CONDITIONAL_STRESS_RESEARCH_NOT_ADOPTED_MAIN_RANGE" ||
-    data.main_range_adopted !== false ||
-    data.main_valuation_range !== null ||
+    (!data.direct_owner_cash &&
+      (data.scope !== "CONDITIONAL_STRESS_RESEARCH_NOT_ADOPTED_MAIN_RANGE" ||
+        data.main_range_adopted !== false ||
+        data.main_valuation_range !== null)) ||
     data.current_price !== null ||
     data.condition_price !== null ||
     data.personal_quantity !== null
@@ -129,6 +253,8 @@ export function FirstResearchInputView({
         </details>
       </section>
     );
+
+  if (data.direct_owner_cash) return <DirectOwnerCashView data={data} />;
 
   if (
     !data.research_case ||

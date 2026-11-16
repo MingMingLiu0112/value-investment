@@ -99,6 +99,171 @@ function visibleHtml(html: string): string {
     })
     .join("");
 }
+
+// Contract fixture only: no backend/live E2/F1/F2 acceptance is implied.
+function directFixture(): FirstResearchInputResponse {
+  return {
+    ...base(),
+    status: "SOURCE_BOUND_FIRST_INPUT_COMPILED",
+    scope: "TEST_ONLY_DIRECT_OWNER_CASH",
+    main_range_adopted: true,
+    main_valuation_range: { low: "11.11", high: "33.33" },
+    valuation: example().valuation,
+    direct_owner_cash: {
+      method: "TEST_ONLY_RI_DDM",
+      valuation_basis: "TEST_ONLY_HISTORICAL_PARENT",
+      scope: "TEST_ONLY_CONDITIONAL",
+      annual_rows: Object.fromEntries(
+        ["bear", "base", "bull"].map((name) => [
+          name,
+          [
+            {
+              year: 2027,
+              direct_operating_cash_cny: "123456789.123456789",
+              conditional_distribution_cny: "0",
+              closing_cash_cny: "123",
+              closing_book_equity_cny: "456",
+              closing_debt_cny: "789",
+              retention_assumption: `TEST_ONLY_${name}_RETENTION`,
+            },
+          ],
+        ]),
+      ) as NonNullable<
+        FirstResearchInputResponse["direct_owner_cash"]
+      >["annual_rows"],
+      assumptions: [
+        {
+          name: "TEST_ONLY_CAPITAL",
+          rationale: "TEST_ONLY_RATIONALE",
+          counter_evidence: "TEST_ONLY_COUNTER",
+        },
+      ],
+      conditional_price: {
+        status: "TEST_ONLY_DRAFT",
+        draft_prices: { bear: "7.125", base: "8.25", bull: "9.375" },
+        reason_codes: ["TEST_ONLY_NOT_APPROVED"],
+        expires_at: "2026-12-01",
+        currentpricecomparison: false,
+        action: "no_order",
+      },
+      source_refs: [{ source_sha256: "TEST_ONLY_HASH", physical_page: 7 }],
+    },
+  };
+}
+
+it("renders direct cash fixture through the existing panel with visible historical valuations and conditional prices", () => {
+  const data = directFixture();
+  const before = JSON.stringify(data);
+  state.value = { loading: false, data };
+  const html = renderToStaticMarkup(
+    <FirstResearchInputPanel symbol="000568" />,
+  );
+  const visible = visibleHtml(html);
+  for (const value of [
+    "直接母公司经营现金→资本/债务支付→约束分配→RI/DDM",
+    "11.11",
+    "22.22",
+    "33.33",
+    "7.125",
+    "8.25",
+    "9.375",
+    "2026-10-31",
+    "2026-12-01",
+    "未批准",
+    "不是当前买价",
+    "no_order",
+    "已采用（研究字段",
+    "TEST_ONLY_COUNTER",
+  ])
+    expect(visible).toContain(value);
+  expect(html).not.toContain("REJECTED");
+  expect(html).not.toContain("中间条件场景未被采用");
+  expect(html).not.toContain("<details open");
+  expect(visible).not.toContain("123456789.123456789");
+  for (const value of [
+    "123456789.123456789",
+    "TEST_ONLY_bear_RETENTION",
+    "TEST_ONLY_base_RETENTION",
+    "TEST_ONLY_bull_RETENTION",
+    "TEST_ONLY_HASH",
+    "期末账面权益",
+    "期末债务",
+  ])
+    expect(html).toContain(value);
+  expect(JSON.stringify(data)).toBe(before);
+});
+
+it.each([true, false, undefined])(
+  "uses actual direct main range adoption %s without the old forced rejection",
+  (adopted) => {
+    const data = directFixture();
+    Object.assign(data, { main_range_adopted: adopted });
+    const html = renderToStaticMarkup(
+      <FirstResearchInputView data={data} symbol="000568" />,
+    );
+    expect(html).toContain(
+      `主区间采用状态：${adopted === true ? "已采用" : adopted === false ? "未采用" : "未提供"}`,
+    );
+    expect(html).not.toContain("停止展示");
+  },
+);
+
+it("shows exact refusal reasons without inventing missing valuations, prices or annual cash", () => {
+  const data = directFixture();
+  data.valuation = null;
+  const cash = data.direct_owner_cash!;
+  cash.conditional_price.draft_prices = null;
+  cash.conditional_price.reason_codes = [
+    "TEST_ONLY_F1_MISSING_SOURCE",
+    "TEST_ONLY_F2_EXPIRED",
+  ];
+  cash.annual_rows.base = [];
+  delete (
+    cash.annual_rows.bear[0] as Partial<(typeof cash.annual_rows.bear)[0]>
+  ).closing_cash_cny;
+  const html = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol="000568" />,
+  );
+  const visible = visibleHtml(html);
+  expect(visible).toContain("bear：未提供");
+  expect(visible).toContain("条件价：未提供");
+  expect(visible).toContain(
+    "TEST_ONLY_F1_MISSING_SOURCE、TEST_ONLY_F2_EXPIRED",
+  );
+  expect(html).toContain("年度现金账未提供");
+  expect(html).toContain("<td>未提供</td>");
+  expect(html).not.toContain("NaN");
+});
+
+it.each([{ action: "order" }, { currentpricecomparison: true }])(
+  "rejects direct price authority violations %s",
+  (patch) => {
+    const data = directFixture();
+    Object.assign(data.direct_owner_cash!.conditional_price, patch);
+    const html = renderToStaticMarkup(
+      <FirstResearchInputView data={data} symbol="000568" />,
+    );
+    expect(html).toContain("停止展示");
+    expect(html).not.toContain("22.22");
+  },
+);
+
+it.each([
+  { symbol: "600519" },
+  { action: "order" },
+  { formal_eligibility: true },
+  { status: "UNASSESSABLE", reason: "TEST_ONLY_HASH_FAILURE" },
+])("keeps direct fixture behind issuer and compilation gates %s", (patch) => {
+  const data = Object.assign(
+    directFixture(),
+    patch,
+  ) as FirstResearchInputResponse;
+  const html = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol="000568" />,
+  );
+  expect(html).not.toContain("22.22");
+  expect(html).not.toContain("7.125");
+});
 it("shows the real E1 version difference as unapproved conditional research", () => {
   const data = example();
   data.successor_update = {

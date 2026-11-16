@@ -42,6 +42,13 @@ def read_first_research_input(*,root,symbol,now:datetime):
         receipt=_json(raw)
         if receipt.get("symbol")!=symbol or receipt.get("action")!="no_order":
             raise ValueError("First-input receipt issuer mismatch")
+        if receipt.get("schema_version") == "direct-owner-cash-first-input-receipt-v1":
+            for binding in receipt.get("source_bindings",[]):
+                _binding(root,binding,runtime_only=False)
+            for key in ("spec_binding","result_binding"):
+                _binding(root,receipt[key])
+            from .direct_owner_cash_view_v1 import read_direct_owner_cash_view
+            return read_direct_owner_cash_view(root=root,receipt_binding=ref,now=now)
         # Public reads do not expose arbitrary local paths or private inputs.
         for binding in receipt.get("source_bindings",[]):
             _binding(root,binding,runtime_only=False)
