@@ -57,6 +57,37 @@ def test_stages_merge_exact_contract(monkeypatch):
     policy_context = json.loads(requests["policy"].user)
     assert policy_context["prior_forecast_assumptions_not_facts"]["operating"]["other_operating_cash"] == ["1.25"] * 10
     assert "Explicit cash mechanism" not in requests["policy"].user
+    assert "Allowed evidence_anchors IDs only:" in requests["operating"].transport_output_contract
+    assert "parent_revenue" in requests["operating"].transport_output_contract
+
+
+def test_year_keyed_notes_are_losslessly_ordered_without_changing_raw(monkeypatch):
+    requests, responses = fixture(monkeypatch)
+    body = json.loads(responses["operating"].text)
+    years = body["years"]
+    body["annual_notes"] = {str(year): f"Operating reason for year {year}"
+                            for year in reversed(years)}
+    raw = json.dumps(body)
+    responses["operating"] = LLMResponse(raw, 100, 100, "MOCK")
+    draft = v2.parse_staged_parent_cash_response(responses["operating"],
+        request=requests["operating"], source_fingerprint="a" * 64)
+    assert draft["annual_notes"] == [f"Operating reason for year {year}" for year in years]
+    assert responses["operating"].text == raw
+
+
+@pytest.mark.parametrize("bad_year", ["2036", None])
+def test_year_keyed_notes_reject_missing_or_extra_year(monkeypatch, bad_year):
+    requests, responses = fixture(monkeypatch)
+    body = json.loads(responses["operating"].text)
+    body["annual_notes"] = {str(year): f"Operating reason for year {year}"
+                            for year in body["years"]}
+    del body["annual_notes"][str(body["years"][0])]
+    if bad_year is not None:
+        body["annual_notes"][bad_year] = "An unrequested year note"
+    response = LLMResponse(json.dumps(body), 100, 100, "MOCK")
+    with pytest.raises(ValueError, match="PARENT_V2_NOTES_INVALID"):
+        v2.parse_staged_parent_cash_response(response, request=requests["operating"],
+            source_fingerprint="a" * 64)
 
 
 @pytest.mark.parametrize("mutation", ["alias", "missing", "year", "source", "numeric"])

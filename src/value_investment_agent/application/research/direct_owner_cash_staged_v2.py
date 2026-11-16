@@ -105,7 +105,9 @@ def staged_parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
         raise ValueError("PARENT_V2_CONTEXT_OVER_BUDGET")
     return LLMRequest(role="FUNDAMENTAL", system=(
         "Return only the requested JSON fields. Use exact field names and explicit decimal "
-        "strings for every value. Cite only provided source fact IDs. Forecasts are "
+        "strings for every value. evidence_anchors must be an array of exact source_context.facts "
+        "KEYS such as ['revenue','cost']; never put a fact description, URL, PDF page, "
+        "hash or source sentence in evidence_anchors. Put explanations in mechanism. Forecasts are "
         "conditional assumptions, never an order or approval. Prior stage values are "
         "unapproved forecast assumptions, not verified facts. Keep operating_cash "
         "distinct from the required other_operating_cash component. Consume scheduled events "
@@ -115,7 +117,10 @@ def staged_parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
             + ", ".join(sorted(properties)) + ". series/policy keys exactly: "
             + ", ".join(fields) + ". Each term has values, evidence_anchors, "
             "mechanism, counter_evidence, reopen_condition. Years must equal required_years; "
-            "no aliases, missing keys, defaults, or identity metadata in response."))
+            "no aliases, missing keys, defaults, or identity metadata in response. "
+            "Allowed evidence_anchors IDs only: " + ", ".join(ids) + ". "
+            "For operating stage annual_notes is a JSON ARRAY of exactly ten strings "
+            "in required_years order, never an object keyed by year."))
 
 
 def parse_staged_parent_cash_response(response: LLMResponse, *, request: LLMRequest,
@@ -141,9 +146,20 @@ def parse_staged_parent_cash_response(response: LLMResponse, *, request: LLMRequ
         for term in value["series"].values():
             _term(term, anchors, HORIZON)
         if stage == "operating":
-            if not isinstance(value["annual_notes"], list) or len(value["annual_notes"]) != HORIZON:
+            notes = value["annual_notes"]
+            # Some JSON-object providers preserve the ten notes under exact
+            # year keys. This is a lossless structural representation only
+            # when every requested year occurs once and no other key exists.
+            # The sealed raw response remains unchanged in the task store.
+            if isinstance(notes, dict):
+                expected = [str(year) for year in packet["required_years"]]
+                if set(notes) != set(expected) or len(notes) != HORIZON:
+                    raise ValueError("PARENT_V2_NOTES_INVALID")
+                notes = [notes[year] for year in expected]
+                value["annual_notes"] = notes
+            if not isinstance(notes, list) or len(notes) != HORIZON:
                 raise ValueError("PARENT_V2_NOTES_INVALID")
-            for note in value["annual_notes"]:
+            for note in notes:
                 _text(note)
             for key in ("rationale", "counter_evidence", "reopen_condition"):
                 _text(value[key])
