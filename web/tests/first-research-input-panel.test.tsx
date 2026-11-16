@@ -222,6 +222,30 @@ it("shows dated financing issuance only when a source-bound review exists", () =
         scope: "CONDITIONAL_FIRST_YEAR_NO_NEW_BORROWING_NO_DISTRIBUTION_STRESS",
       },
     },
+    annual_financing_dependency: {
+      schema_version: "parent-financing-dependency-v1",
+      valuation_date: "2025-12-31",
+      scope: "ANNUAL_SINGLE_YEAR_COUNTERFACTUAL_HOLDING_MODELED_OPENING_STATE",
+      actual_refinancing_capacity_verified: false,
+      main_valuation_recomputed: false,
+      followup_observation_date: "2026-06-30",
+      followup_rebases_historical_valuation: false,
+      scenarios: {
+        bear: [],
+        base: [
+          {
+            year: 2026,
+            assumed_new_borrowing_cny: "60000000000",
+            minimum_borrowing_to_preserve_cash_floor_cny: "54547746465.64",
+            minimum_borrowing_to_preserve_modeled_distribution_cny:
+              "60000000000",
+            modeled_distribution_cny: "5452253534.36",
+            assumption_dependent: true,
+          },
+        ],
+        bull: [],
+      },
+    },
   };
   expect(render()).toContain("融资条件仍待核实");
   expect(render()).toContain("41,500,000,000.00");
@@ -232,6 +256,8 @@ it("shows dated financing issuance only when a source-bound review exists", () =
   expect(render()).toContain("列示额并非完整有息负债");
   expect(render()).toContain("9,606,488,407.61");
   expect(render()).toContain("尚未分解的对账差异");
+  expect(render()).toContain("若维持原条件分配");
+  expect(render()).toContain("未据半年报重算历史估值");
 });
 
 it("renders direct cash fixture through the existing panel with visible historical valuations and conditional prices", () => {

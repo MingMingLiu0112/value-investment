@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 from ..research.agent_review.web_research import _binding
 from ..research.direct_owner_cash_research_v1 import replay_direct_owner_cash_receipt, _read
 from ..research.parent_financing_bridge_v1 import read_registered_parent_financing_bridge
+from ..research.parent_financing_dependency_v1 import assess_parent_financing_dependency
 from ..decision.direct_owner_cash_price_draft_v1 import draft_direct_owner_cash_price
 
 def _first_year_no_new_borrowing_stress(rows):
@@ -80,7 +81,9 @@ def read_direct_owner_cash_view(*,root,receipt_binding,now):
         first_year_no_new_borrowing_stress=no_new_borrowing_stress,
         opening_debt_evidence_comparison=_opening_debt_evidence_comparison(result["compiled"]),
         parent_financing_followup=financing_followup,
-        followup_unavailable_reason=followup_unavailable_reason) if after_basis else None
+        followup_unavailable_reason=followup_unavailable_reason,
+        annual_financing_dependency=assess_parent_financing_dependency(
+            result["compiled"], financing_followup)) if after_basis else None
     for binding in result["source_bindings"]:_binding(root,binding,runtime_only=False)
     receipt=_read(root,receipt_binding)
     spec=_read(root,receipt["spec_binding"])

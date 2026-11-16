@@ -206,6 +206,24 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
                   这是同一年度现金账的条件压力测试，不证明全部债务当年到期。
                 </span>
               )}
+              {cash.financing_review.annual_financing_dependency?.scenarios
+                .base?.[0] && (
+                <span>
+                  {" "}
+                  按共享模型逐年账，Base首年若维持原条件分配，至少需要当年融资
+                  {amount(
+                    cash.financing_review.annual_financing_dependency.scenarios
+                      .base[0]
+                      .minimum_borrowing_to_preserve_modeled_distribution_cny,
+                  )}
+                  元；模型原假设借入
+                  {amount(
+                    cash.financing_review.annual_financing_dependency.scenarios
+                      .base[0].assumed_new_borrowing_cny,
+                  )}
+                  元。这是固定该年期初状态的条件计算，不证明融资可得，亦未据半年报重算历史估值。
+                </span>
+              )}
             </span>
           }
         />

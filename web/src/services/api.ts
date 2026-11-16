@@ -371,6 +371,26 @@ export type DirectOwnerCash = {
         scope: string;
       }
     >;
+    annual_financing_dependency?: {
+      schema_version: string;
+      valuation_date: string;
+      scope: string;
+      actual_refinancing_capacity_verified: boolean;
+      main_valuation_recomputed: boolean;
+      followup_observation_date: string | null;
+      followup_rebases_historical_valuation: boolean;
+      scenarios: Record<
+        "bear" | "base" | "bull",
+        Array<{
+          year: number;
+          assumed_new_borrowing_cny: string;
+          minimum_borrowing_to_preserve_cash_floor_cny: string;
+          minimum_borrowing_to_preserve_modeled_distribution_cny: string;
+          modeled_distribution_cny: string;
+          assumption_dependent: boolean;
+        }>
+      >;
+    };
     opening_debt_evidence_comparison?: {
       scope: string;
       period: string;
