@@ -50,7 +50,11 @@ class ParentCashTaskService(ResearchTaskService):
         cfg = model_configuration(self.shared_budget_root)
         if cfg["model_id"] != "deepseek-flash" or Decimal(str(cfg["daily_cost_limit"])) > 10:
             raise PermissionError("PARENT_SHARED_MODEL_CONFIGURATION_INVALID")
-        return cfg
+        # The same shared D1 gateway is configured for 4096; the established
+        # V19 horizon task expands only its per-request completion ceiling.
+        if cfg["max_completion_tokens_cap"] != 4096:
+            raise PermissionError("PARENT_SHARED_COMPLETION_CONFIG_INVALID")
+        return {**cfg, "max_completion_tokens_cap": 8192}
 
     def _context(self, spec, now):
         if (self._configuration() != spec["config"]
@@ -305,6 +309,7 @@ class ParentCashTaskService(ResearchTaskService):
                         reservations=reservations, reserved_cost=str(Decimal(state["reserved_cost"]) + reserve),
                         provider_requests=state["provider_requests"] + 1,
                         new_llm_calls=state["new_llm_calls"] + (self.test_provider is None))
+                response_recorded = False
                 try:
                     provider = self.test_provider or OpenAICompatibleChatProvider(**{k:cfg[k]
                         for k in ("endpoint", "model_id", "api_key_env", "timeout_seconds",
@@ -332,6 +337,7 @@ class ParentCashTaskService(ResearchTaskService):
                             source_fingerprint=spec["source_fingerprint"], response=response.__dict__, action="no_order")
                         path = directory / ("response-" + reservation + ".json")
                         write_new_bytes(path, _bytes(packet))
+                        response_recorded = True
                         response_binding = self._binding(path)
                         state, binding = self._save(spec, state, binding, _now(),
                             returned_responses=state.get("returned_responses", []) + [response_binding])
@@ -345,11 +351,21 @@ class ParentCashTaskService(ResearchTaskService):
                         responses[scenario] = response_binding
                         state, binding = self._save(spec, state, binding, _now(), responses=responses)
                 except Exception as error:
+                    if response_recorded:
+                        code = "PARENT_DRAFT_REJECTED_OR_UNPUBLISHED"
+                    elif isinstance(error, TimeoutError):
+                        code = "PARENT_PROVIDER_TIMEOUT_AMBIGUOUS"
+                    elif isinstance(error, ValueError) and "completion token cap" in str(error):
+                        code = "PARENT_PROVIDER_COMPLETION_CAP_REACHED"
+                    elif isinstance(error, ValueError) and "truncated" in str(error):
+                        code = "PARENT_PROVIDER_RESPONSE_INCOMPLETE"
+                    else:
+                        code = "PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS"
                     with self._lock(directory):
                         spec, state, binding = self._load(task_id)
                         if state["status"] != "CANCELLED":
                             state, binding = self._save(spec, state, binding, _now(),
-                                status="FAILED", error_code="PARENT_CALL_OR_DRAFT_FAILED")
+                                status="FAILED", error_code=code)
                         return self._view(spec, state, binding, _now())
             with self._lock(directory):
                 spec, state, binding = self._load(task_id)

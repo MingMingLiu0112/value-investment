@@ -9,7 +9,7 @@ from value_investment_agent.infrastructure.agent_runtime.provider import LLMRequ
 
 
 NOW = datetime(2026, 11, 16, tzinfo=timezone.utc)
-CFG = dict(model_id="deepseek-flash", max_completion_tokens_cap=1024,
+CFG = dict(model_id="deepseek-flash", max_completion_tokens_cap=4096,
     input_cost_per_million="1", output_cost_per_million="1",
     max_run_cost="1", daily_cost_limit="2", currency="CNY")
 
@@ -48,6 +48,7 @@ def test_three_stages_and_shared_budget(service):
                           request_key="parentcash001", now=NOW)
     result = task.run(created["task_id"], now=NOW)
     assert result["status"] == "SUCCEEDED"
+    assert task._load(created["task_id"])[0]["config"]["max_completion_tokens_cap"] == 8192
     assert provider.calls == ["bear", "base", "bull"]
     assert result["candidate"]["action"] == "no_order"
     assert result["formal_eligibility"] is False
@@ -66,6 +67,7 @@ def test_ambiguous_call_never_resends_and_can_cancel(service):
                           request_key="parentcash002", now=NOW)
     failed = task.run(created["task_id"], now=NOW)
     assert failed["status"] == "FAILED"
+    assert failed["error_code"] == "PARENT_PROVIDER_TIMEOUT_AMBIGUOUS"
     assert failed["completed_scenarios"] == ["bear"]
     assert any(row["status"] == "RESERVED" for row in failed["reservations"].values())
     resumed = task.resume(created["task_id"], now=NOW)
