@@ -16,6 +16,14 @@ def codes(text, symbol="600398"):
     return labelled_security_codes(["TEST_ONLY\n"+text], symbol=symbol)
 
 
+def test_real_layout_exchange_abbreviation_is_bound_to_shanghai_prefix():
+    # 601600 FY2025 original uses the exact exchange label 上交所.
+    row = ROW.replace("\u4e0a\u6d77\u8bc1\u5238\u4ea4\u6613\u6240", "\u4e0a\u4ea4\u6240")
+    assert codes(HEADER + "\n" + row) == {"600398"}
+    with pytest.raises(ValueError, match="A_SHARE_EXCHANGE_CODE_MISMATCH"):
+        codes(HEADER + "\n" + row.replace("600398", "000398"))
+
+
 @pytest.mark.parametrize("label", ["公司代码：600398", "证券代码 600398", "股票代码: 600398"])
 def test_explicit_legacy_labels_preserved(label):
     assert codes(label) == {"600398"}
