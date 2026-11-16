@@ -382,6 +382,22 @@ export type DirectOwnerCash = {
       completeness_verified: boolean;
       maturity_schedule_verified: boolean;
     } | null;
+    parent_financing_followup?: {
+      schema_version: string;
+      period_start: string;
+      period_end: string;
+      opening_identified_balance_cny: string;
+      closing_identified_balance_cny: string;
+      identified_balance_change_cny: string;
+      reported_net_borrowing_cash_cny: string;
+      unallocated_reconciliation_difference_cny: string;
+      reconciliation_status: string;
+      complete_debt_scope_verified: boolean;
+      maturity_schedule_verified: boolean;
+      actual_refinancing_capacity_verified: boolean;
+      source_refs: Array<Record<string, unknown>>;
+    } | null;
+    followup_unavailable_reason?: string | null;
   };
   method: string;
   valuation_basis: string;

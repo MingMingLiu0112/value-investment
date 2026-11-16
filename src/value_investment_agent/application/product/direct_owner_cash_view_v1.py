@@ -4,6 +4,7 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 from ..research.agent_review.web_research import _binding
 from ..research.direct_owner_cash_research_v1 import replay_direct_owner_cash_receipt, _read
+from ..research.parent_financing_bridge_v1 import read_registered_parent_financing_bridge
 from ..decision.direct_owner_cash_price_draft_v1 import draft_direct_owner_cash_price
 
 def _first_year_no_new_borrowing_stress(rows):
@@ -59,6 +60,17 @@ def read_direct_owner_cash_view(*,root,receipt_binding,now):
         stress=_first_year_no_new_borrowing_stress(rows)
         if stress is not None:
             no_new_borrowing_stress[name]=stress
+    financing_followup=None
+    followup_unavailable_reason=None
+    if after_basis:
+        try:
+            financing_followup=read_registered_parent_financing_bridge(
+                root=root, fy_statement=result["compiled"]["evidence"]["statements"][0], now=now)
+            if financing_followup is None:
+                followup_unavailable_reason="FOLLOWUP_SOURCE_NOT_REGISTERED"
+        except (OSError, ValueError, KeyError, TypeError):
+            # A later source failure cannot rewrite or erase the valid FY receipt.
+            followup_unavailable_reason="FOLLOWUP_SOURCE_NOT_VERIFIED"
     financing_review=dict(basis_date=basis.isoformat(),
         post_basis_issuance_cny=str(sum((Decimal(row["principal_cny"]) for row in after_basis), Decimal(0))),
         post_basis_issue_codes=[row["code"] for row in after_basis],
@@ -66,7 +78,9 @@ def read_direct_owner_cash_view(*,root,receipt_binding,now):
         reason="POST_BASIS_ISSUANCE_IS_NOT_OPENING_DEBT_OR_CONFIRMED_REFINANCING",
         source_refs=[row["source_refs"] for row in after_basis],
         first_year_no_new_borrowing_stress=no_new_borrowing_stress,
-        opening_debt_evidence_comparison=_opening_debt_evidence_comparison(result["compiled"])) if after_basis else None
+        opening_debt_evidence_comparison=_opening_debt_evidence_comparison(result["compiled"]),
+        parent_financing_followup=financing_followup,
+        followup_unavailable_reason=followup_unavailable_reason) if after_basis else None
     for binding in result["source_bindings"]:_binding(root,binding,runtime_only=False)
     receipt=_read(root,receipt_binding)
     spec=_read(root,receipt["spec_binding"])

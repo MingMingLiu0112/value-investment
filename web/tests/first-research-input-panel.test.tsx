@@ -184,6 +184,21 @@ it("shows dated financing issuance only when a source-bound review exists", () =
       completeness_verified: false,
       maturity_schedule_verified: false,
     },
+    parent_financing_followup: {
+      schema_version: "parent-financing-bridge-v1",
+      period_start: "2025-12-31",
+      period_end: "2026-06-30",
+      opening_identified_balance_cny: "19527101262.17",
+      closing_identified_balance_cny: "10454024794.97",
+      identified_balance_change_cny: "-9073076467.20",
+      reported_net_borrowing_cash_cny: "-18679564874.81",
+      unallocated_reconciliation_difference_cny: "9606488407.61",
+      reconciliation_status: "PARTIAL_SCOPE_NOT_BALANCED",
+      complete_debt_scope_verified: false,
+      maturity_schedule_verified: false,
+      actual_refinancing_capacity_verified: false,
+      source_refs: [{ path: "runtime/TEST_ONLY/interim.pdf" }],
+    },
     first_year_no_new_borrowing_stress: {
       bear: {
         year: 2026,
@@ -215,6 +230,8 @@ it("shows dated financing issuance only when a source-bound review exists", () =
   expect(render()).toContain("不证明全部债务当年到期");
   expect(render()).toContain("19,527,101,262.17");
   expect(render()).toContain("列示额并非完整有息负债");
+  expect(render()).toContain("9,606,488,407.61");
+  expect(render()).toContain("尚未分解的对账差异");
 });
 
 it("renders direct cash fixture through the existing panel with visible historical valuations and conditional prices", () => {

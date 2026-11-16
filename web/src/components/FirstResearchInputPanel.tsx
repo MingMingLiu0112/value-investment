@@ -163,6 +163,30 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
                   仍需附注明细及到期安排核对。
                 </span>
               )}
+              {cash.financing_review.parent_financing_followup && (
+                <span>
+                  {" "}
+                  后续母公司半年报（
+                  {cash.financing_review.parent_financing_followup.period_end}
+                  ）列示的同四项余额为
+                  {amount(
+                    cash.financing_review.parent_financing_followup
+                      .closing_identified_balance_cny,
+                  )}
+                  元。其相对年末变动与半年内借还现金净额相差
+                  {amount(
+                    cash.financing_review.parent_financing_followup
+                      .unallocated_reconciliation_difference_cny,
+                  )}
+                  元；此为尚未分解的对账差异，不认作已核债务或可续借额度。
+                </span>
+              )}
+              {cash.financing_review.followup_unavailable_reason && (
+                <span>
+                  {" "}
+                  后续母公司融资对账来源未通过核验，保持历史条件研究。
+                </span>
+              )}
               {cash.financing_review.first_year_no_new_borrowing_stress
                 ?.base && (
                 <span>
