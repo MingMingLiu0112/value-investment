@@ -141,6 +141,25 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
               {amount(cash.financing_review.post_basis_issuance_cny)}元。
               这不能证明基准日母公司期初债务、当前未偿余额或未来续借能力；
               未核实前，三情景仅为条件研究。
+              {cash.financing_review.first_year_no_new_borrowing_stress
+                ?.base && (
+                <span>
+                  {" "}
+                  若
+                  {
+                    cash.financing_review.first_year_no_new_borrowing_stress
+                      .base.year
+                  }
+                  年 完全没有假设中的新增借款，且不分红，Base 路径维持现金底线
+                  至少仍需
+                  {amount(
+                    cash.financing_review.first_year_no_new_borrowing_stress
+                      .base.minimum_funding_gap_to_cash_floor_cny,
+                  )}
+                  元。
+                  这是同一年度现金账的条件压力测试，不证明全部债务当年到期。
+                </span>
+              )}
             </span>
           }
         />

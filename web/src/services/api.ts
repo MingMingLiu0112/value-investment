@@ -361,6 +361,16 @@ export type DirectOwnerCash = {
     outstanding_or_refinancing_verified: boolean;
     reason: string;
     source_refs: Array<Record<string, unknown>>;
+    first_year_no_new_borrowing_stress?: Record<
+      "bear" | "base" | "bull",
+      {
+        year: number;
+        removed_assumed_new_borrowing_cny: string;
+        cash_before_distribution_without_new_borrowing_cny: string;
+        minimum_funding_gap_to_cash_floor_cny: string;
+        scope: string;
+      }
+    >;
   };
   method: string;
   valuation_basis: string;

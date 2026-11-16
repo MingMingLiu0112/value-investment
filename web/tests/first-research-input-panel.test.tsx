@@ -173,10 +173,35 @@ it("shows dated financing issuance only when a source-bound review exists", () =
     outstanding_or_refinancing_verified: false,
     reason: "POST_BASIS_ISSUANCE_IS_NOT_OPENING_DEBT_OR_CONFIRMED_REFINANCING",
     source_refs: [{ path: "runtime/TEST_ONLY/financing.pdf" }],
+    first_year_no_new_borrowing_stress: {
+      bear: {
+        year: 2026,
+        removed_assumed_new_borrowing_cny: "60000000000",
+        cash_before_distribution_without_new_borrowing_cny: "-44439085119.35",
+        minimum_funding_gap_to_cash_floor_cny: "57843672496.10",
+        scope: "CONDITIONAL_FIRST_YEAR_NO_NEW_BORROWING_NO_DISTRIBUTION_STRESS",
+      },
+      base: {
+        year: 2026,
+        removed_assumed_new_borrowing_cny: "60000000000",
+        cash_before_distribution_without_new_borrowing_cny: "-41143159088.89",
+        minimum_funding_gap_to_cash_floor_cny: "54547746465.64",
+        scope: "CONDITIONAL_FIRST_YEAR_NO_NEW_BORROWING_NO_DISTRIBUTION_STRESS",
+      },
+      bull: {
+        year: 2026,
+        removed_assumed_new_borrowing_cny: "60000000000",
+        cash_before_distribution_without_new_borrowing_cny: "-40027622299.01",
+        minimum_funding_gap_to_cash_floor_cny: "53432209675.76",
+        scope: "CONDITIONAL_FIRST_YEAR_NO_NEW_BORROWING_NO_DISTRIBUTION_STRESS",
+      },
+    },
   };
   expect(render()).toContain("融资条件仍待核实");
   expect(render()).toContain("41,500,000,000.00");
   expect(render()).toContain("不能证明基准日母公司期初债务");
+  expect(render()).toContain("54,547,746,465.64");
+  expect(render()).toContain("不证明全部债务当年到期");
 });
 
 it("renders direct cash fixture through the existing panel with visible historical valuations and conditional prices", () => {

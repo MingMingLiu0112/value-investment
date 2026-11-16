@@ -6,18 +6,40 @@ from ..research.agent_review.web_research import _binding
 from ..research.direct_owner_cash_research_v1 import replay_direct_owner_cash_receipt, _read
 from ..decision.direct_owner_cash_price_draft_v1 import draft_direct_owner_cash_price
 
+def _first_year_no_new_borrowing_stress(rows):
+    """Conditional first-year cash-floor gap before owner distributions."""
+    if not rows:
+        return None
+    first=rows[0]
+    borrowing=Decimal(first["cash_policy"]["new_borrowing"])
+    floor=Decimal(first["cash_policy"]["cash_floor"])
+    cash_without_borrowing=Decimal(first["cash_before_distribution_cny"])-borrowing
+    return dict(
+        year=first["year"],removed_assumed_new_borrowing_cny=str(borrowing),
+        cash_before_distribution_without_new_borrowing_cny=str(cash_without_borrowing),
+        minimum_funding_gap_to_cash_floor_cny=str(max(Decimal(0),floor-cash_without_borrowing)),
+        scope="CONDITIONAL_FIRST_YEAR_NO_NEW_BORROWING_NO_DISTRIBUTION_STRESS")
+
+
 def read_direct_owner_cash_view(*,root,receipt_binding,now):
     if now.utcoffset() is None:raise ValueError("DIRECT_OWNER_AWARE_PUBLIC_CLOCK_REQUIRED")
     result=replay_direct_owner_cash_receipt(root=root,receipt_binding=receipt_binding,now=now)
     basis=date.fromisoformat(result["compiled"]["valuation_date"])
     issues=(result["compiled"]["evidence"].get("constraints") or {}).get("issued_financing") or []
     after_basis=[row for row in issues if date.fromisoformat(row["issue_date"]) > basis]
+    no_new_borrowing_stress={}
+    for name in ("bear", "base", "bull"):
+        rows=result["compiled"]["scenarios"][name]["calculation"]["annual_rows"]
+        stress=_first_year_no_new_borrowing_stress(rows)
+        if stress is not None:
+            no_new_borrowing_stress[name]=stress
     financing_review=dict(basis_date=basis.isoformat(),
         post_basis_issuance_cny=str(sum((Decimal(row["principal_cny"]) for row in after_basis), Decimal(0))),
         post_basis_issue_codes=[row["code"] for row in after_basis],
         opening_debt_verified=False,outstanding_or_refinancing_verified=False,
         reason="POST_BASIS_ISSUANCE_IS_NOT_OPENING_DEBT_OR_CONFIRMED_REFINANCING",
-        source_refs=[row["source_refs"] for row in after_basis]) if after_basis else None
+        source_refs=[row["source_refs"] for row in after_basis],
+        first_year_no_new_borrowing_stress=no_new_borrowing_stress) if after_basis else None
     for binding in result["source_bindings"]:_binding(root,binding,runtime_only=False)
     receipt=_read(root,receipt_binding)
     spec=_read(root,receipt["spec_binding"])
