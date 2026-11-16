@@ -371,6 +371,17 @@ export type DirectOwnerCash = {
         scope: string;
       }
     >;
+    opening_debt_evidence_comparison?: {
+      scope: string;
+      period: string;
+      forecast_opening_debt_cny: string;
+      identified_parent_balance_lines_cny: string;
+      unexplained_difference_cny: string;
+      included_fields: string[];
+      source_refs: Array<Record<string, unknown>>;
+      completeness_verified: boolean;
+      maturity_schedule_verified: boolean;
+    } | null;
   };
   method: string;
   valuation_basis: string;

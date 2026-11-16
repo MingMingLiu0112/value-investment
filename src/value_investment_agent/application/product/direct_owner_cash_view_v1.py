@@ -21,6 +21,32 @@ def _first_year_no_new_borrowing_stress(rows):
         scope="CONDITIONAL_FIRST_YEAR_NO_NEW_BORROWING_NO_DISTRIBUTION_STRESS")
 
 
+def _opening_debt_evidence_comparison(compiled):
+    """Compare the forecast opening debt with identified parent balance rows only."""
+    statements=compiled.get("evidence", {}).get("statements", [])
+    if len(statements) != 1:
+        return None
+    balance=statements[0].get("balance_sheet", {})
+    keys=("short_term_borrowings_cny", "current_noncurrent_liabilities_cny",
+          "long_term_borrowings_cny", "lease_liabilities_cny")
+    if any(key not in balance for key in keys):
+        return None
+    facts=[balance[key] for key in keys]
+    if any(fact.get("scope") != "ISSUER_PARENT_STANDALONE" or
+           fact.get("classification") != "FACT" or fact.get("currency") != "CNY" or
+           fact.get("source_refs", {}).get("current_period") != compiled["valuation_date"]
+           for fact in facts):
+        return None
+    identified=sum((Decimal(fact["current"]) for fact in facts), Decimal(0))
+    assumed=Decimal(compiled["opening"]["debt"])
+    return dict(scope="PARENT_IDENTIFIED_BALANCE_LINES_NOT_COMPLETE_DEBT_VERIFICATION",
+        period=compiled["valuation_date"], forecast_opening_debt_cny=str(assumed),
+        identified_parent_balance_lines_cny=str(identified),
+        unexplained_difference_cny=str(assumed-identified),
+        included_fields=list(keys), source_refs=[fact["source_refs"] for fact in facts],
+        completeness_verified=False, maturity_schedule_verified=False)
+
+
 def read_direct_owner_cash_view(*,root,receipt_binding,now):
     if now.utcoffset() is None:raise ValueError("DIRECT_OWNER_AWARE_PUBLIC_CLOCK_REQUIRED")
     result=replay_direct_owner_cash_receipt(root=root,receipt_binding=receipt_binding,now=now)
@@ -39,7 +65,8 @@ def read_direct_owner_cash_view(*,root,receipt_binding,now):
         opening_debt_verified=False,outstanding_or_refinancing_verified=False,
         reason="POST_BASIS_ISSUANCE_IS_NOT_OPENING_DEBT_OR_CONFIRMED_REFINANCING",
         source_refs=[row["source_refs"] for row in after_basis],
-        first_year_no_new_borrowing_stress=no_new_borrowing_stress) if after_basis else None
+        first_year_no_new_borrowing_stress=no_new_borrowing_stress,
+        opening_debt_evidence_comparison=_opening_debt_evidence_comparison(result["compiled"])) if after_basis else None
     for binding in result["source_bindings"]:_binding(root,binding,runtime_only=False)
     receipt=_read(root,receipt_binding)
     spec=_read(root,receipt["spec_binding"])

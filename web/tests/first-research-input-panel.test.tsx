@@ -173,6 +173,17 @@ it("shows dated financing issuance only when a source-bound review exists", () =
     outstanding_or_refinancing_verified: false,
     reason: "POST_BASIS_ISSUANCE_IS_NOT_OPENING_DEBT_OR_CONFIRMED_REFINANCING",
     source_refs: [{ path: "runtime/TEST_ONLY/financing.pdf" }],
+    opening_debt_evidence_comparison: {
+      scope: "PARENT_IDENTIFIED_BALANCE_LINES_NOT_COMPLETE_DEBT_VERIFICATION",
+      period: "2025-12-31",
+      forecast_opening_debt_cny: "60000000000",
+      identified_parent_balance_lines_cny: "19527101262.17",
+      unexplained_difference_cny: "40472898737.83",
+      included_fields: ["short_term_borrowings_cny"],
+      source_refs: [{ path: "runtime/TEST_ONLY/annual.pdf" }],
+      completeness_verified: false,
+      maturity_schedule_verified: false,
+    },
     first_year_no_new_borrowing_stress: {
       bear: {
         year: 2026,
@@ -202,6 +213,8 @@ it("shows dated financing issuance only when a source-bound review exists", () =
   expect(render()).toContain("不能证明基准日母公司期初债务");
   expect(render()).toContain("54,547,746,465.64");
   expect(render()).toContain("不证明全部债务当年到期");
+  expect(render()).toContain("19,527,101,262.17");
+  expect(render()).toContain("列示额并非完整有息负债");
 });
 
 it("renders direct cash fixture through the existing panel with visible historical valuations and conditional prices", () => {

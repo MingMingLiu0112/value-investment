@@ -1,6 +1,7 @@
 """TEST_ONLY arithmetic boundaries for the public financing stress view."""
 from value_investment_agent.application.product.direct_owner_cash_view_v1 import (
     _first_year_no_new_borrowing_stress,
+    _opening_debt_evidence_comparison,
 )
 
 
@@ -25,3 +26,21 @@ def test_no_new_borrowing_with_enough_internal_cash_has_no_gap():
     )
     assert _first_year_no_new_borrowing_stress([row])["minimum_funding_gap_to_cash_floor_cny"] == "0"
     assert _first_year_no_new_borrowing_stress([]) is None
+
+
+def test_opening_debt_comparison_keeps_identified_lines_separate_from_assumption():
+    keys=("short_term_borrowings_cny", "current_noncurrent_liabilities_cny",
+          "long_term_borrowings_cny", "lease_liabilities_cny")
+    balance={key: dict(current=str(index), classification="FACT", currency="CNY",
+                       scope="ISSUER_PARENT_STANDALONE",
+                       source_refs={"current_period": "2025-12-31", "field": key})
+             for index, key in enumerate(keys, start=1)}
+    compiled=dict(valuation_date="2025-12-31", opening={"debt": "60"},
+                  evidence={"statements": [{"balance_sheet": balance}]})
+    review=_opening_debt_evidence_comparison(compiled)
+    assert review["identified_parent_balance_lines_cny"] == "10"
+    assert review["unexplained_difference_cny"] == "50"
+    assert review["completeness_verified"] is False
+    assert review["maturity_schedule_verified"] is False
+    balance[keys[0]]["source_refs"]["current_period"]="2026-06-30"
+    assert _opening_debt_evidence_comparison(compiled) is None

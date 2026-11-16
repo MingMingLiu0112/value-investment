@@ -141,6 +141,28 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
               {amount(cash.financing_review.post_basis_issuance_cny)}元。
               这不能证明基准日母公司期初债务、当前未偿余额或未来续借能力；
               未核实前，三情景仅为条件研究。
+              {cash.financing_review.opening_debt_evidence_comparison && (
+                <span>
+                  {" "}
+                  基准日母公司报表已识别借款及租赁相关列示额
+                  {amount(
+                    cash.financing_review.opening_debt_evidence_comparison
+                      .identified_parent_balance_lines_cny,
+                  )}
+                  元；模型期初债务假设
+                  {amount(
+                    cash.financing_review.opening_debt_evidence_comparison
+                      .forecast_opening_debt_cny,
+                  )}
+                  元，两者差额
+                  {amount(
+                    cash.financing_review.opening_debt_evidence_comparison
+                      .unexplained_difference_cny,
+                  )}
+                  元。列示额并非完整有息负债，差额不能直接认作不存在的债务；
+                  仍需附注明细及到期安排核对。
+                </span>
+              )}
               {cash.financing_review.first_year_no_new_borrowing_stress
                 ?.base && (
                 <span>
