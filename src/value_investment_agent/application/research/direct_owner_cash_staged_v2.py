@@ -22,6 +22,18 @@ def _text(value):
         raise ValueError("PARENT_V2_EXPLANATION_REQUIRED")
 
 
+def _prose(value):
+    """Canonicalize only explicit, nonempty prose lists; never infer content."""
+    if isinstance(value, list):
+        if not 1 <= len(value) <= 8:
+            raise ValueError("PARENT_V2_EXPLANATION_REQUIRED")
+        for item in value:
+            _text(item)
+        value = "\n".join(value)
+    _text(value)
+    return value
+
+
 def _term(value, anchors, count):
     _explanation(value, anchors)
     if not isinstance(value["values"], list) or len(value["values"]) != count:
@@ -107,7 +119,9 @@ def staged_parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
         "Return only the requested JSON fields. Use exact field names and explicit decimal "
         "strings for every value. evidence_anchors must be an array of exact source_context.facts "
         "KEYS such as ['revenue','cost']; never put a fact description, URL, PDF page, "
-        "hash or source sentence in evidence_anchors. Put explanations in mechanism. Forecasts are "
+        "hash or source sentence in evidence_anchors. Put explanations in mechanism. "
+        "counter_evidence, rationale and reopen_condition must each be one JSON STRING, "
+        "not a list. Forecasts are "
         "conditional assumptions, never an order or approval. Prior stage values are "
         "unapproved forecast assumptions, not verified facts. Keep operating_cash "
         "distinct from the required other_operating_cash component. Consume scheduled events "
@@ -140,6 +154,25 @@ def parse_staged_parent_cash_response(response: LLMResponse, *, request: LLMRequ
         raise ValueError("PARENT_V2_FIELDS_INVALID")
     anchors = set(packet["source_context"]["facts"])
     stage = packet["stage"]
+    # JSON-object transport can represent multiple prose points as a list.
+    # Preserve each written point in order; do not synthesize a missing reason.
+    if stage != "terminal":
+        if not isinstance(value["series"], dict):
+            raise ValueError("PARENT_V2_FIELDS_INVALID")
+        prose_rows = [value, *value["series"].values()]
+    else:
+        terminal_row = value["terminal"]
+        if (not isinstance(terminal_row, dict) or
+                not isinstance(terminal_row.get("policy"), dict)):
+            raise ValueError("PARENT_V2_TERMINAL_INVALID")
+        prose_rows = [terminal_row, *terminal_row["policy"].values(),
+                      value["cost_of_equity"]]
+    for row in prose_rows:
+        if not isinstance(row, dict):
+            raise ValueError("PARENT_V2_FIELDS_INVALID")
+        for key in ("mechanism", "counter_evidence", "reopen_condition", "rationale"):
+            if key in row:
+                row[key] = _prose(row[key])
     if stage != "terminal":
         if value["years"] != packet["required_years"] or set(value["series"]) != set(packet["required_fields"]):
             raise ValueError("PARENT_V2_YEARS_OR_SERIES_INVALID")

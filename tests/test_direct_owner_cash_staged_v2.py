@@ -90,6 +90,33 @@ def test_year_keyed_notes_reject_missing_or_extra_year(monkeypatch, bad_year):
             source_fingerprint="a" * 64)
 
 
+def test_prose_list_preserves_every_written_counterpoint(monkeypatch):
+    requests, responses = fixture(monkeypatch)
+    body = json.loads(responses["operating"].text)
+    points = ["First concrete counter evidence", "Second concrete counter evidence"]
+    body["series"]["cost"]["counter_evidence"] = points
+    body["counter_evidence"] = points
+    raw = json.dumps(body)
+    response = LLMResponse(raw, 100, 100, "MOCK")
+    result = v2.parse_staged_parent_cash_response(response,
+        request=requests["operating"], source_fingerprint="a" * 64)
+    assert result["series"]["cost"]["counter_evidence"] == "\n".join(points)
+    assert result["counter_evidence"] == "\n".join(points)
+    assert response.text == raw
+
+
+@pytest.mark.parametrize("points", [[], ["too short"],
+    ["Valid counter evidence", 123], ["Valid counter evidence"] * 9])
+def test_prose_list_rejects_missing_or_nonprose_counterpoint(monkeypatch, points):
+    requests, responses = fixture(monkeypatch)
+    body = json.loads(responses["operating"].text)
+    body["series"]["cost"]["counter_evidence"] = points
+    response = LLMResponse(json.dumps(body), 100, 100, "MOCK")
+    with pytest.raises(ValueError, match="PARENT_V2_EXPLANATION_REQUIRED"):
+        v2.parse_staged_parent_cash_response(response,
+            request=requests["operating"], source_fingerprint="a" * 64)
+
+
 @pytest.mark.parametrize("mutation", ["alias", "missing", "year", "source", "numeric"])
 def test_rejects_invalid_operating_stage(monkeypatch, mutation):
     requests, responses = fixture(monkeypatch)
