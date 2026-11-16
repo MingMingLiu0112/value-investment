@@ -194,3 +194,25 @@ It is not a trading strategy, market-data provider or proof of profitability.
 
 No data redistribution permission, strategy approval or order authorization is
 inferred from the software license. `action=no_order`.
+
+## 2026-11-16 D2 structured research and stage recovery follow-up
+
+The current `deepseek-flash` gateway uses JSON-object transport. Its output has
+repeatedly varied only in representation (exact year maps, prose arrays and
+repeated valid fact IDs), while other responses have genuinely violated the
+economic or source contract. These two classes must remain distinct.
+
+| Reference | Mechanism to borrow | Decision for this repository |
+| --- | --- | --- |
+| [Instructor](https://github.com/567-labs/instructor) | Typed output validation with error-informed, bounded retry; MIT license. | Adapt the validation/repair pattern to the existing Provider and shared fee ledger. Do not install a second provider layer or silently retry paid calls. |
+| [PydanticAI output/retries](https://github.com/pydantic/pydantic-ai/blob/main/docs/retries.md) | Output validator and explicit retry budget. | Use one explicit failed-stage correction attempt only after source, budget and raw-response binding checks. Do not use retries to change economic assumptions until a candidate passes. |
+| [LangGraph persistence](https://github.com/langchain-ai/docs/blob/main/src/oss/langgraph/persistence.mdx) | Checkpointed nodes and recovery without replaying completed work. | Extend existing immutable task records for verified stage reuse. Do not introduce LangGraph as a parallel task platform. |
+| [FinRobot desktop](https://github.com/AI4Finance-Foundation/FinRobot/blob/master/finrobot_desktop/README.md) | Deterministic financial operators separated from LLM explanation. | Keep existing E2/F1 as the sole calculations. Its US-oriented financial data and assumptions cannot certify A-share parent cash or dividends. |
+
+Immediate implementation order: preserve sealed invalid responses; normalize
+only mathematically lossless JSON representations; add source-bound, budgeted
+single-stage repair/recovery so valid stages are not charged again; then prove
+one real D2 -> E2 -> F1 -> F2 result. Current real tasks have not passed the
+complete three-scenario economic contract, so this is a design decision, not a
+business acceptance. See `docs/current/core-value-development-plan.md` for the
+exact task failures and costs.
