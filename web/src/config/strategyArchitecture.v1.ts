@@ -750,7 +750,10 @@ export const catalog: Record<
           gap: "最近真实任务在现金政策阶段因重复证据ID拒绝；离线无损去重后可解析，但该任务仍为失败，未产生完整三情景。终值经济合同、母公司资金可达性及E2实际消费尚未验收。",
           acceptance:
             "来源绑定的经营假设、三情景、反证和重开条件可被模型消费。",
-          evidence: ["docs/current/core-value-development-plan.md", "docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
+          evidence: [
+            "docs/current/core-value-development-plan.md",
+            "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
+          ],
           runHref: "/strategy/value",
         },
         title: "D2 · 经营假设与反证",

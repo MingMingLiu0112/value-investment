@@ -257,7 +257,9 @@ it("records the current driver bridge arithmetic acceptance without adopting par
       "母公司资金、分配、维持投入和营运资金条件桥",
     );
     expect(stage.nextStep).toContain("相同资料不再付费重试");
-    expect(stage.deliveryReview?.done).toContain("最近一次真实分段任务的经营阶段通过");
+    expect(stage.deliveryReview?.done).toContain(
+      "最近一次真实分段任务的经营阶段通过",
+    );
     expect(stage.deliveryReview?.gap).toContain("现金政策阶段因重复证据ID拒绝");
     expect(stage.deliveryReview?.gap).toContain("终值经济合同");
     expect(stage.deliveryReview?.gap).toContain("E2实际消费尚未验收");
