@@ -1,5 +1,7 @@
 """V18 cash candidate and sealed-source offline regression tests."""
 import json
+from copy import deepcopy
+from dataclasses import dataclass
 from types import SimpleNamespace
 
 import pytest
@@ -102,6 +104,24 @@ def test_v18_numeric_candidate_is_conditional_only(task):
     item["evidence_ids"] = ["test:cost"]
     with pytest.raises(ValueError, match="V18_NUMERIC_TERM_LACKS_HISTORICAL_CANDIDATE"):
         request.validate_response(json.dumps(data), context, context["source_binding"])
+
+
+def test_v18_reserve_prompt_prefers_parent_closing_cash_anchor(task):
+    _, original, _ = task
+    context = deepcopy(original)
+    anchor = dict(context["evidence"][0],
+        id="test:parent-cash-v2:closing_cash_and_equivalents_cny",
+        field="closing_cash_and_equivalents_cny", value="100",
+        text="母公司期末现金及现金等价物余额 100")
+    context["evidence"].append(anchor)
+    @dataclass(frozen=True)
+    class Prompt:
+        system: str = ""
+        user: str = ""
+
+    prompt = request.build_cash_request(Prompt(), context, context["source_binding"])
+    preferred = json.loads(prompt.user.split("TERM_CANDIDATE_IDS=")[1])
+    assert anchor["id"] in preferred["reserve_ratio"]
 
 
 def test_v18_mock_provider_rejects_unanchored_numeric_after_settlement(task):
