@@ -2,20 +2,80 @@
 from __future__ import annotations
 
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, localcontext
 import json
 from pathlib import Path
 
 from .direct_owner_cash_agent_draft_v1 import (DRIVERS, HORIZON, POLICY,
-    SCENARIOS, TERMINAL_POLICY, VERSION as DRAFT_VERSION, _explanation)
+    SCENARIOS, TERMINAL_POLICY, VERSION as DRAFT_VERSION, _explanation, _load_spec)
 from .direct_owner_cash_agent_facts_v1 import read_parent_cash_agent_facts
 from .direct_owner_cash_agent_request_v1 import _term_schema
 from .direct_owner_cash_compilation_v1 import financing_maturity_floor
+from .parent_direct_cash_research import read_parent_direct_cash_research
+from ...domain.valuation.parent_direct_operating_cash import forecast_parent_operating_cash, SCOPE
 from ...infrastructure.agent_runtime.provider import LLMRequest, LLMResponse
 
 VERSION = "direct-owner-cash-staged-v2"
 STAGES = ("operating", "policy", "terminal")
 FIELDS = {"operating": frozenset(DRIVERS), "policy": POLICY}
+
+
+def preflight_annual_cash_upper_bound(*, root: Path, spec_binding: dict,
+                                      evaluated_at: datetime, context: dict,
+                                      operating: dict, policy: dict) -> None:
+    """Reject only a deficit that persists even with zero shareholder payout.
+
+    This is a necessary cash condition, not a forecast acceptance or a
+    refinancing proof. The source-bound E2 compiler remains the final judge.
+    """
+    basis = context["valuation_date"]
+    spec = _load_spec(root, spec_binding)
+    historical_rows = []
+    for binding in spec["operating_sources"]:
+        for row in read_parent_direct_cash_research(
+                root=root, receipt_binding=binding, evaluated_at=evaluated_at)["observed"]:
+            if row not in historical_rows:
+                historical_rows.append(row)
+    matches = [row for row in historical_rows
+               if row["period_start"] == basis[:4] + "-01-01"
+               and row["period_end"] == basis and row["symbol"] == context["symbol"]
+               and row["scope"] == SCOPE]
+    if len(matches) != 1:
+        raise ValueError("PARENT_V2_OPERATING_FACTS_REQUIRED")
+    opening_id = context["opening_fact_anchors"]["cash"]
+    if spec.get("opening", {}).get("cash") != {"classification": "FACT", "anchor": opening_id}:
+        raise ValueError("PARENT_V2_OPENING_CASH_SCOPE_INVALID")
+    opening = context["facts"][opening_id]
+    if (opening.get("field") != "closing_cash_and_equivalents_cny"
+            or opening.get("period_end") != basis or opening.get("scope") != SCOPE):
+        raise ValueError("PARENT_V2_OPENING_CASH_SCOPE_INVALID")
+    historical = matches[0]
+    if operating["years"] != policy["years"]:
+        raise ValueError("PARENT_V2_YEAR_MISMATCH")
+    mandatory = ("maintenance_capex", "growth_capex", "commitments_outside_capex",
+                 "debt_repayment", "interest_outside_cfo", "other_mandatory_cash")
+    with localcontext() as arithmetic:
+        arithmetic.prec = 48
+        cash = Decimal(opening["value_cny"])
+        for index, year in enumerate(operating["years"]):
+            forecast = dict(symbol=context["symbol"], scope=SCOPE, currency="CNY",
+                classification="FORECAST_ASSUMPTION", period_start=f"{year}-01-01",
+                period_end=f"{year}-12-31", rationale="Source-bound conditional cash forecast",
+                counter_evidence="Operating cash conversion may weaken",
+                reopen_condition="Reopen after the next parent filing",
+                **{field: operating["series"][field]["values"][index]
+                   for field in DRIVERS})
+            cfo = Decimal(forecast_parent_operating_cash(
+                historical=historical, forecast=forecast)["operating_cash"])
+            amounts = {field: Decimal(term["values"][index])
+                       for field, term in policy["series"].items()}
+            if any(value < 0 for value in amounts.values()):
+                raise ValueError("PARENT_V2_NEGATIVE_POLICY_AMOUNT")
+            cash += (cfo + amounts["investment_cash_received"]
+                     + amounts["new_borrowing"]
+                     - sum(amounts[field] for field in mandatory))
+            if cash < amounts["cash_floor"]:
+                raise ValueError(f"DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:{year}")
 
 
 def _text(value):

@@ -15,7 +15,7 @@ from .operating_task_v2 import LiveOperatingTaskService, model_configuration
 from ..direct_owner_cash_agent_facts_v1 import read_parent_cash_agent_facts
 from ..direct_owner_cash_staged_v2 import (
     STAGES, staged_parent_cash_request, parse_staged_parent_cash_response,
-    merge_staged_parent_cash,
+    merge_staged_parent_cash, preflight_annual_cash_upper_bound,
 )
 from ..direct_owner_cash_agent_draft_v1 import SCENARIOS, assemble_parent_cash_drafts
 from ....infrastructure.agent_runtime.provider import LLMResponse, OpenAICompatibleChatProvider
@@ -453,6 +453,24 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                     if state["status"] == "CANCELLED":
                         return self._view(spec, state, binding, _now())
                     if stage_id in state["responses"]:
+                        if stage == "policy":
+                            context = self._context(spec, _now())
+                            stages = self._stage_outputs(spec, state, _now(),
+                                verified_context=context)[scenario]
+                            try:
+                                preflight_annual_cash_upper_bound(root=self.root,
+                                    spec_binding=spec["spec_binding"], evaluated_at=_now(),
+                                    context=context, operating=stages["operating"],
+                                    policy=stages["policy"])
+                            except (ValueError, OSError, KeyError, TypeError) as error:
+                                detail = str(error)
+                                code = ("PARENT_V2_ECONOMIC_" + detail
+                                    if isinstance(error, ValueError) and re.fullmatch(
+                                        r"DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:20[0-9]{2}", detail)
+                                    else "PARENT_V2_ANNUAL_CASH_PREFLIGHT_REJECTED")
+                                state, binding = self._save(spec, state, binding, _now(),
+                                    status="FAILED", error_code=f"{stage_id.upper().replace('.', '_')}_{code}")
+                                return self._view(spec, state, binding, _now())
                         continue
                     if any(row["scenario"] == stage_id for row in state["reservations"].values()):
                         raise ValueError("PARENT_AMBIGUOUS_CALL_NO_RESEND")
@@ -517,7 +535,7 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                         response_binding = self._binding(path)
                         state, binding = self._save(spec, state, binding, _now(),
                             returned_responses=state.get("returned_responses", []) + [response_binding])
-                    parse_staged_parent_cash_response(response, request=request,
+                    parsed_stage = parse_staged_parent_cash_response(response, request=request,
                         source_fingerprint=spec["source_fingerprint"])
                     with self._lock(directory):
                         spec, state, binding = self._load(task_id)
@@ -526,10 +544,18 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                         responses = deepcopy(state["responses"])
                         responses[stage_id] = response_binding
                         state, binding = self._save(spec, state, binding, _now(), responses=responses)
+                    if stage == "policy":
+                        preflight_annual_cash_upper_bound(root=self.root,
+                            spec_binding=spec["spec_binding"], evaluated_at=_now(),
+                            context=context,
+                            operating=prior["operating"], policy=parsed_stage)
                 except Exception as error:
                     if response_recorded:
                         detail = str(error)
-                        code = (detail if isinstance(error, ValueError)
+                        code = ("PARENT_V2_ECONOMIC_" + detail
+                                if isinstance(error, ValueError) and re.fullmatch(
+                                    r"DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:20[0-9]{2}", detail)
+                                else detail if isinstance(error, ValueError)
                                 and re.fullmatch(r"PARENT_V2_[A-Z0-9_]{1,90}", detail)
                                 else "PARENT_DRAFT_REJECTED_OR_UNPUBLISHED")
                     elif isinstance(error, TimeoutError):

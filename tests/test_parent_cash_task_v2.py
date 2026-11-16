@@ -50,12 +50,30 @@ class Provider:
 
 @pytest.fixture
 def task(tmp_path, monkeypatch):
+    def fact(field, value, section="operating"):
+        return dict(field=field, value_cny=value, section=section,
+            period_end="2025-12-31", column="current",
+            scope="ISSUER_PARENT_STANDALONE", source_refs=[{"sha256": "a" * 64}])
     context = dict(input_fingerprint="a" * 64, symbol="600887",
-        valuation_date="2025-12-31", facts={"profit": {"period_end": "2025-12-31"},
-        "revenue": {"period_end": "2025-12-31"}})
+        valuation_date="2025-12-31", opening_fact_anchors={"cash": "cash"},
+        facts={"profit": fact("parent_net_profit_cny", "10", "income"),
+            "revenue": fact("revenue", "10"), "cost": fact("cost", "10"),
+            "receipts": fact("customer_cash", "10"),
+            "paid": fact("supplier_cash", "10"),
+            "cfo": fact("cfo", "10"),
+            "cash": fact("closing_cash_and_equivalents_cny", "100", "balance_sheet")})
     monkeypatch.setattr(target, "model_configuration", lambda root: CFG.copy())
     monkeypatch.setattr(target, "read_parent_cash_agent_facts", lambda **_: context)
     monkeypatch.setattr(staged, "read_parent_cash_agent_facts", lambda **_: context)
+    monkeypatch.setattr(staged, "_load_spec", lambda root, binding:
+                        {"operating_sources": [{"path": "fixture", "sha256": "a" * 64}],
+                         "opening": {"cash": {"classification": "FACT", "anchor": "cash"}}})
+    monkeypatch.setattr(staged, "read_parent_direct_cash_research", lambda **_:
+                        {"observed": [dict(symbol="600887", scope="ISSUER_PARENT_STANDALONE",
+                            currency="CNY", classification="FACT",
+                            period_start="2025-01-01", period_end="2025-12-31",
+                            revenue="10", cost="10", customer_cash="10", supplier_cash="10",
+                            cfo="10", source_refs=[{"sha256": "a" * 64}])]})
     monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
         dict(action="no_order", formal_eligibility=False, main_range_adopted=False))
     provider = Provider()
@@ -135,6 +153,36 @@ def test_economic_cash_rejection_preserves_the_year(task, monkeypatch):
     assert result["error_code"] == (
         "PARENT_V2_ECONOMIC_DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2026")
     assert "candidate" not in result
+
+
+def test_unfunded_policy_stops_before_terminal_call(task):
+    service, provider = task
+    class UnfundedProvider(Provider):
+        def complete(self, request):
+            response = super().complete(request)
+            if json.loads(request.user)["stage"] != "policy":
+                return response
+            body = json.loads(response.text)
+            body["series"]["debt_repayment"]["values"][0] = "200"
+            return LLMResponse(json.dumps(body), 100, 100, "deepseek-flash")
+    service.test_provider = UnfundedProvider()
+    created = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+        request_key="parentcashpreflight001", now=NOW)
+    result = service.run(created["task_id"], now=NOW)
+    assert result["status"] == "FAILED"
+    assert result["error_code"] == (
+        "BEAR_POLICY_PARENT_V2_ECONOMIC_DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2026")
+    assert result["completed_stages"] == ["bear.operating", "bear.policy"]
+    assert len(result["returned_responses"]) == 2
+    assert service.test_provider.calls == [("bear", "operating"), ("bear", "policy")]
+    assert "candidate" not in result
+    fork = service.create(spec_binding=created["spec_binding"],
+        request_key="parentcashpreflightfork001", now=NOW,
+        seed_task_id=created["task_id"])
+    fork_result = service.run(fork["task_id"], now=NOW)
+    assert fork_result["status"] == "FAILED"
+    assert fork_result["error_code"] == result["error_code"]
+    assert service.test_provider.calls == [("bear", "operating"), ("bear", "policy")]
 
 
 def test_budget_head_tamper_invalidates_completed_view(task):
