@@ -1,6 +1,7 @@
 """TEST_ONLY nine-stage D1 task on existing immutable store and shared ledger."""
 import json
 from datetime import datetime, timezone
+from decimal import Decimal
 
 import pytest
 
@@ -248,3 +249,41 @@ def test_terminal_replay_keeps_independent_scenarios(task, monkeypatch):
                                          if item != "bear.terminal"]
     assert service.run(fork["task_id"], now=NOW)["status"] == "SUCCEEDED"
     assert fork["provider_requests"] == 0 and len(provider.calls) == 10
+
+
+def test_fork_run_cost_counts_ancestor_reservations(task, monkeypatch):
+    service, provider = task
+    monkeypatch.setitem(CFG, "input_cost_per_million", "100")
+    monkeypatch.setitem(CFG, "output_cost_per_million", "100")
+    monkeypatch.setitem(CFG, "max_run_cost", "3")
+    monkeypatch.setitem(CFG, "daily_cost_limit", "10")
+    provider.fail_at = 2
+    original = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+        request_key="parentcashfork015", now=NOW)
+    failed = service.run(original["task_id"], now=NOW)
+    assert failed["status"] == "FAILED"
+    fork = service.create(spec_binding=original["spec_binding"],
+        request_key="parentcashfork016", now=NOW, seed_task_id=original["task_id"])
+    assert float(fork["provider_requests"]) == 0
+    assert Decimal(service._load(fork["task_id"])[0]["ancestor_spend"]) > 0
+    provider.fail_at = None
+    result = service.run(fork["task_id"], now=NOW)
+    assert result["status"] == "FAILED"
+    assert result["error_code"] == "PARENT_TASK_BUDGET_EXHAUSTED"
+    assert result["provider_requests"] == 0 and len(provider.calls) == 2
+
+
+def test_existing_fork_key_returns_failed_provenance_view(task):
+    service, provider = task
+    provider.fail_at = 3
+    original = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+        request_key="parentcashfork017", now=NOW)
+    service.run(original["task_id"], now=NOW)
+    fork = service.create(spec_binding=original["spec_binding"],
+        request_key="parentcashfork018", now=NOW, seed_task_id=original["task_id"])
+    service.cancel(original["task_id"], now=NOW)
+    repeated = service.create(spec_binding=original["spec_binding"],
+        request_key="parentcashfork018", now=NOW, seed_task_id=original["task_id"])
+    assert repeated["task_id"] == fork["task_id"]
+    assert repeated["status"] == "FAILED"
+    assert repeated["error_code"] == "PARENT_SOURCE_OR_CHECKPOINT_INVALID"

@@ -299,6 +299,18 @@ class ParentCashTaskServiceV2(ResearchTaskService):
         if replay_from_stage is not None and (seed_task_id is None
                                                or replay_from_stage not in STAGE_ORDER):
             raise ValueError("PARENT_REPLAY_STAGE_INVALID")
+        task_id = "rt-" + _hash(request_key.encode("utf-8"))[:32]
+        directory = self._directory(task_id)
+        if (directory / "input.json").exists():
+            with self._lock(directory):
+                old, state, binding = self._load(task_id)
+                if (old["spec_binding"] != spec_binding
+                        or (old.get("seed") or {}).get("task_id") != seed_task_id
+                        or old.get("replay_from_stage") != replay_from_stage
+                        or old["mode"] != ("TEST_ONLY_PARENT_CASH_V2"
+                            if self.test_provider is not None else "LIVE_PARENT_CASH_V2")):
+                    raise ValueError("PARENT_REQUEST_KEY_CONFLICT")
+                return self._view(old, state, binding, now)
         cfg = self._configuration()
         if cfg["model_id"] != "deepseek-flash" or cfg["max_completion_tokens_cap"] < 1024:
             raise ValueError("PARENT_MODEL_CONTRACT_INVALID")
@@ -306,6 +318,7 @@ class ParentCashTaskServiceV2(ResearchTaskService):
             raise PermissionError("MODEL_CREDENTIAL_REQUIRED")
         context = read_parent_cash_agent_facts(root=self.root, spec_binding=spec_binding, now=now)
         seed = None
+        ancestor_spend = Decimal(0)
         seed_created_at = now.isoformat()
         if seed_task_id is not None:
             old_spec, old_state, old_head = self._load(seed_task_id)
@@ -316,10 +329,14 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                                                 else "LIVE_PARENT_CASH_V2")):
                 raise ValueError("PARENT_SEED_INCOMPATIBLE")
             self._verify_charges(old_state)
+            ancestor_spend = (Decimal(old_spec.get("ancestor_spend", "0"))
+                + Decimal(old_state["reserved_cost"]) + Decimal(old_state["settled_cost"]))
+            if ancestor_spend >= Decimal(str(cfg["max_run_cost"])):
+                raise ValueError("PARENT_TASK_BUDGET_EXHAUSTED")
             seed_created_at = old_spec["created_at"]
             seed = dict(task_id=seed_task_id, head=old_head, responses={})
-            # Only a continuous prefix with unchanged request bytes is reusable.
-            # A changed prompt or source requires a new model response.
+            # Only stages with unchanged request bytes are reusable. A changed
+            # prompt or source requires a new model response.
             trial = dict(responses={}, reservations={}, reserved_cost="0", settled_cost="0")
             trial_spec = dict(spec_binding=spec_binding, source_fingerprint=context["input_fingerprint"],
                               config=cfg, created_at=seed_created_at,
@@ -359,7 +376,6 @@ class ParentCashTaskServiceV2(ResearchTaskService):
             # before publishing a new task or permitting another model call.
             trial_spec.update(task_id="new-task-preview", mode=old_spec["mode"], seed=seed)
             self._stage_outputs(trial_spec, trial, now, verified_context=context)
-        task_id = "rt-" + _hash(request_key.encode("utf-8"))[:32]
         spec = dict(schema_version=VERSION, task_id=task_id, mode="TEST_ONLY_PARENT_CASH_V2"
             if self.test_provider is not None else "LIVE_PARENT_CASH_V2", spec_binding=spec_binding,
             source_fingerprint=context["input_fingerprint"], config=cfg,
@@ -368,8 +384,8 @@ class ParentCashTaskServiceV2(ResearchTaskService):
             created_at=seed_created_at, action="no_order")
         if seed is not None:
             spec.update(forked_at=now.isoformat(), seed=seed,
-                        replay_from_stage=replay_from_stage)
-        directory = self._directory(task_id)
+                        replay_from_stage=replay_from_stage,
+                        ancestor_spend=str(ancestor_spend))
         with self._lock(directory):
             if (directory / "input.json").exists():
                 old, state, binding = self._load(task_id)
@@ -453,9 +469,12 @@ class ParentCashTaskServiceV2(ResearchTaskService):
                     prompt_cap = len(_bytes(request.__dict__)) + 4096
                     reserve = (Decimal(prompt_cap) * Decimal(str(cfg["input_cost_per_million"])) +
                         Decimal(request.max_completion_tokens) * Decimal(str(cfg["output_cost_per_million"]))) / Decimal(1000000)
-                    if (state["provider_requests"] >= len(STAGE_ORDER) or Decimal(state["reserved_cost"]) +
+                    if (state["provider_requests"] >= len(STAGE_ORDER) or
+                            Decimal(spec.get("ancestor_spend", "0")) + Decimal(state["reserved_cost"]) +
                             Decimal(state["settled_cost"]) + reserve > Decimal(str(cfg["max_run_cost"]))):
-                        raise ValueError("PARENT_TASK_BUDGET_EXHAUSTED")
+                        state, binding = self._save(spec, state, binding, _now(),
+                            status="FAILED", error_code="PARENT_TASK_BUDGET_EXHAUSTED")
+                        return self._view(spec, state, binding, _now())
                     reservation = _hash(os.urandom(32))
                     day = _now().astimezone(ZoneInfo("Asia/Shanghai")).date().isoformat()
                     self.daily._daily_budget(day, reservation, reserve, cfg)
