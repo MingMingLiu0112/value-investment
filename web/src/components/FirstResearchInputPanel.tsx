@@ -106,7 +106,10 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
     );
 
   return (
-    <section aria-label="直接母公司经营现金研究">
+    <section
+      aria-label="直接母公司经营现金研究"
+      style={{ overflowWrap: "anywhere" }}
+    >
       <h3>直接母公司经营现金→资本/债务支付→约束分配→RI/DDM</h3>
       <p>
         历史估值时点：{supplied(data.valuation?.valuation_date)} · 研究截止：
