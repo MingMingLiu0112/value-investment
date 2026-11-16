@@ -85,6 +85,17 @@ def parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
                       ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     if len(user.encode("utf-8")) > 64000:
         raise ValueError("PARENT_DRAFT_CONTEXT_OVER_BUDGET")
+    transport = ("Return one JSON object with schema_version, scenario, source_fingerprint, "
+        "years, annual_notes, series, terminal, cost_of_equity, rationale, "
+        "counter_evidence, reopen_condition. years has exactly ten consecutive years; "
+        "annual_notes has ten explanations. series has exactly the annual_fields listed "
+        "in the user message. Each series term has values (ten decimal strings), "
+        "evidence_anchors (existing fact IDs), mechanism, counter_evidence, "
+        "reopen_condition. terminal has policy with exactly terminal_fields, each "
+        "using the same term shape but one decimal string, plus "
+        "remaining_scheduled_events (array), max_transition_years (integer), "
+        "financing (object or null), rationale, counter_evidence, reopen_condition. "
+        "cost_of_equity is one-value term. No extra keys, unknown source IDs or approvals.")
     return LLMRequest(role="FUNDAMENTAL", system=(
         "Research one conditional parent-company shareholder cash scenario. "
         "Use only the provided verified facts and cite existing fact IDs. "
@@ -94,7 +105,7 @@ def parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
         "For unsupported inputs, report uncertainty in rationale; never fabricate evidence."),
         user=user, output_schema=schema,
         max_completion_tokens=max_completion_tokens,
-        transport_output_contract=None)
+        transport_output_contract=transport)
 
 
 def parse_parent_cash_response(response: LLMResponse, *, scenario: str,
