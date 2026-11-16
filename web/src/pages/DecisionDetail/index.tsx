@@ -1173,8 +1173,8 @@ export default function DecisionDetail() {
       {strategy !== "hotspot" && /^[0-9]{6}$/.test(id) && (
         <>
           <CompanyProfilePanel symbol={id} />
-          <OperatingAssumptionDraftPanel key={id} symbol={id} />
           <FirstResearchInputPanel key={"first-" + id} symbol={id} />
+          <OperatingAssumptionDraftPanel key={id} symbol={id} />
           <LiveOperatingResearchPanel key={"live-" + id} symbol={id} />
         </>
       )}

@@ -132,13 +132,29 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
       <ul>
         {(["bear", "base", "bull"] as const).map((name) => (
           <li key={name}>
-            {name}：{supplied(data.valuation?.[`${name}_value`])}
+            {name}：{amount(data.valuation?.[`${name}_value`])}
           </li>
         ))}
       </ul>
       <h4>条件价草稿（不是当前买价）</h4>
       <p>状态：{supplied(price?.status)}</p>
-      <p>条件价：{supplied(price?.draft_prices)}</p>
+      <ul>
+        {(
+          [
+            ["entry", "建仓条件价"],
+            ["add", "加仓条件价"],
+            ["reduce", "减仓条件价"],
+            ["exit", "退出条件价"],
+          ] as const
+        ).map(([key, label]) => {
+          const value = record(price?.draft_prices)[key];
+          return (
+            <li key={key}>
+              {label}：{value == null ? "未形成" : amount(value)}
+            </li>
+          );
+        })}
+      </ul>
       <p>
         原因代码：
         {price?.reason_codes?.length ? price.reason_codes.join("、") : "未提供"}
@@ -149,7 +165,11 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
         <ul>
           {cash.assumptions.map((item, index) => (
             <li key={index}>
-              {supplied(item.name)}：{supplied(item.rationale)}；反证：
+              假设{index + 1}
+              {item.name && !/^假设\s*\d+$/.test(item.name)
+                ? `（${item.name}）`
+                : ""}
+              ：{supplied(item.rationale)}；反证：
               {supplied(item.counter_evidence)}
             </li>
           ))}
@@ -157,6 +177,16 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
       ) : (
         <p>未提供</p>
       )}
+      <details>
+        <summary>估值、条件价与假设原稿（保留精确值）</summary>
+        <pre>
+          {supplied({
+            valuation: data.valuation,
+            conditional_price: price,
+            assumptions: cash.assumptions,
+          })}
+        </pre>
+      </details>
       <details>
         <summary>三情景年度现金账（元，原值；条件分配不是分红承诺）</summary>
         <p>资本/债务支付仅按后端原稿解释；本组件不由余额倒算支付或分配。</p>

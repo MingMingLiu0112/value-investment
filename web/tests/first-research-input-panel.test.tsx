@@ -140,7 +140,12 @@ function directFixture(): FirstResearchInputResponse {
       ],
       conditional_price: {
         status: "TEST_ONLY_DRAFT",
-        draft_prices: { bear: "7.125", base: "8.25", bull: "9.375" },
+        draft_prices: {
+          entry: "7.125",
+          add: "8.25",
+          reduce: "9.375",
+          exit: null,
+        },
         reason_codes: ["TEST_ONLY_NOT_APPROVED"],
         expires_at: "2026-12-01",
         currentpricecomparison: false,
@@ -164,9 +169,10 @@ it("renders direct cash fixture through the existing panel with visible historic
     "11.11",
     "22.22",
     "33.33",
-    "7.125",
+    "建仓条件价：7.13",
     "8.25",
-    "9.375",
+    "减仓条件价：9.38",
+    "退出条件价：未形成",
     "2026-10-31",
     "2026-12-01",
     "未批准",
@@ -190,6 +196,71 @@ it("renders direct cash fixture through the existing panel with visible historic
     "期末债务",
   ])
     expect(html).toContain(value);
+  expect(JSON.stringify(data)).toBe(before);
+});
+
+it("formats direct prices while keeping exact originals collapsed and assumptions sequential", () => {
+  const data = directFixture();
+  data.main_range_adopted = false;
+  data.valuation!.bear_value = "1234.56789123456789";
+  data.valuation!.base_value = "2345.6789123456789";
+  data.valuation!.bull_value = "3456.789123456789";
+  const cash = data.direct_owner_cash!;
+  cash.conditional_price.draft_prices = {
+    entry: "123.456789123456",
+    add: null,
+    reduce: "345.678912345678",
+    exit: "456.789123456789",
+  };
+  cash.assumptions = [
+    {
+      name: "假设1",
+      rationale: "TEST_ONLY_FIRST",
+      counter_evidence: "TEST_ONLY_COUNTER",
+    },
+    {
+      name: "假设165",
+      rationale: "TEST_ONLY_SECOND",
+      counter_evidence: "TEST_ONLY_COUNTER",
+    },
+    {
+      name: "资本投入",
+      rationale: "TEST_ONLY_THIRD",
+      counter_evidence: "TEST_ONLY_COUNTER",
+    },
+  ];
+  const before = JSON.stringify(data);
+  const html = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol="000568" />,
+  );
+  const visible = visibleHtml(html);
+  for (const value of [
+    "1,234.57",
+    "2,345.68",
+    "3,456.79",
+    "建仓条件价：123.46",
+    "加仓条件价：未形成",
+    "减仓条件价：345.68",
+    "退出条件价：456.79",
+    "假设1：",
+    "假设2：",
+    "假设3（资本投入）：",
+    "未采用",
+    "未批准",
+    "不是当前买价",
+    "不比较当前报价",
+  ])
+    expect(visible).toContain(value);
+  for (const value of [
+    "1234.56789123456789",
+    "123.456789123456",
+    "假设165",
+    "&quot;entry&quot;",
+  ]) {
+    expect(visible).not.toContain(value);
+    expect(html).toContain(value);
+  }
+  expect(html).not.toContain("<details open");
   expect(JSON.stringify(data)).toBe(before);
 });
 
@@ -226,7 +297,8 @@ it("shows exact refusal reasons without inventing missing valuations, prices or 
   );
   const visible = visibleHtml(html);
   expect(visible).toContain("bear：未提供");
-  expect(visible).toContain("条件价：未提供");
+  for (const label of ["建仓", "加仓", "减仓", "退出"])
+    expect(visible).toContain(`${label}条件价：未形成`);
   expect(visible).toContain(
     "TEST_ONLY_F1_MISSING_SOURCE、TEST_ONLY_F2_EXPIRED",
   );
@@ -473,8 +545,8 @@ it("places E2 next to C/D2 only in the existing non-hotspot value-company guard"
   expect(guarded.indexOf("<CompanyProfilePanel")).toBeLessThan(
     guarded.indexOf("<OperatingAssumptionDraftPanel"),
   );
-  expect(guarded.indexOf("<OperatingAssumptionDraftPanel")).toBeLessThan(
-    guarded.indexOf("<FirstResearchInputPanel"),
+  expect(guarded.indexOf("<FirstResearchInputPanel")).toBeLessThan(
+    guarded.indexOf("<OperatingAssumptionDraftPanel"),
   );
   expect(guarded).toContain(
     '<FirstResearchInputPanel key={"first-" + id} symbol={id}',

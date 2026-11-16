@@ -131,5 +131,6 @@ def test_new_native_pdfium_calls_require_shared_serialization():
         ('application/research/quarter_financial_ocr_v1.py', '_render_and_native'),
         ('application/research/current_capital_q3_h1_bridge_v1.py', '_pdf_evidence'),
         ('infrastructure/filings/parent_wc_history_600519_v1.py', '_pages'),
+        ('infrastructure/filings/annual_parent_cfo_scan.py', '_verify_scan_pixels'),
     }
     assert len(calls) == len(sites)

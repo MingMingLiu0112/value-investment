@@ -994,10 +994,11 @@ export const catalog: Record<
           "src/value_investment_agent/application/product/first_research_input_view_v1.py",
         ],
         engineeringStatus:
-          "首编与直接现金适配已通过真实来源重算；本次8001部署须单独验收",
+          "首编与直接现金适配已通过真实来源重算；8001接口与公司页已消费",
         evidenceStatus:
           "000568的84项及600887的44项官方原件事实冷重放；经济采纳待审",
-        shortStatus: "两家原生事实首编进入共享v4；主研究区间均未采纳",
+        shortStatus:
+          "原生首编与直接现金两条入口已消费共享计算；主研究区间未采纳",
         implementation:
           "版本化适配同时支持既有经营路径和直接收付款预测；事实、融资及税款假设分别绑定，逐年消费实际受限分配，不改写旧实现",
         milestone: "首输入条件研究闭环；不代表经济质量、主估值采用或投资准入。",
@@ -1012,12 +1013,13 @@ export const catalog: Record<
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
-          consumer: "来源→首输入→共享v4→ResearchCase→公开API与现有公司页面",
+          consumer:
+            "来源→版本化首输入→共享ResearchApplicationService→年度RI/DDM→公开API与公司页",
           realData:
             "000568两份原件84事实；600887两份原件44事实及三情景年度账冷重算",
           economic: "条件研究／未批准",
           deployment:
-            "600887首编在8001真实浏览器已展示；页面发布不等于经济采纳或F2资格",
+            "2026-11-16直接现金首编在8001真实API及公司页已消费；未采用主区间，不取得当前价格资格",
           acceptance: "用户尚未确认此版本",
         },
       },
@@ -1113,7 +1115,7 @@ export const catalog: Record<
           "src/value_investment_agent/valuation_models/residual_income_path_v4.py",
           "src/value_investment_agent/domain/valuation/distribution_capacity_review.py",
         ],
-        engineeringStatus: "有限贯通",
+        engineeringStatus: "支持的现金合同已联调；经济采纳另审",
         evidenceStatus: "真实样本部分验证",
         shortStatus: "算术通过不证明长期利润或全额分配可持续",
         implementation:
@@ -1130,10 +1132,11 @@ export const catalog: Record<
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
-          consumer: "已有消费者／部分链路",
-          realData: "真实样本部分验证（见证据）",
+          consumer: "真实母公司原件→E2直接现金首编→共享估值→F2历史草案→8001",
+          realData: "三情景30行年度现金账及解析终端；RI与分配折现交叉一致",
           economic: "条件研究／未批准",
-          deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
+          deployment:
+            "2026-11-16直接现金链已在8001接口和公司页消费；不是全模型全场景验收",
           acceptance: "用户尚未确认此版本",
         },
       },
@@ -1223,7 +1226,8 @@ export const catalog: Record<
         engineeringStatus: "部分接通",
         evidenceStatus: "真实样本部分验证",
         shortStatus: "跨日股本、后续分配及材料性未闭合；旧报价会失效",
-        implementation: "600519已有2026-06-30基准未批准参考线；非当前买价",
+        implementation:
+          "已有对齐规则保留；直接现金条件结果经显式价格政策形成历史端点草案，按上海日期到期；不读取现价调参",
         milestone: "部分接通；不代表正式研究准入或实盘资格。",
         existingEvidence: "600519已有2026-06-30基准未批准参考线；非当前买价",
         evidenceSource:
@@ -1234,10 +1238,11 @@ export const catalog: Record<
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
-          consumer: "已有消费者／部分链路",
-          realData: "真实样本部分验证（见证据）",
+          consumer: "共享估值→既有value_price_policy→历史未批准草案→公司详情",
+          realData: "实际原件条件估值已生成历史草案；当前五维对齐仍未取得资格",
           economic: "条件研究／未批准",
-          deployment: "模块部署资格未逐项认证；页面发布不等于业务准入",
+          deployment:
+            "2026-11-16历史草案在8001实际接口和公司页可读；当前买卖资格未放行",
           acceptance: "用户尚未确认此版本",
         },
       },
