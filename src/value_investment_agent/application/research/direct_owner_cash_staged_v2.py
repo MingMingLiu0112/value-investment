@@ -167,7 +167,7 @@ def staged_parent_cash_request(*, root: Path, spec_binding: dict, scenario: str,
             "Do not wrap those six terminal metadata fields in values/evidence_anchors. "
             "If debt remains after the ten annual years, financing cannot be null. "
             "A supported conditional rollover object has exactly mode='CONSTANT_DEBT_REFINANCING', "
-            "rationale, counter_evidence, reopen_condition, and coverage={" 
+            "rationale, counter_evidence, reopen_condition, and coverage={"
             "'interest_outside_cfo':true,'debt_scope':'ALL_EXISTING_TERMINAL_DEBT'}. "
             "Its terminal debt_repayment and new_borrowing must be equal gross cash flows, "
             "and interest_outside_cfo must be positive. This is an unapproved assumption, "
