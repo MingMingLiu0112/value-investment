@@ -257,20 +257,10 @@ it("records the current driver bridge arithmetic acceptance without adopting par
       "母公司资金、分配、维持投入和营运资金条件桥",
     );
     expect(stage.nextStep).toContain("相同资料不再付费重试");
-    expect(stage.deliveryReview?.done).toContain("通过年度三情景的结构校验");
-    expect(stage.deliveryReview?.done).toContain("扫描版支持核验页图");
-    expect(stage.deliveryReview?.done).toContain(
-      "优先带入已核对的营运资金证据",
-    );
-    expect(stage.deliveryReview?.gap).toContain(
-      "仍缺可对账的母公司营运资金现金附注",
-    );
-    expect(stage.deliveryReview?.gap).toContain(
-      "尚无完整现金政策经E2消费的真实正例",
-    );
-    expect(stage.deliveryReview?.gap).toContain(
-      "合并口径、期末余额及借款收现不能替代",
-    );
+    expect(stage.deliveryReview?.done).toContain("最近一次真实分段任务的经营阶段通过");
+    expect(stage.deliveryReview?.gap).toContain("现金政策阶段因重复证据ID拒绝");
+    expect(stage.deliveryReview?.gap).toContain("终值经济合同");
+    expect(stage.deliveryReview?.gap).toContain("E2实际消费尚未验收");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
   expect(d1.evidenceStatus).toContain("当前版本三角色研究");

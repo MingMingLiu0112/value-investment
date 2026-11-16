@@ -55,7 +55,7 @@ export interface DeliveryReview {
 }
 export const deliveryReviewMeta = {
   reviewedAt: "2026-11-16",
-  baseline: "f9aadce0",
+  baseline: "ee38939d",
   kind: "人工交付复核，不是实时运行状态",
 } as const;
 export interface Stage {
@@ -746,11 +746,11 @@ export const catalog: Record<
           why: "估值参数需要经济理由，而不是AI直接报价格。",
           how: "区分事实与预测，推导量价成本及资金路径，保留反例。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "真实模型已通过年度三情景的结构校验。母公司现金附注可与同原件两期经营净现金对账；扫描版支持核验页图、原件与列位置。研究请求优先带入已核对的营运资金证据。",
-          gap: "现有样本仍缺可对账的母公司营运资金现金附注；合并口径、期末余额及借款收现不能替代。D2尚无完整现金政策经E2消费的真实正例。",
+          done: "来源绑定的年度经营、现金政策、三情景及反证合同已实现；最近一次真实分段任务的经营阶段通过，原始响应、预算和失败阶段均封存。既有经营驱动与条件现金研究仍可独立复算。",
+          gap: "最近真实任务在现金政策阶段因重复证据ID拒绝；离线无损去重后可解析，但该任务仍为失败，未产生完整三情景。终值经济合同、母公司资金可达性及E2实际消费尚未验收。",
           acceptance:
             "来源绑定的经营假设、三情景、反证和重开条件可被模型消费。",
-          evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
+          evidence: ["docs/current/core-value-development-plan.md", "docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
           runHref: "/strategy/value",
         },
         title: "D2 · 经营假设与反证",
@@ -769,7 +769,7 @@ export const catalog: Record<
         evidenceStatus:
           "96条官方来源；21项经营驱动范围、6项增长/税前利润率由代码派生、9项资本UNKNOWN；不是模型直接填利润率；新增30行现金账与v4条件估值真实消费",
         shortStatus:
-          "年度三情景真实校验通过；现金政策仍缺资金可达、维持投入等五项依据，结构错误响应已封存拒绝，未进入E2/F1/F2。",
+          "真实分段任务的经营阶段通过；现金政策因重复引用拒绝，终值与完整三情景未通过，未进入E2/F1/F2。",
         implementation:
           "原驱动桥锁定H12026→H12027，按每情景128角点重算；同比FY只对FY、H1只对H1。新增2026Jul–2027Jun滚动全年适配，后续flat，ResearchApplicationService→既有v4计算",
         milestone:
@@ -1425,10 +1425,11 @@ export const catalog: Record<
           why: "任务中断或重试不能丢失过程和版本。",
           how: "复用持久任务、不可变清单和阶段事件，关联输入输出。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "版本链、历史、取消、新任务重试及终态恢复已有。",
-          gap: "全部模块统一独立运行与持久产物闭环尚未完整证明。",
+          done: "版本链、历史、取消、新任务重试及终态恢复已有；D2分段任务另已记录每次调用的费用、原始响应、已完成阶段和明确失败原因。",
+          gap: "分段D2任务尚未接入现有Web任务入口；跨模块同一运行链及全部模块独立运行的持久产物闭环仍未证明。",
           acceptance: "任务恢复、幂等、取消、重试和产物版本均可独立重放。",
           evidence: [
+            "docs/current/core-value-development-plan.md",
             "docs/current/value-mainline-p0-20261101/d1-g2-audit.md",
             "docs/current/value-transparent-workbench-v1.md",
           ],
