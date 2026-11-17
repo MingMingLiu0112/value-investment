@@ -883,10 +883,12 @@ export const catalog: Record<
           "src/value_investment_agent/application/product/neutral_valuation_proposal.py",
           "src/value_investment_agent/application/research/first_research_input_update_v2.py",
         ],
-        engineeringStatus: "旧包再编译与新版首编的来源绑定修订已贯通；自动队列更新待验收",
+        engineeringStatus:
+          "旧包再编译与新版首编的来源绑定修订已贯通；自动队列更新待验收",
         evidenceStatus: "600519同源两条条件情景冷重放有估值差异；经济采用待审",
         shortStatus: "可追溯条件研究修订；不把假设变化冒充新公告",
-        implementation: "前后回执分别重算，比较经济输入与三情景估值，保留原版、变更原因和反证；不自动升级主估值",
+        implementation:
+          "前后回执分别重算，比较经济输入与三情景估值，保留原版、变更原因和反证；不自动升级主估值",
         milestone: "有限贯通；不代表正式研究准入或实盘资格。",
         existingEvidence: "600519、600887已有真实来源候选与消费链",
         evidenceSource:
