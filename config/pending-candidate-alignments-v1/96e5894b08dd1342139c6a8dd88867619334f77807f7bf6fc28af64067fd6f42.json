@@ -1,0 +1,19 @@
+{
+  "schema_version": "pending-candidate-alignment-input-v1",
+  "action": "no_order",
+  "candidate_binding": {
+    "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600887/candidate.json",
+    "sha256": "96e5894b08dd1342139c6a8dd88867619334f77807f7bf6fc28af64067fd6f42"
+  },
+  "input_descriptor_sha256": "4dd9a39131932c48a737ce19c7a485b2807218b1b24bbfb99a5dff93d4269436",
+  "event_observation_bindings": [
+    {
+      "path": "runtime/value-f2-replays/600887-exact-candidate-window-20261115T180234315119Z/observation.json",
+      "sha256": "c83ba8624169a730a50bae2cb0dcd82fb8899ba0fac5abdcf4727aee2a22e2b8"
+    }
+  ],
+  "quote_bundle_binding": {
+    "path": "runtime/quote-sessions/20261115T162338880837Z/bundle.json",
+    "sha256": "6a995660dedc4f1248cc60f2708835a57d2989350e4bfc46c3490e47255da933"
+  }
+}
