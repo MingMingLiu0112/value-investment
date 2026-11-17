@@ -2,6 +2,8 @@
 
 from hashlib import sha256
 from pathlib import Path
+import json
+import os
 
 import pytest
 
@@ -21,8 +23,14 @@ ARGS = {"symbol": "600887", "issuer_name": ISSUER, "period_end": "2026-09-30"}
 
 @pytest.fixture(scope="module")
 def pages():
-    assert sha256(PDF.read_bytes()).hexdigest() == SHA256
-    result = extract_pages(PDF)
+    sealed = json.loads((ROOT / 'tests/fixtures/quarterly-parent-operating-600887-pages.json').read_text(encoding='utf-8'))
+    assert sealed['source_sha256'] == SHA256
+    result = sealed['pages']
+    real_root = os.environ.get('REMAINING_YEAR_REAL_ROOT')
+    if real_root:
+        original = Path(real_root) / 'runtime/value-d2-600887-20261115-q3/1225644500.pdf'
+        assert sha256(original.read_bytes()).hexdigest() == SHA256
+        assert extract_pages(original) == result
     assert len(result) == 15
     return result
 
