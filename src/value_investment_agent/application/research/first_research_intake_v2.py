@@ -274,16 +274,19 @@ def prepare_first_research_intake(*, root: Path, intake: Mapping[str, Any], now:
 
 
 def compile_first_research_from_intake(*, root: Path, intake: Mapping[str, Any],
-        intake_output_dir: Path, output_dir: Path, now: datetime, fact_replay=None) -> dict:
+        intake_output_dir: Path, output_dir: Path, now: datetime, fact_replay=None,
+        compiler_version: str = "v1") -> dict:
     """Persist a new source-bound v1 spec then invoke the existing E2 compiler.
 
-    This is the only write-capable E2 convenience entry.  It intentionally
-    delegates arithmetic, candidate/package creation and cold replay to
-    ``first_research_input_v1``; no second valuation path is introduced here.
+    This is the only write-capable E2 convenience entry. It delegates economic
+    arithmetic to the selected version of the existing first-input compiler.
+    The default stays v1 for historical callers; v2 must be explicit.
     Both directories are append-only and must be distinct so a failed compiler
     cannot overwrite the input record used to explain or retry the run.
     """
     root = root.resolve()
+    if compiler_version not in {"v1", "v2"}:
+        raise ValueError("Unsupported first-input compiler version")
     prepared = prepare_first_research_intake(root=root, intake=intake, now=now)
     intake_output_dir = require_inside(root / "runtime", intake_output_dir, "first intake output")
     output_dir = require_inside(root / "runtime", output_dir, "first compilation output")
@@ -298,7 +301,12 @@ def compile_first_research_from_intake(*, root: Path, intake: Mapping[str, Any],
     write_new_bytes(manifest_path, prepared["input_manifest_bytes"])
     spec_binding = {"path": spec_path.relative_to(root).as_posix(), "sha256": _digest(prepared["spec_bytes"])}
     try:
-        compiled = consumer.build_first_research_input(
+        selected = consumer
+        if compiler_version == "v2":
+            from . import first_research_input_v2 as selected
+        compile_entry = (selected.build_first_research_input_v2 if compiler_version == "v2"
+                         else selected.build_first_research_input)
+        compiled = compile_entry(
             root=root, spec_binding=spec_binding, output_dir=output_dir, now=now,
             fact_replay=fact_replay,
         )

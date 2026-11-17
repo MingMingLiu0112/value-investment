@@ -54,7 +54,11 @@ def read_first_research_input(*,root,symbol,now:datetime):
             _binding(root,binding,runtime_only=False)
         for key in ("spec_binding","package_binding","proposal_binding"):
             _binding(root,receipt[key],runtime_only=key!="spec_binding")
-        result=replay_first_research_input(root=root,receipt_binding=ref,now=now)
+        if receipt.get("schema_version") == "first-research-input-receipt-v2":
+            from ..research.first_research_input_v2 import replay_first_research_input_v2
+            result=replay_first_research_input_v2(root=root,receipt_binding=ref,now=now)
+        else:
+            result=replay_first_research_input(root=root,receipt_binding=ref,now=now)
         def bound_json(binding):
             target=_binding(root,binding,runtime_only=False)
             data=_raw(target,MAX_JSON)

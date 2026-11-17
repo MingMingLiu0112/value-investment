@@ -84,7 +84,8 @@ def observe_first_input_parent_cash(*, root: Path, native_facts_binding: dict,
         manifest = json.loads(_read_bound(root, native_facts_binding))
         symbol = manifest["symbol"]
         envelope["symbol"] = symbol
-        if (manifest.get("schema_version") != "first-research-native-facts-v1"
+        if (manifest.get("schema_version") not in {
+                    "first-research-native-facts-v1", "first-research-native-facts-v2"}
                 or manifest.get("action") != "no_order"
                 or re.fullmatch(r"[0-9]{6}", symbol) is None
                 or not isinstance(manifest.get("issuer_name"), str)
