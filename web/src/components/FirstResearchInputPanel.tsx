@@ -555,7 +555,8 @@ export function FirstResearchInputView({
       )}
       {data.e2_quote_alignment && (
         <p aria-label="E2研究版本报价核验">
-          E2研究版本报价核验：{data.e2_quote_alignment.quote_date || "未登记日期"}
+          E2研究版本报价核验：
+          {data.e2_quote_alignment.quote_date || "未登记日期"}
           {data.e2_quote_alignment.display_price !== null
             ? ` · 收盘价 ${data.e2_quote_alignment.display_price} 元`
             : " · 无可核验报价"}
