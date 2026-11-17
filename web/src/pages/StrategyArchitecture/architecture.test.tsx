@@ -253,14 +253,14 @@ it("records the current driver bridge arithmetic acceptance without adopting par
       "artifacts/current/d2-operating-driver-20261101.json",
     );
     expect(stage.evidenceSource).not.toContain("待Root");
-    expect(stage.nextStep).toContain(
-      "终值分配不超过可持续股东现金",
-    );
+    expect(stage.nextStep).toContain("终值分配不超过可持续股东现金");
     expect(stage.nextStep).toMatch(/相同资料不.*付费.*重试/);
     expect(stage.deliveryReview?.done).toContain(
       "年度经营、现金政策和三情景分步任务已实际运行",
     );
-    expect(stage.deliveryReview?.gap).toContain("Base目标分红超过经常性股东现金");
+    expect(stage.deliveryReview?.gap).toContain(
+      "Base目标分红超过经常性股东现金",
+    );
     expect(stage.deliveryReview?.gap).toContain("Bull把有限承诺延伸到永久终值");
     expect(stage.deliveryReview?.gap).toContain("三情景未进入E2/F1/F2");
     expect(stage.progress?.acceptance).toContain("尚未确认");
