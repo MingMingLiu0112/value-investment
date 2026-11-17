@@ -30,10 +30,12 @@ def test_v3_terminal_request_exposes_forecast_debt_without_certifying_refinancin
                      output_schema={"type": "object"}, transport_output_contract="old")
     monkeypatch.setattr(staged, "staged_parent_cash_request", lambda **_kwargs: old)
     monkeypatch.setattr(staged, "_load_spec", lambda *_args: {
-        "opening": {"debt": {"anchor": "liabilities", "factor": "1"}}})
+        "opening": {"debt": {"anchor": "liabilities", "factor": "1",
+                              "classification": "FORECAST_ASSUMPTION"}}})
     request = staged.staged_parent_cash_request_v3(
         stage="terminal", root=tmp_path, spec_binding={},
-        verified_context={"facts": {"liabilities": {"value_cny": "100"}}},
+        verified_context={"facts": {"liabilities": {
+            "value_cny": "100", "field": "liabilities_cny"}}},
         prior_drafts={"policy": {"series": {
             "new_borrowing": {"values": ["10", "0"]},
             "debt_repayment": {"values": ["20", "5"]}}}})
@@ -45,6 +47,13 @@ def test_v3_terminal_request_exposes_forecast_debt_without_certifying_refinancin
     ]
     assert debt["classification"] == "DERIVED_FORECAST_ASSUMPTION_NOT_FACT"
     assert debt["refinancing_guaranteed"] is False
+    basis = json.loads(request.user)["opening_debt_basis"]
+    assert basis == {
+        "amount_cny": "100", "classification": "FORECAST_ASSUMPTION",
+        "fact_field": "liabilities_cny",
+        "scope": "ALL_PARENT_LIABILITIES_UPPER_BOUND_NOT_FINANCING_FACT",
+    }
+    assert "not an observed interest-bearing debt balance" in request.transport_output_contract
     assert "maximum gross terminal repayment" in request.transport_output_contract
 
 

@@ -47,6 +47,18 @@ def staged_parent_cash_request_v3(**kwargs):
                 factor = Decimal(term.get("factor", "1"))
                 return Decimal(facts[term["anchor"]]["value_cny"]) * factor
             return Decimal(term["value"])
+        # Expose only the verified field identity and the spec classification.
+        # Free-form spec prose is not promoted into a model instruction.
+        anchor = opening_debt.get("anchor")
+        field = facts[anchor]["field"] if anchor is not None else None
+        upper_bound = (opening_debt["classification"] == "FORECAST_ASSUMPTION"
+                       and field == "liabilities_cny")
+        payload["opening_debt_basis"] = dict(
+            amount_cny=str(amount(opening_debt)),
+            classification=opening_debt["classification"],
+            fact_field=field,
+            scope=("ALL_PARENT_LIABILITIES_UPPER_BOUND_NOT_FINANCING_FACT"
+                   if upper_bound else "SPECIFIED_OPENING_DEBT_BASIS"))
         policy = kwargs["prior_drafts"]["policy"]["series"]
         debt = amount(opening_debt)
         debt_path = []
@@ -87,6 +99,10 @@ def staged_parent_cash_request_v3(**kwargs):
         "gross terminal repayment under constant-debt rollover; do not claim "
         "debt was fully repaid when that amount remains positive. Its annual_path "
         "is forecast arithmetic, not evidence of future lender approval."
+        " The opening_debt_basis classification and scope are binding: an all-parent-"
+        "liabilities upper bound is not an observed interest-bearing debt balance or"
+        " a dated maturity schedule. Do not claim the upper bound must be repaid"
+        " or refinanced as a verified financing obligation."
     )
     return replace(request, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
                                              separators=(",", ":")),
