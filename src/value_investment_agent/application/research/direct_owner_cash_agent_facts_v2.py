@@ -19,6 +19,10 @@ from ..product.common import require_inside
 
 VERSION = "direct-owner-cash-agent-facts-v2"
 _OPERATING_FIELDS = {"revenue", "cost", "customer_cash", "supplier_cash", "cfo"}
+_FINANCING_FIELDS = (
+    "short_term_borrowings_cny", "current_noncurrent_liabilities_cny",
+    "long_term_borrowings_cny", "bonds_payable_cny", "lease_liabilities_cny",
+)
 
 
 def _canonical(value):
@@ -36,6 +40,49 @@ def _finite(value):
     if not number.is_finite():
         raise ValueError("PARENT_AGENT_FACT_FINITE_REQUIRED")
     return str(number)
+
+
+def _historical_financing_range(statement):
+    """Expose reported parent rows without filling blank debt cells with zero.
+
+    This is an on-balance research range, not a complete interest-bearing debt
+    certification or a schedule of dated repayments/refinancing.
+    """
+    balance = statement.get("balance_sheet") or {}
+    components = {}
+    lower = Decimal(0)
+    known_count = 0
+    for field in _FINANCING_FIELDS:
+        row = balance.get(field)
+        value = row.get("current") if isinstance(row, dict) else None
+        if value is None:
+            components[field] = {"classification": "UNKNOWN", "value_cny": None}
+            continue
+        source_refs = row.get("source_refs")
+        amount = Decimal(_finite(value))
+        if amount < 0 or not source_refs:
+            raise ValueError("PARENT_AGENT_FINANCING_ROW_INVALID:" + field)
+        lower += amount
+        known_count += 1
+        components[field] = dict(classification="FACT", value_cny=str(amount),
+                                 source_refs=source_refs)
+    liability = balance.get("liabilities_cny")
+    ceiling = None
+    if isinstance(liability, dict) and liability.get("current") is not None:
+        amount = Decimal(_finite(liability["current"]))
+        if amount < lower or not liability.get("source_refs"):
+            raise ValueError("PARENT_AGENT_FINANCING_RANGE_INVALID")
+        ceiling = dict(classification="FACT", value_cny=str(amount),
+                       source_refs=liability["source_refs"])
+    return dict(period_end=statement["period_end"], scope=SCOPE, currency="CNY",
+                components=components,
+                reported_component_sum_cny=str(lower) if known_count else None,
+                reported_component_count=known_count,
+                on_balance_liabilities_ceiling=ceiling,
+                complete_financing_scope_verified=False,
+                dated_maturity_schedule_verified=False,
+                future_refinancing_verified=False,
+                classification="PARTIAL_HISTORICAL_FINANCING_RANGE_NOT_DEBT_FACT")
 
 
 def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
@@ -141,6 +188,10 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
             or shares.get("scope") != "TOTAL_ISSUED_ORDINARY_SHARES"
             or shares.get("classification") not in {"FACT", "DERIVED_FACT"}):
         raise ValueError("PARENT_AGENT_SHARE_SCOPE_INVALID")
+    financing = [_historical_financing_range(row) for row in evidence["statements"]
+                 if row["period_end"] == spec["valuation_date"]]
+    if len(financing) != 1:
+        raise ValueError("PARENT_AGENT_FINANCING_BASIS_NOT_UNIQUE")
     projected = dict(schema_version=VERSION, symbol=spec["symbol"],
         issuer_name=spec["issuer_name"], as_of=spec["computed_at"],
         valuation_date=spec["valuation_date"], facts=facts,
@@ -153,6 +204,7 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
                              derivation=shares.get("derivation"),
                              source_refs=shares["source_refs"]),
         source_status=evidence["status"],
+        historical_financing_range=financing[0],
         working_capital_cash_component=evidence["working_capital_cash_component"],
         constraints=evidence["constraints"], unresolved=evidence["unresolved"],
         fund_commitment_evidence=evidence["fund_commitment_evidence"],

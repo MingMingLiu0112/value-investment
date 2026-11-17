@@ -66,6 +66,9 @@ def test_real_numbered_receipts_and_fail_closed():
             assert statement["cash_flow"]["borrowings_received_cny"]["comparative"] is None
         assert any(gap["field"] == "short_term_borrowings_cny"
                    for gap in statement["gaps"])
+        assert "bonds_payable_cny" not in statement["balance_sheet"]
+        assert any(gap["field"] == "bonds_payable_cny"
+                   for gap in statement["gaps"])
         for field in ("revenue", "cost"):
             assert statement["income"][field]["current"]
             assert statement["income"][field]["comparative"]

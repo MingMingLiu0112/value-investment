@@ -51,6 +51,11 @@ def _evidence(shares=True):
             "cash_flow": {"customer_cash_cny": row("95", 6),
                           "supplier_cash_cny": row("45", 7),
                           "cfo_cny": row("30", 8)},
+            "balance_sheet": {
+                "liabilities_cny": row("100", 10),
+                "current_noncurrent_liabilities_cny": row("40", 11),
+                "long_term_borrowings_cny": row("20", 12),
+            },
             "ordinary_shares_evidence": (
                 {"period_end": "2025-12-31", "unit": "shares",
                  "classification": "DERIVED_FACT",
@@ -75,6 +80,13 @@ def test_numbered_projection_keeps_row_evidence_and_excludes_forecasts(tmp_path,
     assert result["facts"]["profit"]["source_refs"]["physical_page"] == 5
     assert result["forecast_scenarios_present"] is False
     assert result["ordinary_shares"]["classification"] == "DERIVED_FACT"
+    financing = result["historical_financing_range"]
+    assert financing["reported_component_sum_cny"] == "60"
+    assert financing["on_balance_liabilities_ceiling"]["value_cny"] == "100"
+    assert financing["components"]["short_term_borrowings_cny"]["classification"] == "UNKNOWN"
+    assert financing["components"]["bonds_payable_cny"]["value_cny"] is None
+    assert financing["complete_financing_scope_verified"] is False
+    assert financing["future_refinancing_verified"] is False
     assert result["action"] == "no_order" and result["formal_eligibility"] is False
 
 
@@ -84,3 +96,27 @@ def test_numbered_projection_rejects_unproven_shares(tmp_path, monkeypatch):
                         lambda **_kwargs: _evidence(shares=False))
     with pytest.raises(ValueError, match="DATED_SHARES_REQUIRED"):
         facts.read_parent_cash_agent_facts_v2(root=tmp_path, spec_binding=binding, now=NOW)
+
+
+def test_financing_components_cannot_exceed_parent_liabilities(tmp_path, monkeypatch):
+    binding = _spec(tmp_path)
+    evidence = _evidence()
+    evidence["statements"][0]["balance_sheet"]["liabilities_cny"]["current"] = "50"
+    monkeypatch.setattr(facts, "read_parent_direct_owner_cash_sources_v2",
+                        lambda **_kwargs: evidence)
+    with pytest.raises(ValueError, match="FINANCING_RANGE_INVALID"):
+        facts.read_parent_cash_agent_facts_v2(root=tmp_path, spec_binding=binding, now=NOW)
+
+
+def test_missing_financing_rows_are_unknown_not_zero_debt(tmp_path, monkeypatch):
+    binding = _spec(tmp_path)
+    evidence = _evidence()
+    evidence["statements"][0]["balance_sheet"] = {}
+    monkeypatch.setattr(facts, "read_parent_direct_owner_cash_sources_v2",
+                        lambda **_kwargs: evidence)
+    result = facts.read_parent_cash_agent_facts_v2(
+        root=tmp_path, spec_binding=binding, now=NOW)
+    financing = result["historical_financing_range"]
+    assert financing["reported_component_sum_cny"] is None
+    assert financing["reported_component_count"] == 0
+    assert financing["on_balance_liabilities_ceiling"] is None

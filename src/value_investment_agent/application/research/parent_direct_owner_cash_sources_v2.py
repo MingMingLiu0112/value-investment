@@ -29,6 +29,7 @@ _EXTRA_BALANCE = {
     "short_term_borrowings_cny": "短期借款",
     "long_term_borrowings_cny": "长期借款",
     "current_noncurrent_liabilities_cny": "一年内到期的非流动负债",
+    "bonds_payable_cny": "应付债券",
     "lease_liabilities_cny": "租赁负债",
     "other_current_liabilities_cny": "其他流动负债",
 }
