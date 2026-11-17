@@ -522,6 +522,13 @@ export type FirstResearchInputResponse = {
       revenue: string;
       attributable_profit: string;
     };
+    e1_recompile_requirements?: {
+      current_ytd_source_fields_missing: string[];
+      prior_year_comparative_required: boolean;
+      ordinary_shares_at_new_basis: string;
+      parent_accessible_cash_at_new_basis: string;
+      forecast_cash_policy_reunderwriting_required: boolean;
+    };
     valuation_recomputed: false;
     price_admitted: false;
     action: "no_order";

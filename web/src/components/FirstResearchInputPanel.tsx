@@ -562,6 +562,13 @@ export function FirstResearchInputView({
           description={`三季报期间 ${data.financial_update_observation.reported_period}；由已核验的9个月与半年累计数相减，第三季度营业收入 ${amount(data.financial_update_observation.derived_q3_quarter_cny?.revenue)} 元、归母利润 ${amount(data.financial_update_observation.derived_q3_quarter_cny?.attributable_profit)} 元。须重新研究股东现金及估值；此处没有重算当前价值或生成买价。`}
         />
       )}
+      {data.financial_update_observation?.e1_recompile_requirements && (
+        <p>
+          E1 重算仍需：三季报其余年度现金模型财务字段的来源核验、上年同期对照、
+          新基准日普通股股数与母公司可达现金的连续性，以及股东现金政策复核。
+          当前季度收入和利润不能直接替代完整股东现金路径。
+        </p>
+      )}
       <p>
         本页只读重放已登记输入，不发起新LLM或自动任务；不新增C第六家验收，也不授予正式画像准入或交易资格。
       </p>

@@ -8,6 +8,14 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
+from ...domain.valuation.joint_capital_cash_path_v4 import HISTORICAL_FIELDS
+
+
+_SOURCE_FINANCIAL_FIELDS = HISTORICAL_FIELDS - {
+    "scope", "currency", "opening_cash", "opening_distribution_capacity", "cash_floor"
+}
+_Q3_VERIFIED_FIELDS = {"revenue", "parent_profit"}
+
 
 def compare_first_input_financial_update(*, symbol: str, financial_basis: str,
                                          native_facts: dict, q3_read_model: dict) -> dict | None:
@@ -60,6 +68,13 @@ def compare_first_input_financial_update(*, symbol: str, financial_basis: str,
                                         "attributable_profit": str(profit_h1)},
                 "derived_q3_quarter_cny": {"revenue": str(revenue_9m - revenue_h1),
                                             "attributable_profit": str(profit_9m - profit_h1)},
+                "e1_recompile_requirements": {
+                    "current_ytd_source_fields_missing": sorted(_SOURCE_FINANCIAL_FIELDS - _Q3_VERIFIED_FIELDS),
+                    "prior_year_comparative_required": True,
+                    "ordinary_shares_at_new_basis": "UNVERIFIED",
+                    "parent_accessible_cash_at_new_basis": "UNVERIFIED",
+                    "forecast_cash_policy_reunderwriting_required": True,
+                },
                 "fact_classification": "REPORTED_YTD_AND_DERIVED_QUARTER_NOT_FORECAST"}
     except (ValueError, KeyError, TypeError, InvalidOperation) as error:
         return {**base, "reason": str(error)}

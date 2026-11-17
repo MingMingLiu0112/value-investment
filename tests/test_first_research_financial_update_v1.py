@@ -24,6 +24,11 @@ def test_newer_reported_period_requires_e1_without_repricing():
     assert result["status"] == "SOURCE_BOUND_NEW_FINANCIAL_FACT_REQUIRES_E1_RECOMPILE"
     assert result["derived_q3_quarter_cny"] == {"revenue": "40", "attributable_profit": "20"}
     assert result["source_bindings"] == q3["source_bindings"]
+    requirements = result["e1_recompile_requirements"]
+    assert {"cost", "da", "tax"} <= set(requirements["current_ytd_source_fields_missing"])
+    assert "revenue" not in requirements["current_ytd_source_fields_missing"]
+    assert requirements["parent_accessible_cash_at_new_basis"] == "UNVERIFIED"
+    assert requirements["ordinary_shares_at_new_basis"] == "UNVERIFIED"
     assert result["valuation_recomputed"] is False and result["price_admitted"] is False
     assert result["action"] == "no_order"
 
