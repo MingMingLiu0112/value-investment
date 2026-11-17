@@ -558,8 +558,11 @@ export type FirstResearchInputResponse = {
     reason?: string;
     whole_statement_reconciled?: boolean;
     periods?: {
-      period: string;
-      flows: Record<string, string>;
+      period?: string;
+      flows?: Record<string, string>;
+      report_period?: string;
+      rows?: Record<string, unknown>;
+      unknown_fields?: unknown;
       closing_cash_and_equivalents_cny?: string;
       physical_pages?: Record<string, number>;
       source_sha256?: string;

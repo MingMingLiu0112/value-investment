@@ -82,6 +82,46 @@ function example(): FirstResearchInputResponse {
     },
   };
 }
+it("shows verified partial cash rows without calling missing values zero or reconciled", () => {
+  const data = example();
+  data.parent_cash_observation = {
+    status: "SOURCE_REPLAYED_PARTIAL_PARENT_CASH_OBSERVATIONS",
+    action: "no_order",
+    future_cash_proven: false,
+    whole_statement_reconciled: false,
+    periods: [
+      {
+        report_period: "2026-06-30",
+        rows: {
+          cfo_cny: {
+            label: "TEST_ONLY经营现金",
+            statement_scope: "listed_parent_only",
+            currency: "CNY",
+            unit: "CNY",
+            physical_page: 35,
+            columns: [{ period: "H12026", value: "123456.78" }],
+          },
+        },
+        unknown_fields: { fx_cny: "EMPTY_PRINTED_COLUMN" },
+      },
+    ],
+  };
+  const html = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol="000568" />,
+  );
+  expect(html).toContain("123,456.78");
+  expect(html).toContain("未完成全表勾稽");
+  expect(html).toContain("EMPTY_PRINTED_COLUMN");
+  expect(html).not.toContain("母公司现金原件尚未完成独立核验");
+  expect(html).not.toContain("TTM流量（FY");
+  data.parent_cash_observation.whole_statement_reconciled = true;
+  const invalid = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol="000568" />,
+  );
+  expect(invalid).toContain("部分现金观察边界不符");
+  expect(invalid).not.toContain("123,456.78");
+});
+
 function visibleHtml(html: string): string {
   let depth = 0;
   return html

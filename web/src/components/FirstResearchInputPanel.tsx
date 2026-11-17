@@ -47,6 +47,89 @@ export function amount(value: unknown): string {
 function annualRows(ledger?: FirstResearchAnnualLedger) {
   return ledger?.rows10 ?? ledger?.rows;
 }
+function PartialParentCashView({ data }: { data: FirstResearchInputResponse }) {
+  const observation = data.parent_cash_observation;
+  if (
+    observation?.status !== "SOURCE_REPLAYED_PARTIAL_PARENT_CASH_OBSERVATIONS"
+  )
+    return null;
+  if (
+    observation.action !== "no_order" ||
+    observation.future_cash_proven !== false ||
+    observation.whole_statement_reconciled !== false
+  ) {
+    return <Alert type="warning" message="部分现金观察边界不符，停止展示" />;
+  }
+  return (
+    <section aria-label="母公司已核实部分现金事实">
+      <h4>母公司已核实部分现金事实</h4>
+      <p>
+        以下金额来自原件明确列示的母公司现金流量表。空白或列归属不明确的金额仍为未知；未完成全表勾稽，不计算完整TTM，也不据此认定未来可分配现金。
+      </p>
+      {observation.periods?.map((item, index) => {
+        const period = record(item);
+        const rows = record(period.rows);
+        return (
+          <div key={index} style={{ overflowX: "auto" }}>
+            <table>
+              <caption>
+                报告期：{text(period.report_period) || "未提供"}；单位：人民币元
+              </caption>
+              <thead>
+                <tr>
+                  <th>现金科目</th>
+                  <th>原件期间与金额</th>
+                  <th>原件页码</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(rows).map(([key, value]) => {
+                  const row = record(value);
+                  const valid =
+                    row.statement_scope === "listed_parent_only" &&
+                    row.currency === "CNY" &&
+                    row.unit === "CNY";
+                  const columns = Array.isArray(row.columns) ? row.columns : [];
+                  return (
+                    <tr key={key}>
+                      <td>{text(row.label) || key}</td>
+                      <td>
+                        {valid && columns.length
+                          ? columns.map((entry, i) => {
+                              const column = record(entry);
+                              return (
+                                <div key={i}>
+                                  {text(column.period) || "期间未知"}：
+                                  {amount(column.value)}
+                                </div>
+                              );
+                            })
+                          : "口径或金额未核验"}
+                      </td>
+                      <td>
+                        {typeof row.physical_page === "number"
+                          ? row.physical_page
+                          : "未提供"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <details>
+              <summary>未能核实的字段及原因</summary>
+              <DetailSection title="未知字段" value={period.unknown_fields} />
+            </details>
+          </div>
+        );
+      })}
+      <details>
+        <summary>原件来源与核验记录</summary>
+        <DetailSection title="部分现金观察原稿" value={observation} />
+      </details>
+    </section>
+  );
+}
 function scenarioReason(
   data: FirstResearchInputResponse,
   name: FirstResearchScenarioKey,
@@ -384,7 +467,13 @@ export function FirstResearchInputView({
       </section>
     );
 
-  if (data.direct_owner_cash) return <DirectOwnerCashView data={data} />;
+  if (data.direct_owner_cash)
+    return (
+      <>
+        <DirectOwnerCashView data={data} />
+        <PartialParentCashView data={data} />
+      </>
+    );
 
   if (
     !data.research_case ||
@@ -422,102 +511,108 @@ export function FirstResearchInputView({
         {data.research_as_of || "未提供"}
         {data.available_at ? " · 输入可用时间：" + data.available_at : ""}
       </p>
-      {data.parent_cash_observation && (
-        <section aria-label="母公司历史现金观察">
-          <h4>母公司历史现金观察</h4>
-          {data.parent_cash_observation.status === "OBSERVED" &&
-          data.parent_cash_observation.whole_statement_reconciled === true &&
-          data.parent_cash_observation.action === "no_order" &&
-          data.parent_cash_observation.future_cash_proven === false &&
-          data.parent_cash_observation.periods?.length ? (
-            <>
-              <p>
-                母公司现金表各期间余额与现金变动已完整勾稽。以下仅是历史观察，
-                只核对历史母公司现金流量表。经营现金和投资收付会受结算、借还款影响，
-                不能据此推定未来可分配现金；“股利、利润或利息支付”是混合科目，不等于股息。
-              </p>
-              <div style={{ overflowX: "auto" }}>
-                <table>
-                  <caption>
-                    历史原件金额（亿元；四舍五入显示，原值保留在来源记录）
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th>期间</th>
-                      <th>经营现金净额</th>
-                      <th>购建长期资产付现</th>
-                      <th>借款取得</th>
-                      <th>偿还债务</th>
-                      <th>股利、利润或利息支付</th>
-                      <th>期末现金等价物</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.parent_cash_observation.periods.map((row) => (
-                      <tr key={row.period}>
-                        <td>{row.period}</td>
-                        {[
-                          "cfo_cny",
-                          "gross_capex_cny",
-                          "borrowings_received_cny",
-                          "debt_repaid_cny",
-                          "mixed_distribution_interest_paid_cny",
-                        ].map((field) => (
-                          <td key={field}>
-                            {amount(Number(row.flows[field]) / 1e8)}
-                          </td>
-                        ))}
-                        <td>
-                          {amount(
-                            Number(row.closing_cash_and_equivalents_cny) / 1e8,
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {data.parent_cash_observation.ttm_flows && (
+      <PartialParentCashView data={data} />
+      {data.parent_cash_observation &&
+        data.parent_cash_observation.status !==
+          "SOURCE_REPLAYED_PARTIAL_PARENT_CASH_OBSERVATIONS" && (
+          <section aria-label="母公司历史现金观察">
+            <h4>母公司历史现金观察</h4>
+            {data.parent_cash_observation.status === "OBSERVED" &&
+            data.parent_cash_observation.whole_statement_reconciled === true &&
+            data.parent_cash_observation.action === "no_order" &&
+            data.parent_cash_observation.future_cash_proven === false &&
+            data.parent_cash_observation.periods?.length ? (
+              <>
+                <p>
+                  母公司现金表各期间余额与现金变动已完整勾稽。以下仅是历史观察，
+                  只核对历史母公司现金流量表。经营现金和投资收付会受结算、借还款影响，
+                  不能据此推定未来可分配现金；“股利、利润或利息支付”是混合科目，不等于股息。
+                </p>
+                <div style={{ overflowX: "auto" }}>
+                  <table>
+                    <caption>
+                      历史原件金额（亿元；四舍五入显示，原值保留在来源记录）
+                    </caption>
+                    <thead>
                       <tr>
-                        <th>TTM流量（FY＋当期H1－同期H1）</th>
-                        {[
-                          "cfo_cny",
-                          "gross_capex_cny",
-                          "borrowings_received_cny",
-                          "debt_repaid_cny",
-                          "mixed_distribution_interest_paid_cny",
-                        ].map((field) => (
-                          <td key={field}>
+                        <th>期间</th>
+                        <th>经营现金净额</th>
+                        <th>购建长期资产付现</th>
+                        <th>借款取得</th>
+                        <th>偿还债务</th>
+                        <th>股利、利润或利息支付</th>
+                        <th>期末现金等价物</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.parent_cash_observation.periods.map((row) => (
+                        <tr key={row.period}>
+                          <td>{row.period}</td>
+                          {[
+                            "cfo_cny",
+                            "gross_capex_cny",
+                            "borrowings_received_cny",
+                            "debt_repaid_cny",
+                            "mixed_distribution_interest_paid_cny",
+                          ].map((field) => (
+                            <td key={field}>
+                              {amount(Number(row.flows?.[field]) / 1e8)}
+                            </td>
+                          ))}
+                          <td>
                             {amount(
-                              Number(
-                                data.parent_cash_observation!.ttm_flows![field],
-                              ) / 1e8,
+                              Number(row.closing_cash_and_equivalents_cny) /
+                                1e8,
                             )}
                           </td>
-                        ))}
-                        <td>不适用（期末存量）</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <details>
-                <summary>原件页码、来源Hash与现金观察限制</summary>
-                <DetailSection
-                  title="现金观察原稿"
-                  value={data.parent_cash_observation}
-                />
-              </details>
-            </>
-          ) : (
-            <Alert
-              type="info"
-              message="母公司现金原件尚未完成独立核验"
-              description={
-                data.parent_cash_observation.reason ||
-                "现金观察来源或期间不完整"
-              }
-            />
-          )}
-        </section>
-      )}
+                        </tr>
+                      ))}
+                      {data.parent_cash_observation.ttm_flows && (
+                        <tr>
+                          <th>TTM流量（FY＋当期H1－同期H1）</th>
+                          {[
+                            "cfo_cny",
+                            "gross_capex_cny",
+                            "borrowings_received_cny",
+                            "debt_repaid_cny",
+                            "mixed_distribution_interest_paid_cny",
+                          ].map((field) => (
+                            <td key={field}>
+                              {amount(
+                                Number(
+                                  data.parent_cash_observation!.ttm_flows![
+                                    field
+                                  ],
+                                ) / 1e8,
+                              )}
+                            </td>
+                          ))}
+                          <td>不适用（期末存量）</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <details>
+                  <summary>原件页码、来源Hash与现金观察限制</summary>
+                  <DetailSection
+                    title="现金观察原稿"
+                    value={data.parent_cash_observation}
+                  />
+                </details>
+              </>
+            ) : (
+              <Alert
+                type="info"
+                message="母公司现金原件尚未完成独立核验"
+                description={
+                  data.parent_cash_observation.reason ||
+                  "现金观察来源或期间不完整"
+                }
+              />
+            )}
+          </section>
+        )}
       {data.opening_capital && (
         <p aria-label="已消费的估值基准股本">
           估值基准股本：{data.opening_capital.shares} 股（
