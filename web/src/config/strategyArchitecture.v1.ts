@@ -864,8 +864,8 @@ export const catalog: Record<
           why: "研究要更新并保留原判断的变化原因。",
           how: "读取旧研究版本，重编译受影响输入，再交共享内核计算。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "600519、600887旧包真实再编译并进入消费者。",
-          gap: "仍偏固定案例，通用独立重新研究入口尚未完整证明。",
+          done: "600519、600887旧包真实再编译；新版E2现可把两份不可变首编回执冷重放并记录假设修订的估值差异，原版保留。",
+          gap: "本次600519是已有研究情景的明确修订，不是新公告；通用队列触发、全部当前价格对齐及经济采用尚未完成。",
           acceptance: "独立更新输入、重算、保留历史并在API看到新版本。",
           evidence: [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
@@ -881,11 +881,12 @@ export const catalog: Record<
         modules: [
           "src/value_investment_agent/application/product/pending_research_candidate.py",
           "src/value_investment_agent/application/product/neutral_valuation_proposal.py",
+          "src/value_investment_agent/application/research/first_research_input_update_v2.py",
         ],
-        engineeringStatus: "有限贯通",
-        evidenceStatus: "真实样本部分验证",
-        shortStatus: "已有两公司成功不等于任意公司首版研究",
-        implementation: "600519、600887已有真实来源候选与消费链",
+        engineeringStatus: "旧包再编译与新版首编的来源绑定修订已贯通；自动队列更新待验收",
+        evidenceStatus: "600519同源两条条件情景冷重放有估值差异；经济采用待审",
+        shortStatus: "可追溯条件研究修订；不把假设变化冒充新公告",
+        implementation: "前后回执分别重算，比较经济输入与三情景估值，保留原版、变更原因和反证；不自动升级主估值",
         milestone: "有限贯通；不代表正式研究准入或实盘资格。",
         existingEvidence: "600519、600887已有真实来源候选与消费链",
         evidenceSource:
