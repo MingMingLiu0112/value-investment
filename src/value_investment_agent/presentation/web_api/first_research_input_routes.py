@@ -16,6 +16,9 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
             return JSONResponse(dict(action="no_order",status="INVALID_SYMBOL",reason=str(error)),
                 status_code=422,headers={"Cache-Control":"no-store"})
         if result.get("status") == "SOURCE_BOUND_FIRST_INPUT_COMPILED":
+            from ...application.product.first_input_quote_alignment_v1 import read_first_input_quote_alignment
+            result["e2_quote_alignment"] = read_first_input_quote_alignment(
+                root=project, symbol=symbol, first_input=result, now=clock())
             result["successor_update"] = read_first_research_update(
                 root=project, symbol=symbol, now=clock(), predecessor_binding=result["receipt_binding"])
             if (result["successor_update"].get("status") == "UNASSESSABLE"

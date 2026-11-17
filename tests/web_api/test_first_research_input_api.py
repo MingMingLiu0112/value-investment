@@ -60,6 +60,9 @@ def test_public_positive_view_cold_replays_without_account_or_writes(registered,
         assert body['formal_eligibility'] is False and body['action']=='no_order'
         assert body['current_price'] is None and body['personal_quantity'] is None
         assert body['quote_observation']['status']=='POINTER_UNAVAILABLE'
+        assert body['e2_quote_alignment']['status']=='UNASSESSABLE'
+        assert body['e2_quote_alignment']['quote_usable_for_e2_research'] is False
+        assert body['e2_quote_alignment']['current_valuation_comparable'] is False
         assert body['quote_observation']['display_price'] is None
         assert body['quote_observation']['comparison_eligible'] is False
         assert body['user_acceptance']=='NOT_CONFIRMED'

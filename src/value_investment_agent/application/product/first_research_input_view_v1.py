@@ -98,6 +98,7 @@ def read_first_research_input(*,root,symbol,now:datetime):
             input_fingerprint=result["input_fingerprint"],receipt_binding=ref,
             financial_basis=result["research_case"]["financial_period"],
             research_as_of=result["research_case"]["as_of"],
+            input_computed_at=spec["point_in_time"]["computed_at"],
             research_case=result["research_case"],valuation=result["valuation"],
             valuation_status=result["valuation_status"],annual_ledgers=result["annual_ledgers"],
             blockers=result["blockers"],source_bindings=result["source_bindings"],

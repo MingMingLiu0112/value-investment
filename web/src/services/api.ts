@@ -513,6 +513,19 @@ export type FirstResearchInputResponse = {
     price_admitted: boolean;
     comparison_eligible: boolean;
   };
+  e2_quote_alignment?: {
+    status: string;
+    reason: string | null;
+    quote_date: string | null;
+    display_price: string | null;
+    research_as_of: string | null;
+    input_computed_at: string | null;
+    quote_source_verified: boolean;
+    quote_usable_for_e2_research: boolean;
+    current_valuation_comparable: false;
+    condition_price: null;
+    action: "no_order";
+  };
   financial_update_observation?: {
     status: string;
     financial_basis: string;

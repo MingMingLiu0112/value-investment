@@ -111,6 +111,7 @@ def read_direct_owner_cash_view(*,root,receipt_binding,now):
         scope=result["compilation_scope"],receipt_binding=receipt_binding,
         input_descriptor_sha256=result["input_descriptor_sha256"],input_fingerprint=result["input_fingerprint"],
         financial_basis=spec["valuation_date"],research_as_of=spec["research_as_of"],
+        input_computed_at=spec["computed_at"],
         research_case=result["research_case"],valuation=value,valuation_status=result["valuation_status"],
         annual_ledgers={name:dict(rows=rows) for name,rows in annual.items()},
         blockers=result["blockers"],source_bindings=result["source_bindings"],

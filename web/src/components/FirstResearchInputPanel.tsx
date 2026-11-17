@@ -553,6 +553,24 @@ export function FirstResearchInputView({
             : ""}
         </p>
       )}
+      {data.e2_quote_alignment && (
+        <p aria-label="E2研究版本报价核验">
+          E2研究版本报价核验：{data.e2_quote_alignment.quote_date || "未登记日期"}
+          {data.e2_quote_alignment.display_price !== null
+            ? ` · 收盘价 ${data.e2_quote_alignment.display_price} 元`
+            : " · 无可核验报价"}
+          {` · ${data.e2_quote_alignment.status}`}
+          {data.e2_quote_alignment.quote_source_verified
+            ? " · 双源行情原件已核验"
+            : ""}
+          {data.e2_quote_alignment.quote_usable_for_e2_research
+            ? " · 行情可供该研究版本复核；尚不能比较当前估值或生成买价"
+            : " · 行情与该研究版本尚未对齐"}
+          {data.e2_quote_alignment.reason
+            ? ` · ${data.e2_quote_alignment.reason}`
+            : ""}
+        </p>
+      )}
       {data.financial_update_observation?.status ===
         "SOURCE_BOUND_NEW_FINANCIAL_FACT_REQUIRES_E1_RECOMPILE" && (
         <Alert
