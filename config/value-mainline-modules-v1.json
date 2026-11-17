@@ -2875,7 +2875,7 @@
           ]
         },
         "application": {
-          "description": "load_pending_candidate_alignment；核对同一研究候选的报价、股本、分配、事件和财务更新，再判断条件价格资格。 直接股东现金回执现可经精确来源和描述符绑定进入同一五项对齐核验，独立材料性复核输入不授予批准。真实119条公告归档、年度现金分红解析与合格报价已消费；当前股本连续性、分红模型归属、财务更新和材料性决定仍分别阻断当前比较。",
+          "description": "load_pending_candidate_alignment；核对同一研究候选的报价、股本、分配、事件和财务更新，再判断条件价格资格。 直接股东现金回执现可经精确来源和描述符绑定进入同一五项对齐核验，独立材料性复核输入不授予批准。真实119条公告归档、年度现金分红解析与合格报价已消费；新增原件股本检查点消费：半年度不变声明可连接已消费期初普通股，预案总股本与回购库存单列；旧解析矛盾不能回退放行。当前股本连续性、分红模型归属、财务更新和材料性决定仍分别阻断当前比较。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
             "src/value_investment_agent/application/research/pending_candidate_alignment.py",

@@ -1089,9 +1089,14 @@ function BasisFollowup({ value }: { value: unknown }) {
     value.current_comparison_granted !== false
   )
     return null;
-  const checkpoint = object(value.latest_capital_checkpoint)
-    ? value.latest_capital_checkpoint
-    : null;
+  const listedCheckpoints = Array.isArray(value.capital_checkpoints)
+    ? value.capital_checkpoints.filter(object)
+    : [];
+  const checkpoints = listedCheckpoints.length
+    ? listedCheckpoints
+    : object(value.latest_capital_checkpoint)
+      ? [value.latest_capital_checkpoint]
+      : [];
   const interval = object(value.uncovered_capital_interval)
     ? value.uncovered_capital_interval
     : null;
@@ -1101,12 +1106,50 @@ function BasisFollowup({ value }: { value: unknown }) {
   return (
     <section aria-label="股本与中期分配后续核验">
       <h6>已证实到哪一天，后续还缺什么</h6>
-      {checkpoint ? (
-        <p>
-          已核验普通股股数：{text(checkpoint.ordinary_shares)} 股，事实时点{" "}
-          {text(checkpoint.as_of)}， 披露日期 {text(checkpoint.published_date)}
-          。{text(checkpoint.limitation)}
-        </p>
+      {checkpoints.length ? (
+        checkpoints.map((checkpoint, index) => {
+          const ordinary = numberText(checkpoint.ordinary_shares);
+          const issued = numberText(checkpoint.issued_shares);
+          const treasury = numberText(checkpoint.treasury_shares);
+          const proposal = checkpoint.proposal_only === true;
+          const derived = checkpoint.classification === "DERIVED_FACT";
+          const verified =
+            checkpoint.classification === "FACT" ||
+            checkpoint.classification == null;
+          return (
+            <div
+              key={`${text(checkpoint.as_of)}-${text(checkpoint.published_date)}-${index}`}
+            >
+              <p>
+                {proposal ? "预案所述股本检查点" : "股本检查点"}：事实时点{" "}
+                {text(checkpoint.as_of)}，披露日期{" "}
+                {text(checkpoint.published_date)}。
+                {ordinary
+                  ? `${proposal ? "预案所述" : derived ? "推导的" : verified ? "已核验" : "待核实"}普通股股数：${checkpoint.ordinary_shares} 股。`
+                  : "普通股股数：未核实。"}
+                {derived && ordinary && (
+                  <>推导依据：{text(checkpoint.derivation, "未提供")}。</>
+                )}
+                {issued && (
+                  <>
+                    {proposal ? "预案所述" : "原件所述"}总股本：
+                    {checkpoint.issued_shares} 股；口径：
+                    {text(checkpoint.share_scope)}。
+                  </>
+                )}
+                {treasury && (
+                  <>
+                    回购专户库存股：{checkpoint.treasury_shares}{" "}
+                    股，尚不能等同已注销股份。
+                  </>
+                )}
+                {proposal && "预案不是实施或注销证明。"}
+                {text(checkpoint.limitation, "")}
+              </p>
+              <AlignmentEvidence value={[checkpoint.evidence_binding]} />
+            </div>
+          );
+        })
       ) : (
         <p>尚无可消费的原件股本时点。</p>
       )}

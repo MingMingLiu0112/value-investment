@@ -9,6 +9,7 @@ from datetime import date, datetime
 from decimal import Decimal, localcontext
 import json
 import re
+import unicodedata
 from urllib.parse import urlparse
 
 from ...event_scan import event_scan_from_payload
@@ -182,7 +183,48 @@ def _native_basis_fields(analysis, start, end, now, native_sources, read, cache,
             if sha not in cache:
                 validate_pdf_original(original)
                 cache[sha] = extract_pages(original)
-            terms = parse_interim_capital_distribution(cache[sha], symbol=analysis["symbol"])
+            try:
+                terms = parse_interim_capital_distribution(cache[sha], symbol=analysis["symbol"])
+            except ValueError as legacy_error:
+                # Dispatch unsupported layouts, never downgrade a contradiction
+                # already discovered by the richer native parser.
+                if str(legacy_error) not in {
+                    "FULL_INTERIM_REPORT_IDENTITY_REQUIRED", "INTERIM_FIELD_MISSING_OR_AMBIGUOUS"
+                }:
+                    raise
+                page_values = cache[sha].values() if isinstance(cache[sha], dict) else cache[sha]
+                if any(re.search(r"三、\s*股份总数\s*[0-9]", unicodedata.normalize("NFKC", p)) for p in page_values):
+                    raise
+                from ...infrastructure.filings.sse_capital_checkpoint_v1 import parse_sse_capital_checkpoint
+                checkpoint = parse_sse_capital_checkpoint(cache[sha], symbol=analysis["symbol"],
+                                                        published_date=published.isoformat())
+                checkpoint_end = _day(checkpoint["period_end"])
+                if checkpoint_end > published:
+                    raise ValueError("NATIVE_CHECKPOINT_AFTER_PUBLICATION")
+                # A report saying the total AND structure did not change can
+                # bridge the consumed prior-year ordinary-share anchor only.
+                # It is not a same-day market share count or an action review.
+                opening = str(analysis["consumed_operating_inputs"]["ordinary_shares"])
+                bound_hashes = {b["sha256"] for b in analysis["source_bindings"]}
+                anchored = any(a.get("field") == "ordinary_shares"
+                    and a.get("period_end") == start.isoformat() and a.get("unit") == "shares"
+                    and a.get("source_value") == opening
+                    and any(s.get("id") == a.get("source_id") and s.get("sha256") in bound_hashes
+                            for s in analysis.get("source_catalog", []))
+                    for a in analysis.get("official_fact_anchors", []))
+                bridged = (checkpoint.get("unchanged_report_period") is True and anchored
+                    and checkpoint.get("period_start") == date(start.year+1, 1, 1).isoformat()
+                    and start == date(start.year, 12, 31))
+                checkpoint = dict(checkpoint,
+                    ordinary_shares=opening if bridged else None,
+                    inherited_opening_class_scope=bridged,
+                    classification="DERIVED_FACT" if bridged else "FACT",
+                    derivation="已消费的期初普通股股数，加上本报告期股份总数及股本结构未变的原件声明" if bridged else None,
+                    continuity_after_period_end=False)
+                result["reports"].append(dict(**source, terms=checkpoint,
+                    published_date=published.isoformat(), consumed_opening_fact=False,
+                    status="NATIVE_CAPITAL_CHECKPOINT_VERIFIED"))
+                continue
             report_end = _day(terms["period_end"])
             if report_end > published:
                 raise ValueError("NATIVE_REPORT_PERIOD_AFTER_PUBLICATION")
@@ -825,19 +867,24 @@ def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison
     checkpoints, followups = [], []
     for report in reports:
         terms = report.get("terms") or {}
-        if (report.get("status") != "NATIVE_REPORT_FIELDS_VERIFIED"
+        if (report.get("status") not in {"NATIVE_REPORT_FIELDS_VERIFIED", "NATIVE_CAPITAL_CHECKPOINT_VERIFIED"}
                 or terms.get("symbol") != analysis["symbol"]):
             continue
         period, published = _day(terms["period_end"]), _day(report["published_date"])
         if comparison_date is not None and (period > comparison_date or published > comparison_date):
             continue
         checkpoints.append(dict(as_of=period.isoformat(), published_date=published.isoformat(),
-            ordinary_shares=terms["ordinary_shares"], evidence_binding=deepcopy(report["binding"]),
+            ordinary_shares=terms["ordinary_shares"], issued_shares=terms.get("issued_shares"),
+            treasury_shares=terms.get("treasury_shares"), proposal_only=terms.get("proposal_only", False),
+            share_scope=terms.get("share_scope"), classification=terms.get("classification", "FACT"),
+            derivation=terms.get("derivation"), evidence_binding=deepcopy(report["binding"]),
             source_url=report["source_url"], available_at=report["source_available_at"],
             matches_consumed_opening=report.get("consumed_opening_fact") is True,
             continuity_after_period_end=False,
             subsequent_capital_statement=terms.get("subsequent_capital_state"),
-            limitation="每股指标影响栏不适用，不是报告期后总股本无任何变动的声明。"))
+            limitation=("明确报告期间未变可连接原始普通股锚点；预案内总股本只证明所述日期总股数，回购库存不等于注销；均不证明其后至比较日连续性。"
+                if report.get("status") == "NATIVE_CAPITAL_CHECKPOINT_VERIFIED"
+                else "每股指标影响栏不适用，不是报告期后总股本无任何变动的声明。")))
         if terms.get("interim_proposal_state") == "NO_INTERIM_DISTRIBUTION_OR_CAPITALIZATION_PROPOSED":
             followups.append(dict(report_period_end=period.isoformat(),
                 published_date=published.isoformat(), evidence_binding=deepcopy(report["binding"]),

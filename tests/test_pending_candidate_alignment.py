@@ -22,6 +22,60 @@ def write(root, name, value):
     return dict(path=name, sha256=sha256_file(path))
 
 
+def test_sse_checkpoint_consumption_preserves_share_class_and_cutoff(tmp_path, monkeypatch):
+    """TEST_ONLY extraction cache; native parser and consumer remain real."""
+    from test_sse_capital_checkpoint_v1 import sample
+    h1, proposal = sample()
+    root = tmp_path
+    opening = write(root, "runtime/opening.json", {"TEST_ONLY": "ordinary shares"})
+    analysis = dict(symbol="600888", consumed_operating_inputs=dict(ordinary_shares="6325360667"),
+        source_bindings=[opening], source_catalog=[dict(id="opening", **opening)],
+        official_fact_anchors=[dict(source_id="opening", field="ordinary_shares", unit="shares",
+            period_end="2025-12-31", source_value="6325360667")],
+        review_binding=dict(candidate_binding=opening), input_descriptor_sha256="a" * 64)
+    h1_ref = write(root, "runtime/h1.json", h1)
+    proposal_ref = write(root, "runtime/proposal.json", proposal)
+    sources = {
+        (h1_ref["path"], h1_ref["sha256"], "https://static.cninfo.com.cn/finalpage/2026-08-27/123.PDF"): "2026-11-18T00:00:00+00:00",
+        (proposal_ref["path"], proposal_ref["sha256"], "https://static.cninfo.com.cn/finalpage/2026-10-30/456.PDF"): "2026-11-18T00:00:00+00:00",
+    }
+    cache = {h1_ref["sha256"]: h1, proposal_ref["sha256"]: proposal}
+    now = datetime(2026, 11, 18, 1, tzinfo=timezone.utc)
+    def consume(value, end=date(2026, 11, 17)):
+        return service._native_basis_fields(value, date(2025, 12, 31), end, now,
+            sources, lambda ref: _bound(root, ref), cache, [])
+    result = consume(analysis)
+    assert len(result["reports"]) == 2 and not result["unresolved_sources"]
+    terms = {r["terms"]["kind"]: r["terms"] for r in result["reports"]}
+    assert terms["H1_REPORT_UNCHANGED"]["ordinary_shares"] == "6325360667"
+    assert terms["H1_REPORT_UNCHANGED"]["classification"] == "DERIVED_FACT"
+    assert terms["INTERIM_PROPOSAL_DATED_SHARES"]["ordinary_shares"] is None
+    assert terms["INTERIM_PROPOSAL_DATED_SHARES"]["issued_shares"] == "6325360667"
+    assert result["closing_capital"]["ordinary_shares"] is None
+    assert result["complete_action_coverage"] is False
+    followup = service._basis_followup(analysis, dict(native_source_consumption=result),
+        dict(outstanding_authorizations=[]), [], date(2026, 11, 17))
+    assert len(followup["capital_checkpoints"]) == 2
+    assert followup["latest_capital_checkpoint"]["treasury_shares"] == "1800200"
+    assert followup["latest_capital_checkpoint"]["proposal_only"] is True
+    assert followup["current_comparison_granted"] is False
+    wrong = deepcopy(analysis)
+    wrong["official_fact_anchors"] = []
+    assert all(r["terms"]["ordinary_shares"] is None for r in consume(wrong)["reports"])
+    assert not consume(analysis, date(2026, 8, 26))["reports"]
+    h1["43"] = "三、股份总数 ６,３２５,３６０,６６７ １００ 其他变动表"
+    guarded = consume(analysis)
+    assert all(r["terms"]["kind"] != "H1_REPORT_UNCHANGED" for r in guarded["reports"])
+    del h1["43"]
+    from value_investment_agent.infrastructure.filings import interim_capital_distribution
+    def contradictory(*args, **kwargs):
+        raise ValueError("INTERIM_CAPITAL_ROLLFORWARD_CONFLICT")
+    monkeypatch.setattr(interim_capital_distribution, "parse_interim_capital_distribution", contradictory)
+    rejected = consume(analysis)
+    assert not rejected["reports"]
+    assert all(r["reason"] == "INTERIM_CAPITAL_ROLLFORWARD_CONFLICT" for r in rejected["unresolved_sources"])
+
+
 @pytest.fixture
 def reconciliation(tmp_path, monkeypatch):
     from pypdf import PdfWriter

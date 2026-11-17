@@ -826,6 +826,49 @@ it("shows an explicit unproven interval without revoking interim authority", () 
   expect(html).toContain("不能把期初股数沿用为当前股数");
   expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
 });
+it("shows every capital checkpoint with separate ordinary, issued, treasury, and proposal meanings", () => {
+  const review = alignmentFixture();
+  review.conditional_price!.alignment!.checks![2].details = {
+    basis_followup: {
+      schema_version: "candidate-basis-followup-v1",
+      action: "no_order",
+      current_comparison_granted: false,
+      capital_checkpoints: [
+        {
+          ordinary_shares: "6325360667",
+          classification: "DERIVED_FACT",
+          derivation: "年度普通股事实 + 半年报总数及结构未变声明",
+          as_of: "2026-06-30",
+          published_date: "2026-08-27",
+        },
+        {
+          ordinary_shares: null,
+          issued_shares: "6325360667",
+          share_scope: "TOTAL_ISSUED_SHARES",
+          treasury_shares: "1800200",
+          proposal_only: true,
+          classification: "FACT",
+          as_of: "2026-10-22",
+          published_date: "2026-10-30",
+        },
+      ],
+      latest_capital_checkpoint: {
+        ordinary_shares: null,
+        as_of: "2026-10-22",
+        published_date: "2026-10-30",
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("推导的普通股股数：6325360667 股");
+  expect(html).toContain("年度普通股事实 + 半年报总数及结构未变声明");
+  expect(html).toContain("普通股股数：未核实");
+  expect(html).toContain("预案所述总股本：6325360667 股");
+  expect(html).toContain("回购专户库存股：1800200 股");
+  expect(html).toContain("预案不是实施或注销证明");
+  expect(html).not.toContain("已核验普通股股数：未提供");
+  expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
+});
 it("shows consumed model fields and never turns event price change into profit forecast", () => {
   const review = alignmentFixture();
   review.conditional_price!.alignment!.checks![3].details = {
