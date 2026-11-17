@@ -39,8 +39,13 @@ def test_v3_terminal_request_exposes_forecast_debt_without_certifying_refinancin
             "debt_repayment": {"values": ["20", "5"]}}}})
     debt = json.loads(request.user)["forecast_closing_debt_after_annual_years"]
     assert debt["value_cny"] == "85"
+    assert debt["annual_path"] == [
+        {"year": 1, "closing_debt_cny": "90"},
+        {"year": 2, "closing_debt_cny": "85"},
+    ]
     assert debt["classification"] == "DERIVED_FORECAST_ASSUMPTION_NOT_FACT"
     assert debt["refinancing_guaranteed"] is False
+    assert "maximum gross terminal repayment" in request.transport_output_contract
 
 
 def test_v3_terminal_rejects_unfunded_debt_policy_before_next_model_call():

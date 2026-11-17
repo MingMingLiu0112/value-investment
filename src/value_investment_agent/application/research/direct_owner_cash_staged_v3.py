@@ -49,13 +49,22 @@ def staged_parent_cash_request_v3(**kwargs):
             return Decimal(term["value"])
         policy = kwargs["prior_drafts"]["policy"]["series"]
         debt = amount(opening_debt)
-        for borrowing, repayment in zip(policy["new_borrowing"]["values"],
-                                        policy["debt_repayment"]["values"], strict=True):
+        debt_path = []
+        years = kwargs["prior_drafts"]["policy"].get("years")
+        borrowings = policy["new_borrowing"]["values"]
+        repayments = policy["debt_repayment"]["values"]
+        if years is not None and len(years) != len(borrowings):
+            raise ValueError("PARENT_V3_FORECAST_DEBT_YEARS_INVALID")
+        for index, (borrowing, repayment) in enumerate(
+                zip(borrowings, repayments, strict=True)):
             debt += Decimal(borrowing) - Decimal(repayment)
             if debt < 0:
                 raise ValueError("PARENT_V3_FORECAST_DEBT_NEGATIVE")
+            debt_path.append(dict(year=years[index] if years is not None else index + 1,
+                                  closing_debt_cny=str(debt)))
         payload["forecast_closing_debt_after_annual_years"] = dict(
             value_cny=str(debt),
+            annual_path=debt_path,
             classification="DERIVED_FORECAST_ASSUMPTION_NOT_FACT",
             method="opening debt assumption plus ten annual new_borrowing minus debt_repayment",
             refinancing_guaranteed=False)
@@ -73,7 +82,11 @@ def staged_parent_cash_request_v3(**kwargs):
         "unsupported rate or infer one from the current share price."
         " If forecast_closing_debt_after_annual_years.value_cny is positive, "
         "terminal.financing cannot be null; an equal borrowing/repayment rollover "
-        "is only a conditional assumption and must include cash interest."
+        "is only a conditional assumption and must include cash interest. "
+        "Use the forecast_closing_debt_after_annual_years amount as the maximum "
+        "gross terminal repayment under constant-debt rollover; do not claim "
+        "debt was fully repaid when that amount remains positive. Its annual_path "
+        "is forecast arithmetic, not evidence of future lender approval."
     )
     return replace(request, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
                                              separators=(",", ":")),
