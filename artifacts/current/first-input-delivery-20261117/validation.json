@@ -1,0 +1,14 @@
+{
+  "status": "ISOLATED_RESTORE_REPLAY_PASSED",
+  "manifest": {
+    "path": "runtime/first-input-delivery/20261117T121740/archive/manifest.json",
+    "sha256": "e79dbe10d20d22ce432b491fc9d6ef1efbf5d0f4853d48a3792c74917399d66d"
+  },
+  "symbols": [
+    "600519",
+    "600887",
+    "000568"
+  ],
+  "action": "no_order",
+  "scope": "E2_READ_MODEL_ONLY_NOT_FULL_API_OR_PRICE_PUBLICATION"
+}

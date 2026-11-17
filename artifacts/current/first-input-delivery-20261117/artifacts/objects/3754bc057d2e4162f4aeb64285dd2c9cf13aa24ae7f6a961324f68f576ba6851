@@ -1,0 +1,182 @@
+{
+  "schema_version": "m1-event-scan-v1",
+  "symbol": "600519",
+  "provider": "cninfo",
+  "scan_from": "2026-10-30",
+  "scan_to": "2026-11-10",
+  "validity_from": "2026-10-30",
+  "validity_to": "2026-11-10",
+  "status": "PENDING_HUMAN_REVIEW",
+  "coverage_status": "COMPLETE",
+  "pre_model_review_status": "NONE",
+  "announcements": [
+    {
+      "announcement_id": "1225652625",
+      "published_at": "2026-11-03T00:00:00+08:00",
+      "title": "贵州茅台关于召开2026年第三季度业绩说明会的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-11-03/1225652625.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225652625",
+          "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/600519-1225652625.pdf",
+          "sha256": "565e9e36441e0dd59da36b23439f0f7d9df6b94f0bc6fa122fc64de1ad2c421a",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-11-03/1225652625.PDF"
+        }
+      ],
+      "notes": "原件已归档；是否影响原论点、预测或估值尚待版本绑定材料性复核。"
+    },
+    {
+      "announcement_id": "1225649906",
+      "published_at": "2026-10-31T00:00:00+08:00",
+      "title": "贵州茅台2026年第三季度主要经营数据公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649906.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225649906",
+          "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/600519-1225649906.pdf",
+          "sha256": "97a72f8015a116aa370abb2a9ca2b926215e54b77509d4932537b3e82d5fada9",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649906.PDF"
+        }
+      ],
+      "notes": "原件已归档；是否影响原论点、预测或估值尚待版本绑定材料性复核。"
+    },
+    {
+      "announcement_id": "1225649903",
+      "published_at": "2026-10-31T00:00:00+08:00",
+      "title": "贵州茅台第五届董事会2026年度第七次会议决议公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649903.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225649903",
+          "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/600519-1225649903.pdf",
+          "sha256": "b29ff9556d09f948ab9444cbb03ec0862d0b12b03a95b3f621b6ba07f67e00ae",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649903.PDF"
+        }
+      ],
+      "notes": "原件已归档；是否影响原论点、预测或估值尚待版本绑定材料性复核。"
+    },
+    {
+      "announcement_id": "1225649901",
+      "published_at": "2026-10-31T00:00:00+08:00",
+      "title": "贵州茅台关于公司高级管理人员2026年度薪酬兑现方案的公告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649901.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225649901",
+          "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/600519-1225649901.pdf",
+          "sha256": "d2c3124a0b337fab2e9332c148cd3565ca6dd19ae33239b378bfaf32ac23a992",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649901.PDF"
+        }
+      ],
+      "notes": "原件已归档；是否影响原论点、预测或估值尚待版本绑定材料性复核。"
+    },
+    {
+      "announcement_id": "1225649896",
+      "published_at": "2026-10-31T00:00:00+08:00",
+      "title": "贵州茅台2026年第三季度报告",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649896.PDF",
+      "rule_kind": "unknown",
+      "review_status": "PENDING_HUMAN_REVIEW",
+      "materiality_candidate": true,
+      "pre_model": false,
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225649896",
+          "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/600519-1225649896.pdf",
+          "sha256": "96ba51ebf414f841bce79b3ba019927df2f795142392e12e96a9d559e96ebb9b",
+          "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649896.PDF"
+        }
+      ],
+      "notes": "原件已归档；是否影响原论点、预测或估值尚待版本绑定材料性复核。"
+    }
+  ],
+  "blockers": [
+    "This acquired query window does not replace earlier event/model/G3 reviews."
+  ],
+  "evidence_refs": [
+    {
+      "id": "daily-index-600519",
+      "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/cninfo-index.json",
+      "sha256": "ed65649293982353ef4c0d444a5a2df0ffe7631f9110565f500ea39a7d413f4d",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-index-manifest-600519",
+      "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/raw-index-manifest.json",
+      "sha256": "cfc038e88e40313137ada0a3d0615405df1ae867af96bc7087b17aa13006c48c",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-600519-1",
+      "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/raw-index/response-0001.bin",
+      "sha256": "de2cbc2baf9fbf5e8b91b5101e411dea2be5edb6c740829921ef1f2820c598ce",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-metadata-600519-1",
+      "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/raw-index/response-0001.json",
+      "sha256": "4f8bfc540bd1136dc22427ed0efdb7701efd75446a629e6bc700976da86ff25d",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-600519-2",
+      "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/raw-index/response-0002.bin",
+      "sha256": "171707591ecdb32d4f8c4ace75b4ec9f5dcd647cd2c070fdff26feeb09119b71",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "daily-raw-metadata-600519-2",
+      "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/raw-index/response-0002.json",
+      "sha256": "c835a4ed51bac29ebc5b13de26c3e580e4b9f760229d93209fbb13d114c2de89",
+      "source_url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+    },
+    {
+      "id": "cninfo:1225652625",
+      "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/600519-1225652625.pdf",
+      "sha256": "565e9e36441e0dd59da36b23439f0f7d9df6b94f0bc6fa122fc64de1ad2c421a",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-11-03/1225652625.PDF"
+    },
+    {
+      "id": "cninfo:1225649906",
+      "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/600519-1225649906.pdf",
+      "sha256": "97a72f8015a116aa370abb2a9ca2b926215e54b77509d4932537b3e82d5fada9",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649906.PDF"
+    },
+    {
+      "id": "cninfo:1225649903",
+      "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/600519-1225649903.pdf",
+      "sha256": "b29ff9556d09f948ab9444cbb03ec0862d0b12b03a95b3f621b6ba07f67e00ae",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649903.PDF"
+    },
+    {
+      "id": "cninfo:1225649901",
+      "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/600519-1225649901.pdf",
+      "sha256": "d2c3124a0b337fab2e9332c148cd3565ca6dd19ae33239b378bfaf32ac23a992",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649901.PDF"
+    },
+    {
+      "id": "cninfo:1225649896",
+      "path": "runtime/value-alignment-event-observation/600519-20261030-20261110-20261111T025324Z/600519-1225649896.pdf",
+      "sha256": "96ba51ebf414f841bce79b3ba019927df2f795142392e12e96a9d559e96ebb9b",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649896.PDF"
+    }
+  ],
+  "retrieved_at": "2026-11-11T02:53:26.730420+00:00",
+  "parser_version": "cninfo-announcement-window-v1"
+}

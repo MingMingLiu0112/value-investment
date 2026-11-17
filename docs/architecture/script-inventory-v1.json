@@ -10,7 +10,7 @@
     "HISTORICAL_VALIDATION_TOOL": 58,
     "COMPANY_RESEARCH_CASE_TOOL": 222,
     "MIGRATION_TOOL": 13,
-    "DIAGNOSTIC_TOOL": 150,
+    "DIAGNOSTIC_TOOL": 151,
     "SUPERSEDED": 0,
     "DELETE_CANDIDATE": 0
   },
@@ -7990,6 +7990,19 @@
       "risk": "LOW",
       "line_count": 170,
       "sha256": "9712afac29f79b0f879525a2d8f9c7160c9f99e2567a9b7d0a92c6ecffc8afb8"
+    },
+    {
+      "path": "scripts/cases/restore_first_input_delivery.py",
+      "category": "DIAGNOSTIC_TOOL",
+      "current_consumers": [
+        "config/current-cli-entrypoints-v2.json"
+      ],
+      "imports_business_logic": false,
+      "replacement": null,
+      "recommended_action": "KEEP_CURRENT",
+      "risk": "LOW",
+      "line_count": 21,
+      "sha256": "7fdbc2dabcc409309a270fbcf57d3182b056d6ec5e986bd735bc0cc9fa79d2bb"
     }
   ]
 }

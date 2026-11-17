@@ -10,7 +10,7 @@ import re
 
 import pypdfium2 as pdfium
 
-from .quarter_financial_ocr_v1 import MODELS
+from .quarter_financial_ocr_v1 import MODELS, SUPPORTED_SYMBOL
 from .quarter_financial_read_model_v1 import read_quarter_financial_ocr, _inside
 from ...infrastructure.filings.pdfium_runtime import serialized_pdfium
 
@@ -109,7 +109,7 @@ def read_quarter_income_facts(root: Path, symbol: str, now: datetime) -> dict:
         registry = json.loads(registry_path.read_bytes())
         if (registry.get("schema_version") != "quarter-income-ocr-registry-v2" or
                 registry.get("action") != "no_order" or
-                set(registry.get("cases", {})) != {"600519"}):
+                set(registry.get("cases", {})) != {SUPPORTED_SYMBOL}):
             raise ValueError("Q3_INCOME_REGISTRY_INVALID")
         case = registry["cases"][symbol]
         if (case.get("source_sha256") != base["source_bindings"]["original"]["sha256"] or

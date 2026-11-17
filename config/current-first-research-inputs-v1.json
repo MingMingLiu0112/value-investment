@@ -10,8 +10,14 @@
     },
     "600887": {
       "receipt": {
-        "path": "runtime/e2-first-input-600887-20261112/compile-20261112T110216618107Z/receipt.json",
-        "sha256": "61597b8ab43005eabcc79ee310fbac987acd624fc8793d53152e54e4c76c5f18"
+        "path": "runtime/direct-owner-cash-600887-20261117/274637612d5947b1b012e2f73f2c459a/receipt.json",
+        "sha256": "34e7282de7fe774a4800610c3412c6b8eef314e95e76eb2211e05ebb53c7cb1b"
+      }
+    },
+    "600519": {
+      "receipt": {
+        "path": "runtime/e2-first-input-600519-20261117/moutai-e2-20261117T062635-6a7697b2/compilation/receipt.json",
+        "sha256": "eefe40a6fd0e7f144fbc2c5f5322d90eca354b4b27e72bf617a899f200b5396f"
       }
     }
   }

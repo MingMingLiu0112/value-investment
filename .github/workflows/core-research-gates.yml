@@ -613,6 +613,7 @@ jobs:
           tests/test_first_research_input_update_v2.py
           tests/test_first_research_financial_update_v1.py
           tests/test_first_input_quote_alignment_v1.py
+          tests/test_first_input_delivery_v1.py
           tests/test_first_input_parent_cash_observation_v1.py
           tests/test_first_research_fact_replay_v1.py
           tests/test_first_research_fact_replay_v2.py
