@@ -547,6 +547,10 @@ export function FirstResearchInputView({
           {data.quote_observation.comparison_eligible
             ? " · 行情比较资格须以正式研究和F2复核为准"
             : " · 尚无价格比较资格，不得据此认定低估或生成买价"}
+          {!data.quote_observation.comparison_eligible &&
+          data.quote_observation.reason
+            ? ` · 原因：${data.quote_observation.reason}`
+            : ""}
         </p>
       )}
       <p>

@@ -504,6 +504,9 @@ export type FirstResearchInputResponse = {
   };
   quote_observation?: {
     status: string;
+    reason?: string | null;
+    research_day?: string | null;
+    quote_verification_status?: string | null;
     quote_date: string | null;
     display_price: string | number | null;
     bundle_sha256: string | null;

@@ -34,6 +34,9 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                 quote = bridge.get("quote") or {}
                 result["quote_observation"] = {
                     "status": bridge["status"],
+                    "reason": bridge.get("reason"),
+                    "research_day": bridge.get("research_day"),
+                    "quote_verification_status": bridge.get("quote_verification_status"),
                     "quote_date": quote.get("quote_date"),
                     "display_price": quote.get("display_price"),
                     "bundle_sha256": quote.get("bundle_sha256"),
@@ -43,7 +46,9 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                 }
             except (ValueError, OSError, KeyError, TypeError):
                 result["quote_observation"] = {
-                    "status": "UNASSESSABLE", "quote_date": None,
+                    "status": "UNASSESSABLE", "reason": "QUOTE_OBSERVATION_REPLAY_FAILED",
+                    "research_day": None, "quote_verification_status": None,
+                    "quote_date": None,
                     "display_price": None, "bundle_sha256": None,
                     "price_admitted": False, "comparison_eligible": False,
                 }

@@ -73,6 +73,8 @@ def test_verified_quote_is_observation_not_first_input_price(registered,monkeypa
     from value_investment_agent.presentation.web_api import first_research_input_routes as routes
     monkeypatch.setattr(routes,'execute_quote_bridge_for_symbol',lambda *args,**kwargs: {
         'status':'QUOTE_VERIFIED_WITHOUT_RESEARCH_DISPLAY_ONLY',
+        'reason':'研究截止日早于报价日', 'research_day':'2026-10-11',
+        'quote_verification_status':'QUOTE_VERIFIED_BUT_RESEARCH_STALE',
         'price_admitted':False,
         'quote':{'quote_date':'2026-11-10','display_price':'79.99','bundle_sha256':'a'*64},
         'compatibility':{'comparison_eligible':{'eligible':False}},
@@ -82,6 +84,8 @@ def test_verified_quote_is_observation_not_first_input_price(registered,monkeypa
     body=client.get(ROUTE+'600887').json()
     assert body['status']=='SOURCE_BOUND_FIRST_INPUT_COMPILED'
     assert body['quote_observation']['display_price']=='79.99'
+    assert body['quote_observation']['reason']=='研究截止日早于报价日'
+    assert body['quote_observation']['research_day']=='2026-10-11'
     assert body['quote_observation']['comparison_eligible'] is False
     assert body['current_price'] is None and body['condition_price'] is None
     assert body['formal_eligibility'] is False and body['action']=='no_order'
