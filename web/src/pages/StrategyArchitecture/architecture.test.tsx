@@ -260,9 +260,9 @@ it("records the current driver bridge arithmetic acceptance without adopting par
     expect(stage.deliveryReview?.done).toContain(
       "最近一次真实分段任务的经营阶段通过",
     );
-    expect(stage.deliveryReview?.gap).toContain("现金政策阶段因重复证据ID拒绝");
-    expect(stage.deliveryReview?.gap).toContain("终值经济合同");
-    expect(stage.deliveryReview?.gap).toContain("E2实际消费尚未验收");
+    expect(stage.deliveryReview?.gap).toContain("终值债务政策校验");
+    expect(stage.deliveryReview?.gap).toContain("到期偿债或再融资路径");
+    expect(stage.deliveryReview?.gap).toContain("不能进入E2/F1/F2");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
   expect(d1.evidenceStatus).toContain("当前版本三角色研究");
