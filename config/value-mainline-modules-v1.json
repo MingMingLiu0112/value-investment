@@ -1708,6 +1708,16 @@
           "type": "cli",
           "path": "scripts/current/build_joint_cash_v4_candidates.py",
           "entrypoint": "main / CASES"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/direct_owner_cash_update_v1.py",
+          "entrypoint": "build_direct_owner_cash_update"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/direct_owner_cash_update_v1.py",
+          "entrypoint": "replay_direct_owner_cash_update"
         }
       ],
       "method_status": {
@@ -1876,10 +1886,11 @@
           ]
         },
         "application": {
-          "description": "prepare_pending_research_candidate；从明确旧package及source-bound policy/choice生成并校验新候选。",
+          "description": "prepare_pending_research_candidate；从明确旧package及source-bound policy/choice生成并校验新候选。 直接股东现金候选亦可连接不可变前后版本，逐端冷重算、比较实质经济输入；仅改时间、价格有效期或数字格式不算更新。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
-            "src/value_investment_agent/application/product/pending_research_candidate.py"
+            "src/value_investment_agent/application/product/pending_research_candidate.py",
+            "src/value_investment_agent/application/research/direct_owner_cash_update_v1.py"
           ]
         },
         "input_output_schema": {
@@ -1925,10 +1936,11 @@
           ]
         },
         "web": {
-          "description": "既有DecisionDetail research_analysis / JointCapitalReview。",
+          "description": "既有DecisionDetail research_analysis / JointCapitalReview。 现有首编API及公司页面共同展示直接现金修订、逐年现金/分配变化，并区分当前研究是前驱还是后继；当前为后继时展示修订来历，不伪称又有新研究。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
-            "src/value_investment_agent/presentation/web_api/app.py"
+            "src/value_investment_agent/presentation/web_api/app.py",
+            "src/value_investment_agent/application/research/direct_owner_cash_update_v1.py"
           ]
         },
         "hardcoded": {

@@ -177,6 +177,194 @@ function supplied(value: unknown): string {
   return typeof value === "string" ? value : JSON.stringify(value);
 }
 
+function ResearchSuccessorView({
+  data,
+  symbol,
+}: {
+  data: FirstResearchInputResponse;
+  symbol: string;
+}) {
+  return (
+    <>
+      {data.successor_update?.status === "SOURCE_BOUND_CONDITIONAL_SUCCESSOR" &&
+        data.successor_update.symbol === symbol &&
+        data.successor_update.action === "no_order" &&
+        data.successor_update.formal_eligibility === false &&
+        data.successor_update.main_range_adopted === false &&
+        data.successor_update.price_admitted === false && (
+          <section aria-label="研究版本更新">
+            <h4>E1 研究版本更新</h4>
+            {data.successor_update.displayed_version_role === "SUCCESSOR" && (
+              <p>
+                本页当前研究已是下方新版；此处展示其修订来历，不代表又产生一份后续研究。
+              </p>
+            )}
+            <p>
+              新增来源或假设后，旧版与新版均已按各自绑定输入冷重算。新版仍是未批准的条件压力研究，不是当前可比较的主估值或买价。
+            </p>
+            <p>
+              新版研究截止：{data.successor_update.research_as_of || "未提供"} ·
+              财务依据：{data.successor_update.financial_basis || "未提供"}
+            </p>
+            <p>
+              变化输入：
+              {data.successor_update.changed_input_fields?.join("、") ||
+                "未提供"}
+            </p>
+            {data.successor_update.change_rationale && (
+              <p>
+                <strong>变更依据与性质：</strong>
+                {data.successor_update.change_rationale}
+              </p>
+            )}
+            {data.successor_update.countercase && (
+              <p>
+                <strong>需要重开的反证：</strong>
+                {data.successor_update.countercase}
+              </p>
+            )}
+            <ul>
+              {SCENARIOS.map(([name, label]) => {
+                const key =
+                  name === "bear"
+                    ? "bear_value"
+                    : name === "base"
+                      ? "base_value"
+                      : "bull_value";
+                return (
+                  <li key={name}>
+                    {label}：旧版{" "}
+                    {amount(
+                      data.successor_update?.predecessor_valuation?.[key],
+                    )}{" "}
+                    元 → 新版{" "}
+                    {amount(data.successor_update?.successor_valuation?.[key])}{" "}
+                    元
+                  </li>
+                );
+              })}
+            </ul>
+            <details>
+              <summary>新旧输入指纹</summary>
+              <p>旧版：{data.successor_update.predecessor_input_fingerprint}</p>
+              <p>新版：{data.successor_update.successor_input_fingerprint}</p>
+            </details>
+            {data.successor_update.yearly_changes && (
+              <details>
+                <summary>逐年经营现金与股东分配变化（元）</summary>
+                {SCENARIOS.map(([name, label]) => {
+                  const change = data.successor_update?.yearly_changes?.[name];
+                  if (!change) return null;
+                  return (
+                    <section key={name}>
+                      <h5>{label}</h5>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>年度</th>
+                            <th>经营现金：旧 → 新</th>
+                            <th>股东分配：旧 → 新</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {change.successor.map((row, index) => {
+                            const old = change.predecessor.find(
+                              (item) => item.year === row.year,
+                            );
+                            return (
+                              <tr key={String(row.year ?? index)}>
+                                <td>{supplied(row.year)}</td>
+                                <td>
+                                  {amount(old?.direct_operating_cash_cny)} →{" "}
+                                  {amount(row.direct_operating_cash_cny)}
+                                </td>
+                                <td>
+                                  {amount(old?.conditional_distribution_cny)} →{" "}
+                                  {amount(row.conditional_distribution_cny)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </section>
+                  );
+                })}
+              </details>
+            )}
+            {!!data.successor_update.changed_assumptions?.length && (
+              <details>
+                <summary>修改的假设及对应事实锚点</summary>
+                <p>来源与计算已重放；未来假设及修订理由仍需经济复核。</p>
+                {data.successor_update.changed_assumptions.map((change) => (
+                  <details key={change.spec_path}>
+                    <summary>{change.spec_path}</summary>
+                    <p>{supplied(change.successor.rationale)}</p>
+                    <p>反证：{supplied(change.successor.counter_evidence)}</p>
+                    <ul>
+                      {Object.entries(change.evidence_anchors).map(
+                        ([id, anchor]) => (
+                          <li key={id}>
+                            {id}：{supplied(anchor.period_end)} ·{" "}
+                            {supplied(anchor.section)} ·{" "}
+                            {supplied(anchor.field)} · {supplied(anchor.column)}
+                          </li>
+                        ),
+                      )}
+                    </ul>
+                  </details>
+                ))}
+              </details>
+            )}
+          </section>
+        )}
+      {data.successor_update?.status === "UNASSESSABLE" && (
+        <Alert
+          type="warning"
+          message={
+            data.historical_successor_update
+              ? "当前候选没有对应的后继研究"
+              : "后继研究版本无法核验"
+          }
+          description={
+            data.historical_successor_update
+              ? "下方可查看另一份旧研究输入的历史版本链；其结论不适用于本页当前候选。"
+              : data.successor_update.reason || "来源或版本校验失败"
+          }
+        />
+      )}
+      {data.historical_successor_update?.status ===
+        "SOURCE_BOUND_CONDITIONAL_SUCCESSOR" &&
+        data.historical_successor_update.symbol === symbol &&
+        data.historical_successor_update.action === "no_order" && (
+          <section aria-label="历史研究版本">
+            <h4>E1 历史研究版本</h4>
+            <p>
+              该版本链已按原来源冷重算，但它接续的是另一份旧研究输入，不改变本页当前候选或条件价格。
+            </p>
+            <p>
+              研究截止：
+              {data.historical_successor_update.research_as_of || "未提供"} ·
+              财务依据：
+              {data.historical_successor_update.financial_basis || "未提供"}
+            </p>
+            <p>
+              变化输入：
+              {data.historical_successor_update.changed_input_fields?.join(
+                "、",
+              ) || "未提供"}
+            </p>
+            {data.historical_successor_update.change_rationale && (
+              <p>
+                修订理由：{data.historical_successor_update.change_rationale}
+              </p>
+            )}
+          </section>
+        )}
+    </>
+  );
+}
+
 function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
   const cash = data.direct_owner_cash!;
   const price = cash.conditional_price;
@@ -471,6 +659,7 @@ export function FirstResearchInputView({
     return (
       <>
         <DirectOwnerCashView data={data} />
+        <ResearchSuccessorView data={data} symbol={symbol} />
         <PartialParentCashView data={data} />
       </>
     );
@@ -718,109 +907,7 @@ export function FirstResearchInputView({
       <p>
         本页只读重放已登记输入，不发起新LLM或自动任务；不新增C第六家验收，也不授予正式画像准入或交易资格。
       </p>
-      {data.successor_update?.status === "SOURCE_BOUND_CONDITIONAL_SUCCESSOR" &&
-        data.successor_update.symbol === symbol &&
-        data.successor_update.action === "no_order" &&
-        data.successor_update.formal_eligibility === false &&
-        data.successor_update.main_range_adopted === false &&
-        data.successor_update.price_admitted === false && (
-          <section aria-label="研究版本更新">
-            <h4>E1 研究版本更新</h4>
-            <p>
-              新增来源或假设后，旧版与新版均已按各自绑定输入冷重算。新版仍是未批准的条件压力研究，不是当前可比较的主估值或买价。
-            </p>
-            <p>
-              新版研究截止：{data.successor_update.research_as_of || "未提供"} ·
-              财务依据：{data.successor_update.financial_basis || "未提供"}
-            </p>
-            <p>
-              变化输入：
-              {data.successor_update.changed_input_fields?.join("、") ||
-                "未提供"}
-            </p>
-            {data.successor_update.change_rationale && (
-              <p>
-                <strong>变更依据与性质：</strong>
-                {data.successor_update.change_rationale}
-              </p>
-            )}
-            {data.successor_update.countercase && (
-              <p>
-                <strong>需要重开的反证：</strong>
-                {data.successor_update.countercase}
-              </p>
-            )}
-            <ul>
-              {SCENARIOS.map(([name, label]) => {
-                const key =
-                  name === "bear"
-                    ? "bear_value"
-                    : name === "base"
-                      ? "base_value"
-                      : "bull_value";
-                return (
-                  <li key={name}>
-                    {label}：旧版{" "}
-                    {amount(
-                      data.successor_update?.predecessor_valuation?.[key],
-                    )}{" "}
-                    元 → 新版{" "}
-                    {amount(data.successor_update?.successor_valuation?.[key])}{" "}
-                    元
-                  </li>
-                );
-              })}
-            </ul>
-            <details>
-              <summary>新旧输入指纹</summary>
-              <p>旧版：{data.successor_update.predecessor_input_fingerprint}</p>
-              <p>新版：{data.successor_update.successor_input_fingerprint}</p>
-            </details>
-          </section>
-        )}
-      {data.successor_update?.status === "UNASSESSABLE" && (
-        <Alert
-          type="warning"
-          message={
-            data.historical_successor_update
-              ? "当前候选没有对应的后继研究"
-              : "后继研究版本无法核验"
-          }
-          description={
-            data.historical_successor_update
-              ? "下方可查看另一份旧研究输入的历史版本链；其结论不适用于本页当前候选。"
-              : data.successor_update.reason || "来源或版本校验失败"
-          }
-        />
-      )}
-      {data.historical_successor_update?.status ===
-        "SOURCE_BOUND_CONDITIONAL_SUCCESSOR" &&
-        data.historical_successor_update.symbol === symbol &&
-        data.historical_successor_update.action === "no_order" && (
-          <section aria-label="历史研究版本">
-            <h4>E1 历史研究版本</h4>
-            <p>
-              该版本链已按原来源冷重算，但它接续的是另一份旧研究输入，不改变本页当前候选或条件价格。
-            </p>
-            <p>
-              研究截止：
-              {data.historical_successor_update.research_as_of || "未提供"} ·
-              财务依据：
-              {data.historical_successor_update.financial_basis || "未提供"}
-            </p>
-            <p>
-              变化输入：
-              {data.historical_successor_update.changed_input_fields?.join(
-                "、",
-              ) || "未提供"}
-            </p>
-            {data.historical_successor_update.change_rationale && (
-              <p>
-                修订理由：{data.historical_successor_update.change_rationale}
-              </p>
-            )}
-          </section>
-        )}
+      <ResearchSuccessorView data={data} symbol={symbol} />
       <h4>条件研究论点</h4>
       <p>{data.research_case.thesis}</p>
       {SCENARIOS.map(([name, label]) => {

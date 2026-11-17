@@ -480,37 +480,42 @@ it.each([
   expect(html).not.toContain("22.22");
   expect(html).not.toContain("7.125");
 });
-it("shows the real E1 version difference as unapproved conditional research", () => {
-  const data = example();
-  data.successor_update = {
-    status: "SOURCE_BOUND_CONDITIONAL_SUCCESSOR",
-    symbol: "000568",
-    action: "no_order",
-    formal_eligibility: false,
-    main_range_adopted: false,
-    price_admitted: false,
-    research_as_of: "2026-11-11",
-    financial_basis: "2026-06-30",
-    changed_input_fields: ["assumption_binding"],
-    change_rationale: "TEST_ONLY季度收入压力延续假设",
-    countercase: "TEST_ONLY后续销售恢复须重开",
-    predecessor_input_fingerprint: "old",
-    successor_input_fingerprint: "new",
-    predecessor_valuation: data.valuation,
-    successor_valuation: { ...data.valuation!, bear_value: "9.45" },
-  };
-  const visible = visibleHtml(
-    renderToStaticMarkup(
-      <FirstResearchInputView data={data} symbol="000568" />,
-    ),
-  );
-  expect(visible).toContain("E1 研究版本更新");
-  expect(visible).toContain("11.11");
-  expect(visible).toContain("9.45");
-  expect(visible).toContain("不是当前可比较的主估值或买价");
-  expect(visible).toContain("TEST_ONLY季度收入压力延续假设");
-  expect(visible).toContain("TEST_ONLY后续销售恢复须重开");
-});
+it.each(["legacy", "direct"])(
+  "shows E1 version differences for %s cash research",
+  (mode) => {
+    const data = mode === "direct" ? directFixture() : example();
+    data.successor_update = {
+      status: "SOURCE_BOUND_CONDITIONAL_SUCCESSOR",
+      symbol: data.symbol,
+      action: "no_order",
+      formal_eligibility: false,
+      main_range_adopted: false,
+      price_admitted: false,
+      displayed_version_role: "SUCCESSOR",
+      research_as_of: "2026-11-11",
+      financial_basis: "2026-06-30",
+      changed_input_fields: ["assumption_binding"],
+      change_rationale: "TEST_ONLY季度收入压力延续假设",
+      countercase: "TEST_ONLY后续销售恢复须重开",
+      predecessor_input_fingerprint: "old",
+      successor_input_fingerprint: "new",
+      predecessor_valuation: data.valuation,
+      successor_valuation: { ...data.valuation!, bear_value: "9.45" },
+    };
+    const visible = visibleHtml(
+      renderToStaticMarkup(
+        <FirstResearchInputView data={data} symbol={data.symbol} />,
+      ),
+    );
+    expect(visible).toContain("E1 研究版本更新");
+    expect(visible).toContain("本页当前研究已是下方新版");
+    expect(visible).toContain("旧版");
+    expect(visible).toContain("9.45");
+    expect(visible).toContain("不是当前可比较的主估值或买价");
+    expect(visible).toContain("TEST_ONLY季度收入压力延续假设");
+    expect(visible).toContain("TEST_ONLY后续销售恢复须重开");
+  },
+);
 beforeEach(() => {
   state.value = { loading: false, error: undefined, retry: vi.fn() };
 });

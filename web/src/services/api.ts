@@ -458,6 +458,21 @@ export type FirstResearchInputResponse = {
   scope: string;
   action: "no_order";
   successor_update?: {
+    displayed_version_role?: "PREDECESSOR" | "SUCCESSOR" | null;
+    changed_assumptions?: {
+      spec_path: string;
+      successor: Record<string, unknown>;
+      evidence_anchors: Record<string, Record<string, unknown>>;
+    }[];
+    yearly_changes?: Partial<
+      Record<
+        FirstResearchScenarioKey,
+        {
+          predecessor: Record<string, unknown>[];
+          successor: Record<string, unknown>[];
+        }
+      >
+    >;
     status:
       "NOT_STARTED" | "SOURCE_BOUND_CONDITIONAL_SUCCESSOR" | "UNASSESSABLE";
     reason?: string;

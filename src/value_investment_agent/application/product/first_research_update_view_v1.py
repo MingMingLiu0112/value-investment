@@ -24,7 +24,8 @@ def _bound(root: Path, ref: dict, label: str) -> dict:
 
 
 def read_first_research_update(*, root: Path, symbol: str, now: datetime,
-                               predecessor_binding: dict | None = None) -> dict:
+                               predecessor_binding: dict | None = None,
+                               displayed_binding: dict | None = None) -> dict:
     if not isinstance(symbol, str) or len(symbol) != 6 or not symbol.isascii() or not symbol.isdigit():
         raise ValueError("Invalid E1 update symbol")
     base = dict(schema_version="first-research-update-view-v1", action="no_order",
@@ -43,7 +44,7 @@ def read_first_research_update(*, root: Path, symbol: str, now: datetime,
         if ref is None:
             return base
         update = _bound(root, ref, "E1 update")
-        if (update.get("schema_version") not in {"first-research-input-update-v1", "first-research-input-update-v2"}
+        if (update.get("schema_version") not in {"first-research-input-update-v1", "first-research-input-update-v2", "direct-owner-cash-update-v1"}
                 or update.get("symbol") != symbol or update.get("action") != "no_order"
                 or update.get("status") != "SUCCESSOR_CONDITIONAL_RESEARCH_PENDING_REVIEW"
                 or any(update.get(key) is not False for key in
@@ -51,6 +52,35 @@ def read_first_research_update(*, root: Path, symbol: str, now: datetime,
             raise ValueError("E1 update boundary invalid")
         if predecessor_binding is not None and predecessor_binding != update["predecessor_binding"]:
             raise ValueError("E1 predecessor differs from the currently displayed first input")
+        if displayed_binding is not None and displayed_binding not in (
+                update["predecessor_binding"], update["successor_binding"]):
+            raise ValueError("E1 predecessor differs from the currently displayed first input")
+        relation = ("SUCCESSOR" if displayed_binding == update["successor_binding"]
+                    else "PREDECESSOR" if displayed_binding == update["predecessor_binding"]
+                    else None)
+        if update["schema_version"] == "direct-owner-cash-update-v1":
+            from ..research.agent_review.web_research import _binding
+            from ..research.direct_owner_cash_update_v1 import replay_direct_owner_cash_update
+            # Apply the same public-path checks as first-input reads before replay.
+            _binding(root, update["change_binding"])
+            for key in ("predecessor_binding", "successor_binding"):
+                _binding(root, update[key])
+                receipt = _bound(root, update[key], "E1 direct receipt")
+                for item in receipt.get("source_bindings", []):
+                    _binding(root, item, runtime_only=False)
+                for field in ("spec_binding", "result_binding"):
+                    _binding(root, receipt[field])
+            verified = replay_direct_owner_cash_update(root=root, update_binding=ref, now=now)
+            return dict(base, status="SOURCE_BOUND_CONDITIONAL_SUCCESSOR",
+                        displayed_version_role=relation,
+                        yearly_changes=verified["yearly_changes"],
+                        changed_assumptions=verified["changed_assumptions"],
+                        **{key: verified[key] for key in (
+                            "changed_input_fields", "change_rationale", "countercase",
+                            "predecessor_input_fingerprint", "successor_input_fingerprint",
+                            "predecessor_valuation", "successor_valuation", "valuation_changed",
+                            "research_as_of", "financial_basis", "source_bindings")},
+                        scope="CONDITIONAL_CASH_RESEARCH_NOT_CURRENT_PRICE_REVIEW")
         if update["schema_version"] == "first-research-input-update-v2":
             from ..research.first_research_input_v2 import replay_first_research_input_v2
             replay = replay_first_research_input_v2
@@ -85,6 +115,7 @@ def read_first_research_update(*, root: Path, symbol: str, now: datetime,
                 or not isinstance(countercase, str) or not countercase.strip()):
             raise ValueError("E1 successor rationale incomplete")
         return dict(base, status="SOURCE_BOUND_CONDITIONAL_SUCCESSOR", changed_input_fields=update["changed_input_fields"],
+                    displayed_version_role=relation,
                     predecessor_input_fingerprint=old["input_fingerprint"],
                     successor_input_fingerprint=new["input_fingerprint"],
                     predecessor_valuation=old["valuation"], successor_valuation=new["valuation"],

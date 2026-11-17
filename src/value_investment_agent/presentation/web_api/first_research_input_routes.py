@@ -20,7 +20,7 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
             result["e2_quote_alignment"] = read_first_input_quote_alignment(
                 root=project, symbol=symbol, first_input=result, now=clock())
             result["successor_update"] = read_first_research_update(
-                root=project, symbol=symbol, now=clock(), predecessor_binding=result["receipt_binding"])
+                root=project, symbol=symbol, now=clock(), displayed_binding=result["receipt_binding"])
             if (result["successor_update"].get("status") == "UNASSESSABLE"
                     and result["successor_update"].get("reason") ==
                     "E1 predecessor differs from the currently displayed first input"):
