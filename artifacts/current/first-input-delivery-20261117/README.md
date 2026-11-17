@@ -1,5 +1,11 @@
 # Public first-input delivery
 
+Historical in-process validation only. A clean-checkout check subsequently
+failed because Git-normalized source bytes differed from the historical
+implementation hashes. Use `../first-input-delivery-20261117-cold` for the
+corrected cold-process delivery. This archive remains unchanged as evidence;
+its original validation is not a clean-checkout acceptance.
+
 This content-addressed archive restores the exact public inputs currently read
 for 600519, 600887 and 000568. It contains no portfolio or approval record.
 The source snapshot is commit `b640cbea0adeedc40137efb63eee7782089c8127`.

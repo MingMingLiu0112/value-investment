@@ -5,12 +5,27 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 import zipfile
+import subprocess
+import sys
 
 from ...infrastructure.public_evidence_archive_v2 import restore_archive
-from ..product.first_research_input_view_v1 import read_first_research_input
 
 KEYS = ("status", "receipt_binding", "input_fingerprint", "valuation", "annual_ledgers",
         "financial_update_observation", "action")
+
+
+def _replay_projection(stage, symbol, now):
+    code = (
+        "import sys,json;from pathlib import Path;from datetime import datetime;"
+        "root=Path(sys.argv[1]);sys.path.insert(0,str(root/'src'));"
+        "from value_investment_agent.application.product.first_research_input_view_v1 import read_first_research_input;"
+        "x=read_first_research_input(root=root,symbol=sys.argv[2],now=datetime.fromisoformat(sys.argv[3]));"
+        "keys=json.loads(sys.argv[4]);print(json.dumps({k:x.get(k) for k in keys}))"
+    )
+    run = subprocess.run([sys.executable, "-I", "-B", "-c", code, str(stage), symbol,
+                          now.isoformat(), json.dumps(KEYS)], cwd=stage,
+                         capture_output=True, timeout=180, check=True)
+    return json.loads(run.stdout)
 
 
 def restore_first_input_delivery(*, archive_root, manifest_sha256, destination):
@@ -49,7 +64,7 @@ def restore_first_input_delivery(*, archive_root, manifest_sha256, destination):
         if now.utcoffset() is None:
             raise ValueError("FIRST_INPUT_DELIVERY_CLOCK_REQUIRED")
         for symbol, expected in bundle["expected"].items():
-            actual = read_first_research_input(root=stage, symbol=symbol, now=now)
+            actual = _replay_projection(stage, symbol, now)
             if {key: actual.get(key) for key in KEYS} != expected:
                 raise ValueError("FIRST_INPUT_RESTORED_RESULT_MISMATCH:" + symbol)
     packet = restore_archive(archive_root=archive_root, manifest_sha256=manifest_sha256,

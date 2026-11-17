@@ -23,7 +23,7 @@ def setup_delivery(tmp_path, monkeypatch):
         kwargs["validate"](stage, packet)
         return packet
     monkeypatch.setattr(module, "restore_archive", restore)
-    monkeypatch.setattr(module, "read_first_research_input", lambda **kwargs: expected.copy())
+    monkeypatch.setattr(module, "_replay_projection", lambda *args: expected.copy())
     return bundle
 
 
@@ -35,7 +35,7 @@ def run(tmp_path):
 def test_restore_recalculates_and_requires_matching_result(tmp_path, monkeypatch):
     setup_delivery(tmp_path, monkeypatch)
     assert run(tmp_path)["status"] == "ISOLATED_RESTORE_REPLAY_PASSED"
-    monkeypatch.setattr(module, "read_first_research_input", lambda **kwargs: {"status": "UNASSESSABLE"})
+    monkeypatch.setattr(module, "_replay_projection", lambda *args: {"status": "UNASSESSABLE"})
     with pytest.raises(ValueError, match="RESTORED_RESULT_MISMATCH"):
         run(tmp_path)
 
@@ -53,8 +53,8 @@ def test_config_escape_and_empty_results_rejected(tmp_path, monkeypatch):
 def test_checked_in_public_delivery_replays_real_sources(tmp_path):
     root = Path(__file__).resolve().parents[1]
     result = module.restore_first_input_delivery(
-        archive_root=root / "artifacts/current/first-input-delivery-20261117",
-        manifest_sha256="e79dbe10d20d22ce432b491fc9d6ef1efbf5d0f4853d48a3792c74917399d66d",
+        archive_root=root / "artifacts/current/first-input-delivery-20261117-cold",
+        manifest_sha256="4b95fddb8789946da8d9378087a5886b780e926cd35ff73c09ceef007861f2a4",
         destination=tmp_path / "restored")
     assert result["status"] == "ISOLATED_RESTORE_REPLAY_PASSED"
     assert result["action"] == "no_order"
