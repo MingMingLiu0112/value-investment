@@ -1,0 +1,598 @@
+{
+  "symbol": "000333",
+  "package_version": "midea-2014-2024-equity-return-candidate-v1",
+  "period_start": "2014-01-01",
+  "period_end": "2024-12-31",
+  "review_date": "2026-09-22",
+  "source_type": "issuer_annual_report_equity_return_candidate_series",
+  "engineering_status": "equity_return_candidate_series_compiled",
+  "status": "equity_return_candidate_series_compiled_not_reviewed_or_registered",
+  "financial_scope_approved": false,
+  "valuation_status": "VALUATION_NOT_READY",
+  "registered_valuation_model": null,
+  "registered_valuation_inputs": {},
+  "formal_fair_value": null,
+  "valuation_approved": false,
+  "simulation_eligible": false,
+  "trade_approved": false,
+  "live_eligible": false,
+  "purpose": "Turn each year's original audited attributable-equity, attributable-profit, cash-dividend, and buyback-style cash-return disclosures into a page-addressed point-in-time candidate series. No row is a forecast ROE, cost-of-equity, payout, or ordinary-share denominator input.",
+  "series": [
+    {
+      "year": 2014,
+      "report_period_end": "2014-12-31",
+      "source_id": "cninfo:1200767542",
+      "available_at": "2015-04-01T00:00:00+08:00",
+      "audited_facts": {
+        "attributable_ordinary_equity_cny": "39470499840",
+        "attributable_ordinary_net_profit_cny": "10502220260",
+        "cash_dividend_proposed_cny": "4215808472.00",
+        "buyback_cash_counted_as_distribution_cny": "0.00",
+        "total_disclosed_cash_distribution_cny": "4215808472.00",
+        "cash_dividend_per_ten_shares_cny": "10.00",
+        "distribution_share_base_shares": "4215808472"
+      },
+      "derived_candidates": {
+        "cash_dividend_to_parent_net_profit": "0.401420687",
+        "buyback_cash_to_parent_net_profit": "0.000000000",
+        "total_cash_distribution_to_parent_net_profit": "0.401420687"
+      },
+      "disclosed_ratios": {
+        "cash_dividend_payout_ratio_in_original_report": "40.14%",
+        "total_cash_distribution_ratio_in_original_report": "40.14%"
+      },
+      "page_refs": {
+        "balance_sheet": 90,
+        "income_statement": 91,
+        "dividend_disclosure": [
+          36,
+          37
+        ]
+      },
+      "point_in_time": "2014 original annual-report filing",
+      "review_status": "candidate_series_not_reviewed_or_approved",
+      "model_input": null
+    },
+    {
+      "year": 2015,
+      "report_period_end": "2015-12-31",
+      "source_id": "cninfo:1202084987",
+      "available_at": "2016-03-26T00:00:00+08:00",
+      "audited_facts": {
+        "attributable_ordinary_equity_cny": "49201852000",
+        "attributable_ordinary_net_profit_cny": "12706725000",
+        "cash_dividend_proposed_cny": "5120869473.60",
+        "buyback_cash_counted_as_distribution_cny": "0.00",
+        "total_disclosed_cash_distribution_cny": "5120869473.60",
+        "cash_dividend_per_ten_shares_cny": "12.00",
+        "distribution_share_base_shares": "4267391228"
+      },
+      "derived_candidates": {
+        "cash_dividend_to_parent_net_profit": "0.403004667",
+        "buyback_cash_to_parent_net_profit": "0.000000000",
+        "total_cash_distribution_to_parent_net_profit": "0.403004667"
+      },
+      "disclosed_ratios": {
+        "cash_dividend_payout_ratio_in_original_report": "40.30%",
+        "total_cash_distribution_ratio_in_original_report": "40.30%"
+      },
+      "page_refs": {
+        "balance_sheet": 77,
+        "income_statement": 78,
+        "dividend_disclosure": [
+          36,
+          37
+        ]
+      },
+      "point_in_time": "2015 original annual-report filing",
+      "review_status": "candidate_series_not_reviewed_or_approved",
+      "model_input": null
+    },
+    {
+      "year": 2016,
+      "report_period_end": "2016-12-31",
+      "source_id": "cninfo:1203240657",
+      "available_at": "2017-03-31T00:00:00+08:00",
+      "audited_facts": {
+        "attributable_ordinary_equity_cny": "61126923000",
+        "attributable_ordinary_net_profit_cny": "14684357000",
+        "cash_dividend_proposed_cny": "6465677368.00",
+        "buyback_cash_counted_as_distribution_cny": "0.00",
+        "total_disclosed_cash_distribution_cny": "6465677368.00",
+        "cash_dividend_per_ten_shares_cny": "10.00",
+        "distribution_share_base_shares": "6465677368"
+      },
+      "derived_candidates": {
+        "cash_dividend_to_parent_net_profit": "0.440310554",
+        "buyback_cash_to_parent_net_profit": "0.000000000",
+        "total_cash_distribution_to_parent_net_profit": "0.440310554"
+      },
+      "disclosed_ratios": {
+        "cash_dividend_payout_ratio_in_original_report": "44.03%",
+        "total_cash_distribution_ratio_in_original_report": "44.03%"
+      },
+      "page_refs": {
+        "balance_sheet": 76,
+        "income_statement": 77,
+        "dividend_disclosure": [
+          34,
+          35
+        ]
+      },
+      "point_in_time": "2016 original annual-report filing",
+      "review_status": "candidate_series_not_reviewed_or_approved",
+      "model_input": null
+    },
+    {
+      "year": 2017,
+      "report_period_end": "2017-12-31",
+      "source_id": "cninfo:1204557296",
+      "available_at": "2018-03-31T00:00:00+08:00",
+      "audited_facts": {
+        "attributable_ordinary_equity_cny": "73737437000",
+        "attributable_ordinary_net_profit_cny": "17283689000",
+        "cash_dividend_proposed_cny": "7900827088.80",
+        "buyback_cash_counted_as_distribution_cny": "0.00",
+        "total_disclosed_cash_distribution_cny": "7900827088.80",
+        "cash_dividend_per_ten_shares_cny": "12.00",
+        "distribution_share_base_shares": "6584022574"
+      },
+      "derived_candidates": {
+        "cash_dividend_to_parent_net_profit": "0.457126201",
+        "buyback_cash_to_parent_net_profit": "0.000000000",
+        "total_cash_distribution_to_parent_net_profit": "0.457126201"
+      },
+      "disclosed_ratios": {
+        "cash_dividend_payout_ratio_in_original_report": "45.71%",
+        "total_cash_distribution_ratio_in_original_report": "45.71%"
+      },
+      "page_refs": {
+        "balance_sheet": 86,
+        "income_statement": 87,
+        "dividend_disclosure": [
+          39,
+          40
+        ]
+      },
+      "point_in_time": "2017 original annual-report filing",
+      "review_status": "candidate_series_not_reviewed_or_approved",
+      "model_input": null
+    },
+    {
+      "year": 2018,
+      "report_period_end": "2018-12-31",
+      "source_id": "cninfo:1206062041",
+      "available_at": "2019-04-20T00:00:00+08:00",
+      "audited_facts": {
+        "attributable_ordinary_equity_cny": "83072116000",
+        "attributable_ordinary_net_profit_cny": "20230779000",
+        "cash_dividend_proposed_cny": "8561589853.70",
+        "buyback_cash_counted_as_distribution_cny": "4000000000.00",
+        "total_disclosed_cash_distribution_cny": "12561589853.70",
+        "cash_dividend_per_ten_shares_cny": "13.00",
+        "distribution_share_base_shares": "6585838349"
+      },
+      "derived_candidates": {
+        "cash_dividend_to_parent_net_profit": "0.423196252",
+        "buyback_cash_to_parent_net_profit": "0.197718536",
+        "total_cash_distribution_to_parent_net_profit": "0.620914788"
+      },
+      "disclosed_ratios": {
+        "cash_dividend_payout_ratio_in_original_report": "42.32%",
+        "total_cash_distribution_ratio_in_original_report": "62.09%"
+      },
+      "page_refs": {
+        "balance_sheet": 100,
+        "income_statement": 101,
+        "dividend_disclosure": [
+          41,
+          42
+        ]
+      },
+      "point_in_time": "2018 original annual-report filing",
+      "review_status": "candidate_series_not_reviewed_or_approved",
+      "model_input": null
+    },
+    {
+      "year": 2019,
+      "report_period_end": "2019-12-31",
+      "source_id": "cninfo:1207684829",
+      "available_at": "2020-04-30T00:00:00+08:00",
+      "audited_facts": {
+        "attributable_ordinary_equity_cny": "101669163000",
+        "attributable_ordinary_net_profit_cny": "24211222000",
+        "cash_dividend_proposed_cny": "11131489692.80",
+        "buyback_cash_counted_as_distribution_cny": "0.00",
+        "total_disclosed_cash_distribution_cny": "11131489692.80",
+        "cash_dividend_per_ten_shares_cny": "16.00",
+        "distribution_share_base_shares": "6957181058"
+      },
+      "derived_candidates": {
+        "cash_dividend_to_parent_net_profit": "0.459765711",
+        "buyback_cash_to_parent_net_profit": "0.000000000",
+        "total_cash_distribution_to_parent_net_profit": "0.459765711"
+      },
+      "disclosed_ratios": {
+        "cash_dividend_payout_ratio_in_original_report": "45.98%",
+        "total_cash_distribution_ratio_in_original_report": "45.98%"
+      },
+      "page_refs": {
+        "balance_sheet": 114,
+        "income_statement": 115,
+        "dividend_disclosure": [
+          47,
+          48
+        ]
+      },
+      "point_in_time": "2019 original annual-report filing",
+      "review_status": "candidate_series_not_reviewed_or_approved",
+      "model_input": null
+    },
+    {
+      "year": 2020,
+      "report_period_end": "2020-12-31",
+      "source_id": "cninfo:1209870336",
+      "available_at": "2021-04-30T00:00:00+08:00",
+      "audited_facts": {
+        "attributable_ordinary_equity_cny": "117516260000",
+        "attributable_ordinary_net_profit_cny": "27222969000",
+        "cash_dividend_proposed_cny": "11066392174.40",
+        "buyback_cash_counted_as_distribution_cny": "2700000000.00",
+        "total_disclosed_cash_distribution_cny": "13766392174.40",
+        "cash_dividend_per_ten_shares_cny": "16.00",
+        "distribution_share_base_shares": "6916495109"
+      },
+      "derived_candidates": {
+        "cash_dividend_to_parent_net_profit": "0.406509377",
+        "buyback_cash_to_parent_net_profit": "0.099180953",
+        "total_cash_distribution_to_parent_net_profit": "0.505690330"
+      },
+      "disclosed_ratios": {
+        "cash_dividend_payout_ratio_in_original_report": "40.65%",
+        "total_cash_distribution_ratio_in_original_report": "50.57%"
+      },
+      "page_refs": {
+        "balance_sheet": 131,
+        "income_statement": 132,
+        "dividend_disclosure": [
+          58,
+          59
+        ]
+      },
+      "point_in_time": "2020 original annual-report filing",
+      "review_status": "candidate_series_not_reviewed_or_approved",
+      "model_input": null
+    },
+    {
+      "year": 2021,
+      "report_period_end": "2021-12-31",
+      "source_id": "cninfo:1213264815",
+      "available_at": "2022-04-30T00:00:00+08:00",
+      "audited_facts": {
+        "attributable_ordinary_equity_cny": "124868124000",
+        "attributable_ordinary_net_profit_cny": "28573650000",
+        "cash_dividend_proposed_cny": "11677509164.60",
+        "buyback_cash_counted_as_distribution_cny": "13664103513.72",
+        "total_disclosed_cash_distribution_cny": "25341612678.32",
+        "cash_dividend_per_ten_shares_cny": "17.00",
+        "distribution_share_base_shares": "6869123038"
+      },
+      "derived_candidates": {
+        "cash_dividend_to_parent_net_profit": "0.408681046",
+        "buyback_cash_to_parent_net_profit": "0.478206442",
+        "total_cash_distribution_to_parent_net_profit": "0.886887488"
+      },
+      "disclosed_ratios": {
+        "cash_dividend_payout_ratio_in_original_report": null,
+        "total_cash_distribution_ratio_in_original_report": null
+      },
+      "page_refs": {
+        "balance_sheet": 148,
+        "income_statement": 149,
+        "dividend_disclosure": [
+          82
+        ]
+      },
+      "point_in_time": "2021 original annual-report filing",
+      "review_status": "candidate_series_not_reviewed_or_approved",
+      "model_input": null
+    },
+    {
+      "year": 2022,
+      "report_period_end": "2022-12-31",
+      "source_id": "cninfo:1216695045",
+      "available_at": "2023-04-29T00:00:00+08:00",
+      "audited_facts": {
+        "attributable_ordinary_equity_cny": "142935236000",
+        "attributable_ordinary_net_profit_cny": "29553507000",
+        "cash_dividend_proposed_cny": "17187651820.00",
+        "buyback_cash_counted_as_distribution_cny": "2636704772.00",
+        "total_disclosed_cash_distribution_cny": "19824356592.00",
+        "cash_dividend_per_ten_shares_cny": "25.00",
+        "distribution_share_base_shares": "6875060728"
+      },
+      "derived_candidates": {
+        "cash_dividend_to_parent_net_profit": "0.581577402",
+        "buyback_cash_to_parent_net_profit": "0.089217999",
+        "total_cash_distribution_to_parent_net_profit": "0.670795401"
+      },
+      "disclosed_ratios": {
+        "cash_dividend_payout_ratio_in_original_report": null,
+        "total_cash_distribution_ratio_in_original_report": null
+      },
+      "page_refs": {
+        "balance_sheet": 152,
+        "income_statement": 153,
+        "dividend_disclosure": [
+          88
+        ]
+      },
+      "point_in_time": "2022 original annual-report filing",
+      "review_status": "candidate_series_not_reviewed_or_approved",
+      "model_input": null
+    },
+    {
+      "year": 2023,
+      "report_period_end": "2023-12-31",
+      "source_id": "cninfo:1219429374",
+      "available_at": "2024-03-28T00:00:00+08:00",
+      "audited_facts": {
+        "attributable_ordinary_equity_cny": "162878825000",
+        "attributable_ordinary_net_profit_cny": "33719935000",
+        "cash_dividend_proposed_cny": "20761175508.00",
+        "buyback_cash_counted_as_distribution_cny": "0.00",
+        "total_disclosed_cash_distribution_cny": "20761175508.00",
+        "cash_dividend_per_ten_shares_cny": "30.00",
+        "distribution_share_base_shares": "6920391836"
+      },
+      "derived_candidates": {
+        "cash_dividend_to_parent_net_profit": "0.615694411",
+        "buyback_cash_to_parent_net_profit": "0.000000000",
+        "total_cash_distribution_to_parent_net_profit": "0.615694411"
+      },
+      "disclosed_ratios": {
+        "cash_dividend_payout_ratio_in_original_report": null,
+        "total_cash_distribution_ratio_in_original_report": null
+      },
+      "page_refs": {
+        "balance_sheet": 160,
+        "income_statement": 161,
+        "dividend_disclosure": [
+          87
+        ]
+      },
+      "point_in_time": "2023 original annual-report filing",
+      "review_status": "candidate_series_not_reviewed_or_approved",
+      "model_input": null
+    },
+    {
+      "year": 2024,
+      "report_period_end": "2024-12-31",
+      "source_id": "cninfo:1222951181",
+      "available_at": "2025-03-29T00:00:00+08:00",
+      "audited_facts": {
+        "attributable_ordinary_equity_cny": "216750057000",
+        "attributable_ordinary_net_profit_cny": "38537237000",
+        "cash_dividend_proposed_cny": "26711662411.00",
+        "buyback_cash_counted_as_distribution_cny": "0.00",
+        "total_disclosed_cash_distribution_cny": "26711662411.00",
+        "cash_dividend_per_ten_shares_cny": "35.00",
+        "distribution_share_base_shares": "7631903546"
+      },
+      "derived_candidates": {
+        "cash_dividend_to_parent_net_profit": "0.693139013",
+        "buyback_cash_to_parent_net_profit": "0.000000000",
+        "total_cash_distribution_to_parent_net_profit": "0.693139013"
+      },
+      "disclosed_ratios": {
+        "cash_dividend_payout_ratio_in_original_report": null,
+        "total_cash_distribution_ratio_in_original_report": null
+      },
+      "page_refs": {
+        "balance_sheet": 157,
+        "income_statement": 158,
+        "dividend_disclosure": [
+          83,
+          84
+        ]
+      },
+      "point_in_time": "2024 original annual-report filing",
+      "review_status": "candidate_series_not_reviewed_or_approved",
+      "model_input": null
+    }
+  ],
+  "later_comparative_observations": [
+    {
+      "id": "2020_report_restates_2019_buyback_other_cash_distribution",
+      "year": 2019,
+      "comparative_source_id": "cninfo:1209870336",
+      "comparative_source_page": 58,
+      "values": {
+        "cash_dividend_cny": "11131489692.80",
+        "parent_net_profit_cny": "24211222000",
+        "cash_dividend_payout_ratio_disclosed": "45.98%",
+        "buyback_cash_cny": "3200000000.00",
+        "buyback_ratio_disclosed": "13.22%",
+        "total_cash_distribution_cny": "14331489692.80",
+        "total_cash_distribution_ratio_disclosed": "59.19%"
+      },
+      "note": "The original FY2019 report disclosed zero other-cash return at publication; the FY2020 comparative table later includes CNY 3.2 billion of buyback as other cash distribution."
+    },
+    {
+      "id": "2024_report_comparative_cash_dividend_payout_ratios",
+      "year": null,
+      "comparative_source_id": "cninfo:1222951181",
+      "comparative_source_page": 84,
+      "values": {
+        "2021_cash_dividend_payout_ratio_disclosed": "40.87%",
+        "2022_cash_dividend_payout_ratio_disclosed": "58.16%",
+        "2023_cash_dividend_payout_ratio_disclosed": "61.63%"
+      },
+      "note": "The 2024 report's near-three-year table discloses cash-payout ratios for 2021-2023; they are comparative context, not a change to the original filing series."
+    }
+  ],
+  "key_boundaries": [
+    "Attributable ordinary equity is a consolidated accounting fact, not a valuation basis for the listed A/H equity value.",
+    "Attributable net profit is audited history, not a forecast return or normalized earning power.",
+    "Cash dividend is the issuer's proposed amount including tax; it is not proof of future payout policy or distributable capacity.",
+    "Buyback-style cash return is only included when the issuer explicitly counts it as other cash distribution.",
+    "The reported dividend share base is not a current outstanding-share denominator.",
+    "Calculated payout ratios are descriptive arithmetic over two filed amounts; they are not registered model inputs."
+  ],
+  "model_input_decisions": {
+    "start_book_equity": "candidate_history_does_not_establish_current_ordinary_equity_basis",
+    "forecast_roes": "candidate_history_does_not_establish_forward_roe_forecasts",
+    "cost_of_equity": "not_derived_from_historical_equity_or_cash_return",
+    "payout": "candidate_history_does_not_establish_forward_retention_or_payout",
+    "ordinary_shares": "candidate_series_does_not_establish_current_treasury_adjusted_denominator"
+  },
+  "evidence_refs": [
+    {
+      "id": "midea_2014_annual_report_equity_return_pages",
+      "path": "runtime\\historical-filing-index\\20260908T041326996681Z\\pdfs\\000333-1200767542.pdf",
+      "url": "https://static.cninfo.com.cn/finalpage/2015-03-31/1200767542.PDF",
+      "sha256": "e982cf864c15ca8262d3537fa42b746c70dada2002eecfff559f0a8c46423dd9",
+      "pages": [
+        90,
+        91,
+        36,
+        37
+      ],
+      "description": "Attributable equity, attributable net profit, and cash-return disclosure for 2014"
+    },
+    {
+      "id": "midea_2015_annual_report_equity_return_pages",
+      "path": "runtime\\historical-filing-index\\20260908T041326996681Z\\pdfs\\000333-1202084987.pdf",
+      "url": "https://static.cninfo.com.cn/finalpage/2016-03-26/1202084987.PDF",
+      "sha256": "595c0bc14c311d723b3da2b4291cfd0c1bb784fe77bed62427d269ec2f94969f",
+      "pages": [
+        77,
+        78,
+        36,
+        37
+      ],
+      "description": "Attributable equity, attributable net profit, and cash-return disclosure for 2015"
+    },
+    {
+      "id": "midea_2016_annual_report_equity_return_pages",
+      "path": "runtime\\historical-filing-index\\20260908T041326996681Z\\pdfs\\000333-1203240657.pdf",
+      "url": "https://static.cninfo.com.cn/finalpage/2017-03-31/1203240657.PDF",
+      "sha256": "2bd478b158e7622ca4efb58ad46ae4eadd8f92ef873416a5ecd36a25e1864baa",
+      "pages": [
+        76,
+        77,
+        34,
+        35
+      ],
+      "description": "Attributable equity, attributable net profit, and cash-return disclosure for 2016"
+    },
+    {
+      "id": "midea_2017_annual_report_equity_return_pages",
+      "path": "runtime\\historical-filing-index\\20260908T041326996681Z\\pdfs\\000333-1204557296.pdf",
+      "url": "https://static.cninfo.com.cn/finalpage/2018-03-31/1204557296.PDF",
+      "sha256": "86d0e81b852f0de5276f042822dc277d0ea49ef4484e47f0adee8ddb9552bd8f",
+      "pages": [
+        86,
+        87,
+        39,
+        40
+      ],
+      "description": "Attributable equity, attributable net profit, and cash-return disclosure for 2017"
+    },
+    {
+      "id": "midea_2018_annual_report_equity_return_pages",
+      "path": "runtime\\historical-filing-index\\20260908T041326996681Z\\pdfs\\000333-1206062041.pdf",
+      "url": "https://static.cninfo.com.cn/finalpage/2019-04-20/1206062041.PDF",
+      "sha256": "aac5178a6322596c21bfe3738effe6d6cd257c7e2374407f3173c4d40cb8d851",
+      "pages": [
+        100,
+        101,
+        41,
+        42
+      ],
+      "description": "Attributable equity, attributable net profit, and cash-return disclosure for 2018"
+    },
+    {
+      "id": "midea_2019_annual_report_equity_return_pages",
+      "path": "runtime\\historical-filing-index\\20260908T041326996681Z\\pdfs\\000333-1207684829.pdf",
+      "url": "https://static.cninfo.com.cn/finalpage/2020-04-30/1207684829.PDF",
+      "sha256": "c00289fe09b1648e1f281daf8ae27f2b67699b2c72413cd17286c642559361a6",
+      "pages": [
+        114,
+        115,
+        47,
+        48
+      ],
+      "description": "Attributable equity, attributable net profit, and cash-return disclosure for 2019"
+    },
+    {
+      "id": "midea_2020_annual_report_equity_return_pages",
+      "path": "runtime\\historical-filing-index\\20260908T041326996681Z\\pdfs\\000333-1209870336.pdf",
+      "url": "https://static.cninfo.com.cn/finalpage/2021-04-30/1209870336.PDF",
+      "sha256": "882d289f0d753c91ddf967ffb725639827f8a5be0c835ca6da33011e787bf2cc",
+      "pages": [
+        131,
+        132,
+        58,
+        59
+      ],
+      "description": "Attributable equity, attributable net profit, and cash-return disclosure for 2020"
+    },
+    {
+      "id": "midea_2021_annual_report_equity_return_pages",
+      "path": "runtime\\historical-filing-index\\20260908T041326996681Z\\pdfs\\000333-1213264815.pdf",
+      "url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213264815.PDF",
+      "sha256": "f1210d6e006e00963492edbf4cc79884b0febdffa50a82ed2d291fa694369def",
+      "pages": [
+        148,
+        149,
+        82
+      ],
+      "description": "Attributable equity, attributable net profit, and cash-return disclosure for 2021"
+    },
+    {
+      "id": "midea_2022_annual_report_equity_return_pages",
+      "path": "runtime\\historical-filing-index\\20260908T041326996681Z\\pdfs\\000333-1216695045.pdf",
+      "url": "https://static.cninfo.com.cn/finalpage/2023-04-29/1216695045.PDF",
+      "sha256": "444a83cb76f66242b15c2a83796312b0aa618dc90e280702a0b93fa7aac80688",
+      "pages": [
+        152,
+        153,
+        88
+      ],
+      "description": "Attributable equity, attributable net profit, and cash-return disclosure for 2022"
+    },
+    {
+      "id": "midea_2023_annual_report_equity_return_pages",
+      "path": "runtime\\historical-filing-index\\20260908T041326996681Z\\pdfs\\000333-1219429374.pdf",
+      "url": "https://static.cninfo.com.cn/finalpage/2024-03-28/1219429374.PDF",
+      "sha256": "22f4915d91ada74a37eab8d074aef4c15420f3b1a8b5f5bd5777c00f97d58b86",
+      "pages": [
+        160,
+        161,
+        87
+      ],
+      "description": "Attributable equity, attributable net profit, and cash-return disclosure for 2023"
+    },
+    {
+      "id": "midea_2024_annual_report_equity_return_pages",
+      "path": "runtime\\historical-filing-index\\20260908T041326996681Z\\pdfs\\000333-1222951181.pdf",
+      "url": "https://static.cninfo.com.cn/finalpage/2025-03-29/1222951181.PDF",
+      "sha256": "b17a9b9b84bca1d2a4e4a3cadc5dd5ba5c85e3f1fd2d758acd3315b5b040ecd9",
+      "pages": [
+        157,
+        158,
+        83,
+        84
+      ],
+      "description": "Attributable equity, attributable net profit, and cash-return disclosure for 2024"
+    }
+  ],
+  "blockers": [
+    "financial_business_standalone_equity_and_profit_not_disclosed",
+    "treasury_share_count_not_consistently_disclosed",
+    "current_ordinary_share_denominator_not_registered",
+    "forward_roe_and_cost_of_equity_assumptions_not_evidenced",
+    "cash_return_history_is_not_a_forward_payout_commitment"
+  ]
+}

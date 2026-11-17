@@ -1,0 +1,14 @@
+{
+  "action": "no_order",
+  "publication_id": "pub-c7e8c45a229c2006ee96",
+  "snapshot_restoration": {
+    "action": "no_order",
+    "status": "PUBLIC_ARCHIVE_RESTORED_AND_VERIFIED",
+    "restored_files": 2,
+    "private_data": false,
+    "full_inherited_research_restored": false
+  },
+  "whole_site_cold_start": "NOT_PROVEN",
+  "formal_admission_count": 0,
+  "private_data": false
+}

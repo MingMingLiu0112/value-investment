@@ -1,0 +1,33 @@
+{
+  "action": "no_order",
+  "scope": "ACTUAL_LOOPBACK_API_NOT_BROWSER_ACCEPTANCE",
+  "source_commit": "b98f49e3f84bac8a0e044adfff89c3341e2422d7",
+  "registry_sha256": "9aefb4ea049fefe31c88c9761d683293ccf55680ea625af8e85e9b3cceeba74c",
+  "workflows": {
+    "event": {
+      "status": "VERIFIED",
+      "reason": "LOCAL_BYTES_AND_CONTRACTS_VERIFIED_NOT_CLAIM_APPROVAL",
+      "findings": 3,
+      "mode": "MOCK",
+      "research_as_of": "2026-10-08"
+    },
+    "financial": {
+      "status": "VERIFIED",
+      "reason": "LOCAL_BYTES_AND_CONTRACTS_VERIFIED_NOT_CLAIM_APPROVAL",
+      "findings": 3,
+      "mode": "MOCK",
+      "research_as_of": "2026-10-08"
+    },
+    "legacy": {
+      "status": "VERIFIED",
+      "reason": "LOCAL_BYTES_AND_CONTRACTS_VERIFIED_NOT_CLAIM_APPROVAL",
+      "findings": 3,
+      "mode": "MOCK",
+      "research_as_of": "2026-10-08"
+    }
+  },
+  "public_or_private_inputs_written": false,
+  "live_provider_called": false,
+  "browser_acceptance": "NOT_VERIFIED_URL_POLICY_BLOCK",
+  "formal_investment_eligibility": false
+}

@@ -1,0 +1,67 @@
+{
+  "schema_version": "v5-replay-external-review-handoff-verification-v1",
+  "action": "no_order",
+  "status": "PRODUCT_HANDOFF_INTEGRATION_VERIFIED",
+  "changed_source": {
+    "path": "src/value_investment_agent/application/product/research_review_wizard.py",
+    "sha256": "cef3d9df0548e6f1ca26f2b8002b6efa40f63b9bc6ef254071b2e9c9d7ac9762"
+  },
+  "focused_tests": {
+    "passed": 103,
+    "failed": 0,
+    "skipped": 0,
+    "junit_path": "runtime/pending-replay-external-handoff-v5-20261021/tests.xml",
+    "files": [
+      "tests/test_replay_external_review_handoff.py",
+      "tests/test_research_review_wizard.py",
+      "tests/test_bound_draft_review_handoff.py",
+      "tests/test_pending_candidate_replay.py",
+      "tests/test_user_research_workflow.py"
+    ]
+  },
+  "real_source_read_only_run": {
+    "symbol": "600519",
+    "status": "EXTERNAL_SIGNATURE_REQUIRED",
+    "candidate_binding": {
+      "path": "runtime/pending-candidate-replay-v5-final-20261021/600519/candidate.json",
+      "sha256": "d4b4fef96d9b3f66ab2c2c03f7bfdb4b7c3a980417d2489dfb911dd336addd01"
+    },
+    "replay_publication_binding": {
+      "path": "runtime/pending-candidate-replay-v5-final-20261021/600519/publication.json",
+      "sha256": "9420dbbc50a95eba349157fe099b679587000b12e2b8ff3e429e2b7dc816542e"
+    },
+    "valuation_artifact_sha256": "71c8c8063285ea016ca0574231ecf744529b66cbfddeb692c5620a89c6ac297c",
+    "materials": "Exact independently verified replay consumed-review.json; includes original financial summary, assumptions, facts, counterevidence and unapproved G3.",
+    "authorization": {
+      "pinned_root_count": 0,
+      "status": "AUTHORIZED_IDENTITY_REQUIRED"
+    },
+    "materiality_status": "MATERIALITY_HANDOFF_BLOCKED",
+    "materiality_reason": "The frozen candidate has no event_scan_ref; no foreign or incomplete event scan is substituted.",
+    "writes_or_signing_performed": false,
+    "test": "tests/test_replay_external_review_handoff.py::test_real_source_600519_read_only_external_handoff_without_signing"
+  },
+  "integration_contract": {
+    "entrypoint": "research_review_wizard.build_external_review_handoff(root=root, symbol=symbol, now=now, bound_draft=False)",
+    "registered_replay": "Independently resolve current Web replay publication and candidate; use existing pending-response preview/signature contract and replay consumed-review packet.",
+    "invalid_registered_replay": "NOT_READY without signing instructions, or propagated verification error without output; never fallback to canonical candidate. Explicit null registry entry is invalid.",
+    "absent_symbol": "Existing canonical publication selector and legacy checks unchanged.",
+    "bound_draft": "Existing source-bound draft path unchanged; no replay is presented as a bound draft.",
+    "current_policy_basis": "Existing applicable value-policy review loader, current research basis and valuation artifact comparison remain enforced.",
+    "event_materiality": "For replay only, prepare read-only materiality handoff from exact replay package/scan and compare descriptor; no registered-materiality writes or foreign-model substitution.",
+    "external_authority": "Unsigned response has no reviewer identity, reviewed_at or whole_model_approval. A pinned root never mints reviewer authority.",
+    "root_remaining": "Root owns app/types/UI/config and authenticated button/browser acceptance; this verifies the existing product handoff entrypoint, not an HTTP/browser run."
+  },
+  "boundaries": {
+    "approval_changed": false,
+    "research_admitted": false,
+    "g3_approved": false,
+    "position_guidance": null,
+    "fake_draft_type_created": false,
+    "replay_or_publication_hashed_modules_changed": false,
+    "old_receipts_or_manifest_changed": false,
+    "shared_config_app_types_ui_changed_by_this_task": false,
+    "canonical_workbook_changed": false,
+    "git_head_or_index_changed": false
+  }
+}

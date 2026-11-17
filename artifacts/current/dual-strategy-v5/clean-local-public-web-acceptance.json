@@ -1,0 +1,61 @@
+{
+  "schema_version": "v5-clean-local-public-web-acceptance-v1",
+  "action": "no_order",
+  "source_head": "67561f4d1462b6751373f40b2d609878d0338bdb",
+  "runtime_identity": "MATCHED",
+  "public_endpoint_publication_consistency": "PASS",
+  "publication_id": "pub-7e44f6474752da43eaf7",
+  "quote_date": "2026-10-21",
+  "formal_admission_count": 0,
+  "registry_hashes": "14_OF_14_PASS",
+  "browser": {
+    "desktop": {
+      "width": 1280,
+      "height": 720,
+      "scroll_width": 1265
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "scroll_width": 375
+    },
+    "verified_scope": [
+      "daily candidates",
+      "hotspot-600693 conditions",
+      "000333 verified quote and research restrictions"
+    ],
+    "private_workflows": "NOT_TESTED_IN_THIS_CLEAN_RUNTIME",
+    "final_user_acceptance": "NOT_PASSED"
+  },
+  "screenshots": [
+    {
+      "path": "artifacts/current/dual-strategy-v5/clean-runtime-daily-desktop.jpg",
+      "sha256": "37d7ff6e2e70993a4f04112a0b904eb752f126a9a6b9185df72221ac727e33fd"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/clean-runtime-hotspot-desktop.jpg",
+      "sha256": "b0c34729d36001e4c709b764a2a1dd7cd096dc856e5cf067c86a73aadb45629c"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/clean-runtime-daily-mobile.jpg",
+      "sha256": "c4301b6bea48a991b6ac5744dbc9a0edca86e9afc351da6025d07d27d1a398c7"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/clean-runtime-hotspot-mobile.jpg",
+      "sha256": "5247aa630570185a62f5185ae2a24b9698e488f7522b2b48274c1df52bbd38ad"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/clean-runtime-midea-mobile.jpg",
+      "sha256": "c9b86027d99d9f0c0be8f5a335ff9624bef622390b99b603a638954a571ce98d"
+    }
+  ],
+  "restoration": {
+    "archives_restored": true,
+    "local_public_source_seed_required": true,
+    "whole_site_github_cold_start": "NOT_PROVEN",
+    "private_journal_or_excel_copied": false,
+    "local_path_metadata_receipts_not_cleared_for_publication": true
+  },
+  "total_goal": "IN_PROGRESS",
+  "real_assisted_use": "NOT_PROVEN"
+}

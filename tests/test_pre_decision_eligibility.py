@@ -88,6 +88,7 @@ def _receipt(
         reviewed_at=REVIEWED_AT,
         review_as_of=REVIEWED_AT.date(),
         reviewer_type="human_research_lead",
+        reviewer_id="TEST_ONLY-HUMAN-RESEARCH-LEAD",
         decision=decision,
         price_assessment_eligible=price_assessment_eligible,
         remaining_blockers=tuple(remaining_blockers),
@@ -136,6 +137,7 @@ def _review(decision: str = DECISION_NOT_MATERIAL) -> EventMaterialityReview:
         reviewed_at=REVIEWED_AT,
         review_as_of=REVIEWED_AT.date(),
         reviewer_type="human_research_lead",
+        reviewer_id="TEST_ONLY-HUMAN-RESEARCH-LEAD",
         decisions=(_decision(decision),),
         evidence_refs=({"id": "scan"},),
     )

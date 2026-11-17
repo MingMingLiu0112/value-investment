@@ -5,11 +5,12 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import math
-import os
 from pathlib import Path
+import tempfile
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from ...portfolio.private_journal_lock import InterProcessLock, LockTimeout
 from ....domain.agent_research.contracts import AgentFinding, AgentRole, FindingStatus
 from ....infrastructure.agent_runtime.provider import LLMProvider, LLMRequest
 from ...product.common import require_inside, write_new_json
@@ -225,6 +226,12 @@ def verify_llm_packet(packet: dict[str, Any], snapshot: ResearchSnapshot, *, roo
     return expected
 
 
+def _agent_output_lock_path(target: Path) -> Path:
+    """Return a stable OS lock outside the research output tree."""
+    key = hashlib.sha256(str(target.resolve()).encode("utf-8")).hexdigest()
+    return Path(tempfile.gettempdir()) / "value-investment-agent-locks" / f"{key}.lock"
+
+
 def run_llm_research_pilot(*, root: Path, workbench: Path, workbench_sha256: str,
                            symbol: str, output: Path, provider: LLMProvider,
                            mode: str, max_run_cost_usd: float = 0.0,
@@ -266,12 +273,12 @@ def run_llm_research_pilot(*, root: Path, workbench: Path, workbench_sha256: str
             raise FileExistsError("Existing LLM packet has different provider input")
         return existing
     target.parent.mkdir(parents=True, exist_ok=True)
-    lock_path = target.with_suffix(target.suffix + ".lock")
+    lock_path = _agent_output_lock_path(target)
+    lock = InterProcessLock(lock_path, timeout_seconds=0.05)
     try:
-        handle = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-    except FileExistsError as exc:
+        lock.acquire()
+    except LockTimeout as exc:
         raise RuntimeError("Agent run is already active for this output") from exc
-    os.close(handle)
     try:
         if target.exists():
             raise FileExistsError("Agent output appeared during lock acquisition")
@@ -330,4 +337,4 @@ def run_llm_research_pilot(*, root: Path, workbench: Path, workbench_sha256: str
         write_new_json(target, packet)
         return packet
     finally:
-        lock_path.unlink(missing_ok=True)
+        lock.release()

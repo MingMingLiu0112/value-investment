@@ -1,0 +1,21 @@
+{
+  "schema_version": "current-research-drafts-v1",
+  "action": "no_order",
+  "pending_candidates": {
+    "600887": {
+      "path": "runtime/joint-cash-v4-current/20261028T044953763337Z/600887/candidate.json",
+      "sha256": "96e5894b08dd1342139c6a8dd88867619334f77807f7bf6fc28af64067fd6f42"
+    }
+  },
+  "drafts": {
+    "000544": {
+      "path": "artifacts/current/screened-research-000544-20261024/research-only-draft.json",
+      "sha256": "3efdd772d5bd2dca17d208153e39cc1f49e45d03a44108ade0676a6ca4437a87"
+    },
+    "000333": {
+      "path": "artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/public-draft-v4.json",
+      "sha256": "c2c7de481405146ee3fc27d364e698baf7435768fe020f30e2a9b4de68c93f23"
+    }
+  },
+  "economic_comparisons": {}
+}

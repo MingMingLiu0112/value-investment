@@ -1,0 +1,32 @@
+{
+  "stage": "S4",
+  "action": "no_order",
+  "status": "PARTIAL",
+  "browser": "same-selected-in-app-browser-2",
+  "served_commit": "3a2ebd348dcd4bf2e6cdde54a01ebcc099ae6ff3",
+  "checks": {
+    "real_daily_data_visible": true,
+    "hotspot_600150_detail_entry_observation": "36.450",
+    "hotspot_600150_detail_invalidation_reference": "34.410",
+    "formal_eligibility_granted": false,
+    "private_locked_unknown_facts_preserved": true,
+    "locked_confirmation_failure_count_after_fix": 0,
+    "locked_confirmations_single_connection_path": true,
+    "mobile_locked_portfolio_viewport": {"width": 390, "height": 844},
+    "mobile_locked_portfolio_document_width": 375,
+    "mobile_locked_portfolio_horizontal_overflow": false
+  },
+  "runtime_identity_at_recheck": "SOURCE_WORKTREE_DIRTY_OR_UNVERIFIED_DUE_TO_ONGOING_SUBAGENT_SOURCE_WORK",
+  "screenshots": [
+    "hotspot-detail-desktop.jpg",
+    "portfolio-locked-desktop.jpg",
+    "portfolio-locked-mobile.jpg",
+    "locked-confirmations-fixed-desktop.jpg"
+  ],
+  "not_verified": [
+    "real_private_account_interaction",
+    "authenticated_private_approval_browser_flow",
+    "all_goal_viewports_and_E2E_chains"
+  ],
+  "total_goal_status": "IN_PROGRESS"
+}

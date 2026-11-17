@@ -1,0 +1,57 @@
+{
+  "schema_version": "v5-held-review-journal-verification-v1",
+  "scope": "TEST_ONLY",
+  "action": "no_order",
+  "verified_at": "2026-10-21T14:02:05.100637+00:00",
+  "sanitized": true,
+  "verification": "READ_ONLY_EXISTING_OWNED_BROWSER_JOURNAL_AFTER_MOBILE_RETRY",
+  "journal": {
+    "revision": 7,
+    "sha256": "c1d940ffab11beccbb0c4c9dd717549e2590c6638daf2b01e80993d7d652682f",
+    "head_sha256": "3737c9450690671c89a1124c298c0dff0fcc9a85a20c6cbb09ec472c3ab579f3",
+    "matches_pre_browser_verification": true,
+    "unchanged_during_final_check": true,
+    "hash_chain_and_replay_verified": true,
+    "confirmed_fill_count": 1,
+    "pending_fill": false
+  },
+  "accounting": {
+    "cash_cny": "8492.00",
+    "cost_basis_cny": "1508.00",
+    "unchanged_from_fixture": true
+  },
+  "prior_backend_verification": {
+    "ownership_verified": true,
+    "sellable_quantity": "300",
+    "exact_request_echo_verified": true,
+    "sell_response_action": "UNASSESSABLE",
+    "formal_eligibility": false,
+    "transport_delay_seconds": 2,
+    "production_functions_replaced": false
+  },
+  "mobile_browser_observations": {
+    "source": "ROOT_USER_REPORTED_ACTUAL_BROWSER_VERIFICATION",
+    "viewport_width_px": 390,
+    "document_width_px": 375,
+    "initial_pending_requested_quantity": 100,
+    "replacement_requested_quantity": 50,
+    "quantity_change_resets_acknowledgement": true,
+    "quantity_change_releases_old_busy": true,
+    "reacknowledgement_enables_replacement_request": true,
+    "replacement_result": "UNASSESSABLE",
+    "mutations_reported": false,
+    "screenshots_reported_by_root": [
+      "held-review-retry-pending-mobile.png",
+      "held-review-retry-result-mobile.png"
+    ]
+  },
+  "limitations": [
+    "TEST_ONLY_SYNTHETIC_HOLDING_AND_SIGNED_RESEARCH",
+    "HISTORICAL_RECONSTRUCTION_NOT_ORIGINAL_PIT",
+    "NO_REAL_APPROVAL_OR_FORMAL_SELL_ELIGIBILITY",
+    "BROWSER_OBSERVATIONS_AND_SCREENSHOTS_ATTRIBUTED_TO_ROOT_NOT_REEXECUTED_BY_THIS_VERIFIER"
+  ],
+  "private_paths_included": false,
+  "credentials_included": false,
+  "server_control_performed": false
+}

@@ -1,0 +1,122 @@
+{
+  "action": "no_order",
+  "observed_at": "2026-10-21T16:42:16.697906+00:00",
+  "scope": "REAL_PUBLIC_RESEARCH_UNAPPROVED_EX_POST_PRIOR_SESSION_BASIS",
+  "symbol": "600887",
+  "candidate_binding": {
+    "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/candidate.json",
+    "sha256": "1088eab6d48cf0c8f33a59cb7fa90d445eb72e0faf884f00530446bbd1b10303"
+  },
+  "package_binding": {
+    "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/package.json",
+    "sha256": "32ae408776c9efd2ab7a492926db035af85a3ce86d93229ea1a0e2c93479a91c"
+  },
+  "workbench_binding": {
+    "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/workbench.json",
+    "sha256": "8f833e5c130db25facee6b8256ba6a50f6a6b1e77c071f554d2bf1ae1224ed72"
+  },
+  "consumed_review_binding": {
+    "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/consumed-review.json",
+    "sha256": "4c0c7f476541899c1f52760687e871d79adce6788e0fa0aaf0ba01102eeb4b00"
+  },
+  "model_context": {
+    "input_descriptor_sha256": "d431e3b6aa4162f95b6ecb8a1ecdbabd3f8187315f01acc6654ad1b439b66c18",
+    "research_case_sha256": "9d10cb31215181fccd8d85ba9fc70ec7482e205283fe830097a9ad02c9c512ff",
+    "facts_sha256": "fc07327fe76e26c93731685fe0bb4d3c6ea2cb5a1d131fbb2073377c5d1cf00a",
+    "assumptions_sha256": "ec8dbcd55fde80531afe3eb01f5836db0d25d1f44eb29bd9d51fc9a84a317e62",
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "profile_id": "quality_compounder",
+    "research_as_of": "2026-10-22"
+  },
+  "research_as_of": "2026-10-22",
+  "generated_at": "2026-10-21T16:39:10.949988+00:00",
+  "valuation_basis_date": "2026-10-21",
+  "valuation_basis_scope": "EX_POST_PRIOR_COMPLETED_SESSION",
+  "valuation": {
+    "status": "conditional_research_only",
+    "model_type": "residual_income_or_equity_value",
+    "bear": "9.82311355753512637821227145569788295685682866355",
+    "base": "10.0988183727036325528099511989682320838773505617",
+    "bull": "10.3223115883813946287380034955011848506557986876",
+    "scope": "UNAPPROVED_RESEARCH_ESTIMATE_NOT_ENTRY_OR_EXIT_PRICES"
+  },
+  "coverage": {
+    "observation_bindings": [
+      {
+        "path": "runtime/d2-full-event-window-20261011/600887-v1/observation.json",
+        "sha256": "32db89adaff1b03bb011aa4fcb172754a639ae58f059c33c9d92b16014714934"
+      },
+      {
+        "path": "runtime/web-first-event-coverage/600887-20261018/observation.json",
+        "sha256": "560c1dd6bd42c461985e1fe1880fb50de0f2ed82d628baa9e1a0c255ff5d9f58"
+      },
+      {
+        "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/observation.json",
+        "sha256": "ba7968662d59f59c4a9f35000e05d75e7c8a07524697c1743ae5a316f2df42d5"
+      }
+    ],
+    "scan_binding": {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/event-scan.json",
+      "sha256": "fbe2e916a74c04e36be11b062c7fbcfdd54319d37604d5a4a56289a4c7f47ae9"
+    },
+    "coverage_from": "2026-07-01",
+    "review_cutoff": "2026-10-21",
+    "handoff_binding": {
+      "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/materiality-handoff.json",
+      "sha256": "13b6fca26826a7afcd42ee7afe5f1329be8f14278d911e292f1cf0152b385f06"
+    }
+  },
+  "announcements": 36,
+  "handoff_status": "EXTERNAL_SIGNATURE_REQUIRED",
+  "materiality_handoff_status": null,
+  "unsigned_groups": 4,
+  "signed_announcements": 0,
+  "g3": false,
+  "economic_approval": false,
+  "research_admitted": false,
+  "price_admitted": false,
+  "current_market_validity_approved": false,
+  "position_guidance": null,
+  "moutai_replay": {
+    "candidate_binding": {
+      "path": "runtime/pending-candidate-replay-v5-20261022-final/600519/candidate.json",
+      "sha256": "dc0eefec13bac730fecd67856af9789860e9d1f2b3f48f7b0430d233611e62f5"
+    },
+    "research_date": "2026-10-11",
+    "independent_event_count": 7,
+    "approval_changed": false
+  },
+  "source_bindings": [
+    {
+      "path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+      "sha256": "7b8a3dbaba16b0f54cf1a3f5416488ddadd57bf89b6097f4d280a30f10efb258"
+    },
+    {
+      "path": "src/value_investment_agent/domain/research/research_run_contract.py",
+      "sha256": "87aec9a3aed2813d282b97c5a4c093d4989f9cdfea89a6a3d90511aa84764c01"
+    },
+    {
+      "path": "src/value_investment_agent/research_application.py",
+      "sha256": "7a1f33c572dffb9ed0a8c0ef8e8d3bebc4853b1eee52d29d7a71a93e707ed962"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/research_draft.py",
+      "sha256": "944e9109eeb42006ee2e885683c69a35a2f9c01ca8cc5cb5d22f30f90c11b849"
+    },
+    {
+      "path": "config/user-research-workflow-v1.json",
+      "sha256": "47bafd0e396add5e96764ff069e9e9b8c3b146de06a3ecc5bcdf3a848ad14597"
+    },
+    {
+      "path": "config/current-pending-candidate-replays-v1.json",
+      "sha256": "e8df970c92b5c435b6ecde7f2a09d20d14efa9f31d4016908fd3aae1892e7124"
+    }
+  ],
+  "total_goal": "IN_PROGRESS",
+  "real_assisted_use": "NOT_PROVEN",
+  "limitations": [
+    "Local-only research runtime; source clone fails closed without originals.",
+    "Current-market validity, economic signatures, private portfolio and independent hotspot admission remain unproven."
+  ]
+}

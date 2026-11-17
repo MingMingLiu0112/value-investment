@@ -7,6 +7,8 @@ import base64
 import hashlib
 import json
 
+import pytest
+
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
@@ -44,6 +46,21 @@ PUBLISHED_AT = datetime(2026, 9, 2, 9, 0, tzinfo=TZ)
 REVIEWED_AT = datetime(2026, 9, 24, 9, 30, tzinfo=TZ)
 RUN_ID = "600887-synthetic-run-20260924"
 ANNOUNCEMENT_ID = "1225549001"
+
+
+@pytest.fixture
+def synthetic_actual_use_clock(monkeypatch):
+    """Freeze implicit nested use times only; keep explicit at validation real."""
+    from value_investment_agent.operations.authorization import m5_actual_approval_receipt
+
+    original = m5_actual_approval_receipt._use_time
+    clock = {"now": REVIEWED_AT}
+
+    def use_time(value):
+        return original(clock["now"] if value is None else value)
+
+    monkeypatch.setattr(m5_actual_approval_receipt, "_use_time", use_time)
+    return clock
 
 
 def _decision() -> EventMaterialityDecision:

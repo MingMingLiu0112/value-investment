@@ -1,0 +1,250 @@
+{
+  "schema_version": "dual-strategy-v5-new-source-integration-v1",
+  "action": "no_order",
+  "observed_at": "2026-10-21T15:55:23.418844+00:00",
+  "delivery_baseline_sha": "d57f20600d5d3354a46051bbf04beb3ce7e1463a",
+  "code_identity": "EXACT_WORKTREE_BINDINGS_BELOW_FOLLOWED_BY_SCOPED_COMMIT_AND_EXACT_SHA_CI",
+  "source_bindings": [
+    {
+      "path": "src/value_investment_agent/application/product/source_reobservation.py",
+      "sha256": "d2e5e61585321f6f10a07a5d31937dd37363c670264d8ed039d9c251598d8555"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/pending_candidate_supplement.py",
+      "sha256": "c6d541c9b3910e58729a5e606a8cdbc4ae065d7500b370019d77a33395ec37ab"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/event_scan_supplement.py",
+      "sha256": "0667ccd835694c25d707c28231c0c368c19b7755717c7ec74428c683e906c8db"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/event_supplement_handoff.py",
+      "sha256": "7578d6467a709067a1eabf136332aff43305229729ca3b11837fefaeec4b33e5"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/research_review_wizard.py",
+      "sha256": "ac65c094ed163b14b1c64837e5deb5a2b85f04c9f6670993738717160ceb390c"
+    },
+    {
+      "path": "src/value_investment_agent/presentation/web_api/app.py",
+      "sha256": "ddf45381cd374995c1b985e47a5e1f33108e9a54546157515b1caad13646a77c"
+    },
+    {
+      "path": "web/src/components/ValuePolicyReview.tsx",
+      "sha256": "9be5b64e0c01fd536bb64f6b1af34debd53cafa5f7230a02c58b8de65b09b6d4"
+    },
+    {
+      "path": "web/src/services/api.ts",
+      "sha256": "ba5ae25d311f3935bb7aba6b7b84851e1ab1685266e3a67d4bbe3722fd6bd12c"
+    },
+    {
+      "path": "web/src/pages/DecisionDetail/index.tsx",
+      "sha256": "dbae0ca6e7afd24522110ab5653106eca9dce086948d65ff29b007ffef1106c1"
+    },
+    {
+      "path": "config/user-research-workflow-v1.json",
+      "sha256": "746fc7b66ab41fcd76a5ad094481df16223ba212ab51e22ae75a9fe7ac31c728"
+    }
+  ],
+  "yili": {
+    "schema_version": "dual-strategy-v5-real-supplement-handoff-v1",
+    "checked_at": "2026-10-21T15:31:57.207583+00:00",
+    "action": "no_order",
+    "symbol": "600887",
+    "source_scope": "REAL_RETAINED_PUBLIC_SOURCES_CURRENT_LOCAL_REOBSERVATION_NOT_HISTORICAL_PIT",
+    "candidate_binding": {
+      "path": "runtime/source-reobservation-600887-v5-20261021T1509029735523Z/pending-candidate/candidate.json",
+      "sha256": "038e1dfae8be45a663456b9d8bad40fe1c5b67c4a011228ea9a641f5bae43e82"
+    },
+    "model_context": {
+      "input_descriptor_sha256": "62102d8324d04285cdaaab1a438f94882f73ec779d13acb9dd6906968f0cb691",
+      "research_case_sha256": "2d841d9a7082ea4f5ac111b7ffb6a9c7f1b17adc042e91824fbaa920d323ebf4",
+      "facts_sha256": "dc444a4e75b2160cca4fd48a5355a05e071e060458c490d26f008694b1e17d0d",
+      "assumptions_sha256": "ec857a29b983ee5fb4dd08a0f75c4dd0d8e4d34cd88da7ef42c71a2be3175d50",
+      "model_id": "residual_income_or_equity_value",
+      "model_version": "residual-income-equity-shared-dated-v2",
+      "profile_id": "quality_compounder",
+      "research_as_of": "2026-10-21"
+    },
+    "handoff_status": "EXTERNAL_SIGNATURE_REQUIRED",
+    "authorization": {
+      "pinned_root_count": 0,
+      "status": "AUTHORIZED_IDENTITY_REQUIRED"
+    },
+    "materiality_status": "MATERIALITY_HANDOFF_BLOCKED",
+    "materiality_reason": "原研究包尚未绑定完整公告扫描；须先按对应模型版本补齐并核验后，再办理事件审核。",
+    "approval_changed": false,
+    "research_admitted": false,
+    "price_admitted": false,
+    "current_public_price_policy_changed": false,
+    "source_bytes_unchanged": true,
+    "pending_group_count": 4,
+    "position_guidance": null
+  },
+  "moutai_event": {
+    "status": "EXTERNAL_SIGNATURE_REQUIRED",
+    "scope": "SEPARATE_UNADMITTED_EVENT_CONTEXT_NOT_CURRENT_G3",
+    "consumption_binding": {
+      "path": "runtime/v5-event-supplement-consumed-20261021T151651051751Z/consumption.json",
+      "sha256": "f5930d231cc2ec52ce818ce785ed3b16a3b9efc1dcd916c7941be0ff035fe658"
+    },
+    "handoff_binding": {
+      "path": "runtime/v5-event-supplement-20261021T145652722154Z/version/materiality-handoff.json",
+      "sha256": "0d23bd14d7c998976222a537b407d221106a5f7fb4540490208429c7df6777c8"
+    },
+    "model_context": {
+      "input_descriptor_sha256": "ceacb97eb93c4d1af2a57ebda746200d406a7ce49a6fff640152c96eccb8f4d1",
+      "research_case_sha256": "3473f29797d5f3e42934ccfa524af8aa9eed53dcbd9eff8b65afd3e1c3dfd3dc",
+      "facts_sha256": "a3de998c2147fa46c6af16319e97559a51a1320b19e205937705c66a7442cdde",
+      "assumptions_sha256": "c63ab1e7ea8fb8dcbc895147d45f475ace8875860e095ed76f44ef3de17a34a2",
+      "model_id": "residual_income_or_equity_value",
+      "model_version": "residual-income-equity-shared-dated-v2",
+      "profile_id": "quality_compounder",
+      "research_as_of": "2026-10-21"
+    },
+    "scan_window": {
+      "scan_from": "2026-07-01",
+      "scan_to": "2026-10-20",
+      "retrieved_at": "2026-10-21T14:56:54.003568+00:00"
+    },
+    "announcement_count": 7,
+    "signed_decisions": 0,
+    "old_economic_context_unchanged": true,
+    "numeric_valuation_created": false,
+    "valuation_status": "not_ready",
+    "current_g3_materiality_status": "MATERIALITY_HANDOFF_BLOCKED",
+    "approval_granted": false,
+    "research_admitted": false,
+    "price_admitted": false
+  },
+  "tests": {
+    "v5-new-source-integration.xml": {
+      "binding": {
+        "path": "artifacts/current/dual-strategy-v5/test-results/v5-new-source-integration.xml",
+        "sha256": "f45f62b8ed6cf22d90c4d2fbb98795d8782ac68f265fd3a122100e68ced3123a"
+      },
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "192",
+          "time": "153.420",
+          "timestamp": "2026-10-21T23:51:29.763918+08:00",
+          "hostname": "LiuMing"
+        }
+      ]
+    },
+    "v5-web-api.xml": {
+      "binding": {
+        "path": "artifacts/current/dual-strategy-v5/test-results/v5-web-api.xml",
+        "sha256": "db058436024507d50fdb67576f72d7c17aa858179033bf9d304b30c23b8adff7"
+      },
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "248",
+          "time": "79.463",
+          "timestamp": "2026-10-21T23:41:10.305733+08:00",
+          "hostname": "LiuMing"
+        }
+      ]
+    }
+  },
+  "web": {
+    "passed": 320,
+    "failed": 0,
+    "typecheck": true,
+    "format": true,
+    "build": true
+  },
+  "browser": {
+    "source": "REAL_PUBLIC_RESEARCH_WITH_READ_ONLY_TEST_ONLY_ACCOUNT",
+    "desktop_width": 1440,
+    "desktop_document_width": 1425,
+    "mobile_width": 390,
+    "mobile_document_width": 375,
+    "evidence": [
+      {
+        "path": "artifacts/current/dual-strategy-v5/600887-new-input-desktop.png",
+        "sha256": "4e14e629c9ef03050900b01e382ccc9fe5e4a4ad5364e394c985d28e09366cba"
+      },
+      {
+        "path": "artifacts/current/dual-strategy-v5/600887-new-input-mobile.png",
+        "sha256": "596bab04b5dadcb978ed13779f49612a64bfa0c4c6b3c4dfc9e8f027c3cf3e78"
+      },
+      {
+        "path": "artifacts/current/dual-strategy-v5/600519-independent-event-desktop.png",
+        "sha256": "ac55b2c1fb9e7910795be8da4bf15ff1112db1945ab0b24e777719c5ecf58005"
+      },
+      {
+        "path": "artifacts/current/dual-strategy-v5/600519-independent-event-mobile.png",
+        "sha256": "46e2a4d6fdae1686903d558522f07ec10b57414a619318ee0d8e33fe0bd9a461"
+      }
+    ],
+    "real_signature_submitted": false,
+    "account_confirmed": false,
+    "trade_recorded": false,
+    "test_only_journal_unchanged_sha256": "c1d940ffab11beccbb0c4c9dd717549e2590c6638daf2b01e80993d7d652682f"
+  },
+  "session_recovery": {
+    "fresh_launcher_fragment_precedes_stored_token": true,
+    "concurrent_handshake_shared": true,
+    "late_401_preserves_new_session": true,
+    "expired_session_without_launcher_refused": true
+  },
+  "release": {
+    "raw_research_runtime_included": false,
+    "fresh_clone": "FAIL_CLOSED_IF_LOCAL_ORIGINALS_MISSING",
+    "top_level_runtime_tracking": false,
+    "unrelated_p0_work_preserved": true,
+    "local_architecture_results": "83_PASSED_TWO_UNRELATED_UNTRACKED_P0_SCRIPT_INVENTORY_FAILURES",
+    "final_sha_ci": "MUST_BE_CHECKED_AFTER_SCOPED_COMMIT"
+  },
+  "statuses": {
+    "VALUE_ENGINEERING_CLOSURE": "PARTIAL",
+    "VALUE_REAL_EVIDENCE": "PARTIAL",
+    "VALUE_ECONOMIC_ADMISSION": "NOT_PROVEN",
+    "HOTSPOT_ENGINEERING_CLOSURE": "PARTIAL",
+    "HOTSPOT_STRATEGY_VALIDATION": "NOT_PROVEN",
+    "HOTSPOT_FORMAL_ADMISSION": "BLOCKED",
+    "PERSONAL_DECISION_ENGINEERING": "PARTIAL",
+    "REAL_PRIVATE_PORTFOLIO_READY": "NOT_PROVEN",
+    "UNIFIED_DECISION_ENGINEERING": "PARTIAL",
+    "WEB_E2E": "PARTIAL",
+    "DAILY_RUN": "PARTIAL",
+    "REAL_ASSISTED_USE_READY": "NOT_PROVEN"
+  },
+  "total_goal": "IN_PROGRESS",
+  "real_assisted_use": "NOT_PROVEN",
+  "remaining": [
+    {
+      "kind": "RESEARCH",
+      "item": "Complete issuer-specific debt, ROIC, normalized earnings, distribution sustainability and economic assumptions"
+    },
+    {
+      "kind": "EVIDENCE_ENGINEERING",
+      "item": "Bind complete announcement coverage to the actual new economic candidate, not an unrelated event context"
+    },
+    {
+      "kind": "HUMAN_AUTHORITY",
+      "item": "Real scoped signing identity, exact-version G3 and per-announcement signed classifications"
+    },
+    {
+      "kind": "STRATEGY_EVIDENCE",
+      "item": "Contemporaneous hotspot selection/PIT, dated costs, untouched OOS and natural-time Shadow"
+    },
+    {
+      "kind": "PRIVATE_INPUT",
+      "item": "Real IPS, account, reconciliation and user acceptance"
+    },
+    {
+      "kind": "RELEASE_ENGINEERING",
+      "item": "Research runtime remains local-only; do not claim a fully portable source-only release"
+    }
+  ]
+}

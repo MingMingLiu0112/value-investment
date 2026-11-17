@@ -359,7 +359,7 @@ def test_revocation_blocks_old_response_packet_and_stripped_provenance(signed):
         packet.pop('reviewed_candidate_binding')
         stripped = root/'stripped.json'
         write_new_json(stripped, packet)
-        with pytest.raises(ValueError, match='stripped'):
+        with pytest.raises(ValueError, match='stripped|unsigned legacy G3'):
             attach_research_reviews(root=root, descriptor=descriptor, spec=build_research_run_spec(descriptor),
                 path=stripped, expected_sha256=sha256_file(stripped), event_sha256=None)
 

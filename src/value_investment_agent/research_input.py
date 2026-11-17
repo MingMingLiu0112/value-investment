@@ -11,8 +11,10 @@ from dataclasses import dataclass, is_dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 import hashlib
+import json
 import re
 from typing import Any, Mapping, Sequence
+from zoneinfo import ZoneInfo
 
 from .distribution import DividendResearchResult
 from .domain.decision.advisory_dependency_admission import (
@@ -44,6 +46,10 @@ from .research_artifact_codecs import (
 )
 from .research_case import ResearchCase
 from .research_profile import PROFILES
+from .domain.research.research_only_facts import (
+    ResearchOnlyFacts, RESEARCH_ONLY_MODE, UNASSIGNED_PROFILE, NO_MODEL,
+    NO_MODEL_VERSION, SOURCE_SCHEMA, validate_research_only_scope,
+)
 from .research_run_contract import (
     INPUT_DESCRIPTOR_SCHEMA,
     AssumptionScenarioBinding,
@@ -171,6 +177,15 @@ def _confidence_from_payload(value: object) -> ConfidenceEvidence | None:
 
 
 def _residual_scenario_payload(value: ResidualIncomeScenarioInputs) -> dict[str, Any]:
+    from .valuation_models.residual_income_path_v2 import ResidualIncomePathScenarioInputs
+    if isinstance(value, ResidualIncomePathScenarioInputs):
+        return {
+            'retention_contract': 'annual-retention-v2', 'currency': value.currency,
+            'cost_of_equity': str(value.cost_of_equity),
+            'forecast_roes': [str(item) for item in value.forecast_roes],
+            'forecast_retentions': [str(item) for item in value.forecast_retentions],
+            'terminal_roe': str(value.terminal_roe), 'terminal_growth': str(value.terminal_growth),
+        }
     return {
         "cost_of_equity": str(value.cost_of_equity),
         "forecast_roes": [str(item) for item in value.forecast_roes],
@@ -183,6 +198,19 @@ def _residual_scenario_payload(value: ResidualIncomeScenarioInputs) -> dict[str,
 def _residual_scenario_from_payload(
     value: Mapping[str, Any],
 ) -> ResidualIncomeScenarioInputs:
+    if 'forecast_retentions' in value or 'retention_contract' in value:
+        from .valuation_models.residual_income_path_v2 import ResidualIncomePathScenarioInputs
+        if (value.get('retention_contract') != 'annual-retention-v2' or set(value) != {
+                'retention_contract', 'currency', 'cost_of_equity', 'forecast_roes',
+                'forecast_retentions', 'terminal_roe', 'terminal_growth'}):
+            raise ValueError('Exact annual-retention-v2 scenario required; no scalar retention')
+        return ResidualIncomePathScenarioInputs(
+            cost_of_equity=_decimal(value['cost_of_equity'], 'cost_of_equity'),
+            forecast_roes=tuple(_decimal(x, 'forecast_roes') for x in value['forecast_roes']),
+            forecast_retentions=tuple(_decimal(x, 'forecast_retentions') for x in value['forecast_retentions']),
+            terminal_roe=_decimal(value['terminal_roe'], 'terminal_roe'),
+            terminal_growth=_decimal(value['terminal_growth'], 'terminal_growth'), currency=value['currency'],
+        )
     return ResidualIncomeScenarioInputs(
         cost_of_equity=_decimal(value["cost_of_equity"], "cost_of_equity"),
         forecast_roes=tuple(
@@ -305,6 +333,8 @@ def _fcff_scenario_from_payload(
 
 
 def facts_to_payload(facts: Any) -> dict[str, Any]:
+    if isinstance(facts, ResearchOnlyFacts):
+        return facts.as_policy()
     if isinstance(facts, QualityCompounderFacts):
         return {
             "facts_type": "quality_compounder",
@@ -362,6 +392,8 @@ def facts_to_payload(facts: Any) -> dict[str, Any]:
 def facts_from_payload(payload: Mapping[str, Any]) -> Any:
     data = dict(payload)
     facts_type = _string(data.get("facts_type"), "facts_type")
+    if facts_type == 'research_only':
+        return ResearchOnlyFacts.from_payload(data)
     symbol = _string(data.get("symbol"), "facts.symbol")
     as_of = _date(data.get("as_of"), "facts.as_of")
     verified = bool(data.get("verified"))
@@ -489,7 +521,7 @@ def _validity_from_payload(value: object) -> ModelValidityEvaluationInput | None
     )
 
 
-def _source_from_payload(value: object) -> ResearchSourceDescriptor:
+def _source_from_payload(value: object, *, include_local_binding: bool = False) -> ResearchSourceDescriptor:
     if not isinstance(value, Mapping):
         raise ValueError("input source must be an object")
     data = dict(value)
@@ -532,6 +564,7 @@ def _source_from_payload(value: object) -> ResearchSourceDescriptor:
             if data.get("parser_version") else None
         ),
         issuer_identity=issuer_identity,
+        local_path=data.get('local_path') if include_local_binding else None,
     )
 
 
@@ -642,6 +675,103 @@ def _decode_artifact_value(
 
 
 @dataclass(frozen=True)
+class ResearchSourceContract:
+    """Canonical, immutable source-bound package metadata."""
+
+    canonical_json: str
+
+    @classmethod
+    def from_payload(
+        cls, value: object, field: str = "source_contract",
+    ) -> "ResearchSourceContract":
+        if not isinstance(value, Mapping):
+            raise ValueError(f"{field} must be an object")
+        return cls(canonical_contract_payload(dict(value)))
+
+    def as_policy(self) -> dict[str, Any]:
+        return json.loads(self.canonical_json)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.canonical_json, str) or not self.canonical_json:
+            raise ValueError("Research source contract requires canonical JSON")
+        parsed = json.loads(self.canonical_json)
+        if (
+            not isinstance(parsed, dict)
+            or canonical_contract_payload(parsed) != self.canonical_json
+        ):
+            raise ValueError("Research source contract must use canonical JSON")
+
+
+def validate_research_only_sources(sources, case, facts, contract, available_at):
+    """Non-valuation source closure; no synthetic scenarios to pass a valuation validator."""
+    from .application.product.source_bound_inputs import source_catalog_sha256
+    from urllib.parse import urlparse
+    if not isinstance(contract, Mapping) or contract.get('schema_version') != SOURCE_SCHEMA:
+        raise ValueError('Research-only mode requires its explicit source contract')
+    catalog = contract.get('source_catalog')
+    if (not isinstance(catalog, list) or not catalog
+            or contract.get('source_catalog_sha256') != source_catalog_sha256(catalog)):
+        raise ValueError('Research-only source catalog hash mismatch')
+    cutoff = _datetime(contract.get('cutoff_at'), 'research-only cutoff')
+    if (available_at is None or cutoff > available_at
+            or cutoff.astimezone(ZoneInfo('Asia/Shanghai')).date() != case.as_of):
+        raise ValueError('Research-only cutoff/availability does not match the research case')
+    if case.generated_at > available_at:
+        raise ValueError('Research-only case follows output availability')
+    raw_sources = {item['id']: item for item in catalog}
+    if (len(raw_sources) != len(catalog) or len(sources) != len(catalog)
+            or set(raw_sources) != {item.id for item in sources}):
+        raise ValueError('Research-only source identities differ')
+    for source in sources:
+        raw = raw_sources[source.id]
+        for key, value in source.as_policy().items():
+            if raw.get(key) != value:
+                raise ValueError('Research-only source differs from bound catalog: ' + key)
+        if (source.kind != 'official_issuer_filing' or source.local_path is None
+                or not source.issuer_identity or source.issuer_identity.security_code != case.symbol):
+            raise ValueError('Research-only source requires explicit official security identity')
+        url = urlparse(source.location)
+        if url.scheme != 'https' or url.hostname not in {
+                'static.cninfo.com.cn', 'disc.static.szse.cn', 'static.sse.com.cn',
+                'www.sse.com.cn', 'www.szse.cn', 'www.bse.cn'}:
+            raise ValueError('Research-only source requires an official URL')
+        known = _datetime(raw.get('source_available_at'), 'source available_at')
+        if raw.get('published_date'):
+            if _date(raw['published_date'], 'source published_date') > known.astimezone(ZoneInfo('Asia/Shanghai')).date():
+                raise ValueError('Research-only source availability precedes publication date')
+        elif source.published_at is None:
+            raise ValueError('Research-only official source requires a publication date or timestamp')
+        if _date(raw.get('report_period'), 'source report_period') > facts.as_of:
+            raise ValueError('Research-only source exceeds financial period')
+        if (not raw.get('availability_basis') or source.retrieved_at is None
+                or known > source.retrieved_at or source.retrieved_at > cutoff
+                or source.published_at is not None and known < source.published_at):
+            raise ValueError('Research-only source is unavailable at cutoff')
+    if not case.evidence_refs or not facts.evidence_refs:
+        raise ValueError('Research-only case and observations require source evidence')
+    for ref in (*case.evidence_refs, *facts.evidence_refs):
+        source = raw_sources.get(ref.get('id'))
+        if source is None or ref.get('sha256') != source['sha256']:
+            raise ValueError('Research-only evidence id/hash is unbound')
+        if (ref.get('path') != source['local_path']
+                or ref.get('source_url') != source['location']):
+            raise ValueError('Research-only evidence path/URL is unbound')
+        if ref.get('report_period') and ref['report_period'] != source['report_period']:
+            raise ValueError('Research-only evidence period differs from source')
+        for key in ('available_at', 'source_available_at'):
+            if ref.get(key) and _datetime(ref[key], key) > cutoff:
+                raise ValueError('Research-only evidence follows cutoff')
+        if ref.get('source_available_at') and ref['source_available_at'] != source['source_available_at']:
+            raise ValueError('Research-only evidence availability differs from its source')
+    for row in facts.observations:
+        if row.get('period_label') and _date(row['period_label'], 'observation period') > facts.as_of:
+            raise ValueError('Research-only observation exceeds financial period')
+        if row.get('period_label') and any(
+                row['period_label'] != raw_sources[ref_id]['report_period'] for ref_id in row['evidence_refs']):
+            raise ValueError('Research-only observation period differs from its bound source')
+
+
+@dataclass(frozen=True)
 class ResearchInputDescriptor:
     """One hash-verifiable point-in-time input set for a fixed-sample company."""
 
@@ -667,7 +797,9 @@ class ResearchInputDescriptor:
     entry_thesis: EntryThesisSnapshot | None = None
     investment_consistency_review: InvestmentConsistencyReview | None = None
     blockers: tuple[str, ...] = ()
+    source_contract: ResearchSourceContract | None = None
     input_sha256: str | None = None
+    research_mode: str = 'valuation'
 
     def __post_init__(self) -> None:
         if self.schema_version != INPUT_DESCRIPTOR_SCHEMA:
@@ -677,15 +809,39 @@ class ResearchInputDescriptor:
                 raise ValueError(f"Research input descriptor {field} is required")
         if not _SYMBOL.fullmatch(self.symbol):
             raise ValueError("Research input descriptor symbol must contain six digits")
-        if self.profile_id not in PROFILES:
+        if self.research_mode not in ('valuation', RESEARCH_ONLY_MODE):
+            raise ValueError('Unknown research mode')
+        research_only = self.research_mode == RESEARCH_ONLY_MODE
+        if research_only:
+            validate_research_only_scope(self.profile_id, self.requested_model, self.facts,
+                (self.assumptions, self.assumption_bindings, self.distribution_result, self.quote,
+                 self.model_validity_input, self.valuation_approval, self.entry_thesis,
+                 self.investment_consistency_review))
+            if (self.dependencies.model_id != NO_MODEL
+                    or self.dependencies.model_version != NO_MODEL_VERSION):
+                raise ValueError('Research-only dependencies must not identify a valuation model')
+            validate_research_only_sources(self.sources, self.research_case, self.facts,
+                self.source_contract.as_policy() if self.source_contract else None,
+                self.point_in_time.available_at)
+        elif isinstance(self.facts, ResearchOnlyFacts):
+            raise ValueError('Research-only facts require explicit mode')
+        if not research_only and self.profile_id not in PROFILES:
             raise ValueError(f"Unknown descriptor profile: {self.profile_id}")
         if self.dependencies.profile_id != self.profile_id:
             raise ValueError("Descriptor dependency profile does not match")
-        route = route_profile(self.profile_id, self.requested_model)
-        if route.status != "SUPPORTED":
+        route = None if research_only else route_profile(self.profile_id, self.requested_model)
+        if not research_only and route.status != "SUPPORTED":
             raise ValueError("Descriptor model route must be supported")
-        if self.dependencies.model_id != route.selected_model:
+        if not research_only and self.dependencies.model_id != route.selected_model:
             raise ValueError("Descriptor model id does not match the profile route")
+        if (
+            self.dependencies.model_version
+            == "residual-income-equity-shared-dated-v2"
+            and getattr(self.facts, "valuation_timing", None) is None
+        ):
+            raise ValueError(
+                "Dated-v2 residual-income input requires explicit valuation timing"
+            )
         source_ids = [source.id for source in self.sources]
         if len(set(source_ids)) != len(source_ids):
             raise ValueError("Descriptor source ids must be unique")
@@ -779,6 +935,10 @@ class ResearchInputDescriptor:
             "blockers": list(self.blockers),
             "input_sha256": self.input_sha256,
         }
+        if self.source_contract is not None:
+            payload["source_contract"] = self.source_contract.as_policy()
+        if self.research_mode != 'valuation':
+            payload['research_mode'] = self.research_mode
         if (
             self.recommendation_schema_version != DECISION_RECOMMENDATION_SCHEMA
             or self.entry_thesis is not None
@@ -806,6 +966,14 @@ def _artifact_payload_value(value: Any) -> dict[str, Any] | None:
 def descriptor_sha256(descriptor: ResearchInputDescriptor) -> str:
     payload = descriptor.as_policy()
     payload.pop("input_sha256", None)
+    legacy_contract = payload.get("source_contract")
+    if (
+        isinstance(legacy_contract, Mapping)
+        and legacy_contract.get("schema_version") == "source-bound-research-inputs-v1"
+    ):
+        # Legacy receipts were finalized before source_contract entered the
+        # descriptor contract. Keep their exact input identity replayable.
+        payload.pop("source_contract", None)
     return hashlib.sha256(
         canonical_contract_payload(payload).encode("utf-8")
     ).hexdigest()
@@ -833,10 +1001,12 @@ def descriptor_from_payload(payload: Mapping[str, Any]) -> ResearchInputDescript
             if data.get("requested_model") else None
         ),
         run_id=_string(data.get("run_id"), "run_id"),
+        research_mode=data.get('research_mode', 'valuation'),
         point_in_time=_pit_from_payload(data.get("point_in_time")),
         dependencies=_dependency_from_payload(data.get("dependencies")),
         sources=tuple(
-            _source_from_payload(item) for item in data.get("sources") or []
+            _source_from_payload(item, include_local_binding=data.get('research_mode') == RESEARCH_ONLY_MODE)
+            for item in data.get("sources") or []
         ),
         research_case=_decode_artifact_value(
             ARTIFACT_RESEARCH_CASE, data.get("research_case")
@@ -872,6 +1042,11 @@ def descriptor_from_payload(payload: Mapping[str, Any]) -> ResearchInputDescript
             data.get("investment_consistency_review"),
         ),
         blockers=tuple(str(item) for item in data.get("blockers") or []),
+        source_contract=(
+            ResearchSourceContract.from_payload(data["source_contract"])
+            if data.get("source_contract") is not None
+            else None
+        ),
         input_sha256=(
             str(data["input_sha256"]) if data.get("input_sha256") else None
         ),
@@ -892,6 +1067,9 @@ def build_research_run_spec(
         run_id=run_id or descriptor.run_id,
         symbol=descriptor.symbol,
         profile_id=descriptor.profile_id,
+        research_mode=descriptor.research_mode,
+        source_contract_payload=(descriptor.source_contract.as_policy()
+                                 if descriptor.source_contract is not None else None),
         research_case=descriptor.research_case,
         facts=descriptor.facts,
         requested_model=descriptor.requested_model,

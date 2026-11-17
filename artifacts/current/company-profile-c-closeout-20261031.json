@@ -1,0 +1,87 @@
+{
+  "schema_version": "company-profile-c-bounded-public-summary-v2",
+  "action": "no_order",
+  "baseline_head": "4a58287e17d2df245441e3fa3b5e6116dc0c4df9",
+  "evaluated_at": "2026-10-31T05:23:00.976193+00:00",
+  "scope": "FIXED_FIVE_FINITE_COMPLETE_OFFICIAL_SECTION_REVIEW_NOT_GENERAL_AUTOMATIC_CLASSIFICATION",
+  "api_receipt_sha256": "64646bfad728b3d0942458fb48aa37d4b9936683712291fec208a2a415e5b661",
+  "results": [
+    {
+      "symbol": "600519",
+      "status": "SOURCE_BOUND_PROFILE",
+      "route": "residual_income_or_equity_value",
+      "response_sha256": "51ae40d3fe63cea6d6ba2788754d4c84ead1cdd46cb083b28ec5af77fd83ae80",
+      "formal_eligibility": false,
+      "consumption": "EXISTING_ANALYSIS_REPLAYED_UNCHANGED_FINGERPRINT"
+    },
+    {
+      "symbol": "600887",
+      "status": "SOURCE_BOUND_PROFILE",
+      "route": "residual_income_or_equity_value",
+      "response_sha256": "5a21afb88cbfc1a09d55644ce07e08aef921bcb2a46f39fcd0addc505bae75cb",
+      "formal_eligibility": false,
+      "consumption": "EXISTING_ANALYSIS_REPLAYED_UNCHANGED_FINGERPRINT"
+    },
+    {
+      "symbol": "000333",
+      "status": "SOURCE_BOUND_ROUTE_ONLY",
+      "route": "fcff",
+      "response_sha256": "38185e2ea259f3ace37acf398179b25fa27d6f092bfd50daabefaa3bccb5c464",
+      "formal_eligibility": false,
+      "required_inputs_count": 10,
+      "input_status": "ALL_MISSING_NOT_EXTRACTED_OR_ADMITTED",
+      "report_period": "2026-06-30",
+      "original_sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8",
+      "available_at": "2026-10-31T05:02:37.167157+00:00"
+    },
+    {
+      "symbol": "601088",
+      "status": "SOURCE_BOUND_ROUTE_ONLY",
+      "route": "cyclical_normalized",
+      "response_sha256": "424340a039ea037a909884b5f3bc996c7b630e4fc485a2f865cb23602bfa5d49",
+      "formal_eligibility": false,
+      "required_inputs_count": 13,
+      "input_status": "ALL_MISSING_NOT_EXTRACTED_OR_ADMITTED",
+      "report_period": "2025-12-31",
+      "original_sha256": "7068df1231922b8a2fcfd0336d9ae6550dabf7c7edc152d680089df8cc126bd2",
+      "available_at": "2026-10-31T05:03:14.455298+00:00"
+    },
+    {
+      "symbol": "600036",
+      "status": "MODEL_NOT_APPLICABLE",
+      "route": null,
+      "response_sha256": "5305f480705cc7c455cb2a38d522d369f810a37ea8df82c5793dc18031945083",
+      "formal_eligibility": false,
+      "refusal": "FINANCIAL_MAIN_BUSINESS_NO_REGISTERED_ALTERNATIVE_MODEL",
+      "report_period": "2025-12-31",
+      "original_sha256": "abe612a273468072b176dd51ea460c1e1596f8ca729cbc6db3fa28ba9a57ea79",
+      "available_at": "2026-10-31T05:03:26.898411+00:00"
+    }
+  ],
+  "final_implementation_freeze": "FIXED_FIVE_SOURCE_AND_CONTRACT_ACCEPTED_RESPONSIBILITY_FROZEN",
+  "economic_quality_proven": false,
+  "approved": false,
+  "user_acceptance": "用户尚未确认此版本",
+  "deployment": "运行版本及页面验收另存回执",
+  "source_module_sha256": "5ed8a3b418c3726be43d5f8c2654a001cebc607f01b29b89688a6b2a211f3cbf",
+  "classification_method": "FIXED_SOURCE_SECTION_REVIEW_NOT_GENERAL_CLASSIFIER",
+  "c_responsibility": "固定五家及合同已验，C职责冻结",
+  "next_sequence": "D1受限执行 → D2假设 → E2编译；本轮不启动",
+  "root_reported_verification": {
+    "passed": 114,
+    "skipped": 0,
+    "actual_input_environments": "Both enabled; all real-source checks included",
+    "provenance": "Root final test report; this worker reconciled saved actual API outputs without rerunning APIs"
+  },
+  "implementation_and_registry_hashes": {
+    "src/value_investment_agent/application/research/company_profile.py": "99d5296f34ed04fa69a0d36de276b26abb121d1e223e63b2c5940a1420acd97e",
+    "src/value_investment_agent/application/research/company_profile_sources_v1.py": "5ed8a3b418c3726be43d5f8c2654a001cebc607f01b29b89688a6b2a211f3cbf",
+    "src/value_investment_agent/domain/research/profile_applicability_v1.py": "b58f7c86740263486d5810a1dbc8e74b8977b6d58190da8154f2fae82607a263",
+    "config/company-profile-sources-v1.json": "dcb82e2fa3ebac6a60f7988119d940e2cbc5f6133f006585d7acadeb1b072dde"
+  },
+  "targeted_acceptance": {
+    "passed": 114,
+    "skipped": 0,
+    "includes_five_actual_sources": true
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "schema_version": "main-valuation-revalidation-v1",
+  "symbol": "000568",
+  "action": "no_order",
+  "generated_at": "2026-11-01T07:19:55.945234+00:00",
+  "financial_basis": "2026-06-30",
+  "prior_fiscal_end": "2025-12-31",
+  "constraint_bundle": "runtime/parent-obligations-000568-20261101",
+  "bindings": {
+    "native_facts": {
+      "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+      "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+    },
+    "template_package": {
+      "path": "runtime/e2-first-input-000568-20261031/compiled-20261031T111006911210Z/package.json",
+      "sha256": "f4f5f3a692e6c4f3abff76eb852397b0415cafd1b2047fd405a965f71ff2e5f0"
+    },
+    "quarterly_pdf": {
+      "path": "runtime/value-000568-current-alignment-20261101/1225639079.pdf",
+      "sha256": "ce2027403f8c079bc70f34a7de4aa72d0b9a70ad76185a27cd0a3c4bde1052dd"
+    },
+    "quarterly_receipt": {
+      "path": "runtime/value-000568-current-alignment-20261101/source-receipt.json",
+      "sha256": "6c5fe1d3d21c6f4413670e85e1c79b65a2e56736890f459ffeadb3de129c04f0"
+    },
+    "task_state": {
+      "path": "runtime/research-task-execution-v1/live-operating-v1/rt-eac1c74997d17510398ce1fe1e5bea9e/versions/0023-3468ef4efc72747944deb4f4a0efde717d81bcfa58da887fc8fdf75b308ebc10.json",
+      "sha256": "3468ef4efc72747944deb4f4a0efde717d81bcfa58da887fc8fdf75b308ebc10"
+    },
+    "da_wc": {
+      "path": "runtime/value-operating-revalidation-20261101/da-wc-evidence.json",
+      "sha256": "c026cca52e663c144edc02679ce8827a79965b81832ed6958ddd00daa276bbe3"
+    },
+    "constraint_manifest": {
+      "path": "runtime/parent-obligations-000568-20261101/minimal-new-sources-v1.json",
+      "sha256": "c47d077503c607c1b0dd2a7a6de6834ed3968f79b0cde600246b1213824c32ca"
+    },
+    "floor_assumption": {
+      "path": "runtime/e2-first-input-000568-20261031/assumptions-20261031T111006911210Z.json",
+      "sha256": "c1ef378b37b81809cc9fd3c3532c96aaa89be1be5f24e2bd526fe1295a1d932c"
+    },
+    "source_closure": {
+      "path": "artifacts/current/value-main-revalidation-20261101/source-closure.json",
+      "sha256": "b1b9a63050cb4d765f43bb63b7d00b1f5b82ef910f2eb6fac66a21bd6fdbc328"
+    }
+  },
+  "quarterly_source_id": "cninfo:1225639079",
+  "implementation_sha256": {
+    "value_investment_agent.application.research.explicit_cash_research_runner_v1": "def4a3ad51ed3f8d1c0bc4d5684a4d411e1916136bd2fc366fc19fb2e974de56",
+    "value_investment_agent.domain.research.period_earnings_assembly_v1": "314b5fa0edf0227a4bf8fff119098e50539f4ee47b70297691d895450234523f",
+    "value_investment_agent.infrastructure.filings.first_research_fact_replay_v1": "604d199160ca2872be58de85bebc4ab068cfb53b0d061de6eed3000ff60277c0",
+    "value_investment_agent.infrastructure.filings.quarterly_operating_facts_v1": "8f0b700cc618413e147bb35d2d86f75539317360fff4f1a7d70c60d1ef0b3c64",
+    "value_investment_agent.infrastructure.filings.parent_obligation_sources_v2": "40ad7df6cbe7a85307d809b97107a362249c3a715bb3a0a0629e8c79572b7672",
+    "value_investment_agent.domain.valuation.operating_profit_cash_path_v1": "00f6781766c2f0ad427df3a7b126d45cc9518b61be78a92f44eb3fcba8ea2764",
+    "value_investment_agent.domain.valuation.joint_capital_cash_path_v4": "730769d6094a9e6860e05fcde33f3e14bbff887fe6b7a313dfd128b6ce951b68",
+    "value_investment_agent.domain.research.parent_obligation_pressure_v2": "e35646b84ae88ddafc50cf34ac38e4d314faa2316cdfa6f2a67593794628d32a",
+    "value_investment_agent.domain.research.liability_settlement_schedule_v1": "3bc9802126095546675f1b49b16a7ab4c9bfe5d6674d32aace55f176f848d84d",
+    "value_investment_agent.valuation_models.residual_income_path_v4": "3d41bc7b1967c3f45fa7e1f3f058b6b139706bc93db4300cef6dfeb6c2dab666",
+    "value_investment_agent.domain.valuation.signed_parent_profit": "8a25b8f3a8b989bfe9b28c6c88add89b347e539306af7252b944f03b29724a38",
+    "value_investment_agent.domain.decision.value_price_policy": "7c57846b3f212c44b8fc219a4dff11cda620f5f552ef248ff9a98c98261ce032",
+    "value_investment_agent.infrastructure.filings.native_capital_observation_v1": "3319c0842727f9ab23d8af39061c04cdadcf813d4726ddd82d12a9cc89587f68",
+    "value_investment_agent.research_application": "d34ac7998117d13aef19cc02ae42e3f807420ae13f748b012b51b72bad0dc158",
+    "value_investment_agent.research_input": "ae8cfdfa916c5dafe1a4bddba6ea23702aa0af36089cf27d74375ec55c55cd46",
+    "value_investment_agent.m1_valuation_package_builder": "f6aaff840c1a692d7a96f4d1b64269ac936455bd3e4f871bf135dcb804da602b",
+    "value_investment_agent.application.research.v4_input_adapter": "1e134d961627d5ab42ade9d2af9b46010d71a5a0e67cc60e6e8703d0d9737481",
+    "value_investment_agent.application.research.v4_valuation_router": "0a3a396b1739f5633a297c747db2c0a1ce1beba7ae51ff80c12683b33ac6845b",
+    "value_investment_agent.application.product.source_bound_inputs": "0d71c0627d7654dbe173b645dcf046e85e778f80bcffce95fd3dd694923efd3d",
+    "value_investment_agent.application.research.main_valuation_revalidation_v1": "7093d350f6a8e977035f738a4cc726838f55fe1dc870947b7dac660653c8ea6a"
+  },
+  "hypotheses": {
+    "scenarios": {
+      "bear": {
+        "point_selection": "margin_lower",
+        "reserve_other_current": true,
+        "reserve_noncurrent_borrowings": false,
+        "target_payout_ratio": "0.75",
+        "accessible_profit_ratio": "0.70",
+        "reserve_ratio": "0.10",
+        "cost_of_equity": "0.10",
+        "terminal_policy": {
+          "net_maintenance_cash_cny": "1147809855.90",
+          "operating_wc_cash_cny": "0",
+          "commitment_cash_cny": "0",
+          "accessible_profit_ratio": "0.70",
+          "target_payout_ratio": "0.75",
+          "reserve_ratio": "0.10",
+          "profit_scale": "0.50",
+          "rationale": "条件终端：冻结首年利润后按显式0.50持续系数；非经济采纳。净维护代理维持FY2025不减ROU口径；冻结名义经营规模条件下WC零增量无释放。原三项负债仅year1条件支付，终端不再付款、不给释放或利息节约，new returns均零。payout/access/reserve是条件假设，不是财政年度政策期限外承诺。",
+          "terminal_mechanism": "recursive_capital_use_and_owner_distribution_v2",
+          "terminal_start_year": 11,
+          "first_distribution_timing": "end_of_terminal_year_1",
+          "legacy_profit_dynamics": "constant_after_profit_scale_transition",
+          "commitment_occurrences": 0,
+          "restricted_cash_release_cny": "0",
+          "restricted_cash_release_year": null,
+          "convergence_tolerance_cny": "1",
+          "max_tail_years": 1000
+        },
+        "tax_rate": "0.25",
+        "signed_nci_ratio": "0.01",
+        "negative_profit_tax_benefit": false,
+        "tax_rationale": "25%为FY2025与H12026有效税率附近的显式条件研究点，不延续2025Q4极低税率；亏损不自动确认税收利益。",
+        "nci_rationale": "以H12026及2026Q3接近1%的正少数损益作压力点，不把2025Q4负少数损益当未来持股比例。"
+      },
+      "base": {
+        "point_selection": "margin_lower",
+        "reserve_other_current": true,
+        "reserve_noncurrent_borrowings": false,
+        "target_payout_ratio": "0.75",
+        "accessible_profit_ratio": "0.85",
+        "reserve_ratio": "0.10",
+        "cost_of_equity": "0.10",
+        "terminal_policy": {
+          "net_maintenance_cash_cny": "1147809855.90",
+          "operating_wc_cash_cny": "0",
+          "commitment_cash_cny": "0",
+          "accessible_profit_ratio": "0.85",
+          "target_payout_ratio": "0.75",
+          "reserve_ratio": "0.10",
+          "profit_scale": "0.75",
+          "rationale": "条件终端：冻结首年利润后按显式0.75持续系数；非经济采纳。净维护代理维持FY2025不减ROU口径；冻结名义经营规模条件下WC零增量无释放。原三项负债仅year1条件支付，终端不再付款、不给释放或利息节约，new returns均零。payout/access/reserve是条件假设，不是财政年度政策期限外承诺。",
+          "terminal_mechanism": "recursive_capital_use_and_owner_distribution_v2",
+          "terminal_start_year": 11,
+          "first_distribution_timing": "end_of_terminal_year_1",
+          "legacy_profit_dynamics": "constant_after_profit_scale_transition",
+          "commitment_occurrences": 0,
+          "restricted_cash_release_cny": "0",
+          "restricted_cash_release_year": null,
+          "convergence_tolerance_cny": "1",
+          "max_tail_years": 1000
+        },
+        "tax_rate": "0.25",
+        "signed_nci_ratio": "0.01",
+        "negative_profit_tax_benefit": false,
+        "tax_rationale": "25%为FY2025与H12026有效税率附近的显式条件研究点，不延续2025Q4极低税率；亏损不自动确认税收利益。",
+        "nci_rationale": "以H12026及2026Q3接近1%的正少数损益作压力点，不把2025Q4负少数损益当未来持股比例。"
+      },
+      "bull": {
+        "point_selection": "margin_lower",
+        "reserve_other_current": true,
+        "reserve_noncurrent_borrowings": false,
+        "target_payout_ratio": "0.75",
+        "accessible_profit_ratio": "0.95",
+        "reserve_ratio": "0.10",
+        "cost_of_equity": "0.10",
+        "terminal_policy": {
+          "net_maintenance_cash_cny": "1147809855.90",
+          "operating_wc_cash_cny": "0",
+          "commitment_cash_cny": "0",
+          "accessible_profit_ratio": "0.95",
+          "target_payout_ratio": "0.75",
+          "reserve_ratio": "0.10",
+          "profit_scale": "1.00",
+          "rationale": "条件终端：冻结首年利润后按显式1.00持续系数；非经济采纳。净维护代理维持FY2025不减ROU口径；冻结名义经营规模条件下WC零增量无释放。原三项负债仅year1条件支付，终端不再付款、不给释放或利息节约，new returns均零。payout/access/reserve是条件假设，不是财政年度政策期限外承诺。",
+          "terminal_mechanism": "recursive_capital_use_and_owner_distribution_v2",
+          "terminal_start_year": 11,
+          "first_distribution_timing": "end_of_terminal_year_1",
+          "legacy_profit_dynamics": "constant_after_profit_scale_transition",
+          "commitment_occurrences": 0,
+          "restricted_cash_release_cny": "0",
+          "restricted_cash_release_year": null,
+          "convergence_tolerance_cny": "1",
+          "max_tail_years": 1000
+        },
+        "tax_rate": "0.25",
+        "signed_nci_ratio": "0.01",
+        "negative_profit_tax_benefit": false,
+        "tax_rationale": "25%为FY2025与H12026有效税率附近的显式条件研究点，不延续2025Q4极低税率；亏损不自动确认税收利益。",
+        "nci_rationale": "以H12026及2026Q3接近1%的正少数损益作压力点，不把2025Q4负少数损益当未来持股比例。"
+      }
+    },
+    "liability_payment_year": 1
+  },
+  "price_policy": {
+    "policy_id": "dated-main-working-candidate-not-adopted",
+    "rule_version": "dated-revalidation-review-v1",
+    "effective_from": "2026-11-01",
+    "effective_through": "2026-11-01",
+    "economic_conditions_sufficient": false,
+    "rules": [],
+    "rationale": "新条件研究估值的未批准草案，未选择经济充分的研究阈值规则；无当前买卖价，不默认安全边际。",
+    "dividend_coverage_risk": "85亿元年度政策尚未完整表达，母义务年1条件支付不证明真实到期、到账或当前容量。",
+    "reopen_conditions": [
+      {
+        "trigger": "SOURCE_OR_IMPLEMENTATION_OR_PERIOD_OR_ASSUMPTION_CHANGED",
+        "reason": "重新来源冷验算及经济复核"
+      },
+      {
+        "trigger": "MOTHER_FUNDING_OR_MAINTENANCE_WC_OR_POLICY_CONDITION_BREAK",
+        "reason": "停止使用该dated草案，复核现金约束"
+      }
+    ]
+  },
+  "rationale": "条件研究工作候选：真实2026Q3=9M-H1；Q4逐经营行以FY2025-9M2025为基期，条件迁移已验证D2低利润率角点，正Q4未分类残差不自动延续；2027H1保留D2显式量价成本。第一模型年为2026Q3实际+Q4预测+2027H1预测；以后仅冻结首年利润/税/NCI作零名义增长压力。母H1未净扣现金作期初；短期借款账面额、一年内到期负债账面额、已宣股利三项fullbook仅year1条件支付一次，NONPRODUCTIVE_LIABILITY_SETTLEMENT不计CapEx或新分红；不赠送利息节约。对应金额不再放现金floor，其余流动负债和6bn缓冲保持独立不解锁压力，旧永锁只作比较；非流动借款不认作当前到期。维护为FY2025gross减非ROU DA的保守代理，非真实maintenance；首年WC仅库存/应收历史耗用代理，剔除已预留应付，后续冻结经营规模条件下设零增量不产生释放。access/payout/reserve与终端50/75/100%持续率是另行条件假设，不补原D2 UNKNOWN，不称2026政策期限外75%原文保证。",
+  "countercase": "2026Q3收入/利润显著下滑；Q4驱动迁移及十年冻结不构成充分经济预测；年1母债账面额及已宣股利条件支付不是已核到期/真实偿付，不证明当前母容量；旧永锁压力保留比较不替代。维护、WC、上划及未来到期现金滚动未被完全证明；FY2026至少85亿元政策未完整表达，不宣称履约亦不作法律违约判断。",
+  "unknowns": [
+    "真实母公司债务合同到期/本金利息租赁分解及期后现金滚动未齐",
+    "母公司法律可分配利润未获认证；retained profit仅内部账面capacity代理",
+    "D2资金可达、投资与终端UNKNOWN未因复用条件参数而关闭",
+    "维护代理与冻结后续WC不是实际必要投入；CFO未被当作起点再扣WC",
+    "支付为year1条件账面cashuse，不证明实际到期/本金拆分/付款；余下义务保持压力，不赋予解锁或利息收益",
+    "FY2026至少85亿元与财政年度75%政策未完整建模",
+    "主区间/经济批准/当前价格比较与仓位均未批准"
+  ],
+  "implementation_fingerprint_basis": {
+    "default": "SOURCE_CRLF_TO_LF_SHA256_V1",
+    "overrides": {}
+  }
+}

@@ -1,0 +1,553 @@
+{
+  "schema_version": "case-operating-mechanism-evidence-v1",
+  "symbol": "600519",
+  "generated_at": "2026-10-08T13:50:01.329172+00:00",
+  "sources": [
+    {
+      "id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF"
+    },
+    {
+      "id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF"
+    }
+  ],
+  "official_observations": [
+    {
+      "id": "fy_revenue",
+      "period": "FY2025",
+      "scope": "consolidated",
+      "value": "168838102514.79",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 9,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_prior_revenue",
+      "period": "FY2024_comparative",
+      "scope": "consolidated",
+      "value": "170899152276.34",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 9,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_cost",
+      "period": "FY2025",
+      "scope": "consolidated",
+      "value": "14892277570.91",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 9,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_prior_cost",
+      "period": "FY2024_comparative",
+      "scope": "consolidated",
+      "value": "13789482367.98",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 9,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_selling",
+      "period": "FY2025",
+      "scope": "consolidated",
+      "value": "7253499600.68",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 9,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_prior_selling",
+      "period": "FY2024_comparative",
+      "scope": "consolidated",
+      "value": "5639300059.49",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 9,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_admin",
+      "period": "FY2025",
+      "scope": "consolidated",
+      "value": "8320061659.66",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 9,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_prior_admin",
+      "period": "FY2024_comparative",
+      "scope": "consolidated",
+      "value": "9315650060.38",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 9,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_research",
+      "period": "FY2025",
+      "scope": "consolidated",
+      "value": "190112246.58",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 9,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_prior_research",
+      "period": "FY2024_comparative",
+      "scope": "consolidated",
+      "value": "218375472.87",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 9,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_revenue",
+      "period": "H12026",
+      "scope": "consolidated",
+      "value": "90703260964.48",
+      "unit": "CNY",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 7,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_prior_revenue",
+      "period": "H12025_comparative",
+      "scope": "consolidated",
+      "value": "89389354416.84",
+      "unit": "CNY",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 7,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_cost",
+      "period": "H12026",
+      "scope": "consolidated",
+      "value": "9473762565.88",
+      "unit": "CNY",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 7,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_prior_cost",
+      "period": "H12025_comparative",
+      "scope": "consolidated",
+      "value": "7777491083.93",
+      "unit": "CNY",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 7,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_selling",
+      "period": "H12026",
+      "scope": "consolidated",
+      "value": "3206308341.53",
+      "unit": "CNY",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 7,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_prior_selling",
+      "period": "H12025_comparative",
+      "scope": "consolidated",
+      "value": "3260462949.46",
+      "unit": "CNY",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 7,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_admin",
+      "period": "H12026",
+      "scope": "consolidated",
+      "value": "3635355263.82",
+      "unit": "CNY",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 7,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_prior_admin",
+      "period": "H12025_comparative",
+      "scope": "consolidated",
+      "value": "3694704172.74",
+      "unit": "CNY",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 7,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_research",
+      "period": "H12026",
+      "scope": "consolidated",
+      "value": "114926219.60",
+      "unit": "CNY",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 7,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_prior_research",
+      "period": "H12025_comparative",
+      "scope": "consolidated",
+      "value": "73901545.96",
+      "unit": "CNY",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 7,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_alcohol_revenue",
+      "period": "FY2025",
+      "scope": "alcohol_alcohol",
+      "value": "168774585187.65",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_alcohol_cost",
+      "period": "FY2025",
+      "scope": "alcohol_alcohol",
+      "value": "14805900139.59",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_moutai_revenue",
+      "period": "FY2025",
+      "scope": "alcohol_moutai",
+      "value": "146499906480.49",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_moutai_cost",
+      "period": "FY2025",
+      "scope": "alcohol_moutai",
+      "value": "9484757825.54",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_series_revenue",
+      "period": "FY2025",
+      "scope": "alcohol_series",
+      "value": "22274678707.16",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_series_cost",
+      "period": "FY2025",
+      "scope": "alcohol_series",
+      "value": "5321142314.05",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_wholesale_revenue",
+      "period": "FY2025",
+      "scope": "alcohol_wholesale",
+      "value": "84231553333.02",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_wholesale_cost",
+      "period": "FY2025",
+      "scope": "alcohol_wholesale",
+      "value": "10226331441.18",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_direct_revenue",
+      "period": "FY2025",
+      "scope": "alcohol_direct",
+      "value": "84543031854.63",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_direct_cost",
+      "period": "FY2025",
+      "scope": "alcohol_direct",
+      "value": "4579568698.41",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_cost_materials",
+      "period": "FY2025",
+      "scope": "alcohol_cost",
+      "value": "7607858939.76",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 11,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_cost_labor",
+      "period": "FY2025",
+      "scope": "alcohol_cost",
+      "value": "5499482112.67",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 11,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_cost_manufacturing",
+      "period": "FY2025",
+      "scope": "alcohol_cost",
+      "value": "902282395.06",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 11,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_cost_fuel",
+      "period": "FY2025",
+      "scope": "alcohol_cost",
+      "value": "469410305.65",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 11,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_cost_transport",
+      "period": "FY2025",
+      "scope": "alcohol_cost",
+      "value": "326866386.45",
+      "unit": "CNY",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 11,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_moutai_revenue",
+      "period": "H12026",
+      "scope": "alcohol_moutai",
+      "value": "7772443.79",
+      "unit": "CNY_10000",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 8,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_series_revenue",
+      "period": "H12026",
+      "scope": "alcohol_series",
+      "value": "1293418.65",
+      "unit": "CNY_10000",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 8,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_direct_revenue",
+      "period": "H12026",
+      "scope": "alcohol_direct",
+      "value": "5196204.70",
+      "unit": "CNY_10000",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 8,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_wholesale_revenue",
+      "period": "H12026",
+      "scope": "alcohol_wholesale",
+      "value": "3869657.74",
+      "unit": "CNY_10000",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 8,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_domestic_revenue",
+      "period": "H12026",
+      "scope": "alcohol_domestic",
+      "value": "8962212.26",
+      "unit": "CNY_10000",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 8,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_foreign_revenue",
+      "period": "H12026",
+      "scope": "alcohol_foreign",
+      "value": "103650.18",
+      "unit": "CNY_10000",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 8,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_imoutai_revenue",
+      "period": "H12026",
+      "scope": "alcohol_imoutai",
+      "value": "4026356.42",
+      "unit": "CNY_10000",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 8,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_sales_tonnes",
+      "period": "FY2025",
+      "scope": "alcohol",
+      "value": "85104.14",
+      "unit": "tonnes",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_production_tonnes",
+      "period": "FY2025",
+      "scope": "alcohol",
+      "value": "116123.73",
+      "unit": "tonnes",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_inventory_tonnes",
+      "period": "FY2025",
+      "scope": "alcohol",
+      "value": "339977.86",
+      "unit": "tonnes",
+      "source_id": "cninfo:1225114741",
+      "physical_page": 10,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "h1_contract_liabilities",
+      "period": "H12026_end",
+      "scope": "consolidated",
+      "value": "3177561597.07",
+      "unit": "CNY",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 9,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    },
+    {
+      "id": "fy_contract_liabilities",
+      "period": "FY2025_end",
+      "scope": "consolidated",
+      "value": "8006739780.94",
+      "unit": "CNY",
+      "source_id": "cninfo:1225475868",
+      "physical_page": 9,
+      "verification": "exact_amount_on_hash_verified_page; row/column read independently by root"
+    }
+  ],
+  "calculated": {
+    "fy_revenue_growth": "-0.0120600350212231007573121740049614396885",
+    "h1_revenue_growth": "0.014698691541198490124079220627087400965",
+    "h1_cost_growth": "0.218100086987546459280406196882196057273",
+    "fy_consolidated_gross_margin": "0.9117955168348006298282894922065331693139",
+    "h1_consolidated_gross_margin": "0.8955521282791586908487856539022215135860",
+    "h1_comparative_gross_margin": "0.9129930948190760876917884830732179663784",
+    "h1_gross_margin_change_percentage_points": "-1.744096653991739684300282917099645279240",
+    "fy_selling_expense_ratio": "0.04296127173097436812936753476820585661805",
+    "fy_comparative_selling_expense_ratio": "0.03299782347879281144631071361270708587404",
+    "h1_selling_expense_ratio": "0.03534942743442941552532419798511450996708",
+    "fy_moutai_share_of_alcohol_revenue": "0.8680211319589725822042388369633649654290",
+    "fy_direct_share_of_alcohol_revenue": "0.5009227648856718751179490243398724137442",
+    "h1_direct_share_of_alcohol_revenue": "0.5731616527814865013548562071497744896293",
+    "h1_imoutai_share_of_direct_revenue": "0.7748648585764914149744716562070774463523",
+    "h1_other_revenue_cny": "44636564.48",
+    "fy_other_revenue_cny": "63517327.14",
+    "fy_alcohol_revenue_per_sold_tonne_mix_proxy_cny": "1983153.641969121596199667842245982392866",
+    "contract_liability_change": "-0.6031391447697391264433531048442850832160",
+    "fy_cost_component_shares": {
+      "materials": "0.5138396766176402340245172351912169567306",
+      "labor": "0.3714385522542292255676549485685467097114",
+      "manufacturing": "0.06094073217793468787997331596421189016241",
+      "fuel": "0.03170427337915293761298140866843117702900",
+      "transport": "0.02207676557104291491487309160759326636652"
+    },
+    "fy_partition_gross_margins": {
+      "alcohol": "0.9122741132906459976838946369479573679693",
+      "moutai": "0.9352575844353653254538696753339224647612",
+      "series": "0.7611124998027663807070847991238263220503",
+      "wholesale": "0.8785926290501978833716042357617264566715",
+      "direct": "0.9458315061815564652757292092047604247515"
+    },
+    "ttm_comparable_consolidated_selected_lines_cny": {
+      "revenue": "170152009062.43",
+      "cost": "16588549052.86",
+      "selling": "7199344992.75",
+      "admin": "8260712750.74",
+      "research": "231136920.22"
+    },
+    "ttm_consolidated_gross_margin": "0.9025074746735811879607505923459906989393"
+  },
+  "reconciliations": {
+    "fy_product_partition": true,
+    "fy_channel_partition": true,
+    "fy_cost_components": true,
+    "h1_product_channel_geography": true
+  },
+  "scope_limits": [
+    "Product and channel partitions describe the same total; no product-by-channel matrix is disclosed.",
+    "H1 amounts in CNY_10000 are multiplied by 10000; other consolidated revenue is kept separate.",
+    "H1 direct share versus FY direct share is a period comparison, not a channel year-on-year growth rate.",
+    "Revenue per tonne is an aggregate mix proxy, not SKU realized price or immediate saleable aged inventory.",
+    "TTM selected lines are not EBIT, NOPAT or normalized parent profit: taxes/surcharges, finance and other lines are absent.",
+    "Contract liabilities reflect disclosed prepayment-policy and sales-mode changes, not a direct demand measurement.",
+    "July SKU/channel price changes cannot be applied to all revenue without net-realization and volume evidence.",
+    "Historical margins and channel changes support bounded hypotheses, not certain future pricing power or moat duration."
+  ],
+  "research_approved": false,
+  "real_data_admitted": false,
+  "canonical_written": false,
+  "action": "no_order"
+}

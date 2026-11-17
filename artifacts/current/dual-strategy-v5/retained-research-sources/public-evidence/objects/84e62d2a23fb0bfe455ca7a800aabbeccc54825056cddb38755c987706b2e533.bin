@@ -1,0 +1,27 @@
+{
+  "url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+  "method": "POST",
+  "request": {
+    "pageNum": "1",
+    "pageSize": "30",
+    "tabName": "fulltext",
+    "column": "sse",
+    "stock": "",
+    "searchkey": "内蒙古伊利实业集团股份有限公司",
+    "secid": "",
+    "plate": "",
+    "category": "",
+    "trade": "",
+    "seDate": "",
+    "sortName": "",
+    "sortType": "",
+    "isHLtitle": "true"
+  },
+  "page": 1,
+  "acquired_at": "2026-10-21T16:15:56.118234+00:00",
+  "sha256": "2378fb78081c08e249173c8fcb375b826440e455a114ce628321b547bcc37d9d",
+  "size_bytes": 25422,
+  "body_representation": "RECEIVED_RESPONSE_CONTENT_NOT_RESERIALIZED_JSON",
+  "path": "runtime/600887-event-coverage-20261017-20261021-20261021T161554768610Z/raw-index/response-0001.bin",
+  "request_kind": "issuer_discovery"
+}

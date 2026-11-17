@@ -1,0 +1,62 @@
+{
+  "action": "no_order",
+  "actual_settlement_verified": false,
+  "charter": {
+    "available_at": "2026-11-15T10:02:27.8154952+00:00",
+    "path": "runtime/value-d2-600887-20261115-q3/1224834641.pdf",
+    "sha256": "1a9e054b3f3d83b7e574be0e4abde8147f5b47758ba6a5a9f1ca00aab2639352",
+    "url": "https://static.cninfo.com.cn/finalpage/2025-11-29/1224834641.PDF"
+  },
+  "classification": "HISTORICAL_CONSTRAINT_EVIDENCE",
+  "financing_source": {
+    "available_at": "2026-11-15T10:02:27.9634228+00:00",
+    "path": "runtime/value-d2-600887-20261115-q3/1225603138.pdf",
+    "sha256": "bb98b2d13f492eed41c090e96156af41c41bdb1ef2a4d4d5a07ae197d5281d19",
+    "url": "https://static.cninfo.com.cn/finalpage/2026-10-14/1225603138.PDF"
+  },
+  "forecast_commitment_cny": null,
+  "issuer_financing": [
+    {
+      "code": "012682386",
+      "maturity": "2026-12-30",
+      "physical_page": 1,
+      "principal_cny": "10500000000"
+    },
+    {
+      "code": "012682385",
+      "maturity": "2026-12-30",
+      "physical_page": 2,
+      "principal_cny": "8500000000"
+    },
+    {
+      "code": "012682391",
+      "maturity": "2026-12-29",
+      "physical_page": 2,
+      "principal_cny": "7500000000"
+    },
+    {
+      "code": "012682384",
+      "maturity": "2026-12-29",
+      "physical_page": 2,
+      "principal_cny": "7500000000"
+    },
+    {
+      "code": "012682388",
+      "maturity": "2026-12-29",
+      "physical_page": 3,
+      "principal_cny": "7500000000"
+    }
+  ],
+  "legal_reserve": {
+    "above_threshold_cny": "37385125.50",
+    "capital_page": 2,
+    "future_appropriation": null,
+    "fy_page": 198,
+    "fy_pdf": "runtime/public-evidence/20261030-a-first/1/acquisition/original.pdf",
+    "fy_pdf_sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+    "reported_cny": "3200065459.00",
+    "rule_page": 35,
+    "threshold_cny": "3162680333.5"
+  },
+  "symbol": "600887"
+}

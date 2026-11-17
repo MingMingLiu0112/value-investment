@@ -1,0 +1,1966 @@
+{
+  "schema_version": "v5-current-acceptance-v1",
+  "action": "no_order",
+  "code_sha": "b6969333373e8be58bc3050362346ae73adc2bc8",
+  "generated_at": "2026-10-21T12:49:47.577483+00:00",
+  "command": "python -B .tmp/v5-final-receipts.py",
+  "real_or_test": "MIXED_EXPLICITLY_SEPARATED",
+  "excel": "FROZEN",
+  "total_goal": "IN_PROGRESS",
+  "acceptance": {
+    "VALUE_ENGINEERING_CLOSURE": "PARTIAL",
+    "VALUE_REAL_EVIDENCE": "PARTIAL",
+    "VALUE_ECONOMIC_ADMISSION": "NOT_PROVEN",
+    "HOTSPOT_ENGINEERING_CLOSURE": "PARTIAL",
+    "HOTSPOT_STRATEGY_VALIDATION": "NOT_PROVEN",
+    "HOTSPOT_FORMAL_ADMISSION": "BLOCKED",
+    "PERSONAL_DECISION_ENGINEERING": "PARTIAL",
+    "REAL_PRIVATE_PORTFOLIO_READY": "NOT_PROVEN",
+    "UNIFIED_DECISION_ENGINEERING": "PARTIAL",
+    "WEB_E2E": "PARTIAL",
+    "DAILY_RUN": "PARTIAL",
+    "REAL_ASSISTED_USE_READY": "NOT_PROVEN"
+  },
+  "local_checks": {
+    "api": {
+      "tests": 242,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receipt": {
+        "path": "artifacts/current/dual-strategy-v5/test-results/v5-api-final-results.xml",
+        "sha256": "c568a7c8ec2fa00cd3fcc9b311f1d09ee53a4757f76ad2d7630400df308bf8be"
+      }
+    },
+    "restart_observation_value": {
+      "tests": 90,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receipt": {
+        "path": "artifacts/current/dual-strategy-v5/test-results/v5-resume-results.xml",
+        "sha256": "fe29d29b70aab04de870ec407bb564823aef390afd5677673086409c54c98de7"
+      }
+    },
+    "daily_publication_failure_safety": {
+      "tests": 78,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receipt": {
+        "path": "artifacts/current/dual-strategy-v5/test-results/v5-final-root-results.xml",
+        "sha256": "075082f2c317c3168295cab7780c2c5f3a3f4a3046a02b6535ca4fec5a727b07"
+      }
+    },
+    "private_risk_closure": {
+      "tests": 192,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receipt": {
+        "path": "artifacts/current/dual-strategy-v5/test-results/v5-risk-closure-results.xml",
+        "sha256": "027ad9c1273aa52e7cba1f20cbbca87709a15a7baa431d674938b3b12257aae9"
+      }
+    },
+    "current_metadata_and_api": {
+      "tests": 270,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "receipt": {
+        "path": "artifacts/current/dual-strategy-v5/test-results/v5-metadata-final-results.xml",
+        "sha256": "dd8757703feb8735abbd8b31c0b6df70a2a3e083ed1f16a10daea9aa17c8f038"
+      }
+    },
+    "web": {
+      "tests": 312,
+      "passed": 312,
+      "failures": 0,
+      "receipt": {
+        "path": ".tmp/v5-web-final-results.json",
+        "sha256": "27e7d4fe00471d96cbd96f3f6fc345cb2eba55459f6e13067ae5ea7e8d854fd8"
+      },
+      "retained_receipt": {
+        "path": "artifacts/current/dual-strategy-v5/test-results/web-results.json",
+        "sha256": "deebfff0bf6bdce7aa6e1efc5e3753ceab810383eac8d0b2ee4735becba643f1"
+      }
+    },
+    "portfolio": {
+      "summary": "340 passed in 47.60s",
+      "receipt": {
+        "path": ".tmp/v5-portfolio-committed-risk.log",
+        "sha256": "fad94d54d81f8f4d18bf53361f2556bf0549350172929e62a59cb5b81c01c957"
+      },
+      "retained_receipt": {
+        "path": "artifacts/current/dual-strategy-v5/test-results/portfolio-results.txt",
+        "sha256": "fad94d54d81f8f4d18bf53361f2556bf0549350172929e62a59cb5b81c01c957"
+      }
+    }
+  },
+  "exact_source_ci": "PASS",
+  "dates": {
+    "current_quote": "2026-10-21",
+    "published_research": "2026-10-11",
+    "official_value_report": "FY2025",
+    "source_dates": "See individual source-bound receipts; not a current financial approval."
+  },
+  "public_actionable_evaluation": {
+    "action": "no_order",
+    "items": [
+      {
+        "symbol": "600519",
+        "company_name": "贵州茅台",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "估值或适用价格政策证据不足；研究情景不是已批准的建仓价格。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          {
+            "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288"
+          },
+          {
+            "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6"
+          },
+          {
+            "sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+          },
+          {
+            "sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+          },
+          {
+            "sha256": "cca8b43c6069ffda329e940a4be96d27d7af4c3387ec08f4d24a5c9f42da4069"
+          },
+          {
+            "sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+          },
+          {
+            "sha256": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f"
+          },
+          {
+            "sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5"
+          },
+          {
+            "sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9"
+          },
+          {
+            "sha256": "aa7a70c94dcde08a9fef7f6207139a5fcb4527cbbee9adb775c19699a34a7d54"
+          },
+          {
+            "sha256": "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b"
+          },
+          {
+            "sha256": "24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873"
+          },
+          {
+            "sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a"
+          },
+          {
+            "sha256": "6f9e4334a5f5be4526c99f2b60fe345ff4935bb1e0c1ec925915b42e3d98559e"
+          },
+          {
+            "sha256": "b11db869bacf07bcbed428b4ed8f61be1733ee5b63a111eaf3cb9d2d239ed188"
+          },
+          {
+            "sha256": "8d9ff9e6fb94e9f18a62108992a91b7c8f2a438da6e8d32df424e55ffc176260"
+          },
+          {
+            "sha256": "34cf0f4ac76a6fd2e2b6bd0cfe56500c270371fd4b9e6a25767a247b1ad25d78"
+          },
+          {
+            "sha256": "ac1477ab886a7ee02ca621b06a8af66a518c638858bc042c7da293b029d69573"
+          },
+          {
+            "sha256": "4234aaaa2e2b580d89cabee665f59571e29f58b8714f99409e5f362b95ee7bae"
+          },
+          {
+            "sha256": "567b9fa1114a766e76f88ba491ef4449c13163ec1d4f973b8abf2b9fe43763aa"
+          },
+          {
+            "sha256": "37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37"
+          },
+          {
+            "sha256": "17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c"
+          },
+          {
+            "sha256": "c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214"
+          },
+          {
+            "sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+          }
+        ],
+        "data_trade_date": "2026-10-21",
+        "research_or_structure_version": "value-action-plan-projection-v3",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": null,
+        "reduce_condition": null,
+        "exit_condition": null,
+        "invalidation_condition": {
+          "kind": "THESIS_INVALIDATION",
+          "reasons": []
+        },
+        "plan_expiry": null,
+        "required_confirmation": [
+          "pending_complete_event_materiality_review",
+          "event scan is pending human review",
+          "This acquired query window does not replace earlier event/model/G3 reviews.",
+          "仅认可历史财务与条件剩余收益范围；中性主估值、正常化盈利及金融尾部审阅未获准入",
+          "本候选优势期和全资本衰减未获主模型批准",
+          "原文独立解释已形成；重大性、当前模型有效性和估值批准仍未准入",
+          "pending_economic_model_review",
+          "G3_估值门",
+          "等待已验证收盘行情",
+          "price_bridge_pending_external_data",
+          "Selected finite model assumptions remain pending economic approval.",
+          "research_case:仅认可历史财务与条件剩余收益范围；中性主估值、正常化盈利及金融尾部审阅未获准入",
+          "research_case:本候选优势期和全资本衰减未获主模型批准",
+          "research_case:原文独立解释已形成；重大性、当前模型有效性和估值批准仍未准入",
+          "research_case:pending_economic_model_review",
+          "research_case:pending_complete_event_materiality_review",
+          "research_case_valuation_not_approved",
+          "valuation_status_not_approved_for_research",
+          "model_validity_unavailable",
+          "event_materiality_review_unavailable",
+          "decision_dependency_artifacts_unavailable",
+          "predecision_eligibility_unavailable",
+          "human_research_approval_not_resolved",
+          "PRICE_NOT_ADMITTED",
+          "VALUE_PRICE_COMPARISON_NOT_ELIGIBLE",
+          "VALUE_ENTRY_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_ADD_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_REDUCE_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_EXIT_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "CURRENT_VALUE_PLAN_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "600887",
+        "company_name": "伊利股份",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "估值或适用价格政策证据不足；研究情景不是已批准的建仓价格。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          {
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+          },
+          {
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          },
+          {
+            "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+          },
+          {
+            "sha256": "76ab1d93a88c8d5955ecded565b7fb79fcbcc731a48efac8928f503c37ec04c1"
+          },
+          {
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+          },
+          {
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          }
+        ],
+        "data_trade_date": "2026-10-21",
+        "research_or_structure_version": "value-action-plan-projection-v3",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": null,
+        "reduce_condition": null,
+        "exit_condition": null,
+        "invalidation_condition": {
+          "kind": "THESIS_INVALIDATION",
+          "reasons": []
+        },
+        "plan_expiry": null,
+        "required_confirmation": [
+          "source retrieval precedes observed availability",
+          "formal G3 human valuation approval not present",
+          "issuer-specific beta evidence missing; generic beta=1 assumption used",
+          "ROIC and incremental ROIC remain unverified",
+          "H1 2026 interim report is unaudited",
+          "pending_economic_model_review",
+          "pending_complete_event_materiality_review",
+          "G3_估值门",
+          "等待已验证收盘行情",
+          "price_bridge_pending_external_data",
+          "research_case:formal G3 human valuation approval not present",
+          "research_case:issuer-specific beta evidence missing; generic beta=1 assumption used",
+          "research_case:ROIC and incremental ROIC remain unverified",
+          "research_case:H1 2026 interim report is unaudited",
+          "research_case:pending_economic_model_review",
+          "research_case:pending_complete_event_materiality_review",
+          "research_case_valuation_not_approved",
+          "valuation_status_not_approved_for_research",
+          "model_validity_unavailable",
+          "event_materiality_review_unavailable",
+          "decision_dependency_artifacts_unavailable",
+          "predecision_eligibility_unavailable",
+          "human_research_approval_not_resolved",
+          "PRICE_NOT_ADMITTED",
+          "VALUE_PRICE_COMPARISON_NOT_ELIGIBLE",
+          "VALUE_ENTRY_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_ADD_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_REDUCE_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_EXIT_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "CURRENT_VALUE_PLAN_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "000333",
+        "company_name": "美的集团",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "估值或适用价格政策证据不足；研究情景不是已批准的建仓价格。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [],
+        "data_trade_date": null,
+        "research_or_structure_version": "value-action-plan-projection-v3",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": null,
+        "reduce_condition": null,
+        "exit_condition": null,
+        "invalidation_condition": {
+          "kind": "THESIS_INVALIDATION",
+          "reasons": []
+        },
+        "plan_expiry": null,
+        "required_confirmation": [
+          "RESEARCH_ASSESSMENT_NOT_BOUND",
+          "VALUATION_NOT_ADMITTED",
+          "PRICE_NOT_ADMITTED",
+          "剩余收益路由的匹配归母权益、盈利及情景输入尚未注册",
+          "超额收益持续期、分配与权益成本须有经济证据及既有审核链支持",
+          "VALUE_PRICE_COMPARISON_NOT_ELIGIBLE",
+          "VALUE_ENTRY_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_ADD_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_REDUCE_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_EXIT_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "CURRENT_VALUE_PLAN_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "601088",
+        "company_name": "中国神华",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "估值或适用价格政策证据不足；研究情景不是已批准的建仓价格。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [],
+        "data_trade_date": null,
+        "research_or_structure_version": "value-action-plan-projection-v3",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": null,
+        "reduce_condition": null,
+        "exit_condition": null,
+        "invalidation_condition": {
+          "kind": "THESIS_INVALIDATION",
+          "reasons": []
+        },
+        "plan_expiry": null,
+        "required_confirmation": [
+          "RESEARCH_ASSESSMENT_NOT_BOUND",
+          "VALUATION_NOT_ADMITTED",
+          "PRICE_NOT_ADMITTED",
+          "13 项周期必需输入（当前 0 项准入）",
+          "证据停止点 current_perimeter_parent_earnings_bridge_incomplete 未解除",
+          "VALUE_PRICE_COMPARISON_NOT_ELIGIBLE",
+          "VALUE_ENTRY_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_ADD_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_REDUCE_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_EXIT_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "CURRENT_VALUE_PLAN_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "000651",
+        "company_name": "格力电器",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "估值或适用价格政策证据不足；研究情景不是已批准的建仓价格。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [],
+        "data_trade_date": null,
+        "research_or_structure_version": "value-action-plan-projection-v3",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": null,
+        "reduce_condition": null,
+        "exit_condition": null,
+        "invalidation_condition": {
+          "kind": "THESIS_INVALIDATION",
+          "reasons": []
+        },
+        "plan_expiry": null,
+        "required_confirmation": [
+          "RESEARCH_ASSESSMENT_NOT_BOUND",
+          "VALUATION_NOT_ADMITTED",
+          "PRICE_NOT_ADMITTED",
+          "财务公司、受限现金、金融资产与有息负债的范围拆分及法人可分配现金映射",
+          "匹配工业范围的EBIT、现金税、折旧摊销、净营运资本、WACC与净债务输入包",
+          "ROIC、增量ROIC与竞争优势持续期的长期经营证据；半年报未经审计",
+          "VALUE_PRICE_COMPARISON_NOT_ELIGIBLE",
+          "VALUE_ENTRY_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_ADD_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_REDUCE_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_EXIT_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "CURRENT_VALUE_PLAN_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "600741",
+        "company_name": "华域汽车",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "估值或适用价格政策证据不足；研究情景不是已批准的建仓价格。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [],
+        "data_trade_date": null,
+        "research_or_structure_version": "value-action-plan-projection-v3",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": null,
+        "reduce_condition": null,
+        "exit_condition": null,
+        "invalidation_condition": {
+          "kind": "THESIS_INVALIDATION",
+          "reasons": []
+        },
+        "plan_expiry": null,
+        "required_confirmation": [
+          "RESEARCH_ASSESSMENT_NOT_BOUND",
+          "VALUATION_NOT_ADMITTED",
+          "PRICE_NOT_ADMITTED",
+          "分客户及产品收入、毛利率、客户周期敏感性与供应商价格传导证据",
+          "经营现金流增长的营运资本、应收存货及客户回款原因核验",
+          "EBIT、现金税、折旧摊销、营运资本、资本开支、WACC与净债务及周期调整输入",
+          "资本回报、再投资与可持续分配证据；半年报未经审计，完整情景及价格桥尚未形成",
+          "VALUE_PRICE_COMPARISON_NOT_ELIGIBLE",
+          "VALUE_ENTRY_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_ADD_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_REDUCE_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "VALUE_EXIT_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+          "CURRENT_VALUE_PLAN_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "002612",
+        "company_name": "朗姿股份",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "财务、研究或价格计划证据不足，不能形成可操作判断。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": []
+      },
+      {
+        "symbol": "000151",
+        "company_name": "中成股份",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "财务、研究或价格计划证据不足，不能形成可操作判断。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": []
+      },
+      {
+        "symbol": "000544",
+        "company_name": "中原环保",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "财务、研究或价格计划证据不足，不能形成可操作判断。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": []
+      },
+      {
+        "symbol": "000612",
+        "company_name": "焦作万方",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "财务、研究或价格计划证据不足，不能形成可操作判断。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": []
+      },
+      {
+        "symbol": "000656",
+        "company_name": "金科股份",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "财务、研究或价格计划证据不足，不能形成可操作判断。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": []
+      },
+      {
+        "symbol": "000672",
+        "company_name": "上峰材料",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "财务、研究或价格计划证据不足，不能形成可操作判断。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": []
+      },
+      {
+        "symbol": "000685",
+        "company_name": "中山公用",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "财务、研究或价格计划证据不足，不能形成可操作判断。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": []
+      },
+      {
+        "symbol": "000807",
+        "company_name": "云铝股份",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "财务、研究或价格计划证据不足，不能形成可操作判断。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": []
+      },
+      {
+        "symbol": "000885",
+        "company_name": "城发环境",
+        "strategy": "CORE_VALUE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "财务、研究或价格计划证据不足，不能形成可操作判断。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": []
+      },
+      {
+        "symbol": "600246",
+        "company_name": "万通发展",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "NO_TRADE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "EVALUATED_NO_TRADE",
+        "decision_reason": "已形成条件计划，但价格或完整周期确认条件尚未满足，不新建仓。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "2cdd5555128e203665039b83d7781ab622b4ab7fccd4ce031f827125cfdbb6f9",
+          "7940535eb3a9ecf513b404edac7d1b06f205759f0f30db7ea3f4164ebf37a6d2",
+          "6b51c4b9df2ed1e9ef61ce9898078b7268c4d2dce78d115a4c065d8b1359b9e7",
+          "07fb21fa5137f9acb9119e7b6f5c59ccee94553a30c81373d63c715c1b8a29cb",
+          "914b247ddc081bc7a0d68420c42c5f00d603778a226b848686e071a9767d1de6",
+          "090c75b3fb9bbcbd447fd93607e28cca821603b897a58ef7df84eb05ea4be841"
+        ],
+        "data_trade_date": "2026-10-21",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": "11.580",
+        "entry_condition": {
+          "observed": false,
+          "price": "11.820",
+          "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+          "intent": "OPEN",
+          "requires_existing_holding": false,
+          "personal_permission": false,
+          "status": "WATCH",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "entry_price_or_range": "11.820",
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": {
+          "observed": false,
+          "price": "11.090",
+          "rule": "已有持仓时，完整60分钟收盘价严格低于前五根最低价，进入结构失效与人工退出复核；仍须核查T+1、停牌、涨跌停、成本及个人持仓，不是自动止损订单。",
+          "intent": "EXIT",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "invalidation_condition": {
+          "rule": "subsequent completed close < prior_5_low; research review required",
+          "price": "11.090"
+        },
+        "plan_expiry": "2026-10-22",
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN"
+        ]
+      },
+      {
+        "symbol": "600693",
+        "company_name": "东百集团",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "NO_TRADE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "EVALUATED_NO_TRADE",
+        "decision_reason": "已形成条件计划，但价格或完整周期确认条件尚未满足，不新建仓。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "530f5b2018822082a6e961c3285553cb74083b3676e018151237ef582f4e2385",
+          "3bcf557f37944c710969758558894ebccd55205894137113f89ed3a04d0b63ee",
+          "6b51c4b9df2ed1e9ef61ce9898078b7268c4d2dce78d115a4c065d8b1359b9e7",
+          "07fb21fa5137f9acb9119e7b6f5c59ccee94553a30c81373d63c715c1b8a29cb",
+          "914b247ddc081bc7a0d68420c42c5f00d603778a226b848686e071a9767d1de6",
+          "090c75b3fb9bbcbd447fd93607e28cca821603b897a58ef7df84eb05ea4be841"
+        ],
+        "data_trade_date": "2026-10-21",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": "8.970",
+        "entry_condition": {
+          "observed": false,
+          "price": "9.140",
+          "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+          "intent": "OPEN",
+          "requires_existing_holding": false,
+          "personal_permission": false,
+          "status": "WATCH",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "entry_price_or_range": "9.140",
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": {
+          "observed": false,
+          "price": "8.660",
+          "rule": "已有持仓时，完整60分钟收盘价严格低于前五根最低价，进入结构失效与人工退出复核；仍须核查T+1、停牌、涨跌停、成本及个人持仓，不是自动止损订单。",
+          "intent": "EXIT",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "invalidation_condition": {
+          "rule": "subsequent completed close < prior_5_low; research review required",
+          "price": "8.660"
+        },
+        "plan_expiry": "2026-10-22",
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN"
+        ]
+      },
+      {
+        "symbol": "000592",
+        "company_name": "平潭发展",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "NO_TRADE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "EVALUATED_NO_TRADE",
+        "decision_reason": "已形成条件计划，但价格或完整周期确认条件尚未满足，不新建仓。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "c577be9849472a84a85681d3509c8b774ff83ea6f4bd0052da74937137fd5f38",
+          "9bd03805677348d023d8b8cc51bc8c5ed7310216c06ee76d3a1557f8a7935a0b",
+          "6b51c4b9df2ed1e9ef61ce9898078b7268c4d2dce78d115a4c065d8b1359b9e7",
+          "07fb21fa5137f9acb9119e7b6f5c59ccee94553a30c81373d63c715c1b8a29cb",
+          "914b247ddc081bc7a0d68420c42c5f00d603778a226b848686e071a9767d1de6",
+          "c61672ae0919ca940ea3773b329fe61f0c24ca273b7c7e841954c2dad2043893",
+          "ad4cf9f837074c85f49da6f247e671482d1f9cf3e44960f0e9bb9e2d30a133e5"
+        ],
+        "data_trade_date": "2026-10-21",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": "7.190",
+        "entry_condition": {
+          "observed": false,
+          "price": "7.360",
+          "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+          "intent": "OPEN",
+          "requires_existing_holding": false,
+          "personal_permission": false,
+          "status": "WATCH",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "entry_price_or_range": "7.360",
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": {
+          "observed": false,
+          "price": "6.600",
+          "rule": "已有持仓时，完整60分钟收盘价严格低于前五根最低价，进入结构失效与人工退出复核；仍须核查T+1、停牌、涨跌停、成本及个人持仓，不是自动止损订单。",
+          "intent": "EXIT",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "invalidation_condition": {
+          "rule": "subsequent completed close < prior_5_low; research review required",
+          "price": "6.600"
+        },
+        "plan_expiry": "2026-10-22",
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN"
+        ]
+      },
+      {
+        "symbol": "300308",
+        "company_name": "中际旭创",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "NO_TRADE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "EVALUATED_NO_TRADE",
+        "decision_reason": "已形成条件计划，但价格或完整周期确认条件尚未满足，不新建仓。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "f039540493331671ac58edbd77fe952a25ee03b94c5834ba2c929685a4b42133",
+          "d570bcaf151444087de19eef3236bf9ce705601f98e3227c6c1efedcfd4fed68",
+          "6b51c4b9df2ed1e9ef61ce9898078b7268c4d2dce78d115a4c065d8b1359b9e7",
+          "07fb21fa5137f9acb9119e7b6f5c59ccee94553a30c81373d63c715c1b8a29cb",
+          "914b247ddc081bc7a0d68420c42c5f00d603778a226b848686e071a9767d1de6",
+          "c61672ae0919ca940ea3773b329fe61f0c24ca273b7c7e841954c2dad2043893",
+          "ad4cf9f837074c85f49da6f247e671482d1f9cf3e44960f0e9bb9e2d30a133e5"
+        ],
+        "data_trade_date": "2026-10-21",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": "646.770",
+        "entry_condition": {
+          "observed": false,
+          "price": "675.010",
+          "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+          "intent": "OPEN",
+          "requires_existing_holding": false,
+          "personal_permission": false,
+          "status": "WATCH",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "entry_price_or_range": "675.010",
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": {
+          "observed": false,
+          "price": "637.000",
+          "rule": "已有持仓时，完整60分钟收盘价严格低于前五根最低价，进入结构失效与人工退出复核；仍须核查T+1、停牌、涨跌停、成本及个人持仓，不是自动止损订单。",
+          "intent": "EXIT",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "invalidation_condition": {
+          "rule": "subsequent completed close < prior_5_low; research review required",
+          "price": "637.000"
+        },
+        "plan_expiry": "2026-10-22",
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN"
+        ]
+      },
+      {
+        "symbol": "688825",
+        "company_name": "长鑫科技",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "NO_TRADE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "EVALUATED_NO_TRADE",
+        "decision_reason": "已形成条件计划，但价格或完整周期确认条件尚未满足，不新建仓。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "7dcb8a880d3941383d93c00eb7951a3d824c69abbd4f45b8e1cf113e88232cba",
+          "50ed95ba29dcd67ceb4ea6bc3017c88a0b2703830f77c3a5063d79b01c344db8",
+          "6b51c4b9df2ed1e9ef61ce9898078b7268c4d2dce78d115a4c065d8b1359b9e7",
+          "07fb21fa5137f9acb9119e7b6f5c59ccee94553a30c81373d63c715c1b8a29cb",
+          "914b247ddc081bc7a0d68420c42c5f00d603778a226b848686e071a9767d1de6",
+          "090c75b3fb9bbcbd447fd93607e28cca821603b897a58ef7df84eb05ea4be841"
+        ],
+        "data_trade_date": "2026-10-21",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": "40.970",
+        "entry_condition": {
+          "observed": false,
+          "price": "41.750",
+          "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+          "intent": "OPEN",
+          "requires_existing_holding": false,
+          "personal_permission": false,
+          "status": "WATCH",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "entry_price_or_range": "41.750",
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": {
+          "observed": false,
+          "price": "39.810",
+          "rule": "已有持仓时，完整60分钟收盘价严格低于前五根最低价，进入结构失效与人工退出复核；仍须核查T+1、停牌、涨跌停、成本及个人持仓，不是自动止损订单。",
+          "intent": "EXIT",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "invalidation_condition": {
+          "rule": "subsequent completed close < prior_5_low; research review required",
+          "price": "39.810"
+        },
+        "plan_expiry": "2026-10-22",
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN"
+        ]
+      },
+      {
+        "symbol": "603986",
+        "company_name": "兆易创新",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "NO_TRADE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "EVALUATED_NO_TRADE",
+        "decision_reason": "已形成条件计划，但价格或完整周期确认条件尚未满足，不新建仓。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "eab31ce6b7fd7ea9b37a4b58fcf62f32f0394dd5d801c2efca7b7d0ae16460a4",
+          "5473233ddffe3a6f6827ef4f68d85a0485150fce9f845205e6b5e368f9bcfb66",
+          "73af8ec3556b960218d505844ddb5436c6c3bc6ef2018329ec4a80e38be10b89",
+          "9dd5841a6695516c7a3239c23b6c27891852d5784c0ed25c0dd8c3762ff76a53",
+          "30ef7cb7d9bc4473078f99b35a9d9ab2da7875db718870cbf9fb05712b01c5f2",
+          "090c75b3fb9bbcbd447fd93607e28cca821603b897a58ef7df84eb05ea4be841"
+        ],
+        "data_trade_date": "2026-10-21",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": "288.020",
+        "entry_condition": {
+          "observed": false,
+          "price": "292.550",
+          "rule": "完整60分钟收盘价严格高于前五根最高价，且成交量至少为前五根均量的1.2倍；仅在无持仓且价值、事件、风险及验证门禁全部通过后，进入人工开仓复核。",
+          "intent": "OPEN",
+          "requires_existing_holding": false,
+          "personal_permission": false,
+          "status": "WATCH",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "entry_price_or_range": "292.550",
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": {
+          "observed": false,
+          "price": "278.430",
+          "rule": "已有持仓时，完整60分钟收盘价严格低于前五根最低价，进入结构失效与人工退出复核；仍须核查T+1、停牌、涨跌停、成本及个人持仓，不是自动止损订单。",
+          "intent": "EXIT",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "invalidation_condition": {
+          "rule": "subsequent completed close < prior_5_low; research review required",
+          "price": "278.430"
+        },
+        "plan_expiry": "2026-10-22",
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN"
+        ]
+      },
+      {
+        "symbol": "300821",
+        "company_name": "东岳硅材",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "行情或计划失效，不能据此判断当前是否存在交易机会。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "ba06de5916b3e92dba5217c222d997988d5a46eb4f0acdc71c2cc3a43b5b7e73",
+          "e2318e8791eb5f6858fa2f2961671919f95a805692f346e93e233f56f8e1c868",
+          "4982cb9a72eb5460c71b07f85800fe8ae6d875d22daa680b9b47452427e5e0c5",
+          "977ccb33b4d17e3e3c9b1f00bad2603d96d5ca93a6de8618b7eee0a408e48d88",
+          "7e03aa76f59de7b8e641886fde04d112678a7f0841b51afa48aaaf540d19718b",
+          "8baf05693ec4a5b4683c1899d74991d81a55eb0dfa9add7ed33323a9ddaf1471",
+          "afc00dbfb8a7e9c7a0e82fdfb4986c1791ab1c86dd0f58a5befed02dd2aa2142"
+        ],
+        "data_trade_date": "2026-10-20",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": null,
+        "invalidation_condition": null,
+        "plan_expiry": "2026-10-21",
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN",
+          "CURRENT_CASE_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "002242",
+        "company_name": "九阳股份",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "行情或计划失效，不能据此判断当前是否存在交易机会。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "5be1d8d29103e830351d4909a7780d2c0cd091afefc9663aa1cc06d1b3baefbe",
+          "fc1f23d81f984363becc44ec9e71a98eb75384a06a8dacc4f9893039caa4d0ee",
+          "4982cb9a72eb5460c71b07f85800fe8ae6d875d22daa680b9b47452427e5e0c5",
+          "977ccb33b4d17e3e3c9b1f00bad2603d96d5ca93a6de8618b7eee0a408e48d88",
+          "7e03aa76f59de7b8e641886fde04d112678a7f0841b51afa48aaaf540d19718b",
+          "8baf05693ec4a5b4683c1899d74991d81a55eb0dfa9add7ed33323a9ddaf1471",
+          "afc00dbfb8a7e9c7a0e82fdfb4986c1791ab1c86dd0f58a5befed02dd2aa2142"
+        ],
+        "data_trade_date": "2026-10-20",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": null,
+        "invalidation_condition": null,
+        "plan_expiry": "2026-10-21",
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN",
+          "CURRENT_CASE_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "300012",
+        "company_name": "华测检测",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "行情或计划失效，不能据此判断当前是否存在交易机会。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "47a996787b8218db321b2946461e0a101a18233b88a6659d343b2c8ff3f19f93",
+          "ea709bbcf233b92b4b70eb0b511bd6039e073a33df9d6aa565dcd5353248b20e",
+          "4982cb9a72eb5460c71b07f85800fe8ae6d875d22daa680b9b47452427e5e0c5",
+          "977ccb33b4d17e3e3c9b1f00bad2603d96d5ca93a6de8618b7eee0a408e48d88",
+          "7e03aa76f59de7b8e641886fde04d112678a7f0841b51afa48aaaf540d19718b",
+          "8baf05693ec4a5b4683c1899d74991d81a55eb0dfa9add7ed33323a9ddaf1471",
+          "afc00dbfb8a7e9c7a0e82fdfb4986c1791ab1c86dd0f58a5befed02dd2aa2142"
+        ],
+        "data_trade_date": "2026-10-20",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": null,
+        "invalidation_condition": null,
+        "plan_expiry": "2026-10-21",
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN",
+          "CURRENT_CASE_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "600150",
+        "company_name": "中国船舶",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "行情或计划失效，不能据此判断当前是否存在交易机会。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "5775446efe0b1066d4d637c67a27ee39ae0253d7d07602a179c74bef8ef60fa2",
+          "1ba49ba93b0fd5d62d635434148bcc73bc695754132be530dbf82b8e03dac6b5",
+          "56dfbc306d8e958577510a86e0e3fba742c8950427dadc1c307a73d95ec19ace",
+          "e9cb7c551dddcfec03a2cc7fbdb9f2197eab44fae8d728c2c5f179cb6fe4c762",
+          "1a7f462f4d98970feb8e376acc9ea67d6b3a2aac77dfcab5303f51db3c0130c6",
+          "c531e4ed2328b40ef4ce0abf961a044aeff802e60eb2e2f24ec2e9d8b2e48674"
+        ],
+        "data_trade_date": "2026-10-16",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": null,
+        "invalidation_condition": null,
+        "plan_expiry": null,
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN",
+          "CURRENT_CASE_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "600667",
+        "company_name": "太极实业",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "行情或计划失效，不能据此判断当前是否存在交易机会。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "ed83bd0df40ba1151741e9d354e0337c0e30536ff404521461c26acb0e4b06f9",
+          "262f55b9c782072ed44411753e7e9816c6b65a9270fd2018e2d77c617ab3b952",
+          "56dfbc306d8e958577510a86e0e3fba742c8950427dadc1c307a73d95ec19ace",
+          "e9cb7c551dddcfec03a2cc7fbdb9f2197eab44fae8d728c2c5f179cb6fe4c762",
+          "1a7f462f4d98970feb8e376acc9ea67d6b3a2aac77dfcab5303f51db3c0130c6",
+          "c531e4ed2328b40ef4ce0abf961a044aeff802e60eb2e2f24ec2e9d8b2e48674"
+        ],
+        "data_trade_date": "2026-10-16",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": null,
+        "invalidation_condition": null,
+        "plan_expiry": null,
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN",
+          "CURRENT_CASE_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "002008",
+        "company_name": "大族激光",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "行情或计划失效，不能据此判断当前是否存在交易机会。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "4f0545569847d9ad425b08e1180690790a8cbeb903f3b9c9c2a7b723dc8b0325",
+          "3df939450c70264770a1b6b96ac080bab748b0426ae8d5379585d32e84f530a4",
+          "56dfbc306d8e958577510a86e0e3fba742c8950427dadc1c307a73d95ec19ace",
+          "e9cb7c551dddcfec03a2cc7fbdb9f2197eab44fae8d728c2c5f179cb6fe4c762",
+          "1a7f462f4d98970feb8e376acc9ea67d6b3a2aac77dfcab5303f51db3c0130c6",
+          "18f19d67ab0231f114de120d675fc98be211606647e44d39a6f2a2c92fb895cc",
+          "8a7c94c6e78366b769af9b81c9c890f34d69df60924fa4c27ca30bcaa3871c94"
+        ],
+        "data_trade_date": "2026-10-16",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": null,
+        "invalidation_condition": null,
+        "plan_expiry": null,
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN",
+          "CURRENT_CASE_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "600019",
+        "company_name": "宝钢股份",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "行情或计划失效，不能据此判断当前是否存在交易机会。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "321e9aab970ea483d3c31f64983d23793ef40f1c6daac26617642bfae2879ed5",
+          "e749f93e9cfd77789feb8b895ffb687b49602bc222c4b8f186d1659abcf27398",
+          "56dfbc306d8e958577510a86e0e3fba742c8950427dadc1c307a73d95ec19ace",
+          "e9cb7c551dddcfec03a2cc7fbdb9f2197eab44fae8d728c2c5f179cb6fe4c762",
+          "1a7f462f4d98970feb8e376acc9ea67d6b3a2aac77dfcab5303f51db3c0130c6",
+          "c531e4ed2328b40ef4ce0abf961a044aeff802e60eb2e2f24ec2e9d8b2e48674"
+        ],
+        "data_trade_date": "2026-10-16",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": null,
+        "invalidation_condition": null,
+        "plan_expiry": null,
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN",
+          "CURRENT_CASE_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "000338",
+        "company_name": "潍柴动力",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "行情或计划失效，不能据此判断当前是否存在交易机会。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "6f2bda82a77561a04a92c4066b82a8dd92381112786708e57a1cc40d92b0d4cc",
+          "b97bea158519098bf58bd8abd462d2cbaf3216ae08f7bc5e1ecae4f7cc4fe2bc",
+          "56dfbc306d8e958577510a86e0e3fba742c8950427dadc1c307a73d95ec19ace",
+          "e9cb7c551dddcfec03a2cc7fbdb9f2197eab44fae8d728c2c5f179cb6fe4c762",
+          "1a7f462f4d98970feb8e376acc9ea67d6b3a2aac77dfcab5303f51db3c0130c6",
+          "18f19d67ab0231f114de120d675fc98be211606647e44d39a6f2a2c92fb895cc",
+          "8a7c94c6e78366b769af9b81c9c890f34d69df60924fa4c27ca30bcaa3871c94"
+        ],
+        "data_trade_date": "2026-10-16",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": true,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": null,
+        "invalidation_condition": null,
+        "plan_expiry": null,
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN",
+          "CURRENT_CASE_CHANGED_OR_STALE"
+        ]
+      },
+      {
+        "symbol": "600176",
+        "company_name": "XD中国巨",
+        "strategy": "HOTSPOT_SATELLITE",
+        "decision_action": "UNASSESSABLE",
+        "action": "no_order",
+        "decision_layer": "STRATEGY_VERDICT",
+        "personal_action_review": {
+          "state": "UNASSESSABLE",
+          "reason": "PRIVATE_RISK_NOT_EVALUATED"
+        },
+        "evaluation_status": "NOT_ASSESSABLE",
+        "decision_reason": "行情或计划失效，不能据此判断当前是否存在交易机会。",
+        "personal_risk_status": "NOT_EVALUATED_PUBLIC_VIEW",
+        "eligibility": false,
+        "position_range": null,
+        "review_quantity": null,
+        "available_cash_impact": null,
+        "expected_fees_and_slippage": null,
+        "formal_review_status": "UNKNOWN",
+        "evidence_refs": [
+          "a5de3c470a02028f74d4af83fc8b359f0f632760eb19260b8d7fb630d8e5519f",
+          "b16d049498b0c8c51d6a60be1d723e764d66083311cf0e00212d2e2d0b330cec",
+          "56dfbc306d8e958577510a86e0e3fba742c8950427dadc1c307a73d95ec19ace",
+          "e9cb7c551dddcfec03a2cc7fbdb9f2197eab44fae8d728c2c5f179cb6fe4c762",
+          "1a7f462f4d98970feb8e376acc9ea67d6b3a2aac77dfcab5303f51db3c0130c6",
+          "c531e4ed2328b40ef4ce0abf961a044aeff802e60eb2e2f24ec2e9d8b2e48674"
+        ],
+        "data_trade_date": "2026-10-16",
+        "research_or_structure_version": "hotspot-prior-five-completed-bars-v1",
+        "current_verified_reference_price": null,
+        "entry_condition": null,
+        "entry_price_or_range": null,
+        "add_condition": {
+          "observed": false,
+          "price": null,
+          "rule": "已有持仓时，按既有10根回看规则观察突破后缩量回踩：中间收盘不低于突破位、触及突破位的量小于突破量，随后完整60分钟收盘高于前根最高价及突破位、量比至少1.2；全部门禁与个人剩余容量通过后，才进入人工加仓复核。",
+          "intent": "ADD",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "reduce_condition": {
+          "observed": true,
+          "price": null,
+          "rule": "已有持仓时，若已确认日线高低点同时下移，或既有结构距离风险收益比不高于1，进入人工减仓风险复核；这是结构警示，不提供减仓价格、数量或个人卖出许可。",
+          "intent": "REDUCE",
+          "requires_existing_holding": true,
+          "personal_permission": false,
+          "status": "CONDITIONAL_REVIEW_ONLY",
+          "formal_eligibility": false,
+          "action": "no_order"
+        },
+        "exit_condition": null,
+        "invalidation_condition": null,
+        "plan_expiry": null,
+        "required_confirmation": [
+          "INTRADAY_SINGLE_PROVIDER",
+          "VALUE_GATE_NOT_PROVEN",
+          "EVENT_AND_RISK_GATES_NOT_PROVEN",
+          "PIT_OOS_COST_SHADOW_NOT_PROVEN",
+          "CORPORATE_ACTION_REVIEW_NOT_PROVEN",
+          "CURRENT_CASE_CHANGED_OR_STALE"
+        ]
+      }
+    ],
+    "scope": "PUBLISHED_COMPANIES_ONLY",
+    "evaluated_count": 6,
+    "unassessable_count": 24,
+    "operation_eligible_count": 0,
+    "conclusion": "INCOMPLETE_EVALUATION"
+  },
+  "real_formal_buy_count": 0,
+  "actual_increment": {
+    "symbol": "600519",
+    "adopted_fact_count": 1,
+    "coverage_before": "0.5556",
+    "coverage_after": "0.6667",
+    "complete_debt_verified": false,
+    "economic_approval": false
+  },
+  "remaining_integration_or_evidence_gaps": [
+    "TEST_ONLY browser scenario sized 700 shares and recorded a simulated BUY700. Formal preview correctly rejects TEST_ONLY accounts/plans. Separately isolated signed-research browser replay remains unperformed; it must not produce ACTUAL formal qualification.",
+    "Shared runtime contains preserved unrelated untracked source; clean deploy identity is not established.",
+    "Value facts are restored and displayed separately; a new admitted economic valuation/current plan is not established."
+  ],
+  "delivered_private_workflow": {
+    "explicit_risk_declaration": true,
+    "immutable_non_accounting_receipt": true,
+    "corrections_append_only": true,
+    "source_rejection_preserves_known_accounting": true,
+    "simulated_display_marks_opt_in": true,
+    "actual_inputs_not_inferred": true,
+    "test_only_positive_scenario_quantity": 700,
+    "test_only_manual_buy_quantity": 700,
+    "test_only_cash_after_buy_cny": "193590.00",
+    "test_only_cost_after_buy_cny": "6410.00",
+    "real_private_confirmation_submitted": false
+  },
+  "necessary_evidence_or_approvals": [
+    "Official financing scope and independent backing, normalized economic forecast and lawful valuation/event/G3/price admission.",
+    "Hotspot contemporaneous rule/input PIT, real execution-state/cost evidence, representative untouched OOS/Shadow and lawful independent admission.",
+    "Real confirmed IPS, portfolio, external reconciliation, explicit per-sleeve/security risk amount/basis and verified security/market-state input.",
+    "Final actual user acceptance; no synthetic confirmation counts as real approval."
+  ],
+  "evidence": [
+    {
+      "path": "artifacts/current/dual-strategy-v5/baseline.json",
+      "sha256": "fd56ec3b7187d5e8fb9e1e51776c802bc963ed47a5633810afad6bb912de44a6"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/value-real-evidence.json",
+      "sha256": "3e4b0dfbcf9a02cf829fbbe1163c220540a177d17a6e74afb95c58f4ac3b6f65"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/value-decision-chain.json",
+      "sha256": "38e1c2a56bb7842b9f3aba979b2be38c9d0dcf2644c9a417cad367d32e92f0c4"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/hotspot-real-validation.json",
+      "sha256": "3f15c2f501e73caa56aff75b4f36857af5ca2e2f2722f6b9e81b0b3855d86338"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/hotspot-decision-chain.json",
+      "sha256": "0aeb7b00ab68dad0dc0d39d14878ea8ce719af1395e69dfdb4cb5bc8328150c4"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/personal-entry-thesis.json",
+      "sha256": "c3e1f06df1119d22e94d14e560d95ce03840822ab85c0f6d71ad759aa85f35dc"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/unified-decisions.json",
+      "sha256": "146c2cf01b8895166d394c6206c9c338409e7bb23a9c1d09bb1e02dcf0af967f"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/daily-refresh.json",
+      "sha256": "6660f5e114dd5fe09e6fccaaaf28a4c780c8a68df4f9fb3a9013929e2509f75f"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/web-e2e.json",
+      "sha256": "25cb1fa11495971f33a356b7eeaa1ac2ffd0a1e035c3a77064aaa32ae8b02eb5"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/github-source-ci.json",
+      "sha256": "981af3288e29dabd09361059a5668534299a84be6c17d602527006e2fac8242e"
+    },
+    {
+      "path": "artifacts/current/dual-strategy-v5/current-official-metadata.json",
+      "sha256": "2211734ecd0848d67cc0eb63d9133582075e3302a4fdfe13e40544f8ee4dffed"
+    }
+  ],
+  "prohibitions_respected": {
+    "no_order": true,
+    "production_deploy": false,
+    "real_approval_fabricated": false,
+    "real_private_data_uploaded": false,
+    "test_only_ledger_entered_real_account": false
+  }
+}

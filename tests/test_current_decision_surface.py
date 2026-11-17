@@ -14,6 +14,7 @@ from test_decision_recommendation import (
 )
 from test_research_application import residual_facts
 from test_product_workbench_excel import _payload
+from approval_transport_fixture import mint_fixture_approval
 from value_investment_agent.application.decision.artifact_bundle import export_artifact_bundle
 from value_investment_agent.application.decision.build_decision_recommendation import build_decision_recommendation
 from value_investment_agent.application.product.decision_surface import (
@@ -85,6 +86,7 @@ def decision_workbench(*, confidence="中", approval_state=None, financial_pass=
     if approval_state is not None:
         approval = replace(approval, decision=approval_state, price_assessment_eligible=False,
                            remaining_blockers=("approval_review_required",))
+    approval = mint_fixture_approval(approval)
     gate = evaluate_with_human_approval(
         case, valuation, model_id=MODEL_ID, approval=approval,
         research_case_payload=case_payload, facts_payload=facts_payload,
@@ -158,6 +160,7 @@ def project(tmp_path, workbench, *, stale=True):
     project_verified_decision_workbench(
         payload, root=tmp_path, path=source,
         expected_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+        human_approval_provenance_verifier=mint_fixture_approval,
     )
     product_workbench_from_payload(payload)
     return payload
@@ -177,7 +180,9 @@ def test_approved_conditional_model_refreshes_all_steps_without_personal_positio
         assert step["assessment_id"].startswith("decision-workbench-")
         assert step["evidence_refs"] != ["evidence-1"]
     assert "position_guidance=null" in steps["portfolio_gate"]["reason"]
-    assert verify_current_decision_workbench(workbench).dependency_objects["valuation"].status == "conditional_research_only"
+    assert verify_current_decision_workbench(
+        workbench, human_approval_provenance_verifier=mint_fixture_approval,
+    ).dependency_objects["valuation"].status == "conditional_research_only"
 
 
 def test_waiting_price_zone_is_projected_without_inferring_failed_research(tmp_path):
@@ -196,7 +201,9 @@ def test_latest_replayed_case_replaces_inherited_business_and_counterevidence(tm
     workbench = decision_workbench(confidence="低")
     result = project(tmp_path, workbench)
     card = result["companies"][0]
-    recommendation = verify_current_decision_workbench(workbench).recommendation
+    recommendation = verify_current_decision_workbench(
+        workbench, human_approval_provenance_verifier=mint_fixture_approval,
+    ).recommendation
     sections = {item["key"]: item for item in card["sections"]}
     assert sections["business_quality"]["summary"] == recommendation.thesis
     expected = "；".join(item["text"] for item in recommendation.counter_evidence)
@@ -242,14 +249,18 @@ def test_legacy_v1_payload_projects_via_typed_property(tmp_path):
     assert "recommendation_type" not in workbench["decision_recommendation"]
     result = project(tmp_path, workbench)
     assert result["companies"][0]["decision_process"][-1]["status"] == "CONDITIONAL"
-    assert verify_current_decision_workbench(workbench).recommendation.as_policy() == workbench["decision_recommendation"]
+    assert verify_current_decision_workbench(
+        workbench, human_approval_provenance_verifier=mint_fixture_approval,
+    ).recommendation.as_policy() == workbench["decision_recommendation"]
 
 
 def test_current_workbench_allows_generation_after_research_date():
     workbench = decision_workbench()
     workbench["generated_at"] = "2026-09-23T00:00:00+00:00"
 
-    restored = verify_current_decision_workbench(workbench)
+    restored = verify_current_decision_workbench(
+        workbench, human_approval_provenance_verifier=mint_fixture_approval,
+    )
 
     assert restored.recommendation.decision_as_of.isoformat() == "2026-09-22"
 
@@ -272,6 +283,38 @@ def forged_candidate():
 def test_rehashed_candidate_without_approval_fails_semantic_replay(tmp_path):
     with pytest.raises(ValueError, match="full repository replay"):
         project(tmp_path, forged_candidate())
+
+
+def test_v2_serialized_transport_binding_is_not_current_authority():
+    workbench = decision_workbench(schema_version=DECISION_RECOMMENDATION_SCHEMA)
+
+    with pytest.raises(ValueError, match="PreDecision|repository replay|provenance"):
+        verify_current_decision_workbench(workbench)
+
+    replayed = verify_current_decision_workbench(
+        workbench, human_approval_provenance_verifier=mint_fixture_approval,
+    )
+    assert replayed.recommendation.recommendation_type == "BUY_CANDIDATE"
+    assert replayed.dependency_objects["human_approval"].verified_transport is not None
+
+
+def test_web_projection_uses_real_transport_verifier_by_default(tmp_path):
+    workbench = decision_workbench()
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    source = runtime / "decision.json"
+    source.write_text(json.dumps(workbench, ensure_ascii=False), encoding="utf-8")
+    payload = _payload()
+    payload["generated_at"] = "2026-09-22T13:00:00+00:00"
+    payload["as_of"] = AS_OF.isoformat()
+    payload["companies"][0]["symbol"] = SYMBOL
+    payload["opportunities"][0]["symbol"] = SYMBOL
+
+    with pytest.raises(ValueError, match="G3 transport|transport provenance"):
+        project_verified_decision_workbench(
+            payload, root=tmp_path, path=source,
+            expected_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+        )
 
 
 @pytest.mark.parametrize("change", ["future", "symbol", "state", "hash", "unbound"])

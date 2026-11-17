@@ -1,0 +1,134 @@
+{
+  "schema_version": "v5-pending-candidate-replay-handoff-v1",
+  "action": "no_order",
+  "source_files": [
+    "src/value_investment_agent/application/product/pending_candidate_replay.py",
+    "src/value_investment_agent/application/product/pending_replay_publication.py",
+    "scripts/current/replay_pending_candidate.py",
+    "tests/test_pending_candidate_replay.py"
+  ],
+  "engineering_tests": {
+    "passed": 101,
+    "failed": 0,
+    "junit_path": "runtime/pending-candidate-replay-v5-final-20261021/focused-tests.xml",
+    "files": [
+      "tests/test_pending_candidate_replay.py",
+      "tests/test_pending_research_candidate.py",
+      "tests/test_bound_draft_review_handoff.py",
+      "tests/test_user_research_workflow.py",
+      "tests/test_research_review_packet.py"
+    ]
+  },
+  "600519": {
+    "status": "ACTUAL_EXACT_INPUT_REPLAY_AND_INDEPENDENT_VERIFICATION_PASSED",
+    "candidate_binding": {
+      "path": "runtime/pending-candidate-replay-v5-final-20261021/600519/candidate.json",
+      "sha256": "d4b4fef96d9b3f66ab2c2c03f7bfdb4b7c3a980417d2489dfb911dd336addd01"
+    },
+    "publication_binding": {
+      "path": "runtime/pending-candidate-replay-v5-final-20261021/600519/publication.json",
+      "sha256": "9420dbbc50a95eba349157fe099b679587000b12e2b8ff3e429e2b7dc816542e"
+    },
+    "package_sha256_unchanged": "f100c2a26b0d61a3f9d90a1b60976b00d8217b55592360f6940b0696a46829bf",
+    "research_as_of_unchanged": "2026-10-11",
+    "valuation_date_unchanged": "2026-10-11",
+    "valuation_at_unchanged": "2026-10-11T16:21:50.762534+08:00",
+    "valuation_and_model_context_equal_predecessor": true,
+    "new_income_facts_consumed": false,
+    "note": "The 88.89% enrichment remains separate. This replays the original pending package, not new economic research."
+  },
+  "600887": {
+    "status": "REJECTED_BEFORE_OUTPUT_DIRECTORY_CREATION",
+    "predecessor_binding": {
+      "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/candidate.json",
+      "sha256": "410dd4c4fa935bc4ea0b7c596fbdc2a006ab0da4498a11694a7c9868e3520299"
+    },
+    "error": "source retrieval precedes observed availability",
+    "validator": "src/value_investment_agent/application/product/source_bound_inputs.py:294",
+    "package": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/package.json",
+    "conflicts": [
+      {
+        "source_id": "china_cost_equity_20260914",
+        "retrieved_at": "2026-09-23T00:53:00+00:00",
+        "source_available_at": "2026-10-11T08:21:25.089557+00:00",
+        "package_line": 64
+      },
+      {
+        "source_id": "yili_quote_20260922",
+        "retrieved_at": "2026-09-23T00:56:34+00:00",
+        "source_available_at": "2026-10-11T08:21:25.089557+00:00",
+        "package_line": 76
+      }
+    ],
+    "producer_origin": "pending_research_candidate.add_source assigns current acquisition availability for missing non-filing availability while retaining an older retrieved_at (lines 93-101).",
+    "next_step": "Separate source-metadata correction/version review using retained acquisition evidence. Do not edit old bytes or weaken the validator; this frozen-package replay must remain rejected."
+  },
+  "root_owned_changes_proposed_not_applied": [
+    {
+      "path": "config/current-pending-candidate-replays-v1.json",
+      "purpose": "New Web-only version pointer to independently verified replay publications; never a canonical workbook pointer.",
+      "proposed_document": {
+        "schema_version": "current-pending-candidate-replays-v1",
+        "action": "no_order",
+        "publications": {
+          "600519": {
+            "path": "runtime/pending-candidate-replay-v5-final-20261021/600519/publication.json",
+            "sha256": "9420dbbc50a95eba349157fe099b679587000b12e2b8ff3e429e2b7dc816542e"
+          }
+        }
+      }
+    },
+    {
+      "path": "config/current-company-research-registry.json",
+      "expected_current_sha256": "8751796b5a5c32c3e4235cd063adb331d2f0daca77b68d342ef9e110fde9e9e3",
+      "symbol": "000333",
+      "verification": "current_bound_draft_inputs independently succeeded; input_sha256=574a7a1b649d27ac330860e63b20b587f4aec9da984be4f8a57b884f657cb5c6",
+      "replace_only": {
+        "summary": "当前source-bound剩余收益条件研究包已登记匹配归母权益、普通股分母、历史归母盈利及三情景输入；这不代表完整财务质量、经济假设或估值已准入，不构成可靠当前估值。",
+        "missing_inputs": [
+          "既有条件情景尚需经济及事件重大性审核；历史归母盈利不等于正常化盈利",
+          "超额收益持续期、分配与权益成本须有经济证据及既有审核链支持"
+        ],
+        "next_step": "复核当前source-bound草稿与既有待审回执，沿既有审核链评审已登记情景；不重复采集已绑定权益、股数和历史盈利，不以工业FCFF绕过金融范围缺口。"
+      },
+      "append_evidence": [
+        {
+          "path": "artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/public-draft-v4.json",
+          "sha256": "c2c7de481405146ee3fc27d364e698baf7435768fe020f30e2a9b4de68c93f23",
+          "note": "当前来源绑定条件草稿；非经济或估值批准"
+        },
+        {
+          "path": "artifacts/current/web-first-acceptance/s2/midea-consumed-v3-dated/package.json",
+          "sha256": "61525b2918dc33f9f3cc761649b89dc1ba9c13443e4dcfb80381b8be9702facf",
+          "note": "归母权益212861055000元、普通股7464347335股及bear/base/bull已登记；历史盈利保持原分类"
+        }
+      ]
+    },
+    {
+      "path": "docs/current/web-first-full-product-execution-ledger.md",
+      "purpose": "Root records engineering replay pass, 600887 metadata rejection and separate economic/integration status in the existing ledger."
+    }
+  ],
+  "business_integration": {
+    "entrypoint": "value_investment_agent.application.product.pending_replay_publication.load_current_pending_replay(root=root, symbol=symbol)",
+    "scope": "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY",
+    "root_web_assembly": "Call adapter from existing company/decision detail assembly; expose candidate, publication binding and pending review context separately. Keep baseline valuation, action and economic admission unchanged. Invalid binding raises; absent symbol returns None.",
+    "verified_by_tests": "Registry -> immutable manifest -> independent successor verifier -> original receipt/package/current consumed workbench -> existing pending-review intake. Old selected_review_candidate still rejects an unpublished new candidate.",
+    "not_yet_done": "Root-owned registry registration and Web assembly/browser acceptance. No shared config/ledger/Web files were modified by this work package."
+  },
+  "boundaries": {
+    "action": "no_order",
+    "approval_changed": false,
+    "research_admitted": false,
+    "g3_approved": false,
+    "price_admitted": false,
+    "position_guidance": null,
+    "old_receipts_changed": false,
+    "original_packages_changed": false,
+    "canonical_workbook_changed": false,
+    "old_publication_verifier_changed": false,
+    "shared_config_or_ledger_changed": false,
+    "hotspot_worker_web_sharedbatch_queue_income_changed": false,
+    "git_head_or_index_changed": false
+  }
+}

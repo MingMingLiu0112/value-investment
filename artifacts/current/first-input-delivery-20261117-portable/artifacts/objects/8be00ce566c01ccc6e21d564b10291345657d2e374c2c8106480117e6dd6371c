@@ -1,0 +1,91 @@
+{
+  "schema_version": "first-research-input-spec-v1",
+  "action": "no_order",
+  "symbol": "000568",
+  "name": "泸州老窖",
+  "profile_id": "quality_compounder",
+  "run_id": "first-000568-20261031T111006911210Z",
+  "point_in_time": {
+    "report_period": "2026-06-30",
+    "valuation_date": "2026-06-30",
+    "research_as_of": "2026-10-31",
+    "available_at": "2026-10-31T11:10:08.309045+00:00",
+    "computed_at": "2026-10-31T11:10:08.309045+00:00"
+  },
+  "native_facts_binding": {
+    "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+    "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+  },
+  "capital_bindings": {
+    "start_book_equity": "start_book_equity-parent_equity-2026-06-30-1225501255",
+    "ordinary_shares": "ordinary_shares-ordinaryshares-2026-06-30-1225501255"
+  },
+  "share_basis": "issued_ordinary_shares",
+  "assumption_binding": {
+    "path": "runtime/e2-first-input-000568-20261031/assumptions-20261031T111006911210Z.json",
+    "sha256": "c1ef378b37b81809cc9fd3c3532c96aaa89be1be5f24e2bd526fe1295a1d932c"
+  },
+  "research_case": {
+    "industry": "白酒",
+    "investment_path": "条件经营现金压力研究（不是质量准入）",
+    "thesis": "白酒品牌、渠道及产品结构决定实现收入和利润。渠道去库存与回款压力使高毛利不能直接等同高质量股东现金。 本次不采用任何主估值区间，只检验公司自身来源绑定的条件现金机制。",
+    "return_driver": "在明确需求、费用和资源前提成立时，可达利润扣除持续投入后的股东条件分配；不承诺股价收益。",
+    "mispricing_hypothesis": "未检验市场错定价，不比较现价；本次只做首输入和反证路径研究。",
+    "positives": [
+      {
+        "kind": "interpretation",
+        "text": "品牌、既有产能与历史现金上划通道提供条件修复的研究线索，不证明竞争优势或未来分配。",
+        "evidence_refs": [
+          "cninfo:1225240660",
+          "cninfo:1225501255"
+        ]
+      }
+    ],
+    "counter_evidence": [
+      {
+        "kind": "interpretation",
+        "text": "销量及渠道去库存恶化、毛利/促销刚性、回款不足可能推翻稳定和修复条件",
+        "evidence_refs": [
+          "cninfo:1225240660",
+          "cninfo:1225501255"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "真实受限资金、债务、维护/WC或合同付款超条件缓冲时应拒绝路径，不允许隐含融资",
+        "evidence_refs": [
+          "cninfo:1225240660",
+          "cninfo:1225501255"
+        ]
+      },
+      {
+        "kind": "interpretation",
+        "text": "历史TTM含当期利润下降但不代表已正常化；H1中高档销量降幅42.53%未被本有限Bear保证覆盖",
+        "evidence_refs": [
+          "cninfo:1225240660",
+          "cninfo:1225501255"
+        ]
+      }
+    ],
+    "thesis_breakers": [
+      {
+        "kind": "hypothesis",
+        "text": "若现金资源前提、上划或维护/WC及预算条件不成立，路径失效，不能用低价或借款救结论。",
+        "evidence_refs": [
+          "cninfo:1225240660",
+          "cninfo:1225501255"
+        ]
+      }
+    ],
+    "next_events": [
+      {
+        "kind": "gap",
+        "text": "跟踪后续财报、渠道动销和回款、存货、工程付款、已宣告股利实施；尚未核验Q3或当前事件。",
+        "evidence_refs": [
+          "cninfo:1225240660",
+          "cninfo:1225501255"
+        ]
+      }
+    ]
+  }
+}

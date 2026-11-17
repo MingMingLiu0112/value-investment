@@ -1,0 +1,86 @@
+{
+  "schema_version": "v5-signed-browser-bound-evidence-v1",
+  "scope": "TEST_ONLY",
+  "action": "no_order",
+  "verified_at": "2026-10-21T13:31:29.990519+00:00",
+  "verification": "READ_ONLY_EXISTING_BROWSER_JOURNAL",
+  "sanitized": true,
+  "contains_private_paths": false,
+  "contains_credentials": false,
+  "journal": {
+    "revision": 8,
+    "sha256": "2819ec2c6fbd3fa0752cea934c1cb0853e65c489191503110b3362153ea70a86",
+    "head_sha256": "0c7fb5b5e8d390ab4bdae1a891b4923b9a8425fbbb17123e1fa906162895ad80",
+    "unchanged": true,
+    "hash_chain_and_replay_verified": true
+  },
+  "fill": {
+    "transaction_id": "TEST_ONLY_V5_BOUND_BUY300",
+    "symbol": "600519",
+    "exchange": "SSE",
+    "sleeve": "CORE_VALUE",
+    "side": "BUY",
+    "quantity": "300",
+    "price_cny": "5.01",
+    "fees_cny": "5",
+    "trade_date": "2026-10-21"
+  },
+  "cancellation": {
+    "unlinked_buy300_cancelled": true,
+    "cancellation_record_count": 1,
+    "pending_fill": false,
+    "confirmed_fill_count": 1
+  },
+  "binding": {
+    "decision_id": "600519",
+    "research_version": "synthetic-d2-v1",
+    "publication_id": "pub-d6059359fb522ca1e1dc",
+    "snapshot_sha256": "6ff5fa69487ce59f7d971cfcd174c6f3bff3ec378446fc86f0fa8d4549b8c87d",
+    "public_packet_content_sha256": "cbe9b2c8bb571369e3380ad7eefec7831f457775d6945bf8089109ed292f8f98",
+    "scope": "IMMUTABLE_PUBLICATION_AT_RECORDING_TIME_NOT_PROVEN_PRETRADE_KNOWLEDGE",
+    "trade_time_availability_proven": false
+  },
+  "accounting": {
+    "cash_cny": "8492",
+    "cost_basis_total_cny": "1508",
+    "market_value_total_cny": "1500",
+    "total_equity_cny": "9992",
+    "unrealized_pnl_total_cny": "-8",
+    "realized_pnl_cny": "0",
+    "display_quote_cny": "5",
+    "quantity": "300",
+    "restart_replay_verified": true
+  },
+  "public_contract": {
+    "publication_id": "pub-d6059359fb522ca1e1dc",
+    "research_version": "synthetic-d2-v1",
+    "daily_status": "RESEARCH_OBSERVATION",
+    "detail_status": "RESEARCH_ONLY"
+  },
+  "retrospective": {
+    "mode": "MOCK",
+    "status": "MOCK_DRAFT_PENDING_HUMAN_REVIEW",
+    "ledger_source": "TEST_ONLY",
+    "approval_count": 0,
+    "formal_eligibility": false,
+    "research_approval_inferred": false,
+    "trade_time_availability_proven": false,
+    "ledger_written": false,
+    "public_registry_written": false,
+    "live_provider_called": false,
+    "evidence_gaps": [
+      "TRADE_TIME_PLAN_AND_DATA_AVAILABILITY_NOT_PROVEN",
+      "PERSONAL_RISK_AT_TRADE_NOT_PROVEN",
+      "DEVIATION_REASON_NOT_RECORDED",
+      "SUBSEQUENT_RISK_NOT_EVALUATED_NO_LATER_EVIDENCE"
+    ]
+  },
+  "limitations": [
+    "SYNTHETIC_SIGNED_TEST_FIXTURE_NOT_REAL_ISSUER_RESEARCH_OR_APPROVAL",
+    "DISPLAY_QUOTE_NOT_FORMAL_PRICE_ADMISSION",
+    "MANUAL_SIMULATED_FILL_NOT_BROKER_EXECUTION",
+    "REPLAY_VERIFIED_IN_FRESH_SERVICE_INSTANCE_NOT_SERVER_RESTART",
+    "BROWSER_SCREENSHOTS_AND_REFRESH_VERIFIED_SEPARATELY_BY_ROOT"
+  ],
+  "server_control_performed": false
+}

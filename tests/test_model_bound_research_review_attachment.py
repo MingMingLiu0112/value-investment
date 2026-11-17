@@ -7,8 +7,14 @@ import hashlib
 import json
 
 import pytest
+from materiality_transport_helpers import authenticated_materiality_packet
 
-from test_d2_conditional_shared_service import SYNTHETIC, _store, synthetic_chain
+from test_d2_conditional_shared_service import (
+    SYNTHETIC,
+    _packet as _approval_packet,
+    _store,
+    synthetic_chain,
+)
 from test_d2_source_bound_package_contract import source_package
 from test_event_materiality import DECISION_NOT_MATERIAL, _decision, _review
 from value_investment_agent.application.product.company_research import (
@@ -19,6 +25,7 @@ from value_investment_agent.application.product.research_reviews import (
     attach_research_reviews,
     build_research_review_model_context,
 )
+from value_investment_agent.application.product.source_bound_inputs import source_catalog_sha256
 from value_investment_agent.event_scan import AnnouncementReview, EventScanResult
 from value_investment_agent.human_research_approval import artifact_fingerprint
 from value_investment_agent.m1_valuation_package_builder import build_descriptor
@@ -104,7 +111,7 @@ def _changed_descriptor(descriptor, mutation):
     return descriptor_from_payload(payload)
 
 
-def test_v2_exact_original_context_binds_spec_without_promoting_research(synthetic_chain):
+def test_v2_exact_original_context_binds_spec_without_promoting_research(synthetic_chain, authenticated_materiality_packet):
     root, _, descriptor, app, baseline, _, review, scan_hash = synthetic_chain
     context = _context(descriptor)
     canonical = descriptor.as_policy()
@@ -113,7 +120,7 @@ def test_v2_exact_original_context_binds_spec_without_promoting_research(synthet
     for role, key in (('research_case', 'research_case_sha256'), ('facts', 'facts_sha256'),
                       ('assumptions', 'assumptions_sha256')):
         assert context[key] == artifact_fingerprint(canonical[role])
-    path, digest, raw_path, raw_hash = _packet(root, descriptor.symbol, review, context)
+    path, digest, review, raw_path, raw_hash = authenticated_materiality_packet(synthetic_chain[1], review)
     original_bytes = raw_path.read_bytes()
     attached = attach_research_reviews(
         root=root, spec=build_research_run_spec(descriptor), descriptor=descriptor,
@@ -234,16 +241,20 @@ def test_v2_requires_event_original_and_cannot_bypass_with_only_human_binding(sy
         'schema_version': V2, 'symbol': descriptor.symbol, 'action': 'no_order',
         'bindings': {'human_approval': {'path': source.name, 'sha256': digest}},
     })
-    with pytest.raises(ValueError, match='model-bound event materiality'):
+    with pytest.raises(ValueError, match='unsigned legacy G3|model-bound event materiality'):
         attach_research_reviews(
             root=root, spec=build_research_run_spec(descriptor), descriptor=descriptor,
             path=path, expected_sha256=packet_hash, event_sha256=scan_hash,
         )
 
 
-def test_v1_legacy_default_and_fingerprint_remain_unchanged_but_strict_rejects(synthetic_chain):
+def test_v1_exact_legacy_pin_and_fingerprint_remain_unchanged_but_strict_rejects(synthetic_chain, monkeypatch):
     root, _, descriptor, _, _, _, review, scan_hash = synthetic_chain
     path, digest, _, _ = _packet(root, descriptor.symbol, review, None, schema=V1)
+    from value_investment_agent.application.product import research_materiality_reviews
+    # TEST_ONLY exact legacy bytes; the production allowlist remains empty.
+    monkeypatch.setattr(research_materiality_reviews, '_PINNED_LEGACY_MATERIALITY_PACKET_SHA256',
+                        frozenset({digest}))
     attached = attach_research_reviews(
         root=root, spec=build_research_run_spec(descriptor), descriptor=descriptor,
         path=path, expected_sha256=digest, event_sha256=scan_hash,
@@ -276,15 +287,23 @@ def test_v2_keeps_original_hash_and_acquired_scan_checks(synthetic_chain, target
         )
 
 
-def test_v2_attachment_preserves_financial_and_scan_blockers(synthetic_chain):
-    descriptor = synthetic_chain[2]
-    payload = deepcopy(descriptor.as_policy())
-    payload.pop('input_sha256')
+def test_v2_attachment_preserves_financial_and_scan_blockers(synthetic_chain, authenticated_materiality_packet):
+    root, package_path, _, _, _, _, review, _ = synthetic_chain
+    payload = json.loads(package_path.read_text(encoding='utf-8'))
     payload['research_case']['research_status'] = 'synthetic-financial-gap'
     payload['model_validity_input']['blockers'] = ['synthetic-validity-gap']
-    payload['model_validity_input']['event_scan']['blockers'] = ['synthetic-scan-gap']
-    changed = descriptor_from_payload(payload)
-    attached = _attach(synthetic_chain, descriptor=changed, context=_context(changed))
+    scan_ref = payload['model_validity_input']['event_scan_ref']
+    scan = json.loads((root / scan_ref['path']).read_text(encoding='utf-8'))
+    scan['blockers'] = ['synthetic-scan-gap']
+    _, scan_ref['sha256'] = _store(root, scan_ref['path'], scan)
+    package_path, _ = _store(root, package_path.name, payload)
+    changed = build_descriptor(payload, root=root)
+    review = replace(review, scan_sha256=scan_ref['sha256'],
+        evidence_refs=tuple(dict(ref, sha256=scan_ref['sha256'])
+            if ref.get('path') == scan_ref['path'] else ref for ref in review.evidence_refs))
+    path, digest, _, _, _ = authenticated_materiality_packet(package_path, review)
+    attached = attach_research_reviews(root=root, spec=build_research_run_spec(changed), descriptor=changed,
+        path=path, expected_sha256=digest, event_sha256=scan_ref['sha256'], require_model_binding=True)
     assert attached.research_case.research_status == 'synthetic-financial-gap'
     assert attached.model_validity_input.blockers == ('synthetic-validity-gap', 'synthetic-scan-gap')
     assert attached.human_research_approval is None
@@ -295,6 +314,26 @@ def test_v2_attachment_preserves_financial_and_scan_blockers(synthetic_chain):
     assert outcome.decision_recommendation.recommendation_action == 'NO_ACTION'
     assert outcome.decision_recommendation.action == 'no_order'
     assert outcome.decision_recommendation.position_guidance is None
+
+
+def test_signed_materiality_cannot_launder_unsigned_g3(
+    synthetic_chain, authenticated_materiality_packet
+):
+    root, package_path, descriptor, _, _, approval, review, scan_hash = synthetic_chain
+    unsigned_packet, _ = _approval_packet(synthetic_chain, approval)
+    path, digest, _, _, _ = authenticated_materiality_packet(
+        package_path, review, extra_packet=unsigned_packet
+    )
+    with pytest.raises(ValueError, match='unsigned legacy G3 approval rejected'):
+        attach_research_reviews(
+            root=root,
+            spec=build_research_run_spec(descriptor),
+            descriptor=descriptor,
+            path=path,
+            expected_sha256=digest,
+            event_sha256=scan_hash,
+            require_model_binding=True,
+        )
 
 
 @pytest.fixture
@@ -327,7 +366,10 @@ def source_v2_review(source_package):
         'location': 'https://example.test/synthetic-v2-scan', 'local_path': scan_path.name,
         'sha256': scan_hash, 'published_at': observed.isoformat(),
         'source_available_at': observed.isoformat(), 'availability_basis': SYNTHETIC,
+        'retrieved_at': observed.isoformat(),
     })
+    package['source_contract']['event_coverage_status'] = scan.coverage_status
+    package['source_contract']['source_catalog_sha256'] = source_catalog_sha256(package['sources'])
     package['model_validity_input'] = {
         'model_id': package['dependencies']['model_version'], 'valid_from': day.isoformat(),
         'event_scan_ref': {'id': 'synthetic-v2-scan', 'symbol': package['symbol'],
@@ -349,7 +391,7 @@ def source_v2_review(source_package):
     'match', 'v1', 'missing', 'outer-only', 'unknown', 'scenario', 'assumptions',
     'facts', 'case', 'model_version',
 ])
-def test_actual_source_bound_product_entry_enforces_original_context(source_v2_review, mutation):
+def test_actual_source_bound_product_entry_enforces_original_context(source_v2_review, mutation, authenticated_materiality_packet):
     root, package, descriptor, review = source_v2_review
     context = _context(descriptor)
     if mutation in ('missing', 'outer-only', 'v1'):
@@ -380,6 +422,8 @@ def test_actual_source_bound_product_entry_enforces_original_context(source_v2_r
         outer_context=_context(descriptor) if mutation == 'outer-only' else None,
     )
     package_path, package_hash = _store(root, 'synthetic-source-bound-package.json', package)
+    if mutation == 'match':
+        path, digest, _, raw_path, raw_hash = authenticated_materiality_packet(package_path, review)
     output = root / 'synthetic-source-bound-output.json'
     args = dict(
         root=root, symbol=package['symbol'], package_path=package_path,

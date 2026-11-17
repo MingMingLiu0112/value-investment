@@ -148,6 +148,7 @@ def evaluate_with_human_approval(
     research_case_payload: Any | None = None,
     facts_payload: Any | None = None,
     assumptions_payload: Any | None = None,
+    require_authenticated_provenance: bool = False,
 ) -> ResearchGate:
     """G3 binds the human decision to exact valuation and dependency artifacts."""
     if not isinstance(approval, HumanResearchApprovalReceipt):
@@ -160,6 +161,7 @@ def evaluate_with_human_approval(
         research_case_payload=research_case_payload,
         facts_payload=facts_payload,
         assumptions_payload=assumptions_payload,
+        require_authenticated_provenance=require_authenticated_provenance,
     )
     results = dict(base.results)
     results[GATE_VALUATION] = (

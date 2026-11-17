@@ -106,6 +106,7 @@ def _human_approval(
         reviewed_at=datetime(2026, 9, 23, 5, 30, tzinfo=timezone.utc),
         review_as_of=date(2026, 9, 23),
         reviewer_type="human_research_lead",
+        reviewer_id="TEST_ONLY-HUMAN-RESEARCH-LEAD",
         decision=decision,
         price_assessment_eligible=price_assessment_eligible,
         remaining_blockers=remaining_blockers,

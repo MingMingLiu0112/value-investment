@@ -867,6 +867,9 @@ def build_channel_results(
         by_symbol = {item.symbol: item for item in evaluations[channel]}
         for symbol in [item.symbol for item in channel_candidates[policy.max_per_channel :]]:
             item = by_symbol[symbol]
+            # Display budgets must never erase an evidence conflict or other gate.
+            if item.status != EVALUATION_PASS:
+                continue
             by_symbol[symbol] = ChannelEvaluation(
                 symbol=item.symbol,
                 name=item.name,

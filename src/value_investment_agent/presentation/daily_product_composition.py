@@ -89,7 +89,14 @@ def compose_daily_product(*, root: Path, folder: Path, published: dict,
         card = next(c for c in payload['companies'] if c['symbol'] == row['symbol'])
         card['decision_review'] = [entry for entry in card['decision_review'] if entry['label'] not in {
             '当前操作依据', '加仓复核边界', '减仓与退出依据', '本次行情更新'}]
-        explanation = project_value_decision_explanation(verify_current_decision_workbench(workbench),
+        from ..application.product.research_reviews import verify_human_approval_transport_provenance
+        restored = verify_current_decision_workbench(
+            workbench,
+            human_approval_provenance_verifier=lambda approval: (
+                verify_human_approval_transport_provenance(root, approval)
+            ),
+        )
+        explanation = project_value_decision_explanation(restored,
             evidence_scope='RETAINED_RESEARCH')
         explanation_path = folder/(row['symbol']+'-value-decision-explanation.json')
         write_new_json(explanation_path, explanation)

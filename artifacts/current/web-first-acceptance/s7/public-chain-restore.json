@@ -1,0 +1,40 @@
+{
+  "schema_version": "closure-restore-drill-v1",
+  "action": "no_order",
+  "created_at": "2026-10-18T14:37:05.358328+00:00",
+  "drill_root": ".tmp\\web-first-s7-public-20261018",
+  "publication_id": "pub-9b49ff2e54323150a06d",
+  "packet_sha256": "d08317cf3524ab28103dd515c57ed558ed03337277f082a8e2d96bd73325d98b",
+  "files": {
+    "source_copied": 24,
+    "source_missing": [],
+    "config_files": 3,
+    "release_files": 1,
+    "research_files": 11
+  },
+  "package": {
+    "sha256": "27c6b3630532106d630f084890e6064d645a400d8166ee615dae09b276c8f7e6",
+    "manifest_sha256": "edfa46d1eac46edb736c5d2f8994eda734e73766ee37ad16f9e480b5b50fd334",
+    "backup_id": "acf7c583-3774-47a3-a2df-b65fe04df033",
+    "key_id": "58ada24ccd963686",
+    "key_separated": true
+  },
+  "restore": {
+    "verified_files": 28,
+    "mismatches": [],
+    "publication_match": true,
+    "workbook": {
+      "present": true,
+      "sha256_matches_pointer": true
+    }
+  },
+  "corruption": {
+    "rejected": true,
+    "error_type": "ValueError"
+  },
+  "verdicts": {
+    "RESTORE_DRILL_PASS": "PASS",
+    "OFF_MACHINE_BACKUP_READY": "PASS",
+    "REAL_OFF_MACHINE_COPY_CONFIRMED": "NOT_CONFIRMED"
+  }
+}

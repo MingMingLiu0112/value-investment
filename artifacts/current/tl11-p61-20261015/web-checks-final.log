@@ -1,0 +1,10 @@
+
+> value-investment-web@0.1.0 typecheck
+> tsc --noEmit
+
+
+> value-investment-web@0.1.0 format
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!

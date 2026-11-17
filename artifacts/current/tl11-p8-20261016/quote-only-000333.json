@@ -1,0 +1,90 @@
+{
+  "pinned": {
+    "action": "no_order",
+    "pointer_path": "config/current-quote-bridge.json",
+    "pointer_sha256": "ffa65f787032c6f38ead71d380ae32f38ee53e8c48d8e794f95f72c451e2a84e",
+    "symbol": "000333",
+    "quote_bundle_sha256": "e9330a0b74ed2a75c2022d5578c80a7794b9ede8877a3a2b1f37729fda392556",
+    "research_case": null,
+    "registered_at": "2026-10-15T18:32:04.916921+00:00"
+  },
+  "verdict": {
+    "schema_version": "quote-bridge-execution-v1",
+    "action": "no_order",
+    "symbol": "000333",
+    "status": "QUOTE_VERIFIED_WITHOUT_RESEARCH_DISPLAY_ONLY",
+    "reason": "双源收盘已核验；尚无绑定的完整研究包，仅作事实展示，不授予价格比较或交易资格。",
+    "price_admitted": false,
+    "research_case": null,
+    "research_day": null,
+    "quote": {
+      "quote_date": "2026-10-15",
+      "display_price": "84.71",
+      "collected_at": "2026-10-15T18:32:04.223418+00:00",
+      "display_scope": "LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+      "is_historical_close": true,
+      "latest_completed_session": "2026-10-15",
+      "bundle_path": "runtime/quote-sessions/20261015T183204223436Z/bundle.json",
+      "bundle_sha256": "e9330a0b74ed2a75c2022d5578c80a7794b9ede8877a3a2b1f37729fda392556"
+    },
+    "pointer": {
+      "path": "config/current-quote-bridge.json",
+      "sha256": "ffa65f787032c6f38ead71d380ae32f38ee53e8c48d8e794f95f72c451e2a84e"
+    },
+    "sources": [
+      {
+        "id": "daily-assistant-quote-e9330a0b74ed2a75c2022d5578c80a7794b9ede8877a3a2b1f37729fda392556",
+        "kind": "quote_session",
+        "path": "runtime/quote-sessions/20261015T183204223436Z/bundle.json",
+        "sha256": "e9330a0b74ed2a75c2022d5578c80a7794b9ede8877a3a2b1f37729fda392556",
+        "status": "collected_not_verified",
+        "expected_session": "2026-10-15",
+        "session_result": "matched_close",
+        "reason": "带日期双源报价与最近已完成交易日一致"
+      },
+      {
+        "id": "daily-assistant-quote-e9330a0b74ed2a75c2022d5578c80a7794b9ede8877a3a2b1f37729fda392556-tencent",
+        "kind": "quote_provider_document",
+        "provider": "tencent",
+        "source_url": "https://qt.gtimg.cn/q=sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-15T18:32:04.074717+00:00",
+        "sha256": "4fb73d02780a31e137293eed045fdd1477a1d1c9fdf1a97195c4d60ac0c5ec92",
+        "observed_trade_at": "2026-10-15T16:14:33+08:00"
+      },
+      {
+        "id": "daily-assistant-quote-e9330a0b74ed2a75c2022d5578c80a7794b9ede8877a3a2b1f37729fda392556-sina",
+        "kind": "quote_provider_document",
+        "provider": "sina",
+        "source_url": "https://hq.sinajs.cn/list=sz000333,sz000651,sh600741,sh601088",
+        "fetched_at": "2026-10-15T18:32:04.222633+00:00",
+        "sha256": "de2fe9bae01d58f74b44a0b8ccf9e59c3c53143cebc2a55d69dd812d0251ac3d",
+        "observed_trade_at": "2026-10-15T15:35:30+08:00"
+      }
+    ],
+    "compatibility": {
+      "verified_quote": {
+        "eligible": true,
+        "reason": "双源收盘行情已通过核验并归档。"
+      },
+      "research_compatible": {
+        "eligible": false,
+        "reason": "尚无绑定的完整研究包；核验收盘仅供事实展示。"
+      },
+      "historical_reconstruction_eligible": {
+        "eligible": false,
+        "reason": "尚无绑定的完整研究包；核验收盘仅供事实展示。"
+      },
+      "comparison_eligible": {
+        "eligible": false,
+        "reason": "尚无绑定的完整研究包；核验收盘仅供事实展示。"
+      },
+      "formal_decision_eligible": {
+        "eligible": false,
+        "reason": "正式投资决策资格需 G3 人工批准与决策门通过；执行层不评估、不预支。"
+      }
+    },
+    "next_step": "收盘已核验，可供展示；完成正式研究登记后才能评估价格比较资格。",
+    "quote_verification_status": "QUOTE_VERIFIED_WITHOUT_RESEARCH_DISPLAY_ONLY"
+  },
+  "action": "no_order"
+}

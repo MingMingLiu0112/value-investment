@@ -1,0 +1,95 @@
+{
+  "schema_version": "p8-b1-b3-b6-research-judgments-v1",
+  "as_of": "2026-10-16",
+  "baseline_commit": "437b8dc7395763f643f3e4efb021694b14f15c8b",
+  "action": "no_order",
+  "assurance": "Independent research interpretation of retained originals; not authorized G3, materiality, model-validity or investment approval. audit.json binds actual source bytes, physical PDF pages and re-executed shared calculations.",
+  "600887": {
+    "decision": "CURRENT_RELIABLE_FAIR_VALUE_NOT_ESTABLISHED",
+    "recommendation": "NO_ACTION",
+    "business_quality": "全国乳品品牌、渠道及产能利用具有经营基础，H1收入增长4.13%；但这不能证明未来超额收益期限。",
+    "earnings_sustainability": "H1扣非归母同比下降20.25%，收入恢复未转为利润恢复。96.4773471001亿元是FY2025+H12026-H12025历史扣非TTM，不是正常化盈利；不年化H1，不机械加回商誉或存货减值。",
+    "reported_roe": {
+      "FY2025": "20.87%",
+      "FY2024": "15.81%",
+      "H12026": "10.09%",
+      "H12025": "12.60%",
+      "FY_ex_nonrecurring": ["19.97%", "11.24%"],
+      "H1_ex_nonrecurring": ["9.80%", "12.28%"],
+      "source_physical_pages": {"cninfo:1225259562": [7], "cninfo:1225511409": [6]},
+      "interpretation": "全年与半年不直接相比；净资产减值/分配也能改变ROE分母。TTM利润/期末权益约17.96%只是模型起点代理，不是披露加权ROE或ROIC。"
+    },
+    "roic": null,
+    "incremental_capital_return": null,
+    "roic_gap": "集团包含财务公司、票据融资和并购资产，缺可验证的工业NOPAT、经营投入资本和维护/增长资本拆分。不得以ROE替代ROIC，也不能把存量品牌收益赋给新增资本。",
+    "model_applicability": "共享剩余收益模型在quality_compounder画像下可路由，可在归母普通股权益与匹配盈利口径上做条件计算；当前版本尚不足以支持可靠公允价值。通用工业FCFF没有现成证据优势，不能临时切换绕过金融范围和再投资缺口。",
+    "mechanism": {
+      "start_book_equity_cny": "53711364981.99",
+      "disclosed_total_shares": "6325360667",
+      "book_equity_per_share_approx": "8.49143121",
+      "base_profit_anchor_cny": "9647734710.01",
+      "base_equity_cost": "0.09",
+      "base_retention": "0.15",
+      "forecast": "1年保持历史锚盈利条件，随后3年全资本ROE线性降到权益成本；并非只对新投资低回报。",
+      "terminal": "终端ROE=权益成本，终端增长0，剩余收益终项为零；仍有终端账面资本和股东分配，不代表尾部风险为零。",
+      "valuation_date": "2026-10-11",
+      "financial_balance_date": "2026-06-30",
+      "first_assumed_payment_date": "2027-06-30",
+      "per_share_condition_values": {"bear": "9.7976411843977768", "base": "10.075137353068013", "bull": "10.30069250099503"},
+      "economic_explanation_of_low_values": "8.49元历史账面基础仅加上短暂超额收益现值，再按既有假定时间桥输送至估值日。快速侵蚀全资本盈利是低值的关键；不是少算分红，也不应再加现金或股息。",
+      "market_price_not_calibration_target": true,
+      "cost_of_equity_status": "10%/9%/8%仅未批准压力条件；旧参考来自另一公司研究目录，不能据此声称伊利专属资本成本。澳优减值测试10.27%折现率也不能挪用为集团普通股成本。",
+      "sensitivity_interpretation": "Bear/Base/Bull同时变增长、权益成本、留存和ROE终点，并非统计区间或纯折现率敏感性；中优势期只是另一个未批准期限假设，不能按较高估值选用。"
+    },
+    "clean_surplus": "H1合并归母权益历史桥已对平：纯利润减分配的简单桥遗漏约-10.1012899139亿元其他权益变化，包括OCI和资本动作。历史对平不批准未来清洁盈余假设；不得再次扣历史损失或把未来OCI设为已知零。",
+    "distribution": "2025-2027规划不低于归母利润75%、DPS不低于1.22元，不等于可持续现金能力。模型仅自筹留存，不强制DPS下限；首年bear假设DPS约1.1592元，base首年约1.2965元、第四年约0.6943元。模型年末付款约定不直接对应公司财政年度规划，不能据此声称公司已违约；这证明计算不是公司分红预测。合并CFO、母公司CFO、自由现金、法律可分配利润必须分开。",
+    "cash_and_balance_sheet": "H1合并CFO97.5914748318亿元，母公司CFO355.52亿元；不得相加。48,141,014,262.49元内部开票向外部银行贴现仍是外部银行债权。CFO受应付结算、减值加回及金融业务影响，不能直接称FCFE或ROIC回报。",
+    "new_events": "五期超短融实际发行415亿元，补强了短期融资取得事实但产生12月集中到期；惠商9月末担保责任20.578467亿元补充渠道信用敞口，不是已损失或必然新增净债务。逐笔参数、页码、hash、反证与签署待办见audit.json。",
+    "retained_price_observation": {
+      "price_cny": "28.10",
+      "quote_date": "2026-10-15",
+      "artifact": "artifacts/current/tl11-p7-20261015/published-packet.json",
+      "current_quote_verified_in_that_packet": true,
+      "formal_price_comparison_eligible_in_that_packet": false,
+      "scope": "Retained Oct15 observation, not a fresh Oct16 quote or proof of overvaluation. Price/value divergence diagnoses assumptions, not a formal safety margin."
+    },
+    "user_attractive_zone": "NOT_ESTABLISHED: retained public packet has no registered investment price policy; Bear/Base/Bull do not create entry thresholds. No private policy inspected.",
+    "decisive_blockers": [
+      {"category": "EVIDENCE", "field": "normalized_parent_profit", "required": "减值/税费的税后归母归属、重复性、维护投入及分业务盈利桥；未知不得填零。"},
+      {"category": "EVIDENCE", "field": "forward_roe_and_duration", "required": "区分存量业务盈利持续性和增量资本回报，说明1+3/3+5期限及全资本衰减的经济机制；不能凭品牌或市场价设定。"},
+      {"category": "EVIDENCE", "field": "issuer_equity_cost", "required": "同币种、同日期风险基准与伊利经营/杠杆风险解释；不将8%-10%称完整可信区间。"},
+      {"category": "EVIDENCE", "field": "distributable_cash_and_refinancing", "required": "兑付与新增发行的用途/债务/现金滚动、定存及受限资金、到期计划、母公司可分配利润和上划；不得用6月现金简单减9月偿债。"},
+      {"category": "DATA", "field": "current_date_share_refresh_only", "required": "6月末历史分母6,325,360,667股可依法由半年报物理159页股本及库存股不适用核验，历史重放不再以库存未知阻塞。2025年注销已计入；员工计划购入存量股不改变总股本。9月末回购尚未实施，不能外推至10月16日；新日期估值需对应日期资本变动滚动核验。"},
+      {"category": "HUMAN", "field": "event_materiality_and_G3", "required": "将旧全窗口和本轮两份原件、精确模型/假设/候选hash交外部有权审核人逐项签署，再经既有导入核验及重算服务；本审计不代签。"}
+    ],
+    "reopen_triggers": ["可比季度扣非、分业务毛利和库存/商誉回收改变盈利边界", "披露12月到期融资资金来源与偿付后可用现金", "新增担保代偿或清晰拨备/回收证据", "原件支持股数、税后归母正常化或资本回报口径修正"],
+    "next_step": "将本次原件事实和明确不足交付现有材料性/经济假设审核链；可靠估值未建立前维持NO_ACTION，不以再次扫描相同原件代替判断。"
+  },
+  "600519": {
+    "selected_as_second_case": true,
+    "decision": "CONDITIONAL_RESEARCH_ONLY_NOT_RELIABLE_CURRENT_FAIR_VALUE",
+    "recommendation": "NO_ACTION",
+    "business_quality": "核心茅台酒FY毛利率93.53%、收入1464.9990648049亿元，酒类渠道/产品可核，存量品牌盈利能力强；但不等于十年盈利确定性或新增资本高回报。",
+    "earnings_sustainability": "FY扣非归母同比-4.58%、H1-2.04%；H1收入+1.47%仍伴随成本+21.81%，毛利承压。历史扣非TTM813.6706767744亿元可核，不将维护费用加回或称正常化。",
+    "model_applicability": "已授权quality_compounder共享归母剩余收益路由，FY/H1归母权益与股数可核。保留B_CONTINUITY_ALTERNATIVE为低置信可审候选，拒绝把十年盈利+五年全资本衰减当已证实品牌寿命。",
+    "valuation": "audit.json实际重放既有typed候选并逐项匹配已发布数值，不另设情景；日期保持原2026-10-11，不冒称10月16日新估值。5+5/10+5/10+10的旧日期中值约479.88/587.57/636.08仅说明期限敏感，不能拿较高值作投资批准。",
+    "cash_quality": "H1合并CFO706.9075011906亿元上升，原件明确与财务公司吸收成员存款及不可随时支取同业存款变化有关，不等于酒类自由现金。母公司现金/投资上划/普通股分红须单独桥接，不能将金融余额再加到已含收益的权益估值。",
+    "strongest_counterevidence": ["核心产品和直营毛利仍有下行，销售维护费非已证明一次性", "陈酿存货不是即时现金，维护/扩产和金融尾部损失上界未知", "合并高盈利不能证明母公司每期可上划和分红，基金认缴有未来资金约束", "整体ROE衰减将侵蚀存量盈利；仅新资本低回报不能证明这一侵蚀速度"],
+    "price_policy_readiness": "尚不能准备可信正式吸引区间；保留现有政策工作流输入合同，等待精确候选经济假设/材料性/模型有效性/G3，随后由用户明确规则。retained packet的当前价格和注册政策均为空，不推断当前便宜或昂贵。",
+    "decisive_blockers": [
+      {"category": "EVIDENCE", "field": "normalized_profit_duration", "required": "明确扣非代理用途，审阅十年持续和全资本衰减；金融损失、必要维护投入未知不设零。"},
+      {"category": "EVIDENCE", "field": "legal_parent_distribution", "required": "核母公司现金、子公司上划、已付/拟付分红和资本承诺，不能用合并CFO批准75%未来分配。"},
+      {"category": "DATA", "field": "current_price_event_window", "required": "本次不新增采集，原始财务基准仍6月末；当前价格及财务/事件窗口由根沿既有刷新链补齐，不能宣称Oct16完整覆盖。"},
+      {"category": "HUMAN", "field": "bound_candidate_approval", "required": "现有精确B候选交有权经济/材料性/G3审核，签署与导入按既有合同办理；研究偏好不是签名批准。"}
+    ],
+    "reopen_triggers": ["核心收入/毛利/扣非持续可比恶化", "直营增长不改善净收益或维护费用再上升", "资金上划、金融损失或资本承诺限制母公司分配", "权益成本来源和税后归母正常化证据改变"],
+    "next_step": "基于已核事实审阅具体B候选并完成原公告材料性；证据不足则维持研究候选而非修改期限使其靠近市场。"
+  },
+  "confirmed_corrections_and_handoff": [
+    {"kind": "RESEARCH_FACT_UPDATE", "finding": "不能再泛称没有新融资披露：10月14日原件确认五期实际发行415亿元。只更新研究证据，不冒称资金用途、净现金、全部债务或流动性审批已闭合。"},
+    {"kind": "RESEARCH_FACT_UPDATE", "finding": "不能把本次惠商前三季度累计担保32.119987亿元、期末责任20.578467亿元及前五户有反担保混成同一指标；前五户反担保不是全客户覆盖，亦不能外推到10月1日金港无反担保公告。"},
+    {"kind": "RESEARCH_SEMANTIC_CORRECTION", "finding": "600887-current-financial-review文首曾说权益完整桥尚未认可，后续v3及实际候选已给历史H1对平结果。区分已对平历史桥与未批准未来清洁盈余，不复写hash冻结旧文。"},
+    {"kind": "ENGINEERING_HANDOFF_OUTSIDE_WRITE_SCOPE", "finding": "current-company-research-registry对000333仍叙述FCFF情景待注册；已核20261013-v5实际证据说明工业FCFF不适用而共享RI路由已授权。根需核对公开摘要接线，不能让登记情景被误解为足以修复FCFF口径。未改共享registry/packet。"}
+  ],
+  "boundaries": {"new_model": false, "shared_model_modified": false, "approval_fabricated": false, "real_private_stores_read_or_written": false, "formal_price_or_quantity": null, "final_product_acceptance": false}
+}

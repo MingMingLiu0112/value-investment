@@ -6,7 +6,13 @@ import os
 from pathlib import Path
 from uuid import uuid4
 
-from ...human_research_approval import human_research_approval_from_payload
+from ...human_research_approval import (
+    AUTHENTICATED_TRANSPORT_BINDING_SCHEMA,
+    APPROVED_DECISIONS,
+    DECISION_SUPERSEDED,
+    human_research_approval_from_payload,
+    mint_verified_human_research_approval_transport,
+)
 from ...event_materiality import event_materiality_review_from_payload
 from ...event_scan import COVERAGE_COMPLETE
 from ...research_artifact_codecs import artifact_payload
@@ -18,6 +24,16 @@ REVIEW_RESPONSE_PURPOSE = b'value-investment/pending-research-response/v1\x00'
 # No production legacy records exist. Compatibility requires reviewed exact bytes,
 # never a version or missing field supplied by the journal itself.
 _PINNED_LEGACY_REVIEW_RECORD_SHA256 = frozenset()
+FROZEN_REPLAY_BLOCKER = 'FROZEN_REPLAY_REQUIRES_AUTHENTICATED_G3'
+
+
+def _nonactionable_frozen_approval(approval):
+    """Keep legacy evidence readable without granting current price authority."""
+    blockers = tuple(dict.fromkeys((*approval.remaining_blockers, FROZEN_REPLAY_BLOCKER)))
+    decision = (DECISION_SUPERSEDED if approval.decision in APPROVED_DECISIONS
+                else approval.decision)
+    return replace(approval, decision=decision, price_assessment_eligible=False,
+                   remaining_blockers=blockers)
 
 
 def run_pending_review_command(*, root, args):
@@ -203,6 +219,74 @@ def _authenticated_review_history(root, candidate_sha256, *, incomplete_record=N
     return history, previous
 
 
+def verify_human_approval_transport_provenance(root: Path, approval):
+    """Revalidate a persisted G3 transport and mint in-process authority.
+
+    The serialized transport binding is never trusted on its own. This resolves
+    the exact signed response, pinned trust root, candidate, append-only journal
+    head and completion receipt, then verifies the receipt matches the signed
+    whole-model approval and the candidate model context.
+    """
+    if not getattr(approval, 'authenticated_transport_binding', None):
+        return approval
+    binding = approval.authenticated_transport_binding
+    response_binding = binding['response_binding']
+    candidate_binding = binding['candidate_binding']
+    trust_root_binding = binding['trust_root_binding']
+    for label, item in (
+        ('review response', response_binding),
+        ('review candidate', candidate_binding),
+        ('review trust root', trust_root_binding),
+    ):
+        original = require_inside(root, root / item['path'], label)
+        if not original.is_file() or sha256_file(original) != item['sha256']:
+            raise ValueError(f'G3 transport {label} is missing or drifted')
+    _, head = _authenticated_review_history(root, candidate_binding['sha256'])
+    if head is None:
+        raise ValueError('G3 transport has no authenticated review head')
+    record, payload = head[1], head[2]
+    if (
+        record['response_binding'] != response_binding
+        or record['candidate_binding'] != candidate_binding
+        or record['trust_root_binding'] != trust_root_binding
+        or payload.get('whole_model_approval') is None
+    ):
+        raise ValueError('G3 transport is not the current authenticated review head')
+    signed_approval = human_research_approval_from_payload(
+        payload['whole_model_approval']
+    )
+    unbound_approval = replace(
+        approval,
+        authenticated_transport_binding=None,
+        verified_transport=None,
+    )
+    if signed_approval.as_policy() != unbound_approval.as_policy():
+        raise ValueError('G3 receipt differs from its signed whole-model approval')
+    from .pending_research_candidate import verify_pending_research_candidate
+    candidate = verify_pending_research_candidate(
+        root=root,
+        path=root / candidate_binding['path'],
+        expected_sha256=candidate_binding['sha256'],
+    )
+    context = candidate.get('model_context')
+    expected_context = {
+        'research_case_sha256': approval.research_case_sha256,
+        'facts_sha256': approval.facts_artifact_sha256,
+        'assumptions_sha256': approval.assumption_set_sha256,
+        'model_id': approval.valuation_model_id,
+        'model_version': approval.valuation_model_version,
+        'profile_id': approval.profile_id,
+    }
+    if (
+        candidate.get('symbol') != approval.symbol
+        or not isinstance(context, dict)
+        or any(context.get(key) != value for key, value in expected_context.items())
+        or approval.review_as_of.isoformat() < context.get('research_as_of', '9999-12-31')
+    ):
+        raise ValueError('G3 receipt differs from its signed candidate model context')
+    return mint_verified_human_research_approval_transport(approval, binding)
+
+
 def _validate_pending_review_response(*, root, candidate_path, candidate_sha256, envelope, trust, historical=False):
     """One complete no-write validator shared by intake and historical loading."""
     from cryptography.exceptions import InvalidSignature
@@ -224,7 +308,7 @@ def _validate_pending_review_response(*, root, candidate_path, candidate_sha256,
             or trust['schema_version'] != 'research-review-transport-trust-root-v1'):
         raise ValueError('review signature envelope or trust scope mismatch')
     if (not isinstance(trust['scopes'], list) or not trust['scopes']
-            or set(trust['scopes']) - {'human_group_research', 'human_whole_model'}
+            or set(trust['scopes']) - {'human_group_research', 'human_whole_model', 'human_event_materiality'}
             or not isinstance(trust['symbols'], list) or not trust['symbols']
             or any(not isinstance(s, str) or len(s) != 6 or not s.isdigit() for s in trust['symbols'])):
         raise ValueError('review trust privileges must be explicit')
@@ -283,7 +367,12 @@ def _validate_pending_review_response(*, root, candidate_path, candidate_sha256,
                 or approval.profile_id != intake['model_context']['profile_id']
                 or type(approval_payload.get('price_assessment_eligible')) is not bool):
             raise ValueError('whole-model reviewer provenance mismatch')
-        restored = verify_current_decision_workbench(workbench)
+        restored = verify_current_decision_workbench(
+            workbench,
+            human_approval_provenance_verifier=lambda approval: (
+                verify_human_approval_transport_provenance(root, approval)
+            ),
+        )
         decision = resolve_human_research_approval(approval, restored.dependency_objects['valuation'],
             model_id=intake['model_context']['model_id'],
             research_case_payload=restored.dependencies['research_case'].envelope.payload_object(),
@@ -428,7 +517,12 @@ def prepare_pending_review_intake(*, root: Path, candidate_path: Path,
     valuation_hash = None
     if candidate['model_context_scope'] == 'ACTUALLY_CONSUMED':
         workbench = load_json_object(candidate_path.parent / 'workbench.json', 'candidate workbench')
-        objects = verify_current_decision_workbench(workbench).dependency_objects
+        objects = verify_current_decision_workbench(
+            workbench,
+            human_approval_provenance_verifier=lambda approval: (
+                verify_human_approval_transport_provenance(root, approval)
+            ),
+        ).dependency_objects
         if objects.get('valuation') is not None:
             valuation_hash = valuation_result_sha256(objects['valuation'])
     return {
@@ -501,7 +595,15 @@ def build_research_review_model_context(*, descriptor, spec) -> dict[str, str]:
 
 def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
                             expected_sha256: str, event_sha256: str | None,
-                            require_model_binding: bool = False):
+                            require_model_binding: bool = False,
+                            allow_unsigned_legacy_frozen_replay: bool = False):
+    """Attach only authenticated reviews to current research inputs.
+
+    ``allow_unsigned_legacy_frozen_replay`` exists solely for explicit canned
+    historical fixtures whose exact bytes cannot carry an authenticated
+    transport binding. Current production entrypoints must leave it false and
+    cannot publish or admit the resulting research as current evidence.
+    """
     path = require_inside(root, path, 'research review packet')
     if sha256_file(path) != expected_sha256:
         raise ValueError('research review packet hash mismatch')
@@ -518,6 +620,10 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
         and packet.get('authenticated_response_binding') is not None
         and packet.get('reviewed_candidate_binding') is not None
     )
+    authenticated_human_approval = (
+        packet.get('authenticated_response_binding') is not None
+        and packet.get('reviewed_candidate_binding') is not None
+    )
     if (require_model_binding and schema != 'shared-research-review-inputs-v2'
             and not authenticated_g3_only):
         raise ValueError('materiality model binding requires a v2 research review packet')
@@ -527,6 +633,13 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
         if sha256_file(source) != binding['sha256']:
             raise ValueError('research review artifact hash mismatch')
         loaded[role] = load_json_object(source, role)
+    frozen_unsigned_approval = False
+    if 'human_approval' in loaded and not authenticated_human_approval:
+        if not allow_unsigned_legacy_frozen_replay:
+            raise ValueError(
+                'unsigned legacy G3 approval rejected; use the signed review transport'
+            )
+        frozen_unsigned_approval = True
     model_context = None
     if schema == 'shared-research-review-inputs-v2':
         if 'event_materiality' not in loaded:
@@ -541,6 +654,7 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
     changes = dict(research_case_payload=canonical['research_case'],
         facts_payload=canonical['facts'], assumptions_payload=canonical['assumptions'])
     if 'human_approval' in loaded:
+        authenticated_transport_binding = None
         journal = require_inside(root / 'runtime', root / 'runtime/research-review-responses', 'review journal')
         has_journal = any(journal.glob('*/*.json'))
         live_context = (build_research_review_model_context(descriptor=descriptor, spec=spec)
@@ -586,11 +700,27 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
                     or head[2]['whole_model_approval'] is None
                     or human_research_approval_from_payload(head[2]['whole_model_approval']).as_policy() != loaded['human_approval']):
                 raise ValueError('authenticated review packet superseded or conflicting')
+            authenticated_transport_binding = {
+                'schema_version': AUTHENTICATED_TRANSPORT_BINDING_SCHEMA,
+                'transport': 'SIGNED_PENDING_REVIEW_RESPONSE',
+                'response_binding': dict(head[1]['response_binding']),
+                'candidate_binding': dict(head[1]['candidate_binding']),
+                'trust_root_binding': dict(head[1]['trust_root_binding']),
+            }
         approval = human_research_approval_from_payload(loaded['human_approval'])
+        if authenticated_transport_binding is not None:
+            approval = mint_verified_human_research_approval_transport(
+                approval, authenticated_transport_binding
+            )
+        if frozen_unsigned_approval:
+            approval = _nonactionable_frozen_approval(approval)
         if approval.symbol != spec.symbol:
             raise ValueError('human review issuer mismatch')
         changes['human_research_approval'] = approval
     if 'event_materiality' in loaded:
+        from .research_materiality_reviews import verify_authenticated_materiality
+        if not getattr(descriptor, 'input_sha256', None):
+            raise ValueError('authenticated materiality requires a real hash-bound descriptor')
         review = event_materiality_review_from_payload(loaded['event_materiality'])
         if review.symbol != spec.symbol or not event_sha256 or review.scan_sha256 != event_sha256:
             raise ValueError('materiality review must bind the exact acquired event scan')
@@ -616,6 +746,9 @@ def attach_research_reviews(*, root: Path, spec, descriptor, path: Path,
                                  and ref.get('path') == decision.source_ref.get('path')))
                         for ref in announcement.evidence_refs)):
                 raise ValueError('materiality review announcement source mismatch')
+        verify_authenticated_materiality(root=root, packet=packet,
+            model_context=build_research_review_model_context(descriptor=descriptor, spec=spec),
+            materiality=loaded['event_materiality'], packet_sha256=expected_sha256)
         changes['event_materiality_review'] = review
         changes['model_validity_input'] = replace(validity, event_scan=None,
             blockers=tuple(dict.fromkeys((*validity.blockers, *scan.blockers))),

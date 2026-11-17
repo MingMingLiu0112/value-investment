@@ -1,0 +1,75 @@
+{
+  "schema_version": "current-operating-research-sources-v1",
+  "action": "no_order",
+  "cases": {
+    "600323": {
+      "issuer_name": "瀚蓝环境股份有限公司",
+      "parent_cash_observation_receipts": [
+        {
+          "period": "2025-12-31",
+          "receipt_binding": {
+            "path": "runtime/e2-600323-public-followup/20261104T095722709545Z/receipt.json",
+            "sha256": "93337cb3a76d0ceafee6b60ede8a4207bc3f9e9b38ba75e3e457a8e96c6f874a"
+          }
+        },
+        {
+          "period": "2026-06-30",
+          "receipt_binding": {
+            "path": "runtime/e2-600323-public-followup/20261104T015250940833Z/receipt.json",
+            "sha256": "a9a9d47257528372d0ef8fc23f9a8191e187544828fcd4ba2468f26e801ca02c"
+          }
+        }
+      ]
+    },
+    "000568": {
+      "native_facts": {
+        "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+        "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+      },
+      "cash_excerpts": [
+        {
+          "source_id": "cninfo:1225240660",
+          "physical_page": 83,
+          "scope": "CONSOLIDATED_CASH_FLOW"
+        },
+        {
+          "source_id": "cninfo:1225501255",
+          "physical_page": 45,
+          "scope": "CONSOLIDATED_CASH_FLOW"
+        }
+      ],
+      "operating_excerpts": [
+        {
+          "source_id": "cninfo:1225501255",
+          "physical_page": 11,
+          "start_marker": "营业成本的主要构成项目",
+          "max_chars": 2000
+        },
+        {
+          "source_id": "cninfo:1225501255",
+          "physical_page": 14,
+          "start_marker": "金额 占营业收入比重 金额 占营业收入比重",
+          "max_chars": 2000
+        },
+        {
+          "source_id": "cninfo:1225501255",
+          "physical_page": 12,
+          "start_marker": "其他酒类",
+          "max_chars": 500
+        }
+      ],
+      "cash_followup": {
+        "path": "artifacts/current/d2-cash-consumption-20261101/research-spec.json",
+        "sha256": "92a540c81d41fe05ad3c3837b826a734b3f61ca9cdaee2e0880fa7214ea06a4e"
+      },
+      "parent_funding_followup": {
+        "path": "artifacts/current/parent-funding-integration-20261101/research-spec.json",
+        "sha256": "412481ac6f4ed2d0a70180f137cf9a4ebbd92ca99cb2a37d8e762bef8e055fab"
+      },
+      "main_revalidation": {
+        "path": "artifacts/current/value-main-revalidation-20261101/research-spec-source-lf-v2.json",
+        "sha256": "2c09f05fd525b950e7245944a996b96a2e34f1bdd3927f3760c2a1066f9f7b89"
+      }
+    }
+  }
+}

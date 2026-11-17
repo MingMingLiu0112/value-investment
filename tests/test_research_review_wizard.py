@@ -14,6 +14,59 @@ from value_investment_agent.application.product.common import sha256_file
 from value_investment_agent.application.product.research_review_wizard import draft_pending_review_response
 
 
+@pytest.mark.parametrize('policy_state', ['absent', 'matching', 'mismatch', 'rejected-policy'])
+def test_external_handoff_delivers_exact_candidate_and_no_identity_or_approval(tmp_path, monkeypatch, policy_state):
+    from datetime import datetime, timezone
+    from value_investment_agent.application.product import publication_chain, user_research_workflow
+    from value_investment_agent.application.product.research_review_wizard import build_external_review_handoff
+    from value_investment_agent.application.decision import value_price_policy
+    from value_investment_agent.application.product.research_review_wizard import preview_pending_review_response
+    path, candidate = _candidate(tmp_path)
+    binding = dict(path=path.relative_to(tmp_path).as_posix(), sha256=sha256_file(path))
+    config = tmp_path / 'config/user-research-workflow-v1.json'
+    config.parent.mkdir(exist_ok=True)
+    config.write_text(json.dumps(dict(schema_version='user-research-workflow-v1', action='no_order',
+        review_candidates={candidate['symbol']: binding})), encoding='utf-8')
+    manifest = tmp_path / value_price_policy.REVIEW_MANIFEST_PATH
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(json.dumps(dict(items={} if policy_state == 'absent' else {candidate['symbol']: {}})), encoding='utf-8')
+    expected = preview_pending_review_response(root=tmp_path, candidate_path=path,
+        candidate_sha256=binding['sha256'])['draft']['valuation_artifact_sha256']
+    calls = []
+    def current_policy(root_arg, symbol_arg, now):
+        calls.append((root_arg, symbol_arg))
+        if policy_state == 'rejected-policy':
+            raise ValueError('Current research changed since review')
+        return dict(draft=dict(basis=dict(valuation_input_version=(
+            expected if policy_state == 'matching' else '0' * 64))),
+            source_bindings=[dict(path=manifest.relative_to(tmp_path).as_posix(), sha256=sha256_file(manifest))],
+            model_review=dict(scope='CURRENT_PUBLIC_POLICY_REVIEW'))
+    monkeypatch.setattr(value_price_policy, 'load_value_policy_review', current_policy)
+    monkeypatch.setattr(publication_chain, 'load_current_chain',
+        lambda root: dict(sources=dict(source_bindings=[binding])))
+    before = {p: p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
+    if policy_state in ('mismatch', 'rejected-policy'):
+        with pytest.raises(ValueError, match='current valuation|Current research changed'):
+            build_external_review_handoff(root=tmp_path, symbol=candidate['symbol'], now=datetime.now(timezone.utc))
+        assert calls == [(tmp_path, candidate['symbol'])]
+        assert all(p.read_bytes() == raw for p, raw in before.items())
+        return
+    result = build_external_review_handoff(root=tmp_path, symbol=candidate['symbol'], now=datetime.now(timezone.utc))
+    assert result['candidate_binding'] == binding
+    assert result['status'] == 'EXTERNAL_SIGNATURE_REQUIRED'
+    assert result['review_questions'][0]['countercase'] == 'Normalization unknown.'
+    assert result['unsigned_response']['reviewer_id'] is None
+    assert result['verification']['approval_changed'] is False
+    assert result['verification']['research_admitted'] is False
+    assert result['valuation_artifact_sha256']
+    assert calls == ([] if policy_state == 'absent' else [(tmp_path, candidate['symbol'])])
+    assert all(p.read_bytes() == raw for p, raw in before.items())
+    monkeypatch.setattr(publication_chain, 'load_current_chain',
+        lambda root: dict(sources=dict(source_bindings=[])))
+    with pytest.raises(ValueError, match='not bound'):
+        build_external_review_handoff(root=tmp_path, symbol=candidate['symbol'], now=datetime.now(timezone.utc))
+
+
 def run(root, path, answers, show=None):
     values = iter(answers)
     return draft_pending_review_response(root=root, candidate_path=path,

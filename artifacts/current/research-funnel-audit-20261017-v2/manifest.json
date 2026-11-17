@@ -1,0 +1,36 @@
+{
+  "action": "no_order",
+  "audit_sha256": "2553ca0cba30aaa0a41caf7b53e39ca77ab1bca06a5702dd8188f183c5865f1e",
+  "outputs": {
+    "human-review-packet.json": {
+      "path": "artifacts/current/research-funnel-audit-20261017-v2/human-review-packet.json",
+      "sha256": "3f99d0e50e2127e303d78befb327f610b7a2dc68f7c693f3898a5e1c19de895a"
+    },
+    "report.md": {
+      "path": "artifacts/current/research-funnel-audit-20261017-v2/report.md",
+      "sha256": "e761f2ac66c973ac68864c29b6f76392f454e1bcdde6210cf57fa22f34a3871e"
+    },
+    "result.json": {
+      "path": "artifacts/current/research-funnel-audit-20261017-v2/result.json",
+      "sha256": "f447415820b4c714a852b193494f7db14c3a9ef388b2dd0569831682455d9776"
+    }
+  },
+  "packet_sha256": "8a2ce125596ab713c21c765f98f66e4c4edf2fd5c57c8cd330da088258faded5",
+  "review_status": "HUMAN_REVIEW_PENDING",
+  "schema_version": "research-funnel-audit-manifest-v1",
+  "source_hashes": {
+    "dividend": "e6f0810f1149a1385d375f25e01f29bf725045008b54f33ab593ba9cff084fb8",
+    "financial": "d0c6184cd5a878997c7065488168519ac55c11fdda7ef45549872c6faeeb12ca",
+    "lead_report": "a744abf928fc0fcf86a61c8b51f4b04a42e008c403a8c7e4a6e2c7932b3aae60",
+    "manifest": "836c97b051e608dccbdeefa9f74e8f23daa216e56019eca1701c12e9d897e876",
+    "official": "46bfe868f7a7b4c28288c5c8bc5af3f821d1361cd7698b316cda273a4bb3dcdf",
+    "policy": "088db04ad3da125a4c0091a107055907b6e217d93263b4b566a6c72b7dee4226",
+    "queue": "13336a269cbaf19d83da525d05179320f6bf8bfe11315ef51e4bf4be735aa000",
+    "receipt": "e571f7aaf787ae4ade56a194b05e91141b4a86a81bd2484f7517a473896014df",
+    "sina": "8f5cdfa8cb89870fb07d8679a3fba0505da34cc732f7b19e921f75953b72eaad",
+    "tencent": "f77ab2c5541b655c2cb027f3158a03a1c9c53663d3644173d22dd8c4f347aef0",
+    "workbook": "50da260ffd30274dc45eb2e654bcf280e16dbdbb9525575d5ce426f77c2a6e8c"
+  },
+  "task_id": "W6-FUNNEL-AUDIT-V1",
+  "trade_intent": "NO_TRADE"
+}

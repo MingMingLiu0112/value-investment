@@ -1,13 +1,17 @@
 """The M2 queue is research scheduling, never formal admission."""
 from __future__ import annotations
 
+from dataclasses import replace
 from hashlib import sha256
 import json
 from pathlib import Path
 
 import pytest
 
-from test_m2_opportunity_discovery import _receipt
+from test_m2_opportunity_discovery import (
+    _receipt, _reference, _official_payload, _tencent_payload, _sina_payload,
+    _dividend_payload, _financial_points,
+)
 from value_investment_agent.application.product.value_discovery_surface import publish_value_discovery_report
 from value_investment_agent.application.research.value_research_queue import build_value_research_queue
 
@@ -19,9 +23,16 @@ def _hash(path: Path) -> str:
 def _inputs(root: Path):
     runtime = root / "runtime"
     runtime.mkdir(parents=True)
-    receipt = _receipt()
-    for reference in receipt.evidence_refs:
-        (root / reference.path).write_text(reference.id, encoding="utf-8")
+    payloads = dict(official=_official_payload(), tencent=_tencent_payload(),
+                    sina=_sina_payload(), dividend=_dividend_payload(),
+                    financial=dict(points=_financial_points()))
+    references = {}
+    for key, payload in payloads.items():
+        reference = _reference(key)
+        path = root / reference.path
+        path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        references[key] = replace(reference, sha256=_hash(path))
+    receipt = _receipt(run_refs=references)
     receipt_path = runtime / "receipt.json"
     receipt_path.write_text(json.dumps(receipt.as_policy(), ensure_ascii=False), encoding="utf-8")
     report_path = runtime / "value-discovery-report.json"

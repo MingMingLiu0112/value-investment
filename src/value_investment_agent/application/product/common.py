@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+import tempfile
 from typing import Any, Mapping
 
 
@@ -51,14 +53,53 @@ def require_inside(root: Path, path: Path, label: str) -> Path:
     return target
 
 
-def write_new_json(path: Path, payload: Mapping[str, Any]) -> None:
-    if path.exists():
+def _native_path(path: Path) -> str:
+    """Return a Windows extended-length path when the standard API would truncate."""
+    raw = os.path.abspath(os.fspath(path))
+    if os.name == "nt" and not raw.startswith("\\\\?\\"):
+        if raw.startswith("\\\\"):
+            return "\\\\?\\UNC\\" + raw[2:]
+        return "\\\\?\\" + raw
+    return raw
+
+
+def write_new_bytes(path: Path, data: bytes) -> None:
+    """Create an immutable file atomically without leaving a partial target."""
+    if not isinstance(data, bytes):
+        raise TypeError("data must be bytes")
+    path = Path(path)
+    target = _native_path(path)
+    if os.path.exists(target):
         raise FileExistsError(f"refusing to overwrite: {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
-        encoding="utf-8",
+    parent = _native_path(path.parent)
+    os.makedirs(parent, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".part", dir=parent
     )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        try:
+            # A hard link publishes the complete inode and fails atomically if
+            # another writer won the immutable-output race.
+            os.link(_native_path(temporary), target)
+        except FileExistsError as error:
+            raise FileExistsError(f"refusing to overwrite: {path}") from error
+    finally:
+        try:
+            os.unlink(_native_path(temporary))
+        except FileNotFoundError:
+            pass
+
+
+def write_new_json(path: Path, payload: Mapping[str, Any]) -> None:
+    encoded = (
+        json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
+    ).encode("utf-8")
+    write_new_bytes(Path(path), encoded)
 
 
 def receipt(

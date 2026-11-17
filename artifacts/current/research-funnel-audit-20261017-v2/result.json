@@ -1,0 +1,1048 @@
+{
+  "action": "no_order",
+  "admission": "READ_ONLY_AUDIT",
+  "as_of": "2026-10-12",
+  "audit_sha256": "2553ca0cba30aaa0a41caf7b53e39ca77ab1bca06a5702dd8188f183c5865f1e",
+  "capital_return_roic": {
+    "accepted_count": 0,
+    "accepted_symbol_count": 0,
+    "available": false,
+    "model_validity": "NOT_ASSESSED",
+    "point_count": 628,
+    "proven": false,
+    "reason": "ROIC/capital-return points are present but none pass financial_quality._accepted.",
+    "status": "UNAVAILABLE",
+    "verified_count": 0
+  },
+  "channel_status_counts": {
+    "cyclical": {
+      "BUDGET_EXCLUDED": 1534,
+      "CONFLICT": 0,
+      "DATA_GAP": 692,
+      "NOT_EVALUATED": 3063,
+      "PASS": 50,
+      "REJECTED": 113,
+      "UNSUPPORTED": 121
+    },
+    "dividend_cash_return": {
+      "BUDGET_EXCLUDED": 367,
+      "CONFLICT": 0,
+      "DATA_GAP": 0,
+      "NOT_EVALUATED": 1951,
+      "PASS": 50,
+      "REJECTED": 3099,
+      "UNSUPPORTED": 106
+    },
+    "quality": {
+      "BUDGET_EXCLUDED": 0,
+      "CONFLICT": 0,
+      "DATA_GAP": 4677,
+      "NOT_EVALUATED": 0,
+      "PASS": 0,
+      "REJECTED": 775,
+      "UNSUPPORTED": 121
+    },
+    "value": {
+      "BUDGET_EXCLUDED": 350,
+      "CONFLICT": 0,
+      "DATA_GAP": 1468,
+      "NOT_EVALUATED": 0,
+      "PASS": 50,
+      "REJECTED": 3584,
+      "UNSUPPORTED": 121
+    }
+  },
+  "channels": {
+    "cyclical": {
+      "effective_status_counts": {
+        "BUDGET_EXCLUDED": 1534,
+        "CONFLICT": 0,
+        "DATA_GAP": 692,
+        "NOT_EVALUATED": 3063,
+        "PASS": 50,
+        "REJECTED": 113,
+        "UNSUPPORTED": 121
+      },
+      "evidence_ref_coverage": {
+        "with_evidence_refs": 1584,
+        "without_evidence_refs": 3989
+      },
+      "status_counts": {
+        "BUDGET_EXCLUDED": 1534,
+        "CONFLICT": 0,
+        "DATA_GAP": 692,
+        "NOT_EVALUATED": 3063,
+        "PASS": 50,
+        "REJECTED": 113,
+        "UNSUPPORTED": 121
+      },
+      "top_reasons": [
+        {
+          "count": 1534,
+          "raw_status_counts": {
+            "BUDGET_EXCLUDED": 1534
+          },
+          "reason": "已通过通道规则，但超出单通道展示预算 50；仍保留在覆盖率分母，未静默删除"
+        },
+        {
+          "count": 692,
+          "raw_status_counts": {
+            "DATA_GAP": 692
+          },
+          "reason": "PE、PB 或总市值缺失，无法完成周期通道校验"
+        },
+        {
+          "count": 617,
+          "raw_status_counts": {
+            "NOT_EVALUATED": 617
+          },
+          "reason": "行业 机械设备 不在当前周期通道适用清单"
+        },
+        {
+          "count": 521,
+          "raw_status_counts": {
+            "NOT_EVALUATED": 521
+          },
+          "reason": "行业 电子 不在当前周期通道适用清单"
+        },
+        {
+          "count": 508,
+          "raw_status_counts": {
+            "NOT_EVALUATED": 508
+          },
+          "reason": "行业 医药生物 不在当前周期通道适用清单"
+        }
+      ]
+    },
+    "dividend_cash_return": {
+      "effective_status_counts": {
+        "BUDGET_EXCLUDED": 367,
+        "CONFLICT": 0,
+        "DATA_GAP": 0,
+        "NOT_EVALUATED": 1951,
+        "PASS": 50,
+        "REJECTED": 3099,
+        "UNSUPPORTED": 106
+      },
+      "evidence_ref_coverage": {
+        "with_evidence_refs": 417,
+        "without_evidence_refs": 5156
+      },
+      "status_counts": {
+        "BUDGET_EXCLUDED": 367,
+        "CONFLICT": 0,
+        "DATA_GAP": 0,
+        "NOT_EVALUATED": 1951,
+        "PASS": 50,
+        "REJECTED": 3099,
+        "UNSUPPORTED": 106
+      },
+      "top_reasons": [
+        {
+          "count": 2888,
+          "raw_status_counts": {
+            "REJECTED": 2888
+          },
+          "reason": "参考股息率低于 0.025"
+        },
+        {
+          "count": 1951,
+          "raw_status_counts": {
+            "NOT_EVALUATED": 1951
+          },
+          "reason": "当前快照没有该证券的现金分红预案或已宣告记录"
+        },
+        {
+          "count": 367,
+          "raw_status_counts": {
+            "BUDGET_EXCLUDED": 367
+          },
+          "reason": "已通过通道规则，但超出单通道展示预算 50；仍保留在覆盖率分母，未静默删除"
+        },
+        {
+          "count": 211,
+          "raw_status_counts": {
+            "REJECTED": 211
+          },
+          "reason": "总市值低于现金回报通道下限 2000000000"
+        },
+        {
+          "count": 106,
+          "raw_status_counts": {
+            "UNSUPPORTED": 106
+          },
+          "reason": "financial-institution profile is not routed to a supported M2 valuation model"
+        }
+      ]
+    },
+    "quality": {
+      "effective_status_counts": {
+        "BUDGET_EXCLUDED": 0,
+        "CONFLICT": 0,
+        "DATA_GAP": 4677,
+        "INSUFFICIENT_EVIDENCE": 775,
+        "NOT_EVALUATED": 0,
+        "PASS": 0,
+        "REJECTED": 0,
+        "UNSUPPORTED": 121
+      },
+      "evidence_ref_coverage": {
+        "with_evidence_refs": 0,
+        "without_evidence_refs": 5573
+      },
+      "status_counts": {
+        "BUDGET_EXCLUDED": 0,
+        "CONFLICT": 0,
+        "DATA_GAP": 4677,
+        "NOT_EVALUATED": 0,
+        "PASS": 0,
+        "REJECTED": 775,
+        "UNSUPPORTED": 121
+      },
+      "top_reasons": [
+        {
+          "count": 4677,
+          "raw_status_counts": {
+            "DATA_GAP": 4677
+          },
+          "reason": "当前快照缺少同一报告期、可验证的财务质量证据"
+        },
+        {
+          "count": 775,
+          "raw_status_counts": {
+            "REJECTED": 775
+          },
+          "reason": "财务质量状态为 待补证，未通过 60 分门禁"
+        },
+        {
+          "count": 121,
+          "raw_status_counts": {
+            "UNSUPPORTED": 121
+          },
+          "reason": "金融画像需专用模型，不进入通用 Quality 通道"
+        }
+      ]
+    },
+    "value": {
+      "effective_status_counts": {
+        "BUDGET_EXCLUDED": 350,
+        "CONFLICT": 0,
+        "DATA_GAP": 1468,
+        "NOT_EVALUATED": 0,
+        "PASS": 50,
+        "REJECTED": 3584,
+        "UNSUPPORTED": 121
+      },
+      "evidence_ref_coverage": {
+        "with_evidence_refs": 400,
+        "without_evidence_refs": 5173
+      },
+      "status_counts": {
+        "BUDGET_EXCLUDED": 350,
+        "CONFLICT": 0,
+        "DATA_GAP": 1468,
+        "NOT_EVALUATED": 0,
+        "PASS": 50,
+        "REJECTED": 3584,
+        "UNSUPPORTED": 121
+      },
+      "top_reasons": [
+        {
+          "count": 1468,
+          "raw_status_counts": {
+            "DATA_GAP": 1468
+          },
+          "reason": "PE、PB 或总市值缺失，无法完成 Value 通道校验"
+        },
+        {
+          "count": 350,
+          "raw_status_counts": {
+            "BUDGET_EXCLUDED": 350
+          },
+          "reason": "已通过通道规则，但超出单通道展示预算 50；仍保留在覆盖率分母，未静默删除"
+        },
+        {
+          "count": 230,
+          "raw_status_counts": {
+            "REJECTED": 230
+          },
+          "reason": "总市值低于 Value 通道下限 2000000000"
+        },
+        {
+          "count": 200,
+          "raw_status_counts": {
+            "REJECTED": 200
+          },
+          "reason": "ST/风险警示证券不进入通用 Value 通道"
+        },
+        {
+          "count": 82,
+          "raw_status_counts": {
+            "UNSUPPORTED": 82
+          },
+          "reason": "financial-institution profile excluded from general value channel"
+        }
+      ]
+    }
+  },
+  "counts": {
+    "dividend_evidence": 3622,
+    "dividend_records": 3653,
+    "financial_evidence": 873,
+    "financial_points": 21277,
+    "industry_mapped": 5573,
+    "industry_snapshot": 5573,
+    "leads": 114,
+    "market_snapshot": 5573,
+    "queue_deferred": 104,
+    "queue_entries": 114,
+    "queue_selected": 10,
+    "universe": 5573
+  },
+  "dividend_evidence_count": 3622,
+  "financial": {
+    "point_count": 21277,
+    "source_coverage": {
+      "cninfo_official_institution_report": {
+        "accepted_count": 15,
+        "point_count": 132,
+        "symbol_count": 42,
+        "verified_count": 15
+      },
+      "cninfo_statutory_points": {
+        "accepted_count": 5769,
+        "point_count": 5946,
+        "symbol_count": 687,
+        "verified_count": 5769
+      },
+      "derived_facts": {
+        "accepted_count": 1680,
+        "point_count": 1769,
+        "symbol_count": 568,
+        "verified_count": 1692
+      },
+      "independent_structured": {
+        "accepted_count": 0,
+        "point_count": 12585,
+        "symbol_count": 716,
+        "verified_count": 0
+      },
+      "other": {
+        "accepted_count": 0,
+        "point_count": 61,
+        "symbol_count": 11,
+        "verified_count": 0
+      },
+      "tencent_market": {
+        "accepted_count": 784,
+        "point_count": 784,
+        "symbol_count": 784,
+        "verified_count": 784
+      }
+    },
+    "symbol_count": 873
+  },
+  "financial_evidence_count": 873,
+  "general_fields": {
+    "acceptance_semantics": "financial_quality._accepted",
+    "matrix": [
+      {
+        "accepted_count": 567,
+        "field": "roe",
+        "point_count": 705,
+        "symbol_count": 705,
+        "verified_count": 567
+      },
+      {
+        "accepted_count": 306,
+        "field": "gross_margin",
+        "point_count": 693,
+        "symbol_count": 693,
+        "verified_count": 306
+      },
+      {
+        "accepted_count": 347,
+        "field": "net_margin",
+        "point_count": 653,
+        "symbol_count": 653,
+        "verified_count": 347
+      },
+      {
+        "accepted_count": 466,
+        "field": "operating_cash_flow_to_net_income",
+        "point_count": 713,
+        "symbol_count": 713,
+        "verified_count": 466
+      },
+      {
+        "accepted_count": 306,
+        "field": "cash",
+        "point_count": 678,
+        "symbol_count": 678,
+        "verified_count": 306
+      },
+      {
+        "accepted_count": 0,
+        "field": "interest_bearing_debt",
+        "point_count": 695,
+        "symbol_count": 695,
+        "verified_count": 12
+      },
+      {
+        "accepted_count": 427,
+        "field": "debt_ratio",
+        "point_count": 712,
+        "symbol_count": 712,
+        "verified_count": 427
+      },
+      {
+        "accepted_count": 21,
+        "field": "revenue_yoy",
+        "point_count": 635,
+        "symbol_count": 635,
+        "verified_count": 21
+      },
+      {
+        "accepted_count": 22,
+        "field": "net_income_yoy",
+        "point_count": 703,
+        "symbol_count": 703,
+        "verified_count": 22
+      }
+    ],
+    "required_fields": [
+      "roe",
+      "gross_margin",
+      "net_margin",
+      "operating_cash_flow_to_net_income",
+      "cash",
+      "interest_bearing_debt",
+      "debt_ratio",
+      "revenue_yoy",
+      "net_income_yoy"
+    ],
+    "same_period_complete_symbol_count": 0,
+    "same_period_point_complete_symbol_count": 581,
+    "same_period_verified_complete_symbol_count": 0,
+    "totals": {
+      "accepted_count": 2462,
+      "point_count": 6187,
+      "symbol_count": 6187,
+      "verified_count": 2474
+    }
+  },
+  "human_review": {
+    "approval": null,
+    "signature": null,
+    "status": "HUMAN_REVIEW_PENDING"
+  },
+  "industry_count": 5573,
+  "interpretation": {
+    "decision": "NO_TRADE",
+    "product_level": "775 Quality rows have raw status REJECTED but zero evidence refs; the product-level classification is INSUFFICIENT_EVIDENCE. The raw receipt status remains REJECTED rather than being rewritten.",
+    "quality_rejected_without_evidence": {
+      "count": 775,
+      "effective_status": "INSUFFICIENT_EVIDENCE",
+      "raw_status": "REJECTED"
+    },
+    "research_status": "HUMAN_REVIEW_PENDING"
+  },
+  "lead_count": 114,
+  "market_snapshot_count": 5573,
+  "quality_effective_status_counts": {
+    "BUDGET_EXCLUDED": 0,
+    "CONFLICT": 0,
+    "DATA_GAP": 4677,
+    "INSUFFICIENT_EVIDENCE": 775,
+    "NOT_EVALUATED": 0,
+    "PASS": 0,
+    "REJECTED": 0,
+    "UNSUPPORTED": 121
+  },
+  "quality_rejected_zero_evidence_count": 775,
+  "queue": {
+    "deferred_count": 104,
+    "deferred_symbols": [
+      "000498",
+      "000543",
+      "000568",
+      "000589",
+      "000600",
+      "000623",
+      "000651",
+      "000719",
+      "000726",
+      "000848",
+      "000913",
+      "000915",
+      "000933",
+      "002004",
+      "002032",
+      "002034",
+      "002048",
+      "002170",
+      "002327",
+      "002357",
+      "002379",
+      "002432",
+      "002452",
+      "002532",
+      "002546",
+      "002572",
+      "002582",
+      "002588",
+      "002611",
+      "002612",
+      "002758",
+      "002763",
+      "002772",
+      "002867",
+      "002884",
+      "300406",
+      "300456",
+      "300926",
+      "301219",
+      "600007",
+      "600011",
+      "600018",
+      "600023",
+      "600064",
+      "600066",
+      "600096",
+      "600153",
+      "600295",
+      "600329",
+      "600346",
+      "600398",
+      "600461",
+      "600496",
+      "600502",
+      "600566",
+      "600582",
+      "600595",
+      "600642",
+      "600694",
+      "600704",
+      "600757",
+      "600803",
+      "600820",
+      "600841",
+      "600853",
+      "600861",
+      "600866",
+      "600873",
+      "600874",
+      "600961",
+      "600968",
+      "600970",
+      "600983",
+      "600987",
+      "601083",
+      "601117",
+      "601186",
+      "601216",
+      "601390",
+      "601600",
+      "601668",
+      "601677",
+      "601717",
+      "601800",
+      "601919",
+      "603049",
+      "603165",
+      "603167",
+      "603519",
+      "603551",
+      "603558",
+      "603613",
+      "603799",
+      "603801",
+      "603816",
+      "603855",
+      "603886",
+      "605266",
+      "605338",
+      "605599",
+      "688330",
+      "688332",
+      "920186",
+      "920599"
+    ],
+    "entry_count": 114,
+    "industry_distribution": {
+      "all": {
+        "交通运输": 7,
+        "传媒": 2,
+        "公用事业": 6,
+        "农林牧渔": 1,
+        "医药生物": 8,
+        "商贸零售": 3,
+        "基础化工": 7,
+        "家用电器": 5,
+        "建筑材料": 1,
+        "建筑装饰": 11,
+        "房地产": 3,
+        "有色金属": 11,
+        "机械设备": 6,
+        "汽车": 8,
+        "环保": 6,
+        "电力设备": 3,
+        "电子": 3,
+        "石油石化": 2,
+        "社会服务": 1,
+        "纺织服饰": 9,
+        "轻工制造": 5,
+        "钢铁": 1,
+        "食品饮料": 5
+      },
+      "deferred": {
+        "交通运输": 7,
+        "传媒": 2,
+        "公用事业": 6,
+        "农林牧渔": 1,
+        "医药生物": 8,
+        "商贸零售": 2,
+        "基础化工": 7,
+        "家用电器": 5,
+        "建筑装饰": 11,
+        "房地产": 2,
+        "有色金属": 9,
+        "机械设备": 6,
+        "汽车": 7,
+        "环保": 3,
+        "电力设备": 3,
+        "电子": 3,
+        "石油石化": 2,
+        "社会服务": 1,
+        "纺织服饰": 9,
+        "轻工制造": 4,
+        "钢铁": 1,
+        "食品饮料": 5
+      },
+      "selected": {
+        "商贸零售": 1,
+        "建筑材料": 1,
+        "房地产": 1,
+        "有色金属": 2,
+        "汽车": 1,
+        "环保": 3,
+        "轻工制造": 1
+      }
+    },
+    "path": "runtime/value-research-queue-20261012.json",
+    "selected_count": 10,
+    "selected_entries": [
+      {
+        "approval": null,
+        "channels": [
+          "cyclical",
+          "value"
+        ],
+        "company_name": "中成股份",
+        "evidence_ids": [
+          "sina",
+          "tencent"
+        ],
+        "gaps": [
+          "RUN_DATA_HEALTH_INCOMPLETE",
+          "CANDIDATE_DATA_INCOMPLETE",
+          "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+          "VALUATION_MODEL_NOT_VALIDATED",
+          "QUOTE_DATE_UNVERIFIED"
+        ],
+        "industry": "商贸零售",
+        "materiality_status": "UNREVIEWED",
+        "model_validity": "NOT_PROVEN",
+        "price_assessment": "NOT_ASSESSED",
+        "queue_status": "SELECTED_FOR_DATA_CHECK",
+        "quote_date": "2026-10-12",
+        "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+        "research_state": "DATA_CHECK",
+        "review_status": "HUMAN_REVIEW_PENDING",
+        "signature": null,
+        "symbol": "000151"
+      },
+      {
+        "approval": null,
+        "channels": [
+          "cyclical",
+          "value"
+        ],
+        "company_name": "中原环保",
+        "evidence_ids": [
+          "sina",
+          "tencent"
+        ],
+        "gaps": [
+          "RUN_DATA_HEALTH_INCOMPLETE",
+          "CANDIDATE_DATA_INCOMPLETE",
+          "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+          "VALUATION_MODEL_NOT_VALIDATED",
+          "QUOTE_DATE_UNVERIFIED"
+        ],
+        "industry": "环保",
+        "materiality_status": "UNREVIEWED",
+        "model_validity": "NOT_PROVEN",
+        "price_assessment": "NOT_ASSESSED",
+        "queue_status": "SELECTED_FOR_DATA_CHECK",
+        "quote_date": "2026-10-12",
+        "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+        "research_state": "DATA_CHECK",
+        "review_status": "HUMAN_REVIEW_PENDING",
+        "signature": null,
+        "symbol": "000544"
+      },
+      {
+        "approval": null,
+        "channels": [
+          "cyclical",
+          "value"
+        ],
+        "company_name": "焦作万方",
+        "evidence_ids": [
+          "sina",
+          "tencent"
+        ],
+        "gaps": [
+          "RUN_DATA_HEALTH_INCOMPLETE",
+          "CANDIDATE_DATA_INCOMPLETE",
+          "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+          "VALUATION_MODEL_NOT_VALIDATED",
+          "QUOTE_DATE_UNVERIFIED"
+        ],
+        "industry": "有色金属",
+        "materiality_status": "UNREVIEWED",
+        "model_validity": "NOT_PROVEN",
+        "price_assessment": "NOT_ASSESSED",
+        "queue_status": "SELECTED_FOR_DATA_CHECK",
+        "quote_date": "2026-10-12",
+        "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+        "research_state": "DATA_CHECK",
+        "review_status": "HUMAN_REVIEW_PENDING",
+        "signature": null,
+        "symbol": "000612"
+      },
+      {
+        "approval": null,
+        "channels": [
+          "cyclical",
+          "value"
+        ],
+        "company_name": "金科股份",
+        "evidence_ids": [
+          "sina",
+          "tencent"
+        ],
+        "gaps": [
+          "RUN_DATA_HEALTH_INCOMPLETE",
+          "CANDIDATE_DATA_INCOMPLETE",
+          "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+          "VALUATION_MODEL_NOT_VALIDATED",
+          "QUOTE_DATE_UNVERIFIED"
+        ],
+        "industry": "房地产",
+        "materiality_status": "UNREVIEWED",
+        "model_validity": "NOT_PROVEN",
+        "price_assessment": "NOT_ASSESSED",
+        "queue_status": "SELECTED_FOR_DATA_CHECK",
+        "quote_date": "2026-10-12",
+        "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+        "research_state": "DATA_CHECK",
+        "review_status": "HUMAN_REVIEW_PENDING",
+        "signature": null,
+        "symbol": "000656"
+      },
+      {
+        "approval": null,
+        "channels": [
+          "cyclical",
+          "value"
+        ],
+        "company_name": "上峰材料",
+        "evidence_ids": [
+          "sina",
+          "tencent"
+        ],
+        "gaps": [
+          "RUN_DATA_HEALTH_INCOMPLETE",
+          "CANDIDATE_DATA_INCOMPLETE",
+          "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+          "VALUATION_MODEL_NOT_VALIDATED",
+          "QUOTE_DATE_UNVERIFIED"
+        ],
+        "industry": "建筑材料",
+        "materiality_status": "UNREVIEWED",
+        "model_validity": "NOT_PROVEN",
+        "price_assessment": "NOT_ASSESSED",
+        "queue_status": "SELECTED_FOR_DATA_CHECK",
+        "quote_date": "2026-10-12",
+        "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+        "research_state": "DATA_CHECK",
+        "review_status": "HUMAN_REVIEW_PENDING",
+        "signature": null,
+        "symbol": "000672"
+      },
+      {
+        "approval": null,
+        "channels": [
+          "cyclical",
+          "value"
+        ],
+        "company_name": "中山公用",
+        "evidence_ids": [
+          "sina",
+          "tencent"
+        ],
+        "gaps": [
+          "RUN_DATA_HEALTH_INCOMPLETE",
+          "CANDIDATE_DATA_INCOMPLETE",
+          "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+          "VALUATION_MODEL_NOT_VALIDATED",
+          "QUOTE_DATE_UNVERIFIED"
+        ],
+        "industry": "环保",
+        "materiality_status": "UNREVIEWED",
+        "model_validity": "NOT_PROVEN",
+        "price_assessment": "NOT_ASSESSED",
+        "queue_status": "SELECTED_FOR_DATA_CHECK",
+        "quote_date": "2026-10-12",
+        "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+        "research_state": "DATA_CHECK",
+        "review_status": "HUMAN_REVIEW_PENDING",
+        "signature": null,
+        "symbol": "000685"
+      },
+      {
+        "approval": null,
+        "channels": [
+          "cyclical",
+          "value"
+        ],
+        "company_name": "云铝股份",
+        "evidence_ids": [
+          "sina",
+          "tencent"
+        ],
+        "gaps": [
+          "RUN_DATA_HEALTH_INCOMPLETE",
+          "CANDIDATE_DATA_INCOMPLETE",
+          "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+          "VALUATION_MODEL_NOT_VALIDATED",
+          "QUOTE_DATE_UNVERIFIED"
+        ],
+        "industry": "有色金属",
+        "materiality_status": "UNREVIEWED",
+        "model_validity": "NOT_PROVEN",
+        "price_assessment": "NOT_ASSESSED",
+        "queue_status": "SELECTED_FOR_DATA_CHECK",
+        "quote_date": "2026-10-12",
+        "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+        "research_state": "DATA_CHECK",
+        "review_status": "HUMAN_REVIEW_PENDING",
+        "signature": null,
+        "symbol": "000807"
+      },
+      {
+        "approval": null,
+        "channels": [
+          "cyclical",
+          "value"
+        ],
+        "company_name": "城发环境",
+        "evidence_ids": [
+          "sina",
+          "tencent"
+        ],
+        "gaps": [
+          "RUN_DATA_HEALTH_INCOMPLETE",
+          "CANDIDATE_DATA_INCOMPLETE",
+          "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+          "VALUATION_MODEL_NOT_VALIDATED",
+          "QUOTE_DATE_UNVERIFIED"
+        ],
+        "industry": "环保",
+        "materiality_status": "UNREVIEWED",
+        "model_validity": "NOT_PROVEN",
+        "price_assessment": "NOT_ASSESSED",
+        "queue_status": "SELECTED_FOR_DATA_CHECK",
+        "quote_date": "2026-10-12",
+        "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+        "research_state": "DATA_CHECK",
+        "review_status": "HUMAN_REVIEW_PENDING",
+        "signature": null,
+        "symbol": "000885"
+      },
+      {
+        "approval": null,
+        "channels": [
+          "cyclical",
+          "dividend_cash_return",
+          "value"
+        ],
+        "company_name": "紫江企业",
+        "evidence_ids": [
+          "dividend",
+          "sina",
+          "tencent"
+        ],
+        "gaps": [
+          "RUN_DATA_HEALTH_INCOMPLETE",
+          "CANDIDATE_DATA_INCOMPLETE",
+          "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+          "VALUATION_MODEL_NOT_VALIDATED",
+          "QUOTE_DATE_UNVERIFIED"
+        ],
+        "industry": "轻工制造",
+        "materiality_status": "UNREVIEWED",
+        "model_validity": "NOT_PROVEN",
+        "price_assessment": "NOT_ASSESSED",
+        "queue_status": "SELECTED_FOR_DATA_CHECK",
+        "quote_date": "2026-10-12",
+        "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+        "research_state": "DATA_CHECK",
+        "review_status": "HUMAN_REVIEW_PENDING",
+        "signature": null,
+        "symbol": "600210"
+      },
+      {
+        "approval": null,
+        "channels": [
+          "cyclical",
+          "dividend_cash_return",
+          "value"
+        ],
+        "company_name": "华域汽车",
+        "evidence_ids": [
+          "dividend",
+          "sina",
+          "tencent"
+        ],
+        "gaps": [
+          "RUN_DATA_HEALTH_INCOMPLETE",
+          "CANDIDATE_DATA_INCOMPLETE",
+          "OFFICIAL_FINANCIAL_EVIDENCE_NOT_ADMITTED",
+          "VALUATION_MODEL_NOT_VALIDATED",
+          "QUOTE_DATE_UNVERIFIED"
+        ],
+        "industry": "汽车",
+        "materiality_status": "UNREVIEWED",
+        "model_validity": "NOT_PROVEN",
+        "price_assessment": "NOT_ASSESSED",
+        "queue_status": "SELECTED_FOR_DATA_CHECK",
+        "quote_date": "2026-10-12",
+        "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+        "research_state": "DATA_CHECK",
+        "review_status": "HUMAN_REVIEW_PENDING",
+        "signature": null,
+        "symbol": "600741"
+      }
+    ],
+    "selected_symbols": [
+      "000151",
+      "000544",
+      "000612",
+      "000656",
+      "000672",
+      "000685",
+      "000807",
+      "000885",
+      "600210",
+      "600741"
+    ],
+    "sha256": "13336a269cbaf19d83da525d05179320f6bf8bfe11315ef51e4bf4be735aa000"
+  },
+  "queue_count": 114,
+  "quote": {
+    "interpretation": "Provider trade dates are unverified; quote dates are not claimed as verified trading dates.",
+    "quote_date": "2026-10-12",
+    "quote_date_verification": "UNVERIFIED_PROVIDER_TRADE_DATE",
+    "quoted_symbol_count": 5573,
+    "trade_date_verified": false,
+    "unverified_lead_count": 114,
+    "unverified_quote_count": 5573,
+    "verified_lead_count": 0,
+    "verified_quote_count": 0
+  },
+  "receipt_data_health": {
+    "blockers": [
+      "provider trade date is unverified; fetch date is not a verified quote date"
+    ],
+    "dividend_evidence_count": 3622,
+    "extra_quote_count": 0,
+    "financial_evidence_count": 873,
+    "industry_mapping_count": 5573,
+    "matched_quote_count": 5573,
+    "missing_quote_count": 0,
+    "price_conflict_count": 0,
+    "quote_count": 5573,
+    "status": "PARTIAL",
+    "universe_count": 5573,
+    "unsupported_financial_count": 121
+  },
+  "run_id": "m2-20261012T090828Z",
+  "same_period_complete_symbol_count": 0,
+  "sample_size": 10,
+  "schema_version": "research-funnel-audit-v1",
+  "source_files": {
+    "dividend": {
+      "path": "runtime/m2-live-20261012-product-v1/eastmoney-dividends.json",
+      "sha256": "e6f0810f1149a1385d375f25e01f29bf725045008b54f33ab593ba9cff084fb8"
+    },
+    "financial": {
+      "path": "runtime/m2-live-20261012-product-v1/retained-financial-points.json",
+      "sha256": "d0c6184cd5a878997c7065488168519ac55c11fdda7ef45549872c6faeeb12ca"
+    },
+    "lead_report": {
+      "path": "runtime/m2-live-20261012-product-v1/value-discovery-report.json",
+      "sha256": "a744abf928fc0fcf86a61c8b51f4b04a42e008c403a8c7e4a6e2c7932b3aae60"
+    },
+    "manifest": {
+      "path": "runtime/m2-live-20261012-product-v1/manifest.json",
+      "sha256": "836c97b051e608dccbdeefa9f74e8f23daa216e56019eca1701c12e9d897e876"
+    },
+    "official": {
+      "path": "runtime/m2-live-20261012-product-v1/official-universe.json",
+      "sha256": "46bfe868f7a7b4c28288c5c8bc5af3f821d1361cd7698b316cda273a4bb3dcdf"
+    },
+    "policy": {
+      "path": "runtime/m2-live-20261012-product-v1/policy.json",
+      "sha256": "088db04ad3da125a4c0091a107055907b6e217d93263b4b566a6c72b7dee4226"
+    },
+    "queue": {
+      "path": "runtime/value-research-queue-20261012.json",
+      "sha256": "13336a269cbaf19d83da525d05179320f6bf8bfe11315ef51e4bf4be735aa000"
+    },
+    "receipt": {
+      "path": "runtime/m2-live-20261012-product-v1/receipt.json",
+      "sha256": "e571f7aaf787ae4ade56a194b05e91141b4a86a81bd2484f7517a473896014df"
+    },
+    "sina": {
+      "path": "runtime/m2-live-20261012-product-v1/sina-industry-quotes.json",
+      "sha256": "8f5cdfa8cb89870fb07d8679a3fba0505da34cc732f7b19e921f75953b72eaad"
+    },
+    "tencent": {
+      "path": "runtime/m2-live-20261012-product-v1/tencent-market.json",
+      "sha256": "f77ab2c5541b655c2cb027f3158a03a1c9c53663d3644173d22dd8c4f347aef0"
+    },
+    "workbook": {
+      "path": "runtime/m2-live-20261012-product-v1/m2-opportunity-discovery.xlsx",
+      "sha256": "50da260ffd30274dc45eb2e654bcf280e16dbdbb9525575d5ce426f77c2a6e8c"
+    }
+  },
+  "source_hashes": {
+    "dividend": "e6f0810f1149a1385d375f25e01f29bf725045008b54f33ab593ba9cff084fb8",
+    "financial": "d0c6184cd5a878997c7065488168519ac55c11fdda7ef45549872c6faeeb12ca",
+    "lead_report": "a744abf928fc0fcf86a61c8b51f4b04a42e008c403a8c7e4a6e2c7932b3aae60",
+    "manifest": "836c97b051e608dccbdeefa9f74e8f23daa216e56019eca1701c12e9d897e876",
+    "official": "46bfe868f7a7b4c28288c5c8bc5af3f821d1361cd7698b316cda273a4bb3dcdf",
+    "policy": "088db04ad3da125a4c0091a107055907b6e217d93263b4b566a6c72b7dee4226",
+    "queue": "13336a269cbaf19d83da525d05179320f6bf8bfe11315ef51e4bf4be735aa000",
+    "receipt": "e571f7aaf787ae4ade56a194b05e91141b4a86a81bd2484f7517a473896014df",
+    "sina": "8f5cdfa8cb89870fb07d8679a3fba0505da34cc732f7b19e921f75953b72eaad",
+    "tencent": "f77ab2c5541b655c2cb027f3158a03a1c9c53663d3644173d22dd8c4f347aef0",
+    "workbook": "50da260ffd30274dc45eb2e654bcf280e16dbdbb9525575d5ce426f77c2a6e8c"
+  },
+  "task_id": "W6-FUNNEL-AUDIT-V1",
+  "trade_intent": "NO_TRADE",
+  "universe_count": 5573
+}

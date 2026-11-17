@@ -1,0 +1,238 @@
+{
+  "schema_version": "hotspot-event-replay-manifest-v1",
+  "outputs": [
+    {
+      "path": "artifacts/current/tl11-p5-20261014/replay-results-v1.json",
+      "sha256": "9ea23276ae58d853541915e84adf3e0894fed01e3fa57aee65672c98ead011f0",
+      "bytes": 794224
+    },
+    {
+      "path": "artifacts/current/tl11-p5-20261014/replay-shadow-baseline-v1.json",
+      "sha256": "4b95391af03ee2d8814ed02973ddeed7159e42ea965f93e63f86c11d67b01469",
+      "bytes": 5597
+    }
+  ],
+  "spec_binding": {
+    "path": "artifacts/current/tl11-p5-20261014/replay-spec-v1.json",
+    "sha256": "750220bcb8639c8c78f7b337a67f006ae8b076fcdc362e79336e58e2bca252f2"
+  },
+  "rule_bindings": [
+    {
+      "path": "src/value_investment_agent/domain/hotspot/price_action_plan.py",
+      "sha256": "45804be98e7f05135befc5f14c1e57bb69fa14aaef57e41d1dbee45b359adc80"
+    },
+    {
+      "path": "src/value_investment_agent/domain/hotspot/current_price.py",
+      "sha256": "123ca42eaa208959c3ff145f7fc7617db35aafe9d259412adfb7a3c23b99b26d"
+    }
+  ],
+  "implementation_bindings": [
+    {
+      "path": "src/value_investment_agent/domain/hotspot/event_replay.py",
+      "sha256": "73d7fab63fda0eb8825d2fe022d9e70eff3a336f3dd04a479d5e41cb966170b5"
+    },
+    {
+      "path": "src/value_investment_agent/domain/hotspot/shadow_observation.py",
+      "sha256": "8f4fc6be5f62bafd50833cd0854dfe2f10122314c230022ce351d53ea6ef0ba7"
+    },
+    {
+      "path": "src/value_investment_agent/application/hotspot/event_replay.py",
+      "sha256": "6f2afa5a1f1c72de660ad4b3d652443ce1817c0870bf8e87360534b66f0e6935"
+    }
+  ],
+  "original_bindings": [
+    {
+      "symbol": "300364",
+      "case": {
+        "symbol": "300364",
+        "case_path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/case.json",
+        "case_sha256": "a385019f1b9097fdd3bc19d6ea08596ecb07df2939efed4cb8ab023b5d4dec49"
+      },
+      "sources": {
+        "60m": {
+          "path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/sina-60m.jsonp",
+          "sha256": "5e624a34d01d22660a61dbe2b88d19d28cedb6726e692401db9bfd784c88a25c",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz300364&scale=60&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:02.785998+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "SINGLE_PROVIDER_CURRENT_OBSERVATION"
+        },
+        "15m": {
+          "path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/sina-15m.jsonp",
+          "sha256": "42bb042ad71e82cb5b0f8149053ab12af4718fc9bfca40656f75f427f408b54a",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz300364&scale=15&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:02.905168+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "SINGLE_PROVIDER_CURRENT_OBSERVATION"
+        },
+        "daily": {
+          "path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/sina-60m.jsonp",
+          "sha256": "5e624a34d01d22660a61dbe2b88d19d28cedb6726e692401db9bfd784c88a25c",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz300364&scale=60&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:02.785998+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "DERIVED_FROM_SINA_60M_NOT_INDEPENDENT_DAILY_SOURCE"
+        }
+      },
+      "quote_bundle": {
+        "path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530"
+      }
+    },
+    {
+      "symbol": "300413",
+      "case": {
+        "symbol": "300413",
+        "case_path": "runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/case.json",
+        "case_sha256": "38954bd8c9a43d30bc14a7f915d43def5ddb6c31d88a763823f2d5f9788dfcec"
+      },
+      "sources": {
+        "60m": {
+          "path": "runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/sina-60m.jsonp",
+          "sha256": "88e3a74f42ae471872aa6853c8908f070057864e882b8355859cc3e0d16e4ce1",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz300413&scale=60&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:03.268889+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "SINGLE_PROVIDER_CURRENT_OBSERVATION"
+        },
+        "15m": {
+          "path": "runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/sina-15m.jsonp",
+          "sha256": "caf60a7eb3094412cf38195fe4ba08d59c0faf6afa4f04163df35b97eb465a1b",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz300413&scale=15&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:03.374316+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "SINGLE_PROVIDER_CURRENT_OBSERVATION"
+        },
+        "daily": {
+          "path": "runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/sina-60m.jsonp",
+          "sha256": "88e3a74f42ae471872aa6853c8908f070057864e882b8355859cc3e0d16e4ce1",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz300413&scale=60&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:03.268889+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "DERIVED_FROM_SINA_60M_NOT_INDEPENDENT_DAILY_SOURCE"
+        }
+      },
+      "quote_bundle": {
+        "path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530"
+      }
+    },
+    {
+      "symbol": "300418",
+      "case": {
+        "symbol": "300418",
+        "case_path": "runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/case.json",
+        "case_sha256": "055bbfd15f2c6963e2ac07a8b71602a67a6fe6f36211fc871690887a4f133099"
+      },
+      "sources": {
+        "60m": {
+          "path": "runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/sina-60m.jsonp",
+          "sha256": "58cd71355f53fb5e31ad23caf927a75df133df7c45fcb20c8239897e174c23e7",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz300418&scale=60&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:03.749809+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "SINGLE_PROVIDER_CURRENT_OBSERVATION"
+        },
+        "15m": {
+          "path": "runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/sina-15m.jsonp",
+          "sha256": "806cfbc37c61aca93e76f7cdbc81c9ca15a68ff7004ac723b6df64ec6e38d28d",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz300418&scale=15&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:03.874648+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "SINGLE_PROVIDER_CURRENT_OBSERVATION"
+        },
+        "daily": {
+          "path": "runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/sina-60m.jsonp",
+          "sha256": "58cd71355f53fb5e31ad23caf927a75df133df7c45fcb20c8239897e174c23e7",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz300418&scale=60&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:03.749809+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "DERIVED_FROM_SINA_60M_NOT_INDEPENDENT_DAILY_SOURCE"
+        }
+      },
+      "quote_bundle": {
+        "path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530"
+      }
+    },
+    {
+      "symbol": "300058",
+      "case": {
+        "symbol": "300058",
+        "case_path": "runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/case.json",
+        "case_sha256": "584ad23ef03881fec209f3860f2b6955100af30b2d84c499b6249635c7f5fa63"
+      },
+      "sources": {
+        "60m": {
+          "path": "runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/sina-60m.jsonp",
+          "sha256": "f481bcdd77e3f576c9d9131f37affd1895a14b2732dc3dd8544beeed8cbb2433",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz300058&scale=60&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:04.253365+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "SINGLE_PROVIDER_CURRENT_OBSERVATION"
+        },
+        "15m": {
+          "path": "runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/sina-15m.jsonp",
+          "sha256": "3f1203f76210414af27dbe536fc3345257c6bb5bb60a6c770acf113327c61f58",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz300058&scale=15&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:04.348241+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "SINGLE_PROVIDER_CURRENT_OBSERVATION"
+        },
+        "daily": {
+          "path": "runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/sina-60m.jsonp",
+          "sha256": "f481bcdd77e3f576c9d9131f37affd1895a14b2732dc3dd8544beeed8cbb2433",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz300058&scale=60&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:04.253365+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "DERIVED_FROM_SINA_60M_NOT_INDEPENDENT_DAILY_SOURCE"
+        }
+      },
+      "quote_bundle": {
+        "path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530"
+      }
+    },
+    {
+      "symbol": "002354",
+      "case": {
+        "symbol": "002354",
+        "case_path": "runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/case.json",
+        "case_sha256": "7794a725e534860630d8bbf49957a2fa6436e325f2184da6aab351f2808d3bfb"
+      },
+      "sources": {
+        "60m": {
+          "path": "runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/sina-60m.jsonp",
+          "sha256": "7e7c6f08d4ef487f15c5548c6dba27f77e1ad149ff470a8ef65b7969078e7aaa",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz002354&scale=60&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:04.749034+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "SINGLE_PROVIDER_CURRENT_OBSERVATION"
+        },
+        "15m": {
+          "path": "runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/sina-15m.jsonp",
+          "sha256": "ae40f323d1412979b2362f5cf4e01a66452b1fda18fbfbce1335bc838d7310a7",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz002354&scale=15&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:04.861142+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "SINGLE_PROVIDER_CURRENT_OBSERVATION"
+        },
+        "daily": {
+          "path": "runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/sina-60m.jsonp",
+          "sha256": "7e7c6f08d4ef487f15c5548c6dba27f77e1ad149ff470a8ef65b7969078e7aaa",
+          "source_url": "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=sz002354&scale=60&ma=no&datalen=1970",
+          "fetched_at": "2026-10-14T18:05:04.749034+08:00",
+          "adjustment": "UNADJUSTED",
+          "scope": "DERIVED_FROM_SINA_60M_NOT_INDEPENDENT_DAILY_SOURCE"
+        }
+      },
+      "quote_bundle": {
+        "path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530"
+      }
+    }
+  ],
+  "independent_restore_complete": false,
+  "source_storage": "EXISTING_LOCAL_IMMUTABLE_RUNTIME",
+  "action": "no_order"
+}

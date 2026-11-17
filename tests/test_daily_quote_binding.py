@@ -103,7 +103,8 @@ def _write_bundle(root: Path) -> Path:
             ("tencent", "qt.gtimg.cn", f"/q={prefix}{symbol}"),
             ("sina", "hq.sinajs.cn", f"/list={prefix}{symbol}"),
         ):
-            identity, doc = _document(f"https://{host}{path}", _quote_bytes(symbol, provider))
+            identity, doc = _document(f"https://{host}{path}", _quote_bytes(symbol, provider),
+                                      fetched_at="2026-09-24T08:12:00+00:00")
             documents[identity] = doc
             ids[provider] = identity
         calendar_refs = []

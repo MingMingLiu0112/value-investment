@@ -1,0 +1,230 @@
+{
+  "action": "no_order",
+  "tested_code_commit": "7757a00923e2b12235358296bc47ec4edb19d7c8",
+  "files": [
+    {
+      "path": "artifacts/current/tl11-p8-20261016/browser-acceptance.json",
+      "sha256": "478acdf2969de81912a38c66c24baeee236806f79d07517536e09354f3cf53a2"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/final-api.log",
+      "sha256": "24c2ce2b755e82a66cf22a7ecfc57e3d886b729ead8d616f3796e0468036bcb9"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/final-build.log",
+      "sha256": "07f98ecae7670eacdc64a9a0534bf73cfe31d98770d7ce0633a3ccdae3aedb90"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/final-core.log",
+      "sha256": "a108e5d58d37358140502b3a2e86d232c5a2ee211052bfe597a8d1cb72593a38"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/final-format.log",
+      "sha256": "732beba7d3a1dd73cae0a6ae80bd5e785ad8c5f7bf0f1ff429acfcf8a506c405"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/final-integration.log",
+      "sha256": "aa26930265b997288d0040f9fba22d77343a359915e4ad8aebefe2ff6f16b622"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/final-web.log",
+      "sha256": "6c14bebf4fe059746fb6ee0d779f356222409f83fa57778177fd9ddd9ead071c"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/focused-integration.log",
+      "sha256": "c78d4fc187bdb499bfeb919c31f1c8d6c9293879266c72f0c580c8f0e206ed32"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/four-company-quote-collection.log",
+      "sha256": "a131a6315673d1ea63e7c73e8d2f3417d46246dcf17e702c50b39a091204a2e9"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/github-ci.json",
+      "sha256": "a7fc4142e10eb7cded6aef17bc4dfa43c0bb8d7ab377237177b2bd87b7f2afab"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/held-continuity/factual-mark-integration.json",
+      "sha256": "0de370c3cb14097ba2e8247156930e993c4c1f83f3716c3ad5da3315573fa984"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/held-continuity/handoff.md",
+      "sha256": "d8ca5c8dc75eb3c7e01b2d909abf001c09545a85cd771dcfcc3b227023d78b32"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/held-continuity/replay-audit.json",
+      "sha256": "156352a69f7b90966e8d7c93d22a5d9d84f1cbfd0aa08891b275fbf96528ea94"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/moutai-incremental-scan.log",
+      "sha256": "d420e8b65e0a07dc07bd2b79020711cf2742c5b6e6bfa25cad9e2b320623ba4a"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/moutai-quote-registration.log",
+      "sha256": "3aa7b7207ce154bae890df950de60ad36486940c839d4e357729ee8a43d2fab0"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/published-packet.json",
+      "sha256": "5d51b564d4212634d720d54c9315520763055a2de14abdae39e8b42b5b5acda3"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/published-receipt.json",
+      "sha256": "8ec21023890bd2004e4d9125290528e478d1fdac18165462caa4ead854760ca6"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/quote-only-000333.json",
+      "sha256": "5bbbac7f2cf414cc41db22f86dbb3e0ae2e0b5271358f20de826f9a8f77cce85"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/quote-only-000651.json",
+      "sha256": "c211c8fa09d2b868eda408d8d744af1043a53fa07f466e908a7329d6d3cd3d79"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/quote-only-600741.json",
+      "sha256": "eb2d7607251f0f89a8e18f0644a587aee23031985214665bcc80059c3b6331b3"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/quote-only-601088.json",
+      "sha256": "ca6e9c45af5e90a072a560eb83462d8e844e7dcc9caa56785237b990ed4a9d65"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/real-decision-chain-audit.json",
+      "sha256": "5797377b67a2a691b465bf545c919a5b2fab52a207bcb8b0bb836627948a35dd"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/research/audit.json",
+      "sha256": "35f95e1edddd747285a731755b0d6a29edbc9f07739faea9971b4c6a0523946a"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/research/findings.md",
+      "sha256": "fe259af5ac4a1bdbf3d17b65287d0ed63b207a6b202980215688336faa4a7266"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/research/judgments.json",
+      "sha256": "1bf1f0c5b88ae37835a7f0b22b168cb0d7b3dcb2cb69901ac32d20422a609866"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/research/registry-projection-candidates.json",
+      "sha256": "090403623b86bb85b01adb9bb3f76a47f85bdfefa330fbea1e328ea7f4d6359f"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/research/root-integration-handoff.json",
+      "sha256": "5afd34d326e60264345c9fd484ff019772a97a156b11781f1fc6278c28c30695"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/research/source-page-contact-sheet.png",
+      "sha256": "d4f092b9dcee7e8a8f54f83ba483dede8a53f50d67322e7086d510e548dbf75a"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/research/targeted-tests.log",
+      "sha256": "1ba08d06e407e533ca86169fa317233790a430ce7a9b06956a1b90ea84ca20ef"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/safe-refresh.log",
+      "sha256": "d78b8e7b63b2e5843be2028850d9a9c3e395e4a3ea0ff160afdf7230237fd2b4"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/daily-1440.png",
+      "sha256": "6de59c94efaf9a8785c70bcca5090b73412994a62683c6ea7ae76bd0a0aa4017"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/daily-390.png",
+      "sha256": "3b335c4f5042d3f08c3b07576527c4f9644fd8fd968d2ff67bbce9c3cfbfe2c1"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/final-daily1440.png",
+      "sha256": "36436a95f7c976899016f198395dd8718af0257ae38519a3c3e2a79ec767e014"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/final-daily390.png",
+      "sha256": "6db3e179e5b833e842abf5272feb56508158895b351f99e0a8f59a82ab0789e6"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/final-hotspot-chart430.png",
+      "sha256": "82f9ac04fbf4c01dc66173c5ff0667b31267e95ddd4cc6b30108cfeb4b04c4e5"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/final-hotspot430.png",
+      "sha256": "781804d7ee1c93fec2f2041bcdfdd6accb7b4ff3c511954b54b5c82efa483603"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/final-system1280.png",
+      "sha256": "ed8ff4c15f420793131c5c69207023332c4ab48879bc673bd61ca436e8d7e5c7"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/final-value1280.png",
+      "sha256": "b0386842168c070cadddee9f75aefdd35ab3583d5be215d3e1a107ee98ab9160"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/final-value390.png",
+      "sha256": "432b6ed12b5ec927ffcf53fed0fc8c5018075191975470cdf92ed07962d69bb6"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/hotspot-430.png",
+      "sha256": "29c83d9a0861038532ea43694e84bd142c432f835e826a6c9bb1d7adb7f3345e"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/hotspot-chart-430.png",
+      "sha256": "10f3271801da038ebdce974e8fb7115c885a3445976983c47a74888163068a04"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/private-locked-1280.png",
+      "sha256": "0fc275af3911d2e12cd143be1c9e06176ab068fefa33b175fa29d74b8c792de0"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/system-1280.png",
+      "sha256": "6beec333df0ef1310ab4b79dae4f58a2dbed5c03be83d43fe168b119fa8c6a24"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/TEST_ONLY-buy-restart1280.png",
+      "sha256": "4b7574f005471856bf85926907e7309293e99f4709599ab04217dac021bb2dd0"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/TEST_ONLY-buy-result1280.png",
+      "sha256": "4b7574f005471856bf85926907e7309293e99f4709599ab04217dac021bb2dd0"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/TEST_ONLY-factual-marks1280.png",
+      "sha256": "4664f00c2c831da9ea17d74712232906f8dd5a89543a0327f44c0545a9bd6dbb"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/TEST_ONLY-held-1440.png",
+      "sha256": "ffac9b1ee7372159ed4085837bf36d3d5da83500f4479ef3acd175a61ef01c34"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/TEST_ONLY-history-1440.png",
+      "sha256": "3757e9f54e8218c29ce59aac85c35d7da30fb860ccec80cf395bdc62c530497e"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/TEST_ONLY-restart-1280.png",
+      "sha256": "d0b84eb4876b622eee063641bf731652ea7f99aaa0be91113a08fceb459692fd"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/TEST_ONLY-sell-result-1440.png",
+      "sha256": "b5e106c43f00d3340f956ab064051fbfb77bb4e4fe2beb4dcad562f1d0617601"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/TEST_ONLY-two-fills-history1280.png",
+      "sha256": "78a2af92362955fbbef4328130a0b077665da1972544b4490e0d9cf90cc4689c"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/value-1280.png",
+      "sha256": "83eff264ccad0be2562eb61a325be03126f5ec809fa43a15489723e31591d317"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/screenshots/value-390.png",
+      "sha256": "493761f67cce513dcd4210bc9c1abf372c0ae2963ded39afc78e2f38bebb0003"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/strategy/current-five-retrospective-spec.json",
+      "sha256": "742db87da9961e2a9b96722c886112f96994e767a45e4134643a27a42af31347"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/strategy/current-five-retrospective-summary.json",
+      "sha256": "06ef86da9a2180b7617f1c525e2813637ce4a9ddc7ca9cce8104bbdc740c5395"
+    },
+    {
+      "path": "artifacts/current/tl11-p8-20261016/value-quote-collection.log",
+      "sha256": "374b30bbff849f1b48b66a43d512965e5a727e15bdbd2fc16fe8964b0a3fffb6"
+    }
+  ]
+}

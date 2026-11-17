@@ -1,0 +1,19 @@
+{
+  "stage": "S5",
+  "source_commit": "b061bfd2f1dceead534f115081d37588cc1fbbcd",
+  "action": "no_order",
+  "scope": "ISOLATED_LOCAL_PAGE_ACKNOWLEDGMENT",
+  "tests": {
+    "complete_web_api_and_s5_regression": {"passed": 300},
+    "acknowledgment_module": {"passed": 16},
+    "architecture_boundaries": {"passed": 30},
+    "web": {"passed": 228},
+    "typecheck": "PASS",
+    "build": "PASS"
+  },
+  "exact_sha_ci": {"core_run": 39123333203, "core_offline": "PASS", "postgres": "PASS", "web_run": 39123333310, "web": "PASS"},
+  "actual_browser_receipt": "browser-check.json",
+  "total_goal_status": "IN_PROGRESS",
+  "monitor_running": false,
+  "formal_investment_eligibility": "NOT_GRANTED"
+}

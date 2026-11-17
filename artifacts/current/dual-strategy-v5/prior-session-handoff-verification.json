@@ -1,0 +1,61 @@
+{
+  "action": "no_order",
+  "observed_at": "2026-10-21T17:10:31.243584+00:00",
+  "verification": "READ_ONLY_ACTUAL_PUBLIC_MATERIALS",
+  "symbol": "600887",
+  "handoff_status": "EXTERNAL_SIGNATURE_REQUIRED",
+  "materiality_status": "EXTERNAL_SIGNATURE_REQUIRED",
+  "raw_handoff_binding": {
+    "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/materiality-handoff.json",
+    "sha256": "13b6fca26826a7afcd42ee7afe5f1329be8f14278d911e292f1cf0152b385f06"
+  },
+  "model_context": {
+    "input_descriptor_sha256": "d431e3b6aa4162f95b6ecb8a1ecdbabd3f8187315f01acc6654ad1b439b66c18",
+    "research_case_sha256": "9d10cb31215181fccd8d85ba9fc70ec7482e205283fe830097a9ad02c9c512ff",
+    "facts_sha256": "fc07327fe76e26c93731685fe0bb4d3c6ea2cb5a1d131fbb2073377c5d1cf00a",
+    "assumptions_sha256": "ec8dbcd55fde80531afe3eb01f5836db0d25d1f44eb29bd9d51fc9a84a317e62",
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "profile_id": "quality_compounder",
+    "research_as_of": "2026-10-22"
+  },
+  "announcements": 36,
+  "implementation_binding": {
+    "path": "src/value_investment_agent/application/product/research_review_wizard.py",
+    "sha256": "95cb7b7fa79f1bedd85d35b23b1899be8524a64526313fc97ba015860a38c7f0"
+  },
+  "schedule_request": {
+    "path": "runtime/600887-prior-session-candidate-20261021T163909575546Z/schedule-request.json",
+    "sha256": "0e7fe8415541d1809fc5b483008c8f48c5aad8bba2ff6ce5b895207cf6f49f5f"
+  },
+  "read_only_schedule_evaluation": {
+    "allowed": true,
+    "status": "ALLOW_NORMAL_RESEARCH",
+    "matched_stop_ids": [],
+    "scope_key": {
+      "source_id": "CNINFO",
+      "period": "2026-06-30",
+      "research_question_id": "daily-assistant-existing-research-case",
+      "blocker_id": "no-active-evidence-stop"
+    },
+    "active_stop_ids": [
+      "600887-dividend-type-classification",
+      "600887-scp010-011-quote-day-liquidity"
+    ],
+    "reason": "No Evidence Stop matches this research case scope."
+  },
+  "commands": {
+    "consume_signed_response": "python scripts/current/review_materiality.py consume --handoff 'runtime/600887-prior-session-candidate-20261021T163909575546Z/materiality-handoff.json' --handoff-sha256 13b6fca26826a7afcd42ee7afe5f1329be8f14278d911e292f1cf0152b385f06 --response <SIGNED_RESPONSE_PATH> --response-sha256 <SIGNED_RESPONSE_SHA256> --trust-root <PINNED_TRUST_ROOT_PATH> --trust-root-sha256 <PINNED_TRUST_ROOT_SHA256> --output <NEW_RUNTIME_DIRECTORY>",
+    "recompute": "python scripts/current/run_company_research.py --symbol 600887 --package 'runtime/600887-prior-session-candidate-20261021T163909575546Z/package.json' --schedule-request 'runtime/600887-prior-session-candidate-20261021T163909575546Z/schedule-request.json' --research-reviews <IMPORTED_RESEARCH_REVIEWS_PATH> --research-reviews-sha256 <IMPORTED_RESEARCH_REVIEWS_SHA256> --output <NEW_RUNTIME_RESEARCH_JSON>"
+  },
+  "original_raw_packet_unchanged": true,
+  "real_signature_created": false,
+  "real_trade_created": false,
+  "g3_approved": false,
+  "economic_approved": false,
+  "materiality_approved": false,
+  "position_guidance": null,
+  "final_browser_check": "PENDING_BROWSER_URL_POLICY_RECOVERY",
+  "total_goal": "IN_PROGRESS",
+  "real_assisted_use": "NOT_PROVEN"
+}

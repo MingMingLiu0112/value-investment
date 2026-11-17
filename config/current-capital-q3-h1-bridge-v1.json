@@ -1,0 +1,19 @@
+{
+  "schema_version": "current-capital-q3-h1-bridge-v1",
+  "action": "no_order",
+  "symbol": "600519",
+  "issuer_name": "贵州茅台酒股份有限公司",
+  "h1_registry": {
+    "path": "config/current-capital-h1-ocr-v2.json",
+    "sha256": "b31401f046bc8f07ce8d13b4b814b8f255f7a54c34878897ba6c868923364e76"
+  },
+  "q3": {
+    "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-31/1225649896.PDF",
+    "available_at": "2026-11-01T00:00:00+08:00",
+    "report_period_end": "2026-09-30",
+    "comparison_period_end": "2025-12-31",
+    "original": {"path": "runtime/q3-2026-600519/original.pdf", "sha256": "96ba51ebf414f841bce79b3ba019927df2f795142392e12e96a9d559e96ebb9b"},
+    "page_7_image": {"path": "runtime/q3-2026-600519/page-7.png", "sha256": "2d31a7ebf204425fe4a22e6ab3a2a2a427a01792820fe7a482e88d328c6ba06d"},
+    "page_7_ocr": {"path": "runtime/q3-2026-600519/page-7.ocr.json", "sha256": "3df519389da042508b83a1df56b00bf4a5feb73a2d45af2f5f6df11369785ea5"}
+  }
+}

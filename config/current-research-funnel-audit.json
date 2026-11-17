@@ -1,0 +1,7 @@
+{
+  "schema_version": "current-research-funnel-audit-v1",
+  "action": "no_order",
+  "status": "VERIFIED",
+  "manifest_path": "artifacts/current/research-funnel-audit-20261017-v2/manifest.json",
+  "manifest_sha256": "18aa508a9850459348b99ccab1a5f58d6bd9ab6a4729378205d36e491e4a183e"
+}

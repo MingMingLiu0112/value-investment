@@ -1,0 +1,98 @@
+{
+  "schema_version": "yili-current-fact-review-v1-manifest",
+  "script": {
+    "path": "D:/GPTProject/value-investment/scripts/research_cases/yili/build_yili_current_fact_review.py",
+    "sha256": "5c89272af435024ef17e742906f559a801c621f9b3f38dfb87323af9289e7529"
+  },
+  "source_bindings": [
+    {
+      "id": "cninfo:1225259562",
+      "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF",
+      "published_date": "2026-04-30",
+      "available_at_conservative": "2026-05-01T00:00:00+08:00",
+      "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+      "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+      "original_retrieved_at": null,
+      "parser_version": "existing_infrastructure.filings.pdf_text/PDFium"
+    },
+    {
+      "id": "cninfo:1225511409",
+      "path": "D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+      "published_date": "2026-08-27",
+      "available_at_conservative": "2026-08-28T00:00:00+08:00",
+      "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+      "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+      "original_retrieved_at": null,
+      "parser_version": "existing_infrastructure.filings.pdf_text/PDFium"
+    },
+    {
+      "id": "cninfo:1225335436",
+      "path": "D:/GPTProject/value-investment/runtime/company-research/m1-dividend-followup-20260928/600887/yili-fy2025-final-dividend-implementation.pdf",
+      "sha256": "c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-05-29/1225335436.PDF",
+      "published_date": "2026-05-29",
+      "available_at_conservative": "2026-05-30T00:00:00+08:00",
+      "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+      "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+      "original_retrieved_at": null,
+      "parser_version": "existing_infrastructure.filings.pdf_text/PDFium"
+    },
+    {
+      "id": "cninfo:1224859455",
+      "path": "D:/GPTProject/value-investment/runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2025_interim_implementation.pdf",
+      "sha256": "cb0f2870dd2ed48799ec5c3403c402dc09129270b030b533818ba7b9662f0322",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2025-12-09/1224859455.PDF",
+      "published_date": "2025-12-09",
+      "available_at_conservative": "2025-12-10T00:00:00+08:00",
+      "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+      "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+      "original_retrieved_at": null,
+      "parser_version": "existing_infrastructure.filings.pdf_text/PDFium"
+    },
+    {
+      "id": "cninfo:1223718270",
+      "path": "D:/GPTProject/value-investment/runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2024_final_implementation.pdf",
+      "sha256": "94999a4f3f922ab372895488f872b8be864e1f3d5f8c9c78e34d3c3dc6ae0b3f",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2025-05-30/1223718270.PDF",
+      "published_date": "2025-05-30",
+      "available_at_conservative": "2025-05-31T00:00:00+08:00",
+      "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+      "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+      "original_retrieved_at": null,
+      "parser_version": "existing_infrastructure.filings.pdf_text/PDFium"
+    },
+    {
+      "id": "cninfo:1225321219",
+      "path": "D:/GPTProject/value-investment/runtime/company-research/yili-dividend-approval-202605/1225321219.pdf",
+      "sha256": "bda5690cbb6f81b591c7b731f9091d157071abed3054269000b8c690d68a8934",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-05-21/1225321219.PDF",
+      "published_date": "2026-05-21",
+      "available_at_conservative": "2026-05-22T00:00:00+08:00",
+      "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+      "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+      "original_retrieved_at": null,
+      "parser_version": "existing_infrastructure.filings.pdf_text/PDFium"
+    },
+    {
+      "id": "cninfo:1225591152",
+      "path": "D:/GPTProject/value-investment/runtime/public-event-followup-20261002/1225591152.pdf",
+      "sha256": "f59267675689f0d77cc142d91e910e2e839adfc0282a260483e0858cc82a1ba3",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-01/1225591152.PDF",
+      "published_date": "2026-10-01",
+      "available_at_conservative": "2026-10-02T00:00:00+08:00",
+      "availability_basis": "date_only_next_day_bound_not_intraday_timestamp",
+      "current_local_verified_at": "2026-10-11T03:00:50.263465+00:00",
+      "original_retrieved_at": null,
+      "parser_version": "existing_infrastructure.filings.pdf_text/PDFium"
+    }
+  ],
+  "outputs": {
+    "facts.json": "fb07bf552d84dc41ddd58fd2088aafb33a3196d9679baaaa85c029739ac335f7",
+    "report.md": "f6ced418424cdfec55e4d92f01121abfbe117b4a6c20fe1d920fecf95b49a2e3"
+  },
+  "action": "no_order"
+}

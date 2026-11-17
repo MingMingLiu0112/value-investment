@@ -12,6 +12,7 @@ from value_investment_agent.operations.authorization.trust_root_registry import 
 from value_investment_agent.application.product.decision_surface import verify_current_decision_workbench
 
 from value_investment_agent.application.product import daily_trade_assistant as daily
+from value_investment_agent.application.product import quote_bridge as bridge
 from value_investment_agent.presentation import daily_trade_assistant as view
 from value_investment_agent.application.product.common import sha256_file
 from value_investment_agent.quote_snapshot import QUOTE_STATUS_VERIFIED_CLOSE
@@ -27,7 +28,7 @@ def _bundle(root: Path, finished_at: datetime) -> Path:
 def test_verified_quote_after_research_cutoff_is_audited_but_not_admitted(tmp_path, monkeypatch):
     now = datetime(2026, 10, 9, 9, tzinfo=timezone.utc)
     bundle = _bundle(tmp_path, datetime(2026, 10, 9, 8, tzinfo=timezone.utc))
-    monkeypatch.setattr(daily, "quote_snapshot_from_bundle_file", lambda *args, **kwargs:
+    monkeypatch.setattr(bridge, "quote_snapshot_from_bundle_file", lambda *args, **kwargs:
         SimpleNamespace(status=QUOTE_STATUS_VERIFIED_CLOSE,
                         quote_date=datetime(2026, 10, 9).date(), blockers=[], evidence_refs=[
                             {"id": "source-tencent", "sha256": "a" * 64},
@@ -44,7 +45,7 @@ def test_verified_quote_after_research_cutoff_is_audited_but_not_admitted(tmp_pa
 def test_old_quote_archive_never_becomes_current_price(tmp_path, monkeypatch):
     now = datetime(2026, 10, 9, 16, tzinfo=timezone.utc)
     bundle = _bundle(tmp_path, datetime(2026, 10, 8, 16, tzinfo=timezone.utc))
-    monkeypatch.setattr(daily, "quote_snapshot_from_bundle_file", lambda *args, **kwargs:
+    monkeypatch.setattr(bridge, "quote_snapshot_from_bundle_file", lambda *args, **kwargs:
         SimpleNamespace(status=QUOTE_STATUS_VERIFIED_CLOSE,
                         quote_date=datetime(2026, 10, 8).date(), blockers=[], evidence_refs=[]))
     path, digest, check = daily._quote_for_case(tmp_path, bundle, "600519", "2026-10-09", today=now)
@@ -56,7 +57,7 @@ def test_old_quote_archive_never_becomes_current_price(tmp_path, monkeypatch):
 def test_invalid_quote_does_not_enter_research_input(tmp_path, monkeypatch):
     now = datetime(2026, 10, 9, 16, tzinfo=timezone.utc)
     bundle = _bundle(tmp_path, now)
-    monkeypatch.setattr(daily, "quote_snapshot_from_bundle_file", lambda *args, **kwargs:
+    monkeypatch.setattr(bridge, "quote_snapshot_from_bundle_file", lambda *args, **kwargs:
         SimpleNamespace(status="unverified", quote_date=None,
                         blockers=["price_conflict"], evidence_refs=[]))
     path, digest, check = daily._quote_for_case(tmp_path, bundle, "600519", "2026-10-09", today=now)
@@ -102,14 +103,14 @@ def test_pending_independent_review_does_not_require_completed_verdict_fields():
 def test_weekend_latest_close_display_never_becomes_new_price(tmp_path, monkeypatch, research_day, expected_status):
     now = datetime(2026, 10, 11, 4, tzinfo=timezone.utc)
     bundle = _bundle(tmp_path, datetime(2026, 10, 9, 8, tzinfo=timezone.utc))
-    monkeypatch.setattr(daily, "quote_snapshot_from_bundle_file", lambda *args, **kwargs:
+    monkeypatch.setattr(bridge, "quote_snapshot_from_bundle_file", lambda *args, **kwargs:
         SimpleNamespace(status=QUOTE_STATUS_VERIFIED_CLOSE, current_price="1400.00",
             quote_date=datetime(2026, 10, 9).date(), blockers=[], evidence_refs=[]))
     raw = json.loads(bundle.read_text(encoding="utf-8"))
     raw.update(references={"600519": {}}, documents={})
     bundle.write_text(json.dumps(raw), encoding="utf-8")
-    monkeypatch.setattr(daily, "resolve_session_reference", lambda *a: {"calendar_exchange": "SSE", "calendar_documents": []})
-    monkeypatch.setattr(daily, "latest_sse_2026_session", lambda *a: ("2026-10-09", ["a" * 64]))
+    monkeypatch.setattr(bridge, "resolve_session_reference", lambda *a: {"calendar_exchange": "SSE", "calendar_documents": []})
+    monkeypatch.setattr(bridge, "latest_sse_2026_session", lambda *a: ("2026-10-09", ["a" * 64]))
     path, digest, check = daily._quote_for_case(tmp_path, bundle, "600519", research_day, today=now)
     assert path is digest is None
     assert check["status"] == expected_status
@@ -132,15 +133,15 @@ def test_szse_calendar_receives_shanghai_clock_even_before_monday_open(tmp_path,
     raw = json.loads(bundle.read_text(encoding="utf-8"))
     raw.update(references={"000651": {}}, documents={})
     bundle.write_text(json.dumps(raw), encoding="utf-8")
-    monkeypatch.setattr(daily, "quote_snapshot_from_bundle_file", lambda *a, **kw:
+    monkeypatch.setattr(bridge, "quote_snapshot_from_bundle_file", lambda *a, **kw:
         SimpleNamespace(status=QUOTE_STATUS_VERIFIED_CLOSE, current_price="38.83",
             quote_date=datetime(2026, 10, 9).date(), blockers=[], evidence_refs=[]))
-    monkeypatch.setattr(daily, "resolve_session_reference", lambda *a: {"calendar_exchange": "SZSE", "calendar_documents": []})
+    monkeypatch.setattr(bridge, "resolve_session_reference", lambda *a: {"calendar_exchange": "SZSE", "calendar_documents": []})
     def calendar(documents, stamp):
         assert stamp.hour == 8
         assert stamp.utcoffset().total_seconds() == 28800
         return "2026-10-09", ["a" * 64]
-    monkeypatch.setattr(daily, "latest_szse_session", calendar)
+    monkeypatch.setattr(bridge, "latest_szse_session", calendar)
     path, digest, check = daily._quote_for_case(tmp_path, bundle, "000651", "2026-10-09", today=now)
     assert path is digest is None
     assert check["status"] == "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"
@@ -165,7 +166,8 @@ def test_financial_review_never_replaces_decision_or_blocks_old_research(tmp_pat
     prior = config / "prior.json"
     prior.write_text(json.dumps(unchanged), encoding="utf-8")
     case.update(previous_workbench="config/prior.json", previous_workbench_sha256=sha256_file(prior))
-    monkeypatch.setattr(daily, "verify_current_decision_workbench", lambda value: None)
+    monkeypatch.setattr(daily, "verify_current_decision_workbench",
+        lambda value, **kwargs: None)
     if attachment_failure == "missing hash":
         case.pop("financial_review_manifest_sha256")
     def build(**kwargs):
@@ -288,7 +290,16 @@ def test_authenticated_response_reaches_actual_daily_g3_without_price_or_orders(
             case=case, output_dir=signed['root']/'runtime/authenticated-daily', agent_mode='none',
             report_renderer=view._render_report)
     workbench = json.loads((signed['root']/result['outputs']['workbench']['path']).read_text(encoding='utf-8'))
-    restored = verify_current_decision_workbench(workbench)
+    from value_investment_agent.application.product.research_reviews import (
+        verify_human_approval_transport_provenance,
+    )
+    with _use_test_trust_registry(signed['registry']):
+        restored = verify_current_decision_workbench(
+            workbench,
+            human_approval_provenance_verifier=lambda approval: (
+                verify_human_approval_transport_provenance(signed['root'], approval)
+            ),
+        )
     assert restored.dependency_objects['human_approval'].reviewer_id == 'SYNTHETIC_HUMAN'
     package = json.loads((signed['path'].parent/'package.json').read_text(encoding='utf-8'))
     assert set(package['research_case']['blockers']).issubset(workbench['research_blockers'])

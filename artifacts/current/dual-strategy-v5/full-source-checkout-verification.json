@@ -1,0 +1,27 @@
+{
+  "action": "no_order",
+  "observed_at": "2026-10-21T17:27:56.775476+00:00",
+  "scope": "FULL_STAGED_WINDOWS_CHECKOUT_AUTOCRLF_TRUE",
+  "source_baseline": "a1692f3fe5ef997ca83e64d3072e91ce2186932c",
+  "no_preinstalled_runtime": true,
+  "existing_restore": {
+    "action": "no_order",
+    "status": "PUBLIC_ARCHIVE_RESTORED_AND_VERIFIED",
+    "restored_files": 180,
+    "private_data": false,
+    "full_inherited_research_restored": false
+  },
+  "runtime_hashes_verified": 180,
+  "exact_current_context_hashes": 36,
+  "yili_verifier": "PASS",
+  "moutai_replay_verifier": "PASS",
+  "real_handoff": "EXTERNAL_SIGNATURE_REQUIRED",
+  "announcements": 36,
+  "research_admitted": false,
+  "price_admitted": false,
+  "real_signature_created": false,
+  "real_order_created": false,
+  "investment_eligibility": "NOT_PROVEN",
+  "final_browser_acceptance": "PENDING_NOT_PASSED",
+  "total_goal": "IN_PROGRESS"
+}

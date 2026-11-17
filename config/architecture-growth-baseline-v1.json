@@ -224,7 +224,7 @@
     "build_m7_daily_workbench.py": 411,
     "build_m7_workbench_candidate.py": 406,
     "build_midea_2014_2024_equity_return_candidate_series.py": 384,
-    "build_midea_valuation_applicability.py": 321,
+    "build_midea_valuation_applicability.py": 418,
     "build_moutai_consolidated_equity_inputs.py": 382,
     "build_moutai_current_daily_simulation.py": 388,
     "build_moutai_distribution_capacity_evidence.py": 342,

@@ -1,0 +1,25 @@
+{
+  "schema_version": "d1-bounded-task-closeout-v1",
+  "action": "no_order",
+  "engineering_scope": "SAVED_RESPONSE_AND_MOCK_ONLY",
+  "real_model_acceptance": "PENDING_AUTHORIZATION",
+  "source_symbol": "600519",
+  "source_task": "rt-bba564732cca49302d6d3fb8c942b15f",
+  "checkpoint_verified": true,
+  "service_sha256": "2b9bfea72d4b064362f59cf8ac6a241098c22cc19c5deb05d40d2f00ff0452f0",
+  "evidence": {
+    "receipt": "runtime/research-task-execution-v1/acceptance-2b9bfea72d4b.json",
+    "tests": ".tmp/d1-integrated-final.xml"
+  },
+  "independent_review": "ORIGINAL_P1_P2_CLOSED",
+  "user_acceptance": "NOT_CONFIRMED",
+  "deployment": "PENDING_THIS_COMMIT",
+  "formal_eligibility": false,
+  "new_llm_calls": 0,
+  "private_data_changed": false,
+  "limits": [
+    "No live model authorization",
+    "Whole-packet recovery, not role-level exactly-once",
+    "600887 legacy not registered, not counted successful"
+  ]
+}

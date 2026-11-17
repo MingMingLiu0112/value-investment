@@ -1,0 +1,24 @@
+{
+  "schema_version": "current-first-research-inputs-v1",
+  "action": "no_order",
+  "cases": {
+    "000568": {
+      "receipt": {
+        "path": "runtime/e2-first-input-000568-20261112/recompile-20261112T113845341076Z/receipt.json",
+        "sha256": "5cf2e0668e51f6fbb01c82f4ff432d80aa473eda417cbf71c65d1e343531cd38"
+      }
+    },
+    "600887": {
+      "receipt": {
+        "path": "runtime/direct-owner-cash-600887-20261117/274637612d5947b1b012e2f73f2c459a/receipt.json",
+        "sha256": "34e7282de7fe774a4800610c3412c6b8eef314e95e76eb2211e05ebb53c7cb1b"
+      }
+    },
+    "600519": {
+      "receipt": {
+        "path": "runtime/e2-first-input-600519-20261117/moutai-e2-20261117T062635-6a7697b2/compilation/receipt.json",
+        "sha256": "eefe40a6fd0e7f144fbc2c5f5322d90eca354b4b27e72bf617a899f200b5396f"
+      }
+    }
+  }
+}

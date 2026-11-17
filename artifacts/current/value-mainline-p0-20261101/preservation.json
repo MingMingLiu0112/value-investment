@@ -1,0 +1,58 @@
+{
+  "action": "no_order",
+  "protected_pointer_unchanged": true,
+  "protected_pointer_committed": false,
+  "frozen_paths": [
+    {
+      "path": "src/value_investment_agent/historical_validation.py",
+      "sha256": "806d890817611000a588c9ee76ee00cc18a2529d5e1ee9769c092cc00452c5ba",
+      "unchanged_from_baseline": true
+    },
+    {
+      "path": "src/value_investment_agent/virtual_account.py",
+      "sha256": "89d93e23d50fcafb936104049ce02f8273bc28c105f6b5f3923818cd904e07cd",
+      "unchanged_from_baseline": true
+    },
+    {
+      "path": "src/value_investment_agent/application/product/research_reviews.py",
+      "sha256": "bbed3042faac05efc49e2897f5840c5e7d813cc14256021d1ea27c4fffdf2d7c",
+      "unchanged_from_baseline": true
+    },
+    {
+      "path": "config/historical-validation-policy-v1.json",
+      "sha256": "bddc62c602b1837a5cb52f6a62ec16cb91395effd1d3d09e6b5fc11c68ba6870",
+      "unchanged_from_baseline": true
+    },
+    {
+      "path": "docs/reviewed-cash-distributions.json",
+      "sha256": "ab15bdef761774593cd0a8ea96effe1cefa51424643673de492366c9c492312f",
+      "unchanged_from_baseline": true
+    },
+    {
+      "path": "docs/historical-trading-fees.md",
+      "sha256": "3280c81358f07eedc9626d923eb19e5ec5a64585f23bb2079dd70c4bcf820513",
+      "unchanged_from_baseline": true
+    },
+    {
+      "path": "docs/historical-corporate-actions.md",
+      "sha256": "657d40abe78579f52865dfd61d257a3a2acfa2901ff047e90412bc0b1a9e1f9e",
+      "unchanged_from_baseline": true
+    },
+    {
+      "path": "docs/historical-dividend-tax.md",
+      "sha256": "2d31d471dab768a30bd86cb859e23c886347fbdc9738e3b238a4af27b762edb7",
+      "unchanged_from_baseline": true
+    },
+    {
+      "path": "docs/historical-price-crosscheck.md",
+      "sha256": "197e2bb2723cfa6edcfcf91a3e6b7bd28eeef5991410b8cf39b8ef927ac22a0d",
+      "unchanged_from_baseline": true
+    },
+    {
+      "path": "scripts/build_moutai_historical_validation_admission.py",
+      "sha256": "6f8a55ea6fbcd4f1db37e614b9cfc7e05a5084d927bee1810b63e39afb022e60",
+      "unchanged_from_baseline": true
+    }
+  ],
+  "production_deployment": false
+}

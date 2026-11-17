@@ -13,6 +13,7 @@ from test_m1_valuation_package_builder import _package
 from test_quote_sessions import evidence, sse_evidence
 from test_source_bound_research_inputs import source
 from value_investment_agent.application.product.source_bound_inputs import (
+    source_catalog_sha256,
     validate_source_bound_descriptor,
     verify_package_local_sources,
 )
@@ -42,7 +43,7 @@ def source_package(tmp_path):
         sources=[row, {**row, "id": "synthetic-second-source"}],
         quote=None, model_validity_input=None,
         source_contract={
-            "schema_version": "source-bound-research-inputs-v1",
+            "schema_version": "source-bound-research-inputs-v2",
             "cutoff_at": DAY + "T16:00:00+08:00",
             "distribution_input_status": "NOT_ADMITTED",
         },
@@ -52,6 +53,7 @@ def source_package(tmp_path):
             "computed_at": DAY + "T17:01:00+08:00",
         },
     )
+    _refresh_source_catalog(package)
     ref = {"id": row["id"], "sha256": row["sha256"]}
     package["research_case"].update(
         name=SYNTHETIC, as_of=DAY, financial_period=DAY, run_id=package["run_id"],
@@ -98,6 +100,10 @@ def _set(package, path, value):
     for key in path[:-1]:
         parent = parent[key]
     parent[path[-1]] = value
+
+
+def _refresh_source_catalog(package):
+    package["source_contract"]["source_catalog_sha256"] = source_catalog_sha256(package["sources"])
 
 
 @pytest.mark.parametrize("path, value", [
@@ -273,6 +279,7 @@ def reference_package(source_package):
     second_path.write_bytes(b"SYNTHETIC_DISTINCT_SECOND_SOURCE_ONLY")
     second.update(local_path=second_path.relative_to(root).as_posix(),
                   sha256=hashlib.sha256(second_path.read_bytes()).hexdigest())
+    _refresh_source_catalog(package)
     assert first["sha256"] != second["sha256"]
     assert build_descriptor(package, root=root).distribution_result is None
     return root, package
@@ -352,13 +359,17 @@ def test_v2_cutoff_uses_instants_and_shanghai_research_day(source_package, bound
     root, package = source_package
     if boundary == "equal-cutoff":
         package["sources"][1]["source_available_at"] = DAY + "T16:00:00+08:00"
+        package["sources"][1]["retrieved_at"] = DAY + "T16:00:00+08:00"
     elif boundary == "utc-same-instant":
         package["source_contract"]["cutoff_at"] = DAY + "T08:00:00+00:00"
         package["sources"][1]["source_available_at"] = DAY + "T08:00:00+00:00"
+        package["sources"][1]["retrieved_at"] = DAY + "T08:00:00+00:00"
     else:
         package["source_contract"]["cutoff_at"] = "2026-09-21T16:30:00+00:00"
         for row in package["sources"]:
             row["source_available_at"] = "2026-09-21T16:30:00+00:00"
+            row["retrieved_at"] = "2026-09-21T16:30:00+00:00"
+    _refresh_source_catalog(package)
     assert build_descriptor(package, root=root).point_in_time.research_as_of == date.fromisoformat(DAY)
 
 
@@ -398,6 +409,7 @@ def _write_market_source(root, package, name, payload):
     package["sources"].append({
         "id": name, "kind": "research_artifact", "location": relative,
         "local_path": relative, "sha256": digest,
+        "retrieved_at": DAY + "T16:00:00+08:00",
         "source_available_at": DAY + "T16:00:00+08:00", "availability_basis": SYNTHETIC,
     })
     return relative, digest
@@ -446,6 +458,8 @@ def market_package(source_package):
         "event_scan_ref": {"id": "synthetic-event", "symbol": package["symbol"],
                            "path": event_path, "sha256": event_hash},
     }
+    package["source_contract"]["event_coverage_status"] = scan.coverage_status
+    _refresh_source_catalog(package)
     descriptor = build_descriptor(package, root=root)
     assert descriptor.quote.status == "verified_close"
     assert descriptor.model_validity_input.event_scan.coverage_status == "COMPLETE"
@@ -465,6 +479,7 @@ def test_v2_market_input_must_match_verified_source_catalog(market_package, role
         alternate = original.with_name("alternate-" + original.name)
         alternate.write_bytes(original.read_bytes())
         row["local_path"] = alternate.relative_to(root).as_posix()
+    _refresh_source_catalog(package)
     with pytest.raises(ValueError, match="market input.*source catalog"):
         build_descriptor(package, root=root)
 

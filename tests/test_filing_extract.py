@@ -175,3 +175,13 @@ def test_wrapped_chinese_note_reference_is_not_the_amount():
     from value_investment_agent.filing_extract import _number_after_label
     result = _number_after_label('其中：营业收入 （三十\n一） 30,921,801,316.60 26,455,335,152.99', '营业收入', monetary=True, wrapped_label=True)
     assert result[0] == '30921801316.60'
+
+
+def test_split_thousands_separator_does_not_become_empty_amount():
+    from value_investment_agent.filing_extract import _number_after_label
+    # The 601958 annual PDF text layer splits the first thousands separator.
+    # A comma alone is not a monetary observation.
+    assert _number_after_label(
+        '负债合计 1 , 834,039,609.86 1 , 779,690,556.13',
+        '负债合计', monetary=True,
+    ) is None

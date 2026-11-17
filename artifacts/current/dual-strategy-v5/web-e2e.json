@@ -1,0 +1,250 @@
+{
+  "schema_version": "v5-browser-observations-v2",
+  "action": "no_order",
+  "source_commit": "b6969333373e8be58bc3050362346ae73adc2bc8",
+  "status": "PARTIAL",
+  "observations": [
+    {
+      "page": "hotspot-detail",
+      "data": "REAL_PUBLIC_DATA",
+      "url": "http://127.0.0.1:8001/decisions/hotspot-600693",
+      "checked_at": "2026-10-21T11:24:57.141Z",
+      "dimensions": {
+        "height": 844,
+        "scrollWidth": 375,
+        "width": 390
+      },
+      "assertions": {
+        "symbol": true,
+        "entry": true,
+        "invalidation": true,
+        "open_and_exit_rules": true,
+        "not_formal": true
+      },
+      "errors": [],
+      "screenshot": "hotspot-detail-mobile390.png",
+      "source_commit": "09fa460e7fd63767fe036914448e1e23211ecae6"
+    },
+    {
+      "page": "history",
+      "data": "REAL_PUBLIC_DATA",
+      "url": "http://127.0.0.1:8001/history",
+      "checked_at": "2026-10-21T11:26:05.166Z",
+      "dimensions": {
+        "height": 900,
+        "scrollWidth": 1425,
+        "width": 1440
+      },
+      "assertions": {
+        "continuations": true,
+        "expiry": true,
+        "retained": true,
+        "not_approval": true
+      },
+      "errors": [],
+      "screenshot": "history-desktop1440.png",
+      "source_commit": "09fa460e7fd63767fe036914448e1e23211ecae6"
+    },
+    {
+      "page": "daily",
+      "data": "REAL_PUBLIC_DATA",
+      "url": "http://127.0.0.1:8001/daily",
+      "checked_at": "2026-10-21T11:26:46.720Z",
+      "dimensions": {
+        "height": 900,
+        "scrollWidth": 1425,
+        "width": 1440
+      },
+      "assertions": {
+        "market_scan": true,
+        "leads": true,
+        "zero_formal": true,
+        "observed_prices": true
+      },
+      "errors": [],
+      "screenshot": "daily-desktop1440.png",
+      "source_commit": "09fa460e7fd63767fe036914448e1e23211ecae6"
+    },
+    {
+      "page": "portfolio-after-restart",
+      "data": "TEST_ONLY",
+      "url": "http://127.0.0.1:8022/portfolio",
+      "checked_at": "2026-10-21T11:27:02.433Z",
+      "dimensions": {
+        "height": 844,
+        "scrollWidth": 375,
+        "width": 390
+      },
+      "assertions": {
+        "cash": true,
+        "holding": true,
+        "ips": true,
+        "isolated": true,
+        "realized": true,
+        "reconciliation": true
+      },
+      "scope": "Simulated ledger, retrospective thesis, IPS and reconciliation only; no real account approval. Positive browser risk quantity NOT_PROVEN.",
+      "screenshot": "test-only-portfolio-mobile390.png",
+      "source_commit": "09fa460e7fd63767fe036914448e1e23211ecae6"
+    },
+    {
+      "page": "value-detail",
+      "data": "REAL_PUBLIC_DATA",
+      "url": "http://127.0.0.1:8001/decisions/600519",
+      "checked_at": "2026-10-21T11:27:02.565Z",
+      "dimensions": {
+        "height": 900,
+        "scrollWidth": 1425,
+        "width": 1440
+      },
+      "assertions": {
+        "adopted": true,
+        "coverage": true,
+        "no_upgrade": true
+      },
+      "errors": [],
+      "screenshot": "value-detail-desktop1440.png",
+      "source_commit": "09fa460e7fd63767fe036914448e1e23211ecae6"
+    },
+    {
+      "page": "system-after-source-commit",
+      "data": "REAL_PUBLIC_DATA",
+      "url": "http://127.0.0.1:8001/system",
+      "checked_at": "2026-10-21T11:31:59.887Z",
+      "assertions": {
+        "build_sha": true,
+        "dirty_honestly_reported": true,
+        "not_formal": true
+      },
+      "limitation": "Unrelated preserved source files keep the shared runtime dirty; clean-release identity NOT_PROVEN.",
+      "screenshot": "system-desktop1440.png",
+      "source_commit": "09fa460e7fd63767fe036914448e1e23211ecae6"
+    },
+    {
+      "page": "positive-fill-after-reload",
+      "data": "TEST_ONLY",
+      "source_commit": "b6969333373e8be58bc3050362346ae73adc2bc8",
+      "checked_at": "2026-10-21T12:41:58.441Z",
+      "url": "http://127.0.0.1:8023/portfolio?symbol=600693",
+      "assertions": {
+        "cash193590": true,
+        "cost6410": true,
+        "isolated": true,
+        "nextSell": true,
+        "noHorizontalOverflow": true,
+        "transaction": true
+      },
+      "screenshot": "test-only-positive-fill-mobile390.png"
+    },
+    {
+      "page": "daily-current-source-mobile",
+      "data": "REAL_PUBLIC_DATA_WITH_LABELLED_TEST_ONLY_PRIVATE_CONTEXT",
+      "source_commit": "b6969333373e8be58bc3050362346ae73adc2bc8",
+      "checked_at": "2026-10-21T12:42:37.178Z",
+      "url": "http://127.0.0.1:8001/daily",
+      "assertions": {
+        "entry914": true,
+        "invalidation866": true,
+        "leads111": true,
+        "noHorizontalOverflow": true,
+        "scan5576": true,
+        "zeroFormal": true
+      },
+      "screenshot": "daily-current-source-mobile390.png"
+    },
+    {
+      "page": "daily-current-source-desktop",
+      "data": "REAL_PUBLIC_DATA_WITH_LABELLED_TEST_ONLY_PRIVATE_CONTEXT",
+      "source_commit": "b6969333373e8be58bc3050362346ae73adc2bc8",
+      "checked_at": "2026-10-21T12:42:55.744Z",
+      "url": "http://127.0.0.1:8001/daily",
+      "assertions": {
+        "entry914": true,
+        "leads111": true,
+        "noHorizontalOverflow": true,
+        "scan5576": true,
+        "zeroFormal": true
+      },
+      "screenshot": "daily-current-source-desktop.png"
+    },
+    {
+      "page": "hotspot-current-source-desktop",
+      "data": "REAL_PUBLIC_DATA_WITH_LABELLED_TEST_ONLY_PRIVATE_CONTEXT",
+      "source_commit": "b6969333373e8be58bc3050362346ae73adc2bc8",
+      "checked_at": "2026-10-21T12:43:53.707Z",
+      "url": "http://127.0.0.1:8001/decisions/hotspot-600693",
+      "assertions": {
+        "entry": true,
+        "ineligible": true,
+        "invalidation": true,
+        "symbol": true,
+        "testOnlyPrivateLabel": true
+      },
+      "screenshot": "hotspot-current-source-desktop.png"
+    }
+  ],
+  "real_private_confirmations_submitted": false,
+  "test_only_mutations": [
+    "retrospective entry thesis",
+    "simulated SELL100",
+    "TEST_ONLY IPS",
+    "synthetic TEST_ONLY reconciliation",
+    "explicit risk declaration and correction",
+    "two simulated sleeve reductions",
+    "synthetic reconciliation after reductions",
+    "independent empty TEST_ONLY fixture",
+    "simulated positive BUY700"
+  ],
+  "not_passed": [
+    "real financial/strategy admission",
+    "clean shared runtime release identity",
+    "approved decision to formal personal quantity in browser",
+    "final actual user acceptance"
+  ],
+  "generated_at": "2026-10-21T12:44:24.255Z",
+  "command": "mcp__cua_repl.js documented DOM locators and screenshots",
+  "positive_scenario": {
+    "data": "TEST_ONLY",
+    "source_commit": "b6969333373e8be58bc3050362346ae73adc2bc8",
+    "symbol": "600693",
+    "simulated_quantity": 700,
+    "cash_required_cny": "6410.000",
+    "stressed_loss_cny": "395.000",
+    "risk_budget_cny": "400.00",
+    "formal_quantity": null,
+    "formal_eligibility": false,
+    "screenshot": "test-only-positive-sizing-desktop1280.png",
+    "after_manual_simulated_buy": {
+      "transaction_id": "TEST_ONLY_V5_POSITIVE_BUY_700",
+      "quantity": 700,
+      "price_cny": "9.15",
+      "fees_cny": "5",
+      "cash_cny": "193590.00",
+      "cost_cny": "6410.00",
+      "next_sell_session": "2026-10-22",
+      "screenshot": "test-only-positive-fill-mobile390.png"
+    }
+  },
+  "negative_scenario": {
+    "data": "TEST_ONLY",
+    "scope": "Existing overconcentrated account, unchanged IPS",
+    "blocked_by": [
+      "single_security_concentration",
+      "HOTSPOT_SATELLITE budget"
+    ],
+    "screenshot": "test-only-risk-concentration-rejected-desktop1280.png"
+  },
+  "risk_confirmation": {
+    "data": "TEST_ONLY",
+    "confirm_revision": 10,
+    "correction_revision": 11,
+    "restart_retained": true,
+    "held_risk_amounts_cny": {
+      "CORE_VALUE": "21000",
+      "HOTSPOT_SATELLITE": "5000"
+    },
+    "cash_unchanged_on_confirmation": "359990.00",
+    "quantity_unchanged_on_confirmation": 1100,
+    "screenshot": "test-only-risk-confirmed-mobile390.png"
+  }
+}

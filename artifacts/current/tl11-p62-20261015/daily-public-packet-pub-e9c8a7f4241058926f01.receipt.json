@@ -1,0 +1,787 @@
+{
+  "schema_version": "daily-public-packet-receipt-v1",
+  "action": "no_order",
+  "publication_id": "pub-e9c8a7f4241058926f01",
+  "engine_version": "daily-public-packet-engine-v10",
+  "research_version": "canonical-reviewed-research-20261012T113935Z-362d7928",
+  "packet_path": "runtime/daily-public-packet/daily-public-packet-pub-e9c8a7f4241058926f01.json",
+  "packet_sha256": "1078cbbe530346ebb741c3871a0f8d73811529da637abbe53e3be11f4a1cd892",
+  "content_sha256": "34c20e7ec7fb468ae8c213f499c0afa9db103be8d8500f8b5e9f5901ccb94400",
+  "identity_inputs": {
+    "schema": "daily-public-packet-identity-v9",
+    "engine": "daily-public-packet-engine-v10",
+    "natural_date": "2026-10-15",
+    "latest_completed_session": "2026-10-15",
+    "chain": [
+      {
+        "role": "daily_product_state",
+        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/product-update-state-v3.json",
+        "sha256": "39a8a6e4cd617bf93cd1997d22ff5742e506ef59934c72dbe00541bf8d4ec680"
+      },
+      {
+        "role": "publication_handoff",
+        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/product-publication-input-v3.json",
+        "sha256": "92df725d1c228985a94591d187dad732c37bad0c5c298cad46f79842fb2802b3"
+      },
+      {
+        "role": "publication_receipt",
+        "path": "runtime/publication-receipts/canonical-reviewed-research-20261012T113935Z-362d7928.json",
+        "sha256": "cc524ff8e94173b146c578b6bc8dbde1f103aacc95cf9b0f6c8d9ee41e51c48d"
+      },
+      {
+        "role": "publication_sources",
+        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/canonical-integration-historical-preview.source-bindings.json",
+        "sha256": "650107dc44eb00d7d44996dbd4fe3572d25aede9d6c889f943365a0ebd38efe3"
+      },
+      {
+        "role": "publication_wps_receipt",
+        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/published-native-review/receipt.json",
+        "sha256": "df91b8e1db9258dc4352298ccd2b5bcd17bb5213427b4a863f66bd92d4370339"
+      },
+      {
+        "role": "read_model",
+        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/product-read-model-v3.json",
+        "sha256": "ebd4cb9514bde055ef935f2d9d798564e4cdf4e1e187331c429df3a6f3781233"
+      }
+    ],
+    "quote_bridge_pointer": {
+      "path": "config/current-quote-bridge.json",
+      "observed_sha256": "c3061362b16739ac82167381e8da994a7710c6803bfc34ca259fe6ce0bc397e9"
+    },
+    "quote_bundles": [
+      {
+        "role": "quote_bundle:600887",
+        "path": "runtime/quote-sessions/20261015T071120641477Z/bundle.json",
+        "observed_sha256": "e12e824465f4681ff57643dae4859d719c4a85011e669904e30b76ab5b5bc612"
+      }
+    ],
+    "research_registry": {
+      "path": "config/current-company-research-registry.json",
+      "observed_sha256": "ee4ab215e014d572fede9c9c5ebe11cf0d6b9ed8f766b2103426029f6ccb4282"
+    },
+    "registered_evidence": [
+      {
+        "symbol": "000333",
+        "path": "docs/current/tl8-c-000333-share-denominator-recheck-receipt-20261013.json",
+        "observed_sha256": "f2b968c000ae9f6ec39541b2bc8413fb97654d32fed530cc5badd66c547c752b"
+      },
+      {
+        "symbol": "601088",
+        "path": "docs/current/tl8-c-601088-cycle-model-boundary-receipt-20261013.json",
+        "observed_sha256": "9f3a6a22b8a534ff6fce288d7ebe130376e2404fd1936b6ab37525f811171fe8"
+      }
+    ],
+    "bound_explanations": [
+      {
+        "path": "docs/current/600519-event-review-closure-20261011.md",
+        "observed_sha256": "3857f708f73663106f0fa6bc888d1915432c37b9b7418c5c4f168b172a9e42ca"
+      },
+      {
+        "path": "docs/current/600887-event-review-closure-20261011.md",
+        "observed_sha256": "21df1ac3b51912e3a9fed67e74c76beb4d26d2eacbb55e61556f2850184b553a"
+      },
+      {
+        "path": "runtime/d2-600519-event-review-closure-20261011-v1/operating-countercases.json",
+        "observed_sha256": "3f2d8cc58c022f8a5ae029e16f6c76467f9124365c53e7fe4ab86d21271f4e67"
+      },
+      {
+        "path": "runtime/d2-600519-event-review-closure-20261011-v1/review-items.json",
+        "observed_sha256": "32c4caa45ea539db8fa5ce37e2c16ec25af848abbf969a53807e064851e47834"
+      },
+      {
+        "path": "runtime/d2-600887-event-review-closure-20261011-v1/equity-cost-review.json",
+        "observed_sha256": "5e38a4d5014aab5d30c60401f78e255e3b428768a75f2a6ae4828da961e5a24a"
+      },
+      {
+        "path": "runtime/d2-600887-event-review-closure-20261011-v1/event-review.json",
+        "observed_sha256": "27bac56b48e6aabcb6144d75d8bf8fd4bde026dbad3f5c7e20825e3bb4912fb7"
+      },
+      {
+        "path": "runtime/d2-600887-event-review-closure-20261011-v1/operating-review.json",
+        "observed_sha256": "f47d9df8ca07b03b9e7b099a8f1ab465e3b0d57606b0ed70e45458504b6df4d4"
+      },
+      {
+        "path": "runtime/d2-full-event-window-20261011/600519-v1/observation.json",
+        "observed_sha256": "e55567719f1d3f1b78530319b1066e61e222cdb395cf376fd61bb8efcc5add9c"
+      },
+      {
+        "path": "runtime/d2-full-event-window-20261011/600887-v1/observation.json",
+        "observed_sha256": "32db89adaff1b03bb011aa4fcb172754a639ae58f059c33c9d92b16014714934"
+      },
+      {
+        "path": "runtime/d2-human-review-inputs-20261011-v1/600519-editable-response.json",
+        "observed_sha256": "498b66cba98734eb85b31aa448659d983ec37b09c0b8be0d218fc28b46dc8e7e"
+      },
+      {
+        "path": "runtime/d2-human-review-inputs-20261011-v1/600887-editable-response.json",
+        "observed_sha256": "fb1c2bf3f1fcaa99f559ec3f1a21e1c70b0390ccc4bdd4908a345cf26f4f1c39"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/20261011-current-financial-attachment-batch-v2/000651/workbench.json",
+        "observed_sha256": "0310ac11928392b61a7ade864ce54a446ec1d179176e2a2427320b4829d6be1f"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/20261011-current-financial-attachment-batch-v2/600741/workbench.json",
+        "observed_sha256": "0ed8bafe3776e536fa38f63f92ba1fae1d3905a0cad5a89063ba0157c4098bf9"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/20261011-d2-admission-review-v6/600519-existing-version-comparison.json",
+        "observed_sha256": "e7828f7e836a2b101f969c8f407915e418aed42b547445ab8bc59f0510541b51"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/20261011-d2-admission-review-v6/600519-review.md",
+        "observed_sha256": "131cc15a9a37035f38bb664233dffb26a298565cc844f73cc652c3d768228e4d"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/20261011-d2-admission-review-v6/600887-existing-version-comparison.json",
+        "observed_sha256": "0e6ff08a534986949acb66fd6bc6fb38a2cb1d420d400fbfb8230f87f5cae78b"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/20261011-d2-admission-review-v6/600887-review.md",
+        "observed_sha256": "74823fb6ea98a46276b18f96af6dd383e8c3ef2d6a39cbe8fe99582c3e8cc880"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/20261012-productization-canonical-publish-v5/600519-value-decision-explanation.json",
+        "observed_sha256": "1f2af43b1568dee9a401fa6f97f7bea20368ea31083e930419a9005bd149ec83"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/20261012-productization-canonical-publish-v5/600887-value-decision-explanation.json",
+        "observed_sha256": "54ecf79bd1e1f752d32dd9d7032224f8aa2ee3d557265b84600475ad99454049"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/fm2-discovery-canonical-publish-20261012-v3/600519-value-decision-explanation.json",
+        "observed_sha256": "1f2af43b1568dee9a401fa6f97f7bea20368ea31083e930419a9005bd149ec83"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/fm2-discovery-canonical-publish-20261012-v3/600887-value-decision-explanation.json",
+        "observed_sha256": "54ecf79bd1e1f752d32dd9d7032224f8aa2ee3d557265b84600475ad99454049"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/600519-value-decision-explanation.json",
+        "observed_sha256": "1f2af43b1568dee9a401fa6f97f7bea20368ea31083e930419a9005bd149ec83"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/600887-value-decision-explanation.json",
+        "observed_sha256": "54ecf79bd1e1f752d32dd9d7032224f8aa2ee3d557265b84600475ad99454049"
+      },
+      {
+        "path": "scripts/current/render_dual_strategy_artifact_pages.mjs",
+        "observed_sha256": "f9eae3255dece95c09d1e299ca72689503cb146446d966d30443b2d297944c8e"
+      },
+      {
+        "path": "scripts/current/render_dual_strategy_artifact_pages.mjs",
+        "observed_sha256": "f9eae3255dece95c09d1e299ca72689503cb146446d966d30443b2d297944c8e"
+      },
+      {
+        "path": "scripts/current/render_dual_strategy_artifact_pages.mjs",
+        "observed_sha256": "f9eae3255dece95c09d1e299ca72689503cb146446d966d30443b2d297944c8e"
+      },
+      {
+        "path": "scripts/current/render_dual_strategy_artifact_pages_v2.mjs",
+        "observed_sha256": "a25e6c796fd07e670455f81604944025ee4dd9dde62fe92a63dad67c4eea2bc6"
+      },
+      {
+        "path": "scripts/current/render_dual_strategy_artifact_pages_v2.mjs",
+        "observed_sha256": "a25e6c796fd07e670455f81604944025ee4dd9dde62fe92a63dad67c4eea2bc6"
+      },
+      {
+        "path": "scripts/current/render_dual_strategy_artifact_pages_v3.mjs",
+        "observed_sha256": "b067cad7d512f1db5d3d014968a5072a45738b80573d70b990e50b124b5d00e3"
+      },
+      {
+        "path": "scripts/current/render_product_artifact_pages.mjs",
+        "observed_sha256": "11f49f6328d25e8767604275108d419514a097beae708b24075b27e909e2d88f"
+      },
+      {
+        "path": "scripts/current/render_product_artifact_pages.mjs",
+        "observed_sha256": "11f49f6328d25e8767604275108d419514a097beae708b24075b27e909e2d88f"
+      },
+      {
+        "path": "src/value_investment_agent/presentation/daily_product_composition.py",
+        "observed_sha256": "226175a8e9fbc40028f81fda962b35a06e769553dcf44de9f7ca54695c55bec5"
+      },
+      {
+        "path": "src/value_investment_agent/presentation/daily_product_composition.py",
+        "observed_sha256": "226175a8e9fbc40028f81fda962b35a06e769553dcf44de9f7ca54695c55bec5"
+      },
+      {
+        "path": "src/value_investment_agent/presentation/daily_product_composition.py",
+        "observed_sha256": "226175a8e9fbc40028f81fda962b35a06e769553dcf44de9f7ca54695c55bec5"
+      },
+      {
+        "path": "src/value_investment_agent/presentation/daily_product_discovery_v2.py",
+        "observed_sha256": "1a7d982d96fd1f1fa8b95c0cf05dec0d5e7dc39bc54d9f08d6d06e5123ad2961"
+      },
+      {
+        "path": "src/value_investment_agent/presentation/daily_product_discovery_v2.py",
+        "observed_sha256": "1a7d982d96fd1f1fa8b95c0cf05dec0d5e7dc39bc54d9f08d6d06e5123ad2961"
+      },
+      {
+        "path": "src/value_investment_agent/presentation/daily_product_discovery_v3.py",
+        "observed_sha256": "9814e3f77da6f0654a68846d9c4e4b3cd50b6e0dd652067b7e08f73a9f84c077"
+      }
+    ],
+    "current_price_conditions": {
+      "path": "config/current-price-conditions.json",
+      "observed_sha256": "9f2351ff37a5299291f11c5ac680b50e71051da82f9b41e954e78b57a14913b2",
+      "evidence": [
+        {
+          "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/hotspot-observation/report.json",
+          "observed_sha256": "66f3f90d71ae341d9f00c492effed308a3e14293548dc53fccc9d596c43f7c4a"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/case.json",
+          "observed_sha256": "846ba8d1ddab43b0e3d22985917161ce3a7236f903ee88262f2ea6410d6d1f9b"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/sina-15m.jsonp",
+          "observed_sha256": "13daa9df322200fb067878bae7ec3c26cbe3b7b106e899c2ecff2b0f9ddf4283"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/000712-2026-10-15-825dd26405284611b970cf22169fab36/sina-60m.jsonp",
+          "observed_sha256": "b7e0e9d336013f78d349d070c784fcc68494500b42152963f46f93c7ec9aa626"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/case.json",
+          "observed_sha256": "7794a725e534860630d8bbf49957a2fa6436e325f2184da6aab351f2808d3bfb"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/sina-15m.jsonp",
+          "observed_sha256": "ae40f323d1412979b2362f5cf4e01a66452b1fda18fbfbce1335bc838d7310a7"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/002354-2026-10-14-36a850c1c7b1451da1b70013f117528d/sina-60m.jsonp",
+          "observed_sha256": "7e7c6f08d4ef487f15c5548c6dba27f77e1ad149ff470a8ef65b7969078e7aaa"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/002384-2026-10-14-fa2a79d261ae4e97bc2ee79956d392e8/case.json",
+          "observed_sha256": "a92a09259d495cb7d7f599c46749177507742ab25918f4cc703d8f29e66de6f8"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/002384-2026-10-14-fa2a79d261ae4e97bc2ee79956d392e8/sina-15m.jsonp",
+          "observed_sha256": "196162491f436cd958947a69d65e6ae0b8d7cdfc60285d0c3afdad227ba73311"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/002384-2026-10-14-fa2a79d261ae4e97bc2ee79956d392e8/sina-60m.jsonp",
+          "observed_sha256": "217712431ecb3f3683374d12a7adb9017d6f8c13a24302e5fa41dbff9433ebf0"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/case.json",
+          "observed_sha256": "584ad23ef03881fec209f3860f2b6955100af30b2d84c499b6249635c7f5fa63"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/sina-15m.jsonp",
+          "observed_sha256": "3f1203f76210414af27dbe536fc3345257c6bb5bb60a6c770acf113327c61f58"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300058-2026-10-14-0889f5caf29f4e8a8245feb63e80ed5d/sina-60m.jsonp",
+          "observed_sha256": "f481bcdd77e3f576c9d9131f37affd1895a14b2732dc3dd8544beeed8cbb2433"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/case.json",
+          "observed_sha256": "f5a1c3a6021896c073c014b064114713e5dbd397df185c4a86b874fc6b00437e"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/sina-15m.jsonp",
+          "observed_sha256": "8a370ea88bda3e284a1db0bf2b73e3469f1483b7704cd795a190d9e2454802c7"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300059-2026-10-15-8e5a81bd67bd4d3bafd6ecd4d302b664/sina-60m.jsonp",
+          "observed_sha256": "68c489a56bd6cf502b33dcb8b93875680fc279362cae553b5ab7f6cf00b7d263"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300308-2026-10-14-850a7a03a1174be7874dd76acfcb2893/case.json",
+          "observed_sha256": "449f256697fe37818a26e525c1cb959f0aa47cf2b2087b92cff4c21b7c95330c"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300308-2026-10-14-850a7a03a1174be7874dd76acfcb2893/sina-15m.jsonp",
+          "observed_sha256": "7e05f3443911c840da2713fc8c0cbb72118c8e8ee95880072505f3dc082255ff"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300308-2026-10-14-850a7a03a1174be7874dd76acfcb2893/sina-60m.jsonp",
+          "observed_sha256": "20476af04e67458c6886550fcccf7df3bdb13f53376a66e52d9c4016f98f39c7"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/case.json",
+          "observed_sha256": "a385019f1b9097fdd3bc19d6ea08596ecb07df2939efed4cb8ab023b5d4dec49"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/sina-15m.jsonp",
+          "observed_sha256": "42bb042ad71e82cb5b0f8149053ab12af4718fc9bfca40656f75f427f408b54a"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300364-2026-10-14-e2b702fdcb2b40558b8f112a52c568db/sina-60m.jsonp",
+          "observed_sha256": "5e624a34d01d22660a61dbe2b88d19d28cedb6726e692401db9bfd784c88a25c"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/case.json",
+          "observed_sha256": "38954bd8c9a43d30bc14a7f915d43def5ddb6c31d88a763823f2d5f9788dfcec"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/sina-15m.jsonp",
+          "observed_sha256": "caf60a7eb3094412cf38195fe4ba08d59c0faf6afa4f04163df35b97eb465a1b"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300413-2026-10-14-3d97f7f1c463470f93d8f66f8491be54/sina-60m.jsonp",
+          "observed_sha256": "88e3a74f42ae471872aa6853c8908f070057864e882b8355859cc3e0d16e4ce1"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/case.json",
+          "observed_sha256": "055bbfd15f2c6963e2ac07a8b71602a67a6fe6f36211fc871690887a4f133099"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/sina-15m.jsonp",
+          "observed_sha256": "806cfbc37c61aca93e76f7cdbc81c9ca15a68ff7004ac723b6df64ec6e38d28d"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300418-2026-10-14-e11ceac2668646898ec4cf41439d7607/sina-60m.jsonp",
+          "observed_sha256": "58cd71355f53fb5e31ad23caf927a75df133df7c45fcb20c8239897e174c23e7"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300502-2026-10-14-33a95b96f7d845e5b4e3e9f5531839fe/case.json",
+          "observed_sha256": "b385980656ef00181011eef81f49c2a9aa70e36a484a9d127c1e25fbb7388725"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300502-2026-10-14-33a95b96f7d845e5b4e3e9f5531839fe/sina-15m.jsonp",
+          "observed_sha256": "666c3cb61c6f4e559b8bbde06da5c4664b432e29c2aa641c058b3c07abe0a91b"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300502-2026-10-14-33a95b96f7d845e5b4e3e9f5531839fe/sina-60m.jsonp",
+          "observed_sha256": "3a5343a1e956ea48533298f4b0b8d8cf9a4f635a89cacde9cbd2f25c635e8c35"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300750-2026-10-14-da507b1ea615452981492c5e956c0e3b/case.json",
+          "observed_sha256": "9753f1425f5c0bedec391ed3d2a820cdd3a06b0a6811a83f7cb2aa3d72c1896d"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300750-2026-10-14-da507b1ea615452981492c5e956c0e3b/sina-15m.jsonp",
+          "observed_sha256": "c66b7dead9362bdb1eb520b06b66cb6e827ede1844646eeb50a6711bb1f9e3bd"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/300750-2026-10-14-da507b1ea615452981492c5e956c0e3b/sina-60m.jsonp",
+          "observed_sha256": "6cf0b7089867f47cfa4f8648192da75e073a815b6a219ea050969fa4504fad14"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/case.json",
+          "observed_sha256": "6b98c3c625776610acc02fbc1e83a07ccc3861e61ad9498b839caebc5b1c49d3"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/sina-15m.jsonp",
+          "observed_sha256": "f147279eae4c262324a5f51ddc091a82b5e9ccc083f480336987996233dd1168"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/600030-2026-10-15-5f1bfecfa6fd4ee4bcc178791fcb0af3/sina-60m.jsonp",
+          "observed_sha256": "1d1580f8f41adc8d121e21869d859f487fe467a2f422fdc7e10593866d483c77"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/case.json",
+          "observed_sha256": "c3f589d1f70a77da633e52bf63bf74e65ac262561b19f0d8d206b681fadad2c3"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/sina-15m.jsonp",
+          "observed_sha256": "10069bcb64a9e99ceed23c0558cdfeb0db2b8b04b736c4b457645a26aa1d7eeb"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/601211-2026-10-15-435f26924a344d679662dd4322215867/sina-60m.jsonp",
+          "observed_sha256": "dfb9180baa045655590d5081d653759d4a820f86f032409d0c24cc0464eae828"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/case.json",
+          "observed_sha256": "92ad443d0f6b0d4187b202035e0aba9df7953115c406f0ab72cedca0f6f4d580"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/sina-15m.jsonp",
+          "observed_sha256": "a233050c2b8d24fcb4243135e7d968e3d86967cc63b9b60efa39d5851cd8f9d2"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/601318-2026-10-15-ca32740c2d9b45ebb82eb4ff594fa651/sina-60m.jsonp",
+          "observed_sha256": "d03417da11e212c140ec791243f06dec016814db3b4c99bafa4c82002f11da99"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/688825-2026-10-14-09eee3c2e5b841e9bd9b49c9b7879029/case.json",
+          "observed_sha256": "75f67fdb6245230bc4cbdf5ab5ce0b15fa88349fc0bbc394f6843034864e2fe8"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/688825-2026-10-14-09eee3c2e5b841e9bd9b49c9b7879029/sina-15m.jsonp",
+          "observed_sha256": "0ddb95d7a73bb3e6722ae129b42d1b2d5765fd81c4895ae5d85ef62275c29543"
+        },
+        {
+          "path": "runtime/hotspot-current-price-cases/688825-2026-10-14-09eee3c2e5b841e9bd9b49c9b7879029/sina-60m.jsonp",
+          "observed_sha256": "7fc9fce78ba34dd7182322eaddaf2b03b0c36f5b5c78c6fccbbfab8e04dd2345"
+        },
+        {
+          "path": "runtime/hotspot-current-refresh/0d407ebaa91c417fbbde9229b4b9cc10/bundle.json",
+          "observed_sha256": "9a9d6bc0cde86692ea9854c7a2b1d75d7f8dcc66db6cb62f84fe15de8430aa7e"
+        },
+        {
+          "path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+          "observed_sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530"
+        },
+        {
+          "path": "runtime/hotspot-current-refresh/dda4df9526804eda9b2d963a18efc6a6/bundle.json",
+          "observed_sha256": "edd2587299ae075ca4374d01bb4d9206d10ec788d5eac1a55153e6de77d8fbff"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/calendar-anchors.json",
+          "observed_sha256": "42b6deb47ea41a0d501441799a43e3493b7409f10c1fe5b6aa1ebcc17fa02e11"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/classification.json",
+          "observed_sha256": "cc63a655476cd14368301ceaf85eb983086b57920da594ef6a1e67cb76a33e8d"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00000.txt",
+          "observed_sha256": "6f6063235212b5ab91a86cdda08bf0ee86fdbf8684ba2eaf3319d4a781848b5f"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00200.txt",
+          "observed_sha256": "a076f1ed783ac0816e52026a52f773fc593b9ab060c323dcb1ea5306494757fa"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00400.txt",
+          "observed_sha256": "58776a9c2b8e63aabfc9da4ce3d048ffc69947caf65798fa3828ef32130b98f4"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00600.txt",
+          "observed_sha256": "6747a92fb440dd4961bcd09887186ee56c1745b3141e4650dc935a55a3ba0db6"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-00800.txt",
+          "observed_sha256": "dffd4a7094adeac25d3ce996074397e9e69da1b24ce930d80e0e76ef91aa5a7d"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01000.txt",
+          "observed_sha256": "feb86a0f920faf8232b530c84040fe68da2875a2ac51c204cc65a70abcb8f21c"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01200.txt",
+          "observed_sha256": "017fad6b38d48d456aa7486c92491996fddafad595117c5a2c7f742ff310361d"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01400.txt",
+          "observed_sha256": "2e2471720025ae900ead2696789904bacbf68d3af09481d4b7e7197784dc5bc2"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01600.txt",
+          "observed_sha256": "3e8797731f9d551afee19f5f365be4a69d8a0cb526e47fa858c2e89fdaec1e1c"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-01800.txt",
+          "observed_sha256": "1281ccb85cb4bba1f8c13a051c98a9a69f4de69563fd00d0a952f27e176fbc47"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02000.txt",
+          "observed_sha256": "3d44e4e054c9c605a1a6ec10ff9916127ca44ac877693c5f70bf2fda14a1ab98"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02200.txt",
+          "observed_sha256": "b810a46d0851a027a569f817909ce26e02e5ac2c72084b33deb3258ca09c0b0d"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02400.txt",
+          "observed_sha256": "7fa7471fb13954cf8e1fb7d632a97395929d03795594cf0da00a5c5b5b83367d"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02600.txt",
+          "observed_sha256": "904f479a5f44691ed8b38e24a7287c9072aca6d107f2fa521e1bd1225f38904a"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-02800.txt",
+          "observed_sha256": "58e3d27d465b5124652502043e98fab36d99a96aac87bb546ea1e09b20a0d410"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03000.txt",
+          "observed_sha256": "c73e51e393f3aaa28452ed127c47162265d7680d146f1512195c8b8cd8f03536"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03200.txt",
+          "observed_sha256": "765c33e551bd6effdf36f8b7ed9408fe53923cd82585a3423a44e8515f0ce1cb"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03400.txt",
+          "observed_sha256": "fe19693f8ae4ba30a36c0d637d3a97150f8a4e409445f69199c111b0205aea4b"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03600.txt",
+          "observed_sha256": "e84e12f625538b2167a18e50fcae04c89f5cde42c490fa216346cbcfcc8cd68d"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-03800.txt",
+          "observed_sha256": "ab42286620aee074fd7ee463beaa3d6a003221f950cd61f47df00b6d78a4c78e"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04000.txt",
+          "observed_sha256": "ba3c99d335a9fc69e49dca80ebb8df659148428447c2af113e51c218976c9876"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04200.txt",
+          "observed_sha256": "48265318d1f46cd806ad71f9dd92f6a32467a84dbf36bbaa790c0ad3b2dc4237"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04400.txt",
+          "observed_sha256": "8c00634a5e4c6d262696d5b887c7f721bf33c0145339b6892ce1ebe6603e004d"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04600.txt",
+          "observed_sha256": "c2f2c71507ff0e7672de204ee8f0d33d7cf6e5e6f762cbae3b58fa320fb7dcbe"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-04800.txt",
+          "observed_sha256": "1e64cfca3819cde47a5a9b0f10eaa48a853534ec349c242a07fa82da94c7edcd"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-05000.txt",
+          "observed_sha256": "6ba5a4e2631cf49f88249dd824c6a6ff456a5c15e9ef351d181a17ad7fa40b81"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/quotes-05200.txt",
+          "observed_sha256": "bb6f7b927bf0e0af23ca45c515ab8d8a6daea2a83d448b0bd307e1a3938f884a"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/8911070abf964e49b0eb674dac6e3b91/report.json",
+          "observed_sha256": "989aa97241824b61cd3bf3283b4705e846a4d9de78ad4651c5d12bcb00235b8b"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/calendar-anchors.json",
+          "observed_sha256": "1378c7ec15d1b3f2dd1806bf2eaf599d9faaeb18d51a5a2a3939a313b7d58540"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/classification.json",
+          "observed_sha256": "91806f6efc9f382ae0f64006c8fcde7576effff85412c8db825c2620bc84001c"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-00000.txt",
+          "observed_sha256": "aeb7ecced24da2f9976611450659718adff2da016171890810cdefae4da43e69"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-00200.txt",
+          "observed_sha256": "139ff16c9b17731f46ee9713796d8154be19a3c564264675164efce478499177"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-00400.txt",
+          "observed_sha256": "d0ff6a94a44f53ecbf2b49009bb8cf3187f21d7458025bfd49c3f5c3faee79b0"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-00600.txt",
+          "observed_sha256": "d8e057fcff7a3df59781bbd7d8532c5998351c8949c25179cafe18fc61deb1f4"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-00800.txt",
+          "observed_sha256": "e4cca26dd8fb04e382f019a6dbfc60e75b8eed307c470ef050f44cc09206b12d"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-01000.txt",
+          "observed_sha256": "3da2d9629fdfde3fbe8be1765ecc7845ac170e20032fdb51fde70e07248b0d26"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-01200.txt",
+          "observed_sha256": "cef92577ec2541d23b217e0c0a5bc061f3c8473bfa7a3faa3a3f788097733e9a"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-01400.txt",
+          "observed_sha256": "3bcea4e5710478451764964c7b559de70abdb04eea4e23dd6b3e1718f96bae82"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-01600.txt",
+          "observed_sha256": "fecf551a08474ee1edf75e2e662912ae61599882a138001948bd84e40cffa150"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-01800.txt",
+          "observed_sha256": "ba489fa53011d0715505264f4d3be2737eed803dded73ae8baec0f76d5ce7a7f"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-02000.txt",
+          "observed_sha256": "19465f7543f82d1db7c1b5cb734d950fb2ea673916cf53d890ef63b18e718436"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-02200.txt",
+          "observed_sha256": "c4b3f8f651289294808664346e908e1001760faaf8a5d6cf26ea883d54ffa89e"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-02400.txt",
+          "observed_sha256": "f22707e7af6d7a64fc3bf8ec41df22f3c73e53411bf44221a1dc8a8d2fee8c1d"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-02600.txt",
+          "observed_sha256": "3500c3ac807b00c20b6b244116b3417ee30f4bc12b759394019370bffa2599f3"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-02800.txt",
+          "observed_sha256": "a02e16b58eb8698e5ede2b4eed517f296313aadf1ba41fbf72cb6a50619ce521"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-03000.txt",
+          "observed_sha256": "b2fceebe95e62d3afb5399c0a6d92617e4c14bf3f1a515acc0bf7dcaae815be0"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-03200.txt",
+          "observed_sha256": "6aca3422c6f983c9283345dc9eed0ca701f9249a7a5c65938ecd302588c0e700"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-03400.txt",
+          "observed_sha256": "537d6cca3400e22f87515b874bbdc4ea4bc041edb93411b0d5a1d1d75bba27ea"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-03600.txt",
+          "observed_sha256": "8b8c99ae392964cde5f2d5af8add1cc322856cec14dc39da060ae5b92cb6a12d"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-03800.txt",
+          "observed_sha256": "ccdbea571856b75357ccc2161dd4425a29aff7b0606e1bb9ab6635ca703bd393"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-04000.txt",
+          "observed_sha256": "d906165fadbd266b03f050235371e3bc46232815fdd2ea9efbd8cd3219d4f9be"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-04200.txt",
+          "observed_sha256": "0458733349fd4d6b6eca474611c1bd92b6ea4faeeb3e8d8f70d758aaf5ad551a"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-04400.txt",
+          "observed_sha256": "d523207132acc4ccfdcab4ce43d73b763eb1465ad2da68c86ed8edb53fc09c54"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-04600.txt",
+          "observed_sha256": "edd1dc03340a90da4cc0dc1b6cb06c29059a19c16d8806ed17b36d667f58082a"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-04800.txt",
+          "observed_sha256": "0cddd097f214bfb204e87b61b60ce36f5bb2e09d928248203d276aaea0dfae10"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-05000.txt",
+          "observed_sha256": "324b846865956b9d47cf70294944a7ca130e13e88b87fd91b0fdf9a05ec4b97e"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/quotes-05200.txt",
+          "observed_sha256": "31864ff05a9428945e36c3426c1e90ece68084e9a33ebabdeaac84fbeb385164"
+        },
+        {
+          "path": "runtime/hotspot-daily-selection/a781a7eb24024c45b3f9285f49d6f3c1/report.json",
+          "observed_sha256": "59b155c981025b5ce847ad98435d66d9690ab67e10f3db1d98f251685c06bc2e"
+        }
+      ]
+    },
+    "hotspot_structure_rule": {
+      "path": "config/hotspot-confirmed-structure-v1.json",
+      "observed_sha256": "8d399e996cfdb0f57b377e8d905fb08e9de959ecadd56c3b0d3b1467923d3a01"
+    },
+    "value_action_sources": [
+      {
+        "path": "docs/current/600519-equity-cost-independent-review-20261008.md",
+        "observed_sha256": "c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214"
+      },
+      {
+        "path": "docs/current/600519-financial-scope-independent-review-20261008.md",
+        "observed_sha256": "17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c"
+      },
+      {
+        "path": "docs/current/600519-forward-path-independent-review-20261008-v2.md",
+        "observed_sha256": "37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37"
+      },
+      {
+        "path": "docs/current/600519-full-window-materiality-review-20261008.md",
+        "observed_sha256": "aa7a70c94dcde08a9fef7f6207139a5fcb4527cbbee9adb775c19699a34a7d54"
+      },
+      {
+        "path": "docs/current/600519-normalized-assumption-research-20261008.md",
+        "observed_sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a"
+      },
+      {
+        "path": "docs/current/600519-operating-mechanism-research-20261008.md",
+        "observed_sha256": "567b9fa1114a766e76f88ba491ef4449c13163ec1d4f973b8abf2b9fe43763aa"
+      },
+      {
+        "path": "docs/current/600519-parent-distribution-capital-bridge-20261008.md",
+        "observed_sha256": "ac1477ab886a7ee02ca621b06a8af66a518c638858bc042c7da293b029d69573"
+      },
+      {
+        "path": "docs/current/600519-profit-adjustment-bridge-20261008.md",
+        "observed_sha256": "8d9ff9e6fb94e9f18a62108992a91b7c8f2a438da6e8d32df424e55ffc176260"
+      },
+      {
+        "path": "runtime/company-research/600519-consolidated-parent-equity-residual-income-current-20261008T090506Z/evidence.json",
+        "observed_sha256": "5a594b3b80e75aa5a7e880ad32506ae5d66b71cf39ed5aee9157dcff57fa803a"
+      },
+      {
+        "path": "runtime/company-research/600519-current-assumption-diagnostic-20261008T090508Z/evidence.json",
+        "observed_sha256": "5fb410fae0a1ddb03aed46286c7f212d1c4d699e519a7a44666a1a6472f17688"
+      },
+      {
+        "path": "runtime/company-research/600519-current-equity-scope-review-20261008T090507Z/evidence.json",
+        "observed_sha256": "cca8b43c6069ffda329e940a4be96d27d7af4c3387ec08f4d24a5c9f42da4069"
+      },
+      {
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+        "observed_sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+      },
+      {
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+        "observed_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+      },
+      {
+        "path": "runtime/d2-economic-research-20261008/operating-mechanism-evidence-v1.json",
+        "observed_sha256": "4234aaaa2e2b580d89cabee665f59571e29f58b8714f99409e5f362b95ee7bae"
+      },
+      {
+        "path": "runtime/d2-economic-research-20261008/parent-distribution-capital-bridge-v1.json",
+        "observed_sha256": "34cf0f4ac76a6fd2e2b6bd0cfe56500c270371fd4b9e6a25767a247b1ad25d78"
+      },
+      {
+        "path": "runtime/d2-economic-research-20261008/profit-adjustment-bridge-v1.json",
+        "observed_sha256": "b11db869bacf07bcbed428b4ed8f61be1733ee5b63a111eaf3cb9d2d239ed188"
+      },
+      {
+        "path": "runtime/d2-model-bound-followup-20261008/historical-profit-reconciliation-v1.json",
+        "observed_sha256": "6f9e4334a5f5be4526c99f2b60fe345ff4935bb1e0c1ec925915b42e3d98559e"
+      },
+      {
+        "path": "runtime/d2-source-bound-current-20261008/announcements/1225431263.pdf",
+        "observed_sha256": "24e51c43dfc6da7d3a19c67b88081715a3a3b4a26c2d83ec51a557e3e5692873"
+      },
+      {
+        "path": "runtime/d2-source-bound-current-20261008/announcements/1225475863.pdf",
+        "observed_sha256": "cf2d50aa028fcf11ce9eb04746932b7a9be25c3e31d443295f77add844b1121b"
+      },
+      {
+        "path": "runtime/d2-source-bound-current-20261008/event-scan-current-model.json",
+        "observed_sha256": "0c89a9952a53ed0caf2102cd14e25c4743d842746eb8929dd89e02e6ff618ea9"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/20261011-s1-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+        "observed_sha256": "8245b3ee59ba6304f243efce9ee5bb20692c064ecbcd2e2a6950046b156b4d33"
+      },
+      {
+        "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+        "observed_sha256": "76ab1d93a88c8d5955ecded565b7fb79fcbcc731a48efac8928f503c37ec04c1"
+      },
+      {
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+        "observed_sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288"
+      },
+      {
+        "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+        "observed_sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6"
+      },
+      {
+        "path": "runtime/quote-sessions/20261008T090505876967Z/bundle.json",
+        "observed_sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5"
+      },
+      {
+        "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+        "observed_sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+      },
+      {
+        "path": "runtime\\company-research\\600519-current-equity-policy-staged-20261008T090506Z\\policy.json",
+        "observed_sha256": "b9006a70f91402b9532be01228dd01a495c9c84d1b0784a83436b88437320c88"
+      },
+      {
+        "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\600519-1-55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f.json",
+        "observed_sha256": "55d2bc88ebfd28dce332f5b06cb4f1050cc8abeef054f207647bc3d01a21e39f"
+      }
+    ]
+  },
+  "generated_at": "2026-10-15T07:19:47.074016+00:00",
+  "published_at": "2026-10-15T07:19:55.633541+00:00"
+}

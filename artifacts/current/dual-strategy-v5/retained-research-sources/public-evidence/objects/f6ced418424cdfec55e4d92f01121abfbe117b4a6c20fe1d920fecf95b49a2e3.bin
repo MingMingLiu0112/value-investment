@@ -1,0 +1,140 @@
+# 伊利600887保留原件当前财务核读
+
+这是今天核验6/30历史披露的事实包，不是10/11新财报或估值准入。action=no_order。
+
+## 原件逐行数据
+
+|事实|范围|期间及金额（元）|官方来源/物理页|
+|---|---|---|---|
+|fy_revenue：营业收入|consolidated|FY2025=115636231250.05；FY2024=115393310976.69|cninfo:1225259562 p7|
+|fy_parent_profit：归属于上市公司股东的净利润|consolidated_parent_attributable|FY2025=11565166497.81；FY2024=8452859993.18|cninfo:1225259562 p7|
+|fy_ex_nonrecurring_parent_profit：归属于上市公司股东的扣除非经常性损益的净利润|consolidated_parent_attributable|FY2025=11068321695.12；FY2024=6011274945.92|cninfo:1225259562 p7|
+|h1_revenue：营业收入|consolidated|H12026=64330936547.38；H12025=61776746682.68|cninfo:1225511409 p6|
+|h1_parent_profit：归属于上市公司股东的净利润|consolidated_parent_attributable|H12026=5758628097.79；H12025=7200477611.91|cninfo:1225511409 p6|
+|h1_ex_nonrecurring_parent_profit：归属于上市公司股东的扣除非经常性损益的净利润|consolidated_parent_attributable|H12026=5595762517.76；H12025=7016349502.87|cninfo:1225511409 p6|
+|fy_nonrecurring：合计|consolidated_parent_attributable|FY2025=496844802.69；FY2024=2441585047.26|cninfo:1225259562 p9|
+|h1_nonrecurring：合计|consolidated_parent_attributable|H12026=162865580.03|cninfo:1225511409 p7|
+|fy_quarter_profit：归属于上市公司股东的净利润|consolidated_parent_attributable|2025Q1=4874104242.93；2025Q2=2326373368.98；2025Q3=3225625005.13；2025Q4=1139063880.77|cninfo:1225259562 p8|
+|fy_quarter_ex_profit：归属于上市公司股东的扣除非经常性损益后的净利润|consolidated_parent_attributable|2025Q1=4629303049.44；2025Q2=2387046453.43；2025Q3=3086431987.78；2025Q4=965540204.47|cninfo:1225259562 p8|
+|fy_single_parent_profit：四、净利润|listed_parent_only|FY2025=11200348776.89；FY2024=13325341479.69|cninfo:1225259562 p88|
+|h1_single_parent_profit：四、净利润|listed_parent_only|H12026=9246690145.31；H12025=8554645339.60|cninfo:1225511409 p54|
+|fy_consolidated_cfo：经营活动产生的现金流量净额|consolidated|FY2025=14343920490.32；FY2024=21739740393.38|cninfo:1225259562 p89|
+|fy_consolidated_capex：购建固定资产、无形资产和其他长期资产支付的现金|consolidated|FY2025=3036644156.68；FY2024=3978318320.96|cninfo:1225259562 p90|
+|fy_consolidated_cfi：投资活动产生的现金流量净额|consolidated|FY2025=-7796324355.55；FY2024=-32709427280.73|cninfo:1225259562 p90|
+|fy_consolidated_cff：筹资活动产生的现金流量净额|consolidated|FY2025=-13472893729.48；FY2024=-7277915908.33|cninfo:1225259562 p90|
+|fy_consolidated_fx：汇率变动对现金及现金等价物的影响|consolidated|FY2025=56365507.71；FY2024=-17957048.45|cninfo:1225259562 p90|
+|fy_consolidated_movement：现金及现金等价物净增加额|consolidated|FY2025=-6868932087.00；FY2024=-18265559844.13|cninfo:1225259562 p90|
+|fy_consolidated_opening_cash_equivalents：期初现金及现金等价物余额|consolidated|FY2025=24546520007.54；FY2024=42812079851.67|cninfo:1225259562 p90|
+|fy_consolidated_closing_cash_equivalents：期末现金及现金等价物余额|consolidated|FY2025=17677587920.54；FY2024=24546520007.54|cninfo:1225259562 p90|
+|h1_consolidated_cfo：经营活动产生的现金流量净额|consolidated|H12026=9759147483.18；H12025=2964215363.27|cninfo:1225511409 p55|
+|h1_consolidated_capex：购建固定资产、无形资产和其他长期资产支付的现金|consolidated|H12026=1304262044.68；H12025=1452716041.52|cninfo:1225511409 p56|
+|h1_consolidated_cfi：投资活动产生的现金流量净额|consolidated|H12026=-13195068088.81；H12025=-7482038254.51|cninfo:1225511409 p56|
+|h1_consolidated_cff：筹资活动产生的现金流量净额|consolidated|H12026=-241598720.31；H12025=-3894225979.78|cninfo:1225511409 p56|
+|h1_consolidated_fx：汇率变动对现金及现金等价物的影响|consolidated|H12026=-85791022.96；H12025=86434720.96|cninfo:1225511409 p56|
+|h1_consolidated_movement：现金及现金等价物净增加额|consolidated|H12026=-3763310348.90；H12025=-8325614150.06|cninfo:1225511409 p56|
+|h1_consolidated_opening_cash_equivalents：期初现金及现金等价物余额|consolidated|H12026=17677587920.54；H12025=24546520007.54|cninfo:1225511409 p56|
+|h1_consolidated_closing_cash_equivalents：期末现金及现金等价物余额|consolidated|H12026=13914277571.64；H12025=16220905857.48|cninfo:1225511409 p56|
+|fy_parent_cfo：经营活动产生的现金流量净额|listed_parent_only|FY2025=7150459122.43；FY2024=17916866506.69|cninfo:1225259562 p91|
+|fy_parent_capex：购建固定资产、无形资产和其他长期资产支付的现金|listed_parent_only|FY2025=631984543.41；FY2024=775497717.02|cninfo:1225259562 p91|
+|fy_parent_cfi：投资活动产生的现金流量净额|listed_parent_only|FY2025=6936945467.12；FY2024=-26710795490.24|cninfo:1225259562 p91|
+|fy_parent_cff：筹资活动产生的现金流量净额|listed_parent_only|FY2025=-9154464812.27；FY2024=-6247691096.85|cninfo:1225259562 p91|
+|fy_parent_fx：汇率变动对现金及现金等价物的影响|listed_parent_only|FY2025=65113.83；FY2024=158057.52|cninfo:1225259562 p91|
+|fy_parent_movement：现金及现金等价物净增加额|listed_parent_only|FY2025=4933004891.11；FY2024=-15041462022.88|cninfo:1225259562 p91|
+|fy_parent_opening_cash_equivalents：期初现金及现金等价物余额|listed_parent_only|FY2025=8471582485.64；FY2024=23513044508.52|cninfo:1225259562 p91|
+|fy_parent_closing_cash_equivalents：期末现金及现金等价物余额|listed_parent_only|FY2025=13404587376.75；FY2024=8471582485.64|cninfo:1225259562 p91|
+|h1_parent_cfo：经营活动产生的现金流量净额|listed_parent_only|H12026=35551654301.69；H12025=-2890913995.51|cninfo:1225511409 p57|
+|h1_parent_capex：购建固定资产、无形资产和其他长期资产支付的现金|listed_parent_only|H12026=1235902972.58；H12025=237582482.91|cninfo:1225511409 p57|
+|h1_parent_cfi：投资活动产生的现金流量净额|listed_parent_only|H12026=-9125896231.66；H12025=1544381443.71|cninfo:1225511409 p57|
+|h1_parent_cff：筹资活动产生的现金流量净额|listed_parent_only|H12026=-24890894675.89；H12025=1623504544.86|cninfo:1225511409 p57|
+|h1_parent_fx：汇率变动对现金及现金等价物的影响|listed_parent_only|H12026=-22976.75；H12025=51410.90|cninfo:1225511409 p57|
+|h1_parent_movement：现金及现金等价物净增加额|listed_parent_only|H12026=1534840417.39；H12025=277023403.96|cninfo:1225511409 p57|
+|h1_parent_opening_cash_equivalents：期初现金及现金等价物余额|listed_parent_only|H12026=13404587376.75；H12025=8471582485.64|cninfo:1225511409 p57|
+|h1_parent_closing_cash_equivalents：期末现金及现金等价物余额|listed_parent_only|H12026=14939427794.14；H12025=8748605889.60|cninfo:1225511409 p57|
+|h1_monetary_cash：货币资金|consolidated|2026-06-30=16616742290.33；2025-12-31=19494920358.00|cninfo:1225511409 p48|
+|h1_parent_monetary_cash：货币资金|listed_parent_only|2026-06-30=14941770919.14；2025-12-31=13406727376.75|cninfo:1225511409 p50|
+|short_debt：短期借款|consolidated|2026-06-30=64677193034.15；2025-12-31=45630626027.83|cninfo:1225511409 p49|
+|bill_discount_debt：票据贴现借款|consolidated_external_bank_obligation|2026-06-30=48141014262.49；2025-12-31=36614614803.03|cninfo:1225511409 p148|
+|h1_asset_impairment：资产减值损失|consolidated_pre_tax|H12026=-2455875173.02；H12025=-337447486.85|cninfo:1225511409 p52|
+|h1_inventory_impairment：存货跌价损失及合同履约成本减值损失|consolidated_pre_tax|H12026=-907520836.34；H12025=-315591928.82|cninfo:1225511409 p167|
+|h1_goodwill_impairment：商誉减值损失|consolidated_pre_tax|H12026=-1546544866.49|cninfo:1225511409 p167|
+|h1_prior_tax_adjustment：调整以前期间所得税的影响|consolidated_tax_expense_not_parent_adjustment|H12026=450448607.55|cninfo:1225511409 p169|
+|h1_parent_sales_cash：销售商品、提供劳务收到的现金|listed_parent_only|H12026=58600086377.25；H12025=51741383133.15|cninfo:1225511409 p57|
+|h1_parent_purchase_cash：购买商品、接受劳务支付的现金|listed_parent_only|H12026=16440348197.41；H12025=47876131225.54|cninfo:1225511409 p57|
+|h1_consolidated_purchase_cash：购买商品、接受劳务支付的现金|consolidated|H12026=42391803459.23；H12025=45485531733.20|cninfo:1225511409 p55|
+|h1_mixed_distribution_interest：分配股利、利润或偿付利息支付的现金|consolidated_mixed_category|H12026=6287065552.99；H12025=8142842953.25|cninfo:1225511409 p56|
+|h1_parent_mixed_distribution_interest：分配股利、利润或偿付利息支付的现金|listed_parent_mixed_category|H12026=6186835910.21；H12025=8155287516.89|cninfo:1225511409 p57|
+|fy_parent_investment_income_cash：取得投资收益收到的现金|listed_parent_only|FY2025=5034946747.60；FY2024=8502296479.35|cninfo:1225259562 p91|
+|h1_parent_investment_income_cash：取得投资收益收到的现金|listed_parent_only|H12026=4783985308.29；H12025=4131426485.74|cninfo:1225511409 p57|
+|final_dividend：共计派发现金红利|listed_parent_external_shareholders_gross_tax|FY2025_final_paid_2026-06-05=5692824600.30|cninfo:1225335436 p1|
+|interim_dividend：共计派发现金红利|listed_parent_external_shareholders_gross_tax|FY2025_interim_paid_2025-12-17=3036173120.16|cninfo:1224859455 p1|
+|prior_final_dividend：共计派发现金红利|listed_parent_external_shareholders_gross_tax|FY2024_final_paid_2025-06-06=7716940013.74|cninfo:1223718270 p1|
+|h1_parent_equity_distribution：对所有者（或股东）的分配|listed_parent_only|H12026=-5692824600.30|cninfo:1225511409 p62|
+|settlement_two_issue_amounts：本息兑付总额分别为人民币|issuer_disclosed_completed_not_bank_statement|SCP010_paid_2026-09-29=10031454794.52；SCP011_paid_2026-09-29=10031454794.52|cninfo:1225591152 p1|
+
+## 确定性计算
+
+|计算|结果（元）|公式|
+|---|---:|---|
+|fy_consolidated_FY2025_cash_residual|0.00|opening+CFO+CFI+CFF+FX-closing|
+|fy_consolidated_FY2025_cash_capex_proxy|11307276333.64|CFO-gross_long_lived_asset_cash_purchases|
+|fy_consolidated_FY2024_cash_residual|0.00|opening+CFO+CFI+CFF+FX-closing|
+|fy_consolidated_FY2024_cash_capex_proxy|17761422072.42|CFO-gross_long_lived_asset_cash_purchases|
+|h1_consolidated_H12026_cash_residual|0.00|opening+CFO+CFI+CFF+FX-closing|
+|h1_consolidated_H12026_cash_capex_proxy|8454885438.50|CFO-gross_long_lived_asset_cash_purchases|
+|h1_consolidated_H12025_cash_residual|0.00|opening+CFO+CFI+CFF+FX-closing|
+|h1_consolidated_H12025_cash_capex_proxy|1511499321.75|CFO-gross_long_lived_asset_cash_purchases|
+|fy_parent_FY2025_cash_residual|0.00|opening+CFO+CFI+CFF+FX-closing|
+|fy_parent_FY2025_cash_capex_proxy|6518474579.02|CFO-gross_long_lived_asset_cash_purchases|
+|fy_parent_FY2024_cash_residual|0.00|opening+CFO+CFI+CFF+FX-closing|
+|fy_parent_FY2024_cash_capex_proxy|17141368789.67|CFO-gross_long_lived_asset_cash_purchases|
+|h1_parent_H12026_cash_residual|0.00|opening+CFO+CFI+CFF+FX-closing|
+|h1_parent_H12026_cash_capex_proxy|34315751329.11|CFO-gross_long_lived_asset_cash_purchases|
+|h1_parent_H12025_cash_residual|0.00|opening+CFO+CFI+CFF+FX-closing|
+|h1_parent_H12025_cash_capex_proxy|-3128496478.42|CFO-gross_long_lived_asset_cash_purchases|
+|ttm_parent_profit|10123316983.69|FY2025+H12026-H12025; 2025-07-01..2026-06-30|
+|ttm_ex_nonrecurring_parent_profit|9647734710.01|FY2025+H12026-H12025; 2025-07-01..2026-06-30|
+|ttm_single_parent_profit|11892393582.60|FY2025+H12026-H12025; 2025-07-01..2026-06-30|
+|fy_profit_minus_ex_profit|496844802.69|reported_parent_profit-ex_nonrecurring_parent_profit|
+|h1_profit_minus_ex_profit|162865580.03|reported_parent_profit-ex_nonrecurring_parent_profit|
+|ttm_consolidated_cfo|21138852610.23|FY2025+H12026-H12025; same statement scope|
+|ttm_consolidated_capex|2888190159.84|FY2025+H12026-H12025; same statement scope|
+|ttm_parent_cfo|45593027419.63|FY2025+H12026-H12025; same statement scope|
+|ttm_parent_capex|1630305033.08|FY2025+H12026-H12025; same statement scope|
+|fy2025_plan_dividends|8728997720.46|FY2025_interim+FY2025_final; different payment calendar years|
+|calendar2025_paid_dividends|10753113133.90|FY2024_final+FY2025_interim|
+|calendar2025_parent_partial_cash_proxy|11553421326.62|parent_CFO+investment_income_cash-gross_capex|
+|h1_parent_vs_consolidated_cfo_gap|25792506818.51|listed_parent_CFO-consolidated_CFO; not incremental external cash|
+|h1_parent_purchase_cash_change|-31435783028.13|H12026-H12025; not a complete explanation of CFO|
+|ttm_reported_minus_ex_parent_profit|475582273.68|TTM_reported-TTM_ex_nonrecurring|
+
+## 经济解释
+
+TTM归母利润10123316983.69元，扣非归母9647734710.01元；H1报告归母与扣非差仅162865580.03元，扣非仍同比下降，不能将下滑全部归为非经常项目。
+H1合并CFO增加同时母公司CFO远高于合并；各主体现金桥都对平，但内部现金流不能相加当外部股东新增现金。
+短借中存在大量合并内开票、向外部银行贴现融资。合并内部交易抵销不等于银行义务消失，不能剔除这笔负债制造净现金。
+商誉减值与存货减值应分别理解：前者挑战历史并购资本回报，后者涉及库存可回收价值；非现金不等于无经济损失。
+利润分配政策、实施公告、权益减少与混合股利利息现金行分别列示；FY2025计划分红跨两个支付日历年，不能与日历2025派息混比。
+兑付完成已由留存公告核读；资金来源、再融资及兑付后余额未证明，不能沿用缺公告说法，也不能解除流动性/模型门禁。
+
+## 限制与下一复核条件
+
+- 历史扣非不是正常化盈利；商誉/存货减值及税费不直接按税前数加回归母利润。
+- 母公司与合并CFO差异可观察，具体内部结算/融资及现金可取性贡献未建立归属桥。
+- 货币资金与现金等价物差额不全部解释为受限现金；资产负债表现金不净掉外部银行义务。
+- 实施公告与权益减少支持披露层已执行股息，未获得逐笔银行到账凭证；普通/特别分类未知。
+- 75%/1.22元政策已获股东会通过，不是未来可分配现金证明。
+- 6/30余额不能减9/29兑付金额推算期末现金；资金来源和兑付后债务/现金仍未知。
+- 原件可用日与今天核验时点分开；不证明完整事件覆盖或历史同期运行。
+- 未消费旧8%盈利增长/ROE路径，未产生新估值、报价、模型审批或仓位。
+
+下一复核只针对改变扣非/资产回收、母公司与合并现金归属、票据融资到期及兑付后流动性的事实。模型/重大性/价格准入分别审核；本包未签署任何审批。
+
+## 来源绑定
+
+- cninfo:1225259562：[官方PDF](https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF)；D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf；SHA-256 `d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac`。
+- cninfo:1225511409：[官方PDF](https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF)；D:/GPTProject/value-investment/runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf；SHA-256 `423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2`。
+- cninfo:1225335436：[官方PDF](https://static.cninfo.com.cn/finalpage/2026-05-29/1225335436.PDF)；D:/GPTProject/value-investment/runtime/company-research/m1-dividend-followup-20260928/600887/yili-fy2025-final-dividend-implementation.pdf；SHA-256 `c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70`。
+- cninfo:1224859455：[官方PDF](https://static.cninfo.com.cn/finalpage/2025-12-09/1224859455.PDF)；D:/GPTProject/value-investment/runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2025_interim_implementation.pdf；SHA-256 `cb0f2870dd2ed48799ec5c3403c402dc09129270b030b533818ba7b9662f0322`。
+- cninfo:1223718270：[官方PDF](https://static.cninfo.com.cn/finalpage/2025-05-30/1223718270.PDF)；D:/GPTProject/value-investment/runtime/company-research/m1-dividend-lifecycles/20260923T052056Z/600887/yili_fy2024_final_implementation.pdf；SHA-256 `94999a4f3f922ab372895488f872b8be864e1f3d5f8c9c78e34d3c3dc6ae0b3f`。
+- cninfo:1225321219：[官方PDF](https://static.cninfo.com.cn/finalpage/2026-05-21/1225321219.PDF)；D:/GPTProject/value-investment/runtime/company-research/yili-dividend-approval-202605/1225321219.pdf；SHA-256 `bda5690cbb6f81b591c7b731f9091d157071abed3054269000b8c690d68a8934`。
+- cninfo:1225591152：[官方PDF](https://static.cninfo.com.cn/finalpage/2026-10-01/1225591152.PDF)；D:/GPTProject/value-investment/runtime/public-event-followup-20261002/1225591152.pdf；SHA-256 `f59267675689f0d77cc142d91e910e2e839adfc0282a260483e0858cc82a1ba3`。

@@ -10,6 +10,7 @@ from .decision_surface import (
     current_recommendation_type,
     verify_current_decision_workbench,
 )
+from .research_reviews import verify_human_approval_transport_provenance
 from ...m1_valuation_package_builder import build_descriptor
 from ...research_artifact_codecs import artifact_payload
 from ...research_artifacts import canonicalize_artifact_payload
@@ -50,7 +51,12 @@ def _read_model_impacts(*, root, value, events, observed_at):
     binding = value.get("model_binding")
     workbench_path = _read_binding(root, binding, "model-bound workbench")
     workbench = load_json_object(workbench_path, "model-bound workbench")
-    restored = verify_current_decision_workbench(workbench)
+    restored = verify_current_decision_workbench(
+        workbench,
+        human_approval_provenance_verifier=lambda approval: (
+            verify_human_approval_transport_provenance(root, approval)
+        ),
+    )
     recommendation = restored.recommendation
     if (recommendation.symbol != value["symbol"]
             or current_recommendation_type(recommendation) != "NO_ACTION"

@@ -1,0 +1,319 @@
+{
+  "schema_version": "v5-integrated-continuation-v1",
+  "action": "no_order",
+  "observed_at": "2026-10-21T14:50:10.680078+00:00",
+  "goal_status": "IN_PROGRESS",
+  "shared_checkout_head": "b6969333373e8be58bc3050362346ae73adc2bc8",
+  "authorized_parent": "cfe751f81cca1d748f90bfa423ad95137222c06f",
+  "runtime_scope": "SHARED_DIRTY_WINDOWS_CHECKOUT_NOT_CLEAN_PRODUCTION_RELEASE",
+  "source_bindings": [
+    {
+      "path": "src/value_investment_agent/application/product/research_review_wizard.py",
+      "sha256": "662ca259af1ae03b871980169b5dbc471710700cfdc943e3e4a4a4419202b0b0"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/pending_candidate_replay.py",
+      "sha256": "739e530203f08eb7a2a0a5a1e9552f184978eef97cbac1b91e9e7dd402389782"
+    },
+    {
+      "path": "src/value_investment_agent/application/product/pending_replay_publication.py",
+      "sha256": "4e37ad6f0d39cf0a2a5221ad3190b7753d46cbc7c549584482576b9c8f066f05"
+    },
+    {
+      "path": "src/value_investment_agent/application/hotspot/retained_source_replay.py",
+      "sha256": "baf6dd8e0ff7d7e181eb18cf068b0b021dbdf5d9e53ee11b34ce899f1c0757d6"
+    },
+    {
+      "path": "src/value_investment_agent/application/decision/current_value_plan.py",
+      "sha256": "c6ba8456fa8a6c381fc6886c2329e945f6769127ba20320ddd765cb27d21dee7"
+    },
+    {
+      "path": "src/value_investment_agent/application/research/value_enrichment_batch.py",
+      "sha256": "56cb9d52918fc66a6c00589547f0debd15284d6ff45de9200ff7508b625ed30d"
+    },
+    {
+      "path": "src/value_investment_agent/infrastructure/screening/sina_income_original.py",
+      "sha256": "e7dbe56215dc530d31772c6c8a97f4514eb506b22a1a34a6e682ab8e440bdd81"
+    },
+    {
+      "path": "web/src/components/CurrentJudgment.tsx",
+      "sha256": "82caae0b34a4789a272540067ac7b9137c122d57054885a47fe707a5ecb0d324"
+    },
+    {
+      "path": "web/src/components/HotspotReplayReview.tsx",
+      "sha256": "b10977728c2d2071bab48c5bdacbfd52228baf4ea702896e305d86aa620245f6"
+    },
+    {
+      "path": "web/src/pages/DecisionDetail/index.tsx",
+      "sha256": "df43dfbf99a4486972db171dc8e033c2e5e27730fa6663adcccdedf00a891a6b"
+    }
+  ],
+  "public_api": {
+    "action": "no_order",
+    "value": {
+      "status": "RESEARCH_ONLY",
+      "review_replay": {
+        "status": "VERIFIED_EXACT_INPUT_REPLAY",
+        "symbol": "600519",
+        "action": "no_order",
+        "formal_eligibility": false,
+        "approval_changed": false,
+        "research_admitted": false,
+        "price_admitted": false,
+        "research_as_of": "2026-10-11",
+        "replayed_at": "2026-10-21T14:12:21.202083+00:00",
+        "publication_binding": {
+          "path": "runtime/pending-candidate-replay-v5-final-20261021/600519/publication.json",
+          "sha256": "9420dbbc50a95eba349157fe099b679587000b12e2b8ff3e429e2b7dc816542e"
+        },
+        "scope": "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY",
+        "next_url": "#value-review-handoff"
+      },
+      "financial_progress": {
+        "status": "VERIFIED_FACT_ADOPTION",
+        "symbol": "600519",
+        "adopted_fact_count": 3,
+        "research_inputs_updated": true,
+        "quality_coverage_before": "0.5556",
+        "quality_coverage_after": "0.8889",
+        "formal_eligibility": false,
+        "action": "no_order",
+        "as_of": "2026-10-21T13:07:59.980905+00:00",
+        "verified_at": "2026-10-21T14:41:15.521989+00:00",
+        "adopted_metrics": [
+          {
+            "field_name": "debt_ratio",
+            "value": "16.41536219224762329957853997",
+            "unit": "percent",
+            "period_label": "2025-12-31"
+          },
+          {
+            "field_name": "revenue_yoy",
+            "value": "-1.206003502122310075731217400",
+            "unit": "percent",
+            "period_label": "2025-12-31"
+          },
+          {
+            "field_name": "net_income_yoy",
+            "value": "-4.532254817158085759953691710",
+            "unit": "percent",
+            "period_label": "2025-12-31"
+          }
+        ]
+      },
+      "plan_price_fields": {
+        "market_trade_date": "2026-10-21",
+        "current_reference_price": "1309.69",
+        "entry_trigger_price": null,
+        "add_trigger_price": null,
+        "reduce_trigger_price": null,
+        "exit_trigger_price": null,
+        "invalidation_price": null,
+        "price_comparison_eligible": false,
+        "reference_close": "1309.69",
+        "reference_price_scope": "CURRENT_VERIFIED_CLOSE_NOT_VALUATION_COMPARABLE",
+        "quote_bridge_status": "INCREMENTAL_VALIDITY_BLOCKED",
+        "resolved_historical_quote_blockers": [
+          "等待已验证收盘行情",
+          "price_bridge_pending_external_data"
+        ],
+        "current_quote_verified": true,
+        "current_quote_blockers": []
+      }
+    },
+    "hotspot": {
+      "status": "HISTORICAL_DESCRIPTIVE_REPLAY_NOT_ADMITTED",
+      "retained": {
+        "scope": "DESCRIPTIVE",
+        "namespace": "ACTUAL",
+        "signal_event_count": 161,
+        "mature_five_session_count": 150,
+        "right_censored_count": 11,
+        "trade_count": null,
+        "formal_eligibility": false,
+        "strategy_validation": "NOT_PROVEN"
+      }
+    }
+  },
+  "tests": {
+    "backend_scopes_overlap": true,
+    "junit": {
+      "v5-integrated-core.xml": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "249",
+          "time": "98.832",
+          "timestamp": "2026-10-21T22:28:07.105303+08:00",
+          "hostname": "LiuMing"
+        }
+      ],
+      "v5-automatic-income-results.xml": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "154",
+          "time": "23.578",
+          "timestamp": "2026-10-21T22:14:43.625202+08:00",
+          "hostname": "LiuMing"
+        }
+      ],
+      "v5-review-final.xml": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "41",
+          "time": "44.735",
+          "timestamp": "2026-10-21T22:43:48.399105+08:00",
+          "hostname": "LiuMing"
+        }
+      ],
+      "v5-retained-portable.xml": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "27",
+          "time": "6.539",
+          "timestamp": "2026-10-21T22:49:44.919648+08:00",
+          "hostname": "LiuMing"
+        }
+      ]
+    },
+    "web": {
+      "passed": 315,
+      "failed": 0,
+      "typecheck": "PASS",
+      "format": "PASS",
+      "build": "PASS"
+    }
+  },
+  "browser": {
+    "platform": "Windows",
+    "actual_user_acceptance": "NOT_PASSED",
+    "checks": [
+      "REAL_PUBLIC_VALUE_DETAIL",
+      "REAL_RETAINED_HOTSPOT_HISTORY",
+      "REAL_PUBLIC_REVIEW_WITH_ISOLATED_TEST_ONLY_ACCOUNT"
+    ],
+    "desktop": "PASS_WITHIN_SCOPED_PATHS",
+    "mobile": {
+      "viewport_width": 390,
+      "document_width": 375,
+      "horizontal_table_scroll": "CONTAINED"
+    },
+    "screenshots": [
+      {
+        "path": "artifacts/current/dual-strategy-v5/current-quote-value-desktop.png",
+        "sha256": "fc1c7408ebd0c69c04e4be0ca66bc4e58de405b89bb115bae2c20684f4127fc7"
+      },
+      {
+        "path": "artifacts/current/dual-strategy-v5/current-quote-value-mobile.png",
+        "sha256": "1cf15c820bce62fd830fb7dd90876427cc74070e9a397f2f5d0f497fa45b7038"
+      },
+      {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-history-desktop.png",
+        "sha256": "3dbc45ed3095f32eabc8d61cef9d0643ad5e645cadbd31041406f99564b6a5d9"
+      },
+      {
+        "path": "artifacts/current/dual-strategy-v5/retained-hotspot-history-mobile.png",
+        "sha256": "03195e6db5c6dcfff8d63ebe15416cb9e83eb59d0f5beb796e5d2349fd9525b3"
+      },
+      {
+        "path": "artifacts/current/dual-strategy-v5/real-review-handoff-desktop.png",
+        "sha256": "268e9122261fdf28ee45f036e1fcbe870d71f772e4e128f6538d93f5036233a0"
+      },
+      {
+        "path": "artifacts/current/dual-strategy-v5/real-review-handoff-mobile.png",
+        "sha256": "f4b20b11b6266cac4c532ec05474a3a1c7f0ad0fd54f23a5c3fdb3ec4741b1e3"
+      }
+    ],
+    "read_only_review": {
+      "real_signature_submitted": false,
+      "private_confirmation_submitted": false,
+      "fill_recorded": false,
+      "pinned_reviewer_roots": 0,
+      "handoff_status": "EXTERNAL_SIGNATURE_REQUIRED",
+      "materiality_status": "MATERIALITY_HANDOFF_BLOCKED",
+      "missing": "MODEL_BOUND_COMPLETE_ANNOUNCEMENT_SCAN"
+    },
+    "isolated_journal": {
+      "scope": "TEST_ONLY",
+      "sha256": "c1d940ffab11beccbb0c4c9dd717549e2590c6638daf2b01e80993d7d652682f",
+      "unchanged": true
+    },
+    "transient_build_chunk_race": "RELOADED_AFTER_SETTLED_BUILD",
+    "owned_test_server_stopped": true
+  },
+  "retained_hotspot_archive": {
+    "manifest": {
+      "path": "runtime/hotspot-retained-source-replays/90a2563ecff349719e9f70318a9caf4d/manifest.json",
+      "sha256": "ce5725c8667f72d96023b778f864fa59d835f2314fe97964ceaaf0cefc32f61e"
+    },
+    "files": 20,
+    "bytes": 7981602,
+    "privacy_review": "EULER_SCOPED_20_FILES_ONLY",
+    "execution_cost_validation": "NOT_PROVEN"
+  },
+  "pending_replay_portability": {
+    "actual_runtime_committed": false,
+    "transitive_files": 78,
+    "bytes": 7148423,
+    "limitation": "PRODUCER_RAW_NEWLINE_IDENTITY_AND_UNARCHIVED_RUNTIME",
+    "fresh_clone": "FAIL_CLOSED",
+    "independent_review": "GAUSS_READ_ONLY_DEPENDENCY_AUDIT"
+  },
+  "independent_audits": {
+    "automatic_income": "ERDOS_NO_REMAINING_P0_P1_IN_SCOPE",
+    "fresh_quote": "ERDOS_NO_REMAINING_P0_P1_IN_SCOPE",
+    "pending_handoff": "RAMAN_NO_REMAINING_P0_P1_IN_SCOPE",
+    "retained_hotspot": "EULER_CORRECTNESS_AND_SCOPED_PUBLIC_FILE_REVIEW"
+  },
+  "statuses": {
+    "VALUE_ENGINEERING_CLOSURE": "PARTIAL",
+    "VALUE_REAL_EVIDENCE": "PARTIAL",
+    "VALUE_ECONOMIC_ADMISSION": "NOT_PROVEN",
+    "HOTSPOT_ENGINEERING_CLOSURE": "PARTIAL",
+    "HOTSPOT_STRATEGY_VALIDATION": "NOT_PROVEN",
+    "HOTSPOT_FORMAL_ADMISSION": "BLOCKED",
+    "PERSONAL_DECISION_ENGINEERING": "PARTIAL",
+    "REAL_PRIVATE_PORTFOLIO_READY": "NOT_PROVEN",
+    "UNIFIED_DECISION_ENGINEERING": "PARTIAL",
+    "WEB_E2E": "PARTIAL",
+    "DAILY_RUN": "PARTIAL",
+    "REAL_ASSISTED_USE_READY": "NOT_PROVEN"
+  },
+  "remaining_work": [
+    {
+      "scope": "ENGINEERING_AND_EVIDENCE",
+      "item": "600887 separately evidenced successor package; preserve rejected legacy replay"
+    },
+    {
+      "scope": "ENGINEERING_AND_EVIDENCE",
+      "item": "600519 new model-bound complete announcement scan and exact-version handoff"
+    },
+    {
+      "scope": "RESEARCH",
+      "item": "Complete debt scope, financial-company boundary, earnings assumptions and new economic admission"
+    },
+    {
+      "scope": "HUMAN_AUTHORITY",
+      "item": "Independent authorized reviewer identity and exact-version G3/materiality signatures"
+    },
+    {
+      "scope": "STRATEGY_VALIDATION",
+      "item": "Contemporaneous selection/PIT, dated execution costs, untouched OOS and real Shadow"
+    },
+    {
+      "scope": "PRIVATE_USER_INPUT",
+      "item": "Real IPS, portfolio, reconciliation and user acceptance"
+    }
+  ]
+}

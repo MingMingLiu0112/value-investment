@@ -1,0 +1,19 @@
+{
+  "schema_version": "current-hotspot-structure-validation-v1",
+  "action": "no_order",
+  "status": "VERIFIED",
+  "manifest_path": "artifacts/current/hotspot-structure-validation-20261017-v3/manifest.json",
+  "manifest_sha256": "3b8e10f821d986e83c5caa0c7302638b533f994aa738162ca00b62223f05873b",
+  "evidence_sha256": "a65fc7002cac4b57da746ced01f7ce5a5417712e7e1a38777bc90717e4f754dd",
+  "strategy_validation": "NOT_PROVEN",
+  "rule_pit_status": "NOT_PROVEN",
+  "classification_pit": "NOT_PROVEN",
+  "formal_eligibility": false,
+  "portfolio_eligibility": null,
+  "trade_intent": "NO_TRADE",
+  "current_reference": "artifacts/current/hotspot-structure-validation-20261017-v3",
+  "superseded": [
+    "artifacts/current/hotspot-structure-validation-20261017-v1",
+    "artifacts/current/hotspot-structure-validation-20261017-v2"
+  ]
+}

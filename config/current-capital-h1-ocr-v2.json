@@ -1,0 +1,22 @@
+{
+  "schema_version": "current-capital-h1-ocr-overlay-v2",
+  "action": "no_order",
+  "cases": {
+    "600519": {
+      "issuer_name": "贵州茅台酒股份有限公司",
+      "report_year": 2026,
+      "report_period_end": "2026-06-30",
+      "original_available_at": "2026-08-16T00:00:00+08:00",
+      "cross_notice_available_at": "2026-05-29T00:00:00+08:00",
+      "files": {
+        "source-manifest.json": {"path": "runtime/h1-2026-ocr/source-manifest.json", "sha256": "1645d742091b64a057bd823b82afef589cbd44eedcd179b5b48458d57f9cd4a4"},
+        "original.pdf": {"path": "runtime/h1-2026-ocr/original.pdf", "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6"},
+        "cross-notice.pdf": {"path": "runtime/h1-2026-ocr/cross-notice.pdf", "sha256": "c3d2cf8322ad4b8d8b69c914a0afd265bf0f85cdaa1f023d00109caa0a9721c1"},
+        "page-22.png": {"path": "runtime/h1-2026-ocr/page-22.png", "sha256": "59975e53480b52d718582c71b4d4ba4ccfc9c7acdfc081cf5cb5b5f957f15dad"},
+        "page-23.png": {"path": "runtime/h1-2026-ocr/page-23.png", "sha256": "d4b121da5b6f4e68ccd518aa63ca8715eab2184f0fb396ade4f23b6525ffa672"},
+        "page-22.ocr.json": {"path": "runtime/h1-2026-ocr/page-22.ocr.json", "sha256": "042f949ffa5d5a266bf9dd76fda23188b387b03830e92add98fd544ea9841890"},
+        "page-23.ocr.json": {"path": "runtime/h1-2026-ocr/page-23.ocr.json", "sha256": "ddec835a993c9e573ebc8ca783a3f181fc60c59cb60cd28f59daa99fba7cb73d"}
+      }
+    }
+  }
+}

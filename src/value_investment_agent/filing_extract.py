@@ -7,7 +7,7 @@ import re
 from decimal import Decimal
 from pathlib import Path
 
-ANNUAL_BACKFILL_PARSER_VERSION = 'filing-extract-v35-chinese-note-reference'
+ANNUAL_BACKFILL_PARSER_VERSION = 'filing-extract-v36-require-digit-in-amount'
 
 FIELDS = {
     "资产总计": "total_assets",
@@ -71,7 +71,7 @@ def _number_after_label(text: str, label: str, *, bare_footnote: bool = True,
     loss_note = (rf'(?:\s*[（(]\s*{note_words}\s*[“"][-—－][”"]\s*{note_end}\s*[）)])?'
                  if monetary and label == '归属于母公司股东的净利润' else '')
     match = re.search(
-        rf"(?<![\u4e00-\u9fff]){label_pattern}{loss_note}{footnote}\s+(-?[\d,]+(?:\.\d+)?)",
+        rf"(?<![\u4e00-\u9fff]){label_pattern}{loss_note}{footnote}\s+(-?\d[\d,]*(?:\.\d+)?)",
         text,
     )
     if match is None:
@@ -81,6 +81,10 @@ def _number_after_label(text: str, label: str, *, bare_footnote: bool = True,
         # A lone following number might instead be the previous-year value.
         value = match.group(1)
         tail = text[match.end():]
+        # A broken thousands separator such as "1 , 834,039,609.86" is not
+        # the amount 1. Keep this row pending instead of inventing a value.
+        if re.match(r'\s+,', tail):
+            return None
         if '.' not in value and tail.startswith('.'):
             spaced = re.match(r'\.\s+(\d{2})\s+-?[\d,]+\.\s+\d{2}(?=\s|$)', tail)
             if spaced is None:

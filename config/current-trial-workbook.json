@@ -16,15 +16,15 @@
   "historical_wps_readonly_receipt_sha256": "b6fe4a7b9949b76cdb3ff3f3c4392fa62ccd4a7a6745e76df0a30800e941ed60",
   "visual_review_receipt": "runtime/m7-product-ux-candidate-v3-20261001-delivery-visual.json",
   "historical_visual_review_receipt_sha256": "0c7cd7c4ea62bbd8e1232f19e669c5a6962bc45b32468ad6d143fe4a93b5918d",
-  "previous_canonical_workbook_sha256": "b630e0198e10d6a8e6bac7a1b4ea91480fd96d51506c22019216aba1b3af7621",
-  "canonical_workbook_sha256": "dd8aa81f15548a7b274fc96173d92401d7bcea593f90f89f36e558568cc9c782",
+  "previous_canonical_workbook_sha256": "7874aa5accc08e880cb1444843e6a4a2076f303cfe4f9885ade16eb29b494faf",
+  "canonical_workbook_sha256": "aeaa3c7fec2b46d34c0651b0384dec49fb3ca16747dc41fcf675bbd022be82f1",
   "current_publication": {
-    "receipt": "runtime/publication-receipts/canonical-reviewed-research-20261011T170534Z-de11d84a.json",
-    "receipt_sha256": "feed6bdf99df5e8a3ecf78c551e5dce7ddf04c03f4e84870a3afc91538a0d041",
-    "wps_receipt": "runtime/daily-trade-assistant/20261012-productization-canonical-publish-v5/published-native-review/receipt.json",
-    "wps_receipt_sha256": "cea921116334e72298d40e64276f61c14f6b23c5f1c3389a591d8197634bf7f1",
+    "receipt": "runtime/publication-receipts/canonical-reviewed-research-20261012T113935Z-362d7928.json",
+    "receipt_sha256": "cc524ff8e94173b146c578b6bc8dbde1f103aacc95cf9b0f6c8d9ee41e51c48d",
+    "wps_receipt": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/published-native-review/receipt.json",
+    "wps_receipt_sha256": "df91b8e1db9258dc4352298ccd2b5bcd17bb5213427b4a863f66bd92d4370339",
     "status": "PUBLISHED_WPS_READONLY_VERIFIED",
-    "registered_at": "2026-10-11",
+    "registered_at": "2026-10-12",
     "research_as_of": "2026-10-11",
     "registered_research_dates": {
       "600519": "2026-10-08",
@@ -48,7 +48,7 @@
   "initial_assisted_use": "NOT_REACHED",
   "action": "no_order",
   "daily_product_state_binding": {
-    "path": "runtime/daily-trade-assistant/20261012-productization-canonical-publish-v5/product-update-state.json",
-    "sha256": "52721f77f82e8607da3564c4c82e2cfce33d6833185edde917f2721cc74e0cf6"
+    "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/product-update-state-v3.json",
+    "sha256": "39a8a6e4cd617bf93cd1997d22ff5742e506ef59934c72dbe00541bf8d4ec680"
   }
 }

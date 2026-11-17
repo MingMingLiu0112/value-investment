@@ -4,6 +4,7 @@
   "paths": {
     "src/value_investment_agent/historical_validation.py": "806d890817611000a588c9ee76ee00cc18a2529d5e1ee9769c092cc00452c5ba",
     "src/value_investment_agent/virtual_account.py": "89d93e23d50fcafb936104049ce02f8273bc28c105f6b5f3923818cd904e07cd",
+    "src/value_investment_agent/application/product/research_reviews.py": "bbed3042faac05efc49e2897f5840c5e7d813cc14256021d1ea27c4fffdf2d7c",
     "config/historical-validation-policy-v1.json": "bddc62c602b1837a5cb52f6a62ec16cb91395effd1d3d09e6b5fc11c68ba6870",
     "docs/reviewed-cash-distributions.json": "ab15bdef761774593cd0a8ea96effe1cefa51424643673de492366c9c492312f",
     "docs/historical-trading-fees.md": "3280c81358f07eedc9626d923eb19e5ec5a64585f23bb2079dd70c4bcf820513",

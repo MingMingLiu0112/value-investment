@@ -39,7 +39,8 @@ SENSITIVITY_LEVELS = {SENSITIVITY_LOW, SENSITIVITY_MEDIUM, SENSITIVITY_HIGH}
 
 ORDER_ASCENDING = "ascending"
 ORDER_DESCENDING = "descending"
-SCENARIO_ORDERINGS = {ORDER_ASCENDING, ORDER_DESCENDING}
+ORDER_NON_MONOTONIC = "non_monotonic"
+SCENARIO_ORDERINGS = {ORDER_ASCENDING, ORDER_DESCENDING, ORDER_NON_MONOTONIC}
 
 
 def _validate_refs(refs: list[dict[str, Any]]) -> None:
@@ -69,6 +70,8 @@ def _scenario_values_are_ordered(
         return True
     if ordering == ORDER_ASCENDING:
         return values[0] <= values[1] <= values[2]
+    if ordering == ORDER_NON_MONOTONIC:
+        return True
     return values[0] >= values[1] >= values[2]
 
 

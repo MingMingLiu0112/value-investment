@@ -1,0 +1,73 @@
+{
+  "schema_version": "company-profile-c-public-acceptance-v1",
+  "action": "no_order",
+  "checked_at": "2026-10-31T00:57:32.785553+00:00",
+  "baseline_head": "b8173980bdd8fafc334f3b2f385bd2901c44d9f8",
+  "scope": "Two retained-source company profiles; validation before existing analysis, no new collection",
+  "implementation_files": {
+    "src/value_investment_agent/application/research/company_profile.py": "99d5296f34ed04fa69a0d36de276b26abb121d1e223e63b2c5940a1420acd97e",
+    "src/value_investment_agent/presentation/web_api/app.py": "7a927055cf397eb130fd1f77222db1b964e4d8921be421a12165c3599f8a1ef6",
+    "src/value_investment_agent/application/research/value_research_analysis.py": "8ce286f056a7652dd552825140221293f776f85d22b74d0970758078363dd7fe",
+    "src/value_investment_agent/application/research/v4_input_adapter.py": "1e134d961627d5ab42ade9d2af9b46010d71a5a0e67cc60e6e8703d0d9737481"
+  },
+  "implementation_unchanged_during_acceptance": true,
+  "actual_api_results": [
+    {
+      "symbol": "600519",
+      "http_status": 200,
+      "cache_control": "no-store",
+      "status": "SOURCE_BOUND_PROFILE",
+      "reported_business_family": "consumer_products",
+      "profile_validation": "REPORTED_BUSINESS_TEMPLATE_CANDIDATE",
+      "consumption_status": "C_PROFILE_VALIDATED_AND_EXISTING_ANALYSIS_REPLAYED",
+      "source_ref_count": 2,
+      "counter_evidence_count": 9,
+      "formal_eligibility": false
+    },
+    {
+      "symbol": "600887",
+      "http_status": 200,
+      "cache_control": "no-store",
+      "status": "SOURCE_BOUND_PROFILE",
+      "reported_business_family": "consumer_products",
+      "profile_validation": "REPORTED_BUSINESS_TEMPLATE_CANDIDATE",
+      "consumption_status": "C_PROFILE_VALIDATED_AND_EXISTING_ANALYSIS_REPLAYED",
+      "source_ref_count": 4,
+      "counter_evidence_count": 5,
+      "formal_eligibility": false
+    }
+  ],
+  "validation_before_analysis": true,
+  "reported_business_family_not_economic_quality_proof": true,
+  "economic_quality_proven": false,
+  "moat_proven": false,
+  "approved": false,
+  "tests": {
+    "backend_passed": 34,
+    "backend_skipped": 0,
+    "actual_retained_source_tests": 2,
+    "scope": "company_profile, company_profile_api, research_profile; explicit VALUE_COMPANY_PROFILE_REAL_ROOT",
+    "synthetic_negative_cases": "Unknown main business, mixed business, financial institution, customer bank mention and raw issuer mismatch are tests, not actual issuer evidence",
+    "root_reported_integrated_backend": {
+      "passed": 75,
+      "skipped": 0,
+      "provenance": "Root final integrated verification report; independent worker verification is recorded separately"
+    }
+  },
+  "runtime_receipt": {
+    "path": "runtime/c-profile-source-handoff-20261031/frozen-source-api-acceptance.json",
+    "sha256": "fa9349dc2640e7a14cfd9db70df442a0b4b46a94541296164085960ad7892897"
+  },
+  "new_collection_count": 0,
+  "raw_evidence_included": false,
+  "private_data_included": false,
+  "limitations": [
+    "Only existing 600519 and 600887 sources accepted here; no third-company deep research",
+    "000333/601088 current complete source/profile acceptance not established",
+    "No ROIC, normalized earnings, sustainable dividend, economic/valuation or trading approval",
+    "Production deployment not verified by this receipt; user has not confirmed this version"
+  ],
+  "formal_eligibility": false,
+  "trade_eligible": false,
+  "user_acceptance": "用户尚未确认此版本"
+}

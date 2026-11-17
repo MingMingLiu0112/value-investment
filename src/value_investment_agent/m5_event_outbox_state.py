@@ -10,6 +10,7 @@ from .m5_event_outbox import (
     ALERT_FAILED_RETRYABLE,
     ALERT_FAILED_TERMINAL,
     ALERT_SENT,
+    ALERT_LIFECYCLE_TERMINALS,
 )
 from .m5_event_outbox_transition import (
     OutboxTransitionRecord,
@@ -26,11 +27,21 @@ def apply_outbox_transition(
     to_status: str,
     occurred_at: datetime,
     error: str | None = None,
+    reason: str | None = None,
+    expires_at: datetime | None = None,
+    evidence_refs: tuple[str, ...] = (),
 ) -> M5EventRunState:
     """Return a successor state with one persisted outbox transition.
 
     Repeating the exact request is an idempotent clone. This function never
     sends a notification; callers record the transport outcome explicitly.
+
+    CANCELLED/EXPIRED require a reason and nonempty evidence reference strings.
+    EXPIRED also requires an aware expires_at, at or after alert creation and
+    at or before occurred_at. The caller supplies the policy deadline and its
+    evidence; this helper neither infers TTLs nor authorizes the caller. These
+    fields are immutable v2 transition identity inputs. Termination stops
+    delivery only and retains the event's human-review/risk requirements.
     """
     if not isinstance(state, M5EventRunState):
         raise ValueError("state must be an M5EventRunState")
@@ -42,6 +53,9 @@ def apply_outbox_transition(
         to_status=to_status,
         occurred_at=occurred_at,
         error=error,
+        reason=reason,
+        expires_at=expires_at,
+        evidence_refs=evidence_refs,
     )
     existing = next(
         (
@@ -59,6 +73,9 @@ def apply_outbox_transition(
             or existing.occurred_at != requested.occurred_at
             or existing.error != requested.error
             or existing.action != requested.action
+            or existing.reason != requested.reason
+            or existing.expires_at != requested.expires_at
+            or existing.evidence_refs != requested.evidence_refs
         ):
             raise ValueError("Outbox transition id was reused with different inputs")
         return state.clone()
@@ -88,6 +105,10 @@ def apply_outbox_transition(
             now=occurred_at,
             error=error,
             terminal=to_status == ALERT_FAILED_TERMINAL,
+        )
+    elif to_status in ALERT_LIFECYCLE_TERMINALS:
+        updated = candidate.outbox.mark_terminated(
+            alert_id=alert_id, now=occurred_at, status=to_status,
         )
     else:
         raise ValueError("Unsupported outbox transition")

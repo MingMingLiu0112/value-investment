@@ -1,0 +1,24 @@
+{
+  "action": "no_order",
+  "observed_at": "2026-10-21T16:02:10.290933+00:00",
+  "code_sha": "030e7581cd30ac99ac84315487af4daa04e7f6da",
+  "workflows": {
+    "Core Research Gates": {
+      "id": 39630169513,
+      "head_sha": "030e7581cd30ac99ac84315487af4daa04e7f6da",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39630169513"
+    },
+    "Web Workbench": {
+      "id": 39630169305,
+      "head_sha": "030e7581cd30ac99ac84315487af4daa04e7f6da",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/MingMingLiu0112/value-investment/actions/runs/39630169305"
+    }
+  },
+  "source_only_ci": true,
+  "local_real_signature": false,
+  "investment_qualification": false
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": "p6-refresh-failure-e2e-v1",
+  "action": "no_order",
+  "execution": "ACTUAL_WINDOWS_PWSH_SAME_SAFE_REFRESH_NOSERVER",
+  "injection": [
+    "missing_public_input_registry",
+    "network_connect_denied_in_isolated_python"
+  ],
+  "exit_code": 2,
+  "status": "BLOCKED",
+  "published": false,
+  "retained_publication_id": "pub-53fd34a5ae8aefdcaa5e",
+  "finished_at": "2026-10-15T02:17:21.5765797+00:00",
+  "pointer_sha_before": "34b297817537e58156b608fc22952818b32f4455b7e5e5baa026f68ca702f44d",
+  "pointer_sha_after": "34b297817537e58156b608fc22952818b32f4455b7e5e5baa026f68ca702f44d",
+  "packet_sha_before": "8891179146e63f80ef5b210486c29231834a392ee40367233aa0af4ebf8c6f8a",
+  "packet_sha_after": "8891179146e63f80ef5b210486c29231834a392ee40367233aa0af4ebf8c6f8a",
+  "original_pointer_unchanged": true,
+  "network_failure_observed": true,
+  "network_failed_request_count": 3,
+  "no_server_observed": true,
+  "excel_or_private_copied": false,
+  "script_sha256": "659518ac24f30771c1f631900d7295717b7e20430f916e8142d17374ea6ac83d"
+}

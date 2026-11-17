@@ -1,0 +1,31 @@
+{
+  "bundle_sha256": "348171fc8b147b1aba356c3efa65c1b9e740a37919d13c65e4e974372b106cd5",
+  "bundle_bytes": 41592,
+  "document_count": 3,
+  "company_count": 1,
+  "status": "collected_not_verified",
+  "observations": [
+    {
+      "symbol": "600519",
+      "observed_price": "1255.79",
+      "result": {
+        "version": "quote-session-v2-szse-sse-raw-evidence",
+        "status": "matched_close",
+        "passed": true,
+        "expected_session": "2026-10-08",
+        "provider_times": {
+          "tencent": "2026-10-08T16:14:57+08:00",
+          "sina": "2026-10-08T15:34:59+08:00"
+        },
+        "source_hashes": [
+          "faab934ff758d6a4cbc91c89594e40219aaac1c70fcf79a3a475d728d9620768",
+          "8b1c064d5d3f22f73d6ee1c25d16814660e90d140db47e8249e65408dbdc6ac3",
+          "4e260b815ce1309175ed994e6490a4ccd51b998a5f92bcdc41cec00fc6823dc7"
+        ],
+        "reason": "带日期双源报价与最近已完成交易日一致"
+      }
+    }
+  ],
+  "production_database_changed": false,
+  "financial_or_strategy_approval": false
+}

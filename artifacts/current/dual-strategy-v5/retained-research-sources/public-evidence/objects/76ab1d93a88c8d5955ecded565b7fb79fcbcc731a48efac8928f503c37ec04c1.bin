@@ -1,0 +1,1294 @@
+{
+  "schema_version": "finite-neutral-valuation-proposal-v1",
+  "symbol": "600887",
+  "status": "NEUTRAL_VALUATION_PROPOSAL_PENDING_REVIEW",
+  "action": "no_order",
+  "generated_at": "2026-10-11T08:21:25.084924+00:00",
+  "original_research_as_of": "2026-09-22",
+  "original_valuation_date": "2026-09-22",
+  "date_semantics": "New proposal computed now on retained financial/date basis; not a contemporaneous historical or current admitted valuation.",
+  "source_descriptor_sha256": "e34062506c9cc4daf8bc6219f6b6ae7f88ed45f068240a9a083bf04b436f76bb",
+  "baseline_valuation": {
+    "symbol": "600887",
+    "model_type": "residual_income_or_equity_value",
+    "valuation_date": "2026-09-22",
+    "bear_value": "10.37178165795572420912536576",
+    "base_value": "17.02303690867559841190686682",
+    "bull_value": "24.07169429656794742058832475",
+    "confidence": "低",
+    "assumptions": {
+      "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+      "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+      "status": "conditional_research_only",
+      "disclaimer": "No market price, margin of safety, position or order is produced here."
+    },
+    "sensitivities": [
+      {
+        "scenario": "bear",
+        "cost_of_equity": "0.08",
+        "ordinary_equity_value": "65605259745.9451855399012710247467222880925123193",
+        "per_share_value": "10.37178165795572420912536576",
+        "terminal_residual_contribution_ratio": "0.1089119603358798697159902947",
+        "dividend_crosscheck_difference": "0E-37",
+        "arithmetic_status": "research_arithmetic_only"
+      },
+      {
+        "scenario": "base",
+        "cost_of_equity": "0.08",
+        "ordinary_equity_value": "107676848095.025901257363359826959874597649377289",
+        "per_share_value": "17.02303690867559841190686682",
+        "terminal_residual_contribution_ratio": "0.3546413850622337449832432876",
+        "dividend_crosscheck_difference": "0E-36",
+        "arithmetic_status": "research_arithmetic_only"
+      },
+      {
+        "scenario": "bull",
+        "cost_of_equity": "0.08",
+        "ordinary_equity_value": "152262148291.559127707113495348678822714510589552",
+        "per_share_value": "24.07169429656794742058832475",
+        "terminal_residual_contribution_ratio": "0.4780164137103141968390147318",
+        "dividend_crosscheck_difference": "0E-36",
+        "arithmetic_status": "research_arithmetic_only"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "yili_fy2025_annual",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+        "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+      },
+      {
+        "id": "yili_2026h1",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+        "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+      },
+      {
+        "id": "china_cost_equity_20260914",
+        "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+        "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+      }
+    ],
+    "blockers": [],
+    "status": "conditional_research_only",
+    "model_version": "residual-income-equity-shared-v1"
+  },
+  "choices": [
+    {
+      "id": "short-advantage",
+      "growth_years": 1,
+      "fade_years": 3,
+      "rationale": "盈利条件保留一年，再用三年全资本ROE衰减至权益成本；不假定永久超额回报。",
+      "countercase": "盈利下降、减值及融资约束可能使短期持续性也无法成立。",
+      "status": "NEUTRAL_VALUATION_PROPOSAL_PENDING_REVIEW",
+      "valuation": {
+        "symbol": "600887",
+        "model_type": "residual_income_or_equity_value",
+        "valuation_date": "2026-09-22",
+        "bear_value": "9.74911416028948890779673139278982400804849464673",
+        "base_value": "10.0300066681498756130065711437009342329189104432",
+        "bull_value": "10.2594763327078873451832064779830341362051296689",
+        "confidence": "低",
+        "assumptions": {
+          "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+          "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+          "status": "conditional_research_only",
+          "disclaimer": "No market price, margin of safety, position or order is produced here.",
+          "valuation_timing": {
+            "basis_at": "2026-06-30T23:59:59+08:00",
+            "valuation_at": "2026-09-22T16:00:00+08:00",
+            "evidence_refs": [
+              {
+                "id": "cninfo:1225259562",
+                "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+              },
+              {
+                "id": "cninfo:1225511409",
+                "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+              }
+            ],
+            "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+          }
+        },
+        "sensitivities": [
+          {
+            "scenario": "bear",
+            "cost_of_equity": "0.10",
+            "ordinary_equity_value": "61666663247.5878664709102343831168801783622394670",
+            "per_share_value": "9.74911416028948890779673139278982400804849464673",
+            "terminal_residual_contribution_ratio": "0E+8",
+            "dividend_crosscheck_difference": "2E-37",
+            "arithmetic_status": "research_arithmetic_only",
+            "basis_to_valuation_factor": "1.02208776037803898332045808650927601531853632684"
+          },
+          {
+            "scenario": "base",
+            "cost_of_equity": "0.09",
+            "ordinary_equity_value": "63443409668.4629448634542787249030942080590927176",
+            "per_share_value": "10.0300066681498756130065711437009342329189104432",
+            "terminal_residual_contribution_ratio": "0E+8",
+            "dividend_crosscheck_difference": "2E-37",
+            "arithmetic_status": "research_arithmetic_only",
+            "basis_to_valuation_factor": "1.01995037784329480222587933092665066994969343704"
+          },
+          {
+            "scenario": "bull",
+            "cost_of_equity": "0.08",
+            "ordinary_equity_value": "64894888058.9278762138889061647734856184702478516",
+            "per_share_value": "10.2594763327078873451832064779830341362051296689",
+            "terminal_residual_contribution_ratio": "0E+8",
+            "dividend_crosscheck_difference": "0E-37",
+            "arithmetic_status": "research_arithmetic_only",
+            "basis_to_valuation_factor": "1.01779782728600849991825516347210842344610117363"
+          }
+        ],
+        "evidence_refs": [
+          {
+            "id": "yili_fy2025_annual",
+            "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+          },
+          {
+            "id": "yili_2026h1",
+            "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          },
+          {
+            "id": "cninfo:1225259562",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+          },
+          {
+            "id": "cninfo:1225511409",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          },
+          {
+            "id": "china_cost_equity_20260914",
+            "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+            "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+          }
+        ],
+        "blockers": [],
+        "status": "conditional_research_only",
+        "model_version": "residual-income-equity-shared-dated-v2"
+      },
+      "actual_calculation_inputs": {
+        "start_book_equity": "53711364981.99",
+        "ordinary_shares": "6325360667",
+        "profit_anchor": "9647734710.01",
+        "profit_anchor_field": "ttm_ex_nonrecurring_parent_profit_cny",
+        "profit_anchor_unit": "CNY",
+        "profit_anchor_scope": "consolidated_parent_profit_ex_nonrecurring",
+        "scenarios": {
+          "bear": {
+            "cost_of_equity": "0.10",
+            "forecast_roe": [
+              "0.170640756897217935751938067909694803009634988837",
+              "0.147093837931478623834625378606463202006423325891",
+              "0.123546918965739311917312689303231601003211662946",
+              "0.100000000000000000000000000000000000000000000000"
+            ],
+            "terminal_roe": "0.10",
+            "terminal_growth": "0",
+            "retention": "0.20"
+          },
+          "base": {
+            "cost_of_equity": "0.09",
+            "forecast_roe": [
+              "0.179621849365492563949408492536520845273299988250",
+              "0.149747899576995042632938995024347230182199992167",
+              "0.119873949788497521316469497512173615091099996083",
+              "0.090000000000000000000000000000000000000000000000"
+            ],
+            "terminal_roe": "0.09",
+            "terminal_growth": "0",
+            "retention": "0.15"
+          },
+          "bull": {
+            "cost_of_equity": "0.08",
+            "forecast_roe": [
+              "0.185010504846457340867890747312616470631498987897",
+              "0.150007003230971560578593831541744313754332658598",
+              "0.115003501615485780289296915770872156877166329299",
+              "0.080000000000000000000000000000000000000000000000"
+            ],
+            "terminal_roe": "0.08",
+            "terminal_growth": "0",
+            "retention": "0.10"
+          }
+        },
+        "valuation_timing": {
+          "basis_at": "2026-06-30T23:59:59+08:00",
+          "valuation_at": "2026-09-22T16:00:00+08:00",
+          "evidence_refs": [
+            {
+              "id": "cninfo:1225259562",
+              "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+            },
+            {
+              "id": "cninfo:1225511409",
+              "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+            }
+          ],
+          "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+        }
+      },
+      "calculation_inputs_sha256": "5f59bfa7df07bebf39cbd652e0bea213644823729ccde0f5bd3cf5981aa8c808",
+      "annual_arithmetic": {
+        "bear": {
+          "cost_of_equity_cny_nominal": "0.10",
+          "forecast_years": [
+            {
+              "year": 1,
+              "opening_book_equity_cny": "53711364981.99",
+              "roe_assumption": "0.170640756897217935751938067909694803009634988837",
+              "net_income_assumption_cny": "9165347974.50949999999999999999999999999999999999",
+              "retention_assumption": "0.20",
+              "dividend_assumption_cny": "7332278379.60759999999999999999999999999999999999",
+              "residual_income_cny": "3794211476.31049999999999999999999999999999999999",
+              "discount_factor": "1.10",
+              "closing_book_equity_cny": "55544434576.8919000000000000000000000000000000000"
+            },
+            {
+              "year": 2,
+              "opening_book_equity_cny": "55544434576.8919000000000000000000000000000000000",
+              "roe_assumption": "0.147093837931478623834625378606463202006423325891",
+              "net_income_assumption_cny": "8170244057.64895458657594937007402774977635688658",
+              "retention_assumption": "0.20",
+              "dividend_assumption_cny": "6536195246.11916366926075949605922219982108550926",
+              "residual_income_cny": "2615800599.95976458657594937007402774977635688658",
+              "discount_factor": "1.2100",
+              "closing_book_equity_cny": "57178483388.4216909173151898740148055499552713773"
+            },
+            {
+              "year": 3,
+              "opening_book_equity_cny": "57178483388.4216909173151898740148055499552713773",
+              "roe_assumption": "0.123546918965739311917312689303231601003211662946",
+              "net_income_assumption_cny": "7064225453.77320600119274207477552277292742963240",
+              "retention_assumption": "0.20",
+              "dividend_assumption_cny": "5651380363.01856480095419365982041821834194370592",
+              "residual_income_cny": "1346377114.93103690946122308737404221793190249467",
+              "discount_factor": "1.331000",
+              "closing_book_equity_cny": "58591328479.1763321175537382889699101045407573038"
+            },
+            {
+              "year": 4,
+              "opening_book_equity_cny": "58591328479.1763321175537382889699101045407573038",
+              "roe_assumption": "0.100000000000000000000000000000000000000000000000",
+              "net_income_assumption_cny": "5859132847.91763321175537382889699101045407573038",
+              "retention_assumption": "0.20",
+              "dividend_assumption_cny": "4687306278.33410656940429906311759280836326058430",
+              "residual_income_cny": "0E-38",
+              "discount_factor": "1.46410000",
+              "closing_book_equity_cny": "59763155048.7598587599048130547493083066315724499"
+            }
+          ],
+          "terminal_roe": "0.10",
+          "terminal_growth": "0",
+          "terminal_opening_book_equity_cny": "59763155048.7598587599048130547493083066315724499",
+          "terminal_retention_assumption": "0E+2",
+          "terminal_first_dividend_cny": "5976315504.87598587599048130547493083066315724499",
+          "terminal_residual_income_cny": "0E-39",
+          "present_value_explicit_residual_income_cny": "6622654891.97782340698329631439179018984665294508",
+          "present_value_terminal_residual_income_cny": "0E-29",
+          "conditional_equity_value_cny": "61666663247.5878664709102343831168801783622394670",
+          "dividend_crosscheck_equity_value_cny": "61666663247.5878664709102343831168801783622394668",
+          "dividend_crosscheck_difference_cny": "2E-37",
+          "terminal_residual_contribution_ratio": "0E+8",
+          "per_share_value": "9.74911416028948890779673139278982400804849464673",
+          "basis_origin_equity_value_cny": "60334019873.9678234069832963143917901898466529451",
+          "basis_to_valuation_factor": "1.02208776037803898332045808650927601531853632684",
+          "date_bridge": {
+            "scope": "conditional_timing_transport_not_observed_equity_or_approval",
+            "basis_at": "2026-06-30T23:59:59+08:00",
+            "valuation_at": "2026-09-22T16:00:00+08:00",
+            "fractional_first_year_elapsed": "0.229223776002029426686960933536276002029426686961",
+            "basis_to_valuation_factor": "1.02208776037803898332045808650927601531853632684",
+            "basis_origin_equity_value_cny": "60334019873.9678234069832963143917901898466529451",
+            "basis_origin_per_share_cny": "9.53843156940221056441196229963400286054339120029",
+            "valuation_date_equity_value_cny": "61666663247.5878664709102343831168801783622394670",
+            "valuation_date_per_share_cny": "9.74911416028948890779673139278982400804849464673",
+            "equity_transport_difference_cny": "0E-37",
+            "model_per_share_difference_cny": "0E-47"
+          },
+          "annual_schedule_scope": "basis_origin_annual_cash_flows_not_valuation_date_present_values"
+        },
+        "base": {
+          "cost_of_equity_cny_nominal": "0.09",
+          "forecast_years": [
+            {
+              "year": 1,
+              "opening_book_equity_cny": "53711364981.99",
+              "roe_assumption": "0.179621849365492563949408492536520845273299988250",
+              "net_income_assumption_cny": "9647734710.01000000000000000000000000000000000002",
+              "retention_assumption": "0.15",
+              "dividend_assumption_cny": "8200574503.50850000000000000000000000000000000002",
+              "residual_income_cny": "4813711861.63090000000000000000000000000000000002",
+              "discount_factor": "1.09",
+              "closing_book_equity_cny": "55158525188.4915000000000000000000000000000000000"
+            },
+            {
+              "year": 2,
+              "opening_book_equity_cny": "55158525188.4915000000000000000000000000000000000",
+              "roe_assumption": "0.149747899576995042632938995024347230182199992167",
+              "net_income_assumption_cny": "8259873290.74137669706219245897195288531737876083",
+              "retention_assumption": "0.15",
+              "dividend_assumption_cny": "7020892297.13017019250286359012615995251977194671",
+              "residual_income_cny": "3295606023.77714169706219245897195288531737876083",
+              "discount_factor": "1.1881",
+              "closing_book_equity_cny": "56397506182.1027065045593288688457929327976068141"
+            },
+            {
+              "year": 3,
+              "opening_book_equity_cny": "56397506182.1027065045593288688457929327976068141",
+              "roe_assumption": "0.119873949788497521316469497512173615091099996083",
+              "net_income_assumption_cny": "6760591824.26985838530776234492360283464610570313",
+              "retention_assumption": "0.15",
+              "dividend_assumption_cny": "5746503050.62937962751159799318506240944918984766",
+              "residual_income_cny": "1684816267.88061479989742274672748147069432108986",
+              "discount_factor": "1.295029",
+              "closing_book_equity_cny": "57411594955.7431852623554932205843333579945226696"
+            },
+            {
+              "year": 4,
+              "opening_book_equity_cny": "57411594955.7431852623554932205843333579945226696",
+              "roe_assumption": "0.090000000000000000000000000000000000000000000000",
+              "net_income_assumption_cny": "5167043546.01688667361199438985259000221950704026",
+              "retention_assumption": "0.15",
+              "dividend_assumption_cny": "4391987014.11435367257019523137470150188658098422",
+              "residual_income_cny": "0E-38",
+              "discount_factor": "1.41158161",
+              "closing_book_equity_cny": "58186651487.6457182633972923790622218583274487256"
+            }
+          ],
+          "terminal_roe": "0.09",
+          "terminal_growth": "0",
+          "terminal_opening_book_equity_cny": "58186651487.6457182633972923790622218583274487256",
+          "terminal_retention_assumption": "0E+2",
+          "terminal_first_dividend_cny": "5236798633.88811464370575631411559996724947038530",
+          "terminal_residual_income_cny": "0E-39",
+          "present_value_explicit_residual_income_cny": "8491082359.23780204126333273386689418977510460321",
+          "present_value_terminal_residual_income_cny": "0E-29",
+          "conditional_equity_value_cny": "63443409668.4629448634542787249030942080590927176",
+          "dividend_crosscheck_equity_value_cny": "63443409668.4629448634542787249030942080590927174",
+          "dividend_crosscheck_difference_cny": "2E-37",
+          "terminal_residual_contribution_ratio": "0E+8",
+          "per_share_value": "10.0300066681498756130065711437009342329189104432",
+          "basis_origin_equity_value_cny": "62202447341.2278020412633327338668941897751046032",
+          "basis_to_valuation_factor": "1.01995037784329480222587933092665066994969343704",
+          "date_bridge": {
+            "scope": "conditional_timing_transport_not_observed_equity_or_approval",
+            "basis_at": "2026-06-30T23:59:59+08:00",
+            "valuation_at": "2026-09-22T16:00:00+08:00",
+            "fractional_first_year_elapsed": "0.229223776002029426686960933536276002029426686961",
+            "basis_to_valuation_factor": "1.01995037784329480222587933092665066994969343704",
+            "basis_origin_equity_value_cny": "62202447341.2278020412633327338668941897751046032",
+            "basis_origin_per_share_cny": "9.83381827786418649782003533204486823134936103134",
+            "valuation_date_equity_value_cny": "63443409668.4629448634542787249030942080590927176",
+            "valuation_date_per_share_cny": "10.0300066681498756130065711437009342329189104432",
+            "equity_transport_difference_cny": "0E-37",
+            "model_per_share_difference_cny": "0E-46"
+          },
+          "annual_schedule_scope": "basis_origin_annual_cash_flows_not_valuation_date_present_values"
+        },
+        "bull": {
+          "cost_of_equity_cny_nominal": "0.08",
+          "forecast_years": [
+            {
+              "year": 1,
+              "opening_book_equity_cny": "53711364981.99",
+              "roe_assumption": "0.185010504846457340867890747312616470631498987897",
+              "net_income_assumption_cny": "9937166751.31029999999999999999999999999999999999",
+              "retention_assumption": "0.10",
+              "dividend_assumption_cny": "8943450076.17926999999999999999999999999999999999",
+              "residual_income_cny": "5640257552.75109999999999999999999999999999999999",
+              "discount_factor": "1.08",
+              "closing_book_equity_cny": "54705081657.1210300000000000000000000000000000000"
+            },
+            {
+              "year": 2,
+              "opening_book_equity_cny": "54705081657.1210300000000000000000000000000000000",
+              "roe_assumption": "0.150007003230971560578593831541744313754332658598",
+              "net_income_assumption_cny": "8206145360.89031740049774220870445209957769364044",
+              "retention_assumption": "0.10",
+              "dividend_assumption_cny": "7385530824.80128566044796798783400688961992427640",
+              "residual_income_cny": "3829738828.32063500049774220870445209957769364044",
+              "discount_factor": "1.1664",
+              "closing_book_equity_cny": "55525696193.2100617400497742208704452099577693640"
+            },
+            {
+              "year": 3,
+              "opening_book_equity_cny": "55525696193.2100617400497742208704452099577693640",
+              "roe_assumption": "0.115003501615485780289296915770872156877166329299",
+              "net_income_assumption_cny": "6385649491.85680597611621415830846898665219738257",
+              "retention_assumption": "0.10",
+              "dividend_assumption_cny": "5747084542.67112537850459274247762208798697764431",
+              "residual_income_cny": "1943593796.40000103691223222063883336985557583345",
+              "discount_factor": "1.259712",
+              "closing_book_equity_cny": "56164261142.3957423376613956367012921086229891023"
+            },
+            {
+              "year": 4,
+              "opening_book_equity_cny": "56164261142.3957423376613956367012921086229891023",
+              "roe_assumption": "0.080000000000000000000000000000000000000000000000",
+              "net_income_assumption_cny": "4493140891.39165938701291165093610336868983912818",
+              "retention_assumption": "0.10",
+              "dividend_assumption_cny": "4043826802.25249344831162048584249303182085521536",
+              "residual_income_cny": "0E-38",
+              "discount_factor": "1.36048896",
+              "closing_book_equity_cny": "56613575231.5349082763626868017949024454919730151"
+            }
+          ],
+          "terminal_roe": "0.08",
+          "terminal_growth": "0",
+          "terminal_opening_book_equity_cny": "56613575231.5349082763626868017949024454919730151",
+          "terminal_retention_assumption": "0E+2",
+          "terminal_first_dividend_cny": "4529086018.52279266210901494414359219563935784121",
+          "terminal_residual_income_cny": "0E-39",
+          "present_value_explicit_residual_income_cny": "10048731885.1572183780497397865858558443513159874",
+          "present_value_terminal_residual_income_cny": "0E-29",
+          "conditional_equity_value_cny": "64894888058.9278762138889061647734856184702478516",
+          "dividend_crosscheck_equity_value_cny": "64894888058.9278762138889061647734856184702478516",
+          "dividend_crosscheck_difference_cny": "0E-37",
+          "terminal_residual_contribution_ratio": "0E+8",
+          "per_share_value": "10.2594763327078873451832064779830341362051296689",
+          "basis_origin_equity_value_cny": "63760096867.1472183780497397865858558443513159874",
+          "basis_to_valuation_factor": "1.01779782728600849991825516347210842344610117363",
+          "date_bridge": {
+            "scope": "conditional_timing_transport_not_observed_equity_or_approval",
+            "basis_at": "2026-06-30T23:59:59+08:00",
+            "valuation_at": "2026-09-22T16:00:00+08:00",
+            "fractional_first_year_elapsed": "0.229223776002029426686960933536276002029426686961",
+            "basis_to_valuation_factor": "1.01779782728600849991825516347210842344610117363",
+            "basis_origin_equity_value_cny": "63760096867.1472183780497397865858558443513159874",
+            "basis_origin_per_share_cny": "10.0800729355702395362003062499180421587098909988",
+            "valuation_date_equity_value_cny": "64894888058.9278762138889061647734856184702478516",
+            "valuation_date_per_share_cny": "10.2594763327078873451832064779830341362051296689",
+            "equity_transport_difference_cny": "0E-37",
+            "model_per_share_difference_cny": "0E-46"
+          },
+          "annual_schedule_scope": "basis_origin_annual_cash_flows_not_valuation_date_present_values"
+        }
+      },
+      "base_difference_from_old_pressure": "-6.993030240525722798900295676"
+    },
+    {
+      "id": "medium-advantage",
+      "growth_years": 3,
+      "fade_years": 5,
+      "rationale": "复用已披露TTM代理的三年持续与五年衰减条件；恢复机制仍待审。",
+      "countercase": "现有经营证据不能证明三年优势期；更长持续性须独立经济论证。",
+      "status": "NEUTRAL_VALUATION_PROPOSAL_PENDING_REVIEW",
+      "valuation": {
+        "symbol": "600887",
+        "model_type": "residual_income_or_equity_value",
+        "valuation_date": "2026-09-22",
+        "bear_value": "10.5062121295761533323061242365642510407805661276",
+        "base_value": "11.5778491748186483327303678904276530277701173508",
+        "bull_value": "12.4498853360523458771551916746185930888142617638",
+        "confidence": "低",
+        "assumptions": {
+          "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+          "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+          "status": "conditional_research_only",
+          "disclaimer": "No market price, margin of safety, position or order is produced here.",
+          "valuation_timing": {
+            "basis_at": "2026-06-30T23:59:59+08:00",
+            "valuation_at": "2026-09-22T16:00:00+08:00",
+            "evidence_refs": [
+              {
+                "id": "cninfo:1225259562",
+                "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+              },
+              {
+                "id": "cninfo:1225511409",
+                "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+              }
+            ],
+            "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+          }
+        },
+        "sensitivities": [
+          {
+            "scenario": "bear",
+            "cost_of_equity": "0.10",
+            "ordinary_equity_value": "66455580963.5793076693301386491789167516672059618",
+            "per_share_value": "10.5062121295761533323061242365642510407805661276",
+            "terminal_residual_contribution_ratio": "0E+16",
+            "dividend_crosscheck_difference": "3E-37",
+            "arithmetic_status": "research_arithmetic_only",
+            "basis_to_valuation_factor": "1.02208776037803898332045808650927601531853632684"
+          },
+          {
+            "scenario": "base",
+            "cost_of_equity": "0.09",
+            "ordinary_equity_value": "73234071778.8562850219577977705508422709805590090",
+            "per_share_value": "11.5778491748186483327303678904276530277701173508",
+            "terminal_residual_contribution_ratio": "0E+16",
+            "dividend_crosscheck_difference": "4E-37",
+            "arithmetic_status": "research_arithmetic_only",
+            "basis_to_valuation_factor": "1.01995037784329480222587933092665066994969343704"
+          },
+          {
+            "scenario": "bull",
+            "cost_of_equity": "0.08",
+            "ordinary_equity_value": "78750015013.3255856644370632734783109508637690292",
+            "per_share_value": "12.4498853360523458771551916746185930888142617638",
+            "terminal_residual_contribution_ratio": "0E+16",
+            "dividend_crosscheck_difference": "0E-37",
+            "arithmetic_status": "research_arithmetic_only",
+            "basis_to_valuation_factor": "1.01779782728600849991825516347210842344610117363"
+          }
+        ],
+        "evidence_refs": [
+          {
+            "id": "yili_fy2025_annual",
+            "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+          },
+          {
+            "id": "yili_2026h1",
+            "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          },
+          {
+            "id": "cninfo:1225259562",
+            "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+          },
+          {
+            "id": "cninfo:1225511409",
+            "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+          },
+          {
+            "id": "china_cost_equity_20260914",
+            "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+            "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+          }
+        ],
+        "blockers": [],
+        "status": "conditional_research_only",
+        "model_version": "residual-income-equity-shared-dated-v2"
+      },
+      "actual_calculation_inputs": {
+        "start_book_equity": "53711364981.99",
+        "ordinary_shares": "6325360667",
+        "profit_anchor": "9647734710.01",
+        "profit_anchor_field": "ttm_ex_nonrecurring_parent_profit_cny",
+        "profit_anchor_unit": "CNY",
+        "profit_anchor_scope": "consolidated_parent_profit_ex_nonrecurring",
+        "scenarios": {
+          "bear": {
+            "cost_of_equity": "0.10",
+            "forecast_roe": [
+              "0.170640756897217935751938067909694803009634988837",
+              "0.156758829972974893129950072944593431519257187198",
+              "0.144393885175260950209204565711262051962809193256",
+              "0.135515108140208760167363652569009641570247354605",
+              "0.126636331105156570125522739426757231177685515954",
+              "0.117757554070104380083681826284504820785123677302",
+              "0.108878777035052190041840913142252410392561838651",
+              "0.100000000000000000000000000000000000000000000000"
+            ],
+            "terminal_roe": "0.10",
+            "terminal_growth": "0",
+            "retention": "0.20"
+          },
+          "base": {
+            "cost_of_equity": "0.09",
+            "forecast_roe": [
+              "0.179621849365492563949408492536520845273299988250",
+              "0.174909221684972512241163151278878394059980631934",
+              "0.170437556628602907898707552083607995907821394130",
+              "0.154350045302882326318966041666886396726257115304",
+              "0.138262533977161744739224531250164797544692836478",
+              "0.122175022651441163159483020833443198363128557652",
+              "0.106087511325720581579741510416721599181564278826",
+              "0.090000000000000000000000000000000000000000000000"
+            ],
+            "terminal_roe": "0.09",
+            "terminal_growth": "0",
+            "retention": "0.15"
+          },
+          "bull": {
+            "cost_of_equity": "0.08",
+            "forecast_roe": [
+              "0.185010504846457340867890747312616470631498987897",
+              "0.187099286644009046403267954180833158490307484138",
+              "0.189172854627998385470854892860968131263896968052",
+              "0.167338283702398708376683914288774505011117574442",
+              "0.145503712776799031282512935716580878758338180831",
+              "0.123669141851199354188341957144387252505558787221",
+              "0.101834570925599677094170978572193626252779393610",
+              "0.080000000000000000000000000000000000000000000000"
+            ],
+            "terminal_roe": "0.08",
+            "terminal_growth": "0",
+            "retention": "0.10"
+          }
+        },
+        "valuation_timing": {
+          "basis_at": "2026-06-30T23:59:59+08:00",
+          "valuation_at": "2026-09-22T16:00:00+08:00",
+          "evidence_refs": [
+            {
+              "id": "cninfo:1225259562",
+              "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+            },
+            {
+              "id": "cninfo:1225511409",
+              "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+            }
+          ],
+          "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+        }
+      },
+      "calculation_inputs_sha256": "ade05178e3c441617a29d827bd29fe4efdf257f0afeeb36a9f469abc3fb6ad38",
+      "annual_arithmetic": {
+        "bear": {
+          "cost_of_equity_cny_nominal": "0.10",
+          "forecast_years": [
+            {
+              "year": 1,
+              "opening_book_equity_cny": "53711364981.99",
+              "roe_assumption": "0.170640756897217935751938067909694803009634988837",
+              "net_income_assumption_cny": "9165347974.50949999999999999999999999999999999999",
+              "retention_assumption": "0.20",
+              "dividend_assumption_cny": "7332278379.60759999999999999999999999999999999999",
+              "residual_income_cny": "3794211476.31049999999999999999999999999999999999",
+              "discount_factor": "1.10",
+              "closing_book_equity_cny": "55544434576.8919000000000000000000000000000000000"
+            },
+            {
+              "year": 2,
+              "opening_book_equity_cny": "55544434576.8919000000000000000000000000000000000",
+              "roe_assumption": "0.156758829972974893129950072944593431519257187198",
+              "net_income_assumption_cny": "8707080575.78402500000000000000000000000000000001",
+              "retention_assumption": "0.20",
+              "dividend_assumption_cny": "6965664460.62722000000000000000000000000000000001",
+              "residual_income_cny": "3152637118.09483500000000000000000000000000000001",
+              "discount_factor": "1.2100",
+              "closing_book_equity_cny": "57285850692.0487050000000000000000000000000000000"
+            },
+            {
+              "year": 3,
+              "opening_book_equity_cny": "57285850692.0487050000000000000000000000000000000",
+              "roe_assumption": "0.144393885175260950209204565711262051962809193256",
+              "net_income_assumption_cny": "8271726546.99482374999999999999999999999999999999",
+              "retention_assumption": "0.20",
+              "dividend_assumption_cny": "6617381237.59585899999999999999999999999999999999",
+              "residual_income_cny": "2543141477.78995324999999999999999999999999999999",
+              "discount_factor": "1.331000",
+              "closing_book_equity_cny": "58940196001.4476697500000000000000000000000000000"
+            },
+            {
+              "year": 4,
+              "opening_book_equity_cny": "58940196001.4476697500000000000000000000000000000",
+              "roe_assumption": "0.135515108140208760167363652569009641570247354605",
+              "net_income_assumption_cny": "7987287034.94128092790396546647262909711379189446",
+              "retention_assumption": "0.20",
+              "dividend_assumption_cny": "6389829627.95302474232317237317810327769103351557",
+              "residual_income_cny": "2093267434.79651395290396546647262909711379189446",
+              "discount_factor": "1.46410000",
+              "closing_book_equity_cny": "60537653408.4359259355807930932945258194227583789"
+            },
+            {
+              "year": 5,
+              "opening_book_equity_cny": "60537653408.4359259355807930932945258194227583789",
+              "roe_assumption": "0.126636331105156570125522739426757231177685515954",
+              "net_income_assumption_cny": "7666266321.35990210494847712185912109174073967252",
+              "retention_assumption": "0.20",
+              "dividend_assumption_cny": "6133013057.08792168395878169748729687339259173802",
+              "residual_income_cny": "1612500980.51630951139039781252966850979846383463",
+              "discount_factor": "1.6105100000",
+              "closing_book_equity_cny": "62070906672.7079063565704885176663500377709063134"
+            },
+            {
+              "year": 6,
+              "opening_book_equity_cny": "62070906672.7079063565704885176663500377709063134",
+              "roe_assumption": "0.117757554070104380083681826284504820785123677302",
+              "net_income_assumption_cny": "7309318148.69180404253305008215816233982755394386",
+              "retention_assumption": "0.20",
+              "dividend_assumption_cny": "5847454518.95344323402644006572652987186204315509",
+              "residual_income_cny": "1102227481.42101340687600123039152733605046331252",
+              "discount_factor": "1.771561000000",
+              "closing_book_equity_cny": "63532770302.4462671650770985340979825057364171022"
+            },
+            {
+              "year": 7,
+              "opening_book_equity_cny": "63532770302.4462671650770985340979825057364171022",
+              "roe_assumption": "0.108878777035052190041840913142252410392561838651",
+              "net_income_assumption_cny": "6917370332.17923241567482474447345262192659958217",
+              "retention_assumption": "0.20",
+              "dividend_assumption_cny": "5533896265.74338593253985979557876209754127966574",
+              "residual_income_cny": "564093301.93460569916711489106365437135295787195",
+              "discount_factor": "1.94871710000000",
+              "closing_book_equity_cny": "64916244368.8821136482120634829926730301217370186"
+            },
+            {
+              "year": 8,
+              "opening_book_equity_cny": "64916244368.8821136482120634829926730301217370186",
+              "roe_assumption": "0.100000000000000000000000000000000000000000000000",
+              "net_income_assumption_cny": "6491624436.88821136482120634829926730301217370186",
+              "retention_assumption": "0.20",
+              "dividend_assumption_cny": "5193299549.51056909185696507863941384240973896149",
+              "residual_income_cny": "0E-38",
+              "discount_factor": "2.1435888100000000",
+              "closing_book_equity_cny": "66214569256.2597559211763047526525264907241717590"
+            }
+          ],
+          "terminal_roe": "0.10",
+          "terminal_growth": "0",
+          "terminal_opening_book_equity_cny": "66214569256.2597559211763047526525264907241717590",
+          "terminal_retention_assumption": "0E+2",
+          "terminal_first_dividend_cny": "6621456925.62597559211763047526525264907241717590",
+          "terminal_residual_income_cny": "0E-39",
+          "present_value_explicit_residual_income_cny": "11308082016.3767762834858254353750488801699670861",
+          "present_value_terminal_residual_income_cny": "0E-21",
+          "conditional_equity_value_cny": "66455580963.5793076693301386491789167516672059618",
+          "dividend_crosscheck_equity_value_cny": "66455580963.5793076693301386491789167516672059615",
+          "dividend_crosscheck_difference_cny": "3E-37",
+          "terminal_residual_contribution_ratio": "0E+16",
+          "per_share_value": "10.5062121295761533323061242365642510407805661276",
+          "basis_origin_equity_value_cny": "65019446998.3667762834858254353750488801699670861",
+          "basis_to_valuation_factor": "1.02208776037803898332045808650927601531853632684",
+          "date_bridge": {
+            "scope": "conditional_timing_transport_not_observed_equity_or_approval",
+            "basis_at": "2026-06-30T23:59:59+08:00",
+            "valuation_at": "2026-09-22T16:00:00+08:00",
+            "fractional_first_year_elapsed": "0.229223776002029426686960933536276002029426686961",
+            "basis_to_valuation_factor": "1.02208776037803898332045808650927601531853632684",
+            "basis_origin_equity_value_cny": "65019446998.3667762834858254353750488801699670861",
+            "basis_origin_per_share_cny": "10.2791683227771233560057525547222758673675432785",
+            "valuation_date_equity_value_cny": "66455580963.5793076693301386491789167516672059618",
+            "valuation_date_per_share_cny": "10.5062121295761533323061242365642510407805661276",
+            "equity_transport_difference_cny": "0E-37",
+            "model_per_share_difference_cny": "0E-46"
+          },
+          "annual_schedule_scope": "basis_origin_annual_cash_flows_not_valuation_date_present_values"
+        },
+        "base": {
+          "cost_of_equity_cny_nominal": "0.09",
+          "forecast_years": [
+            {
+              "year": 1,
+              "opening_book_equity_cny": "53711364981.99",
+              "roe_assumption": "0.179621849365492563949408492536520845273299988250",
+              "net_income_assumption_cny": "9647734710.01000000000000000000000000000000000002",
+              "retention_assumption": "0.15",
+              "dividend_assumption_cny": "8200574503.50850000000000000000000000000000000002",
+              "residual_income_cny": "4813711861.63090000000000000000000000000000000002",
+              "discount_factor": "1.09",
+              "closing_book_equity_cny": "55158525188.4915000000000000000000000000000000000"
+            },
+            {
+              "year": 2,
+              "opening_book_equity_cny": "55158525188.4915000000000000000000000000000000000",
+              "roe_assumption": "0.174909221684972512241163151278878394059980631934",
+              "net_income_assumption_cny": "9647734710.01000000000000000000000000000000000000",
+              "retention_assumption": "0.15",
+              "dividend_assumption_cny": "8200574503.50850000000000000000000000000000000000",
+              "residual_income_cny": "4683467443.04576500000000000000000000000000000000",
+              "discount_factor": "1.1881",
+              "closing_book_equity_cny": "56605685394.9930000000000000000000000000000000000"
+            },
+            {
+              "year": 3,
+              "opening_book_equity_cny": "56605685394.9930000000000000000000000000000000000",
+              "roe_assumption": "0.170437556628602907898707552083607995907821394130",
+              "net_income_assumption_cny": "9647734710.01000000000000000000000000000000000000",
+              "retention_assumption": "0.15",
+              "dividend_assumption_cny": "8200574503.50850000000000000000000000000000000000",
+              "residual_income_cny": "4553223024.46063000000000000000000000000000000000",
+              "discount_factor": "1.295029",
+              "closing_book_equity_cny": "58052845601.4945000000000000000000000000000000000"
+            },
+            {
+              "year": 4,
+              "opening_book_equity_cny": "58052845601.4945000000000000000000000000000000000",
+              "roe_assumption": "0.154350045302882326318966041666886396726257115304",
+              "net_income_assumption_cny": "8960459348.55190906746890960521461737116091150055",
+              "retention_assumption": "0.15",
+              "dividend_assumption_cny": "7616390446.26912270734857316443242476548677477547",
+              "residual_income_cny": "3735703244.41740406746890960521461737116091150055",
+              "discount_factor": "1.41158161",
+              "closing_book_equity_cny": "59396914503.7772863601203364407821926056741367251"
+            },
+            {
+              "year": 5,
+              "opening_book_equity_cny": "59396914503.7772863601203364407821926056741367251",
+              "roe_assumption": "0.138262533977161744739224531250164797544692836478",
+              "net_income_assumption_cny": "8212367909.71707828865415191011822978692538359050",
+              "retention_assumption": "0.15",
+              "dividend_assumption_cny": "6980512723.25951654535602912360049531888657605192",
+              "residual_income_cny": "2866645604.37712251624332163044783245241471128524",
+              "discount_factor": "1.5386239549",
+              "closing_book_equity_cny": "60628769690.2348481034184592272999270737129442637"
+            },
+            {
+              "year": 6,
+              "opening_book_equity_cny": "60628769690.2348481034184592272999270737129442637",
+              "roe_assumption": "0.122175022651441163159483020833443198363128557652",
+              "net_income_assumption_cny": "7407321310.23345200013680706253449075375490749532",
+              "retention_assumption": "0.15",
+              "dividend_assumption_cny": "6296223113.69843420011628600315431714069167137102",
+              "residual_income_cny": "1950732038.11231567082914573207749731712074251159",
+              "discount_factor": "1.677100110841",
+              "closing_book_equity_cny": "61739867886.7698659034389802866801006867761803880"
+            },
+            {
+              "year": 7,
+              "opening_book_equity_cny": "61739867886.7698659034389802866801006867761803880",
+              "roe_assumption": "0.106087511325720581579741510416721599181564278826",
+              "net_income_assumption_cny": "6549828933.68619057823469495595700045250493722452",
+              "retention_assumption": "0.15",
+              "dividend_assumption_cny": "5567354593.63326199149949071256345038462919664084",
+              "residual_income_cny": "993240823.87690264692518673015579139069508098960",
+              "discount_factor": "1.82803912081669",
+              "closing_book_equity_cny": "62722342226.8227944901741845300736507546519209717"
+            },
+            {
+              "year": 8,
+              "opening_book_equity_cny": "62722342226.8227944901741845300736507546519209717",
+              "roe_assumption": "0.090000000000000000000000000000000000000000000000",
+              "net_income_assumption_cny": "5645010800.41405150411567660770662856791867288745",
+              "retention_assumption": "0.15",
+              "dividend_assumption_cny": "4798259180.35194377849832511655063428273087195433",
+              "residual_income_cny": "0E-38",
+              "discount_factor": "1.9925626416901921",
+              "closing_book_equity_cny": "63569093846.8849022157915360212296450398397219048"
+            }
+          ],
+          "terminal_roe": "0.09",
+          "terminal_growth": "0",
+          "terminal_opening_book_equity_cny": "63569093846.8849022157915360212296450398397219048",
+          "terminal_retention_assumption": "0E+2",
+          "terminal_first_dividend_cny": "5721218446.21964119942123824191066805358557497143",
+          "terminal_residual_income_cny": "0E-39",
+          "present_value_explicit_residual_income_cny": "18090237693.7315137477556475824938878214383178081",
+          "present_value_terminal_residual_income_cny": "0E-21",
+          "conditional_equity_value_cny": "73234071778.8562850219577977705508422709805590090",
+          "dividend_crosscheck_equity_value_cny": "73234071778.8562850219577977705508422709805590086",
+          "dividend_crosscheck_difference_cny": "4E-37",
+          "terminal_residual_contribution_ratio": "0E+16",
+          "per_share_value": "11.5778491748186483327303678904276530277701173508",
+          "basis_origin_equity_value_cny": "71801602675.7215137477556475824938878214383178081",
+          "basis_to_valuation_factor": "1.01995037784329480222587933092665066994969343704",
+          "date_bridge": {
+            "scope": "conditional_timing_transport_not_observed_equity_or_approval",
+            "basis_at": "2026-06-30T23:59:59+08:00",
+            "valuation_at": "2026-09-22T16:00:00+08:00",
+            "fractional_first_year_elapsed": "0.229223776002029426686960933536276002029426686961",
+            "basis_to_valuation_factor": "1.01995037784329480222587933092665066994969343704",
+            "basis_origin_equity_value_cny": "71801602675.7215137477556475824938878214383178081",
+            "basis_origin_per_share_cny": "11.3513847598157067662044902620718635808088882544",
+            "valuation_date_equity_value_cny": "73234071778.8562850219577977705508422709805590090",
+            "valuation_date_per_share_cny": "11.5778491748186483327303678904276530277701173508",
+            "equity_transport_difference_cny": "0E-37",
+            "model_per_share_difference_cny": "0E-46"
+          },
+          "annual_schedule_scope": "basis_origin_annual_cash_flows_not_valuation_date_present_values"
+        },
+        "bull": {
+          "cost_of_equity_cny_nominal": "0.08",
+          "forecast_years": [
+            {
+              "year": 1,
+              "opening_book_equity_cny": "53711364981.99",
+              "roe_assumption": "0.185010504846457340867890747312616470631498987897",
+              "net_income_assumption_cny": "9937166751.31029999999999999999999999999999999999",
+              "retention_assumption": "0.10",
+              "dividend_assumption_cny": "8943450076.17926999999999999999999999999999999999",
+              "residual_income_cny": "5640257552.75109999999999999999999999999999999999",
+              "discount_factor": "1.08",
+              "closing_book_equity_cny": "54705081657.1210300000000000000000000000000000000"
+            },
+            {
+              "year": 2,
+              "opening_book_equity_cny": "54705081657.1210300000000000000000000000000000000",
+              "roe_assumption": "0.187099286644009046403267954180833158490307484138",
+              "net_income_assumption_cny": "10235281753.8496090000000000000000000000000000000",
+              "retention_assumption": "0.10",
+              "dividend_assumption_cny": "9211753578.46464810000000000000000000000000000000",
+              "residual_income_cny": "5858875221.27992660000000000000000000000000000000",
+              "discount_factor": "1.1664",
+              "closing_book_equity_cny": "55728609832.5059909000000000000000000000000000000"
+            },
+            {
+              "year": 3,
+              "opening_book_equity_cny": "55728609832.5059909000000000000000000000000000000",
+              "roe_assumption": "0.189172854627998385470854892860968131263896968052",
+              "net_income_assumption_cny": "10542340206.4650972700000000000000000000000000000",
+              "retention_assumption": "0.10",
+              "dividend_assumption_cny": "9488106185.81858754300000000000000000000000000000",
+              "residual_income_cny": "6084051419.86461799800000000000000000000000000000",
+              "discount_factor": "1.259712",
+              "closing_book_equity_cny": "56782843853.1525006270000000000000000000000000000"
+            },
+            {
+              "year": 4,
+              "opening_book_equity_cny": "56782843853.1525006270000000000000000000000000000",
+              "roe_assumption": "0.167338283702398708376683914288774505011117574442",
+              "net_income_assumption_cny": "9501943634.12783977248784549542775271788350762964",
+              "retention_assumption": "0.10",
+              "dividend_assumption_cny": "8551749270.71505579523906094588497744609515686668",
+              "residual_income_cny": "4959316125.87563972232784549542775271788350762964",
+              "discount_factor": "1.36048896",
+              "closing_book_equity_cny": "57733038216.5652846042487845495427752717883507630"
+            },
+            {
+              "year": 5,
+              "opening_book_equity_cny": "57733038216.5652846042487845495427752717883507630",
+              "roe_assumption": "0.145503712776799031282512935716580878758338180831",
+              "net_income_assumption_cny": "8400371410.39507695987886046666581145711132379285",
+              "retention_assumption": "0.10",
+              "dividend_assumption_cny": "7560334269.35556926389097441999923031140019141356",
+              "residual_income_cny": "3781728353.06985419153895770270238943536825573181",
+              "discount_factor": "1.4693280768",
+              "closing_book_equity_cny": "58573075357.6047923002366705962093564174994831423"
+            },
+            {
+              "year": 6,
+              "opening_book_equity_cny": "58573075357.6047923002366705962093564174994831423",
+              "roe_assumption": "0.123669141851199354188341957144387252505558787221",
+              "net_income_assumption_cny": "7243681965.06061639847196899141576385900990978659",
+              "retention_assumption": "0.10",
+              "dividend_assumption_cny": "6519313768.55455475862477209227418747310891880793",
+              "residual_income_cny": "2557835936.45223301445303534371901534560995113521",
+              "discount_factor": "1.586874322944",
+              "closing_book_equity_cny": "59297443554.1108539400838674953509328034004741210"
+            },
+            {
+              "year": 7,
+              "opening_book_equity_cny": "59297443554.1108539400838674953509328034004741210",
+              "roe_assumption": "0.101834570925599677094170978572193626252779393610",
+              "net_income_assumption_cny": "6038529721.31784514951608312578187863843984397461",
+              "retention_assumption": "0.10",
+              "dividend_assumption_cny": "5434676749.18606063456447481320369077459585957715",
+              "residual_income_cny": "1294734236.98897683430937372615380401416780604493",
+              "discount_factor": "1.71382426877952",
+              "closing_book_equity_cny": "59901296526.2426384550354758079291206672444585185"
+            },
+            {
+              "year": 8,
+              "opening_book_equity_cny": "59901296526.2426384550354758079291206672444585185",
+              "roe_assumption": "0.080000000000000000000000000000000000000000000000",
+              "net_income_assumption_cny": "4792103722.09941107640283806463432965337955668148",
+              "retention_assumption": "0.10",
+              "dividend_assumption_cny": "4312893349.88946996876255425817089668804160101333",
+              "residual_income_cny": "0E-38",
+              "discount_factor": "1.8509302102818816",
+              "closing_book_equity_cny": "60380506898.4525795626757596143925536325824141866"
+            }
+          ],
+          "terminal_roe": "0.08",
+          "terminal_growth": "0",
+          "terminal_opening_book_equity_cny": "60380506898.4525795626757596143925536325824141866",
+          "terminal_retention_assumption": "0E+2",
+          "terminal_first_dividend_cny": "4830440551.87620636501406076915140429060659313493",
+          "terminal_residual_income_cny": "0E-39",
+          "present_value_explicit_residual_income_cny": "23661579724.8336527238924133703596725974986508574",
+          "present_value_terminal_residual_income_cny": "0E-21",
+          "conditional_equity_value_cny": "78750015013.3255856644370632734783109508637690292",
+          "dividend_crosscheck_equity_value_cny": "78750015013.3255856644370632734783109508637690292",
+          "dividend_crosscheck_difference_cny": "0E-37",
+          "terminal_residual_contribution_ratio": "0E+16",
+          "per_share_value": "12.4498853360523458771551916746185930888142617638",
+          "basis_origin_equity_value_cny": "77372944706.8236527238924133703596725974986508574",
+          "basis_to_valuation_factor": "1.01779782728600849991825516347210842344610117363",
+          "date_bridge": {
+            "scope": "conditional_timing_transport_not_observed_equity_or_approval",
+            "basis_at": "2026-06-30T23:59:59+08:00",
+            "valuation_at": "2026-09-22T16:00:00+08:00",
+            "fractional_first_year_elapsed": "0.229223776002029426686960933536276002029426686961",
+            "basis_to_valuation_factor": "1.01779782728600849991825516347210842344610117363",
+            "basis_origin_equity_value_cny": "77372944706.8236527238924133703596725974986508574",
+            "basis_origin_per_share_cny": "12.2321791246601263130617328591864898630449353407",
+            "valuation_date_equity_value_cny": "78750015013.3255856644370632734783109508637690292",
+            "valuation_date_per_share_cny": "12.4498853360523458771551916746185930888142617638",
+            "equity_transport_difference_cny": "0E-37",
+            "model_per_share_difference_cny": "0E-46"
+          },
+          "annual_schedule_scope": "basis_origin_annual_cash_flows_not_valuation_date_present_values"
+        }
+      },
+      "base_difference_from_old_pressure": "-5.445187733856950079176498930"
+    }
+  ],
+  "research_preference": null,
+  "financial_rebase": {
+    "schema_version": "financial-proposal-rebase-v1",
+    "manifest_path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/manifest.json",
+    "manifest_sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384",
+    "share_basis": "DISCLOSED_TOTAL_NOT_TREASURY_OR_DILUTION_ADJUSTED",
+    "start_book_equity": {
+      "value": "53711364981.99",
+      "unit": "CNY",
+      "scope": "consolidated_parent_attributable",
+      "period_end": "2026-06-30",
+      "source_id": "cninfo:1225511409",
+      "physical_page": 49,
+      "statement_header_page": 48,
+      "evidence_excerpt": "归属于母公司所有者权益（或股东权益）合计 53,711,364,981.99 54,655,690,475.89"
+    },
+    "ordinary_shares": {
+      "value": "6325360667",
+      "unit": "shares",
+      "scope": "disclosed_total_ordinary_shares",
+      "period_end": "2026-06-30",
+      "source_id": "cninfo:1225511409",
+      "physical_page": 66,
+      "evidence_excerpt": "6,325,360,667 股。"
+    },
+    "share_continuity": {
+      "period_end": "2026-06-30",
+      "source_id": "cninfo:1225511409",
+      "physical_page": 42,
+      "evidence_excerpt": "报告期内，公司股份总数及股本结构未发生变化。"
+    },
+    "share_capital_confirmation": {
+      "source_id": "cninfo:1225511409",
+      "physical_page": 159,
+      "evidence_excerpt": "股份总数 6,325,360,667.00 6,325,360,667.00"
+    },
+    "limitations": [
+      "Disclosed historical total shares, not a treasury-adjusted or diluted current denominator.",
+      "Historical H1 equity movements reconciled; prospective clean-surplus behavior and distribution are not approved.",
+      "Retained 2026-09-22 valuation date; first modeled annual payment 2027-06-30, not FY2026."
+    ],
+    "equity_bridge": {
+      "schema_version": "consolidated-equity-statement-bridge-v1",
+      "unit": "CNY",
+      "scope": "consolidated_parent_attributable",
+      "period_end": "2026-06-30",
+      "source_id": "cninfo:1225511409",
+      "header_page": 58,
+      "rows": {
+        "opening": {
+          "physical_page": 58,
+          "parent_value": "54655690475.89",
+          "evidence_excerpt": "二、本年期初余额 6,325,360,667.00 12,262,344,222.29 -173,163,583.80 3,200,065,459.00 33,041,083,711.40 54,655,690,475.89 3,888,586,202.27 58,544,276,678.16"
+        },
+        "closing": {
+          "physical_page": 59,
+          "parent_value": "53711364981.99",
+          "evidence_excerpt": "四、本期期末余额 6,325,360,667.00 12,240,717,240.54 -1,162,028,076.08 362,482.64 3,200,065,459.00 33,106,887,208.89 53,711,364,981.99 3,565,015,649.48 57,276,380,631.47"
+        },
+        "change": {
+          "physical_page": 58,
+          "parent_value": "-944325493.90",
+          "evidence_excerpt": "三、本期增减变动金额（减少以“-”号填列） -21,626,981.75 -988,864,492.28 362,482.64 65,803,497.49 -944,325,493.90 -323,570,552.79 -1,267,896,046.69"
+        },
+        "comprehensive": {
+          "physical_page": 58,
+          "parent_value": "4769763605.51",
+          "evidence_excerpt": "（一）综合收益总额 -988,864,492.28 5,758,628,097.79 4,769,763,605.51 -288,426,476.70 4,481,337,128.81"
+        },
+        "contribution": {
+          "physical_page": 58,
+          "parent_value": "0",
+          "evidence_excerpt": "（二）所有者投入和减少资本 12,460,000.00 12,460,000.00"
+        },
+        "distribution": {
+          "physical_page": 59,
+          "parent_value": "-5692824600.30",
+          "evidence_excerpt": "（三）利润分配 -5,692,824,600.30 -5,692,824,600.30 -45,212,091.14 -5,738,036,691.44"
+        },
+        "reserve": {
+          "physical_page": 59,
+          "parent_value": "362482.64",
+          "evidence_excerpt": "（五）专项储备 362,482.64 362,482.64 304,641.73 667,124.37"
+        },
+        "other": {
+          "physical_page": 59,
+          "parent_value": "-21626981.75",
+          "evidence_excerpt": "（六）其他 -21,626,981.75 -21,626,981.75 -2,696,626.68 -24,323,608.43"
+        }
+      },
+      "treasury_disclosure": {
+        "physical_page": 159,
+        "evidence_excerpt": "56、库存股 □适用 √不适用"
+      },
+      "comprehensive_components": {
+        "parent_profit_cny": "5758628097.79",
+        "parent_oci_cny": "-988864492.28"
+      }
+    },
+    "equity_bridge_result": {
+      "schema_version": "consolidated-equity-statement-bridge-result-v1",
+      "status": "ACCOUNTING_RECONCILED_NOT_MODEL_APPROVAL",
+      "period_end": "2026-06-30",
+      "unit": "CNY",
+      "scope": "consolidated_parent_attributable",
+      "source_id": "cninfo:1225511409",
+      "source_rows": {
+        "opening": {
+          "physical_page": 58,
+          "parent_value": "54655690475.89",
+          "evidence_excerpt": "二、本年期初余额 6,325,360,667.00 12,262,344,222.29 -173,163,583.80 3,200,065,459.00 33,041,083,711.40 54,655,690,475.89 3,888,586,202.27 58,544,276,678.16"
+        },
+        "closing": {
+          "physical_page": 59,
+          "parent_value": "53711364981.99",
+          "evidence_excerpt": "四、本期期末余额 6,325,360,667.00 12,240,717,240.54 -1,162,028,076.08 362,482.64 3,200,065,459.00 33,106,887,208.89 53,711,364,981.99 3,565,015,649.48 57,276,380,631.47"
+        },
+        "change": {
+          "physical_page": 58,
+          "parent_value": "-944325493.90",
+          "evidence_excerpt": "三、本期增减变动金额（减少以“-”号填列） -21,626,981.75 -988,864,492.28 362,482.64 65,803,497.49 -944,325,493.90 -323,570,552.79 -1,267,896,046.69"
+        },
+        "comprehensive": {
+          "physical_page": 58,
+          "parent_value": "4769763605.51",
+          "evidence_excerpt": "（一）综合收益总额 -988,864,492.28 5,758,628,097.79 4,769,763,605.51 -288,426,476.70 4,481,337,128.81"
+        },
+        "contribution": {
+          "physical_page": 58,
+          "parent_value": "0",
+          "evidence_excerpt": "（二）所有者投入和减少资本 12,460,000.00 12,460,000.00"
+        },
+        "distribution": {
+          "physical_page": 59,
+          "parent_value": "-5692824600.30",
+          "evidence_excerpt": "（三）利润分配 -5,692,824,600.30 -5,692,824,600.30 -45,212,091.14 -5,738,036,691.44"
+        },
+        "reserve": {
+          "physical_page": 59,
+          "parent_value": "362482.64",
+          "evidence_excerpt": "（五）专项储备 362,482.64 362,482.64 304,641.73 667,124.37"
+        },
+        "other": {
+          "physical_page": 59,
+          "parent_value": "-21626981.75",
+          "evidence_excerpt": "（六）其他 -21,626,981.75 -21,626,981.75 -2,696,626.68 -24,323,608.43"
+        }
+      },
+      "header_page": 58,
+      "treasury_disclosure": {
+        "physical_page": 159,
+        "evidence_excerpt": "56、库存股 □适用 √不适用",
+        "status": "H1_DISCLOSED_NOT_APPLICABLE_NOT_CURRENT_DILUTION_APPROVAL",
+        "period_end": "2026-06-30"
+      },
+      "ownership_amounts": {
+        "opening": {
+          "parent": "54655690475.89",
+          "minority": "3888586202.27",
+          "total": "58544276678.16"
+        },
+        "closing": {
+          "parent": "53711364981.99",
+          "minority": "3565015649.48",
+          "total": "57276380631.47"
+        },
+        "change": {
+          "parent": "-944325493.90",
+          "minority": "-323570552.79",
+          "total": "-1267896046.69"
+        },
+        "comprehensive": {
+          "parent": "4769763605.51",
+          "minority": "-288426476.70",
+          "total": "4481337128.81"
+        },
+        "contribution": {
+          "parent": "0.00",
+          "minority": "12460000.00",
+          "total": "12460000.00"
+        },
+        "distribution": {
+          "parent": "-5692824600.30",
+          "minority": "-45212091.14",
+          "total": "-5738036691.44"
+        },
+        "reserve": {
+          "parent": "362482.64",
+          "minority": "304641.73",
+          "total": "667124.37"
+        },
+        "other": {
+          "parent": "-21626981.75",
+          "minority": "-2696626.68",
+          "total": "-24323608.43"
+        }
+      },
+      "parent_profit_cny": "5758628097.79",
+      "parent_oci_cny": "-988864492.28",
+      "naive_profit_distribution_equity_cny": "54721493973.38",
+      "outside_profit_adjustment_cny": "-1010128991.39",
+      "reconciled_closing_parent_equity_cny": "53711364981.99",
+      "unexplained_difference_cny": "0",
+      "future_clean_surplus_assumption_approved": false,
+      "sustainable_distribution_approved": false,
+      "normalized_profit_approved": false,
+      "action": "no_order"
+    }
+  },
+  "profit_basis": "Historical ex-nonrecurring parent-profit TTM proxy, not normalized earnings.",
+  "normalized_profit": null,
+  "economic_review_items": [
+    "Validate earnings normalization and forward operating mechanism without impairment addbacks.",
+    "Validate issuer-specific equity cost, share denominator and finite advantage duration.",
+    "Historical H1 consolidated ownership equity now reconciles; separately validate future OCI/capital changes and sustainable distribution."
+  ],
+  "assurance_limits": [
+    "Conditional mathematical alternatives only; not approved fair value or entry prices.",
+    "Self-funded model does not enforce the issuer DPS floor or financing-funded distributions.",
+    "No G3, materiality, strict PIT, current price or private portfolio approval."
+  ],
+  "assumptions_approved": false,
+  "g3_approved": false,
+  "model_validity_approved": false,
+  "price_admitted": false,
+  "research_date_advanced": false,
+  "decision_changed": false,
+  "position_guidance": null,
+  "canonical_written": false,
+  "source_bindings": [
+    {
+      "path": "config/m1-valuation-packages-v1/600887-quality-compounder.json",
+      "sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803"
+    },
+    {
+      "path": "config/research-proposals/600887-20261011-v3.json",
+      "sha256": "fc7dba372686f7fefb17364546046ae9bc8b2cd9eef29431a3ad2d83e6aa0edb"
+    },
+    {
+      "path": "docs/current/600887-current-financial-review-20261011.md",
+      "sha256": "5241cd6420eb497bf5450d43bced4c35703d562db0e8762460b2af93bd0a7427"
+    },
+    {
+      "path": "docs/current/600887-economic-closure-review-20261011.md",
+      "sha256": "6bc1bb2886e7c783119a51ad57bc5a7c146a105164db42c3f6e66176c27d45e6"
+    },
+    {
+      "path": "runtime/prospective-public-event-2026-04-30/gapfill-600887-20260928T111456470155Z/index.json",
+      "sha256": "172808bcfe7069e5e30017136089764804a7edb4b2370422703ef79b3d10f54a"
+    },
+    {
+      "path": "runtime/d2-full-event-window-20261011/600887-v1/raw-index-manifest.json",
+      "sha256": "2378d8dac7ef431ab416944b850a2565382f41170cce86fd2153a3ed99c0bd3f"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/manifest.json",
+      "sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/facts.json",
+      "sha256": "fb07bf552d84dc41ddd58fd2088aafb33a3196d9679baaaa85c029739ac335f7"
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/report.md",
+      "sha256": "f6ced418424cdfec55e4d92f01121abfbe117b4a6c20fe1d920fecf95b49a2e3"
+    },
+    {
+      "path": "scripts/research_cases/yili/build_yili_current_fact_review.py",
+      "sha256": "5c89272af435024ef17e742906f559a801c621f9b3f38dfb87323af9289e7529"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+    },
+    {
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+    }
+  ]
+}

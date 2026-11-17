@@ -14,7 +14,7 @@ from value_investment_agent.application.product import build_current_workbench_f
 from value_investment_agent.domain.decision.decision_recommendation import (  # noqa: E402
     DECISION_RECOMMENDATION_SCHEMA, DECISION_RECOMMENDATION_V3_SCHEMA,
 )
-from value_investment_agent.presentation.read_models.existing_research_report import render_existing_research_report, render_current_research_readiness  # noqa: E402
+from value_investment_agent.presentation.read_models.existing_research_report import render_workbench_result  # noqa: E402
 from value_investment_agent.application.product.common import load_json_object, sha256_file, require_inside  # noqa: E402
 
 
@@ -77,8 +77,10 @@ def main() -> int:
     if report is not None:
         report.parent.mkdir(parents=True, exist_ok=True)
         with report.open("x", encoding="utf-8", newline="\n") as stream:
-            renderer = render_existing_research_report if args.existing_manifest is not None else render_current_research_readiness
-            stream.write(renderer(result["result"]))
+            stream.write(render_workbench_result(
+                root=ROOT, result=result["result"],
+                existing_manifest=args.existing_manifest is not None,
+            ))
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 

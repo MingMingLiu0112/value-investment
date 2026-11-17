@@ -1,0 +1,141 @@
+{
+  "schema_version": "tl8-c-share-denominator-recheck-receipt-v1",
+  "work_package": "TL8-C",
+  "task": "bounded-official-verification-of-000333-2026-06-30-ordinary-share-denominator",
+  "as_of": "2026-10-13",
+  "outcome": "VERIFIED_2026_06_30_ISSUED_EXCLUDING_TREASURY",
+  "verified_2026_06_30": {
+    "a_issued": 6962590407,
+    "h_issued": 650848500,
+    "issued_total": 7613438907,
+    "a_treasury": 149091572,
+    "h_treasury": 0,
+    "ordinary_shares_excluding_treasury": 7464347335,
+    "treasury_use_split": {
+      "cancellation_designated_2026_program": 68679031,
+      "share_incentive_or_plan_designated": 80412541
+    },
+    "basis": "Issuer HKEX monthly returns, issued shares excluding treasury shares, by class",
+    "alternative_denominator_recorded_not_selected": 7544759876
+  },
+  "query_windows": [
+    {
+      "provider": "HKEXNEWS",
+      "code": "00300",
+      "stock_id": "1000231771",
+      "window": "2026-07-01~2026-08-07",
+      "record_count": 35,
+      "index_path": "runtime/company-research/midea-denominator-recheck-20261013/hkex-window-20260701-20260807/window-index.json",
+      "index_sha256": "e94a4cd424e3d37037577e7b5466888f6e65c9b827ecdaa469411efa38ae2679",
+      "receipt_path": "runtime/company-research/midea-denominator-recheck-20261013/hkex-window-20260701-20260807/capture-receipt.json",
+      "receipt_sha256": "32824f8345edc983d04f151b83ce5a5de76e92b30110f76daf641a48f9a98443"
+    },
+    {
+      "provider": "HKEXNEWS",
+      "code": "00300",
+      "stock_id": "1000231771",
+      "window": "2026-09-30~2026-10-13",
+      "record_count": 6,
+      "index_path": "runtime/company-research/midea-denominator-recheck-20261013/hkex-window-20260930-20261013/window-index.json",
+      "index_sha256": "7e0879845d517c007d47d6cba5547b02136f6c9641c4b13bedf5977d0ec7a116",
+      "receipt_path": "runtime/company-research/midea-denominator-recheck-20261013/hkex-window-20260930-20261013/capture-receipt.json",
+      "receipt_sha256": "3c5032897522506194b8bd376c4246e93b85e495ef49222b6a5423f2e78aa7a5"
+    },
+    {
+      "provider": "CNINFO",
+      "symbol": "000333",
+      "window": "2026-09-30~2026-10-13",
+      "record_count": 5,
+      "index_path": "runtime/prospective-public-event-2026-10-13/gapfill-000333-20261013T061406981606Z/index.json",
+      "index_sha256": "e69aac04f458b2a57e138943a7131dc61ba97ac8abfc616cacc0fe562022c462",
+      "receipt_path": "runtime/prospective-public-event-2026-10-13/gapfill-000333-20261013T061406981606Z/scan-receipt.json",
+      "receipt_sha256": "27e526f0d05c57e8db7a45f0db83c33f643f93864acef452bd090ce4a952d60f"
+    }
+  ],
+  "sources": [
+    {
+      "id": "midea_202606_hkex_monthly_return",
+      "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0707/2026070700419_c.pdf",
+      "path": "runtime/company-research/midea-denominator-recheck-20261013/hkex-window-20260701-20260807/originals/12235688-2026070700419_c.pdf",
+      "sha256": "fab9be2f0349dcda9880b178e45e4dd65474b98635bf454adeeb19ed7bc3ecfd"
+    },
+    {
+      "id": "midea_202607_hkex_monthly_return",
+      "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0806/2026080601118_c.pdf",
+      "path": "runtime/company-research/midea-denominator-recheck-20261013/hkex-window-20260701-20260807/originals/12275468-2026080601118_c.pdf",
+      "sha256": "2b44a2f088e59c6fcae197da299e1f98a365bd35084bd06333d815c897dbaba9"
+    },
+    {
+      "id": "midea_202609_hkex_monthly_return",
+      "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/1007/2026100700897_c.pdf",
+      "path": "runtime/company-research/midea-denominator-recheck-20261013/hkex-window-20260930-20261013/originals/12365201-2026100700897_c.pdf",
+      "sha256": "c56a8370659ec85aa0812060cd6511184bb0ac29b304dd3c1c575367f64f378e"
+    },
+    {
+      "id": "midea_2026_10_09_repurchase_progress",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-10-09/1225596587.PDF",
+      "path": "runtime/company-research/midea-denominator-recheck-20261013/cninfo-originals/1225596587.PDF",
+      "sha256": "ecf88af046574b4a780c8fca23b4b5a4968648c2a70142cda0056753532a7073"
+    },
+    {
+      "id": "midea_2026_09_03_repurchase_progress",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-09-03/1225544342.PDF",
+      "path": "runtime/company-research/midea-share-denominator-followup-20260930/1225544342.pdf",
+      "sha256": "24900692f953f24bff8464e27e3383e91b2a272984e38bff21ca628b3d7cc50b"
+    },
+    {
+      "id": "midea_2026_09_03_plan_transfer_notice",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-09-03/1225544482.PDF",
+      "path": "runtime/company-research/midea-share-denominator-followup-20260930/1225544482.pdf",
+      "sha256": "d93bfd07da79f6b5e11b1c7bbdb151a4fe021690a2a307c0fc3c1047b4716365"
+    },
+    {
+      "id": "midea_2026h1_report",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-08-29/1225531404.PDF",
+      "path": "runtime/prospective-public-event-20260927/gapfill-000333-20260927T091704729284Z/1225531404.pdf",
+      "sha256": "576dd80e353e53296a800b03e9889a9cbb2e8b91fa2ab3c1dace7c10159179b8"
+    }
+  ],
+  "reconciliation": [
+    "A+H issued shares at 2026-06-30 equal the 2026H1 report total 7,613,438,907",
+    "The July monthly return repeats the June monthly return June 30 balances field by field",
+    "September 2026: 23,212,340 buybacks minus 15,772,385 employee-plan transfer out equals the +7,439,955 monthly-return treasury delta",
+    "Treasury split reconciles: 149,091,572 minus 68,679,031 equals 80,412,541 plan-designated shares",
+    "The 2026H1 interim-dividend base excludes the full repurchase account on the same basis"
+  ],
+  "not_substituted": [
+    "H1 weighted-average basic and diluted EPS denominators are period averages, not date-end counts",
+    "The verified 2026-09-29 post-period count 7,445,382,896 is a different date and is not backdated"
+  ],
+  "shared_chain_wiring": {
+    "builder": "scripts/build_midea_valuation_applicability.py",
+    "package_version": "midea-valuation-applicability-v5",
+    "assessment_date": "2026-10-13",
+    "evidence_path": "runtime/company-research/midea-valuation-applicability-20261013-v5/evidence.json",
+    "evidence_sha256": "b69e2fc931a016393ae5d274ad8d7aec8c5aaad52787e92ae377c5ff5ee5f541",
+    "pointer_path": "runtime/company-research/midea-valuation-applicability-latest.json",
+    "pointer_sha256": "4695c562389fd2e969077e820a4feb42ab3831aab96c87f6c04e6cc563dabfb1",
+    "a_blocking_unknown": 0,
+    "b_scenario_range_input": 6,
+    "valuation_run_status": "NOT_RUN_B_SCENARIO_INPUTS_NOT_REGISTERED",
+    "decision": "AUTHORIZED_DENOMINATOR_VERIFIED_PENDING_B_SCENARIO_INPUTS",
+    "tests": [
+      "tests/test_midea_valuation_applicability.py",
+      "tests/test_hkex_issuer_window_capture.py"
+    ]
+  },
+  "tooling": {
+    "new_cli": "scripts/cases/capture_hkex_issuer_disclosure_window.py",
+    "inventory": "docs/architecture/script-inventory-v1.json",
+    "ci": ".github/workflows/core-research-gates.yml",
+    "growth_baseline": "config/architecture-growth-baseline-v1.json"
+  },
+  "limitations": [
+    "Retrieval timestamps are local process clock and not independently attested",
+    "Bounded official-source reconciliation is not strict contemporaneous PIT proof",
+    "No valuation, baseline, price assessment, decision state or workbook value changed",
+    "The FCFF non-applicability conclusion and the three FCFF evidence stops are unchanged"
+  ],
+  "reopen_condition": "Re-check with the same bounded tooling when the 2026Q3 report or later monthly returns widen the disclosure window; any new issuance, cancellation, transfer or plan event after 2026-06-30 requires a fresh dated denominator for a new valuation date",
+  "action": "no_order"
+}

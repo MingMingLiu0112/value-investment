@@ -1,0 +1,7 @@
+{
+  "action": "no_order",
+  "candidate_binding": {
+    "path": "runtime/midea-economic-review-ready-20261021T193106744906Z/candidate.json",
+    "sha256": "51a1389c053067ab740ac9a8e7fa45d1e289a4ef605f224b38d14f667b99dfc8"
+  }
+}

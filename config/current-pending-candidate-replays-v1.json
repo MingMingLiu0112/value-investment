@@ -1,0 +1,10 @@
+{
+  "schema_version": "current-pending-candidate-replays-v1",
+  "action": "no_order",
+  "publications": {
+    "600887": {
+      "path": "runtime/cc1-companion-replay-20261023-v2-final/600887/publication.json",
+      "sha256": "86b26ff6d4df03bacca7d49702a2e163448e1723e876e5776f37c57cdec54f3f"
+    }
+  }
+}

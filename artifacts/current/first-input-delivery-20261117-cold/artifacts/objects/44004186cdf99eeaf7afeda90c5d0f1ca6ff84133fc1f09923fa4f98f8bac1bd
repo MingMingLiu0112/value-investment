@@ -1,0 +1,57 @@
+{
+  "schema_version": "first-company-conditional-research-rationale-v1",
+  "action": "no_order",
+  "symbol": "000568",
+  "generated_at": "2026-10-31T11:10:08.293047+00:00",
+  "scope": "CONDITIONAL_STRESS_RESEARCH_NOT_ADOPTED_MAIN_RANGE",
+  "main_research_range": "REJECTED",
+  "source_bindings": [
+    {
+      "path": "runtime/e2-first-input-000568-20261031/evidence/FY2025/original.pdf",
+      "sha256": "7a2e321f049401fd34dfbf8c22964e804d16f077ece9382791cb2b2ce0c74676"
+    },
+    {
+      "path": "runtime/e2-first-input-000568-20261031/original.pdf",
+      "sha256": "33fbc65e9bc5c41a80d2cc5f8ae0eaa2990424c81bb93b90029ccdb05e092ade"
+    }
+  ],
+  "native_fact_binding": {
+    "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+    "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+  },
+  "business": "白酒品牌、渠道及产品结构决定实现收入和利润。渠道去库存与回款压力使高毛利不能直接等同高质量股东现金。",
+  "basis": "TTM仅用FY2025+H12026-H12025逐字段历史算术，不是正常化利润；资本状态统一为H12026。模型年不冒称完整财年预测。",
+  "conditional_resources": {
+    "opening_cash": "17016211333.61",
+    "cash_floor": "6000000000",
+    "opening_distribution_capacity": "23214184665.64",
+    "basis": "若H1母公司现金等价物23517778984.18排除已宣告股利6501567650.57后剩余资源可用，且维持60亿元全期现金底线；这是条件映射，非净自由现金/合法分配证明。期末权益已反映宣告股利，不再减同额book或以后commitment。"
+  },
+  "resource_unknowns": {
+    "actual_net_incremental_distributable_cash": null,
+    "actual_legal_distribution_capacity": null,
+    "actual_minimum_operating_cash": null,
+    "actual_declared_dividend_payment_date": null,
+    "actual_maintenance": null,
+    "actual_normalized_wc": null,
+    "actual_remaining_contract_payments": null,
+    "actual_future_remittance_ratio": null,
+    "actual_post_2026_dividend_policy": null,
+    "actual_terminal_profit": null
+  },
+  "cash_policy_reason": "75%仅压力目标，不自动延续2026规划的法律效力；access为主体上划条件折扣，不是CFO转换率。净维护为DA已费用化之外增补，不再加回DA或重复扣全CapEx。WC独立压力，不以库存释放救现金。",
+  "commitment_reason": "三年8/8/6亿元为参考项目规模的条件预算包，不是未付合同事实。假定第四年此包完成且无新增同类预算；其他真实承诺仍未知。新增资本收益机制停用，避免对同一预算再计回报。",
+  "terminal_reason": "Y11旧业务利润仅假定变为Y10总利润的50%/75%/100%后保持；本例新增资本与流动性收益已停用，故无重复缩放该收益。持续维护、WC、可达、现金底线与分配限制保留。它是无概率权重的反证机制，不是预计终值或可采用主区间。",
+  "limitations": [
+    "历史其他税前利润残差和税/费用/归属比被固定，不证明利息收入和费用结构可长期维持",
+    "资料范围FY2025及H12026；未核验当前Q3、最新资本事件或合格报价，不得称今日公允价值",
+    "主区间拒绝，条件数字不能进入价格政策、正式候选、私人股数或订单",
+    "独立经济研究不认可预计终值，只认可清楚条件下的压力算术"
+  ],
+  "counter_evidence": [
+    "销量及渠道去库存恶化、毛利/促销刚性、回款不足可能推翻稳定和修复条件",
+    "真实受限资金、债务、维护/WC或合同付款超条件缓冲时应拒绝路径，不允许隐含融资",
+    "历史TTM含当期利润下降但不代表已正常化；H1中高档销量降幅42.53%未被本有限Bear保证覆盖"
+  ],
+  "independent_review_scope": "Darwin只确认可定义条件反证机制，不授予主估值、G3或真实交易资格"
+}

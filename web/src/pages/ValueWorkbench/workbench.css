@@ -1,0 +1,136 @@
+.value-workbench {
+  min-width: 0;
+}
+.value-workbench section {
+  min-width: 0;
+}
+.value-workbench nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 16px;
+}
+.value-workbench nav a {
+  display: inline-block;
+  padding: 6px 10px;
+  border: 1px solid #d9e6e1;
+  border-radius: 6px;
+}
+.value-workbench label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-block: 12px;
+}
+.value-workbench input:not([type="checkbox"]),
+.value-workbench select,
+.value-workbench textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #b8c8c0;
+  border-radius: 6px;
+  font: inherit;
+  background: #fff;
+  color: inherit;
+}
+.value-workbench input[type="checkbox"] {
+  align-self: flex-start;
+  width: 18px;
+  height: 18px;
+}
+.value-workbench textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+.value-workbench fieldset {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 12px;
+  margin-block: 16px;
+  padding: 14px;
+  border: 1px solid #d9e6e1;
+  border-radius: 8px;
+  min-width: 0;
+}
+.value-workbench fieldset > p {
+  grid-column: 1 / -1;
+}
+.value-workbench .ant-space {
+  max-width: 100%;
+}
+.value-workbench .ant-btn {
+  min-height: 32px;
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+.value-workbench .ant-card-body {
+  min-width: 0;
+  overflow-x: auto;
+}
+.value-workbench code,
+.value-workbench dd,
+.value-workbench li {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .value-workbench .ant-card-body {
+    padding: 12px;
+  }
+  .value-workbench h2 {
+    font-size: 20px;
+  }
+  .value-workbench h3 {
+    font-size: 17px;
+  }
+  .value-workbench fieldset {
+    padding: 10px;
+  }
+}
+
+.value-workbench {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.value-workbench section,
+.value-workbench details,
+.value-workbench dl,
+.value-workbench .ant-card {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.value-workbench a,
+.value-workbench p,
+.value-workbench dt,
+.value-workbench dd,
+.value-workbench code {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.value-workbench dd {
+  margin-inline-start: 0;
+  margin-block-end: 8px;
+}
+.value-workbench .task-result-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.value-workbench .task-result-scroll table {
+  width: 100%;
+  min-width: 580px;
+  border-collapse: collapse;
+}
+.value-workbench .task-result-scroll th,
+.value-workbench .task-result-scroll td {
+  padding: 8px;
+  border-bottom: 1px solid #d9e6e1;
+  text-align: start;
+  vertical-align: top;
+}

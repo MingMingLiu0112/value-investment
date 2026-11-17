@@ -1,0 +1,50 @@
+
+> value-investment-web@0.1.0 typecheck
+> tsc --noEmit
+
+
+> value-investment-web@0.1.0 test
+> vitest run
+
+
+ RUN  v2.1.9 D:/GPTProject/value-investment/web
+
+ ✓ tests/research-detail.test.ts (21 tests) 15ms
+ ✓ tests/packet.test.ts (8 tests) 9ms
+ ✓ tests/api-session.test.ts (5 tests) 199ms
+ ✓ tests/current-judgment.test.ts (20 tests) 11ms
+ ✓ tests/private-state.test.ts (9 tests) 8ms
+ ✓ tests/value-policy.test.tsx (6 tests) 22ms
+ ✓ tests/PortfolioPolicyPanel.test.tsx (4 tests) 31ms
+ ✓ tests/dual-sleeve.test.ts (11 tests) 8ms
+ ✓ tests/confirmation-tasks.test.tsx (9 tests) 17ms
+ ✓ tests/portfolio-policy.test.ts (4 tests) 12ms
+ ✓ tests/decision-eligibility.test.ts (4 tests) 7ms
+ ✓ tests/PortfolioSetupForm.test.tsx (4 tests) 20ms
+ ✓ tests/codes.test.ts (3 tests) 6ms
+ ✓ tests/reconciliation.test.ts (5 tests) 6ms
+ ✓ tests/ConfirmedTrades.test.tsx (1 test) 11ms
+ ✓ tests/opportunity-view.test.ts (4 tests) 7ms
+ ✓ tests/private-state-consistency.test.ts (3 tests) 5ms
+ ✓ tests/history.test.ts (4 tests) 5ms
+ ✓ tests/format.test.ts (4 tests) 5ms
+ ✓ tests/chart-time.test.ts (2 tests) 5ms
+ ✓ tests/hotspot-quality-card.test.tsx (1 test) 10ms
+ ✓ tests/status.test.ts (1 test) 3ms
+ ✓ tests/p6-detail-review.test.tsx (9 tests) 22ms
+ ✓ tests/detail-section.test.ts (2 tests) 6ms
+ ✓ tests/detail-current-holding.test.tsx (8 tests) 23ms
+ ✓ tests/FillPanel.test.tsx (11 tests) 92ms
+ ✓ tests/materiality-handoff.test.tsx (2 tests) 78ms
+ ✓ tests/HotspotSizingPanel.test.tsx (4 tests) 110ms
+ ✓ tests/private-risk-experience.test.tsx (4 tests) 218ms
+ ✓ tests/p6-detail-history-navigation.test.tsx (4 tests) 384ms
+ ✓ tests/Portfolio.test.tsx (4 tests) 13ms
+ ✓ tests/holdings-attention.test.tsx (5 tests) 57ms
+ ✓ tests/p6-daily-failclosed-ssr.test.tsx (10 tests) 132ms
+
+ Test Files  33 passed (33)
+      Tests  196 passed (196)
+   Start at  02:41:11
+   Duration  48.13s (transform 10.91s, setup 0ms, collect 389.52s, tests 1.56s, environment 9ms, prepare 8.28s)
+

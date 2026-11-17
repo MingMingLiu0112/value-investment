@@ -1,0 +1,24 @@
+{
+  "schema_version": "hotspot-replay-verification-v1",
+  "verified_at": "2026-10-14T21:15:53.785332+08:00",
+  "v1_manifest_sha256": "084db88666db823d788a928388a99633bbc7916363729dcda8720f363fe33373",
+  "structure_manifest_sha256": "1c4e270a58e909b6b51fee1909892c3155338d745ca6e06728da2cbf912aceb5",
+  "web_summary_sha256": "06f78a3921b394cb6c4d2ff7bc3591ef81adec5c863f2b5be0bd22c9f8fd2775",
+  "reader_code_sha256": "cec6f57b03b42a16cc3c54b28caeb67efa63086e2ee523f0cc0e2a3bb405f0f7",
+  "checks": [
+    "five case identity",
+    "v1 trigger counts unchanged",
+    "inherited prices match at every complete prefix",
+    "actual full windows 492/1968/1968",
+    "first 15m warm-up explicitly missing",
+    "all frozen rules and implementation hashes unchanged",
+    "externally pinned manifest and report hashes verified"
+  ],
+  "tests": {
+    "passed": 51,
+    "scope": "targeted replay plus existing rule/current-case/plan/registry tests"
+  },
+  "formal_eligibility": false,
+  "prospective_oos_admitted": false,
+  "action": "no_order"
+}

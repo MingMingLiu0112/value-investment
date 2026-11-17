@@ -1,0 +1,43 @@
+{
+  "action": "no_order",
+  "scope": "ACTUAL_REGISTERED_RESEARCH_QUOTE_OBSERVATIONS_ONLY",
+  "status": "PASS",
+  "items": [
+    {
+      "symbol": "000333",
+      "reference_close": "83.86",
+      "market_trade_date": "2026-10-21",
+      "reference_price_scope": "LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+      "current_quote_verified": true,
+      "price_comparison_eligible": false,
+      "formal_eligibility": false,
+      "qualification": "REGISTERED_RESEARCH_GAPS_ONLY",
+      "position_guidance": null
+    },
+    {
+      "symbol": "000651",
+      "reference_close": "37.13",
+      "market_trade_date": "2026-10-21",
+      "reference_price_scope": "LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+      "current_quote_verified": true,
+      "price_comparison_eligible": false,
+      "formal_eligibility": false,
+      "qualification": "REGISTERED_RESEARCH_GAPS_ONLY",
+      "position_guidance": null
+    },
+    {
+      "symbol": "600741",
+      "reference_close": "14.85",
+      "market_trade_date": "2026-10-21",
+      "reference_price_scope": "LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+      "current_quote_verified": true,
+      "price_comparison_eligible": false,
+      "formal_eligibility": false,
+      "qualification": "REGISTERED_RESEARCH_GAPS_ONLY",
+      "position_guidance": null
+    }
+  ],
+  "blockers": [],
+  "real_assisted_use": "NOT_PROVEN",
+  "implementation_sha256": "a878c5355bf63884fc491b85ce5a7303c78851e4ca620905f6a9aa01ea16851a"
+}

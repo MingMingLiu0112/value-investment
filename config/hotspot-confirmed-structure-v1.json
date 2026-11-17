@@ -1,0 +1,21 @@
+{
+  "schema_version": "hotspot-research-rule-registration-v1",
+  "rule_version": "hotspot-confirmed-structure-v1",
+  "registered_date": "2026-10-14",
+  "status": "FROZEN_RESEARCH_CANDIDATE_NOT_ADMITTED",
+  "swing_left_bars": 2,
+  "swing_right_bars": 2,
+  "swing_confirmation": "strict extremum, known only at second right completed close",
+  "trend": "last two confirmed daily highs and lows, both rising or both falling",
+  "breakout_confirmation": "inherited v1 breakout then next completed 60m close holds original breakout level",
+  "retest_lookback_bars": 10,
+  "retest_confirmation": "after frozen breakout all interim closes hold its level, at least one lower-volume touching bar, latest close exceeds preceding high with inherited volume confirmation",
+  "upper_reference": "nearest of last two confirmed daily swing highs strictly above entry observation price",
+  "reward_risk": "structural distance only, no expected return, no invented target",
+  "historical_classification_pit": "NOT_PROVEN",
+  "prospective_validation": "NOT_YET_AVAILABLE",
+  "parameter_optimization": false,
+  "formal_eligibility": false,
+  "confirmation_explanation": "confirmation_level freezes the prior breakout threshold; level remains the current rolling threshold",
+  "action": "no_order"
+}

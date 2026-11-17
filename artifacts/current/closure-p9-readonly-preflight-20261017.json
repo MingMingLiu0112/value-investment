@@ -1,0 +1,263 @@
+{
+  "schema_version": "p9-readonly-preflight-v1",
+  "action": "no_order",
+  "started_at": "2026-10-17T22:04:34.8163329+08:00",
+  "finished_at": "2026-10-17T22:04:35.0471209+08:00",
+  "head": "4a56ab357322122079400a0fed33fd023fceeff3",
+  "branch": "codex/web-d1-investment-workbench",
+  "python": "D:\\APP\\Python313\\python.exe",
+  "node": "D:\\APP\\NodeJs\\node.exe",
+  "publication_id": "pub-cb73f09b88c4150ecf0d",
+  "research_version": "canonical-reviewed-research-20261012T113935Z-362d7928",
+  "quote_trade_date": "2026-10-16",
+  "latest_completed_session": "2026-10-16",
+  "formal_admission_count": 0,
+  "research_counts": {
+    "universe_count": 5573,
+    "lead_count": 114,
+    "queue_count": 114,
+    "needs_re_research_count": 0,
+    "incomplete_research_count": 6,
+    "awaiting_verified_close_count": 0
+  },
+  "hotspot_case_count": 5,
+  "source_checks": [
+    {
+      "label": "public_packet",
+      "path": "runtime/daily-public-packet/daily-public-packet-pub-cb73f09b88c4150ecf0d.json",
+      "status": "PASS",
+      "sha256": "f0efba54ff69ccc774eba6a9ce4ec43deea2b541488af934cce11606c31b6dff"
+    },
+    {
+      "label": "packet_binding:daily_product_state",
+      "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/product-update-state-v3.json",
+      "status": "PASS",
+      "sha256": "39a8a6e4cd617bf93cd1997d22ff5742e506ef59934c72dbe00541bf8d4ec680"
+    },
+    {
+      "label": "packet_binding:publication_handoff",
+      "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/product-publication-input-v3.json",
+      "status": "PASS",
+      "sha256": "92df725d1c228985a94591d187dad732c37bad0c5c298cad46f79842fb2802b3"
+    },
+    {
+      "label": "packet_binding:publication_receipt",
+      "path": "runtime/publication-receipts/canonical-reviewed-research-20261012T113935Z-362d7928.json",
+      "status": "PASS",
+      "sha256": "cc524ff8e94173b146c578b6bc8dbde1f103aacc95cf9b0f6c8d9ee41e51c48d"
+    },
+    {
+      "label": "packet_binding:publication_sources",
+      "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/canonical-integration-historical-preview.source-bindings.json",
+      "status": "PASS",
+      "sha256": "650107dc44eb00d7d44996dbd4fe3572d25aede9d6c889f943365a0ebd38efe3"
+    },
+    {
+      "label": "packet_binding:publication_wps_receipt",
+      "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/published-native-review/receipt.json",
+      "status": "PASS",
+      "sha256": "df91b8e1db9258dc4352298ccd2b5bcd17bb5213427b4a863f66bd92d4370339"
+    },
+    {
+      "label": "packet_binding:read_model",
+      "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/product-read-model-v3.json",
+      "status": "PASS",
+      "sha256": "ebd4cb9514bde055ef935f2d9d798564e4cdf4e1e187331c429df3a6f3781233"
+    },
+    {
+      "label": "packet_binding:quote_bridge_pointer",
+      "path": "config/current-quote-bridge.json",
+      "status": "PASS",
+      "sha256": "37bb13aa8a6323c9b107bd28c22d0276c993d221ca9f9764f00351421cc4ad6c"
+    },
+    {
+      "label": "packet_binding:quote_bundle:000333",
+      "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "status": "PASS",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "label": "packet_binding:quote_bundle:000651",
+      "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "status": "PASS",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "label": "packet_binding:quote_bundle:600519",
+      "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "status": "PASS",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "label": "packet_binding:quote_bundle:600741",
+      "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "status": "PASS",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "label": "packet_binding:quote_bundle:600887",
+      "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "status": "PASS",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "label": "packet_binding:quote_bundle:601088",
+      "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "status": "PASS",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "label": "packet_binding:company_research_registry",
+      "path": "config/current-company-research-registry.json",
+      "status": "PASS",
+      "sha256": "8751796b5a5c32c3e4235cd063adb331d2f0daca77b68d342ef9e110fde9e9e3"
+    },
+    {
+      "label": "registry:000333",
+      "path": "runtime/company-research/midea-valuation-applicability-20261013-v5/evidence.json",
+      "status": "PASS",
+      "sha256": "b69e2fc931a016393ae5d274ad8d7aec8c5aaad52787e92ae377c5ff5ee5f541"
+    },
+    {
+      "label": "registry:000333",
+      "path": "docs/current/tl8-c-000333-share-denominator-recheck-receipt-20261013.json",
+      "status": "PASS",
+      "sha256": "f2b968c000ae9f6ec39541b2bc8413fb97654d32fed530cc5badd66c547c752b"
+    },
+    {
+      "label": "registry:000651",
+      "path": "runtime/company-research/000651-m1-dossier-20260923T004117Z/evidence.json",
+      "status": "PASS",
+      "sha256": "be20b1686aea0219b52602ece96b7e240147e679890d7f28966ae82a60702c56"
+    },
+    {
+      "label": "registry:000651",
+      "path": "runtime/company-research/000651-official-interim-20260917/1225515004.pdf",
+      "status": "PASS",
+      "sha256": "50da2e03fddbe9dd424d8fe7881f47fb34efa5d38c96aa9449c12e445c3b2dec"
+    },
+    {
+      "label": "registry:600741",
+      "path": "runtime/company-research/600741-m1-dossier-20260923T004123Z/evidence.json",
+      "status": "PASS",
+      "sha256": "d162721de48b530720917c8c154159b9ed0e260a84c4592a084b7d2069fb6864"
+    },
+    {
+      "label": "registry:600741",
+      "path": "runtime/company-research/m1-official-filings-20260923/600741/2026-06-30-interim-2b5ced0dc37827ad9d35036fb0d49b3b34e6ff47f2559222db0225f7519162c6.pdf",
+      "status": "PASS",
+      "sha256": "77db47cdf18cc46123c4924cb869a75dc3d4404f718e132292e6c9132e65f2f9"
+    },
+    {
+      "label": "registry:600887",
+      "path": "artifacts/current/tl11-p8-20261016/research/judgments.json",
+      "status": "PASS",
+      "sha256": "1bf1f0c5b88ae37835a7f0b22b168cb0d7b3dcb2cb69901ac32d20422a609866"
+    },
+    {
+      "label": "registry:600887",
+      "path": "artifacts/current/tl11-p8-20261016/research/audit.json",
+      "status": "PASS",
+      "sha256": "35f95e1edddd747285a731755b0d6a29edbc9f07739faea9971b4c6a0523946a"
+    },
+    {
+      "label": "registry:600519",
+      "path": "artifacts/current/tl11-p8-20261016/research/judgments.json",
+      "status": "PASS",
+      "sha256": "1bf1f0c5b88ae37835a7f0b22b168cb0d7b3dcb2cb69901ac32d20422a609866"
+    },
+    {
+      "label": "registry:600519",
+      "path": "artifacts/current/tl11-p8-20261016/research/audit.json",
+      "status": "PASS",
+      "sha256": "35f95e1edddd747285a731755b0d6a29edbc9f07739faea9971b4c6a0523946a"
+    },
+    {
+      "label": "registry:601088",
+      "path": "docs/current/tl8-c-601088-cycle-model-boundary-receipt-20261013.json",
+      "status": "PASS",
+      "sha256": "9f3a6a22b8a534ff6fce288d7ebe130376e2404fd1936b6ab37525f811171fe8"
+    },
+    {
+      "label": "quote:600887",
+      "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "status": "PASS",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "label": "quote:600519",
+      "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "status": "PASS",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "label": "quote:000333",
+      "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "status": "PASS",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "label": "quote:000651",
+      "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "status": "PASS",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "label": "quote:600741",
+      "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "status": "PASS",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "label": "quote:601088",
+      "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+      "status": "PASS",
+      "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+    },
+    {
+      "label": "hotspot_selection",
+      "path": "runtime/hotspot-daily-selection/561a1e66bf424d4e87426fbf1f080106/report.json",
+      "status": "PASS",
+      "sha256": "c2ef47a982ea85f04ed4d5e6324f9beda00e0f80f55cd4b19590d1c96d53f4f1"
+    },
+    {
+      "label": "price:600150",
+      "path": "runtime/hotspot-current-price-cases/600150-2026-10-16-e5c5ad49533d4fc9a28abd698f863d48/case.json",
+      "status": "PASS",
+      "sha256": "c6fb58071b35ef1c710da2bba71f6a46eefd6bb10f2f5b9e0a5ada9752fac140"
+    },
+    {
+      "label": "price:600391",
+      "path": "runtime/hotspot-current-price-cases/600391-2026-10-16-2ad547c8995149a88d11218322c15a8b/case.json",
+      "status": "PASS",
+      "sha256": "4062df741444b4e7f39c97f94f12a4b9527e3e586607fb704da76204880edba5"
+    },
+    {
+      "label": "price:600967",
+      "path": "runtime/hotspot-current-price-cases/600967-2026-10-16-1c9b9b258534454c9b50e99bcb472250/case.json",
+      "status": "PASS",
+      "sha256": "d10f8665c0cc61fd7c6f27a6da6afd50092ad827591d03b6a78ce4c0fc17a72f"
+    },
+    {
+      "label": "price:600316",
+      "path": "runtime/hotspot-current-price-cases/600316-2026-10-16-d585221144934f1fa83ebe25000377f5/case.json",
+      "status": "PASS",
+      "sha256": "51e7cb2e0f5caf54a27c73638764c1fa007d9dfcbd7f2d48b8422a6793d61e92"
+    },
+    {
+      "label": "price:600893",
+      "path": "runtime/hotspot-current-price-cases/600893-2026-10-16-d9c3d07d9988448db1bfd084b175cd6b/case.json",
+      "status": "PASS",
+      "sha256": "cf879270b1d6cdb1e94758cf1bf4ae3d68a1341cbd00e96e2dd076bdcfe0050e"
+    }
+  ],
+  "tests": "NOT_RUN",
+  "browser": "NOT_RUN_BY_SCRIPT_REQUIRES_ACTUAL_UI",
+  "private_account": "NOT_READ_REQUIRES_USER_CONFIRMATION",
+  "human_review": "NOT_SIGNED_BY_SCRIPT",
+  "excel": "NOT_WRITTEN",
+  "full_acceptance": "NOT_ASSESSED",
+  "failures": [],
+  "status": "PASS_ENGINEERING_PRECHECK",
+  "exit_code": 0
+}

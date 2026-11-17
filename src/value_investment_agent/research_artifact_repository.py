@@ -14,7 +14,7 @@ from typing import Any, Protocol, Sequence
 import psycopg
 from psycopg.rows import dict_row
 
-from .research_artifact_codecs import artifact_payload
+from .infrastructure.module_run_artifact_codec_v1 import artifact_payload
 from .research_artifacts import (
     ResearchArtifactEnvelope,
     ResearchArtifactHead,

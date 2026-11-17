@@ -1,0 +1,183 @@
+{
+  "status": "READ_ONLY_PREVIEW_NOT_APPROVED",
+  "action": "no_order",
+  "approval_changed": false,
+  "draft": {
+    "schema_version": "pending-research-review-response-v1",
+    "action": "no_order",
+    "symbol": "000333",
+    "candidate_binding": {
+      "path": "runtime/midea-economic-review-ready-20261021T193106744906Z/candidate.json",
+      "sha256": "51a1389c053067ab740ac9a8e7fa45d1e289a4ef605f224b38d14f667b99dfc8"
+    },
+    "model_context": {
+      "input_descriptor_sha256": "74986ca9370ba7af8dcde481bd23f852f292ab85ef2e5e79d692f7879c2b2f62",
+      "research_case_sha256": "dcfa18653a1995d00c572b111076575642895d99d17685ff23a71438e7b5a773",
+      "facts_sha256": "c51b36cedb0b95c73deda53181547a82159723a0b30a4d3bf10472ed4ddb936c",
+      "assumptions_sha256": "d690ec74be7b7a995bdd7c6a3ce478363b365e720cb583e3161fa97559443d84",
+      "model_id": "residual_income_or_equity_value",
+      "model_version": "residual-income-equity-shared-dated-v2",
+      "profile_id": "mature_manufacturing",
+      "research_as_of": "2026-10-22"
+    },
+    "valuation_artifact_sha256": "4b0252f1bdb3d06f7b73a842527610820c28fa06d5554bf21cd7288c18af2ed9",
+    "reviewer_id": null,
+    "reviewed_at": null,
+    "whole_model_approval": null,
+    "supersedes_response_sha256": null,
+    "groups": [
+      {
+        "id": "ACCOUNTING_COMPARABILITY",
+        "field_paths": [
+          "research_case.financial_summary",
+          "research_case.counter_evidence"
+        ],
+        "response": null,
+        "response_reason": null,
+        "confirmed_scope": null
+      },
+      {
+        "id": "ROE_PATH",
+        "field_paths": [
+          "facts.scenario_inputs",
+          "assumptions",
+          "research_case.financial_summary"
+        ],
+        "response": null,
+        "response_reason": null,
+        "confirmed_scope": null
+      },
+      {
+        "id": "EQUITY_COST",
+        "field_paths": [
+          "facts.scenario_inputs",
+          "assumptions",
+          "research_case.financial_summary"
+        ],
+        "response": null,
+        "response_reason": null,
+        "confirmed_scope": null
+      },
+      {
+        "id": "DISTRIBUTION",
+        "field_paths": [
+          "facts.scenario_inputs",
+          "source_contract.distribution_input_status",
+          "research_case.financial_summary"
+        ],
+        "response": null,
+        "response_reason": null,
+        "confirmed_scope": null
+      },
+      {
+        "id": "TERMINAL_AND_CAPITAL",
+        "field_paths": [
+          "facts.operating_inputs",
+          "facts.valuation_timing",
+          "facts.scenario_inputs",
+          "assumptions"
+        ],
+        "response": null,
+        "response_reason": null,
+        "confirmed_scope": null
+      },
+      {
+        "id": "EVENTS_AND_AUTHORITY",
+        "field_paths": [
+          "model_validity_input",
+          "research_case.blockers",
+          "source_contract"
+        ],
+        "response": null,
+        "response_reason": null,
+        "confirmed_scope": null
+      }
+    ]
+  },
+  "review_questions": [
+    {
+      "id": "ACCOUNTING_COMPARABILITY",
+      "question": "同比ROE及汇兑/衍生品分类是否解释准确？",
+      "support": "H1加权ROE11.33%对11.29%，同比+0.04个百分点；归母利润、扣非及非经常损益桥已勾稽。",
+      "countercase": "混合工具收益并非全部套保，工具范围差、OCI包含关系及项目税后归母未知。",
+      "impact": "纠正旧半年/全年误比，不将扣非降幅认定为主业等幅下降，不机械加回。",
+      "field_paths": [
+        "research_case.financial_summary",
+        "research_case.counter_evidence"
+      ],
+      "response": null,
+      "response_reason": null
+    },
+    {
+      "id": "ROE_PATH",
+      "question": "五期15/18/20.5%起点及衰减路径是否有经济支持？",
+      "support": "FY2025加权ROE19.70%为历史参照；家用与商用工业收入增长、研发投入支持研究持续经营能力。",
+      "countercase": "半年加权ROE不能乘二，也不等于模型期初权益ROE；毛利率下行与洗衣机销量下降反对机械外推。",
+      "impact": "保留全部旧数值但仅作低置信待审条件；未来同口径收益/现金转换不支持时重开，不按估值结果选路径。",
+      "field_paths": [
+        "facts.scenario_inputs",
+        "assumptions",
+        "research_case.financial_summary"
+      ],
+      "response": null,
+      "response_reason": null
+    },
+    {
+      "id": "EQUITY_COST",
+      "question": "9%权益成本及实验proxy如何分别解释？",
+      "support": "9%是原候选门槛；12格记录2026-09-08无风险proxy1.6813%与2026-01-05中国ERP5.14%，beta=1是假设。",
+      "countercase": "6.8213%不是下界、不是美的当前实测权益成本，也未证明9%适当。",
+      "impact": "不改9%输入，不借用其他公司beta；公司专属风险与币种/日期适用性仍需独立经济判断。",
+      "field_paths": [
+        "facts.scenario_inputs",
+        "assumptions",
+        "research_case.financial_summary"
+      ],
+      "response": null,
+      "response_reason": null
+    },
+    {
+      "id": "DISTRIBUTION",
+      "question": "留存40/35/30%是否可作为研究条件？",
+      "support": "2022/2023/2024拟现金分红/归母利润约58.16/61.57/69.31%，可与模型60/65/70%派付条件对照。",
+      "countercase": "拟分红不等于实付或未来现金能力；回购用途、母公司可分配利润、集团融资和OCI/资本变化不能忽略。",
+      "impact": "只支持区间讨论，不证明可持续派息；不能把全部回购直接算作分红或认定留存=1-全部现金回报。",
+      "field_paths": [
+        "facts.scenario_inputs",
+        "source_contract.distribution_input_status",
+        "research_case.financial_summary"
+      ],
+      "response": null,
+      "response_reason": null
+    },
+    {
+      "id": "TERMINAL_AND_CAPITAL",
+      "question": "终端ROE9.5/11/13%、g1.5/2/2.5%与资本桥是否成立？",
+      "support": "共享剩余收益模型和压力附件揭示尾部敏感性；资本212861055000元及扣库存普通股7464347335沿用原锚点。",
+      "countercase": "收入增长不证明永久超额回报；终端ROE/成本压力仅数学对照，干净盈余/未来OCI/资本变动及再投资约束未获经济验证。",
+      "impact": "不改终端参数，不将代数股利一致性当现金能力；终值依赖高或资本变动时须重审。",
+      "field_paths": [
+        "facts.operating_inputs",
+        "facts.valuation_timing",
+        "facts.scenario_inputs",
+        "assumptions"
+      ],
+      "response": null,
+      "response_reason": null
+    },
+    {
+      "id": "EVENTS_AND_AUTHORITY",
+      "question": "研究更新是否足以解除公告、有效性及G3阻断？",
+      "support": "只复用已保留官方原件与旧INCOMPLETE扫描，新研究说明按实际现在可得。",
+      "countercase": "旧窗口不完整，四公告待材料性审查；旧G3、后来观察或补证文件均不能自动建立新上下文批准。",
+      "impact": "继续UNKNOWN、G1/G3未通过、无价格准入；等待Root和独立审核，不申请或创建签署。",
+      "field_paths": [
+        "model_validity_input",
+        "research_case.blockers",
+        "source_contract"
+      ],
+      "response": null,
+      "response_reason": null
+    }
+  ]
+}

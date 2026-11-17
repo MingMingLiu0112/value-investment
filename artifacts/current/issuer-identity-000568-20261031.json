@@ -1,0 +1,21 @@
+{
+  "schema_version": "issuer-identity-source-reconciliation-v1",
+  "action": "no_order",
+  "symbol": "000568",
+  "organization_id": "gssz0000568",
+  "issuer_names": [
+    "泸州老窖",
+    "泸州老窖股份有限公司"
+  ],
+  "observed_at": "2026-10-31T10:59:29.671693+00:00",
+  "basis": "封存CNINFO官方响应唯一证券代码/组织ID/简称，结合两期PDF证券代码与发行人全名",
+  "source_index": {
+    "path": "runtime/e2-first-input-000568-20261031/index-1.json",
+    "sha256": "aa94c026732eb508b2b679febdda2d8a784f36934360956a753febb18382da4b",
+    "url": "https://www.cninfo.com.cn/new/hisAnnouncement/query"
+  },
+  "first_input_only": true,
+  "c_profile_samples_unchanged": true,
+  "economic_quality_approval": false,
+  "formal_eligibility": false
+}

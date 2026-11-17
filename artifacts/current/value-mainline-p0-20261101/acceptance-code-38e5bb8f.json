@@ -1,0 +1,57 @@
+{
+  "schema_version": "value-mainline-p0-acceptance-v1",
+  "action": "no_order",
+  "verified_code_commit": "38e5bb8f8736d7c62cd2487c4234469f1fc6f19a",
+  "observed_at": "2026-11-01T09:07:46.915610+00:00",
+  "clean_checkout": "D:\\GPTProject\\value-investment\\.tmp\\p0f",
+  "clean_checkout_status": "",
+  "isolated_real_validation": {
+    "tests": 319,
+    "passed": 319,
+    "failures": 0,
+    "skipped": 0,
+    "junit_path": "D:\\GPTProject\\value-investment\\.tmp\\p0f\\.tmp\\clean-real-results.xml",
+    "junit_sha256": "f35cbe827dd7b024cdf71917f3058ec7086a492a7761e9e5b1c32535b2d19347"
+  },
+  "web_local": {
+    "typecheck": "PASS",
+    "format": "PASS",
+    "tests_passed": 1513,
+    "tests_skipped": 28,
+    "scope": "NO_BROWSER_OR_DEPLOYMENT_CLAIM"
+  },
+  "isolated_build": {
+    "schema_version": "web-build-identity-v1",
+    "commit": "38e5bb8f8736d7c62cd2487c4234469f1fc6f19a",
+    "built_at": "2026-11-01T09:03:05.177Z",
+    "source_dirty": false
+  },
+  "protected_pointer_sha256": "2aba22a9e043d20076c7c40916808aee1bae9ba48f13951b8d0735e6fa077686",
+  "runtime_backend_commit": "283c7212d832f52118705bb095e046e0c36dcbfc",
+  "runtime_frontend_commit": "283c7212d832f52118705bb095e046e0c36dcbfc",
+  "production_deployment": false,
+  "main_merged": false,
+  "database_actual_version": "NOT_VERIFIED",
+  "core_ci": {
+    "run_id": 41291347559,
+    "state_at_observation": "IN_PROGRESS_NOT_A_PASS"
+  },
+  "web_ci": {
+    "run_id": 41291347540,
+    "state_at_observation": "IN_PROGRESS_NOT_A_PASS"
+  },
+  "acceptance": {
+    "a_archive_restore": "BOUNDED_REAL_SOURCE_ACCEPTED",
+    "b_independent_replay": "ENGINEERING_ACCEPTED_SOURCE_COVERAGE_PARTIAL",
+    "eleven_module_schema": "CONTRACT_DESIGN_FROZEN_NOT_ELEVEN_IMPLEMENTED_WRAPPERS",
+    "human_acceptance": "NOT_CONFIRMED",
+    "investment_readiness": "NOT_GRANTED"
+  },
+  "limits": [
+    "A exact22file closure and2 debt ratios, not complete financialfacts",
+    "B retained5224 scope, shortlist30, formalfinancialadmission0, not today allA",
+    "historical raw-byte implementation contract requires exact checkout bytes; one .gitattributes fix, no evidence re-signing",
+    "F2 exact candidate and corporate-action/quote/economic-adoption gaps remain",
+    "No hotspot development, account access, order, DB migration or server action"
+  ]
+}

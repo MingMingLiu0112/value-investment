@@ -1,0 +1,348 @@
+{
+  "schema_version": "value-source-closure-v1",
+  "symbol": "000568",
+  "generated_at": "2026-11-01T06:39:53.312270+00:00",
+  "action": "no_order",
+  "restore_root": "repository_root",
+  "source_count": 7,
+  "sources": [
+    {
+      "path": "runtime/parent-obligations-000568-20261101/articles-1225400319.pdf",
+      "sha256": "7d188b8e29b425a093377f7b55e9e5b2355994ec7b9d102db76fab8ae9b886f2",
+      "hash_verification": {
+        "status": "MATCH",
+        "verified_at": "2026-11-01T06:39:53.312270+00:00"
+      },
+      "source_id": "articles-1225400319",
+      "official_url": "https://static.cninfo.com.cn/finalpage/2026-07-01/1225400319.PDF",
+      "actual_available_at": "2026-11-01T06:05:27.642766+00:00",
+      "available_at_basis": "retained manifest actual_acquired_at, not re-dated on copy",
+      "original_manifest_path": "D:\\GPTProject\\value-investment\\.tmp\\pf2\\runtime\\parent-obligations-000568-20261101\\articles-1225400319.pdf",
+      "locators": [
+        {
+          "physical_page_1based": 54,
+          "printed_page": 54,
+          "article_locator": null,
+          "needle": "公司法定公积金累计额为公司注册资本的50%以上的，可以不再提取。",
+          "needle_matching": "REMOVE_UNICODE_WHITESPACE_ONLY",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 55,
+          "printed_page": 55,
+          "article_locator": null,
+          "needle": "公司利润分配不得超过累计可供分配利润的范围，不得损害公司持续经营能力。",
+          "needle_matching": "REMOVE_UNICODE_WHITESPACE_ONLY",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 56,
+          "printed_page": 56,
+          "article_locator": null,
+          "needle": "公司应当调整利润分配政策",
+          "needle_matching": "REMOVE_UNICODE_WHITESPACE_ONLY",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        }
+      ]
+    },
+    {
+      "path": "runtime/parent-obligations-000568-20261101/company-law-official.html",
+      "sha256": "bfa2bbedf14c123b1128f7e472c993bd2980045fa5ad92b5eee900e63a06b359",
+      "hash_verification": {
+        "status": "MATCH",
+        "verified_at": "2026-11-01T06:39:53.312270+00:00"
+      },
+      "source_id": "company-law-official",
+      "official_url": "https://www.gov.cn/yaowen/liebiao/202312/content_6923395.htm",
+      "actual_available_at": "2026-11-01T06:06:29.151303+00:00",
+      "available_at_basis": "retained manifest actual_acquired_at, not re-dated on copy",
+      "original_manifest_path": "D:\\GPTProject\\value-investment\\.tmp\\pf2\\runtime\\parent-obligations-000568-20261101\\company-law-official.html",
+      "locators": [
+        {
+          "physical_page_1based": null,
+          "printed_page": null,
+          "article_locator": "第二百一十条",
+          "needle": "第二百一十条　公司分配当年税后利润时，应当提取利润的百分之十列入公司法定公积金。",
+          "needle_matching": "REMOVE_UNICODE_WHITESPACE_ONLY",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": null,
+          "printed_page": null,
+          "article_locator": "第二百一十一条",
+          "needle": "第二百一十一条　公司违反本法规定向股东分配利润的，股东应当将违反规定分配的利润退还公司；",
+          "needle_matching": "REMOVE_UNICODE_WHITESPACE_ONLY",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": null,
+          "printed_page": null,
+          "article_locator": "第二百一十二条",
+          "needle": "第二百一十二条　股东会作出分配利润的决议的，董事会应当在股东会决议作出之日起六个月内进行分配。",
+          "needle_matching": "REMOVE_UNICODE_WHITESPACE_ONLY",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": null,
+          "printed_page": null,
+          "article_locator": "第二百一十四条",
+          "needle": "第二百一十四条　公司的公积金用于弥补公司的亏损、扩大公司生产经营或者转为增加公司注册资本。",
+          "needle_matching": "REMOVE_UNICODE_WHITESPACE_ONLY",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        }
+      ]
+    },
+    {
+      "path": "runtime/parent-obligations-000568-20261101/IR-1225562256.pdf",
+      "sha256": "2b5b517d76d77415f0b2588624ecb516e4fc39f01d697c4ac62bb5699b14ff0e",
+      "hash_verification": {
+        "status": "MATCH",
+        "verified_at": "2026-11-01T06:39:53.312270+00:00"
+      },
+      "source_id": "IR-1225562256",
+      "official_url": "https://static.cninfo.com.cn/finalpage/2026-09-14/1225562256.PDF",
+      "actual_available_at": "2026-11-01T06:04:24.530104+00:00",
+      "available_at_basis": "retained manifest actual_acquired_at, not re-dated on copy",
+      "original_manifest_path": "D:\\GPTProject\\value-investment\\.tmp\\pf2\\runtime\\parent-obligations-000568-20261101\\IR-1225562256.pdf",
+      "locators": [
+        {
+          "physical_page_1based": 5,
+          "printed_page": 5,
+          "article_locator": null,
+          "needle": "公司目前资金充裕，具备落实三年分红规划的财务基础。",
+          "needle_matching": "REMOVE_UNICODE_WHITESPACE_ONLY",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 5,
+          "printed_page": 5,
+          "article_locator": null,
+          "needle": "相关数据请以公司定期报告披露为准。",
+          "needle_matching": "REMOVE_UNICODE_WHITESPACE_ONLY",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        }
+      ]
+    },
+    {
+      "path": "runtime/parent-obligations-000568-20261101/H1-related-funds.pdf",
+      "sha256": "3349a60d09e3df3e1bb976c69ecd0ad46bc6a43541ebb7f0ba114cede425c27b",
+      "hash_verification": {
+        "status": "MATCH",
+        "verified_at": "2026-11-01T06:39:53.312270+00:00"
+      },
+      "source_id": "H1-related-funds",
+      "official_url": "https://static.cninfo.com.cn/finalpage/2026-08-26/1225501256.PDF",
+      "actual_available_at": "2026-11-01T06:03:14.021177+00:00",
+      "available_at_basis": "retained manifest actual_acquired_at, not re-dated on copy",
+      "original_manifest_path": "D:\\GPTProject\\value-investment\\.tmp\\pf2\\runtime\\parent-obligations-000568-20261101\\H1-related-funds.pdf",
+      "locators": [
+        {
+          "physical_page_1based": 1,
+          "printed_page": 1,
+          "article_locator": null,
+          "needle": "2026年半年度非经营性资金占用及其他关联资金往来情况汇总表",
+          "needle_matching": "REMOVE_UNICODE_WHITESPACE_ONLY",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        }
+      ]
+    },
+    {
+      "path": "runtime/e2-first-input-000568-20261031/evidence/FY2025/original.pdf",
+      "sha256": "7a2e321f049401fd34dfbf8c22964e804d16f077ece9382791cb2b2ce0c74676",
+      "hash_verification": {
+        "status": "MATCH",
+        "verified_at": "2026-11-01T06:39:53.312270+00:00"
+      },
+      "source_id": "cninfo:1225240660",
+      "official_url": "https://static.cninfo.com.cn/finalpage/2026-04-29/1225240660.PDF",
+      "actual_available_at": "2026-10-25T02:22:46.425382+00:00",
+      "published_date": "2026-04-29",
+      "locators": [
+        {
+          "physical_page_1based": 98,
+          "label": "记账本位币",
+          "needle": "以人民币为记账本位币。",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 153,
+          "label": "现金流量表补充资料",
+          "needle": "固定资产折旧",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 153,
+          "label": "营运资本现金调整",
+          "needle": "经营性应收项目的减少",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 154,
+          "label": "非现金背书",
+          "needle": "827,500,000.00",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 83,
+          "label": "合并现金CapEx",
+          "needle": "1,932,762,969.97",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        }
+      ],
+      "restore_basis": "REUSE_RETAINED_ORIGINAL_HASH; no new retrieval"
+    },
+    {
+      "path": "runtime/e2-first-input-000568-20261031/original.pdf",
+      "sha256": "33fbc65e9bc5c41a80d2cc5f8ae0eaa2990424c81bb93b90029ccdb05e092ade",
+      "hash_verification": {
+        "status": "MATCH",
+        "verified_at": "2026-11-01T06:39:53.312270+00:00"
+      },
+      "source_id": "cninfo:1225501255",
+      "official_url": "https://static.cninfo.com.cn/finalpage/2026-08-26/1225501255.PDF",
+      "actual_available_at": "2026-10-31T09:37:21.876549+00:00",
+      "published_date": "2026-08-26",
+      "locators": [
+        {
+          "physical_page_1based": 56,
+          "label": "记账本位币",
+          "needle": "以人民币为记账本位币。",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 38,
+          "label": "母公司表起点",
+          "needle": "母公司资产负债表",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 39,
+          "label": "母公司短期借款",
+          "needle": "3,001,758,333.34",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 40,
+          "label": "母公司其他应付款",
+          "needle": "12,311,533,974.01",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 40,
+          "label": "母公司应付股利",
+          "needle": "6,501,567,650.57",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 40,
+          "label": "母公司一年内到期非流动负债",
+          "needle": "1,510,049,088.62",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 40,
+          "label": "母公司长期借款",
+          "needle": "1,220,000,000.00",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 110,
+          "label": "四项D&A",
+          "needle": "使用权资产折旧",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 111,
+          "label": "营运资本现金调整",
+          "needle": "经营性应付项目的增加",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 45,
+          "label": "合并现金CapEx，母公司表头之前",
+          "needle": "713,743,846.14",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        }
+      ],
+      "restore_basis": "REUSE_RETAINED_ORIGINAL_HASH; no new retrieval"
+    },
+    {
+      "path": "runtime/value-000568-current-alignment-20261101/1225639079.pdf",
+      "sha256": "ce2027403f8c079bc70f34a7de4aa72d0b9a70ad76185a27cd0a3c4bde1052dd",
+      "hash_verification": {
+        "status": "MATCH",
+        "verified_at": "2026-11-01T06:39:53.312270+00:00"
+      },
+      "source_id": "cninfo:1225639079",
+      "official_url": "https://static.cninfo.com.cn/finalpage/2026-10-30/1225639079.PDF",
+      "actual_available_at": "2026-11-01T04:14:50.889101+00:00",
+      "published_date": "2026-10-30",
+      "locators": [
+        {
+          "physical_page_1based": 8,
+          "label": "合并9M利润表表头",
+          "needle": "合并年初到报告期末利润表",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 9,
+          "label": "PBT/tax/NI/parent/NCI",
+          "needle": "少数股东损益",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 10,
+          "label": "合并9M现金流表头及CFO",
+          "needle": "合并年初到报告期末现金流量表",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        },
+        {
+          "physical_page_1based": 11,
+          "label": "合并现金CapEx",
+          "needle": "947,762,368.34",
+          "cold_locator_verification": "MATCH_REMOVE_UNICODE_WHITESPACE_ONLY"
+        }
+      ],
+      "currency_evidence_refs": [
+        {
+          "source_id": "cninfo:1225501255",
+          "physical_page_1based": 56,
+          "needle": "以人民币为记账本位币。"
+        },
+        {
+          "source_id": "cninfo:1225240660",
+          "physical_page_1based": 98,
+          "needle": "以人民币为记账本位币。"
+        }
+      ]
+    }
+  ],
+  "manifests": [
+    {
+      "path": "runtime/parent-obligations-000568-20261101/minimal-new-sources-v1.json",
+      "sha256": "c47d077503c607c1b0dd2a7a6de6834ed3968f79b0cde600246b1213824c32ca",
+      "hash_verification": {
+        "status": "MATCH",
+        "verified_at": "2026-11-01T06:39:53.312270+00:00"
+      },
+      "kind": "LOCAL_PROVENANCE_MANIFEST",
+      "official_url": null,
+      "actual_available_at": null,
+      "created_at": "2026-11-01T06:07:39.862782+00:00",
+      "restore_note": "Restore exact original bytes. Embedded pf2 paths remain historical provenance; use closure relative paths for vf1 restore, do not rewrite manifest."
+    }
+  ],
+  "restore_constraints": [
+    "Copy retained originals byte-for-byte into relative path; verify SHA before consumption.",
+    "No network required for retained restore. Redownload may differ; fail hash check instead of replacing historical identity.",
+    "Original sidecar manifest contains pf2 absolute paths; preserve original bytes and use this closure mapping.",
+    "actual_available_at is retained acquisition evidence, not current verification/copy time.",
+    "Q3 currency is company-specific retained H1/FY evidence, not Q3 unit-only default CNY.",
+    "Closure verification is local, not a completed clean-checkout restore test."
+  ],
+  "validation": {
+    "all_source_hashes": "MATCH",
+    "all_locators": "MATCH",
+    "original_files_modified": false
+  }
+}

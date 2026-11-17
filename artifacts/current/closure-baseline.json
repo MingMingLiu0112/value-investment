@@ -1,0 +1,111 @@
+{
+  "schema_version": "closure-baseline-v1",
+  "action": "no_order",
+  "captured_at": "2026-10-17T17:38:16+08:00",
+  "git": {
+    "repository": "D:\\GPTProject\\value-investment",
+    "branch": "codex/web-d1-investment-workbench",
+    "head": "4a56ab357322122079400a0fed33fd023fceeff3",
+    "origin_branch_head": "4a56ab357322122079400a0fed33fd023fceeff3",
+    "ahead": 0,
+    "behind": 0,
+    "worktree_modified": 7,
+    "worktree_untracked": 43,
+    "user_owned_modified_paths": [
+      "LONG-TERM-GOAL.md",
+      "config/current-daily-public-snapshot.json",
+      "config/current-price-conditions.json",
+      "config/current-quote-bridge.json",
+      "config/current-trial-workbook.json",
+      "docs/current-stage-goal.md",
+      "docs/current/advisory-sentiment-satellite-goal-v1.md"
+    ],
+    "note": "Uncommitted work predates this Goal Run and is preserved. No reset, checkout or bulk staging was performed."
+  },
+  "runtime": {
+    "process": "python -m uvicorn value_investment_agent.presentation.web_api.app:app --host 127.0.0.1 --port 8001",
+    "pid": 21624,
+    "started_at": "2026-10-16T19:32:49+08:00",
+    "identity_status": "MATCHED",
+    "backend_loaded_head": "4a56ab357322122079400a0fed33fd023fceeff3",
+    "backend_module_sha256": "375bb2203e03882f87a3d46eeece18095fc7386341476e8de8a7df30de0fd902",
+    "web_build": {
+      "commit": "4a56ab357322122079400a0fed33fd023fceeff3",
+      "built_at": "2026-10-16T11:33:17.078Z",
+      "source_dirty": false,
+      "index_sha256": "9fef6d5f873cb8735b5c6a297d849b7e0ce541a617897aa174505380ed6923e9"
+    }
+  },
+  "publication": {
+    "status": "VERIFIED",
+    "publication_id": "pub-5f803ec65b6e52fd7de4",
+    "packet_path": "runtime/daily-public-packet/daily-public-packet-pub-5f803ec65b6e52fd7de4.json",
+    "packet_sha256": "1ed978a5b2fe8baf9f7db801b46c97ca97fa3b03575ac4115c3eef57aa8a93b4",
+    "content_sha256": "097937e491861c85daa78034f1bd444bf3496dcd58632fad7c1f290eb0d5f081",
+    "engine_version": "daily-public-packet-engine-v18",
+    "research_version": "canonical-reviewed-research-20261012T113935Z-362d7928",
+    "generated_at": "2026-10-16T09:00:54.327634+00:00",
+    "published_at": "2026-10-16T11:32:48.139695+00:00",
+    "dates": {
+      "current_natural_date": "2026-10-16",
+      "latest_completed_trade_session": "2026-10-16",
+      "quote_trade_date": "2026-10-16",
+      "quote_observed_at": "2026-10-16T17:00:31.652222+08:00",
+      "research_as_of": "2026-10-11",
+      "model_validity_status": "UNKNOWN",
+      "decision_published_on": "2026-10-12",
+      "excel_published_as_of": "2026-10-01",
+      "excel_quote_observation_as_of": "2026-10-09"
+    },
+    "formal_admissions": 0,
+    "action": "no_order"
+  },
+  "preflight": {
+    "script": "scripts/current/audit_p9_readonly.ps1",
+    "status": "PASS_ENGINEERING_PRECHECK",
+    "checks": 38,
+    "tests": "NOT_RUN",
+    "receipt": ".tmp/p9-readonly-preflight.json",
+    "head": "4a56ab357322122079400a0fed33fd023fceeff3",
+    "publication_id": "pub-5f803ec65b6e52fd7de4"
+  },
+  "writers": {
+    "scheduled_tasks": [
+      {"name": "ValueInvestmentAgent-DailyUpdate", "state": "Ready", "entry": "scripts/run_moutai_b1_after_close.ps1", "last_run": "2026-10-16T17:05:00+08:00", "last_result": 0},
+      {"name": "ValueInvestmentAgent-MoutaiB1ExcelPublish", "state": "Ready", "entry": "scripts/run_moutai_b1_excel_publish.ps1", "last_run": "2026-10-16T17:30:00+08:00", "last_result": 1},
+      {"name": "ValueInvestmentAgent-MoutaiPostclosePolicyStage", "state": "Disabled", "entry": "scripts/run_moutai_postclose_p1_refresh.ps1", "last_run": "1999-11-30T00:00:00+08:00", "last_result": 267011},
+      {"name": "ValueInvestmentAgent-MoutaiPrecloseCapitalRefresh", "state": "Ready", "entry": "scripts/run_moutai_preclose_capital_refresh.ps1", "last_run": "2026-10-16T14:45:00+08:00", "last_result": 0}
+    ],
+    "server_db_pipeline": {
+      "connection": "read-only query using DATABASE_URL from local .env (secret not recorded)",
+      "window_hours": 48,
+      "task_runs_succeeded": {
+        "extract-filing-candidates": 50,
+        "collect-filings": 50,
+        "collect-secondary-financials": 50,
+        "enrich-financials": 50,
+        "refresh-valuations": 49,
+        "auto-verify-filings": 48,
+        "collect-institution-metrics": 48,
+        "track-candidates": 1,
+        "update": 1
+      },
+      "valuation_results_rows": 888,
+      "valuation_results_with_target_weight": 0,
+      "last_run_started_at": "2026-10-17T09:30:13.293744+00:00"
+    }
+  },
+  "data_assets": {
+    "runtime_files": 128326,
+    "runtime_size_mb": 21687.6,
+    "runtime_tracked_files": 0,
+    "canonical_workbook": "C:\\Users\\we\\WPSDrive\\197617831\\WPS云盘\\价投跟踪\\A股价值投资_Agent前端智能跟踪模板.xlsx",
+    "canonical_workbook_sha256": "aeaa3c7fec2b46d34c0651b0384dec49fb3ca16747dc41fcf675bbd022be82f1"
+  },
+  "action_boundaries": {
+    "no_order": true,
+    "no_auto_trading": true,
+    "no_fabricated_approval": true,
+    "private_data_lock": "BLOCKED_PRIVATE_INPUT"
+  }
+}

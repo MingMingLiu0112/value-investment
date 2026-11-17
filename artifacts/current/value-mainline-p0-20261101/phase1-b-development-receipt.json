@@ -1,0 +1,98 @@
+{
+  "action": "no_order",
+  "scope": "DEVELOPMENT_WORKTREE_REAL_PUBLIC_REPLAY_NOT_FINAL_CLEAN_ACCEPTANCE",
+  "records": [
+    {
+      "role": "original",
+      "binding": {
+        "path": "runtime/value-module-adapter-acceptance/a34e36c1a5d043b78f983e79b9602d69/original/module-run.json",
+        "sha256": "df61b0e051340b0aacf6933994a72a6cf463526f9fdf7236a5c44e9d62107db9"
+      },
+      "run_id": "b-a2eb67710514436897384a941eea2a99",
+      "status": "PARTIAL",
+      "code_commit": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "metrics": {
+        "assurance": "REAL_PUBLIC_REPLAY",
+        "buy_eligible": false,
+        "coverage": {
+          "observation_company_count": 5222,
+          "observation_count": 50055,
+          "official_fact_admission_count": 0,
+          "research_queue_count": 4647,
+          "shortlist_count": 30,
+          "specialized_count": 119,
+          "universe_count": 5224
+        },
+        "current_pointer_used": false,
+        "engineering_status": "COMPLETED",
+        "execution_scope": "BATCH",
+        "financial_source_admitted": false,
+        "formal_eligibility": false,
+        "input_schema_ref": "value-module-adapter-v1#/input_schema",
+        "native_source_validation": "SOURCE_REVALIDATED",
+        "network_calls": 0,
+        "new_llm_calls": 0,
+        "output_schema_ref": "value-module-adapter-v1#/output_schema",
+        "requested_symbol": null,
+        "source_ref_validation": "CALLER_RESPONSIBILITY",
+        "source_scope_status": "PARTIAL",
+        "workspace_dirty": true
+      },
+      "selection": [
+        {
+          "hash_basis": "RAW_BYTES",
+          "path": "runtime/value-module-adapter-acceptance/a34e36c1a5d043b78f983e79b9602d69/original/selection.json",
+          "role": "selection",
+          "schema_id": "value-observation-research-priority-v1",
+          "sha256": "1da9ae22ee46d901147a85f7aefb5bd68ca1ad06bd8c782c1471d45534a5d0c0"
+        }
+      ]
+    },
+    {
+      "role": "replay",
+      "binding": {
+        "path": "runtime/value-module-adapter-acceptance/a34e36c1a5d043b78f983e79b9602d69/replay/module-run.json",
+        "sha256": "812cdf411a0643de59843537e7181fa38ebd62b3486918eb6f939e7832824462"
+      },
+      "run_id": "b-74650a4cd2f84b6dbc3f8747aec78504",
+      "status": "PARTIAL",
+      "code_commit": "283c7212d832f52118705bb095e046e0c36dcbfc",
+      "metrics": {
+        "assurance": "REAL_PUBLIC_REPLAY",
+        "buy_eligible": false,
+        "coverage": {
+          "observation_company_count": 5222,
+          "observation_count": 50055,
+          "official_fact_admission_count": 0,
+          "research_queue_count": 4647,
+          "shortlist_count": 30,
+          "specialized_count": 119,
+          "universe_count": 5224
+        },
+        "current_pointer_used": false,
+        "engineering_status": "COMPLETED",
+        "execution_scope": "BATCH",
+        "financial_source_admitted": false,
+        "formal_eligibility": false,
+        "input_schema_ref": "value-module-adapter-v1#/input_schema",
+        "native_source_validation": "SOURCE_REVALIDATED",
+        "network_calls": 0,
+        "new_llm_calls": 0,
+        "output_schema_ref": "value-module-adapter-v1#/output_schema",
+        "requested_symbol": null,
+        "source_ref_validation": "CALLER_RESPONSIBILITY",
+        "source_scope_status": "PARTIAL",
+        "workspace_dirty": true
+      },
+      "selection": [
+        {
+          "hash_basis": "RAW_BYTES",
+          "path": "runtime/value-module-adapter-acceptance/a34e36c1a5d043b78f983e79b9602d69/replay/selection.json",
+          "role": "selection",
+          "schema_id": "value-observation-research-priority-v1",
+          "sha256": "1da9ae22ee46d901147a85f7aefb5bd68ca1ad06bd8c782c1471d45534a5d0c0"
+        }
+      ]
+    }
+  ]
+}

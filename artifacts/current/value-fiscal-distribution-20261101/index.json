@@ -1,0 +1,94 @@
+{
+  "schema_version": "value-fiscal-distribution-acceptance-v1",
+  "action": "no_order",
+  "symbol": "000568",
+  "baseline_commit": "d7187b0d5376cc31a8fc4e2963849dde9a31c3db",
+  "source_registry": {
+    "path": "config/current-capital-observations-v1.json",
+    "sha256": "fb21aa023522a61a1d455f351025b748683b8103a083a938eff18d6bb369c0b6"
+  },
+  "official_originals": [
+    {
+      "path": "runtime/value-000568-current-alignment-20261101/1225639079.pdf",
+      "sha256": "ce2027403f8c079bc70f34a7de4aa72d0b9a70ad76185a27cd0a3c4bde1052dd",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-10-30/1225639079.PDF",
+      "available_at": "2026-11-01T04:14:50.889101+00:00",
+      "report_period": "2026-09-30",
+      "kind": "q3"
+    },
+    {
+      "path": "runtime/value-000568-current-alignment-20261101/1225576512.pdf",
+      "sha256": "4c8de16792dba49cbdaaa3db0c032122e8744d59cd87d87e322c5f5e9953f267",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-09-23/1225576512.PDF",
+      "available_at": "2026-11-01T04:14:51.270442+00:00",
+      "report_period": "2026-09-23",
+      "kind": "share_unlock_notice"
+    },
+    {
+      "path": "runtime/value-000568-current-alignment-20261101/1225481717.pdf",
+      "sha256": "bff4efd3a9aa3d486ffce8143117627aafa4d86dd5d0e1ecb74278ceb3b0980b",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-20/1225481717.PDF",
+      "available_at": "2026-11-01T04:14:53.228543+00:00",
+      "report_period": "2025-12-31",
+      "kind": "dividend_implementation"
+    },
+    {
+      "path": "runtime/e2-first-input-000568-20261031/original.pdf",
+      "sha256": "33fbc65e9bc5c41a80d2cc5f8ae0eaa2990424c81bb93b90029ccdb05e092ade",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-26/1225501255.PDF",
+      "available_at": "2026-10-31T09:37:21.876549+00:00",
+      "report_period": "2026-06-30",
+      "kind": "interim"
+    }
+  ],
+  "prior_source_closure_index": {
+    "path": "artifacts/current/d2-cash-consumption-20261101/index.json",
+    "sha256": "4d3790ccf48be86a801fe0d1f4f8c417f8e1f44c11f909a6bc5f0ecaa2ff4049"
+  },
+  "implementation_bindings": [
+    {
+      "path": "src/value_investment_agent/domain/research/fiscal_distribution_review_v1.py",
+      "sha256": "819bb82468f652814372f3c58d4264f5a90cf318819b8657affba57eac8a4952"
+    },
+    {
+      "path": "src/value_investment_agent/application/research/operating_distribution_review_v1.py",
+      "sha256": "ba3fdc0020237b12cf767ce75fa83f68caa0bee95e863e3e042042d44f8c028e"
+    },
+    {
+      "path": "src/value_investment_agent/application/research/current_capital_observation_v1.py",
+      "sha256": "53f5ff89594879571d20ee90d6d6bc3722361af9f94165c2883b7c4978cd1ed0"
+    },
+    {
+      "path": "src/value_investment_agent/infrastructure/filings/native_capital_observation_v1.py",
+      "sha256": "911a0d3f01e6297dc835e3b860d35f8564b36c3cbbfdeeb98e635374fd981c0e"
+    }
+  ],
+  "actual_api_receipt": {
+    "path": "runtime/value-000568-current-alignment-20261101/actual-api-isolated.json",
+    "sha256": "b553e20f9753835ecf5c097575f5bec8fd684f616b3fc879ee5ca179474b8e68"
+  },
+  "review_fingerprint": "e744ce49225259f7f9adb8ae77b703ed2a9169f64c2620c91b1e50dbd88de096",
+  "historical_cash_fingerprint": "153d179a46b1cf5262620266a08a8690063b03fae7b5356812ff9d6129e95426",
+  "results": {
+    "conditional_fy_profit_cny": "5392390277.70052265210880882049211279881753676853",
+    "policy_target_cny": "8500000000",
+    "policy_compliance": "NOT_ASSESSED",
+    "current_capital_continuity": "NOT_PROVEN",
+    "current_model_validity": "NOT_GRANTED",
+    "financial_update": "NEWER_REPORT_REQUIRES_MODEL_REVALIDATION",
+    "main_range_adopted": false,
+    "condition_price": null
+  },
+  "verification": {
+    "related_core": "299 passed; includes original full economic/source/model/architecture regression",
+    "final_fix": "75 passed; final native PIT/rounding correction, explicit real original acceptance, no skip",
+    "web": "1477 passed,28 skipped; typecheck and format passed; skipped tests not investment evidence",
+    "independent_review": "Euclid fiscal metadata P2 and Darwin source PIT P1/rounding P2 independently CLOSED"
+  },
+  "boundaries": [
+    "Fiscal target is not a rolling-year cash assumption or present payable.",
+    "Target above earnings is not proof of missing cash or policy breach.",
+    "Existing API may acquire transient task locks; actual task JSON before/after unchanged.",
+    "No paid calls, approval, personal quantity, order or current undervaluation claim."
+  ]
+}

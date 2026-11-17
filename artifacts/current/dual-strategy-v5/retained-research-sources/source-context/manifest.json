@@ -1,0 +1,644 @@
+{
+  "action": "no_order",
+  "baseline_ref": "a1692f3fe5ef997ca83e64d3072e91ce2186932c",
+  "byte_conversion": "NONE",
+  "captured_context_baseline_ref": "e2d97007",
+  "execution_source_scope": "GIT_BLOBS_PLUS_FOUR_EXACT_RETAINED_SOURCE_BYTES",
+  "historical_producer_policy": "ARCHIVE_ONLY_NEVER_REPLACE_CURRENT_SOURCE",
+  "items": [
+    {
+      "actual_sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803.bin",
+      "crlf_count": 599,
+      "direct_seed_origins": [
+        "runtime/600887-prior-session-candidate-20261021T163909575546Z/candidate.json"
+      ],
+      "expected_sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803",
+      "lf_count": 599,
+      "original_path": "config/m1-valuation-packages-v1/600887-quality-compounder.json",
+      "provenance": {
+        "copy_source_path": "config/m1-valuation-packages-v1/600887-quality-compounder.json"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "e0387d58d45e728d6576a3e44bce66b14c03253491bcf733ce8e6942f492e803",
+      "size_bytes": 20433
+    },
+    {
+      "actual_sha256": "14bed2d1609e5479e1f43a90e01bb314d332000fe988b903a3c8adec9f628330",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/14bed2d1609e5479e1f43a90e01bb314d332000fe988b903a3c8adec9f628330.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "14bed2d1609e5479e1f43a90e01bb314d332000fe988b903a3c8adec9f628330",
+      "lf_count": 75,
+      "original_path": "config/research-evidence-stop-ledger-v1.json",
+      "provenance": {
+        "copy_source_path": "config/research-evidence-stop-ledger-v1.json"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "14bed2d1609e5479e1f43a90e01bb314d332000fe988b903a3c8adec9f628330",
+      "size_bytes": 3937
+    },
+    {
+      "actual_sha256": "91daee7dc97830c1644b0f4c5838bc774127c658b309e9397c93bc073e618d9e",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/91daee7dc97830c1644b0f4c5838bc774127c658b309e9397c93bc073e618d9e.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "91daee7dc97830c1644b0f4c5838bc774127c658b309e9397c93bc073e618d9e",
+      "lf_count": 43,
+      "original_path": "config/research-proposals/600519-20261011-v3.json",
+      "provenance": {
+        "copy_source_path": "config/research-proposals/600519-20261011-v3.json"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "91daee7dc97830c1644b0f4c5838bc774127c658b309e9397c93bc073e618d9e",
+      "size_bytes": 6301
+    },
+    {
+      "actual_sha256": "fc7dba372686f7fefb17364546046ae9bc8b2cd9eef29431a3ad2d83e6aa0edb",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/fc7dba372686f7fefb17364546046ae9bc8b2cd9eef29431a3ad2d83e6aa0edb.bin",
+      "crlf_count": 226,
+      "direct_seed_origins": [
+        "runtime/600887-prior-session-candidate-20261021T163909575546Z/candidate.json"
+      ],
+      "expected_sha256": "fc7dba372686f7fefb17364546046ae9bc8b2cd9eef29431a3ad2d83e6aa0edb",
+      "lf_count": 230,
+      "original_path": "config/research-proposals/600887-20261011-v3.json",
+      "provenance": {
+        "copy_source_path": "config/research-proposals/600887-20261011-v3.json"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "fc7dba372686f7fefb17364546046ae9bc8b2cd9eef29431a3ad2d83e6aa0edb",
+      "size_bytes": 10231
+    },
+    {
+      "actual_sha256": "f86dc7b2197775f2e697925fa6fddc7d6077ed4ea06bd1e4ee675e78d2b2ee0e",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/f86dc7b2197775f2e697925fa6fddc7d6077ed4ea06bd1e4ee675e78d2b2ee0e.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "f86dc7b2197775f2e697925fa6fddc7d6077ed4ea06bd1e4ee675e78d2b2ee0e",
+      "lf_count": 49,
+      "original_path": "docs/current/600519-bounded-research-preference-20261011.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600519-bounded-research-preference-20261011.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "f86dc7b2197775f2e697925fa6fddc7d6077ed4ea06bd1e4ee675e78d2b2ee0e",
+      "size_bytes": 2971
+    },
+    {
+      "actual_sha256": "2027ab44826ff28903a29d449fe1abe016da039d9c90e3d20746c2328415e71a",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/2027ab44826ff28903a29d449fe1abe016da039d9c90e3d20746c2328415e71a.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "2027ab44826ff28903a29d449fe1abe016da039d9c90e3d20746c2328415e71a",
+      "lf_count": 84,
+      "original_path": "docs/current/600519-economic-candidate-closure-20261011.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600519-economic-candidate-closure-20261011.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "2027ab44826ff28903a29d449fe1abe016da039d9c90e3d20746c2328415e71a",
+      "size_bytes": 6415
+    },
+    {
+      "actual_sha256": "c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214",
+      "lf_count": 130,
+      "original_path": "docs/current/600519-equity-cost-independent-review-20261008.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600519-equity-cost-independent-review-20261008.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "c46e84b1475af0429708c8756e49715727b8bfe3b1523800bc7cc7916c0cb214",
+      "size_bytes": 19004
+    },
+    {
+      "actual_sha256": "17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c",
+      "lf_count": 118,
+      "original_path": "docs/current/600519-financial-scope-independent-review-20261008.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600519-financial-scope-independent-review-20261008.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "17266f29a4f64292a631fb47017d72c624367f0bfcb9ae903ac98ef1e4dd9c6c",
+      "size_bytes": 22019
+    },
+    {
+      "actual_sha256": "37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37",
+      "lf_count": 197,
+      "original_path": "docs/current/600519-forward-path-independent-review-20261008-v2.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600519-forward-path-independent-review-20261008-v2.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "37e3ba270ba78b358a853d87cbf2d3fbb1921544ac9797d99ecddaa1f5084d37",
+      "size_bytes": 32162
+    },
+    {
+      "actual_sha256": "aa7a70c94dcde08a9fef7f6207139a5fcb4527cbbee9adb775c19699a34a7d54",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/aa7a70c94dcde08a9fef7f6207139a5fcb4527cbbee9adb775c19699a34a7d54.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "aa7a70c94dcde08a9fef7f6207139a5fcb4527cbbee9adb775c19699a34a7d54",
+      "lf_count": 191,
+      "original_path": "docs/current/600519-full-window-materiality-review-20261008.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600519-full-window-materiality-review-20261008.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "aa7a70c94dcde08a9fef7f6207139a5fcb4527cbbee9adb775c19699a34a7d54",
+      "size_bytes": 46054
+    },
+    {
+      "actual_sha256": "fe862b41296adf239c006f0fa2b7c44902c5b83c623e3c7c99fe83cb306fa14d",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/fe862b41296adf239c006f0fa2b7c44902c5b83c623e3c7c99fe83cb306fa14d.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "fe862b41296adf239c006f0fa2b7c44902c5b83c623e3c7c99fe83cb306fa14d",
+      "lf_count": 125,
+      "original_path": "docs/current/600519-neutral-model-review-20261011.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600519-neutral-model-review-20261011.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "fe862b41296adf239c006f0fa2b7c44902c5b83c623e3c7c99fe83cb306fa14d",
+      "size_bytes": 16939
+    },
+    {
+      "actual_sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a",
+      "lf_count": 194,
+      "original_path": "docs/current/600519-normalized-assumption-research-20261008.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600519-normalized-assumption-research-20261008.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "f8f03c6c5146e85f6e446624d5cf1d08dbbe7708dc2a181177b195cb8719f55a",
+      "size_bytes": 29430
+    },
+    {
+      "actual_sha256": "567b9fa1114a766e76f88ba491ef4449c13163ec1d4f973b8abf2b9fe43763aa",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/567b9fa1114a766e76f88ba491ef4449c13163ec1d4f973b8abf2b9fe43763aa.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "567b9fa1114a766e76f88ba491ef4449c13163ec1d4f973b8abf2b9fe43763aa",
+      "lf_count": 85,
+      "original_path": "docs/current/600519-operating-mechanism-research-20261008.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600519-operating-mechanism-research-20261008.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "567b9fa1114a766e76f88ba491ef4449c13163ec1d4f973b8abf2b9fe43763aa",
+      "size_bytes": 6519
+    },
+    {
+      "actual_sha256": "ac1477ab886a7ee02ca621b06a8af66a518c638858bc042c7da293b029d69573",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/ac1477ab886a7ee02ca621b06a8af66a518c638858bc042c7da293b029d69573.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "ac1477ab886a7ee02ca621b06a8af66a518c638858bc042c7da293b029d69573",
+      "lf_count": 170,
+      "original_path": "docs/current/600519-parent-distribution-capital-bridge-20261008.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600519-parent-distribution-capital-bridge-20261008.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "ac1477ab886a7ee02ca621b06a8af66a518c638858bc042c7da293b029d69573",
+      "size_bytes": 20646
+    },
+    {
+      "actual_sha256": "70028ada50bc3c50d897087451b5b18f6387fc4e8af4fa16d09679ef7da6ce1a",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/70028ada50bc3c50d897087451b5b18f6387fc4e8af4fa16d09679ef7da6ce1a.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "70028ada50bc3c50d897087451b5b18f6387fc4e8af4fa16d09679ef7da6ce1a",
+      "lf_count": 123,
+      "original_path": "docs/current/600519-primary-earnings-assumption-research-20261009.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600519-primary-earnings-assumption-research-20261009.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "70028ada50bc3c50d897087451b5b18f6387fc4e8af4fa16d09679ef7da6ce1a",
+      "size_bytes": 26363
+    },
+    {
+      "actual_sha256": "8d9ff9e6fb94e9f18a62108992a91b7c8f2a438da6e8d32df424e55ffc176260",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/8d9ff9e6fb94e9f18a62108992a91b7c8f2a438da6e8d32df424e55ffc176260.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "8d9ff9e6fb94e9f18a62108992a91b7c8f2a438da6e8d32df424e55ffc176260",
+      "lf_count": 32,
+      "original_path": "docs/current/600519-profit-adjustment-bridge-20261008.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600519-profit-adjustment-bridge-20261008.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "8d9ff9e6fb94e9f18a62108992a91b7c8f2a438da6e8d32df424e55ffc176260",
+      "size_bytes": 3819
+    },
+    {
+      "actual_sha256": "5241cd6420eb497bf5450d43bced4c35703d562db0e8762460b2af93bd0a7427",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/5241cd6420eb497bf5450d43bced4c35703d562db0e8762460b2af93bd0a7427.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/600887-prior-session-candidate-20261021T163909575546Z/candidate.json"
+      ],
+      "expected_sha256": "5241cd6420eb497bf5450d43bced4c35703d562db0e8762460b2af93bd0a7427",
+      "lf_count": 159,
+      "original_path": "docs/current/600887-current-financial-review-20261011.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600887-current-financial-review-20261011.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "5241cd6420eb497bf5450d43bced4c35703d562db0e8762460b2af93bd0a7427",
+      "size_bytes": 23248
+    },
+    {
+      "actual_sha256": "6bc1bb2886e7c783119a51ad57bc5a7c146a105164db42c3f6e66176c27d45e6",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/6bc1bb2886e7c783119a51ad57bc5a7c146a105164db42c3f6e66176c27d45e6.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/600887-prior-session-candidate-20261021T163909575546Z/candidate.json"
+      ],
+      "expected_sha256": "6bc1bb2886e7c783119a51ad57bc5a7c146a105164db42c3f6e66176c27d45e6",
+      "lf_count": 237,
+      "original_path": "docs/current/600887-economic-closure-review-20261011.md",
+      "provenance": {
+        "copy_source_path": "docs/current/600887-economic-closure-review-20261011.md"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "6bc1bb2886e7c783119a51ad57bc5a7c146a105164db42c3f6e66176c27d45e6",
+      "size_bytes": 32075
+    },
+    {
+      "actual_sha256": "0ee6b27b220b136b709dd413c5d1d415f1152c1e99df6c12d90e71154306fdce",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/0ee6b27b220b136b709dd413c5d1d415f1152c1e99df6c12d90e71154306fdce.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/600887-prior-session-candidate-20261021T163909575546Z/candidate.json"
+      ],
+      "expected_sha256": "0ee6b27b220b136b709dd413c5d1d415f1152c1e99df6c12d90e71154306fdce",
+      "lf_count": 160,
+      "original_path": "docs/current/600887-shared-valuation-result-20260929.json",
+      "provenance": {
+        "copy_source_path": "docs/current/600887-shared-valuation-result-20260929.json"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "0ee6b27b220b136b709dd413c5d1d415f1152c1e99df6c12d90e71154306fdce",
+      "size_bytes": 6381
+    },
+    {
+      "actual_sha256": "a84281d106df48b90e006d865c5f65315f1ce824faaf8b37f3f4c8c69d7a7da3",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/a84281d106df48b90e006d865c5f65315f1ce824faaf8b37f3f4c8c69d7a7da3.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/600887-prior-session-candidate-20261021T163909575546Z/candidate.json"
+      ],
+      "expected_sha256": "a84281d106df48b90e006d865c5f65315f1ce824faaf8b37f3f4c8c69d7a7da3",
+      "lf_count": 216,
+      "original_path": "docs/current/600887-valuation-readiness-review-20260929.json",
+      "provenance": {
+        "copy_source_path": "docs/current/600887-valuation-readiness-review-20260929.json"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "a84281d106df48b90e006d865c5f65315f1ce824faaf8b37f3f4c8c69d7a7da3",
+      "size_bytes": 14896
+    },
+    {
+      "actual_sha256": "101ae422674ab2d7b993939aa485ab482eead32684a5741c38f19a1d52534339",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/101ae422674ab2d7b993939aa485ab482eead32684a5741c38f19a1d52534339.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/600887-prior-session-candidate-20261021T163909575546Z/candidate.json"
+      ],
+      "expected_sha256": "101ae422674ab2d7b993939aa485ab482eead32684a5741c38f19a1d52534339",
+      "lf_count": 121,
+      "original_path": "scripts/build_moutai_consolidated_equity_discount_range.py",
+      "provenance": {
+        "copy_source_path": "scripts/build_moutai_consolidated_equity_discount_range.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "101ae422674ab2d7b993939aa485ab482eead32684a5741c38f19a1d52534339",
+      "size_bytes": 6800
+    },
+    {
+      "actual_sha256": "5c89272af435024ef17e742906f559a801c621f9b3f38dfb87323af9289e7529",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/5c89272af435024ef17e742906f559a801c621f9b3f38dfb87323af9289e7529.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/600887-prior-session-candidate-20261021T163909575546Z/candidate.json"
+      ],
+      "expected_sha256": "5c89272af435024ef17e742906f559a801c621f9b3f38dfb87323af9289e7529",
+      "lf_count": 277,
+      "original_path": "scripts/research_cases/yili/build_yili_current_fact_review.py",
+      "provenance": {
+        "copy_source_path": "scripts/research_cases/yili/build_yili_current_fact_review.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "5c89272af435024ef17e742906f559a801c621f9b3f38dfb87323af9289e7529",
+      "size_bytes": 25968
+    },
+    {
+      "actual_sha256": "557286fea4191dc742128d2083c765545049a6cd5ab7185ed3acca7a2f85e0f3",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/557286fea4191dc742128d2083c765545049a6cd5ab7185ed3acca7a2f85e0f3.bin",
+      "crlf_count": 250,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "557286fea4191dc742128d2083c765545049a6cd5ab7185ed3acca7a2f85e0f3",
+      "lf_count": 407,
+      "original_path": "src/value_investment_agent/application/product/company_research.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/application/product/company_research.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "557286fea4191dc742128d2083c765545049a6cd5ab7185ed3acca7a2f85e0f3",
+      "size_bytes": 17644
+    },
+    {
+      "actual_sha256": "739e530203f08eb7a2a0a5a1e9552f184978eef97cbac1b91e9e7dd402389782",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/739e530203f08eb7a2a0a5a1e9552f184978eef97cbac1b91e9e7dd402389782.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "739e530203f08eb7a2a0a5a1e9552f184978eef97cbac1b91e9e7dd402389782",
+      "lf_count": 252,
+      "original_path": "src/value_investment_agent/application/product/pending_candidate_replay.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/application/product/pending_candidate_replay.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "739e530203f08eb7a2a0a5a1e9552f184978eef97cbac1b91e9e7dd402389782",
+      "size_bytes": 14687
+    },
+    {
+      "actual_sha256": "4e37ad6f0d39cf0a2a5221ad3190b7753d46cbc7c549584482576b9c8f066f05",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/4e37ad6f0d39cf0a2a5221ad3190b7753d46cbc7c549584482576b9c8f066f05.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "4e37ad6f0d39cf0a2a5221ad3190b7753d46cbc7c549584482576b9c8f066f05",
+      "lf_count": 89,
+      "original_path": "src/value_investment_agent/application/product/pending_replay_publication.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/application/product/pending_replay_publication.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "4e37ad6f0d39cf0a2a5221ad3190b7753d46cbc7c549584482576b9c8f066f05",
+      "size_bytes": 4530
+    },
+    {
+      "actual_sha256": "7b8a3dbaba16b0f54cf1a3f5416488ddadd57bf89b6097f4d280a30f10efb258",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/7b8a3dbaba16b0f54cf1a3f5416488ddadd57bf89b6097f4d280a30f10efb258.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/600887-prior-session-candidate-20261021T163909575546Z/candidate.json",
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "7b8a3dbaba16b0f54cf1a3f5416488ddadd57bf89b6097f4d280a30f10efb258",
+      "lf_count": 527,
+      "original_path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/application/product/pending_research_candidate.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "7b8a3dbaba16b0f54cf1a3f5416488ddadd57bf89b6097f4d280a30f10efb258",
+      "size_bytes": 35532
+    },
+    {
+      "actual_sha256": "f9b9e1292708511d88ba89ac100ef72341c023cea1e988d0bd7c17929c63a042",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/f9b9e1292708511d88ba89ac100ef72341c023cea1e988d0bd7c17929c63a042.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "f9b9e1292708511d88ba89ac100ef72341c023cea1e988d0bd7c17929c63a042",
+      "lf_count": 370,
+      "original_path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+      "provenance": {
+        "byte_conversion": "NONE",
+        "copy_source_git_path": "src/value_investment_agent/application/product/pending_research_candidate.py",
+        "copy_source_git_ref": "2788d789364c3a61e8426a6c58873c5727dd3489"
+      },
+      "role": "HISTORICAL_PRODUCER_ARCHIVE_ONLY_NOT_INSTALLED",
+      "sha256": "f9b9e1292708511d88ba89ac100ef72341c023cea1e988d0bd7c17929c63a042",
+      "size_bytes": 24756
+    },
+    {
+      "actual_sha256": "a07d37a7358c38eeb2fc562691951ecab4364b55a361d57eceae5b4dd0dee1c6",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/a07d37a7358c38eeb2fc562691951ecab4364b55a361d57eceae5b4dd0dee1c6.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "a07d37a7358c38eeb2fc562691951ecab4364b55a361d57eceae5b4dd0dee1c6",
+      "lf_count": 126,
+      "original_path": "src/value_investment_agent/application/product/research_review_packet.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/application/product/research_review_packet.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "a07d37a7358c38eeb2fc562691951ecab4364b55a361d57eceae5b4dd0dee1c6",
+      "size_bytes": 8102
+    },
+    {
+      "actual_sha256": "bbed3042faac05efc49e2897f5840c5e7d813cc14256021d1ea27c4fffdf2d7c",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/bbed3042faac05efc49e2897f5840c5e7d813cc14256021d1ea27c4fffdf2d7c.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "bbed3042faac05efc49e2897f5840c5e7d813cc14256021d1ea27c4fffdf2d7c",
+      "lf_count": 766,
+      "original_path": "src/value_investment_agent/application/product/research_reviews.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/application/product/research_reviews.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "bbed3042faac05efc49e2897f5840c5e7d813cc14256021d1ea27c4fffdf2d7c",
+      "size_bytes": 45987
+    },
+    {
+      "actual_sha256": "5c589e830cf691e47b212a1dc48d029df3bffffd2b7bda86a44b123090013d1e",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/5c589e830cf691e47b212a1dc48d029df3bffffd2b7bda86a44b123090013d1e.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "5c589e830cf691e47b212a1dc48d029df3bffffd2b7bda86a44b123090013d1e",
+      "lf_count": 376,
+      "original_path": "src/value_investment_agent/application/product/source_bound_inputs.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/application/product/source_bound_inputs.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "5c589e830cf691e47b212a1dc48d029df3bffffd2b7bda86a44b123090013d1e",
+      "size_bytes": 20565
+    },
+    {
+      "actual_sha256": "d2e5e61585321f6f10a07a5d31937dd37363c670264d8ed039d9c251598d8555",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/d2e5e61585321f6f10a07a5d31937dd37363c670264d8ed039d9c251598d8555.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/600887-prior-session-candidate-20261021T163909575546Z/candidate.json"
+      ],
+      "expected_sha256": "d2e5e61585321f6f10a07a5d31937dd37363c670264d8ed039d9c251598d8555",
+      "lf_count": 317,
+      "original_path": "src/value_investment_agent/application/product/source_reobservation.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/application/product/source_reobservation.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "d2e5e61585321f6f10a07a5d31937dd37363c670264d8ed039d9c251598d8555",
+      "size_bytes": 20352
+    },
+    {
+      "actual_sha256": "d2cf127733cdd8fe37503b757305af6c3e686d2ed654c47d04f7ed7e18585fc9",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/d2cf127733cdd8fe37503b757305af6c3e686d2ed654c47d04f7ed7e18585fc9.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "d2cf127733cdd8fe37503b757305af6c3e686d2ed654c47d04f7ed7e18585fc9",
+      "lf_count": 218,
+      "original_path": "src/value_investment_agent/application/product/workbench.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/application/product/workbench.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "d2cf127733cdd8fe37503b757305af6c3e686d2ed654c47d04f7ed7e18585fc9",
+      "size_bytes": 10988
+    },
+    {
+      "actual_sha256": "64d55b666cc90514696410d926c49344f70afd350912ce342758319daa100c87",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/64d55b666cc90514696410d926c49344f70afd350912ce342758319daa100c87.bin",
+      "crlf_count": 597,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "64d55b666cc90514696410d926c49344f70afd350912ce342758319daa100c87",
+      "lf_count": 654,
+      "original_path": "src/value_investment_agent/m1_valuation_package_builder.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/m1_valuation_package_builder.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "64d55b666cc90514696410d926c49344f70afd350912ce342758319daa100c87",
+      "size_bytes": 27334
+    },
+    {
+      "actual_sha256": "7a1f33c572dffb9ed0a8c0ef8e8d3bebc4853b1eee52d29d7a71a93e707ed962",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/7a1f33c572dffb9ed0a8c0ef8e8d3bebc4853b1eee52d29d7a71a93e707ed962.bin",
+      "crlf_count": 1026,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "7a1f33c572dffb9ed0a8c0ef8e8d3bebc4853b1eee52d29d7a71a93e707ed962",
+      "lf_count": 1233,
+      "original_path": "src/value_investment_agent/research_application.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/research_application.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "7a1f33c572dffb9ed0a8c0ef8e8d3bebc4853b1eee52d29d7a71a93e707ed962",
+      "size_bytes": 52398
+    },
+    {
+      "actual_sha256": "b597fe37bee9019ea87df4c00b2ed1f8b33c844cdbf205082fb9394c74281c98",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/b597fe37bee9019ea87df4c00b2ed1f8b33c844cdbf205082fb9394c74281c98.bin",
+      "crlf_count": 881,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "b597fe37bee9019ea87df4c00b2ed1f8b33c844cdbf205082fb9394c74281c98",
+      "lf_count": 971,
+      "original_path": "src/value_investment_agent/research_input.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/research_input.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "b597fe37bee9019ea87df4c00b2ed1f8b33c844cdbf205082fb9394c74281c98",
+      "size_bytes": 40637
+    },
+    {
+      "actual_sha256": "090bb42f00300662ed4f626ee0df19c58c0e6049edd612021d8ccd4b7925a0f7",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/090bb42f00300662ed4f626ee0df19c58c0e6049edd612021d8ccd4b7925a0f7.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "090bb42f00300662ed4f626ee0df19c58c0e6049edd612021d8ccd4b7925a0f7",
+      "lf_count": 539,
+      "original_path": "src/value_investment_agent/valuation_models/residual_income.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/valuation_models/residual_income.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "090bb42f00300662ed4f626ee0df19c58c0e6049edd612021d8ccd4b7925a0f7",
+      "size_bytes": 22090
+    },
+    {
+      "actual_sha256": "23f187da6526807023507581f82e7e79864251147d4ac4517d29e85d43c0e724",
+      "archive_path": "artifacts/current/dual-strategy-v5/retained-research-sources/source-context/objects/23f187da6526807023507581f82e7e79864251147d4ac4517d29e85d43c0e724.bin",
+      "crlf_count": 0,
+      "direct_seed_origins": [
+        "runtime/pending-candidate-replay-v5-20261022-final/600519/publication.json"
+      ],
+      "expected_sha256": "23f187da6526807023507581f82e7e79864251147d4ac4517d29e85d43c0e724",
+      "lf_count": 247,
+      "original_path": "src/value_investment_agent/valuation_router.py",
+      "provenance": {
+        "copy_source_path": "src/value_investment_agent/valuation_router.py"
+      },
+      "role": "CURRENT_SOURCE_CONTEXT",
+      "sha256": "23f187da6526807023507581f82e7e79864251147d4ac4517d29e85d43c0e724",
+      "size_bytes": 9322
+    }
+  ],
+  "private_data": false,
+  "scope": "EXACT_SOURCE_AND_RESEARCH_CONTEXT_NOT_RUNTIME_ARCHIVE_RESTORE"
+}

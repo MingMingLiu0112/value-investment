@@ -1,0 +1,17 @@
+{
+  "action": "no_order",
+  "review_sha256": "f074c7f7ecd9d7072dc5061c792284985a3abbe713de2a0d505bfac91f4a7462",
+  "source_hashes": "PASS",
+  "same_period_roe": "PASS",
+  "accounting_reconciliation": "PASS",
+  "read_model_summary": "半年加权ROE为11.33%，上年同期11.29%，同比增加0.04个百分点，不能与全年ROE直接比较。归母净利同比增长1.66%，扣非下降25.31%主要涉及公司披露的汇兑与风险管理工具损益分类不对称，不能据此认定经营盈利下降同幅。已有条件研究包不等于正常化盈利、经济假设或正式估值获批。",
+  "registry_correction_verified": true,
+  "packet_status": "CURRENT",
+  "publication_id": "pub-e48a3720b38782a62dcd",
+  "formal_admission_count": 0,
+  "normalized_parent_profit": null,
+  "new_valuation": null,
+  "economic_approval": false,
+  "browser_acceptance": "PENDING",
+  "historical_package_rewritten": false
+}

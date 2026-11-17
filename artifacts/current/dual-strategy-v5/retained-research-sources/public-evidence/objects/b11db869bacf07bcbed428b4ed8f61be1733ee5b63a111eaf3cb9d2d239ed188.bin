@@ -1,0 +1,599 @@
+{
+  "schema_version": "issuer-profit-adjustment-research-v1",
+  "symbol": "600519",
+  "observed_at": "2026-10-08T13:07:40.430632+00:00",
+  "report_period": "2026-06-30",
+  "scope": "HISTORICAL_ACCOUNTING_CLASSIFICATION_NOT_FORWARD_NORMALIZATION_APPROVAL",
+  "official_amount_observations": [
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 7,
+      "label": "asset_disposal",
+      "amount_cny": "-2384586.28",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 7,
+      "label": "government_grants",
+      "amount_cny": "4271947.79",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 7,
+      "label": "financial_nonrecurring",
+      "amount_cny": "76162597.66",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 7,
+      "label": "other_nonoperating_net",
+      "amount_cny": "-48197347.69",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 7,
+      "label": "other_qualifying",
+      "amount_cny": "7138800.00",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 7,
+      "label": "tax_effect_to_subtract",
+      "amount_cny": "9247852.87",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 7,
+      "label": "after_tax_nci_to_subtract",
+      "amount_cny": "784112.18",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 7,
+      "label": "net_parent_nonrecurring",
+      "amount_cny": "26959446.43",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 6,
+      "label": "reported_parent_profit",
+      "amount_cny": "82320067101.68",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 6,
+      "label": "ex_nonrecurring_parent_profit",
+      "amount_cny": "82293107655.25",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 5,
+      "label": "asset_disposal",
+      "amount_cny": "-1864170.69",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 5,
+      "label": "government_grants",
+      "amount_cny": "20012654.88",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 6,
+      "label": "financial_nonrecurring",
+      "amount_cny": "22537102.09",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 6,
+      "label": "other_nonoperating_net",
+      "amount_cny": "29131392.76",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 6,
+      "label": "other_qualifying",
+      "amount_cny": "418450.00",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 6,
+      "label": "tax_effect_to_subtract",
+      "amount_cny": "17558857.26",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 6,
+      "label": "after_tax_nci_to_subtract",
+      "amount_cny": "3795.93",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 6,
+      "label": "net_parent_nonrecurring",
+      "amount_cny": "52672775.85",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 5,
+      "label": "reported_parent_profit",
+      "amount_cny": "44516880421.86",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 5,
+      "label": "ex_nonrecurring_parent_profit",
+      "amount_cny": "44464207646.01",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 7,
+      "label": "Q1_2025_parent",
+      "amount_cny": "26847474238.76",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 7,
+      "label": "Q2_2025_parent",
+      "amount_cny": "18555488059.34",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 7,
+      "label": "Q1_2025_ex_nonrecurring_parent",
+      "amount_cny": "26849883702.90",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225114741",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "physical_page": 7,
+      "label": "Q2_2025_ex_nonrecurring_parent",
+      "amount_cny": "18540363920.92",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 5,
+      "label": "H1_2025_comparative_parent",
+      "amount_cny": "45402962298.10",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 5,
+      "label": "H1_2025_comparative_ex_parent",
+      "amount_cny": "45390247623.82",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 77,
+      "label": "other_noncurrent_financial_fair_value_gain",
+      "amount_cny": "22082651.62",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 76,
+      "label": "other_noncurrent_financial_holding_return",
+      "amount_cny": "454300.43",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 76,
+      "label": "other_noncurrent_financial_disposal_return",
+      "amount_cny": "150.04",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 77,
+      "label": "other_receivables",
+      "amount_cny": "-44171.06",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 77,
+      "label": "debt_investment",
+      "amount_cny": "6378602.03",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 77,
+      "label": "loans_advances",
+      "amount_cny": "34348863.07",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 77,
+      "label": "interbank_lending",
+      "amount_cny": "-8203078.19",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 77,
+      "label": "repo_assets",
+      "amount_cny": "-6453.94",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 31,
+      "label": "credit_impairment_loss_negative_convention",
+      "amount_cny": "32473761.91",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 78,
+      "label": "statutory_applicable_rate_expense",
+      "amount_cny": "15359604794.32",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 78,
+      "label": "subsidiary_rate_difference",
+      "amount_cny": "-653592.63",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 78,
+      "label": "prior_period_adjustment",
+      "amount_cny": "-137159711.51",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 78,
+      "label": "nontaxable_income",
+      "amount_cny": "-6750063.57",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 78,
+      "label": "nondeductible_items",
+      "amount_cny": "190047183.89",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 78,
+      "label": "total_tax_expense",
+      "amount_cny": "15405088610.51",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 31,
+      "label": "profit_before_tax",
+      "amount_cny": "61438419177.29",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 31,
+      "label": "consolidated_net_profit",
+      "amount_cny": "46033330566.78",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    },
+    {
+      "source_id": "cninfo:1225475868",
+      "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225475868.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "physical_page": 31,
+      "label": "nci_profit",
+      "amount_cny": "1516450144.92",
+      "unit": "CNY",
+      "scope": "consolidated_unless_label_specifies_parent"
+    }
+  ],
+  "nonrecurring_to_parent_bridges": [
+    {
+      "period": "FY2025",
+      "items_cny": {
+        "asset_disposal": "-2384586.28",
+        "government_grants": "4271947.79",
+        "financial_nonrecurring": "76162597.66",
+        "other_nonoperating_net": "-48197347.69",
+        "other_qualifying": "7138800.00",
+        "tax_effect_to_subtract": "9247852.87",
+        "after_tax_nci_to_subtract": "784112.18"
+      },
+      "pretax_total_cny": "36991411.48",
+      "parent_net_cny": "26959446.43",
+      "reconciliation_residual_cny": "0.00",
+      "additional_adjustment_from_ex_nonrecurring_basis_cny": "0.00",
+      "zero_basis": "same_disclosed_category_already_excluded_not_an_unknown_allocation"
+    },
+    {
+      "period": "H1_2026",
+      "items_cny": {
+        "asset_disposal": "-1864170.69",
+        "government_grants": "20012654.88",
+        "financial_nonrecurring": "22537102.09",
+        "other_nonoperating_net": "29131392.76",
+        "other_qualifying": "418450.00",
+        "tax_effect_to_subtract": "17558857.26",
+        "after_tax_nci_to_subtract": "3795.93"
+      },
+      "pretax_total_cny": "70235429.04",
+      "parent_net_cny": "52672775.85",
+      "reconciliation_residual_cny": "0.00",
+      "additional_adjustment_from_ex_nonrecurring_basis_cny": "0.00",
+      "zero_basis": "same_disclosed_category_already_excluded_not_an_unknown_allocation"
+    }
+  ],
+  "prior_h1_cross_check": {
+    "annual_q1_plus_q2_parent_cny": "45402962298.10",
+    "annual_q1_plus_q2_ex_parent_cny": "45390247623.82",
+    "residual_cny": "0.00"
+  },
+  "financial_category_overlap": {
+    "components_cny": [
+      "22082651.62",
+      "454300.43",
+      "150.04"
+    ],
+    "sum_cny": "22537102.09",
+    "disclosed_category_cny": "22537102.09",
+    "arithmetic_match": true,
+    "issuer_item_level_attribution_explicit": false,
+    "interpretation": "Supports category reconciliation; do not subtract the already excluded category again. Does not identify every subsidiary, tax or NCI allocation, or all recurring finance-company income."
+  },
+  "credit_impairment": {
+    "components_cny": {
+      "other_receivables": "-44171.06",
+      "debt_investment": "6378602.03",
+      "loans_advances": "34348863.07",
+      "interbank_lending": "-8203078.19",
+      "repo_assets": "-6453.94"
+    },
+    "pretax_profit_contribution_cny": "32473761.91",
+    "loss_negative_convention": true,
+    "recurring_classification": "UNRESOLVED",
+    "overlap_with_ex_nonrecurring": "UNKNOWN",
+    "tax_after_parent_adjustment_cny": null
+  },
+  "tax_expense_bridge": {
+    "components_cny": {
+      "statutory_applicable_rate_expense": "15359604794.32",
+      "subsidiary_rate_difference": "-653592.63",
+      "prior_period_adjustment": "-137159711.51",
+      "nontaxable_income": "-6750063.57",
+      "nondeductible_items": "190047183.89"
+    },
+    "printed_component_sum_cny": "15405088610.50",
+    "expense_cny": "15405088610.51",
+    "printed_reconciliation_residual_cny": "0.01",
+    "residual_classification": "ONE_CENT_PRINTED_DISCREPANCY_NOT_REWRITTEN_OR_PROVEN_ROUNDING",
+    "consolidated_profit_benefit_from_prior_period_adjustment_cny": "137159711.51",
+    "already_tax_expense_item_do_not_tax_again": true,
+    "parent_allocation_cny": null,
+    "overlap_with_ex_nonrecurring": "UNKNOWN"
+  },
+  "magnitude_comparison": {
+    "combined_group_disclosed_magnitude_cny": "169633473.42",
+    "h1_ex_parent_benchmark_cny": "44464207646.01",
+    "ratio": "0.003815056702921413157008240053",
+    "scope": "size_comparison_only_not_parent_normalized_adjustment_or_materiality_approval"
+  },
+  "closed_questions": [
+    "FY/H1 disclosed nonrecurring parent bridges reconcile exactly",
+    "prior H1 compares independently with annual quarterly figures",
+    "financial nonrecurring category must not be deducted twice",
+    "credit impairment line is net positive profit contribution",
+    "prior tax adjustment benefits net profit and is not pretax income"
+  ],
+  "open_questions": [
+    "item-level after-tax parent allocation and ex-nonrecurring overlap for tax/credit",
+    "forward operating profit path",
+    "capital-return and competitive-advantage fade assumptions"
+  ],
+  "forward_normalized_profit_cny": null,
+  "additional_parent_normalization_adjustment_cny": null,
+  "forecast_approved": false,
+  "action": "no_order"
+}

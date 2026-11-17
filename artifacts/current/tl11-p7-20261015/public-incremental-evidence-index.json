@@ -1,0 +1,68 @@
+{
+  "schema_version": "tl11-p4-public-evidence-archive-v1",
+  "action": "no_order",
+  "private_data": false,
+  "scope": "PUBLIC_INCREMENTAL_CNINFO_EVIDENCE_ONLY_NOT_FULL_RESEARCH_OR_ACCOUNT_BACKUP",
+  "items": [
+    {
+      "original_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/600887-1225600810.pdf",
+      "archive_path": "artifacts/current/tl11-p7-20261015/public-incremental-evidence/1ba54ca786f66efbaebe67f6e6c17cb50f52284251bd46c3b7ae7f226be6a3e2.pdf",
+      "sha256": "1ba54ca786f66efbaebe67f6e6c17cb50f52284251bd46c3b7ae7f226be6a3e2"
+    },
+    {
+      "original_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/600887-1225603138.pdf",
+      "archive_path": "artifacts/current/tl11-p7-20261015/public-incremental-evidence/bb98b2d13f492eed41c090e96156af41c41bdb1ef2a4d4d5a07ae197d5281d19.pdf",
+      "sha256": "bb98b2d13f492eed41c090e96156af41c41bdb1ef2a4d4d5a07ae197d5281d19"
+    },
+    {
+      "original_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/cninfo-index.json",
+      "archive_path": "artifacts/current/tl11-p7-20261015/public-incremental-evidence/1d573dad5b5622f3db7bdf2579cf373cc131262936c4cc9aaa00b609965c11b2.json",
+      "sha256": "1d573dad5b5622f3db7bdf2579cf373cc131262936c4cc9aaa00b609965c11b2"
+    },
+    {
+      "original_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/event-scan.json",
+      "archive_path": "artifacts/current/tl11-p7-20261015/public-incremental-evidence/40c118d90584a9b89f86aafc3eab43b6aaa25d3685a2799accb44e751c106c4f.json",
+      "sha256": "40c118d90584a9b89f86aafc3eab43b6aaa25d3685a2799accb44e751c106c4f"
+    },
+    {
+      "original_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/incremental-binding.json",
+      "archive_path": "artifacts/current/tl11-p7-20261015/public-incremental-evidence/f362ec07952203c167aa6d83abf03f4bba86ae076b379e3d07edb419661f13fb.json",
+      "sha256": "f362ec07952203c167aa6d83abf03f4bba86ae076b379e3d07edb419661f13fb"
+    },
+    {
+      "original_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/observation.json",
+      "archive_path": "artifacts/current/tl11-p7-20261015/public-incremental-evidence/77927d6c76a9ab4f4e4467c8e07eb018840d6b99f9dcdbd703eaa9bd7641edcf.json",
+      "sha256": "77927d6c76a9ab4f4e4467c8e07eb018840d6b99f9dcdbd703eaa9bd7641edcf"
+    },
+    {
+      "original_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/raw-index/response-0001.bin",
+      "archive_path": "artifacts/current/tl11-p7-20261015/public-incremental-evidence/8115a2afb3fe3433141bf1c28df148beecd410000e82b59a3a70ed673c65c977.bin",
+      "sha256": "8115a2afb3fe3433141bf1c28df148beecd410000e82b59a3a70ed673c65c977"
+    },
+    {
+      "original_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/raw-index/response-0001.json",
+      "archive_path": "artifacts/current/tl11-p7-20261015/public-incremental-evidence/351f258633fd9919564b7c32bcfeb52f512d14476c93cd3b8563f428e66a5200.json",
+      "sha256": "351f258633fd9919564b7c32bcfeb52f512d14476c93cd3b8563f428e66a5200"
+    },
+    {
+      "original_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/raw-index/response-0002.bin",
+      "archive_path": "artifacts/current/tl11-p7-20261015/public-incremental-evidence/aa05e1c3daa1d1f2a0af4ebc5ef74a4c5f5ddc83d978ded8fe05e6dda76e87ab.bin",
+      "sha256": "aa05e1c3daa1d1f2a0af4ebc5ef74a4c5f5ddc83d978ded8fe05e6dda76e87ab"
+    },
+    {
+      "original_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/raw-index/response-0002.json",
+      "archive_path": "artifacts/current/tl11-p7-20261015/public-incremental-evidence/8bbe82a22d52d556424e54a182b6d4bf228879f6c4c427564f9f5d0243d26878.json",
+      "sha256": "8bbe82a22d52d556424e54a182b6d4bf228879f6c4c427564f9f5d0243d26878"
+    },
+    {
+      "original_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/raw-index-manifest.json",
+      "archive_path": "artifacts/current/tl11-p7-20261015/public-incremental-evidence/90d393a6f83c13433fda8899ba72d8a7b13f04f5fbd8acea14d7df73a6736d0e.json",
+      "sha256": "90d393a6f83c13433fda8899ba72d8a7b13f04f5fbd8acea14d7df73a6736d0e"
+    },
+    {
+      "original_path": "runtime/research-validity-reviews/600887-20261015-incremental-a2/registered-review.json",
+      "archive_path": "artifacts/current/tl11-p7-20261015/public-incremental-evidence/e4a78ec5a5670e2777708aca412e6b66ea0a1611ca0fc2e90f36c3e97fb46625.json",
+      "sha256": "e4a78ec5a5670e2777708aca412e6b66ea0a1611ca0fc2e90f36c3e97fb46625"
+    }
+  ]
+}

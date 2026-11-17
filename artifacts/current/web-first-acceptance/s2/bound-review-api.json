@@ -1,0 +1,55 @@
+{
+  "stage": "S2",
+  "status": "PARTIAL",
+  "action": "no_order",
+  "source_commit": "f602e7d52d91ecf86102345a87207f42db720288",
+  "captured_at": "2026-10-18T10:03:30.286469+00:00",
+  "data_version": "midea-bound-draft-20261018-v4",
+  "anonymous_status": 401,
+  "authenticated_status": 200,
+  "cache_control": "no-store",
+  "candidate_binding": {
+    "path": "runtime/bound-draft-reviews/midea-consumed-v3-dated-20261018/candidate.json",
+    "sha256": "2c329f188d538d0b90293aae1d989916c556afedc358f0c08964605b4ff5fba5"
+  },
+  "model_context": {
+    "input_descriptor_sha256": "574a7a1b649d27ac330860e63b20b587f4aec9da984be4f8a57b884f657cb5c6",
+    "research_case_sha256": "af096ef71f2462454544b38c6cb4fcb6948b5e569c2a967f6d6dde28bb9600d1",
+    "facts_sha256": "c51b36cedb0b95c73deda53181547a82159723a0b30a4d3bf10472ed4ddb936c",
+    "assumptions_sha256": "aea87a4308c3afd36f42e5eaf91e2bf25a6cf12f7361e0c705b37e656b2a11f0",
+    "model_id": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "profile_id": "mature_manufacturing",
+    "research_as_of": "2026-10-17"
+  },
+  "valuation_artifact_sha256": "342f9122c67ba797b9a69d037ca40f2b1be6c2436fda5b8dec3f52fed8fe67c6",
+  "consumed_packet_projection": "MATCHED_TO_VERIFIED_PACKAGE_AND_WORKBENCH",
+  "review_group_ids": [
+    "CAPITAL_BASIS",
+    "ECONOMIC_ASSUMPTIONS",
+    "FINANCIAL_AND_EVENTS"
+  ],
+  "materiality_handoff": {
+    "status": "MATERIALITY_HANDOFF_BLOCKED",
+    "action": "no_order",
+    "approval_granted": false,
+    "g3_approval_granted": false,
+    "reason": "materiality handoff requires complete acquired scan coverage",
+    "steps": []
+  },
+  "verification": {
+    "approval_changed": false,
+    "research_admitted": false,
+    "policy_confirmation_is_not_g3": true,
+    "required_results": [
+      "authenticated-review-response.json",
+      "共享研究重新核验结果",
+      "当前发布版本及页面资格"
+    ]
+  },
+  "reviewer_signed": false,
+  "real_trust_root_enrolled": false,
+  "actual_browser_evidence": "NOT_VERIFIED",
+  "formal_price_admission": false,
+  "current_draft_notes_scope": "DISPLAY_INTERPRETATION_NOT_A_CHANGE_TO_CONSUMED_RESEARCH"
+}

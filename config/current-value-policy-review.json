@@ -1,0 +1,8 @@
+{
+  "schema_version": "current-value-policy-review-v1",
+  "action": "no_order",
+  "manifest": {
+    "path": "artifacts/current/tl11-p62-20261015/value-policy-review-manifest.json",
+    "sha256": "aa90dc53af77c9de4b1594d6d95fedb8b18692f8832feed4ce2663f835568776"
+  }
+}

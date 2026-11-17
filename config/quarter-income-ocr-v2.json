@@ -1,0 +1,32 @@
+{
+  "schema_version": "quarter-income-ocr-registry-v2",
+  "action": "no_order",
+  "cases": {
+    "600519": {
+      "source_sha256": "96ba51ebf414f841bce79b3ba019927df2f795142392e12e96a9d559e96ebb9b",
+      "report_period": "2026-09-30",
+      "pages": {
+        "8": {
+          "image": {
+            "path": "runtime/value-q3-income-ocr-600519-20261117/page-8.png",
+            "sha256": "f5a23eb3e94bcb9fa4013301e87af546582ae3497f728c4129199cf41878eb23"
+          },
+          "ocr": {
+            "path": "runtime/value-q3-income-ocr-600519-20261117/page-8.ocr.json",
+            "sha256": "3d28333c421fe19640605543ca1c3beb631f6043f71ac80d5a6ebcf64d903f5d"
+          }
+        },
+        "9": {
+          "image": {
+            "path": "runtime/value-q3-income-ocr-600519-20261117/page-9.png",
+            "sha256": "eedc143a4973430facd8e1b0a40e116d8d5a5dbb3d1fe16847585387e3613b2a"
+          },
+          "ocr": {
+            "path": "runtime/value-q3-income-ocr-600519-20261117/page-9.ocr.json",
+            "sha256": "aa15449fd587f0ce827c5730f19166dab2f00dfd66b3b4d4f24a8050f47885be"
+          }
+        }
+      }
+    }
+  }
+}

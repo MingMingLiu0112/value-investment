@@ -1,0 +1,86 @@
+{
+  "schema_version": "web-agent-research-registry-v2",
+  "action": "no_order",
+  "cases": {
+    "600519": {
+      "workflows": {
+        "legacy": {
+          "packet": {
+            "path": "runtime/agent-research-pilot-20261009/600519-mock-llm-v3.json",
+            "sha256": "4b55d65ab426ee9f0215dc2f0121d638684a6d6164f76d2293b8bc8ecc501c36"
+          },
+          "workbench": {
+            "path": "runtime/d2-model-bound-followup-20261008/workbench-v10.json",
+            "sha256": "b88fa501a3bcd76fb538ab633a9ea1f086cc0aa35877e41c2bacf3c996935d2c"
+          },
+          "scope": "MOCK_LLM_RESEARCH_NOT_ADMITTED"
+        },
+        "event": {
+          "packet": {
+            "path": "runtime/agent-research-s6-cli-20261018-v2/event-packet.json",
+            "sha256": "2d7beddcab60376529b17bb2a00d8793981ca00f75a8980c990290854a9953eb"
+          },
+          "workbench": {
+            "path": "runtime/d2-model-bound-followup-20261008/workbench-v10.json",
+            "sha256": "b88fa501a3bcd76fb538ab633a9ea1f086cc0aa35877e41c2bacf3c996935d2c"
+          },
+          "scope": "MOCK_LLM_RESEARCH_NOT_ADMITTED",
+          "workflow_binding": {
+            "workflow": "announcement_event",
+            "version": 2,
+            "workbench": {
+              "path": "runtime/d2-model-bound-followup-20261008/workbench-v10.json",
+              "sha256": "b88fa501a3bcd76fb538ab633a9ea1f086cc0aa35877e41c2bacf3c996935d2c"
+            },
+            "research_input_fingerprint": "6a11c705f15424961ed3a046b64c19f066dbf61477aec59721d203bd80242127"
+          }
+        },
+        "financial": {
+          "packet": {
+            "path": "runtime/agent-research-s6-financial-20261018/financial-packet.json",
+            "sha256": "72dbd35323123c714d6d01bbb2d9d0209fb436d39f7683afe5efe0965b3c89dd"
+          },
+          "workbench": {
+            "path": "runtime/d2-model-bound-followup-20261008/workbench-v10.json",
+            "sha256": "b88fa501a3bcd76fb538ab633a9ea1f086cc0aa35877e41c2bacf3c996935d2c"
+          },
+          "workflow_binding": {
+            "workflow": "financial_report",
+            "version": 2,
+            "research_input_fingerprint": "6a11c705f15424961ed3a046b64c19f066dbf61477aec59721d203bd80242127",
+            "workbench": {
+              "path": "runtime/d2-model-bound-followup-20261008/workbench-v10.json",
+              "sha256": "b88fa501a3bcd76fb538ab633a9ea1f086cc0aa35877e41c2bacf3c996935d2c"
+            },
+            "transcription": {
+              "path": "runtime/agent-research-s6-financial-20261018/transcription.json",
+              "sha256": "d57df4b611f3196142404392c58f7d701d46752bb4ed0ebf1ab04d1410484507"
+            },
+            "metric_workbench": {
+              "path": "runtime/agent-research-s6-financial-20261018/metric-source-view.json",
+              "sha256": "c234b3047380b14325842f6179ed5f610aa2ccb35fdc0b10abfac8e13f483360"
+            },
+            "period_checks": [
+              {
+                "metric": "reported_operating_cash_flow",
+                "prior_period": "2024",
+                "current_period": "2025",
+                "scope": "CONSOLIDATED",
+                "unit": "CNY"
+              },
+              {
+                "metric": "reported_cash_capex",
+                "prior_period": "2024",
+                "current_period": "2025",
+                "scope": "CONSOLIDATED",
+                "unit": "CNY"
+              }
+            ],
+            "economic_comparability_approved": false
+          },
+          "scope": "MOCK_LLM_RESEARCH_NOT_ADMITTED"
+        }
+      }
+    }
+  }
+}

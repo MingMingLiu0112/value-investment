@@ -1,0 +1,33 @@
+{
+  "schema_version": "finite-advantage-cash-research-policy-v1",
+  "symbol": "600519",
+  "generated_at": "2026-10-25T11:25:48+00:00",
+  "action": "no_order",
+  "confidence": "LOW",
+  "identity": "UNAPPROVED_ECONOMIC_HYPOTHESES_NOT_DISCLOSED_FORECAST",
+  "candidate_binding": {
+    "path": "runtime/product-operating-research/20261025T071814444248Z/proposal/candidate/candidate.json",
+    "sha256": "2e53d50d988a737272d7a95b822c8e0e9998d3749c1432cac7f6c12d92fe8ed0"
+  },
+  "fade_years": [5, 10],
+  "maintenance_gap_challenge_ratios": ["0.02", "0.05"],
+  "persistent_withheld_challenge": "0.10",
+  "rationale": "Keep the existing five-year product hypotheses, then test five/ten further years of total-equity excess-return fade to Ke instead of assuming perpetual excess profitability. These durations are uncalibrated sensitivity choices, not an industry standard or proof of a moat's life.",
+  "cash_mapping_rationale": "Owner-equivalent profit-to-funds mapping anchored by actual parent cash, not a standalone-parent forecast. Net capital needs are deducted here exactly once and are not already deducted from upstream funds. Group DA is never added to parent cash. Operating WC excludes cash and financial-subsidiary customer funds; other noncash adjustments/net financing are explicit zero hypotheses.",
+  "maintenance_rationale": "Baseline net maintenance gap zero assumes same-scope maintenance cash and already-expensed noncash charges offset, not that maintenance is zero. Extra 2%/5% of first-year legacy profit are fixed nominal annual cash challenges, not measured CapEx or calibrated bounds. They are assumed incremental to the selected project schedule, with no overlap; if project maintenance already covers them that challenge overstates cash needs.",
+  "capacity_rationale": "Opening parent retained profit is only a research capacity proxy. Future mapped funds are not certified standalone profit. A 10% of profit reserve-transfer proxy is retained in explicit years. No legal distribution capacity, resolution or actual payment is asserted.",
+  "terminal_rationale": "Conditional no-growth continuation earns Ke on closing model book equity, with no further excess return. Book pricing is an economic hypothesis, not liquidation value. Net maintenance/WC must balance, all temporary withholding must have released, selected project/fund commitments must have been funded, and no ongoing cash shortfall is allowed.",
+  "terminal_distribution_rationale": "Full terminal payout additionally assumes lawful cessation of further reserve accumulation and effective upstream access. This is a future conditional hypothesis, not a finding that present law, charter, reserves or a shareholder resolution already permits it. If not supportable, this entire valuation branch is unusable.",
+  "counter_evidence": [
+    "The current issuer can lose pricing power, volume or margin earlier than either fade path; linear total-ROE fade is not a forecast of operating decline.",
+    "Parent investment income recognition and actual cash receipt differ materially in the interim; complete future conversion is unproven.",
+    "Parent DA is not separately identified in the reviewed originals. Maintenance balance, WC neutrality and project overlap are unknown.",
+    "Fund commitment of CNY6bn is disclosed, but its date is unknown. The inherited project budget is a historical plan, not a certified unpaid balance.",
+    "Ke remains the inherited asynchronously dated proxy. Its precise decimals do not imply precise required returns.",
+    "Terminal economic book pricing and lawful full payout remain substantial unapproved assumptions. RI/DDM equality proves arithmetic only."
+  ],
+  "methodology_urls": [
+    "https://www.cfainstitute.org/insights/professional-learning/refresher-readings/2026/residual-income-valuation",
+    "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/project/prques.htm"
+  ]
+}

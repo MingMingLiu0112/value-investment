@@ -1,0 +1,550 @@
+{
+  "schema_version": "tl11-p5-value-model-review-v1",
+  "symbol": "600887",
+  "company_name": "伊利股份",
+  "reviewed_at": "2026-10-14T21:15:32.242424+08:00",
+  "status": "RESEARCH_REVIEW_NOT_G3_APPROVAL",
+  "action": "no_order",
+  "model_type": "residual_income_or_equity_value",
+  "model_version": "residual-income-equity-shared-dated-v2",
+  "model_id": "residual_income_or_equity_value",
+  "model_identity_evidence": {
+    "model_id": "residual_income_or_equity_value",
+    "model_type": "residual_income_or_equity_value",
+    "model_version": "residual-income-equity-shared-dated-v2",
+    "profile_id": "quality_compounder",
+    "scope": "REGISTERED_IMPLEMENTATION_IDENTITY_NOT_MODEL_APPROVAL",
+    "code_evidence": [
+      {
+        "module": "value_investment_agent.valuation_router",
+        "path": "src/value_investment_agent/valuation_router.py",
+        "sha256": "23f187da6526807023507581f82e7e79864251147d4ac4517d29e85d43c0e724"
+      },
+      {
+        "module": "value_investment_agent.valuation_models.residual_income",
+        "path": "src/value_investment_agent/valuation_models/residual_income.py",
+        "sha256": "090bb42f00300662ed4f626ee0df19c58c0e6049edd612021d8ccd4b7925a0f7"
+      }
+    ]
+  },
+  "valuation_input_version": "876bfdf7829c1e8225e3338bd090dd102965ebce8049edc2628bae90c0264b68",
+  "valuation_date": "2026-10-11",
+  "scenarios": {
+    "bear": "9.79764118439777680597278298395676515182872214703",
+    "base": "10.0751373530680129477021471870066470782479712991",
+    "bull": "10.3006925009950307944059171660835859543186976072"
+  },
+  "reference_quote": {
+    "price": "28.13",
+    "trade_date": "2026-10-14",
+    "verified": true,
+    "scope": "QUOTE_VERIFIED_BUT_RESEARCH_STALE"
+  },
+  "research_comparison": {
+    "quote_to_conditional_base": "2.7920214895565708510939362335310237370174909369146",
+    "scope": "DESCRIPTIVE_ONLY_NOT_ADMITTED_PRICE_ASSESSMENT",
+    "price_comparison_eligible": false
+  },
+  "financial_basis": {
+    "schema_version": "financial-proposal-rebase-v1",
+    "manifest_path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/manifest.json",
+    "manifest_sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384",
+    "share_basis": "DISCLOSED_TOTAL_NOT_TREASURY_OR_DILUTION_ADJUSTED",
+    "start_book_equity": {
+      "value": "53711364981.99",
+      "unit": "CNY",
+      "scope": "consolidated_parent_attributable",
+      "period_end": "2026-06-30",
+      "source_id": "cninfo:1225511409",
+      "physical_page": 49,
+      "statement_header_page": 48,
+      "evidence_excerpt": "归属于母公司所有者权益（或股东权益）合计 53,711,364,981.99 54,655,690,475.89"
+    },
+    "ordinary_shares": {
+      "value": "6325360667",
+      "unit": "shares",
+      "scope": "disclosed_total_ordinary_shares",
+      "period_end": "2026-06-30",
+      "source_id": "cninfo:1225511409",
+      "physical_page": 66,
+      "evidence_excerpt": "6,325,360,667 股。"
+    },
+    "share_continuity": {
+      "period_end": "2026-06-30",
+      "source_id": "cninfo:1225511409",
+      "physical_page": 42,
+      "evidence_excerpt": "报告期内，公司股份总数及股本结构未发生变化。"
+    },
+    "share_capital_confirmation": {
+      "source_id": "cninfo:1225511409",
+      "physical_page": 159,
+      "evidence_excerpt": "股份总数 6,325,360,667.00 6,325,360,667.00"
+    },
+    "limitations": [
+      "Disclosed historical total shares, not a treasury-adjusted or diluted current denominator.",
+      "Historical H1 equity movements reconciled; prospective clean-surplus behavior and distribution are not approved.",
+      "Retained 2026-09-22 valuation date; first modeled annual payment 2027-06-30, not FY2026."
+    ],
+    "equity_bridge": {
+      "schema_version": "consolidated-equity-statement-bridge-v1",
+      "unit": "CNY",
+      "scope": "consolidated_parent_attributable",
+      "period_end": "2026-06-30",
+      "source_id": "cninfo:1225511409",
+      "header_page": 58,
+      "rows": {
+        "opening": {
+          "physical_page": 58,
+          "parent_value": "54655690475.89",
+          "evidence_excerpt": "二、本年期初余额 6,325,360,667.00 12,262,344,222.29 -173,163,583.80 3,200,065,459.00 33,041,083,711.40 54,655,690,475.89 3,888,586,202.27 58,544,276,678.16"
+        },
+        "closing": {
+          "physical_page": 59,
+          "parent_value": "53711364981.99",
+          "evidence_excerpt": "四、本期期末余额 6,325,360,667.00 12,240,717,240.54 -1,162,028,076.08 362,482.64 3,200,065,459.00 33,106,887,208.89 53,711,364,981.99 3,565,015,649.48 57,276,380,631.47"
+        },
+        "change": {
+          "physical_page": 58,
+          "parent_value": "-944325493.90",
+          "evidence_excerpt": "三、本期增减变动金额（减少以“-”号填列） -21,626,981.75 -988,864,492.28 362,482.64 65,803,497.49 -944,325,493.90 -323,570,552.79 -1,267,896,046.69"
+        },
+        "comprehensive": {
+          "physical_page": 58,
+          "parent_value": "4769763605.51",
+          "evidence_excerpt": "（一）综合收益总额 -988,864,492.28 5,758,628,097.79 4,769,763,605.51 -288,426,476.70 4,481,337,128.81"
+        },
+        "contribution": {
+          "physical_page": 58,
+          "parent_value": "0",
+          "evidence_excerpt": "（二）所有者投入和减少资本 12,460,000.00 12,460,000.00"
+        },
+        "distribution": {
+          "physical_page": 59,
+          "parent_value": "-5692824600.30",
+          "evidence_excerpt": "（三）利润分配 -5,692,824,600.30 -5,692,824,600.30 -45,212,091.14 -5,738,036,691.44"
+        },
+        "reserve": {
+          "physical_page": 59,
+          "parent_value": "362482.64",
+          "evidence_excerpt": "（五）专项储备 362,482.64 362,482.64 304,641.73 667,124.37"
+        },
+        "other": {
+          "physical_page": 59,
+          "parent_value": "-21626981.75",
+          "evidence_excerpt": "（六）其他 -21,626,981.75 -21,626,981.75 -2,696,626.68 -24,323,608.43"
+        }
+      },
+      "treasury_disclosure": {
+        "physical_page": 159,
+        "evidence_excerpt": "56、库存股 □适用 √不适用"
+      },
+      "comprehensive_components": {
+        "parent_profit_cny": "5758628097.79",
+        "parent_oci_cny": "-988864492.28"
+      }
+    },
+    "equity_bridge_result": {
+      "schema_version": "consolidated-equity-statement-bridge-result-v1",
+      "status": "ACCOUNTING_RECONCILED_NOT_MODEL_APPROVAL",
+      "period_end": "2026-06-30",
+      "unit": "CNY",
+      "scope": "consolidated_parent_attributable",
+      "source_id": "cninfo:1225511409",
+      "source_rows": {
+        "opening": {
+          "physical_page": 58,
+          "parent_value": "54655690475.89",
+          "evidence_excerpt": "二、本年期初余额 6,325,360,667.00 12,262,344,222.29 -173,163,583.80 3,200,065,459.00 33,041,083,711.40 54,655,690,475.89 3,888,586,202.27 58,544,276,678.16"
+        },
+        "closing": {
+          "physical_page": 59,
+          "parent_value": "53711364981.99",
+          "evidence_excerpt": "四、本期期末余额 6,325,360,667.00 12,240,717,240.54 -1,162,028,076.08 362,482.64 3,200,065,459.00 33,106,887,208.89 53,711,364,981.99 3,565,015,649.48 57,276,380,631.47"
+        },
+        "change": {
+          "physical_page": 58,
+          "parent_value": "-944325493.90",
+          "evidence_excerpt": "三、本期增减变动金额（减少以“-”号填列） -21,626,981.75 -988,864,492.28 362,482.64 65,803,497.49 -944,325,493.90 -323,570,552.79 -1,267,896,046.69"
+        },
+        "comprehensive": {
+          "physical_page": 58,
+          "parent_value": "4769763605.51",
+          "evidence_excerpt": "（一）综合收益总额 -988,864,492.28 5,758,628,097.79 4,769,763,605.51 -288,426,476.70 4,481,337,128.81"
+        },
+        "contribution": {
+          "physical_page": 58,
+          "parent_value": "0",
+          "evidence_excerpt": "（二）所有者投入和减少资本 12,460,000.00 12,460,000.00"
+        },
+        "distribution": {
+          "physical_page": 59,
+          "parent_value": "-5692824600.30",
+          "evidence_excerpt": "（三）利润分配 -5,692,824,600.30 -5,692,824,600.30 -45,212,091.14 -5,738,036,691.44"
+        },
+        "reserve": {
+          "physical_page": 59,
+          "parent_value": "362482.64",
+          "evidence_excerpt": "（五）专项储备 362,482.64 362,482.64 304,641.73 667,124.37"
+        },
+        "other": {
+          "physical_page": 59,
+          "parent_value": "-21626981.75",
+          "evidence_excerpt": "（六）其他 -21,626,981.75 -21,626,981.75 -2,696,626.68 -24,323,608.43"
+        }
+      },
+      "header_page": 58,
+      "treasury_disclosure": {
+        "physical_page": 159,
+        "evidence_excerpt": "56、库存股 □适用 √不适用",
+        "status": "H1_DISCLOSED_NOT_APPLICABLE_NOT_CURRENT_DILUTION_APPROVAL",
+        "period_end": "2026-06-30"
+      },
+      "ownership_amounts": {
+        "opening": {
+          "parent": "54655690475.89",
+          "minority": "3888586202.27",
+          "total": "58544276678.16"
+        },
+        "closing": {
+          "parent": "53711364981.99",
+          "minority": "3565015649.48",
+          "total": "57276380631.47"
+        },
+        "change": {
+          "parent": "-944325493.90",
+          "minority": "-323570552.79",
+          "total": "-1267896046.69"
+        },
+        "comprehensive": {
+          "parent": "4769763605.51",
+          "minority": "-288426476.70",
+          "total": "4481337128.81"
+        },
+        "contribution": {
+          "parent": "0.00",
+          "minority": "12460000.00",
+          "total": "12460000.00"
+        },
+        "distribution": {
+          "parent": "-5692824600.30",
+          "minority": "-45212091.14",
+          "total": "-5738036691.44"
+        },
+        "reserve": {
+          "parent": "362482.64",
+          "minority": "304641.73",
+          "total": "667124.37"
+        },
+        "other": {
+          "parent": "-21626981.75",
+          "minority": "-2696626.68",
+          "total": "-24323608.43"
+        }
+      },
+      "parent_profit_cny": "5758628097.79",
+      "parent_oci_cny": "-988864492.28",
+      "naive_profit_distribution_equity_cny": "54721493973.38",
+      "outside_profit_adjustment_cny": "-1010128991.39",
+      "reconciled_closing_parent_equity_cny": "53711364981.99",
+      "unexplained_difference_cny": "0",
+      "future_clean_surplus_assumption_approved": false,
+      "sustainable_distribution_approved": false,
+      "normalized_profit_approved": false,
+      "action": "no_order"
+    }
+  },
+  "profit_basis": "Historical ex-nonrecurring parent-profit TTM proxy, not normalized earnings.",
+  "normalized_profit": null,
+  "consumed_short_advantage_inputs": {
+    "start_book_equity": "53711364981.99",
+    "ordinary_shares": "6325360667",
+    "profit_anchor": "9647734710.01",
+    "profit_anchor_field": "ttm_ex_nonrecurring_parent_profit_cny",
+    "profit_anchor_unit": "CNY",
+    "profit_anchor_scope": "consolidated_parent_profit_ex_nonrecurring",
+    "scenarios": {
+      "bear": {
+        "cost_of_equity": "0.10",
+        "forecast_roe": [
+          "0.170640756897217935751938067909694803009634988837",
+          "0.147093837931478623834625378606463202006423325891",
+          "0.123546918965739311917312689303231601003211662946",
+          "0.100000000000000000000000000000000000000000000000"
+        ],
+        "terminal_roe": "0.10",
+        "terminal_growth": "0",
+        "retention": "0.20"
+      },
+      "base": {
+        "cost_of_equity": "0.09",
+        "forecast_roe": [
+          "0.179621849365492563949408492536520845273299988250",
+          "0.149747899576995042632938995024347230182199992167",
+          "0.119873949788497521316469497512173615091099996083",
+          "0.090000000000000000000000000000000000000000000000"
+        ],
+        "terminal_roe": "0.09",
+        "terminal_growth": "0",
+        "retention": "0.15"
+      },
+      "bull": {
+        "cost_of_equity": "0.08",
+        "forecast_roe": [
+          "0.185010504846457340867890747312616470631498987897",
+          "0.150007003230971560578593831541744313754332658598",
+          "0.115003501615485780289296915770872156877166329299",
+          "0.080000000000000000000000000000000000000000000000"
+        ],
+        "terminal_roe": "0.08",
+        "terminal_growth": "0",
+        "retention": "0.10"
+      }
+    },
+    "valuation_timing": {
+      "basis_at": "2026-06-30T23:59:59+08:00",
+      "valuation_at": "2026-09-22T16:00:00+08:00",
+      "evidence_refs": [
+        {
+          "id": "cninfo:1225259562",
+          "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+        },
+        {
+          "id": "cninfo:1225511409",
+          "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+        }
+      ],
+      "scope": "conditional_cash_flow_timing_not_observed_current_equity"
+    }
+  },
+  "growth_years": 1,
+  "fade_years": 3,
+  "book_equity_per_disclosed_share": "8.4914312099556994320558005898132290643656984057950",
+  "earlier_unapproved_baseline": {
+    "symbol": "600887",
+    "model_type": "residual_income_or_equity_value",
+    "valuation_date": "2026-09-22",
+    "bear_value": "10.37178165795572420912536576",
+    "base_value": "17.02303690867559841190686682",
+    "bull_value": "24.07169429656794742058832475",
+    "confidence": "低",
+    "assumptions": {
+      "scope": "conditional residual income with an algebraic dividend-path cross-check; not evidence of issuer distributable cash or dividend sustainability",
+      "formula": "Equity value = opening equity + PV(explicit residual income) + PV(terminal residual income), divided by ordinary shares",
+      "status": "conditional_research_only",
+      "disclaimer": "No market price, margin of safety, position or order is produced here."
+    },
+    "sensitivities": [
+      {
+        "scenario": "bear",
+        "cost_of_equity": "0.08",
+        "ordinary_equity_value": "65605259745.9451855399012710247467222880925123193",
+        "per_share_value": "10.37178165795572420912536576",
+        "terminal_residual_contribution_ratio": "0.1089119603358798697159902947",
+        "dividend_crosscheck_difference": "0E-37",
+        "arithmetic_status": "research_arithmetic_only"
+      },
+      {
+        "scenario": "base",
+        "cost_of_equity": "0.08",
+        "ordinary_equity_value": "107676848095.025901257363359826959874597649377289",
+        "per_share_value": "17.02303690867559841190686682",
+        "terminal_residual_contribution_ratio": "0.3546413850622337449832432876",
+        "dividend_crosscheck_difference": "0E-36",
+        "arithmetic_status": "research_arithmetic_only"
+      },
+      {
+        "scenario": "bull",
+        "cost_of_equity": "0.08",
+        "ordinary_equity_value": "152262148291.559127707113495348678822714510589552",
+        "per_share_value": "24.07169429656794742058832475",
+        "terminal_residual_contribution_ratio": "0.4780164137103141968390147318",
+        "dividend_crosscheck_difference": "0E-36",
+        "arithmetic_status": "research_arithmetic_only"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "id": "yili_fy2025_annual",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+        "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac"
+      },
+      {
+        "id": "yili_2026h1",
+        "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+        "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2"
+      },
+      {
+        "id": "china_cost_equity_20260914",
+        "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+        "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154"
+      }
+    ],
+    "blockers": [],
+    "status": "conditional_research_only",
+    "model_version": "residual-income-equity-shared-v1"
+  },
+  "retained_cost_sensitivity": [
+    {
+      "case": "industry_reference",
+      "conditional_value_per_share_cny": "10.2645764419255068994475684454380422720749690970",
+      "difference_from_v5_base_cny": "0.1894390888574939517454212584313951938269977979",
+      "difference_from_v5_base_percent": "1.88026308941393475604913057888020535771238593003"
+    },
+    {
+      "case": "retained_base",
+      "conditional_value_per_share_cny": "10.0751373530680129477021471870066470782479712991",
+      "difference_from_v5_base_cny": "0E-46",
+      "difference_from_v5_base_percent": "0"
+    },
+    {
+      "case": "higher_cost_stress",
+      "conditional_value_per_share_cny": "9.78713781553486010594368056075766109231587778936",
+      "difference_from_v5_base_cny": "-0.28799953753315284175846662624898598593209350974",
+      "difference_from_v5_base_percent": "-2.85851723346931010249037425468048178121917261969"
+    }
+  ],
+  "sensitivity_scope": "UNAPPROVED_SENSITIVITY_NOT_A_NEW_RESEARCH_CANDIDATE",
+  "findings": [
+    {
+      "category": "CONSERVATIVE_ASSUMPTIONS",
+      "text": "一年盈利条件后，ROE三年衰减至资本成本，终端ROE=Ke、增长=0；终值超额收益为零，不是终端股票权益价值为零。"
+    },
+    {
+      "category": "CAPITAL_COST",
+      "text": "Bear/Base/Bull Ke分别为10%/9%/8%，还同时改变ROE与留存，不能把情景差额全部归因于Ke。已有行业参考Ke敏感性只使Base上升约1.88%，不足解释市场差距。"
+    },
+    {
+      "category": "INPUT_BASIS_LIMIT",
+      "text": "使用2026H1归母权益、历史披露普通股总数及历史扣非归母TTM；未批准正常化利润，也未核准当前稀释分母。6月基期现金流滚至10月估值时刻，不是10月实测权益。"
+    },
+    {
+      "category": "MODEL_APPLICABILITY_PENDING",
+      "text": "剩余收益方法可在可核验净资产与盈利条件下研究，但未来clean-surplus、必要投入、ROIC和分配现金覆盖仍须核验，不能据差距认定模型完全适用或市场错误。"
+    },
+    {
+      "category": "FUNDAMENTAL_COUNTEREVIDENCE",
+      "text": "H1扣非归母利润同比下降20.25%，商誉及资产减值、资本项目效益和融资约束使历史高ROE不可机械外推；不重复扣已入账减值，也不直接加回制造利润。"
+    },
+    {
+      "category": "MARKET_MODEL_DISAGREEMENT",
+      "text": "市场可能隐含更长盈利优势或复苏路径，现有证据尚未证明；28.13仅为核验参考收盘，不据此调增长、Ke或优势年限。"
+    }
+  ],
+  "dividend_review": {
+    "latest_retained_fact": "FY2025末期每10股9元；已披露2025—2027分红率不低于75%、每股不低于1.22元政策。",
+    "coverage_status": "UNKNOWN_NOT_APPROVED",
+    "sustainable_distribution": "UNKNOWN",
+    "explanation": "会计利润和代数股息路径不是母公司可分配现金。模型留存假设不等于已批准分红率。",
+    "risks": [
+      "利润与经营现金流下行",
+      "维护投入与资本用途未完整覆盖",
+      "债务续作及现金期限/限制",
+      "回购、担保与股息竞争资金"
+    ],
+    "income_goal_contribution": null,
+    "income_goal_reason": "未消费个人持仓和股息目标，不能计算个人贡献。"
+  },
+  "existing_blockers": [
+    "formal G3 human valuation approval not present",
+    "issuer-specific beta evidence missing; generic beta=1 assumption used",
+    "ROIC and incremental ROIC remain unverified",
+    "H1 2026 interim report is unaudited",
+    "pending_economic_model_review",
+    "pending_complete_event_materiality_review",
+    "G3_估值门",
+    "research_case:formal G3 human valuation approval not present",
+    "research_case:issuer-specific beta evidence missing; generic beta=1 assumption used",
+    "research_case:ROIC and incremental ROIC remain unverified",
+    "research_case:H1 2026 interim report is unaudited",
+    "research_case:pending_economic_model_review",
+    "research_case:pending_complete_event_materiality_review",
+    "research_case_valuation_not_approved",
+    "valuation_status_not_approved_for_research",
+    "model_validity_unavailable",
+    "event_materiality_review_unavailable",
+    "decision_dependency_artifacts_unavailable",
+    "predecision_eligibility_unavailable",
+    "human_research_approval_not_resolved",
+    "VALUE_PRICE_COMPARISON_NOT_ELIGIBLE",
+    "VALUE_ENTRY_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+    "VALUE_ADD_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+    "VALUE_REDUCE_PRICE_POLICY_MISSING_OR_INAPPLICABLE",
+    "VALUE_EXIT_PRICE_POLICY_MISSING_OR_INAPPLICABLE"
+  ],
+  "formal_eligibility": false,
+  "portfolio_eligibility": null,
+  "registered_investment_policy_binding": null,
+  "direct_hash_checks": [
+    {
+      "path": "runtime/600887-equity-cost-sensitivity-20261011-v1/result.json",
+      "sha256": "47c91f919e642fb4e9054cf2e3fc0a07169e34625f2f196e2dd151f8bee841bb",
+      "observed_sha256": "47c91f919e642fb4e9054cf2e3fc0a07169e34625f2f196e2dd151f8bee841bb",
+      "matches": true
+    },
+    {
+      "id": "yili_fy2025_annual",
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2025-12-31-annual-ef988688acf64ebeafd5ad3da4721c9f3390ae9c204038cd4e1e3ae3b5ec8451.pdf",
+      "sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+      "observed_sha256": "d17b8c541c42f65d092317093eb0cfbb5aeed4f44eafa2d2f6182041cdcdbaac",
+      "matches": true
+    },
+    {
+      "id": "yili_2026h1",
+      "path": "runtime/company-research/m1-valuation-filings-20260923/600887/2026-06-30-interim-6c456d8e5f19ba114b2cac48595f997612f66b337d294265975ed5eb7c3499ab.pdf",
+      "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "observed_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+      "matches": true
+    },
+    {
+      "path": "runtime/d2-real-admission-20261011/600887-current-facts-v1/manifest.json",
+      "sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384",
+      "observed_sha256": "1f1207e343cbc08dead636f2ba61ce76012b290a19776f4c0d9ef20a0acca384",
+      "matches": true
+    },
+    {
+      "id": "pending-economic-proposal",
+      "path": "runtime/daily-trade-assistant/20261011-s5-pending-candidate-v5/pending-candidate/valuation-proposal.json",
+      "sha256": "76ab1d93a88c8d5955ecded565b7fb79fcbcc731a48efac8928f503c37ec04c1",
+      "observed_sha256": "76ab1d93a88c8d5955ecded565b7fb79fcbcc731a48efac8928f503c37ec04c1",
+      "matches": true
+    },
+    {
+      "path": "runtime/daily-trade-assistant/fm3-v3-publish-20261012-v2/600887-value-decision-explanation.json",
+      "sha256": "54ecf79bd1e1f752d32dd9d7032224f8aa2ee3d557265b84600475ad99454049",
+      "observed_sha256": "54ecf79bd1e1f752d32dd9d7032224f8aa2ee3d557265b84600475ad99454049",
+      "matches": true
+    },
+    {
+      "id": "china_cost_equity_20260914",
+      "path": "runtime/valuation-research/moutai-consolidated-parent-equity-discount-range-20260914T104355Z/evidence.json",
+      "sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154",
+      "observed_sha256": "d53f204548a2a97c83c046572b93e331af3963e53773f0b3f8d4962a819dd154",
+      "matches": true
+    },
+    {
+      "path": "src/value_investment_agent/valuation_models/residual_income.py",
+      "sha256": "090bb42f00300662ed4f626ee0df19c58c0e6049edd612021d8ccd4b7925a0f7",
+      "observed_sha256": "090bb42f00300662ed4f626ee0df19c58c0e6049edd612021d8ccd4b7925a0f7",
+      "matches": true
+    },
+    {
+      "path": "src/value_investment_agent/valuation_router.py",
+      "sha256": "23f187da6526807023507581f82e7e79864251147d4ac4517d29e85d43c0e724",
+      "observed_sha256": "23f187da6526807023507581f82e7e79864251147d4ac4517d29e85d43c0e724",
+      "matches": true
+    }
+  ],
+  "approval_changed": false,
+  "valuation_recomputed": false,
+  "isolated_replay": {
+    "status": "EXACT_VALUATION_REPLAY",
+    "full_payload_match": true,
+    "copied_file_count": 6,
+    "copied_bytes": 3106146,
+    "scope": "DIRECT_CONSUMED_INPUTS_AND_SHARED_ARITHMETIC_NOT_FULL_ADMISSION_RESTORE",
+    "receipt_binding": {
+      "path": "artifacts/current/tl11-p5-20261014/value-600887-isolated-replay-receipt.json",
+      "sha256": "f4b12fc6df066fe9eff5008f6f4d5f4d1087bc7f3bfa40210f4d963740cc5c7c"
+    }
+  }
+}

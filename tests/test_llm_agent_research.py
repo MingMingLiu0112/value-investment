@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import date, datetime, timezone
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
@@ -11,8 +14,8 @@ from value_investment_agent.application.decision.artifact_bundle import export_a
 from value_investment_agent.application.product.agent_research_surface import project_verified_agent_packet
 from value_investment_agent.application.product.common import sha256_file
 from value_investment_agent.application.research.agent_review.llm_pilot import (
-    MOCK_SCOPE, ROLE_TASKS, run_llm_research_pilot, validate_role_response,
-    verify_llm_packet,
+    MOCK_SCOPE, ROLE_TASKS, _agent_output_lock_path, run_llm_research_pilot,
+    validate_role_response, verify_llm_packet,
 )
 from value_investment_agent.application.research.agent_review.snapshot import load_research_snapshot
 from value_investment_agent.domain.agent_research.contracts import AgentRole
@@ -213,14 +216,53 @@ def test_timeout_concurrency_and_cost_preflight_do_not_write(tmp_path):
         run_llm_research_pilot(**kwargs, mode="live", live_authorized=True,
                                provider_input_sha256="a" * 64, max_run_cost_usd=float("nan"),
                                input_usd_per_million=1, output_usd_per_million=1)
-    lock = output.with_suffix(".json.lock")
-    lock.write_text("busy", encoding="utf-8")
-    with pytest.raises(RuntimeError, match="already active"):
-        run_llm_research_pilot(**kwargs, mode="mock")
-    lock.unlink()
+    lock = _agent_output_lock_path(output)
+    # A crash-left file is not an active owner. The OS lock must decide whether
+    # the output is busy, so this stale marker cannot block a retry.
+    lock.write_text("crash-left", encoding="utf-8")
     with pytest.raises(TimeoutError):
         run_llm_research_pilot(**kwargs, mode="mock")
-    assert not output.exists() and not lock.exists()
+    assert not output.exists() and lock.exists()
+
+
+def test_agent_lock_blocks_live_owner_and_recovers_after_owner_is_killed(tmp_path):
+    workbench, digest, _ = _inputs(tmp_path)
+    output = tmp_path / "runtime" / "killed-owner.json"
+    lock_path = _agent_output_lock_path(output)
+    source_root = Path(__file__).resolve().parents[1] / "src"
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(source_root) + (
+        os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+    child_code = (
+        "import sys\n"
+        "from pathlib import Path\n"
+        "from value_investment_agent.application.portfolio.private_journal_lock import InterProcessLock\n"
+        "lock = InterProcessLock(Path(sys.argv[1]), timeout_seconds=1)\n"
+        "lock.acquire()\n"
+        "print('LOCKED', flush=True)\n"
+        "sys.stdin.read()\n"
+    )
+    holder = subprocess.Popen(
+        [sys.executable, "-c", child_code, str(lock_path)],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True, encoding="utf-8", env=env,
+    )
+    try:
+        assert holder.stdout.readline().strip() == "LOCKED"
+        kwargs = dict(root=tmp_path, workbench=workbench, workbench_sha256=digest,
+                      symbol="600519", output=output,
+                      provider=MockLLMProvider(_replies()), mode="mock")
+        with pytest.raises(RuntimeError, match="already active"):
+            run_llm_research_pilot(**kwargs)
+        holder.kill()
+        holder.wait(timeout=10)
+        packet = run_llm_research_pilot(**kwargs)
+        assert packet["action"] == "no_order"
+        assert output.is_file() and lock_path.is_file()
+    finally:
+        if holder.poll() is None:
+            holder.kill()
+            holder.wait(timeout=10)
 
 
 def test_https_provider_requires_explicit_secret_and_never_uses_tools(monkeypatch):

@@ -1,0 +1,604 @@
+{
+  "schema_version": "tl11-p5-d-real-attributes-synthetic-ledger-receipt-v3",
+  "action": "no_order",
+  "generated_at": "2026-10-14T13:11:57.026181+00:00",
+  "supersedes": "public-safe-receipt-v2.json",
+  "real_private_writes": false,
+  "account_kind": "SYNTHETIC_TEST_ONLY",
+  "real_public_attribute_samples": [
+    {
+      "schema_version": "field-verified-security-risk-attributes-v1",
+      "action": "no_order",
+      "symbol": "300364",
+      "company_name": "中文在线",
+      "exchange": "SZSE",
+      "board": "创业板",
+      "security_type": "A_SHARE",
+      "listed_on": "2015-01-21",
+      "industry": "CSRC_SECTION:R",
+      "industry_description": "R 文化传播",
+      "classification_standard": "EXCHANGE_REPORTED_CSRC_SECTION",
+      "classification_effective_date": null,
+      "historical_pit": false,
+      "classification_scope": "CURRENT_OBSERVATION_KNOWN_AFTER_CAPTURE_ONLY",
+      "cyclical": "UNKNOWN",
+      "common_factors": "UNKNOWN",
+      "liquidity_profile": "UNKNOWN",
+      "published_at": null,
+      "known_at": "2026-10-12T10:54:10.186212+00:00",
+      "valid_until": "2026-10-19T10:54:05.474734+00:00",
+      "validity_basis": "SOURCE_CAPTURE_PLUS_7_CALENDAR_DAYS_REQUIRES_REFRESH",
+      "field_evidence": {
+        "symbol": [
+          {
+            "id": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845.bin",
+            "sha256": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+            "source_url": "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1",
+            "known_at": "2026-10-12T10:54:05.474734+00:00",
+            "source_role": "SZSE_A",
+            "published_at": null
+          },
+          {
+            "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+            "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+          }
+        ],
+        "company_name": [
+          {
+            "id": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845.bin",
+            "sha256": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+            "source_url": "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1",
+            "known_at": "2026-10-12T10:54:05.474734+00:00",
+            "source_role": "SZSE_A",
+            "published_at": null
+          },
+          {
+            "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+            "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+          }
+        ],
+        "exchange": [
+          {
+            "id": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845.bin",
+            "sha256": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+            "source_url": "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1",
+            "known_at": "2026-10-12T10:54:05.474734+00:00",
+            "source_role": "SZSE_A",
+            "published_at": null
+          },
+          {
+            "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+            "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+          }
+        ],
+        "security_type": [
+          {
+            "id": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845.bin",
+            "sha256": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+            "source_url": "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1",
+            "known_at": "2026-10-12T10:54:05.474734+00:00",
+            "source_role": "SZSE_A",
+            "published_at": null
+          },
+          {
+            "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+            "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+          }
+        ],
+        "industry": [
+          {
+            "id": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845.bin",
+            "sha256": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+            "source_url": "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1",
+            "known_at": "2026-10-12T10:54:05.474734+00:00",
+            "source_role": "SZSE_A",
+            "published_at": null
+          },
+          {
+            "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+            "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+          }
+        ]
+      },
+      "field_status": {
+        "symbol": "VERIFIED_OFFICIAL_OBSERVATION",
+        "company_name": "VERIFIED_OFFICIAL_OBSERVATION",
+        "exchange": "VERIFIED_OFFICIAL_OBSERVATION",
+        "security_type": "VERIFIED_OFFICIAL_OBSERVATION",
+        "industry": "VERIFIED_OFFICIAL_OBSERVATION",
+        "cyclical": "UNKNOWN",
+        "common_factors": "UNKNOWN",
+        "liquidity_profile": "UNKNOWN",
+        "classification_effective_date": "UNKNOWN",
+        "published_at": "UNKNOWN"
+      },
+      "evidence_refs": [
+        {
+          "id": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+          "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845.bin",
+          "sha256": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+          "source_url": "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1",
+          "known_at": "2026-10-12T10:54:05.474734+00:00",
+          "source_role": "SZSE_A",
+          "published_at": null
+        },
+        {
+          "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+          "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+          "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+          "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+        }
+      ]
+    },
+    {
+      "schema_version": "field-verified-security-risk-attributes-v1",
+      "action": "no_order",
+      "symbol": "600887",
+      "company_name": "伊利股份",
+      "exchange": "SSE",
+      "board": "主板",
+      "security_type": "A_SHARE",
+      "listed_on": "1996-03-12",
+      "industry": "CSRC_SECTION:C",
+      "industry_description": "制造业",
+      "classification_standard": "EXCHANGE_REPORTED_CSRC_SECTION",
+      "classification_effective_date": null,
+      "historical_pit": false,
+      "classification_scope": "CURRENT_OBSERVATION_KNOWN_AFTER_CAPTURE_ONLY",
+      "cyclical": "UNKNOWN",
+      "common_factors": "UNKNOWN",
+      "liquidity_profile": "UNKNOWN",
+      "published_at": null,
+      "known_at": "2026-10-12T10:54:10.186212+00:00",
+      "valid_until": "2026-10-19T10:54:07.355714+00:00",
+      "validity_basis": "SOURCE_CAPTURE_PLUS_7_CALENDAR_DAYS_REQUIRES_REFRESH",
+      "field_evidence": {
+        "symbol": [
+          {
+            "id": "bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e.bin",
+            "sha256": "bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e",
+            "source_url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=2%2C4%2C5%2C7%2C8&type=inParams&isPagination=true&pageHelp.pageSize=10000&pageHelp.pageNo=1&pageHelp.beginPage=1&pageHelp.endPage=1",
+            "known_at": "2026-10-12T10:54:07.355714+00:00",
+            "source_role": "SSE_1",
+            "published_at": null
+          },
+          {
+            "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+            "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+          }
+        ],
+        "company_name": [
+          {
+            "id": "bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e.bin",
+            "sha256": "bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e",
+            "source_url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=2%2C4%2C5%2C7%2C8&type=inParams&isPagination=true&pageHelp.pageSize=10000&pageHelp.pageNo=1&pageHelp.beginPage=1&pageHelp.endPage=1",
+            "known_at": "2026-10-12T10:54:07.355714+00:00",
+            "source_role": "SSE_1",
+            "published_at": null
+          },
+          {
+            "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+            "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+          }
+        ],
+        "exchange": [
+          {
+            "id": "bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e.bin",
+            "sha256": "bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e",
+            "source_url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=2%2C4%2C5%2C7%2C8&type=inParams&isPagination=true&pageHelp.pageSize=10000&pageHelp.pageNo=1&pageHelp.beginPage=1&pageHelp.endPage=1",
+            "known_at": "2026-10-12T10:54:07.355714+00:00",
+            "source_role": "SSE_1",
+            "published_at": null
+          },
+          {
+            "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+            "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+          }
+        ],
+        "security_type": [
+          {
+            "id": "bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e.bin",
+            "sha256": "bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e",
+            "source_url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=2%2C4%2C5%2C7%2C8&type=inParams&isPagination=true&pageHelp.pageSize=10000&pageHelp.pageNo=1&pageHelp.beginPage=1&pageHelp.endPage=1",
+            "known_at": "2026-10-12T10:54:07.355714+00:00",
+            "source_role": "SSE_1",
+            "published_at": null
+          },
+          {
+            "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+            "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+          }
+        ],
+        "industry": [
+          {
+            "id": "bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e.bin",
+            "sha256": "bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e",
+            "source_url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=2%2C4%2C5%2C7%2C8&type=inParams&isPagination=true&pageHelp.pageSize=10000&pageHelp.pageNo=1&pageHelp.beginPage=1&pageHelp.endPage=1",
+            "known_at": "2026-10-12T10:54:07.355714+00:00",
+            "source_role": "SSE_1",
+            "published_at": null
+          },
+          {
+            "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+            "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+          }
+        ]
+      },
+      "field_status": {
+        "symbol": "VERIFIED_OFFICIAL_OBSERVATION",
+        "company_name": "VERIFIED_OFFICIAL_OBSERVATION",
+        "exchange": "VERIFIED_OFFICIAL_OBSERVATION",
+        "security_type": "VERIFIED_OFFICIAL_OBSERVATION",
+        "industry": "VERIFIED_OFFICIAL_OBSERVATION",
+        "cyclical": "UNKNOWN",
+        "common_factors": "UNKNOWN",
+        "liquidity_profile": "UNKNOWN",
+        "classification_effective_date": "UNKNOWN",
+        "published_at": "UNKNOWN"
+      },
+      "evidence_refs": [
+        {
+          "id": "bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e",
+          "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e.bin",
+          "sha256": "bdf0a79aad5be49e3d3e9c613889d5046322fd6c50f579a4b99f718a3082506e",
+          "source_url": "https://query.sse.com.cn/sseQuery/commonQuery.do?STOCK_TYPE=1&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&COMPANY_STATUS=2%2C4%2C5%2C7%2C8&type=inParams&isPagination=true&pageHelp.pageSize=10000&pageHelp.pageNo=1&pageHelp.beginPage=1&pageHelp.endPage=1",
+          "known_at": "2026-10-12T10:54:07.355714+00:00",
+          "source_role": "SSE_1",
+          "published_at": null
+        },
+        {
+          "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+          "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+          "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+          "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+        }
+      ]
+    }
+  ],
+  "risk": {
+    "action": "no_order",
+    "status": "BLOCKED_PRIVATE_INPUT",
+    "blockers": [
+      "security_attributes.300364.cyclical.unknown",
+      "security_attributes.300364.common_factors.unknown",
+      "security_attributes.300364.liquidity_profile.unknown",
+      "CORE_VALUE:risk_unknown",
+      "CORE_VALUE:liquidity_review:300364",
+      "HOTSPOT_SATELLITE:budget_exceeded"
+    ],
+    "engine": {
+      "schema_version": "dual-sleeve-risk-review-v1",
+      "action": "no_order",
+      "namespace": "ACTUAL",
+      "status": "BLOCKED_PRIVATE_INPUT",
+      "generated_at": "2026-10-14T13:11:57.026181+00:00",
+      "sensitivity": "PRIVATE_USER_CONFIRMED",
+      "blockers": [
+        "security_attributes.300364.cyclical.unknown",
+        "security_attributes.300364.common_factors.unknown",
+        "security_attributes.300364.liquidity_profile.unknown",
+        "CORE_VALUE:risk_unknown",
+        "CORE_VALUE:liquidity_review:300364",
+        "HOTSPOT_SATELLITE:budget_exceeded"
+      ],
+      "sleeves": {
+        "CORE_VALUE": {
+          "contract_sleeve": "CORE_VALUE",
+          "budget_cny": "6996.5000",
+          "equity_cny": "6995.000",
+          "used_funds_cny": "2658.000",
+          "cash_cny": "4337.00",
+          "available_funds_cny": "4337.00",
+          "risk_budget_cny": "1400",
+          "committed_risk_cny": null,
+          "available_risk_cny": null,
+          "unrealized_pnl_cny": "-5.000",
+          "realized_pnl_cny": null,
+          "full_capital_at_risk_cny": "2658.000",
+          "holdings": [
+            {
+              "symbol": "300364",
+              "quantity": "100",
+              "sellable_quantity": "0",
+              "market_value_cny": "2658.000",
+              "cost_basis_cny": "2663.00",
+              "unrealized_pnl_cny": "-5.000",
+              "committed_risk_cny": null,
+              "industry": "CSRC_SECTION:R",
+              "common_factors": "UNKNOWN"
+            }
+          ],
+          "limits": {
+            "max_single_security_fraction": "0.8",
+            "max_industry_fraction": "0.9",
+            "max_factor_fraction": "1"
+          },
+          "industry_exposure_cny": {
+            "CSRC_SECTION:R": "2658.000"
+          },
+          "factor_exposure_cny": null,
+          "exit_basis": "FUNDAMENTAL_THESIS_AND_LIQUIDITY_REVIEW",
+          "mechanical_stop_required": false
+        },
+        "HOTSPOT_SATELLITE": {
+          "contract_sleeve": "TACTICAL_HOTSPOT",
+          "budget_cny": "1999.0000",
+          "equity_cny": "2000",
+          "used_funds_cny": "0",
+          "cash_cny": "2000",
+          "available_funds_cny": "1999.0000",
+          "risk_budget_cny": "400",
+          "committed_risk_cny": "0",
+          "available_risk_cny": "400",
+          "unrealized_pnl_cny": "0",
+          "realized_pnl_cny": null,
+          "full_capital_at_risk_cny": "0",
+          "holdings": [],
+          "limits": {
+            "max_single_security_fraction": "0.8",
+            "max_industry_fraction": "0.9",
+            "max_factor_fraction": "1"
+          },
+          "industry_exposure_cny": {},
+          "factor_exposure_cny": {},
+          "exit_basis": "PRICE_STRUCTURE_REVIEW",
+          "mechanical_stop_required": null
+        }
+      },
+      "aggregate": {
+        "total_assets_cny": "9995.000",
+        "cash_cny": "7337.00",
+        "reserve_cny": "1000",
+        "duplicated_security_exposure": {},
+        "existing_risk_assessment": null,
+        "security_attribute_gaps": [
+          "security_attributes.300364.cyclical.unknown",
+          "security_attributes.300364.common_factors.unknown",
+          "security_attributes.300364.liquidity_profile.unknown"
+        ],
+        "committed_risk_total_cny": null
+      },
+      "hotspot_quantity_review": null,
+      "position_guidance": null,
+      "expected_return": null,
+      "trade_eligible": false,
+      "acceptance_authority": "NONE"
+    },
+    "facts": {
+      "revision": 6,
+      "account_scope": "TEST_ONLY_SYNTHETIC_P5_D",
+      "as_of": "2026-10-14",
+      "cash_cny": "7337.00",
+      "realized_pnl_cny": "0",
+      "cost_basis_total_cny": "2663.00",
+      "positions": [
+        {
+          "symbol": "300364",
+          "exchange": "SZSE",
+          "quantity": "100",
+          "cost_basis_cny": "2663.00",
+          "market_value_cny": "2658.000",
+          "unrealized_pnl_cny": "-5.000",
+          "quote_binding": {
+            "price_cny": "26.580",
+            "trade_date": "2026-10-14",
+            "case_sha256": "a385019f1b9097fdd3bc19d6ea08596ecb07df2939efed4cb8ab023b5d4dec49",
+            "scope": "VERIFIED_LATEST_COMPLETED_CLOSE_NOT_TRADE_PERMISSION"
+          },
+          "sleeves": [
+            {
+              "sleeve": "CORE_VALUE",
+              "quantity": "100"
+            }
+          ]
+        }
+      ],
+      "market_value_total_cny": "2658.000",
+      "total_equity_cny": "9995.000",
+      "unrealized_pnl_total_cny": "-5.000",
+      "current_drawdown_pct": null,
+      "confirmed_fill_count": 1,
+      "reconciliation_status": "RECONCILED",
+      "reconciliation": {
+        "status": "RECONCILED",
+        "superseded": false,
+        "reason": null,
+        "state_version": 1,
+        "snapshot_version": 1,
+        "scope": "INTERNAL_JOURNAL_REPLAY",
+        "reconciled_at": "2026-10-14T17:05:00+08:00"
+      },
+      "price_status": "VERIFIED_LATEST_COMPLETED_CLOSE",
+      "price_reason": null
+    },
+    "security_attributes": [
+      {
+        "schema_version": "field-verified-security-risk-attributes-v1",
+        "action": "no_order",
+        "symbol": "300364",
+        "company_name": "中文在线",
+        "exchange": "SZSE",
+        "board": "创业板",
+        "security_type": "A_SHARE",
+        "listed_on": "2015-01-21",
+        "industry": "CSRC_SECTION:R",
+        "industry_description": "R 文化传播",
+        "classification_standard": "EXCHANGE_REPORTED_CSRC_SECTION",
+        "classification_effective_date": null,
+        "historical_pit": false,
+        "classification_scope": "CURRENT_OBSERVATION_KNOWN_AFTER_CAPTURE_ONLY",
+        "cyclical": "UNKNOWN",
+        "common_factors": "UNKNOWN",
+        "liquidity_profile": "UNKNOWN",
+        "published_at": null,
+        "known_at": "2026-10-12T10:54:10.186212+00:00",
+        "valid_until": "2026-10-19T10:54:05.474734+00:00",
+        "validity_basis": "SOURCE_CAPTURE_PLUS_7_CALENDAR_DAYS_REQUIRES_REFRESH",
+        "field_evidence": {
+          "symbol": [
+            {
+              "id": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+              "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845.bin",
+              "sha256": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+              "source_url": "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1",
+              "known_at": "2026-10-12T10:54:05.474734+00:00",
+              "source_role": "SZSE_A",
+              "published_at": null
+            },
+            {
+              "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+              "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+              "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+              "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+            }
+          ],
+          "company_name": [
+            {
+              "id": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+              "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845.bin",
+              "sha256": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+              "source_url": "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1",
+              "known_at": "2026-10-12T10:54:05.474734+00:00",
+              "source_role": "SZSE_A",
+              "published_at": null
+            },
+            {
+              "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+              "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+              "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+              "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+            }
+          ],
+          "exchange": [
+            {
+              "id": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+              "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845.bin",
+              "sha256": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+              "source_url": "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1",
+              "known_at": "2026-10-12T10:54:05.474734+00:00",
+              "source_role": "SZSE_A",
+              "published_at": null
+            },
+            {
+              "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+              "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+              "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+              "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+            }
+          ],
+          "security_type": [
+            {
+              "id": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+              "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845.bin",
+              "sha256": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+              "source_url": "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1",
+              "known_at": "2026-10-12T10:54:05.474734+00:00",
+              "source_role": "SZSE_A",
+              "published_at": null
+            },
+            {
+              "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+              "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+              "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+              "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+            }
+          ],
+          "industry": [
+            {
+              "id": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+              "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845.bin",
+              "sha256": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+              "source_url": "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1",
+              "known_at": "2026-10-12T10:54:05.474734+00:00",
+              "source_role": "SZSE_A",
+              "published_at": null
+            },
+            {
+              "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+              "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+              "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+              "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+            }
+          ]
+        },
+        "field_status": {
+          "symbol": "VERIFIED_OFFICIAL_OBSERVATION",
+          "company_name": "VERIFIED_OFFICIAL_OBSERVATION",
+          "exchange": "VERIFIED_OFFICIAL_OBSERVATION",
+          "security_type": "VERIFIED_OFFICIAL_OBSERVATION",
+          "industry": "VERIFIED_OFFICIAL_OBSERVATION",
+          "cyclical": "UNKNOWN",
+          "common_factors": "UNKNOWN",
+          "liquidity_profile": "UNKNOWN",
+          "classification_effective_date": "UNKNOWN",
+          "published_at": "UNKNOWN"
+        },
+        "evidence_refs": [
+          {
+            "id": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-raw/a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845.bin",
+            "sha256": "a7ef6520a62ad83e34a5236e8e75c4c107431943070b00d3afa9ef556151c845",
+            "source_url": "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1",
+            "known_at": "2026-10-12T10:54:05.474734+00:00",
+            "source_role": "SZSE_A",
+            "published_at": null
+          },
+          {
+            "id": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "path": "runtime/daily-trade-assistant/fm3-auto-dryrun-20261012-v2-m2-discovery/official-universe.json",
+            "sha256": "4c23e3a6932e0042486a32e61278257dc7d61f2fdad630010ae147bc022e1807",
+            "source_role": "PUBLISHED_OFFICIAL_UNIVERSE"
+          }
+        ]
+      }
+    ],
+    "policy": {
+      "confirmation_status": "HUMAN_CONFIRMED",
+      "effective_date": "2026-10-12",
+      "max_drawdown_pct": "20",
+      "dividend_income_goal_cny": "500",
+      "financing_allowed": false
+    }
+  },
+  "tests": "81 passed",
+  "root_entry": "application.portfolio.security_attributes.load_verified_security_attributes(root, symbols, now=aware_datetime)",
+  "candidate_review_entry": "review_private_risk_rehearsal(journal, generated_at=now, repository_root=root, hotspot_request=explicit_verified_request)",
+  "cost_safety": "Both-side fees, minimum fees, entry/exit slippage and gap stress; same-security existing risk subtracted across both sleeves; shared factor cap includes both sleeves; no borrowing core cash",
+  "limits": [
+    "Official observed CSRC sections are broad concentration buckets, not economic factor certification",
+    "Industry classification effective date and source publication time unknown; no strict historical membership PIT claim",
+    "Source capture plus seven-day explicit freshness boundary",
+    "Cyclical/factors/liquidity/committed risk remain unknown; suggestion quantity null",
+    "Legacy original absolute paths rebased only by retained runtime suffix plus hash"
+  ]
+}

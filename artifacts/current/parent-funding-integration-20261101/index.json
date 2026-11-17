@@ -1,0 +1,89 @@
+{
+  "schema_version": "parent-funding-integration-acceptance-v1",
+  "symbol": "000568",
+  "action": "no_order",
+  "delegated_head": "65fce3b0d8fb333d792fd5f023fb33530c25c03c",
+  "merge_commit": "6a3e03e4f014f1edb17ca5f6abf195bdb54b8129",
+  "baseline_current_chain": "952f48c88d70d891756abccca8080d601b35604c",
+  "baseline_core": 41275316186,
+  "baseline_web": 41275316158,
+  "source_spec": {
+    "path": "artifacts/current/parent-funding-integration-20261101/research-spec.json",
+    "sha256": "412481ac6f4ed2d0a70180f137cf9a4ebbd92ca99cb2a37d8e762bef8e055fab"
+  },
+  "registered_source_pointer": {
+    "path": "config/current-operating-research-sources-v1.json",
+    "sha256": "4c0f2a4d199eee5386ac1af1a7cc6a39c9765dfc9891206b3a4dd45dabb518a4"
+  },
+  "source_receipt": {
+    "path": "runtime/value-000568-current-alignment-20261101/source-receipt.json",
+    "sha256": "6c5fe1d3d21c6f4413670e85e1c79b65a2e56736890f459ffeadb3de129c04f0"
+  },
+  "prior_public_source_closure": {
+    "path": "artifacts/current/d2-cash-consumption-20261101/index.json",
+    "sha256": "4d3790ccf48be86a801fe0d1f4f8c417f8e1f44c11f909a6bc5f0ecaa2ff4049"
+  },
+  "prior_current_originals": {
+    "path": "artifacts/current/value-fiscal-distribution-20261101/index.json",
+    "sha256": "a05b85bd222918bbcbb7bc34dde7c58eedb9d79ddc216a7566587e96ea28a301"
+  },
+  "prior_fiscal_update": {
+    "path": "artifacts/current/value-fiscal-update-20261101/index.json",
+    "sha256": "825546a30bff4757d4a77defc31ded2c672c0b68c4d624a3a86eec2969122b79"
+  },
+  "implementation_bindings": [
+    {
+      "path": "src/value_investment_agent/application/research/parent_funding_review_v1.py",
+      "sha256": "93487c6ce92d6ea6715a6ae6c7195e69b43a5a33d6e964adaa7d4d730051f9a0"
+    },
+    {
+      "path": "src/value_investment_agent/domain/research/parent_distribution_capacity_v1.py",
+      "sha256": "4bb9a9a452bedc1bc01cc5b2632ab6467ee697fe7389daaa5ff28b0f58018435"
+    },
+    {
+      "path": "src/value_investment_agent/infrastructure/filings/parent_funding_facts_v1.py",
+      "sha256": "c4422ccb1db238b549b46abdf211565ea6330ce81d219540550b519c5d402136"
+    }
+  ],
+  "actual_api_receipt": {
+    "path": "runtime/value-000568-current-alignment-20261101/actual-api-isolated-parent-accepted.json",
+    "sha256": "94c50012191d54a6431421c7fbdcc05bdf1bf82c93fe83cda4f410af67c56712"
+  },
+  "actual_results": {
+    "historical_static_remainder_cny": "17016211333.61",
+    "funding_status": "INCOMPLETE_OBLIGATIONS",
+    "distribution_ceiling": null,
+    "shortfall": null,
+    "current_capacity_proven": false,
+    "source_mapping_verified": false,
+    "cash_input_comparison": "AMOUNT_EQUAL_NOT_MAPPING_VERIFIED",
+    "dividend_additional_deduction_cny": "0",
+    "cash_model_fingerprint": "153d179a46b1cf5262620266a08a8690063b03fae7b5356812ff9d6129e95426"
+  },
+  "independent_reviews": [
+    "Darwin and Euclid accepted the fixed original-source package as historical-only; no definite P1/P2.",
+    "Registered wrapper true-source + 11 independent substitution/time/mid-read negative cases passed.",
+    "Amount-versus-origin confusion and null structure P2 both fixed and independently closed; no mapping or capacity grant."
+  ],
+  "tests": {
+    "related_core": "231 passed,0 skipped",
+    "final_parent_and_api": "48 passed,0 skipped including explicit real sources",
+    "web": "1487 passed,28 skipped before final terminology-only targeted verification; final CI separate"
+  },
+  "reproduction": {
+    "public_api": "GET /api/v1/operating-research/companies/000568",
+    "environment": [
+      "PYTHONPATH=src",
+      "PARENT_FUNDING_REAL_ROOT=<checkout>",
+      "PARENT_FUNDING_REAL_REQUIRED=1"
+    ],
+    "command": "python -B -m pytest -q -p no:cacheprovider tests/test_parent_funding_review_v1.py tests/web_api/test_operating_distribution_api.py"
+  },
+  "limitations": [
+    "Fixed000568/H1 reviewed source adapter, not universal company/period parsing.",
+    "Historical cash after declared-dividend reserve is not today's free or legally distributable cash.",
+    "Parent principal/interest/timing, operating reserve, necessary investment and legal adjustments remain incomplete.",
+    "Amount equality with a bound same-date owner-equivalent model input does not prove automatic derivation or scope mapping.",
+    "Existing API uses transient task locks; actual task JSON unchanged; no network/model/approval/order."
+  ]
+}

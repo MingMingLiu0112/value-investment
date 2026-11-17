@@ -1,0 +1,38 @@
+{
+  "schema_version": "p61-isolated-browser-verification-v1",
+  "action": "no_order",
+  "generated_at": "2026-10-15T10:54:13.689842+08:00",
+  "scope": "ISOLATED_TEST_ONLY",
+  "real_account_modified": false,
+  "cash_cny": "10190",
+  "realized_pnl_cny": "195",
+  "quantity": "100",
+  "remaining_cost_cny": "2005",
+  "confirmed_trades": 2,
+  "ledger_record_count": 11,
+  "repeated_fill_confirmation": "UNCHANGED_BYTES",
+  "policy_restore": "REGISTERED",
+  "duplicate_policy_confirmation": "SAME_RECEIPT",
+  "research_approval_changed": false,
+  "formal_eligibility": false,
+  "public_api_checks": {
+    "daily-decisions": {
+      "status_code": 200,
+      "action": "no_order"
+    },
+    "daily-public-snapshot": {
+      "status_code": 200,
+      "action": "no_order"
+    },
+    "daily-update-status": {
+      "status_code": 200,
+      "action": "no_order"
+    },
+    "current-price-case/300364": {
+      "status_code": 200,
+      "action": "no_order"
+    }
+  },
+  "private_unauthorized_status": 401,
+  "verified_by": "Windows browser workflow plus independent journal replay; synthetic fills are not real trades"
+}

@@ -1,0 +1,171 @@
+{
+  "started_at": "2026-10-15T02:44:50.1113841+00:00",
+  "retained_publication_id": "pub-53fd34a5ae8aefdcaa5e",
+  "schema_version": "daily-workbench-run-v1",
+  "action": "no_order",
+  "exit_code": 0,
+  "mode": "SAFE_REFRESH",
+  "core_integrity_ok": true,
+  "notes": [],
+  "published": true,
+  "finished_at": "2026-10-15T02:45:09.7940344+00:00",
+  "price_securities": [
+    {
+      "symbol": "002354",
+      "status": "VERIFIED",
+      "market_trade_date": "2026-10-14",
+      "sources": {
+        "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+        "price": "7.650",
+        "bundle_path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "bundle_sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530",
+        "evidence_refs": [
+          "6af1abf0172d5aadd559a27299e17538a3052479910e5aa338cf67efdaca6ef9",
+          "014a0445f925f1d0731ef9b3a1720097979c8b5b67f95b5fb662f3da4170d821",
+          "87ab7f2b4e983ae689095f9f41bbfb2171baca5c37ddca75e9377e68516a0361",
+          "20c1ee04d7dc8285219b0b2ff135fbafc14de41dabae6bfef25d2d907e610722"
+        ],
+        "provider_times": {
+          "tencent": "2026-10-14T16:14:57+08:00",
+          "sina": "2026-10-14T15:35:30+08:00"
+        },
+        "next_session": "2026-10-15"
+      },
+      "missing": []
+    },
+    {
+      "symbol": "300058",
+      "status": "VERIFIED",
+      "market_trade_date": "2026-10-14",
+      "sources": {
+        "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+        "price": "12.850",
+        "bundle_path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "bundle_sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530",
+        "evidence_refs": [
+          "6af1abf0172d5aadd559a27299e17538a3052479910e5aa338cf67efdaca6ef9",
+          "014a0445f925f1d0731ef9b3a1720097979c8b5b67f95b5fb662f3da4170d821",
+          "87ab7f2b4e983ae689095f9f41bbfb2171baca5c37ddca75e9377e68516a0361",
+          "20c1ee04d7dc8285219b0b2ff135fbafc14de41dabae6bfef25d2d907e610722"
+        ],
+        "provider_times": {
+          "tencent": "2026-10-14T16:14:39+08:00",
+          "sina": "2026-10-14T15:35:15+08:00"
+        },
+        "next_session": "2026-10-15"
+      },
+      "missing": []
+    },
+    {
+      "symbol": "300364",
+      "status": "VERIFIED",
+      "market_trade_date": "2026-10-14",
+      "sources": {
+        "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+        "price": "26.580",
+        "bundle_path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "bundle_sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530",
+        "evidence_refs": [
+          "6af1abf0172d5aadd559a27299e17538a3052479910e5aa338cf67efdaca6ef9",
+          "014a0445f925f1d0731ef9b3a1720097979c8b5b67f95b5fb662f3da4170d821",
+          "87ab7f2b4e983ae689095f9f41bbfb2171baca5c37ddca75e9377e68516a0361",
+          "20c1ee04d7dc8285219b0b2ff135fbafc14de41dabae6bfef25d2d907e610722"
+        ],
+        "provider_times": {
+          "tencent": "2026-10-14T16:14:30+08:00",
+          "sina": "2026-10-14T15:35:30+08:00"
+        },
+        "next_session": "2026-10-15"
+      },
+      "missing": []
+    },
+    {
+      "symbol": "300413",
+      "status": "VERIFIED",
+      "market_trade_date": "2026-10-14",
+      "sources": {
+        "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+        "price": "25.640",
+        "bundle_path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "bundle_sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530",
+        "evidence_refs": [
+          "6af1abf0172d5aadd559a27299e17538a3052479910e5aa338cf67efdaca6ef9",
+          "014a0445f925f1d0731ef9b3a1720097979c8b5b67f95b5fb662f3da4170d821",
+          "87ab7f2b4e983ae689095f9f41bbfb2171baca5c37ddca75e9377e68516a0361",
+          "20c1ee04d7dc8285219b0b2ff135fbafc14de41dabae6bfef25d2d907e610722"
+        ],
+        "provider_times": {
+          "tencent": "2026-10-14T16:14:36+08:00",
+          "sina": "2026-10-14T15:35:30+08:00"
+        },
+        "next_session": "2026-10-15"
+      },
+      "missing": []
+    },
+    {
+      "symbol": "300418",
+      "status": "VERIFIED",
+      "market_trade_date": "2026-10-14",
+      "sources": {
+        "status": "VERIFIED_DUAL_SOURCE_CLOSE",
+        "price": "42.100",
+        "bundle_path": "runtime/hotspot-current-refresh/c60b76c49bc441a3a12fd098af779604/bundle.json",
+        "bundle_sha256": "5e499d8ffb480ebf65f5dc9eb377d0077c6b83474781e3d38978323cff7d1530",
+        "evidence_refs": [
+          "6af1abf0172d5aadd559a27299e17538a3052479910e5aa338cf67efdaca6ef9",
+          "014a0445f925f1d0731ef9b3a1720097979c8b5b67f95b5fb662f3da4170d821",
+          "87ab7f2b4e983ae689095f9f41bbfb2171baca5c37ddca75e9377e68516a0361",
+          "20c1ee04d7dc8285219b0b2ff135fbafc14de41dabae6bfef25d2d907e610722"
+        ],
+        "provider_times": {
+          "tencent": "2026-10-14T16:14:57+08:00",
+          "sina": "2026-10-14T15:35:45+08:00"
+        },
+        "next_session": "2026-10-15"
+      },
+      "missing": []
+    }
+  ],
+  "quote_securities": [
+    {
+      "symbol": "600887",
+      "status": "VERIFIED",
+      "market_trade_date": "2026-10-14",
+      "latest_completed_session": "2026-10-14",
+      "sources": [
+        {
+          "id": "daily-assistant-quote-66fd5d957d7441ae1dca81242551b2f860007d754868453181a2aa3ea886365f",
+          "kind": "quote_session",
+          "path": "runtime/quote-sessions/20261014T090240643969Z/bundle.json",
+          "sha256": "66fd5d957d7441ae1dca81242551b2f860007d754868453181a2aa3ea886365f",
+          "status": "collected_not_verified",
+          "expected_session": "2026-10-14",
+          "session_result": "matched_close",
+          "reason": "带日期双源报价与最近已完成交易日一致"
+        },
+        {
+          "id": "daily-assistant-quote-66fd5d957d7441ae1dca81242551b2f860007d754868453181a2aa3ea886365f-tencent",
+          "kind": "quote_provider_document",
+          "provider": "tencent",
+          "source_url": "https://qt.gtimg.cn/q=sh600887,sz000333,sh601088,sh600519",
+          "fetched_at": "2026-10-14T17:02:40.542732+08:00",
+          "sha256": "e626c8d0f5fbddbd837e039da69ca4e2f542272a3cb14718e3b3213a00679ae4",
+          "observed_trade_at": "2026-10-14T16:14:58+08:00"
+        },
+        {
+          "id": "daily-assistant-quote-66fd5d957d7441ae1dca81242551b2f860007d754868453181a2aa3ea886365f-sina",
+          "kind": "quote_provider_document",
+          "provider": "sina",
+          "source_url": "https://hq.sinajs.cn/list=sh600887,sz000333,sh601088,sh600519",
+          "fetched_at": "2026-10-14T17:02:40.643425+08:00",
+          "sha256": "a90e955c677f49a869d40e98e62a2e07fc540b7a209db1428ac4c601421a9bc5",
+          "observed_trade_at": "2026-10-14T15:34:59+08:00"
+        }
+      ],
+      "reason": "行情晚于当前 ResearchCase 截止日；须先更新官方事件和模型有效性",
+      "missing": []
+    }
+  ],
+  "publication_id": "pub-53fd34a5ae8aefdcaa5e",
+  "status": "SUCCESS"
+}

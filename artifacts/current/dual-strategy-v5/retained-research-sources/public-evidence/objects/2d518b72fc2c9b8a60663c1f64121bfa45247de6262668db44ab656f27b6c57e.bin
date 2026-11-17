@@ -1,0 +1,211 @@
+{
+  "symbol": "600519",
+  "period_start": "2025-07-01",
+  "period_end": "2026-06-30",
+  "reported_flow_research_supported": true,
+  "normalized_earnings_approved": false,
+  "fcff_approved": false,
+  "current_eps_approved": false,
+  "trade_value_approved": false,
+  "scope_checks": {
+    "52": [
+      "财会〔2025〕32号）无0",
+      "财会〔2026〕7号）无0",
+      "(2)重要会计估计变更□适用√不适用"
+    ],
+    "85": [
+      "1、非同一控制下企业合并□适用√不适用",
+      "2、同一控制下企业合并□适用√不适用"
+    ],
+    "86": [
+      "本期是否存在丧失子公司控制权的交易或事项□适用√不适用",
+      "公司出资6亿元成立全资子公司贵州爱茅台数字科技有限公司",
+      "截至报告披露日已出资2亿元"
+    ]
+  },
+  "ttm": {
+    "revenue": {
+      "value": "170152009062.43",
+      "unit": "CNY",
+      "formula": "FY2025 + H1_2026 - H1_2025",
+      "input_rows": [
+        {
+          "field": "revenue",
+          "period_end": "2025-12-31",
+          "period_basis": "FY",
+          "current": "168838102514.79",
+          "comparative_from_current_report": "170899152276.34",
+          "unit": "CNY",
+          "yoy_recomputed": "-0.0120600350212231007573121740",
+          "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+          "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+          "physical_page": 6,
+          "reviewed_row": "营业收入",
+          "cells": [
+            "168,838,102,514.79",
+            "170,899,152,276.34"
+          ]
+        },
+        {
+          "field": "revenue",
+          "period_end": "2026-06-30",
+          "period_basis": "YTD",
+          "current": "90703260964.48",
+          "comparative_from_current_report": "89389354416.84",
+          "unit": "CNY",
+          "yoy_recomputed": "0.014698691541198490124079221",
+          "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225475868.pdf",
+          "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+          "physical_page": 5,
+          "reviewed_row": "营业收入",
+          "cells": [
+            "90,703,260,964.48",
+            "89,389,354,416.84"
+          ]
+        },
+        {
+          "field": "revenue",
+          "period_end": "2025-06-30",
+          "period_basis": "YTD",
+          "current": "89389354416.84",
+          "comparative_from_current_report": "81930977667.75",
+          "unit": "CNY",
+          "yoy_recomputed": "0.091032439272670807717501869",
+          "path": "runtime\\historical-filing-index\\20260909T033820132471Z\\pdfs\\600519-1224462930.pdf",
+          "sha256": "c80fb7180169469053c396e65315414368bcfa9f1f1d4e3bf793c8fb327e6b0c",
+          "physical_page": 5,
+          "reviewed_row": "营业收入",
+          "cells": [
+            "89,389,354,416.84",
+            "81,930,977,667.75"
+          ]
+        }
+      ],
+      "comparative_matches_original": true
+    },
+    "parent_profit": {
+      "value": "81433985225.44",
+      "unit": "CNY",
+      "formula": "FY2025 + H1_2026 - H1_2025",
+      "input_rows": [
+        {
+          "field": "parent_profit",
+          "period_end": "2025-12-31",
+          "period_basis": "FY",
+          "current": "82320067101.68",
+          "comparative_from_current_report": "86228146421.62",
+          "unit": "CNY",
+          "yoy_recomputed": "-0.0453225481715808575995369171",
+          "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+          "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+          "physical_page": 6,
+          "reviewed_row": "归属于上市公司股东的净利润",
+          "cells": [
+            "82,320,067,101.68",
+            "86,228,146,421.62"
+          ]
+        },
+        {
+          "field": "parent_profit",
+          "period_end": "2026-06-30",
+          "period_basis": "YTD",
+          "current": "44516880421.86",
+          "comparative_from_current_report": "45402962298.10",
+          "unit": "CNY",
+          "yoy_recomputed": "-0.0195159485502795112169483063",
+          "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225475868.pdf",
+          "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+          "physical_page": 5,
+          "reviewed_row": "归属于上市公司股东的净利润",
+          "cells": [
+            "44,516,880,421.86",
+            "45,402,962,298.10"
+          ]
+        },
+        {
+          "field": "parent_profit",
+          "period_end": "2025-06-30",
+          "period_basis": "YTD",
+          "current": "45402962298.10",
+          "comparative_from_current_report": "41695610983.37",
+          "unit": "CNY",
+          "yoy_recomputed": "0.088914665771624041959286981",
+          "path": "runtime\\historical-filing-index\\20260909T033820132471Z\\pdfs\\600519-1224462930.pdf",
+          "sha256": "c80fb7180169469053c396e65315414368bcfa9f1f1d4e3bf793c8fb327e6b0c",
+          "physical_page": 5,
+          "reviewed_row": "归属于上市公司股东的净利润",
+          "cells": [
+            "45,402,962,298.10",
+            "41,695,610,983.37"
+          ]
+        }
+      ],
+      "comparative_matches_original": true
+    },
+    "cfo": {
+      "value": "119093894077.08",
+      "unit": "CNY",
+      "formula": "FY2025 + H1_2026 - H1_2025",
+      "input_rows": [
+        {
+          "field": "cfo",
+          "period_end": "2025-12-31",
+          "period_basis": "FY",
+          "current": "61522204989.35",
+          "comparative_from_current_report": "92463692168.43",
+          "unit": "CNY",
+          "yoy_recomputed": "-0.3346339136308510147654039553",
+          "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225114741.pdf",
+          "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+          "physical_page": 6,
+          "reviewed_row": "经营活动产生的现金流量净额",
+          "cells": [
+            "61,522,204,989.35",
+            "92,463,692,168.43"
+          ]
+        },
+        {
+          "field": "cfo",
+          "period_end": "2026-06-30",
+          "period_basis": "YTD",
+          "current": "70690750119.06",
+          "comparative_from_current_report": "13119061031.33",
+          "unit": "CNY",
+          "yoy_recomputed": "4.388400126368908875479890286",
+          "path": "runtime\\historical-filing-index\\20260909T033444358365Z\\pdfs\\600519-1225475868.pdf",
+          "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+          "physical_page": 5,
+          "reviewed_row": "经营活动产生的现金流量净额",
+          "cells": [
+            "70,690,750,119.06",
+            "13,119,061,031.33"
+          ]
+        },
+        {
+          "field": "cfo",
+          "period_end": "2025-06-30",
+          "period_basis": "YTD",
+          "current": "13119061031.33",
+          "comparative_from_current_report": "36621833812.63",
+          "unit": "CNY",
+          "yoy_recomputed": "-0.6417694127920610113313405247",
+          "path": "runtime\\historical-filing-index\\20260909T033820132471Z\\pdfs\\600519-1224462930.pdf",
+          "sha256": "c80fb7180169469053c396e65315414368bcfa9f1f1d4e3bf793c8fb327e6b0c",
+          "physical_page": 5,
+          "reviewed_row": "经营活动产生的现金流量净额",
+          "cells": [
+            "13,119,061,031.33",
+            "36,621,833,812.63"
+          ]
+        }
+      ],
+      "comparative_matches_original": true
+    }
+  },
+  "limitations": [
+    "Issuer disclosed zero effects; not an independent audit opinion",
+    "Organic subsidiary formation does not mean unchanged economic operations",
+    "Consolidated CFO includes finance subsidiary flows; not distributable cash",
+    "No September share count, industrial/financial split or scenario valuation approval"
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "symbol": "600519",
+  "research_as_of": "2026-09-09",
+  "disclosure_supported_ordinary_share_assumption": 1250081601,
+  "last_reported_share_date": "2026-06-30",
+  "prior_disclosed_treasury_shares": 0,
+  "current_registry_verified": false,
+  "capital_query_window": "2026-06-01~2026-09-09",
+  "current_share_basis": "Latest disclosed shares carried forward; no later capital-change announcement identified in the complete query, not an as-of registry extract.",
+  "distribution": {
+    "gross_per_share": "28.02423",
+    "gross_announced": "35032574305.19",
+    "payment_date": "2026-06-26",
+    "exact_product_before_cent_rounding": "35032574305.19223",
+    "deduct_again_from_june_book_equity": false,
+    "one_cent_difference_vs_interim_equity_note": "0.01; retain reported precision, do not rewrite one source"
+  },
+  "pricing_event": {
+    "effective_at": "2026-07-18T00:00:00+08:00",
+    "publication_date": "2026-07-18",
+    "conservative_historical_available_at": "2026-07-19T00:00:00+08:00",
+    "intraday_publication_verified": false,
+    "product": "飞天53%vol 500ml贵州茅台酒（2026）",
+    "changes": [
+      {
+        "channel_price": "platform_retail",
+        "old": "1539",
+        "new": "1639",
+        "change": "100",
+        "proportional_change": "0.064977257959714100064977258",
+        "volume_change_at_revenue_break_even": "-0.0610128126906650396583282489",
+        "volume_sensitivity": [
+          {
+            "volume_change": "-0.10",
+            "affected_sales_revenue_change": "-0.0415204678362573099415204678"
+          },
+          {
+            "volume_change": "-0.05",
+            "affected_sales_revenue_change": "0.011728395061728395061728395"
+          },
+          {
+            "volume_change": "0",
+            "affected_sales_revenue_change": "0.064977257959714100064977258"
+          },
+          {
+            "volume_change": "0.05",
+            "affected_sales_revenue_change": "0.118226120857699805068226121"
+          }
+        ]
+      },
+      {
+        "channel_price": "sales_contract",
+        "old": "1269",
+        "new": "1369",
+        "change": "100",
+        "proportional_change": "0.078802206461780929866036249",
+        "volume_change_at_revenue_break_even": "-0.0730460189919649379108838568",
+        "volume_sensitivity": [
+          {
+            "volume_change": "-0.10",
+            "affected_sales_revenue_change": "-0.0290780141843971631205673759"
+          },
+          {
+            "volume_change": "-0.05",
+            "affected_sales_revenue_change": "0.024862096138691883372734437"
+          },
+          {
+            "volume_change": "0",
+            "affected_sales_revenue_change": "0.078802206461780929866036249"
+          },
+          {
+            "volume_change": "0.05",
+            "affected_sales_revenue_change": "0.132742316784869976359338061"
+          }
+        ]
+      }
+    ],
+    "forecast_treatment": "Reassess existing aggregate-growth assumptions; do not add both price increases to all company sales.",
+    "affected_volume_and_channel_mix": null,
+    "realized_incremental_revenue": null
+  },
+  "channel_scope": {
+    "period": "2026H1",
+    "unit": "CNY",
+    "platform_alcohol_revenue_ex_vat": "40263564200.00",
+    "all_alcohol_revenue": "90658624437.30",
+    "historical_platform_share_of_alcohol": "0.4441228228412675838926662461",
+    "target_sku_revenue": null,
+    "target_sku_units": null,
+    "future_platform_share": null,
+    "scope": "Platform total includes multiple products. Published product/channel marginals do not identify target SKU by channel.",
+    "model_formula": "Total affected-plus-unaffected revenue factor = 1 + retail_weight*((new_retail/old_retail)*(1+retail_volume_change)-1) + contract_weight*((new_contract/old_contract)*(1+contract_volume_change)-1)",
+    "weight_contract": "Weights are disjoint baseline recognized-revenue exposures, nonnegative and sum <= 1. Do not count the same bottle at retail and upstream contract prices.",
+    "assumptions": "Same VAT basis and revenue recognition within each comparison; unchanged unexposed sales; no mix/cost/tax/commission or channel substitution effects.",
+    "limits": "One-off price level change, not a recurring annual price growth rate. No incremental profit or company revenue forecast inferred."
+  },
+  "affected_research": [
+    "product growth assumptions",
+    "industrial margin/channel mix",
+    "sales-subsidiary minority forecast"
+  ],
+  "historical_facts_changed": false,
+  "existing_condition_experiments_retained": true,
+  "current_forecast_event_review_complete": true,
+  "event_review_scope": "Aggregate stress assumptions reviewed, not realized uplift or approved company forecast.",
+  "assumption_decision": "Retain existing -5/+2/+5 percent Moutai net-revenue growth stress cases. They represent combined price, volume and mix outcomes, not a no-price-change quantity forecast. Do not stack an extra price uplift or repeat this one-off price change each year. Target SKU quantities remain unknown without blocking other explicitly conditional bridge estimates.",
+  "valuation_approved": false
+}

@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from m5_actual_authorization_fixture import synthetic_actual_receipt
+from m5_actual_authorization_fixture import synthetic_actual_receipt, synthetic_actual_use_clock
 from value_investment_agent.event_materiality import (
     DECISION_ALREADY_INCORPORATED,
     DECISION_REQUIRES_RECALCULATION,
@@ -283,7 +283,7 @@ def test_run_request_round_trips_and_rejects_tampering():
         M5EventRunRequest.from_payload(payload)
 
 
-def test_actual_run_request_requires_and_binds_offline_authorization(tmp_path):
+def test_actual_run_request_requires_and_binds_offline_authorization(tmp_path, synthetic_actual_use_clock):
     fixture = synthetic_actual_receipt()
     graph = fixture["graph"]
     batch = fixture["batch"]
@@ -311,6 +311,7 @@ def test_actual_run_request_requires_and_binds_offline_authorization(tmp_path):
         request=request,
         store=JsonM5EventRunStateStore(tmp_path / "state"),
         receipt_store=JsonM5EventRunReceiptStore(tmp_path / "receipts"),
+        at=REVIEWED_AT,
     )
     assert applied.receipt.state.actual_offline_authorization == authorization
     assert (
@@ -323,7 +324,7 @@ def test_actual_run_request_requires_and_binds_offline_authorization(tmp_path):
         M5EventRunRequest.from_payload(payload)
 
 
-def test_actual_run_request_cannot_be_applied_after_authorization_expiry(tmp_path):
+def test_actual_run_request_cannot_be_applied_after_authorization_expiry(tmp_path, synthetic_actual_use_clock):
     fixture = synthetic_actual_receipt()
     authorization = verify_m5_actual_approval_receipt(
         fixture["bundle"],

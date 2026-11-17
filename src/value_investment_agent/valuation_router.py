@@ -16,6 +16,7 @@ from .valuation_models.residual_income import (
     QualityCompounderFacts,
     ResidualIncomeEquityValuationModel,
 )
+from .valuation_models.residual_income_path_v2 import ResidualIncomeContractDispatcher
 
 
 ROUTE_SUPPORTED = "SUPPORTED"
@@ -128,7 +129,7 @@ _DEFAULT_REGISTRATIONS = (
         ValuationModelRegistration(
             "residual_income_or_equity_value",
             "residual_income_or_equity_value",
-            ResidualIncomeEquityValuationModel,
+            ResidualIncomeContractDispatcher,
             QualityCompounderFacts,
             (*QualityCompounderFacts.REQUIRED_COMMON_INPUTS, "scenario_inputs"),
         ),

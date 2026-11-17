@@ -98,6 +98,51 @@ def _source_venue(location: str) -> str | None:
     return None
 
 
+def source_identity_matches_registered_issuer(
+    *,
+    symbol: str,
+    location: str,
+    issuer_identity: Mapping[str, Any],
+) -> bool:
+    """Compare venue metadata with the canonical A/H issuer registry.
+
+    A HKEX filing for Midea must retain its venue code ``00300``; callers may
+    not rewrite it to the A-share code to satisfy an identity check.
+    """
+
+    venue = _source_venue(location)
+    declared_venue = issuer_identity.get("venue")
+    security_code = issuer_identity.get("security_code")
+    issuer_name = issuer_identity.get("issuer_name")
+    if not isinstance(issuer_name, str) or not issuer_name.strip():
+        return False
+
+    if venue == "HKEX":
+        if declared_venue != "HKEX":
+            return False
+        approved = _HKEX_IDENTITIES.get(symbol)
+        if approved is None:
+            return False
+        expected_code, expected_names = approved
+        if security_code != expected_code:
+            return False
+    elif venue == "CNINFO":
+        if declared_venue != "CNINFO":
+            return False
+        expected_org = _CNINFO_ORG_IDS.get(symbol)
+        expected_names = _CNINFO_NAMES.get(symbol)
+        if expected_org is None or expected_names is None or security_code != symbol:
+            return False
+        if issuer_identity.get("organization_id") != expected_org:
+            return False
+    else:
+        return False
+
+    return _canonical_name(issuer_name) in {
+        _canonical_name(name) for name in expected_names
+    }
+
+
 def assess_issuer_identity(
     *,
     symbol: str,

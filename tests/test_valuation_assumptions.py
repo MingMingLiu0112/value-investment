@@ -91,3 +91,15 @@ def test_json_roundtrip_preserves_the_fail_closed_contract():
     assert restored.status == STATUS_PARTIAL
     assert Decimal(restored.assumptions[0].bear) == Decimal("550")
     assert restored.assumptions[0].bull is None
+
+
+def test_explicit_non_monotonic_scenarios_preserve_exact_derived_values():
+    values = (
+        Decimal("0.15"),
+        Decimal("0.150000000000000000000000000001"),
+        Decimal("0.15"),
+    )
+    outcome = normalized_coal_price(
+        bear=values[0], base=values[1], bull=values[2],
+        ordering="non_monotonic",
+    )

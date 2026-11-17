@@ -1,0 +1,36 @@
+{
+  "stage": "S2",
+  "status": "PARTIAL",
+  "action": "no_order",
+  "scope": "OFFLINE_SOURCE_BINDING_NOT_APPROVAL_OR_CURRENT_PUBLICATION",
+  "source_commit": "28a4e9448153074fc0a628518ed1a2de1654c427",
+  "source_worktree_dirty": true,
+  "predecessor_sha256": "cd7a14b3e09c2d87e6ed3ea8cb852728456ac6ea50a34f3314a2e47bba89316c",
+  "input_sha256": "a7aded0fc14ac9c82d447c481d97fbe562d337f5f5f7247d0a27f2d918c1f2e2",
+  "previous_input_sha256": "be460eb1b66a268a7f2a7294b258b3a0bc3f9bbefd4c35f615eaa08d83be30b0",
+  "original_unchanged": true,
+  "normalized_equity_cny": "212861055000",
+  "ordinary_shares_excluding_treasury": "7464347335",
+  "bearer_source_components_verified_on_local_pages": true,
+  "negative_consumed_mutations_rejected": [
+    "start_book_equity",
+    "ordinary_shares"
+  ],
+  "valuation": {
+    "bear": "36.0121866604528720800629631840921914063801838080",
+    "base": "45.7417037044192281574936570926129861357849631511",
+    "bull": "58.1686744055803340295467634666441075299523416697"
+  },
+  "formal_eligibility": false,
+  "price_admitted": false,
+  "human_approved": false,
+  "current_pointer_changed": false,
+  "position_guidance": null,
+  "remaining": [
+    "economic research",
+    "event materiality",
+    "G1/G3",
+    "PIT",
+    "browser acceptance"
+  ]
+}

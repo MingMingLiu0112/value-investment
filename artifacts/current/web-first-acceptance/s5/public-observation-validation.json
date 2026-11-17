@@ -1,0 +1,49 @@
+{
+  "schema_version": "web-first-public-observation-acceptance-v1",
+  "stage": "S5",
+  "status": "PARTIAL",
+  "code_commit": "6a72bde664d2125affac4727b56b84d7100597a0",
+  "ci_workflow_fix_commit": "34588e40f854af12f76b72954e487623ad7a47d7",
+  "action": "no_order",
+  "m5_admitted": false,
+  "investment_eligibility": false,
+  "tests": {
+    "source_and_complete_web_api_regression": {"passed": 371},
+    "final_service_and_api_regression": {"passed": 45},
+    "web_full_before_final_stop_identity_patch": {"passed": 229},
+    "web_final_targeted": {"passed": 4},
+    "final_web_typecheck": "PASS",
+    "final_web_build": "PASS",
+    "independent_review": "STOP_IDENTITY_P2_FIXED_AND_REVIEWED"
+  },
+  "actual_browser": {
+    "url": "http://127.0.0.1:8001/alerts",
+    "manual_start_confirmed_symbols": ["600150", "000333"],
+    "actual_clock_date": "2026-10-18",
+    "real_source_result": "OUTSIDE_EXCHANGE_SESSION",
+    "real_source_providers": ["tencent", "sina"],
+    "automatic_stop_after_non_session_sample": "PASS",
+    "source_links_and_hash_expansion": "PASS",
+    "history_after_service_restart": "PASS_FOR_600150",
+    "manual_stop_during_real_browser_collection": "NOT_EXERCISED_COLLECTION_COMPLETED_BEFORE_CONTROL_WAS_USED",
+    "manual_stop_and_stale_session_regressions": "PASS_TEST_ONLY_INJECTED_COLLECTORS",
+    "mobile_viewport": {"width": 390, "height": 844, "client_width": 375, "scroll_width": 375},
+    "screenshots": ["public-observation-desktop.jpg", "public-observation-mobile.jpg"],
+    "last_session_id": "2e07a5b3-3055-42ea-ab6f-7ec1860a2a67",
+    "last_sample_id": "c568e104-8bb2-4ce8-9a6f-68fd3302fb34"
+  },
+  "remaining_engineering_gaps": [
+    "REAL_PRICE_CONDITION_ORCHESTRATION_AND_ADMISSION_BOUNDARY",
+    "REMAINING_REMINDER_INPUTS",
+    "S1_TO_S4_REMAINING_PRIVATE_BROWSER_ACCEPTANCE",
+    "S6_AGENT_WORKFLOW",
+    "S7_FULL_E2E_AND_RESTORE"
+  ],
+  "remaining_external_gates": [
+    "REAL_PRIVATE_INPUTS_AND_USER_ACCEPTANCE",
+    "LEGITIMATE_RESEARCH_EVENT_AND_PRODUCTION_AUTHORIZATIONS",
+    "NATURAL_TIME_STRATEGY_VALIDATION"
+  ],
+  "total_goal_status": "IN_PROGRESS",
+  "excel": "FROZEN"
+}

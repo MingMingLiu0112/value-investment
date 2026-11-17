@@ -1,0 +1,2155 @@
+{
+  "schema_version": "first-research-native-facts-v1",
+  "symbol": "000568",
+  "issuer_name": "泸州老窖股份有限公司",
+  "financial_basis": "2026-06-30",
+  "generated_at": "2026-10-31T10:59:29.672925+00:00",
+  "action": "no_order",
+  "sources": [
+    {
+      "id": "cninfo:1225240660",
+      "path": "runtime/e2-first-input-000568-20261031/evidence/FY2025/original.pdf",
+      "sha256": "7a2e321f049401fd34dfbf8c22964e804d16f077ece9382791cb2b2ce0c74676",
+      "hash": "7a2e321f049401fd34dfbf8c22964e804d16f077ece9382791cb2b2ce0c74676",
+      "symbol": "000568",
+      "issuer_name": "泸州老窖股份有限公司",
+      "report_period": "2025-12-31",
+      "published_date": "2026-04-29",
+      "available_at": "2026-10-25T02:22:46.425382+00:00",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-29/1225240660.PDF",
+      "report_title": "2025年年度报告",
+      "organization_id": "gssz0000568",
+      "identity_index_binding": {
+        "path": "runtime/e2-first-input-000568-20261031/index-1.json",
+        "sha256": "aa94c026732eb508b2b679febdda2d8a784f36934360956a753febb18382da4b"
+      },
+      "identity_available_at": "2026-10-31T10:59:29.672925+00:00"
+    },
+    {
+      "id": "cninfo:1225501255",
+      "path": "runtime/e2-first-input-000568-20261031/original.pdf",
+      "sha256": "33fbc65e9bc5c41a80d2cc5f8ae0eaa2990424c81bb93b90029ccdb05e092ade",
+      "hash": "33fbc65e9bc5c41a80d2cc5f8ae0eaa2990424c81bb93b90029ccdb05e092ade",
+      "symbol": "000568",
+      "issuer_name": "泸州老窖股份有限公司",
+      "report_period": "2026-06-30",
+      "published_date": "2026-08-26",
+      "available_at": "2026-10-31T09:37:21.876549+00:00",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-26/1225501255.PDF",
+      "report_title": "2026年半年度报告",
+      "organization_id": "gssz0000568",
+      "identity_index_binding": {
+        "path": "runtime/e2-first-input-000568-20261031/index-1.json",
+        "sha256": "aa94c026732eb508b2b679febdda2d8a784f36934360956a753febb18382da4b"
+      },
+      "identity_available_at": "2026-10-31T10:59:29.672925+00:00"
+    }
+  ],
+  "facts": [
+    {
+      "id": "revenue-revenue-2025-12-31-1225240660",
+      "field": "revenue",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 79,
+      "label": "其中：营业收入",
+      "excerpt": "其中：营业收入 25,731,010,647.32 31,196,248,208.33",
+      "value": "25731010647.32",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        77,
+        78,
+        79
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "revenue-revenue-2024-12-31-1225240660",
+      "field": "revenue",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 79,
+      "label": "其中：营业收入",
+      "excerpt": "其中：营业收入 25,731,010,647.32 31,196,248,208.33",
+      "value": "31196248208.33",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        77,
+        78,
+        79
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "cost-cost-2025-12-31-1225240660",
+      "field": "cost",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 79,
+      "label": "其中：营业成本",
+      "excerpt": "其中：营业成本 3,441,749,582.69 3,888,116,183.93",
+      "value": "3441749582.69",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        77,
+        78,
+        79
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "cost-cost-2024-12-31-1225240660",
+      "field": "cost",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 79,
+      "label": "其中：营业成本",
+      "excerpt": "其中：营业成本 3,441,749,582.69 3,888,116,183.93",
+      "value": "3888116183.93",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        77,
+        78,
+        79
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "surcharges-surcharges-2025-12-31-1225240660",
+      "field": "surcharges",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 79,
+      "label": "税金及附加",
+      "excerpt": "税金及附加 3,927,743,376.52 4,753,755,581.18",
+      "value": "3927743376.52",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        77,
+        78,
+        79
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "surcharges-surcharges-2024-12-31-1225240660",
+      "field": "surcharges",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 79,
+      "label": "税金及附加",
+      "excerpt": "税金及附加 3,927,743,376.52 4,753,755,581.18",
+      "value": "4753755581.18",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        77,
+        78,
+        79
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "selling-selling-2025-12-31-1225240660",
+      "field": "selling",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 79,
+      "label": "销售费用",
+      "excerpt": "销售费用 3,237,149,369.15 3,538,382,615.99",
+      "value": "3237149369.15",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        77,
+        78,
+        79
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "selling-selling-2024-12-31-1225240660",
+      "field": "selling",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 79,
+      "label": "销售费用",
+      "excerpt": "销售费用 3,237,149,369.15 3,538,382,615.99",
+      "value": "3538382615.99",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        77,
+        78,
+        79
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "admin-admin-2025-12-31-1225240660",
+      "field": "admin",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 79,
+      "label": "管理费用",
+      "excerpt": "管理费用 962,421,600.80 1,100,779,964.56",
+      "value": "962421600.80",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        77,
+        78,
+        79
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "admin-admin-2024-12-31-1225240660",
+      "field": "admin",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 79,
+      "label": "管理费用",
+      "excerpt": "管理费用 962,421,600.80 1,100,779,964.56",
+      "value": "1100779964.56",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        77,
+        78,
+        79
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "research-research-2025-12-31-1225240660",
+      "field": "research",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 79,
+      "label": "研发费用",
+      "excerpt": "研发费用 215,855,671.81 260,975,311.10",
+      "value": "215855671.81",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        77,
+        78,
+        79
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "research-research-2024-12-31-1225240660",
+      "field": "research",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 79,
+      "label": "研发费用",
+      "excerpt": "研发费用 215,855,671.81 260,975,311.10",
+      "value": "260975311.10",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        77,
+        78,
+        79
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "pre_tax_profit-pretax-2025-12-31-1225240660",
+      "field": "pre_tax_profit",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 80,
+      "label": "四、利润总额（亏损总额以“－”号\r\n填列）",
+      "excerpt": "四、利润总额（亏损总额以“－”号\r\n填列）\r\n14,653,935,736.33 18,205,298,819.04",
+      "value": "14653935736.33",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        78,
+        79,
+        80
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "pre_tax_profit-pretax-2024-12-31-1225240660",
+      "field": "pre_tax_profit",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 80,
+      "label": "四、利润总额（亏损总额以“－”号\r\n填列）",
+      "excerpt": "四、利润总额（亏损总额以“－”号\r\n填列）\r\n14,653,935,736.33 18,205,298,819.04",
+      "value": "18205298819.04",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        78,
+        79,
+        80
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "tax-tax-2025-12-31-1225240660",
+      "field": "tax",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 80,
+      "label": "减：所得税费用",
+      "excerpt": "减：所得税费用 3,794,025,056.16 4,707,520,248.15",
+      "value": "3794025056.16",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        78,
+        79,
+        80
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "tax-tax-2024-12-31-1225240660",
+      "field": "tax",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 80,
+      "label": "减：所得税费用",
+      "excerpt": "减：所得税费用 3,794,025,056.16 4,707,520,248.15",
+      "value": "4707520248.15",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        78,
+        79,
+        80
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_profit-parent_profit-2025-12-31-1225240660",
+      "field": "parent_profit",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 7,
+      "label": "归属于上市公司股东\r\n的净利润（元）",
+      "excerpt": "归属于上市公司股东\r\n的净利润（元）\r\n10,830,713,936.14 13,472,986,476.01",
+      "value": "10830713936.14",
+      "unit": "CNY",
+      "scope": "consolidated_parent",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年 2024 年",
+      "header_pages": [
+        5,
+        6,
+        7
+      ],
+      "scope_marker": "主要会计数据和财务指标",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_profit-parent_profit-2024-12-31-1225240660",
+      "field": "parent_profit",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 7,
+      "label": "归属于上市公司股东\r\n的净利润（元）",
+      "excerpt": "归属于上市公司股东\r\n的净利润（元）\r\n10,830,713,936.14 13,472,986,476.01",
+      "value": "13472986476.01",
+      "unit": "CNY",
+      "scope": "consolidated_parent",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年 2024 年",
+      "header_pages": [
+        5,
+        6,
+        7
+      ],
+      "scope_marker": "主要会计数据和财务指标",
+      "number_kind": "money"
+    },
+    {
+      "id": "ex_parent_profit-adjusted_parent_profit-2025-12-31-1225240660",
+      "field": "ex_parent_profit",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 7,
+      "label": "归属于上市公司股东\r\n的扣除非经常性损益\r\n的净利润（元）",
+      "excerpt": "归属于上市公司股东\r\n的扣除非经常性损益\r\n的净利润（元）\r\n10,760,038,787.76 13,399,514,669.49",
+      "value": "10760038787.76",
+      "unit": "CNY",
+      "scope": "consolidated_parent",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年 2024 年",
+      "header_pages": [
+        5,
+        6,
+        7
+      ],
+      "scope_marker": "主要会计数据和财务指标",
+      "number_kind": "money"
+    },
+    {
+      "id": "ex_parent_profit-adjusted_parent_profit-2024-12-31-1225240660",
+      "field": "ex_parent_profit",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 7,
+      "label": "归属于上市公司股东\r\n的扣除非经常性损益\r\n的净利润（元）",
+      "excerpt": "归属于上市公司股东\r\n的扣除非经常性损益\r\n的净利润（元）\r\n10,760,038,787.76 13,399,514,669.49",
+      "value": "13399514669.49",
+      "unit": "CNY",
+      "scope": "consolidated_parent",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年 2024 年",
+      "header_pages": [
+        5,
+        6,
+        7
+      ],
+      "scope_marker": "主要会计数据和财务指标",
+      "number_kind": "money"
+    },
+    {
+      "id": "depreciation-DA_fixed_oil_biological-2025-12-31-1225240660",
+      "field": "depreciation",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 153,
+      "label": "固定资产折旧、油气资产折\r\n耗、生产性生物资产折旧",
+      "excerpt": "固定资产折旧、油气资产折\r\n耗、生产性生物资产折旧\r\n679,729,252.35 680,834,155.15",
+      "value": "679729252.35",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        151,
+        152,
+        153
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "depreciation-DA_fixed_oil_biological-2024-12-31-1225240660",
+      "field": "depreciation",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 153,
+      "label": "固定资产折旧、油气资产折\r\n耗、生产性生物资产折旧",
+      "excerpt": "固定资产折旧、油气资产折\r\n耗、生产性生物资产折旧\r\n679,729,252.35 680,834,155.15",
+      "value": "680834155.15",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        151,
+        152,
+        153
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "depreciation-DA_right_of_use-2025-12-31-1225240660",
+      "field": "depreciation",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 153,
+      "label": "使用权资产折旧",
+      "excerpt": "使用权资产折旧 8,694,005.79 9,694,652.62",
+      "value": "8694005.79",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        151,
+        152,
+        153
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "depreciation-DA_right_of_use-2024-12-31-1225240660",
+      "field": "depreciation",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 153,
+      "label": "使用权资产折旧",
+      "excerpt": "使用权资产折旧 8,694,005.79 9,694,652.62",
+      "value": "9694652.62",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        151,
+        152,
+        153
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "amortization-DA_intangible-2025-12-31-1225240660",
+      "field": "amortization",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 153,
+      "label": "无形资产摊销",
+      "excerpt": "无形资产摊销 104,502,575.17 92,110,427.08",
+      "value": "104502575.17",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        151,
+        152,
+        153
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "amortization-DA_intangible-2024-12-31-1225240660",
+      "field": "amortization",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 153,
+      "label": "无形资产摊销",
+      "excerpt": "无形资产摊销 104,502,575.17 92,110,427.08",
+      "value": "92110427.08",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        151,
+        152,
+        153
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "amortization-DA_longterm_deferred-2025-12-31-1225240660",
+      "field": "amortization",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 153,
+      "label": "长期待摊费用摊销",
+      "excerpt": "长期待摊费用摊销 721,286.55 715,835.64",
+      "value": "721286.55",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        151,
+        152,
+        153
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "amortization-DA_longterm_deferred-2024-12-31-1225240660",
+      "field": "amortization",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 153,
+      "label": "长期待摊费用摊销",
+      "excerpt": "长期待摊费用摊销 721,286.55 715,835.64",
+      "value": "715835.64",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        151,
+        152,
+        153
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "revenue-revenue-2026-06-30-1225501255",
+      "field": "revenue",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "其中：营业收入",
+      "excerpt": "其中：营业收入 10,472,224,575.78 16,453,732,904.65",
+      "value": "10472224575.78",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "revenue-revenue-2025-06-30-1225501255",
+      "field": "revenue",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "其中：营业收入",
+      "excerpt": "其中：营业收入 10,472,224,575.78 16,453,732,904.65",
+      "value": "16453732904.65",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "cost-cost-2026-06-30-1225501255",
+      "field": "cost",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "其中：营业成本",
+      "excerpt": "其中：营业成本 1,534,654,594.77 2,124,120,485.84",
+      "value": "1534654594.77",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "cost-cost-2025-06-30-1225501255",
+      "field": "cost",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "其中：营业成本",
+      "excerpt": "其中：营业成本 1,534,654,594.77 2,124,120,485.84",
+      "value": "2124120485.84",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "surcharges-surcharges-2026-06-30-1225501255",
+      "field": "surcharges",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "税金及附加",
+      "excerpt": "税金及附加 1,787,893,231.53 2,182,376,054.10",
+      "value": "1787893231.53",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "surcharges-surcharges-2025-06-30-1225501255",
+      "field": "surcharges",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "税金及附加",
+      "excerpt": "税金及附加 1,787,893,231.53 2,182,376,054.10",
+      "value": "2182376054.10",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "selling-selling-2026-06-30-1225501255",
+      "field": "selling",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "销售费用",
+      "excerpt": "销售费用 1,329,931,987.36 1,518,512,182.04",
+      "value": "1329931987.36",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "selling-selling-2025-06-30-1225501255",
+      "field": "selling",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "销售费用",
+      "excerpt": "销售费用 1,329,931,987.36 1,518,512,182.04",
+      "value": "1518512182.04",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "admin-admin-2026-06-30-1225501255",
+      "field": "admin",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "管理费用",
+      "excerpt": "管理费用 391,895,740.55 428,272,440.13",
+      "value": "391895740.55",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "admin-admin-2025-06-30-1225501255",
+      "field": "admin",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "管理费用",
+      "excerpt": "管理费用 391,895,740.55 428,272,440.13",
+      "value": "428272440.13",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "research-research-2026-06-30-1225501255",
+      "field": "research",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "研发费用",
+      "excerpt": "研发费用 74,992,033.70 83,864,133.32",
+      "value": "74992033.70",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "research-research-2025-06-30-1225501255",
+      "field": "research",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "研发费用",
+      "excerpt": "研发费用 74,992,033.70 83,864,133.32",
+      "value": "83864133.32",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "pre_tax_profit-pretax-2026-06-30-1225501255",
+      "field": "pre_tax_profit",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "四、利润总额（亏损总额以“—”号",
+      "excerpt": "四、利润总额（亏损总额以“—”号 5,720,831,188.21 10,410,245,180.83",
+      "value": "5720831188.21",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "pre_tax_profit-pretax-2025-06-30-1225501255",
+      "field": "pre_tax_profit",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 41,
+      "label": "四、利润总额（亏损总额以“—”号",
+      "excerpt": "四、利润总额（亏损总额以“—”号 5,720,831,188.21 10,410,245,180.83",
+      "value": "10410245180.83",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        39,
+        40,
+        41
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "tax-tax-2026-06-30-1225501255",
+      "field": "tax",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 42,
+      "label": "减：所得税费用",
+      "excerpt": "减：所得税费用 1,343,880,854.63 2,726,585,021.21",
+      "value": "1343880854.63",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        40,
+        41,
+        42
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "tax-tax-2025-06-30-1225501255",
+      "field": "tax",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 42,
+      "label": "减：所得税费用",
+      "excerpt": "减：所得税费用 1,343,880,854.63 2,726,585,021.21",
+      "value": "2726585021.21",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        40,
+        41,
+        42
+      ],
+      "scope_marker": "合并利润表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_profit-parent_profit-2026-06-30-1225501255",
+      "field": "parent_profit",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 7,
+      "label": "归属于上市公司股东的净利\r\n润（元）",
+      "excerpt": "归属于上市公司股东的净利\r\n润（元）\r\n4,339,264,086.33 7,662,907,812.98",
+      "value": "4339264086.33",
+      "unit": "CNY",
+      "scope": "consolidated_parent",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "本报告期 上年同期 本报告期比上年同期增减",
+      "header_pages": [
+        5,
+        6,
+        7
+      ],
+      "scope_marker": "主要会计数据和财务指标",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_profit-parent_profit-2025-06-30-1225501255",
+      "field": "parent_profit",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 7,
+      "label": "归属于上市公司股东的净利\r\n润（元）",
+      "excerpt": "归属于上市公司股东的净利\r\n润（元）\r\n4,339,264,086.33 7,662,907,812.98",
+      "value": "7662907812.98",
+      "unit": "CNY",
+      "scope": "consolidated_parent",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "本报告期 上年同期 本报告期比上年同期增减",
+      "header_pages": [
+        5,
+        6,
+        7
+      ],
+      "scope_marker": "主要会计数据和财务指标",
+      "number_kind": "money"
+    },
+    {
+      "id": "depreciation-DA_fixed_oil_biological-2026-06-30-1225501255",
+      "field": "depreciation",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 110,
+      "label": "固定资产折旧、油气资产折\r\n耗、生产性生物资产折旧",
+      "excerpt": "固定资产折旧、油气资产折\r\n耗、生产性生物资产折旧\r\n334,333,147.85 343,126,216.83",
+      "value": "334333147.85",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        108,
+        109,
+        110
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "depreciation-DA_fixed_oil_biological-2025-06-30-1225501255",
+      "field": "depreciation",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 110,
+      "label": "固定资产折旧、油气资产折\r\n耗、生产性生物资产折旧",
+      "excerpt": "固定资产折旧、油气资产折\r\n耗、生产性生物资产折旧\r\n334,333,147.85 343,126,216.83",
+      "value": "343126216.83",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        108,
+        109,
+        110
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "depreciation-DA_right_of_use-2026-06-30-1225501255",
+      "field": "depreciation",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 110,
+      "label": "使用权资产折旧",
+      "excerpt": "使用权资产折旧 4,219,324.52 4,750,333.12",
+      "value": "4219324.52",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        108,
+        109,
+        110
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "depreciation-DA_right_of_use-2025-06-30-1225501255",
+      "field": "depreciation",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 110,
+      "label": "使用权资产折旧",
+      "excerpt": "使用权资产折旧 4,219,324.52 4,750,333.12",
+      "value": "4750333.12",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        108,
+        109,
+        110
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "amortization-DA_intangible-2026-06-30-1225501255",
+      "field": "amortization",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 110,
+      "label": "无形资产摊销",
+      "excerpt": "无形资产摊销 51,861,909.18 50,125,914.63",
+      "value": "51861909.18",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        108,
+        109,
+        110
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "amortization-DA_intangible-2025-06-30-1225501255",
+      "field": "amortization",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 110,
+      "label": "无形资产摊销",
+      "excerpt": "无形资产摊销 51,861,909.18 50,125,914.63",
+      "value": "50125914.63",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        108,
+        109,
+        110
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "amortization-DA_longterm_deferred-2026-06-30-1225501255",
+      "field": "amortization",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 110,
+      "label": "长期待摊费用摊销",
+      "excerpt": "长期待摊费用摊销 156,191.66 413,938.32",
+      "value": "156191.66",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        108,
+        109,
+        110
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "amortization-DA_longterm_deferred-2025-06-30-1225501255",
+      "field": "amortization",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 110,
+      "label": "长期待摊费用摊销",
+      "excerpt": "长期待摊费用摊销 156,191.66 413,938.32",
+      "value": "413938.32",
+      "unit": "CNY",
+      "scope": "consolidated",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "本期金额 上期金额",
+      "header_pages": [
+        108,
+        109,
+        110
+      ],
+      "scope_marker": "现金流量表补充资料",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_cfo-operating_CF-2025-12-31-1225240660",
+      "field": "parent_cfo",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 83,
+      "label": "经营活动产生的现金流量净额",
+      "excerpt": "经营活动产生的现金流量净额 4,506,071,680.73 3,168,353,800.01",
+      "value": "4506071680.73",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        81,
+        82,
+        83
+      ],
+      "scope_marker": "母公司现金流量表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_cfo-operating_CF-2024-12-31-1225240660",
+      "field": "parent_cfo",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 83,
+      "label": "经营活动产生的现金流量净额",
+      "excerpt": "经营活动产生的现金流量净额 4,506,071,680.73 3,168,353,800.01",
+      "value": "3168353800.01",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        81,
+        82,
+        83
+      ],
+      "scope_marker": "母公司现金流量表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_capex-capex_cash-2025-12-31-1225240660",
+      "field": "parent_capex",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 84,
+      "label": "购建固定资产、无形资产和其他长\r\n期资产支付的现金",
+      "excerpt": "购建固定资产、无形资产和其他长\r\n期资产支付的现金\r\n652,780,256.66 212,817,179.55",
+      "value": "652780256.66",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        82,
+        83,
+        84
+      ],
+      "scope_marker": "母公司现金流量表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_capex-capex_cash-2024-12-31-1225240660",
+      "field": "parent_capex",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 84,
+      "label": "购建固定资产、无形资产和其他长\r\n期资产支付的现金",
+      "excerpt": "购建固定资产、无形资产和其他长\r\n期资产支付的现金\r\n652,780,256.66 212,817,179.55",
+      "value": "212817179.55",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        82,
+        83,
+        84
+      ],
+      "scope_marker": "母公司现金流量表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_cfo-operating_CF-2026-06-30-1225501255",
+      "field": "parent_cfo",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 45,
+      "label": "经营活动产生的现金流量净额",
+      "excerpt": "经营活动产生的现金流量净额 1,449,811,455.57 10,511,757,052.40",
+      "value": "1449811455.57",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        43,
+        44,
+        45
+      ],
+      "scope_marker": "母公司现金流量表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_cfo-operating_CF-2025-06-30-1225501255",
+      "field": "parent_cfo",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 45,
+      "label": "经营活动产生的现金流量净额",
+      "excerpt": "经营活动产生的现金流量净额 1,449,811,455.57 10,511,757,052.40",
+      "value": "10511757052.40",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        43,
+        44,
+        45
+      ],
+      "scope_marker": "母公司现金流量表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_capex-capex_cash-2026-06-30-1225501255",
+      "field": "parent_capex",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 46,
+      "label": "购建固定资产、无形资产和其他长\r\n期资产支付的现金",
+      "excerpt": "购建固定资产、无形资产和其他长\r\n期资产支付的现金\r\n413,591,845.80 299,172,584.54",
+      "value": "413591845.80",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        44,
+        45,
+        46
+      ],
+      "scope_marker": "母公司现金流量表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_capex-capex_cash-2025-06-30-1225501255",
+      "field": "parent_capex",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 46,
+      "label": "购建固定资产、无形资产和其他长\r\n期资产支付的现金",
+      "excerpt": "购建固定资产、无形资产和其他长\r\n期资产支付的现金\r\n413,591,845.80 299,172,584.54",
+      "value": "299172584.54",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        44,
+        45,
+        46
+      ],
+      "scope_marker": "母公司现金流量表",
+      "number_kind": "money"
+    },
+    {
+      "id": "ordinary_shares-ordinaryshares-2025-12-31-1225240660",
+      "field": "ordinary_shares",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 97,
+      "label": "公司股份总数为",
+      "excerpt": "截至 2025 年 12 月 31 日，公司股份总数为 1,471,941,963 股",
+      "value": "1471941963",
+      "unit": "shares",
+      "scope": "issued_ordinary_shares",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31"
+      ],
+      "column_header": "2025 年年度报告全文",
+      "header_pages": [
+        95,
+        96,
+        97
+      ],
+      "scope_marker": "泸州老窖股份有限公司",
+      "number_kind": "shares"
+    },
+    {
+      "id": "ordinary_shares-ordinaryshares-2026-06-30-1225501255",
+      "field": "ordinary_shares",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 30,
+      "label": "上述回购注销完成后，公司总股本由 1,471,941,963 股减少\r\n至 ",
+      "excerpt": "上述回购注销完成后，公司总股本由 1,471,941,963 股减少\r\n至 1,471,901,463 股。",
+      "value": "1471901463",
+      "unit": "shares",
+      "scope": "issued_ordinary_shares",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30"
+      ],
+      "column_header": "2026 年半年度报告全文",
+      "header_pages": [
+        28,
+        29,
+        30
+      ],
+      "scope_marker": "股份变动的批准情况",
+      "number_kind": "shares"
+    },
+    {
+      "id": "parent_investment_cash-2025-12-31-1225240660",
+      "field": "parent_investment_cash",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 83,
+      "label": "取得投资收益收到的现金",
+      "excerpt": "取得投资收益收到的现金 7,013,919,266.56 9,836,384,328.88",
+      "value": "7013919266.56",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        81,
+        82,
+        83
+      ],
+      "scope_marker": "母公司现金流量表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_investment_cash-2024-12-31-1225240660",
+      "field": "parent_investment_cash",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 83,
+      "label": "取得投资收益收到的现金",
+      "excerpt": "取得投资收益收到的现金 7,013,919,266.56 9,836,384,328.88",
+      "value": "9836384328.88",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "2025 年度 2024 年度",
+      "header_pages": [
+        81,
+        82,
+        83
+      ],
+      "scope_marker": "母公司现金流量表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_investment_cash-2026-06-30-1225501255",
+      "field": "parent_investment_cash",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 45,
+      "label": "取得投资收益收到的现金",
+      "excerpt": "收回投资收到的现金 130,710,322.86 608,462,037.37\r\n取得投资收益收到的现金 359,964.55 31,271.10",
+      "value": "359964.55",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        43,
+        44,
+        45
+      ],
+      "scope_marker": "母公司现金流量表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_investment_cash-2025-06-30-1225501255",
+      "field": "parent_investment_cash",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 45,
+      "label": "取得投资收益收到的现金",
+      "excerpt": "收回投资收到的现金 130,710,322.86 608,462,037.37\r\n取得投资收益收到的现金 359,964.55 31,271.10",
+      "value": "31271.10",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        43,
+        44,
+        45
+      ],
+      "scope_marker": "母公司现金流量表",
+      "number_kind": "money"
+    },
+    {
+      "id": "ex_parent_profit-adjusted_parent_profit-2026-06-30-1225501255",
+      "field": "ex_parent_profit",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 7,
+      "label": "归属于上市公司股东的扣除\r\n非经常性损益的净利润\r\n（元）",
+      "excerpt": "归属于上市公司股东的扣除\r\n非经常性损益的净利润\r\n（元）\r\n4,291,450,847.49 7,650,004,468.05",
+      "value": "4291450847.49",
+      "unit": "CNY",
+      "scope": "consolidated_parent",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "本报告期 上年同期 本报告期比上年同期增减",
+      "header_pages": [
+        5,
+        6,
+        7
+      ],
+      "scope_marker": "主要会计数据和财务指标",
+      "number_kind": "money"
+    },
+    {
+      "id": "ex_parent_profit-adjusted_parent_profit-2025-06-30-1225501255",
+      "field": "ex_parent_profit",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 7,
+      "label": "归属于上市公司股东的扣除\r\n非经常性损益的净利润\r\n（元）",
+      "excerpt": "归属于上市公司股东的扣除\r\n非经常性损益的净利润\r\n（元）\r\n4,291,450,847.49 7,650,004,468.05",
+      "value": "7650004468.05",
+      "unit": "CNY",
+      "scope": "consolidated_parent",
+      "period_end": "2025-06-30",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "本报告期 上年同期 本报告期比上年同期增减",
+      "header_pages": [
+        5,
+        6,
+        7
+      ],
+      "scope_marker": "主要会计数据和财务指标",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_cash-monetary_funds-2025-12-31-1225240660",
+      "field": "parent_cash",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 77,
+      "label": "货币资金",
+      "excerpt": "货币资金 25,751,391,606.26 26,651,132,665.66",
+      "value": "25751391606.26",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        75,
+        76,
+        77
+      ],
+      "scope_marker": "母公司资产负债表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_cash-monetary_funds-2024-12-31-1225240660",
+      "field": "parent_cash",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 77,
+      "label": "货币资金",
+      "excerpt": "货币资金 25,751,391,606.26 26,651,132,665.66",
+      "value": "26651132665.66",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        75,
+        76,
+        77
+      ],
+      "scope_marker": "母公司资产负债表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_retained_profit-retained_earnings-2025-12-31-1225240660",
+      "field": "parent_retained_profit",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 78,
+      "label": "未分配利润",
+      "excerpt": "未分配利润 31,070,237,008.89 31,526,616,851.39",
+      "value": "31070237008.89",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        76,
+        77,
+        78
+      ],
+      "scope_marker": "母公司资产负债表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_retained_profit-retained_earnings-2024-12-31-1225240660",
+      "field": "parent_retained_profit",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 78,
+      "label": "未分配利润",
+      "excerpt": "未分配利润 31,070,237,008.89 31,526,616,851.39",
+      "value": "31526616851.39",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        76,
+        77,
+        78
+      ],
+      "scope_marker": "母公司资产负债表",
+      "number_kind": "money"
+    },
+    {
+      "id": "start_book_equity-parent_equity-2025-12-31-1225240660",
+      "field": "start_book_equity",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 76,
+      "label": "归属于母公司所有者权益合计",
+      "excerpt": "归属于母公司所有者权益合计 49,780,293,635.74 47,388,500,553.46",
+      "value": "49780293635.74",
+      "unit": "CNY",
+      "scope": "consolidated_parent_equity",
+      "period_end": "2025-12-31",
+      "column_index": 0,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        74,
+        75,
+        76
+      ],
+      "scope_marker": "合并资产负债表",
+      "number_kind": "money"
+    },
+    {
+      "id": "start_book_equity-parent_equity-2024-12-31-1225240660",
+      "field": "start_book_equity",
+      "source_id": "cninfo:1225240660",
+      "physical_page": 76,
+      "label": "归属于母公司所有者权益合计",
+      "excerpt": "归属于母公司所有者权益合计 49,780,293,635.74 47,388,500,553.46",
+      "value": "47388500553.46",
+      "unit": "CNY",
+      "scope": "consolidated_parent_equity",
+      "period_end": "2024-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2025-12-31",
+        "2024-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        74,
+        75,
+        76
+      ],
+      "scope_marker": "合并资产负债表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_cash-monetary_funds-2026-06-30-1225501255",
+      "field": "parent_cash",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 38,
+      "label": "货币资金",
+      "excerpt": "货币资金 23,927,192,164.41 25,751,391,606.26",
+      "value": "23927192164.41",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        36,
+        37,
+        38
+      ],
+      "scope_marker": "母公司资产负债表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_cash-monetary_funds-2025-12-31-1225501255",
+      "field": "parent_cash",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 38,
+      "label": "货币资金",
+      "excerpt": "货币资金 23,927,192,164.41 25,751,391,606.26",
+      "value": "25751391606.26",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2025-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        36,
+        37,
+        38
+      ],
+      "scope_marker": "母公司资产负债表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_retained_profit-retained_earnings-2026-06-30-1225501255",
+      "field": "parent_retained_profit",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 40,
+      "label": "未分配利润",
+      "excerpt": "未分配利润 23,214,184,665.64 31,070,237,008.89",
+      "value": "23214184665.64",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        38,
+        39,
+        40
+      ],
+      "scope_marker": "母公司资产负债表",
+      "number_kind": "money"
+    },
+    {
+      "id": "parent_retained_profit-retained_earnings-2025-12-31-1225501255",
+      "field": "parent_retained_profit",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 40,
+      "label": "未分配利润",
+      "excerpt": "未分配利润 23,214,184,665.64 31,070,237,008.89",
+      "value": "31070237008.89",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2025-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        38,
+        39,
+        40
+      ],
+      "scope_marker": "母公司资产负债表",
+      "number_kind": "money"
+    },
+    {
+      "id": "start_book_equity-parent_equity-2026-06-30-1225501255",
+      "field": "start_book_equity",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 38,
+      "label": "归属于母公司所有者权益合计",
+      "excerpt": "归属于母公司所有者权益合计 45,732,857,079.30 49,780,293,635.74",
+      "value": "45732857079.30",
+      "unit": "CNY",
+      "scope": "consolidated_parent_equity",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "column_periods": [
+        "2026-06-30",
+        "2025-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        36,
+        37,
+        38
+      ],
+      "scope_marker": "合并资产负债表",
+      "number_kind": "money"
+    },
+    {
+      "id": "start_book_equity-parent_equity-2025-12-31-1225501255",
+      "field": "start_book_equity",
+      "source_id": "cninfo:1225501255",
+      "physical_page": 38,
+      "label": "归属于母公司所有者权益合计",
+      "excerpt": "归属于母公司所有者权益合计 45,732,857,079.30 49,780,293,635.74",
+      "value": "49780293635.74",
+      "unit": "CNY",
+      "scope": "consolidated_parent_equity",
+      "period_end": "2025-12-31",
+      "column_index": 1,
+      "column_periods": [
+        "2026-06-30",
+        "2025-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        36,
+        37,
+        38
+      ],
+      "scope_marker": "合并资产负债表",
+      "number_kind": "money"
+    },
+    {
+      "source_id": "cninfo:1225501255",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "number_kind": "money",
+      "id": "parent_cash_equivalents-2026-06-30-1225501255",
+      "field": "parent_cash_equivalents",
+      "physical_page": 46,
+      "label": "六、期末现金及现金等价物余额",
+      "excerpt": "六、期末现金及现金等价物余额 23,517,778,984.18 33,150,621,043.18",
+      "value": "23517778984.18",
+      "column_periods": [
+        "2026-06-30",
+        "2025-06-30"
+      ],
+      "column_header": "2026 年半年度 2025 年半年度",
+      "header_pages": [
+        44,
+        45,
+        46
+      ],
+      "scope_marker": "母公司现金流量表"
+    },
+    {
+      "source_id": "cninfo:1225501255",
+      "unit": "CNY",
+      "scope": "parent",
+      "period_end": "2026-06-30",
+      "column_index": 0,
+      "number_kind": "money",
+      "id": "parent_dividend_payable-2026-06-30-1225501255",
+      "field": "parent_dividend_payable",
+      "physical_page": 40,
+      "label": "应付股利",
+      "excerpt": "应付股利 6,501,567,650.57",
+      "value": "6501567650.57",
+      "column_periods": [
+        "2026-06-30",
+        "2025-12-31"
+      ],
+      "column_header": "期末余额 期初余额",
+      "header_pages": [
+        38,
+        39,
+        40
+      ],
+      "scope_marker": "母公司资产负债表",
+      "column_geometry": {
+        "header_page": 38,
+        "labels": [
+          "期末余额",
+          "期初余额"
+        ]
+      }
+    }
+  ]
+}

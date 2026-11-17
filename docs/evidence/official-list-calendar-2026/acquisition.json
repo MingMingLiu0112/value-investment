@@ -1,0 +1,32 @@
+{
+  "action": "no_order",
+  "sources": [
+    {
+      "exchange": "BSE",
+      "source_url": "https://dataclouds.cninfo.com.cn/sjother2/regulatory/2025/20251222/55875a9937374da4ae2d4999dfda2722.pdf",
+      "publisher_url": "https://www.bse.cn/important_news/200027428.html",
+      "path": "docs/evidence/official-list-calendar-2026/BSE.raw",
+      "sha256": "d512772d26260909147d1b349474cf8720140194cf80bf826c97ffdc304cb8be",
+      "fetched_at": "2026-10-23T19:15:55.642946+00:00",
+      "scope": "ORIGINAL_OFFICIAL_NOTICE_ARCHIVE_NOT_HISTORICAL_ACQUISITION_PROOF"
+    },
+    {
+      "exchange": "SSE",
+      "source_url": "https://www.sse.com.cn/disclosure/announcement/general/c/c_20251222_10802507.shtml",
+      "publisher_url": "https://www.sse.com.cn/disclosure/announcement/general/c/c_20251222_10802507.shtml",
+      "path": "docs/evidence/official-list-calendar-2026/SSE.raw",
+      "sha256": "090c75b3fb9bbcbd447fd93607e28cca821603b897a58ef7df84eb05ea4be841",
+      "fetched_at": "2026-10-23T19:15:55.734029+00:00",
+      "scope": "ORIGINAL_OFFICIAL_NOTICE_ARCHIVE_NOT_HISTORICAL_ACQUISITION_PROOF"
+    },
+    {
+      "exchange": "SZSE",
+      "source_url": "https://www.szse.cn/disclosure/notice/general/t20251222_618087.html",
+      "publisher_url": "https://www.szse.cn/disclosure/notice/general/t20251222_618087.html",
+      "path": "docs/evidence/official-list-calendar-2026/SZSE.raw",
+      "sha256": "1656d8708d5faed33c7588538639d96128f39fdface02cfa6eb66d796c40f14e",
+      "fetched_at": "2026-10-23T19:15:55.873895+00:00",
+      "scope": "ORIGINAL_OFFICIAL_NOTICE_ARCHIVE_NOT_HISTORICAL_ACQUISITION_PROOF"
+    }
+  ]
+}

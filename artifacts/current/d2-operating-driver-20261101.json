@@ -1,0 +1,86 @@
+{
+  "schema_version": "d2-operating-driver-acceptance-v1",
+  "action": "no_order",
+  "symbol": "000568",
+  "task_id": "rt-eac1c74997d17510398ce1fe1e5bea9e",
+  "research_contract": "operating-drivers-v2",
+  "scope": "CONDITIONAL_OPERATING_PRESSURE_ANALYSIS_NOT_VALUATION",
+  "prior_baseline_commit": "15359ee365d01a9c8ac8be530fd2355b4c01e2fe",
+  "prior_core_ci": {
+    "run_id": 41258906449,
+    "status": "SUCCESS"
+  },
+  "prior_web_ci": {
+    "run_id": 41258906380,
+    "status": "SUCCESS"
+  },
+  "implementation_sha256": {
+    "value_investment_agent.application.research.agent_review.operating_draft_v1": "c79e3fec10fb5dd8bc9026cf381fc421bb9558326ca254f65035394864f4d22c",
+    "value_investment_agent.application.research.agent_review.operating_driver_draft_v2": "b81472ddfb63c0e01d4a13f3ef449574ee1e300abdd45f53703015e720127aae",
+    "value_investment_agent.application.research.agent_review.operating_sources_v1": "0084892fdedf165663a9356084702b38b01c81841c1965b4f1306564802ca5e0",
+    "value_investment_agent.application.research.agent_review.operating_task_v2": "05b312611dca14b36a5445864f6910fa099bf2719f502f33f75044b77129b651",
+    "value_investment_agent.application.research.agent_review.task_execution_v1": "2b9bfea72d4b064362f59cf8ac6a241098c22cc19c5deb05d40d2f00ff0452f0",
+    "value_investment_agent.domain.research.operating_driver_bridge_v1": "5b1956b93995547d1f519abbd6fa841b080436e0bdf5d1bd3f991f2f7c50355d",
+    "value_investment_agent.infrastructure.agent_runtime.provider": "e8a3428ee2b25c5034e66c31c2a0af19b4261caf16a05d0d46ba9cfb8d989eee"
+  },
+  "source_context_fingerprint": "c895fd455f8f1aa05fbe088cdd7346ee9bb12b22541b7d9e1fb010ea60aa5988",
+  "source_binding": {
+    "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+    "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+  },
+  "source_records": 96,
+  "role_response_bindings": {
+    "COUNTER_EVIDENCE": {
+      "path": "runtime/research-task-execution-v1/live-operating-v1/rt-eac1c74997d17510398ce1fe1e5bea9e/response-35f3fb3ce7a3c9ad95aeb7bb0a1efea1443ba34275d21968aa3429825631817b.json",
+      "sha256": "693013a525aa21dca1b3c6a49e297c8905362517ba50352cf39c65f0f7171912"
+    },
+    "EVENT": {
+      "path": "runtime/research-task-execution-v1/live-operating-v1/rt-eac1c74997d17510398ce1fe1e5bea9e/response-04b2c690891bb8b557325555f890637557c05b0bd78076d82671c870e02749f2.json",
+      "sha256": "6886b24f91c22046a188a58432aaa11e90b02fefcf378f14f206c2b1da0f1f80"
+    },
+    "FUNDAMENTAL": {
+      "path": "runtime/research-task-execution-v1/live-operating-v1/rt-eac1c74997d17510398ce1fe1e5bea9e/response-f6fb0ea49e412315a3e287649f848d0bee5d34b9f6f095e7b9e7737adffc58aa.json",
+      "sha256": "ce12838d46f2d4ae77911ac90bae5cf179c3532e4654aec65f0ce278e6c3c540"
+    }
+  },
+  "real_task_calls": 4,
+  "package_calls": 5,
+  "package_actual_cny": "0.095976",
+  "day_actual_cny": "0.282832",
+  "test_receipt": ".tmp/driver-final.xml",
+  "targeted_passed": 345,
+  "targeted_skipped": 0,
+  "web_receipt": ".tmp/driver-final-web.log",
+  "web_passed": 1465,
+  "web_skipped": 28,
+  "actual_research": {
+    "path": "runtime/d2-operating-driver-20261101/rt-eac1c74997d17510398ce1fe1e5bea9e-reviewed.json",
+    "sha256": "18688d57b285de9fc898e56d8c666a5b089eb9b7bf07ec6a15bfaf2755fb887c"
+  },
+  "independent_acceptance": {
+    "path": "runtime/d2-operating-driver-20261101/independent-acceptance.json",
+    "sha256": "04f19f810fbad88b783d2cb93d2bf22b78d42fc71dbf1501b15054522ad29458"
+  },
+  "billing": {
+    "path": "runtime/d2-operating-driver-20261101/billing-confirmed.json",
+    "sha256": "68b1bc6dc34b05f5f838366bd6c79289354ac60dc2ce35dd0c1ecaed30006d50"
+  },
+  "baseline": "2026-06-30 H1",
+  "forecast": "2027-01-01 through 2027-06-30",
+  "structured_drivers": 21,
+  "derived_growth_and_margin_ranges": 6,
+  "corner_cases_per_scenario": 128,
+  "research_reopen_conditions": 12,
+  "historical_period_alignment": "FY_TO_FY_AND_H1_TO_H1_ONLY",
+  "threshold_policy": "STRICT_OUTSIDE_SAME_DERIVED_INTERVAL_EQUALITY_INSIDE",
+  "engineering": "ACCEPTED",
+  "conditional_analysis_arithmetic": "INDEPENDENTLY_ACCEPTED",
+  "future_parameter_applicability": "NOT_PROVEN",
+  "capital_assumptions_unknown": 9,
+  "compile_into_main_valuation": false,
+  "approval_changed": false,
+  "formal_fact_count": 0,
+  "formal_eligibility": false,
+  "condition_price": null,
+  "personal_quantity": null
+}

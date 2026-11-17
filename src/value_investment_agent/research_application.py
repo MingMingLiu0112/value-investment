@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 import re
 from typing import Any, Callable, Mapping, Sequence
+from zoneinfo import ZoneInfo
 
 from .current_research_status import (
     ENGINEERING_READY,
@@ -104,6 +105,9 @@ from .research_artifacts import (
     StoredResearchArtifact,
 )
 from .research_case import ResearchCase
+from .domain.research.research_only_facts import (
+    ResearchOnlyFacts, RESEARCH_ONLY_MODE, validate_research_only_scope,
+)
 from .domain.research.issuer_identity import (
     ISSUER_IDENTITY_NOT_READY,
     ISSUER_IDENTITY_VERIFIED,
@@ -236,13 +240,32 @@ class ResearchRunSpec:
     recommendation_schema_version: str = DECISION_RECOMMENDATION_SCHEMA
     entry_thesis: EntryThesisSnapshot | None = None
     investment_consistency_review: InvestmentConsistencyReview | None = None
+    research_mode: str = 'valuation'
+    source_contract_payload: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if not self.run_id.strip():
             raise ValueError("Research run id is required")
         if not re.fullmatch(r"[0-9]{6}", self.symbol):
             raise ValueError("Research run symbol must contain six digits")
-        if self.profile_id not in PROFILES:
+        if self.research_mode not in ('valuation', RESEARCH_ONLY_MODE):
+            raise ValueError('Unknown research mode')
+        research_only = self.research_mode == RESEARCH_ONLY_MODE
+        if research_only:
+            from .domain.research.research_only_facts import NO_MODEL_VERSION
+            if self.model_version != NO_MODEL_VERSION:
+                raise ValueError('Research-only run cannot identify a valuation model version')
+            validate_research_only_scope(self.profile_id, self.requested_model, self.facts,
+                (self.assumptions, self.quote, self.model_validity_input, self.valuation_approval,
+                 self.distribution_result, self.human_research_approval, self.event_materiality_review,
+                 self.bridge_contribution_reviews, self.interim_report_policy, self.entry_thesis,
+                 self.investment_consistency_review, self.assumption_bindings))
+            from .research_input import validate_research_only_sources
+            validate_research_only_sources(self.input_sources, self.research_case, self.facts,
+                self.source_contract_payload, self.available_at)
+        elif isinstance(self.facts, ResearchOnlyFacts):
+            raise ValueError('Research-only facts require explicit mode')
+        if not research_only and self.profile_id not in PROFILES:
             raise ValueError(f"Unknown research profile: {self.profile_id}")
         if not isinstance(self.research_case, ResearchCase):
             raise TypeError("Research run requires a typed ResearchCase")
@@ -286,7 +309,11 @@ class ResearchRunSpec:
             raise ValueError("Research as_of cannot override the case date")
         if self.research_case.as_of < facts_as_of:
             raise ValueError("Research case cannot precede its financial facts")
-        if self.available_at is not None and self.available_at.date() < self.research_case.as_of:
+        if (
+            self.available_at is not None
+            and self.available_at.astimezone(ZoneInfo("Asia/Shanghai")).date()
+            < self.research_case.as_of
+        ):
             raise ValueError("Research availability cannot precede research as-of")
         if self.input_sources and self.available_at is None:
             raise ValueError("Research input sources require available_at")
@@ -540,6 +567,34 @@ class ResearchApplicationService:
 
         available_at = spec.available_at or self.now_utc()
         identity = spec.issuer_identity_assessment
+        if spec.research_mode == RESEARCH_ONLY_MODE:
+            # Remain inside the shared run/repository path, but never build a
+            # synthetic valuation or turn a missing model into a NO_TRADE verdict.
+            from .research_input import validate_research_only_sources
+            validate_research_only_sources(spec.input_sources, spec.research_case, spec.facts,
+                spec.source_contract_payload, available_at)
+            clock = self.now_utc()
+            if available_at > clock or spec.computed_at is not None and spec.computed_at > clock:
+                raise ValueError('Research-only output is not available at the current clock')
+            stored = []
+            for value, kind, as_of in (
+                    (spec.research_case, ARTIFACT_RESEARCH_CASE, spec.research_case.as_of),
+                    (spec.facts, ARTIFACT_FINANCIAL_FACTS, spec.facts.as_of)):
+                stored.append(self.repository.save_object(value,
+                    identity=ResearchArtifactIdentity(scope_type=SCOPE_SECURITY,scope_key=spec.symbol,
+                        artifact_type=kind,schema_version=ARTIFACT_SCHEMA_VERSION,
+                        as_of=as_of,available_at=available_at),
+                    evidence_refs=value.evidence_refs,run_id=spec.run_id))
+            validate_research_only_sources(spec.input_sources, spec.research_case, spec.facts,
+                spec.source_contract_payload, available_at)
+            return CompanyResearchRunOutcome(run_id=spec.run_id,symbol=spec.symbol,
+                profile_id=spec.profile_id,status=RUN_UNSUPPORTED,route=None,gate=None,
+                valuation=None,assumptions=None,model_validity=None,quote_snapshot=None,
+                price_bridge=None,price_attractiveness=None,distribution_result=None,current_status=None,
+                blockers=tuple(dict.fromkeys(['MODEL_APPLICABILITY_UNASSESSED_RESEARCH_ONLY',
+                    *spec.facts.blockers,*spec.research_case.blockers,*identity.blockers])),
+                stored_artifacts=tuple(stored),as_of=spec.as_of or spec.research_case.as_of,
+                available_at=available_at,issuer_identity_status=identity.status)
         profile = PROFILES[spec.profile_id]
         route = self.router.route(profile, spec.requested_model)
         if route.status != ROUTE_SUPPORTED:
@@ -582,6 +637,13 @@ class ResearchApplicationService:
             valuation = model.value(spec.facts, spec.research_case)
             if not isinstance(valuation, ValuationResult):
                 raise TypeError("Registered model returned a non-valuation result")
+            if (
+                spec.model_version is not None
+                and valuation.model_version != spec.model_version
+            ):
+                raise ValueError(
+                    "Registered valuation model version differs from the declared input"
+                )
         else:
             evidence_refs = list(
                 getattr(spec.facts, "evidence_refs", ())
@@ -621,6 +683,7 @@ class ResearchApplicationService:
                 research_case_payload=case_payload,
                 facts_payload=facts_payload,
                 assumptions_payload=assumptions_payload,
+                require_authenticated_provenance=True,
             )
             approval_decision = resolve_human_research_approval(
                 spec.human_research_approval,
@@ -629,6 +692,7 @@ class ResearchApplicationService:
                 research_case_payload=case_payload,
                 facts_payload=facts_payload,
                 assumptions_payload=assumptions_payload,
+                require_authenticated_provenance=True,
             )
         else:
             gate = evaluate_with_valuation(
@@ -695,6 +759,7 @@ class ResearchApplicationService:
                 facts_payload=facts_payload,
                 assumptions_payload=assumptions_payload,
                 price_attractiveness=price_attractiveness,
+                require_authenticated_approval_provenance=True,
             )
 
         blockers = tuple(

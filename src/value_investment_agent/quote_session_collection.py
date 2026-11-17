@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 from .quote_sessions import CHINA, CALENDAR_PATH, SSE_2026_CLOSURE_NOTICE_URL
+from .infrastructure.hotspot.daily_market import bounded_get
 
 
 def collect_session_bundle(symbols, *, session=None, clock=None, batch_size=50):
@@ -28,7 +29,7 @@ def collect_session_bundle(symbols, *, session=None, clock=None, batch_size=50):
 
     def fetch(url, *, params=None, headers=None):
         try:
-            response = session.get(url, params=params, headers=headers, timeout=(10, 20))
+            response = bounded_get(session.get, url, params=params, headers=headers, timeout=(10, 20))
             raw = response.content
             if len(raw) > 1_000_000:
                 raise ValueError('Bounded response exceeds maximum size')
@@ -38,11 +39,13 @@ def collect_session_bundle(symbols, *, session=None, clock=None, batch_size=50):
             identity = hashlib.sha256((response.url + '\n' + stamp + '\n' + digest).encode()).hexdigest()
             documents[identity] = {'source_url': response.url, 'fetched_at': stamp,
                                    'sha256': digest, 'http_status': response.status_code,
+                                   'request_attempts': response.request_attempts,
                                    'raw_base64': base64.b64encode(raw).decode('ascii')}
             response.raise_for_status()
             return identity
         except (requests.RequestException, ValueError) as error:
-            failures.append({'requested_url': url, 'params': params, 'error': str(error)})
+            failures.append({'requested_url': url, 'params': params, 'error': str(error),
+                             'request_attempts': getattr(error, 'request_attempts', 1)})
             return None
 
     references = {}

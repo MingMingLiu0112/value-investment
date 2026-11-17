@@ -1,0 +1,15 @@
+{
+  "schema_version": "parent-funding-followup-v1",
+  "symbol": "000568",
+  "scope": "HISTORICAL_PARENT_CASH_REVIEW_NOT_CURRENT_CAPACITY",
+  "action": "no_order",
+  "native_facts": {
+    "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+    "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+  },
+  "source_receipt": {
+    "path": "runtime/value-000568-current-alignment-20261101/source-receipt.json",
+    "sha256": "6c5fe1d3d21c6f4413670e85e1c79b65a2e56736890f459ffeadb3de129c04f0"
+  },
+  "generated_at": "2026-11-01T05:09:05.348369+00:00"
+}

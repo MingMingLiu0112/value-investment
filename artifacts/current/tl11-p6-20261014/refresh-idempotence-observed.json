@@ -1,0 +1,40 @@
+{
+  "schema_version": "p6-refresh-idempotence-observed-v1",
+  "action": "no_order",
+  "evidence_scope": "Retained summary of actual Windows invocations observed earlier in this task; reconstructed from captured tool outputs, not a new collection or rerun.",
+  "mode": "SAFE_REFRESH",
+  "no_server": true,
+  "latest_completed_trade_session": "2026-10-14",
+  "public_input_reused": true,
+  "external_market_collection_performed": false,
+  "observed_runs": [
+    {
+      "symbols_argument": "600887",
+      "status": "SUCCESS",
+      "exit_code": 0,
+      "publication_id": "pub-fe046ccec02162d3cb04",
+      "packet_sha256": "1c020b6aa88fbf09fc18b25d14314182e1adce9167cc42e0bce7d2f5a43bd0be",
+      "content_sha256": "e622f29fee9a421da78e29d82a48a0ac657fa290fefbf258af11eb324600be57"
+    },
+    {
+      "symbols_argument": "default_registered_symbols",
+      "status": "SUCCESS",
+      "exit_code": 0,
+      "publication_id": "pub-fe046ccec02162d3cb04",
+      "packet_sha256": "1c020b6aa88fbf09fc18b25d14314182e1adce9167cc42e0bce7d2f5a43bd0be",
+      "content_sha256": "e622f29fee9a421da78e29d82a48a0ac657fa290fefbf258af11eb324600be57"
+    },
+    {
+      "symbols_argument": "default_registered_symbols",
+      "status": "SUCCESS",
+      "exit_code": 0,
+      "publication_id": "pub-fe046ccec02162d3cb04",
+      "packet_sha256": "1c020b6aa88fbf09fc18b25d14314182e1adce9167cc42e0bce7d2f5a43bd0be",
+      "content_sha256": "e622f29fee9a421da78e29d82a48a0ac657fa290fefbf258af11eb324600be57"
+    }
+  ],
+  "publication_and_content_unchanged": true,
+  "publication_verification_time_may_change": true,
+  "original_per_run_safe_refresh_receipts_retained": false,
+  "limitation": "The latest-run receipt was subsequently replaced by READ_ONLY regression invocations. This file preserves the observed SAFE_REFRESH results without inventing per-run timestamps."
+}

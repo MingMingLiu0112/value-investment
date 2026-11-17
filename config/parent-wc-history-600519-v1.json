@@ -1,0 +1,36 @@
+{
+  "schema_version": "parent-wc-history-600519-v1",
+  "action": "no_order",
+  "symbol": "600519",
+  "issuer_name": "贵州茅台酒股份有限公司",
+  "sources": [
+    {
+      "period": "2025-12-31",
+      "path": "runtime/fy2025-600519-wc/original.pdf",
+      "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+      "published_date": "2026-04-17",
+      "available_at": "2026-10-30T10:40:54.570454+00:00",
+      "parent_balance_pages": [59, 60],
+      "parent_cash_page": 66,
+      "group_cash_header_page": 64,
+      "group_cash_page": 65,
+      "group_cash_reconciliation_page": 115,
+      "columns": ["2025-12-31", "2024-12-31"]
+    },
+    {
+      "period": "2026-06-30",
+      "path": "runtime/h1-2026-ocr/original.pdf",
+      "sha256": "0e10aa26be46b1cf3cd03f06e834c7fb98d5dd0d661b96f8fddd4af7e846a4f6",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-15/1225475868.PDF",
+      "published_date": "2026-08-15",
+      "available_at": "2026-11-10T13:11:10.046986+00:00",
+      "parent_balance_pages": [28, 29],
+      "parent_cash_page": 35,
+      "group_cash_header_page": 33,
+      "group_cash_page": 34,
+      "group_cash_reconciliation_page": 81,
+      "columns": ["2026-06-30", "2025-12-31"]
+    }
+  ]
+}

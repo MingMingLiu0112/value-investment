@@ -1,0 +1,31 @@
+{
+  "schema_version": "midea-draft-package-build-receipt-v2",
+  "action": "no_order",
+  "status": "DRAFT_PACKAGE_VALIDATED",
+  "symbol": "000333",
+  "run_id": "midea-draft-20261017-v2",
+  "generated_at": "2026-10-17T10:58:56.033982+00:00",
+  "package": {
+    "path": "runtime/company-research/midea-draft-20261017-v2/package.json",
+    "sha256": "cd7a14b3e09c2d87e6ed3ea8cb852728456ac6ea50a34f3314a2e47bba89316c"
+  },
+  "event_scan": {
+    "path": "runtime/company-research/midea-draft-20261017-v2/event-scan-20261017.json",
+    "sha256": "7353717eacf31cbff2bb46d00783b67bccdf805c9c383e5e100754ca38258a7f"
+  },
+  "assumption_memo": {
+    "path": "runtime/company-research/midea-draft-20261017-v2/assumption-memo-v2.json",
+    "sha256": "a93c53e3227e35bba58c3cdd57b0c3936645549210d73bf6cb5b1f0899ec2402"
+  },
+  "quote": {
+    "path": "runtime/quote-sessions/20261016T090031652233Z/bundle.json",
+    "sha256": "08a8cb10dbb7785870645f8b2e1ab7d4a5f3f6cf8bf4295da5b5baa8ccbd927e"
+  },
+  "descriptor_input_sha256": "be460eb1b66a268a7f2a7294b258b3a0bc3f9bbefd4c35f615eaa08d83be30b0",
+  "research_run_input_sha256": "be460eb1b66a268a7f2a7294b258b3a0bc3f9bbefd4c35f615eaa08d83be30b0",
+  "scenario_binding_count": 27,
+  "requested_model": "residual_income_or_equity_value",
+  "formal_admission": false,
+  "position_guidance": null,
+  "strict_contemporaneous_pit": "NOT_PROVEN"
+}

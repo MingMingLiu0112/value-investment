@@ -1,0 +1,25 @@
+{
+  "schema_version": "product-continuation-research-policy-v1",
+  "symbol": "600519",
+  "generated_at": "2026-10-26T09:02:00+00:00",
+  "action": "no_order",
+  "confidence": "LOW",
+  "candidate_binding": {"path": "runtime/product-operating-research/20261025T071814444248Z/proposal/candidate/candidate.json", "sha256": "2e53d50d988a737272d7a95b822c8e0e9998d3749c1432cac7f6c12d92fe8ed0"},
+  "shareholder_cash_source_binding": {"path": "docs/current/two-company-earnings-bridge-20261024/sources.json", "sha256": "ce88d63737e0ea520e870c932d304a702ce420f581f9f484974df16ab99bfcbc"},
+  "center": "FLAT_YEAR5_PRODUCT_LEVELS_AND_COST_RATIOS",
+  "continuation_years": 5,
+  "rationale": "保留来源绑定的前五年销量、实现价格和成本假设，后五年只测试第五年产品水平不变。年度成本法收益与投资收现同额支持历史上划渠道，不证明未来即时上划。研究对象仍有价值，但这条路径不是已验证的正常化利润或永久品牌盈利。",
+  "cash_return_rationale": "从母公司现金起点出发，经营等价利润经明确上划时差、资本投入和公积分配能力约束后确定分配；目标90%是上限而非强制结果。留存现金仅按既有1%增量回报假设计息，不重复添加金融子公司税前收益或现金余额。",
+  "terminal_rationale": "零增长且必要净投入已满足、承诺付清、资金可达时，全额分配可作为条件预测；它不意味着竞争优势消失。本路径仍保留终端超额盈利永久持续，品牌和历史利润支持持续性研究，却未给出选择永续而非有限优势期的充分理由。零净维护只是维护与已计折旧净抵的情景，不是gross维护为零；稳态零新增WC不能自动覆盖前五年销量增长。",
+  "strongest_counter_evidence": "不选本中心路径为唯一主估值的决定性理由是永久超额盈利：第十年后仍保留显著高于权益成本的盈利能力，未将优势衰减作为中心情景。零增长不能为永久超额回报背书。这是模型选择问题，不是要求证明未来或缺G3。历史年度上划渠道得到支持，6.757%左右Ke有国债代理、beta和ERP公式可供低置信条件研究；不能因此一概否定未来现金。维护/WC、半年收现差额、承诺付款时点仍需区分事实与假设。接受本路径作为稳定盈利永续的条件分支，拒绝直接作为唯一主估值及当前买入定价依据。",
+  "counter_evidence": ["零净维护不是零维护支出；同口径非现金加回与维护的净抵尚缺细分。", "半年现金下降不自动代表永久损失；同时不能承诺下一年所有上划差额恢复。", "数字科技注册与已缴差额不是已到期付款；产业基金未缴余额不得与现金底线重复扣减。", "终端贡献、资金可达性与要求回报率误差足以改变价值判断；当前报价比较还需期间分配及事件对齐。"],
+  "cash_allocation": {
+    "schema_version": "source-bound-cash-allocation-policy-v2",
+    "rationale": "将原件重放的基金未缴余额与数字科技注册/已缴差额分别入账。沿用基金首年支付的保守研究假设；数字科技差额在前两年各支付一半仅为研究情景，不是已披露到期日。两者不重复纳入六个月经营现金底线。保留零净维护中心用于可比研究，绝不把它宣称为已核验事实。现金或分配能力不足时降低当年分红，不借融资、平均留存或终值掩盖。",
+    "timing_identity": "UNAPPROVED_CALL_SCHEDULE_NOT_DISCLOSED_DATES",
+    "fund_call_weights": ["1", "0", "0", "0", "0", "0", "0", "0", "0", "0"],
+    "digital_call_weights": ["0.5", "0.5", "0", "0", "0", "0", "0", "0", "0", "0"],
+    "net_maintenance_gap_fraction": "0",
+    "requested_payout_ratios": ["0.9", "0.9", "0.9", "0.9", "0.9", "0.9", "0.9", "0.9", "0.9", "0.9"]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": "retained-financial-draft-validation-v1",
+  "stage": "S6",
+  "action": "no_order",
+  "engineering_source_commit": "faf0486e4137541b7704d2b73e1eb27b5e641d0d",
+  "mode": "MOCK",
+  "symbol": "600519",
+  "research_cutoff": "2026-10-08",
+  "source": {
+    "path": "runtime/historical-filing-index/20260909T033444358365Z/pdfs/600519-1225114741.pdf",
+    "sha256": "474905deeaf0f875fc0a1b097a626c0c7852c427faadc5d7fc7816cbf45ea288",
+    "url": "https://static.cninfo.com.cn/finalpage/2026-04-17/1225114741.PDF",
+    "physical_pages": [64, 65],
+    "visual_render_review": true,
+    "periods": ["2025", "2024"],
+    "statement_scope": "CONSOLIDATED",
+    "unit": "CNY"
+  },
+  "transcription": {
+    "path": "runtime/agent-research-s6-financial-20261018/transcription.json",
+    "sha256": "d57df4b611f3196142404392c58f7d701d46752bb4ed0ebf1ab04d1410484507",
+    "selected_metrics": ["reported_operating_cash_flow", "reported_cash_capex"],
+    "numeric_row_observations": 4,
+    "verification_scope": "NUMERIC_ROW_CORRESPONDENCE_ONLY_NOT_ACCOUNTING_APPROVAL"
+  },
+  "packet": {
+    "path": "runtime/agent-research-s6-financial-20261018/financial-packet.json",
+    "sha256": "72dbd35323123c714d6d01bbb2d9d0209fb436d39f7683afe5efe0965b3c89dd",
+    "mock_questions": 3
+  },
+  "actual_cli": "SUCCESS",
+  "display_registration": "UPDATED",
+  "actual_authenticated_loopback_api": "VERIFIED",
+  "browser_acceptance": "NOT_VERIFIED",
+  "live_model_called": false,
+  "financial_gate_admitted": false,
+  "economic_comparability_approved": false,
+  "formal_eligibility_changed": false,
+  "approval_count": 0,
+  "coverage": "SELECTED_ANNUAL_CASH_ROWS_NOT_FULL_REPORT_OR_NORMALIZED_EARNINGS"
+}

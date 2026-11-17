@@ -1,0 +1,70 @@
+{
+  "schema_version": "p8-held-factual-mark-integration-v1",
+  "action": "no_order",
+  "status": "SCOPED_BACKEND_P1_REVIEW_FIX_IMPLEMENTED_AND_TESTED",
+  "files": [
+    {
+      "path": "src/value_investment_agent/application/portfolio/private_risk_projection.py",
+      "sha256": "c360b52b86c9ba3fdd455407c2437fee46f45ceed1d6b0adca614110e50376d5"
+    },
+    {
+      "path": "tests/test_private_risk_held_marks.py",
+      "sha256": "bcc987661a249d7f100fab02c18f1f217f2a90e18b1e49356238fa6a23fa682b"
+    },
+    {
+      "path": "tests/test_private_risk_cash_floor.py",
+      "sha256": "fe0ad95907e5a9ea730f207150a9c884ac1b59871a7729dddf3dce0538d7b3c9"
+    },
+    {
+      "path": "tests/test_private_ips_policy.py",
+      "sha256": "83c057827059c2fc3d8008419a60bfaa0c979a798625aebf9b34577e583a3009"
+    }
+  ],
+  "integration": {
+    "existing_consumers": ["GET /api/v1/portfolio", "GET /api/v1/private/portfolio/risk"],
+    "provider": "_load_verified_prices: missing held marks fall back to existing immutable case history, reverified by load_current_price_case",
+    "facts": ["market_value_cny", "floating_pnl_cny", "unrealized_pnl_cny", "quote_binding"],
+    "display_only_marks_excluded_from_formal_risk_input": true,
+    "explicit_blocker": "DISPLAY_ONLY_HELD_MARK_NOT_FORMAL_PRICE_INPUT",
+    "current_pit": false,
+    "price_admitted": false,
+    "formal_eligibility": false
+  },
+  "independent_review": {
+    "reviewer": "Hooke, reported by root",
+    "severity": "P1",
+    "finding": "Quote-bridge and registry branches discarded price_admitted=false; the formal-input filter excluded only explicit false, allowing display or unknown-admission prices through those branches. The earlier artifact's blanket exclusion claim was incomplete.",
+    "resolution": "FIXED",
+    "changes": "All provider paths retain admission/scope/current_pit metadata. Formal price inputs require explicit price_admitted is True and reject display/historical scopes or current_pit=false, including contradictory flags. Missing admission remains unknown and is denied for formal input while factual marks remain visible.",
+    "regression": "One real-verifier TEST_ONLY display case is routed through quote bridge, registry and immutable history: every route retains market value/PnL and excludes the formal price. Explicitly admitted strict quotes remain compatible. Unknown admission, explicit rejection, display/admission conflict and PIT rejection are covered.",
+    "fixture_updates": "Cash-floor and IPS fixtures that represent strictly admitted prices now explicitly declare price_admitted=true; verified_quote alone no longer implies admission."
+  },
+  "simulated_compatibility_regression": {
+    "reported_by": "Root focused P7 signed/P62 positive workflow run",
+    "finding": "The explicit-admission filter also stripped explicit SIMULATED hypothetical prices, breaking the inherited allow_synthetic positive workflow.",
+    "resolution": "FIXED",
+    "bounded_exception": "Only namespace=SIMULATED with explicitly supplied _prices retains hypothetical prices. ACTUAL explicit raw prices and automatic provider prices in either namespace still require formal admission. The existing domain engine continues requiring allow_synthetic=true; production routes cannot set this exception.",
+    "negative_tests": "ACTUAL versus SIMULATED, explicit versus provider-discovered prices, unknown versus explicitly rejected admission; assumptions remain unmodified and the domain rejects SIMULATED without allow_synthetic."
+  },
+  "timing_review": {
+    "strict_b1_unchanged": true,
+    "display_scope": "LAST_COMPLETED_CLOSE_DISPLAY_ONLY",
+    "bundle_finished_at_not_future": true,
+    "source_fetched_at_not_future_or_after_bundle_cutoff": true,
+    "calendar_bound_latest_completed_session": true,
+    "minute_sources_acquired_after_observed_session_close": true,
+    "close_predating_confirmed_trade_not_used_for_mark": true,
+    "future_account_facts_do_not_receive_current_valuation": true,
+    "stale_tampered_future_case_tests_passed": true
+  },
+  "validation": {
+    "command": "python -m pytest tests/test_p7_signed_review_workflow.py tests/test_p62_positive_workflow.py tests/test_private_risk_preview.py tests/test_private_risk_experience.py tests/test_private_ips_policy.py tests/test_private_risk_held_marks.py tests/test_private_risk_partial_facts.py tests/test_private_risk_cash_floor.py tests/web_api/test_private_risk_projection.py tests/web_api/test_held_continuity_api.py -q --basetemp=.tmp/p8-held-simulated-fix",
+    "temporary_directory": "repository .tmp via process TEMP/TMP",
+    "result": "181 passed in 35.36s",
+    "diff_check": "PASS; unrelated CRLF normalization notices only",
+    "scope": "TEST_ONLY fixtures and isolated journals; no actual private ledger accessed or mutated"
+  },
+  "root_handoff": "Root reports UI v3 TEST_ONLY factual marks, equity/PnL and outside-Top5 exit review correctly displayed. This is root-reported browser evidence, not independently rerun here. Root owns final full Core CI and final product acceptance. No app/frontend changes were made for the P1 fix.",
+  "public_membership_written": false,
+  "actual_ledger_written": false
+}

@@ -1,0 +1,52 @@
+{
+  "bundle_sha256": "53169790e8f359e8860bc1c085719c865a0c0cb100b0016ca1ae7ecec2e7663f",
+  "bundle_bytes": 45598,
+  "document_count": 5,
+  "company_count": 2,
+  "status": "collected_not_verified",
+  "observations": [
+    {
+      "symbol": "600887",
+      "observed_price": "28.03",
+      "result": {
+        "version": "quote-session-v2-szse-sse-raw-evidence",
+        "status": "intraday_quote",
+        "passed": false,
+        "expected_session": "2026-10-14",
+        "provider_times": {
+          "tencent": "2026-10-15T10:18:21+08:00",
+          "sina": "2026-10-15T10:18:21+08:00"
+        },
+        "source_hashes": [
+          "03d17f29a265e6025d5cc9a282a610fce69fc52fd13c571388fce9d0419c2097",
+          "4f610a2e434ecdfdfe91587f3b5a5a27fa0fa9c560f1a778f0ccc80c775bbd3d",
+          "c531e4ed2328b40ef4ce0abf961a044aeff802e60eb2e2f24ec2e9d8b2e48674"
+        ],
+        "reason": "盘中报价不能充当最近已完成交易日的收盘价"
+      }
+    },
+    {
+      "symbol": "000333",
+      "observed_price": "84.43",
+      "result": {
+        "version": "quote-session-v2-szse-sse-raw-evidence",
+        "status": "intraday_quote",
+        "passed": false,
+        "expected_session": "2026-10-14",
+        "provider_times": {
+          "tencent": "2026-10-15T10:18:21+08:00",
+          "sina": "2026-10-15T10:18:21+08:00"
+        },
+        "source_hashes": [
+          "03d17f29a265e6025d5cc9a282a610fce69fc52fd13c571388fce9d0419c2097",
+          "4f610a2e434ecdfdfe91587f3b5a5a27fa0fa9c560f1a778f0ccc80c775bbd3d",
+          "023b6379a117080240fe1a020f40341305be86083800c64a1a727d6819adac03",
+          "ceffa0cc72691178fa274957c5facade8b4153a7e90eb4a9c6b41d1561e76f6e"
+        ],
+        "reason": "盘中报价不能充当最近已完成交易日的收盘价"
+      }
+    }
+  ],
+  "production_database_changed": false,
+  "financial_or_strategy_approval": false
+}
