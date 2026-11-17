@@ -939,7 +939,7 @@ export const catalog: Record<
           ],
           outputDetails: [
             "首版proposal、package、receipt、三条十年现金账及条件压力估值，或字段级拒绝。",
-            "000568两份自身官方原件84项事实、600887两份自身官方原件44项事实均经同一首编入口冷重算并由公开API消费；主经济区间仍未采纳。",
+            "000568两份自身官方原件84项事实、600887两份自身官方原件44项事实经首编入口冷重算；600519四页权益表使用版本化v2重放44项事实，并由公开API消费。三家公司都未采纳主经济区间。",
           ],
           acceptanceChecks: [
             "检查项：无旧包仍可首编，输出已存在拒覆盖；来源变化、未来日期或descriptor不一致拒绝。",
@@ -963,6 +963,11 @@ export const catalog: Record<
               description: "原页事实重放。",
             },
             {
+              path: "src/value_investment_agent/infrastructure/filings/first_research_fact_replay_v2.py",
+              symbol: "replay_first_research_facts",
+              description: "四页跨页权益表的版本化原件重放；旧版保持历史语义。",
+            },
+            {
               path: "src/value_investment_agent/application/product/first_research_input_view_v1.py",
               symbol: "read_first_research_input",
               description: "注册首输入公开reader。",
@@ -978,7 +983,7 @@ export const catalog: Record<
           how: "核验事实和假设，经画像路由编译为共享模型输入。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
           done: "原生事实首编保留；新增直接经营现金首编：重读母公司原件和同日普通股数，逐年推导分配与留存，送入原ResearchApplicationService并完整保存版本化输入；已有公开详情接口消费结果。",
-          gap: "两家公司首编已通过共享模型，但未来母公司现金与终值假设仍待经济采纳；当前D2自动现金政策尚无完整正例，首编尚未批量化。不能将条件压力值写成主估值或当前买价。",
+          gap: "三家公司有来源绑定的条件计算；600519母公司现金观察仍因财报外币栏空白拒绝整表核验。未来母公司现金与终值假设待经济采纳，D2自动现金政策尚无完整正例，首编尚未批量化；条件压力值不是主估值或当前买价。",
           acceptance: "无旧研究包的真实公司经同一入口形成可消费的完整输入。",
           evidence: [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
@@ -997,9 +1002,9 @@ export const catalog: Record<
           "src/value_investment_agent/application/product/first_research_input_view_v1.py",
         ],
         engineeringStatus:
-          "首编与直接现金适配已通过真实来源重算；8001接口与公司页已消费",
+          "首编与直接现金适配已通过真实来源重算；600519新版E2回执已由8001公开API消费",
         evidenceStatus:
-          "000568的84项及600887的44项官方原件事实冷重放；经济采纳待审",
+          "000568的84项、600887的44项及600519的44项官方原件事实冷重放；经济采纳待审",
         shortStatus:
           "原生首编与直接现金两条入口已消费共享计算；主研究区间未采纳",
         implementation:
