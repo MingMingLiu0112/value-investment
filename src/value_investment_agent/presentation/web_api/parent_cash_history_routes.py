@@ -87,9 +87,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         if not re.fullmatch(r"[0-9]{6}", symbol):
             return reply({"action": "no_order", "status": "INVALID_SYMBOL"}, 422)
         try:
-            if not service.base.exists():
-                return reply({"action": "no_order", "symbol": symbol, "items": [], "formal": False})
-            children = list(islice(service.base.iterdir(), 101))
+            children = list(islice(service.base.iterdir(), 101)) if service.base.exists() else []
             if len(children) > 100:
                 raise ValueError("PARENT_TASK_DISCOVERY_LIMIT_EXCEEDED")
             items = []
@@ -120,6 +118,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                     if isinstance(error_code, str) and error_code.startswith(
                                         stage.upper().replace(".", "_") + "_")), None)
                 items.append({"task_id": directory.name, "status": state["status"],
+                    "task_contract": "parent-cash-task-v2",
                     "stage": next((row.get("scenario") for row in reservations.values()
                                    if row.get("status") == "RESERVED"), error_stage),
                     "completed_stages": sorted(state.get("responses", {})),
@@ -131,6 +130,45 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                  "reserved_cny": row.get("cost"), "settled_cny": row.get("actual_cost")}
                                 for row in reservations.values()],
                     "e2_consumption": "UNVERIFIED", "formal": False, "action": "no_order"})
+            if numbered_service.base.exists():
+                numbered_children = list(islice(numbered_service.base.iterdir(), 101))
+                if len(numbered_children) > 100:
+                    raise ValueError("PARENT_V3_TASK_DISCOVERY_LIMIT_EXCEEDED")
+                for directory in sorted(numbered_children):
+                    if (not directory.is_dir()
+                            or not re.fullmatch(r"rt-[0-9a-f]{32}", directory.name)
+                            or not (directory / "input.json").is_file()):
+                        continue
+                    spec, state, binding = numbered_service._load(directory.name)
+                    source = numbered_service._bound(spec["spec_binding"])
+                    if (source.get("action") != "no_order"
+                            or not spec["spec_binding"]["path"].startswith("runtime/")):
+                        raise ValueError("PARENT_V3_TASK_SOURCE_INVALID")
+                    if source.get("symbol") != symbol:
+                        continue
+                    reservations = state.get("reservations", {})
+                    if len(reservations) > 32 or len(state.get("responses", {})) > 9:
+                        raise ValueError("PARENT_V3_TASK_PROJECTION_LIMIT_EXCEEDED")
+                    items.append({"task_id": directory.name, "task_contract": "parent-cash-task-v3",
+                        "status": state["status"],
+                        "stage": next((row.get("scenario") for row in reservations.values()
+                                       if row.get("status") == "RESERVED"), None),
+                        "completed_stages": sorted(state.get("responses", {})),
+                        "error_code": state.get("error_code"),
+                        "source_years": sorted({ref["period_end"][:4]
+                            for ref in source.get("fact_anchors", {}).values()
+                            if isinstance(ref, dict) and re.fullmatch(
+                                r"[0-9]{4}-[0-9]{2}-[0-9]{2}", str(ref.get("period_end", "")))}),
+                        "source_binding": spec["spec_binding"], "record_binding": binding,
+                        "reserved_cost_cny": state.get("reserved_cost"),
+                        "settled_cost_cny": state.get("settled_cost"),
+                        "charges": [{"stage": row.get("scenario"), "status": row.get("status"),
+                                     "reserved_cny": row.get("cost"),
+                                     "settled_cny": row.get("actual_cost")}
+                                    for row in reservations.values()],
+                        "candidate_status": ("COMPILED_CONDITIONAL_NOT_MAIN" if state["status"] == "SUCCEEDED"
+                                             else "NOT_COMPILED"),
+                        "e2_consumption": "UNVERIFIED", "formal": False, "action": "no_order"})
             return reply({"action": "no_order", "symbol": symbol, "items": items, "formal": False})
         except (ValueError, OSError, KeyError, TypeError, RuntimeError):
             return reply({"action": "no_order", "status": "PARENT_TASK_HISTORY_UNAVAILABLE"}, 422)

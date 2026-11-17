@@ -97,3 +97,47 @@ def test_numbered_parent_cash_task_api_runs_only_on_explicit_post(tmp_path, monk
     assert calls[-2:] == [("resume", task_id), ("run", task_id)]
     assert client.post(path, json={"request_key": "x", "extra": 1}).status_code == 422
     assert client.get(f"{path}/invalid").status_code == 422
+
+
+def test_numbered_history_is_visible_without_old_task_store(tmp_path, monkeypatch):
+    directory = tmp_path / "new" / ("rt-" + "c" * 32)
+    directory.mkdir(parents=True)
+    (directory / "input.json").write_text("{}", encoding="utf-8")
+
+    class OldService:
+        base = tmp_path / "absent-old"
+
+        def __init__(self, root):
+            assert root == tmp_path
+
+    class NumberedService:
+        base = tmp_path / "new"
+
+        def __init__(self, root):
+            assert root == tmp_path
+
+        def _load(self, task_id):
+            assert task_id == directory.name
+            return ({"spec_binding": {"path": "runtime/source.json", "sha256": "a" * 64}},
+                    {"status": "SUCCEEDED", "responses": {"base.operating": {}},
+                     "reservations": {}, "reserved_cost": "0", "settled_cost": "0.1"},
+                    {"path": "runtime/task.json", "sha256": "b" * 64})
+
+        def _bound(self, binding):
+            return {"symbol": "000568", "action": "no_order",
+                    "fact_anchors": {"cash": {"period_end": "2025-12-31"}}}
+
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda _: tmp_path)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV2", OldService)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV3", NumberedService)
+    monkeypatch.setattr(routes, "authorize", lambda *_, **__: None)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=0)
+    response = TestClient(app).get(
+        "/api/v1/operating-research/parent-cash-tasks/history?symbol=000568")
+    assert response.status_code == 200
+    row = response.json()["items"][0]
+    assert row["task_contract"] == "parent-cash-task-v3"
+    assert row["candidate_status"] == "COMPILED_CONDITIONAL_NOT_MAIN"
+    assert row["e2_consumption"] == "UNVERIFIED"
+    assert row["action"] == "no_order"

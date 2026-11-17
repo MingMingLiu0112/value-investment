@@ -1691,6 +1691,8 @@ export interface ParentCashTaskHistory {
   formal: false;
   items: Array<{
     task_id: string;
+    task_contract?: "parent-cash-task-v2" | "parent-cash-task-v3";
+    candidate_status?: "COMPILED_CONDITIONAL_NOT_MAIN" | "NOT_COMPILED";
     status: string;
     stage: string | null;
     completed_stages: string[];

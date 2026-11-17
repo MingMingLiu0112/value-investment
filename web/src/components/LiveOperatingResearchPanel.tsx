@@ -44,14 +44,19 @@ export function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
     <section aria-label="母公司现金任务历史">
       <h4>母公司现金任务历史 · 非正式研究</h4>
       <p>
-        仅展示已有失败或部分任务；费用为任务记录，E2
-        使用情况未经证实。不构成正式结论或下单依据。
+        展示已留存的 V2 与 V3 母公司现金任务；V3
+        成功只表示条件现金候选完成编译。 费用为任务记录，E2
+        实际使用仍需核验，不构成正式结论或下单依据。
       </p>
       {error && <p>任务历史暂不可读取。</p>}
       {history?.items.length === 0 && <p>暂无相关记录。</p>}
       {history?.items.map((item) => (
         <div key={item.task_id}>
-          <strong>{item.task_id}</strong> · {item.status} · 当前阶段：
+          <strong>{item.task_id}</strong> · {item.task_contract || "历史任务"} ·{" "}
+          {item.status}
+          {item.candidate_status === "COMPILED_CONDITIONAL_NOT_MAIN" &&
+            " · 条件现金候选已编译，主估值未采用"}{" "}
+          · 当前阶段：
           {item.stage || "未记录"}· 来源年份：
           {item.source_years.join("、") || "未记录"}· 错误：
           {item.error_code || "无"}· 完成阶段：
