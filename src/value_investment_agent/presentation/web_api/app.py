@@ -1154,6 +1154,7 @@ def create_app(
         snapshot = _snapshot_metadata(project)
         identity["publication"] = {
             "status": snapshot["status"],
+            "reason": snapshot.get("reason"),
             "publication_id": snapshot["publication_id"],
             "packet_sha256": snapshot["packet_sha256"],
             "published_at": snapshot["published_at"],
@@ -1166,6 +1167,9 @@ def create_app(
         if registry["status"] != "MATCHED":
             identity["status"] = "MISMATCH"
             identity["reasons"].append("PUBLICATION_REGISTRY_" + registry["status"])
+        if registry.get("source_validation", {}).get("status") == "NOT_VERIFIED":
+            identity["status"] = "MISMATCH"
+            identity["reasons"].append("PUBLICATION_SOURCE_VALIDATION_NOT_VERIFIED")
         return identity
 
     @api.get("/api/v1/research-funnel-status")

@@ -54,6 +54,9 @@ const CODE_TEXT: Record<string, string> = {
   PUBLICATION_CHAIN_UNAVAILABLE: "发布链不可用（哈希或结构校验未通过）",
   PUBLICATION_REGISTRY_MISMATCH: "当前发布注册表与已验证数据包不一致",
   PUBLICATION_REGISTRY_UNAVAILABLE: "当前发布注册表尚无法核验",
+  PUBLICATION_SOURCE_VALIDATION_NOT_VERIFIED:
+    "发布引用已可核对，但来源或价格时效校验仍未通过；不具备当前操作资格",
+  BEHAVIOR_CONFIG_DIRTY: "本机行为配置尚有未提交修改，需核对来源后纳入版本",
   NEEDS_RE_RESEARCH: "需要重新研究以覆盖最新已核验收盘",
   MODEL_VALIDITY_UNKNOWN: "模型有效性未确立",
   VALUE_EXPLANATION_BINDING_UNAVAILABLE: "研究解释绑定不可用",

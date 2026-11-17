@@ -4,7 +4,7 @@ import json
 import re
 
 from ..research.first_research_input_v1 import replay_first_research_input
-from ..research.first_input_parent_cash_observation_v1 import observe_first_input_parent_cash
+from ..research.first_input_parent_cash_observation_v2 import observe_first_input_parent_cash_by_source
 from ..research.agent_review.web_research import _binding, _raw, MAX_JSON, _json
 
 REGISTRY="config/current-first-research-inputs-v1.json"
@@ -69,7 +69,7 @@ def read_first_research_input(*,root,symbol,now:datetime):
         spec=bound_json(receipt["spec_binding"])
         assumptions=bound_json(spec["assumption_binding"])
         native=bound_json(spec["native_facts_binding"])
-        parent_cash=observe_first_input_parent_cash(root=root,
+        parent_cash=observe_first_input_parent_cash_by_source(root=root,
             native_facts_binding=spec["native_facts_binding"],now=now)
         from ..research.quarter_financial_read_model_v1 import read_quarter_financial_ocr
         from ..research.quarter_income_facts_v2 import read_quarter_income_facts
