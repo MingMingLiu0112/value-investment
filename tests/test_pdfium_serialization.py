@@ -121,6 +121,7 @@ def test_new_native_pdfium_calls_require_shared_serialization():
             calls.extend(native)
             sites.add((path.relative_to(package).as_posix(), function.name))
     assert sites == {
+        ('application/research/quarter_income_facts_v2.py', '_render'),
         ('infrastructure/filings/pdf_text.py', 'extract_pages'),
         ('infrastructure/filings/official_pdf.py', 'validate_pdf_original'),
         ('infrastructure/filings/first_research_fact_replay_v1.py', '_native_column'),

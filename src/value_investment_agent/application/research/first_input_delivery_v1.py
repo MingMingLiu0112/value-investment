@@ -20,7 +20,7 @@ def _replay_projection(stage, symbol, now):
         "root=Path(sys.argv[1]);sys.path.insert(0,str(root/'src'));"
         "from value_investment_agent.application.product.first_research_input_view_v1 import read_first_research_input;"
         "x=read_first_research_input(root=root,symbol=sys.argv[2],now=datetime.fromisoformat(sys.argv[3]));"
-        "keys=json.loads(sys.argv[4]);print(json.dumps({k:x.get(k) for k in keys}))"
+        "keys=json.loads(sys.argv[4]);print(json.dumps({**{k:x.get(k) for k in keys},'_diagnostic':{'reason':x.get('reason'),'blockers':x.get('blockers')}}))"
     )
     run = subprocess.run([sys.executable, "-I", "-B", "-c", code, str(stage), symbol,
                           now.isoformat(), json.dumps(KEYS)], cwd=stage,
@@ -66,7 +66,11 @@ def restore_first_input_delivery(*, archive_root, manifest_sha256, destination):
         for symbol, expected in bundle["expected"].items():
             actual = _replay_projection(stage, symbol, now)
             if {key: actual.get(key) for key in KEYS} != expected:
-                raise ValueError("FIRST_INPUT_RESTORED_RESULT_MISMATCH:" + symbol)
+                differences = {key: {'expected': expected.get(key), 'actual': actual.get(key)}
+                               for key in KEYS if actual.get(key) != expected.get(key)}
+                raise ValueError("FIRST_INPUT_RESTORED_RESULT_MISMATCH:" + symbol + ":" +
+                                 json.dumps({'differences': differences, 'diagnostic': actual.get('_diagnostic')},
+                                            ensure_ascii=True, default=str))
     packet = restore_archive(archive_root=archive_root, manifest_sha256=manifest_sha256,
                              destination=destination, validate=validate)
     return {"status": "ISOLATED_RESTORE_REPLAY_PASSED", "manifest_sha256": manifest_sha256,
