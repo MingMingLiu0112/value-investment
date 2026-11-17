@@ -30,6 +30,9 @@ jobs:
       - name: Verify reviewed strategy-statistics runtime
         run: python -c "from importlib.metadata import version; from arch.bootstrap import StationaryBootstrap; assert version('arch') == '8.0.0'"
       - name: Verify fail-closed offline research gates
+        # Keep real delivery portability failures ahead of the long full suite.
+        run: python -B -m pytest -q -p no:cacheprovider tests/test_first_input_delivery_v1.py tests/test_pdfium_serialization.py --basetemp=.tmp/delivery-preflight
+      - name: Verify full offline research gates
         run: >-
           mkdir -p .tmp && python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest --junitxml=.tmp/offline-core-results.xml
           tests/test_research_gate.py
