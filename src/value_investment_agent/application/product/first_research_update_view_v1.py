@@ -43,7 +43,7 @@ def read_first_research_update(*, root: Path, symbol: str, now: datetime,
         if ref is None:
             return base
         update = _bound(root, ref, "E1 update")
-        if (update.get("schema_version") != "first-research-input-update-v1"
+        if (update.get("schema_version") not in {"first-research-input-update-v1", "first-research-input-update-v2"}
                 or update.get("symbol") != symbol or update.get("action") != "no_order"
                 or update.get("status") != "SUCCESSOR_CONDITIONAL_RESEARCH_PENDING_REVIEW"
                 or any(update.get(key) is not False for key in
@@ -51,8 +51,13 @@ def read_first_research_update(*, root: Path, symbol: str, now: datetime,
             raise ValueError("E1 update boundary invalid")
         if predecessor_binding is not None and predecessor_binding != update["predecessor_binding"]:
             raise ValueError("E1 predecessor differs from the currently displayed first input")
-        old = replay_first_research_input(root=root, receipt_binding=update["predecessor_binding"], now=now)
-        new = replay_first_research_input(root=root, receipt_binding=update["successor_binding"], now=now)
+        if update["schema_version"] == "first-research-input-update-v2":
+            from ..research.first_research_input_v2 import replay_first_research_input_v2
+            replay = replay_first_research_input_v2
+        else:
+            replay = replay_first_research_input
+        old = replay(root=root, receipt_binding=update["predecessor_binding"], now=now)
+        new = replay(root=root, receipt_binding=update["successor_binding"], now=now)
         if (old["research_case"]["symbol"] != symbol or new["research_case"]["symbol"] != symbol
                 or old["input_fingerprint"] != update["predecessor_input_fingerprint"]
                 or new["input_fingerprint"] != update["successor_input_fingerprint"]
@@ -72,6 +77,10 @@ def read_first_research_update(*, root: Path, symbol: str, now: datetime,
             raise ValueError("E1 successor rationale incomplete")
         change_rationale = choice.get("rationale")
         countercase = choice.get("countercase")
+        if update["schema_version"] == "first-research-input-update-v2" and (
+                change_rationale != update.get("change_rationale")
+                or countercase != update.get("countercase")):
+            raise ValueError("E1 v2 change rationale differs from bound assumptions")
         if (not isinstance(change_rationale, str) or not change_rationale.strip()
                 or not isinstance(countercase, str) or not countercase.strip()):
             raise ValueError("E1 successor rationale incomplete")
