@@ -104,6 +104,16 @@ def staged_parent_cash_request_v3(**kwargs):
         " a dated maturity schedule. Do not claim the upper bound must be repaid"
         " or refinanced as a verified financing obligation."
     )
+    if "forecast_closing_debt_after_annual_years" in payload:
+        exact_cap = payload["forecast_closing_debt_after_annual_years"]["value_cny"]
+        rule += (
+            " The exact forecast terminal opening debt is " + exact_cap +
+            " CNY. Any terminal annual gross debt_repayment must be no greater"
+            " than this exact amount. Do not round the amount upward to a"
+            " convenient billion; equal gross new_borrowing does not relax"
+            " this bound. A feasible arithmetic assumption is still not"
+            " evidence of available refinancing."
+        )
     return replace(request, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
                                              separators=(",", ":")),
                    transport_output_contract=request.transport_output_contract + rule)

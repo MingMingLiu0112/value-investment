@@ -54,6 +54,8 @@ def test_v3_terminal_request_exposes_forecast_debt_without_certifying_refinancin
         "scope": "ALL_PARENT_LIABILITIES_UPPER_BOUND_NOT_FINANCING_FACT",
     }
     assert "not an observed interest-bearing debt balance" in request.transport_output_contract
+    assert "exact forecast terminal opening debt is 85 CNY" in request.transport_output_contract
+    assert "Do not round the amount upward" in request.transport_output_contract
     assert "maximum gross terminal repayment" in request.transport_output_contract
 
 
