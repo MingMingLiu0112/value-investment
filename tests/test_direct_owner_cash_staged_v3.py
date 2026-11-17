@@ -1,10 +1,60 @@
 """TEST_ONLY annual cash sufficiency checks for numbered parent evidence."""
 from datetime import datetime, timezone
+import json
 
 import pytest
 
 from value_investment_agent.application.research import direct_owner_cash_staged_v3 as staged
 from value_investment_agent.domain.valuation.parent_direct_operating_cash import SCOPE
+from value_investment_agent.infrastructure.agent_runtime.provider import LLMRequest
+
+
+def test_v3_terminal_request_states_existing_stationary_cash_gate(monkeypatch):
+    old = LLMRequest(role="FUNDAMENTAL", system="old", user="{}",
+                     output_schema={"type": "object"},
+                     transport_output_contract="Old terminal contract.")
+    monkeypatch.setattr(staged, "staged_parent_cash_request", lambda **_kwargs: old)
+    assert staged.staged_parent_cash_request_v3(stage="operating") is old
+    updated = staged.staged_parent_cash_request_v3(stage="terminal")
+    assert updated is not old
+    assert updated.system == old.system and updated.user == old.user
+    assert updated.output_schema == old.output_schema
+    assert updated.transport_output_contract.startswith(old.transport_output_contract)
+    assert "between zero and parent_profit inclusive" in updated.transport_output_contract
+    assert "one-time return of investment principal" in updated.transport_output_contract
+    assert "12 percent must be 0.12, never 12.00" in updated.transport_output_contract
+
+
+def test_v3_terminal_request_exposes_forecast_debt_without_certifying_refinancing(monkeypatch, tmp_path):
+    old = LLMRequest(role="FUNDAMENTAL", system="old", user="{}",
+                     output_schema={"type": "object"}, transport_output_contract="old")
+    monkeypatch.setattr(staged, "staged_parent_cash_request", lambda **_kwargs: old)
+    monkeypatch.setattr(staged, "_load_spec", lambda *_args: {
+        "opening": {"debt": {"anchor": "liabilities", "factor": "1"}}})
+    request = staged.staged_parent_cash_request_v3(
+        stage="terminal", root=tmp_path, spec_binding={},
+        verified_context={"facts": {"liabilities": {"value_cny": "100"}}},
+        prior_drafts={"policy": {"series": {
+            "new_borrowing": {"values": ["10", "0"]},
+            "debt_repayment": {"values": ["20", "5"]}}}})
+    debt = json.loads(request.user)["forecast_closing_debt_after_annual_years"]
+    assert debt["value_cny"] == "85"
+    assert debt["classification"] == "DERIVED_FORECAST_ASSUMPTION_NOT_FACT"
+    assert debt["refinancing_guaranteed"] is False
+
+
+def test_v3_terminal_rejects_unfunded_debt_policy_before_next_model_call():
+    request = LLMRequest(role="FUNDAMENTAL", system="", user=json.dumps({
+        "forecast_closing_debt_after_annual_years": {"value_cny": "85"}}),
+        output_schema={"type": "object"})
+    with pytest.raises(ValueError, match="TERMINAL_DEBT_POLICY_UNSUPPORTED"):
+        staged.preflight_terminal_forecast_debt_v3(request=request,
+            parsed_stage={"terminal": {"financing": None}})
+    with pytest.raises(ValueError, match="TERMINAL_REFINANCING_ARITHMETIC_INVALID"):
+        staged.preflight_terminal_forecast_debt_v3(request=request,
+            parsed_stage={"terminal": {"financing": {"mode": "CONSTANT_DEBT_REFINANCING"},
+                "policy": {"debt_repayment": {"values": ["86"]},
+                           "new_borrowing": {"values": ["86"]}}}})
 
 
 def test_numbered_annual_history_drives_cash_preflight(monkeypatch, tmp_path):

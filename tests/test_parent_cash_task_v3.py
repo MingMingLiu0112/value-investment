@@ -65,7 +65,8 @@ def task(tmp_path, monkeypatch):
             "receipts": fact("customer_cash", "10"),
             "paid": fact("supplier_cash", "10"),
             "cfo": fact("cfo", "10"),
-            "cash": fact("closing_cash_and_equivalents_cny", "100", "balance_sheet")})
+            "cash": fact("closing_cash_and_equivalents_cny", "100", "balance_sheet"),
+            "debt": fact("liabilities_cny", "0", "balance_sheet")})
     module_name = "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2"
     facts_stub = types.ModuleType(module_name)
     facts_stub.__file__ = str(Path(target.__file__).parent.parent / "direct_owner_cash_agent_facts_v1.py")
@@ -76,6 +77,8 @@ def task(tmp_path, monkeypatch):
     monkeypatch.setattr(staged, "_load_spec", lambda root, binding:
                         {"operating_sources": [{"path": "fixture", "sha256": "a" * 64}],
                          "opening": {"cash": {"classification": "FACT", "anchor": "cash"}}})
+    monkeypatch.setattr(staged_numbered, "_load_spec", lambda root, binding:
+                        {"opening": {"debt": {"classification": "FACT", "anchor": "debt"}}})
     monkeypatch.setattr(staged, "read_parent_direct_cash_research", lambda **_:
                         {"observed": [dict(symbol="600887", scope="ISSUER_PARENT_STANDALONE",
                             currency="CNY", classification="FACT",
@@ -102,6 +105,22 @@ def test_nine_stages_and_shared_budget(task):
     assert result["formal_eligibility"] is False
     assert service.read(created["task_id"])["status"] == "SUCCEEDED"
     assert len(provider.calls) == 9
+
+
+def test_old_implementation_retains_original_failure_without_replay(task, monkeypatch):
+    service, provider = task
+    provider.fail_at = 1
+    created = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+        request_key="parentcashv3history", now=NOW)
+    failed = service.run(created["task_id"], now=NOW)
+    assert failed["status"] == "FAILED"
+    original_error = failed["error_code"]
+    monkeypatch.setattr(target, "_implementation", lambda: "0" * 64)
+    historical = service.read(created["task_id"])
+    assert historical["historical_status"] == "FAILED"
+    assert historical["historical_error_code"] == original_error
+    assert historical["error_code"] == "PARENT_IMPLEMENTATION_CHANGED_REPLAY_REQUIRED"
+    assert "candidate" not in historical
 
 
 def test_ambiguous_stage_never_resends(task):

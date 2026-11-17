@@ -17,10 +17,11 @@ def read_parent_cash_agent_facts_v2(**kwargs):
     return reader(**kwargs)
 
 from ..direct_owner_cash_staged_v2 import (
-    STAGES, staged_parent_cash_request, parse_staged_parent_cash_response,
+    STAGES, parse_staged_parent_cash_response,
 )
 from ..direct_owner_cash_staged_v3 import (
     preflight_annual_cash_upper_bound_v3, merge_staged_parent_cash_v3,
+    staged_parent_cash_request_v3, preflight_terminal_forecast_debt_v3,
 )
 from ..direct_owner_cash_agent_draft_v2 import (
     SCENARIOS, assemble_parent_cash_drafts_v2,
@@ -188,7 +189,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 raise ValueError("PARENT_V3_PRIOR_STAGE_MISSING")
             binding = state["responses"][stage_id]
             packet = self._bound(binding)
-            request = staged_parent_cash_request(root=self.root,
+            request = staged_parent_cash_request_v3(root=self.root,
                 spec_binding=spec["spec_binding"], scenario=scenario, stage=stage,
                 prior_drafts=prior, generated_at=datetime.fromisoformat(spec["created_at"]),
                 verified_context=context,
@@ -197,9 +198,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     _hash(_bytes(request.__dict__)) or packet.get("source_fingerprint") !=
                     context["input_fingerprint"] or packet.get("action") != "no_order"):
                 raise ValueError("PARENT_RESPONSE_BINDING_INVALID")
-            outputs[scenario][stage] = parse_staged_parent_cash_response(
+            parsed = parse_staged_parent_cash_response(
                 LLMResponse(**packet["response"]), request=request,
                 source_fingerprint=context["input_fingerprint"])
+            if stage == "terminal":
+                preflight_terminal_forecast_debt_v3(request=request, parsed_stage=parsed)
+            outputs[scenario][stage] = parsed
         return outputs
 
     def _drafts(self, spec, state, now):
@@ -214,7 +218,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             requests = {}
             for stage in STAGES:
                 prior = {name: stages[name] for name in STAGES[:STAGES.index(stage)]}
-                requests[stage] = staged_parent_cash_request(root=self.root,
+                requests[stage] = staged_parent_cash_request_v3(root=self.root,
                     spec_binding=spec["spec_binding"], scenario=scenario, stage=stage,
                     prior_drafts=prior, generated_at=datetime.fromisoformat(spec["created_at"]),
                     verified_context=context,
@@ -289,6 +293,11 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if spec.get("seed") is not None:
             view["reused_stages"] = list(spec["seed"]["responses"])
             view["reused_from_task_id"] = spec["seed"]["task_id"]
+        if spec.get("implementation_sha256") != _implementation():
+            view.update(historical_status=state["status"],
+                        historical_error_code=state.get("error_code"),
+                        status="FAILED", error_code="PARENT_IMPLEMENTATION_CHANGED_REPLAY_REQUIRED")
+            return view
         try:
             drafts = self._drafts(spec, state, now)
             view["completed_stages"] = [stage for stage in STAGE_ORDER
@@ -491,7 +500,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     prior = self._stage_outputs(spec, state, _now(), verified_context=context)[scenario]
                     if set(prior) != set(STAGES[:STAGES.index(stage)]):
                         raise ValueError("PARENT_V3_STAGE_ORDER_INVALID")
-                    request = staged_parent_cash_request(root=self.root,
+                    request = staged_parent_cash_request_v3(root=self.root,
                         spec_binding=spec["spec_binding"], scenario=scenario, stage=stage,
                         prior_drafts=prior, generated_at=datetime.fromisoformat(spec["created_at"]),
                         verified_context=context,
@@ -549,6 +558,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                             returned_responses=state.get("returned_responses", []) + [response_binding])
                     parsed_stage = parse_staged_parent_cash_response(response, request=request,
                         source_fingerprint=spec["source_fingerprint"])
+                    if stage == "terminal":
+                        preflight_terminal_forecast_debt_v3(request=request, parsed_stage=parsed_stage)
                     with self._lock(directory):
                         spec, state, binding = self._load(task_id)
                         if state["status"] == "CANCELLED":

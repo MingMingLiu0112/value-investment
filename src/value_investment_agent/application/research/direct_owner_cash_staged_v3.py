@@ -5,18 +5,97 @@ parent-company observation source changes; no model response is repaired.
 """
 from __future__ import annotations
 
+from dataclasses import replace
 from decimal import Decimal, localcontext
+import json
 from pathlib import Path
 
 from .direct_owner_cash_agent_draft_v1 import _load_spec
 from .direct_owner_cash_agent_draft_v2 import VERSION as DRAFT_VERSION_V2
-from .direct_owner_cash_staged_v2 import merge_staged_parent_cash
+from .direct_owner_cash_staged_v2 import (
+    merge_staged_parent_cash, staged_parent_cash_request,
+)
 from .parent_direct_owner_cash_sources_v2 import read_parent_direct_owner_cash_sources_v2
 from ...domain.valuation.parent_direct_operating_cash import (
     SCOPE, forecast_parent_operating_cash,
 )
 
 VERSION = "direct-owner-cash-staged-v3"
+
+
+def staged_parent_cash_request_v3(**kwargs):
+    """Keep old stage schemas; state the existing terminal economic invariant.
+
+    Old sealed requests and responses remain historical. This V3-only prompt
+    correction never edits a model response or relaxes the deterministic cash
+    compiler, which still rejects an unsupported stationary tail.
+    """
+    request = staged_parent_cash_request(**kwargs)
+    if kwargs["stage"] != "terminal":
+        return request
+    payload = json.loads(request.user)
+    if kwargs.get("verified_context") is not None and kwargs.get("prior_drafts") is not None:
+        # This is a forecast arithmetic check, never evidence of future lending.
+        spec = _load_spec(Path(kwargs["root"]), kwargs["spec_binding"])
+        opening_debt = spec["opening"]["debt"]
+        facts = kwargs["verified_context"]["facts"]
+        def amount(term):
+            if "linear_terms" in term:
+                return sum(Decimal(facts[row["anchor"]]["value_cny"]) *
+                           Decimal(row["factor"]) for row in term["linear_terms"])
+            if "anchor" in term:
+                factor = Decimal(term.get("factor", "1"))
+                return Decimal(facts[term["anchor"]]["value_cny"]) * factor
+            return Decimal(term["value"])
+        policy = kwargs["prior_drafts"]["policy"]["series"]
+        debt = amount(opening_debt)
+        for borrowing, repayment in zip(policy["new_borrowing"]["values"],
+                                        policy["debt_repayment"]["values"], strict=True):
+            debt += Decimal(borrowing) - Decimal(repayment)
+            if debt < 0:
+                raise ValueError("PARENT_V3_FORECAST_DEBT_NEGATIVE")
+        payload["forecast_closing_debt_after_annual_years"] = dict(
+            value_cny=str(debt),
+            classification="DERIVED_FORECAST_ASSUMPTION_NOT_FACT",
+            method="opening debt assumption plus ten annual new_borrowing minus debt_repayment",
+            refinancing_guaranteed=False)
+    rule = (
+        " For the stationary tail, calculate net distributable cash before payout as "
+        "operating_cash + investment_cash_received - maintenance_capex - growth_capex "
+        "- interest_outside_cfo - other_mandatory_cash + new_borrowing - debt_repayment. "
+        "This stationary net must be between zero and parent_profit inclusive. "
+        "A one-time return of investment principal is not a recurring terminal receipt. "
+        "Explain the recurring source of investment_cash_received; if it cannot be "
+        "supported, leave the terminal economically unassessable rather than inventing "
+        "a sustainable amount. Do not adjust values to match a market price."
+        " Express cost_of_equity as a decimal fraction strictly between zero and one: "
+        "12 percent must be 0.12, never 12.00. Do not silently convert an "
+        "unsupported rate or infer one from the current share price."
+        " If forecast_closing_debt_after_annual_years.value_cny is positive, "
+        "terminal.financing cannot be null; an equal borrowing/repayment rollover "
+        "is only a conditional assumption and must include cash interest."
+    )
+    return replace(request, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
+                                             separators=(",", ":")),
+                   transport_output_contract=request.transport_output_contract + rule)
+
+
+def preflight_terminal_forecast_debt_v3(*, request, parsed_stage):
+    """Reject a terminal debt contradiction before requesting another scenario."""
+    projected = json.loads(request.user).get("forecast_closing_debt_after_annual_years")
+    if projected is None:
+        return  # Older TEST_ONLY requests have no source-bound debt projection.
+    debt = Decimal(projected["value_cny"])
+    terminal = parsed_stage["terminal"]
+    financing = terminal["financing"]
+    if debt > 0 and financing is None:
+        raise ValueError("PARENT_V3_TERMINAL_DEBT_POLICY_UNSUPPORTED")
+    if financing is not None:
+        policy = terminal["policy"]
+        repayment = Decimal(policy["debt_repayment"]["values"][0])
+        borrowing = Decimal(policy["new_borrowing"]["values"][0])
+        if repayment > debt or borrowing != repayment:
+            raise ValueError("PARENT_V3_TERMINAL_REFINANCING_ARITHMETIC_INVALID")
 
 
 def merge_staged_parent_cash_v3(**kwargs):
