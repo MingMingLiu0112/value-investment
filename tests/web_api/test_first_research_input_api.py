@@ -88,6 +88,33 @@ def test_verified_quote_is_observation_not_first_input_price(registered,monkeypa
     assert snapshot(root)==before
 
 
+def test_unrelated_verified_e1_chain_is_historical_not_current(registered, monkeypatch):
+    root, _, _ = registered
+    from value_investment_agent.presentation.web_api import first_research_input_routes as routes
+    calls = []
+
+    def update(*, predecessor_binding=None, **_):
+        calls.append(predecessor_binding)
+        if predecessor_binding is not None:
+            return {"status": "UNASSESSABLE",
+                    "reason": "E1 predecessor differs from the currently displayed first input"}
+        return {"status": "SOURCE_BOUND_CONDITIONAL_SUCCESSOR", "symbol": "600887",
+                "action": "no_order", "formal_eligibility": False,
+                "main_range_adopted": False, "price_admitted": False,
+                "research_as_of": "2026-11-11"}
+
+    monkeypatch.setattr(routes, "read_first_research_update", update)
+    client, _ = client_for(root, root / "TEST_ONLY-private-journal.jsonl", monkeypatch)
+    before = snapshot(root)
+    body = client.get(ROUTE + "600887").json()
+    assert body["status"] == "SOURCE_BOUND_FIRST_INPUT_COMPILED"
+    assert body["successor_update"]["status"] == "UNASSESSABLE"
+    assert body["historical_successor_update"]["status"] == "SOURCE_BOUND_CONDITIONAL_SUCCESSOR"
+    assert body["formal_eligibility"] is False and body["action"] == "no_order"
+    assert calls[0] == body["receipt_binding"] and calls[1] is None
+    assert snapshot(root) == before
+
+
 @pytest.mark.parametrize('registered_empty',[False,True])
 def test_public_missing_registry_or_symbol_read_only(tmp_path,monkeypatch,registered_empty):
     if registered_empty:

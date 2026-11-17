@@ -615,10 +615,46 @@ export function FirstResearchInputView({
       {data.successor_update?.status === "UNASSESSABLE" && (
         <Alert
           type="warning"
-          message="后继研究版本无法核验"
-          description={data.successor_update.reason || "来源或版本校验失败"}
+          message={
+            data.historical_successor_update
+              ? "当前候选没有对应的后继研究"
+              : "后继研究版本无法核验"
+          }
+          description={
+            data.historical_successor_update
+              ? "下方可查看另一份旧研究输入的历史版本链；其结论不适用于本页当前候选。"
+              : data.successor_update.reason || "来源或版本校验失败"
+          }
         />
       )}
+      {data.historical_successor_update?.status ===
+        "SOURCE_BOUND_CONDITIONAL_SUCCESSOR" &&
+        data.historical_successor_update.symbol === symbol &&
+        data.historical_successor_update.action === "no_order" && (
+          <section aria-label="历史研究版本">
+            <h4>E1 历史研究版本</h4>
+            <p>
+              该版本链已按原来源冷重算，但它接续的是另一份旧研究输入，不改变本页当前候选或条件价格。
+            </p>
+            <p>
+              研究截止：
+              {data.historical_successor_update.research_as_of || "未提供"} ·
+              财务依据：
+              {data.historical_successor_update.financial_basis || "未提供"}
+            </p>
+            <p>
+              变化输入：
+              {data.historical_successor_update.changed_input_fields?.join(
+                "、",
+              ) || "未提供"}
+            </p>
+            {data.historical_successor_update.change_rationale && (
+              <p>
+                修订理由：{data.historical_successor_update.change_rationale}
+              </p>
+            )}
+          </section>
+        )}
       <h4>条件研究论点</h4>
       <p>{data.research_case.thesis}</p>
       {SCENARIOS.map(([name, label]) => {

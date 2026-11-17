@@ -477,6 +477,17 @@ export type FirstResearchInputResponse = {
     successor_valuation?: FirstResearchInputResponse["valuation"];
     valuation_changed?: boolean;
   };
+  historical_successor_update?: {
+    status: "SOURCE_BOUND_CONDITIONAL_SUCCESSOR";
+    symbol: string;
+    action: "no_order";
+    research_as_of?: string;
+    financial_basis?: string;
+    changed_input_fields?: string[];
+    change_rationale?: string;
+    predecessor_input_fingerprint?: string;
+    successor_input_fingerprint?: string;
+  };
   formal_eligibility: false;
   main_range_adopted: boolean;
   main_valuation_range: unknown;

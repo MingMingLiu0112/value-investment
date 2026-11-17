@@ -18,6 +18,15 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
         if result.get("status") == "SOURCE_BOUND_FIRST_INPUT_COMPILED":
             result["successor_update"] = read_first_research_update(
                 root=project, symbol=symbol, now=clock(), predecessor_binding=result["receipt_binding"])
+            if (result["successor_update"].get("status") == "UNASSESSABLE"
+                    and result["successor_update"].get("reason") ==
+                    "E1 predecessor differs from the currently displayed first input"):
+                historical = read_first_research_update(
+                    root=project, symbol=symbol, now=clock())
+                if historical.get("status") == "SOURCE_BOUND_CONDITIONAL_SUCCESSOR":
+                    # Both old versions cold replay, but this chain is not a
+                    # successor of the first input currently shown above.
+                    result["historical_successor_update"] = historical
             # A verified close is a separate observation. It must not populate
             # current_price or turn this historical conditional study into F2.
             try:
