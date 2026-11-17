@@ -53,8 +53,17 @@ def test_real_numbered_receipts_and_fail_closed():
         assert statement["income"]["parent_net_profit_cny"]["source_refs"]["physical_page"]
         assert statement["income"]["interest_expense_cny"]["source_refs"]["physical_page"]
         assert statement["checks"]["balance_equation_reconciled"] is True
-        assert statement["checks"]["cash_statement_reconciled"] is False
-        assert "short_term_borrowings_cny" not in statement["balance_sheet"]
+        assert statement["checks"]["cash_statement_reconciled"] is True
+        assert statement["cash_flow"]["fx_cny"]["source_refs"]["physical_page"] in {46, 84}
+        if statement["period_basis"] == "FY":
+            assert "short_term_borrowings_cny" not in statement["balance_sheet"]
+            assert statement["cash_flow"]["borrowings_received_cny"]["current"] is None
+            assert statement["cash_flow"]["borrowings_received_cny"]["comparative"] == "2000000000.00"
+        else:
+            assert statement["balance_sheet"]["short_term_borrowings_cny"]["current"] == "3001758333.34"
+            assert statement["balance_sheet"]["short_term_borrowings_cny"]["comparative"] is None
+            assert statement["cash_flow"]["borrowings_received_cny"]["current"] == "3000000000.00"
+            assert statement["cash_flow"]["borrowings_received_cny"]["comparative"] is None
         assert any(gap["field"] == "short_term_borrowings_cny"
                    for gap in statement["gaps"])
         for field in ("revenue", "cost"):
@@ -132,3 +141,38 @@ def test_split_share_table_requires_all_reconciliations(monkeypatch, tmp_path):
     with pytest.raises(ValueError, match="SHARE_TABLE_RECONCILIATION_CHANGED"):
         adapter._numbered_ordinary_shares(
             tmp_path, statement, "TEST_ONLY", datetime.now(timezone.utc))
+
+
+def test_single_printed_amount_needs_unique_pdf_column(monkeypatch, tmp_path):
+    import pdfplumber
+
+    class Page:
+        def __init__(self, rows):
+            self.rows = rows
+
+        def extract_tables(self):
+            return [self.rows]
+
+    class PDF:
+        def __init__(self, rows):
+            self.pages = [Page(rows)]
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    rows = [["TEST_ONLY current", "1,000.00", ""]]
+    monkeypatch.setattr(pdfplumber, "open", lambda *_args: PDF(rows))
+    assert adapter._one_printed_amount_columns(tmp_path / "test.pdf", 1,
+                                                "TEST_ONLY current", "1000.00") == (
+        "1000.00", None)
+    rows[0] = ["TEST_ONLY comparative", "", "1,000.00"]
+    assert adapter._one_printed_amount_columns(tmp_path / "test.pdf", 1,
+                                                "TEST_ONLY comparative", "1000.00") == (
+        None, "1000.00")
+    rows.append(["TEST_ONLY comparative", "1,000.00", ""])
+    with pytest.raises(ValueError, match="COLUMN_AMBIGUOUS"):
+        adapter._one_printed_amount_columns(tmp_path / "test.pdf", 1,
+                                            "TEST_ONLY comparative", "1000.00")

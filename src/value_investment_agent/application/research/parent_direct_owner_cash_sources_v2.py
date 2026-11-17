@@ -33,7 +33,8 @@ _EXTRA_BALANCE = {
     "other_current_liabilities_cny": "其他流动负债",
 }
 _EXTRA_CASH = {"customer_cash_cny": "销售商品、提供劳务收到的现金",
-               "supplier_cash_cny": "购买商品、接受劳务支付的现金"}
+               "supplier_cash_cny": "购买商品、接受劳务支付的现金",
+               "borrowings_received_cny": "取得借款收到的现金"}
 
 
 def _fact(value, comparative, page, excerpt, source, period, field, *, balance=False):
@@ -45,6 +46,56 @@ def _fact(value, comparative, page, excerpt, source, period, field, *, balance=F
     return dict(current=value, comparative=comparative, physical_page=page,
                 excerpt=excerpt, classification="FACT", scope=prior.SCOPE,
                 currency="CNY", source_refs=ref)
+
+
+def _one_printed_amount_columns(original, page, label, printed):
+    """Locate a sole printed amount in the actual PDF table, never fill its blank peer.
+
+    PDFium text preserves the row label and amount but loses empty column
+    positions. The table geometry supplies that position only when the amount
+    uniquely identifies one three-column row on this physical page.
+    """
+    import pdfplumber
+
+    matches = []
+    with pdfplumber.open(original) as pdf:
+        for table in pdf.pages[page - 1].extract_tables():
+            for row in table:
+                if (not row or len(row) != 3 or not isinstance(row[0], str)
+                        or re.sub(r"\s+", "", row[0]) != re.sub(r"\s+", "", label)):
+                    continue
+                current = (row[1] or "").replace(",", "").strip()
+                comparative = (row[2] or "").replace(",", "").strip()
+                if current == printed and not comparative:
+                    matches.append((printed, None))
+                elif comparative == printed and not current:
+                    matches.append((None, printed))
+    if len(matches) != 1:
+        raise ValueError("OWNER_CASH_V2_SINGLE_AMOUNT_COLUMN_AMBIGUOUS")
+    return matches[0]
+
+
+def _parent_fx_row(original, first_page, last_page, expected):
+    """Recover the wrapped signed FX line from the numbered parent cash table."""
+    import pdfplumber
+
+    label = "四、汇率变动对现金及现金等价物的影响"
+    matches = []
+    with pdfplumber.open(original) as pdf:
+        for index in range(first_page - 1, last_page):
+            for table in pdf.pages[index].extract_tables():
+                for row in table:
+                    if (row and len(row) == 3 and isinstance(row[0], str)
+                            and re.sub(r"\s+", "", row[0]) == label):
+                        amounts = [(value or "").replace(",", "").strip()
+                                   for value in row[1:]]
+                        if (all(re.fullmatch(r"-?[0-9]+\.[0-9]{2}", value)
+                                for value in amounts)
+                                and [Decimal(value) for value in amounts] == expected):
+                            matches.append((index + 1, row[0].replace("\n", " "), amounts))
+    if len(matches) != 1:
+        raise ValueError("OWNER_CASH_V2_PARENT_FX_ROW_AMBIGUOUS")
+    return matches[0]
 
 
 def _numbered_ordinary_shares(root, statement, issuer, evaluated_at):
@@ -194,12 +245,19 @@ def _read(root, symbol, issuer_name, item, evaluated_at):
             continue
         page, line = matches[0]
         values = AMOUNT.findall(line[len(label):])
-        if len(values) != 2 or not line.endswith(values[-1]):
+        if not values or len(values) > 2 or not line.endswith(values[-1]):
             gaps.append(dict(table="balance", field=field,
                              reason="TWO_PRINTED_VALUES_REQUIRED", value=None))
             continue
-        balance[field] = _fact(*(value.replace(",", "") for value in values),
+        columns = (tuple(value.replace(",", "") for value in values)
+                   if len(values) == 2 else
+                   _one_printed_amount_columns(original, page, label, values[0].replace(",", "")))
+        balance[field] = _fact(*columns,
                                page, line, source, period, field, balance=True)
+        if len(values) == 1:
+            gaps.append(dict(table="balance", field=field,
+                             reason="COMPARATIVE_CELL_BLANK" if columns[0] is not None
+                             else "CURRENT_CELL_BLANK", value=None))
     balance_check = all(field in balance for field in (
         "assets_cny", "liabilities_cny", "book_equity_cny"))
     if balance_check:
@@ -255,14 +313,27 @@ def _read(root, symbol, issuer_name, item, evaluated_at):
     for field, row in cash["rows"].items():
         flows[field] = _fact(row["columns"][0]["value"], row["columns"][1]["value"],
                              row["physical_page"], row["evidence_excerpt"], source, period, field)
-    for field in cash["unknown_fields"]:
-        gaps.append(dict(table="cash_flow", field=field, reason="ROW_NOT_UNAMBIGUOUS", value=None))
     # Additional operating receipts retain the same numbered-table ownership.
     starts = [i for i, (_, line) in enumerate(lines) if prior._compact(line) == "6、母公司现金流量表"]
     ends = [i for i, (_, line) in enumerate(lines) if prior._compact(line) == "7、合并所有者权益变动表"]
     if len(starts) != 1 or len(ends) != 1 or starts[0] >= ends[0]:
         raise ValueError("OWNER_CASH_V2_PARENT_TABLE_INVALID")
+    if "fx_cny" in cash["unknown_fields"]:
+        expected_fx = [Decimal(flows["reported_net_change_cny"][column])
+                       - sum(Decimal(flows[field][column]) for field in (
+                           "cfo_cny", "cfi_cny", "cff_cny"))
+                       for column in ("current", "comparative")]
+        page, label, amounts = _parent_fx_row(original, lines[starts[0]][0],
+                                              lines[ends[0]][0], expected_fx)
+        flows["fx_cny"] = _fact(*amounts, page, label + " " + " ".join(amounts),
+                                source, period, "fx_cny")
+    for field in cash["unknown_fields"]:
+        if field not in _EXTRA_CASH and field not in flows:
+            gaps.append(dict(table="cash_flow", field=field,
+                             reason="ROW_NOT_UNAMBIGUOUS", value=None))
     for field, label in _EXTRA_CASH.items():
+        if field in flows:
+            continue
         matches = [(page, line) for page, line in lines[starts[0]:ends[0]]
                    if prior._compact(line).startswith(prior._compact(label))]
         if len(matches) != 1:
@@ -270,11 +341,32 @@ def _read(root, symbol, issuer_name, item, evaluated_at):
             continue
         page, line = matches[0]
         values = prior.MONEY.findall(line[len(label):])
-        if len(values) != 2:
+        if not values or len(values) > 2:
             gaps.append(dict(table="cash_flow", field=field, reason="TWO_PRINTED_VALUES_REQUIRED", value=None))
             continue
-        flows[field] = _fact(*(v.replace(",", "") for v in values), page, line,
+        columns = (tuple(value.replace(",", "") for value in values)
+                   if len(values) == 2 else
+                   _one_printed_amount_columns(original, page, label, values[0].replace(",", "")))
+        flows[field] = _fact(*columns, page, line,
                              source, period, field)
+        if len(values) == 1:
+            gaps.append(dict(table="cash_flow", field=field,
+                             reason="COMPARATIVE_CELL_BLANK" if columns[0] is not None
+                             else "CURRENT_CELL_BLANK", value=None))
+    cash_check = all(field in flows for field in (
+        "cfo_cny", "cfi_cny", "cff_cny", "fx_cny", "reported_net_change_cny",
+        "opening_cash_and_equivalents_cny", "closing_cash_and_equivalents_cny"))
+    if cash_check:
+        for column in ("current", "comparative"):
+            if (sum(Decimal(flows[field][column]) for field in (
+                    "cfo_cny", "cfi_cny", "cff_cny", "fx_cny"))
+                    != Decimal(flows["reported_net_change_cny"][column])
+                    or Decimal(flows["opening_cash_and_equivalents_cny"][column])
+                    + Decimal(flows["reported_net_change_cny"][column])
+                    != Decimal(flows["closing_cash_and_equivalents_cny"][column])):
+                raise ValueError("OWNER_CASH_V2_PARENT_CASH_EQUATION_CHANGED")
+    if sha256_file(original) != source["sha256"]:
+        raise ValueError("OWNER_CASH_V2_ORIGINAL_CHANGED")
     year = day.year
     return dict(symbol=symbol, issuer_name=issuer_name, scope=prior.SCOPE, currency="CNY",
         classification="FACT", period_start=f"{year}-01-01", period_end=period,
@@ -283,7 +375,7 @@ def _read(root, symbol, issuer_name, item, evaluated_at):
         comparative_flow_start=f"{year-1}-01-01",
         comparative_flow_end=f"{year-1}{period[4:]}", source_binding=reference,
         balance_sheet=balance, income=income, cash_flow=flows, gaps=gaps,
-        checks=dict(cash_statement_reconciled=False,
+        checks=dict(cash_statement_reconciled=cash_check,
                     balance_equation_reconciled=balance_check))
 
 
