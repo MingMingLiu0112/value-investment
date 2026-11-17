@@ -254,14 +254,14 @@ it("records the current driver bridge arithmetic acceptance without adopting par
     );
     expect(stage.evidenceSource).not.toContain("待Root");
     expect(stage.nextStep).toContain(
-      "母公司资金、分配、维持投入和营运资金条件桥",
+      "终值分配不超过可持续股东现金",
     );
     expect(stage.nextStep).toMatch(/相同资料不.*付费.*重试/);
     expect(stage.deliveryReview?.done).toContain(
       "年度经营、现金政策和三情景分步任务已实际运行",
     );
-    expect(stage.deliveryReview?.gap).toContain("终值债务政策校验");
-    expect(stage.deliveryReview?.gap).toContain("到期安排");
+    expect(stage.deliveryReview?.gap).toContain("Base目标分红超过经常性股东现金");
+    expect(stage.deliveryReview?.gap).toContain("Bull把有限承诺延伸到永久终值");
     expect(stage.deliveryReview?.gap).toContain("三情景未进入E2/F1/F2");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
@@ -274,7 +274,7 @@ it("records the current driver bridge arithmetic acceptance without adopting par
   expect(d2.implementation).toContain("H12026→H12027");
   expect(d2.implementation).toContain("同比FY只对FY、H1只对H1");
   expect(d2.milestone).toContain("V25任务与API/E2读取已接线");
-  expect(d2.milestone).toContain("000568真实任务经济拒绝");
+  expect(d2.milestone).toContain("最终经济编译继续拒绝不稳定分配");
   expect(d2.existingEvidence).toContain("rt-c40经济拒绝保留为历史");
   expect(d2.evidence).toContain("typed bridge不消费这些文字");
   expect(d2.progress?.economic).toContain("资金可达");
