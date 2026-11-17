@@ -453,7 +453,70 @@ export type DirectOwnerCash = {
 
 export type FirstResearchInputResponse = {
   receipt_binding?: { path: string; sha256: string };
-  direct_owner_cash?: DirectOwnerCash;
+  direct_owner_cash?: DirectOwnerCash & {
+    remaining_year_review?: {
+      schema_version: "parent-remaining-year-review-v1";
+      symbol: string;
+      candidate_binding?: { path: string; sha256: string };
+      input_descriptor_sha256?: string;
+      action: "no_order";
+      formal_eligibility: false;
+      successor_adopted: false;
+      current_price_qualified: false;
+      status: string;
+      reason?: string;
+      capital_policy_mode?: string;
+      reported_facts?: {
+        period_start?: string;
+        period_end?: string;
+        period_basis?: string;
+        scope?: string;
+        currency?: string;
+        cash_fields?: { cfo?: { current?: string } };
+      };
+      scenarios?: Partial<
+        Record<
+          FirstResearchScenarioKey,
+          {
+            status: string;
+            reason?: string;
+            reported_9m_parent_profit?: string;
+            retained_annual_parent_profit?: string;
+            implied_q4_parent_profit?: string;
+            economic_review?: {
+              classification: "RETAINED_PLAN_STRESS_NOT_NEW_EARNINGS_FORECAST";
+              warnings?: string[];
+              adopted: false;
+              explanation?: string;
+              next_evidence?: string;
+            };
+            annual?: {
+              full_year?: {
+                cfo?: {
+                  total?: string;
+                  fact_9m?: string;
+                  forecast_q4?: string;
+                  fact_classification?: string;
+                  forecast_classification?: string;
+                };
+              };
+            };
+            calculation?: Record<string, unknown>;
+            capital_policy_changes?: {
+              gross_capex?: {
+                classification?: string;
+                fact_9m?: string;
+                assumed_q4?: string;
+                full_year?: string;
+                rationale?: string;
+              };
+            };
+          }
+        >
+      >;
+      limitation?: string;
+    };
+  };
   direct_cash_alignment?: CandidatePriceAlignment & {
     research_artifact_kind?: "DIRECT_OWNER_CASH_RECEIPT";
     receipt_binding?: { path: string; sha256: string };

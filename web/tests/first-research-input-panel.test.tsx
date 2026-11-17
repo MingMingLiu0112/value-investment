@@ -196,6 +196,130 @@ function directFixture(): FirstResearchInputResponse {
   };
 }
 
+it("shows a bound remaining-year CFO split without promoting its owner calculation to a price", () => {
+  const data = directFixture();
+  data.receipt_binding = {
+    path: "runtime/TEST_ONLY-direct.json",
+    sha256: "a".repeat(64),
+  };
+  data.input_descriptor_sha256 = "b".repeat(64);
+  data.main_range_adopted = false;
+  data.direct_owner_cash!.remaining_year_review = {
+    schema_version: "parent-remaining-year-review-v1",
+    symbol: data.symbol,
+    candidate_binding: data.receipt_binding,
+    input_descriptor_sha256: data.input_descriptor_sha256,
+    action: "no_order",
+    formal_eligibility: false,
+    successor_adopted: false,
+    current_price_qualified: false,
+    status: "PARTIAL_CONDITIONAL_RESEARCH",
+    capital_policy_mode: "REPORTED_9M_PLUS_PRIOR_Q4",
+    reported_facts: {
+      period_start: "2026-01-01",
+      period_end: "2026-09-30",
+      period_basis: "YTD_9M",
+      scope: "ISSUER_PARENT_STANDALONE",
+      currency: "CNY",
+      cash_fields: { cfo: { current: "39649908007.27" } },
+    },
+    scenarios: {
+      base: {
+        status: "CONDITIONAL_RECALCULATION_NOT_ADOPTED",
+        annual: {
+          full_year: {
+            cfo: {
+              fact_9m: "39649908007.27",
+              forecast_q4: "-5414707226.13",
+              total: "34235200781.14",
+              fact_classification: "FACT",
+              forecast_classification: "FORECAST_ASSUMPTION",
+            },
+          },
+        },
+        calculation: { per_share_value: "DO_NOT_RENDER_VALUE" },
+        reported_9m_parent_profit: "11224391992.81",
+        retained_annual_parent_profit: "12000000000",
+        implied_q4_parent_profit: "775608007.19",
+        economic_review: {
+          classification: "RETAINED_PLAN_STRESS_NOT_NEW_EARNINGS_FORECAST",
+          adopted: false,
+          warnings: ["TEST_ONLY_Q4_PROFIT_STRESS_REQUIRES_REVIEW"],
+          explanation: "旧计划净利不是新盈利预测",
+          next_evidence: "TEST_ONLY_NEW_PARENT_REPORT",
+        },
+        capital_policy_changes: {
+          gross_capex: {
+            classification: "FORECAST_ASSUMPTION",
+            fact_9m: "1410074492.50",
+            assumed_q4: "281437265.21",
+            rationale: "上年第四季度支出仅作条件假设",
+          },
+        },
+      },
+      bear: { status: "REJECTED", reason: "TEST_ONLY_EXACT_SOURCE_MISSING" },
+      bull: { status: "REJECTED", reason: "TEST_ONLY_Q4_ASSUMPTION_INVALID" },
+    },
+  };
+  const html = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol={data.symbol} />,
+  );
+  expect(html).toContain("九个月事实＋条件第四季度");
+  expect(html).toContain("39,649,908,007.27");
+  expect(html).toContain("-5,414,707,226.13");
+  expect(html).toContain("34,235,200,781.14");
+  expect(html).toContain("上年第四季度支出仅作条件假设");
+  expect(html).toContain("第四季度条件 CFO 为负");
+  expect(html).toContain("隐含第四季度净利 775,608,007.19 元");
+  expect(html).toContain("旧全年母公司净利目标 12,000,000,000.00 元");
+  expect(html).toContain("仅为保留计划压力重算，不是新的盈利预测");
+  expect(html).toContain("不是已认可的 Base");
+  expect(html).toContain("TEST_ONLY_Q4_PROFIT_STRESS_REQUIRES_REVIEW");
+  expect(html).toContain("TEST_ONLY_NEW_PARENT_REPORT");
+  expect(html).toContain("TEST_ONLY_EXACT_SOURCE_MISSING");
+  expect(html).toContain("TEST_ONLY_Q4_ASSUMPTION_INVALID");
+  expect(html).toContain("不是已采纳 E1、主估值区间或当前买价");
+  expect(html).not.toContain("DO_NOT_RENDER_VALUE");
+  data.direct_owner_cash!.remaining_year_review.candidate_binding = {
+    path: data.receipt_binding.path,
+    sha256: "c".repeat(64),
+  };
+  const mismatched = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol={data.symbol} />,
+  );
+  expect(mismatched).toContain("年度现金更新身份不符，停止展示");
+  expect(mismatched).not.toContain("34,235,200,781.14");
+});
+
+it("shows the bound source-or-research rejection reason without scenario cash", () => {
+  const data = directFixture();
+  data.receipt_binding = {
+    path: "runtime/TEST_ONLY-direct.json",
+    sha256: "a".repeat(64),
+  };
+  data.input_descriptor_sha256 = "b".repeat(64);
+  data.direct_owner_cash!.remaining_year_review = {
+    schema_version: "parent-remaining-year-review-v1",
+    symbol: data.symbol,
+    candidate_binding: data.receipt_binding,
+    input_descriptor_sha256: data.input_descriptor_sha256,
+    status: "SOURCE_OR_RESEARCH_REJECTED",
+    reason: "TEST_ONLY_EXACT_RECEIPT_SOURCE_REJECTED",
+    scenarios: {},
+    current_price_qualified: false,
+    action: "no_order",
+    successor_adopted: false,
+    formal_eligibility: false,
+  };
+  const html = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol={data.symbol} />,
+  );
+  expect(html).toContain("年度现金更新来源或研究未通过核验");
+  expect(html).toContain("TEST_ONLY_EXACT_RECEIPT_SOURCE_REJECTED");
+  expect(html).not.toContain("九个月事实＋条件第四季度");
+  expect(html).not.toContain("全年条件 CFO");
+});
+
 it("shows direct receipt alignment and refuses another candidate identity", () => {
   const data = directFixture();
   data.receipt_binding = {

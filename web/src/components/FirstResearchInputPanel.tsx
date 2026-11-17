@@ -366,6 +366,148 @@ function ResearchSuccessorView({
   );
 }
 
+function RemainingYearReview({ data }: { data: FirstResearchInputResponse }) {
+  const review = data.direct_owner_cash?.remaining_year_review;
+  if (!review) return null;
+  if (
+    review.schema_version !== "parent-remaining-year-review-v1" ||
+    review.symbol !== data.symbol ||
+    review.action !== "no_order" ||
+    review.formal_eligibility !== false ||
+    review.successor_adopted !== false ||
+    review.current_price_qualified !== false ||
+    !data.receipt_binding ||
+    review.candidate_binding?.path !== data.receipt_binding.path ||
+    review.candidate_binding?.sha256 !== data.receipt_binding.sha256 ||
+    review.input_descriptor_sha256 !== data.input_descriptor_sha256
+  )
+    return <Alert type="warning" message="年度现金更新身份不符，停止展示" />;
+
+  if (review.status === "SOURCE_OR_RESEARCH_REJECTED")
+    return (
+      <section aria-label="年度现金更新来源或研究拒绝">
+        <Alert
+          type="warning"
+          message="年度现金更新来源或研究未通过核验"
+          description={review.reason || "未提供具体拒绝原因"}
+        />
+        <p>原首次研究回执保持独立；不展示本次全年重算、条件价或资格。</p>
+      </section>
+    );
+
+  const facts = review.reported_facts;
+  return (
+    <section aria-label="九个月事实与条件全年现金更新">
+      <h4>九个月事实＋条件第四季度：全年经营现金</h4>
+      <p>
+        当前九个月母公司经营现金为已报告事实；第四季度为条件预测，全年仅为同口径条件重算。
+        不是已采纳 E1、主估值区间或当前买价，不自动生成分红。
+      </p>
+      <p>
+        报告期间：{supplied(facts?.period_start)} 至{" "}
+        {supplied(facts?.period_end)}； 口径：{supplied(facts?.period_basis)} /{" "}
+        {supplied(facts?.scope)} / {supplied(facts?.currency)}。
+        九个月经营现金事实：{amount(facts?.cash_fields?.cfo?.current)} 元。
+      </p>
+      <p>
+        资本政策模式：{supplied(review.capital_policy_mode)}。
+        {review.capital_policy_mode === "REPORTED_9M_PLUS_PRIOR_Q4"
+          ? "资本支出采用“当年九个月事实＋上年第四季度金额”的条件假设，不能把上年第四季度当作当年已发生支出。"
+          : "资本支出模式尚未核实，不推断第四季度支出。"}
+      </p>
+      <ul>
+        {SCENARIOS.map(([name, label]) => {
+          const scenario = review.scenarios?.[name];
+          const cfo = scenario?.annual?.full_year?.cfo;
+          const capex = scenario?.capital_policy_changes?.gross_capex;
+          const economics = scenario?.economic_review;
+          const retainedStress =
+            economics?.classification ===
+              "RETAINED_PLAN_STRESS_NOT_NEW_EARNINGS_FORECAST" &&
+            economics.adopted === false;
+          const ready =
+            scenario?.status === "CONDITIONAL_RECALCULATION_NOT_ADOPTED" &&
+            facts?.period_basis === "YTD_9M" &&
+            facts.scope === "ISSUER_PARENT_STANDALONE" &&
+            facts.currency === "CNY" &&
+            cfo?.fact_classification === "FACT" &&
+            cfo?.forecast_classification === "FORECAST_ASSUMPTION" &&
+            cfo.fact_9m === facts.cash_fields?.cfo?.current &&
+            cfo.forecast_q4 != null &&
+            cfo.total != null;
+          return (
+            <li key={name}>
+              <strong>{label}：</strong>
+              {ready ? (
+                <>
+                  九个月事实 {amount(cfo.fact_9m)} 元 ＋ 第四季度条件预测{" "}
+                  {amount(cfo.forecast_q4)} 元 ＝ 全年条件 CFO{" "}
+                  {amount(cfo.total)} 元。
+                  {Number.isFinite(Number(cfo.forecast_q4)) &&
+                    Number(cfo.forecast_q4) < 0 && (
+                      <strong>
+                        {" "}
+                        第四季度条件 CFO 为负，需复核收付节奏与现金压力。
+                      </strong>
+                    )}
+                  原 owner 年度现金账
+                  {scenario?.calculation ? "已条件重算" : "未提供"}，未采纳。
+                  {retainedStress &&
+                    scenario?.reported_9m_parent_profit != null &&
+                    scenario.retained_annual_parent_profit != null &&
+                    scenario.implied_q4_parent_profit != null && (
+                      <>
+                        <p>
+                          旧全年母公司净利目标{" "}
+                          {amount(scenario.retained_annual_parent_profit)} 元 －
+                          已报九个月母公司净利{" "}
+                          {amount(scenario.reported_9m_parent_profit)} 元 ＝
+                          隐含第四季度净利{" "}
+                          {amount(scenario.implied_q4_parent_profit)} 元。
+                        </p>
+                        <p>
+                          仅为保留计划压力重算，不是新的盈利预测，亦不是已认可的
+                          Base； bear/base/bull 只沿用旧情景分组。
+                        </p>
+                        {economics.explanation && (
+                          <p>{economics.explanation}</p>
+                        )}
+                        {economics.warnings?.length ? (
+                          <ul>
+                            {economics.warnings.map((warning, index) => (
+                              <li key={index}>{warning}</li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        {economics.next_evidence && (
+                          <p>下一步证据：{economics.next_evidence}</p>
+                        )}
+                      </>
+                    )}
+                  {review.capital_policy_mode === "REPORTED_9M_PLUS_PRIOR_Q4" &&
+                    capex?.classification === "FORECAST_ASSUMPTION" && (
+                      <>
+                        资本支出：九个月事实 {amount(capex.fact_9m)} 元 ＋
+                        上年第四季度金额条件假设 {amount(capex.assumed_q4)} 元；
+                        {supplied(capex.rationale)}
+                      </>
+                    )}
+                </>
+              ) : (
+                <>
+                  未形成可展示的全年条件现金：
+                  {supplied(scenario?.reason || scenario?.status)}。
+                </>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {review.limitation && <p>研究限制：{review.limitation}</p>}
+    </section>
+  );
+}
+
 function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
   const cash = data.direct_owner_cash!;
   const price = cash.conditional_price;
@@ -400,6 +542,7 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
             ? "未采用"
             : "未提供"}
       </p>
+      <RemainingYearReview data={data} />
       {data.main_range_adopted === true && (
         <p>主估值区间（原稿）：{supplied(data.main_valuation_range)}</p>
       )}

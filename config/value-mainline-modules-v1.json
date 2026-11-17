@@ -1936,7 +1936,7 @@
           ]
         },
         "web": {
-          "description": "既有DecisionDetail research_analysis / JointCapitalReview。 现有首编API及公司页面共同展示直接现金修订、逐年现金/分配变化，并区分当前研究是前驱还是后继；当前为后继时展示修订来历，不伪称又有新研究。",
+          "description": "既有DecisionDetail research_analysis / JointCapitalReview。首编API及公司页面展示直接现金修订与前后版本。新增母公司已报9M事实加剩余Q4条件现金的重算：原全年资本支出低于已发生支出时拒绝；显式同季假设可进入共享现金内核，同时列出隐含Q4亏损及现金流出。此结果是未采纳压力研究，不能冒充E1已采用后继或当前价格资格。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
             "src/value_investment_agent/presentation/web_api/app.py",
