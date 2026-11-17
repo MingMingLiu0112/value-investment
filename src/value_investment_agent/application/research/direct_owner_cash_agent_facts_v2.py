@@ -138,7 +138,8 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
     shares = share_facts[0]
     if (shares.get("period_end") != spec["valuation_date"]
             or shares.get("unit") != "shares"
-            or shares.get("scope") != "TOTAL_ISSUED_ORDINARY_SHARES"):
+            or shares.get("scope") != "TOTAL_ISSUED_ORDINARY_SHARES"
+            or shares.get("classification") not in {"FACT", "DERIVED_FACT"}):
         raise ValueError("PARENT_AGENT_SHARE_SCOPE_INVALID")
     projected = dict(schema_version=VERSION, symbol=spec["symbol"],
         issuer_name=spec["issuer_name"], as_of=spec["computed_at"],
@@ -148,6 +149,8 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
                               if row.get("classification") == "FACT"},
         ordinary_shares=dict(count=_finite(shares["count"]), period_end=shares["period_end"],
                              unit="shares", scope=shares["scope"],
+                             classification=shares["classification"],
+                             derivation=shares.get("derivation"),
                              source_refs=shares["source_refs"]),
         source_status=evidence["status"],
         working_capital_cash_component=evidence["working_capital_cash_component"],

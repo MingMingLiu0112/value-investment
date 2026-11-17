@@ -10,6 +10,7 @@ import pytest
 
 from value_investment_agent.application.research.agent_review import parent_cash_task_v3 as target
 from value_investment_agent.application.research import direct_owner_cash_staged_v2 as staged
+from value_investment_agent.application.research import direct_owner_cash_staged_v3 as staged_numbered
 from value_investment_agent.infrastructure.agent_runtime.provider import LLMResponse
 
 NOW = datetime(2026, 11, 16, tzinfo=timezone.utc)
@@ -81,8 +82,9 @@ def task(tmp_path, monkeypatch):
                             period_start="2025-01-01", period_end="2025-12-31",
                             revenue="10", cost="10", customer_cash="10", supplier_cash="10",
                             cfo="10", source_refs=[{"sha256": "a" * 64}])]})
-    monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts_v2", lambda **_:
         dict(action="no_order", formal_eligibility=False, main_range_adopted=False))
+    monkeypatch.setattr(target, "preflight_annual_cash_upper_bound_v3", lambda **_: None)
     provider = Provider()
     return target.ParentCashTaskServiceV3(tmp_path, test_provider=provider), provider
 
@@ -136,7 +138,7 @@ def test_model_cash_alias_is_rejected_after_response_is_sealed(task):
 
 def test_economic_rejection_keeps_all_raw_responses(task, monkeypatch):
     service, provider = task
-    monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts_v2", lambda **_:
                         (_ for _ in ()).throw(ValueError("DIRECT_OWNER_UNCONSUMED_FUTURE_EVENTS")))
     created = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
         request_key="parentcashv3004", now=NOW)
@@ -150,7 +152,7 @@ def test_economic_rejection_keeps_all_raw_responses(task, monkeypatch):
 
 def test_economic_cash_rejection_preserves_the_year(task, monkeypatch):
     service, _ = task
-    monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts_v2", lambda **_:
                         (_ for _ in ()).throw(ValueError(
                             "DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2026")))
     created = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
@@ -162,8 +164,19 @@ def test_economic_cash_rejection_preserves_the_year(task, monkeypatch):
     assert "candidate" not in result
 
 
-def test_unfunded_policy_stops_before_terminal_call(task):
+def test_unfunded_policy_stops_before_terminal_call(task, monkeypatch):
     service, provider = task
+    monkeypatch.setattr(staged_numbered, "_load_spec", lambda *_args: {
+        "symbol": "600887", "valuation_date": "2025-12-31",
+        "opening": {"cash": {"classification": "FACT", "anchor": "cash"}}})
+    monkeypatch.setattr(staged_numbered, "_historical_parent_operating_cash",
+        lambda **_kwargs: dict(symbol="600887", scope="ISSUER_PARENT_STANDALONE",
+            currency="CNY", classification="FACT", period_start="2025-01-01",
+            period_end="2025-12-31", revenue="10", cost="10",
+            customer_cash="10", supplier_cash="10", cfo="10",
+            source_refs=[{"sha256": "a" * 64}]))
+    monkeypatch.setattr(target, "preflight_annual_cash_upper_bound_v3",
+                        staged_numbered.preflight_annual_cash_upper_bound_v3)
     class UnfundedProvider(Provider):
         def complete(self, request):
             response = super().complete(request)
@@ -287,12 +300,12 @@ def test_nested_fork_revalidates_original_provenance_chain(task):
 
 def test_replay_from_later_stage_reuses_unchanged_prefix(task, monkeypatch):
     service, provider = task
-    monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts_v2", lambda **_:
                         (_ for _ in ()).throw(ValueError("DIRECT_OWNER_UNCONSUMED_FUTURE_EVENTS")))
     original = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
         request_key="parentcashfork011", now=NOW)
     assert service.run(original["task_id"], now=NOW)["status"] == "FAILED"
-    monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts_v2", lambda **_:
         dict(action="no_order", formal_eligibility=False, main_range_adopted=False))
     fork = service.create(spec_binding=original["spec_binding"],
         request_key="parentcashfork012", now=NOW, seed_task_id=original["task_id"],
@@ -304,12 +317,12 @@ def test_replay_from_later_stage_reuses_unchanged_prefix(task, monkeypatch):
 
 def test_terminal_replay_keeps_independent_scenarios(task, monkeypatch):
     service, provider = task
-    monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts_v2", lambda **_:
                         (_ for _ in ()).throw(ValueError("DIRECT_OWNER_TERMINAL_DEBT_POLICY_UNSUPPORTED")))
     original = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
         request_key="parentcashfork013", now=NOW)
     assert service.run(original["task_id"], now=NOW)["status"] == "FAILED"
-    monkeypatch.setattr(target, "assemble_parent_cash_drafts", lambda **_:
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts_v2", lambda **_:
         dict(action="no_order", formal_eligibility=False, main_range_adopted=False))
     fork = service.create(spec_binding=original["spec_binding"],
         request_key="parentcashfork014", now=NOW, seed_task_id=original["task_id"],

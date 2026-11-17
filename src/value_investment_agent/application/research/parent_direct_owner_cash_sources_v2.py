@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, date, time, timedelta, timezone
+from decimal import Decimal
 from pathlib import Path
 import json
 import re
@@ -21,6 +22,16 @@ _BALANCE = {"parent_cash_balance": "monetary_funds_cny",
             "parent_ordinary_share_capital": "share_capital_cny",
             "parent_surplus_reserve": "surplus_reserve_cny",
             "parent_retained_earnings": "retained_earnings_cny"}
+_EXTRA_BALANCE = {
+    "assets_cny": "资产总计",
+    "liabilities_cny": "负债合计",
+    "book_equity_cny": "所有者权益合计",
+    "short_term_borrowings_cny": "短期借款",
+    "long_term_borrowings_cny": "长期借款",
+    "current_noncurrent_liabilities_cny": "一年内到期的非流动负债",
+    "lease_liabilities_cny": "租赁负债",
+    "other_current_liabilities_cny": "其他流动负债",
+}
 _EXTRA_CASH = {"customer_cash_cny": "销售商品、提供劳务收到的现金",
                "supplier_cash_cny": "购买商品、接受劳务支付的现金"}
 
@@ -34,6 +45,86 @@ def _fact(value, comparative, page, excerpt, source, period, field, *, balance=F
     return dict(current=value, comparative=comparative, physical_page=page,
                 excerpt=excerpt, classification="FACT", scope=prior.SCOPE,
                 currency="CNY", source_refs=ref)
+
+
+def _numbered_ordinary_shares(root, statement, issuer, evaluated_at):
+    """Reconcile a split annual share table with the dated report narrative.
+
+    This deliberately covers one explicit table layout. A different layout
+    yields no share proof rather than converting CNY share capital into shares.
+    """
+    source = statement["source_binding"]
+    path, _ = prior._bound(root, source)
+    pages = extract_pages(path)
+    if statement["period_basis"] != "FY":
+        return None
+    year = statement["period_end"][:4]
+    starts = [i for i, text in enumerate(pages)
+              if any(prior._compact(line) == "第六节股份变动及股东情况"
+                     for line in text.splitlines())]
+    if len(starts) != 1:
+        return None
+    try:
+        import pdfplumber
+    except ImportError as error:
+        raise ValueError("OWNER_CASH_V2_TABLE_READER_UNAVAILABLE") from error
+    labels = {"一、有限售条件股份": "restricted",
+              "二、无限售条件股份": "unrestricted",
+              "1、人民币普通股": "rmb_ordinary",
+              "三、股份总数": "total"}
+    rows = {}
+    with pdfplumber.open(path) as pdf:
+        for index in (starts[0], starts[0] + 1):
+            if index >= len(pdf.pages):
+                continue
+            for table in pdf.pages[index].extract_tables():
+                for row in table:
+                    if not row or not row[0]:
+                        continue
+                    label = re.sub(r"\s+", "", row[0])
+                    if label not in labels:
+                        continue
+                    if label in rows or len(row) <= 8 or not row[8]:
+                        raise ValueError("OWNER_CASH_V2_SHARE_TABLE_AMBIGUOUS")
+                    raw = re.sub(r"\s+", "", row[8])
+                    if not re.fullmatch(r"[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+", raw):
+                        raise ValueError("OWNER_CASH_V2_SHARE_TABLE_AMOUNT_INVALID")
+                    rows[label] = (int(raw.replace(",", "")), index + 1, label + " " + raw)
+    if set(rows) != set(labels):
+        return None
+    restricted, unrestricted, ordinary, total = (rows[key][0] for key in labels)
+    if restricted + unrestricted != total or ordinary != unrestricted:
+        raise ValueError("OWNER_CASH_V2_SHARE_TABLE_RECONCILIATION_CHANGED")
+    no_preferred = [(i, line.strip()) for i, text in enumerate(pages, 1)
+                    for line in text.splitlines()
+                    if prior._compact(line) == "报告期公司不存在优先股。"]
+    dated = []
+    pattern = re.compile(r"截至" + year + r"年12月31日,公司股份总数为([0-9,]+)股")
+    for i, text in enumerate(pages, 1):
+        for line in text.splitlines():
+            compact = prior._compact(line)
+            match = pattern.search(compact)
+            if match:
+                dated.append((i, line.strip(), int(match.group(1).replace(",", ""))))
+    if len(no_preferred) != 1 or len(dated) != 1:
+        return None
+    capital = statement["balance_sheet"].get("share_capital_cny")
+    if (dated[0][2] != total or capital is None
+            or Decimal(capital["current"]) != Decimal(total)):
+        raise ValueError("OWNER_CASH_V2_DATED_SHARE_COUNT_CONFLICT")
+    prior._bound(root, source)
+    return dict(classification="DERIVED_FACT", period_end=statement["period_end"],
+                unit="shares", scope="TOTAL_ISSUED_ORDINARY_SHARES",
+                count=str(total), treasury_excluded=False,
+                derivation="ANNUAL_SHARE_TABLE_AND_DATED_TOTAL_NO_PREFERRED",
+                source_refs=[
+                    dict(source, physical_page=rows[key][1], excerpt=rows[key][2])
+                    for key in ("一、有限售条件股份", "二、无限售条件股份",
+                                "1、人民币普通股", "三、股份总数")
+                ] + [dict(source, physical_page=no_preferred[0][0],
+                          excerpt=no_preferred[0][1]),
+                     dict(source, physical_page=dated[0][0], excerpt=dated[0][1]),
+                     capital["source_refs"]])
 
 
 def _read(root, symbol, issuer_name, item, evaluated_at):
@@ -84,6 +175,39 @@ def _read(root, symbol, issuer_name, item, evaluated_at):
                                source, period, field, balance=True)
     for gap in balance_result["gaps"]:
         gaps.append(dict(table="balance", field=None, reason=gap, value=None))
+    lines = [(page, line.strip()) for page, text in enumerate(pages, 1)
+             for line in text.splitlines()]
+    balance_starts = [i for i, (_, line) in enumerate(lines)
+                      if re.fullmatch(r"2[、．.]\s*母公司资产负债表", line)]
+    balance_ends = [i for i, (_, line) in enumerate(lines)
+                    if re.fullmatch(r"3[、．.]\s*合并利润表", line)]
+    if (len(balance_starts) != 1 or len(balance_ends) != 1
+            or balance_starts[0] >= balance_ends[0]):
+        raise ValueError("OWNER_CASH_V2_BALANCE_TABLE_INVALID")
+    for field, label in _EXTRA_BALANCE.items():
+        matches = [(page, line) for page, line in
+                   lines[balance_starts[0]:balance_ends[0]]
+                   if line == label or line.startswith(label + " ")]
+        if len(matches) != 1:
+            gaps.append(dict(table="balance", field=field,
+                             reason="ROW_NOT_UNIQUE", value=None))
+            continue
+        page, line = matches[0]
+        values = AMOUNT.findall(line[len(label):])
+        if len(values) != 2 or not line.endswith(values[-1]):
+            gaps.append(dict(table="balance", field=field,
+                             reason="TWO_PRINTED_VALUES_REQUIRED", value=None))
+            continue
+        balance[field] = _fact(*(value.replace(",", "") for value in values),
+                               page, line, source, period, field, balance=True)
+    balance_check = all(field in balance for field in (
+        "assets_cny", "liabilities_cny", "book_equity_cny"))
+    if balance_check:
+        for column in ("current", "comparative"):
+            if (Decimal(balance["assets_cny"][column])
+                    != Decimal(balance["liabilities_cny"][column])
+                    + Decimal(balance["book_equity_cny"][column])):
+                raise ValueError("OWNER_CASH_V2_BALANCE_EQUATION_CHANGED")
     for row in income_result["evidence"]:
         field = "parent_net_profit_cny"
         printed = AMOUNT.findall(row["text"])
@@ -93,8 +217,6 @@ def _read(root, symbol, issuer_name, item, evaluated_at):
                               source, period, field)
     for gap in income_result["gaps"]:
         gaps.append(dict(table="income", field=None, reason=gap, value=None))
-    lines = [(page, line.strip()) for page, text in enumerate(pages, 1)
-             for line in text.splitlines()]
     income_starts = [i for i, (_, line) in enumerate(lines)
                      if re.fullmatch(r"4[、．.]\s*母公司利润表", line)]
     income_ends = [i for i, (_, line) in enumerate(lines)
@@ -114,6 +236,22 @@ def _read(root, symbol, issuer_name, item, evaluated_at):
             continue
         income[field] = _fact(*(v.replace(",", "") for v in values), page, line,
                               source, period, field)
+    interest = [(page, line) for page, line in
+                lines[income_starts[0]:income_ends[0]]
+                if line.startswith("其中：利息费用 ")]
+    if len(interest) == 1:
+        page, line = interest[0]
+        values = AMOUNT.findall(line[len("其中：利息费用"):])
+        if len(values) == 2 and line.endswith(values[-1]):
+            income["interest_expense_cny"] = _fact(
+                *(v.replace(",", "") for v in values), page, line,
+                source, period, "interest_expense_cny")
+        else:
+            gaps.append(dict(table="income", field="interest_expense_cny",
+                             reason="TWO_PRINTED_VALUES_REQUIRED", value=None))
+    else:
+        gaps.append(dict(table="income", field="interest_expense_cny",
+                         reason="ROW_NOT_UNIQUE", value=None))
     for field, row in cash["rows"].items():
         flows[field] = _fact(row["columns"][0]["value"], row["columns"][1]["value"],
                              row["physical_page"], row["evidence_excerpt"], source, period, field)
@@ -145,7 +283,8 @@ def _read(root, symbol, issuer_name, item, evaluated_at):
         comparative_flow_start=f"{year-1}-01-01",
         comparative_flow_end=f"{year-1}{period[4:]}", source_binding=reference,
         balance_sheet=balance, income=income, cash_flow=flows, gaps=gaps,
-        checks=dict(cash_statement_reconciled=False, balance_equation_reconciled=False))
+        checks=dict(cash_statement_reconciled=False,
+                    balance_equation_reconciled=balance_check))
 
 
 def read_parent_direct_owner_cash_sources_v2(*, root, symbol, issuer_name, sources,
@@ -174,14 +313,9 @@ def read_parent_direct_owner_cash_sources_v2(*, root, symbol, issuer_name, sourc
                 raise ValueError("OWNER_CASH_V2_CASH_CONTINUITY_CHANGED")
     constraints = (prior._constraints(root, constraint_binding, symbol, issuer_name, evaluated_at)
                    if constraint_binding is not None else None)
-    charter = None
-    if constraint_binding is not None:
-        _, raw = prior._bound(root, constraint_binding)
-        charter = json.loads(raw, object_pairs_hook=prior._unique)["charter"]
     for statement in statements:
-        statement["ordinary_shares_evidence"] = (prior._ordinary_shares(
-            root, statement, charter, issuer_name, evaluated_at)
-            if statement["period_basis"] == "FY" else None)
+        statement["ordinary_shares_evidence"] = _numbered_ordinary_shares(
+            root, statement, issuer_name, evaluated_at)
     fund = (prior.replay_parent_fund_evidence(root=root,
         context=dict(symbol=symbol, issuer_name=issuer_name),
         selection=fund_selection, cutoff=evaluated_at) if fund_selection is not None else None)

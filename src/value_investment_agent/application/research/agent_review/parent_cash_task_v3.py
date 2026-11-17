@@ -18,9 +18,13 @@ def read_parent_cash_agent_facts_v2(**kwargs):
 
 from ..direct_owner_cash_staged_v2 import (
     STAGES, staged_parent_cash_request, parse_staged_parent_cash_response,
-    merge_staged_parent_cash, preflight_annual_cash_upper_bound,
 )
-from ..direct_owner_cash_agent_draft_v1 import SCENARIOS, assemble_parent_cash_drafts
+from ..direct_owner_cash_staged_v3 import (
+    preflight_annual_cash_upper_bound_v3, merge_staged_parent_cash_v3,
+)
+from ..direct_owner_cash_agent_draft_v2 import (
+    SCENARIOS, assemble_parent_cash_drafts_v2,
+)
 from ....infrastructure.agent_runtime.provider import LLMResponse, OpenAICompatibleChatProvider
 from ...product.common import require_inside, write_new_bytes
 
@@ -30,14 +34,18 @@ STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 
 
 def _implementation():
-    from .. import (direct_owner_cash_agent_draft_v1 as draft,
+    from .. import (direct_owner_cash_agent_draft_v1 as draft_prior,
+                    direct_owner_cash_agent_draft_v2 as draft,
                     direct_owner_cash_agent_facts_v2 as facts,
                     parent_direct_owner_cash_sources_v2 as sources,
                     direct_owner_cash_staged_v2 as staged,
+                    direct_owner_cash_staged_v3 as staged_numbered,
+                    direct_owner_cash_compilation_v2 as compiler_numbered,
                     direct_owner_cash_agent_request_v1 as request,
                     direct_owner_cash_compilation_v1 as compiler)
     return {module.__name__: _hash(Path(module.__file__).read_bytes())
-            for module in (draft, facts, sources, staged, request, compiler)} | {
+            for module in (draft_prior, draft, facts, sources, staged, staged_numbered,
+                           request, compiler, compiler_numbered)} | {
         __name__: _hash(Path(__file__).read_bytes())}
 
 
@@ -214,7 +222,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             responses = {stage: LLMResponse(text=json.dumps(stages[stage], ensure_ascii=False),
                 prompt_tokens=0, completion_tokens=0, model_id=spec["config"]["model_id"])
                 for stage in STAGES}
-            drafts[scenario] = merge_staged_parent_cash(
+            drafts[scenario] = merge_staged_parent_cash_v3(
                 scenario=scenario, source_fingerprint=spec["source_fingerprint"],
                 requests=requests, responses=responses)
         return drafts
@@ -289,7 +297,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             if state["status"] == "SUCCEEDED":
                 if set(drafts) != set(SCENARIOS):
                     raise ValueError("PARENT_RESULT_INCOMPLETE")
-                view["candidate"] = assemble_parent_cash_drafts(root=self.root,
+                view["candidate"] = assemble_parent_cash_drafts_v2(root=self.root,
                     spec_binding=spec["spec_binding"], drafts=drafts, generated_at=now)
         except (ValueError, OSError, KeyError, TypeError, PermissionError):
             view.update(status="FAILED", error_code="PARENT_SOURCE_OR_CHECKPOINT_INVALID")
@@ -462,7 +470,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                             stages = self._stage_outputs(spec, state, _now(),
                                 verified_context=context)[scenario]
                             try:
-                                preflight_annual_cash_upper_bound(root=self.root,
+                                preflight_annual_cash_upper_bound_v3(root=self.root,
                                     spec_binding=spec["spec_binding"], evaluated_at=_now(),
                                     context=context, operating=stages["operating"],
                                     policy=stages["policy"])
@@ -549,7 +557,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         responses[stage_id] = response_binding
                         state, binding = self._save(spec, state, binding, _now(), responses=responses)
                     if stage == "policy":
-                        preflight_annual_cash_upper_bound(root=self.root,
+                        preflight_annual_cash_upper_bound_v3(root=self.root,
                             spec_binding=spec["spec_binding"], evaluated_at=_now(),
                             context=context,
                             operating=prior["operating"], policy=parsed_stage)
@@ -584,7 +592,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     drafts = self._drafts(spec, state, _now())
                     if set(drafts) != set(SCENARIOS):
                         raise ValueError("PARENT_V3_INCOMPLETE_THREE_SCENARIOS")
-                    assemble_parent_cash_drafts(root=self.root, spec_binding=spec["spec_binding"],
+                    assemble_parent_cash_drafts_v2(root=self.root, spec_binding=spec["spec_binding"],
                         drafts=drafts, generated_at=_now())
                 except (ValueError, KeyError, TypeError, OSError) as error:
                     detail = str(error).replace("PARENT_V2_", "PARENT_V3_", 1)
