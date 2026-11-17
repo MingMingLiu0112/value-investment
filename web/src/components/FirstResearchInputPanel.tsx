@@ -8,6 +8,7 @@ import {
 } from "../services/api";
 import { useApi } from "../hooks/useApi";
 import { DetailSection } from "./DetailSection";
+import { CandidateAlignmentPanel } from "./CandidatePriceDraft";
 
 const SCENARIOS = [
   ["bear", "渠道压力持续"],
@@ -659,6 +660,29 @@ export function FirstResearchInputView({
     return (
       <>
         <DirectOwnerCashView data={data} />
+        <CandidateAlignmentPanel
+          alignment={data.direct_cash_alignment}
+          matches={
+            data.direct_cash_alignment?.schema_version ===
+              "direct-owner-cash-alignment-v1" &&
+            data.direct_cash_alignment.research_artifact_kind ===
+              "DIRECT_OWNER_CASH_RECEIPT" &&
+            data.direct_cash_alignment.action === "no_order" &&
+            data.direct_cash_alignment.formal_eligibility === false &&
+            !!data.receipt_binding &&
+            data.direct_cash_alignment.receipt_binding?.path ===
+              data.receipt_binding.path &&
+            data.direct_cash_alignment.receipt_binding?.sha256 ===
+              data.receipt_binding.sha256 &&
+            data.direct_cash_alignment.candidate_binding?.path ===
+              data.receipt_binding.path &&
+            data.direct_cash_alignment.candidate_binding?.sha256 ===
+              data.receipt_binding.sha256 &&
+            data.direct_cash_alignment.input_descriptor_sha256 ===
+              data.input_descriptor_sha256 &&
+            data.direct_cash_alignment.valuation_date === data.financial_basis
+          }
+        />
         <ResearchSuccessorView data={data} symbol={symbol} />
         <PartialParentCashView data={data} />
       </>

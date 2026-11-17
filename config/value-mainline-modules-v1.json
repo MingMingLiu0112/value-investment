@@ -2687,6 +2687,11 @@
           "type": "python_function",
           "path": "src/value_investment_agent/model_validity.py",
           "entrypoint": "evaluate_model_validity"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/direct_owner_cash_alignment_v1.py",
+          "entrypoint": "read_direct_owner_cash_alignment"
         }
       ],
       "method_status": {
@@ -2870,10 +2875,11 @@
           ]
         },
         "application": {
-          "description": "load_pending_candidate_alignment；核对同一研究候选的报价、股本、分配、事件和财务更新，再判断条件价格资格。",
+          "description": "load_pending_candidate_alignment；核对同一研究候选的报价、股本、分配、事件和财务更新，再判断条件价格资格。 直接股东现金回执现可经精确来源和描述符绑定进入同一五项对齐核验，独立材料性复核输入不授予批准。真实119条公告归档、年度现金分红解析与合格报价已消费；当前股本连续性、分红模型归属、财务更新和材料性决定仍分别阻断当前比较。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
-            "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py",
+            "src/value_investment_agent/application/research/direct_owner_cash_alignment_v1.py"
           ]
         },
         "input_output_schema": {
@@ -2919,10 +2925,11 @@
           ]
         },
         "web": {
-          "description": "CandidatePriceDraft及main价格政策分清dated未批准与当前资格。",
+          "description": "CandidatePriceDraft及main价格政策分清dated未批准与当前资格。 公司首编研究页面消费direct回执的同版本对齐结果；显示分项通过与阻断，不沿用旧候选资格。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
-            "src/value_investment_agent/presentation/web_api/app.py"
+            "src/value_investment_agent/presentation/web_api/app.py",
+            "src/value_investment_agent/application/research/direct_owner_cash_alignment_v1.py"
           ]
         },
         "hardcoded": {

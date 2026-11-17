@@ -56,7 +56,8 @@ def _replay_raw_index(root: Path, archive: Path, records: list[dict], index: dic
 
 
 def verify_retained_event_coverage(root: Path, observation: dict, *, symbol: str,
-                                   required_from: date, required_to: date, now: datetime) -> dict:
+                                   required_from: date, required_to: date, now: datetime,
+                                   pdf_byte_limit: int = 32 * 1024 * 1024) -> dict:
     """Read-only replay of retained CNINFO coverage, never materiality approval.
 
     Hashes bind local artifacts, not an external signature or timestamp authority.
@@ -64,26 +65,32 @@ def verify_retained_event_coverage(root: Path, observation: dict, *, symbol: str
     """
     try:
         return _verify_retained_event_coverage(root.resolve(), observation, symbol=symbol,
-            required_from=required_from, required_to=required_to, now=now)
+            required_from=required_from, required_to=required_to, now=now,
+            pdf_byte_limit=pdf_byte_limit)
     except (OSError, KeyError, TypeError, AttributeError, OverflowError) as error:
         raise ValueError("Retained event coverage is unavailable or malformed") from error
 
 
 def verify_retained_event_snapshot(root: Path, observation: dict, *, symbol: str,
-                                   required_from: date, required_to: date, now: datetime) -> dict:
+                                   required_from: date, required_to: date, now: datetime,
+                                   pdf_byte_limit: int = 32 * 1024 * 1024) -> dict:
     """Verify identical retained originals for a same-day PENDING snapshot only.
 
     This does not prove an elapsed calendar window or approve materiality.
     """
     try:
         return _verify_retained_event_coverage(root.resolve(), observation, symbol=symbol,
-            required_from=required_from, required_to=required_to, now=now, snapshot=True)
+            required_from=required_from, required_to=required_to, now=now, snapshot=True,
+            pdf_byte_limit=pdf_byte_limit)
     except (OSError, KeyError, TypeError, AttributeError, OverflowError) as error:
         raise ValueError("Retained event snapshot is unavailable or malformed") from error
 
 
 def _verify_retained_event_coverage(root, observation, *, symbol, required_from, required_to, now,
-                                    snapshot=False):
+                                    snapshot=False, pdf_byte_limit=32 * 1024 * 1024):
+    if (type(pdf_byte_limit) is not int or
+            not 32 * 1024 * 1024 <= pdf_byte_limit <= 128 * 1024 * 1024):
+        raise ValueError("Retained event PDF byte limit must be an integer from 32 to 128 MiB")
     china = ZoneInfo("Asia/Shanghai")
 
     def stamp(value):
@@ -168,7 +175,7 @@ def _verify_retained_event_coverage(root, observation, *, symbol, required_from,
         limit = (32 * 1024 if ref["id"].startswith("daily-raw-metadata-") else
                  MAX_CNINFO_RAW_RESPONSE_BYTES if ref["id"].startswith("daily-raw-")
                  and not ref["id"].startswith("daily-raw-index-manifest-") else
-                 32 * 1024 * 1024 if ref["id"].startswith("cninfo:") else MAX_CNINFO_RAW_TOTAL_BYTES)
+                 pdf_byte_limit if ref["id"].startswith("cninfo:") else MAX_CNINFO_RAW_TOTAL_BYTES)
         bound(ref, limit)
     total_bytes, paths, org_ids, window_pages = 0, set(), set(), 0
     for number, record in enumerate(records, 1):
@@ -240,7 +247,7 @@ def _verify_retained_event_coverage(root, observation, *, symbol, required_from,
         for ref in item.evidence_refs:
             if ref.get("source_url") != url or refs.get(ref["id"]) != ref:
                 raise ValueError("Retained announcement original binding mismatch")
-            validate_pdf_original(bound(ref, 32 * 1024 * 1024))
+            validate_pdf_original(bound(ref, pdf_byte_limit))
     if snapshot:
         return {"symbol": symbol, "scan_from": start, "scan_to": end,
                 "coverage_status": "INCOMPLETE", "scan_binding": dict(scan_ref),

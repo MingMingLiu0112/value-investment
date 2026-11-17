@@ -196,6 +196,50 @@ function directFixture(): FirstResearchInputResponse {
   };
 }
 
+it("shows direct receipt alignment and refuses another candidate identity", () => {
+  const data = directFixture();
+  data.receipt_binding = {
+    path: "runtime/TEST_ONLY-receipt.json",
+    sha256: "a".repeat(64),
+  };
+  data.input_descriptor_sha256 = "b".repeat(64);
+  data.financial_basis = "2025-12-31";
+  data.direct_cash_alignment = {
+    schema_version: "direct-owner-cash-alignment-v1",
+    research_artifact_kind: "DIRECT_OWNER_CASH_RECEIPT",
+    receipt_binding: data.receipt_binding,
+    candidate_binding: data.receipt_binding,
+    input_descriptor_sha256: data.input_descriptor_sha256,
+    valuation_date: data.financial_basis,
+    action: "no_order",
+    formal_eligibility: false,
+    status: "BLOCKED",
+    currentpricecomparison: false,
+    reason_codes: ["TEST_ONLY_MISSING_PERIOD_DISTRIBUTIONS"],
+    checks: [
+      {
+        id: "distributions",
+        status: "BLOCKED",
+        reason_codes: ["TEST_ONLY_PERIOD_GAP"],
+        explanation: "TEST_ONLY期间分配未核验",
+      },
+    ],
+  };
+  const render = () =>
+    renderToStaticMarkup(
+      <FirstResearchInputView data={data} symbol="000568" />,
+    );
+  expect(render()).toContain("TEST_ONLY期间分配未核验");
+  expect(render()).not.toContain("当前研究比较口径已核验");
+  data.direct_cash_alignment.candidate_binding = {
+    ...data.receipt_binding,
+    sha256: "c".repeat(64),
+  };
+  expect(render()).toContain("当前对齐证据与候选/输入/估值日期不匹配");
+  expect(render()).not.toContain("TEST_ONLY期间分配未核验");
+  expect(render()).toContain("TEST_ONLY_RATIONALE");
+});
+
 it("shows dated financing issuance only when a source-bound review exists", () => {
   const data = directFixture();
   const render = () => {

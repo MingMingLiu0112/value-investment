@@ -16,6 +16,23 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
             return JSONResponse(dict(action="no_order",status="INVALID_SYMBOL",reason=str(error)),
                 status_code=422,headers={"Cache-Control":"no-store"})
         if result.get("status") == "SOURCE_BOUND_FIRST_INPUT_COMPILED":
+            if result.get("direct_owner_cash") is not None:
+                from ...application.research.direct_owner_cash_alignment_v1 import read_direct_owner_cash_alignment
+                try:
+                    result["direct_cash_alignment"] = read_direct_owner_cash_alignment(
+                        root=project, receipt_binding=result["receipt_binding"], now=clock())
+                except (ValueError, OSError, KeyError, TypeError, ArithmeticError) as error:
+                    result["direct_cash_alignment"] = dict(
+                        schema_version="direct-owner-cash-alignment-v1",
+                        research_artifact_kind="DIRECT_OWNER_CASH_RECEIPT",
+                        status="BLOCKED", action="no_order", formal_eligibility=False,
+                        currentpricecomparison=False,
+                        receipt_binding=result["receipt_binding"],
+                        candidate_binding=result["receipt_binding"],
+                        input_descriptor_sha256=result.get("input_descriptor_sha256"),
+                        valuation_date=result.get("financial_basis"),
+                        reason_codes=["DIRECT_ALIGNMENT_SOURCE_REPLAY_FAILED: " + str(error)],
+                        checks=[], evidence_bindings=[])
             from ...application.product.first_input_quote_alignment_v1 import read_first_input_quote_alignment
             result["e2_quote_alignment"] = read_first_input_quote_alignment(
                 root=project, symbol=symbol, first_input=result, now=clock())

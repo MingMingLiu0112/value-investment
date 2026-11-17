@@ -65,16 +65,41 @@ def _cash_terms(pages, symbol):
     if not pages or len(pages) > 16 or any(not p.strip() for p in pages):
         raise ValueError("UNSUPPORTED_CASH_IMPLEMENTATION_LAYOUT")
     text = compact("".join(pages))
+    # This exact negative declaration excludes noncash distributions. Other
+    # mentions still block; do not generally strip negation or infer its scope.
+    cash_only_text = text.replace("本次权益分派不涉及派送红股或转增股本。", "")
     if (len(text) > 120000 or f"证券代码:{symbol}" not in compact(pages[0])
             or "权益分派实施公告" not in compact(pages[0]) or "差异化分红送转:否" not in text
-            or any(word in text for word in ("更正", "修订", "取消", "作废", "撤销", "送红股", "转增股本", "配股", "拆股", "合股", "股份转换"))):
+            or any(word in cash_only_text for word in ("更正", "修订", "取消", "作废", "撤销", "送红股", "转增股本", "配股", "拆股", "合股", "股份转换"))):
         raise ValueError("UNSUPPORTED_CASH_IMPLEMENTATION_LAYOUT")
     schemes = [(i, m[1]) for i, p in enumerate(pages, 1)
                if (m := re.search(r"\(三\)分配方案:(.*?)三、相关日期", compact(p)))]
+    if not schemes:
+        # Strip only a standalone physical page number equal to its own index.
+        # Keep every other line and require both complete section boundaries.
+        def without_edge_page_number(page, index):
+            lines = page.strip().splitlines()
+            if lines and lines[0].strip() == str(index):
+                lines = lines[1:]
+            if lines and lines[-1].strip() == str(index):
+                lines = lines[:-1]
+            return "\n".join(lines)
+        joined = "".join(compact(without_edge_page_number(p, i))
+                         for i, p in enumerate(pages, 1))
+        spans = list(re.finditer(r"\(三\)分配方案:(.*?)三、相关日期", joined))
+        starts = [i for i, p in enumerate(pages, 1) if "(三)分配方案:" in compact(p)]
+        if len(spans) == len(starts) == 1:
+            schemes = [(starts[0], spans[0][1])]
     number = r"((?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)(?:\.[0-9]+)?)"
     terms = re.fullmatch(r"本次利润分配以方案实施前的公司总股本扣除回购专用账户内的股份"
         + number + r"股为基数,每股派发现金红利" + number
         + r"元\(含税\),共计派发现金红利" + number + r"元。", schemes[0][1]) if len(schemes) == 1 else None
+    all_shares = False
+    if terms is None and len(schemes) == 1:
+        terms = re.fullmatch(r"本次利润分配以方案实施前的公司总股本" + number
+            + r"股为基数,(?:向全体股东)?每股派发现金红利" + number
+            + r"元\(含税\),共计派发现金红利" + number + r"元。", schemes[0][1])
+        all_shares = terms is not None
     if terms is None:
         raise ValueError("UNSUPPORTED_CASH_IMPLEMENTATION_LAYOUT")
     shares, cash, total = (Decimal(v.replace(",", "")) for v in terms.groups())
@@ -106,7 +131,8 @@ def _cash_terms(pages, symbol):
     published = date(*map(int, publication.groups())).isoformat()
     if published > dates["record_date"]:
         raise ValueError("CASH_IMPLEMENTATION_PUBLICATION_AFTER_RECORD")
-    return dict(parser_version="sse-repurchase-excluded-gross-cash-scheme-v1", symbol=symbol,
+    return dict(parser_version=("sse-full-share-cross-page-cash-scheme-v1" if all_shares
+                               else "sse-repurchase-excluded-gross-cash-scheme-v1"), symbol=symbol,
         cash_per_share=str(cash), eligible_distribution_shares=str(shares), total_gross_cash=str(total),
         published_date=published, **dates, currency="CNY", body_terms_reconciled=True,
         term_pages=dict(scheme=[schemes[0][0]], chronology=sorted({r["page"] for r in candidates})),
@@ -577,8 +603,10 @@ def _event_windows(root, analysis, refs, now, read):
             raise ValueError("EXPLICIT_EVENT_COVERAGE_MODE_REQUIRED")
         snapshot = not observation["full_calendar_window_elapsed"]
         verifier = verify_retained_event_snapshot if snapshot else verify_retained_event_coverage
+        resource_options = ({"pdf_byte_limit": analysis["event_pdf_byte_limit"]}
+                            if "event_pdf_byte_limit" in analysis else {})
         proof = verifier(root, observation, symbol=analysis["symbol"],
-            required_from=start, required_to=end, now=now)
+            required_from=start, required_to=end, now=now, **resource_options)
         scan = event_scan_from_payload(load_json_object(read(observation["scan_binding"]), "candidate event scan"))
         # Snapshot verifier replays originals; explicitly retain the closure for
         # the after-calculation byte recheck as well.
@@ -855,7 +883,12 @@ def _materiality(root, analysis, ref, windows, scans, now, read):
                      reason="当前原生材料性消费者要求一个精确扫描；未合并多份扫描或复核。")
         return None, route
     scan_ref = windows[0]["scan_binding"]
-    package_ref = analysis["review_binding"]["package_binding"]
+    package_ref = analysis["review_binding"].get("package_binding")
+    if package_ref is None:
+        route.update(status="NATIVE_MATERIALITY_CANDIDATE_ADAPTER_UNSUPPORTED",
+                     reason="EXACT_RESEARCH_PACKAGE_MATERIALITY_HANDOFF_NOT_BOUND",
+                     engineering_gap="当前研究回执尚未绑定既有材料性复核输入；不能复用其他候选的批准。")
+        return None, route
     scan = scans[0]
     preflight = []
     if scan.coverage_status != "COMPLETE" or windows[0].get("full_calendar_window_elapsed") is False:
@@ -1000,6 +1033,17 @@ def _assess(analysis, valuation, quote, quote_result, windows, scans, reconcilia
 
 def load_pending_candidate_alignment(*, root, analysis, now):
     """No discovery by recency, no registration, no approval and no writes."""
+    return _load_bound_alignment(root=root, analysis=analysis, now=now,
+                                 input_schema=INPUT_SCHEMA)
+
+
+def _load_bound_alignment(*, root, analysis, now, input_schema):
+    """Shared checks for a source-replayed research identity, never a promotion.
+
+    Versioned adapters must cold-replay their own input before calling this
+    function. Each registration has an explicit schema and exact artifact hash;
+    a direct cash receipt cannot consume a historical pending candidate's entry.
+    """
     from .value_research_analysis import _bound
     result = _initial(analysis, now)
     verified = {}
@@ -1027,7 +1071,7 @@ def load_pending_candidate_alignment(*, root, analysis, now):
             return result
         config_ref = dict(path=config_path.relative_to(root).as_posix(), sha256=sha256_file(config_path))
         config = load_json_object(read(config_ref), "candidate alignment inputs")
-        if (config["schema_version"] != INPUT_SCHEMA or config["candidate_binding"] != result["candidate_binding"]
+        if (config["schema_version"] != input_schema or config["candidate_binding"] != result["candidate_binding"]
                 or config["input_descriptor_sha256"] != analysis["input_descriptor_sha256"]):
             raise ValueError("ALIGNMENT_CANDIDATE_OR_DESCRIPTOR_MISMATCH")
         read(result["candidate_binding"])

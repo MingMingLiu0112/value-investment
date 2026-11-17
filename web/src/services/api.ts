@@ -22,6 +22,7 @@ import type {
 } from "../types/api";
 import type { CurrentScreening } from "../types/discovery";
 import type { DualStrategySelection } from "../types/selection";
+import type { CandidatePriceAlignment } from "./valuePolicy";
 
 export interface PublicEvidenceStatus {
   schema_version: "public-evidence-status-v1";
@@ -451,7 +452,12 @@ export type DirectOwnerCash = {
 };
 
 export type FirstResearchInputResponse = {
+  receipt_binding?: { path: string; sha256: string };
   direct_owner_cash?: DirectOwnerCash;
+  direct_cash_alignment?: CandidatePriceAlignment & {
+    research_artifact_kind?: "DIRECT_OWNER_CASH_RECEIPT";
+    receipt_binding?: { path: string; sha256: string };
+  };
   schema_version?: string;
   symbol: string;
   status: "NOT_STARTED" | "SOURCE_BOUND_FIRST_INPUT_COMPILED" | "UNASSESSABLE";
