@@ -58,6 +58,11 @@ export function RuntimeResults({ data }: { data: ValueWorkbenchResponse }) {
 }
 
 function CompanyRuntime({ symbol }: { symbol: string }) {
+  const loadFirst = useCallback(
+    (signal: AbortSignal) => api.firstResearchInput(symbol, signal),
+    [symbol],
+  );
+  const first = useApi(loadFirst);
   const load = useCallback(
     (signal: AbortSignal) => api.valueWorkbench(symbol, signal),
     [symbol],
@@ -106,6 +111,22 @@ function CompanyRuntime({ symbol }: { symbol: string }) {
       {!result.loading && !result.error && result.data && (
         <RuntimeResults data={result.data} />
       )}
+      <details>
+        <summary>E1 → E2/F1/F2 · 当前注册首编与后继版本消费</summary>
+        {first.loading && <p>正在核验当前注册回执及后继链。</p>}
+        {first.error && <p>当前首编接口读取失败；不显示旧成功结果。</p>}
+        {!first.loading && !first.error && first.data && (
+          <>
+            <p>
+              当前首编：{first.data.status}；后继：
+              {first.data.successor_update?.status || "未返回后继记录"}
+            </p>
+            <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+              {JSON.stringify(first.data, null, 2)}
+            </pre>
+          </>
+        )}
+      </details>
       <h3>D1 / D2 / G2 · 实际持久任务</h3>
       <p>
         仅在点击后读取现有任务服务；需要本机研究授权，不读取私人持仓。任务执行成功与经济输入可用分开判断。
