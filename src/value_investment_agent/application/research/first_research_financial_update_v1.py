@@ -18,7 +18,8 @@ _Q3_VERIFIED_FIELDS = {"revenue", "parent_profit"}
 
 
 def compare_first_input_financial_update(*, symbol: str, financial_basis: str,
-                                         native_facts: dict, q3_read_model: dict) -> dict | None:
+                                         native_facts: dict, q3_read_model: dict,
+                                         income_read_model: dict | None = None) -> dict | None:
     if q3_read_model.get("status") == "NOT_SUPPORTED":
         return None
     base = {"schema_version": "first-input-financial-update-v1", "symbol": symbol,
@@ -58,10 +59,26 @@ def compare_first_input_financial_update(*, symbol: str, financial_basis: str,
                     (revenue_9m, profit_9m, revenue_h1, profit_h1))
                 or revenue_9m < revenue_h1 or revenue_h1 < 0):
             raise ValueError("FINANCIAL_UPDATE_INVALID_REPORTED_VALUES")
+        verified_fields = set(_Q3_VERIFIED_FIELDS)
+        income = None
+        if income_read_model and income_read_model.get("status") == "VERIFIED_REPORTED_Q3_INCOME_FACTS_ONLY":
+            if (income_read_model.get("symbol") != symbol or
+                    income_read_model.get("report_period") != period.isoformat() or
+                    income_read_model.get("currency") != "CNY" or
+                    income_read_model.get("unit") != "yuan" or
+                    income_read_model.get("period_basis") != "YTD_9M"):
+                raise ValueError("FINANCIAL_UPDATE_INCOME_SCOPE_MISMATCH")
+            income = income_read_model
+            current = income["facts"][str(period.year)]
+            if Decimal(current["revenue"]) != revenue_9m or Decimal(current["parent_profit"]) != profit_9m:
+                raise ValueError("FINANCIAL_UPDATE_INCOME_FACT_CONFLICT")
+            verified_fields.update(current)
         return {**base, "status": "SOURCE_BOUND_NEW_FINANCIAL_FACT_REQUIRES_E1_RECOMPILE",
                 "reason": "Newer reported profit and revenue require a new economic and cash review; the old valuation remains historical.",
                 "reported_period": period.isoformat(),
                 "source_bindings": q3_read_model["source_bindings"],
+                "verified_income_observation": income,
+                "income_observation_status": (income_read_model or {}).get("status", "NOT_STARTED"),
                 "reported_ytd_9m_cny": {"revenue": str(revenue_9m),
                                          "attributable_profit": str(profit_9m)},
                 "reported_h1_ytd_cny": {"revenue": str(revenue_h1),
@@ -69,7 +86,7 @@ def compare_first_input_financial_update(*, symbol: str, financial_basis: str,
                 "derived_q3_quarter_cny": {"revenue": str(revenue_9m - revenue_h1),
                                             "attributable_profit": str(profit_9m - profit_h1)},
                 "e1_recompile_requirements": {
-                    "current_ytd_source_fields_missing": sorted(_SOURCE_FINANCIAL_FIELDS - _Q3_VERIFIED_FIELDS),
+                    "current_ytd_source_fields_missing": sorted(_SOURCE_FINANCIAL_FIELDS - verified_fields),
                     "prior_year_comparative_required": True,
                     "ordinary_shares_at_new_basis": "UNVERIFIED",
                     "parent_accessible_cash_at_new_basis": "UNVERIFIED",

@@ -72,10 +72,12 @@ def read_first_research_input(*,root,symbol,now:datetime):
         parent_cash=observe_first_input_parent_cash(root=root,
             native_facts_binding=spec["native_facts_binding"],now=now)
         from ..research.quarter_financial_read_model_v1 import read_quarter_financial_ocr
+        from ..research.quarter_income_facts_v2 import read_quarter_income_facts
         from ..research.first_research_financial_update_v1 import compare_first_input_financial_update
         financial_update=compare_first_input_financial_update(symbol=symbol,
             financial_basis=native["financial_basis"],native_facts=native,
-            q3_read_model=read_quarter_financial_ocr(root,symbol,now))
+            q3_read_model=read_quarter_financial_ocr(root,symbol,now),
+            income_read_model=read_quarter_income_facts(root,symbol,now))
         if parent_cash.get("symbol") != symbol or parent_cash.get("action") != "no_order":
             raise ValueError("Parent cash observation issuer boundary changed")
         if (result["research_case"]["symbol"]!=symbol or result["action"]!="no_order"

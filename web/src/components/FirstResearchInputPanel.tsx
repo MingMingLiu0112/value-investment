@@ -588,6 +588,38 @@ export function FirstResearchInputView({
           当前季度收入和利润不能直接替代完整股东现金路径。
         </p>
       )}
+      {data.financial_update_observation?.verified_income_observation && (
+        <section aria-label="已核验季度利润表">
+          <h4>已核验季度利润表（合并口径，人民币元）</h4>
+          <p>
+            原件行列、同期列及利润勾稽已核验；这些历史金额尚未转成未来现金预测。
+          </p>
+          {Object.entries(
+            data.financial_update_observation.verified_income_observation.facts,
+          ).map(([year, facts]) => (
+            <div key={year}>
+              <strong>{year} 年前九个月</strong>
+              <ul>
+                {Object.entries({
+                  revenue: "营业收入",
+                  cost: "营业成本",
+                  surcharges: "税金及附加",
+                  selling: "销售费用",
+                  admin: "管理费用",
+                  research: "研发费用",
+                  pre_tax_profit: "税前利润",
+                  tax: "所得税",
+                  parent_profit: "归母利润",
+                }).map(([field, label]) => (
+                  <li key={field}>
+                    {label}：{amount(facts[field])}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      )}
       <p>
         本页只读重放已登记输入，不发起新LLM或自动任务；不新增C第六家验收，也不授予正式画像准入或交易资格。
       </p>

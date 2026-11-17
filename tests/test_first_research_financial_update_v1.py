@@ -52,3 +52,20 @@ def test_unsupported_issuer_has_no_q3_claim():
     native, _ = inputs()
     assert compare_first_input_financial_update(symbol="600519", financial_basis="2026-06-30",
         native_facts=native, q3_read_model={"status": "NOT_SUPPORTED"}) is None
+
+
+def test_verified_income_removes_only_covered_gaps_and_conflict_rejects():
+    native, q3 = inputs()
+    income = {"status": "VERIFIED_REPORTED_Q3_INCOME_FACTS_ONLY", "symbol": "600519",
+              "report_period": "2026-09-30", "currency": "CNY", "unit": "yuan",
+              "period_basis": "YTD_9M", "facts": {"2026": {
+                  "revenue": "130", "parent_profit": "64", "cost": "20", "tax": "10"}}}
+    def evaluate():
+        return compare_first_input_financial_update(symbol="600519", financial_basis="2026-06-30",
+            native_facts=native, q3_read_model=q3, income_read_model=income)
+    result = evaluate()
+    missing = result["e1_recompile_requirements"]["current_ytd_source_fields_missing"]
+    assert "cost" not in missing and "tax" not in missing and "da" in missing
+    assert result["valuation_recomputed"] is False and result["price_admitted"] is False
+    income["facts"]["2026"]["revenue"] = "131"
+    assert evaluate()["reason"] == "FINANCIAL_UPDATE_INCOME_FACT_CONFLICT"

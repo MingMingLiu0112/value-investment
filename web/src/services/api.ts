@@ -535,6 +535,11 @@ export type FirstResearchInputResponse = {
       revenue: string;
       attributable_profit: string;
     };
+    verified_income_observation?: {
+      status: string;
+      report_period: string;
+      facts: Record<string, Record<string, string>>;
+    } | null;
     e1_recompile_requirements?: {
       current_ytd_source_fields_missing: string[];
       prior_year_comparative_required: boolean;
