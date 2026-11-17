@@ -53,6 +53,8 @@ def _evidence(shares=True):
                           "cfo_cny": row("30", 8)},
             "ordinary_shares_evidence": (
                 {"period_end": "2025-12-31", "unit": "shares",
+                 "classification": "DERIVED_FACT",
+                 "derivation": "TEST_ONLY_RECONCILIATION",
                  "scope": "TOTAL_ISSUED_ORDINARY_SHARES", "count": "10",
                  "source_refs": [row("10", 9)["source_refs"]]} if shares else None),
         }],
@@ -72,6 +74,7 @@ def test_numbered_projection_keeps_row_evidence_and_excludes_forecasts(tmp_path,
     assert result["facts"]["revenue"]["source_refs"]["physical_page"] == 3
     assert result["facts"]["profit"]["source_refs"]["physical_page"] == 5
     assert result["forecast_scenarios_present"] is False
+    assert result["ordinary_shares"]["classification"] == "DERIVED_FACT"
     assert result["action"] == "no_order" and result["formal_eligibility"] is False
 
 
