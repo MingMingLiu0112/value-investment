@@ -81,7 +81,7 @@ def test_numbered_projection_keeps_row_evidence_and_excludes_forecasts(tmp_path,
     assert result["forecast_scenarios_present"] is False
     assert result["ordinary_shares"]["classification"] == "DERIVED_FACT"
     financing = result["historical_financing_range"]
-    assert financing["reported_component_sum_cny"] == "60"
+    assert financing["selected_liability_rows_sum_cny"] == "60"
     assert financing["on_balance_liabilities_ceiling"]["value_cny"] == "100"
     assert financing["components"]["short_term_borrowings_cny"]["classification"] == "UNKNOWN"
     assert financing["components"]["bonds_payable_cny"]["value_cny"] is None
@@ -117,6 +117,6 @@ def test_missing_financing_rows_are_unknown_not_zero_debt(tmp_path, monkeypatch)
     result = facts.read_parent_cash_agent_facts_v2(
         root=tmp_path, spec_binding=binding, now=NOW)
     financing = result["historical_financing_range"]
-    assert financing["reported_component_sum_cny"] is None
+    assert financing["selected_liability_rows_sum_cny"] is None
     assert financing["reported_component_count"] == 0
     assert financing["on_balance_liabilities_ceiling"] is None

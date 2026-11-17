@@ -45,8 +45,9 @@ def _finite(value):
 def _historical_financing_range(statement):
     """Expose reported parent rows without filling blank debt cells with zero.
 
-    This is an on-balance research range, not a complete interest-bearing debt
-    certification or a schedule of dated repayments/refinancing.
+    The selected rows can include non-debt items in the current portion of
+    noncurrent liabilities. Their sum is not a certified debt lower bound or
+    a schedule of dated repayments/refinancing.
     """
     balance = statement.get("balance_sheet") or {}
     components = {}
@@ -76,13 +77,13 @@ def _historical_financing_range(statement):
                        source_refs=liability["source_refs"])
     return dict(period_end=statement["period_end"], scope=SCOPE, currency="CNY",
                 components=components,
-                reported_component_sum_cny=str(lower) if known_count else None,
+                selected_liability_rows_sum_cny=str(lower) if known_count else None,
                 reported_component_count=known_count,
                 on_balance_liabilities_ceiling=ceiling,
                 complete_financing_scope_verified=False,
                 dated_maturity_schedule_verified=False,
                 future_refinancing_verified=False,
-                classification="PARTIAL_HISTORICAL_FINANCING_RANGE_NOT_DEBT_FACT")
+                classification="PARTIAL_HISTORICAL_LIABILITY_ROWS_NOT_DEBT_FACT")
 
 
 def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
