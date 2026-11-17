@@ -46,7 +46,7 @@ describe("actual runtime evidence separate from capability descriptions", () => 
   });
   it("initial render does not read authorized task history or start work", () => {
     const tasks = vi.spyOn(api, "valueWorkbenchTasks");
-    const live = vi.spyOn(api, "recentHorizonCashPolicyTasks");
+    const live = vi.spyOn(api, "horizonCashPolicyHistory");
     const create = vi.spyOn(api, "createValueWorkbenchTask");
     renderToStaticMarkup(<ModuleRuntimePanel />);
     expect(tasks).not.toHaveBeenCalled();

@@ -79,7 +79,11 @@ function CompanyRuntime({ symbol }: { symbol: string }) {
     setLive(null);
     const responses = await Promise.allSettled([
       api.valueWorkbenchTasks(symbol),
-      api.recentHorizonCashPolicyTasks(),
+      api.horizonCashPolicyHistory(
+        symbol,
+        undefined,
+        "operating-horizon-task-v25-full-schema-canonical-2027",
+      ),
     ]);
     const messages: string[] = [];
     if (responses[0].status === "fulfilled") setTasks(responses[0].value.items);
@@ -172,7 +176,7 @@ function CompanyRuntime({ symbol }: { symbol: string }) {
       {live !== null && (
         <>
           <p>
-            D1/D2近期历史任务 {live.length}{" "}
+            D1/D2当前V25合同历史任务 {live.length}{" "}
             条（有界列表，不代表全部历史或当前候选）。
           </p>
           <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>

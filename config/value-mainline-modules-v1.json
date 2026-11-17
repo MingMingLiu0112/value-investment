@@ -2268,14 +2268,19 @@
       "version_policy": {
         "reviewed_code": "c53ad65d026d422dc797f2b0891aa451d2f4d600",
         "current": {
-          "create_route": "POST /api/v1/operating-research/horizon-cash-policy-tasks",
-          "required_task_contract": "operating-horizon-task-v25-full-schema-canonical-2027",
-          "consumer_route": "GET /api/v1/operating-research/horizon-cash-policy-tasks/{task_id}/e2-input"
+          "read_route": "GET /api/v1/first-research-inputs/{symbol}",
+          "registry": "config/current-first-research-inputs-v1.json",
+          "receipt_dispatch": [
+            "first-research-input-receipt-v1",
+            "first-research-input-receipt-v2",
+            "direct-owner-cash-first-input-receipt-v1"
+          ],
+          "research_handoff_route": "GET /api/v1/operating-research/horizon-cash-policy-tasks/{task_id}/e2-input"
         },
-        "implicit_default": "LEGACY_V4_NOT_CURRENT_V25",
+        "implicit_default": "REGISTERED_RECEIPT_SCHEMA_DISPATCH_NOT_LATEST_FILENAME",
         "replay_only": "Historical task reads and E2 dispatch use each saved contract; never upgrade or re-sign old tasks.",
         "experimental": "Explicit older create/import/repair routes remain compatibility operations, not current product defaults.",
-        "scope": "Current API research contract only; direct owner-cash compiled receipts retain their own model/receipt versions. E2 readiness is not valuation or approval.",
+        "scope": "First-input receipt replay and separate task readiness projection; a readiness result is not a compiled receipt or valuation.",
         "action": "no_order"
       }
     },
