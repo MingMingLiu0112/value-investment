@@ -553,6 +553,15 @@ export function FirstResearchInputView({
             : ""}
         </p>
       )}
+      {data.financial_update_observation?.status ===
+        "SOURCE_BOUND_NEW_FINANCIAL_FACT_REQUIRES_E1_RECOMPILE" && (
+        <Alert
+          type="warning"
+          showIcon
+          message="三季报已有新事实，当前估值仍以半年报为基础"
+          description={`三季报期间 ${data.financial_update_observation.reported_period}；由已核验的9个月与半年累计数相减，第三季度营业收入 ${amount(data.financial_update_observation.derived_q3_quarter_cny?.revenue)} 元、归母利润 ${amount(data.financial_update_observation.derived_q3_quarter_cny?.attributable_profit)} 元。须重新研究股东现金及估值；此处没有重算当前价值或生成买价。`}
+        />
+      )}
       <p>
         本页只读重放已登记输入，不发起新LLM或自动任务；不新增C第六家验收，也不授予正式画像准入或交易资格。
       </p>

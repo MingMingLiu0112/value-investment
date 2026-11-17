@@ -513,6 +513,19 @@ export type FirstResearchInputResponse = {
     price_admitted: boolean;
     comparison_eligible: boolean;
   };
+  financial_update_observation?: {
+    status: string;
+    financial_basis: string;
+    reported_period: string | null;
+    reason?: string | null;
+    derived_q3_quarter_cny?: {
+      revenue: string;
+      attributable_profit: string;
+    };
+    valuation_recomputed: false;
+    price_admitted: false;
+    action: "no_order";
+  } | null;
   condition_price: null;
   personal_quantity: null;
   parent_cash_observation?: {
