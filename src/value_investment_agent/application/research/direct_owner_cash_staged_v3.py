@@ -203,6 +203,26 @@ def preflight_annual_cash_upper_bound_v3(*, root: Path, spec_binding: dict,
         raise ValueError("PARENT_V3_OPENING_CASH_SCOPE_INVALID")
     if operating["years"] != policy["years"]:
         raise ValueError("PARENT_V3_YEAR_MISMATCH")
+    # Annual forecasts cover the full calendar year. A known interim parent
+    # cash movement within that year is a hard floor, not a future estimate.
+    for observation in context.get("historical_financing_observations", []):
+        cash = observation["financing_cash_flows"]
+        period = cash["period_end"]
+        year = int(period[:4])
+        if (year not in policy["years"] or cash["period_start"] != f"{year}-01-01"
+                or period == f"{year}-12-31"):
+            continue
+        index = policy["years"].index(year)
+        for observed_field, forecast_field in (
+            ("borrowings_received_cny", "new_borrowing"),
+            ("debt_repayments_paid_cny", "debt_repayment"),
+        ):
+            movement = cash["components"][observed_field]
+            if (movement["classification"] == "FACT"
+                    and Decimal(policy["series"][forecast_field]["values"][index])
+                    < Decimal(movement["value_cny"])):
+                raise ValueError(
+                    f"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:{year}:{forecast_field}")
     mandatory = ("maintenance_capex", "growth_capex", "commitments_outside_capex",
                  "debt_repayment", "interest_outside_cfo", "other_mandatory_cash")
     with localcontext() as arithmetic:

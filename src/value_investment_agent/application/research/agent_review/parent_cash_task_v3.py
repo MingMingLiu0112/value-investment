@@ -488,6 +488,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                 code = ("PARENT_V3_ECONOMIC_" + detail
                                     if isinstance(error, ValueError) and re.fullmatch(
                                         r"DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:20[0-9]{2}", detail)
+                                    else detail if isinstance(error, ValueError) and re.fullmatch(
+                                        r"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:20[0-9]{2}:(?:new_borrowing|debt_repayment)", detail)
                                     else "PARENT_V3_ANNUAL_CASH_PREFLIGHT_REJECTED")
                                 state, binding = self._save(spec, state, binding, _now(),
                                     status="FAILED", error_code=f"{stage_id.upper().replace('.', '_')}_{code}")

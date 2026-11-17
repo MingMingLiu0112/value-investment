@@ -112,6 +112,22 @@ def test_numbered_annual_history_drives_cash_preflight(monkeypatch, tmp_path):
                 evaluated_at=datetime(2026, 11, 17, tzinfo=timezone.utc),
                 context=context, operating=operating, policy=policy)
     staged.preflight_annual_cash_upper_bound_v3(**args)
+    context["historical_financing_observations"] = [{
+        "financing_cash_flows": {
+            "period_start": "2026-01-01", "period_end": "2026-06-30",
+            "components": {
+                "borrowings_received_cny": {"classification": "FACT", "value_cny": "10"},
+                "debt_repayments_paid_cny": {"classification": "FACT", "value_cny": "25"},
+            },
+        },
+    }]
+    with pytest.raises(ValueError, match="BELOW_REALISED_CASH:2026:new_borrowing"):
+        staged.preflight_annual_cash_upper_bound_v3(**args)
+    policy["series"]["new_borrowing"]["values"] = ["10"]
+    with pytest.raises(ValueError, match="BELOW_REALISED_CASH:2026:debt_repayment"):
+        staged.preflight_annual_cash_upper_bound_v3(**args)
+    policy["series"]["debt_repayment"]["values"] = ["25"]
+    staged.preflight_annual_cash_upper_bound_v3(**args)
     policy["series"]["maintenance_capex"]["values"] = ["40"]
     with pytest.raises(ValueError, match="UNFUNDED_CASH_REQUIREMENT:2026"):
         staged.preflight_annual_cash_upper_bound_v3(**args)
