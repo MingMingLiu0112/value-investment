@@ -2,6 +2,7 @@
 import re
 import json
 from itertools import islice
+from pathlib import Path
 
 from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -16,6 +17,11 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
     root = resolve_research_task_root(project)
     service = ParentCashTaskServiceV2(root)
     numbered_service = ParentCashTaskServiceV3(root)
+    # When execution uses a sibling worktree, retain read-only access to V3
+    # history created in the code checkout. Writes and budget stay at root.
+    code_root = Path(project).resolve()
+    archived_numbered_service = (ParentCashTaskServiceV3(code_root)
+                                 if code_root != Path(root).resolve() else None)
 
     def reply(value, status=200):
         return JSONResponse(value, status_code=status, headers={"Cache-Control": "no-store"})
@@ -56,7 +62,11 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         if not re.fullmatch(r"rt-[0-9a-f]{32}", task_id):
             return reply({"action": "no_order", "status": "INVALID_TASK_ID"}, 422)
         try:
-            return reply(numbered_service.read(task_id))
+            primary_base = getattr(numbered_service, "base", None)
+            if (primary_base is None or (Path(primary_base) / task_id).exists()
+                    or archived_numbered_service is None):
+                return reply(numbered_service.read(task_id))
+            return reply(archived_numbered_service.read(task_id))
         except (ValueError, TypeError, KeyError, OSError, PermissionError):
             return reply({"action": "no_order", "status": "PARENT_V3_TASK_UNAVAILABLE"}, 422)
 
@@ -68,6 +78,11 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
             return error
         if not re.fullmatch(r"rt-[0-9a-f]{32}", task_id) or operation not in {"cancel", "resume"}:
             return reply({"action": "no_order", "status": "INVALID_TASK_CONTROL"}, 422)
+        primary_base = getattr(numbered_service, "base", None)
+        if (primary_base is not None and archived_numbered_service is not None
+                and not (Path(primary_base) / task_id).exists()
+                and (archived_numbered_service.base / task_id).exists()):
+            return reply({"action": "no_order", "status": "ARCHIVED_TASK_READ_ONLY"}, 422)
         try:
             task = (numbered_service.cancel(task_id) if operation == "cancel"
                     else numbered_service.resume(task_id))
@@ -130,8 +145,12 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                  "reserved_cny": row.get("cost"), "settled_cny": row.get("actual_cost")}
                                 for row in reservations.values()],
                     "e2_consumption": "UNVERIFIED", "formal": False, "action": "no_order"})
-            if numbered_service.base.exists():
-                numbered_children = list(islice(numbered_service.base.iterdir(), 101))
+            seen_numbered = set()
+            for numbered, archived in ((numbered_service, False),
+                                       (archived_numbered_service, True)):
+                if numbered is None or not numbered.base.exists():
+                    continue
+                numbered_children = list(islice(numbered.base.iterdir(), 101))
                 if len(numbered_children) > 100:
                     raise ValueError("PARENT_V3_TASK_DISCOVERY_LIMIT_EXCEEDED")
                 for directory in sorted(numbered_children):
@@ -139,8 +158,11 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                             or not re.fullmatch(r"rt-[0-9a-f]{32}", directory.name)
                             or not (directory / "input.json").is_file()):
                         continue
-                    spec, state, binding = numbered_service._load(directory.name)
-                    source = numbered_service._bound(spec["spec_binding"])
+                    if directory.name in seen_numbered:
+                        raise ValueError("PARENT_V3_DUPLICATE_TASK_ACROSS_ROOTS")
+                    seen_numbered.add(directory.name)
+                    spec, state, binding = numbered._load(directory.name)
+                    source = numbered._bound(spec["spec_binding"])
                     if (source.get("action") != "no_order"
                             or not spec["spec_binding"]["path"].startswith("runtime/")):
                         raise ValueError("PARENT_V3_TASK_SOURCE_INVALID")
@@ -150,6 +172,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                     if len(reservations) > 32 or len(state.get("responses", {})) > 9:
                         raise ValueError("PARENT_V3_TASK_PROJECTION_LIMIT_EXCEEDED")
                     items.append({"task_id": directory.name, "task_contract": "parent-cash-task-v3",
+                        "read_only_archive": archived,
                         "status": state["status"],
                         "stage": next((row.get("scenario") for row in reservations.values()
                                        if row.get("status") == "RESERVED"), None),

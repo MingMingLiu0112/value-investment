@@ -141,3 +141,55 @@ def test_numbered_history_is_visible_without_old_task_store(tmp_path, monkeypatc
     assert row["candidate_status"] == "COMPILED_CONDITIONAL_NOT_MAIN"
     assert row["e2_consumption"] == "UNVERIFIED"
     assert row["action"] == "no_order"
+
+
+def test_sibling_execution_root_keeps_code_checkout_v3_history_read_only(tmp_path, monkeypatch):
+    code_root = tmp_path / "code"
+    task_root = tmp_path / "tasks"
+    code_root.mkdir()
+    task_root.mkdir()
+    task_id = "rt-" + "d" * 32
+    archive = code_root / "numbered" / task_id
+    archive.mkdir(parents=True)
+    (archive / "input.json").write_text("{}", encoding="utf-8")
+    calls = []
+
+    class OldService:
+        def __init__(self, root):
+            self.base = root / "absent-old"
+
+    class NumberedService:
+        def __init__(self, root):
+            self.base = root / "numbered"
+            self.root = root
+
+        def read(self, value):
+            calls.append(("read", self.root, value))
+            return {"task_id": value, "status": "FAILED", "action": "no_order"}
+
+        def _load(self, value):
+            calls.append(("load", self.root, value))
+            return ({"spec_binding": {"path": "runtime/source.json", "sha256": "a" * 64}},
+                    {"status": "FAILED", "responses": {}, "reservations": {},
+                     "error_code": "TERMINAL_DEBT_UNSUPPORTED", "reserved_cost": "0.1",
+                     "settled_cost": "0.1"},
+                    {"path": "runtime/archived-state.json", "sha256": "b" * 64})
+
+        def _bound(self, binding):
+            return {"symbol": "000568", "action": "no_order", "fact_anchors": {}}
+
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda _: task_root)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV2", OldService)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV3", NumberedService)
+    monkeypatch.setattr(routes, "authorize", lambda *_, **__: None)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=code_root, sessions=None, port=0)
+    client = TestClient(app)
+    history = client.get("/api/v1/operating-research/parent-cash-tasks/history?symbol=000568")
+    assert history.status_code == 200
+    assert history.json()["items"][0]["read_only_archive"] is True
+    detail = client.get(f"/api/v1/operating-research/parent-cash-tasks/v3/{task_id}")
+    assert detail.json()["status"] == "FAILED"
+    assert ("read", code_root, task_id) in calls
+    assert ("read", task_root, task_id) not in calls
+    assert client.post(f"/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/cancel").status_code == 422
