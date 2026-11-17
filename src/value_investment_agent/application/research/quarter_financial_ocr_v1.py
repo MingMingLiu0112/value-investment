@@ -1,7 +1,7 @@
 """Fixed-source 600519 Q3 2026 OCR verifier, not a general extractor or A closure."""
 from datetime import datetime, timezone
 from hashlib import sha256
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import json
 import re
 
@@ -104,14 +104,14 @@ def replay_quarter_financial_ocr(*, receipt_path: Path, receipt_sha256: str,
     _require(as_of.astimezone(timezone.utc).date().isoformat() >= '2026-10-31',
              'NOT_AVAILABLE_AS_OF')
     original = Path(original_path) if original_path is not None else Path(receipt['original_path'])
-    _require(original.name == Path(receipt['original_path']).name,
+    _require(original.name == PureWindowsPath(receipt['original_path']).name,
              'ORIGINAL_IDENTITY_CHANGED')
     _require(receipt.get('original_sha256') == original_sha256 and
              _hash(original) == original_sha256, 'ORIGINAL_HASH_CHANGED')
     _require(any(row.get('id') == 'cninfo:1225649896' and
                  row.get('sha256') == original_sha256 and
                  row.get('source_url') == receipt['source_url'] and
-                 Path(row.get('path', '')).name == original.name
+                 PureWindowsPath(row.get('path', '')).name == original.name
                  for row in registration.get('evidence_refs', [])),
              'REGISTRATION_SOURCE_UNVERIFIED')
     files = receipt.get('files')
