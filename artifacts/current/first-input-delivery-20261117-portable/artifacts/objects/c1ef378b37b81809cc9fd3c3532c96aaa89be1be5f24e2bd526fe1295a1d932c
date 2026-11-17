@@ -1,0 +1,660 @@
+{
+  "schema_version": "first-research-assumptions-v1",
+  "action": "no_order",
+  "symbol": "000568",
+  "financial_basis": "2026-06-30",
+  "generated_at": "2026-10-31T11:10:08.300949+00:00",
+  "assumption_scope": "RESEARCH_ASSUMPTIONS_NOT_OFFICIAL_FORECAST",
+  "source_bindings": [
+    {
+      "path": "runtime/e2-first-input-000568-20261031/evidence/FY2025/original.pdf",
+      "sha256": "7a2e321f049401fd34dfbf8c22964e804d16f077ece9382791cb2b2ce0c74676"
+    },
+    {
+      "path": "runtime/e2-first-input-000568-20261031/original.pdf",
+      "sha256": "33fbc65e9bc5c41a80d2cc5f8ae0eaa2990424c81bb93b90029ccdb05e092ade"
+    },
+    {
+      "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+      "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+    },
+    {
+      "path": "runtime/e2-first-input-000568-20261031/research-rationale-20261031T111006911210Z.json",
+      "sha256": "44004186cdf99eeaf7afeda90c5d0f1ca6ff84133fc1f09923fa4f98f8bac1bd"
+    }
+  ],
+  "choice": {
+    "id": "LZLJ_CONDITIONAL_PRESSURE_NOT_PRIMARY_RANGE",
+    "rationale": "白酒品牌、渠道及产品结构决定实现收入和利润。渠道去库存与回款压力使高毛利不能直接等同高质量股东现金。 TTM仅用FY2025+H12026-H12025逐字段历史算术，不是正常化利润；资本状态统一为H12026。模型年不冒称完整财年预测。 Y11旧业务利润仅假定变为Y10总利润的50%/75%/100%后保持；本例新增资本与流动性收益已停用，故无重复缩放该收益。持续维护、WC、可达、现金底线与分配限制保留。它是无概率权重的反证机制，不是预计终值或可采用主区间。",
+    "countercase": "销量及渠道去库存恶化、毛利/促销刚性、回款不足可能推翻稳定和修复条件；真实受限资金、债务、维护/WC或合同付款超条件缓冲时应拒绝路径，不允许隐含融资；历史TTM含当期利润下降但不代表已正常化；H1中高档销量降幅42.53%未被本有限Bear保证覆盖"
+  },
+  "historical_bindings": {
+    "revenue": {
+      "operation": "TTM",
+      "fact_ids": [
+        "revenue-revenue-2025-12-31-1225240660",
+        "revenue-revenue-2026-06-30-1225501255",
+        "revenue-revenue-2025-06-30-1225501255"
+      ]
+    },
+    "cost": {
+      "operation": "TTM",
+      "fact_ids": [
+        "cost-cost-2025-12-31-1225240660",
+        "cost-cost-2026-06-30-1225501255",
+        "cost-cost-2025-06-30-1225501255"
+      ]
+    },
+    "surcharges": {
+      "operation": "TTM",
+      "fact_ids": [
+        "surcharges-surcharges-2025-12-31-1225240660",
+        "surcharges-surcharges-2026-06-30-1225501255",
+        "surcharges-surcharges-2025-06-30-1225501255"
+      ]
+    },
+    "selling": {
+      "operation": "TTM",
+      "fact_ids": [
+        "selling-selling-2025-12-31-1225240660",
+        "selling-selling-2026-06-30-1225501255",
+        "selling-selling-2025-06-30-1225501255"
+      ]
+    },
+    "admin": {
+      "operation": "TTM",
+      "fact_ids": [
+        "admin-admin-2025-12-31-1225240660",
+        "admin-admin-2026-06-30-1225501255",
+        "admin-admin-2025-06-30-1225501255"
+      ]
+    },
+    "research": {
+      "operation": "TTM",
+      "fact_ids": [
+        "research-research-2025-12-31-1225240660",
+        "research-research-2026-06-30-1225501255",
+        "research-research-2025-06-30-1225501255"
+      ]
+    },
+    "pre_tax_profit": {
+      "operation": "TTM",
+      "fact_ids": [
+        "pre_tax_profit-pretax-2025-12-31-1225240660",
+        "pre_tax_profit-pretax-2026-06-30-1225501255",
+        "pre_tax_profit-pretax-2025-06-30-1225501255"
+      ]
+    },
+    "tax": {
+      "operation": "TTM",
+      "fact_ids": [
+        "tax-tax-2025-12-31-1225240660",
+        "tax-tax-2026-06-30-1225501255",
+        "tax-tax-2025-06-30-1225501255"
+      ]
+    },
+    "parent_profit": {
+      "operation": "TTM",
+      "fact_ids": [
+        "parent_profit-parent_profit-2025-12-31-1225240660",
+        "parent_profit-parent_profit-2026-06-30-1225501255",
+        "parent_profit-parent_profit-2025-06-30-1225501255"
+      ]
+    },
+    "nonrecurring": {
+      "operation": "DIFFERENCE",
+      "operands": [
+        {
+          "operation": "TTM",
+          "fact_ids": [
+            "parent_profit-parent_profit-2025-12-31-1225240660",
+            "parent_profit-parent_profit-2026-06-30-1225501255",
+            "parent_profit-parent_profit-2025-06-30-1225501255"
+          ]
+        },
+        {
+          "operation": "TTM",
+          "fact_ids": [
+            "ex_parent_profit-adjusted_parent_profit-2025-12-31-1225240660",
+            "ex_parent_profit-adjusted_parent_profit-2026-06-30-1225501255",
+            "ex_parent_profit-adjusted_parent_profit-2025-06-30-1225501255"
+          ]
+        }
+      ]
+    },
+    "da": {
+      "operation": "SUM",
+      "operands": [
+        {
+          "operation": "TTM",
+          "fact_ids": [
+            "depreciation-DA_right_of_use-2025-12-31-1225240660",
+            "depreciation-DA_right_of_use-2026-06-30-1225501255",
+            "depreciation-DA_right_of_use-2025-06-30-1225501255"
+          ]
+        },
+        {
+          "operation": "TTM",
+          "fact_ids": [
+            "depreciation-DA_fixed_oil_biological-2025-12-31-1225240660",
+            "depreciation-DA_fixed_oil_biological-2026-06-30-1225501255",
+            "depreciation-DA_fixed_oil_biological-2025-06-30-1225501255"
+          ]
+        },
+        {
+          "operation": "TTM",
+          "fact_ids": [
+            "amortization-DA_intangible-2025-12-31-1225240660",
+            "amortization-DA_intangible-2026-06-30-1225501255",
+            "amortization-DA_intangible-2025-06-30-1225501255"
+          ]
+        },
+        {
+          "operation": "TTM",
+          "fact_ids": [
+            "amortization-DA_longterm_deferred-2025-12-31-1225240660",
+            "amortization-DA_longterm_deferred-2026-06-30-1225501255",
+            "amortization-DA_longterm_deferred-2025-06-30-1225501255"
+          ]
+        }
+      ]
+    },
+    "opening_cash": {
+      "assumption": {
+        "value": "17016211333.61",
+        "unit": "CNY",
+        "scope": "ordinary_owner_equivalent_cash_mapping",
+        "rationale": "若H1母公司现金等价物23517778984.18排除已宣告股利6501567650.57后剩余资源可用，且维持60亿元全期现金底线；这是条件映射，非净自由现金/合法分配证明。期末权益已反映宣告股利，不再减同额book或以后commitment。",
+        "source_bindings": [
+          {
+            "path": "runtime/e2-first-input-000568-20261031/evidence/FY2025/original.pdf",
+            "sha256": "7a2e321f049401fd34dfbf8c22964e804d16f077ece9382791cb2b2ce0c74676"
+          },
+          {
+            "path": "runtime/e2-first-input-000568-20261031/original.pdf",
+            "sha256": "33fbc65e9bc5c41a80d2cc5f8ae0eaa2990424c81bb93b90029ccdb05e092ade"
+          },
+          {
+            "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+            "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+          },
+          {
+            "path": "runtime/e2-first-input-000568-20261031/research-rationale-20261031T111006911210Z.json",
+            "sha256": "44004186cdf99eeaf7afeda90c5d0f1ca6ff84133fc1f09923fa4f98f8bac1bd"
+          }
+        ]
+      }
+    },
+    "cash_floor": {
+      "assumption": {
+        "value": "6000000000",
+        "unit": "CNY",
+        "scope": "ordinary_owner_equivalent_cash_mapping",
+        "rationale": "若H1母公司现金等价物23517778984.18排除已宣告股利6501567650.57后剩余资源可用，且维持60亿元全期现金底线；这是条件映射，非净自由现金/合法分配证明。期末权益已反映宣告股利，不再减同额book或以后commitment。",
+        "source_bindings": [
+          {
+            "path": "runtime/e2-first-input-000568-20261031/evidence/FY2025/original.pdf",
+            "sha256": "7a2e321f049401fd34dfbf8c22964e804d16f077ece9382791cb2b2ce0c74676"
+          },
+          {
+            "path": "runtime/e2-first-input-000568-20261031/original.pdf",
+            "sha256": "33fbc65e9bc5c41a80d2cc5f8ae0eaa2990424c81bb93b90029ccdb05e092ade"
+          },
+          {
+            "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+            "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+          },
+          {
+            "path": "runtime/e2-first-input-000568-20261031/research-rationale-20261031T111006911210Z.json",
+            "sha256": "44004186cdf99eeaf7afeda90c5d0f1ca6ff84133fc1f09923fa4f98f8bac1bd"
+          }
+        ]
+      }
+    },
+    "opening_distribution_capacity": {
+      "assumption": {
+        "value": "23214184665.64",
+        "unit": "CNY",
+        "scope": "ordinary_owner_equivalent_cash_mapping",
+        "rationale": "若H1母公司现金等价物23517778984.18排除已宣告股利6501567650.57后剩余资源可用，且维持60亿元全期现金底线；这是条件映射，非净自由现金/合法分配证明。期末权益已反映宣告股利，不再减同额book或以后commitment。",
+        "source_bindings": [
+          {
+            "path": "runtime/e2-first-input-000568-20261031/evidence/FY2025/original.pdf",
+            "sha256": "7a2e321f049401fd34dfbf8c22964e804d16f077ece9382791cb2b2ce0c74676"
+          },
+          {
+            "path": "runtime/e2-first-input-000568-20261031/original.pdf",
+            "sha256": "33fbc65e9bc5c41a80d2cc5f8ae0eaa2990424c81bb93b90029ccdb05e092ade"
+          },
+          {
+            "path": "runtime/e2-first-input-000568-20261031/native-facts-v5.json",
+            "sha256": "223dc8bf4c8d0ad4d74f8ae10db3a8fecafab46189ef9301e4d1d0497b9882f9"
+          },
+          {
+            "path": "runtime/e2-first-input-000568-20261031/research-rationale-20261031T111006911210Z.json",
+            "sha256": "44004186cdf99eeaf7afeda90c5d0f1ca6ff84133fc1f09923fa4f98f8bac1bd"
+          }
+        ]
+      }
+    }
+  },
+  "scenarios": {
+    "bear": {
+      "drivers": {
+        "years": [
+          {
+            "year": 1,
+            "revenue_growth": "-0.18",
+            "cost_ratio": "0.18",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.70",
+            "net_maintenance_cash_cny": "500000000",
+            "operating_wc_cash_cny": "3000000000",
+            "commitment_cash_cny": "800000000",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 2,
+            "revenue_growth": "-0.1",
+            "cost_ratio": "0.19",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.70",
+            "net_maintenance_cash_cny": "500000000",
+            "operating_wc_cash_cny": "2000000000",
+            "commitment_cash_cny": "800000000",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 3,
+            "revenue_growth": "-0.04",
+            "cost_ratio": "0.19",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.70",
+            "net_maintenance_cash_cny": "500000000",
+            "operating_wc_cash_cny": "1000000000",
+            "commitment_cash_cny": "600000000",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 4,
+            "revenue_growth": "-0.04",
+            "cost_ratio": "0.19",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.70",
+            "net_maintenance_cash_cny": "500000000",
+            "operating_wc_cash_cny": "1000000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 5,
+            "revenue_growth": "-0.04",
+            "cost_ratio": "0.19",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.70",
+            "net_maintenance_cash_cny": "500000000",
+            "operating_wc_cash_cny": "1000000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 6,
+            "revenue_growth": "-0.01",
+            "cost_ratio": "0.19",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.70",
+            "net_maintenance_cash_cny": "500000000",
+            "operating_wc_cash_cny": "500000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 7,
+            "revenue_growth": "-0.01",
+            "cost_ratio": "0.19",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.70",
+            "net_maintenance_cash_cny": "500000000",
+            "operating_wc_cash_cny": "500000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 8,
+            "revenue_growth": "-0.01",
+            "cost_ratio": "0.19",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.70",
+            "net_maintenance_cash_cny": "500000000",
+            "operating_wc_cash_cny": "500000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 9,
+            "revenue_growth": "-0.01",
+            "cost_ratio": "0.19",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.70",
+            "net_maintenance_cash_cny": "500000000",
+            "operating_wc_cash_cny": "500000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 10,
+            "revenue_growth": "-0.01",
+            "cost_ratio": "0.19",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.70",
+            "net_maintenance_cash_cny": "500000000",
+            "operating_wc_cash_cny": "500000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          }
+        ],
+        "operating_allocation": "0",
+        "new_operating_return": "0",
+        "new_liquidity_return": "0"
+      },
+      "terminal_policy": {
+        "net_maintenance_cash_cny": "500000000",
+        "operating_wc_cash_cny": "500000000",
+        "commitment_cash_cny": "0",
+        "accessible_profit_ratio": "0.70",
+        "target_payout_ratio": "0.75",
+        "reserve_ratio": "0.10",
+        "profit_scale": "0.50",
+        "rationale": "Y11旧业务利润仅假定变为Y10总利润的50%/75%/100%后保持；本例新增资本与流动性收益已停用，故无重复缩放该收益。持续维护、WC、可达、现金底线与分配限制保留。它是无概率权重的反证机制，不是预计终值或可采用主区间。",
+        "terminal_mechanism": "recursive_capital_use_and_owner_distribution_v2",
+        "terminal_start_year": 11,
+        "first_distribution_timing": "end_of_terminal_year_1",
+        "legacy_profit_dynamics": "constant_after_profit_scale_transition",
+        "commitment_occurrences": 0,
+        "restricted_cash_release_cny": "0",
+        "restricted_cash_release_year": null,
+        "convergence_tolerance_cny": "1",
+        "max_tail_years": 1000
+      },
+      "cost_of_equity": "0.10"
+    },
+    "base": {
+      "drivers": {
+        "years": [
+          {
+            "year": 1,
+            "revenue_growth": "-0.06",
+            "cost_ratio": "0.16",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.85",
+            "net_maintenance_cash_cny": "400000000",
+            "operating_wc_cash_cny": "2000000000",
+            "commitment_cash_cny": "800000000",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 2,
+            "revenue_growth": "-0.02",
+            "cost_ratio": "0.16",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.85",
+            "net_maintenance_cash_cny": "400000000",
+            "operating_wc_cash_cny": "1000000000",
+            "commitment_cash_cny": "800000000",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 3,
+            "revenue_growth": "0.01",
+            "cost_ratio": "0.155",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.85",
+            "net_maintenance_cash_cny": "400000000",
+            "operating_wc_cash_cny": "500000000",
+            "commitment_cash_cny": "600000000",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 4,
+            "revenue_growth": "0.01",
+            "cost_ratio": "0.155",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.85",
+            "net_maintenance_cash_cny": "400000000",
+            "operating_wc_cash_cny": "500000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 5,
+            "revenue_growth": "0.01",
+            "cost_ratio": "0.155",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.85",
+            "net_maintenance_cash_cny": "400000000",
+            "operating_wc_cash_cny": "500000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 6,
+            "revenue_growth": "0.005",
+            "cost_ratio": "0.155",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.85",
+            "net_maintenance_cash_cny": "400000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 7,
+            "revenue_growth": "0.005",
+            "cost_ratio": "0.155",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.85",
+            "net_maintenance_cash_cny": "400000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 8,
+            "revenue_growth": "0.005",
+            "cost_ratio": "0.155",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.85",
+            "net_maintenance_cash_cny": "400000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 9,
+            "revenue_growth": "0.005",
+            "cost_ratio": "0.155",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.85",
+            "net_maintenance_cash_cny": "400000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 10,
+            "revenue_growth": "0.005",
+            "cost_ratio": "0.155",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.85",
+            "net_maintenance_cash_cny": "400000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          }
+        ],
+        "operating_allocation": "0",
+        "new_operating_return": "0",
+        "new_liquidity_return": "0"
+      },
+      "terminal_policy": {
+        "net_maintenance_cash_cny": "400000000",
+        "operating_wc_cash_cny": "300000000",
+        "commitment_cash_cny": "0",
+        "accessible_profit_ratio": "0.85",
+        "target_payout_ratio": "0.75",
+        "reserve_ratio": "0.10",
+        "profit_scale": "0.75",
+        "rationale": "Y11旧业务利润仅假定变为Y10总利润的50%/75%/100%后保持；本例新增资本与流动性收益已停用，故无重复缩放该收益。持续维护、WC、可达、现金底线与分配限制保留。它是无概率权重的反证机制，不是预计终值或可采用主区间。",
+        "terminal_mechanism": "recursive_capital_use_and_owner_distribution_v2",
+        "terminal_start_year": 11,
+        "first_distribution_timing": "end_of_terminal_year_1",
+        "legacy_profit_dynamics": "constant_after_profit_scale_transition",
+        "commitment_occurrences": 0,
+        "restricted_cash_release_cny": "0",
+        "restricted_cash_release_year": null,
+        "convergence_tolerance_cny": "1",
+        "max_tail_years": 1000
+      },
+      "cost_of_equity": "0.10"
+    },
+    "bull": {
+      "drivers": {
+        "years": [
+          {
+            "year": 1,
+            "revenue_growth": "0.02",
+            "cost_ratio": "0.15",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.95",
+            "net_maintenance_cash_cny": "300000000",
+            "operating_wc_cash_cny": "1000000000",
+            "commitment_cash_cny": "800000000",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 2,
+            "revenue_growth": "0.03",
+            "cost_ratio": "0.15",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.95",
+            "net_maintenance_cash_cny": "300000000",
+            "operating_wc_cash_cny": "500000000",
+            "commitment_cash_cny": "800000000",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 3,
+            "revenue_growth": "0.04",
+            "cost_ratio": "0.145",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.95",
+            "net_maintenance_cash_cny": "300000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "600000000",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 4,
+            "revenue_growth": "0.04",
+            "cost_ratio": "0.145",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.95",
+            "net_maintenance_cash_cny": "300000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 5,
+            "revenue_growth": "0.04",
+            "cost_ratio": "0.145",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.95",
+            "net_maintenance_cash_cny": "300000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 6,
+            "revenue_growth": "0.015",
+            "cost_ratio": "0.145",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.95",
+            "net_maintenance_cash_cny": "300000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 7,
+            "revenue_growth": "0.015",
+            "cost_ratio": "0.145",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.95",
+            "net_maintenance_cash_cny": "300000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 8,
+            "revenue_growth": "0.015",
+            "cost_ratio": "0.145",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.95",
+            "net_maintenance_cash_cny": "300000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 9,
+            "revenue_growth": "0.015",
+            "cost_ratio": "0.145",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.95",
+            "net_maintenance_cash_cny": "300000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          },
+          {
+            "year": 10,
+            "revenue_growth": "0.015",
+            "cost_ratio": "0.145",
+            "target_payout_ratio": "0.75",
+            "accessible_profit_ratio": "0.95",
+            "net_maintenance_cash_cny": "300000000",
+            "operating_wc_cash_cny": "300000000",
+            "commitment_cash_cny": "0",
+            "reserve_ratio": "0.10"
+          }
+        ],
+        "operating_allocation": "0",
+        "new_operating_return": "0",
+        "new_liquidity_return": "0"
+      },
+      "terminal_policy": {
+        "net_maintenance_cash_cny": "300000000",
+        "operating_wc_cash_cny": "300000000",
+        "commitment_cash_cny": "0",
+        "accessible_profit_ratio": "0.95",
+        "target_payout_ratio": "0.75",
+        "reserve_ratio": "0.10",
+        "profit_scale": "1.00",
+        "rationale": "Y11旧业务利润仅假定变为Y10总利润的50%/75%/100%后保持；本例新增资本与流动性收益已停用，故无重复缩放该收益。持续维护、WC、可达、现金底线与分配限制保留。它是无概率权重的反证机制，不是预计终值或可采用主区间。",
+        "terminal_mechanism": "recursive_capital_use_and_owner_distribution_v2",
+        "terminal_start_year": 11,
+        "first_distribution_timing": "end_of_terminal_year_1",
+        "legacy_profit_dynamics": "constant_after_profit_scale_transition",
+        "commitment_occurrences": 0,
+        "restricted_cash_release_cny": "0",
+        "restricted_cash_release_year": null,
+        "convergence_tolerance_cny": "1",
+        "max_tail_years": 1000
+      },
+      "cost_of_equity": "0.10"
+    }
+  }
+}

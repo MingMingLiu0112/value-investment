@@ -13,6 +13,7 @@ import {
   type StrategyKey,
 } from "../../config/strategyArchitecture.v1";
 import "./architecture.css";
+import { ModuleRuntimePanel } from "../../components/ModuleRuntimePanel";
 
 const deliveryLabels = {
   COMPLETE: "可独立交付",
@@ -633,6 +634,7 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
       {strategy === "value" && (
         <DeliveryOverview stages={flow.stages} onSelect={selectStage} />
       )}
+      {strategy === "value" && <ModuleRuntimePanel />}
       <details open={strategy !== "value"}>
         <summary>流程关系与历史审查说明</summary>
         <Typography.Paragraph>{flow.summary}</Typography.Paragraph>

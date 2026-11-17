@@ -6,6 +6,7 @@ import "./workbench.css";
 const items = [
   { key: "/daily", label: <Link to="/daily">今日决策</Link> },
   { key: "/strategy/value", label: <Link to="/strategy/value">价值策略</Link> },
+  { key: "/project", label: <Link to="/project">模块与运行</Link> },
   {
     key: "/strategy/hotspot",
     label: <Link to="/strategy/hotspot">热点策略</Link>,

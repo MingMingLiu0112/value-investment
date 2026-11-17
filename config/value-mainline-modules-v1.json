@@ -1299,6 +1299,19 @@
             "src/value_investment_agent/application/research/agent_review/task_execution_v1.py"
           ]
         }
+      },
+      "version_policy": {
+        "reviewed_code": "c53ad65d026d422dc797f2b0891aa451d2f4d600",
+        "current": {
+          "create_route": "POST /api/v1/operating-research/horizon-cash-policy-tasks",
+          "required_task_contract": "operating-horizon-task-v25-full-schema-canonical-2027",
+          "consumer_route": "GET /api/v1/operating-research/horizon-cash-policy-tasks/{task_id}/e2-input"
+        },
+        "implicit_default": "LEGACY_V4_NOT_CURRENT_V25",
+        "replay_only": "Historical task reads and E2 dispatch use each saved contract; never upgrade or re-sign old tasks.",
+        "experimental": "Explicit older create/import/repair routes remain compatibility operations, not current product defaults.",
+        "scope": "Current API research contract only; direct owner-cash compiled receipts retain their own model/receipt versions. E2 readiness is not valuation or approval.",
+        "action": "no_order"
       }
     },
     {
@@ -1618,6 +1631,19 @@
             "src/value_investment_agent/application/research/operating_assumption_draft_v1.py"
           ]
         }
+      },
+      "version_policy": {
+        "reviewed_code": "c53ad65d026d422dc797f2b0891aa451d2f4d600",
+        "current": {
+          "create_route": "POST /api/v1/operating-research/horizon-cash-policy-tasks",
+          "required_task_contract": "operating-horizon-task-v25-full-schema-canonical-2027",
+          "consumer_route": "GET /api/v1/operating-research/horizon-cash-policy-tasks/{task_id}/e2-input"
+        },
+        "implicit_default": "LEGACY_V4_NOT_CURRENT_V25",
+        "replay_only": "Historical task reads and E2 dispatch use each saved contract; never upgrade or re-sign old tasks.",
+        "experimental": "Explicit older create/import/repair routes remain compatibility operations, not current product defaults.",
+        "scope": "Current API research contract only; direct owner-cash compiled receipts retain their own model/receipt versions. E2 readiness is not valuation or approval.",
+        "action": "no_order"
       }
     },
     {
@@ -2238,6 +2264,19 @@
             "src/value_investment_agent/application/research/first_research_input_v1.py"
           ]
         }
+      },
+      "version_policy": {
+        "reviewed_code": "c53ad65d026d422dc797f2b0891aa451d2f4d600",
+        "current": {
+          "create_route": "POST /api/v1/operating-research/horizon-cash-policy-tasks",
+          "required_task_contract": "operating-horizon-task-v25-full-schema-canonical-2027",
+          "consumer_route": "GET /api/v1/operating-research/horizon-cash-policy-tasks/{task_id}/e2-input"
+        },
+        "implicit_default": "LEGACY_V4_NOT_CURRENT_V25",
+        "replay_only": "Historical task reads and E2 dispatch use each saved contract; never upgrade or re-sign old tasks.",
+        "experimental": "Explicit older create/import/repair routes remain compatibility operations, not current product defaults.",
+        "scope": "Current API research contract only; direct owner-cash compiled receipts retain their own model/receipt versions. E2 readiness is not valuation or approval.",
+        "action": "no_order"
       }
     },
     {

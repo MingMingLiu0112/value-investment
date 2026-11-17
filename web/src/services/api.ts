@@ -1782,6 +1782,13 @@ export const api = {
     ),
   valueWorkbenchCompanies: (signal?: AbortSignal) =>
     get<ValueWorkbenchCompanies>("value-workbench/companies", signal),
+  valueModuleCatalog: (signal?: AbortSignal) =>
+    get<{
+      modules: {
+        module_id: string;
+        version_policy?: Record<string, unknown>;
+      }[];
+    }>("value-workbench/modules", signal),
   valueWorkbenchTaskInputs: (symbol: string, signal?: AbortSignal) =>
     get<PreparedWorkbenchInputs>(
       "value-workbench/task-inputs?symbol=" + encodeURIComponent(symbol),

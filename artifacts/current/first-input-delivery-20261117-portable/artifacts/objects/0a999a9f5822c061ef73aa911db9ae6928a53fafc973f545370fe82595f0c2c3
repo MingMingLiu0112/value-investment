@@ -1,0 +1,100 @@
+{
+  "schema_version": "official-report-acquisition-v1",
+  "status": "ORIGINAL_ACQUIRED_NOT_FACT_ADMITTED",
+  "source": {
+    "symbol": "600887",
+    "period": "2026-06-30",
+    "path": "runtime/value-d2-600887-20261111/h12026-20261110T204227Z/original.pdf",
+    "sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+    "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+    "available_at": "2026-11-10T20:42:28.256007+00:00"
+  },
+  "source_id": "cninfo:1225511409",
+  "report_kind": "interim",
+  "published_date": "2026-08-27",
+  "publication_precision": "DATE_ONLY",
+  "fetched_at": "2026-11-10T20:42:28.256007+00:00",
+  "historical_available_at": null,
+  "strict_historical_pit": false,
+  "index_bindings": [
+    {
+      "path": "runtime/value-d2-600887-20261111/h12026-20261110T204227Z/index-1.json",
+      "sha256": "5a4af99f3bf64b2361bd057a98255027986e3129022ba0adc9a95ab73f989672",
+      "metadata": {
+        "url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+        "method": "POST",
+        "request": {
+          "pageNum": "1",
+          "pageSize": "30",
+          "tabName": "fulltext",
+          "column": "sse",
+          "stock": "",
+          "searchkey": "\u5185\u8499\u53e4\u4f0a\u5229\u5b9e\u4e1a\u96c6\u56e2\u80a1\u4efd\u6709\u9650\u516c\u53f8",
+          "secid": "",
+          "plate": "",
+          "category": "",
+          "trade": "",
+          "seDate": "",
+          "sortName": "",
+          "sortType": "",
+          "isHLtitle": "true"
+        },
+        "page": 1,
+        "acquired_at": "2026-11-10T20:42:27.698098+00:00",
+        "sha256": "5a4af99f3bf64b2361bd057a98255027986e3129022ba0adc9a95ab73f989672",
+        "size_bytes": 25216,
+        "body_representation": "RECEIVED_RESPONSE_CONTENT_NOT_RESERIALIZED_JSON"
+      }
+    },
+    {
+      "path": "runtime/value-d2-600887-20261111/h12026-20261110T204227Z/index-2.json",
+      "sha256": "90ad46e5293ec1907e015e835883e2d0b54e500574c38a623eb9dbe4352990b2",
+      "metadata": {
+        "url": "https://www.cninfo.com.cn/new/hisAnnouncement/query",
+        "method": "POST",
+        "request": {
+          "pageNum": "1",
+          "pageSize": "30",
+          "tabName": "fulltext",
+          "column": "sse",
+          "stock": "600887,gssh0600887",
+          "searchkey": "",
+          "secid": "",
+          "plate": "",
+          "category": "category_bndbg_szsh",
+          "trade": "",
+          "seDate": "2026-07-01~2026-11-11",
+          "sortName": "",
+          "sortType": "",
+          "isHLtitle": "false"
+        },
+        "page": 1,
+        "acquired_at": "2026-11-10T20:42:27.913740+00:00",
+        "sha256": "90ad46e5293ec1907e015e835883e2d0b54e500574c38a623eb9dbe4352990b2",
+        "size_bytes": 1563,
+        "body_representation": "RECEIVED_RESPONSE_CONTENT_NOT_RESERIALIZED_JSON"
+      }
+    }
+  ],
+  "request_attempts": [
+    {
+      "kind": "INDEX",
+      "attempt": 1,
+      "status": "RECEIVED"
+    },
+    {
+      "kind": "INDEX",
+      "attempt": 1,
+      "status": "RECEIVED"
+    },
+    {
+      "kind": "PDF",
+      "attempt": 1,
+      "status": "RECEIVED"
+    }
+  ],
+  "formal_eligibility": false,
+  "action": "no_order",
+  "started_at": "2026-11-10T20:42:27.286657+00:00",
+  "completed_at": "2026-11-10T20:42:28.292456+00:00"
+}

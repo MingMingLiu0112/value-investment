@@ -53,8 +53,8 @@ def test_config_escape_and_empty_results_rejected(tmp_path, monkeypatch):
 def test_checked_in_public_delivery_replays_real_sources(tmp_path):
     root = Path(__file__).resolve().parents[1]
     result = module.restore_first_input_delivery(
-        archive_root=root / "artifacts/current/first-input-delivery-20261117-cold",
-        manifest_sha256="4b95fddb8789946da8d9378087a5886b780e926cd35ff73c09ceef007861f2a4",
+        archive_root=root / "artifacts/current/first-input-delivery-20261117-portable",
+        manifest_sha256="d78f8b5be8f76f197146e08ecb1c3c71770c99a2d63105e2e20811ba87247001",
         destination=tmp_path / "restored")
     assert result["status"] == "ISOLATED_RESTORE_REPLAY_PASSED"
     assert result["action"] == "no_order"

@@ -12,6 +12,15 @@ The 2026-10-09 architecture/agent pilot boundary and runbook are in
 
 ## Current Entries
 
+`/project` uses the existing StrategyArchitecture/Value page for module scope
+and a separate live read panel for registered public artifacts and authorized
+persisted tasks. PR #3's alternative ProjectControl route and second static
+status store are intentionally superseded; its original commit and validation
+records remain historical evidence, not current deployment proof. Current
+D1/D2/E2 entry policies are in the existing
+`config/value-mainline-modules-v1.json` catalog. Missing run evidence is unknown,
+never inferred from the capability descriptions.
+
 | Need | Authoritative entry |
 | --- | --- |
 | Value strategy rules, sources and unapproved hypotheses | [Value strategy specification](value-strategy-specification-20261023.md) (fixed historical rule baseline; not strategy or account approval) |
