@@ -48,3 +48,52 @@ def test_parent_cash_history_projects_failed_checkpoint_without_execution(tmp_pa
     assert row["formal"] is False
     assert calls == [task.name]
     assert list(task.iterdir()) == [task / "input.json"]
+
+
+def test_numbered_parent_cash_task_api_runs_only_on_explicit_post(tmp_path, monkeypatch):
+    calls = []
+    task_id = "rt-" + "b" * 32
+
+    class NumberedService:
+        def __init__(self, root):
+            assert root == tmp_path
+
+        def create(self, *, spec_binding, request_key):
+            calls.append(("create", spec_binding, request_key))
+            return {"task_id": task_id, "status": "QUEUED", "action": "no_order",
+                    "formal_eligibility": False}
+
+        def run(self, value):
+            calls.append(("run", value))
+
+        def read(self, value):
+            calls.append(("read", value))
+            return {"task_id": value, "status": "SUCCEEDED", "action": "no_order",
+                    "formal_eligibility": False, "main_range_adopted": False}
+
+        def cancel(self, value):
+            calls.append(("cancel", value))
+            return {"task_id": value, "status": "CANCELLED", "action": "no_order"}
+
+        def resume(self, value):
+            calls.append(("resume", value))
+            return {"task_id": value, "status": "QUEUED", "action": "no_order"}
+
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda _: tmp_path)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV3", NumberedService)
+    monkeypatch.setattr(routes, "authorize", lambda *_, **__: None)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=0)
+    client = TestClient(app)
+    path = "/api/v1/operating-research/parent-cash-tasks/v3"
+    assert client.get(f"{path}/{task_id}").json()["status"] == "SUCCEEDED"
+    assert calls == [("read", task_id)]
+    assert client.post(path, json={"request_key": "test-request-01",
+        "spec_binding": {"path": "runtime/spec.json", "sha256": "a" * 64}}).status_code == 202
+    assert calls[-2:] == [("create", {"path": "runtime/spec.json", "sha256": "a" * 64},
+                            "test-request-01"), ("run", task_id)]
+    assert client.post(f"{path}/{task_id}/cancel").json()["status"] == "CANCELLED"
+    assert client.post(f"{path}/{task_id}/resume").json()["status"] == "QUEUED"
+    assert calls[-2:] == [("resume", task_id), ("run", task_id)]
+    assert client.post(path, json={"request_key": "x", "extra": 1}).status_code == 422
+    assert client.get(f"{path}/invalid").status_code == 422

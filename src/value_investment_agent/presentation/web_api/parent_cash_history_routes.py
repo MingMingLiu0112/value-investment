@@ -1,21 +1,81 @@
 """Bounded, read-only projection of existing parent cash task checkpoints."""
 import re
+import json
 from itertools import islice
 
-from fastapi import FastAPI, Request
+from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from .live_operating_research_routes import resolve_research_task_root
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
+from ...application.research.agent_review.parent_cash_task_v3 import ParentCashTaskServiceV3
 
 
 def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port):
     root = resolve_research_task_root(project)
     service = ParentCashTaskServiceV2(root)
+    numbered_service = ParentCashTaskServiceV3(root)
 
     def reply(value, status=200):
         return JSONResponse(value, status_code=status, headers={"Cache-Control": "no-store"})
+
+    def denied(request):
+        try:
+            authorize(request, session=sessions, port=port)
+        except LocalAuthorizationError as error:
+            return reply({"action": "no_order", "status": error.code},
+                         401 if error.code == AUTHORIZATION_REQUIRED else 403)
+        return None
+
+    @api.post("/api/v1/operating-research/parent-cash-tasks/v3")
+    async def create_numbered(request: Request, background: BackgroundTasks):
+        error = denied(request)
+        if error is not None:
+            return error
+        try:
+            raw = await request.body()
+            if len(raw) > 2048:
+                raise ValueError("PARENT_V3_REQUEST_TOO_LARGE")
+            body = json.loads(raw)
+            if not isinstance(body, dict) or set(body) != {"spec_binding", "request_key"}:
+                raise ValueError("PARENT_V3_REQUEST_INVALID")
+            task = numbered_service.create(**body)
+            if task["status"] == "QUEUED":
+                background.add_task(numbered_service.run, task["task_id"])
+            return reply(task, 202)
+        except (ValueError, TypeError, KeyError, OSError, PermissionError) as exc:
+            return reply({"action": "no_order", "status": "PARENT_V3_TASK_REJECTED",
+                          "reason": str(exc)}, 422)
+
+    @api.get("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}")
+    def read_numbered(task_id: str, request: Request):
+        error = denied(request)
+        if error is not None:
+            return error
+        if not re.fullmatch(r"rt-[0-9a-f]{32}", task_id):
+            return reply({"action": "no_order", "status": "INVALID_TASK_ID"}, 422)
+        try:
+            return reply(numbered_service.read(task_id))
+        except (ValueError, TypeError, KeyError, OSError, PermissionError):
+            return reply({"action": "no_order", "status": "PARENT_V3_TASK_UNAVAILABLE"}, 422)
+
+    @api.post("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/{operation}")
+    def control_numbered(task_id: str, operation: str, request: Request,
+                         background: BackgroundTasks):
+        error = denied(request)
+        if error is not None:
+            return error
+        if not re.fullmatch(r"rt-[0-9a-f]{32}", task_id) or operation not in {"cancel", "resume"}:
+            return reply({"action": "no_order", "status": "INVALID_TASK_CONTROL"}, 422)
+        try:
+            task = (numbered_service.cancel(task_id) if operation == "cancel"
+                    else numbered_service.resume(task_id))
+            if operation == "resume" and task["status"] == "QUEUED":
+                background.add_task(numbered_service.run, task_id)
+            return reply(task)
+        except (ValueError, TypeError, KeyError, OSError, PermissionError):
+            return reply({"action": "no_order", "status": "PARENT_V3_TASK_UNAVAILABLE"}, 422)
 
     @api.get("/api/v1/operating-research/parent-cash-tasks/history")
     def history(request: Request, symbol: str):
