@@ -75,11 +75,34 @@ def _historical_financing_range(statement):
             raise ValueError("PARENT_AGENT_FINANCING_RANGE_INVALID")
         ceiling = dict(classification="FACT", value_cny=str(amount),
                        source_refs=liability["source_refs"])
+    flows = statement.get("cash_flow") or {}
+    cash_movements = {}
+    for field in ("borrowings_received_cny", "debt_repayments_paid_cny"):
+        row = flows.get(field)
+        value = row.get("current") if isinstance(row, dict) else None
+        if value is None:
+            cash_movements[field] = dict(classification="UNKNOWN", value_cny=None)
+            continue
+        amount = Decimal(_finite(value))
+        if amount < 0 or not row.get("source_refs"):
+            raise ValueError("PARENT_AGENT_FINANCING_CASH_ROW_INVALID:" + field)
+        cash_movements[field] = dict(classification="FACT", value_cny=str(amount),
+                                     source_refs=row["source_refs"])
+    received = cash_movements["borrowings_received_cny"]["value_cny"]
+    repaid = cash_movements["debt_repayments_paid_cny"]["value_cny"]
     return dict(period_end=statement["period_end"], scope=SCOPE, currency="CNY",
                 components=components,
                 selected_liability_rows_sum_cny=str(lower) if known_count else None,
                 reported_component_count=known_count,
                 on_balance_liabilities_ceiling=ceiling,
+                financing_cash_flows=dict(
+                    period_start=statement.get("period_start"),
+                    period_end=statement["period_end"],
+                    components=cash_movements,
+                    net_borrowing_cash_cny=(str(Decimal(received) - Decimal(repaid))
+                                            if received is not None and repaid is not None
+                                            else None),
+                    classification="HISTORICAL_CASH_FLOW_NOT_DEBT_BALANCE_CHANGE"),
                 complete_financing_scope_verified=False,
                 dated_maturity_schedule_verified=False,
                 future_refinancing_verified=False,
@@ -189,9 +212,10 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
             or shares.get("scope") != "TOTAL_ISSUED_ORDINARY_SHARES"
             or shares.get("classification") not in {"FACT", "DERIVED_FACT"}):
         raise ValueError("PARENT_AGENT_SHARE_SCOPE_INVALID")
-    financing = [_historical_financing_range(row) for row in evidence["statements"]
-                 if row["period_end"] == spec["valuation_date"]]
-    if len(financing) != 1:
+    financing = [_historical_financing_range(row) for row in evidence["statements"]]
+    basis_financing = [row for row in financing
+                       if row["period_end"] == spec["valuation_date"]]
+    if len(basis_financing) != 1:
         raise ValueError("PARENT_AGENT_FINANCING_BASIS_NOT_UNIQUE")
     projected = dict(schema_version=VERSION, symbol=spec["symbol"],
         issuer_name=spec["issuer_name"], as_of=spec["computed_at"],
@@ -205,7 +229,8 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
                              derivation=shares.get("derivation"),
                              source_refs=shares["source_refs"]),
         source_status=evidence["status"],
-        historical_financing_range=financing[0],
+        historical_financing_range=basis_financing[0],
+        historical_financing_observations=financing,
         working_capital_cash_component=evidence["working_capital_cash_component"],
         constraints=evidence["constraints"], unresolved=evidence["unresolved"],
         fund_commitment_evidence=evidence["fund_commitment_evidence"],

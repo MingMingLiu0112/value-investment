@@ -59,11 +59,14 @@ def test_real_numbered_receipts_and_fail_closed():
             assert "short_term_borrowings_cny" not in statement["balance_sheet"]
             assert statement["cash_flow"]["borrowings_received_cny"]["current"] is None
             assert statement["cash_flow"]["borrowings_received_cny"]["comparative"] == "2000000000.00"
+            assert statement["cash_flow"]["debt_repayments_paid_cny"]["current"] == "3220200000.00"
         else:
             assert statement["balance_sheet"]["short_term_borrowings_cny"]["current"] == "3001758333.34"
             assert statement["balance_sheet"]["short_term_borrowings_cny"]["comparative"] is None
             assert statement["cash_flow"]["borrowings_received_cny"]["current"] == "3000000000.00"
             assert statement["cash_flow"]["borrowings_received_cny"]["comparative"] is None
+            assert statement["cash_flow"]["debt_repayments_paid_cny"]["current"] == "3551200000.00"
+        assert statement["cash_flow"]["debt_repayments_paid_cny"]["source_refs"]["physical_page"] in {46, 84}
         assert any(gap["field"] == "short_term_borrowings_cny"
                    for gap in statement["gaps"])
         assert "bonds_payable_cny" not in statement["balance_sheet"]

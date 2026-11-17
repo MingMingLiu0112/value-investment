@@ -35,7 +35,8 @@ _EXTRA_BALANCE = {
 }
 _EXTRA_CASH = {"customer_cash_cny": "销售商品、提供劳务收到的现金",
                "supplier_cash_cny": "购买商品、接受劳务支付的现金",
-               "borrowings_received_cny": "取得借款收到的现金"}
+               "borrowings_received_cny": "取得借款收到的现金",
+               "debt_repayments_paid_cny": "偿还债务支付的现金"}
 
 
 def _fact(value, comparative, page, excerpt, source, period, field, *, balance=False):
