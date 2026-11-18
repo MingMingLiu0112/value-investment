@@ -232,6 +232,12 @@ def read_parent_owner_distribution_alignment(*, root: Path, receipt_binding: dic
             "ordinary_shares": result["compiled"]["ordinary_shares"],
         },
         "joint_capital_review": {"economic_path": {"currency": "CNY"}},
+        # The exact replay establishes the identity for event research. It does
+        # not supply comparable quarterly operating fields for impact estimates.
+        "source_native_cash_review": {
+            "candidate_binding": dict(receipt_binding),
+            "model_context": {"input_descriptor_sha256": result["input_descriptor_sha256"]},
+        },
         "consumed_implemented_distributions": [deepcopy(inclusion)],
         "consumed_financial_updates": financial_update_closure,
     }
