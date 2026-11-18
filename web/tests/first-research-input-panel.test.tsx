@@ -320,6 +320,145 @@ it("shows the bound source-or-research rejection reason without scenario cash", 
   expect(html).not.toContain("全年条件 CFO");
 });
 
+function successorFixture(): FirstResearchInputResponse {
+  const data = directFixture();
+  const receipt = {
+    path: "runtime/TEST_ONLY-successor.json",
+    sha256: "a".repeat(64),
+  };
+  const predecessor = {
+    path: "runtime/TEST_ONLY-predecessor.json",
+    sha256: "b".repeat(64),
+  };
+  data.receipt_binding = receipt;
+  data.receipt_schema_version = "parent-remaining-year-successor-receipt-v1";
+  data.predecessor_binding = predecessor;
+  data.input_descriptor_sha256 = "c".repeat(64);
+  data.main_range_adopted = false;
+  data.main_valuation_range = null;
+  data.current_price = null;
+  data.condition_price = null;
+  data.direct_owner_cash!.conditional_price = null;
+  data.direct_owner_cash!.assumptions = { bear: {}, base: {}, bull: {} };
+  data.direct_cash_alignment = {
+    schema_version: "direct-owner-cash-alignment-v1",
+    status: "BLOCKED",
+    action: "no_order",
+    formal_eligibility: false,
+    currentpricecomparison: false,
+    reason_codes: ["EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING"],
+  } as FirstResearchInputResponse["direct_cash_alignment"];
+  const annual = Object.fromEntries(
+    (["bear", "base", "bull"] as const).map((name) => [
+      name,
+      {
+        symbol: data.symbol,
+        action: "no_order" as const,
+        formal_eligibility: false as const,
+        scope: "ISSUER_PARENT_STANDALONE",
+        currency: "CNY",
+        current_nine_months: {
+          period_start: "2026-01-01",
+          period_end: "2026-09-30",
+          classification: "FACT" as const,
+          cfo: "40",
+        },
+        conditional_q4: {
+          period_start: "2026-10-01",
+          period_end: "2026-12-31",
+          classification: "FORECAST_ASSUMPTION" as const,
+          cfo: name === "base" ? "60" : "20",
+        },
+        full_year: {
+          cfo: {
+            total: name === "base" ? "100" : "60",
+            fact_9m: "40",
+            forecast_q4: name === "base" ? "60" : "20",
+            fact_classification: "FACT" as const,
+            forecast_classification: "FORECAST_ASSUMPTION" as const,
+          },
+        },
+        annualized_nine_months: false as const,
+      },
+    ]),
+  ) as NonNullable<FirstResearchInputResponse["annual_recalculations"]>;
+  data.annual_recalculations = annual;
+  data.direct_owner_cash!.remaining_year_review = {
+    schema_version: "parent-remaining-year-successor-receipt-v1",
+    status: "SOURCE_BOUND_CONDITIONAL_SUCCESSOR",
+    symbol: data.symbol,
+    candidate_binding: receipt,
+    predecessor_binding: predecessor,
+    input_descriptor_sha256: data.input_descriptor_sha256,
+    action: "no_order",
+    formal_eligibility: false,
+    successor_adopted: false,
+    current_price_qualified: false,
+    annual_recalculations: annual,
+    scenarios: { bear: {}, base: {}, bull: {} },
+  };
+  return data;
+}
+
+it("shows bound successor annual facts, Q4 forecast and yearly cash without a price", () => {
+  const data = successorFixture();
+  const html = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol={data.symbol} />,
+  );
+  expect(html).toContain("九个月事实＋条件第四季度：全年现金后继研究");
+  expect(html).toContain("九个月经营现金事实 40.00 元");
+  expect(html).toContain("第四季度条件预测 60.00 元");
+  expect(html).toContain("全年条件经营现金 100.00 元");
+  expect(html).toContain("逐年现金账 1 年");
+  expect(html).toContain("EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING");
+  expect(html).toContain("未采纳");
+  expect(html).toContain("不是买价");
+  expect(html).not.toContain("建仓条件价");
+  expect(html).not.toContain("7.13");
+});
+
+it.each([
+  "symbol",
+  "candidate",
+  "predecessor",
+  "descriptor",
+  "adoption",
+  "forecast",
+])(
+  "rejects tampered successor %s before showing cash or valuation",
+  (fault) => {
+    const data = successorFixture();
+    const review = data.direct_owner_cash!.remaining_year_review!;
+    if (review.schema_version !== "parent-remaining-year-successor-receipt-v1")
+      throw new Error("fixture schema");
+    if (fault === "symbol") review.symbol = "000333";
+    if (fault === "candidate")
+      review.candidate_binding = {
+        ...review.candidate_binding,
+        sha256: "d".repeat(64),
+      };
+    if (fault === "predecessor")
+      review.predecessor_binding = {
+        ...review.predecessor_binding,
+        sha256: "e".repeat(64),
+      };
+    if (fault === "descriptor") review.input_descriptor_sha256 = "f".repeat(64);
+    if (fault === "adoption")
+      (review as unknown as { successor_adopted: boolean }).successor_adopted =
+        true;
+    if (fault === "forecast")
+      review.annual_recalculations.base.full_year.cfo.forecast_classification =
+        "FACT" as "FORECAST_ASSUMPTION";
+    const html = renderToStaticMarkup(
+      <FirstResearchInputView data={data} symbol={data.symbol} />,
+    );
+    expect(html).toMatch(/年度现金更新身份不符|年度现金更新事实或预测分类不符/);
+    expect(html).not.toContain("全年条件经营现金 100.00 元");
+    expect(html).not.toContain("逐年现金账 1 年");
+    expect(html).not.toContain("建仓条件价");
+  },
+);
+
 it("shows direct receipt alignment and refuses another candidate identity", () => {
   const data = directFixture();
   data.receipt_binding = {
@@ -518,7 +657,7 @@ it("formats direct prices while keeping exact originals collapsed and assumption
   data.valuation!.base_value = "2345.6789123456789";
   data.valuation!.bull_value = "3456.789123456789";
   const cash = data.direct_owner_cash!;
-  cash.conditional_price.draft_prices = {
+  cash.conditional_price!.draft_prices = {
     entry: "123.456789123456",
     add: null,
     reduce: "345.678912345678",
@@ -595,8 +734,8 @@ it("shows exact refusal reasons without inventing missing valuations, prices or 
   const data = directFixture();
   data.valuation = null;
   const cash = data.direct_owner_cash!;
-  cash.conditional_price.draft_prices = null;
-  cash.conditional_price.reason_codes = [
+  cash.conditional_price!.draft_prices = null;
+  cash.conditional_price!.reason_codes = [
     "TEST_ONLY_F1_MISSING_SOURCE",
     "TEST_ONLY_F2_EXPIRED",
   ];
@@ -623,7 +762,7 @@ it.each([{ action: "order" }, { currentpricecomparison: true }])(
   "rejects direct price authority violations %s",
   (patch) => {
     const data = directFixture();
-    Object.assign(data.direct_owner_cash!.conditional_price, patch);
+    Object.assign(data.direct_owner_cash!.conditional_price!, patch);
     const html = renderToStaticMarkup(
       <FirstResearchInputView data={data} symbol="000568" />,
     );

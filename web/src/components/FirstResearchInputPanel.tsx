@@ -366,9 +366,126 @@ function ResearchSuccessorView({
   );
 }
 
+function successorBound(data: FirstResearchInputResponse): boolean {
+  const review = data.direct_owner_cash?.remaining_year_review;
+  if (review?.schema_version !== "parent-remaining-year-successor-receipt-v1")
+    return false;
+  const candidate = review.candidate_binding;
+  const prior = review.predecessor_binding;
+  const displayed = data.receipt_binding;
+  return (
+    data.receipt_schema_version === review.schema_version &&
+    review.status === "SOURCE_BOUND_CONDITIONAL_SUCCESSOR" &&
+    review.symbol === data.symbol &&
+    review.action === "no_order" &&
+    review.formal_eligibility === false &&
+    review.successor_adopted === false &&
+    review.current_price_qualified === false &&
+    data.formal_eligibility === false &&
+    data.main_range_adopted === false &&
+    data.current_price == null &&
+    data.condition_price == null &&
+    data.direct_owner_cash?.conditional_price == null &&
+    !!displayed?.path &&
+    !!displayed.sha256 &&
+    candidate.path === displayed.path &&
+    candidate.sha256 === displayed.sha256 &&
+    !!prior?.path &&
+    !!prior.sha256 &&
+    prior.path === data.predecessor_binding?.path &&
+    prior.sha256 === data.predecessor_binding?.sha256 &&
+    !!review.input_descriptor_sha256 &&
+    review.input_descriptor_sha256 === data.input_descriptor_sha256
+  );
+}
+
+function RemainingYearSuccessor({
+  data,
+}: {
+  data: FirstResearchInputResponse;
+}) {
+  const review = data.direct_owner_cash?.remaining_year_review;
+  if (review?.schema_version !== "parent-remaining-year-successor-receipt-v1")
+    return null;
+  if (!successorBound(data))
+    return <Alert type="warning" message="年度现金更新身份不符，停止展示" />;
+  const complete = SCENARIOS.every(([name]) => {
+    const annual = review.annual_recalculations?.[name];
+    const cfo = annual?.full_year?.cfo;
+    return (
+      annual?.symbol === data.symbol &&
+      annual.action === "no_order" &&
+      annual.formal_eligibility === false &&
+      annual.scope === "ISSUER_PARENT_STANDALONE" &&
+      annual.currency === "CNY" &&
+      annual.current_nine_months?.classification === "FACT" &&
+      annual.conditional_q4?.classification === "FORECAST_ASSUMPTION" &&
+      annual.annualized_nine_months === false &&
+      cfo?.fact_classification === "FACT" &&
+      cfo.forecast_classification === "FORECAST_ASSUMPTION" &&
+      cfo.fact_9m === annual.current_nine_months.cfo &&
+      cfo.forecast_q4 === annual.conditional_q4.cfo &&
+      !!cfo.total &&
+      Array.isArray(data.direct_owner_cash?.annual_rows?.[name])
+    );
+  });
+  if (!complete)
+    return (
+      <Alert
+        type="warning"
+        message="年度现金更新事实或预测分类不符，停止展示"
+      />
+    );
+  const f2Reasons = data.direct_cash_alignment?.reason_codes ?? [];
+  const f2Reason = f2Reasons.length
+    ? f2Reasons.join("、")
+    : "F2 对齐配置或精确回执绑定未提供";
+  return (
+    <section aria-label="九个月事实与条件全年现金后继研究">
+      <h4>九个月事实＋条件第四季度：全年现金后继研究</h4>
+      <p>新研究未采纳；不是当前买价，不据此比较报价或授予正式资格。</p>
+      <p>F2 精确配置缺失：{f2Reason}。</p>
+      {SCENARIOS.map(([name, label]) => {
+        const annual = review.annual_recalculations[name];
+        const cfo = annual.full_year.cfo;
+        const rows = data.direct_owner_cash!.annual_rows[name];
+        return (
+          <article key={name} aria-label={`${label}全年现金后继研究`}>
+            <h5>{label}（沿用旧情景名称，未采纳）</h5>
+            <p>
+              {annual.current_nine_months.period_start} 至{" "}
+              {annual.current_nine_months.period_end}
+              九个月经营现金事实 {amount(cfo.fact_9m)} 元 ＋
+              {annual.conditional_q4.period_start} 至{" "}
+              {annual.conditional_q4.period_end}
+              第四季度条件预测 {amount(cfo.forecast_q4)} 元 ＝ 全年条件经营现金{" "}
+              {amount(cfo.total)} 元。
+            </p>
+            <p>
+              逐年现金账 {rows.length} 年；条件估值{" "}
+              {amount(data.valuation?.[`${name}_value`])}{" "}
+              元/股，均未采纳，不是买价。
+            </p>
+            <details>
+              <summary>{label}：后端逐年现金与事实预测分量原稿</summary>
+              <DetailSection title="逐年现金账" value={rows} />
+              <DetailSection
+                title="九个月事实及第四季度条件预测"
+                value={annual}
+              />
+            </details>
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
 function RemainingYearReview({ data }: { data: FirstResearchInputResponse }) {
   const review = data.direct_owner_cash?.remaining_year_review;
   if (!review) return null;
+  if (review.schema_version === "parent-remaining-year-successor-receipt-v1")
+    return <RemainingYearSuccessor data={data} />;
   if (
     review.schema_version !== "parent-remaining-year-review-v1" ||
     review.symbol !== data.symbol ||
@@ -512,6 +629,12 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
   const cash = data.direct_owner_cash!;
   const price = cash.conditional_price;
   if (
+    cash.remaining_year_review?.schema_version ===
+      "parent-remaining-year-successor-receipt-v1" &&
+    !successorBound(data)
+  )
+    return <Alert type="warning" message="年度现金更新身份不符，停止展示" />;
+  if (
     price &&
     (price.action !== "no_order" || price.currentpricecomparison !== false)
   )
@@ -651,32 +774,39 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
           </li>
         ))}
       </ul>
-      <h4>条件价草稿（不是当前买价）</h4>
-      <p>状态：{supplied(price?.status)}</p>
-      <ul>
-        {(
-          [
-            ["entry", "建仓条件价"],
-            ["add", "加仓条件价"],
-            ["reduce", "减仓条件价"],
-            ["exit", "退出条件价"],
-          ] as const
-        ).map(([key, label]) => {
-          const value = record(price?.draft_prices)[key];
-          return (
-            <li key={key}>
-              {label}：{value == null ? "未形成" : amount(value)}
-            </li>
-          );
-        })}
-      </ul>
-      <p>
-        原因代码：
-        {price?.reason_codes?.length ? price.reason_codes.join("、") : "未提供"}
-      </p>
-      <p>有效期至：{supplied(price?.expires_at)}</p>
+      {cash.remaining_year_review?.schema_version !==
+        "parent-remaining-year-successor-receipt-v1" && (
+        <>
+          <h4>条件价草稿（不是当前买价）</h4>
+          <p>状态：{supplied(price?.status)}</p>
+          <ul>
+            {(
+              [
+                ["entry", "建仓条件价"],
+                ["add", "加仓条件价"],
+                ["reduce", "减仓条件价"],
+                ["exit", "退出条件价"],
+              ] as const
+            ).map(([key, label]) => {
+              const value = record(price?.draft_prices)[key];
+              return (
+                <li key={key}>
+                  {label}：{value == null ? "未形成" : amount(value)}
+                </li>
+              );
+            })}
+          </ul>
+          <p>
+            原因代码：
+            {price?.reason_codes?.length
+              ? price.reason_codes.join("、")
+              : "未提供"}
+          </p>
+          <p>有效期至：{supplied(price?.expires_at)}</p>
+        </>
+      )}
       <h4>经营与留存假设、反证</h4>
-      {cash.assumptions?.length ? (
+      {Array.isArray(cash.assumptions) && cash.assumptions.length ? (
         <ul>
           {cash.assumptions.map((item, index) => (
             <li key={index}>

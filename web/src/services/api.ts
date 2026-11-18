@@ -435,11 +435,13 @@ export type DirectOwnerCash = {
       retention_assumption: string;
     }>
   >;
-  assumptions: Array<{
-    name: string;
-    rationale: string;
-    counter_evidence: string;
-  }>;
+  assumptions:
+    | Array<{
+        name: string;
+        rationale: string;
+        counter_evidence: string;
+      }>
+    | Record<FirstResearchScenarioKey, Record<string, unknown>>;
   conditional_price: {
     status: string;
     draft_prices: unknown;
@@ -447,81 +449,123 @@ export type DirectOwnerCash = {
     expires_at?: string;
     currentpricecomparison: false;
     action: "no_order";
-  };
+  } | null;
   source_refs: Array<Record<string, unknown>>;
+};
+
+type RemainingYearCfoSplit = {
+  total: string;
+  fact_9m: string;
+  forecast_q4: string;
+  fact_classification: "FACT";
+  forecast_classification: "FORECAST_ASSUMPTION";
+};
+
+type RemainingYearLegacyReview = {
+  schema_version: "parent-remaining-year-review-v1";
+  symbol: string;
+  candidate_binding?: { path: string; sha256: string };
+  input_descriptor_sha256?: string;
+  action: "no_order";
+  formal_eligibility: false;
+  successor_adopted: false;
+  current_price_qualified: false;
+  status: string;
+  reason?: string;
+  capital_policy_mode?: string;
+  reported_facts?: {
+    period_start?: string;
+    period_end?: string;
+    period_basis?: string;
+    scope?: string;
+    currency?: string;
+    cash_fields?: { cfo?: { current?: string } };
+  };
+  scenarios?: Partial<
+    Record<
+      FirstResearchScenarioKey,
+      {
+        status: string;
+        reason?: string;
+        reported_9m_parent_profit?: string;
+        retained_annual_parent_profit?: string;
+        implied_q4_parent_profit?: string;
+        economic_review?: {
+          classification: "RETAINED_PLAN_STRESS_NOT_NEW_EARNINGS_FORECAST";
+          warnings?: string[];
+          adopted: false;
+          explanation?: string;
+          next_evidence?: string;
+        };
+        annual?: { full_year?: { cfo?: Partial<RemainingYearCfoSplit> } };
+        calculation?: Record<string, unknown>;
+        capital_policy_changes?: {
+          gross_capex?: {
+            classification?: string;
+            fact_9m?: string;
+            assumed_q4?: string;
+            full_year?: string;
+            rationale?: string;
+          };
+        };
+      }
+    >
+  >;
+  limitation?: string;
+};
+
+type RemainingYearSuccessorReview = {
+  schema_version: "parent-remaining-year-successor-receipt-v1";
+  symbol: string;
+  candidate_binding: { path: string; sha256: string };
+  predecessor_binding: { path: string; sha256: string };
+  input_descriptor_sha256: string;
+  action: "no_order";
+  formal_eligibility: false;
+  successor_adopted: false;
+  current_price_qualified: false;
+  status: "SOURCE_BOUND_CONDITIONAL_SUCCESSOR";
+  annual_recalculations: Record<
+    FirstResearchScenarioKey,
+    {
+      symbol: string;
+      action: "no_order";
+      formal_eligibility: false;
+      scope: string;
+      currency: string;
+      current_nine_months: {
+        period_start: string;
+        period_end: string;
+        classification: "FACT";
+        cfo: string;
+      };
+      conditional_q4: {
+        period_start: string;
+        period_end: string;
+        classification: "FORECAST_ASSUMPTION";
+        cfo: string;
+      };
+      full_year: { cfo: RemainingYearCfoSplit };
+      annualized_nine_months: false;
+    }
+  >;
+  scenarios: Record<FirstResearchScenarioKey, Record<string, unknown>>;
 };
 
 export type FirstResearchInputResponse = {
   receipt_binding?: { path: string; sha256: string };
   direct_owner_cash?: DirectOwnerCash & {
-    remaining_year_review?: {
-      schema_version: "parent-remaining-year-review-v1";
-      symbol: string;
-      candidate_binding?: { path: string; sha256: string };
-      input_descriptor_sha256?: string;
-      action: "no_order";
-      formal_eligibility: false;
-      successor_adopted: false;
-      current_price_qualified: false;
-      status: string;
-      reason?: string;
-      capital_policy_mode?: string;
-      reported_facts?: {
-        period_start?: string;
-        period_end?: string;
-        period_basis?: string;
-        scope?: string;
-        currency?: string;
-        cash_fields?: { cfo?: { current?: string } };
-      };
-      scenarios?: Partial<
-        Record<
-          FirstResearchScenarioKey,
-          {
-            status: string;
-            reason?: string;
-            reported_9m_parent_profit?: string;
-            retained_annual_parent_profit?: string;
-            implied_q4_parent_profit?: string;
-            economic_review?: {
-              classification: "RETAINED_PLAN_STRESS_NOT_NEW_EARNINGS_FORECAST";
-              warnings?: string[];
-              adopted: false;
-              explanation?: string;
-              next_evidence?: string;
-            };
-            annual?: {
-              full_year?: {
-                cfo?: {
-                  total?: string;
-                  fact_9m?: string;
-                  forecast_q4?: string;
-                  fact_classification?: string;
-                  forecast_classification?: string;
-                };
-              };
-            };
-            calculation?: Record<string, unknown>;
-            capital_policy_changes?: {
-              gross_capex?: {
-                classification?: string;
-                fact_9m?: string;
-                assumed_q4?: string;
-                full_year?: string;
-                rationale?: string;
-              };
-            };
-          }
-        >
-      >;
-      limitation?: string;
-    };
+    remaining_year_review?:
+      RemainingYearLegacyReview | RemainingYearSuccessorReview;
   };
   direct_cash_alignment?: CandidatePriceAlignment & {
     research_artifact_kind?: "DIRECT_OWNER_CASH_RECEIPT";
     receipt_binding?: { path: string; sha256: string };
   };
   schema_version?: string;
+  receipt_schema_version?: string;
+  predecessor_binding?: { path: string; sha256: string };
+  annual_recalculations?: RemainingYearSuccessorReview["annual_recalculations"];
   symbol: string;
   status: "NOT_STARTED" | "SOURCE_BOUND_FIRST_INPUT_COMPILED" | "UNASSESSABLE";
   scope: string;

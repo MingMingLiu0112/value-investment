@@ -56,6 +56,7 @@ def read_parent_remaining_year_successor_view(*, root, receipt_binding, symbol, 
             conditional_price=None, source_refs=result["source_bindings"],
             remaining_year_review=dict(
                 schema_version="parent-remaining-year-successor-receipt-v1",
+                symbol=symbol,
                 status="SOURCE_BOUND_CONDITIONAL_SUCCESSOR", action="no_order",
                 formal_eligibility=False, successor_adopted=False,
                 candidate_binding=receipt_binding,

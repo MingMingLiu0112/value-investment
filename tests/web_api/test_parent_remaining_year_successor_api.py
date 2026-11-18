@@ -86,6 +86,7 @@ def test_successor_api_keeps_full_conditional_research_and_blocks_f2(tmp_path, m
     assert body["annual_ledgers"]["base"]["rows"][0]["policy"]["operating_cash"] == "100"
     assert body["annual_recalculations"]["base"]["full_year"]["cfo"]["fact_9m"] == "40"
     assert body["valuation"]["base_value"] == "2"
+    assert body["direct_owner_cash"]["remaining_year_review"]["symbol"] == "600887"
     assert body["direct_cash_alignment"]["reason_codes"] == [
         "EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING"]
     assert body["e2_quote_alignment"]["quote_usable_for_e2_research"] is False
