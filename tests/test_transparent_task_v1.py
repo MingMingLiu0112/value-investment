@@ -691,11 +691,24 @@ def test_receipt_resume_clears_old_attempt_clock_and_new_attempt_gets_new_id(cas
     assert datetime.fromisoformat(second['started_at']) >= datetime.fromisoformat(first['started_at'])
 
 
+def test_e1_task_rejects_unregistered_revision_before_creating_task(tmp_path):
+    service = mod.TransparentTaskService(tmp_path)
+    registered = put(tmp_path, 'runtime/e1-public/registered.json', {})
+    unregistered = put(tmp_path, 'runtime/e1-public/other.json', {})
+    put(tmp_path, 'config/current-first-research-updates-v1.json', {
+        'schema_version': 'current-first-research-updates-v1', 'action': 'no_order',
+        'cases': {'600519': registered}})
+    with pytest.raises(ValueError, match='EXACT_REGISTERED_E1_UPDATE_REQUIRED'):
+        service.create(symbol='600519', operation='RECOMPILE_REGISTERED_E1',
+            payload={'update_binding': unregistered}, request_key='test-e1-unregistered')
+    assert not service.base.exists()
+
+
 def test_operation_module_mapping_is_bounded():
     assert mod.OPERATION_MODULES == {
         'VERIFY_EVIDENCE': 'A', 'REPLAY_SELECTION': 'B', 'FRESH_PUBLIC_SCAN': 'B',
         'RECALCULATE_MAIN': 'F1', 'SIMULATE_ASSUMPTIONS': 'F1', 'REVIEW_NOTE': 'G2',
-        'VALUE_RESEARCH_REFRESH': 'B'}
+        'VALUE_RESEARCH_REFRESH': 'B', 'RECOMPILE_REGISTERED_E1': 'E1'}
 
 
 @pytest.mark.parametrize('damage', [None, 'changed', 'missing_binding'])
