@@ -2701,6 +2701,11 @@
           "type": "python_function",
           "path": "src/value_investment_agent/application/research/direct_owner_cash_alignment_v1.py",
           "entrypoint": "read_direct_owner_cash_alignment"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/parent_owner_distribution_alignment_v2.py",
+          "entrypoint": "read_parent_owner_distribution_alignment"
         }
       ],
       "method_status": {
@@ -2785,7 +2790,9 @@
         "tests/test_incremental_quote_bridge.py",
         "tests/test_main_valuation_revalidation_v1.py",
         "tests/test_parent_remaining_year_alignment.py",
-        "tests/web_api/test_parent_remaining_year_successor_api.py"
+        "tests/web_api/test_parent_remaining_year_successor_api.py",
+        "tests/test_parent_owner_distribution_alignment_v2.py",
+        "tests/web_api/test_parent_owner_distribution_successor_api.py"
       ],
       "real_samples": [
         {
@@ -2801,10 +2808,10 @@
           "symbols": [
             "600887"
           ],
-          "path": "runtime/remaining-q4-successor-20261118/20261118T000059574371Z/compiled/receipt.json",
-          "sha256": "b39c98491c0bbc0feba0bc3394e42ac1d6593682ad063b3d320f576f7681ed2d",
-          "result": "当前E1后继已实际进入F2共享门禁；新回执缺精确绑定的股本、分配、事件与报价配置，返回EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING，不借旧配置、不生成条件价格",
-          "evidence_kind": "REAL_SOURCE_SUCCESSOR_ALIGNMENT_NEGATIVE_PATH"
+          "path": "runtime/parent-owner-distribution-successor-600887-20261118-v3/compiled/receipt.json",
+          "sha256": "dcf8dcf4dbf3965d31c5e787d22d103d4fb2e6bc6a8ca3f2fbc682e21eecf027",
+          "result": "当前E1后继已把已实施现金分配纳入三情景年度账并进入F2共享门禁；报价通过，已实施分配模型内含子状态通过。股本连续性、完整期间行动覆盖、材料性和财务更新仍分别阻断，条件价格为空",
+          "evidence_kind": "REAL_SOURCE_SUCCESSOR_ALIGNMENT_PARTIAL_POSITIVE_PATH"
         },
         {
           "symbols": [
@@ -2861,7 +2868,7 @@
       "axes": {
         "engineering": {
           "status": "BOUNDED_NATIVE_CAPABILITY",
-          "scope": "旧候选、直接股东现金回执及剩余年度后继回执均进入同一F2共享门禁。新回执只按自身Hash取配置，不能借用旧价位；当前真实样本仍因精确股本、分配、事件与报价绑定缺失而阻断。",
+          "scope": "旧候选、直接股东现金回执及两个版本化后继回执均进入同一F2共享门禁。600887新回执只按自身Hash取配置；合格报价及已实施分配模型内含已实际通过，股本连续性、完整期间行动覆盖、材料性和财务更新仍阻断。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/d2-f-audit.md"
           ]
