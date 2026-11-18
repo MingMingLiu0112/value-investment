@@ -886,6 +886,24 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             implication="核对该候选的收入、利润及预测基期是否需要更新。",
                             financial_update=update, affected_model_fields=["revenue_cny", "parent_profit_cny"],
                             limitations=["前三季度累计披露，不视为单季、全年或预测。"], action="no_order")
+                    elif allow_quarterly_report and (dividend_title := re.search(
+                            r"(20[0-9]{2})年度分红派息实施公告$", event["title"])):
+                        from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
+
+                        observation = parse_native_capital_observation(pages, symbol=analysis["symbol"])
+                        if (observation.get("kind") != "dividend_implementation"
+                                or observation.get("status") != "VERIFIED"
+                                or observation.get("observation_date") != published.isoformat()
+                                or observation.get("dividend_fiscal_year") != dividend_title[1]):
+                            raise ValueError("DIVIDEND_ORIGINAL_NOT_VERIFIED_FOR_EVENT")
+                        terms = dict(event_type="REPORTED_ANNUAL_DIVIDEND_IMPLEMENTATION_SCHEDULE",
+                            published_date=published.isoformat(), effective_date=None,
+                            summary=f"原件列示每10股派现{observation['dividend_per_10_shares_cny']}元、"
+                                    f"登记日{observation['record_date']}及除息日{observation['ex_date']}。",
+                            implication="供期间分配核对；托管代派日程不证明账户到账或模型已扣除现金。",
+                            terms=observation, affected_model_fields=["shareholder_distributions"],
+                            limitations=["仅核验实施安排；不将公告复述的往期注销计为本次股本行动。"],
+                            action="no_order")
                     elif allow_quarterly_report and event["title"].endswith("关于部分限制性股票回购注销完成的公告"):
                         from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
 

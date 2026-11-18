@@ -1299,3 +1299,34 @@ def test_opening_purchase_link_needs_exact_later_confirmation(reconciliation, co
     assert (result["purchase_links"][0]["cancellation_binding"] == confirmation["binding"]) == (confirmed_quantity == "2")
     assert not result["complete_opening_action_coverage"]
     assert not result["comparison_date_capital_proven"]
+
+
+@pytest.mark.parametrize("signed_date,fiscal_year", [("2020-10-29", "2019"),
+    ("2020-10-28", "2019"), ("2020-10-29", "2018")])
+def test_dividend_schedule_does_not_admit_payment(reconciliation, monkeypatch, signed_date, fiscal_year):
+    from value_investment_agent.infrastructure.filings import native_capital_observation_v1
+
+    case = reconciliation
+    source = dict(case["anchor"]["binding"],
+                  source_url="https://static.cninfo.com.cn/finalpage/2020-10-29/123.PDF")
+    monkeypatch.setattr(native_capital_observation_v1, "parse_native_capital_observation",
+        lambda pages, symbol: dict(kind="dividend_implementation", status="VERIFIED",
+            observation_date=signed_date, dividend_fiscal_year=fiscal_year,
+            record_date="2020-11-02", ex_date="2020-11-03",
+            dividend_per_10_shares_cny="10.50", payment_completion_state="UNKNOWN"))
+    window = dict(acquired_at="2020-10-30T00:00:00+08:00", announcements=[dict(
+        announcement_id="123", title="2019年度分红派息实施公告",
+        published_at="2020-10-29T00:00:00+08:00", source_url=source["source_url"], evidence_refs=[source])])
+    row, = service._operating_events(case["analysis"], [window], case["now"],
+        lambda ref: _bound(case["root"], ref))
+    assert not row["materiality_approved"] and not row["model_inputs_changed"]
+    if signed_date != "2020-10-29" or fiscal_year != "2019":
+        assert not row["facts"]
+        assert row["unresolved"][0]["reason"] == "DIVIDEND_ORIGINAL_NOT_VERIFIED_FOR_EVENT"
+        return
+    fact, = row["facts"]
+    terms = fact["terms"]
+    assert terms["event_type"] == "REPORTED_ANNUAL_DIVIDEND_IMPLEMENTATION_SCHEDULE"
+    assert terms["effective_date"] is None
+    assert terms["terms"]["payment_completion_state"] == "UNKNOWN"
+    assert terms["action"] == "no_order"
