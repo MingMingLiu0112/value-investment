@@ -1252,7 +1252,8 @@ export const catalog: Record<
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer: "共享估值→既有value_price_policy→历史未批准草案→公司详情",
-          realData: "600887当前报价、Q3财务更新及已实施分配模型内含通过；其余F2门禁仍准确阻断",
+          realData:
+            "600887当前报价、Q3财务更新及已实施分配模型内含通过；其余F2门禁仍准确阻断",
           economic: "条件研究／未批准",
           deployment:
             "2026-11-18当前继任候选及F2五维结果已在8001真实API消费；当前买卖资格未放行",
