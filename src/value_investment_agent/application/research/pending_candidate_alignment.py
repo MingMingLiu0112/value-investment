@@ -1060,7 +1060,7 @@ def _materiality(root, analysis, ref, windows, scans, now, read):
         # adapter support explicitly, instead of calling it missing user approval.
         handoff = prepare_materiality_review_handoff(root=root,
             package_path=read(package_ref), package_sha256=package_ref["sha256"],
-            scan_path=read(scan_ref), scan_sha256=scan_ref["sha256"])
+            scan_path=read(scan_ref), scan_sha256=scan_ref["sha256"], now=now)
     except (ValueError, KeyError, TypeError, AttributeError, OSError) as error:
         unsupported = str(error) == "Exact annual-retention-v2 scenario required; no scalar retention"
         route.update(status="NATIVE_MATERIALITY_CANDIDATE_ADAPTER_UNSUPPORTED" if unsupported else "NATIVE_MATERIALITY_HANDOFF_REJECTED",

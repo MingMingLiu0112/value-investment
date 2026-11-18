@@ -76,9 +76,10 @@ def _direct_review_original(*, root, envelope, now=None):
         replayed = replay_direct_owner_cash_receipt(
             root=root, receipt_binding=receipt_ref, now=replayed_at)
     else:
-        from ..research.parent_owner_distribution_successor_v2 import (
-            RECEIPT_SCHEMA, replay_parent_owner_distribution_successor,
+        from ..research.owner_distribution_read_scope import (
+            replay_parent_owner_distribution_successor,
         )
+        from ..research.parent_owner_distribution_successor_v2 import RECEIPT_SCHEMA
         if (receipt.get('schema_version') != RECEIPT_SCHEMA
                 or receipt.get('input_descriptor_sha256') != envelope['input_descriptor_sha256']
                 or receipt.get('formal_eligibility') is not False
