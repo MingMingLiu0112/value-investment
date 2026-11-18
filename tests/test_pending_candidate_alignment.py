@@ -25,7 +25,7 @@ def write(root, name, value):
 def test_sse_checkpoint_consumption_preserves_share_class_and_cutoff(tmp_path, monkeypatch):
     """TEST_ONLY extraction cache; native parser and consumer remain real."""
     from test_sse_capital_checkpoint_v1 import sample
-    h1, proposal = sample()
+    h1, proposal, _ = sample()
     root = tmp_path
     opening = write(root, "runtime/opening.json", {"TEST_ONLY": "ordinary shares"})
     analysis = dict(symbol="600888", consumed_operating_inputs=dict(ordinary_shares="6325360667"),
@@ -188,6 +188,25 @@ def test_in_period_cash_is_not_blindly_subtracted_or_declared_included(reconcili
     assert result["distributions"][0]["model_inclusion"] == "NOT_NATIVE_VERIFIED"
     assert result["distributions"][0]["verified_cash_per_share"] is None
     assert result["distributions"][0]["price_deduction_applied"] == "0"
+
+
+def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconciliation):
+    case = reconciliation
+    case["ledger"]["distributions"] = [cash(case, in_period=True)]
+    case["analysis"]["consumed_implemented_distributions"] = [dict(
+        status="PASS", reason_code="IMPLEMENTED_DISTRIBUTION_INCLUDED_IN_MODEL",
+        scope="EXACT_IMPLEMENTED_DISTRIBUTION_ONLY_NOT_PERIOD_COMPLETENESS",
+        paid_date="2020-01-02", per_share_cny="2", total_cny="200",
+        original_binding=case["anchor"]["binding"], period_cash_coverage_complete=False,
+        capital_structure_aligned=False, materiality_approved=False,
+        financial_updates_reconciled=False, formal_eligibility=False, action="no_order")]
+    result = reconcile(case)
+    assert result["implemented_distribution_inclusion_complete"] is True
+    assert result["unconsumed_period_cash_per_share"] == "0"
+    assert result["distributions"][0]["model_inclusion"] == (
+        "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE")
+    assert "IN_PERIOD_CASH_FLOW_INCLUSION_REQUIRES_CANDIDATE_RECOMPUTATION" not in result["reason_codes"]
+    assert result["current_price_basis_compatible"] is False
 
 
 @pytest.mark.parametrize("path,value", [
@@ -862,6 +881,22 @@ def test_basis_empty_retrieval_cannot_prove_capital_or_zero_dividend(reconciliat
     assert result["latest_capital_checkpoint"] is None
     assert not result["complete_effective_action_coverage"]
     assert not result["current_comparison_granted"]
+
+
+def test_basis_followup_classifies_existing_share_purchases_without_granting_continuity(reconciliation):
+    case = reconciliation
+    event = dict(announcement_id="TEST_ONLY_EVENT", title="完成股票购买的公告",
+        published_at="2020-01-02T08:00:00+08:00", facts=[dict(
+            binding=case["anchor"]["binding"], terms=dict(
+                event_type="PLAN_SECONDARY_MARKET_SHARE_PURCHASE_COMPLETED",
+                terms=dict(issued_share_effect="NO_ISSUANCE_OR_CANCELLATION_IN_THIS_PURCHASE_EVENT")))])
+    result = service._basis_followup(case["analysis"], None,
+        dict(outstanding_authorizations=[]), [], date(2020, 1, 3), [event])
+    classified = result["capital_event_classifications"][0]
+    assert classified["classification"] == "EXISTING_SHARE_TRANSACTION_NO_ISSUED_SHARE_CHANGE"
+    assert classified["window_completeness_granted"] is False
+    assert result["complete_effective_action_coverage"] is False
+    assert result["current_comparison_granted"] is False
 
 
 def test_event_impact_binds_consumed_years_not_profit_uplift(reconciliation):

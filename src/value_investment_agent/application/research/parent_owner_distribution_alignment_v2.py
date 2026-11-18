@@ -231,6 +231,7 @@ def read_parent_owner_distribution_alignment(*, root: Path, receipt_binding: dic
             "ordinary_shares": result["compiled"]["ordinary_shares"],
         },
         "joint_capital_review": {"economic_path": {"currency": "CNY"}},
+        "consumed_implemented_distributions": [deepcopy(inclusion)],
         "consumed_financial_updates": financial_update_closure,
     }
     aligned = _load_bound_alignment(

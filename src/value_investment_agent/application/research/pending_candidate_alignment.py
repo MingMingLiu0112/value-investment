@@ -477,6 +477,35 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
             native_terms=parsed, field_semantics_reason=parse_error,
             **({"native_entitlement_only": entitlement} if entitlement is not None else {}),
             price_deduction_applied="0", model_inclusion=treatment if parsed and ex <= start and payment <= start else "NOT_NATIVE_VERIFIED"))
+    unconsumed_period_cash = period_cash
+    distribution_closures = analysis.get("consumed_implemented_distributions", [])
+    if distribution_closures is not None:
+        if not isinstance(distribution_closures, list):
+            raise ValueError("CONSUMED_IMPLEMENTED_DISTRIBUTIONS_INVALID")
+        matched_rows = set()
+        for closure in distribution_closures:
+            if (not isinstance(closure, dict) or closure.get("status") != "PASS"
+                    or closure.get("reason_code") != "IMPLEMENTED_DISTRIBUTION_INCLUDED_IN_MODEL"
+                    or closure.get("scope") != "EXACT_IMPLEMENTED_DISTRIBUTION_ONLY_NOT_PERIOD_COMPLETENESS"
+                    or closure.get("action") != "no_order"
+                    or closure.get("formal_eligibility") is not False):
+                raise ValueError("CONSUMED_IMPLEMENTED_DISTRIBUTION_CLOSURE_INVALID")
+            matches = [index for index, cash_row in enumerate(cash_rows)
+                if cash_row["ex_entitlement_in_period"]
+                and cash_row["cash_payment_date"] == closure.get("paid_date")
+                and Decimal(cash_row["arithmetic_cash_per_share"])
+                    == Decimal(closure.get("per_share_cny", "NaN"))
+                and any(e.get("binding") == closure.get("original_binding")
+                        for e in cash_row.get("evidence", []))]
+            if len(matches) != 1 or matches[0] in matched_rows:
+                raise ValueError("CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED")
+            index = matches[0]
+            matched_rows.add(index)
+            cash_rows[index]["model_inclusion"] = "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE"
+            cash_rows[index]["period_treatment"] = "IN_PERIOD_MODEL_INCLUSION_VERIFIED"
+            with localcontext() as context:
+                context.prec = 80
+                unconsumed_period_cash -= Decimal(cash_rows[index]["arithmetic_cash_per_share"])
     pending = ledger.get("opening_pending_actions")
     if pending is None:
         gaps.append("OPENING_PENDING_ACTION_STATE_UNVERIFIED")
@@ -571,7 +600,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     compatible = same_basis
     if actions:
         gaps.append("EFFECTIVE_SHARE_ACTION_REQUIRES_CANDIDATE_RECOMPUTATION")
-    if period_cash:
+    if unconsumed_period_cash:
         gaps.append("IN_PERIOD_CASH_FLOW_INCLUSION_REQUIRES_CANDIDATE_RECOMPUTATION")
     return dict(status="RECONCILED" if same_basis else "PARTIAL", arithmetic_status="RECONCILED" if arithmetic_complete else "PARTIAL",
         scope="SOURCE_BOUND_PUBLIC_RESEARCH_ARITHMETIC_NOT_FIELD_OR_MATERIALITY_APPROVAL", action="no_order",
@@ -579,6 +608,8 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         opening_shares_semantics="NATIVE_CONSUMED_FACT_MATCHED" if native_opening else "NOT_VERIFIED",
         closing_shares=str(closing_value) if closing_value is not None else None,
         share_actions=action_rows, distributions=cash_rows, period_cash_per_share=str(period_cash),
+        unconsumed_period_cash_per_share=str(unconsumed_period_cash),
+        implemented_distribution_inclusion_complete=(period_cash > 0 and unconsumed_period_cash == 0),
         period_cash_coverage_complete=same_basis,
         native_basis_semantics_verified=same_basis,
         native_source_consumption=native_fields,
@@ -913,7 +944,8 @@ def _opening_chain_research(analysis, rows, reconciliation):
         formal_eligibility=False, action="no_order")
 
 
-def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison_date):
+def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison_date,
+                    operating_events=()):
     """Explain the exact latest proven checkpoint, never extend it by silence."""
     reports = ((reconciliation or {}).get("native_source_consumption") or {}).get("reports", [])
     checkpoints, followups = [], []
@@ -947,6 +979,27 @@ def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison
                 authorization_resolved=False, zero_future_dividend_proven=False))
     checkpoints.sort(key=lambda row: (row["as_of"], row["published_date"]))
     latest = checkpoints[-1] if checkpoints else None
+    capital_events = []
+    for event in operating_events:
+        for fact in event.get("facts", []):
+            terms = fact.get("terms") or {}
+            event_type = terms.get("event_type")
+            if event_type not in {
+                    "REPORTED_BUYBACK_PROGRESS",
+                    "PLAN_SECONDARY_MARKET_SHARE_PURCHASE_COMPLETED"}:
+                continue
+            issued_effect = (terms.get("terms") or {}).get("issued_share_effect")
+            capital_events.append(dict(
+                announcement_id=event["announcement_id"], title=event["title"],
+                published_at=event["published_at"], event_type=event_type,
+                source_binding=deepcopy(fact["binding"]),
+                issued_share_effect=issued_effect or (
+                    "NO_ISSUANCE_OR_CANCELLATION_PROVEN_BY_THIS_EVENT_ONLY"
+                    if event_type == "REPORTED_BUYBACK_PROGRESS" else None),
+                classification=("EXISTING_SHARE_TRANSACTION_NO_ISSUED_SHARE_CHANGE"
+                    if issued_effect == "NO_ISSUANCE_OR_CANCELLATION_IN_THIS_PURCHASE_EVENT"
+                    else "TREASURY_PURCHASE_OBSERVATION_NOT_CANCELLATION"),
+                window_completeness_granted=False, action="no_order"))
     observed = [dict(scan_from=w["scan_from"], scan_to=w["scan_to"],
         acquired_at=w["acquired_at"], announcement_count=w["announcement_count"],
         coverage_status=w["coverage_status"], observation_binding=deepcopy(w["observation_binding"]))
@@ -960,6 +1013,7 @@ def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison
         uncovered_capital_interval=dict(after=latest["as_of"], through=comparison_date.isoformat())
             if latest and comparison_date and _day(latest["as_of"]) < comparison_date else None,
         interim_report_followups=followups,
+        capital_event_classifications=capital_events,
         authorization_followup_required=bool(opening_chain["outstanding_authorizations"]),
         observed_windows=observed,
         next_required_evidence=[
@@ -1260,7 +1314,8 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
         opening_actions = _operating_events(analysis, source_windows, now, read,
             parser=parse_opening_action_terms)
         opening_chain = _opening_chain_research(analysis, opening_actions, reconciliation)
-        basis_followup = _basis_followup(analysis, reconciliation, opening_chain, windows, quote.quote_date)
+        basis_followup = _basis_followup(analysis, reconciliation, opening_chain, windows,
+            quote.quote_date, operating_events)
         for index in (1, 2):
             checks[index]["details"]["opening_action_research"] = opening_actions
             checks[index]["details"]["opening_action_chain"] = opening_chain
