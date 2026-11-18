@@ -68,6 +68,7 @@ def test_h1_conflicting_body_statement_rejected():
 
 def test_proposal_total_issued_not_ordinary_or_implemented():
     _, proposal, _ = sample()
+    proposal["1"] += "\n具体财务数据见公司2026年第三季度报告。"
     result = parse(proposal, symbol="600888", published_date="2026-10-30")
     assert result["period_end"] == "2026-10-22"
     assert result["issued_shares"] == "6325360667"

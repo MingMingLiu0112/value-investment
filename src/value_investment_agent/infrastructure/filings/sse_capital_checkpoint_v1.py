@@ -81,7 +81,8 @@ def parse_sse_capital_checkpoint(pages, *, symbol, published_date):
     def evidence(field, page, matched):
         return dict(field=field, physical_page=page, excerpt=_excerpt(raw[page], matched))
 
-    if "第三季度报告" in cover:
+    if any(re.fullmatch(r"20\d{2}年第三季度报告", _compact(line))
+           for line in raw[1].splitlines()):
         code = _one(cover, r"证券代码:" + symbol + r"证券简称:", "quarter code")
         company_lines = [_compact(line) for line in raw[1].splitlines()
                          if re.fullmatch(r"[\u4e00-\u9fff]+股份有限公司", _compact(line))]
