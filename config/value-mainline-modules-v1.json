@@ -1817,6 +1817,15 @@
           "sha256": "96e5894b08dd1342139c6a8dd88867619334f77807f7bf6fc28af64067fd6f42",
           "result": "同共享v4消费；不是无旧包",
           "evidence_kind": "INDEPENDENT_REPLAY_D2_F_AUDIT"
+        },
+        {
+          "symbols": [
+            "600887"
+          ],
+          "path": "runtime/remaining-q4-successor-20261118/20261118T000059574371Z/compiled/receipt.json",
+          "sha256": "b39c98491c0bbc0feba0bc3394e42ac1d6593682ad063b3d320f576f7681ed2d",
+          "result": "真实9M母公司事实加显式Q4条件假设形成不可变后继；旧版本保留，后继未采纳，action=no_order",
+          "evidence_kind": "REAL_SOURCE_CONDITIONAL_SUCCESSOR_COLD_REPLAY"
         }
       ],
       "errors": {
@@ -1860,7 +1869,7 @@
       "axes": {
         "engineering": {
           "status": "BOUNDED_NATIVE_CAPABILITY",
-          "scope": "prepare与verify可独立传参；需要旧包，不能替代E2。 两个真实旧包候选被独立verify及public analysis重算。",
+          "scope": "旧候选更新与直接股东现金后继均可独立冷重放。600887已把真实9M事实与显式Q4条件假设编译为新回执并由API消费；后继未采纳，不能替代E2首编。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md"
           ]
@@ -2774,7 +2783,9 @@
         "tests/test_pending_candidate_alignment.py",
         "tests/test_current_snapshot_quote_bridge.py",
         "tests/test_incremental_quote_bridge.py",
-        "tests/test_main_valuation_revalidation_v1.py"
+        "tests/test_main_valuation_revalidation_v1.py",
+        "tests/test_parent_remaining_year_alignment.py",
+        "tests/web_api/test_parent_remaining_year_successor_api.py"
       ],
       "real_samples": [
         {
@@ -2790,9 +2801,10 @@
           "symbols": [
             "600887"
           ],
-          "path": "config/current-research-drafts.json",
-          "result": "独立analysis：EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING；不等当前决策成功",
-          "evidence_kind": "INDEPENDENT_REPLAY"
+          "path": "runtime/remaining-q4-successor-20261118/20261118T000059574371Z/compiled/receipt.json",
+          "sha256": "b39c98491c0bbc0feba0bc3394e42ac1d6593682ad063b3d320f576f7681ed2d",
+          "result": "当前E1后继已实际进入F2共享门禁；新回执缺精确绑定的股本、分配、事件与报价配置，返回EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING，不借旧配置、不生成条件价格",
+          "evidence_kind": "REAL_SOURCE_SUCCESSOR_ALIGNMENT_NEGATIVE_PATH"
         },
         {
           "symbols": [
@@ -2849,7 +2861,7 @@
       "axes": {
         "engineering": {
           "status": "BOUNDED_NATIVE_CAPABILITY",
-          "scope": "可读exact候选alignment；跨日期原生有效行动链与当前正例尚未完成。 三家本范围没有已证明当前决策联合正例；真实拒绝是能力证据不是成功投资。",
+          "scope": "旧候选、直接股东现金回执及剩余年度后继回执均进入同一F2共享门禁。新回执只按自身Hash取配置，不能借用旧价位；当前真实样本仍因精确股本、分配、事件与报价绑定缺失而阻断。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/d2-f-audit.md"
           ]
