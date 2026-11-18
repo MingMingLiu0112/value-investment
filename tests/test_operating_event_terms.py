@@ -325,3 +325,74 @@ def test_completed_buyback_keeps_planned_cancellation_out_of_effective_shares():
         parse([page.replace("10月22日", "10月24日")])
     with pytest.raises(ValueError, match="ISSUER_CODE_MISMATCH"):
         parse([page.replace("000777", "000778")])
+
+
+def _plan_purchase_page(*, plan="第六期长期服务计划"):
+    return (
+        "证券代码：000777 证券简称：示例 公告编号：临2026-087 "
+        f"示例股份有限公司关于{plan}完成股票购买的公告"
+        "本公司董事会及全体董事保证本公告内容不存在任何虚假记载、误导性陈述或者"
+        "重大遗漏，并对其内容的真实性、准确性和完整性承担法律责任。"
+        "一、本期计划基本情况公司已按照相关规则完成必要程序。"
+        "二、本期计划完成股票购买的情况"
+        f"截至2026年11月12日，公司通过上海证券交易所证券交易系统购买公司股票10,156,369股，"
+        "成交金额285,672,468.67元（不含交易费用），占公司总股本的比例为0.16%，"
+        f"成交均价为28.127元/股，公司{plan}标的股票的购买已全部完成。"
+        "三、后续安排公司将持续关注计划实施进展。"
+        "特此公告示例股份有限公司董事会2026年11月14日"
+    )
+
+
+@pytest.mark.parametrize("plan", ["第六期长期服务计划", "第三期员工持股计划"])
+def test_plan_purchase_requires_exchange_system_existing_share_purchase(plan):
+    page = _plan_purchase_page(plan=plan)
+    result = parse([page])
+    assert result["event_type"] == "PLAN_SECONDARY_MARKET_SHARE_PURCHASE_COMPLETED"
+    assert result["effective_date"] == "2026-11-12"
+    assert result["terms"] == {
+        "plan_name": plan,
+        "completion_date": "2026-11-12",
+        "purchase_method": "EXCHANGE_SECURITIES_TRADING_SYSTEM_EXISTING_SHARES",
+        "exchange": "上海证券交易所",
+        "purchased_shares": 10156369,
+        "paid_cny": "285672468.67",
+        "average_price_cny_per_share": "28.127",
+        "disclosed_total_share_percent": "0.16",
+        "issued_share_effect": "NO_ISSUANCE_OR_CANCELLATION_IN_THIS_PURCHASE_EVENT",
+    }
+    assert result["action"] == "no_order"
+    assert "不得据此调减" in result["limitations"][1]
+    assert_evidence(result, [page])
+
+
+def test_plan_purchase_accepts_strict_chinese_numeral_publication_date():
+    page = _plan_purchase_page().replace("2026年11月14日", "二〇二六年十一月十四日")
+    result = parse([page])
+    assert result["published_date"] == "2026-11-14"
+    assert result["effective_date"] == "2026-11-12"
+
+
+@pytest.mark.parametrize("old,new", [
+    ("通过上海证券交易所证券交易系统购买", "通过未披露方式购买"),
+    ("通过上海证券交易所证券交易系统购买", "通过协议转让取得"),
+    ("一、本期计划基本情况", "一、本期计划基本情况本次发行新股"),
+    ("一、本期计划基本情况", "一、本期计划基本情况本次注销股份"),
+    ("公司第六期长期服务计划标的股票", "公司第五期长期服务计划标的股票"),
+])
+def test_plan_purchase_unknown_transfer_issuance_cancellation_or_identity_rejected(old, new):
+    page = _plan_purchase_page()
+    assert old in page
+    with pytest.raises(ValueError, match="OPERATING_EVENT_"):
+        parse([page.replace(old, new)])
+
+
+@pytest.mark.parametrize("old,new", [
+    ("2026年11月12日", "2026年11月15日"),
+    ("285,672,468.67元", "100,000,000.00元"),
+    ("10,156,369股", "20,156,369股"),
+    ("0.16%", "0%"),
+])
+def test_plan_purchase_date_and_arithmetic_must_reconcile(old, new):
+    page = _plan_purchase_page()
+    with pytest.raises(ValueError, match="OPERATING_EVENT_"):
+        parse([page.replace(old, new)])

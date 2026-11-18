@@ -11,8 +11,13 @@ from decimal import Decimal
 import re
 import unicodedata
 
-VERSION = "operating-event-terms-v1"
+VERSION = "operating-event-terms-v2"
 _DATE = r"(?P<{name}>20[0-9]{{2}}年[0-9]{{1,2}}月[0-9]{{1,2}}日)"
+_PUBLICATION_DATE = (
+    r"(?P<{name}>(?:20[0-9]{{2}}年[0-9]{{1,2}}月[0-9]{{1,2}}日|"
+    r"二[〇零一二三四五六七八九]{{3}}年"
+    r"[一二三四五六七八九十]{{1,3}}月[一二三四五六七八九十]{{1,3}}日))"
+)
 _MONEY = r"[0-9]+(?:\.[0-9]+)?"
 _MEETING = r"第[一二三四五六七八九十]+届董事会20[0-9]{2}年度第[一二三四五六七八九十]+次会议"
 _GUARANTEE = (
@@ -27,6 +32,28 @@ def _reject(reason):
 
 def _day(text):
     match = re.fullmatch(r"(20[0-9]{2})年([0-9]{1,2})月([0-9]{1,2})日", text)
+    if not match:
+        chinese = re.fullmatch(
+            r"(二[〇零一二三四五六七八九]{3})年"
+            r"([一二三四五六七八九十]{1,3})月"
+            r"([一二三四五六七八九十]{1,3})日",
+            text,
+        )
+        if chinese:
+            digits = {"〇": 0, "零": 0, "一": 1, "二": 2, "三": 3, "四": 4,
+                      "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+
+            def number(value):
+                if "十" not in value:
+                    return digits[value]
+                left, right = value.split("十", 1)
+                return (digits[left] if left else 1) * 10 + (digits[right] if right else 0)
+
+            year = int("".join(str(digits[char]) for char in chinese[1]))
+            try:
+                return date(year, number(chinese[2]), number(chinese[3])).isoformat()
+            except (KeyError, ValueError):
+                _reject("INVALID_DATE")
     if not match:
         _reject("INVALID_DATE")
     try:
@@ -422,6 +449,77 @@ def _buyback_completion(body, published):
     )
 
 
+def _plan_market_purchase_completion(body, title, published):
+    """Parse a bounded employee/service-plan secondary-market purchase.
+
+    The title is only routing information.  Admission requires the complete
+    body to identify the same plan and to state that shares were bought through
+    an exchange securities trading system.  Any issuance, cancellation,
+    transfer, subscription or other acquisition method is outside this
+    contract and therefore remains unresolved.
+    """
+    title_match = _match(
+        r"关于(?P<plan>第[一二三四五六七八九十]+期(?:长期服务计划|员工持股计划))完成股票购买的公告",
+        title,
+    )
+    plan = title_match["plan"]
+    forbidden = (
+        "非公开发行", "向特定对象发行", "发行新股", "新股发行",
+        "认购新股", "股份注销", "注销股份", "转让股份", "股份转让",
+        "非交易过户", "无偿划转", "大宗交易", "协议转让", "股东赠与",
+    )
+    if any(term in body for term in forbidden):
+        _reject("PLAN_PURCHASE_ISSUANCE_CANCELLATION_OR_TRANSFER_UNRESOLVED")
+    quantity = r"[1-9][0-9]{0,2}(?:,[0-9]{3})+|[1-9][0-9]*"
+    money = r"[1-9][0-9]*(?:,[0-9]{3})*(?:\.[0-9]+)?"
+    price = r"[1-9][0-9]*(?:\.[0-9]+)?"
+    exchange = r"(?P<exchange>上海证券交易所|深圳证券交易所)"
+    row_pattern = (
+        r"截至" + _DATE.format(name="completed") + r"[,，]公司通过" + exchange
+        + r"证券交易系统购买公司股票(?P<shares>" + quantity + r")股[,，]"
+        + r"成交金额(?P<total>" + money + r")元\(不含交易费用\)[,，]"
+        + r"占公司总股本的比例为(?P<ratio>" + _MONEY + r")%[,，]"
+        + r"成交均价为(?P<average>" + price + r")元/股[,，]公司(?P<plan>" + re.escape(plan)
+        + r")标的股票的购买已全部完成。"
+    )
+    rows = list(re.finditer(row_pattern, body))
+    if len(rows) != 1:
+        _reject("PLAN_PURCHASE_METHOD_OR_TERMS_MISSING_OR_AMBIGUOUS")
+    row = rows[0]
+    completed = _day(row["completed"])
+    shares = int(row["shares"].replace(",", ""))
+    total = Decimal(row["total"].replace(",", ""))
+    average = Decimal(row["average"])
+    ratio = Decimal(row["ratio"])
+    if (completed > published or not 0 < ratio <= 100 or total <= 0 or average <= 0
+            or abs(total / shares - average) > Decimal("0.0005")):
+        _reject("PLAN_PURCHASE_ARITHMETIC_OR_DATE_INVALID")
+    return dict(
+        event_type="PLAN_SECONDARY_MARKET_SHARE_PURCHASE_COMPLETED",
+        effective_date=completed,
+        terms=dict(
+            plan_name=plan,
+            completion_date=completed,
+            purchase_method="EXCHANGE_SECURITIES_TRADING_SYSTEM_EXISTING_SHARES",
+            exchange=row["exchange"],
+            purchased_shares=shares,
+            paid_cny=str(total),
+            average_price_cny_per_share=str(average),
+            disclosed_total_share_percent=str(ratio),
+            issued_share_effect="NO_ISSUANCE_OR_CANCELLATION_IN_THIS_PURCHASE_EVENT",
+        ),
+        affected_model_fields=["cash", "ordinary_shares"],
+        summary=(f"{plan}于{completed}前通过{row['exchange']}证券交易系统购买"
+                 f"已有公司股票{shares}股，本次购买已完成。"),
+        implication="该二级市场购买事件本身不发行或注销股份；资金影响及其他股本事件仍需分别核验。",
+        limitations=[
+            "仅证明本公告所述购买通过交易所证券交易系统完成，不证明公告窗口内不存在其他发行或注销。",
+            "购买已有股票不等于股份注销，不得据此调减发行在外股数。",
+        ],
+        _evidence=[(row[0], "plan_exchange_market_purchase_completion")],
+    )
+
+
 def parse_operating_event_terms(pages, *, symbol):
     """Extract bounded source terms; ValueError rejects unsupported prose.
 
@@ -438,9 +536,11 @@ def parse_operating_event_terms(pages, *, symbol):
         r"证券简称:(?P<short_b>[^:]{1,30})证券代码:(?P<code_b>[0-9]{6})编号:临)"
         r"(?P<year>20[0-9]{2})-(?P<number>[0-9]{3})"
         r"(?P<issuer>[\u4e00-\u9fffA-Za-z()]{2,80}股份有限公司)"
-        r"(?P<title>重大事项公告|" + _MEETING + r"决议公告|关于会计政策变更的公告|(?P<buyback>关于股份回购进展公告|关于以集中竞价交易方式首次回购公司股份的公告|关于股份回购实施结果暨股份变动的公告))"
-        + re.escape(_GUARANTEE) + r"(?P<body>.+)特此公告(?(buyback)。?|。)"
-        r"(?P=issuer)董事会" + _DATE.format(name="published"), text,
+        r"(?P<title>重大事项公告|" + _MEETING + r"决议公告|关于会计政策变更的公告|(?P<no_period>"
+        r"(?P<plan_purchase>关于第[一二三四五六七八九十]+期(?:长期服务计划|员工持股计划)完成股票购买的公告)|"
+        r"(?P<buyback>关于股份回购进展公告|关于以集中竞价交易方式首次回购公司股份的公告|关于股份回购实施结果暨股份变动的公告)))"
+        + re.escape(_GUARANTEE) + r"(?P<body>.+)特此公告(?(no_period)。?|。)"
+        r"(?P=issuer)董事会" + _PUBLICATION_DATE.format(name="published"), text,
     )
     if (header["code_a"] or header["code_b"]) != symbol or len(re.findall(r"证券代码:", text)) != 1:
         _reject("ISSUER_CODE_MISMATCH")
@@ -454,6 +554,8 @@ def parse_operating_event_terms(pages, *, symbol):
         result = _accounting(body, issuer, published)
     elif title == "关于股份回购实施结果暨股份变动的公告":
         result = _buyback_completion(body, published)
+    elif header["plan_purchase"]:
+        result = _plan_market_purchase_completion(body, title, published)
     elif header["buyback"]:
         result = _buyback_progress(body, published, first_execution="首次回购" in title)
     else:
