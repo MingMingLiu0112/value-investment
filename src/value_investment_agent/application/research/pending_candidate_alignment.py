@@ -1056,9 +1056,36 @@ def _opening_chain_research(analysis, rows, reconciliation):
         formal_eligibility=False, action="no_order")
 
 
+def _buyback_checkpoint_deltas(checkpoints):
+    """Difference comparable cumulative disclosures without altering the candidate."""
+    grouped = {}
+    for point in checkpoints:
+        grouped.setdefault((point["plan_start"], point["plan_end"]), []).append(point)
+    result = []
+    for (plan_start, plan_end), points in sorted(grouped.items()):
+        points.sort(key=lambda row: row["through"])
+        if len({p["through"] for p in points}) != len(points):
+            continue
+        for before, after in zip(points, points[1:]):
+            shares = after["shares"] - before["shares"]
+            with localcontext() as context:
+                context.prec = 80
+                paid = after["paid_cny"] - before["paid_cny"]
+            if shares < 0 or paid < 0 or (shares == 0) != (paid == 0):
+                continue
+            result.append(dict(plan_start=plan_start, plan_end=plan_end,
+                after_date=before["through"], through=after["through"],
+                purchase_share_delta=shares, disclosed_cash_delta_cny=str(paid),
+                before_binding=deepcopy(before["binding"]), after_binding=deepcopy(after["binding"]),
+                scope="MATCHING_DISCLOSED_PLAN_WINDOW_RESEARCH_ONLY", action="no_order"))
+    return result
+
+
 def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison_date,
                     operating_events=()):
     """Explain the exact latest proven checkpoint, never extend it by silence."""
+    from ...quote_sessions import CHINA
+
     reports = ((reconciliation or {}).get("native_source_consumption") or {}).get("reports", [])
     checkpoints, followups = [], []
     for report in reports:
@@ -1091,7 +1118,7 @@ def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison
                 authorization_resolved=False, zero_future_dividend_proven=False))
     checkpoints.sort(key=lambda row: (row["as_of"], row["published_date"]))
     latest = checkpoints[-1] if checkpoints else None
-    capital_events = []
+    capital_events, buyback_checkpoints = [], []
     for event in operating_events:
         for fact in event.get("facts", []):
             terms = fact.get("terms") or {}
@@ -1100,7 +1127,16 @@ def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison
                     "REPORTED_BUYBACK_PROGRESS",
                     "PLAN_SECONDARY_MARKET_SHARE_PURCHASE_COMPLETED"}:
                 continue
-            issued_effect = (terms.get("terms") or {}).get("issued_share_effect")
+            facts = terms.get("terms") or {}
+            if (event_type == "REPORTED_BUYBACK_PROGRESS" and comparison_date is not None
+                    and facts.get("plan_start") and facts.get("plan_end")
+                    and facts["plan_start"] <= facts["through"] <= facts["plan_end"]
+                    and _day(facts["through"]) <= comparison_date
+                    and datetime.fromisoformat(event["published_at"]).astimezone(CHINA).date() <= comparison_date):
+                buyback_checkpoints.append(dict(plan_start=facts["plan_start"], plan_end=facts["plan_end"],
+                    through=facts["through"], shares=facts["cumulative_purchased_shares"],
+                    paid_cny=Decimal(facts["cumulative_paid_cny"]), binding=fact["binding"]))
+            issued_effect = facts.get("issued_share_effect")
             capital_events.append(dict(
                 announcement_id=event["announcement_id"], title=event["title"],
                 published_at=event["published_at"], event_type=event_type,
@@ -1126,6 +1162,7 @@ def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison
             if latest and comparison_date and _day(latest["as_of"]) < comparison_date else None,
         interim_report_followups=followups,
         capital_event_classifications=capital_events,
+        buyback_checkpoint_deltas=_buyback_checkpoint_deltas(buyback_checkpoints),
         authorization_followup_required=bool(opening_chain["outstanding_authorizations"]),
         observed_windows=observed,
         next_required_evidence=[

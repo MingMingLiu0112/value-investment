@@ -314,6 +314,18 @@ def _accounting(body, issuer, published):
 
 
 def _buyback_progress(body, published, *, first_execution=False):
+    plan_rows = list(re.finditer(
+        "回购方案实施期限" + _DATE.format(name="start") + "[~～至]" + _DATE.format(name="end"), body))
+    if len(plan_rows) > 1:
+        _reject("BUYBACK_PLAN_WINDOW_AMBIGUOUS")
+    plan_terms, plan_evidence = {}, []
+    if plan_rows:
+        plan = plan_rows[0]
+        plan_start, plan_end = _day(plan["start"]), _day(plan["end"])
+        if plan_start >= plan_end or plan_start > published:
+            _reject("BUYBACK_PLAN_WINDOW_INVALID")
+        plan_terms = dict(plan_start=plan_start, plan_end=plan_end)
+        plan_evidence = [(plan[0], "buyback_plan_window")]
     quantity = r"[1-9][0-9]{0,2}(?:,[0-9]{3})*|[1-9][0-9]*"
     amount = r"[0-9]+(?:,[0-9]{3})*\.[0-9]{2}"
     summary_rows = list(re.finditer(
@@ -337,12 +349,12 @@ def _buyback_progress(body, published, *, first_execution=False):
             event_type="REPORTED_BUYBACK_PROGRESS", effective_date=None,
             terms=dict(through=through, cumulative_purchased_shares=0,
                        cumulative_paid_cny="0", disclosed_share_percent="0",
-                       completed_cancellation_shares=None),
+                       completed_cancellation_shares=None, **plan_terms),
             affected_model_fields=["cash", "ordinary_shares"],
             summary=f"公告确认截至{through}尚未实施股份回购。",
             implication="仅作为本回购计划已披露累计数据的期初对照。",
             limitations=["该结论限于所述回购计划及截止日。"],
-            _evidence=[(zero_summary, "buyback_summary"), (no_execution[0][0], "buyback_progress")],
+            _evidence=[(zero_summary, "buyback_summary"), (no_execution[0][0], "buyback_progress"), *plan_evidence],
         )
     if first_execution:
         opening = (_DATE.format(name="through") + r",公司通过集中竞价交易方式首次回购股份数量为"
@@ -373,7 +385,7 @@ def _buyback_progress(body, published, *, first_execution=False):
         _reject("BUYBACK_PROGRESS_ARITHMETIC_OR_DATE_INVALID")
     terms = dict(through=through, cumulative_purchased_shares=int(shares),
                  cumulative_paid_cny=str(total), disclosed_share_percent=str(ratio),
-                 completed_cancellation_shares=None)
+                 completed_cancellation_shares=None, **plan_terms)
     if first_execution:
         terms["first_purchase_date"] = through
     return dict(
@@ -383,7 +395,7 @@ def _buyback_progress(body, published, *, first_execution=False):
         summary=f"截至{through}累计购回{int(shares)}股，已支付{total}元（不含交易费用）。",
         implication="核对累计金额的期间增量及后续注销生效公告，当前资料不改变估值股数。",
         limitations=["购回进展不能证明注销生效；累计数不能重复计为各期现金支出。"],
-        _evidence=[(summary_rows[0][0], "buyback_summary"), (row[0], "buyback_progress")],
+        _evidence=[(summary_rows[0][0], "buyback_summary"), (row[0], "buyback_progress"), *plan_evidence],
     )
 
 

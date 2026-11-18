@@ -1140,6 +1140,16 @@ function BasisFollowup({ value }: { value: unknown }) {
   const reports = Array.isArray(value.interim_report_followups)
     ? value.interim_report_followups.filter(object)
     : [];
+  const buybackDeltas = Array.isArray(value.buyback_checkpoint_deltas)
+    ? value.buyback_checkpoint_deltas.filter(
+        (row) =>
+          object(row) &&
+          row.scope === "MATCHING_DISCLOSED_PLAN_WINDOW_RESEARCH_ONLY" &&
+          row.action === "no_order" &&
+          numberText(row.purchase_share_delta) &&
+          numberText(row.disclosed_cash_delta_cny),
+      )
+    : [];
   return (
     <section aria-label="股本与中期分配后续核验">
       <h6>已证实到哪一天，后续还缺什么</h6>
@@ -1195,6 +1205,25 @@ function BasisFollowup({ value }: { value: unknown }) {
           尚未证明连续性的区间：{text(interval.after)} 之后至{" "}
           {text(interval.through)}。 不能把期初股数沿用为当前股数。
         </p>
+      )}
+      {buybackDeltas.length > 0 && (
+        <div>
+          <p>
+            披露回购累计差额，仅用于现金与库存股核对，注销及估值调整另行验证。
+          </p>
+          {buybackDeltas.map((row, i) => (
+            <div key={`${text(row.after_date)}-${text(row.through)}-${i}`}>
+              <p>
+                {text(row.after_date)} 至 {text(row.through)}：累计购回增加
+                {numberText(row.purchase_share_delta)} 股，披露支付增加
+                {numberText(row.disclosed_cash_delta_cny)} 元。
+              </p>
+              <AlignmentEvidence
+                value={[row.before_binding, row.after_binding]}
+              />
+            </div>
+          ))}
+        </div>
       )}
       {reports.map((row, i) => (
         <div key={i}>

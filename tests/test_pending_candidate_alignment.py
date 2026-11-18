@@ -953,6 +953,24 @@ def test_opening_chain_maps_only_supported_distribution_object_contracts(kind):
     assert changed["distribution_links"][0]["status"]=="TERMS_NOT_MATCHED"
 
 
+def test_buyback_differences_do_not_cross_plan_windows_or_ambiguous_dates():
+    def point(through, shares, paid, plan_end="2026-12-31"):
+        return dict(plan_start="2026-01-01", plan_end=plan_end, through=through,
+                    shares=shares, paid_cny=Decimal(paid), binding={"path": through})
+
+    first = point("2026-02-01", 10, "100.25")
+    second = point("2026-03-01", 15, "145.75")
+    other_plan = point("2026-04-01", 99, "999", "2026-11-30")
+    result = service._buyback_checkpoint_deltas([second, other_plan, first])
+    assert len(result) == 1
+    assert result[0]["purchase_share_delta"] == 5
+    assert result[0]["disclosed_cash_delta_cny"] == "45.50"
+    assert result[0]["before_binding"] == first["binding"]
+    assert result[0]["after_binding"] == second["binding"]
+    assert service._buyback_checkpoint_deltas([first, second, point("2026-03-01", 12, "120")]) == []
+    assert service._buyback_checkpoint_deltas([first, point("2026-03-01", 5, "95")]) == []
+
+
 def test_basis_followup_keeps_no_proposal_distinct_from_revocation(reconciliation):
     case = reconciliation
     report = dict(status="NATIVE_REPORT_FIELDS_VERIFIED", binding=case["anchor"]["binding"],

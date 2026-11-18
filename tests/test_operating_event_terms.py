@@ -197,7 +197,7 @@ def test_real_bound_originals(announcement_id, kind, published):
         pytest.skip("Set VALUE_ALIGNMENT_REAL_ROOT to replay retained originals")
     from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
     root = Path(configured)
-    base = root / "runtime/value-alignment-event-observation/20261030T034906348838Z"
+    base = root / "runtime/value-alignment-event-observation/600519-20260630-20261113-20261115T132948687168Z"
     scan = json.loads((base / "event-scan.json").read_text(encoding="utf-8"))
     item = next(a for a in scan["announcements"] if a["announcement_id"] == announcement_id)
     source = item["evidence_refs"][0]
