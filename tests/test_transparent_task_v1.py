@@ -1039,3 +1039,32 @@ def test_refresh_nonpublic_pointer_target_rejected_before_read(refresh_case,monk
     monkeypatch.setattr(Path,'read_bytes',read)
     with pytest.raises(ValueError):refresh_task(refresh_case)
     assert not service.base.exists()
+
+
+@pytest.mark.parametrize('update_schema,receipt_schema', [
+    ('first-research-input-update-v1', 'first-research-input-receipt-v1'),
+    ('first-research-input-update-v2', 'first-research-input-receipt-v2'),
+    ('direct-owner-cash-update-v1', 'direct-owner-cash-first-input-receipt-v1'),
+])
+@pytest.mark.parametrize('wrong_receipt', [False, True])
+def test_e1_prepare_requires_matching_registered_receipt_version(
+        tmp_path, update_schema, receipt_schema, wrong_receipt):
+    service = mod.TransparentTaskService(tmp_path)
+    spec = put(tmp_path, 'runtime/e1-public/spec.json', {'symbol': '600519'})
+    successor = put(tmp_path, 'runtime/e1-public/successor.json', {
+        'schema_version': 'unknown' if wrong_receipt else receipt_schema,
+        'symbol': '600519', 'spec_binding': spec})
+    update = put(tmp_path, 'runtime/e1-public/update.json', {
+        'schema_version': update_schema, 'symbol': '600519', 'action': 'no_order',
+        'status': 'SUCCESSOR_CONDITIONAL_RESEARCH_PENDING_REVIEW',
+        'formal_eligibility': False, 'main_range_adopted': False, 'price_admitted': False,
+        'successor_binding': successor})
+    put(tmp_path, 'config/current-first-research-updates-v1.json', {
+        'schema_version': 'current-first-research-updates-v1', 'action': 'no_order',
+        'cases': {'600519': update}})
+
+    prepared = service.prepare(symbol='600519')
+    operation = next(row for row in prepared['operations']
+                     if row['operation'] == 'RECOMPILE_REGISTERED_E1')
+    assert operation['enabled'] is not wrong_receipt
+    assert operation['reason'] == ('REGISTERED_E1_INVALID' if wrong_receipt else None)

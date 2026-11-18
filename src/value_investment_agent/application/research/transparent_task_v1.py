@@ -330,16 +330,22 @@ class TransparentTaskService(base.ResearchTaskService):
                 or registry['cases'].get(symbol) != update_binding):
             raise ValueError('EXACT_REGISTERED_E1_UPDATE_REQUIRED')
         update = self._bound(update_binding)
-        if (update.get('schema_version') != 'first-research-input-update-v2'
+        version = update.get('schema_version')
+        receipt_versions = {
+            'first-research-input-update-v1': 'first-research-input-receipt-v1',
+            'first-research-input-update-v2': 'first-research-input-receipt-v2',
+            'direct-owner-cash-update-v1': 'direct-owner-cash-first-input-receipt-v1',
+        }
+        if (version not in receipt_versions
                 or update.get('symbol') != symbol or update.get('action') != 'no_order'
                 or update.get('status') != 'SUCCESSOR_CONDITIONAL_RESEARCH_PENDING_REVIEW'
                 or any(update.get(key) is not False for key in
                        ('formal_eligibility', 'main_range_adopted', 'price_admitted'))):
-            raise ValueError('REGISTERED_E1_V2_SCOPE_MISMATCH')
+            raise ValueError('REGISTERED_E1_SCOPE_MISMATCH')
         successor = self._bound(update['successor_binding'])
-        if successor.get('schema_version') != 'first-research-input-receipt-v2' or successor.get('symbol') != symbol:
+        if successor.get('schema_version') != receipt_versions[version] or successor.get('symbol') != symbol:
             raise ValueError('REGISTERED_E1_SUCCESSOR_RECEIPT_MISMATCH')
-        return update['predecessor_binding'], successor['spec_binding']
+        return update, successor['spec_binding']
 
     def _validate_payload(self, symbol, operation, payload):
         if operation not in OPERATIONS or not isinstance(payload, dict):
@@ -1009,15 +1015,45 @@ def _dispatch(service, spec, attempt):
         outcome = ('BLOCKED' if not any(x.get('receipt') for x in packet['items']) else
                    'SUCCESS' if packet['status'] == 'VERIFIED' else 'PARTIAL')
     elif operation == 'RECOMPILE_REGISTERED_E1':
-        from .first_research_input_update_v2 import build_first_research_input_update_v2
-        predecessor, revised = service._registered_e1_inputs(spec['symbol'], payload['update_binding'])
+        update_binding = payload['update_binding']
+        registered, revised = service._registered_e1_inputs(spec['symbol'], update_binding)
         output = require_inside(attempt, attempt / 'e1-recompilation', 'owned E1 output')
-        result = build_first_research_input_update_v2(root=service.root,
-            predecessor_binding=predecessor, successor_spec_binding=revised,
-            output_dir=output, now=base._now())
+        predecessor = registered['predecessor_binding']
+        now = base._now()
+        receipt_path = output / 'update.json'
+        if registered['schema_version'] == 'direct-owner-cash-update-v1':
+            from .direct_owner_cash_update_v1 import build_direct_owner_cash_update, replay_direct_owner_cash_update
+            from .direct_owner_cash_research_v1 import build_direct_owner_cash_receipt
+            from ..product.common import write_new_json
+
+            replay_direct_owner_cash_update(service.root, update_binding, now)
+            compiled = build_direct_owner_cash_receipt(root=service.root, spec_binding=revised,
+                output_dir=output / 'compiled', now=now)
+            rationale = service._bound(registered['change_binding'])
+            rationale_path = output / 'replayed-rationale.json'
+            write_new_json(rationale_path, dict(rationale, successor_binding=compiled['receipt_binding']))
+            rationale_binding = service._binding(rationale_path)
+            artifacts.extend([registered['change_binding'], rationale_binding])
+            result = build_direct_owner_cash_update(root=service.root, predecessor_binding=predecessor,
+                successor_binding=compiled['receipt_binding'], change_binding=rationale_binding,
+                output_dir=output / 'update', now=now)['update']
+            receipt_path = output / 'update/update.json'
+        elif registered['schema_version'] == 'first-research-input-update-v1':
+            from .first_research_input_update_v1 import build_first_research_input_update
+
+            result = build_first_research_input_update(root=service.root,
+                predecessor_binding=predecessor, successor_spec_binding=revised,
+                output_dir=output, now=now)
+        else:
+            from .first_research_input_update_v2 import build_first_research_input_update_v2
+
+            result = build_first_research_input_update_v2(root=service.root,
+                predecessor_binding=predecessor, successor_spec_binding=revised,
+                output_dir=output, now=now)
+            receipt_path = output / 'update/update.json'
         if result.get('status') == 'SUCCESSOR_CONDITIONAL_RESEARCH_PENDING_REVIEW':
-            artifacts.extend([payload['update_binding'], result['predecessor_binding'],
-                              result['successor_binding'], service._binding(output / 'update/update.json')])
+            artifacts.extend([update_binding, result['predecessor_binding'],
+                              result['successor_binding'], service._binding(receipt_path)])
         else:
             outcome = 'BLOCKED'
     elif operation == 'RECALCULATE_MAIN':
