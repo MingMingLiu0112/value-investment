@@ -124,16 +124,17 @@ def test_future_report_or_observation_rejected():
         parse(q3, symbol="600888", published_date="2026-09-29")
 
 
-def test_q3_exact_issued_share_checkpoint_does_not_infer_current_continuity():
+def test_q3_share_capital_amount_does_not_infer_issued_shares_or_current_continuity():
     _, _, q3 = sample()
     result = parse(q3, symbol="600888", published_date="2026-10-30")
-    assert result["kind"] == "Q3_REPORT_EXACT_ISSUED_SHARES"
+    assert result["kind"] == "Q3_REPORT_EXACT_SHARE_CAPITAL_CNY"
     assert result["period_end"] == "2026-09-30"
-    assert result["issued_shares"] == "6325360667"
-    assert result["share_scope"] == "TOTAL_ISSUED_SHARES"
+    assert result["issued_shares"] is None
+    assert result["share_capital_cny"] == "6325360667.00"
+    assert result["share_scope"] == "PAID_IN_CAPITAL_AMOUNT_NOT_SHARE_COUNT"
     assert result["statement_scope"] == "CONSOLIDATED_BALANCE_SHEET"
     assert (result["source_currency"], result["source_unit"]) == ("CNY", "CNY")
-    assert result["ordinary_shares"] is None
+    assert result["ordinary_shares"] is None and result["exact_share_count"] is False
     assert result["ordinary_share_type_continuity_proven"] is False
     assert result["continuity_after_period_end"] is False
     assert result["proposal_only"] is False and result["action"] == "no_order"

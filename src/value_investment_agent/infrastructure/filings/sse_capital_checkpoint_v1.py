@@ -111,11 +111,15 @@ def parse_sse_capital_checkpoint(pages, *, symbol, published_date):
         capital_page, issuer, unit, period, capital = statements[0]
         current = _shares(capital[1])
         _shares(capital[2])
-        return dict(parser_version=VERSION, kind="Q3_REPORT_EXACT_ISSUED_SHARES",
+        # The balance-sheet line is a CNY paid-in-capital amount.  It must not
+        # be promoted to an issued-share count unless a separate source proves
+        # the applicable par value and share-class bridge.
+        return dict(parser_version=VERSION, kind="Q3_REPORT_EXACT_SHARE_CAPITAL_CNY",
             symbol=symbol, period_start=date(year, 1, 1).isoformat(),
-            period_end=end.isoformat(), issued_shares=format(current, "f").split(".", 1)[0],
-            share_scope="TOTAL_ISSUED_SHARES", ordinary_shares=None,
-            exact_share_count=True, statement_scope="CONSOLIDATED_BALANCE_SHEET",
+            period_end=end.isoformat(), issued_shares=None,
+            share_capital_cny=format(current, "f"),
+            share_scope="PAID_IN_CAPITAL_AMOUNT_NOT_SHARE_COUNT", ordinary_shares=None,
+            exact_share_count=False, statement_scope="CONSOLIDATED_BALANCE_SHEET",
             source_currency="CNY", source_unit="CNY",
             exact_share_field="实收资本（或股本）",
             unchanged_report_period=False, treasury_shares=None, proposal_only=False,
