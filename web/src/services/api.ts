@@ -559,7 +559,9 @@ export type FirstResearchInputResponse = {
       RemainingYearLegacyReview | RemainingYearSuccessorReview;
   };
   direct_cash_alignment?: CandidatePriceAlignment & {
-    research_artifact_kind?: "DIRECT_OWNER_CASH_RECEIPT";
+    research_artifact_kind?:
+      | "DIRECT_OWNER_CASH_RECEIPT"
+      | "PARENT_OWNER_DISTRIBUTION_SUCCESSOR_RECEIPT";
     receipt_binding?: { path: string; sha256: string };
   };
   schema_version?: string;
