@@ -42,6 +42,10 @@ def read_first_research_input(*,root,symbol,now:datetime):
         receipt=_json(raw)
         if receipt.get("symbol")!=symbol or receipt.get("action")!="no_order":
             raise ValueError("First-input receipt issuer mismatch")
+        if receipt.get("schema_version") == "parent-remaining-year-successor-receipt-v1":
+            from .parent_remaining_year_successor_view import read_parent_remaining_year_successor_view
+            return read_parent_remaining_year_successor_view(
+                root=root, receipt_binding=ref, symbol=symbol, now=now)
         if receipt.get("schema_version") == "direct-owner-cash-first-input-receipt-v1":
             for binding in receipt.get("source_bindings",[]):
                 _binding(root,binding,runtime_only=False)
@@ -49,6 +53,9 @@ def read_first_research_input(*,root,symbol,now:datetime):
                 _binding(root,receipt[key])
             from .direct_owner_cash_view_v1 import read_direct_owner_cash_view
             return read_direct_owner_cash_view(root=root,receipt_binding=ref,now=now)
+        if receipt.get("schema_version") not in {
+                "first-research-input-receipt-v1", "first-research-input-receipt-v2"}:
+            raise ValueError("FIRST_INPUT_RECEIPT_SCHEMA_UNSUPPORTED")
         # Public reads do not expose arbitrary local paths or private inputs.
         for binding in receipt.get("source_bindings",[]):
             _binding(root,binding,runtime_only=False)
@@ -57,8 +64,10 @@ def read_first_research_input(*,root,symbol,now:datetime):
         if receipt.get("schema_version") == "first-research-input-receipt-v2":
             from ..research.first_research_input_v2 import replay_first_research_input_v2
             result=replay_first_research_input_v2(root=root,receipt_binding=ref,now=now)
-        else:
+        elif receipt.get("schema_version") == "first-research-input-receipt-v1":
             result=replay_first_research_input(root=root,receipt_binding=ref,now=now)
+        else:
+            raise ValueError("FIRST_INPUT_RECEIPT_SCHEMA_UNSUPPORTED")
         def bound_json(binding):
             target=_binding(root,binding,runtime_only=False)
             data=_raw(target,MAX_JSON)

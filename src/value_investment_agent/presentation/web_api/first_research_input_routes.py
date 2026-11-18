@@ -15,6 +15,28 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
         except ValueError as error:
             return JSONResponse(dict(action="no_order",status="INVALID_SYMBOL",reason=str(error)),
                 status_code=422,headers={"Cache-Control":"no-store"})
+        if result.get("receipt_schema_version") == "parent-remaining-year-successor-receipt-v1":
+            reason = "F2_DIRECT_ALIGNMENT_NOT_CONNECTED_FOR_REMAINING_YEAR_SUCCESSOR_RECEIPT"
+            result["direct_cash_alignment"] = dict(
+                schema_version="direct-owner-cash-alignment-v1", status="BLOCKED",
+                reason_codes=[reason], research_artifact_kind="PARENT_REMAINING_YEAR_SUCCESSOR_RECEIPT",
+                receipt_binding=result["receipt_binding"],
+                candidate_binding=result["receipt_binding"],
+                input_descriptor_sha256=result["input_descriptor_sha256"],
+                checks=[], evidence_bindings=[], currentpricecomparison=False,
+                formal_eligibility=False, action="no_order")
+            result["e2_quote_alignment"] = dict(
+                schema_version="first-input-quote-alignment-v1", status="UNASSESSABLE",
+                reason="E2_QUOTE_ALIGNMENT_NOT_APPLICABLE_TO_REMAINING_YEAR_SUCCESSOR",
+                quote_usable_for_e2_research=False, current_valuation_comparable=False,
+                condition_price=None, formal_eligibility=False, action="no_order")
+            result["successor_update"] = dict(
+                status="NOT_APPLICABLE", reason="DISPLAYED_RECEIPT_IS_REMAINING_YEAR_SUCCESSOR",
+                action="no_order", formal_eligibility=False, price_admitted=False)
+            result["quote_observation"] = dict(
+                status="NOT_REQUESTED_FOR_UNALIGNED_SUCCESSOR", reason=reason,
+                display_price=None, price_admitted=False, comparison_eligible=False)
+            return JSONResponse(result, headers={"Cache-Control": "no-store"})
         if result.get("status") == "SOURCE_BOUND_FIRST_INPUT_COMPILED":
             if result.get("direct_owner_cash") is not None:
                 from ...application.research.direct_owner_cash_alignment_v1 import read_direct_owner_cash_alignment
