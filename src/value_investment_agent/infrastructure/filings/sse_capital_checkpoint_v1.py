@@ -42,7 +42,7 @@ def _excerpt(raw, matched):
 
 
 def parse_sse_capital_checkpoint(pages, *, symbol, published_date):
-    """Parse one supported full H1 report or interim proposal page selection."""
+    """Parse one supported full H1/Q3 report or interim proposal selection."""
     if not isinstance(symbol, str) or not re.fullmatch(r"[0-9]{6}", symbol):
         raise ValueError("SSE_CHECKPOINT_SYMBOL_REQUIRED")
     if isinstance(published_date, date) and type(published_date) is date:
@@ -80,6 +80,54 @@ def parse_sse_capital_checkpoint(pages, *, symbol, published_date):
 
     def evidence(field, page, matched):
         return dict(field=field, physical_page=page, excerpt=_excerpt(raw[page], matched))
+
+    if "第三季度报告" in cover:
+        code = _one(cover, r"证券代码:" + symbol + r"证券简称:", "quarter code")
+        company_lines = [_compact(line) for line in raw[1].splitlines()
+                         if re.fullmatch(r"[\u4e00-\u9fff]+股份有限公司", _compact(line))]
+        if len(company_lines) != 1:
+            raise ValueError("SSE_CHECKPOINT_FIELD_MISSING_OR_AMBIGUOUS: quarter company")
+        company = company_lines[0]
+        title = _one(cover, r"(20\d{2})年第三季度报告", "quarter title")
+        year = int(title[1])
+        end = date(year, 9, 30)
+        if end > published:
+            raise ValueError("SSE_CHECKPOINT_REPORT_AFTER_PUBLICATION")
+        statements = []
+        for page, body in text.items():
+            if "合并资产负债表" not in body:
+                continue
+            issuer = _one(body, r"编制单位:" + re.escape(company),
+                          "quarter statement issuer")
+            unit = _one(body, r"单位:元币种:人民币(?:审计类型:未经审计)?",
+                        "quarter statement CNY unit")
+            period = _one(body, rf"项目{year}年9月30日{year - 1}年12月31日",
+                          "quarter statement period")
+            capital = _one(body, r"实收资本\(或股本\)" + MONEY + MONEY,
+                           "quarter exact share capital")
+            statements.append((page, issuer, unit, period, capital))
+        if len(statements) != 1:
+            raise ValueError("SSE_CHECKPOINT_Q3_CONSOLIDATED_STATEMENT_REQUIRED")
+        capital_page, issuer, unit, period, capital = statements[0]
+        current = _shares(capital[1])
+        _shares(capital[2])
+        return dict(parser_version=VERSION, kind="Q3_REPORT_EXACT_ISSUED_SHARES",
+            symbol=symbol, period_start=date(year, 1, 1).isoformat(),
+            period_end=end.isoformat(), issued_shares=format(current, "f").split(".", 1)[0],
+            share_scope="TOTAL_ISSUED_SHARES", ordinary_shares=None,
+            exact_share_count=True, statement_scope="CONSOLIDATED_BALANCE_SHEET",
+            source_currency="CNY", source_unit="CNY",
+            exact_share_field="实收资本（或股本）",
+            unchanged_report_period=False, treasury_shares=None, proposal_only=False,
+            ordinary_share_type_continuity_proven=False,
+            continuity_after_period_end=False,
+            term_pages=dict(identity=[1], capital=[capital_page]),
+            evidence_refs=[dict(field="identity", physical_page=1, excerpt=raw[1]),
+                evidence("statement_issuer", capital_page, issuer[0]),
+                evidence("currency_and_unit", capital_page, unit[0]),
+                evidence("period_end", capital_page, period[0]),
+                evidence("issued_shares", capital_page, capital[0])],
+            published_date=published.isoformat(), action="no_order")
 
     if "半年度报告" in cover:
         code = _one(cover, r"公司代码:" + symbol + r"公司简称:", "report code")

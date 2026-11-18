@@ -23,11 +23,20 @@ def sample(symbol="600888"):
         "1": f"证券代码：{symbol} 证券简称：测试 公告编号：临 2026-081\n{issuer}\n关于 2026 年中期利润分配预案的公告\n本次利润分配以实施权益分派股权登记日登记的总股本扣除回购专户股份数为基数。\n公司拟向全体股东每股派发现金红利 0.42 元（含税），截至 2026 年 10 月 22 日，公司总股本 6,325,360,667 股，扣除公司回购专户股份 1,800,200 股，以此计算合计拟派发现金红利总额为 2,655,895,396.14 元。",
         "2": f"{issuer}\n董 事 会\n二○二六年十月三十日",
     }
-    return h1, proposal
+    q3 = {
+        "1": f"证券代码：{symbol} 证券简称：测试\n{issuer}\n2026 年第三季度报告",
+        "6": (f"{issuer}2026 年第三季度报告\n合并资产负债表\n"
+              f"编制单位：{issuer}\n"
+              "单位：元 币种：人民币 审计类型：未经审计\n"
+              "项目 2026年9月30日 2025年12月31日\n"
+              "实收资本（或股本） 6,325,360,667.00 6,325,360,667.00\n"
+              "资本公积 12,218,240,548.46 12,262,344,222.29"),
+    }
+    return h1, proposal, q3
 
 
 def test_h1_total_structure_statement_has_no_share_quantity():
-    h1, _ = sample()
+    h1, _, _ = sample()
     result = parse(h1, symbol="600888", published_date="2026-08-15")
     assert result["kind"] == "H1_REPORT_UNCHANGED"
     assert (result["period_start"], result["period_end"]) == ("2026-01-01", "2026-06-30")
@@ -40,7 +49,7 @@ def test_h1_total_structure_statement_has_no_share_quantity():
 
 
 def test_h1_complete_layout_ignores_contents_and_blank_but_rejects_second_body():
-    h1, _ = sample()
+    h1, _, _ = sample()
     h1["2"] = "目录\n第六节 股份变动及股东情况 39"
     h1["3"] = ""
     assert parse(h1, symbol="600888", published_date="2026-08-15")["term_pages"]["unchanged"] == [42]
@@ -50,7 +59,7 @@ def test_h1_complete_layout_ignores_contents_and_blank_but_rejects_second_body()
 
 
 def test_h1_conflicting_body_statement_rejected():
-    h1, _ = sample()
+    h1, _, _ = sample()
     h1["42"] = h1["42"].replace("二、股东情况",
         "报告期内，公司股份总数及股本结构发生变化。\n二、股东情况")
     with pytest.raises(ValueError, match="SHARE_CHANGE_OR_CONFLICT"):
@@ -58,7 +67,7 @@ def test_h1_conflicting_body_statement_rejected():
 
 
 def test_proposal_total_issued_not_ordinary_or_implemented():
-    _, proposal = sample()
+    _, proposal, _ = sample()
     result = parse(proposal, symbol="600888", published_date="2026-10-30")
     assert result["period_end"] == "2026-10-22"
     assert result["issued_shares"] == "6325360667"
@@ -71,7 +80,7 @@ def test_proposal_total_issued_not_ordinary_or_implemented():
 
 
 def test_zero_treasury_is_valid_total_issued_basis():
-    _, proposal = sample()
+    _, proposal, _ = sample()
     proposal["1"] = proposal["1"].replace("1,800,200 股", "0 股").replace(
         "2,655,895,396.14 元", "2,656,651,480.14 元")
     result = parse(proposal, symbol="600888", published_date="2026-10-30")
@@ -86,7 +95,7 @@ def test_zero_treasury_is_valid_total_issued_basis():
     lambda p: p.__setitem__("1", p["1"].replace("半年度报告", "半年度报告摘要")),
 ])
 def test_h1_changed_conflicting_wrong_exchange_issuer_or_summary_rejected(change):
-    h1, _ = sample()
+    h1, _, _ = sample()
     change(h1)
     with pytest.raises(ValueError):
         parse(h1, symbol="600888", published_date="2026-08-15")
@@ -99,18 +108,54 @@ def test_h1_changed_conflicting_wrong_exchange_issuer_or_summary_rejected(change
     lambda p: p.__setitem__("1", p["1"] + "\n" + p["1"].split("公司拟向全体股东", 1)[1].join(["公司拟向全体股东", ""])),
 ])
 def test_proposal_wrong_unit_amount_issuer_or_repeated_terms_rejected(change):
-    _, proposal = sample()
+    _, proposal, _ = sample()
     change(proposal)
     with pytest.raises(ValueError):
         parse(proposal, symbol="600888", published_date="2026-10-30")
 
 
 def test_future_report_or_observation_rejected():
-    h1, proposal = sample()
+    h1, proposal, q3 = sample()
     with pytest.raises(ValueError):
         parse(h1, symbol="600888", published_date="2026-06-29")
     with pytest.raises(ValueError):
         parse(proposal, symbol="600888", published_date="2026-10-21")
+    with pytest.raises(ValueError):
+        parse(q3, symbol="600888", published_date="2026-09-29")
+
+
+def test_q3_exact_issued_share_checkpoint_does_not_infer_current_continuity():
+    _, _, q3 = sample()
+    result = parse(q3, symbol="600888", published_date="2026-10-30")
+    assert result["kind"] == "Q3_REPORT_EXACT_ISSUED_SHARES"
+    assert result["period_end"] == "2026-09-30"
+    assert result["issued_shares"] == "6325360667"
+    assert result["share_scope"] == "TOTAL_ISSUED_SHARES"
+    assert result["statement_scope"] == "CONSOLIDATED_BALANCE_SHEET"
+    assert (result["source_currency"], result["source_unit"]) == ("CNY", "CNY")
+    assert result["ordinary_shares"] is None
+    assert result["ordinary_share_type_continuity_proven"] is False
+    assert result["continuity_after_period_end"] is False
+    assert result["proposal_only"] is False and result["action"] == "no_order"
+    assert all(row["excerpt"] in q3[str(row["physical_page"])]
+               for row in result["evidence_refs"])
+
+
+@pytest.mark.parametrize("change", [
+    lambda p: p.__setitem__("1", p["1"].replace("600888", "600887")),
+    lambda p: p.__setitem__("1", p["1"].replace("第三季度报告", "第三季度报告摘要")),
+    lambda p: p.__setitem__("6", p["6"].replace("测试样本股份有限公司", "另一测试股份有限公司")),
+    lambda p: p.__setitem__("6", p["6"].replace("单位：元", "单位：千元")),
+    lambda p: p.__setitem__("6", p["6"].replace("币种：人民币", "币种：美元")),
+    lambda p: p.__setitem__("6", p["6"].replace("2026年9月30日", "2026年6月30日")),
+    lambda p: p.__setitem__("6", p["6"].replace("实收资本（或股本）", "股本附注")),
+    lambda p: p.__setitem__("6", p["6"] + "\n实收资本（或股本） 6,325,360,667.00 6,325,360,667.00"),
+])
+def test_q3_wrong_issuer_kind_unit_currency_period_field_or_duplicate_rejected(change):
+    _, _, q3 = sample()
+    change(q3)
+    with pytest.raises(ValueError):
+        parse(q3, symbol="600888", published_date="2026-10-30")
 
 
 def test_retained_exact_pages_only_when_explicitly_enabled():
