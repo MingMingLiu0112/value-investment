@@ -105,6 +105,10 @@ def build_candidate_event_impact(analysis, events):
                 missing = ["估值截止日前同计划累计付款及原模型是否已计入",
                            "报价日前回购增量与实际现金限制",
                            "注销生效文件和报价日精确普通股股数"]
+            elif kind == "REPORTED_SHARE_UNLOCK_NOTICE":
+                judgement = "SHARE_CLASS_TRANSFER_FOLLOWUP_REQUIRED"
+                rationale = "解禁通知列示限售转流通及总股数不变。实际股本结构须以登记结算资料确认。"
+                missing = ["实际流通结构及登记结算证据", "比较日普通股及期间资本行动完整核对"]
             elif kind == "REPORTED_Q3_OPERATING_BREAKDOWN":
                 judgement = "OPERATING_MIX_REVIEW_REQUIRED"
                 rationale = "来源披露本年产品、渠道和地区的主营收入结构。需核对与原预测口径及持续性，不能据此推断同比或量价。"

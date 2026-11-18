@@ -1131,6 +1131,15 @@ def test_unlock_notice_is_not_effective_share_reduction(reconciliation, monkeypa
         assert terms["effective_date"] is None
         assert terms["planned_implementation_date"] == "2020-01-06"
         assert terms["affected_model_fields"] == []
+        from value_investment_agent.application.research.candidate_event_impact import build_candidate_event_impact
+
+        analysis = case["analysis"]
+        analysis["joint_capital_review"]["economic_path"]["candidate_binding"] = row["candidate_binding"]
+        draft = build_candidate_event_impact(analysis, [row])
+        impact, = draft["items"]
+        assert impact["status"] == "SHARE_CLASS_TRANSFER_FOLLOWUP_REQUIRED"
+        assert impact["consumed_model_values"] == []
+        assert not draft["materiality_approved"] and not draft["model_validity_granted"]
     else:
         assert not row["facts"]
         assert row["unresolved"][0]["reason"] == "UNLOCK_ORIGINAL_NOT_VERIFIED_FOR_EVENT"
