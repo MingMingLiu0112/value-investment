@@ -1109,7 +1109,8 @@ def test_mixed_payment_ledger_does_not_claim_issuer_payment(reconciliation, monk
 
 
 @pytest.mark.parametrize("report_end,verified", [("2020-09-30", True), ("2021-09-30", False)])
-def test_quarter_event_keeps_candidate_review_separate(reconciliation, monkeypatch, report_end, verified):
+@pytest.mark.parametrize("title", ["2020年第三季度报告", "2020年三季度报告"])
+def test_quarter_event_keeps_candidate_review_separate(reconciliation, monkeypatch, report_end, verified, title):
     from value_investment_agent.infrastructure.filings import native_capital_observation_v1
 
     case = reconciliation
@@ -1119,7 +1120,7 @@ def test_quarter_event_keeps_candidate_review_separate(reconciliation, monkeypat
             period_start=report_end[:4] + "-01-01", period_end=report_end,
             fields=dict(revenue_cny={"value": "200"}, parent_profit_cny={"value": "20"}))))
     window = dict(acquired_at="2020-10-30T00:00:00+08:00", announcements=[dict(
-        announcement_id="123", title="TEST_ONLY 2020年第三季度报告",
+        announcement_id="123", title="TEST_ONLY " + title,
         published_at="2020-10-29T00:00:00+08:00", source_url=source["source_url"], evidence_refs=[source])])
     row, = service._operating_events(case["analysis"], [window], case["now"],
         lambda ref: _bound(case["root"], ref))

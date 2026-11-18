@@ -853,7 +853,7 @@ def _operating_events(analysis, windows, now, read, *, parser=None):
                     original = read(binding)
                     validate_pdf_original(original)
                     pages = extract_pages(original)
-                    quarter_title = re.search(r"(20[0-9]{2})年第三季度报告$", event["title"]) if allow_quarterly_report else None
+                    quarter_title = re.search(r"(20[0-9]{2})年(?:第)?三季度报告$", event["title"]) if allow_quarterly_report else None
                     if quarter_title:
                         from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
                         try:
