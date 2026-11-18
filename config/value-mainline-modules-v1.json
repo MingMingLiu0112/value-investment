@@ -2810,7 +2810,7 @@
           ],
           "path": "runtime/parent-owner-distribution-successor-600887-20261118-v3/compiled/receipt.json",
           "sha256": "dcf8dcf4dbf3965d31c5e787d22d103d4fb2e6bc6a8ca3f2fbc682e21eecf027",
-          "result": "当前E1后继已把已实施现金分配纳入三情景年度账并进入F2共享门禁；报价通过，已实施分配模型内含子状态通过。股本连续性、完整期间行动覆盖、材料性和财务更新仍分别阻断，条件价格为空",
+      "result": "当前E1后继已把已实施现金分配纳入三情景年度账并进入F2共享门禁；报价、已实施分配模型内含以及精确Q3财务更新冷重算闭包通过。股本连续性、完整期间行动覆盖和材料性仍分别阻断，条件价格为空",
           "evidence_kind": "REAL_SOURCE_SUCCESSOR_ALIGNMENT_PARTIAL_POSITIVE_PATH"
         },
         {
@@ -2868,7 +2868,7 @@
       "axes": {
         "engineering": {
           "status": "BOUNDED_NATIVE_CAPABILITY",
-          "scope": "旧候选、直接股东现金回执及两个版本化后继回执均进入同一F2共享门禁。600887新回执只按自身Hash取配置；合格报价及已实施分配模型内含已实际通过，股本连续性、完整期间行动覆盖、材料性和财务更新仍阻断。",
+      "scope": "旧候选、直接股东现金回执及两个版本化后继回执均进入同一F2共享门禁。600887新回执只按自身Hash取配置；合格报价、已实施分配模型内含和Q3财务更新冷重算闭包已实际通过，股本连续性、完整期间行动覆盖和材料性仍阻断。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/d2-f-audit.md"
           ]
@@ -2894,7 +2894,7 @@
           ]
         },
         "application": {
-          "description": "load_pending_candidate_alignment；核对同一研究候选的报价、股本、分配、事件和财务更新，再判断条件价格资格。 直接股东现金回执现可经精确来源和描述符绑定进入同一五项对齐核验，独立材料性复核输入不授予批准。真实119条公告归档、年度现金分红解析与合格报价已消费；新增原件股本检查点消费：半年度不变声明可连接已消费期初普通股，预案总股本与回购库存单列；旧解析矛盾不能回退放行。当前股本连续性、分红模型归属、财务更新和材料性决定仍分别阻断当前比较。",
+        "description": "load_pending_candidate_alignment；核对同一研究候选的报价、股本、分配、事件和财务更新，再判断条件价格资格。直接股东现金回执可经精确来源和描述符绑定进入同一五项对齐核验，独立材料性复核输入不授予批准。真实119条公告归档、年度现金分红解析与合格报价已消费；Q3原件必须沿前驱回执、来源Hash和输入描述符证明实际重算后，财务更新门禁才可独立通过，不能因原件仅在来源闭包中就放行。半年度不变声明可连接已消费期初普通股，预案总股本与回购库存单列；当前股本连续性、完整期间行动覆盖和材料性仍分别阻断当前比较。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
             "src/value_investment_agent/application/research/pending_candidate_alignment.py",
