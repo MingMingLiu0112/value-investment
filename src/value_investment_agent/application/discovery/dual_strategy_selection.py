@@ -36,9 +36,10 @@ def _invoke_selector(selector, *, root, now, limit, offset, query):
     return selector(root=root, now=now, limit=limit)
 
 
-def _lane(selector, *, root, now, limit, offset=0, query='', strategy='value'):
+def _lane(selector, *, root, now, limit, offset=0, query='', strategy='value', selector_owns_pagination=False):
     try:
-        value = _invoke_selector(selector, root=root, now=now, limit=30,
+        value = _invoke_selector(selector, root=root, now=now,
+                                 limit=limit if selector_owns_pagination else 30,
                                  offset=offset, query=query)
         if not isinstance(value, dict) or value.get('action') != 'no_order':
             raise ValueError('Invalid selection envelope')
@@ -204,17 +205,20 @@ def build_dual_strategy_selection(*, root: Path, now: datetime, limit: int = 30,
     if now.utcoffset() is None or type(limit) is not int or not 1 <= limit <= 50:
         raise ValueError('Aware evaluation time and bounded research limit required')
     production_value = value_selector is None
+    value_selector_owns_pagination = False
     if value_selector is None:
         from .sse_main_screening import POINTER as SSE_MAIN_POINTER
         if (Path(root) / SSE_MAIN_POINTER).is_file():
             value_selector = select_source_bound_sse_main_value_candidates
+            value_selector_owns_pagination = True
         else:
             from .value_candidate_selection import select_current_value_candidates
             value_selector = select_current_value_candidates
     if hotspot_selector is None:
         from ..hotspot.candidate_selection import select_current_hotspot_candidates
         hotspot_selector = select_current_hotspot_candidates
-    value = _lane(value_selector, root=Path(root), now=now, limit=limit, offset=value_offset, query=q_value)
+    value = _lane(value_selector, root=Path(root), now=now, limit=limit, offset=value_offset,
+                  query=q_value, selector_owns_pagination=value_selector_owns_pagination)
     hotspot = _lane(hotspot_selector, root=Path(root), now=now, limit=limit, offset=hotspot_offset, query=q_hotspot, strategy='hotspot')
     if production_value and value['items']:
         _research_summaries(value, root=Path(root), now=now)
