@@ -28,13 +28,16 @@ def _retained():
                 sha256=sha256(RETAINED.read_bytes()).hexdigest())
 
 
-def test_retained_successor_cold_replay_has_real_missing_config():
+def test_retained_successor_cold_replay_enters_exact_registered_checks():
     if not RETAINED.is_file():
         pytest.skip("retained official successor absent")
     row = alignment.read_parent_remaining_year_alignment(
         root=ROOT, receipt_binding=_retained(), now=NOW)
     assert row["status"] == "BLOCKED"
-    assert row["reason_codes"] == ["EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING"]
+    assert "EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING" not in row["reason_codes"]
+    assert row["quote"].get("bundle_binding") is not None
+    assert "SOURCE_BOUND_RECONCILIATION_MISSING" in row["reason_codes"]
+    assert "EXACT_CANDIDATE_MATERIALITY_REVIEW_NOT_BOUND" in row["reason_codes"]
     assert row["action"] == "no_order" and row["formal_eligibility"] is False
     assert row["currentpricecomparison"] is False
 
