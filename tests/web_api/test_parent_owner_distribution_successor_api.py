@@ -8,6 +8,7 @@ import json
 from value_investment_agent.application.product import first_research_input_view_v1 as view
 from value_investment_agent.application.product import parent_owner_distribution_successor_view_v2 as successor_view
 from value_investment_agent.application.research import parent_owner_distribution_alignment_v2 as alignment
+from value_investment_agent.application.research import owner_distribution_read_scope as read_scope
 from web_api.test_held_continuity_api import client_for
 
 
@@ -70,16 +71,20 @@ def case(root):
 def test_v2_successor_api_exposes_distributions_and_calls_f2(tmp_path, monkeypatch):
     receipt, result = case(tmp_path)
     calls = []
-    monkeypatch.setattr(successor_view, "replay_parent_owner_distribution_successor",
+    monkeypatch.setattr(read_scope, "_cold_replay",
         lambda **kwargs: (calls.append(kwargs), deepcopy(result))[1])
     monkeypatch.setattr(view, "replay_first_research_input", lambda **_:
         (_ for _ in ()).throw(AssertionError("legacy replay must not see v2 successor")))
-    monkeypatch.setattr(alignment, "read_parent_owner_distribution_alignment",
-        lambda **kwargs: dict(schema_version="parent-owner-distribution-alignment-v2",
+    def read_alignment(**kwargs):
+        replayed = alignment.replay_parent_owner_distribution_successor(**kwargs)
+        assert replayed == result
+        return dict(schema_version="parent-owner-distribution-alignment-v2",
             status="BLOCKED", reason_codes=["CURRENT_SHARE_COUNT_NOT_RECONCILED"],
             implemented_distribution_model_inclusion=dict(status="PASS"),
             receipt_binding=kwargs["receipt_binding"], currentpricecomparison=False,
-            formal_eligibility=False, action="no_order"))
+            formal_eligibility=False, action="no_order")
+
+    monkeypatch.setattr(alignment, "read_parent_owner_distribution_alignment", read_alignment)
     client, _ = client_for(tmp_path, tmp_path / "TEST_ONLY-private.jsonl", monkeypatch)
     before = files(tmp_path)
     response = client.get("/api/v1/first-research-inputs/600887")
@@ -103,6 +108,8 @@ def test_v2_successor_api_exposes_distributions_and_calls_f2(tmp_path, monkeypat
     assert body["main_range_adopted"] is False
     assert body["formal_eligibility"] is False and body["action"] == "no_order"
     assert len(calls) == 1 and calls[0]["receipt_binding"] == receipt
+    assert client.get("/api/v1/first-research-inputs/600887").json() == body
+    assert len(calls) == 2
     assert files(tmp_path) == before
 
 

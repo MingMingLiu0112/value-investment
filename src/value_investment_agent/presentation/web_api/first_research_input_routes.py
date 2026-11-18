@@ -5,13 +5,16 @@ from fastapi.responses import JSONResponse
 from ...application.product.first_research_input_view_v1 import read_first_research_input
 from ...application.product.first_research_update_view_v1 import read_first_research_update
 from ...application.product.quote_bridge import execute_quote_bridge_for_symbol
+from ...application.research.owner_distribution_read_scope import owner_distribution_read_scope
 
 
 def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:datetime.now(timezone.utc)):
     @api.get("/api/v1/first-research-inputs/{symbol}")
+    @owner_distribution_read_scope()
     def first_research_input(symbol:str):
+        now = clock()
         try:
-            result=read_first_research_input(root=project,symbol=symbol,now=clock())
+            result=read_first_research_input(root=project,symbol=symbol,now=now)
         except ValueError as error:
             return JSONResponse(dict(action="no_order",status="INVALID_SYMBOL",reason=str(error)),
                 status_code=422,headers={"Cache-Control":"no-store"})
@@ -38,7 +41,7 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                 from ...application.research.parent_owner_distribution_alignment_v2 import read_parent_owner_distribution_alignment
                 try:
                     result["direct_cash_alignment"] = read_parent_owner_distribution_alignment(
-                        root=project, receipt_binding=result["receipt_binding"], now=clock())
+                        root=project, receipt_binding=result["receipt_binding"], now=now)
                 except (ValueError, OSError, KeyError, TypeError, AttributeError, ArithmeticError) as error:
                     result["direct_cash_alignment"] = dict(
                         schema_version="parent-owner-distribution-alignment-v2", status="BLOCKED",

@@ -15,10 +15,10 @@ from typing import Any, Mapping
 
 from .direct_owner_cash_alignment_v1 import _capital_anchor, _official_catalog
 from .direct_owner_cash_research_v1 import _read
-from .parent_owner_distribution_successor_v2 import (
-    RECEIPT_SCHEMA,
+from .owner_distribution_read_scope import (
     replay_parent_owner_distribution_successor,
 )
+from .parent_owner_distribution_successor_v2 import RECEIPT_SCHEMA
 from .parent_remaining_year_successor import replay_parent_remaining_year_successor
 from .parent_direct_cash_research import _bound
 from .pending_candidate_alignment import _load_bound_alignment

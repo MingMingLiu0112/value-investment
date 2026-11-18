@@ -5,7 +5,7 @@ valuation range, qualifying a price, or granting any formal action.
 """
 
 from ..research.direct_owner_cash_research_v1 import _read
-from ..research.parent_owner_distribution_successor_v2 import (
+from ..research.owner_distribution_read_scope import (
     replay_parent_owner_distribution_successor,
 )
 
