@@ -622,9 +622,12 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         reviewed.add(identity)
         if item["disposition"] == "UNRESOLVED":
             gaps.append("PUBLIC_ACTION_REVIEW_UNRESOLVED: " + identity)
-        if item["disposition"] in {"SHARE_ACTION", "CASH_DISTRIBUTION"} and not any(
-                e["binding"]["sha256"] in announced_hashes for row in [*actions, *cash] for e in row["evidence"]):
-            gaps.append("REVIEWED_ACTION_MISSING_LEDGER_ROW: " + identity)
+        disposition = item["disposition"]
+        if disposition in {"SHARE_ACTION", "CASH_DISTRIBUTION"}:
+            matching_rows = actions if disposition == "SHARE_ACTION" else cash
+            if not any(e["binding"]["sha256"] in announced_hashes
+                       for row in matching_rows for e in row["evidence"]):
+                gaps.append("REVIEWED_ACTION_MISSING_LEDGER_ROW: " + identity)
     if reviewed != set(announced):
         gaps.append("PUBLIC_ACTION_REVIEW_DOES_NOT_COVER_ALL_ANNOUNCEMENTS")
     if not windows or not any(_day(w["scan_from"]) <= start and _day(w["scan_to"]) >= end for w in windows):

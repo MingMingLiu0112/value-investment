@@ -1,6 +1,6 @@
 """TEST_ONLY arithmetic negatives; native quote/coverage/signature replay positives."""
 from copy import deepcopy
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import json
 
@@ -495,11 +495,13 @@ def real_candidate():
         pytest.skip("VALUE_ALIGNMENT_REAL_ROOT unset: real originals not installed; skip is not real acceptance")
     assert configured.strip(), "VALUE_ALIGNMENT_REAL_ROOT must name the installed real evidence root"
     root = Path(configured).resolve(strict=True)
-    ledger = root / "config/pending-candidate-alignments-v1/600519-basis-reconciliation-20261029.json"
-    original = json.loads(ledger.read_bytes())  # Explicit opt-in: missing evidence must fail.
     now = datetime.now(timezone.utc)
     analysis = load_current_value_research_analysis(root=root, symbol="600519", now=now)
     assert analysis["status"] == "CONDITIONAL_ANALYSIS_VERIFIED", analysis
+    candidate = analysis["review_binding"]["candidate_binding"]
+    config = json.loads((root / service.CONFIG_DIRECTORY / f"{candidate['sha256']}.json").read_bytes())
+    assert config["candidate_binding"] == candidate
+    original = json.loads(_bound(root, config["reconciliation_binding"]).read_bytes())
     alignment = analysis["current_alignment"]
     quote = alignment["quote"]
     # Real retained sources outlive a trading session. The same archived quote
@@ -696,24 +698,25 @@ def test_real_native_report_cutoffs_and_exact_closing_date(real_candidate):
 
 def test_real_new_complete_window_does_not_grant_semantics_or_materiality(real_candidate):
     root, analysis, ledger, now = real_candidate
-    path = root / "runtime/value-alignment-event-observation/20261030T034906348838Z/observation.json"
-    assert path.is_file(), "Explicit real run requires Root supplied complete window"
-    ref = dict(path=path.relative_to(root).as_posix(), sha256=sha256_file(path))
-    windows, scans = service._event_windows(root, analysis, [ref], now, lambda r: _bound(root, r))
-    assert len(scans[0].announcements) == 7
-    assert windows[0]["full_calendar_window_elapsed"]
-    assert not windows[0]["materiality_approved"]
     config = json.loads((root / service.CONFIG_DIRECTORY /
         (analysis["review_binding"]["candidate_binding"]["sha256"] + ".json")).read_bytes())
+    refs = config["event_observation_bindings"]
+    assert len(refs) == 1
+    ref = refs[0]
+    observation = json.loads(_bound(root, ref).read_bytes())
+    windows, scans = service._event_windows(root, analysis, refs, now, lambda r: _bound(root, r))
+    assert len(scans[0].announcements) == observation["announcement_count"] > 0
+    assert windows[0]["full_calendar_window_elapsed"]
+    assert not windows[0]["materiality_approved"]
     sources, _ = service._event_windows(root, analysis, config["source_observation_bindings"], now,
         lambda r: _bound(root, r))
-    result = service._reconcile(root, analysis, config["reconciliation_binding"], date(2026,10,29),
+    result = service._reconcile(root, analysis, config["reconciliation_binding"], date.fromisoformat(ledger["comparison_date"]),
         windows, now, lambda r: _bound(root, r), sources)
     assert result["native_source_consumption"]["status"] == "NATIVE_FIELDS_VERIFIED_CHAIN_INCOMPLETE"
     assert not result["native_basis_semantics_verified"]
-    # Acquisition on Oct 30 must never become an Oct 29 historical proof.
+    # The later acquisition cannot be used immediately before the archived retrieval.
     with pytest.raises(ValueError):
-        service._event_windows(root, analysis, [ref], datetime(2026,10,29,15,tzinfo=timezone.utc),
+        service._event_windows(root, analysis, [ref], datetime.fromisoformat(observation["acquired_at"]) - timedelta(seconds=1),
             lambda r: _bound(root, r))
     quote, _ = service._qualified_quote(root, analysis, config["quote_bundle_binding"], now, lambda r: _bound(root, r))
     checks, _, _, ready = service._assess(analysis, ValuationResultCodec().from_payload(analysis["valuation"]),
@@ -721,7 +724,8 @@ def test_real_new_complete_window_does_not_grant_semantics_or_materiality(real_c
                     native_status="TEST"), windows, scans, result)
     assert not ready and checks[3]["status"] == "BLOCKED"
     rows = checks[3]["details"]["matched_input_sources"] + checks[3]["details"]["unresolved_sources"]
-    assert len(rows) == 7 and all(r["source_url"].startswith("https://static.cninfo.com.cn/") for r in rows)
+    assert len(rows) == observation["announcement_count"]
+    assert all(r["source_url"].startswith("https://static.cninfo.com.cn/") for r in rows)
 
 
 @pytest.mark.parametrize("old,new", [
@@ -824,6 +828,21 @@ def test_same_day_exempts_only_empty_interval_gaps(reconciliation, issue, reason
         assert result["reason_codes"] == []
         assert result["status"] == "RECONCILED"
         assert result["closing_shares"] == "100"
+
+
+@pytest.mark.parametrize("disposition,missing", [("SHARE_ACTION", True), ("CASH_DISTRIBUTION", False)])
+def test_review_disposition_requires_ledger_row_of_same_kind(reconciliation, disposition, missing):
+    case = reconciliation
+    anchor = case["anchor"]
+    case["windows"][0].update(acquired_at=anchor["available_at"], announcements=[dict(
+        announcement_id="123", evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
+    case["ledger"].update(distributions=[cash(case)], reviewed_documents=[dict(
+        announcement_id="123", disposition=disposition, rationale="TEST_ONLY", evidence=[anchor])])
+
+    result = reconcile(case)
+
+    assert ("REVIEWED_ACTION_MISSING_LEDGER_ROW: 123" in result["reason_codes"]) is missing
+    assert result["current_price_basis_compatible"] is False
 
 
 def test_operating_event_terms_are_research_not_materiality(reconciliation, monkeypatch):
