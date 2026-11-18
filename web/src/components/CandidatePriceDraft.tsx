@@ -1146,8 +1146,12 @@ function BasisFollowup({ value }: { value: unknown }) {
           object(row) &&
           row.scope === "MATCHING_DISCLOSED_PLAN_WINDOW_RESEARCH_ONLY" &&
           row.action === "no_order" &&
-          numberText(row.purchase_share_delta) &&
-          numberText(row.disclosed_cash_delta_cny),
+          typeof row.purchase_share_delta === "number" &&
+          Number.isSafeInteger(row.purchase_share_delta) &&
+          row.purchase_share_delta >= 0 &&
+          (row.disclosed_cash_delta_cny === "0" ||
+            row.disclosed_cash_delta_cny === "0.00" ||
+            numberText(row.disclosed_cash_delta_cny)),
       )
     : [];
   return (
@@ -1215,8 +1219,8 @@ function BasisFollowup({ value }: { value: unknown }) {
             <div key={`${text(row.after_date)}-${text(row.through)}-${i}`}>
               <p>
                 {text(row.after_date)} 至 {text(row.through)}：累计购回增加
-                {numberText(row.purchase_share_delta)} 股，披露支付增加
-                {numberText(row.disclosed_cash_delta_cny)} 元。
+                {String(row.purchase_share_delta)} 股，披露支付增加
+                {text(row.disclosed_cash_delta_cny)} 元。
               </p>
               <AlignmentEvidence
                 value={[row.before_binding, row.after_binding]}

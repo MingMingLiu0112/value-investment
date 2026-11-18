@@ -872,6 +872,16 @@ it("shows every capital checkpoint with separate ordinary, issued, treasury, and
       schema_version: "candidate-basis-followup-v1",
       action: "no_order",
       current_comparison_granted: false,
+      buyback_checkpoint_deltas: [
+        {
+          after_date: "2026-10-22",
+          through: "2026-10-31",
+          purchase_share_delta: 1680400,
+          disclosed_cash_delta_cny: "49999397.00",
+          scope: "MATCHING_DISCLOSED_PLAN_WINDOW_RESEARCH_ONLY",
+          action: "no_order",
+        },
+      ],
       capital_checkpoints: [
         {
           ordinary_shares: "6325360667",
@@ -904,6 +914,9 @@ it("shows every capital checkpoint with separate ordinary, issued, treasury, and
   expect(html).toContain("普通股股数：未核实");
   expect(html).toContain("预案所述总股本：6325360667 股");
   expect(html).toContain("回购专户库存股：1800200 股");
+  expect(html).toContain("披露回购累计差额");
+  expect(html).toContain("1680400 股");
+  expect(html).toContain("49999397.00 元");
   expect(html).toContain("预案不是实施或注销证明");
   expect(html).not.toContain("已核验普通股股数：未提供");
   expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
