@@ -423,6 +423,45 @@ it("explains partial source-bound share and distribution arithmetic without clai
   expect(html).toContain("100.00");
   expect(html).toContain("1354");
 });
+it("shows exact share evidence and rollforward conflict without enabling price comparison", () => {
+  const review = alignmentFixture();
+  const capital = review.conditional_price!.alignment!.checks!.find(
+    (check) => check.id === "capital_structure",
+  )!;
+  capital.details = {
+    reconciliation: {
+      ...reconciliationExample,
+      native_source_consumption: {
+        closing_capital: {
+          status: "EXACT_REPORT_DATE_SHARES_VERIFIED",
+          as_of: "2026-11-17",
+          anchors: [
+            {
+              evidence_binding: {
+                path: "TEST_ONLY/closing.pdf",
+                sha256: "a".repeat(64),
+              },
+            },
+          ],
+          rollforward_comparison: {
+            status: "CONFLICT",
+            observed_ordinary_shares: "1250081602",
+            calculated_ordinary_shares: "1250081601",
+          },
+        },
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  for (const term of [
+    "2026-11-17",
+    "与台账滚动值冲突",
+    "1250081602",
+    "1250081601",
+    "TEST_ONLY/closing.pdf",
+  ])
+    expect(html).toContain(term);
+});
 const actualReceipt = resolve(
   "..",
   ".tmp/value-alignment-acceptance/600519-api.json",

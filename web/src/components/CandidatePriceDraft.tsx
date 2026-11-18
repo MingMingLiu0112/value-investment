@@ -620,6 +620,40 @@ const nativeAmount = (value: unknown, unit: string) =>
     ? `${value} ${unit}`
     : "未提供";
 
+function ClosingCapital({ value }: { value: unknown }) {
+  if (!object(value)) return null;
+  const comparison = object(value.rollforward_comparison)
+    ? value.rollforward_comparison
+    : null;
+  const labels: Record<string, string> = {
+    EXACT_CLOSING_REPORT_ANCHOR_MISSING: "缺少比较日精确普通股原件",
+    EXACT_CLOSING_REPORT_ANCHORS_CONFLICT: "多份比较日股本原件不一致",
+    EXACT_REPORT_DATE_SHARES_VERIFIED: "已取得比较日精确普通股原件",
+  };
+  const anchors = Array.isArray(value.anchors)
+    ? value.anchors.filter(object)
+    : [];
+  return (
+    <section aria-label="比较日股本原件对账">
+      <p>
+        比较日 {text(value.as_of)}：{labels[text(value.status)] || "待核验"}。
+      </p>
+      {comparison && (
+        <p>
+          {comparison.status === "MATCH"
+            ? "与台账滚动值一致"
+            : "与台账滚动值冲突"}
+          ：原件 {text(comparison.observed_ordinary_shares)} 股，台账{" "}
+          {text(comparison.calculated_ordinary_shares)} 股。
+        </p>
+      )}
+      {anchors.length > 0 && (
+        <AlignmentEvidence value={anchors.map((row) => row.evidence_binding)} />
+      )}
+    </section>
+  );
+}
+
 function NativeSourceConsumption({
   id,
   value,
@@ -662,6 +696,9 @@ function NativeSourceConsumption({
       <p>
         以下仅为已列中报披露范围内的事实，非截至当前完整证明；不证明其他待生效方案、后续行动或修订已全部覆盖，不代表重大性批准或当前比较获准。
       </p>
+      {id === "capital_structure" && (
+        <ClosingCapital value={value.closing_capital} />
+      )}
       {reports.length ? (
         <ul>
           {reports.map((report, index) => {
