@@ -1,0 +1,23 @@
+{
+  "schema_version": "parent-owner-distribution-alignment-input-v2",
+  "candidate_binding": {
+    "path": "runtime/parent-owner-distribution-successor-600887-20261118-v3/compiled/receipt.json",
+    "sha256": "dcf8dcf4dbf3965d31c5e787d22d103d4fb2e6bc6a8ca3f2fbc682e21eecf027"
+  },
+  "input_descriptor_sha256": "731d509c2b1f5773991a2f882ff20e3808cbf53e798ef34d3590c4e61f51ddc2",
+  "quote_bundle_binding": {
+    "path": "runtime/quote-sessions/20261117T085927371800Z/bundle.json",
+    "sha256": "5b83288d1d765979e1664f587d5c7f55829106faeded6b92181843041043ada1"
+  },
+  "event_observation_bindings": [
+    {
+      "path": "runtime/direct-cash-600887-recovery-20261117T172437931869Z-073bd450-full-window/observation.json",
+      "sha256": "004452ae892533f199daba1611921f9298bee471b796f853b563d0312ffd9357"
+    }
+  ],
+  "source_observation_bindings": [],
+  "reconciliation_binding": {
+    "path": "runtime/parent-owner-distribution-successor-f2-600887-20261118/basis-ledger.json",
+    "sha256": "09b6782735df4907bb1a79e5b9c595f85aae810be751e3ab4b6aceb921b46641"
+  }
+}

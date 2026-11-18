@@ -1,0 +1,61 @@
+{
+  "schema_version": "sse-current-capital-snapshot-v1",
+  "status": "OFFICIAL_ROUNDED_SNAPSHOT_ACQUIRED",
+  "symbol": "600887",
+  "source_url": "https://query.sse.com.cn/commonQuery.do?isPagination=false&sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GPGK_GBJG_C&COMPANY_CODE=600887",
+  "sql_id": "COMMON_SSE_CP_GPJCTPZ_GPLB_GPGK_GBJG_C",
+  "acquired_at": "2026-11-18T02:23:27.388608+00:00",
+  "raw_filename": "response.json",
+  "raw_sha256": "8f2cfbcdc8e23f7a30658d62f62e078a3e2472d9cbb3c8bfdccf00842e8fa483",
+  "observation": {
+    "schema_version": "sse-current-capital-snapshot-v1",
+    "classification": "DERIVED_FACT_FROM_OFFICIAL_ROUNDED_SNAPSHOT",
+    "symbol": "600887",
+    "trade_date": "2026-11-17",
+    "display_unit": "TEN_THOUSAND_SHARES",
+    "display_decimals": 2,
+    "displayed_total_domestic_10k_shares": "632536.07",
+    "lower_bound_shares": 6325360650,
+    "upper_bound_shares": 6325360749,
+    "precision_shares": 100,
+    "exact_share_count": false,
+    "displayed_components_10k_shares": {
+      "A_LIMIT_VOL": "3143.09",
+      "TOTAL_UNLIMIT_VOL": "629392.97",
+      "A_UNLIMIT_VOL": "629392.97",
+      "B_VOL": "0.00",
+      "CDR_VOL": "0.00",
+      "SPECIAL_VOL": "0.00"
+    },
+    "component_bounds_shares": {
+      "A_LIMIT_VOL": {
+        "lower": 31430850,
+        "upper": 31430949
+      },
+      "TOTAL_UNLIMIT_VOL": {
+        "lower": 6293929650,
+        "upper": 6293929749
+      },
+      "A_UNLIMIT_VOL": {
+        "lower": 6293929650,
+        "upper": 6293929749
+      },
+      "B_VOL": {
+        "lower": 0,
+        "upper": 49
+      },
+      "CDR_VOL": {
+        "lower": 0,
+        "upper": 49
+      },
+      "SPECIAL_VOL": {
+        "lower": 0,
+        "upper": 49
+      }
+    },
+    "formal_eligibility": false,
+    "action": "no_order"
+  },
+  "formal_eligibility": false,
+  "action": "no_order"
+}

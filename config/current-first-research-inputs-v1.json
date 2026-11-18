@@ -10,8 +10,8 @@
     },
     "600887": {
       "receipt": {
-        "path": "runtime/remaining-q4-successor-20261118/20261118T000059574371Z/compiled/receipt.json",
-        "sha256": "b39c98491c0bbc0feba0bc3394e42ac1d6593682ad063b3d320f576f7681ed2d"
+        "path": "runtime/parent-owner-distribution-successor-600887-20261118-v3/compiled/receipt.json",
+        "sha256": "dcf8dcf4dbf3965d31c5e787d22d103d4fb2e6bc6a8ca3f2fbc682e21eecf027"
       }
     },
     "600519": {

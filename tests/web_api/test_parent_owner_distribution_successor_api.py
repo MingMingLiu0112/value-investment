@@ -7,6 +7,7 @@ import json
 
 from value_investment_agent.application.product import first_research_input_view_v1 as view
 from value_investment_agent.application.product import parent_owner_distribution_successor_view_v2 as successor_view
+from value_investment_agent.application.research import parent_owner_distribution_alignment_v2 as alignment
 from web_api.test_held_continuity_api import client_for
 
 
@@ -66,13 +67,19 @@ def case(root):
     return receipt, result
 
 
-def test_v2_successor_api_exposes_distributions_and_blocks_f2(tmp_path, monkeypatch):
+def test_v2_successor_api_exposes_distributions_and_calls_f2(tmp_path, monkeypatch):
     receipt, result = case(tmp_path)
     calls = []
     monkeypatch.setattr(successor_view, "replay_parent_owner_distribution_successor",
         lambda **kwargs: (calls.append(kwargs), deepcopy(result))[1])
     monkeypatch.setattr(view, "replay_first_research_input", lambda **_:
         (_ for _ in ()).throw(AssertionError("legacy replay must not see v2 successor")))
+    monkeypatch.setattr(alignment, "read_parent_owner_distribution_alignment",
+        lambda **kwargs: dict(schema_version="parent-owner-distribution-alignment-v2",
+            status="BLOCKED", reason_codes=["CURRENT_SHARE_COUNT_NOT_RECONCILED"],
+            implemented_distribution_model_inclusion=dict(status="PASS"),
+            receipt_binding=kwargs["receipt_binding"], currentpricecomparison=False,
+            formal_eligibility=False, action="no_order"))
     client, _ = client_for(tmp_path, tmp_path / "TEST_ONLY-private.jsonl", monkeypatch)
     before = files(tmp_path)
     response = client.get("/api/v1/first-research-inputs/600887")
@@ -86,10 +93,10 @@ def test_v2_successor_api_exposes_distributions_and_blocks_f2(tmp_path, monkeypa
                    "total_owner_distribution_cny": "100"}
     assert body["implemented_distribution"] == result["distribution"]
     assert body["distribution_evidence"] == result["distribution_evidence"]
-    assert body["direct_cash_alignment"]["reason_codes"] == [
-        "F2_ALIGNMENT_NOT_IMPLEMENTED_FOR_OWNER_DISTRIBUTION_V2"]
+    assert body["direct_cash_alignment"]["implemented_distribution_model_inclusion"]["status"] == "PASS"
+    assert body["direct_cash_alignment"]["reason_codes"] == ["CURRENT_SHARE_COUNT_NOT_RECONCILED"]
     assert body["e2_quote_alignment"]["reason"] == (
-        "F2_ALIGNMENT_NOT_IMPLEMENTED_FOR_OWNER_DISTRIBUTION_V2")
+        "F2_USES_OWNER_DISTRIBUTION_DIRECT_CASH_ALIGNMENT")
     assert body["successor_update"]["reason"] == (
         "DISPLAYED_RECEIPT_IS_OWNER_DISTRIBUTION_SUCCESSOR_V2")
     assert body["condition_price"] is None and body["current_price"] is None

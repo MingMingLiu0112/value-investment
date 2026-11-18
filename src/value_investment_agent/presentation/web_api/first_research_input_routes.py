@@ -35,20 +35,25 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                         checks=[], evidence_bindings=[], currentpricecomparison=False,
                         formal_eligibility=False, action="no_order")
             else:
-                result["direct_cash_alignment"] = dict(
-                    schema_version="parent-owner-distribution-alignment-v2", status="BLOCKED",
-                    reason_codes=["F2_ALIGNMENT_NOT_IMPLEMENTED_FOR_OWNER_DISTRIBUTION_V2"],
-                    research_artifact_kind="PARENT_OWNER_DISTRIBUTION_SUCCESSOR_RECEIPT",
-                    receipt_binding=result["receipt_binding"],
-                    candidate_binding=result["receipt_binding"],
-                    input_descriptor_sha256=result.get("input_descriptor_sha256"),
-                    checks=[], evidence_bindings=[], currentpricecomparison=False,
-                    formal_eligibility=False, action="no_order")
+                from ...application.research.parent_owner_distribution_alignment_v2 import read_parent_owner_distribution_alignment
+                try:
+                    result["direct_cash_alignment"] = read_parent_owner_distribution_alignment(
+                        root=project, receipt_binding=result["receipt_binding"], now=clock())
+                except (ValueError, OSError, KeyError, TypeError, AttributeError, ArithmeticError) as error:
+                    result["direct_cash_alignment"] = dict(
+                        schema_version="parent-owner-distribution-alignment-v2", status="BLOCKED",
+                        reason_codes=["OWNER_DISTRIBUTION_ALIGNMENT_SOURCE_REPLAY_FAILED: " + str(error)],
+                        research_artifact_kind="PARENT_OWNER_DISTRIBUTION_SUCCESSOR_RECEIPT",
+                        receipt_binding=result["receipt_binding"],
+                        candidate_binding=result["receipt_binding"],
+                        input_descriptor_sha256=result.get("input_descriptor_sha256"),
+                        checks=[], evidence_bindings=[], currentpricecomparison=False,
+                        formal_eligibility=False, action="no_order")
             result["e2_quote_alignment"] = dict(
                 schema_version="first-input-quote-alignment-v1", status="UNASSESSABLE",
                 reason=("E2_QUOTE_ALIGNMENT_NOT_APPLICABLE_TO_REMAINING_YEAR_SUCCESSOR"
                     if successor_schema == "parent-remaining-year-successor-receipt-v1"
-                    else "F2_ALIGNMENT_NOT_IMPLEMENTED_FOR_OWNER_DISTRIBUTION_V2"),
+                    else "F2_USES_OWNER_DISTRIBUTION_DIRECT_CASH_ALIGNMENT"),
                 quote_usable_for_e2_research=False, current_valuation_comparable=False,
                 condition_price=None, formal_eligibility=False, action="no_order")
             result["successor_update"] = dict(
