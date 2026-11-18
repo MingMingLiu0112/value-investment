@@ -936,10 +936,16 @@ export function FirstResearchInputView({
         <CandidateAlignmentPanel
           alignment={data.direct_cash_alignment}
           matches={
-            data.direct_cash_alignment?.schema_version ===
+            ((data.direct_cash_alignment?.schema_version ===
               "direct-owner-cash-alignment-v1" &&
-            data.direct_cash_alignment.research_artifact_kind ===
-              "DIRECT_OWNER_CASH_RECEIPT" &&
+              data.direct_cash_alignment.research_artifact_kind ===
+                "DIRECT_OWNER_CASH_RECEIPT") ||
+              (data.receipt_schema_version ===
+                "parent-owner-distribution-successor-receipt-v2" &&
+                data.direct_cash_alignment?.schema_version ===
+                  "parent-owner-distribution-alignment-v2" &&
+                data.direct_cash_alignment.research_artifact_kind ===
+                  "PARENT_OWNER_DISTRIBUTION_SUCCESSOR_RECEIPT")) &&
             data.direct_cash_alignment.action === "no_order" &&
             data.direct_cash_alignment.formal_eligibility === false &&
             !!data.receipt_binding &&
