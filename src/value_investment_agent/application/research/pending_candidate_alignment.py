@@ -817,7 +817,7 @@ def _explicit_quarterly_financial_update(pages, symbol, binding):
                 period_basis="YEAR_TO_DATE_9M_NOT_SINGLE_QUARTER", fields=fields)
 
 
-def _operating_events(analysis, windows, now, read, *, parser=None):
+def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=None):
     """Read official originals into research facts, never grant materiality."""
     from ...infrastructure.filings.pdf_text import extract_pages
     from ...infrastructure.filings.official_pdf import validate_pdf_original
@@ -854,8 +854,16 @@ def _operating_events(analysis, windows, now, read, *, parser=None):
                             or published != datetime.fromisoformat(event["published_at"]).date()):
                         raise ValueError("OPERATING_EVENT_PUBLICATION_MISMATCH")
                     original = read(binding)
-                    validate_pdf_original(original)
-                    pages = extract_pages(original)
+                    # The bound read still verifies the file on every pass.
+                    # Reuse text only within this alignment, for the same bytes.
+                    key = (binding["path"], binding["sha256"])
+                    pages = page_cache.get(key) if page_cache is not None else None
+                    if pages is None:
+                        validate_pdf_original(original)
+                        pages = extract_pages(original)
+                        if page_cache is not None and len(page_cache) < 128:
+                            page_cache[key] = pages
+                    pages = list(pages)
                     quarter_title = re.search(r"(20[0-9]{2})年(?:第)?三季度报告$", event["title"]) if allow_quarterly_report else None
                     if quarter_title:
                         from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
@@ -1351,6 +1359,7 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
     from .value_research_analysis import _bound
     result = _initial(analysis, now)
     verified = {}
+    event_pages = {}
 
     def read(ref):
         path = _bound(root, ref)
@@ -1426,7 +1435,7 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
             ready = False
         # Official event terms are a separate research result. A parser success
         # neither changes frozen assumptions nor signs the materiality review.
-        operating_events = _operating_events(analysis, windows, now, read)
+        operating_events = _operating_events(analysis, windows, now, read, page_cache=event_pages)
         checks[3]["details"]["operating_event_research"] = operating_events
         financial_events = []
         for event in operating_events:
@@ -1463,7 +1472,7 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
         checks[3]["details"]["candidate_event_impact"] = build_candidate_event_impact(analysis, operating_events)
         from ...infrastructure.filings.opening_action_terms import parse_opening_action_terms
         opening_actions = _operating_events(analysis, source_windows, now, read,
-            parser=parse_opening_action_terms)
+            parser=parse_opening_action_terms, page_cache=event_pages)
         opening_chain = _opening_chain_research(analysis, opening_actions, reconciliation)
         basis_followup = _basis_followup(analysis, reconciliation, opening_chain, windows,
             quote.quote_date, operating_events)
@@ -1491,9 +1500,9 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
             if again != result["quote"]:
                 raise ValueError("QUOTE_CHANGED_DURING_ALIGNMENT")
         if opening_actions != _operating_events(analysis, source_windows, now, read,
-                parser=parse_opening_action_terms):
+                parser=parse_opening_action_terms, page_cache=event_pages):
             raise ValueError("OPENING_ACTION_TERMS_CHANGED_DURING_READ")
-        if operating_events != _operating_events(analysis, windows, now, read):
+        if operating_events != _operating_events(analysis, windows, now, read, page_cache=event_pages):
             raise ValueError("OPERATING_EVENT_TERMS_CHANGED_DURING_READ")
         if scans:
             again, _ = _event_windows(root, analysis, config["event_observation_bindings"], now, read)

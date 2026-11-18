@@ -866,6 +866,34 @@ def test_operating_event_terms_are_research_not_materiality(reconciliation, monk
     assert rows[0]["materiality_approved"] is False
     assert rows[0]["model_inputs_changed"] is False
     assert rows[0]["facts"][0]["terms"]["effective_date"] == "2020-01-02"
+    from value_investment_agent.infrastructure.filings import pdf_text
+    extracted, verified = [], []
+    original_extract = pdf_text.extract_pages
+
+    def extract_once(path):
+        extracted.append(path)
+        return original_extract(path)
+
+    def verify(ref):
+        verified.append(ref)
+        return _bound(case["root"], ref)
+
+    monkeypatch.setattr(pdf_text, "extract_pages", extract_once)
+    cache = {}
+    for _ in range(2):
+        assert service._operating_events(case["analysis"], [window], case["now"],
+            verify, page_cache=cache) == rows
+    assert len(extracted) == 1 and len(verified) == 2
+    original_path = case["root"] / anchor["binding"]["path"]
+    original_bytes = original_path.read_bytes()
+    try:
+        original_path.write_bytes(original_bytes + b"modified")
+        modified = service._operating_events(case["analysis"], [window], case["now"],
+            verify, page_cache=cache)
+        assert not modified[0]["facts"] and modified[0]["unresolved"]
+        assert len(extracted) == 1 and len(verified) == 3
+    finally:
+        original_path.write_bytes(original_bytes)
     window["announcements"][0]["announcement_id"] = "999"
     rows = service._operating_events(case["analysis"], [window], case["now"],
         lambda ref: _bound(case["root"], ref))
