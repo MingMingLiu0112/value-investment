@@ -256,23 +256,40 @@ def test_retained_projection_requires_exact_raw_replay_not_resealed_metadata(
         app.verify_retained_official_input(payload, root=tmp_path)
 
 
-def test_explicit_application_opt_in_archives_partial_and_original_receipt(
-        coverage_documents, tmp_path, monkeypatch):
-    install_transport(monkeypatch, coverage_documents, 'BSE_0')
+@pytest.mark.parametrize('failed_label', [None, 'BSE_0'])
+def test_application_archives_portable_official_input_and_original_receipt(
+        coverage_documents, tmp_path, monkeypatch, failed_label):
+    install_transport(monkeypatch, coverage_documents, failed_label)
     monkeypatch.setattr(app, 'verify_calendar_archives', lambda root: None)
     monkeypatch.setattr(app, 'collect_security_lists_with_coverage',
         lambda directory: lists.collect_security_lists_with_coverage(directory, clock=lambda: SATURDAY))
     directory = tmp_path / 'new'
     payload, ref = app.collect_official_m2_input(directory, tmp_path, allow_partial=True)
-    assert_partial(payload, ['SZSE', 'SSE'])
+    if failed_label:
+        assert_partial(payload, ['SZSE', 'SSE'])
+    else:
+        assert payload['complete'] is True
+        assert payload['parser_version'] == lists.VERSION
     raw = (directory / 'official-universe.json').read_bytes()
     assert json.loads(raw) == payload
-    assert 'incomplete' in ref.source_name
+    assert ('incomplete' in ref.source_name) == bool(failed_label)
     assert ref.sha256 == sha256(raw).hexdigest()
     receipt = {'evidence_refs': [dict(id='official', path=ref.path, sha256=ref.sha256)]}
     assert app.read_receipt_bound_official_input(directory / 'official-universe.json',
         root=tmp_path, receipt=receipt) == raw
     app.verify_retained_official_input(payload, root=tmp_path)
+    relocated = tmp_path / 'relocated'
+    for source in payload['sources']:
+        relative = Path(source['local_path'])
+        assert not relative.is_absolute() and '..' not in relative.parts
+        copy = relocated / relative
+        copy.parent.mkdir(parents=True, exist_ok=True)
+        copy.write_bytes((tmp_path / relative).read_bytes())
+    app.verify_retained_official_input(payload, root=relocated)
+    raw_doc = relocated / payload['sources'][0]['local_path']
+    raw_doc.write_bytes(raw_doc.read_bytes() + b'TAMPERED')
+    with pytest.raises(ValueError, match='hash'):
+        app.verify_retained_official_input(payload, root=relocated)
 
 
 @pytest.mark.parametrize('fault', [None, 'restamp', 'future', 'session', 'wrong_retained'])
