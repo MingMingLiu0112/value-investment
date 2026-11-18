@@ -19,6 +19,7 @@ from .parent_owner_distribution_successor_v2 import (
     RECEIPT_SCHEMA,
     replay_parent_owner_distribution_successor,
 )
+from .parent_remaining_year_successor import replay_parent_remaining_year_successor
 from .parent_direct_cash_research import _bound
 from .pending_candidate_alignment import _load_bound_alignment
 from ...research_artifact_codecs import ValuationResultCodec
@@ -28,6 +29,7 @@ INPUT_SCHEMA = "parent-owner-distribution-alignment-input-v2"
 SCHEMA = "parent-owner-distribution-alignment-v2"
 KIND = "PARENT_OWNER_DISTRIBUTION_SUCCESSOR_RECEIPT"
 PASS = "IMPLEMENTED_DISTRIBUTION_INCLUDED_IN_MODEL"
+FINANCIAL_UPDATE_RECOMPUTED = "EXACT_FINANCIAL_UPDATE_COLD_RECOMPUTED_IN_CANDIDATE"
 
 
 def _decimal(value: Any, error: str) -> Decimal:
@@ -133,6 +135,49 @@ def _implemented_distribution(result: Mapping[str, Any], spec: Mapping[str, Any]
     }
 
 
+def _consumed_financial_update_closure(*, result: Mapping[str, Any],
+                                       receipt: Mapping[str, Any], root: Path,
+                                       now: datetime,
+                                       candidate_binding: Mapping[str, str]) -> list[dict[str, Any]]:
+    """Prove a quarterly original was consumed by a cold-recomputed predecessor."""
+    predecessor_binding = receipt.get("predecessor_binding")
+    if (not isinstance(predecessor_binding, Mapping)
+            or result.get("predecessor_binding") != predecessor_binding):
+        raise ValueError("FINANCIAL_UPDATE_PREDECESSOR_BINDING_MISMATCH")
+    predecessor = replay_parent_remaining_year_successor(
+        root=root, receipt_binding=dict(predecessor_binding), now=now,
+    )
+    predecessor_receipt = _read(root, predecessor_binding)
+    predecessor_spec = _read(root, predecessor_receipt["spec_binding"])
+    source = predecessor_spec.get("quarterly_source")
+    if (predecessor.get("quarterly_source") != source
+            or predecessor.get("spec_binding") != predecessor_receipt.get("spec_binding")
+            or predecessor.get("input_descriptor_sha256")
+            != predecessor_receipt.get("input_descriptor_sha256")):
+        raise ValueError("FINANCIAL_UPDATE_PREDECESSOR_COLD_RESULT_IDENTITY_MISMATCH")
+    if (not isinstance(source, Mapping)
+            or not isinstance(source.get("path"), str)
+            or not isinstance(source.get("sha256"), str)
+            or not isinstance(predecessor_spec.get("period_end"), str)):
+        raise ValueError("FINANCIAL_UPDATE_PREDECESSOR_SOURCE_INVALID")
+    source_binding = {"path": source["path"], "sha256": source["sha256"]}
+    if (source_binding not in predecessor.get("source_bindings", [])
+            or source_binding not in result.get("source_bindings", [])):
+        raise ValueError("FINANCIAL_UPDATE_SOURCE_OUTSIDE_RECOMPUTED_CLOSURE")
+    _bound(root, source_binding)
+    return [{
+        "status": FINANCIAL_UPDATE_RECOMPUTED,
+        "period_end": predecessor_spec["period_end"],
+        "source_binding": source_binding,
+        "predecessor_receipt_binding": dict(predecessor_binding),
+        "predecessor_input_descriptor_sha256": predecessor["input_descriptor_sha256"],
+        "candidate_binding": dict(candidate_binding),
+        "input_descriptor_sha256": result["input_descriptor_sha256"],
+        "valuation_date_preserved": result["compiled"]["valuation_date"],
+        "action": "no_order",
+    }]
+
+
 def read_parent_owner_distribution_alignment(*, root: Path, receipt_binding: dict,
                                              now: datetime) -> dict[str, Any]:
     root = Path(root).resolve()
@@ -158,6 +203,10 @@ def read_parent_owner_distribution_alignment(*, root: Path, receipt_binding: dic
             or result.get("main_range_adopted") is not False):
         raise ValueError("OWNER_DISTRIBUTION_ALIGNMENT_COLD_RESULT_IDENTITY_CHANGED")
     inclusion = _implemented_distribution(result, spec, receipt, root)
+    financial_update_closure = _consumed_financial_update_closure(
+        result=result, receipt=receipt, root=root, now=now,
+        candidate_binding=receipt_binding,
+    )
     source_bindings = [dict(row) for row in result["source_bindings"]]
     for ref in (receipt_binding, receipt["spec_binding"], receipt["result_binding"]):
         if ref not in source_bindings:
@@ -182,6 +231,7 @@ def read_parent_owner_distribution_alignment(*, root: Path, receipt_binding: dic
             "ordinary_shares": result["compiled"]["ordinary_shares"],
         },
         "joint_capital_review": {"economic_path": {"currency": "CNY"}},
+        "consumed_financial_updates": financial_update_closure,
     }
     aligned = _load_bound_alignment(
         root=root, analysis=analysis, now=now, input_schema=INPUT_SCHEMA,

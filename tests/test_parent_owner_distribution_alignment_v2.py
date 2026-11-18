@@ -12,7 +12,11 @@ from value_investment_agent.application.research import parent_owner_distributio
 from value_investment_agent.application.research.direct_owner_cash_research_v1 import _bytes
 from value_investment_agent.application.research.parent_owner_distribution_alignment_v2 import (
     INPUT_SCHEMA,
+    _consumed_financial_update_closure,
     read_parent_owner_distribution_alignment,
+)
+from value_investment_agent.application.research.pending_candidate_alignment import (
+    _financial_update_closure_status,
 )
 
 NOW = datetime(2026, 11, 18, 8, tzinfo=timezone.utc)
@@ -158,3 +162,91 @@ def test_source_closure_is_required(aligned_case):
     new_receipt = bound(root, receipt["path"], receipt_payload)
     with pytest.raises(ValueError, match="COLD_REPLAY_CHANGED|VERSION_INVALID"):
         read_parent_owner_distribution_alignment(root=root, receipt_binding=new_receipt, now=NOW)
+
+
+def financial_closure(aligned_case):
+    root, receipt, *_ = aligned_case
+    receipt_payload = json.loads((root / receipt["path"]).read_text(encoding="utf-8"))
+    result = successor.replay_parent_owner_distribution_successor(
+        root=root, receipt_binding=receipt, now=NOW,
+    )
+    closure = _consumed_financial_update_closure(
+        result=result, receipt=receipt_payload, root=root, now=NOW,
+        candidate_binding=receipt,
+    )
+    return root, receipt, receipt_payload, result, closure
+
+
+def test_financial_update_closure_requires_actual_predecessor_cold_recompute(aligned_case):
+    _, receipt, _, result, closure = financial_closure(aligned_case)
+    assert closure[0]["status"] == "EXACT_FINANCIAL_UPDATE_COLD_RECOMPUTED_IN_CANDIDATE"
+    assert closure[0]["candidate_binding"] == receipt
+    assert closure[0]["input_descriptor_sha256"] == result["input_descriptor_sha256"]
+    assert closure[0]["action"] == "no_order"
+
+
+def test_financial_update_pass_is_separate_from_materiality(aligned_case):
+    _, receipt, _, result, closure = financial_closure(aligned_case)
+    source = closure[0]["source_binding"]
+    analysis = {
+        "review_binding": {"candidate_binding": receipt},
+        "input_descriptor_sha256": result["input_descriptor_sha256"],
+        "consumed_financial_updates": closure,
+        "source_bindings": [source],
+    }
+    events = [{"facts": [{
+        "binding": source,
+        "terms": {"financial_update": {"period_end": closure[0]["period_end"]}},
+    }]}]
+    status = _financial_update_closure_status(analysis, events)
+    assert status["status"] == "PASS"
+    assert status["reason_codes"] == []
+    assert status["scope"] == "EXACT_CANDIDATE_FINANCIAL_UPDATE_CLOSURE"
+
+
+def test_source_presence_without_recompute_closure_cannot_pass(aligned_case):
+    _, receipt, receipt_payload, result, _ = financial_closure(aligned_case)
+    source = result["source_bindings"][0]
+    analysis = {
+        "review_binding": {"candidate_binding": receipt},
+        "input_descriptor_sha256": receipt_payload["input_descriptor_sha256"],
+        "source_bindings": [source],
+    }
+    events = [{"facts": [{
+        "binding": source,
+        "terms": {"financial_update": {"period_end": "2026-09-30"}},
+    }]}]
+    assert _financial_update_closure_status(analysis, events) is None
+    analysis["consumed_financial_updates"] = [{
+        "status": "SOURCE_PRESENT_ONLY", "period_end": "2026-09-30",
+        "source_binding": source, "candidate_binding": receipt,
+        "input_descriptor_sha256": receipt_payload["input_descriptor_sha256"],
+        "action": "no_order",
+    }]
+    with pytest.raises(ValueError, match="CLOSURE_INVALID"):
+        _financial_update_closure_status(analysis, events)
+
+
+def test_unconsumed_newer_update_requires_recomputation(aligned_case):
+    _, receipt, _, result, closure = financial_closure(aligned_case)
+    analysis = {
+        "review_binding": {"candidate_binding": receipt},
+        "input_descriptor_sha256": result["input_descriptor_sha256"],
+        "consumed_financial_updates": closure,
+    }
+    newer = {"path": "runtime/TEST_ONLY-newer-q3.pdf", "sha256": "f" * 64}
+    events = [{"facts": [{
+        "binding": newer,
+        "terms": {"financial_update": {"period_end": "2027-09-30"}},
+    }]}]
+    status = _financial_update_closure_status(analysis, events)
+    assert status["status"] == "BLOCKED"
+    assert status["reason_codes"] == ["FINANCIAL_UPDATE_REQUIRES_RECOMPUTATION"]
+
+
+def test_total_f2_remains_blocked_and_no_order_with_financial_closure(aligned_case):
+    result = read(aligned_case)
+    assert result["status"] == "BLOCKED"
+    assert result["currentpricecomparison"] is False
+    assert result["formal_eligibility"] is False
+    assert result["action"] == "no_order"

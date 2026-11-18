@@ -781,6 +781,58 @@ def _operating_events(analysis, windows, now, read, *, parser=None):
     return rows
 
 
+def _financial_update_closure_status(analysis, financial_events):
+    """Reconcile reported updates to an adapter-proven recomputation closure."""
+    closure = analysis.get("consumed_financial_updates")
+    if closure is None:
+        return None
+    candidate = analysis["review_binding"]["candidate_binding"]
+    descriptor = analysis["input_descriptor_sha256"]
+    if not isinstance(closure, list) or not closure:
+        raise ValueError("CONSUMED_FINANCIAL_UPDATE_CLOSURE_REQUIRED")
+    expected = {}
+    for row in closure:
+        if (not isinstance(row, dict)
+                or row.get("status") != "EXACT_FINANCIAL_UPDATE_COLD_RECOMPUTED_IN_CANDIDATE"
+                or row.get("candidate_binding") != candidate
+                or row.get("input_descriptor_sha256") != descriptor
+                or row.get("action") != "no_order"
+                or not isinstance(row.get("predecessor_receipt_binding"), dict)
+                or not isinstance(row.get("predecessor_input_descriptor_sha256"), str)
+                or not row["predecessor_input_descriptor_sha256"]):
+            raise ValueError("CONSUMED_FINANCIAL_UPDATE_CLOSURE_INVALID")
+        source_binding = row.get("source_binding")
+        if not isinstance(source_binding, dict):
+            raise ValueError("CONSUMED_FINANCIAL_UPDATE_CLOSURE_IDENTITY_INVALID")
+        key = (row.get("period_end"), source_binding.get("sha256"))
+        if (not isinstance(row.get("period_end"), str)
+                or set(source_binding) != {"path", "sha256"}
+                or key in expected):
+            raise ValueError("CONSUMED_FINANCIAL_UPDATE_CLOSURE_IDENTITY_INVALID")
+        expected[key] = row
+    observed = []
+    for event in financial_events:
+        for fact in event["facts"]:
+            update = fact["terms"]["financial_update"]
+            observed.append((update["period_end"], fact["binding"].get("sha256")))
+    unmatched_observed = [key for key in observed if key not in expected]
+    unmatched_closure = [key for key in expected if key not in observed]
+    if unmatched_observed or unmatched_closure:
+        return {
+            "status": "BLOCKED",
+            "reason_codes": ["FINANCIAL_UPDATE_REQUIRES_RECOMPUTATION"],
+            "scope": "EXACT_CANDIDATE_FINANCIAL_UPDATE_CLOSURE",
+            "consumed_closure": deepcopy(closure),
+            "unmatched_observed": unmatched_observed,
+            "unmatched_closure": unmatched_closure,
+        }
+    return {
+        "status": "PASS", "reason_codes": [],
+        "scope": "EXACT_CANDIDATE_FINANCIAL_UPDATE_CLOSURE",
+        "consumed_closure": deepcopy(closure),
+        "unmatched_observed": [], "unmatched_closure": [],
+    }
+
 
 def _opening_chain_research(analysis, rows, reconciliation):
     """Reconcile named observed actions only; never certify an empty universe."""
@@ -1178,6 +1230,30 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
             if facts:
                 financial_events.append({**event, "facts": facts})
         checks[4]["details"]["financial_update_research"] = financial_events
+        financial_closure = _financial_update_closure_status(analysis, financial_events)
+        if financial_closure is not None:
+            checks[4]["status"] = financial_closure["status"]
+            checks[4]["reason_codes"] = financial_closure["reason_codes"]
+            checks[4]["explanation"] = (
+                "财务更新只有在精确原件、期间、候选、描述符及冷重算前驱全部一致时才通过；"
+                "来源存在本身不证明已消费。"
+            )
+            checks[4]["details"]["recomputation_closure"] = financial_closure
+            all_reasons = list(dict.fromkeys(
+                code for item in checks for code in item["reason_codes"]
+            ))
+            bridge_validity = validity
+            if validity.status == "VALID" and all_reasons:
+                bridge_validity = replace(
+                    validity, status="UNKNOWN", material_event_found=None,
+                    blockers=all_reasons,
+                )
+            bridge = bridge_with_quote(
+                valuation, bridge_validity, quote, blockers=all_reasons,
+            )
+            validity = bridge_validity
+            ready = (all(item["status"] == "PASS" for item in checks)
+                     and bridge.bridge_status == "READY" and not bridge.blockers)
         from .candidate_event_impact import build_candidate_event_impact
         checks[3]["details"]["candidate_event_impact"] = build_candidate_event_impact(analysis, operating_events)
         from ...infrastructure.filings.opening_action_terms import parse_opening_action_terms
