@@ -58,6 +58,7 @@ def test_sse_checkpoint_consumption_preserves_share_class_and_cutoff(tmp_path, m
     assert len(followup["capital_checkpoints"]) == 2
     assert followup["latest_capital_checkpoint"]["treasury_shares"] == "1800200"
     assert followup["latest_capital_checkpoint"]["proposal_only"] is True
+    assert followup["latest_capital_checkpoint"]["proposed_cash_per_share_cny"] == "0.42"
     assert followup["current_comparison_granted"] is False
     wrong = deepcopy(analysis)
     wrong["official_fact_anchors"] = []

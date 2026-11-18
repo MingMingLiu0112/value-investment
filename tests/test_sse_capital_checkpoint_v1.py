@@ -171,6 +171,7 @@ def test_retained_exact_pages_only_when_explicitly_enabled():
     assert proposal["period_end"] == "2026-10-22"
     assert proposal["issued_shares"] == "6325360667" and proposal["treasury_shares"] == "1800200"
     assert proposal["ordinary_shares"] is None and proposal["proposal_only"] is True
+    assert proposal["proposed_cash_per_share_cny"] == "0.42"
 
 
 def test_retained_complete_pdfs_only_when_explicitly_enabled():
@@ -187,3 +188,4 @@ def test_retained_complete_pdfs_only_when_explicitly_enabled():
     assert proposal["issued_shares"] == "6325360667"
     assert proposal["treasury_shares"] == "1800200"
     assert proposal["ordinary_shares"] is None and proposal["proposal_only"] is True
+    assert proposal["proposed_cash_per_share_cny"] == "0.42"

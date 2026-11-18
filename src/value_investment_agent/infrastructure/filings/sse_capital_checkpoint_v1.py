@@ -207,6 +207,7 @@ def parse_sse_capital_checkpoint(pages, *, symbol, published_date):
         period_start=None, period_end=observed.isoformat(), issued_shares=str(total),
         share_scope="TOTAL_ISSUED_SHARES", ordinary_shares=None,
         unchanged_report_period=False, treasury_shares=str(treasury), proposal_only=True,
+        proposed_cash_per_share_cny=str(dps),
         ordinary_share_type_continuity_proven=False,
         term_pages=dict(identity=[1], share_basis=[1]),
         evidence_refs=[dict(field="identity", physical_page=1,

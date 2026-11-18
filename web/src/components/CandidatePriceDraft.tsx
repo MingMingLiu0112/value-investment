@@ -1163,6 +1163,9 @@ function BasisFollowup({ value }: { value: unknown }) {
           const issued = numberText(checkpoint.issued_shares);
           const treasury = numberText(checkpoint.treasury_shares);
           const proposal = checkpoint.proposal_only === true;
+          const proposedCash = numberText(
+            checkpoint.proposed_cash_per_share_cny,
+          );
           const derived = checkpoint.classification === "DERIVED_FACT";
           const verified =
             checkpoint.classification === "FACT" ||
@@ -1178,6 +1181,12 @@ function BasisFollowup({ value }: { value: unknown }) {
                 {ordinary
                   ? `${proposal ? "预案所述" : derived ? "推导的" : verified ? "已核验" : "待核实"}普通股股数：${checkpoint.ordinary_shares} 股。`
                   : "普通股股数：未核实。"}
+                {proposal && proposedCash && (
+                  <>
+                    每股拟派 {String(checkpoint.proposed_cash_per_share_cny)}{" "}
+                    元（含税），此原件仅为预案，未计入已实施分配。
+                  </>
+                )}
                 {derived && ordinary && (
                   <>推导依据：{text(checkpoint.derivation, "未提供")}。</>
                 )}

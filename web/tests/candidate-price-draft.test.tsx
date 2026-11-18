@@ -896,6 +896,7 @@ it("shows every capital checkpoint with separate ordinary, issued, treasury, and
           share_scope: "TOTAL_ISSUED_SHARES",
           treasury_shares: "1800200",
           proposal_only: true,
+          proposed_cash_per_share_cny: "0.42",
           classification: "FACT",
           as_of: "2026-10-22",
           published_date: "2026-10-30",
@@ -918,6 +919,8 @@ it("shows every capital checkpoint with separate ordinary, issued, treasury, and
   expect(html).toContain("1680400 股");
   expect(html).toContain("49999397.00 元");
   expect(html).toContain("预案不是实施或注销证明");
+  expect(html).toContain("每股拟派");
+  expect(html).toContain("未计入已实施分配");
   expect(html).not.toContain("已核验普通股股数：未提供");
   expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
 });

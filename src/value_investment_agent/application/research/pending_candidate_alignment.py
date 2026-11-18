@@ -1099,6 +1099,8 @@ def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison
         checkpoints.append(dict(as_of=period.isoformat(), published_date=published.isoformat(),
             ordinary_shares=terms["ordinary_shares"], issued_shares=terms.get("issued_shares"),
             treasury_shares=terms.get("treasury_shares"), proposal_only=terms.get("proposal_only", False),
+            proposed_cash_per_share_cny=terms.get("proposed_cash_per_share_cny")
+                if terms.get("proposal_only") is True else None,
             share_scope=terms.get("share_scope"), classification=terms.get("classification", "FACT"),
             derivation=terms.get("derivation"), evidence_binding=deepcopy(report["binding"]),
             source_url=report["source_url"], available_at=report["source_available_at"],
