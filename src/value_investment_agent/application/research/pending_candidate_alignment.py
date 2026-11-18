@@ -352,6 +352,18 @@ def _verify_period_buyback_cancellation(row, *, symbol, before, after, end, cach
                 confirmation_physical_pages=confirmation["term_pages"]["confirmed_cancellation"])
 
 
+def _continuous_publication_window(windows, start, end):
+    next_day = start.toordinal()
+    intervals = sorted((_day(window["scan_from"]).toordinal(), _day(window["scan_to"]).toordinal())
+                       for window in windows)
+    for first, last in intervals:
+        if first > next_day:
+            return False
+        next_day = max(next_day, last + 1)
+        if next_day > end.toordinal():
+            return True
+    return False
+
 def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     """Replay source-anchored public research arithmetic, never approve materiality.
 
@@ -630,7 +642,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
                 gaps.append("REVIEWED_ACTION_MISSING_LEDGER_ROW: " + identity)
     if reviewed != set(announced):
         gaps.append("PUBLIC_ACTION_REVIEW_DOES_NOT_COVER_ALL_ANNOUNCEMENTS")
-    if not windows or not any(_day(w["scan_from"]) <= start and _day(w["scan_to"]) >= end for w in windows):
+    if not _continuous_publication_window(windows, start, end):
         gaps.append("ACTION_PUBLICATION_WINDOW_MISSING")
     if any(not w["full_calendar_window_elapsed"] for w in windows):
         gaps.append("ACTION_COVERAGE_IS_RETRIEVAL_SNAPSHOT_ONLY")

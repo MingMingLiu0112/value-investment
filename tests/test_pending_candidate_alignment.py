@@ -1330,3 +1330,18 @@ def test_dividend_schedule_does_not_admit_payment(reconciliation, monkeypatch, s
     assert terms["effective_date"] is None
     assert terms["terms"]["payment_completion_state"] == "UNKNOWN"
     assert terms["action"] == "no_order"
+
+
+@pytest.mark.parametrize(("first_end", "required_end", "covered"), [
+    ("2026-11-17", "2026-11-18", True),
+    ("2026-11-16", "2026-11-18", False),
+    ("2026-11-17", "2026-11-19", False),
+])
+def test_publication_window_can_use_adjacent_archives(first_end, required_end, covered):
+    windows = [
+        {"scan_from": "2026-11-18", "scan_to": "2026-11-18"},
+        {"scan_from": "2025-12-31", "scan_to": first_end},
+    ]
+    assert service._continuous_publication_window(
+        windows, date(2025, 12, 31), date.fromisoformat(required_end),
+    ) is covered
