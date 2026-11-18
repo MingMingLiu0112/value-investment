@@ -71,6 +71,44 @@ def test_scheduled_distribution_enters_shared_model_and_reconciles():
     assert value.assumptions["action"] == "no_order"
 
 
+def test_shared_model_rechecks_nonterminating_roe_at_domain_precision():
+    data = deepcopy(inputs())
+    data["opening"].update(book="3", cash="0", capacity="0", debt="0")
+    data["ordinary_shares"] = "3"
+    for policy in (data["years"][0]["policy"], data["terminal"]["policy"]):
+        policy.update(
+            parent_profit="1",
+            operating_cash="1",
+            maintenance_capex="0",
+            cash_floor="0",
+            payout_ratio="1",
+        )
+    data["years"][0]["scheduled_owner_distribution_cny"] = "0"
+    calculated = compile_v2(**data)
+    typed = model.DirectOwnerCashScenario(
+        symbol="600519",
+        opening=data["opening"],
+        years=data["years"],
+        terminal=data["terminal"],
+        ordinary_shares=D(data["ordinary_shares"]),
+        cost_of_equity=D(data["cost_of_equity"]),
+        forecast_roes=tuple(D(row["roe_assumption"]) for row in calculated["annual_rows"]),
+        forecast_retentions=tuple(
+            D(row["retention_assumption"]) for row in calculated["annual_rows"]
+        ),
+    )
+    f = complete_facts(
+        operating_inputs={
+            "start_book_equity": D("3"),
+            "ordinary_shares": D("3"),
+            "opening_cash": D("0"),
+        },
+        scenario_inputs={name: typed for name in model.SCENARIOS},
+    )
+    value = model.DirectOwnerCashValuationModel().value(f, case())
+    assert value.status == "conditional_research_only"
+
+
 def test_zero_scheduled_is_economically_v1_compatible():
     data = inputs()
     old = compile_v1(**deepcopy(data))

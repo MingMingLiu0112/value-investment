@@ -90,6 +90,39 @@ def test_scheduled_distribution_cannot_be_manufactured_by_new_borrowing():
         compile_direct_owner_cash_path_v2(**data)
 
 
+def test_equal_principal_refinancing_does_not_erase_nonfinancing_cash_headroom():
+    data = v2_inputs(scheduled="30")
+    data["opening"].update(cash="20", capacity="100", debt="100")
+    data["years"][0]["policy"].update(
+        operating_cash="100",
+        maintenance_capex="20",
+        debt_repayment="100",
+        new_borrowing="100",
+        payout_ratio="0",
+    )
+    data["terminal"]["policy"].update(
+        debt_repayment="100", new_borrowing="100", interest_outside_cfo="1"
+    )
+    data["terminal"]["financing"] = {
+        "mode": "CONSTANT_DEBT_REFINANCING",
+        "rationale": "TEST_ONLY equal principal rollover",
+        "counter_evidence": "TEST_ONLY refinancing may be unavailable",
+        "reopen_condition": "TEST_ONLY debt policy changes",
+        "coverage": {
+            "interest_outside_cfo": True,
+            "debt_scope": "ALL_EXISTING_TERMINAL_DEBT",
+        },
+    }
+
+    row = compile_direct_owner_cash_path_v2(**data)["annual_rows"][0]
+
+    assert Decimal(row["scheduled_nonborrowed_cash_limit_cny"]) == 80
+    assert Decimal(row["scheduled_owner_distribution_cny"]) == 30
+    assert Decimal(row["conditional_distribution_cny"]) == 0
+    assert Decimal(row["closing_debt_cny"]) == 100
+    assert Decimal(row["closing_cash_cny"]) == 70
+
+
 def test_scheduled_distribution_refuses_insufficient_capacity():
     data = v2_inputs(scheduled="41")
     data["opening"].update(cash="100", capacity="0")

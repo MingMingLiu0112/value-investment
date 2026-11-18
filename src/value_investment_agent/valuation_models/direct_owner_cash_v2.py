@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, fields, replace
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from typing import Any
 
 from ..domain.valuation.direct_parent_owner_cash_v2 import compile_direct_owner_cash_path
@@ -195,16 +195,18 @@ def scenario_calculation(
         total = _decimal(row, "total_owner_distribution_cny")
         if scheduled < 0 or conditional < 0 or total != scheduled + conditional:
             raise ValueError("DIRECT_OWNER_V2_DISTRIBUTION_RECONCILIATION_FAILED")
-        profit = _decimal(row, "net_income_assumption_cny")
-        opening_book = _decimal(row, "opening_book_equity_cny")
-        closing_book = _decimal(row, "closing_book_equity_cny")
-        if closing_book != opening_book + profit - total:
-            raise ValueError("DIRECT_OWNER_V2_CLEAN_SURPLUS_FAILED")
-        expected_retention = (profit - total) / profit
-        if _decimal(row, "retention_assumption") != expected_retention:
-            raise ValueError("DIRECT_OWNER_V2_RETENTION_RECALCULATION_FAILED")
-        if _decimal(row, "roe_assumption") != profit / opening_book:
-            raise ValueError("DIRECT_OWNER_V2_ROE_RECALCULATION_FAILED")
+        with localcontext() as context:
+            context.prec = 48
+            profit = _decimal(row, "net_income_assumption_cny")
+            opening_book = _decimal(row, "opening_book_equity_cny")
+            closing_book = _decimal(row, "closing_book_equity_cny")
+            if closing_book != opening_book + profit - total:
+                raise ValueError("DIRECT_OWNER_V2_CLEAN_SURPLUS_FAILED")
+            expected_retention = (profit - total) / profit
+            if _decimal(row, "retention_assumption") != expected_retention:
+                raise ValueError("DIRECT_OWNER_V2_RETENTION_RECALCULATION_FAILED")
+            if _decimal(row, "roe_assumption") != profit / opening_book:
+                raise ValueError("DIRECT_OWNER_V2_ROE_RECALCULATION_FAILED")
     return result
 
 

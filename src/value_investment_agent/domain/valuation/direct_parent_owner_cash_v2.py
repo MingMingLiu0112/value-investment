@@ -87,11 +87,14 @@ def _step(state, flow, *, scheduled, year, shares, cost):
     capacity = state["capacity"] + flow["parent_profit"] * (
         1 - flow["reserve_ratio"]
     )
-    # A scheduled distribution must stand without current-year borrowing.  V1
-    # policy semantics for the subsequent conditional payout remain unchanged.
-    scheduled_cash_limit = (
-        before - flow["new_borrowing"] - flow["cash_floor"]
+    # A scheduled distribution must stand without net financing cash. Equal
+    # principal rollover only refinances debt repaid in the same year and must
+    # not be subtracted a second time after ``mandatory`` already included the
+    # repayment. Any borrowing above repayment remains unavailable to owners.
+    financing_cash_inflow = max(
+        flow["new_borrowing"] - flow["debt_repayment"], ZERO
     )
+    scheduled_cash_limit = before - financing_cash_inflow - flow["cash_floor"]
     if scheduled > 0 and scheduled > scheduled_cash_limit:
         raise ValueError(
             f"DIRECT_OWNER_SCHEDULED_DISTRIBUTION_REQUIRES_BORROWING_OR_CASH:{year}"
