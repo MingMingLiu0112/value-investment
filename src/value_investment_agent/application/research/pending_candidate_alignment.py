@@ -284,6 +284,57 @@ def _native_basis_fields(analysis, start, end, now, native_sources, read, cache,
     return result
 
 
+def _verify_period_buyback_cancellation(row, *, symbol, before, after, end, cache, window_sources):
+    """Check the supplied pair of issuer originals for one effective decrease."""
+    from ...infrastructure.filings.opening_action_terms import parse_opening_action_terms
+    from ...infrastructure.filings.operating_event_terms import parse_operating_event_terms
+
+    proof = {"status": "NATIVE_CANCELLATION_PAIR_UNVERIFIED",
+             "reason": "UNIQUE_OFFICIAL_PURCHASE_AND_CANCELLATION_REQUIRED"}
+    refs = {(e["binding"]["path"], e["binding"]["sha256"], e["source_url"])
+            for e in row["evidence"]}
+    candidates, confirmations = [], []
+    for key in sorted(refs & window_sources):
+        path, sha, url = key
+        published = _day(urlparse(url).path.split("/")[2])
+        if published > end:
+            continue
+        for parser, expected_field, destination in (
+                (parse_operating_event_terms, "scheduled_cancellation_date", candidates),
+                (parse_opening_action_terms, "confirmed_cancellation_date", confirmations)):
+            try:
+                parsed = parser(cache[sha], symbol=symbol)
+                terms = parsed["terms"]
+            except ValueError:
+                continue
+            if (parsed["symbol"] == symbol and parsed["published_date"] == published.isoformat()
+                    and expected_field in terms):
+                destination.append((parsed, {"path": path, "sha256": sha}))
+    if len(candidates) != 1 or len(confirmations) != 1:
+        return proof
+    purchase, purchase_ref = candidates[0]
+    confirmation, confirmation_ref = confirmations[0]
+    planned, actual = purchase["terms"], confirmation["terms"]
+    if (purchase_ref["sha256"] == confirmation_ref["sha256"]
+            or planned.get("purchase_state") != "COMPLETED"
+            or planned.get("cancellation_state") != "SCHEDULED_UNCONFIRMED"
+            or actual["completion_notice_on"] != purchase["published_date"]
+            or planned["scheduled_cancellation_date"] != row["effective_date"]
+            or actual["confirmed_cancellation_date"] != row["effective_date"]
+            or not _day(purchase["published_date"]) <= _day(row["effective_date"]) <= _day(confirmation["published_date"])
+            or _number(actual["cancelled_shares"]) != before - after
+            or Decimal(planned["cumulative_purchased_shares"]) != before - after
+            or Decimal(planned["planned_post_cancellation_shares"]) != after
+            or _number(actual["issued_shares"]) != after):
+        proof["reason"] = "CANCELLATION_PAIR_TERMS_OR_RUNNING_SHARE_COUNT_MISMATCH"
+        return proof
+    return dict(status="NATIVE_BUYBACK_CANCELLATION_MATCHED", reason=None,
+                effective_date=row["effective_date"], confirmation_date=confirmation["published_date"],
+                capital_as_of=actual["capital_as_of"], shares_before=str(before), shares_after=str(after),
+                purchase_binding=purchase_ref, confirmation_binding=confirmation_ref,
+                confirmation_physical_pages=confirmation["term_pages"]["confirmed_cancellation"])
+
+
 def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     """Replay source-anchored public research arithmetic, never approve materiality.
 
@@ -312,6 +363,12 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
                 and (source.get("issuer_identity") or {}).get("security_code") == analysis["symbol"]):
             key = (source["local_path"], source["sha256"], source["location"])
             native_sources[key] = source["source_available_at"]
+    window_sources = {
+        (source["path"], source["sha256"], source["source_url"])
+        for window in windows if window.get("source_integrity_verified") is True
+        for announcement in window["announcements"]
+        for source in announcement["evidence_refs"]
+    }
     for window in [*windows, *source_windows]:
         for announcement in window["announcements"]:
             for source in announcement["evidence_refs"]:
@@ -398,10 +455,16 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         if not start < effective <= end or row["kind"] not in {"INCREASE", "DECREASE"} or shares <= 0 or shares != shares.to_integral_value():
             raise ValueError("UNSUPPORTED_EFFECTIVE_SHARE_ACTION")
         anchors(row["evidence"], numbers=[shares], dates=[effective])
+        before = total
         with localcontext() as context:
             context.prec = 80
             total += shares if row["kind"] == "INCREASE" else -shares
-        action_rows.append(deepcopy(row))
+        action = deepcopy(row)
+        if row["kind"] == "DECREASE":
+            action["native_cancellation"] = _verify_period_buyback_cancellation(
+                row, symbol=analysis["symbol"], before=before, after=total, end=end,
+                cache=cache, window_sources=window_sources)
+        action_rows.append(action)
     if total <= 0:
         raise ValueError("NONPOSITIVE_RECONCILED_SHARE_COUNT")
     closing, closing_value = ledger.get("closing_shares"), None
@@ -600,6 +663,9 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     compatible = same_basis
     if actions:
         gaps.append("EFFECTIVE_SHARE_ACTION_REQUIRES_CANDIDATE_RECOMPUTATION")
+    if any(row.get("native_cancellation", {}).get("status") == "NATIVE_CANCELLATION_PAIR_UNVERIFIED"
+           for row in action_rows):
+        gaps.append("PERIOD_DECREASE_NATIVE_CANCELLATION_UNVERIFIED")
     if unconsumed_period_cash:
         gaps.append("IN_PERIOD_CASH_FLOW_INCLUSION_REQUIRES_CANDIDATE_RECOMPUTATION")
     return dict(status="RECONCILED" if same_basis else "PARTIAL", arithmetic_status="RECONCILED" if arithmetic_complete else "PARTIAL",

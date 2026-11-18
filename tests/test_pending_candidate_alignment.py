@@ -190,6 +190,59 @@ def test_in_period_cash_is_not_blindly_subtracted_or_declared_included(reconcili
     assert result["distributions"][0]["price_deduction_applied"] == "0"
 
 
+def test_period_decrease_with_only_manual_excerpt_stays_unverified(reconciliation):
+    case = reconciliation
+    case["ledger"]["share_actions"] = [
+        dict(id="TEST_ONLY_DECREASE", kind="DECREASE", shares="5",
+             effective_date="2020-01-02", evidence=[case["anchor"]])
+    ]
+    case["ledger"]["closing_shares"] = None
+    result = reconcile(case)
+    assert result["calculated_closing_shares"] == "95"
+    assert result["share_actions"][0]["native_cancellation"]["status"] == "NATIVE_CANCELLATION_PAIR_UNVERIFIED"
+    assert "PERIOD_DECREASE_NATIVE_CANCELLATION_UNVERIFIED" in result["reason_codes"]
+    assert not result["current_price_basis_compatible"]
+
+
+def test_period_cancellation_requires_pair_and_post_publication_cutoff(monkeypatch):
+    from value_investment_agent.infrastructure.filings import opening_action_terms, operating_event_terms
+
+    purchase = ("buyback.pdf", "a" * 64, "https://static.cninfo.com.cn/finalpage/2020-01-02/321.PDF")
+    confirmation = ("cancel.pdf", "b" * 64, "https://static.cninfo.com.cn/finalpage/2020-01-03/322.PDF")
+
+    def parse_purchase(pages, *, symbol):
+        if pages != ["purchase"]:
+            raise ValueError("TEST_ONLY_NOT_PURCHASE")
+        return dict(symbol=symbol, published_date="2020-01-02",
+                    terms=dict(purchase_state="COMPLETED", cancellation_state="SCHEDULED_UNCONFIRMED",
+                               scheduled_cancellation_date="2020-01-02",
+                               cumulative_purchased_shares=5, planned_post_cancellation_shares=95))
+
+    def parse_confirmation(pages, *, symbol):
+        if pages != ["confirmation"]:
+            raise ValueError("TEST_ONLY_NOT_CONFIRMATION")
+        return dict(symbol=symbol, published_date="2020-01-03",
+                    terms=dict(completion_notice_on="2020-01-02", confirmed_cancellation_date="2020-01-02",
+                               cancelled_shares="5", issued_shares="95", capital_as_of="2020-01-03"),
+                    term_pages=dict(confirmed_cancellation=[2]))
+
+    monkeypatch.setattr(operating_event_terms, "parse_operating_event_terms", parse_purchase)
+    monkeypatch.setattr(opening_action_terms, "parse_opening_action_terms", parse_confirmation)
+    row = dict(effective_date="2020-01-02", evidence=[
+        dict(binding=dict(path=path, sha256=sha), source_url=url)
+        for path, sha, url in (purchase, confirmation)
+    ])
+    inputs = dict(symbol="600519", before=Decimal(100), after=Decimal(95), end=date(2020, 1, 3),
+                  cache={purchase[1]: ["purchase"], confirmation[1]: ["confirmation"]},
+                  window_sources={purchase, confirmation})
+    proof = service._verify_period_buyback_cancellation(row, **inputs)
+    assert proof["status"] == "NATIVE_BUYBACK_CANCELLATION_MATCHED"
+    assert proof["confirmation_physical_pages"] == [2]
+    for changes in (dict(end=date(2020, 1, 2)), dict(window_sources={purchase}), dict(after=Decimal(94))):
+        proof = service._verify_period_buyback_cancellation(row, **(inputs | changes))
+        assert proof["status"] == "NATIVE_CANCELLATION_PAIR_UNVERIFIED"
+
+
 def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconciliation):
     case = reconciliation
     case["ledger"]["distributions"] = [cash(case, in_period=True)]
