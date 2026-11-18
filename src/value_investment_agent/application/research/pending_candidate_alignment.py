@@ -142,6 +142,28 @@ def _cash_terms(pages, symbol):
 
 
 
+def _close_report_checkpoint(reports, end):
+    """Collect exact ordinary-share observations and retain conflicting originals."""
+    as_of = end.isoformat()
+    anchors = [
+        {"ordinary_shares": report["terms"]["ordinary_shares"],
+         "evidence_binding": report["binding"], "published_date": report["published_date"]}
+        for report in reports
+        if report["status"] == "NATIVE_REPORT_FIELDS_VERIFIED"
+        and report["terms"]["period_end"] == as_of
+        and _day(report["published_date"]) <= end
+    ]
+    values = {_number(anchor["ordinary_shares"]) for anchor in anchors}
+    if len(values) != 1:
+        return dict(status=("EXACT_CLOSING_REPORT_ANCHORS_CONFLICT" if values
+                            else "EXACT_CLOSING_REPORT_ANCHOR_MISSING"),
+                    as_of=as_of, ordinary_shares=None, anchors=anchors,
+                    continuity_to_opening_verified=False)
+    return dict(status="EXACT_REPORT_DATE_SHARES_VERIFIED", as_of=as_of,
+                ordinary_shares=str(next(iter(values))), evidence_binding=anchors[0]["evidence_binding"],
+                anchors=anchors, continuity_to_opening_verified=False)
+
+
 def _native_basis_fields(analysis, start, end, now, native_sources, read, cache, cash_rows):
     """Consume full native originals; never promote manual excerpts/empty lists.
 
@@ -156,8 +178,6 @@ def _native_basis_fields(analysis, start, end, now, native_sources, read, cache,
 
     result = dict(status="NO_SUPPORTED_SOURCE_FIELDS", reports=[], unresolved_sources=[],
         opening_pending_actions=dict(status="UNVERIFIED", known_completed_actions=[]),
-        closing_capital=dict(status="EXACT_CLOSING_REPORT_ANCHOR_MISSING", as_of=end.isoformat(),
-            ordinary_shares=None),
         distribution_inclusion=dict(status="NOT_VERIFIED", comparisons=[]),
         historical_availability_proven=False, complete_action_coverage=False,
         materiality_approved=False, formal_eligibility=False, action="no_order")
@@ -241,10 +261,6 @@ def _native_basis_fields(analysis, start, end, now, native_sources, read, cache,
                 consumed_opening_fact=consumed and report_end == start,
                 status="NATIVE_REPORT_FIELDS_VERIFIED")
             result["reports"].append(report)
-            if report_end == end:
-                result["closing_capital"].update(status="EXACT_REPORT_DATE_SHARES_VERIFIED",
-                    ordinary_shares=terms["ordinary_shares"], evidence_binding=binding,
-                    continuity_to_opening_verified=False)
             if report["consumed_opening_fact"]:
                 pending = result["opening_pending_actions"]
                 pending["status"] = "KNOWN_BUYBACK_COMPLETED_OTHER_PENDING_SCHEMES_UNVERIFIED"
@@ -279,6 +295,7 @@ def _native_basis_fields(analysis, start, end, now, native_sources, read, cache,
             result["unresolved_sources"].append(dict(**source, reason=str(error)))
     if result["reports"]:
         result["status"] = "NATIVE_FIELDS_VERIFIED_CHAIN_INCOMPLETE"
+    result["closing_capital"] = _close_report_checkpoint(result["reports"], end)
     if result["distribution_inclusion"]["comparisons"]:
         result["distribution_inclusion"]["status"] = "SOURCE_AMOUNTS_COMPARED_INCLUSION_UNVERIFIED"
     return result
@@ -622,10 +639,19 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     for report in native_fields["reports"]:
         if report["binding"] not in evidence:
             evidence.append(deepcopy(report["binding"]))
-    closing_status = native_fields["closing_capital"]["status"]
+    closing_capital = native_fields["closing_capital"]
+    closing_status = closing_capital["status"]
     if closing_status == "EXACT_CLOSING_REPORT_ANCHOR_MISSING":
         gaps.append("EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING")
+    elif closing_status == "EXACT_CLOSING_REPORT_ANCHORS_CONFLICT":
+        gaps.append("EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHORS_CONFLICT")
     else:
+        observed = _number(closing_capital["ordinary_shares"])
+        closing_capital["rollforward_comparison"] = dict(
+            status="MATCH" if observed == total else "CONFLICT",
+            calculated_ordinary_shares=str(total), observed_ordinary_shares=str(observed))
+        if observed != total:
+            gaps.append("NATIVE_CLOSING_SHARE_COUNT_DIFFERS_FROM_ROLLFORWARD")
         gaps.append("NATIVE_CLOSING_SHARES_OPENING_CONTINUITY_UNVERIFIED")
     gaps.extend(["OPENING_PENDING_SCHEMES_AND_EFFECTIVE_ACTION_CHAIN_INCOMPLETE",
                  "PERIOD_DISTRIBUTION_COVERAGE_AND_MODEL_INCLUSION_UNVERIFIED"])

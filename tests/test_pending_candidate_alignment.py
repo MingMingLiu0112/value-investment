@@ -152,6 +152,43 @@ def test_cross_date_manual_arithmetic_cannot_grant_native_alignment(reconciliati
     assert result["action"] == "no_order"
 
 
+@pytest.mark.parametrize("closing_values,expected_status,expected_gap", [
+    (["100", "100"], "EXACT_REPORT_DATE_SHARES_VERIFIED", None),
+    (["105"], "EXACT_REPORT_DATE_SHARES_VERIFIED", "NATIVE_CLOSING_SHARE_COUNT_DIFFERS_FROM_ROLLFORWARD"),
+    (["100", "105"], "EXACT_CLOSING_REPORT_ANCHORS_CONFLICT", "EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHORS_CONFLICT"),
+    ([], "EXACT_CLOSING_REPORT_ANCHOR_MISSING", "EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING"),
+])
+def test_comparison_date_closing_reports_agree_with_each_other_and_rollforward(
+    reconciliation, monkeypatch, closing_values, expected_status, expected_gap
+):
+    def report(value, index, *, published="2020-01-02", status="NATIVE_REPORT_FIELDS_VERIFIED"):
+        return dict(status=status, binding=dict(path=f"TEST_ONLY-{index}", sha256=f"{index:064x}"),
+                    published_date=published, terms=dict(period_end="2020-01-02", ordinary_shares=value))
+
+    reports = [
+        report(value, index) for index, value in enumerate(closing_values, 1)
+    ] + [
+        report("200", 10, published="2020-01-03"),
+        report("200", 11, status="NATIVE_CAPITAL_CHECKPOINT_VERIFIED"),
+    ]
+
+    def native_fields(analysis, start, end, now, native_sources, read, cache, cash_rows):
+        return dict(reports=reports, closing_capital=service._close_report_checkpoint(reports, end),
+                    distribution_inclusion=dict(comparisons=[]))
+
+    monkeypatch.setattr(service, "_native_basis_fields", native_fields)
+    result = reconcile(reconciliation)
+    closing = result["native_source_consumption"]["closing_capital"]
+    assert closing["status"] == expected_status
+    assert len(closing["anchors"]) == len(closing_values)
+    assert not closing["continuity_to_opening_verified"]
+    assert not result["current_price_basis_compatible"]
+    if expected_gap:
+        assert expected_gap in result["reason_codes"]
+    if expected_status == "EXACT_REPORT_DATE_SHARES_VERIFIED":
+        assert closing["rollforward_comparison"]["status"] == ("CONFLICT" if expected_gap else "MATCH")
+
+
 def test_partial_retains_prevaluation_cash_without_double_deduction(reconciliation):
     case = reconciliation
     case["ledger"].update(closing_shares=None, opening_pending_actions=None,
