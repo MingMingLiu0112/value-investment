@@ -625,6 +625,10 @@ def company_registries(root):
 def test_companies_union_registration_not_shortlist_or_research_success(case):
     client, _, data, root = case
     company_registries(root)
+    (root / 'config/current-first-research-inputs-v1.json').write_text(json.dumps({
+        'schema_version': 'current-first-research-inputs-v1', 'action': 'no_order',
+        'cases': {'600519': {'receipt': {'path': 'TEST_ONLY_NOT_READ'}}},
+    }), encoding='utf-8')
     before = snapshot(root)
     with client:
         with no_io_effects():
@@ -632,12 +636,12 @@ def test_companies_union_registration_not_shortlist_or_research_success(case):
     assert response.status_code == 200
     body = response.json()
     assert body['status'] == 'REGISTERED_ENTRIES'
-    assert [row['symbol'] for row in body['items']] == ['000001', '600001', '600002']
+    assert [row['symbol'] for row in body['items']] == ['000001', '600001', '600002', '600519']
     for row in body['items']:
         assert row['name'] is None and row['status'] == 'REGISTERED_NOT_YET_REVALIDATED'
         assert row['research_verified'] is False and row['current_candidate'] is None
         assert row['formal_eligibility'] is False and row['url'].endswith(row['symbol'])
-    assert len(body['items'][-1]['source_registries']) == 2
+    assert len(body['items'][2]['source_registries']) == 2
     assert data.reads == data.calls == [] and snapshot(root) == before
 
 
@@ -678,7 +682,8 @@ def test_actual_registered_company_entry_list_not_tied_to_current_shortlist():
     expected = set()
     for name, field in (
             ('config/current-research-drafts.json', 'pending_candidates'),
-            ('config/current-operating-research-sources-v1.json', 'cases')):
+            ('config/current-operating-research-sources-v1.json', 'cases'),
+            ('config/current-first-research-inputs-v1.json', 'cases')):
         expected.update(json.loads((root / name).read_bytes()).get(field, {}))
     with no_io_effects():
         body = routes._companies(root)
