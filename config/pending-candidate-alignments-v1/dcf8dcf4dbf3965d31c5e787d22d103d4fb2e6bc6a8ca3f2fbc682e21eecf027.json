@@ -15,6 +15,10 @@
       "sha256": "004452ae892533f199daba1611921f9298bee471b796f853b563d0312ffd9357"
     }
   ],
+  "materiality_envelope_binding": {
+    "path": "runtime/parent-owner-distribution-materiality-envelope-600887-20261118/envelope.json",
+    "sha256": "c1d6d764dd62430ba4e400c2ec0c5f5e54ef3bfa162867f3cbe8b5ba8de92e98"
+  },
   "source_observation_bindings": [],
   "reconciliation_binding": {
     "path": "runtime/parent-owner-distribution-successor-f2-600887-20261118/basis-ledger.json",

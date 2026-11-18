@@ -23,6 +23,7 @@ from .parent_remaining_year_successor import replay_parent_remaining_year_succes
 from .parent_direct_cash_research import _bound
 from .pending_candidate_alignment import _load_bound_alignment
 from ...research_artifact_codecs import ValuationResultCodec
+from ..product.common import load_json_object, require_inside, sha256_file
 
 
 INPUT_SCHEMA = "parent-owner-distribution-alignment-input-v2"
@@ -234,6 +235,46 @@ def read_parent_owner_distribution_alignment(*, root: Path, receipt_binding: dic
         "consumed_implemented_distributions": [deepcopy(inclusion)],
         "consumed_financial_updates": financial_update_closure,
     }
+    materiality_adapter = {
+        "status": "INPUT_ADAPTER_REQUIRED_IF_AUTHENTICATED_MATERIALITY",
+        "reason": "No exact owner-distribution successor review envelope is bound.",
+    }
+    config_path = root / "config/pending-candidate-alignments-v1" / (
+        receipt_binding["sha256"] + ".json"
+    )
+    if config_path.is_file():
+        config_path = require_inside(root, config_path, "owner distribution alignment configuration")
+        config_ref = {
+            "path": config_path.relative_to(root).as_posix(),
+            "sha256": sha256_file(config_path),
+        }
+        config = load_json_object(config_path, "owner distribution alignment configuration")
+        envelope_ref = config.get("materiality_envelope_binding")
+        if envelope_ref is not None:
+            if (
+                config.get("schema_version") != INPUT_SCHEMA
+                or config.get("candidate_binding") != receipt_binding
+                or config.get("input_descriptor_sha256") != result["input_descriptor_sha256"]
+            ):
+                raise ValueError("OWNER_DISTRIBUTION_MATERIALITY_ALIGNMENT_IDENTITY_MISMATCH")
+            envelope = _read(root, envelope_ref)
+            if envelope.get("receipt_binding") != receipt_binding:
+                raise ValueError("OWNER_DISTRIBUTION_MATERIALITY_RECEIPT_MISMATCH")
+            from ..product.research_materiality_reviews import _direct_review_original
+
+            _direct_review_original(root=root, envelope=envelope, now=now)
+            analysis["review_binding"]["package_binding"] = dict(envelope_ref)
+            for ref in (config_ref, envelope_ref, envelope["spec_binding"], envelope["result_binding"]):
+                if ref not in source_bindings:
+                    source_bindings.append(dict(ref))
+            materiality_adapter = {
+                "status": "EXACT_OWNER_DISTRIBUTION_REVIEW_ENVELOPE_BOUND",
+                "envelope_binding": dict(envelope_ref),
+                "approval_granted": False,
+                "reason": (
+                    "Bound review inputs only; authenticated event decisions remain required."
+                ),
+            }
     aligned = _load_bound_alignment(
         root=root, analysis=analysis, now=now, input_schema=INPUT_SCHEMA,
     )
@@ -243,6 +284,7 @@ def read_parent_owner_distribution_alignment(*, root: Path, receipt_binding: dic
         research_artifact_kind=KIND,
         receipt_binding=dict(receipt_binding),
         implemented_distribution_model_inclusion=deepcopy(inclusion),
+        materiality_input_adapter=materiality_adapter,
         formal_eligibility=False,
         action="no_order",
     )
