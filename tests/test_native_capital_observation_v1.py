@@ -240,3 +240,41 @@ def test_q3_table_wide_unit_and_ytd_columns(unit, expected):
         assert update["period_basis"] == "YEAR_TO_DATE_9M_NOT_SINGLE_QUARTER"
         assert update["fields"]["revenue_cny"]["value"] == "130970.04"
         assert update["fields"]["parent_profit_cny"]["value"] == "64467.95"
+
+
+@pytest.mark.parametrize("fault,error", [
+    (None, None),
+    ("symbol", "NATIVE_CANCELLATION_NOTICE_ISSUER_INVALID"),
+    ("delta", "NATIVE_CANCELLATION_NOTICE_SHARE_DELTA_MISMATCH"),
+    ("pending", "NATIVE_CANCELLATION_NOTICE_OPERATIVE_FIELDS_REQUIRED"),
+    ("date", "NATIVE_CANCELLATION_NOTICE_SIGNED_DATE_INVALID"),
+])
+def test_completed_cancellation_uses_operative_current_plan_only(fault, error):
+    cover = (
+        "证券代码：000001 证券简称：测试 公告编号：2026-22\n"
+        "测试股份有限公司\n关于部分限制性股票回购注销完成的公告\n"
+        "本公司及董事会全体成员保证披露内容。\n特别提示：\n"
+        "本次回购注销的限制性股票数量为10股。\n"
+        "截至本公告披露日，经中国登记结算有限责任公司深圳分公司审核确认，"
+        "本次限制性股票回购注销事宜已办理完成，公司股份总数由1,000股减少至990股。\n"
+        "根据既有激励计划，往期事项另见下文。"
+    )
+    footer = "往期注销90股。测试股份有限公司\n董事会\n2026年6月3日"
+    if fault == "delta":
+        cover = cover.replace("数量为10股", "数量为11股")
+    if fault == "pending":
+        cover = cover.replace("已办理完成", "尚未办理完成")
+    if fault == "date":
+        footer = footer.replace("2026年", "2025年")
+    pages = [cover, footer]
+    if error:
+        with pytest.raises(ValueError, match=error):
+            mod.parse_native_capital_observation(pages, symbol="600519" if fault == "symbol" else "000001")
+        return
+    output = mod.parse_native_capital_observation(pages, symbol="000001")
+    assert output["cancelled_shares"] == "10"
+    assert output["shares_before"] == "1000"
+    assert output["issued_shares_after"] == "990"
+    assert output["completed_by"] == "2026-06-03"
+    assert output["closing_continuity_proven"] is False
+    assert output["action"] == "no_order"

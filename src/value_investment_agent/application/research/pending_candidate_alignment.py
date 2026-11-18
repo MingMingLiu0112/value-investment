@@ -886,6 +886,22 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             implication="核对该候选的收入、利润及预测基期是否需要更新。",
                             financial_update=update, affected_model_fields=["revenue_cny", "parent_profit_cny"],
                             limitations=["前三季度累计披露，不视为单季、全年或预测。"], action="no_order")
+                    elif allow_quarterly_report and event["title"].endswith("关于部分限制性股票回购注销完成的公告"):
+                        from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
+
+                        observation = parse_native_capital_observation(pages, symbol=analysis["symbol"])
+                        if (observation.get("kind") != "restricted_share_cancellation_notice"
+                                or observation.get("status") != "VERIFIED"
+                                or observation.get("observation_date") != published.isoformat()):
+                            raise ValueError("CANCELLATION_ORIGINAL_NOT_VERIFIED_FOR_EVENT")
+                        terms = dict(event_type="REPORTED_RESTRICTED_SHARE_CANCELLATION_COMPLETED",
+                            published_date=published.isoformat(), effective_date=None,
+                            summary=f"截至公告日已完成注销{observation['cancelled_shares']}股；"
+                                    f"股份总数由{observation['shares_before']}变为{observation['issued_shares_after']}股。",
+                            implication="核对该次股本行动，不能证明比较日股本或期间行动覆盖。",
+                            terms=observation, affected_model_fields=["ordinary_shares"],
+                            limitations=["公告证明截至披露日已完成，未据此推断精确生效日。"],
+                            action="no_order")
                     elif allow_quarterly_report and event["title"].endswith("解除限售股份上市流通的提示性公告"):
                         from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
 
