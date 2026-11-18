@@ -15,5 +15,9 @@
       "sha256": "004452ae892533f199daba1611921f9298bee471b796f853b563d0312ffd9357"
     }
   ],
-  "source_observation_bindings": []
+  "source_observation_bindings": [],
+  "reconciliation_binding": {
+    "path": "runtime/remaining-q4-successor-f2-20261118/basis-ledger.json",
+    "sha256": "8c54db24ebe8e7c3e622d2ac51f0b30e54de17e5d389f595a94e4eb62fa2d4e6"
+  }
 }

@@ -36,7 +36,9 @@ def test_retained_successor_cold_replay_enters_exact_registered_checks():
     assert row["status"] == "BLOCKED"
     assert "EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING" not in row["reason_codes"]
     assert row["quote"].get("bundle_binding") is not None
-    assert "SOURCE_BOUND_RECONCILIATION_MISSING" in row["reason_codes"]
+    assert "SOURCE_BOUND_RECONCILIATION_MISSING" not in row["reason_codes"]
+    assert "CLOSING_SHARE_COUNT_UNVERIFIED" in row["reason_codes"]
+    assert "IN_PERIOD_CASH_FLOW_INCLUSION_REQUIRES_CANDIDATE_RECOMPUTATION" in row["reason_codes"]
     assert "EXACT_CANDIDATE_MATERIALITY_REVIEW_NOT_BOUND" in row["reason_codes"]
     assert row["action"] == "no_order" and row["formal_eligibility"] is False
     assert row["currentpricecomparison"] is False
