@@ -46,6 +46,12 @@ def read_first_research_input(*,root,symbol,now:datetime):
             from .parent_remaining_year_successor_view import read_parent_remaining_year_successor_view
             return read_parent_remaining_year_successor_view(
                 root=root, receipt_binding=ref, symbol=symbol, now=now)
+        if receipt.get("schema_version") == "parent-owner-distribution-successor-receipt-v2":
+            from .parent_owner_distribution_successor_view_v2 import (
+                read_parent_owner_distribution_successor_view,
+            )
+            return read_parent_owner_distribution_successor_view(
+                root=root, receipt_binding=ref, symbol=symbol, now=now)
         if receipt.get("schema_version") == "direct-owner-cash-first-input-receipt-v1":
             for binding in receipt.get("source_bindings",[]):
                 _binding(root,binding,runtime_only=False)

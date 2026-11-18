@@ -15,16 +15,30 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
         except ValueError as error:
             return JSONResponse(dict(action="no_order",status="INVALID_SYMBOL",reason=str(error)),
                 status_code=422,headers={"Cache-Control":"no-store"})
-        if result.get("receipt_schema_version") == "parent-remaining-year-successor-receipt-v1":
-            from ...application.research.parent_remaining_year_alignment import read_parent_remaining_year_alignment
-            try:
-                result["direct_cash_alignment"] = read_parent_remaining_year_alignment(
-                    root=project, receipt_binding=result["receipt_binding"], now=clock())
-            except (ValueError, OSError, KeyError, TypeError, AttributeError, ArithmeticError) as error:
+        successor_schema = result.get("receipt_schema_version")
+        if successor_schema in {
+                "parent-remaining-year-successor-receipt-v1",
+                "parent-owner-distribution-successor-receipt-v2"}:
+            if successor_schema == "parent-remaining-year-successor-receipt-v1":
+                from ...application.research.parent_remaining_year_alignment import read_parent_remaining_year_alignment
+                try:
+                    result["direct_cash_alignment"] = read_parent_remaining_year_alignment(
+                        root=project, receipt_binding=result["receipt_binding"], now=clock())
+                except (ValueError, OSError, KeyError, TypeError, AttributeError, ArithmeticError) as error:
+                    result["direct_cash_alignment"] = dict(
+                        schema_version="parent-remaining-year-alignment-v1", status="BLOCKED",
+                        reason_codes=["SUCCESSOR_ALIGNMENT_SOURCE_REPLAY_FAILED: " + str(error)],
+                        research_artifact_kind="PARENT_REMAINING_YEAR_SUCCESSOR_RECEIPT",
+                        receipt_binding=result["receipt_binding"],
+                        candidate_binding=result["receipt_binding"],
+                        input_descriptor_sha256=result.get("input_descriptor_sha256"),
+                        checks=[], evidence_bindings=[], currentpricecomparison=False,
+                        formal_eligibility=False, action="no_order")
+            else:
                 result["direct_cash_alignment"] = dict(
-                    schema_version="parent-remaining-year-alignment-v1", status="BLOCKED",
-                    reason_codes=["SUCCESSOR_ALIGNMENT_SOURCE_REPLAY_FAILED: " + str(error)],
-                    research_artifact_kind="PARENT_REMAINING_YEAR_SUCCESSOR_RECEIPT",
+                    schema_version="parent-owner-distribution-alignment-v2", status="BLOCKED",
+                    reason_codes=["F2_ALIGNMENT_NOT_IMPLEMENTED_FOR_OWNER_DISTRIBUTION_V2"],
+                    research_artifact_kind="PARENT_OWNER_DISTRIBUTION_SUCCESSOR_RECEIPT",
                     receipt_binding=result["receipt_binding"],
                     candidate_binding=result["receipt_binding"],
                     input_descriptor_sha256=result.get("input_descriptor_sha256"),
@@ -32,11 +46,15 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                     formal_eligibility=False, action="no_order")
             result["e2_quote_alignment"] = dict(
                 schema_version="first-input-quote-alignment-v1", status="UNASSESSABLE",
-                reason="E2_QUOTE_ALIGNMENT_NOT_APPLICABLE_TO_REMAINING_YEAR_SUCCESSOR",
+                reason=("E2_QUOTE_ALIGNMENT_NOT_APPLICABLE_TO_REMAINING_YEAR_SUCCESSOR"
+                    if successor_schema == "parent-remaining-year-successor-receipt-v1"
+                    else "F2_ALIGNMENT_NOT_IMPLEMENTED_FOR_OWNER_DISTRIBUTION_V2"),
                 quote_usable_for_e2_research=False, current_valuation_comparable=False,
                 condition_price=None, formal_eligibility=False, action="no_order")
             result["successor_update"] = dict(
-                status="NOT_APPLICABLE", reason="DISPLAYED_RECEIPT_IS_REMAINING_YEAR_SUCCESSOR",
+                status="NOT_APPLICABLE", reason=("DISPLAYED_RECEIPT_IS_REMAINING_YEAR_SUCCESSOR"
+                    if successor_schema == "parent-remaining-year-successor-receipt-v1"
+                    else "DISPLAYED_RECEIPT_IS_OWNER_DISTRIBUTION_SUCCESSOR_V2"),
                 action="no_order", formal_eligibility=False, price_admitted=False)
             result["quote_observation"] = dict(
                 status="NOT_REQUESTED_FOR_SUCCESSOR_F2_PROJECTION",
