@@ -16,15 +16,20 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
             return JSONResponse(dict(action="no_order",status="INVALID_SYMBOL",reason=str(error)),
                 status_code=422,headers={"Cache-Control":"no-store"})
         if result.get("receipt_schema_version") == "parent-remaining-year-successor-receipt-v1":
-            reason = "F2_DIRECT_ALIGNMENT_NOT_CONNECTED_FOR_REMAINING_YEAR_SUCCESSOR_RECEIPT"
-            result["direct_cash_alignment"] = dict(
-                schema_version="direct-owner-cash-alignment-v1", status="BLOCKED",
-                reason_codes=[reason], research_artifact_kind="PARENT_REMAINING_YEAR_SUCCESSOR_RECEIPT",
-                receipt_binding=result["receipt_binding"],
-                candidate_binding=result["receipt_binding"],
-                input_descriptor_sha256=result["input_descriptor_sha256"],
-                checks=[], evidence_bindings=[], currentpricecomparison=False,
-                formal_eligibility=False, action="no_order")
+            from ...application.research.parent_remaining_year_alignment import read_parent_remaining_year_alignment
+            try:
+                result["direct_cash_alignment"] = read_parent_remaining_year_alignment(
+                    root=project, receipt_binding=result["receipt_binding"], now=clock())
+            except (ValueError, OSError, KeyError, TypeError, AttributeError, ArithmeticError) as error:
+                result["direct_cash_alignment"] = dict(
+                    schema_version="parent-remaining-year-alignment-v1", status="BLOCKED",
+                    reason_codes=["SUCCESSOR_ALIGNMENT_SOURCE_REPLAY_FAILED: " + str(error)],
+                    research_artifact_kind="PARENT_REMAINING_YEAR_SUCCESSOR_RECEIPT",
+                    receipt_binding=result["receipt_binding"],
+                    candidate_binding=result["receipt_binding"],
+                    input_descriptor_sha256=result.get("input_descriptor_sha256"),
+                    checks=[], evidence_bindings=[], currentpricecomparison=False,
+                    formal_eligibility=False, action="no_order")
             result["e2_quote_alignment"] = dict(
                 schema_version="first-input-quote-alignment-v1", status="UNASSESSABLE",
                 reason="E2_QUOTE_ALIGNMENT_NOT_APPLICABLE_TO_REMAINING_YEAR_SUCCESSOR",
@@ -34,7 +39,8 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                 status="NOT_APPLICABLE", reason="DISPLAYED_RECEIPT_IS_REMAINING_YEAR_SUCCESSOR",
                 action="no_order", formal_eligibility=False, price_admitted=False)
             result["quote_observation"] = dict(
-                status="NOT_REQUESTED_FOR_UNALIGNED_SUCCESSOR", reason=reason,
+                status="NOT_REQUESTED_FOR_SUCCESSOR_F2_PROJECTION",
+                reason="QUOTE_REQUIRES_EXACT_BOUND_F2_EVIDENCE",
                 display_price=None, price_admitted=False, comparison_eligible=False)
             return JSONResponse(result, headers={"Cache-Control": "no-store"})
         if result.get("status") == "SOURCE_BOUND_FIRST_INPUT_COMPILED":

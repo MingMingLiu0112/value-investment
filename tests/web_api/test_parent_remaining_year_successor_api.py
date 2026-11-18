@@ -7,6 +7,7 @@ import json
 
 from value_investment_agent.application.product import first_research_input_view_v1 as view
 from value_investment_agent.application.product import parent_remaining_year_successor_view as successor_view
+from value_investment_agent.application.research import parent_remaining_year_alignment as successor_alignment
 from web_api.test_held_continuity_api import client_for
 
 
@@ -63,6 +64,16 @@ def test_successor_api_keeps_full_conditional_research_and_blocks_f2(tmp_path, m
         lambda **kwargs: (calls.append(kwargs), deepcopy(result))[1])
     monkeypatch.setattr(view, "replay_first_research_input", lambda **_:
         (_ for _ in ()).throw(AssertionError("v1 replay must not see successor")))
+    alignment_calls = []
+    monkeypatch.setattr(successor_alignment, "read_parent_remaining_year_alignment",
+        lambda **kwargs: (alignment_calls.append(kwargs), dict(
+            schema_version="parent-remaining-year-alignment-v1",
+            status="BLOCKED", reason_codes=["EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING"],
+            research_artifact_kind="PARENT_REMAINING_YEAR_SUCCESSOR_RECEIPT",
+            receipt_binding=receipt, candidate_binding=receipt,
+            input_descriptor_sha256="d" * 64, checks=[], evidence_bindings=[],
+            currentpricecomparison=False, formal_eligibility=False,
+            action="no_order"))[1])
     client, _ = client_for(tmp_path, tmp_path / "TEST_ONLY-private.jsonl", monkeypatch)
     before = files(tmp_path)
     assert client.get("/api/v1/private/portfolio/held-continuity").status_code == 401
@@ -76,11 +87,12 @@ def test_successor_api_keeps_full_conditional_research_and_blocks_f2(tmp_path, m
     assert body["annual_recalculations"]["base"]["full_year"]["cfo"]["fact_9m"] == "40"
     assert body["valuation"]["base_value"] == "2"
     assert body["direct_cash_alignment"]["reason_codes"] == [
-        "F2_DIRECT_ALIGNMENT_NOT_CONNECTED_FOR_REMAINING_YEAR_SUCCESSOR_RECEIPT"]
+        "EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING"]
     assert body["e2_quote_alignment"]["quote_usable_for_e2_research"] is False
     assert body["condition_price"] is None and body["current_price"] is None
     assert body["formal_eligibility"] is False and body["action"] == "no_order"
     assert len(calls) == 1 and calls[0]["receipt_binding"] == receipt
+    assert len(alignment_calls) == 1 and alignment_calls[0]["receipt_binding"] == receipt
     assert files(tmp_path) == before
 
 
