@@ -54,7 +54,7 @@ export interface DeliveryReview {
   runHref: string;
 }
 export const deliveryReviewMeta = {
-  reviewedAt: "2026-11-16",
+  reviewedAt: "2026-11-18",
   baseline: "ee38939d",
   kind: "人工交付复核，不是实时运行状态",
 } as const;
@@ -1218,8 +1218,8 @@ export const catalog: Record<
           why: "历史估值不能直接当作今天的买入依据。",
           how: "核对股本、期间分配、事件、模型有效性和合格报价。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
-          done: "现有当前对齐校验保留；新增直接股东现金候选消费既有价格政策，生成未批准的历史条件端点草案，按上海日期检查有效期；与当前买卖资格分开。",
-          gap: "本次直接现金结果是历史条件研究，主区间未采用；当前股本、期间分配、事件与报价联合资格未由这份草案取得，不输出当前买价。",
+          done: "现有当前对齐校验保留；600887当前继任候选已消费三季报冷重算和0.90元/股已实施分配。回购库存购买与长期服务计划二级市场购买被逐项分类，但不冒充完整股本连续性。",
+          gap: "报价与财务更新已通过，已实施分配已进入模型；比较日股本连续性、期间全部行动/分配覆盖及精确候选材料性仍未闭合，因此不输出当前买价。",
           acceptance: "完整对齐正例能产未批准条件价；不齐时准确拒绝。",
           evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
           runHref: "/strategy/value",
@@ -1240,20 +1240,22 @@ export const catalog: Record<
         implementation:
           "已有对齐规则保留；直接现金条件结果经显式价格政策形成历史端点草案，按上海日期到期；不读取现价调参",
         milestone: "部分接通；不代表正式研究准入或实盘资格。",
-        existingEvidence: "600519已有2026-06-30基准未批准参考线；非当前买价",
+        existingEvidence:
+          "600519已有2026-06-30基准未批准参考线（非当前买价）；600887当前候选的报价、Q3财务重算和已实施分配模型内含已核验；总F2仍阻断",
         evidenceSource:
           "d01923cd；docs/current/web-first-full-product-execution-ledger.md；.tmp/value-followup-acceptance/real-business-receipt.json（本机留存，不公开私人文件）",
-        evidence: "跨日股本、后续分配及材料性未闭合；旧报价会失效",
-        nextStep: "补跨日有效公司行动链及经济影响复核",
+        evidence:
+          "资本事件已逐项分类；跨日股本及完整股本连续性、期间覆盖与材料性未闭合",
+        nextStep: "补齐比较日股本完整行动链与精确候选材料性复核",
         ruleWhy: "价格桥不改变内在价值；UNKNOWN不是NO_TRADE，参考线不是BUY。",
         boundary:
           "事实、预测、研究候选与批准分开；未知必须保留。action=no_order。",
         progress: {
           consumer: "共享估值→既有value_price_policy→历史未批准草案→公司详情",
-          realData: "实际原件条件估值已生成历史草案；当前五维对齐仍未取得资格",
+          realData: "600887当前报价、Q3财务更新及已实施分配模型内含通过；其余F2门禁仍准确阻断",
           economic: "条件研究／未批准",
           deployment:
-            "2026-11-16历史草案在8001实际接口和公司页可读；当前买卖资格未放行",
+            "2026-11-18当前继任候选及F2五维结果已在8001真实API消费；当前买卖资格未放行",
           acceptance: "用户尚未确认此版本",
         },
       },
