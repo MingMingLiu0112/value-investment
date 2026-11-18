@@ -1108,6 +1108,34 @@ def test_mixed_payment_ledger_does_not_claim_issuer_payment(reconciliation, monk
         reconcile(case)
 
 
+@pytest.mark.parametrize("net_change", ["0", "-5"])
+def test_unlock_notice_is_not_effective_share_reduction(reconciliation, monkeypatch, net_change):
+    from value_investment_agent.infrastructure.filings import native_capital_observation_v1
+
+    case = reconciliation
+    source = dict(case["anchor"]["binding"],
+                  source_url="https://static.cninfo.com.cn/finalpage/2020-01-02/123.PDF")
+    monkeypatch.setattr(native_capital_observation_v1, "parse_native_capital_observation",
+        lambda pages, symbol: dict(kind="share_unlock_notice", status="VERIFIED",
+            observation_date="2020-01-02", share_effective_date="2020-01-06",
+            net_share_change=net_change, historical_cancelled_shares="5"))
+    window = dict(acquired_at="2020-01-03T00:00:00+08:00", announcements=[dict(
+        announcement_id="123", title="TEST_ONLY 解除限售股份上市流通的提示性公告",
+        published_at="2020-01-02T00:00:00+08:00", source_url=source["source_url"], evidence_refs=[source])])
+    row, = service._operating_events(case["analysis"], [window], case["now"],
+        lambda ref: _bound(case["root"], ref))
+    assert not row["materiality_approved"] and not row["model_inputs_changed"]
+    if net_change == "0":
+        terms = row["facts"][0]["terms"]
+        assert terms["event_type"] == "REPORTED_SHARE_UNLOCK_NOTICE"
+        assert terms["effective_date"] is None
+        assert terms["planned_implementation_date"] == "2020-01-06"
+        assert terms["affected_model_fields"] == []
+    else:
+        assert not row["facts"]
+        assert row["unresolved"][0]["reason"] == "UNLOCK_ORIGINAL_NOT_VERIFIED_FOR_EVENT"
+
+
 @pytest.mark.parametrize("report_end,verified", [("2020-09-30", True), ("2021-09-30", False)])
 @pytest.mark.parametrize("title", ["2020年第三季度报告", "2020年三季度报告"])
 def test_quarter_event_keeps_candidate_review_separate(reconciliation, monkeypatch, report_end, verified, title):

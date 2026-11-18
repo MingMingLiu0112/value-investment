@@ -875,6 +875,23 @@ def _operating_events(analysis, windows, now, read, *, parser=None):
                             implication="核对该候选的收入、利润及预测基期是否需要更新。",
                             financial_update=update, affected_model_fields=["revenue_cny", "parent_profit_cny"],
                             limitations=["前三季度累计披露，不视为单季、全年或预测。"], action="no_order")
+                    elif allow_quarterly_report and event["title"].endswith("解除限售股份上市流通的提示性公告"):
+                        from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
+
+                        observation = parse_native_capital_observation(pages, symbol=analysis["symbol"])
+                        if (observation.get("kind") != "share_unlock_notice"
+                                or observation.get("status") != "VERIFIED"
+                                or observation.get("observation_date") != published.isoformat()
+                                or _day(observation["share_effective_date"]) < published
+                                or observation.get("net_share_change") != "0"):
+                            raise ValueError("UNLOCK_ORIGINAL_NOT_VERIFIED_FOR_EVENT")
+                        terms = dict(event_type="REPORTED_SHARE_UNLOCK_NOTICE",
+                            published_date=published.isoformat(), effective_date=None,
+                            planned_implementation_date=observation["share_effective_date"],
+                            summary="解除限售通知列示总股数不变，流通结构以登记结算资料为准。",
+                            implication="此通知不支持增减股台账，也不证明比较日股本连续性。",
+                            share_unlock_observation=observation, affected_model_fields=[],
+                            limitations=["仅核验公告所列方案，未确认实际完成。"], action="no_order")
                     else:
                         from ...infrastructure.filings.parent_guarantee_event import TITLE, parse_parent_guarantee_event
 
