@@ -1181,7 +1181,8 @@ def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison
             event_type = terms.get("event_type")
             if event_type not in {
                     "REPORTED_BUYBACK_PROGRESS",
-                    "PLAN_SECONDARY_MARKET_SHARE_PURCHASE_COMPLETED"}:
+                    "PLAN_SECONDARY_MARKET_SHARE_PURCHASE_COMPLETED",
+                    "BUYBACK_CAPITAL_REDUCTION_CREDITOR_NOTICE"}:
                 continue
             facts = terms.get("terms") or {}
             if (event_type == "REPORTED_BUYBACK_PROGRESS" and comparison_date is not None
@@ -1202,6 +1203,8 @@ def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison
                     if event_type == "REPORTED_BUYBACK_PROGRESS" else None),
                 classification=("EXISTING_SHARE_TRANSACTION_NO_ISSUED_SHARE_CHANGE"
                     if issued_effect == "NO_ISSUANCE_OR_CANCELLATION_IN_THIS_PURCHASE_EVENT"
+                    else "PLANNED_CANCELLATION_NO_EFFECTIVE_DATE"
+                    if event_type == "BUYBACK_CAPITAL_REDUCTION_CREDITOR_NOTICE"
                     else "TREASURY_PURCHASE_OBSERVATION_NOT_CANCELLATION"),
                 window_completeness_granted=False, action="no_order"))
     observed = [dict(scan_from=w["scan_from"], scan_to=w["scan_to"],
