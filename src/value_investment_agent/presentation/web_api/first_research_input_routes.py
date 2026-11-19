@@ -52,6 +52,19 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                         input_descriptor_sha256=result.get("input_descriptor_sha256"),
                         checks=[], evidence_bindings=[], currentpricecomparison=False,
                         formal_eligibility=False, action="no_order")
+            if successor_schema == "parent-owner-distribution-successor-receipt-v2":
+                from ...application.product.parent_owner_distribution_successor_view_v2 import (
+                    read_aligned_owner_distribution_price,
+                )
+
+                draft = read_aligned_owner_distribution_price(
+                    root=project, view=result, alignment=result["direct_cash_alignment"], now=now,
+                )
+                result["condition_price_status"] = draft["status"]
+                result["condition_price_blockers"] = draft["reason_codes"]
+                if draft["status"] == "UNAPPROVED_ALIGNED_CONDITIONAL_DRAFT":
+                    result["condition_price"] = draft
+                    result["direct_owner_cash"]["conditional_price"] = draft
             result["e2_quote_alignment"] = dict(
                 schema_version="first-input-quote-alignment-v1", status="UNASSESSABLE",
                 reason=("E2_QUOTE_ALIGNMENT_NOT_APPLICABLE_TO_REMAINING_YEAR_SUCCESSOR"

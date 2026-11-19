@@ -105,3 +105,66 @@ def read_parent_owner_distribution_successor_view(*, root, receipt_binding, symb
             source_refs=result["source_bindings"],
         ),
     )
+
+
+
+def read_aligned_owner_distribution_price(*, root, view, alignment, now):
+    """Project explicit, hash-bound draft rules after the exact F2 replay."""
+    from zoneinfo import ZoneInfo
+
+    from ..decision.direct_owner_cash_price_draft_v1 import draft_direct_owner_cash_price
+    from ..research.pending_candidate_alignment import CHECK_IDS, CONFIG_DIRECTORY
+    from ..research.value_research_analysis import _bound
+    from .common import load_json_object
+
+    candidate = view.get("receipt_binding")
+    descriptor = view.get("input_descriptor_sha256")
+    checks = alignment.get("checks", [])
+    if (not candidate or not descriptor
+            or alignment.get("evaluated_at") != now.isoformat()
+            or (alignment.get("price_bridge") or {}).get("bridge_status") != "READY"
+            or alignment.get("status") != "ALIGNED_FOR_RESEARCH_COMPARISON"
+            or alignment.get("currentpricecomparison") is not True
+            or alignment.get("candidate_binding") != candidate
+            or alignment.get("input_descriptor_sha256") != descriptor
+            or alignment.get("action") != "no_order"
+            or alignment.get("formal_eligibility") is not False
+            or [row.get("id") for row in checks] != list(CHECK_IDS)
+            or any(row.get("status") != "PASS" for row in checks)):
+        return dict(status="BLOCKED", reason_codes=["EXACT_F2_ALIGNMENT_REQUIRED"], action="no_order")
+    try:
+        refs = alignment["evidence_bindings"]
+        config_path = f"{CONFIG_DIRECTORY}/{candidate['sha256']}.json"
+        config_ref, = [ref for ref in refs if ref["path"] == config_path]
+        config = load_json_object(_bound(root, config_ref), "owner distribution alignment")
+        policy_ref = config.get("price_policy_binding")
+        if policy_ref is None:
+            return dict(status="BLOCKED", reason_codes=["EXACT_PRICE_POLICY_NOT_BOUND"], action="no_order")
+        policy = load_json_object(_bound(root, policy_ref), "conditional price policy")
+        if (policy.get("schema_version") != "owner-distribution-price-policy-input-v1"
+                or policy.get("candidate_binding") != candidate
+                or policy.get("input_descriptor_sha256") != descriptor
+                or policy.get("action") != "no_order"):
+            raise ValueError("EXACT_PRICE_POLICY_IDENTITY_MISMATCH")
+        value = view["valuation"]
+        plan = dict(symbol=view["symbol"], action="no_order",
+                    research_version=view["research_case"]["research_version"],
+                    valuation_input_version=descriptor, model_id=value["model_type"],
+                    model_type=value["model_type"], model_version=value["model_version"],
+                    valuation_date=value["valuation_date"],
+                    source_bindings=[*refs, policy_ref], **view["scenario_valuations"])
+        result = draft_direct_owner_cash_price(
+            plan=plan, rule_config=policy["rule_config"],
+            as_of=now.astimezone(ZoneInfo("Asia/Shanghai")).date(),
+        )
+        for ref in (*refs, policy_ref):
+            _bound(root, ref)
+        if result["status"] == "HISTORICAL_CONDITIONAL_DRAFT":
+            result.update(status="UNAPPROVED_ALIGNED_CONDITIONAL_DRAFT",
+                          scope="CURRENT_ALIGNMENT_RESEARCH_DRAFT_NOT_FORMAL_ACTION",
+                          candidate_binding=candidate, input_descriptor_sha256=descriptor,
+                          policy_binding=policy_ref, quote_date=alignment["quote_date"])
+        return result
+    except (ValueError, OSError, TypeError, KeyError, ArithmeticError) as error:
+        return dict(status="BLOCKED", reason_codes=["PRICE_POLICY_REPLAY_REJECTED:" + str(error)],
+                    action="no_order")

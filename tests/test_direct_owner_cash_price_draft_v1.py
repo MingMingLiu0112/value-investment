@@ -154,3 +154,55 @@ def test_not_ready_valuation_rejected(inputs):
     from dataclasses import replace
     inputs["valuation"] = replace(valuation(), status="not_ready")
     assert "VALUATION_NOT_READY_OR_BLOCKED" in adapter.draft_direct_owner_cash_price(**inputs)["reason_codes"]
+
+
+
+@pytest.mark.parametrize("fault", [None, "failed_check", "wrong_candidate", "expired", "policy_tampered"])
+def test_successor_policy_requires_exact_f2_and_explicit_bound_rules(tmp_path, inputs, fault):
+    from datetime import datetime, timezone
+    from hashlib import sha256
+
+    from value_investment_agent.application.product.parent_owner_distribution_successor_view_v2 import (
+        read_aligned_owner_distribution_price,
+    )
+    from value_investment_agent.application.research.pending_candidate_alignment import CHECK_IDS, CONFIG_DIRECTORY
+
+    def write(name, data):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        raw = json.dumps(data).encode()
+        path.write_bytes(raw)
+        return dict(path=name, sha256=sha256(raw).hexdigest())
+
+    now = datetime(2026, 11, 16, tzinfo=timezone.utc)
+    candidate = write("candidate.json", {"fixture": "TEST_ONLY"})
+    descriptor = "a" * 64
+    view = dict(receipt_binding=candidate, input_descriptor_sha256=descriptor,
+                symbol="000568", research_case={"research_version": "TEST_ONLY_R1"},
+                valuation={key: inputs["plan"][key] for key in ("model_type", "model_version", "valuation_date")},
+                scenario_valuations=dict(bear="10", base="20", bull="30"))
+    rule = deepcopy(inputs["rule_config"])
+    if fault == "expired":
+        rule["effective_through"] = "2026-11-15"
+    policy = write("policy.json", dict(schema_version="owner-distribution-price-policy-input-v1",
+        action="no_order", candidate_binding=candidate if fault != "wrong_candidate" else {},
+        input_descriptor_sha256=descriptor, rule_config=rule))
+    config = write(f"{CONFIG_DIRECTORY}/{candidate['sha256']}.json", dict(price_policy_binding=policy))
+    checks = [dict(id=key, status="PASS") for key in CHECK_IDS]
+    if fault == "failed_check":
+        checks[1]["status"] = "BLOCKED"
+    if fault == "policy_tampered":
+        (tmp_path / policy["path"]).write_text("{}", encoding="utf-8")
+    alignment = dict(status="ALIGNED_FOR_RESEARCH_COMPARISON", candidate_binding=candidate,
+        input_descriptor_sha256=descriptor, evaluated_at=now.isoformat(), action="no_order",
+        formal_eligibility=False, currentpricecomparison=True, checks=checks,
+        price_bridge={"bridge_status": "READY"}, quote_date="2026-11-16",
+        evidence_bindings=[candidate, config])
+    result = read_aligned_owner_distribution_price(root=tmp_path, view=view, alignment=alignment, now=now)
+    assert result["action"] == "no_order"
+    if fault is None:
+        assert result["status"] == "UNAPPROVED_ALIGNED_CONDITIONAL_DRAFT"
+        assert result["approved"] is False and result["registered"] is False
+        assert result["candidate_binding"] == candidate and result["policy_binding"] == policy
+    else:
+        assert result["status"] in {"BLOCKED", "REJECTED"} and not result.get("draft_prices")

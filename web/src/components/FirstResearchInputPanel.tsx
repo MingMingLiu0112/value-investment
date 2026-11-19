@@ -628,6 +628,20 @@ function RemainingYearReview({ data }: { data: FirstResearchInputResponse }) {
 function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
   const cash = data.direct_owner_cash!;
   const price = cash.conditional_price;
+  const alignedDraft = price?.status === "UNAPPROVED_ALIGNED_CONDITIONAL_DRAFT";
+  const alignment = data.direct_cash_alignment;
+  const draftMismatch =
+    alignedDraft &&
+    (price.approved !== false ||
+      price.registered !== false ||
+      alignment?.currentpricecomparison !== true ||
+      alignment.quote_date !== price.quote_date ||
+      !data.receipt_binding?.sha256 ||
+      price.candidate_binding?.sha256 !== data.receipt_binding.sha256 ||
+      price.candidate_binding?.path !== data.receipt_binding.path ||
+      !data.input_descriptor_sha256 ||
+      price.input_descriptor_sha256 !== data.input_descriptor_sha256);
+
   if (
     cash.remaining_year_review?.schema_version ===
       "parent-remaining-year-successor-receipt-v1" &&
@@ -636,7 +650,9 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
     return <Alert type="warning" message="年度现金更新身份不符，停止展示" />;
   if (
     price &&
-    (price.action !== "no_order" || price.currentpricecomparison !== false)
+    (price.action !== "no_order" ||
+      price.currentpricecomparison !== false ||
+      draftMismatch)
   )
     return (
       <Alert type="warning" message="直接经营现金条件价边界不符，停止展示" />
@@ -652,7 +668,11 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
         历史估值时点：{supplied(data.valuation?.valuation_date)} · 研究截止：
         {supplied(data.research_as_of)}
       </p>
-      <p>条件研究 / 未批准 / 不是当前买价；不比较当前报价；action=no_order。</p>
+      <p>
+        {alignedDraft
+          ? "当前口径已核对，价格仅供未批准研究复核。action=no_order。"
+          : "条件研究 / 未批准 / 不比较当前报价；action=no_order。"}
+      </p>
       <p>
         方法：{supplied(cash.method)} · 估值依据：
         {supplied(cash.valuation_basis)} · 范围：{supplied(cash.scope)}
@@ -778,7 +798,7 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
         "parent-remaining-year-successor-receipt-v1" && (
         <>
           <h4>条件价草稿（不是当前买价）</h4>
-          <p>状态：{supplied(price?.status)}</p>
+          <p>状态：{supplied(price?.status ?? data.condition_price_status)}</p>
           <ul>
             {(
               [
@@ -800,7 +820,7 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
             原因代码：
             {price?.reason_codes?.length
               ? price.reason_codes.join("、")
-              : "未提供"}
+              : supplied(data.condition_price_blockers?.join("、"))}
           </p>
           <p>有效期至：{supplied(price?.expires_at)}</p>
         </>

@@ -448,6 +448,11 @@ export type DirectOwnerCash = {
     reason_codes: string[];
     expires_at?: string;
     currentpricecomparison: false;
+    candidate_binding?: { path: string; sha256: string };
+    input_descriptor_sha256?: string;
+    quote_date?: string;
+    approved?: false;
+    registered?: false;
     action: "no_order";
   } | null;
   source_refs: Array<Record<string, unknown>>;
@@ -681,7 +686,9 @@ export type FirstResearchInputResponse = {
     price_admitted: false;
     action: "no_order";
   } | null;
-  condition_price: null;
+  condition_price: DirectOwnerCash["conditional_price"];
+  condition_price_status?: string;
+  condition_price_blockers?: string[];
   personal_quantity: null;
   parent_cash_observation?: {
     status: string;
