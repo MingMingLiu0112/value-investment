@@ -145,3 +145,54 @@ def test_prior_period_attempt_cannot_be_displayed_as_current_period_stage(setup)
     assert view['status']=='AVAILABLE'
     assert view['items'][0]['tracking_status']=='DEEP_RESEARCH_PENDING'
     assert 'TEST_ONLY_OLD_ACTION' not in view['items'][0]['next_action']
+
+
+def test_v2_publishes_native_successor_and_rejects_implementation_gap(setup, monkeypatch):
+    from value_investment_agent.application.research import sse_research_pipeline_v2 as successor
+
+    root, _ = setup
+    before = prepare(setup, "v1")
+    old_manifest_path = root / before["manifest"]["path"]
+    old_queue_path = root / before["queue"]["path"]
+    preserved = old_manifest_path.read_bytes(), old_queue_path.read_bytes()
+    now = datetime.now(timezone.utc)
+    gap = successor.read_sse_research_pool(root=root, now=now)
+    assert gap["status"] == "UNAVAILABLE" and gap["tracking_count"] is None
+    legacy_pointer = (root / app.POINTER).read_bytes()
+    assert successor.read_sse_research_pool_for_web(root=root, now=now)["queue_binding"] == before["queue"]
+
+    published = successor.prepare_sse_research_run(
+        root=root, manifest_binding=setup[1],
+        output_path=root / "runtime/v2/queue.json")
+    manifest = successor._bound(root, published["manifest"])
+    assert manifest["parent_manifest"] == before["manifest"]
+    assert manifest["implementation"] == successor.implementation()
+    assert any(path.endswith("/verified_research_queue_cache_v1.py")
+               for path in manifest["implementation"])
+    assert (old_manifest_path.read_bytes(), old_queue_path.read_bytes()) == preserved
+
+    original_build = priority.build_sse_research_priority
+    calls = []
+    def count_replay(**kwargs):
+        calls.append(kwargs)
+        return original_build(**kwargs)
+    monkeypatch.setattr(priority, "build_sse_research_priority", count_replay)
+    now = datetime.now(timezone.utc)
+    cold = successor.read_sse_research_pool(root=root, now=now)
+    assert cold["status"] == "AVAILABLE" and cold["queue_binding"] == published["queue"]
+    assert cold["action"] == "no_order" and cold["history_available"] is True
+    assert successor.read_sse_research_pool(root=root, now=now) == cold
+    assert len(calls) == 1
+    assert successor.read_sse_research_pool_for_web(root=root, now=now)["queue_binding"] == before["queue"]
+    with pytest.raises(ValueError, match="STAGED_RESEARCH_MANIFEST_MISMATCH"):
+        successor.accept_sse_research_pool_for_web(root=root, manifest_binding=before["manifest"], now=now)
+    assert not (root / successor.WEB_POINTER).exists()
+    successor.accept_sse_research_pool_for_web(root=root, manifest_binding=published["manifest"], now=now)
+    assert successor.read_sse_research_pool_for_web(root=root, now=now)["queue_binding"] == published["queue"]
+    assert (root / app.POINTER).read_bytes() == legacy_pointer
+    assert app.read_sse_research_pool(root=root, now=now)["queue_binding"] == before["queue"]
+
+    (root / manifest["financial_export"]["path"]).write_bytes(b"{}")
+    broken = successor.read_sse_research_pool(root=root, now=now)
+    assert broken["status"] == "UNAVAILABLE" and broken["tracking_count"] is None
+    assert broken["blockers"] == ["CACHED_SCREEN_SOURCE_HASH_CHANGED"]

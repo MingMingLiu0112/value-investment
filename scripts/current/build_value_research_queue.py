@@ -20,7 +20,7 @@ def main() -> int:
     parser.add_argument("--receipt", type=Path)
     parser.add_argument("--receipt-sha256")
     parser.add_argument("--budget", type=int, default=10)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--output", type=Path)
     parser.add_argument("--previous", type=Path)
     parser.add_argument("--previous-sha256")
     parser.add_argument("--priority-version", choices=("v1", "v2"), default="v1")
@@ -35,7 +35,22 @@ def main() -> int:
     parser.add_argument("--execution-budget", type=int, default=2)
     parser.add_argument("--sse-manifest", type=Path, help="Explicit verified SSE screen manifest; reuse existing priority/enrichment engine")
     parser.add_argument("--sse-manifest-sha256")
+    parser.add_argument("--sse-pipeline", choices=("v1", "v2"), default="v1")
+    parser.add_argument("--accept-sse-v2-manifest", type=Path)
+    parser.add_argument("--accept-sse-v2-manifest-sha256")
     args = parser.parse_args()
+    if args.accept_sse_v2_manifest is not None or args.accept_sse_v2_manifest_sha256 is not None:
+        if args.accept_sse_v2_manifest is None or args.accept_sse_v2_manifest_sha256 is None:
+            parser.error("Web acceptance requires the exact staged manifest path and hash")
+        from datetime import datetime, timezone
+        from value_investment_agent.application.research.sse_research_pipeline_v2 import accept_sse_research_pool_for_web
+        accepted = accept_sse_research_pool_for_web(root=ROOT, now=datetime.now(timezone.utc),
+            manifest_binding=dict(path=args.accept_sse_v2_manifest.as_posix(),
+                                  sha256=args.accept_sse_v2_manifest_sha256))
+        print(json.dumps(accepted, ensure_ascii=False, indent=2))
+        return 0
+    if args.output is None:
+        parser.error("--output is required for queue preparation")
     if args.sse_manifest is not None or args.sse_manifest_sha256 is not None:
         if args.sse_manifest is None or args.sse_manifest_sha256 is None:
             parser.error("SSE manifest requires path and hash")
@@ -43,7 +58,10 @@ def main() -> int:
             parser.error("SSE source contract cannot be mixed with legacy report/export/previous inputs")
         if args.allow_public_evidence_downloads and not args.execute_enrichment:
             parser.error("public downloads require explicit enrichment execution")
-        from value_investment_agent.application.research.sse_research_pipeline_v1 import prepare_sse_research_run
+        if args.sse_pipeline == "v2":
+            from value_investment_agent.application.research.sse_research_pipeline_v2 import prepare_sse_research_run
+        else:
+            from value_investment_agent.application.research.sse_research_pipeline_v1 import prepare_sse_research_run
         result=prepare_sse_research_run(root=ROOT,
             manifest_binding=dict(path=args.sse_manifest.as_posix(),sha256=args.sse_manifest_sha256),
             output_path=ROOT/args.output,budget=args.budget,
