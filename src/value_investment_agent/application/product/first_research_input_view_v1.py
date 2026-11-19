@@ -126,7 +126,13 @@ def read_first_research_input(*,root,symbol,now:datetime):
             financial_update_observation=financial_update,
             source_review="NATIVE_FACT_ROWS_COLD_REPLAYED_NOT_ECONOMIC_APPROVAL",
             investment_conclusion="PRIMARY_RANGE_REJECTED_CONDITIONAL_PRESSURE_RESEARCH_ONLY")
-        from ..research.pending_candidate_alignment import _load_bound_alignment
+        from ..research.pending_candidate_alignment import (
+            _load_bound_alignment,
+            candidate_alignment_config_path,
+        )
+
+        if not candidate_alignment_config_path(root, ref["sha256"]).is_file():
+            return view
 
         analysis = dict(
             status="CONDITIONAL_ANALYSIS_VERIFIED", arithmetic_complete=True, action="no_order",
@@ -137,7 +143,8 @@ def read_first_research_input(*,root,symbol,now:datetime):
             joint_capital_review=dict(economic_path=dict(currency=next(iter(package["facts"]["scenario_inputs"].values()))["currency"])),
             official_fact_anchors=[dict(field="ordinary_shares", source_id=share_fact["source_id"],
                 source_value=share_fact["value"], unit=share_fact["unit"], period_end=share_fact["period_end"])],
-            opening_capital_original=dict(path=share_source["path"], sha256=share_source["sha256"]),
+            opening_capital_original=({key: share_source[key] for key in ("path", "sha256")}
+                if share_source.get("path") else None),
         )
         view["pending_candidate_alignment"] = _load_bound_alignment(
             root=root, analysis=analysis, now=now, input_schema="first-research-input-alignment-input-v1")
