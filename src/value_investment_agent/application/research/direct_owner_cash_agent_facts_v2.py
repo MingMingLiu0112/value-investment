@@ -183,6 +183,16 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
                 other_operating_cash_change_cny=str(
                     changes["cfo"] - changes["customer_cash"] + changes["supplier_cash"]),
             )
+        profit = statement["income"].get("parent_net_profit_cny")
+        if profit is not None and profit.get("current") is not None:
+            observed_profit = Decimal(_finite(profit["current"]))
+            row["profit_and_operating_cash"] = dict(
+                classification="HISTORICAL_CFO_VS_PARENT_PROFIT_NOT_TERMINAL_CONVERSION",
+                parent_profit_cny=str(observed_profit),
+                operating_cash_cny=row["cfo"],
+                operating_cash_minus_parent_profit_cny=str(Decimal(row["cfo"]) - observed_profit),
+                profit_source_refs=profit["source_refs"], cash_source_refs=row["source_refs"]["cfo"],
+            )
         observations.append(row)
     statements = {row["period_end"]: row for row in evidence["statements"]}
     if len(statements) != len(evidence["statements"]):
