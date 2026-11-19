@@ -431,6 +431,8 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     from ...infrastructure.filings.pdf_text import extract_pages
     from ...infrastructure.filings.official_pdf import validate_pdf_original
 
+    from ...quote_sessions import CHINA
+
     ledger = load_json_object(read(ref), "candidate public basis reconciliation")
     start = _day(analysis["valuation_date"])
     if (ledger["schema_version"] != "pending-candidate-basis-reconciliation-v1"
@@ -477,7 +479,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
             if (stamp.utcoffset() is None or stamp > now
                     or url.scheme != "https" or url.hostname != "static.cninfo.com.cn"
                     or not re.fullmatch(r"/finalpage/\d{4}-\d{2}-\d{2}/\d+\.PDF", url.path, re.I)
-                    or _day(url.path.split("/")[2]) > stamp.date()):
+                    or _day(url.path.split("/")[2]) > stamp.astimezone(CHINA).date()):
                 raise ValueError("OFFICIAL_RECONCILIATION_SOURCE_UNAVAILABLE")
             if binding["sha256"] not in cache:
                 validate_pdf_original(path)

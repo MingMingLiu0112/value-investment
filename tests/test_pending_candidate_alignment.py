@@ -1448,3 +1448,20 @@ def test_opening_dividend_schedule_does_not_claim_receipt(reconciliation, paymen
     assert schedule["outside_comparison_interval"] is outside
     assert schedule["cash_receipt_proven"] is False
     assert result["complete_opening_action_coverage"] is False
+
+
+@pytest.mark.parametrize("stamp,rejected", [
+    ("2019-12-31T16:00:01+00:00", False),
+    ("2019-12-31T15:59:59+00:00", True),
+])
+def test_reconciliation_uses_exchange_local_day_for_publication(reconciliation, stamp, rejected):
+    assert "/2020-01-01/" in reconciliation["anchor"]["source_url"]
+    reconciliation["anchor"]["available_at"] = stamp
+    reconciliation["analysis"]["source_catalog"][0]["source_available_at"] = stamp
+    if rejected:
+        with pytest.raises(ValueError, match="OFFICIAL_RECONCILIATION_SOURCE_UNAVAILABLE"):
+            reconcile(reconciliation)
+    else:
+        result = reconcile(reconciliation)
+        assert result["arithmetic_status"] == "RECONCILED"
+        assert not result["current_price_basis_compatible"]
