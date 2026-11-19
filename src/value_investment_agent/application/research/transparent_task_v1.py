@@ -299,22 +299,27 @@ class TransparentTaskService(base.ResearchTaskService):
                 failed(('REVIEW_NOTE',), 'REVIEW_TARGET', error)
 
         try:
+            from ..discovery.current_scan import current_scan_details
+            from ..discovery.value_candidate_selection import registered_value_screen
             from ..discovery.value_module_adapter_v1 import validate
+
             pointer_path = self.root / '.tmp/daily-workbench-latest-run.json'
-            raw = pointer_path.read_bytes()
-            pointer = json.loads(raw.decode('utf-8-sig'))
-            if (pointer.get('schema_version') != 'daily-workbench-run-v1'
-                    or pointer.get('action') != 'no_order'):
+            if pointer_path.is_symlink() or pointer_path.stat().st_size > 512_000:
                 raise ValueError('INVALID_SCAN_REGISTRATION')
-            # A registered restoration is explicitly historical replay, never fresh.
-            entry = (pointer['marketwide_screen'] if 'marketwide_screen' in pointer
-                     else pointer['retained_marketwide_screen'])
+            raw = pointer_path.read_bytes()
+            if len(raw) > 512_000:
+                raise ValueError('INVALID_SCAN_REGISTRATION')
+            pointer = json.loads(raw.decode('utf-8-sig'))
+            now = base._now()
+            entry, _ = registered_value_screen(pointer, now=now)
             ref = dict(path=entry['manifest_path'], sha256=entry['manifest_sha256'])
-            payload = dict(manifest_binding=ref, evaluation_at=base._now().isoformat(), limit=50)
+            payload = dict(manifest_binding=ref, evaluation_at=now.isoformat(), limit=50)
             validate(root=self.root, payload=dict(payload, symbol=symbol))
             manifest = self._bound(ref)
             for source_ref in manifest['files'].values():
                 self._raw_binding(source_ref)
+            if current_scan_details(self.root, manifest)['status'] != 'SOURCE_REVALIDATED':
+                raise ValueError('ORIGINAL_SOURCES_NOT_REPLAYABLE')
             if pointer_path.read_bytes() != raw:
                 raise ValueError('SCAN_REGISTRATION_CHANGED')
             ready('REPLAY_SELECTION', payload)

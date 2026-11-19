@@ -502,3 +502,17 @@ def test_quote_replay_rejects_manifest_source_not_consumed_by_receipt(source_pac
     binding = write('manifest.json', manifest)
     with pytest.raises(ValueError, match='not consumed by M2 receipt'):
         app.select_value_candidates(root=root, manifest_binding=binding, now=NOW)
+
+
+def test_workbench_prepares_retained_replay_after_failed_refresh(source_package):
+    from value_investment_agent.application.research.transparent_task_v1 import TransparentTaskService
+
+    root, binding, _, _ = source_package
+    path, _ = _run_pointer(root, binding)
+    before = path.read_bytes()
+    prepared = TransparentTaskService(root).prepare(symbol='600519')
+    replay = next(row for row in prepared['operations'] if row['operation'] == 'REPLAY_SELECTION')
+    assert replay['enabled'], replay
+    assert replay['payload']['manifest_binding'] == binding
+    assert prepared['tasks_started'] == 0
+    assert path.read_bytes() == before
