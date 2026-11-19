@@ -50,14 +50,36 @@ def staged_parent_cash_request_v3(**kwargs):
                 if movement["classification"] == "FACT":
                     floors.append(dict(year=year, field=forecast_field,
                                        minimum_cny=movement["value_cny"], observed_through=period))
-        if floors:
+        history = [
+            row for row in context.get("parent_operating_cash_observations", [])
+            if row["period_end"] == context["valuation_date"]
+            and row["scope"] == SCOPE and row["symbol"] == context["symbol"]
+        ]
+        if history:
+            if len(history) != 1 or not context["valuation_date"].endswith("-12-31"):
+                raise ValueError("PARENT_V3_UNIQUE_ANNUAL_OPERATING_HISTORY_REQUIRED")
+            historical = dict(history[0], currency="CNY", classification="FACT",
+                              period_start=context["valuation_date"][:4] + "-01-01")
+            operating = kwargs["prior_drafts"]["operating"]
+            with localcontext() as arithmetic:
+                arithmetic.prec = 48
+                payload["derived_annual_operating_cash_path"] = [
+                    dict(year=year, operating_cash_cny=str(_annual_operating_cash(
+                        historical, context, operating, index, year)))
+                    for index, year in enumerate(operating["years"])
+                ]
+        if floors or history:
             payload["realised_annual_financing_floors"] = floors
             return replace(request, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
                                                     separators=(",", ":")),
                            transport_output_contract=request.transport_output_contract +
                            " For each realised_annual_financing_floors row, the stated policy series "
                            "field in that year must be at least minimum_cny. These are gross realised "
-                           "parent cash amounts, not net financing or future refinancing forecasts.")
+                           "parent cash amounts, not net financing or future refinancing forecasts."
+                           " If derived_annual_operating_cash_path is present, use that cash path to "
+                           "check yearly liquidity and mandatory payments before modelling payout. "
+                           "It is derived from the submitted operating forecast, not a historical fact. "
+                           "Do not invent financing or other receipts to close a funding gap.")
     if kwargs["stage"] != "terminal":
         return request
     payload = json.loads(request.user)
@@ -228,6 +250,18 @@ def _historical_parent_operating_cash(*, root, spec, evaluated_at):
     return observed
 
 
+def _annual_operating_cash(historical, context, operating, index, year):
+    forecast = dict(symbol=context["symbol"], scope=SCOPE, currency="CNY",
+                    classification="FORECAST_ASSUMPTION", period_start=f"{year}-01-01",
+                    period_end=f"{year}-12-31",
+                    rationale="Source-bound conditional parent operating cash forecast",
+                    counter_evidence="Collection and payment conversion may weaken",
+                    reopen_condition="Reopen after new parent-company filing",
+                    **{field: operating["series"][field]["values"][index]
+                       for field in ("revenue", "cost", "other_operating_cash")})
+    return Decimal(forecast_parent_operating_cash(
+        historical=historical, forecast=forecast)["operating_cash"])
+
 def preflight_annual_cash_upper_bound_v3(*, root: Path, spec_binding: dict,
                                          evaluated_at, context: dict,
                                          operating: dict, policy: dict) -> None:
@@ -278,16 +312,7 @@ def preflight_annual_cash_upper_bound_v3(*, root: Path, spec_binding: dict,
         arithmetic.prec = 48
         cash = Decimal(opening["value_cny"])
         for index, year in enumerate(operating["years"]):
-            forecast = dict(symbol=context["symbol"], scope=SCOPE, currency="CNY",
-                classification="FORECAST_ASSUMPTION", period_start=f"{year}-01-01",
-                period_end=f"{year}-12-31",
-                rationale="Source-bound conditional parent operating cash forecast",
-                counter_evidence="Collection and payment conversion may weaken",
-                reopen_condition="Reopen after new parent-company filing",
-                **{field: operating["series"][field]["values"][index]
-                   for field in ("revenue", "cost", "other_operating_cash")})
-            cfo = Decimal(forecast_parent_operating_cash(
-                historical=historical, forecast=forecast)["operating_cash"])
+            cfo = _annual_operating_cash(historical, context, operating, index, year)
             amounts = {field: Decimal(term["values"][index])
                        for field, term in policy["series"].items()}
             if any(value < 0 for value in amounts.values()):
