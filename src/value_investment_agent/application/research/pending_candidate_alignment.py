@@ -699,8 +699,24 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         }
         gaps = [gap for gap in gaps if gap not in empty_interval_gaps]
         same_basis = not gaps
-        if same_basis:
-            closing_value = opening_value
+    rounded_capital = None
+    if (snapshot_ref := ledger.get("rounded_capital_snapshot_binding")) is not None:
+        from ...infrastructure.filings.sse_current_capital_snapshot_v1 import replay_sse_current_capital_snapshot
+
+        observation = replay_sse_current_capital_snapshot(
+            receipt_path=read(snapshot_ref), symbol=analysis["symbol"], as_of=now,
+        )
+        if _day(observation["trade_date"]) != end:
+            raise ValueError("ROUNDED_CAPITAL_SNAPSHOT_COMPARISON_DATE_MISMATCH")
+        within_range = observation["lower_bound_shares"] <= total <= observation["upper_bound_shares"]
+        rounded_capital = dict(observation, rollforward_within_range=within_range,
+                               evidence_binding=deepcopy(snapshot_ref))
+        evidence.append(deepcopy(snapshot_ref))
+        if not within_range:
+            gaps.append("ROUNDED_CAPITAL_SNAPSHOT_CONFLICTS_WITH_ROLLFORWARD")
+            same_basis = False
+    if same_basis:
+        closing_value = opening_value
     compatible = same_basis
     if actions:
         gaps.append("EFFECTIVE_SHARE_ACTION_REQUIRES_CANDIDATE_RECOMPUTATION")
@@ -720,6 +736,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         period_cash_coverage_complete=same_basis,
         native_basis_semantics_verified=same_basis,
         native_source_consumption=native_fields,
+        rounded_capital_observation=rounded_capital,
         engineering_gap=None if same_basis else (
             "已消费期初原件；跨日期股本连续性仍缺原生有效行动链消费者，不能仅补同日报告或人工无变动标志放行。"
             if native_fields["reports"] else "绑定原件尚未匹配已支持的正式中报股本及分配字段。"),
