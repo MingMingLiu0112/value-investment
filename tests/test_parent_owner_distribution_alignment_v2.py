@@ -215,6 +215,17 @@ def test_financial_update_pass_is_separate_from_materiality(aligned_case):
     issue["interest_start"] = closure[0]["period_end"]
     assert _financial_update_closure_status(analysis, events, operating_events=later)["status"] == "PASS"
 
+    redemption = {"event_type": "REPORTED_ISSUER_FINANCING_REDEMPTION",
+                  "published_date": "2099-01-01", "effective_date": closure[0]["period_end"],
+                  "financing_redemptions": [{"paid_cny": "203.10"}]}
+    later[0]["facts"][0]["terms"] = redemption
+    assert _financial_update_closure_status(analysis, events, operating_events=later)["status"] == "PASS"
+    redemption["effective_date"] = "2099-01-01"
+    unresolved = _financial_update_closure_status(analysis, events, operating_events=later)
+    assert unresolved["status"] == "BLOCKED"
+    assert unresolved["reason_codes"] == ["ISSUER_REDEMPTION_AFTER_RECOMPUTED_PERIOD_REQUIRES_CASH_RECONCILIATION"]
+    assert unresolved["subsequent_financing_redemption"][0]["redemptions"] == redemption["financing_redemptions"]
+
 
 
 def test_source_presence_without_recompute_closure_cannot_pass(aligned_case):

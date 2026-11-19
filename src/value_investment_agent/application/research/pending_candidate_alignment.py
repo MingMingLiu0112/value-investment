@@ -1157,7 +1157,17 @@ def _financial_update_closure_status(analysis, financial_events, *, operating_ev
         for issue in fact["terms"]["financing_issues"]
         if _day(issue["interest_start"]) > cutoff
     ]
-    if unmatched_observed or unmatched_closure or conflicts or later_financing:
+    later_redemptions = [
+        {"announcement_id": event["announcement_id"], "source_binding": fact["binding"],
+         "effective_date": fact["terms"]["effective_date"],
+         "redemptions": deepcopy(fact["terms"]["financing_redemptions"])}
+        for event in operating_events
+        if event.get("status") == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
+        for fact in event["facts"]
+        if fact["terms"].get("event_type") == "REPORTED_ISSUER_FINANCING_REDEMPTION"
+        and _day(fact["terms"]["effective_date"]) > cutoff
+    ]
+    if unmatched_observed or unmatched_closure or conflicts or later_financing or later_redemptions:
         reasons = []
         if unmatched_observed or unmatched_closure:
             reasons.append("FINANCIAL_UPDATE_REQUIRES_RECOMPUTATION")
@@ -1165,6 +1175,8 @@ def _financial_update_closure_status(analysis, financial_events, *, operating_ev
             reasons.append("REPORTED_PARENT_FINANCING_EXCEEDS_FULL_YEAR_POLICY")
         if later_financing:
             reasons.append("ISSUER_FINANCING_AFTER_RECOMPUTED_PERIOD_REQUIRES_CASH_RECONCILIATION")
+        if later_redemptions:
+            reasons.append("ISSUER_REDEMPTION_AFTER_RECOMPUTED_PERIOD_REQUIRES_CASH_RECONCILIATION")
         return {
             "status": "BLOCKED",
             "reason_codes": reasons,
@@ -1173,6 +1185,7 @@ def _financial_update_closure_status(analysis, financial_events, *, operating_ev
             "unmatched_observed": unmatched_observed,
             "unmatched_closure": unmatched_closure,
             "subsequent_financing_issuance": later_financing,
+            "subsequent_financing_redemption": later_redemptions,
         }
     return {
         "status": "PASS", "reason_codes": [],

@@ -487,3 +487,26 @@ def test_financing_issuance_extracts_only_complete_consistent_terms(fault):
             face_value_cny="3500000000", coupon_percent="1.37",
             issue_price_per_100_face_cny="100")]
         assert_evidence(result, pages)
+
+
+@pytest.mark.parametrize("reported", ["26,100.00", "100.00"])
+def test_financing_redemption_uses_payment_date_and_checks_principal(reported):
+    header = PRICE[0].split(" 根据《", 1)[0].replace(
+        "重大事项公告", "关于2026年度第十期超短期融资券兑付完成的公告",
+    )
+    pages = [header
+        + "公司2026年度第十期超短期融资券0.0002亿元1.29%89天"
+        + "2026年7月2日2026年9月29日临2026-046"
+        + "2026年9月29日，公司完成了2026年度第十期超短期融资券的兑付工作，"
+        + f"本息兑付总额为人民币{reported}元，由银行间市场清算所股份有限公司"
+        + "代理划付至债券持有人指定的银行账户。"
+        + "特此公告示例酒业股份有限公司董事会2026年10月1日"]
+    if reported == "100.00":
+        with pytest.raises(ValueError, match="FINANCING_REDEMPTION_TERMS_CONFLICT"):
+            parse(pages)
+        return
+    result = parse(pages)
+    assert result["effective_date"] == "2026-09-29"
+    assert result["published_date"] == "2026-10-01"
+    assert result["financing_redemptions"][0]["inferred_interest_cny"] == "6100.00"
+    assert_evidence(result, pages)
