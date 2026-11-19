@@ -641,6 +641,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
                 raise ValueError("CONSUMED_IMPLEMENTED_DISTRIBUTION_CLOSURE_INVALID")
             matches = [index for index, cash_row in enumerate(cash_rows)
                 if cash_row["ex_entitlement_in_period"]
+                and not cash_row["payment_pending_at_comparison"]
                 and cash_row["native_terms"] is not None
                 and Decimal(cash_row["native_terms"]["total_gross_cash"])
                     == Decimal(closure.get("total_cny", "NaN"))

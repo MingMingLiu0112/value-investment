@@ -316,6 +316,19 @@ def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconcil
     with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
         reconcile(case)
     terms["total_gross_cash"] = "200"
+    case["ledger"]["distributions"][0]["cash_payment_date"] = "2020-01-03"
+    case["analysis"]["consumed_implemented_distributions"][0]["paid_date"] = "2020-01-03"
+    terms["cash_payment_date"] = "2020-01-03"
+    case["anchor"]["excerpt"] += " 2020-01-03"
+    from value_investment_agent.infrastructure.filings import pdf_text
+    extract = pdf_text.extract_pages
+    monkeypatch.setattr(pdf_text, "extract_pages",
+        lambda path: [page + " 2020-01-03" for page in extract(path)])
+    with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
+        reconcile(case)
+    case["ledger"]["distributions"][0]["cash_payment_date"] = "2020-01-02"
+    case["analysis"]["consumed_implemented_distributions"][0]["paid_date"] = "2020-01-02"
+    terms["cash_payment_date"] = "2020-01-02"
 
     result = reconcile(case)
     assert result["implemented_distribution_inclusion_complete"] is True
