@@ -146,6 +146,7 @@ def test_cross_date_manual_arithmetic_cannot_grant_native_alignment(reconciliati
     result = reconcile(reconciliation)
     assert reconciliation["ledger"]["comparison_date"] != reconciliation["ledger"]["valuation_date"]
     assert result["status"] == "PARTIAL" and result["arithmetic_status"] == "RECONCILED"
+    assert "CROSS_DATE_NATIVE_CAPITAL_AND_DISTRIBUTION_CLOSURE_NOT_SUPPORTED" in result["reason_codes"]
     assert result["current_price_basis_compatible"] is False
     assert result["native_basis_semantics_verified"] is False
     assert result["closing_shares"] == result["calculated_closing_shares"] == "100"
@@ -839,6 +840,7 @@ def test_same_day_exempts_only_empty_interval_gaps(reconciliation, issue, reason
         assert result["reason_codes"] == []
         assert result["status"] == "RECONCILED"
         assert result["closing_shares"] == "100"
+        assert result["arithmetic_status"] == "RECONCILED"
 
 
 @pytest.mark.parametrize("disposition,missing", [("SHARE_ACTION", True), ("CASH_DISTRIBUTION", False)])

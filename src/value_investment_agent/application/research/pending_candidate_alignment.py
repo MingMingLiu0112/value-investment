@@ -664,7 +664,6 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         gaps.append("ACTION_PUBLICATION_WINDOW_MISSING")
     if any(not w["full_calendar_window_elapsed"] for w in windows):
         gaps.append("ACTION_COVERAGE_IS_RETRIEVAL_SNAPSHOT_ONLY")
-    arithmetic_complete = closing_value is not None
     # Exact excerpts/number/date co-occurrence and researcher classifications
     # are not a sealed semantic consumer. No caller-provided review/NO_EFFECT or
     # empty pending list may establish effective-action coverage or price basis.
@@ -736,6 +735,9 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     if same_basis:
         closing_value = opening_value
     compatible = same_basis
+    arithmetic_complete = closing_value is not None
+    if start < end:
+        gaps.append("CROSS_DATE_NATIVE_CAPITAL_AND_DISTRIBUTION_CLOSURE_NOT_SUPPORTED")
     if actions:
         gaps.append("EFFECTIVE_SHARE_ACTION_REQUIRES_CANDIDATE_RECOMPUTATION")
     if any(row.get("native_cancellation", {}).get("status") == "NATIVE_CANCELLATION_PAIR_UNVERIFIED"
