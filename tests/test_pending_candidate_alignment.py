@@ -1465,3 +1465,30 @@ def test_reconciliation_uses_exchange_local_day_for_publication(reconciliation, 
         result = reconcile(reconciliation)
         assert result["arithmetic_status"] == "RECONCILED"
         assert not result["current_price_basis_compatible"]
+
+
+@pytest.mark.parametrize("row_count", [0, 1, 2])
+def test_covered_cash_original_requires_exactly_one_ledger_row(reconciliation, monkeypatch, row_count):
+    case = reconciliation
+    anchor = case["anchor"]
+    case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
+        announcements=[dict(announcement_id="123", title="TEST_ONLY权益分派实施公告",
+            published_at="2019-12-31T16:00:00+00:00",
+            evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
+    case["ledger"]["distributions"] = [
+        dict(cash(case, in_period=True), id=f"TEST_ONLY_CASH_{i}") for i in range(row_count)
+    ]
+    terms = dict(published_date="2020-01-01", record_date="2020-01-01",
+        ex_date="2020-01-02", cash_payment_date="2020-01-02",
+        cash_per_share="2", total_gross_cash="200")
+    monkeypatch.setattr(service, "_cash_terms", lambda pages, symbol: terms)
+
+    result = reconcile(case)
+
+    observed, = result["covered_cash_implementations"]
+    assert observed["terms"] == terms
+    assert len(observed["matched_ledger_ids"]) == row_count
+    assert observed["status"] == ("MATCHED" if row_count == 1 else "LEDGER_MISMATCH")
+    assert ("COVERED_CASH_IMPLEMENTATION_REQUIRES_UNIQUE_LEDGER_ROW: 123" in
+            result["reason_codes"]) == (row_count != 1)
+    assert result["period_cash_coverage_complete"] is False

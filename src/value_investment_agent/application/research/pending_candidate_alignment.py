@@ -716,6 +716,45 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         gaps.append("ACTION_PUBLICATION_WINDOW_MISSING")
     if any(not w["full_calendar_window_elapsed"] for w in windows):
         gaps.append("ACTION_COVERAGE_IS_RETRIEVAL_SNAPSHOT_ONLY")
+    # Derive listed cash schedules from the covered originals, independently
+    # of the researcher-selected ledger rows and document classifications.
+    observed_cash = []
+    for identity, event in announced.items():
+        if not event.get("title", "").endswith(("权益分派实施公告", "分红派息实施公告")):
+            continue
+        sources = event["evidence_refs"]
+        try:
+            if len(sources) != 1:
+                raise ValueError("SINGLE_CASH_IMPLEMENTATION_ORIGINAL_REQUIRED")
+            source = sources[0]
+            original = read(dict(path=source["path"], sha256=source["sha256"]))
+            validate_pdf_original(original)
+            pages = cache.get(source["sha256"])
+            if pages is None:
+                pages = extract_pages(original)
+            terms = _cash_terms(pages, analysis["symbol"])
+            publication = datetime.fromisoformat(event["published_at"]).astimezone(CHINA).date()
+            if _day(terms["published_date"]) != publication:
+                raise ValueError("CASH_IMPLEMENTATION_PUBLICATION_MISMATCH")
+        except (OSError, ValueError) as error:
+            gaps.append("COVERED_CASH_IMPLEMENTATION_UNVERIFIED: " + identity)
+            observed_cash.append(dict(announcement_id=identity, status="UNVERIFIED", reason=str(error)))
+            continue
+        ex, payment = (_day(terms[k]) for k in ("ex_date", "cash_payment_date"))
+        if ex > end or max(ex, payment) <= start:
+            continue
+        matches = [
+            row for row in cash_rows
+            if row["native_terms"] == terms and any(
+                anchor["binding"]["sha256"] == source["sha256"]
+                and anchor["source_url"] == source["source_url"] for anchor in row["evidence"]
+            )
+        ]
+        if len(matches) != 1:
+            gaps.append("COVERED_CASH_IMPLEMENTATION_REQUIRES_UNIQUE_LEDGER_ROW: " + identity)
+        observed_cash.append(dict(announcement_id=identity, evidence_binding=deepcopy(source),
+            status="MATCHED" if len(matches) == 1 else "LEDGER_MISMATCH", terms=terms,
+            matched_ledger_ids=[row["id"] for row in matches]))
     # Exact excerpts/number/date co-occurrence and researcher classifications
     # are not a sealed semantic consumer. No caller-provided review/NO_EFFECT or
     # empty pending list may establish effective-action coverage or price basis.
@@ -819,6 +858,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         period_cash_coverage_complete=same_basis,
         native_basis_semantics_verified=same_basis,
         native_source_consumption=native_fields,
+        covered_cash_implementations=observed_cash,
         rounded_capital_observation=rounded_capital,
         closing_market_value_corroboration=market_value_capital,
         engineering_gap=None if same_basis else (
