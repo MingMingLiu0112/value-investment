@@ -876,7 +876,10 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         closing_shares=str(closing_value) if closing_value is not None else None,
         share_actions=action_rows, distributions=cash_rows, period_cash_per_share=str(period_cash),
         unconsumed_period_cash_per_share=str(unconsumed_period_cash),
-        implemented_distribution_inclusion_complete=(period_cash > 0 and unconsumed_period_cash == 0),
+        implemented_distribution_inclusion_complete=(
+            period_cash > 0 and unconsumed_period_cash == 0
+            and all(row["status"] == "MATCHED" for row in observed_cash)
+        ),
         period_cash_coverage_complete=same_basis,
         native_basis_semantics_verified=same_basis,
         native_source_consumption=native_fields,

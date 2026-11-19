@@ -325,6 +325,21 @@ def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconcil
     assert "IN_PERIOD_CASH_FLOW_INCLUSION_REQUIRES_CANDIDATE_RECOMPUTATION" not in result["reason_codes"]
     assert result["current_price_basis_compatible"] is False
 
+    anchor = case["anchor"]
+    case["windows"][0].update(
+        source_integrity_verified=True, acquired_at=anchor["available_at"],
+        announcements=[dict(
+            announcement_id="124", title="TEST_ONLY权益分派实施公告更正",
+            published_at="2019-12-31T16:00:00+00:00",
+            evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])],
+        )],
+    )
+    result = reconcile(case)
+    assert result["unconsumed_period_cash_per_share"] == "0"
+    assert not result["implemented_distribution_inclusion_complete"]
+    assert "COVERED_CASH_IMPLEMENTATION_LINEAGE_UNRESOLVED: 124" in result["reason_codes"]
+    assert not result["current_price_basis_compatible"]
+
 
 @pytest.mark.parametrize("path,value", [
     (("candidate_binding", "sha256"), "b" * 64),
