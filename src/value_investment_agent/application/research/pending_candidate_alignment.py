@@ -1108,7 +1108,7 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
     return rows
 
 
-def _financial_update_closure_status(analysis, financial_events):
+def _financial_update_closure_status(analysis, financial_events, *, operating_events=()):
     """Reconcile reported updates to an adapter-proven recomputation closure."""
     closure = analysis.get("consumed_financial_updates")
     if closure is None:
@@ -1146,12 +1146,25 @@ def _financial_update_closure_status(analysis, financial_events):
     unmatched_closure = [key for key in expected if key not in observed]
     conflicts = any(row.get("financing_comparison", {}).get("status") == "CONFLICT"
                     for row in closure)
-    if unmatched_observed or unmatched_closure or conflicts:
+    cutoff = max(_day(period) for period, _ in expected)
+    later_financing = [
+        {"announcement_id": event["announcement_id"], "source_binding": fact["binding"],
+         "issue": issue}
+        for event in operating_events
+        if event.get("status") == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
+        for fact in event["facts"]
+        if fact["terms"].get("event_type") == "REPORTED_ISSUER_FINANCING_ISSUANCE"
+        for issue in fact["terms"]["financing_issues"]
+        if _day(issue["interest_start"]) > cutoff
+    ]
+    if unmatched_observed or unmatched_closure or conflicts or later_financing:
         reasons = []
         if unmatched_observed or unmatched_closure:
             reasons.append("FINANCIAL_UPDATE_REQUIRES_RECOMPUTATION")
         if conflicts:
             reasons.append("REPORTED_PARENT_FINANCING_EXCEEDS_FULL_YEAR_POLICY")
+        if later_financing:
+            reasons.append("ISSUER_FINANCING_AFTER_RECOMPUTED_PERIOD_REQUIRES_CASH_RECONCILIATION")
         return {
             "status": "BLOCKED",
             "reason_codes": reasons,
@@ -1159,6 +1172,7 @@ def _financial_update_closure_status(analysis, financial_events):
             "consumed_closure": deepcopy(closure),
             "unmatched_observed": unmatched_observed,
             "unmatched_closure": unmatched_closure,
+            "subsequent_financing_issuance": later_financing,
         }
     return {
         "status": "PASS", "reason_codes": [],
@@ -1651,7 +1665,9 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
             if facts:
                 financial_events.append({**event, "facts": facts})
         checks[4]["details"]["financial_update_research"] = financial_events
-        financial_closure = _financial_update_closure_status(analysis, financial_events)
+        financial_closure = _financial_update_closure_status(
+            analysis, financial_events, operating_events=operating_events,
+        )
         if financial_closure is not None:
             checks[4]["status"] = financial_closure["status"]
             checks[4]["reason_codes"] = financial_closure["reason_codes"]

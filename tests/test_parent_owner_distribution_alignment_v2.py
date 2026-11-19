@@ -202,6 +202,19 @@ def test_financial_update_pass_is_separate_from_materiality(aligned_case):
     assert status["status"] == "PASS"
     assert status["reason_codes"] == []
     assert status["scope"] == "EXACT_CANDIDATE_FINANCIAL_UPDATE_CLOSURE"
+    # A separately replayed issue after the closed reporting period is not
+    # included merely because the quarterly report itself was recomputed.
+    issue = {"interest_start": "2099-01-01", "face_value_cny": "3500000000"}
+    later = [{"announcement_id": "TEST_ONLY", "status": "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW",
+              "facts": [{"binding": source, "terms": {"event_type": "REPORTED_ISSUER_FINANCING_ISSUANCE",
+                                                    "financing_issues": [issue]}}]}]
+    unresolved = _financial_update_closure_status(analysis, events, operating_events=later)
+    assert unresolved["status"] == "BLOCKED"
+    assert unresolved["reason_codes"] == ["ISSUER_FINANCING_AFTER_RECOMPUTED_PERIOD_REQUIRES_CASH_RECONCILIATION"]
+    assert unresolved["subsequent_financing_issuance"][0]["issue"] == issue
+    issue["interest_start"] = closure[0]["period_end"]
+    assert _financial_update_closure_status(analysis, events, operating_events=later)["status"] == "PASS"
+
 
 
 def test_source_presence_without_recompute_closure_cannot_pass(aligned_case):
