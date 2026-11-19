@@ -172,6 +172,18 @@ def preflight_terminal_forecast_debt_v3(*, request, parsed_stage):
         interest = Decimal(policy["interest_outside_cfo"]["values"][0])
         if interest <= 0:
             raise ValueError("PARENT_V3_TERMINAL_CASH_INTEREST_REQUIRED")
+    policy = terminal.get("policy", {})
+    cash_fields = ("operating_cash", "investment_cash_received", "new_borrowing",
+                   "maintenance_capex", "growth_capex", "interest_outside_cfo",
+                   "other_mandatory_cash", "debt_repayment", "parent_profit")
+    if all(field in policy for field in cash_fields):
+        with localcontext() as arithmetic:
+            arithmetic.prec = 48
+            amounts = {field: Decimal(policy[field]["values"][0]) for field in cash_fields}
+            net = (amounts["operating_cash"] + amounts["investment_cash_received"]
+                   + amounts["new_borrowing"] - sum(amounts[field] for field in cash_fields[3:-1]))
+        if not 0 <= net <= amounts["parent_profit"]:
+            raise ValueError("PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION")
 
 
 def merge_staged_parent_cash_v3(**kwargs):
