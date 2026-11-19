@@ -1144,6 +1144,26 @@ export function FirstResearchInputView({
           )}
         </p>
       )}
+      {data.pending_candidate_alignment && (
+        <CandidateAlignmentPanel
+          alignment={data.pending_candidate_alignment}
+          matches={
+            data.pending_candidate_alignment.schema_version ===
+              "pending-candidate-alignment-v1" &&
+            data.pending_candidate_alignment.action === "no_order" &&
+            data.pending_candidate_alignment.formal_eligibility === false &&
+            !!data.receipt_binding &&
+            data.pending_candidate_alignment.candidate_binding?.path ===
+              data.receipt_binding.path &&
+            data.pending_candidate_alignment.candidate_binding?.sha256 ===
+              data.receipt_binding.sha256 &&
+            data.pending_candidate_alignment.input_descriptor_sha256 ===
+              data.input_descriptor_sha256 &&
+            data.pending_candidate_alignment.valuation_date ===
+              data.financial_basis
+          }
+        />
+      )}
       {data.quote_observation && (
         <p aria-label="独立行情观察">
           行情观察：{data.quote_observation.quote_date || "未登记日期"}

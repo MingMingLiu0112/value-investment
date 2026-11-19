@@ -1155,7 +1155,20 @@ function OpeningActionChain({ value }: { value: unknown }) {
     : [];
   return (
     <section aria-label="已知期初行动对账">
-      <h6>已知期初行动对账 · 不等于当前完整股本链</h6>
+      <h6>已知期初行动对账</h6>
+      {object(value.completed_cancellation_in_opening_basis) &&
+        value.completed_cancellation_in_opening_basis.status ===
+          "MATCHED_COMPLETED_IN_CONSUMED_OPENING_CAPITAL" && (
+          <p>
+            已注销{" "}
+            {text(
+              value.completed_cancellation_in_opening_basis.cancelled_shares,
+            )}
+            股已计入估值期初的{" "}
+            {text(value.completed_cancellation_in_opening_basis.opening_shares)}
+            股，本次注销的期间股本变动计零。比较日股本连续性仍需核验。
+          </p>
+        )}
       {purchases.map((row, i) => (
         <div key={i}>
           <p>

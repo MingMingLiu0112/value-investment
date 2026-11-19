@@ -558,6 +558,7 @@ type RemainingYearSuccessorReview = {
 };
 
 export type FirstResearchInputResponse = {
+  pending_candidate_alignment?: CandidatePriceAlignment;
   receipt_binding?: { path: string; sha256: string };
   direct_owner_cash?: DirectOwnerCash & {
     remaining_year_review?:
