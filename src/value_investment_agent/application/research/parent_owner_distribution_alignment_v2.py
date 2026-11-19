@@ -24,7 +24,7 @@ from .owner_distribution_read_scope import (
 from .parent_owner_distribution_successor_v2 import RECEIPT_SCHEMA
 from .parent_remaining_year_successor import replay_parent_remaining_year_successor
 from .parent_direct_cash_research import _bound
-from .pending_candidate_alignment import _load_bound_alignment
+from .pending_candidate_alignment import _load_bound_alignment, candidate_alignment_config_path
 from ...research_artifact_codecs import ValuationResultCodec
 from ..product.common import load_json_object, require_inside, sha256_file
 
@@ -284,9 +284,7 @@ def read_parent_owner_distribution_alignment(*, root: Path, receipt_binding: dic
         "status": "INPUT_ADAPTER_REQUIRED_IF_AUTHENTICATED_MATERIALITY",
         "reason": "No exact owner-distribution successor review envelope is bound.",
     }
-    config_path = root / "config/pending-candidate-alignments-v1" / (
-        receipt_binding["sha256"] + ".json"
-    )
+    config_path = candidate_alignment_config_path(root, receipt_binding["sha256"])
     if config_path.is_file():
         config_path = require_inside(root, config_path, "owner distribution alignment configuration")
         config_ref = {

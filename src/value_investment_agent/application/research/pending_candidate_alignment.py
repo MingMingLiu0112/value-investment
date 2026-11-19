@@ -1516,6 +1516,12 @@ def _assess(analysis, valuation, quote, quote_result, windows, scans, reconcilia
     return checks, validity, bridge, ready
 
 
+def candidate_alignment_config_path(root, digest):
+    if not isinstance(digest, str) or not re.fullmatch(r"[a-f0-9]{64}", digest):
+        raise ValueError("EXACT_CANDIDATE_HASH_REQUIRED")
+    return root / CONFIG_DIRECTORY / (digest + ".json")
+
+
 def load_pending_candidate_alignment(*, root, analysis, now):
     """No discovery by recency, no registration, no approval and no writes."""
     return _load_bound_alignment(root=root, analysis=analysis, now=now,
@@ -1553,7 +1559,7 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
         if (analysis["status"] != "CONDITIONAL_ANALYSIS_VERIFIED" or analysis["action"] != "no_order"
                 or analysis["arithmetic_complete"] is not True):
             raise ValueError("SOURCE_RECOMPUTED_ANALYSIS_REQUIRED")
-        config_path = root / CONFIG_DIRECTORY / (digest + ".json")
+        config_path = candidate_alignment_config_path(root, digest)
         if not config_path.is_file():
             result["reason_codes"] = ["EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING"]
             return result
