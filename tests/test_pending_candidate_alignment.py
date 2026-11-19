@@ -281,7 +281,7 @@ def test_period_cancellation_requires_pair_and_post_publication_cutoff(monkeypat
         assert proof["status"] == "NATIVE_CANCELLATION_PAIR_UNVERIFIED"
 
 
-def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconciliation):
+def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconciliation, monkeypatch):
     case = reconciliation
     case["ledger"]["distributions"] = [cash(case, in_period=True)]
     case["analysis"]["consumed_implemented_distributions"] = [dict(
@@ -291,6 +291,16 @@ def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconcil
         original_binding=case["anchor"]["binding"], period_cash_coverage_complete=False,
         capital_structure_aligned=False, materiality_approved=False,
         financial_updates_reconciled=False, formal_eligibility=False, action="no_order")]
+    with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
+        reconcile(case)
+    terms = dict(published_date="2020-01-01", record_date="2020-01-01",
+        ex_date="2020-01-02", cash_payment_date="2020-01-02",
+        cash_per_share="2", total_gross_cash="201")
+    monkeypatch.setattr(service, "_cash_terms", lambda pages, symbol: terms)
+    with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
+        reconcile(case)
+    terms["total_gross_cash"] = "200"
+
     result = reconcile(case)
     assert result["implemented_distribution_inclusion_complete"] is True
     assert result["unconsumed_period_cash_per_share"] == "0"
