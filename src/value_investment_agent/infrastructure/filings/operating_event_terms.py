@@ -15,7 +15,7 @@ VERSION = "operating-event-terms-v2"
 _DATE = r"(?P<{name}>20[0-9]{{2}}年[0-9]{{1,2}}月[0-9]{{1,2}}日)"
 _PUBLICATION_DATE = (
     r"(?P<{name}>(?:20[0-9]{{2}}年[0-9]{{1,2}}月[0-9]{{1,2}}日|"
-    r"二[〇零一二三四五六七八九]{{3}}年"
+    r"二[〇○零一二三四五六七八九]{{3}}年"
     r"[一二三四五六七八九十]{{1,3}}月[一二三四五六七八九十]{{1,3}}日))"
 )
 _MONEY = r"[0-9]+(?:\.[0-9]+)?"
@@ -34,13 +34,13 @@ def _day(text):
     match = re.fullmatch(r"(20[0-9]{2})年([0-9]{1,2})月([0-9]{1,2})日", text)
     if not match:
         chinese = re.fullmatch(
-            r"(二[〇零一二三四五六七八九]{3})年"
+            r"(二[〇○零一二三四五六七八九]{3})年"
             r"([一二三四五六七八九十]{1,3})月"
             r"([一二三四五六七八九十]{1,3})日",
             text,
         )
         if chinese:
-            digits = {"〇": 0, "零": 0, "一": 1, "二": 2, "三": 3, "四": 4,
+            digits = {"〇": 0, "○": 0, "零": 0, "一": 1, "二": 2, "三": 3, "四": 4,
                       "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
 
             def number(value):
@@ -461,6 +461,27 @@ def _buyback_completion(body, published):
     )
 
 
+def _buyback_creditor_notice(body, published):
+    future_cancellation = _match(
+        r".*(?P<clause>待回购完成后,本次回购的股份将依法全部予以注销并减少公司注册资本。).*", body,
+    )
+    claim_window = _match(r".*(?P<clause>申报时间:(?P<start>20\d{2}年\d{1,2}月\d{1,2}日)至"
+                          r"(?P<end>20\d{2}年\d{1,2}月\d{1,2}日)).*", body)
+    start, end = _day(claim_window["start"]), _day(claim_window["end"])
+    if start != published or end < start:
+        _reject("BUYBACK_CREDITOR_CLAIM_WINDOW_INVALID")
+    return dict(
+        event_type="BUYBACK_CAPITAL_REDUCTION_CREDITOR_NOTICE",
+        effective_date=None,
+        terms=dict(claim_start=start, claim_end=end, cancellation_status="PLANNED"),
+        affected_model_fields=["cash", "ordinary_shares"],
+        summary=f"拟于回购完成后注销股份；债权申报期间为 {start} 至 {end}。",
+        implication="后续须核对实际回购、注销及资金义务的完成证据。",
+        limitations=["债权人通知不证明已注销、实付金额或债权已结清。"],
+        _evidence=[(future_cancellation["clause"], "planned_cancellation"),
+                   (claim_window["clause"], "creditor_claim_window")],
+    )
+
 def _plan_market_purchase_completion(body, title, published):
     """Parse a bounded employee/service-plan secondary-market purchase.
 
@@ -550,7 +571,7 @@ def parse_operating_event_terms(pages, *, symbol):
         r"(?P<issuer>[\u4e00-\u9fffA-Za-z()]{2,80}股份有限公司)"
         r"(?P<title>重大事项公告|" + _MEETING + r"决议公告|关于会计政策变更的公告|(?P<no_period>"
         r"(?P<plan_purchase>关于第[一二三四五六七八九十]+期(?:长期服务计划|员工持股计划)完成股票购买的公告)|"
-        r"(?P<buyback>关于股份回购进展公告|关于以集中竞价交易方式首次回购公司股份的公告|关于股份回购实施结果暨股份变动的公告)))"
+        r"(?P<buyback>关于股份回购进展公告|关于以集中竞价交易方式首次回购公司股份的公告|关于股份回购实施结果暨股份变动的公告|关于回购股份减少注册资本通知债权人的公告)))"
         + re.escape(_GUARANTEE) + r"(?P<body>.+)特此公告(?(no_period)。?|。)"
         r"(?P=issuer)董事会" + _PUBLICATION_DATE.format(name="published"), text,
     )
@@ -566,6 +587,8 @@ def parse_operating_event_terms(pages, *, symbol):
         result = _accounting(body, issuer, published)
     elif title == "关于股份回购实施结果暨股份变动的公告":
         result = _buyback_completion(body, published)
+    elif title == "关于回购股份减少注册资本通知债权人的公告":
+        result = _buyback_creditor_notice(body, published)
     elif header["plan_purchase"]:
         result = _plan_market_purchase_completion(body, title, published)
     elif header["buyback"]:

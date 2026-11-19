@@ -396,3 +396,25 @@ def test_plan_purchase_date_and_arithmetic_must_reconcile(old, new):
     page = _plan_purchase_page()
     with pytest.raises(ValueError, match="OPERATING_EVENT_"):
         parse([page.replace(old, new)])
+
+
+def test_creditor_notice_keeps_cancellation_pending():
+    page = (
+        "证券代码：000777 证券简称：示例 公告编号：临2026-090 "
+        "示例股份有限公司关于回购股份减少注册资本通知债权人的公告"
+        "本公司董事会及全体董事保证本公告内容不存在任何虚假记载、误导性陈述或者"
+        "重大遗漏，并对其内容的真实性、准确性和完整性承担法律责任。"
+        "待回购完成后，本次回购的股份将依法全部予以注销并减少公司注册资本。"
+        "申报时间：2026年9月17日至2026年10月31日。"
+        "特此公告 示例股份有限公司董事会二○二六年九月十七日"
+    )
+    result = parse([page])
+    assert result["event_type"] == "BUYBACK_CAPITAL_REDUCTION_CREDITOR_NOTICE"
+    assert result["terms"] == {
+        "claim_start": "2026-09-17", "claim_end": "2026-10-31",
+        "cancellation_status": "PLANNED",
+    }
+    assert result["effective_date"] is None
+    assert result["action"] == "no_order"
+    with pytest.raises(ValueError, match="CLAIM_WINDOW_INVALID"):
+        parse([page.replace("2026年9月17日", "2026年9月18日")])
