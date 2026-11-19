@@ -277,3 +277,32 @@ def test_exact_48_digit_capex_split_accepts_and_one_digit_change_rejects(case):
     with pytest.raises(ValueError, match="SUCCESSOR_CAPEX_NOT_RECONCILED"):
         successor.build_parent_remaining_year_successor(root=root, spec_binding=bad,
             output_dir=root / "runtime/TEST_ONLY-precise-bad-output", now=NOW)
+
+
+def test_quarterly_financing_opt_in_replays_parent_only_and_rejects_missing_row(tmp_path, monkeypatch):
+    from value_investment_agent.application.research.agent_review import quarterly_parent_cash_source as source
+
+    original = write_bound(tmp_path, "runtime/TEST_ONLY-financing-original.json", {"fixture": True})
+    original.update(
+        url="https://static.cninfo.com.cn/finalpage/2026-10-30/1225644500.PDF",
+        acquired_at=NOW.isoformat(),
+    )
+    kwargs = dict(root=tmp_path, source=original, symbol="600887", issuer_name=ISSUER,
+                  period_end="2026-09-30", now=NOW)
+    pages = list(PAGES)
+    monkeypatch.setattr(source, "extract_pages", lambda path: pages)
+    legacy = source.replay_quarterly_parent_cash(**kwargs)
+    observed = source.replay_quarterly_parent_cash(**kwargs, include_financing=True)
+    financing = observed.pop("financing")
+    assert observed == legacy
+    assert financing["borrowings_received_cny"]["current"] == "182711547658.23"
+    repayment = financing["debt_repayments_paid_cny"]
+    assert repayment["current"] == "202501881888.99"
+    assert repayment["comparative"] == "128240500000.00"
+    assert repayment["scope"] == "ISSUER_PARENT_STANDALONE"
+    assert repayment["physical_page"] == legacy["fields"]["cfo"]["physical_page"]
+    index = repayment["physical_page"] - 1
+    pages[index] = pages[index].replace(repayment["excerpt"], "")
+    assert source.replay_quarterly_parent_cash(**kwargs) == legacy
+    with pytest.raises(ValueError, match="PARENT_QUARTER_FINANCING_ROW_MISSING_OR_AMBIGUOUS"):
+        source.replay_quarterly_parent_cash(**kwargs, include_financing=True)

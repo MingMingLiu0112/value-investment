@@ -1,15 +1,18 @@
 """Replay parent cash facts with an explicit official original and observation time."""
 
 from datetime import datetime
+from decimal import Decimal
 from hashlib import sha256
 import re
 
 from ...product.common import require_inside
 from ....infrastructure.filings.pdf_text import extract_pages
+from ....infrastructure.filings.quarterly_operating_facts_v1 import MONEY
 from ....infrastructure.filings.quarterly_parent_cash_facts import parse_quarterly_parent_cash_facts
 
 
-def replay_quarterly_parent_cash(*, root, source, symbol, issuer_name, period_end, now):
+def replay_quarterly_parent_cash(*, root, source, symbol, issuer_name, period_end, now,
+                                 include_financing=False):
     fields = {"path", "sha256", "url", "acquired_at"}
     if (not isinstance(source, dict) or set(source) != fields
             or any(not isinstance(source[key], str) for key in fields)
@@ -26,8 +29,34 @@ def replay_quarterly_parent_cash(*, root, source, symbol, issuer_name, period_en
     path = require_inside(root / "runtime", root / relative, "parent quarter source")
     if sha256(path.read_bytes()).hexdigest() != source["sha256"]:
         raise ValueError("PARENT_QUARTER_SOURCE_HASH_CHANGED")
+    pages = extract_pages(path)
     result = parse_quarterly_parent_cash_facts(
-        extract_pages(path), symbol=symbol, issuer_name=issuer_name, period_end=period_end)
+        pages, symbol=symbol, issuer_name=issuer_name, period_end=period_end)
+    if include_financing:
+        anchor = result["fields"]["cfo"]
+        lines = pages[anchor["physical_page"] - 1].splitlines()
+        section = [index for index, line in enumerate(lines)
+                   if re.fullmatch(r"三[、.]筹资活动产生的现金流量[:：]", "".join(line.split()))]
+        if len(section) != 1:
+            raise ValueError("PARENT_QUARTER_FINANCING_SECTION_REQUIRED")
+        result["financing"] = {}
+        for field, label in (("borrowings_received_cny", "取得借款收到的现金"),
+                             ("debt_repayments_paid_cny", "偿还债务支付的现金")):
+            pattern = re.compile(re.escape(label) + MONEY + MONEY)
+            rows = [(line, pattern.fullmatch("".join(line.split())))
+                    for line in lines[section[0] + 1:]]
+            matches = [(line, matched) for line, matched in rows if matched]
+            if len(matches) != 1:
+                raise ValueError("PARENT_QUARTER_FINANCING_ROW_MISSING_OR_AMBIGUOUS:" + field)
+            line, match = matches[0]
+            amounts = [Decimal(value.replace(",", "")) for value in match.groups()]
+            if min(amounts) < 0:
+                raise ValueError("PARENT_QUARTER_FINANCING_NEGATIVE_GROSS_FLOW:" + field)
+            result["financing"][field] = {
+                "current": str(amounts[0]), "comparative": str(amounts[1]),
+                "excerpt": line.strip(), "physical_page": anchor["physical_page"],
+                "currency": anchor["currency"], "scope": anchor["scope"],
+            }
     if sha256(path.read_bytes()).hexdigest() != source["sha256"]:
         raise ValueError("PARENT_QUARTER_SOURCE_HASH_CHANGED")
     return {**result, "source": dict(source), "available_at": acquired.isoformat()}
