@@ -46,6 +46,7 @@ from ...application.hotspot.independent_price_conditions import (
     project_independent_price_conditions,
 )
 from ...application.decision.current_value_plan import revalidate_current_value_plan
+from ...application.research.pending_candidate_alignment import pending_alignment_read_scope
 from ...application.decision.value_action_plan import CoreValuePublicReviews
 from ...application.decision.strategy_readiness import attach_strategy_readiness
 from ...infrastructure.hotspot.sina_price_case import load_historical_case
@@ -453,6 +454,7 @@ def create_app(
             "items": items, "blockers": gaps}
 
     @api.get("/api/v1/daily-decisions")
+    @pending_alignment_read_scope()
     def daily_decisions(core_reviews: CoreValuePublicReviews = Depends(core_public_reviews)):
         packet, _ = _load_snapshot(project)
         empty = {"action": "no_order", "status": "UNAVAILABLE", "as_of": None,

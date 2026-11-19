@@ -3,6 +3,8 @@
 Reuse native quote/coverage/validity/bridge contracts. Publication coverage is
 not effective corporate-action coverage. No date rolling or price adjustment.
 """
+from contextlib import contextmanager
+from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import replace
 from datetime import date, datetime
@@ -23,6 +25,19 @@ from ..product.daily_event_observation import (
     verify_retained_event_coverage, verify_retained_event_snapshot,
 )
 from ..product.quote_bridge import admit_quote_for_research
+
+_event_pages_for_read = ContextVar("pending_alignment_event_pages", default=None)
+
+
+@contextmanager
+def pending_alignment_read_scope():
+    """Share decoded text only across alignments within one public read."""
+    token = _event_pages_for_read.set({})
+    try:
+        yield
+    finally:
+        _event_pages_for_read.reset(token)
+
 
 SCHEMA = "pending-candidate-alignment-v1"
 INPUT_SCHEMA = "pending-candidate-alignment-input-v1"
@@ -918,6 +933,24 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             implication="核对该候选的收入、利润及预测基期是否需要更新。",
                             financial_update=update, affected_model_fields=["revenue_cny", "parent_profit_cny"],
                             limitations=["前三季度累计披露，不视为单季、全年或预测。"], action="no_order")
+                    elif allow_quarterly_report and event["title"].endswith("中期利润分配预案的公告"):
+                        from ...infrastructure.filings.sse_capital_checkpoint_v1 import parse_sse_capital_checkpoint
+
+                        proposal = parse_sse_capital_checkpoint(
+                            pages, symbol=analysis["symbol"], published_date=published,
+                        )
+                        if (proposal.get("kind") != "INTERIM_PROPOSAL_DATED_SHARES"
+                                or proposal.get("proposal_only") is not True):
+                            raise ValueError("INTERIM_DIVIDEND_PROPOSAL_ORIGINAL_NOT_VERIFIED")
+                        terms = dict(
+                            event_type="REPORTED_INTERIM_DIVIDEND_PROPOSAL",
+                            published_date=published.isoformat(), effective_date=None,
+                            summary=f"原件拟每股派现{proposal['proposed_cash_per_share_cny']}元。",
+                            implication="跟踪股东会决议和实施公告，并核对登记日股本及实际分配。",
+                            terms=proposal, affected_model_fields=["shareholder_distributions"],
+                            limitations=["预案不代表已实施、已支付或模型已包含；所列股本仅对应原件日期。"],
+                            action="no_order",
+                        )
                     elif allow_quarterly_report and (dividend_title := re.search(
                             r"(20[0-9]{2})年度分红派息实施公告$", event["title"])):
                         from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
@@ -1434,7 +1467,9 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
     from .value_research_analysis import _bound
     result = _initial(analysis, now)
     verified = {}
-    event_pages = {}
+    event_pages = _event_pages_for_read.get()
+    if event_pages is None:
+        event_pages = {}
 
     def read(ref):
         path = _bound(root, ref)

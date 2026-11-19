@@ -26,7 +26,7 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                 from ...application.research.parent_remaining_year_alignment import read_parent_remaining_year_alignment
                 try:
                     result["direct_cash_alignment"] = read_parent_remaining_year_alignment(
-                        root=project, receipt_binding=result["receipt_binding"], now=clock())
+                        root=project, receipt_binding=result["receipt_binding"], now=now)
                 except (ValueError, OSError, KeyError, TypeError, AttributeError, ArithmeticError) as error:
                     result["direct_cash_alignment"] = dict(
                         schema_version="parent-remaining-year-alignment-v1", status="BLOCKED",
@@ -74,7 +74,7 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                 from ...application.research.direct_owner_cash_alignment_v1 import read_direct_owner_cash_alignment
                 try:
                     result["direct_cash_alignment"] = read_direct_owner_cash_alignment(
-                        root=project, receipt_binding=result["receipt_binding"], now=clock())
+                        root=project, receipt_binding=result["receipt_binding"], now=now)
                 except (ValueError, OSError, KeyError, TypeError, ArithmeticError) as error:
                     result["direct_cash_alignment"] = dict(
                         schema_version="direct-owner-cash-alignment-v1",
@@ -89,14 +89,14 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                         checks=[], evidence_bindings=[])
             from ...application.product.first_input_quote_alignment_v1 import read_first_input_quote_alignment
             result["e2_quote_alignment"] = read_first_input_quote_alignment(
-                root=project, symbol=symbol, first_input=result, now=clock())
+                root=project, symbol=symbol, first_input=result, now=now)
             result["successor_update"] = read_first_research_update(
-                root=project, symbol=symbol, now=clock(), displayed_binding=result["receipt_binding"])
+                root=project, symbol=symbol, now=now, displayed_binding=result["receipt_binding"])
             if (result["successor_update"].get("status") == "UNASSESSABLE"
                     and result["successor_update"].get("reason") ==
                     "E1 predecessor differs from the currently displayed first input"):
                 historical = read_first_research_update(
-                    root=project, symbol=symbol, now=clock())
+                    root=project, symbol=symbol, now=now)
                 if historical.get("status") == "SOURCE_BOUND_CONDITIONAL_SUCCESSOR":
                     # Both old versions cold replay, but this chain is not a
                     # successor of the first input currently shown above.
@@ -104,7 +104,7 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
             # A verified close is a separate observation. It must not populate
             # current_price or turn this historical conditional study into F2.
             try:
-                bridge = execute_quote_bridge_for_symbol(project, symbol, today=clock())
+                bridge = execute_quote_bridge_for_symbol(project, symbol, today=now)
                 quote = bridge.get("quote") or {}
                 result["quote_observation"] = {
                     "status": bridge["status"],
