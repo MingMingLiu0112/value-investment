@@ -868,7 +868,9 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
     """Read official originals into research facts, never grant materiality."""
     from ...infrastructure.filings.pdf_text import extract_pages
     from ...infrastructure.filings.official_pdf import validate_pdf_original
-    from ...infrastructure.filings.operating_event_terms import parse_operating_event_terms
+    from ...infrastructure.filings.operating_event_terms import (
+        BUYBACK_PLAN_TITLES, parse_buyback_cancellation_plan, parse_operating_event_terms,
+    )
     from ...quote_sessions import CHINA
     allow_quarterly_report = parser is None
     parser = parser or parse_operating_event_terms
@@ -933,6 +935,8 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             implication="核对该候选的收入、利润及预测基期是否需要更新。",
                             financial_update=update, affected_model_fields=["revenue_cny", "parent_profit_cny"],
                             limitations=["前三季度累计披露，不视为单季、全年或预测。"], action="no_order")
+                    elif allow_quarterly_report and event["title"].endswith(BUYBACK_PLAN_TITLES):
+                        terms = parse_buyback_cancellation_plan(pages, symbol=analysis["symbol"])
                     elif allow_quarterly_report and event["title"].endswith("中期利润分配预案的公告"):
                         from ...infrastructure.filings.sse_capital_checkpoint_v1 import parse_sse_capital_checkpoint
 

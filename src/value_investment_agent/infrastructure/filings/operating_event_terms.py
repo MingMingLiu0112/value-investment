@@ -70,10 +70,10 @@ def _match(pattern, text):
 
 
 class _Original:
-    def __init__(self, pages):
-        if (not isinstance(pages, (list, tuple)) or not 1 <= len(pages) <= 3
+    def __init__(self, pages, *, max_pages=3, max_chars=40000):
+        if (not isinstance(pages, (list, tuple)) or not 1 <= len(pages) <= max_pages
                 or any(not isinstance(page, str) or not page.strip() for page in pages)
-                or sum(map(len, pages)) > 40000):
+                or sum(map(len, pages)) > max_chars):
             _reject("BOUNDED_COMPLETE_PAGES_REQUIRED")
         self.pages = pages
         self.text = ""
@@ -614,3 +614,80 @@ def parse_operating_event_terms(pages, *, symbol):
         "不授予材料性、股本不变、模型有效性、策略或交易资格；披露日期须由调用方与来源索引和URL核对。",
     ])
     return result
+
+
+BUYBACK_PLAN_TITLES = (
+    "关于以集中竞价交易方式回购公司股份方案的公告",
+    "关于以集中竞价交易方式回购公司股份的回购报告书",
+)
+
+
+def parse_buyback_cancellation_plan(pages, *, symbol):
+    """Extract a named proposal or approved plan, without asserting execution."""
+    original = _Original(pages, max_pages=10, max_chars=90000)
+    text = original.text
+    title_pattern = "|".join(map(re.escape, BUYBACK_PLAN_TITLES))
+    match = _match(
+        r"(?P<heading>证券代码:(?P<code>[0-9]{6})证券简称:[^:]{1,30}公告编号:临"
+        r"(?P<number>20[0-9]{2}-[0-9]{3})(?P<issuer>[\u4e00-\u9fff]{2,80}股份有限公司)"
+        r"(?P<title>" + title_pattern + r"))(?P<body>.+)特此公告。?"
+        r"(?P<signature>(?P=issuer)董事会" + _PUBLICATION_DATE.format(name="published") + ")",
+        text,
+    )
+    if match["code"] != symbol or text.count("证券代码:") != 1:
+        _reject("ISSUER_CODE_MISMATCH")
+    published = _day(match["published"])
+    if not match["number"].startswith(published[:4]):
+        _reject("ANNOUNCEMENT_YEAR_MISMATCH")
+    terms = re.search(
+        r"回购股份金额:不低于人民币(?P<low>" + _MONEY + r")亿元\(含\)且不超过人民币"
+        r"(?P<high>" + _MONEY + r")亿元\(含\),[^。]+。"
+        r"●回购股份资金来源:公司自有资金。"
+        r"●回购股份用途:本次回购股份将依法全部予以注销并减少公司注册资本。"
+        r"●回购股份价格:不超过人民币(?P<cap>" + _MONEY + r")元/股\(含\)",
+        match["body"],
+    )
+    duration = re.search(
+        r"回购股份期限:自公司股东会审议通过回购方案之日起不超过(?P<months>[1-9][0-9]?)个月。",
+        match["body"],
+    )
+    if terms is None or duration is None:
+        _reject("BUYBACK_PLAN_TERMS_MISSING")
+    low, high, cap = (Decimal(terms[key]) for key in ("low", "high", "cap"))
+    if not 0 < low <= high or cap <= 0:
+        _reject("BUYBACK_PLAN_TERMS_INVALID")
+    pending = "本次回购股份方案尚需提交公司股东会审议通过。"
+    approval = re.search(
+        _DATE.format(name="meeting") + r",公司召开20[0-9]{2}年第[一二三四五六七八九十]+次临时股东会,"
+        r"审议通过了《关于以集中竞价交易方式回购公司股份方案的议案》。",
+        match["body"],
+    )
+    approved_on = None
+    if match["title"] == BUYBACK_PLAN_TITLES[0]:
+        if pending not in match["body"] or approval is not None:
+            _reject("BUYBACK_PLAN_APPROVAL_CONFLICT")
+        status, decision_span = "PROPOSED_SUBJECT_TO_SHAREHOLDER_APPROVAL", pending
+    else:
+        if approval is None or pending in match["body"]:
+            _reject("BUYBACK_PLAN_APPROVAL_MISSING_OR_CONFLICTING")
+        approved_on = _day(approval["meeting"])
+        if approved_on > published:
+            _reject("BUYBACK_PLAN_APPROVAL_AFTER_PUBLICATION")
+        status, decision_span = "SHAREHOLDER_APPROVED_PLAN", approval[0]
+    excerpts = []
+    for fragment, field in ((match["heading"], "issuer"), (terms[0], "budget_funding_purpose_and_price"),
+                            (duration[0], "duration"), (decision_span, "approval"),
+                            (match["signature"], "publication")):
+        excerpts.extend(original.evidence(fragment, field))
+    return dict(
+        parser_version="buyback-cancellation-plan-v1", event_type="REPORTED_BUYBACK_CANCELLATION_PLAN",
+        symbol=symbol, published_date=published, effective_date=None,
+        summary=f"原件回购预算{low}–{high}亿元，价格上限{cap}元/股，拟用于注销减资。",
+        implication="核对后续回购结果及注销生效公告，再重算实际现金和股本。",
+        terms=dict(plan_state=status, shareholder_approved_on=approved_on,
+                   cash_min_cny=str(low * 100000000), cash_max_cny=str(high * 100000000),
+                   price_cap_cny=str(cap), duration_months=int(duration["months"])),
+        affected_model_fields=["ordinary_shares", "shareholder_distributions"],
+        limitations=["方案和资金上限均不证明实际回购金额、注销股数或生效日。"],
+        evidence_excerpts=excerpts, action="no_order",
+    )
