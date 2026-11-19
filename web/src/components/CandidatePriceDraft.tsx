@@ -395,6 +395,11 @@ export function CandidateAlignmentPanel({
               <BasisFollowup value={check.details.basis_followup} />
             )}
             <CheckInputSources id={check.id} details={check.details} />
+            {check.id === "material_events" && object(check.details) && (
+              <UnsignedMaterialitySummary
+                route={check.details.materiality_review_route}
+              />
+            )}
             {check.id === "financial_updates" && object(check.details) && (
               <OperatingEventResearch
                 value={check.details.financial_update_research}
@@ -977,6 +982,34 @@ function CheckReconciliation({
   );
 }
 
+function UnsignedMaterialitySummary({ route }: { route: unknown }) {
+  if (!object(route) || route.status !== "EXACT_MATERIALITY_REVIEW_NOT_BOUND")
+    return null;
+  const handoff = route.unsigned_handoff;
+  if (
+    !object(handoff) ||
+    handoff.human_review_required !== true ||
+    handoff.action !== "no_order" ||
+    typeof handoff.announcement_count !== "number" ||
+    !Number.isSafeInteger(handoff.announcement_count) ||
+    handoff.announcement_count < 1 ||
+    !object(handoff.scan_window)
+  )
+    return null;
+
+  return (
+    <section aria-label="候选重大事件待复核">
+      <p>
+        当前候选有 {handoff.announcement_count} 条公告待人工复核。 扫描范围{" "}
+        {text(handoff.scan_window.scan_from)} 至{" "}
+        {text(handoff.scan_window.scan_to)}。
+      </p>
+      <AlignmentEvidence
+        value={[handoff.scan_binding, handoff.package_binding]}
+      />
+    </section>
+  );
+}
 function OperatingEventResearch({
   value,
   opening = false,

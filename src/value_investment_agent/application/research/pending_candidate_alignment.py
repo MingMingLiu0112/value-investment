@@ -1292,6 +1292,12 @@ def _materiality(root, analysis, ref, windows, scans, now, read):
             reason=str(error), engineering_gap="既有材料性消费者不支持此候选模型格式；需接通现有适配器。" if unsupported else None)
         return None, route
     route["model_context"] = handoff["model_context"]
+    route["unsigned_handoff"] = dict(
+        handoff_sha256=handoff["unsigned_response"]["handoff_sha256"],
+        package_binding=handoff["package_binding"], scan_binding=handoff["scan_binding"],
+        scan_window=handoff["scan_window"], announcement_count=len(handoff["announcements"]),
+        human_review_required=True, action="no_order",
+    )
     if ref is None:
         return None, route
     packet = load_json_object(read(ref), "existing materiality packet")
