@@ -712,7 +712,10 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
                 gaps.append("REVIEWED_ACTION_MISSING_LEDGER_ROW: " + identity)
     if reviewed != set(announced):
         gaps.append("PUBLIC_ACTION_REVIEW_DOES_NOT_COVER_ALL_ANNOUNCEMENTS")
-    if not _continuous_publication_window(windows, start, end):
+    complete_windows = [window for window in windows
+                        if window.get("source_integrity_verified") is True
+                        and window["full_calendar_window_elapsed"] is True]
+    if not _continuous_publication_window(complete_windows, start, end):
         gaps.append("ACTION_PUBLICATION_WINDOW_MISSING")
     if any(not w["full_calendar_window_elapsed"] for w in windows):
         gaps.append("ACTION_COVERAGE_IS_RETRIEVAL_SNAPSHOT_ONLY")

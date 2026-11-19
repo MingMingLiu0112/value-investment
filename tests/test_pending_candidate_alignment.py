@@ -142,6 +142,21 @@ def cash(case, *, in_period=False):
         amount_basis="implemented_gross_entitlement", evidence=[case["anchor"]])
 
 
+@pytest.mark.parametrize(("verified", "elapsed"), [(True, True), (False, True), (True, False)])
+def test_publication_window_only_counts_verified_completed_days(reconciliation, verified, elapsed):
+    first = reconciliation["windows"][0]
+    first.update(scan_to="2020-01-01", source_integrity_verified=True)
+    reconciliation["windows"].append(dict(
+        first, scan_from="2020-01-02", scan_to="2020-01-02",
+        source_integrity_verified=verified, full_calendar_window_elapsed=elapsed,
+    ))
+
+    result = reconcile(reconciliation)
+
+    assert ("ACTION_PUBLICATION_WINDOW_MISSING" in result["reason_codes"]) is not (verified and elapsed)
+    assert result["current_price_basis_compatible"] is False
+
+
 def test_cross_date_manual_arithmetic_cannot_grant_native_alignment(reconciliation):
     result = reconcile(reconciliation)
     assert reconciliation["ledger"]["comparison_date"] != reconciliation["ledger"]["valuation_date"]
