@@ -99,6 +99,16 @@ def build_candidate_event_impact(analysis, events):
                                 classification="REPORTED_YTD_COMPARISON_NOT_FORECAST_CHANGE"))
                 rationale = "前三季度实际收入和归母利润用于检验原预测，需按同期和经营口径核对后再重算。"
                 missing = ["原候选同期间经营基线", "剩余月份及成本税费假设", "候选现金路径的独立复核"]
+            elif kind == "REPORTED_BUYBACK_CANCELLATION_PLAN":
+                judgement = "BUYBACK_PLAN_EXECUTION_FOLLOWUP_REQUIRED"
+                rationale = parsed["summary"] + " 方案预算不进入已付现金，拟注销也不改变现有股数。"
+                missing = ["同方案实际支付与母公司现金路径核对",
+                           "注销生效文件、实际注销数量及比较日股本"]
+            elif kind == "REPORTED_INTERIM_DIVIDEND_PROPOSAL":
+                judgement = "INTERIM_DISTRIBUTION_IMPLEMENTATION_FOLLOWUP_REQUIRED"
+                rationale = parsed["summary"] + " 预案保留为反证与跟踪事件，不能按已支付分红扣除。"
+                missing = ["有权决议和权益分派实施公告", "除息、支付及实际分配额",
+                           "该分配是否已进入同一候选年度现金路径"]
             elif kind == "REPORTED_BUYBACK_PROGRESS":
                 judgement = "BUYBACK_CASH_AND_SHARE_BASIS_REVIEW_REQUIRED"
                 rationale = "公告披露的是同一回购计划的累计股数和付款。只将同计划两个截止日的差额用于期间现金核对；实购股数不等于已注销股数。"
