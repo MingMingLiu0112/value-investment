@@ -1035,3 +1035,28 @@ it("shows single model-consumed distribution without granting period alignment",
     renderToStaticMarkup(<CandidatePriceDraft review={review} />),
   ).not.toContain("5692824600.30");
 });
+
+it("shows unsigned event review scope only for the current candidate", () => {
+  const review = alignmentFixture();
+  const alignment = review.conditional_price!.alignment!;
+  const check = alignment.checks!.find((row) => row.id === "material_events")!;
+  const route = {
+    status: "EXACT_MATERIALITY_REVIEW_NOT_BOUND",
+    unsigned_handoff: {
+      human_review_required: true,
+      action: "no_order",
+      announcement_count: 119,
+      scan_window: { scan_from: "2025-12-31", scan_to: "2026-11-18" },
+    },
+  };
+  check.details = { materiality_review_route: route };
+  const render = () =>
+    renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(render()).toContain("候选重大事件待复核");
+  expect(render()).toContain("2026-11-18");
+  route.status = "EXISTING_AUTHENTICATED_MATERIALITY_REPLAYED";
+  expect(render()).not.toContain("候选重大事件待复核");
+  route.status = "EXACT_MATERIALITY_REVIEW_NOT_BOUND";
+  alignment.input_descriptor_sha256 = "e".repeat(64);
+  expect(render()).not.toContain("候选重大事件待复核");
+});
