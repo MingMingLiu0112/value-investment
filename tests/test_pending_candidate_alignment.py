@@ -1414,3 +1414,24 @@ def test_sse_closing_value_corroboration_requires_same_day_and_integral_shares(t
     binding["response_binding"] = write(tmp_path, "runtime/TEST_ONLY-fractional.json", packet)
     with pytest.raises(ValueError, match="SSE_CLOSING_VALUE_SHARE_COUNT_NOT_INTEGRAL"):
         service._market_value_share_corroboration(binding, **options)
+
+
+@pytest.mark.parametrize("conflict", [False, True])
+def test_overlapping_action_windows_require_same_announcement_original(reconciliation, conflict):
+    root = reconciliation["root"]
+    url = "https://static.cninfo.com.cn/finalpage/2020-01-02/123.PDF"
+    original = dict(**write(root, "runtime/first.pdf", {"1": "TEST_ONLY original"}), source_url=url)
+    other = dict(**write(root, "runtime/second.pdf",
+                         {"1": "TEST_ONLY changed" if conflict else "TEST_ONLY original"}), source_url=url)
+    window = reconciliation["windows"][0]
+    window["acquired_at"] = reconciliation["now"].isoformat()
+    window["announcements"] = [dict(announcement_id="123", evidence_refs=[original])]
+    replay = deepcopy(window)
+    replay["announcements"][0]["evidence_refs"] = [other]
+    reconciliation["windows"].append(replay)
+    if conflict:
+        with pytest.raises(ValueError, match="PUBLIC_ACTION_ANNOUNCEMENT_ORIGINAL_CONFLICT"):
+            reconcile(reconciliation)
+    else:
+        result = reconcile(reconciliation)
+        assert "PUBLIC_ACTION_REVIEW_DOES_NOT_COVER_ALL_ANNOUNCEMENTS" in result["reason_codes"]

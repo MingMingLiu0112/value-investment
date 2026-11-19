@@ -675,7 +675,17 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     documents = ledger["reviewed_documents"]
     if not isinstance(documents, list):
         raise ValueError("PUBLIC_REVIEW_DOCUMENT_ARRAY_REQUIRED")
-    announced = {row["announcement_id"]: row for window in windows for row in window["announcements"]}
+    announced = {}
+    announcement_sources = {}
+    for window in windows:
+        for row in window["announcements"]:
+            identity = row["announcement_id"]
+            sources = frozenset((ref.get("source_url"), ref["sha256"]) for ref in row["evidence_refs"])
+            # Overlapping windows may archive the same PDF to different local paths.
+            if identity in announcement_sources and announcement_sources[identity] != sources:
+                raise ValueError("PUBLIC_ACTION_ANNOUNCEMENT_ORIGINAL_CONFLICT")
+            announcement_sources[identity] = sources
+            announced[identity] = row
     reviewed = set()
     for item in documents:
         identity = item["announcement_id"]
