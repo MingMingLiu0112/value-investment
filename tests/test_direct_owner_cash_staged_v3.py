@@ -151,3 +151,14 @@ def test_v3_terminal_refinancing_checks_opening_debt_and_cash_interest(debt, int
             staged.preflight_terminal_forecast_debt_v3(request=request, parsed_stage=stage)
     else:
         staged.preflight_terminal_forecast_debt_v3(request=request, parsed_stage=stage)
+
+def test_v3_rejects_finite_commitment_before_next_scenario():
+    request = LLMRequest(role="FUNDAMENTAL", system="", user=json.dumps({
+        "forecast_closing_debt_after_annual_years": {"value_cny": "0"}}),
+        output_schema={"type": "object"})
+    policy = {"commitments_outside_capex": {"values": ["410000000.00"]}}
+    stage = {"terminal": {"policy": policy, "financing": None}}
+    with pytest.raises(ValueError, match="FINITE_COMMITMENT_IN_TERMINAL"):
+        staged.preflight_terminal_forecast_debt_v3(request=request, parsed_stage=stage)
+    policy["commitments_outside_capex"]["values"][0] = "0"
+    staged.preflight_terminal_forecast_debt_v3(request=request, parsed_stage=stage)

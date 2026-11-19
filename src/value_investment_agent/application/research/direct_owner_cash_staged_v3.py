@@ -112,6 +112,10 @@ def staged_parent_cash_request_v3(**kwargs):
         "operating_cash + investment_cash_received - maintenance_capex - growth_capex "
         "- interest_outside_cfo - other_mandatory_cash + new_borrowing - debt_repayment. "
         "This stationary net must be between zero and parent_profit inclusive. "
+        " The stationary terminal policy field commitments_outside_capex must be zero. "
+        "Allocate supported finite obligations to their finite forecast years. "
+        "If any obligation remains after the forecast or its settlement cannot be supported, "
+        "do not assert a stationary terminal or claim that the obligation disappeared. "
         "A one-time return of investment principal is not a recurring terminal receipt. "
         "Explain the recurring source of investment_cash_received; if it cannot be "
         "supported, leave the terminal economically unassessable rather than inventing "
@@ -153,6 +157,9 @@ def preflight_terminal_forecast_debt_v3(*, request, parsed_stage):
         return  # Older TEST_ONLY requests have no source-bound debt projection.
     debt = Decimal(projected["value_cny"])
     terminal = parsed_stage["terminal"]
+    commitment = terminal.get("policy", {}).get("commitments_outside_capex")
+    if commitment is not None and Decimal(commitment["values"][0]) != 0:
+        raise ValueError("PARENT_V3_FINITE_COMMITMENT_IN_TERMINAL")
     financing = terminal["financing"]
     if debt > 0 and financing is None:
         raise ValueError("PARENT_V3_TERMINAL_DEBT_POLICY_UNSUPPORTED")
