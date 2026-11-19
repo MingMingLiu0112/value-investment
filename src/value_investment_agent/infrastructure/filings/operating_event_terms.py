@@ -679,10 +679,11 @@ def parse_buyback_cancellation_plan(pages, *, symbol):
                             (duration[0], "duration"), (decision_span, "approval"),
                             (match["signature"], "publication")):
         excerpts.extend(original.evidence(fragment, field))
+    phase = "董事会方案待股东会审议" if approved_on is None else f"{approved_on}股东会通过方案"
     return dict(
         parser_version="buyback-cancellation-plan-v1", event_type="REPORTED_BUYBACK_CANCELLATION_PLAN",
         symbol=symbol, published_date=published, effective_date=None,
-        summary=f"原件回购预算{low}–{high}亿元，价格上限{cap}元/股，拟用于注销减资。",
+        summary=f"{phase}。原件回购预算{low}–{high}亿元，价格上限{cap}元/股，拟用于注销减资。",
         implication="核对后续回购结果及注销生效公告，再重算实际现金和股本。",
         terms=dict(plan_state=status, shareholder_approved_on=approved_on,
                    cash_min_cny=str(low * 100000000), cash_max_cny=str(high * 100000000),

@@ -418,3 +418,45 @@ def test_creditor_notice_keeps_cancellation_pending():
     assert result["action"] == "no_order"
     with pytest.raises(ValueError, match="CLAIM_WINDOW_INVALID"):
         parse([page.replace("2026年9月17日", "2026年9月18日")])
+
+
+@pytest.mark.parametrize(
+    "proposal,approval,expected",
+    [
+        (True, False, "PROPOSED_SUBJECT_TO_SHAREHOLDER_APPROVAL"),
+        (False, True, "SHAREHOLDER_APPROVED_PLAN"),
+        (False, False, None),
+        (True, True, None),
+    ],
+)
+def test_buyback_plan_requires_matching_approval_evidence(proposal, approval, expected):
+    from value_investment_agent.infrastructure.filings.operating_event_terms import (
+        BUYBACK_PLAN_TITLES, parse_buyback_cancellation_plan,
+    )
+
+    decision = (
+        "2026年9月16日，公司召开2026年第一次临时股东会，"
+        "审议通过了《关于以集中竞价交易方式回购公司股份方案的议案》。"
+        if approval else "本次回购股份方案尚需提交公司股东会审议通过。"
+    )
+    title = BUYBACK_PLAN_TITLES[0 if proposal else 1]
+    page = (
+        "证券代码：000777 证券简称：示例酒业 公告编号：临2026-031"
+        f"示例酒业股份有限公司{title}"
+        "●回购股份金额：不低于人民币1亿元（含）且不超过人民币2亿元（含），"
+        "实际金额以回购完毕为准。"
+        "●回购股份资金来源：公司自有资金。"
+        "●回购股份用途：本次回购股份将依法全部予以注销并减少公司注册资本。"
+        "●回购股份价格：不超过人民币39.53元/股（含）。"
+        "●回购股份期限：自公司股东会审议通过回购方案之日起不超过6个月。"
+        f"{decision}特此公告。示例酒业股份有限公司董事会2026年9月17日"
+    )
+    if expected is None:
+        with pytest.raises(ValueError, match="APPROVAL"):
+            parse_buyback_cancellation_plan([page], symbol="000777")
+        return
+    result = parse_buyback_cancellation_plan([page], symbol="000777")
+    assert result["terms"]["plan_state"] == expected
+    assert result["terms"]["shareholder_approved_on"] == ("2026-09-16" if approval else None)
+    assert result["effective_date"] is None
+    assert result["action"] == "no_order"
