@@ -5,6 +5,7 @@ import { expect, it } from "vitest";
 const { renderToStaticMarkup } = require("react-dom/server");
 import {
   CandidatePriceDraft,
+  FinancialFinancingConflicts,
   candidatePriceMatches,
   candidateResearchComparisonMatches,
 } from "../src/components/CandidatePriceDraft";
@@ -1059,4 +1060,30 @@ it("shows unsigned event review scope only for the current candidate", () => {
   route.status = "EXACT_MATERIALITY_REVIEW_NOT_BOUND";
   alignment.input_descriptor_sha256 = "e".repeat(64);
   expect(render()).not.toContain("候选重大事件待复核");
+});
+
+it("renders both financing amounts only for a verified conflict", () => {
+  const conflicts = [
+    {
+      scenario: "base",
+      field: "debt_repayment",
+      reported_ytd_cny: "202501881888.99",
+      modeled_full_year_cny: "60000000000",
+    },
+  ];
+  const closure = (status: string) => ({
+    consumed_closure: [{ financing_comparison: { status, conflicts } }],
+  });
+  const html = renderToStaticMarkup(
+    <FinancialFinancingConflicts value={closure("CONFLICT")} />,
+  );
+  expect(html).toContain("基准情景");
+  expect(html).toContain("偿债支出");
+  expect(html).toContain("202,501,881,888.99");
+  expect(html).toContain("60,000,000,000.00");
+  expect(
+    renderToStaticMarkup(
+      <FinancialFinancingConflicts value={closure("NOT_VERIFIED")} />,
+    ),
+  ).toBe("");
 });

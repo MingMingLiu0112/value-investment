@@ -3,6 +3,8 @@ import type {
   JointCapitalReview,
 } from "../services/valuePolicy";
 
+import { formatMoney } from "../utils/format";
+
 type Review = Readonly<JointCapitalReview>;
 const numberText = (value: unknown) =>
   typeof value === "string" &&
@@ -202,6 +204,47 @@ function Reasons({ value }: { value: unknown }) {
     </ul>
   ) : null;
 }
+export function FinancialFinancingConflicts({ value }: { value: unknown }) {
+  if (!object(value) || !Array.isArray(value.consumed_closure)) return null;
+  const rows = value.consumed_closure.flatMap((closure: unknown) => {
+    if (!object(closure) || !object(closure.financing_comparison)) return [];
+    const financing = closure.financing_comparison;
+    return financing.status === "CONFLICT" && Array.isArray(financing.conflicts)
+      ? financing.conflicts.filter(object)
+      : [];
+  });
+  const scenarios = { bear: "悲观", base: "基准", bull: "乐观" };
+  const fields = { new_borrowing: "借款收现", debt_repayment: "偿债支出" };
+  const valid = rows.filter(
+    (row) =>
+      typeof row.scenario === "string" &&
+      Object.prototype.hasOwnProperty.call(scenarios, row.scenario) &&
+      typeof row.field === "string" &&
+      Object.prototype.hasOwnProperty.call(fields, row.field) &&
+      numberText(row.reported_ytd_cny) &&
+      (row.modeled_full_year_cny === "0" ||
+        numberText(row.modeled_full_year_cny)),
+  );
+  if (!valid.length) return null;
+  return (
+    <div>
+      <p>
+        母公司已披露的借还款超过全年模型金额。更新融资路径后才能完成当前价格核验。
+      </p>
+      <ul>
+        {valid.map((row, index) => (
+          <li key={index}>
+            {scenarios[row.scenario as keyof typeof scenarios]}情景
+            {fields[row.field as keyof typeof fields]}，已发生{" "}
+            {formatMoney(String(row.reported_ytd_cny))} 元，全年模型{" "}
+            {formatMoney(String(row.modeled_full_year_cny))} 元。
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function AlignmentEvidence({ value }: { value: unknown }) {
   const rows = Array.isArray(value)
     ? value.filter(
@@ -401,9 +444,14 @@ export function CandidateAlignmentPanel({
               />
             )}
             {check.id === "financial_updates" && object(check.details) && (
-              <OperatingEventResearch
-                value={check.details.financial_update_research}
-              />
+              <>
+                <FinancialFinancingConflicts
+                  value={check.details.recomputation_closure}
+                />
+                <OperatingEventResearch
+                  value={check.details.financial_update_research}
+                />
+              </>
             )}
             {check.id === "material_events" && object(check.details) && (
               <OperatingEventResearch
