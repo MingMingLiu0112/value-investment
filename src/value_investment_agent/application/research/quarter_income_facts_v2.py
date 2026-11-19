@@ -95,8 +95,8 @@ def _render(root: Path, original: Path, entries: dict) -> dict[int, str]:
 
 
 def _reported_nonrecurring_ytd(pages: list[str], parent_profit: str) -> str:
-    first, second = (" ".join(page.split()) for page in pages)
-    unit = "单位：元 币种：人民币"
+    first, second = (" ".join(page.replace("：", ":").split()) for page in pages)
+    unit = "单位:元 币种:人民币"
     if (unit not in first or "年初至报告期末" not in first
             or "非经常性损益项目和金额" not in second):
         raise ValueError("Q3_NONRECURRING_HEADERS_UNVERIFIED")
@@ -195,7 +195,32 @@ def read_quarter_income_facts(root: Path, symbol: str, now: datetime) -> dict:
             raise ValueError("Q3_INCOME_ORIGINAL_HASH_CHANGED")
         if nonrecurring is not None:
             facts["2026"]["nonrecurring"] = nonrecurring
+        comparative = None
+        if prior := case.get("prior_year_original"):
+            try:
+                prior_path = _inside(root, prior["path"])
+                acquired_at = datetime.fromisoformat(prior["available_at"])
+                if (prior["report_period"] != "2025-09-30"
+                        or acquired_at.utcoffset() is None or acquired_at > now
+                        or not re.fullmatch(
+                            r"https://static[.]cninfo[.]com[.]cn/finalpage/2025-\d{2}-\d{2}/\d+[.]PDF",
+                            prior["source_url"])
+                        or _sha(prior_path) != prior["sha256"]):
+                    raise ValueError("Q3_COMPARATIVE_BINDING_INVALID")
+                prior_pages = extract_pages(prior_path, limit=2)
+                heading = "".join(prior_pages[0].split())
+                if ("2025年第三季度报告" not in heading
+                        or f"证券代码：{symbol}" not in heading):
+                    raise ValueError("Q3_COMPARATIVE_IDENTITY_MISMATCH")
+                value = _reported_nonrecurring_ytd(prior_pages, facts["2025"]["parent_profit"])
+                if _sha(prior_path) != prior["sha256"]:
+                    raise ValueError("Q3_COMPARATIVE_ORIGINAL_HASH_CHANGED")
+                comparative = {**prior, "physical_pages": [1, 2]}
+                facts["2025"]["nonrecurring"] = value
+            except (ValueError, OSError, KeyError, TypeError):
+                pass
         return {**result, "status": "VERIFIED_REPORTED_Q3_INCOME_FACTS_ONLY",
+                "prior_year_nonrecurring_source": comparative,
                 "nonrecurring_source_pages": [1, 2] if nonrecurring is not None else [],
                 "report_period": "2026-09-30", "period_basis": "YTD_9M",
                 "currency": "CNY", "unit": "yuan", "facts": facts,
