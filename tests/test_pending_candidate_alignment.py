@@ -1503,11 +1503,12 @@ def test_covered_cash_original_requires_exactly_one_ledger_row(reconciliation, m
 
 
 @pytest.mark.parametrize("suffix", ["（修订版）", "（已取消）"])
-def test_covered_cash_notice_variants_require_lineage_resolution(reconciliation, suffix):
+@pytest.mark.parametrize("notice_title", ["权益分派实施公告", "利润分配实施公告", "现金分红实施公告"])
+def test_covered_cash_notice_variants_require_lineage_resolution(reconciliation, suffix, notice_title):
     case = reconciliation
     anchor = case["anchor"]
     case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
-        announcements=[dict(announcement_id="123", title="TEST_ONLY权益分派实施公告" + suffix,
+        announcements=[dict(announcement_id="123", title="TEST_ONLY" + notice_title + suffix,
             evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
 
     result = reconcile(case)

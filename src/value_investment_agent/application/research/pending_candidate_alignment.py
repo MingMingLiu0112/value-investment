@@ -721,7 +721,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     observed_cash = []
     for identity, event in announced.items():
         title = event.get("title", "")
-        suffixes = ("权益分派实施公告", "分红派息实施公告")
+        suffixes = ("权益分派实施公告", "分红派息实施公告", "利润分配实施公告", "现金分红实施公告")
         if not any(suffix in title for suffix in suffixes):
             continue
         if not title.endswith(suffixes):
