@@ -45,9 +45,12 @@ def test_reads_both_registries_and_rejects_conflict_without_losing_next_company(
     )
     assert replayed == [symbols[0], symbols[2]]
     assert receipt["result"]["items"][1]["reason"] == "HORIZON_SELECTION_REGISTRY_CONFLICT"
-    assert batch.read_queue_receipt_batch(
+    view = batch.read_queue_receipt_batch(
         research_root=tmp_path, queue_binding=queue, as_of=now,
-    )["sha256"] == receipt["binding"]["sha256"]
+    )
+    assert view["sha256"] == receipt["binding"]["sha256"]
+    assert view["items"][1]["reason_code"] == "HORIZON_SELECTION_REGISTRY_CONFLICT"
+    assert view["items"][2]["reason_code"] is None
     variants.pop(symbols[2])
     write(batch.alternate.CONFIG, variants)
     assert batch.read_queue_receipt_batch(research_root=tmp_path, queue_binding=queue, as_of=now) is None

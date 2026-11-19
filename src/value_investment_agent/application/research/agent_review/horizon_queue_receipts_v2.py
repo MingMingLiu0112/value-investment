@@ -120,6 +120,11 @@ def read_queue_receipt_batch(*, research_root, queue_binding, as_of):
     _, digest, result = latest
     return dict(as_of=result["as_of"], sha256=digest, items=[
         dict(symbol=row["symbol"], status=row["status"],
+             reason_code=(
+                 'HORIZON_SELECTION_REGISTRY_CONFLICT'
+                 if row.get('reason') == 'HORIZON_SELECTION_REGISTRY_CONFLICT'
+                 else 'HORIZON_SELECTION_SOURCE_REPLAY_FAILED'
+                 if row['status'] == 'SOURCE_REPLAY_REJECTED' else None),
              evidence_count=len(row.get("evidence_ids", [])) or
              sum(len(statement["rows"]) for statement in row.get("historical_parent_cash", [])))
         for row in result["items"]
