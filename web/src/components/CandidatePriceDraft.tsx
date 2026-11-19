@@ -279,6 +279,7 @@ export function CandidateAlignmentPanel({
         </p>
       </section>
     );
+  const distribution = alignment.implemented_distribution_model_inclusion;
   const quote = alignment.quote;
   const checks = Array.isArray(alignment.checks)
     ? alignment.checks.filter(
@@ -305,6 +306,18 @@ export function CandidateAlignmentPanel({
         估值日期：{text(alignment.valuation_date)}；核验时点：
         {text(alignment.evaluated_at)}。
       </p>
+      {object(distribution) &&
+        distribution.reason_code ===
+          "IMPLEMENTED_DISTRIBUTION_INCLUDED_IN_MODEL" &&
+        distribution.status === "PASS" &&
+        distribution.action === "no_order" && (
+          <p>
+            已计入当前估值的已实施分配：{text(distribution.paid_date)}，每股{" "}
+            {nativeAmount(distribution.per_share_cny, "元")}，合计{" "}
+            {nativeAmount(distribution.total_cny, "元")}
+            。全期间分配仍须单独核验。
+          </p>
+        )}
       <details>
         <summary>原始对齐状态与比较标记</summary>
         <p>

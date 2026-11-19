@@ -1012,3 +1012,26 @@ it.each([
     expect(candidateResearchComparisonMatches(review)).toBe(false);
   },
 );
+
+it("shows single model-consumed distribution without granting period alignment", () => {
+  const review = alignmentFixture();
+  const alignment = review.conditional_price!.alignment!;
+  alignment.implemented_distribution_model_inclusion = {
+    status: "PASS",
+    reason_code: "IMPLEMENTED_DISTRIBUTION_INCLUDED_IN_MODEL",
+    action: "no_order",
+    paid_date: "2026-06-05",
+    per_share_cny: "0.90",
+    total_cny: "5692824600.30",
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("5692824600.30");
+  expect(html).toContain("全期间分配仍须单独核验");
+  alignment.candidate_binding = {
+    path: "TEST_ONLY/other",
+    sha256: "b".repeat(64),
+  };
+  expect(
+    renderToStaticMarkup(<CandidatePriceDraft review={review} />),
+  ).not.toContain("5692824600.30");
+});

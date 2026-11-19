@@ -145,6 +145,7 @@ export type CandidateAlignmentCheck = {
     | null;
 };
 export type CandidatePriceAlignment = {
+  implemented_distribution_model_inclusion?: unknown;
   schema_version?: string;
   status?: string;
   action?: "no_order";
