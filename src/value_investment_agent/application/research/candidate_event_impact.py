@@ -123,6 +123,10 @@ def build_candidate_event_impact(analysis, events):
                 judgement = "OPERATING_MIX_REVIEW_REQUIRED"
                 rationale = "来源披露本年产品、渠道和地区的主营收入结构。需核对与原预测口径及持续性，不能据此推断同比或量价。"
                 missing = ["对应口径的上年同期及量价分拆", "与原模型营业收入相同范围的经营基线"]
+            elif kind == "REPORTED_ISSUER_FINANCING_ISSUANCE":
+                judgement = "FINANCING_CASH_AND_MATURITY_REVIEW_REQUIRED"
+                rationale = "同一候选需分别核对公告发行额、实际收现、到期还本和付息口径，避免与原借还款假设重复。"
+                missing = ["发行净收现和费用", "逐券到期还本及付息条款", "原候选年度预测的已包含金额"]
             elif kind == "PARENT_SUBSIDIARY_GUARANTEE":
                 judgement = "CONTINGENT_PARENT_GUARANTEE_REVIEW_REQUIRED"
                 rationale = parsed["summary"] + " 担保上限不能直接视为新增债务或现金支出。"

@@ -460,3 +460,30 @@ def test_buyback_plan_requires_matching_approval_evidence(proposal, approval, ex
     assert result["terms"]["shareholder_approved_on"] == ("2026-09-16" if approval else None)
     assert result["effective_date"] is None
     assert result["action"] == "no_order"
+
+
+@pytest.mark.parametrize("fault", [None, "missing_rate", "wrong_days", "duplicate_code"])
+def test_financing_issuance_extracts_only_complete_consistent_terms(fault):
+    header = PRICE[0].split(" 根据《", 1)[0].replace(
+        "重大事项公告", "关于2026年度第五期科技创新债券发行结果的公告",
+    )
+    row = ("代码102600001期限380天起息日2026年10月28日兑付日2027年11月12日"
+           "计划发行总额35亿元实际发行总额35亿元发行利率1.37%发行价格100元/百元面值")
+    if fault == "missing_rate":
+        row = row.replace("发行利率1.37%", "")
+    if fault == "wrong_days":
+        row = row.replace("380天", "379天")
+    if fault == "duplicate_code":
+        row += row
+    pages = [header + row + "特此公告示例酒业股份有限公司董事会2026年10月30日"]
+    if fault:
+        with pytest.raises(ValueError, match="OPERATING_EVENT_FINANCING_ISSUANCE_"):
+            parse(pages)
+    else:
+        result = parse(pages)
+        assert result["event_type"] == "REPORTED_ISSUER_FINANCING_ISSUANCE"
+        assert result["financing_issues"] == [dict(code="102600001",
+            interest_start="2026-10-28", maturity="2027-11-12", term_days=380,
+            face_value_cny="3500000000", coupon_percent="1.37",
+            issue_price_per_100_face_cny="100")]
+        assert_evidence(result, pages)

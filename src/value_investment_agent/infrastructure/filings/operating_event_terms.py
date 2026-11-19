@@ -553,6 +553,44 @@ def _plan_market_purchase_completion(body, title, published):
     )
 
 
+def _financing_issuance(body, published):
+    terms = re.compile(
+        r"代码(?P<code>[0-9]{9})期限(?P<days>[0-9]{1,4})天"
+        + "起息日" + _DATE.format(name="starts") + "兑付日" + _DATE.format(name="matures")
+        + rf"计划发行总额{_MONEY}亿元实际发行总额(?P<amount>{_MONEY})亿元"
+          rf"发行利率(?P<rate>{_MONEY})%发行价格(?P<price>{_MONEY})元/百元面值"
+    )
+    rows = list(terms.finditer(body))
+    if not rows or len(rows) != body.count("实际发行总额"):
+        _reject("FINANCING_ISSUANCE_ROWS_INCOMPLETE")
+    issues, evidence = [], []
+    seen = set()
+    for row in rows:
+        code = row["code"]
+        starts, matures = _day(row["starts"]), _day(row["matures"])
+        days = int(row["days"])
+        principal = Decimal(row["amount"]) * 100_000_000
+        rate, price = Decimal(row["rate"]), Decimal(row["price"])
+        if (code in seen or starts > published or published >= matures
+                or (date.fromisoformat(matures) - date.fromisoformat(starts)).days != days
+                or principal <= 0 or principal != principal.to_integral_value()
+                or rate <= 0 or price <= 0):
+            _reject("FINANCING_ISSUANCE_TERMS_CONFLICT")
+        seen.add(code)
+        issues.append(dict(code=code, interest_start=starts, maturity=matures, term_days=days,
+                           face_value_cny=format(principal, "f"), coupon_percent=str(rate),
+                           issue_price_per_100_face_cny=str(price)))
+        evidence.append((row[0], "issuer_financing_issue_terms"))
+    return dict(
+        event_type="REPORTED_ISSUER_FINANCING_ISSUANCE", effective_date=None,
+        summary=f"公告披露{len(issues)}项债务融资工具的发行面额及期限。",
+        implication="分别核对发行面额、实际收现与到期偿付，确认是否已计入该候选。",
+        financing_issues=issues, affected_model_fields=["new_borrowing", "debt_repayment", "interest_outside_cfo"],
+        limitations=["发行面额与票息不证明实际净收现、付息结算、完整债务范围或未来续借。"],
+        _evidence=evidence,
+    )
+
+
 def parse_operating_event_terms(pages, *, symbol):
     """Extract bounded source terms; ValueError rejects unsupported prose.
 
@@ -570,6 +608,7 @@ def parse_operating_event_terms(pages, *, symbol):
         r"(?P<year>20[0-9]{2})-(?P<number>[0-9]{3})"
         r"(?P<issuer>[\u4e00-\u9fffA-Za-z()]{2,80}股份有限公司)"
         r"(?P<title>重大事项公告|" + _MEETING + r"决议公告|关于会计政策变更的公告|(?P<no_period>"
+        r"(?P<financing>关于20[0-9]{2}年度第[一二三四五六七八九十、]+期(?:超短期融资券|科技创新债券)发行结果的公告)|"
         r"(?P<plan_purchase>关于第[一二三四五六七八九十]+期(?:长期服务计划|员工持股计划)完成股票购买的公告)|"
         r"(?P<buyback>关于股份回购进展公告|关于以集中竞价交易方式首次回购公司股份的公告|关于股份回购实施结果暨股份变动的公告|关于回购股份减少注册资本通知债权人的公告)))"
         + re.escape(_GUARANTEE) + r"(?P<body>.+)特此公告(?(no_period)。?|。)"
@@ -589,6 +628,8 @@ def parse_operating_event_terms(pages, *, symbol):
         result = _buyback_completion(body, published)
     elif title == "关于回购股份减少注册资本通知债权人的公告":
         result = _buyback_creditor_notice(body, published)
+    elif header["financing"]:
+        result = _financing_issuance(body, published)
     elif header["plan_purchase"]:
         result = _plan_market_purchase_completion(body, title, published)
     elif header["buyback"]:
