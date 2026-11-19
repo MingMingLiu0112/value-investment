@@ -133,8 +133,11 @@ def preflight_terminal_forecast_debt_v3(*, request, parsed_stage):
         policy = terminal["policy"]
         repayment = Decimal(policy["debt_repayment"]["values"][0])
         borrowing = Decimal(policy["new_borrowing"]["values"][0])
-        if repayment > debt or borrowing != repayment:
+        if debt <= 0 or repayment > debt or borrowing != repayment:
             raise ValueError("PARENT_V3_TERMINAL_REFINANCING_ARITHMETIC_INVALID")
+        interest = Decimal(policy["interest_outside_cfo"]["values"][0])
+        if interest <= 0:
+            raise ValueError("PARENT_V3_TERMINAL_CASH_INTEREST_REQUIRED")
 
 
 def merge_staged_parent_cash_v3(**kwargs):

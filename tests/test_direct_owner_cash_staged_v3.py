@@ -131,3 +131,23 @@ def test_numbered_annual_history_drives_cash_preflight(monkeypatch, tmp_path):
     policy["series"]["maintenance_capex"]["values"] = ["40"]
     with pytest.raises(ValueError, match="UNFUNDED_CASH_REQUIREMENT:2026"):
         staged.preflight_annual_cash_upper_bound_v3(**args)
+
+
+@pytest.mark.parametrize("debt,interest,reason", [
+    ("0", "1", "TERMINAL_REFINANCING_ARITHMETIC_INVALID"),
+    ("85", "0", "TERMINAL_CASH_INTEREST_REQUIRED"),
+    ("85", "1", None),
+])
+def test_v3_terminal_refinancing_checks_opening_debt_and_cash_interest(debt, interest, reason):
+    request = LLMRequest(role="FUNDAMENTAL", system="", user=json.dumps({
+        "forecast_closing_debt_after_annual_years": {"value_cny": debt}}),
+        output_schema={"type": "object"})
+    stage = {"terminal": {"financing": {"mode": "CONSTANT_DEBT_REFINANCING"},
+             "policy": {"debt_repayment": {"values": ["0"]},
+                        "new_borrowing": {"values": ["0"]},
+                        "interest_outside_cfo": {"values": [interest]}}}}
+    if reason:
+        with pytest.raises(ValueError, match=reason):
+            staged.preflight_terminal_forecast_debt_v3(request=request, parsed_stage=stage)
+    else:
+        staged.preflight_terminal_forecast_debt_v3(request=request, parsed_stage=stage)
