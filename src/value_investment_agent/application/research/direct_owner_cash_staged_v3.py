@@ -79,6 +79,15 @@ def staged_parent_cash_request_v3(**kwargs):
                            " If derived_annual_operating_cash_path is present, use that cash path to "
                            "check yearly liquidity and mandatory payments before modelling payout. "
                            "It is derived from the submitted operating forecast, not a historical fact. "
+                           "Supplier payments, working-capital movements and other operating "
+                           "cash adjustments are already included in this path. "
+                           "For other_mandatory_cash, identify distinct cash payments outside "
+                           "operating cash and the separately forecast capex, commitments, debt "
+                           "repayment and interest lines. Do not deduct an operating cash or "
+                           "working-capital residual again as other_mandatory_cash. "
+                           "A reported closing cash balance is a point-in-time observation, "
+                           "not a minimum operating reserve. Explain the basis and uncertainty "
+                           "of each cash_floor assumption independently of the observed balance. "
                            "Do not invent financing or other receipts to close a funding gap.")
     if kwargs["stage"] != "terminal":
         return request

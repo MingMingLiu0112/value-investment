@@ -162,3 +162,21 @@ def test_v3_rejects_finite_commitment_before_next_scenario():
         staged.preflight_terminal_forecast_debt_v3(request=request, parsed_stage=stage)
     policy["commitments_outside_capex"]["values"][0] = "0"
     staged.preflight_terminal_forecast_debt_v3(request=request, parsed_stage=stage)
+
+
+def test_policy_request_separates_cash_drivers_and_reserves(monkeypatch):
+    request = LLMRequest(role="FUNDAMENTAL", system="", user=json.dumps({
+        "required_years": [2026], "source_context": {
+            "historical_financing_observations": [{"financing_cash_flows": {
+                "period_start": "2026-01-01", "period_end": "2026-06-30",
+                "components": {field: {"classification": "FACT", "value_cny": "1"}
+                               for field in ("borrowings_received_cny", "debt_repayments_paid_cny")},
+            }}],
+        },
+    }), output_schema={"type": "object"}, transport_output_contract="Bound request.")
+    monkeypatch.setattr(staged, "staged_parent_cash_request", lambda **kwargs: request)
+
+    revised = staged.staged_parent_cash_request_v3(stage="policy")
+
+    assert "working-capital residual again" in revised.transport_output_contract
+    assert "not a minimum operating reserve" in revised.transport_output_contract
