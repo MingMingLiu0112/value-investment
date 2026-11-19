@@ -229,8 +229,19 @@ class TransparentTaskService(base.ResearchTaskService):
             for op in ops:
                 rows[op]['reason'] = prefix + '_' + suffix
 
-        ready('FRESH_PUBLIC_SCAN', dict(network_authorized=False, max_per_channel=50),
-              ('network_authorized',))
+        from ...domain.discovery.official_list_calendar import completed_list_session
+
+        try:
+            completed_list_session(base._now())
+        except ValueError as error:
+            rows['FRESH_PUBLIC_SCAN']['reason'] = (
+                '正式证券名单须在交易日 15:05 后采集。'
+                if str(error) == 'Official universe requires a completed trading day (15:05 buffer)'
+                else '当前官方证券名单采集日历无法核验。'
+            )
+        else:
+            ready('FRESH_PUBLIC_SCAN', dict(network_authorized=False, max_per_channel=50),
+                  ('network_authorized',))
         ready('VALUE_RESEARCH_REFRESH', dict(source_mode='FRESH', network_authorized=False,
             tracking_budget=30, enrichment_batches=1, comparison_batches=1, operating_budget=0),
             ('source_mode', 'network_authorized', 'tracking_budget', 'enrichment_batches',

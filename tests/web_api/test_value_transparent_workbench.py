@@ -539,6 +539,11 @@ def test_prepared_recalculation_binding_change_is_rejected_at_post(case, monkeyp
 
 
 def test_actual_darwin_prepare_empty_root_disables_unregistered_operations(case, monkeypatch):
+    from datetime import datetime
+    from value_investment_agent.application.research import transparent_task_v1
+
+    when = datetime.fromisoformat('2026-11-20T15:05:00+08:00')
+    monkeypatch.setattr(transparent_task_v1.base, '_now', lambda value=None: when if value is None else value)
     client, _, data, root = case
     monkeypatch.setattr(routes, '_task_service', data.actual_service)
     before = snapshot(root)

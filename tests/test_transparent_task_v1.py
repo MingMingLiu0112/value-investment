@@ -463,7 +463,9 @@ def test_actual_owned_subprocess_cancel_is_reaped_and_logs_retained(case, monkey
         thread.join(5)
 
 
-def test_prepare_missing_inputs_is_independent_readonly_and_fresh_not_authorized(tmp_path):
+def test_prepare_missing_inputs_is_independent_readonly_and_fresh_not_authorized(tmp_path, monkeypatch):
+    when = datetime.fromisoformat('2026-11-20T15:05:00+08:00')
+    monkeypatch.setattr(mod.base, '_now', lambda value=None: when if value is None else value)
     service = mod.TransparentTaskService(tmp_path)
     prepared = service.prepare(symbol='000568')
     rows = {x['operation']: x for x in prepared['operations']}
@@ -1068,3 +1070,13 @@ def test_e1_prepare_requires_matching_registered_receipt_version(
                      if row['operation'] == 'RECOMPILE_REGISTERED_E1')
     assert operation['enabled'] is not wrong_receipt
     assert operation['reason'] == ('REGISTERED_E1_INVALID' if wrong_receipt else None)
+
+
+def test_prepare_fresh_scan_before_official_list_cutoff(tmp_path, monkeypatch):
+    when = datetime.fromisoformat('2026-11-20T15:04:59+08:00')
+    monkeypatch.setattr(mod.base, '_now', lambda value=None: when if value is None else value)
+    prepared = mod.TransparentTaskService(tmp_path).prepare(symbol='600519')
+    row = next(item for item in prepared['operations'] if item['operation'] == 'FRESH_PUBLIC_SCAN')
+    assert row['enabled'] is False and row['payload'] is None
+    assert '15:05' in row['reason']
+    assert prepared['tasks_started'] == 0 and not list(tmp_path.iterdir())
