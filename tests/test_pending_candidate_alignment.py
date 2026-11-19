@@ -1389,3 +1389,28 @@ def test_rounded_capital_never_supplies_exact_closing_shares(
     assert result["closing_shares"] is None
     assert not result["current_price_basis_compatible"]
     assert ("ROUNDED_CAPITAL_SNAPSHOT_CONFLICTS_WITH_ROLLFORWARD" in result["reason_codes"]) is not expected
+
+
+def test_sse_closing_value_corroboration_requires_same_day_and_integral_shares(tmp_path):
+    packet = {"code": "600887", "date": 20261119, "time": 162900,
+              "snap": ["TEST_ONLY", 32.91, 32.39, None, None, 208167619550.97, "E110    "]}
+    ref = write(tmp_path, "runtime/TEST_ONLY-sse-close.json", packet)
+    binding = dict(
+        source_url="https://yunhq.sse.com.cn:32042/v1/sh1/snap/600887"
+                   "?select=name%2Clast%2Cprev_close%2CtotalShares%2CnonRestrictedShares%2CtotalValue%2Ctradephase",
+        observed_at="2026-11-19T21:00:00+08:00", response_binding=ref,
+    )
+    now = datetime.fromisoformat("2026-11-19T21:01:00+08:00")
+    options = dict(symbol="600887", comparison_date=date(2026, 11, 19), now=now,
+                   read=lambda ref: _bound(tmp_path, ref))
+    result = service._market_value_share_corroboration(binding, **options)
+    assert result["share_count"] == 6325360667
+    assert not result["exact_registry_count"] and not result["continuity_verified"]
+    with pytest.raises(ValueError, match="SSE_CLOSING_VALUE_SOURCE_OR_CLOCK_INVALID"):
+        service._market_value_share_corroboration(
+            binding, **{**options, "comparison_date": date(2026, 11, 18)},
+        )
+    packet["snap"][5] = 208167619550.98
+    binding["response_binding"] = write(tmp_path, "runtime/TEST_ONLY-fractional.json", packet)
+    with pytest.raises(ValueError, match="SSE_CLOSING_VALUE_SHARE_COUNT_NOT_INTEGRAL"):
+        service._market_value_share_corroboration(binding, **options)

@@ -379,6 +379,46 @@ def _continuous_publication_window(windows, start, end):
             return True
     return False
 
+def _market_value_share_corroboration(binding, *, symbol, comparison_date, now, read):
+    """Replay closing market-value arithmetic without certifying registered capital."""
+    from fractions import Fraction
+
+    from ...quote_sessions import CHINA
+
+    observed = datetime.fromisoformat(binding["observed_at"])
+    expected = (
+        f"https://yunhq.sse.com.cn:32042/v1/sh1/snap/{symbol}"
+        "?select=name%2Clast%2Cprev_close%2CtotalShares%2CnonRestrictedShares%2CtotalValue%2Ctradephase"
+    )
+    if (binding["source_url"] != expected or observed.utcoffset() is None
+            or observed > now or observed.astimezone(CHINA).date() != comparison_date):
+        raise ValueError("SSE_CLOSING_VALUE_SOURCE_OR_CLOCK_INVALID")
+    ref = binding["response_binding"]
+    path = read(ref)
+    if path.stat().st_size > 16384:
+        raise ValueError("SSE_CLOSING_VALUE_RESPONSE_TOO_LARGE")
+    packet = json.loads(path.read_bytes(), parse_float=Decimal)
+    time = packet.get("time")
+    cutoff = int(observed.astimezone(CHINA).strftime("%H%M%S"))
+    if (packet.get("code") != symbol or packet.get("date") != int(comparison_date.strftime("%Y%m%d"))
+            or type(time) is not int or not 150000 <= time <= cutoff
+            or time % 100 >= 60 or (time // 100) % 100 >= 60):
+        raise ValueError("SSE_CLOSING_VALUE_SYMBOL_OR_SESSION_MISMATCH")
+    snap = packet.get("snap")
+    if (not isinstance(snap, list) or len(snap) != 7 or not isinstance(snap[6], str)
+            or snap[6].strip() != "E110"
+            or not all(isinstance(value, Decimal) and value.is_finite() and value > 0
+                       for value in (snap[1], snap[5]))):
+        raise ValueError("SSE_CLOSING_VALUE_FIELDS_INVALID")
+    implied = Fraction(snap[5]) / Fraction(snap[1])
+    if implied.denominator != 1:
+        raise ValueError("SSE_CLOSING_VALUE_SHARE_COUNT_NOT_INTEGRAL")
+    return dict(status="CLOSE_MARKET_VALUE_DERIVED_SHARE_CORROBORATION", share_count=implied.numerator,
+                date=comparison_date.isoformat(), closing_quote_cny=str(snap[1]),
+                raw_total_value_cny=str(snap[5]), evidence_binding=deepcopy(ref),
+                exact_registry_count=False, continuity_verified=False, action="no_order")
+
+
 def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     """Replay source-anchored public research arithmetic, never approve materiality.
 
@@ -732,6 +772,17 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         if not within_range:
             gaps.append("ROUNDED_CAPITAL_SNAPSHOT_CONFLICTS_WITH_ROLLFORWARD")
             same_basis = False
+    market_value_capital = None
+    if (market_binding := ledger.get("closing_market_value_observation")) is not None:
+        market_value_capital = _market_value_share_corroboration(
+            market_binding, symbol=analysis["symbol"], comparison_date=end, now=now, read=read,
+        )
+        consistent = market_value_capital["share_count"] == total
+        market_value_capital["rollforward_matches"] = consistent
+        evidence.append(market_value_capital["evidence_binding"])
+        if not consistent:
+            gaps.append("SSE_CLOSING_VALUE_IMPLIED_SHARES_CONFLICT_WITH_ROLLFORWARD")
+            same_basis = False
     if same_basis:
         closing_value = opening_value
     compatible = same_basis
@@ -757,6 +808,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         native_basis_semantics_verified=same_basis,
         native_source_consumption=native_fields,
         rounded_capital_observation=rounded_capital,
+        closing_market_value_corroboration=market_value_capital,
         engineering_gap=None if same_basis else (
             "已消费期初原件；跨日期股本连续性仍缺原生有效行动链消费者，不能仅补同日报告或人工无变动标志放行。"
             if native_fields["reports"] else "绑定原件尚未匹配已支持的正式中报股本及分配字段。"),
