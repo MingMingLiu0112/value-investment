@@ -1435,3 +1435,16 @@ def test_overlapping_action_windows_require_same_announcement_original(reconcili
     else:
         result = reconcile(reconciliation)
         assert "PUBLIC_ACTION_REVIEW_DOES_NOT_COVER_ALL_ANNOUNCEMENTS" in result["reason_codes"]
+
+
+@pytest.mark.parametrize("payment,outside", [("2020-01-01", True), ("2020-01-02", False)])
+def test_opening_dividend_schedule_does_not_claim_receipt(reconciliation, payment, outside):
+    rows = [{"facts": [{"binding": reconciliation["anchor"]["binding"],
+        "terms": {"event_type": "PREVALUATION_DISTRIBUTION_SCHEDULE",
+                  "published_date": "2019-12-31", "terms": {"cash_per_share": "0.48",
+                  "ex_date": "2020-01-01", "cash_payment_date": payment}}}]}]
+    result = service._opening_chain_research(reconciliation["analysis"], rows, None)
+    schedule, = result["prevaluation_distribution_schedules"]
+    assert schedule["outside_comparison_interval"] is outside
+    assert schedule["cash_receipt_proven"] is False
+    assert result["complete_opening_action_coverage"] is False

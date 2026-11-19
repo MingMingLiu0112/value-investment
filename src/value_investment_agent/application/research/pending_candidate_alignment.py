@@ -978,7 +978,16 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             page_cache[key] = pages
                     pages = list(pages)
                     quarter_title = re.search(r"(20[0-9]{2})年(?:第)?三季度报告$", event["title"]) if allow_quarterly_report else None
-                    if quarter_title:
+                    if not allow_quarterly_report and event["title"].endswith("权益分派实施公告"):
+                        distribution = _cash_terms(pages, analysis["symbol"])
+                        terms = dict(event_type="PREVALUATION_DISTRIBUTION_SCHEDULE",
+                            published_date=distribution["published_date"], effective_date=None,
+                            summary="原件列示现金分配及发放日程。",
+                            implication="按除息与约定发放日检查是否落在估值基准日前。",
+                            affected_model_fields=[],
+                            limitations=["实施日程不证明现金实收或其他行动已全部核销。"],
+                            terms=distribution, action="no_order")
+                    elif quarter_title:
                         from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
                         try:
                             update = _explicit_quarterly_financial_update(pages, analysis["symbol"], binding)
@@ -1163,13 +1172,19 @@ def _opening_chain_research(analysis, rows, reconciliation):
     """Reconcile named observed actions only; never certify an empty universe."""
     start = _day(analysis["valuation_date"])
     shares = Decimal(analysis["consumed_operating_inputs"]["ordinary_shares"])
-    confirmations, authorizations, annual, purchases = [], [], [], []
+    confirmations, authorizations, annual, purchases, distribution_schedules = [], [], [], [], []
     for row in rows:
         for fact in row["facts"]:
             parsed = fact["terms"]
             terms = parsed["terms"]
             if _day(parsed["published_date"]) > start:
                 continue
+            if parsed.get("event_type") == "PREVALUATION_DISTRIBUTION_SCHEDULE":
+                distribution_schedules.append(dict(
+                    evidence_binding=fact["binding"], cash_per_share=terms["cash_per_share"],
+                    ex_date=terms["ex_date"], cash_payment_date=terms["cash_payment_date"],
+                    outside_comparison_interval=max(_day(terms["ex_date"]), _day(terms["cash_payment_date"])) <= start,
+                    cash_receipt_proven=False))
             if terms.get("purchase_state") == "COMPLETED" and terms.get("cancellation_state") == "SCHEDULED_UNCONFIRMED":
                 purchases.append(dict(binding=fact["binding"], terms=terms, published_date=parsed["published_date"]))
             if "confirmed_cancellation_date" in terms:
@@ -1234,6 +1249,7 @@ def _opening_chain_research(analysis, rows, reconciliation):
         candidate_binding=deepcopy(analysis["review_binding"]["candidate_binding"]),
         valuation_date=start.isoformat(), confirmations=confirmations,
         distribution_links=annual, outstanding_authorizations=authorizations, purchase_links=purchase_links,
+        prevaluation_distribution_schedules=distribution_schedules,
         complete_opening_action_coverage=False, comparison_date_capital_proven=False,
         formal_eligibility=False, action="no_order")
 
