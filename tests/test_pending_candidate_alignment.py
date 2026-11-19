@@ -1345,3 +1345,35 @@ def test_publication_window_can_use_adjacent_archives(first_end, required_end, c
     assert service._continuous_publication_window(
         windows, date(2025, 12, 31), date.fromisoformat(required_end),
     ) is covered
+
+
+@pytest.mark.parametrize("observed_date,lower,upper,expected", [
+    ("2020-01-02", 95, 104, True),
+    ("2020-01-02", 101, 110, False),
+    ("2020-01-01", 95, 104, None),
+])
+def test_rounded_capital_never_supplies_exact_closing_shares(
+    reconciliation, monkeypatch, observed_date, lower, upper, expected,
+):
+    from value_investment_agent.infrastructure.filings import sse_current_capital_snapshot_v1 as sse
+
+    case = reconciliation
+    snapshot = write(case["root"], "runtime/rounded.json", {"scope": "TEST_ONLY"})
+    case["ledger"].update(closing_shares=None, rounded_capital_snapshot_binding=snapshot)
+
+    def replay(*, receipt_path, symbol, as_of):
+        assert receipt_path == case["root"] / snapshot["path"]
+        assert symbol == case["analysis"]["symbol"] and as_of == case["now"]
+        return dict(trade_date=observed_date, lower_bound_shares=lower,
+                    upper_bound_shares=upper, exact_share_count=False)
+
+    monkeypatch.setattr(sse, "replay_sse_current_capital_snapshot", replay)
+    if expected is None:
+        with pytest.raises(ValueError, match="ROUNDED_CAPITAL_SNAPSHOT_COMPARISON_DATE_MISMATCH"):
+            reconcile(case)
+        return
+    result = reconcile(case)
+    assert result["rounded_capital_observation"]["rollforward_within_range"] is expected
+    assert result["closing_shares"] is None
+    assert not result["current_price_basis_compatible"]
+    assert ("ROUNDED_CAPITAL_SNAPSHOT_CONFLICTS_WITH_ROLLFORWARD" in result["reason_codes"]) is not expected
