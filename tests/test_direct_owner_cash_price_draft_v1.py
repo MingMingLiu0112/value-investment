@@ -157,10 +157,13 @@ def test_not_ready_valuation_rejected(inputs):
 
 
 
-@pytest.mark.parametrize("fault", [None, "failed_check", "wrong_candidate", "expired", "policy_tampered"])
+@pytest.mark.parametrize("fault", [None, "failed_check", "wrong_candidate", "expired", "policy_tampered",
+                                  "unready_valuation", "blocked_valuation", "changed_scenario"])
 def test_successor_policy_requires_exact_f2_and_explicit_bound_rules(tmp_path, inputs, fault):
     from datetime import datetime, timezone
     from hashlib import sha256
+
+    from value_investment_agent.research_artifact_codecs import ValuationResultCodec
 
     from value_investment_agent.application.product.parent_owner_distribution_successor_view_v2 import (
         read_aligned_owner_distribution_price,
@@ -179,8 +182,14 @@ def test_successor_policy_requires_exact_f2_and_explicit_bound_rules(tmp_path, i
     descriptor = "a" * 64
     view = dict(receipt_binding=candidate, input_descriptor_sha256=descriptor,
                 symbol="000568", research_case={"research_version": "TEST_ONLY_R1"},
-                valuation={key: inputs["plan"][key] for key in ("model_type", "model_version", "valuation_date")},
+                valuation=ValuationResultCodec().to_payload(valuation()),
                 scenario_valuations=dict(bear="10", base="20", bull="30"))
+    if fault == "unready_valuation":
+        view["valuation"]["status"] = "not_ready"
+    if fault == "blocked_valuation":
+        view["valuation"]["blockers"] = ["TEST_ONLY economic input expired"]
+    if fault == "changed_scenario":
+        view["scenario_valuations"]["bear"] = "11"
     rule = deepcopy(inputs["rule_config"])
     if fault == "expired":
         rule["effective_through"] = "2026-11-15"
@@ -206,3 +215,7 @@ def test_successor_policy_requires_exact_f2_and_explicit_bound_rules(tmp_path, i
         assert result["candidate_binding"] == candidate and result["policy_binding"] == policy
     else:
         assert result["status"] in {"BLOCKED", "REJECTED"} and not result.get("draft_prices")
+        if fault in {"unready_valuation", "blocked_valuation"}:
+            assert "VALUATION_NOT_READY_OR_BLOCKED" in result["reason_codes"]
+        if fault == "changed_scenario":
+            assert "VALUATION_PLAN_MISMATCH:bear" in result["reason_codes"]

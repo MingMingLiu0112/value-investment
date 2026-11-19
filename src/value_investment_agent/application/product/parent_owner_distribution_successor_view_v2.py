@@ -112,6 +112,7 @@ def read_aligned_owner_distribution_price(*, root, view, alignment, now):
     """Project explicit, hash-bound draft rules after the exact F2 replay."""
     from zoneinfo import ZoneInfo
 
+    from ...research_artifact_codecs import ValuationResultCodec
     from ..decision.direct_owner_cash_price_draft_v1 import draft_direct_owner_cash_price
     from ..research.pending_candidate_alignment import CHECK_IDS, CONFIG_DIRECTORY
     from ..research.value_research_analysis import _bound
@@ -147,6 +148,7 @@ def read_aligned_owner_distribution_price(*, root, view, alignment, now):
                 or policy.get("action") != "no_order"):
             raise ValueError("EXACT_PRICE_POLICY_IDENTITY_MISMATCH")
         value = view["valuation"]
+        valuation = ValuationResultCodec().from_payload(value)
         plan = dict(symbol=view["symbol"], action="no_order",
                     research_version=view["research_case"]["research_version"],
                     valuation_input_version=descriptor, model_id=value["model_type"],
@@ -154,7 +156,7 @@ def read_aligned_owner_distribution_price(*, root, view, alignment, now):
                     valuation_date=value["valuation_date"],
                     source_bindings=[*refs, policy_ref], **view["scenario_valuations"])
         result = draft_direct_owner_cash_price(
-            plan=plan, rule_config=policy["rule_config"],
+            plan=plan, rule_config=policy["rule_config"], valuation=valuation,
             as_of=now.astimezone(ZoneInfo("Asia/Shanghai")).date(),
         )
         for ref in (*refs, policy_ref):
