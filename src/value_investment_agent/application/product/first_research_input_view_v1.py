@@ -109,7 +109,7 @@ def read_first_research_input(*,root,symbol,now:datetime):
             physical_page=share_fact["physical_page"],
             source_url=share_source.get("source_url"), source_sha256=share_source["sha256"],
         )
-        return dict(base,status="SOURCE_BOUND_FIRST_INPUT_COMPILED",reason=None,
+        view = dict(base,status="SOURCE_BOUND_FIRST_INPUT_COMPILED",reason=None,
             input_descriptor_sha256=result["input_descriptor_sha256"],
             opening_capital=opening_capital,
             input_fingerprint=result["input_fingerprint"],receipt_binding=ref,
@@ -126,5 +126,21 @@ def read_first_research_input(*,root,symbol,now:datetime):
             financial_update_observation=financial_update,
             source_review="NATIVE_FACT_ROWS_COLD_REPLAYED_NOT_ECONOMIC_APPROVAL",
             investment_conclusion="PRIMARY_RANGE_REJECTED_CONDITIONAL_PRESSURE_RESEARCH_ONLY")
+        from ..research.pending_candidate_alignment import _load_bound_alignment
+
+        analysis = dict(
+            status="CONDITIONAL_ANALYSIS_VERIFIED", arithmetic_complete=True, action="no_order",
+            symbol=symbol, valuation_date=view["financial_basis"], research_as_of=view["research_as_of"],
+            valuation=view["valuation"], input_descriptor_sha256=view["input_descriptor_sha256"],
+            review_binding=dict(candidate_binding=ref), source_bindings=result["source_bindings"],
+            consumed_operating_inputs=dict(ordinary_shares=share_fact["value"]),
+            joint_capital_review=dict(economic_path=dict(currency=next(iter(package["facts"]["scenario_inputs"].values()))["currency"])),
+            official_fact_anchors=[dict(field="ordinary_shares", source_id=share_fact["source_id"],
+                source_value=share_fact["value"], unit=share_fact["unit"], period_end=share_fact["period_end"])],
+            opening_capital_original=dict(path=share_source["path"], sha256=share_source["sha256"]),
+        )
+        view["pending_candidate_alignment"] = _load_bound_alignment(
+            root=root, analysis=analysis, now=now, input_schema="first-research-input-alignment-input-v1")
+        return view
     except (ValueError,OSError,KeyError,TypeError,OverflowError) as error:
         return dict(base,status="UNASSESSABLE",reason=str(error))

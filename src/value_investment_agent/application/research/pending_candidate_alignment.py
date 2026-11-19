@@ -1256,6 +1256,54 @@ def _financial_update_closure_status(analysis, financial_events, *, operating_ev
     }
 
 
+def _first_input_opening_cancellation(analysis, source_windows, now, read, page_cache):
+    """Match a named completion to a capital transition in the consumed report."""
+    from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation
+    from ...infrastructure.filings.official_pdf import validate_pdf_original
+    from ...infrastructure.filings.pdf_text import extract_pages
+
+    basis = analysis["valuation_date"]
+    candidates = [
+        dict(window, announcements=[
+            event for event in window["announcements"]
+            if event["title"].endswith("关于部分限制性股票回购注销完成的公告")
+            and datetime.fromisoformat(event["published_at"]).date() <= _day(basis)
+        ])
+        for window in source_windows
+    ]
+    matches = [
+        fact for row in _operating_events(analysis, candidates, now, read, page_cache=page_cache)
+        for fact in row["facts"]
+        if fact["terms"]["event_type"] == "REPORTED_RESTRICTED_SHARE_CANCELLATION_COMPLETED"
+    ]
+    if not matches:
+        return None
+    report_ref = analysis["opening_capital_original"]
+    original = read(report_ref)
+    validate_pdf_original(original)
+    report = parse_native_capital_observation(extract_pages(original), symbol=analysis["symbol"])
+    shares = analysis["consumed_operating_inputs"]["ordinary_shares"]
+    if (report.get("status") != "VERIFIED" or report.get("period_end") != basis
+            or report.get("ordinary_shares") != shares
+            or report.get("cancellation_state") != "REPORTED_RESTRICTED_SHARE_CANCELLATION_COMPLETED_BY_PERIOD_END"):
+        return None
+    matched = [
+        fact for fact in matches
+        if (notice := fact["terms"]["terms"])["shares_before"] == report["shares_before"]
+        and notice["cancelled_shares"] == report["cancelled_shares"]
+        and notice["issued_shares_after"] == shares
+        and _day(report["cancellation_date"]) <= _day(notice["completed_by"]) <= _day(basis)
+    ]
+    if len(matched) != 1:
+        return None
+    return dict(status="MATCHED_COMPLETED_IN_CONSUMED_OPENING_CAPITAL",
+        notice_binding=matched[0]["binding"], report_binding=report_ref,
+        completion_reported_by=matched[0]["terms"]["terms"]["completed_by"],
+        report_evidence=report["evidence_refs"], opening_shares=shares,
+        cancelled_shares=report["cancelled_shares"], in_opening_basis=True,
+        period_share_delta="0", action="no_order")
+
+
 def _opening_chain_research(analysis, rows, reconciliation):
     """Reconcile named observed actions only; never certify an empty universe."""
     start = _day(analysis["valuation_date"])
@@ -1771,6 +1819,14 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
         opening_actions = _operating_events(analysis, source_windows, now, read,
             parser=parse_opening_action_terms, page_cache=event_pages)
         opening_chain = _opening_chain_research(analysis, opening_actions, reconciliation)
+        if analysis.get("opening_capital_original") is not None:
+            try:
+                cancellation = _first_input_opening_cancellation(
+                    analysis, source_windows, now, read, event_pages)
+                if cancellation is not None:
+                    opening_chain["completed_cancellation_in_opening_basis"] = cancellation
+            except (OSError, ValueError, TypeError, KeyError, ArithmeticError) as error:
+                opening_chain["completed_cancellation_replay_error"] = str(error)
         basis_followup = _basis_followup(analysis, reconciliation, opening_chain, windows,
             quote.quote_date, operating_events)
         for index in (1, 2):
