@@ -31,6 +31,33 @@ def staged_parent_cash_request_v3(**kwargs):
     compiler, which still rejects an unsupported stationary tail.
     """
     request = staged_parent_cash_request(**kwargs)
+    if kwargs["stage"] == "policy":
+        payload = json.loads(request.user)
+        context = payload["source_context"]
+        floors = []
+        for observation in context.get("historical_financing_observations", []):
+            cash = observation["financing_cash_flows"]
+            period = cash["period_end"]
+            year = int(period[:4])
+            if (year not in payload["required_years"] or
+                    cash["period_start"] != f"{year}-01-01" or period == f"{year}-12-31"):
+                continue
+            for observed_field, forecast_field in (
+                ("borrowings_received_cny", "new_borrowing"),
+                ("debt_repayments_paid_cny", "debt_repayment"),
+            ):
+                movement = cash["components"][observed_field]
+                if movement["classification"] == "FACT":
+                    floors.append(dict(year=year, field=forecast_field,
+                                       minimum_cny=movement["value_cny"], observed_through=period))
+        if floors:
+            payload["realised_annual_financing_floors"] = floors
+            return replace(request, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
+                                                    separators=(",", ":")),
+                           transport_output_contract=request.transport_output_contract +
+                           " For each realised_annual_financing_floors row, the stated policy series "
+                           "field in that year must be at least minimum_cny. These are gross realised "
+                           "parent cash amounts, not net financing or future refinancing forecasts.")
     if kwargs["stage"] != "terminal":
         return request
     payload = json.loads(request.user)
