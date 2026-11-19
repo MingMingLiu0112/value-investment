@@ -69,3 +69,21 @@ def test_verified_income_removes_only_covered_gaps_and_conflict_rejects():
     assert result["valuation_recomputed"] is False and result["price_admitted"] is False
     income["facts"]["2026"]["revenue"] = "131"
     assert evaluate()["reason"] == "FINANCIAL_UPDATE_INCOME_FACT_CONFLICT"
+
+def test_q3_nonrecurring_requires_matching_reported_total():
+    import pytest
+
+    from value_investment_agent.application.research.quarter_income_facts_v2 import (
+        _reported_nonrecurring_ytd,
+    )
+
+    first = (
+        "单位：元 币种：人民币 年初至报告期末\n"
+        "归属于上市公司股东的 扣除非经常性损益的净 利润 10.00 1.00 99.00 2.00"
+    )
+    second = "非经常性损益项目和金额 单位：元 币种：人民币 年初至报告期末 合计 0.20 1.00"
+    assert _reported_nonrecurring_ytd([first, second], "100.00") == "1.00"
+    with pytest.raises(ValueError, match="Q3_NONRECURRING_PROFIT_RECONCILIATION_FAILED"):
+        _reported_nonrecurring_ytd([first, second], "100.01")
+    with pytest.raises(ValueError, match="Q3_NONRECURRING_ROWS_UNVERIFIED"):
+        _reported_nonrecurring_ytd([first, second + " 合计 0.20 1.00"], "100.00")

@@ -94,6 +94,30 @@ def _render(root: Path, original: Path, entries: dict) -> dict[int, str]:
         doc.close()
 
 
+def _reported_nonrecurring_ytd(pages: list[str], parent_profit: str) -> str:
+    first, second = (" ".join(page.split()) for page in pages)
+    unit = "单位：元 币种：人民币"
+    if (unit not in first or "年初至报告期末" not in first
+            or "非经常性损益项目和金额" not in second):
+        raise ValueError("Q3_NONRECURRING_HEADERS_UNVERIFIED")
+    section = second.split("非经常性损益项目和金额", 1)[1]
+    section = section.split("对公司将", 1)[0]
+    if unit not in section or "年初至报告期末" not in section:
+        raise ValueError("Q3_NONRECURRING_HEADERS_UNVERIFIED")
+    amount = r"(-?(?:\d{1,3},)*\d+\.\d{2})"
+    adjusted = re.findall(
+        r"归属于上市公司股东的 扣除非经常性损益的净 利润 "
+        + amount + r" -?\d+\.\d{2} " + amount + r" -?\d+\.\d{2}", first)
+    totals = re.findall(r"合计 " + amount + " " + amount, section)
+    if len(adjusted) != 1 or len(totals) != 1:
+        raise ValueError("Q3_NONRECURRING_ROWS_UNVERIFIED")
+    ytd_adjusted = Decimal(adjusted[0][1].replace(",", ""))
+    total = Decimal(totals[0][1].replace(",", ""))
+    if Decimal(parent_profit) - ytd_adjusted != total:
+        raise ValueError("Q3_NONRECURRING_PROFIT_RECONCILIATION_FAILED")
+    return str(total)
+
+
 def read_quarter_income_facts(root: Path, symbol: str, now: datetime) -> dict:
     result = {"schema_version": "quarter-income-facts-v2", "symbol": symbol,
               "status": "UNASSESSABLE", "action": "no_order", "formal_eligibility": False,
@@ -160,7 +184,19 @@ def read_quarter_income_facts(root: Path, symbol: str, now: datetime) -> dict:
         if (facts["2026"]["revenue"] != original_pair["revenue_ytd_cny"] or
                 facts["2026"]["parent_profit"] != original_pair["attributable_profit_ytd_cny"]):
             raise ValueError("Q3_INCOME_V1_V2_FACT_CONFLICT")
+        from ...infrastructure.filings.pdf_text import extract_pages
+
+        nonrecurring = None
+        try:
+            nonrecurring = _reported_nonrecurring_ytd(extract_pages(original, limit=2), facts["2026"]["parent_profit"])
+        except (ValueError, OSError, TypeError):
+            pass
+        if _sha(original) != case["source_sha256"]:
+            raise ValueError("Q3_INCOME_ORIGINAL_HASH_CHANGED")
+        if nonrecurring is not None:
+            facts["2026"]["nonrecurring"] = nonrecurring
         return {**result, "status": "VERIFIED_REPORTED_Q3_INCOME_FACTS_ONLY",
+                "nonrecurring_source_pages": [1, 2] if nonrecurring is not None else [],
                 "report_period": "2026-09-30", "period_basis": "YTD_9M",
                 "currency": "CNY", "unit": "yuan", "facts": facts,
                 "source_bindings": {"original": base["source_bindings"]["original"],
