@@ -13,6 +13,9 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Mapping
 
+from pypdfium2 import PdfiumError
+
+from .agent_review.quarterly_parent_cash_source import replay_quarterly_parent_cash
 from .direct_owner_cash_alignment_v1 import _capital_anchor, _official_catalog
 from .direct_owner_cash_research_v1 import _read
 from .owner_distribution_read_scope import (
@@ -136,6 +139,38 @@ def _implemented_distribution(result: Mapping[str, Any], spec: Mapping[str, Any]
     }
 
 
+def _observed_financing_comparison(*, root, result, source, period_end, now):
+    """Compare gross full-year policies with already reported parent gross flows."""
+    try:
+        financing = replay_quarterly_parent_cash(
+            root=root, source=dict(source), symbol=result["symbol"],
+            issuer_name=result["research_case"]["name"], period_end=period_end,
+            now=now, include_financing=True,
+        )["financing"]
+    except (ValueError, OSError, PdfiumError) as error:
+        return {"status": "NOT_VERIFIED", "reason": str(error)}
+    year = int(period_end[:4])
+    amounts = {
+        "new_borrowing": financing["borrowings_received_cny"]["current"],
+        "debt_repayment": financing["debt_repayments_paid_cny"]["current"],
+    }
+    modeled = {
+        name: {key: scenario["years"][0]["policy"][key] for key in amounts}
+        for name, scenario in result["compiled"]["scenarios"].items()
+        if scenario["years"][0]["year"] == year
+    }
+    if set(modeled) != {"bear", "base", "bull"}:
+        raise ValueError("OWNER_DISTRIBUTION_FINANCING_POLICY_PERIOD_MISMATCH")
+    conflicts = [
+        {"scenario": name, "field": key, "reported_ytd_cny": actual,
+         "modeled_full_year_cny": policy[key]}
+        for name, policy in modeled.items() for key, actual in amounts.items()
+        if Decimal(policy[key]) < Decimal(actual)
+    ]
+    return {"status": "CONFLICT" if conflicts else "GROSS_YTD_FLOOR_NOT_CONTRADICTED",
+            "reported_ytd": financing, "conflicts": conflicts}
+
+
 def _consumed_financial_update_closure(*, result: Mapping[str, Any],
                                        receipt: Mapping[str, Any], root: Path,
                                        now: datetime,
@@ -166,7 +201,11 @@ def _consumed_financial_update_closure(*, result: Mapping[str, Any],
             or source_binding not in result.get("source_bindings", [])):
         raise ValueError("FINANCIAL_UPDATE_SOURCE_OUTSIDE_RECOMPUTED_CLOSURE")
     _bound(root, source_binding)
+    financing = _observed_financing_comparison(
+        root=root, result=result, source=source, period_end=predecessor_spec["period_end"], now=now,
+    )
     return [{
+        "financing_comparison": financing,
         "status": FINANCIAL_UPDATE_RECOMPUTED,
         "period_end": predecessor_spec["period_end"],
         "source_binding": source_binding,

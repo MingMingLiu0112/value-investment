@@ -250,3 +250,20 @@ def test_total_f2_remains_blocked_and_no_order_with_financial_closure(aligned_ca
     assert result["currentpricecomparison"] is False
     assert result["formal_eligibility"] is False
     assert result["action"] == "no_order"
+
+
+def test_reported_parent_financing_conflict_blocks_financial_update(aligned_case):
+    _, receipt, _, result, closure = financial_closure(aligned_case)
+    closure[0]["financing_comparison"] = {"status": "CONFLICT"}
+    source = closure[0]["source_binding"]
+    analysis = {
+        "review_binding": {"candidate_binding": receipt},
+        "input_descriptor_sha256": result["input_descriptor_sha256"],
+        "consumed_financial_updates": closure,
+    }
+    events = [{"facts": [{"binding": source, "terms": {"financial_update": {
+        "period_end": closure[0]["period_end"],
+    }}}]}]
+    observed = _financial_update_closure_status(analysis, events)
+    assert observed["status"] == "BLOCKED"
+    assert observed["reason_codes"] == ["REPORTED_PARENT_FINANCING_EXCEEDS_FULL_YEAR_POLICY"]

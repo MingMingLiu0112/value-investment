@@ -1073,10 +1073,17 @@ def _financial_update_closure_status(analysis, financial_events):
             observed.append((update["period_end"], fact["binding"].get("sha256")))
     unmatched_observed = [key for key in observed if key not in expected]
     unmatched_closure = [key for key in expected if key not in observed]
-    if unmatched_observed or unmatched_closure:
+    conflicts = any(row.get("financing_comparison", {}).get("status") == "CONFLICT"
+                    for row in closure)
+    if unmatched_observed or unmatched_closure or conflicts:
+        reasons = []
+        if unmatched_observed or unmatched_closure:
+            reasons.append("FINANCIAL_UPDATE_REQUIRES_RECOMPUTATION")
+        if conflicts:
+            reasons.append("REPORTED_PARENT_FINANCING_EXCEEDS_FULL_YEAR_POLICY")
         return {
             "status": "BLOCKED",
-            "reason_codes": ["FINANCIAL_UPDATE_REQUIRES_RECOMPUTATION"],
+            "reason_codes": reasons,
             "scope": "EXACT_CANDIDATE_FINANCIAL_UPDATE_CLOSURE",
             "consumed_closure": deepcopy(closure),
             "unmatched_observed": unmatched_observed,
