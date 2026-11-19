@@ -167,6 +167,22 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
                 row["source_refs"][name] = sourced["source_refs"]
             except (KeyError, TypeError) as error:
                 raise ValueError("PARENT_AGENT_V2_OPERATING_FIELD_MISSING:" + name) from error
+        cash_fields = ("customer_cash", "supplier_cash", "cfo")
+        if all(statement["cash_flow"][numbered_fields[key][1]].get("comparative")
+               is not None for key in cash_fields):
+            changes = {
+                key: Decimal(row[key]) - Decimal(
+                    statement["cash_flow"][numbered_fields[key][1]]["comparative"])
+                for key in cash_fields
+            }
+            row["cash_change_explanation"] = dict(
+                classification="DERIVED_HISTORICAL_CASH_CHANGE_NOT_WORKING_CAPITAL",
+                cfo_change_cny=str(changes["cfo"]),
+                customer_receipt_change_cny=str(changes["customer_cash"]),
+                lower_supplier_payments_contribution_cny=str(-changes["supplier_cash"]),
+                other_operating_cash_change_cny=str(
+                    changes["cfo"] - changes["customer_cash"] + changes["supplier_cash"]),
+            )
         observations.append(row)
     statements = {row["period_end"]: row for row in evidence["statements"]}
     if len(statements) != len(evidence["statements"]):
@@ -231,6 +247,7 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
         source_status=evidence["status"],
         historical_financing_range=basis_financing[0],
         historical_financing_observations=financing,
+        parent_operating_cash_observations=observations,
         working_capital_cash_component=evidence["working_capital_cash_component"],
         constraints=evidence["constraints"], unresolved=evidence["unresolved"],
         fund_commitment_evidence=evidence["fund_commitment_evidence"],

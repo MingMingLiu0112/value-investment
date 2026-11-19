@@ -170,3 +170,16 @@ def test_real_parent_financing_cash_reaches_d2_request():
         generated_at=now, verified_context=context)
     received = json.loads(request.user)["source_context"]["historical_financing_observations"]
     assert received == context["historical_financing_observations"]
+    from decimal import Decimal
+
+    cash_history = json.loads(request.user)["source_context"]["parent_operating_cash_observations"]
+    assert cash_history == context["parent_operating_cash_observations"]
+    assert {row["period_end"] for row in cash_history} == {"2025-12-31", "2026-06-30"}
+    for row in cash_history:
+        changes = row["cash_change_explanation"]
+        assert changes["classification"] == "DERIVED_HISTORICAL_CASH_CHANGE_NOT_WORKING_CAPITAL"
+        assert Decimal(changes["cfo_change_cny"]) == sum(Decimal(changes[key]) for key in (
+            "customer_receipt_change_cny", "lower_supplier_payments_contribution_cny",
+            "other_operating_cash_change_cny"))
+        assert row["source_refs"]["cfo"]
+    assert context["working_capital_cash_component"] is None
