@@ -720,7 +720,13 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     # of the researcher-selected ledger rows and document classifications.
     observed_cash = []
     for identity, event in announced.items():
-        if not event.get("title", "").endswith(("权益分派实施公告", "分红派息实施公告")):
+        title = event.get("title", "")
+        suffixes = ("权益分派实施公告", "分红派息实施公告")
+        if not any(suffix in title for suffix in suffixes):
+            continue
+        if not title.endswith(suffixes):
+            gaps.append("COVERED_CASH_IMPLEMENTATION_LINEAGE_UNRESOLVED: " + identity)
+            observed_cash.append(dict(announcement_id=identity, status="LINEAGE_UNRESOLVED"))
             continue
         sources = event["evidence_refs"]
         try:
@@ -732,7 +738,16 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
             pages = cache.get(source["sha256"])
             if pages is None:
                 pages = extract_pages(original)
-            terms = _cash_terms(pages, analysis["symbol"])
+            term_field = "native_terms"
+            payment_field = "cash_payment_date"
+            try:
+                terms = _cash_terms(pages, analysis["symbol"])
+            except ValueError:
+                from ...infrastructure.filings.szse_cash_entitlement import parse_mixed_cash_entitlement
+
+                terms = parse_mixed_cash_entitlement(pages, symbol=analysis["symbol"])
+                term_field = "native_entitlement_only"
+                payment_field = "clearing_house_scheduled_payment_date"
             publication = datetime.fromisoformat(event["published_at"]).astimezone(CHINA).date()
             if _day(terms["published_date"]) != publication:
                 raise ValueError("CASH_IMPLEMENTATION_PUBLICATION_MISMATCH")
@@ -740,20 +755,24 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
             gaps.append("COVERED_CASH_IMPLEMENTATION_UNVERIFIED: " + identity)
             observed_cash.append(dict(announcement_id=identity, status="UNVERIFIED", reason=str(error)))
             continue
-        ex, payment = (_day(terms[k]) for k in ("ex_date", "cash_payment_date"))
+        ex, payment = (_day(terms[k]) for k in ("ex_date", payment_field))
         if ex > end or max(ex, payment) <= start:
             continue
         matches = [
             row for row in cash_rows
-            if row["native_terms"] == terms and any(
+            if row.get(term_field) == terms and any(
                 anchor["binding"]["sha256"] == source["sha256"]
                 and anchor["source_url"] == source["source_url"] for anchor in row["evidence"]
             )
         ]
+        status = "MATCHED"
         if len(matches) != 1:
             gaps.append("COVERED_CASH_IMPLEMENTATION_REQUIRES_UNIQUE_LEDGER_ROW: " + identity)
+            status = "LEDGER_MISMATCH"
+        elif term_field == "native_entitlement_only":
+            status = "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"
         observed_cash.append(dict(announcement_id=identity, evidence_binding=deepcopy(source),
-            status="MATCHED" if len(matches) == 1 else "LEDGER_MISMATCH", terms=terms,
+            status=status, terms=terms,
             matched_ledger_ids=[row["id"] for row in matches]))
     # Exact excerpts/number/date co-occurrence and researcher classifications
     # are not a sealed semantic consumer. No caller-provided review/NO_EFFECT or

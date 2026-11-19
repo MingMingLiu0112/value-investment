@@ -1171,7 +1171,15 @@ def test_mixed_payment_ledger_does_not_claim_issuer_payment(reconciliation, monk
                  published_date="2020-01-01", clearing_house_scheduled_payment_date="2020-01-02",
                  issuer_direct_payment_date=None, cash_payment_status="ISSUER_DIRECT_PAYMENT_UNVERIFIED")
     monkeypatch.setattr(szse_cash_entitlement, "parse_mixed_cash_entitlement", lambda *a, **k: terms)
+    anchor = case["anchor"]
+    case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
+        announcements=[dict(announcement_id="123", title="TEST_ONLY年度分红派息实施公告",
+            published_at="2019-12-31T16:00:00+00:00",
+            evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
     result = reconcile(case)
+    observed, = result["covered_cash_implementations"]
+    assert observed["status"] == "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"
+    assert observed["matched_ledger_ids"] == ["TEST_ONLY_CASH"]
     row = result["distributions"][0]
     assert row["field_semantics_status"] == "NATIVE_ENTITLEMENT_ONLY_VERIFIED"
     assert row["verified_cash_per_share"] == "2"
@@ -1492,3 +1500,20 @@ def test_covered_cash_original_requires_exactly_one_ledger_row(reconciliation, m
     assert ("COVERED_CASH_IMPLEMENTATION_REQUIRES_UNIQUE_LEDGER_ROW: 123" in
             result["reason_codes"]) == (row_count != 1)
     assert result["period_cash_coverage_complete"] is False
+
+
+@pytest.mark.parametrize("suffix", ["（修订版）", "（已取消）"])
+def test_covered_cash_notice_variants_require_lineage_resolution(reconciliation, suffix):
+    case = reconciliation
+    anchor = case["anchor"]
+    case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
+        announcements=[dict(announcement_id="123", title="TEST_ONLY权益分派实施公告" + suffix,
+            evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
+
+    result = reconcile(case)
+
+    assert result["covered_cash_implementations"] == [
+        dict(announcement_id="123", status="LINEAGE_UNRESOLVED")
+    ]
+    assert "COVERED_CASH_IMPLEMENTATION_LINEAGE_UNRESOLVED: 123" in result["reason_codes"]
+    assert not result["current_price_basis_compatible"]
