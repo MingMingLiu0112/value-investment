@@ -194,3 +194,46 @@ def test_real_annual_distribution_vote_original():
     assert chain["comparison_date_capital_proven"] is False
     events[0]["facts"][0]["terms"]["terms"]["meeting_date"] = "2026-05-19"
     assert not _opening_chain_research(analysis, events, None)["annual_approval_schedule_links"]
+
+def test_real_interim_vote_cannot_backfill_comparison_close():
+    root = os.environ.get("VALUE_REAL_SOURCE_ROOT")
+    if not root:
+        pytest.skip("real original root explicitly required; not a real-data pass")
+    from datetime import date
+
+    from value_investment_agent.infrastructure.filings.disclosure_availability import indexed_disclosure_availability
+    from value_investment_agent.infrastructure.filings.interim_dividend_resolution import parse_interim_dividend_resolution
+    from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
+
+    root = Path(root)
+    sources = root / "runtime/f2-yili-interim-vote-20261120"
+    pdf = sources / "resolution.pdf"
+    digest = hashlib.sha256(pdf.read_bytes()).hexdigest()
+    assert digest == "b98fd6c8dfb862bd5a4ceede5c51bb8c67c25ef1e76297000f106e2a3e94a462"
+    index_raw = (sources / "index.json").read_bytes()
+    assert hashlib.sha256(index_raw).hexdigest() == "b8c23e6c57c37eb54b21b571df192844921307d8a227313fde76dfdba6e77d77"
+    index = dict(json.loads(index_raw), url="https://www.cninfo.com.cn/new/hisAnnouncement/query")
+    source_url = "https://static.cninfo.com.cn/finalpage/2026-11-21/1225681447.PDF"
+    availability = indexed_disclosure_availability(index, symbol="600887",
+        source_id="cninfo:1225681447", source_url=source_url)
+    published = date.fromisoformat(availability["disclosure_date"])
+    assert availability["available_from"] == "2026-11-22T00:00:00+08:00"
+    vote = parse_interim_dividend_resolution(extract_pages(pdf), symbol="600887", published=published)
+    assert vote["decision"] == "APPROVED" and vote["yes_votes"] == 2163014000
+    assert not vote["implementation_verified"] and not vote["payment_verified"]
+
+    capture_raw = (sources / "receipt.json").read_bytes()
+    assert hashlib.sha256(capture_raw).hexdigest() == "7c44bea9c81ef6e8dc6728589f74ebf54cb062ef41f1e519c8a3ed186013ddd9"
+    announcement, = [r for r in index["announcements"] if r["announcementId"] == "1225681447"]
+    ref = dict(path=pdf.relative_to(root).as_posix(), sha256=digest, source_url=source_url)
+    window = dict(acquired_at=json.loads(capture_raw)["captured_at"], announcements=[dict(
+        announcement_id="1225681447", title=announcement["announcementTitle"],
+        published_at=f"{published}T00:00:00+08:00", source_url=source_url, evidence_refs=[ref])])
+    analysis = dict(symbol="600887", input_descriptor_sha256="a" * 64,
+                    review_binding=dict(candidate_binding={"path": "TEST_ONLY", "sha256": "b" * 64}))
+    read = lambda binding: _bound(root, binding)
+    with pytest.raises(ValueError, match="OPERATING_EVENT_ACQUISITION_UNAVAILABLE"):
+        _operating_events(analysis, [window], datetime.fromisoformat("2026-11-20T15:00:00+08:00"), read)
+    later, = _operating_events(analysis, [window], datetime.fromisoformat(availability["available_from"]), read)
+    assert not later["facts"] and not later["materiality_approved"]
+    assert later["unresolved"][0]["reason"] == "OPERATING_EVENT_PUBLICATION_MISMATCH"
