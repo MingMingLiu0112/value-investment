@@ -313,3 +313,47 @@ def test_retained_annual_balance_requires_exact_parent_header(case, monkeypatch,
             "parent_surplus_reserve": "4.00", "parent_retained_earnings": "22.00",
         }
         assert {row["physical_page"] for row in result["evidence"]} == {1}
+
+
+def test_retained_d2_preflight_yutong_originals():
+    import os
+    from pathlib import Path
+
+    from value_investment_agent.application.research.retained_parent_direct_observations import (
+        read_retained_parent_d2_preflight,
+    )
+
+    root = os.environ.get("VALUE_REAL_SOURCE_ROOT")
+    if not root:
+        pytest.skip("real original root explicitly required")
+    root = Path(root).resolve()
+    d = root / "runtime/value-f2-replays"
+    observations = json.loads((d / "b-retained-direct-observations-two-companies-20261120.json").read_bytes())
+    pins = {period: rows[0]["source_refs"][0]["receipt_binding"]
+            for period, rows in observations["candidates"]["600066"]["periods"].items()}
+    raw = (d / "yutong-opening-shares-20261120/retained-ordinary-shares-adapter.json").read_bytes()
+    assert sha256(raw).hexdigest() == "26a0215fb467d046e4792552e7f9c9dd58c116cd26ba7b8b8cb0f00b7a457734"
+    share_refs = json.loads(raw)["source_refs"][1:]
+    support = {role: {key: ref[key] for key in ("path", "sha256", "source_url", "available_at")}
+               for role, ref in zip(("proposal", "charter", "charter_vote"), share_refs, strict=True)}
+    args = dict(root=root.parent / "vf1", symbol="600066", issuer_name="宇通客车股份有限公司",
+                annual_period="2025-12-31", annual_receipt=pins["2025-12-31"],
+                interim_period="2026-06-30", interim_receipt=pins["2026-06-30"],
+                supporting_root=root, supporting_sources=support, evaluated_at=NOW)
+
+    result = read_retained_parent_d2_preflight(**args)
+    assert result["ordinary_shares"]["count"] == "2213939223"
+    assert result["status"] == "SOURCE_BOUND_D2_PREFLIGHT_ONLY"
+    assert not result["formal_eligibility"] and not result["model_applicability_verified"]
+    bridge = result["cash_source_bridge"]
+    assert bridge["owner_cash_cny"] is None and bridge["distribution_capacity_cny"] is None
+    assert [row["period_end"] for row in bridge["statements"]] == ["2025-12-31", "2026-06-30"]
+    assert all(row["checks"]["cash_statement_reconciled"] for row in bridge["statements"])
+    assert all(row["checks"]["balance_equation_reconciled"] for row in bridge["statements"])
+    with pytest.raises(ValueError, match="RETAINED_D2_NONCONSECUTIVE_PERIODS"):
+        read_retained_parent_d2_preflight(**dict(args, interim_period="2027-06-30"))
+    with pytest.raises(ValueError):
+        read_retained_parent_d2_preflight(**dict(args, symbol="600398"))
+    corrupted = dict(support, charter=dict(support["charter"], sha256="0" * 64))
+    with pytest.raises(ValueError, match="HASH_CHANGED"):
+        read_retained_parent_d2_preflight(**dict(args, supporting_sources=corrupted))
