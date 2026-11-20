@@ -168,6 +168,7 @@ def test_cross_date_facts_keep_empty_verified_window_blocked(reconciliation, ela
     assert facts["candidate_binding"] == case["ledger"]["candidate_binding"]
     assert facts["ledger_binding"]["sha256"] == sha256_file(case["root"] / "runtime/reconciliation.json")
     assert facts["announcements"] == []
+    assert facts["row_proof_reconciliation"]["status"] == "NO_IN_PERIOD_ROWS"
     assert "NATIVE_ANNOUNCEMENT_DISPOSITIONS_UNRESOLVED" in facts["reason_codes"]
     assert facts["status"] == "BLOCKED"
     assert not facts["effective_action_continuity_proven"]
@@ -196,10 +197,12 @@ def test_cross_date_facts_use_native_terminal_observations_and_reject_conflictin
     inputs = dict(ledger_binding=dict(path="runtime/ledger.json", sha256="d" * 64),
                   ledger=ledger, start=date(2020, 1, 1), end=date(2020, 1, 2),
                   action_rows=[dict(id="cancel", native_cancellation=proof)],
-                  cash_rows=[dict(id="cash", model_inclusion="NOT_NATIVE_VERIFIED")],
-                  cancellations=[dict(announcement_id="2", matched_ledger_ids=["cancel"], status="MATCHED")],
+                  cash_rows=[dict(id="cash", model_inclusion="NOT_NATIVE_VERIFIED",
+                                  ex_date="2020-01-02", cash_payment_date="2020-01-02")],
+                  cancellations=[dict(announcement_id="2", matched_ledger_ids=["cancel"], status="MATCHED",
+                                      evidence_binding=confirmation)],
                   cash_implementations=[dict(announcement_id="3", matched_ledger_ids=["cash"],
-                                             status="ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED", terms={})])
+                                             status="ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED", evidence_binding=cash_ref, terms={})])
     facts = service._cross_date_action_facts(**inputs, windows=[window])
     rows = facts["announcements"]
     assert [row["status"] for row in rows] == ["NATIVE_TERMINAL_MATCHED", "NATIVE_TERMINAL_MATCHED",
@@ -207,6 +210,51 @@ def test_cross_date_facts_use_native_terminal_observations_and_reject_conflictin
     assert rows[1]["facts"][0]["native_proof"] == proof
     assert rows[2]["facts"][0]["cash_payment_proven"] is False
     assert not facts["effective_action_continuity_proven"]
+    proof = facts["row_proof_reconciliation"]
+    assert proof["status"] == "MATCHED"
+    assert [row["ledger_id"] for row in proof["matched_rows"]] == ["cancel", "cash"]
+    assert proof["matched_rows"][1]["cash_payment_proven"] is False
+    assert facts["status"] == "BLOCKED"
+    assert not facts["current_price_basis_compatible"]
+
+    orphan = deepcopy(inputs)
+    orphan["action_rows"].append(dict(id="offsetting_increase"))
+    proof = service._cross_date_action_facts(**orphan, windows=[window])["row_proof_reconciliation"]
+    assert proof["status"] == "UNRESOLVED"
+    assert proof["unmatched_ledger_ids"] == ["offsetting_increase"]
+
+    duplicate = deepcopy(orphan)
+    duplicate["action_rows"][1]["native_cancellation"] = deepcopy(duplicate["action_rows"][0]["native_cancellation"])
+    alias = deepcopy(duplicate["cancellations"][0])
+    alias["matched_ledger_ids"] = ["offsetting_increase"]
+    alias["evidence_binding"]["path"] = "runtime/duplicate.pdf"
+    duplicate["cancellations"].append(alias)
+    proof = service._cross_date_action_facts(**duplicate, windows=[window])["row_proof_reconciliation"]
+    assert proof["status"] == "UNRESOLVED"
+    assert proof["unmatched_ledger_ids"] == ["cancel", "offsetting_increase"]
+    assert len(proof["duplicate_native_proofs"]) == 2
+    assert len(proof["unmatched_native_proofs"]) == 2
+
+    for variant in ("detached", "missing_sha", "wrong_disposition", "partial_window", "aliased_original"):
+        altered, archive = deepcopy(inputs), deepcopy(window)
+        observation = altered["cancellations"][0]
+        if variant == "detached":
+            observation["announcement_id"] = "absent"
+        elif variant == "missing_sha":
+            observation["evidence_binding"].pop("sha256")
+        elif variant == "wrong_disposition":
+            altered["ledger"]["reviewed_documents"][1]["disposition"] = "NO_CAPITAL_OR_DISTRIBUTION_EFFECT"
+        elif variant == "partial_window":
+            archive["scan_from"] = "2020-01-02"
+        else:
+            archive["announcements"].append(dict(archive["announcements"][1], announcement_id="alias"))
+        facts = service._cross_date_action_facts(**altered, windows=[archive])
+        proof = facts["row_proof_reconciliation"]
+        assert proof["status"] == "UNRESOLVED", variant
+        assert "cancel" in proof["unmatched_ledger_ids"], variant
+        if variant == "aliased_original":
+            assert {row["announcement_id"] for row in facts["announcements"]
+                    if row["status"] == "ANNOUNCEMENT_METADATA_CONFLICT"} == {"2", "alias"}
 
     changed = deepcopy(window)
     changed["announcements"][1]["published_at"] = "2020-01-02T05:00:00+00:00"

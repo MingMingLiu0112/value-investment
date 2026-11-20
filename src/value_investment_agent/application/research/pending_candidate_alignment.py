@@ -447,6 +447,65 @@ def _continuous_publication_window(windows, start, end):
             return True
     return False
 
+def _cross_date_row_proofs(*, start, end, action_rows, cash_rows, cancellations,
+                           cash_implementations, announcements, dispositions, complete_ids,
+                           conflicts, publication_window_covered):
+    """Match ledger rows to replayed native proofs, without granting economic closure."""
+    ledger = {row["id"]: ("SHARE_ACTION", row) for row in action_rows}
+    ledger.update({row["id"]: ("CASH_DISTRIBUTION", row) for row in cash_rows
+                   if _day(row["ex_date"]) <= end
+                   and start < max(_day(row["ex_date"]), _day(row["cash_payment_date"]))})
+    proof_rows, by_ledger, by_original = [], {}, {}
+    for kind, observations in (("SHARE_ACTION", cancellations), ("CASH_DISTRIBUTION", cash_implementations)):
+        for observation in observations:
+            identity = observation["announcement_id"]
+            binding = observation.get("evidence_binding")
+            announcement = announcements.get(identity)
+            originals = announcement[2] if announcement else ()
+            digest = binding.get("sha256") if isinstance(binding, dict) else None
+            sources = [url for url, original_digest in originals if digest is not None and digest == original_digest
+                       and binding.get("source_url", url) == url]
+            source_url = sources[0] if len(sources) == 1 else None
+            ids = observation.get("matched_ledger_ids", [])
+            proof = dict(kind=kind, announcement_id=identity, evidence_binding=binding, source_url=source_url,
+                         native_status=observation["status"], ledger_ids=ids)
+            index = len(proof_rows)
+            proof_rows.append(proof)
+            if source_url is not None:
+                by_original.setdefault((identity, source_url, digest), []).append(index)
+            if (not publication_window_covered or identity not in complete_ids
+                    or identity in conflicts or source_url is None
+                    or dispositions.get(identity) != kind or len(ids) != 1 or observation["status"] not in {
+                        "MATCHED", "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"
+                    }):
+                continue
+            row_id, = ids
+            if row_id in ledger and ledger[row_id][0] == kind:
+                by_ledger.setdefault(row_id, []).append(index)
+
+    duplicate_proofs = {i for indices in by_original.values() if len(indices) > 1 for i in indices}
+    matched, used = [], set()
+    for row_id, (kind, row) in ledger.items():
+        indices = by_ledger.get(row_id, [])
+        if len(indices) != 1 or indices[0] in duplicate_proofs:
+            continue
+        index, = indices
+        used.add(index)
+        match = dict(ledger_id=row_id, **proof_rows[index])
+        if kind == "CASH_DISTRIBUTION":
+            match.update(cash_payment_proven=False, model_inclusion=row["model_inclusion"])
+        matched.append(match)
+
+    unmatched_ledger = sorted(set(ledger) - {row["ledger_id"] for row in matched})
+    unmatched_proofs = [row for index, row in enumerate(proof_rows) if index not in used]
+    ambiguous_ledger = sorted(row_id for row_id, indices in by_ledger.items() if len(indices) > 1)
+    status = "MATCHED" if matched and not (unmatched_ledger or unmatched_proofs) else (
+        "UNRESOLVED" if ledger or proof_rows else "NO_IN_PERIOD_ROWS")
+    return dict(status=status, matched_rows=matched, unmatched_ledger_ids=unmatched_ledger,
+                unmatched_native_proofs=unmatched_proofs, ambiguous_ledger_ids=ambiguous_ledger,
+                duplicate_native_proofs=[proof_rows[i] for i in sorted(duplicate_proofs)])
+
+
 def _cross_date_action_facts(*, ledger_binding, ledger, start, end, windows, action_rows,
                              cash_rows, cancellations, cash_implementations):
     """Project replayed announcement facts without certifying interval continuity."""
@@ -480,7 +539,7 @@ def _cross_date_action_facts(*, ledger_binding, ledger, start, end, windows, act
     facts_by_announcement = {}
     purchases = {}
     for observation in cancellations:
-        if observation["status"] != "MATCHED":
+        if observation["status"] != "MATCHED" or observation["announcement_id"] not in announcements:
             continue
         row_id, = observation["matched_ledger_ids"]
         proof = actions_by_id[row_id]["native_cancellation"]
@@ -500,7 +559,8 @@ def _cross_date_action_facts(*, ledger_binding, ledger, start, end, windows, act
                 if fact not in facts:
                     facts.append(fact)
     for observation in cash_implementations:
-        if observation["status"] not in {"MATCHED", "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"}:
+        if (observation["status"] not in {"MATCHED", "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"}
+                or observation["announcement_id"] not in announcements):
             continue
         row_id, = observation["matched_ledger_ids"]
         row = cash_by_id[row_id]
@@ -530,7 +590,12 @@ def _cross_date_action_facts(*, ledger_binding, ledger, start, end, windows, act
                 ledger_binding=deepcopy(ledger_binding), valuation_date=start.isoformat(),
                 comparison_date=end.isoformat(), publication_window_covered=covered,
                 coverage_observation_bindings=[deepcopy(w["observation_binding"]) for w in complete],
-                announcements=rows, effective_action_continuity_proven=False,
+                announcements=rows, row_proof_reconciliation=_cross_date_row_proofs(
+                    start=start, end=end, action_rows=action_rows, cash_rows=cash_rows,
+                    cancellations=cancellations, cash_implementations=cash_implementations,
+                    announcements=announcements, dispositions=dispositions,
+                    complete_ids=complete_ids, conflicts=conflicts, publication_window_covered=covered),
+                effective_action_continuity_proven=False,
                 current_price_basis_compatible=False,
                 status="BLOCKED", reason_codes=[
                     *([] if covered else ["COMPLETE_ACTION_PUBLICATION_WINDOW_REQUIRED"]),
