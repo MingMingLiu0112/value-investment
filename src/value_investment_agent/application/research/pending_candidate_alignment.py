@@ -447,6 +447,100 @@ def _continuous_publication_window(windows, start, end):
             return True
     return False
 
+def _cross_date_action_facts(*, ledger_binding, ledger, start, end, windows, action_rows,
+                             cash_rows, cancellations, cash_implementations):
+    """Project replayed announcement facts without certifying interval continuity."""
+    complete = [window for window in windows
+                if window.get("source_integrity_verified") is True
+                and window["full_calendar_window_elapsed"] is True
+                and window.get("coverage_status") == "COMPLETE"]
+    covered = _continuous_publication_window(complete, start, end)
+    dispositions = {row["announcement_id"]: row["disposition"]
+                    for row in ledger["reviewed_documents"]}
+    complete_ids = {event["announcement_id"] for window in complete
+                    for event in window["announcements"]}
+    announcements = {}
+    original_owners = {}
+    conflicts = set()
+    for window in windows:
+        for event in window["announcements"]:
+            identity = event["announcement_id"]
+            originals = sorted({(ref["source_url"], ref["sha256"]) for ref in event["evidence_refs"]})
+            metadata = (event.get("title"), event.get("published_at"), originals)
+            for original in originals:
+                owner = original_owners.setdefault(original, identity)
+                if owner != identity:
+                    conflicts.update((owner, identity))
+            if identity in announcements and announcements[identity] != metadata:
+                conflicts.add(identity)
+            announcements[identity] = metadata
+
+    actions_by_id = {row["id"]: row for row in action_rows}
+    cash_by_id = {row["id"]: row for row in cash_rows}
+    facts_by_announcement = {}
+    purchases = {}
+    for observation in cancellations:
+        if observation["status"] != "MATCHED":
+            continue
+        row_id, = observation["matched_ledger_ids"]
+        proof = actions_by_id[row_id]["native_cancellation"]
+        facts_by_announcement.setdefault(observation["announcement_id"], []).append(dict(
+            kind="CONFIRMED_BUYBACK_CANCELLATION", ledger_id=row_id, native_proof=proof))
+        purchase = proof["purchase_binding"]
+        purchases.setdefault((purchase["path"], purchase["sha256"]), []).append(row_id)
+    for window in complete:
+        for event in window["announcements"]:
+            identity = event["announcement_id"]
+            refs = event["evidence_refs"]
+            if len(refs) != 1:
+                continue
+            for row_id in purchases.get((refs[0]["path"], refs[0]["sha256"]), []):
+                fact = dict(kind="PURCHASE_LINKED_TO_CONFIRMED_CANCELLATION", ledger_id=row_id)
+                facts = facts_by_announcement.setdefault(identity, [])
+                if fact not in facts:
+                    facts.append(fact)
+    for observation in cash_implementations:
+        if observation["status"] not in {"MATCHED", "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"}:
+            continue
+        row_id, = observation["matched_ledger_ids"]
+        row = cash_by_id[row_id]
+        facts_by_announcement.setdefault(observation["announcement_id"], []).append(dict(
+            kind="CASH_ENTITLEMENT_AND_SCHEDULE", ledger_id=row_id, terms=observation["terms"],
+            cash_payment_proven=False, model_inclusion=row["model_inclusion"]))
+
+    rows = []
+    for identity, (title, published_at, originals) in sorted(announcements.items()):
+        facts = facts_by_announcement.get(identity, [])
+        disposition = dispositions.get(identity)
+        status = "UNRESOLVED"
+        if identity in conflicts:
+            status = "ANNOUNCEMENT_METADATA_CONFLICT"
+        elif identity in complete_ids and len(facts) == 1:
+            kind = facts[0]["kind"]
+            expected = "CASH_DISTRIBUTION" if kind == "CASH_ENTITLEMENT_AND_SCHEDULE" else "SHARE_ACTION"
+            if disposition == expected:
+                status = "SCHEDULE_TERMS_ONLY" if expected == "CASH_DISTRIBUTION" else "NATIVE_TERMINAL_MATCHED"
+        rows.append(dict(announcement_id=identity, title=title, published_at=published_at,
+                         originals=[dict(source_url=url, sha256=sha) for url, sha in originals],
+                         disposition=disposition, status=status, facts=facts))
+
+    return dict(schema_version="cross-date-action-facts-v1", action="no_order",
+                candidate_binding=deepcopy(ledger["candidate_binding"]),
+                input_descriptor_sha256=ledger["input_descriptor_sha256"],
+                ledger_binding=deepcopy(ledger_binding), valuation_date=start.isoformat(),
+                comparison_date=end.isoformat(), publication_window_covered=covered,
+                coverage_observation_bindings=[deepcopy(w["observation_binding"]) for w in complete],
+                announcements=rows, effective_action_continuity_proven=False,
+                current_price_basis_compatible=False,
+                status="BLOCKED", reason_codes=[
+                    *([] if covered else ["COMPLETE_ACTION_PUBLICATION_WINDOW_REQUIRED"]),
+                    *(["ANNOUNCEMENT_METADATA_CONFLICT"] if conflicts else []),
+                    *(["NATIVE_ANNOUNCEMENT_DISPOSITIONS_UNRESOLVED"]
+                      if not rows or any(row["status"] != "NATIVE_TERMINAL_MATCHED" for row in rows) else []),
+                    "NATIVE_INTERVAL_CONTINUITY_AND_EXACT_MODEL_CONSUMPTION_REQUIRED",
+                ])
+
+
 def _market_value_share_corroboration(binding, *, symbol, comparison_date, now, read):
     """Replay closing market-value arithmetic without certifying registered capital."""
     from fractions import Fraction
@@ -997,6 +1091,13 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
         gaps.append("PERIOD_DECREASE_NATIVE_CANCELLATION_UNVERIFIED")
     if unconsumed_period_cash:
         gaps.append("IN_PERIOD_CASH_FLOW_INCLUSION_REQUIRES_CANDIDATE_RECOMPUTATION")
+    cross_date_facts = {}
+    if start < end:
+        cross_date_facts["cross_date_action_facts"] = _cross_date_action_facts(
+            ledger_binding=ref, ledger=ledger, start=start, end=end, windows=windows,
+            action_rows=action_rows, cash_rows=cash_rows, cancellations=observed_cancellations,
+            cash_implementations=observed_cash,
+        )
     return dict(status="RECONCILED" if same_basis else "PARTIAL", arithmetic_status="RECONCILED" if arithmetic_complete else "PARTIAL",
         scope="SOURCE_BOUND_PUBLIC_RESEARCH_ARITHMETIC_NOT_FIELD_OR_MATERIALITY_APPROVAL", action="no_order",
         opening_shares=str(opening_value), calculated_closing_shares=str(total),
@@ -1021,6 +1122,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
             "已消费期初原件；跨日期股本连续性仍缺原生有效行动链消费者，不能仅补同日报告或人工无变动标志放行。"
             if native_fields["reports"] else "绑定原件尚未匹配已支持的正式中报股本及分配字段。"),
         current_price_basis_compatible=compatible, formal_eligibility=False,
+        **cross_date_facts,
         reason_codes=list(dict.fromkeys(gaps)), evidence_bindings=[deepcopy(ref), *evidence])
 
 

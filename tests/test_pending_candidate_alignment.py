@@ -157,6 +157,64 @@ def test_publication_window_only_counts_verified_completed_days(reconciliation, 
     assert result["current_price_basis_compatible"] is False
 
 
+@pytest.mark.parametrize("elapsed,covered", [(True, True), (False, False)])
+def test_cross_date_facts_keep_empty_verified_window_blocked(reconciliation, elapsed, covered):
+    case = reconciliation
+    case["windows"][0].update(source_integrity_verified=True, coverage_status="COMPLETE",
+                              full_calendar_window_elapsed=elapsed)
+    result = reconcile(case)
+    facts = result["cross_date_action_facts"]
+    assert facts["publication_window_covered"] is covered
+    assert facts["candidate_binding"] == case["ledger"]["candidate_binding"]
+    assert facts["ledger_binding"]["sha256"] == sha256_file(case["root"] / "runtime/reconciliation.json")
+    assert facts["announcements"] == []
+    assert "NATIVE_ANNOUNCEMENT_DISPOSITIONS_UNRESOLVED" in facts["reason_codes"]
+    assert facts["status"] == "BLOCKED"
+    assert not facts["effective_action_continuity_proven"]
+    assert not result["current_price_basis_compatible"]
+
+
+def test_cross_date_facts_use_native_terminal_observations_and_reject_conflicting_identity():
+    purchase, confirmation, cash_ref, unrelated = [
+        dict(path=f"runtime/{i}.pdf", sha256=f"{i:064x}", source_url=f"https://example.invalid/{i}.pdf")
+        for i in range(1, 5)
+    ]
+    events = [dict(announcement_id=str(i), title=f"TEST_ONLY {i}",
+                   published_at="2020-01-02T00:00:00+00:00", evidence_refs=[ref])
+              for i, ref in enumerate((purchase, confirmation, cash_ref, unrelated), 1)]
+    window = dict(scan_from="2020-01-01", scan_to="2020-01-02", coverage_status="COMPLETE",
+                  source_integrity_verified=True, full_calendar_window_elapsed=True,
+                  observation_binding=dict(path="runtime/window.json", sha256="a" * 64),
+                  announcements=events)
+    decisions = ("SHARE_ACTION", "SHARE_ACTION", "CASH_DISTRIBUTION", "NO_CAPITAL_OR_DISTRIBUTION_EFFECT")
+    ledger = dict(candidate_binding=dict(path="runtime/candidate.json", sha256="b" * 64),
+                  input_descriptor_sha256="c" * 64,
+                  reviewed_documents=[dict(announcement_id=str(i), disposition=decision)
+                                      for i, decision in enumerate(decisions, 1)])
+    proof = dict(purchase_binding={key: purchase[key] for key in ("path", "sha256")},
+                 status="NATIVE_BUYBACK_CANCELLATION_MATCHED")
+    inputs = dict(ledger_binding=dict(path="runtime/ledger.json", sha256="d" * 64),
+                  ledger=ledger, start=date(2020, 1, 1), end=date(2020, 1, 2),
+                  action_rows=[dict(id="cancel", native_cancellation=proof)],
+                  cash_rows=[dict(id="cash", model_inclusion="NOT_NATIVE_VERIFIED")],
+                  cancellations=[dict(announcement_id="2", matched_ledger_ids=["cancel"], status="MATCHED")],
+                  cash_implementations=[dict(announcement_id="3", matched_ledger_ids=["cash"],
+                                             status="ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED", terms={})])
+    facts = service._cross_date_action_facts(**inputs, windows=[window])
+    rows = facts["announcements"]
+    assert [row["status"] for row in rows] == ["NATIVE_TERMINAL_MATCHED", "NATIVE_TERMINAL_MATCHED",
+                                             "SCHEDULE_TERMS_ONLY", "UNRESOLVED"]
+    assert rows[1]["facts"][0]["native_proof"] == proof
+    assert rows[2]["facts"][0]["cash_payment_proven"] is False
+    assert not facts["effective_action_continuity_proven"]
+
+    changed = deepcopy(window)
+    changed["announcements"][1]["published_at"] = "2020-01-02T05:00:00+00:00"
+    conflict = service._cross_date_action_facts(**inputs, windows=[window, changed])
+    assert conflict["announcements"][1]["status"] == "ANNOUNCEMENT_METADATA_CONFLICT"
+    assert conflict["status"] == "BLOCKED"
+
+
 def test_cross_date_manual_arithmetic_cannot_grant_native_alignment(reconciliation):
     result = reconcile(reconciliation)
     assert reconciliation["ledger"]["comparison_date"] != reconciliation["ledger"]["valuation_date"]
@@ -392,6 +450,23 @@ def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconcil
             evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])],
         )],
     )
+    announcement = case["windows"][0]["announcements"][0]
+    announcement.update(title="TEST_ONLY权益分派实施公告")
+    case["windows"][0]["coverage_status"] = "COMPLETE"
+    case["ledger"]["reviewed_documents"] = [dict(
+        announcement_id="124", disposition="CASH_DISTRIBUTION",
+        rationale="TEST_ONLY", evidence=[anchor],
+    )]
+    facts = reconcile(case)["cross_date_action_facts"]
+    row, = facts["announcements"]
+    fact, = row["facts"]
+    assert row["status"] == "SCHEDULE_TERMS_ONLY"
+    assert fact["model_inclusion"] == "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE"
+    assert fact["cash_payment_proven"] is False
+    assert facts["status"] == "BLOCKED"
+    assert not facts["current_price_basis_compatible"]
+
+    announcement.update(title="TEST_ONLY权益分派实施公告更正")
     result = reconcile(case)
     assert result["unconsumed_period_cash_per_share"] == "0"
     assert not result["implemented_distribution_inclusion_complete"]
