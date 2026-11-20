@@ -5,7 +5,7 @@ from itertools import islice
 from pathlib import Path
 
 from ...product.common import require_inside, write_new_bytes
-from ..sse_research_pipeline_v1 import read_sse_research_pool
+from ..sse_research_pipeline_v2 import read_sse_research_pool_for_web
 from . import horizon_receipt_selection as legacy
 from . import operating_horizon_sources_parent_layout as alternate
 from .task_execution_v1 import _bytes, _hash
@@ -61,7 +61,7 @@ def persist_current_queue_receipt_batch(*, queue_root, research_root, expected_q
         raise ValueError("HORIZON_SELECTION_BATCH_BUDGET_INVALID")
     if not isinstance(as_of, datetime) or as_of.utcoffset() is None:
         raise ValueError("HORIZON_SELECTION_REQUIRES_AWARE_CUTOFF")
-    queue = read_sse_research_pool(root=queue_root, now=as_of)
+    queue = read_sse_research_pool_for_web(root=queue_root, now=as_of)
     if queue["status"] != "AVAILABLE" or not expected_queue or queue["queue_binding"] != expected_queue:
         raise ValueError("HORIZON_SELECTION_TRACKING_QUEUE_CHANGED")
     root = Path(research_root).resolve()

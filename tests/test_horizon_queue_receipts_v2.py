@@ -11,7 +11,7 @@ def test_reads_both_registries_and_isolates_bad_entry(tmp_path, monkeypatch, fau
     now = datetime(2026, 11, 16, tzinfo=timezone.utc)
     queue = {"sha256": "a" * 64}
     symbols = ["600001", "600002", "600003"]
-    monkeypatch.setattr(batch, "read_sse_research_pool", lambda **_: {
+    monkeypatch.setattr(batch, "read_sse_research_pool_for_web", lambda **_: {
         "status": "AVAILABLE", "queue_binding": queue,
         "items": [{"symbol": symbol} for symbol in symbols],
     })
