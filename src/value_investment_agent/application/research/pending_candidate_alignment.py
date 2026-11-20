@@ -1232,7 +1232,8 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             action="no_order",
                         )
                     elif (event["title"].endswith(("年度股东会决议公告", "年度股东大会决议公告"))
-                          and "年度利润分配预案" in "".join("".join(pages).split())):
+                          and any(label in "".join("".join(pages).split())
+                                  for label in ("年度利润分配预案", "年度利润分配方案"))):
                         from ...infrastructure.filings.interim_dividend_resolution import parse_annual_dividend_resolution
 
                         terms = None
@@ -1278,6 +1279,15 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                                 or observation.get("observation_date") != published.isoformat()
                                 or observation.get("dividend_fiscal_year") != dividend_title[1]):
                             raise ValueError("DIVIDEND_ORIGINAL_NOT_VERIFIED_FOR_EVENT")
+                        cover = "".join(pages[0].split())
+                        meetings = re.findall(
+                            rf"已获(20[0-9]{{2}})年([0-9]{{1,2}})月([0-9]{{1,2}})日召开的"
+                            rf"{dividend_title[1]}年度股东(?:大会|会)审议通过", cover,
+                        )
+                        if len(meetings) == 1:
+                            meeting = date(*map(int, meetings[0]))
+                            if meeting <= published:
+                                observation["referenced_approval_meeting_date"] = meeting.isoformat()
                         terms = dict(event_type="REPORTED_ANNUAL_DIVIDEND_IMPLEMENTATION_SCHEDULE",
                             published_date=published.isoformat(), effective_date=None,
                             summary=f"原件列示每10股派现{observation['dividend_per_10_shares_cny']}元、"
@@ -1505,24 +1515,33 @@ def _annual_approval_schedule_links(rows, *, end, after=None):
     for row in rows:
         for fact in row["facts"]:
             parsed = fact["terms"]
-            if parsed.get("event_type") != "PREVALUATION_DISTRIBUTION_SCHEDULE":
-                continue
+            kind = parsed.get("event_type")
             schedule = parsed["terms"]
-            meeting = schedule.get("referenced_approval_meeting_date")
-            if schedule.get("distribution_period") != "年度" or not meeting:
+            if kind == "REPORTED_ANNUAL_DIVIDEND_IMPLEMENTATION_SCHEDULE":
+                fiscal_year = schedule["dividend_fiscal_year"]
+                scheduled_payment_date = schedule["agency_payment_date"]
+                publication_date = parsed["published_date"]
+            elif kind == "PREVALUATION_DISTRIBUTION_SCHEDULE" and schedule.get("distribution_period") == "年度":
+                fiscal_year = schedule["distribution_year"]
+                scheduled_payment_date = schedule["cash_payment_date"]
+                publication_date = schedule["published_date"]
+            else:
                 continue
-            effective = max(_day(schedule["ex_date"]), _day(schedule["cash_payment_date"]))
+            meeting = schedule.get("referenced_approval_meeting_date")
+            if not meeting:
+                continue
+            effective = max(_day(schedule["ex_date"]), _day(scheduled_payment_date))
             if effective > end or (after is not None and effective <= after):
                 continue
             matches = [
                 vote for vote in approvals
-                if str(vote["terms"]["terms"]["fiscal_year"]) == schedule["distribution_year"]
+                if str(vote["terms"]["terms"]["fiscal_year"]) == fiscal_year
                 and vote["terms"]["terms"]["meeting_date"] == meeting
-                and _day(vote["terms"]["published_date"]) <= _day(schedule["published_date"])
+                and _day(vote["terms"]["published_date"]) <= _day(publication_date)
             ]
             if len(matches) == 1:
                 vote_links.append(dict(
-                    fiscal_year=schedule["distribution_year"], meeting_date=meeting,
+                    fiscal_year=fiscal_year, meeting_date=meeting,
                     approval_evidence_binding=matches[0]["binding"],
                     implementation_evidence_binding=fact["binding"],
                     status="APPROVED_AGENDA_MATCHED_TO_HISTORICAL_SCHEDULE",
@@ -2090,8 +2109,13 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
         opening_actions = _operating_events(analysis, opening_windows, now, read,
             parser=parse_opening_action_terms, page_cache=event_pages)
         opening_chain = _opening_chain_research(analysis, opening_actions, reconciliation)
+        annual_implementation_events = [
+            dict(facts=[fact for fact in event["facts"]
+                        if fact["terms"].get("event_type") == "REPORTED_ANNUAL_DIVIDEND_IMPLEMENTATION_SCHEDULE"])
+            for event in operating_events
+        ]
         opening_chain["in_period_annual_approval_schedule_links"] = _annual_approval_schedule_links(
-            opening_actions, end=distribution_cutoff, after=opening_cutoff)
+            [*opening_actions, *annual_implementation_events], end=distribution_cutoff, after=opening_cutoff)
         if analysis.get("opening_capital_original") is not None:
             try:
                 cancellation = _first_input_opening_cancellation(

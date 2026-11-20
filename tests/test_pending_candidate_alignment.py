@@ -1839,3 +1839,26 @@ def test_exact_szse_end_count_requires_matching_rollforward(reconciliation, coun
     assert "CLOSING_SHARE_COUNT_UNVERIFIED" not in result["reason_codes"]
     assert "NATIVE_CLOSING_SHARES_OPENING_CONTINUITY_UNVERIFIED" in result["reason_codes"]
     assert result["current_price_basis_compatible"] is False
+
+@pytest.mark.parametrize("yes, approved", [(90, True), (89, False)])
+def test_numbered_annual_distribution_resolution_checks_full_votes(yes, approved):
+    from value_investment_agent.infrastructure.filings.interim_dividend_resolution import (
+        parse_annual_dividend_resolution,
+    )
+
+    pages = [
+        "证券代码：000568\n2025年度股东会决议公告\n"
+        "1.会议召开日期和时间：\n（1）现场会议时间：2026年6月30日",
+        "股东出席的总体情况：通过现场和网络投票的股东3人，代表股份100股，\n"
+        "4.00《2025年度利润分配方案》\n表决结果：审议通过。\n总表决情况："
+        f"同意{yes}股，占出席会议所有股东所持股份的90.0%；"
+        "反对5股，占出席会议所有股东所持股份的5.0%；"
+        "弃权5股，占出席会议所有股东所持股份的5.0%。\n董事会\n2026年6月30日",
+    ]
+    if not approved:
+        with pytest.raises(ValueError, match="VOTES_NOT_RECONCILED"):
+            parse_annual_dividend_resolution(pages, symbol="000568", published=date(2026, 7, 1))
+        return
+    result = parse_annual_dividend_resolution(pages, symbol="000568", published=date(2026, 7, 1))
+    assert result["yes_votes"] == 90
+    assert result["decision"] == "APPROVED" and result["payment_verified"] is False
