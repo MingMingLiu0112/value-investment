@@ -1,5 +1,6 @@
 """Read/recompile one explicitly registered first input using the existing engine."""
 from datetime import datetime
+from decimal import Decimal
 import json
 import re
 
@@ -158,6 +159,32 @@ def read_first_research_input(*,root,symbol,now:datetime):
         )
         view["pending_candidate_alignment"] = _load_bound_alignment(
             root=root, analysis=analysis, now=now, input_schema="first-research-input-alignment-input-v1")
+        alignment = view["pending_candidate_alignment"]
+        for check in alignment["checks"]:
+            reconciliation = check["details"].get("reconciliation") or {}
+            payable = reconciliation.get("opening_parent_dividend_payable")
+            if not payable or check["id"] != "distributions":
+                continue
+            original = payable["original_binding"]
+            reported_source = any(
+                source.get("sha256") == original["sha256"]
+                and source.get("report_period") == view["financial_basis"]
+                for source in parent_cash.get("source_bindings", ())
+            )
+            balance = next((row["balances"][0].get("closing_cash_and_equivalents_cny")
+                for row in parent_cash.get("periods", ())
+                if row.get("report_period") == view["financial_basis"] and row.get("balances")), None)
+            if not reported_source or balance is None:
+                continue
+            residual = Decimal(balance) - Decimal(payable["parent_dividend_payable_cny"])
+            ledgers = result["annual_ledgers"]
+            if residual >= 0 and set(ledgers) == {"bear", "base", "bull"} and all(
+                Decimal(ledger["rows"][0]["opening_cash"]) == residual for ledger in ledgers.values()
+            ):
+                payable["conditional_opening_cash_match"] = dict(
+                    reported_parent_cash_cny=str(balance), model_opening_cash_cny=str(residual),
+                    scope="CONDITIONAL_NET_CASH_MATCH_NOT_PAYMENT_PROOF", action="no_order",
+                )
         return view
     except (ValueError,OSError,KeyError,TypeError,OverflowError) as error:
         return dict(base,status="UNASSESSABLE",reason=str(error))

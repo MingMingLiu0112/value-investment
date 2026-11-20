@@ -969,6 +969,17 @@ function CheckReconciliation({
         value={ledger.native_source_consumption}
       />
       <h6>已列公告分配条款</h6>
+      {object(ledger.opening_parent_dividend_payable) &&
+        object(
+          ledger.opening_parent_dividend_payable.conditional_opening_cash_match,
+        ) &&
+        ledger.opening_parent_dividend_payable.conditional_opening_cash_match
+          .scope === "CONDITIONAL_NET_CASH_MATCH_NOT_PAYMENT_PROOF" && (
+          <p>
+            三个估值情景的期初现金均按母公司披露现金减去已挂账应付股利后的余额计算。
+            这笔股利不应再扣一次；实际付款仍待核验。
+          </p>
+        )}
       {rows.length ? (
         <ul>
           {rows.map((row, index) => (

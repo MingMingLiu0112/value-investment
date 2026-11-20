@@ -424,6 +424,25 @@ it("explains partial source-bound share and distribution arithmetic without clai
   expect(html).toContain("100.00");
   expect(html).toContain("1354");
 });
+it("explains opening cash already net of the booked dividend without proving payment", () => {
+  const review = alignmentFixture();
+  const distributions = review.conditional_price!.alignment!.checks!.find(
+    (check) => check.id === "distributions",
+  )!;
+  distributions.details = {
+    reconciliation: {
+      ...reconciliationExample,
+      opening_parent_dividend_payable: {
+        conditional_opening_cash_match: {
+          scope: "CONDITIONAL_NET_CASH_MATCH_NOT_PAYMENT_PROOF",
+          action: "no_order",
+        },
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("这笔股利不应再扣一次；实际付款仍待核验。");
+});
 it("shows exact share evidence and rollforward conflict without enabling price comparison", () => {
   const review = alignmentFixture();
   const capital = review.conditional_price!.alignment!.checks!.find(
