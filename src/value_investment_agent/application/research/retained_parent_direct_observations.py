@@ -103,3 +103,31 @@ def read_retained_parent_balance_observations(
     if path.read_bytes() != raw:
         raise ValueError("RETAINED_DIRECT_OBSERVATION_ORIGINAL_CHANGED")
     return result
+
+
+def read_retained_parent_cash_statement_observations(
+    *, root, symbol, issuer_name, period_end, receipt_binding, evaluated_at,
+):
+    """Replay verified cash rows without imputing absent borrowings or repayments."""
+    from .parent_cash_research import _column_labels, _period_pair, extract_parent_cash_statement
+
+    packet, path, raw, pages = _read_retained_original(
+        root=root, symbol=symbol, issuer_name=issuer_name, period_end=period_end,
+        receipt_binding=receipt_binding, evaluated_at=evaluated_at,
+    )
+    periods = _period_pair(period_end)
+    result = extract_parent_cash_statement(
+        pages=pages,
+        spec=dict(symbol=symbol, issuer=issuer_name, periods=list(periods),
+                  column_labels=_column_labels(periods)),
+        observation_fields={
+            "cfo_cny", "cfi_cny", "cff_cny", "gross_capex_cny",
+            "mixed_distribution_interest_paid_cny", "opening_cash_and_equivalents_cny",
+            "closing_cash_and_equivalents_cny",
+        },
+    )
+    if path.read_bytes() != raw:
+        raise ValueError("RETAINED_DIRECT_OBSERVATION_ORIGINAL_CHANGED")
+    return dict(result, schema_version="retained-parent-cash-statement-observations-v1",
+                source=dict(packet["source"], receipt_binding=receipt_binding),
+                financing_inference_allowed=False, action="no_order")
