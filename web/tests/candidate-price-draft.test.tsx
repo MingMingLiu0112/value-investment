@@ -1214,6 +1214,13 @@ it("shows verified publication coverage without conflating it with capital conti
         comparison_date: "2026-11-20",
         publication_window_covered: true,
         effective_action_continuity_proven: false,
+        row_proof_reconciliation: {
+          status: "UNRESOLVED",
+          matched_rows: [{ cash_payment_proven: false }],
+          unmatched_ledger_ids: ["share-action-2"],
+          unmatched_native_proofs: [{ announcement_id: "duplicate" }],
+          duplicate_native_proofs: [{ announcement_id: "duplicate" }],
+        },
         announcements: [
           {
             announcement_id: "example",
@@ -1229,5 +1236,10 @@ it("shows verified publication coverage without conflating it with capital conti
   expect(html).toContain("跨日公告逐项核验");
   expect(html).toContain("披露窗口已覆盖");
   expect(html).toContain("股本行动连续性和期间变化的估值重算仍待核验");
+  expect(html).toMatch(/账本与原件双向核对：已匹配 .*1/);
+  expect(html).toContain("未匹配账本 1 项");
+  expect(html).toContain("未匹配原件 1 项");
+  expect(html).toContain("重复引用 1 条");
+  expect(html).toContain("分派安排已匹配，实际到账仍待核验。");
   expect(html).toContain("已核对分派安排，实际支付待核");
 });

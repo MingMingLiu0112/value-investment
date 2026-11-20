@@ -968,6 +968,39 @@ function NativeSourceConsumption({
   );
 }
 
+function CrossDateRowProofs({ value }: { value: unknown }) {
+  if (!object(value) || value.status === "NO_IN_PERIOD_ROWS") return null;
+  const matched = Array.isArray(value.matched_rows)
+    ? value.matched_rows.filter(object)
+    : [];
+  const unmatched = Array.isArray(value.unmatched_ledger_ids)
+    ? value.unmatched_ledger_ids
+    : [];
+  const ambiguous = Array.isArray(value.ambiguous_ledger_ids)
+    ? value.ambiguous_ledger_ids
+    : [];
+  const extra = Array.isArray(value.unmatched_native_proofs)
+    ? value.unmatched_native_proofs.length
+    : 0;
+  const duplicates = Array.isArray(value.duplicate_native_proofs)
+    ? value.duplicate_native_proofs.length
+    : 0;
+  return (
+    <div>
+      <p>
+        账本与原件双向核对：已匹配 {matched.length} 项
+        {unmatched.length > 0 && `，未匹配账本 ${unmatched.length} 项`}
+        {extra > 0 && `，未匹配原件 ${extra} 项`}
+        {ambiguous.length > 0 && `，歧义账本 ${ambiguous.length} 项`}
+        {duplicates > 0 && `，重复引用 ${duplicates} 条`}。
+      </p>
+      {matched.some((row) => row.cash_payment_proven === false) && (
+        <p>分派安排已匹配，实际到账仍待核验。</p>
+      )}
+    </div>
+  );
+}
+
 function CrossDateActionFacts({ value }: { value: unknown }) {
   if (
     !object(value) ||
@@ -993,6 +1026,7 @@ function CrossDateActionFacts({ value }: { value: unknown }) {
         {value.effective_action_continuity_proven !== true &&
           "股本行动连续性和期间变化的估值重算仍待核验。"}
       </p>
+      <CrossDateRowProofs value={value.row_proof_reconciliation} />
       <ul>
         {rows.map((row) => (
           <li key={text(row.announcement_id)}>
