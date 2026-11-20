@@ -390,6 +390,12 @@ def _covered_share_cancellations(announced, action_rows, *, symbol, start, end, 
             pages = cache.get(source["sha256"])
             if pages is None:
                 pages = extract_pages(original)
+            # A price-only adjustment can have the same title as a cancellation
+            # confirmation. Only rule it out when the original has readable text.
+            if distribution_adjustment and not cancellation_notice:
+                compact = "".join("".join(pages).split())
+                if compact and "注销" not in compact:
+                    continue
             parsed = parse_opening_action_terms(pages, symbol=symbol)
             terms = parsed["terms"]
             publication = datetime.fromisoformat(event["published_at"]).astimezone(CHINA).date()

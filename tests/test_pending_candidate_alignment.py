@@ -1629,3 +1629,18 @@ def test_covered_cancellation_cannot_be_omitted(reconciliation, monkeypatch, eff
     assert result["current_price_basis_compatible"] is False
     assert [row["status"] for row in result["covered_share_cancellations"]] == (
         ["LEDGER_MISMATCH"] if expects_mismatch else [])
+
+
+def test_dividend_adjustment_without_cancellation_is_not_a_share_action(reconciliation):
+    case = reconciliation
+    anchor = case["anchor"]
+    case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
+        announcements=[dict(announcement_id="123", title="TEST_ONLY调整年度利润分配方案每股分红金额的公告",
+            published_at="2020-01-01T16:00:00+00:00",
+            evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
+
+    result = reconcile(case)
+
+    assert result["covered_share_cancellations"] == []
+    assert not any(code.startswith("COVERED_CANCELLATION") for code in result["reason_codes"])
+    assert not result["current_price_basis_compatible"]
