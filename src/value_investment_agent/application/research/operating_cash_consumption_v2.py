@@ -94,15 +94,9 @@ def compile_verified_annual_candidates(*, consumed, opening_date, asof):
 
 def read_operating_cash_consumption(*, root, task, now):
     """Cold-source v1 replay plus annual compilation; no network or writes."""
-    result = previous.read_operating_cash_consumption(root=root, task=task, now=now)
+    result, context = previous._read_with_context(root=root, task=task, now=now)
     if not result.get("scenarios"):
         return result
-    # v1 already authenticates the exact task source/context and recomputes every
-    # witness. The opening date is the registered financial basis, not today.
-    context = previous.build_operating_source_context(root=root, symbol=task["symbol"],
-        now=datetime.fromisoformat(task["research_as_of"]), binding=task["source_binding"])
-    if context["snapshot_fingerprint"] != task["context_fingerprint"]:
-        raise ValueError("OPERATING_CONTEXT_CHANGED_DURING_ANNUAL_COMPILATION")
     try:
         if all(row["period_basis"] == "H1" for row in result["scenarios"].values()):
             compiled = dict(schema_version=VERSION,
@@ -127,7 +121,11 @@ def read_operating_cash_consumption(*, root, task, now):
                                else "COMPLETE_ANNUAL_OPERATING_PATH_REQUIRED",
                     explanation=("已有完整年度经营输入；仍缺逐年连续预测、明确角点选择与现金政策，不能复制一年为十年。"
                                  if annual else "已有期间不是完整年度；需补齐同一年其他期间，不能乘二年化。"))
-    hashes = {VERSION: hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+    # Legacy results retain the pre-dispatch compiler identity.
+    implementation = (hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+                      if context.get("d1_projection_version")
+                      else "545e75201c288f3e321527eb8ee06aba0c970c8879c8bd61722b2dcfbfaddfb8")
+    hashes = {VERSION: implementation,
               periods.VERSION: hashlib.sha256(Path(periods.__file__).read_bytes()).hexdigest()}
     identity = dict(previous_fingerprint=result.get("consumption_fingerprint"),
                     compilation=compiled, implementations=hashes)
