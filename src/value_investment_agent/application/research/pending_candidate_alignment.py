@@ -1440,6 +1440,42 @@ def _first_input_opening_cancellation(analysis, source_windows, now, read, page_
         period_share_delta="0", action="no_order")
 
 
+def _annual_approval_schedule_links(rows, *, end, after=None):
+    approvals = [
+        fact for row in rows for fact in row["facts"]
+        if fact["terms"].get("event_type") == "REPORTED_ANNUAL_DIVIDEND_SHAREHOLDER_APPROVAL"
+        and _day(fact["terms"]["published_date"]) <= end
+    ]
+    vote_links = []
+    for row in rows:
+        for fact in row["facts"]:
+            parsed = fact["terms"]
+            if parsed.get("event_type") != "PREVALUATION_DISTRIBUTION_SCHEDULE":
+                continue
+            schedule = parsed["terms"]
+            meeting = schedule.get("referenced_approval_meeting_date")
+            if schedule.get("distribution_period") != "年度" or not meeting:
+                continue
+            effective = max(_day(schedule["ex_date"]), _day(schedule["cash_payment_date"]))
+            if effective > end or (after is not None and effective <= after):
+                continue
+            matches = [
+                vote for vote in approvals
+                if str(vote["terms"]["terms"]["fiscal_year"]) == schedule["distribution_year"]
+                and vote["terms"]["terms"]["meeting_date"] == meeting
+                and _day(vote["terms"]["published_date"]) <= _day(schedule["published_date"])
+            ]
+            if len(matches) == 1:
+                vote_links.append(dict(
+                    fiscal_year=schedule["distribution_year"], meeting_date=meeting,
+                    approval_evidence_binding=matches[0]["binding"],
+                    implementation_evidence_binding=fact["binding"],
+                    status="APPROVED_AGENDA_MATCHED_TO_HISTORICAL_SCHEDULE",
+                    cash_receipt_proven=False, action="no_order",
+                ))
+    return vote_links
+
+
 def _opening_chain_research(analysis, rows, reconciliation):
     """Reconcile named observed actions only; never certify an empty universe."""
     start = _day(analysis["valuation_date"])
@@ -1505,37 +1541,7 @@ def _opening_chain_research(analysis, rows, reconciliation):
                         status="MATCHED_PREVALUATION_IMPLEMENTATION_TERMS" if matches else "TERMS_NOT_MATCHED",
                         price_deduction_applied="0", payment_receipt_proven=False,
                         accounting_one_cent_difference_resolved=False))
-    approvals = [
-        fact for row in rows for fact in row["facts"]
-        if fact["terms"].get("event_type") == "REPORTED_ANNUAL_DIVIDEND_SHAREHOLDER_APPROVAL"
-        and _day(fact["terms"]["published_date"]) <= start
-    ]
-    vote_links = []
-    for row in rows:
-        for fact in row["facts"]:
-            parsed = fact["terms"]
-            if parsed.get("event_type") != "PREVALUATION_DISTRIBUTION_SCHEDULE":
-                continue
-            schedule = parsed["terms"]
-            meeting = schedule.get("referenced_approval_meeting_date")
-            if schedule.get("distribution_period") != "年度" or not meeting:
-                continue
-            if max(_day(schedule["ex_date"]), _day(schedule["cash_payment_date"])) > start:
-                continue
-            matches = [
-                vote for vote in approvals
-                if str(vote["terms"]["terms"]["fiscal_year"]) == schedule["distribution_year"]
-                and vote["terms"]["terms"]["meeting_date"] == meeting
-                and _day(vote["terms"]["published_date"]) <= _day(schedule["published_date"])
-            ]
-            if len(matches) == 1:
-                vote_links.append(dict(
-                    fiscal_year=schedule["distribution_year"], meeting_date=meeting,
-                    approval_evidence_binding=matches[0]["binding"],
-                    implementation_evidence_binding=fact["binding"],
-                    status="APPROVED_AGENDA_MATCHED_TO_HISTORICAL_SCHEDULE",
-                    cash_receipt_proven=False, action="no_order",
-                ))
+    vote_links = _annual_approval_schedule_links(rows, end=start)
     purchase_links = []
     for purchase in purchases:
         terms = purchase["terms"]
@@ -1988,9 +1994,25 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
         from .candidate_event_impact import build_candidate_event_impact
         checks[3]["details"]["candidate_event_impact"] = build_candidate_event_impact(analysis, operating_events)
         from ...infrastructure.filings.opening_action_terms import parse_opening_action_terms
-        opening_actions = _operating_events(analysis, source_windows, now, read,
+        # A covered scan can start before the valuation date. Reuse the verified
+        # distribution originals for opening research without treating the rest
+        # of the scan as a certified opening-action inventory.
+        opening_cutoff = _day(analysis["valuation_date"])
+        distribution_cutoff = quote.quote_date or opening_cutoff
+        opening_windows = [*source_windows, *(
+            dict(window, announcements=[
+                event for event in window["announcements"]
+                if datetime.fromisoformat(event["published_at"]).date() <= distribution_cutoff
+                and event["title"].endswith((
+                    "年度股东会决议公告", "年度股东大会决议公告", "权益分派实施公告",
+                ))
+            ]) for window in windows
+        )]
+        opening_actions = _operating_events(analysis, opening_windows, now, read,
             parser=parse_opening_action_terms, page_cache=event_pages)
         opening_chain = _opening_chain_research(analysis, opening_actions, reconciliation)
+        opening_chain["in_period_annual_approval_schedule_links"] = _annual_approval_schedule_links(
+            opening_actions, end=distribution_cutoff, after=opening_cutoff)
         if analysis.get("opening_capital_original") is not None:
             try:
                 cancellation = _first_input_opening_cancellation(
@@ -2024,7 +2046,7 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
             _, again = _qualified_quote(root, analysis, config["quote_bundle_binding"], now, read)
             if again != result["quote"]:
                 raise ValueError("QUOTE_CHANGED_DURING_ALIGNMENT")
-        if opening_actions != _operating_events(analysis, source_windows, now, read,
+        if opening_actions != _operating_events(analysis, opening_windows, now, read,
                 parser=parse_opening_action_terms, page_cache=event_pages):
             raise ValueError("OPENING_ACTION_TERMS_CHANGED_DURING_READ")
         if operating_events != _operating_events(analysis, windows, now, read, page_cache=event_pages):
