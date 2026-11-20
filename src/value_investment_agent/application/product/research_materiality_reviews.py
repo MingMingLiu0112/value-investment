@@ -204,6 +204,13 @@ def build_materiality_review_descriptor(*, root, package_binding, scan_binding, 
         original = build_descriptor_for_package(package, root=root)
     else:
         original = build_descriptor(package, root=root)
+    if (validity is None and not direct and 'model_validity_input' not in package
+            and package.get('descriptor_version') == 'first-research-input-spec-v1'
+            and package.get('source_contract', {}).get('schema_version') == 'source-bound-research-inputs-v3'
+            and package.get('dependencies', {}).get('model_version') == 'residual-income-equity-path-v4'
+            and contracts == {RETENTION_CONTRACT}):
+        validity = dict(model_id=package['dependencies']['model_version'],
+                        valid_from=package['point_in_time']['valuation_date'])
     if not isinstance(validity, dict) or validity.get('events'):
         raise ValueError('materiality handoff needs non-conflicting validity inputs')
     existing_scan = validity.get('event_scan_ref') or {}
@@ -225,11 +232,9 @@ def prepare_materiality_review_handoff(*, root, package_path, package_sha256,
     supplied = _load(root, package_ref)
     direct_schema = supplied.get('schema_version')
     direct = direct_schema in {DIRECT_ENVELOPE_V1, OWNER_DISTRIBUTION_ENVELOPE_V1}
-    package, validity = (_direct_review_original(root=root, envelope=supplied, now=now)
+    package, _ = (_direct_review_original(root=root, envelope=supplied, now=now)
                          if direct else (supplied, supplied.get('model_validity_input')))
     symbol = package['symbol']
-    if not isinstance(validity, dict) or validity.get('events'):
-        raise ValueError('materiality handoff needs non-conflicting validity inputs')
     ref = dict(id='daily-event-' + scan_sha256, symbol=symbol, **scan_ref)
     descriptor = build_materiality_review_descriptor(root=root,
         package_binding=package_ref, scan_binding=scan_ref, now=now)
