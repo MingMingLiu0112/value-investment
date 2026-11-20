@@ -533,7 +533,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     if not isinstance(actions, list) or not isinstance(cash, list):
         raise ValueError("RECONCILIATION_ACTION_ARRAYS_REQUIRED")
     ids, total, action_rows = set(), opening_value, []
-    for row in actions:
+    for row in sorted(actions, key=lambda item: _day(item["effective_date"])):
         if not isinstance(row["id"], str) or not row["id"] or row["id"] in ids:
             raise ValueError("UNIQUE_ACTION_ID_REQUIRED")
         ids.add(row["id"])
@@ -545,6 +545,8 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         with localcontext() as context:
             context.prec = 80
             total += shares if row["kind"] == "INCREASE" else -shares
+        if total <= 0:
+            raise ValueError("NONPOSITIVE_RECONCILED_SHARE_COUNT")
         action = deepcopy(row)
         if row["kind"] == "DECREASE":
             action["native_cancellation"] = _verify_period_buyback_cancellation(

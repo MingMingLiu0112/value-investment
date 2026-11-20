@@ -233,6 +233,51 @@ def test_effective_shares_recompute_but_never_mechanically_change_prices(reconci
     assert case["analysis"]["valuation"]["bear_value"] == "10"
 
 
+def test_share_actions_use_effective_order_for_cancellation_basis(reconciliation, monkeypatch):
+    from value_investment_agent.infrastructure.filings import pdf_text
+
+    case = reconciliation
+    anchor = case["anchor"]
+    anchor["excerpt"] += " 2020-01-02 10; 2020-01-03 105"
+    monkeypatch.setattr(pdf_text, "extract_pages", lambda path: [anchor["excerpt"]])
+    close = date(2020, 1, 3)
+    case["ledger"]["comparison_date"] = close.isoformat()
+    case["ledger"]["closing_shares"].update(as_of=close.isoformat(), value="105")
+    case["windows"][0]["scan_to"] = close.isoformat()
+    case["ledger"]["share_actions"] = [
+        dict(id="TEST_ONLY_LATER", kind="DECREASE", shares="5",
+             effective_date=close.isoformat(), evidence=[anchor]),
+        dict(id="TEST_ONLY_EARLIER", kind="INCREASE", shares="10",
+             effective_date="2020-01-02", evidence=[anchor]),
+    ]
+    proof = []
+
+    def verify(row, *, before, after, **kwargs):
+        proof.append((before, after))
+        return dict(status="NATIVE_CANCELLATION_PAIR_UNVERIFIED")
+
+    monkeypatch.setattr(service, "_verify_period_buyback_cancellation", verify)
+    ref = write(case["root"], "runtime/reconciliation.json", case["ledger"])
+    result = service._reconcile(case["root"], case["analysis"], ref, close,
+        case["windows"], case["now"], lambda binding: _bound(case["root"], binding))
+    assert proof == [(110, 105)]
+    assert [row["id"] for row in result["share_actions"]] == ["TEST_ONLY_EARLIER", "TEST_ONLY_LATER"]
+    assert result["calculated_closing_shares"] == "105"
+    assert not result["current_price_basis_compatible"]
+
+
+def test_reconciled_closing_count_cannot_hide_nonpositive_intermediate_balance(reconciliation):
+    case = reconciliation
+    case["ledger"]["share_actions"] = [
+        dict(id="TEST_ONLY_DECREASE", kind="DECREASE", shares="100",
+             effective_date="2020-01-02", evidence=[case["anchor"]]),
+        dict(id="TEST_ONLY_REISSUE", kind="INCREASE", shares="100",
+             effective_date="2020-01-02", evidence=[case["anchor"]]),
+    ]
+    with pytest.raises(ValueError, match="NONPOSITIVE_RECONCILED_SHARE_COUNT"):
+        reconcile(case)
+
+
 def test_in_period_cash_is_not_blindly_subtracted_or_declared_included(reconciliation):
     case = reconciliation
     case["ledger"]["distributions"] = [cash(case, in_period=True)]
