@@ -1906,6 +1906,65 @@ def test_basis_followup_consumes_only_in_period_confirmed_zero_net_unlock(reconc
     assert classified["action"] == "no_order"
 
 
+@pytest.mark.parametrize("variant", [
+    "verified", "notice_hash", "report_hash", "report_missing", "report_conflict",
+    "snapshot", "contradictory_disposition", "duplicate_confirmation",
+])
+def test_cross_date_unlock_requires_exact_notice_and_q3_originals(variant):
+    notice_id, report_id = "1225576512", "1225639079"
+    notice_url = "https://static.cninfo.com.cn/finalpage/2026-09-23/1225576512.PDF"
+    report_url = "https://static.cninfo.com.cn/finalpage/2026-10-30/1225639079.PDF"
+    notice = dict(announcement_id=notice_id, title="TEST_ONLY 解除限售股份上市流通的提示性公告",
+                  published_at="2026-09-23T00:00:00+08:00", status="UNRESOLVED",
+                  disposition=None, facts=[], originals=[dict(source_url=notice_url, sha256="a" * 64)])
+    report = dict(announcement_id=report_id, status="UNRESOLVED",
+                  originals=[dict(source_url=report_url, sha256="b" * 64)])
+    other = dict(announcement_id="TEST_OTHER", status="UNRESOLVED",
+                 disposition="NO_CAPITAL_OR_DISTRIBUTION_EFFECT", facts=[])
+    confirmation = dict(announcement_id=report_id, source_url=report_url,
+                        binding=dict(path="runtime/q3.pdf", sha256="b" * 64),
+                        physical_page=6, listing_date="2026-09-28")
+    event = dict(announcement_id=notice_id, title=notice["title"], published_at=notice["published_at"],
+                 source_url=notice_url, source_binding=dict(path="runtime/notice.pdf", sha256="a" * 64),
+                 classification="ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK", net_share_change="0",
+                 issuer_reported_listing_confirmation=confirmation)
+    window_binding = dict(path="runtime/window.json", sha256="c" * 64)
+    rows = [notice, report, other]
+    facts = dict(coverage_observation_bindings=[window_binding], announcements=rows,
+                 effective_action_continuity_proven=False, current_price_basis_compatible=False,
+                 status="BLOCKED", reason_codes=["NATIVE_ANNOUNCEMENT_DISPOSITIONS_UNRESOLVED"])
+    windows = [dict(observation_binding=window_binding, announcements=rows)]
+    events = [event]
+    if variant == "notice_hash":
+        notice["originals"][0]["sha256"] = "d" * 64
+    elif variant == "report_hash":
+        report["originals"][0]["sha256"] = "d" * 64
+    elif variant == "report_missing":
+        rows.remove(report)
+    elif variant == "report_conflict":
+        report["status"] = "ANNOUNCEMENT_METADATA_CONFLICT"
+    elif variant == "snapshot":
+        facts["coverage_observation_bindings"] = []
+    elif variant == "contradictory_disposition":
+        notice["disposition"] = "SHARE_ACTION"
+    elif variant == "duplicate_confirmation":
+        events.append(deepcopy(event))
+
+    service._attach_confirmed_unlock_facts(dict(cross_date_action_facts=facts), windows, events)
+
+    if variant == "verified":
+        assert notice["status"] == "NATIVE_TERMINAL_MATCHED"
+        assert notice["facts"] == [dict(kind="ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK", native_proof=event)]
+    else:
+        assert notice["status"] == "UNRESOLVED"
+        assert notice["facts"] == []
+    assert report["status"] == ("ANNOUNCEMENT_METADATA_CONFLICT" if variant == "report_conflict" else "UNRESOLVED")
+    assert other["status"] == "UNRESOLVED"
+    assert facts["status"] == "BLOCKED"
+    assert not facts["effective_action_continuity_proven"]
+    assert not facts["current_price_basis_compatible"]
+
+
 @pytest.mark.parametrize("complete", [True, False])
 def test_adjacent_full_windows_report_coverage_without_materiality_admission(reconciliation, complete):
     from types import SimpleNamespace

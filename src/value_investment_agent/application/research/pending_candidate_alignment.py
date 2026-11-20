@@ -541,6 +541,50 @@ def _cross_date_action_facts(*, ledger_binding, ledger, start, end, windows, act
                 ])
 
 
+def _attach_confirmed_unlock_facts(reconciliation, windows, capital_events):
+    """Join already replayed issuer confirmations to the exact cross-date notice."""
+    facts = (reconciliation or {}).get("cross_date_action_facts")
+    if facts is None:
+        return
+    completed_ids = {
+        event["announcement_id"] for window in windows
+        if window["observation_binding"] in facts["coverage_observation_bindings"]
+        for event in window["announcements"]
+    }
+    rows = {row["announcement_id"]: row for row in facts["announcements"]}
+    unlocks = {}
+    for event in capital_events:
+        if event["classification"] == "ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK":
+            unlocks.setdefault(event["announcement_id"], []).append(event)
+    for identity, events in unlocks.items():
+        if len(events) != 1 or identity not in completed_ids:
+            continue
+        event, = events
+        notice = rows[identity]
+        confirmation = event["issuer_reported_listing_confirmation"]
+        report_id = confirmation["announcement_id"]
+        if report_id == identity or report_id not in completed_ids:
+            continue
+        report = rows[report_id]
+        if (notice["status"] != "UNRESOLVED" or notice["facts"]
+                or notice["disposition"] not in {None, "NO_CAPITAL_OR_DISTRIBUTION_EFFECT"}
+                or notice["title"] != event["title"] or notice["published_at"] != event["published_at"]
+                or notice["originals"] != [dict(source_url=event["source_url"],
+                                             sha256=event["source_binding"]["sha256"])]
+                or report["status"] == "ANNOUNCEMENT_METADATA_CONFLICT"
+                or report["originals"] != [dict(source_url=confirmation["source_url"],
+                                             sha256=confirmation["binding"]["sha256"])]):
+            continue
+        notice["facts"] = [dict(kind="ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK",
+                                native_proof=deepcopy(event))]
+        notice["status"] = "NATIVE_TERMINAL_MATCHED"
+
+    if rows and all(row["status"] == "NATIVE_TERMINAL_MATCHED" for row in rows.values()):
+        unresolved = "NATIVE_ANNOUNCEMENT_DISPOSITIONS_UNRESOLVED"
+        if unresolved in facts["reason_codes"]:
+            facts["reason_codes"].remove(unresolved)
+
+
 def _market_value_share_corroboration(binding, *, symbol, comparison_date, now, read):
     """Replay closing market-value arithmetic without certifying registered capital."""
     from fractions import Fraction
@@ -2367,6 +2411,9 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
                 raise ValueError("MATERIALITY_CHANGED_DURING_ALIGNMENT")
         for path, sha in list(verified.items()):
             _bound(root, dict(path=path, sha256=sha))
+        _attach_confirmed_unlock_facts(
+            reconciliation, windows, basis_followup["capital_event_classifications"],
+        )
         result["evidence_bindings"] = [dict(path=path, sha256=sha) for path, sha in verified.items()]
         return result
     except (OSError, ValueError, KeyError, TypeError, AttributeError, ArithmeticError) as error:
