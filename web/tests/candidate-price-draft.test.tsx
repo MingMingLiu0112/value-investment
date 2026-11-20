@@ -1200,3 +1200,34 @@ it("distinguishes reported parent financing and scheduled maturities", () => {
     ),
   ).toBe("");
 });
+it("shows verified publication coverage without conflating it with capital continuity", () => {
+  const review = alignmentFixture();
+  const capital = review.conditional_price!.alignment!.checks!.find(
+    (check) => check.id === "capital_structure",
+  )!;
+  capital.details = {
+    reconciliation: {
+      ...reconciliationExample,
+      cross_date_action_facts: {
+        schema_version: "cross-date-action-facts-v1",
+        valuation_date: "2026-06-30",
+        comparison_date: "2026-11-20",
+        publication_window_covered: true,
+        effective_action_continuity_proven: false,
+        announcements: [
+          {
+            announcement_id: "example",
+            published_at: "2026-08-20T00:00:00+08:00",
+            title: "分红派息实施公告",
+            status: "SCHEDULE_TERMS_ONLY",
+          },
+        ],
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("跨日公告逐项核验");
+  expect(html).toContain("披露窗口已覆盖");
+  expect(html).toContain("股本行动连续性和期间变化的估值重算仍待核验");
+  expect(html).toContain("已核对分派安排，实际支付待核");
+});

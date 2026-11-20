@@ -968,6 +968,43 @@ function NativeSourceConsumption({
   );
 }
 
+function CrossDateActionFacts({ value }: { value: unknown }) {
+  if (
+    !object(value) ||
+    value.schema_version !== "cross-date-action-facts-v1" ||
+    !Array.isArray(value.announcements)
+  )
+    return null;
+  const rows = value.announcements.filter(object);
+  const labels: Record<string, string> = {
+    NATIVE_TERMINAL_MATCHED: "原件已核对行动终态",
+    SCHEDULE_TERMS_ONLY: "已核对分派安排，实际支付待核",
+    ANNOUNCEMENT_METADATA_CONFLICT: "公告或原件身份冲突",
+    UNRESOLVED: "行动影响待核",
+  };
+  return (
+    <details aria-label="跨日公告逐项核验">
+      <summary>跨日公告逐项核验（{rows.length} 份）</summary>
+      <p>
+        {text(value.valuation_date)} 至 {text(value.comparison_date)}。
+        {value.publication_window_covered === true
+          ? "披露窗口已覆盖。"
+          : "披露窗口尚未完整覆盖。"}
+        {value.effective_action_continuity_proven !== true &&
+          "股本行动连续性和期间变化的估值重算仍待核验。"}
+      </p>
+      <ul>
+        {rows.map((row) => (
+          <li key={text(row.announcement_id)}>
+            {text(row.published_at).slice(0, 10)} · {text(row.title)} ·{" "}
+            {labels[text(row.status)] ?? "核验状态待确认"}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 function CheckReconciliation({
   id,
   details,
@@ -980,6 +1017,7 @@ function CheckReconciliation({
   if (id === "capital_structure")
     return (
       <section aria-label="已核验股本与当前缺口">
+        <CrossDateActionFacts value={ledger.cross_date_action_facts} />
         <NativeSourceConsumption
           id={id}
           value={ledger.native_source_consumption}
