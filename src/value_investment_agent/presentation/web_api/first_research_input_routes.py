@@ -77,6 +77,9 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                     if successor_schema == "parent-remaining-year-successor-receipt-v1"
                     else "DISPLAYED_RECEIPT_IS_OWNER_DISTRIBUTION_SUCCESSOR_V2"),
                 action="no_order", formal_eligibility=False, price_admitted=False)
+            historical = read_first_research_update(root=project, symbol=symbol, now=now)
+            if historical.get("status") == "SOURCE_BOUND_CONDITIONAL_SUCCESSOR":
+                result["historical_successor_update"] = historical
             result["quote_observation"] = dict(
                 status="NOT_REQUESTED_FOR_SUCCESSOR_F2_PROJECTION",
                 reason="QUOTE_REQUIRES_EXACT_BOUND_F2_EVIDENCE",
