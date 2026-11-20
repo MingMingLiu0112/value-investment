@@ -885,6 +885,46 @@ it("shows an explicit unproven interval without revoking interim authority", () 
   expect(html).toContain("不能把期初股数沿用为当前股数");
   expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
 });
+it("only renders confirmed zero-net unlocks from the F2 evidence", () => {
+  const review = alignmentFixture();
+  const confirmed = {
+    announcement_id: "confirmed",
+    classification: "ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK",
+    effective_date: "2026-09-28",
+    net_share_change: "0",
+    action: "no_order",
+    window_completeness_granted: false,
+    issuer_reported_listing_confirmation: {},
+  };
+  review.conditional_price!.alignment!.checks![2].details = {
+    basis_followup: {
+      schema_version: "candidate-basis-followup-v1",
+      action: "no_order",
+      current_comparison_granted: false,
+      capital_event_classifications: [
+        confirmed,
+        {
+          ...confirmed,
+          announcement_id: "nonzero",
+          effective_date: "2026-09-29",
+          net_share_change: "-1",
+        },
+        {
+          ...confirmed,
+          announcement_id: "pending",
+          effective_date: "2026-09-30",
+          issuer_reported_listing_confirmation: null,
+        },
+      ],
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("2026-09-28");
+  expect(html).toContain("已发行股数净变动 0 股");
+  expect(html).toContain("股本全期间连续性仍需核验");
+  expect(html).not.toContain("2026-09-29：发行人已确认");
+  expect(html).not.toContain("2026-09-30：发行人已确认");
+});
 it("shows every capital checkpoint with separate ordinary, issued, treasury, and proposal meanings", () => {
   const review = alignmentFixture();
   review.conditional_price!.alignment!.checks![2].details = {

@@ -1281,6 +1281,17 @@ function BasisFollowup({ value }: { value: unknown }) {
   const reports = Array.isArray(value.interim_report_followups)
     ? value.interim_report_followups.filter(object)
     : [];
+  const confirmedUnlocks = Array.isArray(value.capital_event_classifications)
+    ? value.capital_event_classifications.filter(
+        (row) =>
+          object(row) &&
+          row.classification === "ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK" &&
+          row.net_share_change === "0" &&
+          row.action === "no_order" &&
+          row.window_completeness_granted === false &&
+          object(row.issuer_reported_listing_confirmation),
+      )
+    : [];
   const buybackDeltas = Array.isArray(value.buyback_checkpoint_deltas)
     ? value.buyback_checkpoint_deltas.filter(
         (row) =>
@@ -1360,6 +1371,22 @@ function BasisFollowup({ value }: { value: unknown }) {
           {text(interval.through)}。 不能把期初股数沿用为当前股数。
         </p>
       )}
+      {confirmedUnlocks.map((row) => (
+        <div key={text(row.announcement_id)}>
+          <p>
+            {text(row.effective_date)}：发行人已确认本次解除限售股份上市流通，
+            已发行股数净变动 0 股。股本全期间连续性仍需核验。
+          </p>
+          <AlignmentEvidence
+            value={[
+              row.source_binding,
+              object(row.issuer_reported_listing_confirmation)
+                ? row.issuer_reported_listing_confirmation.binding
+                : null,
+            ]}
+          />
+        </div>
+      ))}
       {buybackDeltas.length > 0 && (
         <div>
           <p>
