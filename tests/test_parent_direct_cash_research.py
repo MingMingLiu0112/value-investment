@@ -271,3 +271,45 @@ def test_retained_direct_annual_layout_preserves_source_contract(case, monkeypat
             "2026-12-31", "30.00", "2025-12-31", "90.00")
         assert first["source_refs"][0]["income_page"] == 2
         assert first["classification"] == "FACT"
+
+
+@pytest.mark.parametrize("mutation", [None, "scope", "currency", "period"])
+def test_retained_annual_balance_requires_exact_parent_header(case, monkeypatch, mutation):
+    from value_investment_agent.application.research import retained_parent_direct_observations as retained
+
+    issuer = "示例股份有限公司"
+    page = (
+        f"{issuer} 2026 年年度报告 93\n财务报告\n2026年12月31日\n编制单位：{issuer}\n"
+        "母公司资产负债表\n单位：元 币种：人民币\n项目 附注 2026年12月31日 2025年12月31日\n"
+        "货币资金 80.00 70.00\n实收资本（或股本） 30.00 30.00\n"
+        "盈余公积 4.00 3.00\n未分配利润 22.00 15.00"
+    )
+    if mutation:
+        old, new = {
+            "scope": ("编制单位：" + issuer, "编制单位：其他公司"),
+            "currency": ("人民币", "美元"),
+            "period": ("2025年12月31日", "2025年06月30日"),
+        }[mutation]
+        page = page.replace(old, new)
+    available_at = "2027-04-30T00:00:00+00:00"
+    source = dict(path="runtime/original.pdf", sha256=sha256(case["pdf"].read_bytes()).hexdigest(),
+                  available_at=available_at, period="2026-12-31")
+    monkeypatch.setattr(retained, "load_retained_official_report", lambda **kwargs: dict(
+        source=source, fetched_at=available_at, completed_at=available_at, source_id="TEST_ONLY"))
+    monkeypatch.setattr(retained, "extract_pages", lambda path: [page, "合并利润表"])
+
+    result = retained.read_retained_parent_balance_observations(
+        root=case["root"], symbol="600123", issuer_name=issuer, period_end="2026-12-31",
+        receipt_binding=case["seal"](), evaluated_at=NOW,
+    )
+
+    if mutation:
+        assert not result["evidence"]
+        assert result["gaps"] == ["PARENT_BALANCE_OWNER_UNIT_OR_COLUMNS_INVALID"]
+    else:
+        assert not result["gaps"]
+        assert {row["field"]: row["value"] for row in result["evidence"]} == {
+            "parent_cash_balance": "80.00", "parent_ordinary_share_capital": "30.00",
+            "parent_surplus_reserve": "4.00", "parent_retained_earnings": "22.00",
+        }
+        assert {row["physical_page"] for row in result["evidence"]} == {1}
