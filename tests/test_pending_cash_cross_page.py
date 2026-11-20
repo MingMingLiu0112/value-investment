@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from value_investment_agent.application.research.pending_candidate_alignment import _cash_terms, _operating_events
+from value_investment_agent.application.research.pending_candidate_alignment import _cash_terms, _opening_chain_research, _operating_events
 from value_investment_agent.application.research.value_research_analysis import _bound
 
 
@@ -171,3 +171,26 @@ def test_real_annual_distribution_vote_original():
     assert vote["fiscal_year"] == 2025 and vote["meeting_date"] == "2026-05-20"
     assert vote["yes_votes"] == 2083610013
     assert vote["implementation_verified"] is False and vote["payment_verified"] is False
+
+    from value_investment_agent.infrastructure.filings.opening_action_terms import parse_opening_action_terms
+
+    implementation = Path(root) / "runtime/value-f2-replays/600887-annual-dividend-20261115T1741423113652Z/original.pdf"
+    implementation_url = "https://static.cninfo.com.cn/finalpage/2026-05-29/1225335436.PDF"
+    implementation_binding = dict(path=implementation.relative_to(root).as_posix(),
+        sha256="c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70")
+    window["announcements"].append(dict(announcement_id="1225335436",
+        title="内蒙古伊利实业集团股份有限公司2025年年度权益分派实施公告",
+        published_at="2026-05-29T00:00:00+08:00", source_url=implementation_url,
+        evidence_refs=[dict(implementation_binding, source_url=implementation_url)]))
+    analysis.update(valuation_date="2026-06-30", consumed_operating_inputs={"ordinary_shares": "6325360667"})
+    events = _operating_events(analysis, [window], cutoff, lambda binding: _bound(Path(root), binding),
+                               parser=parse_opening_action_terms)
+    chain = _opening_chain_research(analysis, events, None)
+    link, = chain["annual_approval_schedule_links"]
+    assert link["approval_evidence_binding"]["sha256"] == digest
+    assert link["implementation_evidence_binding"] == implementation_binding
+    assert link["cash_receipt_proven"] is False
+    assert chain["complete_opening_action_coverage"] is False
+    assert chain["comparison_date_capital_proven"] is False
+    events[0]["facts"][0]["terms"]["terms"]["meeting_date"] = "2026-05-19"
+    assert not _opening_chain_research(analysis, events, None)["annual_approval_schedule_links"]

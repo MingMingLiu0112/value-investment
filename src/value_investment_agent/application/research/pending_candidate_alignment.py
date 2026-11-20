@@ -1188,23 +1188,29 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             limitations=["决议仅证明通过议案，不证明最终每股金额、实施或支付。"],
                             action="no_order",
                         )
-                    elif (allow_quarterly_report
-                          and event["title"].endswith(("年度股东会决议公告", "年度股东大会决议公告"))
+                    elif (event["title"].endswith(("年度股东会决议公告", "年度股东大会决议公告"))
                           and "年度利润分配预案" in "".join("".join(pages).split())):
                         from ...infrastructure.filings.interim_dividend_resolution import parse_annual_dividend_resolution
 
-                        resolution = parse_annual_dividend_resolution(
-                            pages, symbol=analysis["symbol"], published=published,
-                        )
-                        terms = dict(
-                            event_type="REPORTED_ANNUAL_DIVIDEND_SHAREHOLDER_APPROVAL",
-                            published_date=published.isoformat(), effective_date=None,
-                            summary=f"股东会于{resolution['meeting_date']}通过{resolution['fiscal_year']}年度利润分配预案。",
-                            implication="结合独立提案和实施公告核对金额、登记与支付。",
-                            terms=resolution, affected_model_fields=["shareholder_distributions"],
-                            limitations=["表决原件只确认通过，未证明金额、实施或支付。"],
-                            action="no_order",
-                        )
+                        terms = None
+                        if not allow_quarterly_report:
+                            try:
+                                terms = parser(pages, symbol=analysis["symbol"])
+                            except ValueError:
+                                pass
+                        if terms is None:
+                            resolution = parse_annual_dividend_resolution(
+                                pages, symbol=analysis["symbol"], published=published,
+                            )
+                            terms = dict(
+                                event_type="REPORTED_ANNUAL_DIVIDEND_SHAREHOLDER_APPROVAL",
+                                published_date=published.isoformat(), effective_date=None,
+                                summary=f"股东会于{resolution['meeting_date']}通过{resolution['fiscal_year']}年度利润分配预案。",
+                                implication="结合独立提案和实施公告核对金额、登记与支付。",
+                                terms=resolution, affected_model_fields=["shareholder_distributions"],
+                                limitations=["表决原件只确认通过，未证明金额、实施或支付。"],
+                                action="no_order",
+                            )
                     elif allow_quarterly_report and (interim_title := re.search(r"(?:中期|半年度)权益分派实施公告$", event["title"])):
                         heading = re.sub(r"\s+", "", pages[0]) if pages else ""
                         if interim_title[0] not in heading:
@@ -1499,6 +1505,37 @@ def _opening_chain_research(analysis, rows, reconciliation):
                         status="MATCHED_PREVALUATION_IMPLEMENTATION_TERMS" if matches else "TERMS_NOT_MATCHED",
                         price_deduction_applied="0", payment_receipt_proven=False,
                         accounting_one_cent_difference_resolved=False))
+    approvals = [
+        fact for row in rows for fact in row["facts"]
+        if fact["terms"].get("event_type") == "REPORTED_ANNUAL_DIVIDEND_SHAREHOLDER_APPROVAL"
+        and _day(fact["terms"]["published_date"]) <= start
+    ]
+    vote_links = []
+    for row in rows:
+        for fact in row["facts"]:
+            parsed = fact["terms"]
+            if parsed.get("event_type") != "PREVALUATION_DISTRIBUTION_SCHEDULE":
+                continue
+            schedule = parsed["terms"]
+            meeting = schedule.get("referenced_approval_meeting_date")
+            if schedule.get("distribution_period") != "年度" or not meeting:
+                continue
+            if max(_day(schedule["ex_date"]), _day(schedule["cash_payment_date"])) > start:
+                continue
+            matches = [
+                vote for vote in approvals
+                if str(vote["terms"]["terms"]["fiscal_year"]) == schedule["distribution_year"]
+                and vote["terms"]["terms"]["meeting_date"] == meeting
+                and _day(vote["terms"]["published_date"]) <= _day(schedule["published_date"])
+            ]
+            if len(matches) == 1:
+                vote_links.append(dict(
+                    fiscal_year=schedule["distribution_year"], meeting_date=meeting,
+                    approval_evidence_binding=matches[0]["binding"],
+                    implementation_evidence_binding=fact["binding"],
+                    status="APPROVED_AGENDA_MATCHED_TO_HISTORICAL_SCHEDULE",
+                    cash_receipt_proven=False, action="no_order",
+                ))
     purchase_links = []
     for purchase in purchases:
         terms = purchase["terms"]
@@ -1516,11 +1553,11 @@ def _opening_chain_research(analysis, rows, reconciliation):
             purchased_shares=terms["cumulative_purchased_shares"], paid_cny=terms["cumulative_paid_cny"],
             planned_post_cancellation_shares=terms["planned_post_cancellation_shares"],
             action="no_order"))
-    return dict(status="KNOWN_ACTIONS_PARTIALLY_RECONCILED" if confirmations or annual or authorizations or purchases else "NO_SUPPORTED_OPENING_ACTION",
+    return dict(status="KNOWN_ACTIONS_PARTIALLY_RECONCILED" if confirmations or annual or authorizations or purchases or vote_links else "NO_SUPPORTED_OPENING_ACTION",
         candidate_binding=deepcopy(analysis["review_binding"]["candidate_binding"]),
         valuation_date=start.isoformat(), confirmations=confirmations,
         distribution_links=annual, outstanding_authorizations=authorizations, purchase_links=purchase_links,
-        prevaluation_distribution_schedules=distribution_schedules,
+        prevaluation_distribution_schedules=distribution_schedules, annual_approval_schedule_links=vote_links,
         complete_opening_action_coverage=False, comparison_date_capital_proven=False,
         formal_eligibility=False, action="no_order")
 
