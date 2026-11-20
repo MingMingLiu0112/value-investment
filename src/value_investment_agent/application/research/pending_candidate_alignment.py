@@ -2150,6 +2150,21 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
                 "来源存在本身不证明已消费。"
             )
             checks[4]["details"]["recomputation_closure"] = financial_closure
+            if len(financial_closure["consumed_closure"]) == 1:
+                from .parent_financing_schedule_v1 import project_parent_financing_schedule
+
+                consumed = financial_closure["consumed_closure"][0]
+                observed = consumed.get("financing_comparison", {}).get("reported_ytd")
+                if observed is not None:
+                    try:
+                        checks[4]["details"]["parent_financing_schedule"] = (
+                            project_parent_financing_schedule(
+                                period_end=consumed["period_end"], reported_ytd=observed,
+                                issuance_events=financial_closure.get("subsequent_financing_issuance", []),
+                            )
+                        )
+                    except (KeyError, ValueError, TypeError, ArithmeticError) as error:
+                        checks[4]["details"]["parent_financing_schedule_error"] = str(error)
             all_reasons = list(dict.fromkeys(
                 code for item in checks for code in item["reason_codes"]
             ))
