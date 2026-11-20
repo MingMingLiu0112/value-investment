@@ -187,6 +187,7 @@ def test_financial_update_closure_requires_actual_predecessor_cold_recompute(ali
 
 def test_financial_update_pass_is_separate_from_materiality(aligned_case):
     _, receipt, _, result, closure = financial_closure(aligned_case)
+    closure[0]["financing_comparison"] = {"status": "GROSS_YTD_FLOOR_NOT_CONTRADICTED"}
     source = closure[0]["source_binding"]
     analysis = {
         "review_binding": {"candidate_binding": receipt},
@@ -253,6 +254,7 @@ def test_source_presence_without_recompute_closure_cannot_pass(aligned_case):
 
 def test_unconsumed_newer_update_requires_recomputation(aligned_case):
     _, receipt, _, result, closure = financial_closure(aligned_case)
+    closure[0]["financing_comparison"] = {"status": "GROSS_YTD_FLOOR_NOT_CONTRADICTED"}
     analysis = {
         "review_binding": {"candidate_binding": receipt},
         "input_descriptor_sha256": result["input_descriptor_sha256"],
@@ -291,3 +293,21 @@ def test_reported_parent_financing_conflict_blocks_financial_update(aligned_case
     observed = _financial_update_closure_status(analysis, events)
     assert observed["status"] == "BLOCKED"
     assert observed["reason_codes"] == ["REPORTED_PARENT_FINANCING_EXCEEDS_FULL_YEAR_POLICY"]
+
+
+def test_unverified_parent_financing_blocks_matched_financial_update(aligned_case):
+    _, receipt, _, result, closure = financial_closure(aligned_case)
+    closure[0]["financing_comparison"] = {"status": "NOT_VERIFIED", "reason": "PARENT_TABLE_MISSING"}
+    analysis = {
+        "review_binding": {"candidate_binding": receipt},
+        "input_descriptor_sha256": result["input_descriptor_sha256"],
+        "consumed_financial_updates": closure,
+    }
+    events = [{"facts": [{
+        "binding": closure[0]["source_binding"],
+        "terms": {"financial_update": {"period_end": closure[0]["period_end"]}},
+    }]}]
+    observed = _financial_update_closure_status(analysis, events)
+    assert observed["status"] == "BLOCKED"
+    assert observed["reason_codes"] == ["REPORTED_PARENT_FINANCING_VERIFICATION_REQUIRED"]
+    assert observed["consumed_closure"][0]["financing_comparison"]["reason"] == "PARENT_TABLE_MISSING"

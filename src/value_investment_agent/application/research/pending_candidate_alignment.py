@@ -1446,8 +1446,13 @@ def _financial_update_closure_status(analysis, financial_events, *, operating_ev
             observed.append((update["period_end"], fact["binding"].get("sha256")))
     unmatched_observed = [key for key in observed if key not in expected]
     unmatched_closure = [key for key in expected if key not in observed]
-    conflicts = any(row.get("financing_comparison", {}).get("status") == "CONFLICT"
-                    for row in closure)
+    financing_statuses = {
+        row.get("financing_comparison", {}).get("status") for row in closure
+    }
+    conflicts = "CONFLICT" in financing_statuses
+    financing_unverified = bool(
+        financing_statuses - {"CONFLICT", "GROSS_YTD_FLOOR_NOT_CONTRADICTED"}
+    )
     cutoff = max(_day(period) for period, _ in expected)
     later_financing = [
         {"announcement_id": event["announcement_id"], "source_binding": fact["binding"],
@@ -1469,12 +1474,15 @@ def _financial_update_closure_status(analysis, financial_events, *, operating_ev
         if fact["terms"].get("event_type") == "REPORTED_ISSUER_FINANCING_REDEMPTION"
         and _day(fact["terms"]["effective_date"]) > cutoff
     ]
-    if unmatched_observed or unmatched_closure or conflicts or later_financing or later_redemptions:
+    if (unmatched_observed or unmatched_closure or conflicts or financing_unverified
+            or later_financing or later_redemptions):
         reasons = []
         if unmatched_observed or unmatched_closure:
             reasons.append("FINANCIAL_UPDATE_REQUIRES_RECOMPUTATION")
         if conflicts:
             reasons.append("REPORTED_PARENT_FINANCING_EXCEEDS_FULL_YEAR_POLICY")
+        if financing_unverified:
+            reasons.append("REPORTED_PARENT_FINANCING_VERIFICATION_REQUIRED")
         if later_financing:
             reasons.append("ISSUER_FINANCING_AFTER_RECOMPUTED_PERIOD_REQUIRES_CASH_RECONCILIATION")
         if later_redemptions:
