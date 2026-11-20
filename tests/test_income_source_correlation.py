@@ -112,3 +112,43 @@ def test_acquisition_receipt_tamper_is_not_just_a_descriptor_change(fixture):
     (root / 'receipt.json').write_text('{}', encoding='utf-8')
     with pytest.raises(ValueError, match='receipt hash mismatch'):
         correlation.correlate_income_inputs(root, source, descriptor, evaluation_at=NOW)
+
+
+@pytest.mark.parametrize("mutation", ["valid", "forged_value", "wrong_scope", "wrong_period",
+                                      "duplicate", "changed_secondary", "flag_only"])
+def test_d1_projects_only_individually_replayed_parent_profit(fixture, mutation):
+    from value_investment_agent.application.research.agent_review.operating_sources_d1_v2 import (
+        _existing_parent_profit,
+    )
+
+    root, source, secondary, _ = fixture
+    points = correlation.correlate_income_inputs(root, source, secondary, evaluation_at=NOW)
+    current = next(point for point in points if point["field_name"] == "net_income"
+                   and point["period_label"] == source.period)
+    if mutation == "valid":
+        result = _existing_parent_profit(root, source, points, NOW)
+        assert result["id"] == current["data_point_id"]
+        assert result["value"] == "30.00"
+        assert result["period"] == source.period and result["scope"] == "consolidated"
+        assert result["physical_page"] == 2
+        assert result["evidence_refs"][1]["sha256"] == secondary["sha256"]
+        return
+    if mutation == "wrong_period":
+        points.remove(current)
+        assert _existing_parent_profit(root, source, points, NOW) is None
+        return
+    if mutation == "flag_only":
+        current["data_point_id"] = "claimed"
+        del current["metadata"]["income_source_version"]
+        assert _existing_parent_profit(root, source, points, NOW) is None
+        return
+    if mutation == "forged_value":
+        current["value"] = "31.00"
+    elif mutation == "wrong_scope":
+        current["metadata"]["statement_scope"] = "parent"
+    elif mutation == "duplicate":
+        points.append(deepcopy(current))
+    elif mutation == "changed_secondary":
+        (root / secondary["path"]).write_bytes(b"changed")
+    with pytest.raises(ValueError):
+        _existing_parent_profit(root, source, points, NOW)

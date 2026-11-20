@@ -83,9 +83,9 @@ def test_explicit_fresh_refresh_invokes_existing_collector_then_queue(cycle,monk
 
 
 def test_operating_tasks_use_existing_service_and_finite_explicit_budget(cycle,monkeypatch):
-    from value_investment_agent.application.research.agent_review import operating_sources_v1,operating_task_v2
+    from value_investment_agent.application.research.agent_review import operating_sources_d1_v2,operating_task_v2
     root,calls=cycle; seen=[]
-    monkeypatch.setattr(operating_sources_v1,'build_operating_source_context',lambda **kw:dict(source_binding={'path':'runtime/TEST_ONLY.json','sha256':'a'*64}))
+    monkeypatch.setattr(operating_sources_d1_v2,'build_d1_source_context',lambda **kw:dict(source_binding={'path':'runtime/TEST_ONLY.json','sha256':'a'*64}))
     monkeypatch.setattr(operating_task_v2,'implementation',lambda: {'TEST_ONLY':'1'})
     class Service:
         def __init__(self,root,**kwargs):pass
@@ -133,7 +133,7 @@ def test_parser_update_replays_bound_inputs_without_restamping_originals(cycle,m
 
 
 def test_missing_first_company_source_does_not_starve_next_company(cycle,monkeypatch):
-    from value_investment_agent.application.research.agent_review import operating_sources_v1,operating_task_v2
+    from value_investment_agent.application.research.agent_review import operating_sources_d1_v2,operating_task_v2
     root,calls=cycle; real=app.pipeline.prepare_sse_research_run; ran=[]
     def prepare(**kw):
         r=real(**kw);p=root/r['queue']['path'];q=json.loads(p.read_bytes())
@@ -143,7 +143,7 @@ def test_missing_first_company_source_does_not_starve_next_company(cycle,monkeyp
     def context(**kw):
         if kw['symbol']=='600001':raise ValueError('TEST_ONLY_NO_ORIGINAL')
         return {'source_binding':{'path':'runtime/TEST_ONLY.json','sha256':'a'*64}}
-    monkeypatch.setattr(operating_sources_v1,'build_operating_source_context',context)
+    monkeypatch.setattr(operating_sources_d1_v2,'build_d1_source_context',context)
     monkeypatch.setattr(operating_task_v2,'implementation',lambda:{})
     class Service:
         def __init__(self,root,**kwargs):pass
@@ -171,9 +171,9 @@ def test_verified_zero_candidates_is_not_source_failure(cycle,monkeypatch):
 
 @pytest.mark.parametrize('locked',[False,True])
 def test_reused_model_calls_and_lock_contention_are_not_new_calls(cycle,monkeypatch,locked):
-    from value_investment_agent.application.research.agent_review import operating_sources_v1,operating_task_v2
+    from value_investment_agent.application.research.agent_review import operating_sources_d1_v2,operating_task_v2
     root,calls=cycle;ran=[]
-    monkeypatch.setattr(operating_sources_v1,'build_operating_source_context',lambda **kw:{'source_binding':{'path':'runtime/TEST_ONLY.json','sha256':'a'*64}})
+    monkeypatch.setattr(operating_sources_d1_v2,'build_d1_source_context',lambda **kw:{'source_binding':{'path':'runtime/TEST_ONLY.json','sha256':'a'*64}})
     monkeypatch.setattr(operating_task_v2,'implementation',lambda:{})
     class Service:
         def __init__(self,root,**kwargs):pass
@@ -190,9 +190,9 @@ def test_reused_model_calls_and_lock_contention_are_not_new_calls(cycle,monkeypa
 
 
 def test_driver_calendar_preflight_blocks_missing_baseline_before_task_or_fees(cycle,monkeypatch):
-    from value_investment_agent.application.research.agent_review import operating_sources_v1,operating_task_v2
+    from value_investment_agent.application.research.agent_review import operating_sources_d1_v2,operating_task_v2
     root,_=cycle; calls=[]
-    monkeypatch.setattr(operating_sources_v1,'build_operating_source_context',lambda **kw:dict(as_of='2026-11-03',evidence=[]))
+    monkeypatch.setattr(operating_sources_d1_v2,'build_d1_source_context',lambda **kw:dict(as_of='2026-11-03',evidence=[]))
     monkeypatch.setattr(operating_task_v2,'model_configuration',lambda root:{'research_contract':'operating-drivers-v2'})
     class Service:
         def __init__(self,root,**kwargs):pass
@@ -205,7 +205,7 @@ def test_driver_calendar_preflight_blocks_missing_baseline_before_task_or_fees(c
 
 @pytest.mark.parametrize("changed", [False, True])
 def test_task_creation_replays_preflight_pin_and_cutoff(cycle, monkeypatch, changed):
-    from value_investment_agent.application.research.agent_review import operating_sources_v1, operating_task_v2
+    from value_investment_agent.application.research.agent_review import operating_sources_d1_v2, operating_task_v2
 
     root, _ = cycle
     pin = {"path": "runtime/TEST_ONLY.json", "sha256": "a" * 64}
@@ -231,7 +231,7 @@ def test_task_creation_replays_preflight_pin_and_cutoff(cycle, monkeypatch, chan
             return dict(task_id=task_id, status="SUCCEEDED", source_binding=pin,
                         record_binding=record, new_llm_calls=0)
 
-    monkeypatch.setattr(operating_sources_v1, "build_operating_source_context", load)
+    monkeypatch.setattr(operating_sources_d1_v2, "build_d1_source_context", load)
     monkeypatch.setattr(operating_task_v2, "LiveOperatingTaskService", Service)
     result = app.run_value_research_refresh(root=root, output_dir=root / "runtime/pinned",
                                             enrichment_batches=0, operating_budget=1)

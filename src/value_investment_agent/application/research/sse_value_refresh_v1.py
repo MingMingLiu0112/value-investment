@@ -127,7 +127,7 @@ def run_value_research_refresh(*, root, output_dir, source_mode='RETAINED',
             latest = prepare('consumption')
             queue = pipeline._bound(root, latest['queue'])
             if operating_budget:
-                from .agent_review.operating_sources_v1 import build_operating_source_context
+                from .agent_review.operating_sources_d1_v2 import build_d1_source_context
                 from .agent_review.operating_task_v2 import (LiveOperatingTaskService, implementation,
                     model_configuration, research_context)
                 started_model_tasks = 0
@@ -143,7 +143,7 @@ def run_value_research_refresh(*, root, output_dir, source_mode='RETAINED',
                     # this does NOT mean quality/G3/valuation prerequisites have passed.
                     try:
                         cutoff = _now()
-                        context = build_operating_source_context(root=root, symbol=symbol, now=cutoff)
+                        context = build_d1_source_context(root=root, symbol=symbol, now=cutoff)
                         cfg = model_configuration(root)
                         # Deterministic financial prerequisites before task/budget creation.
                         # A source-only candidate cannot bypass a quantitative driver contract.
@@ -160,9 +160,9 @@ def run_value_research_refresh(*, root, output_dir, source_mode='RETAINED',
                         def load_pinned_context(*, root, symbol, now, binding=None):
                             if binding is not None:
                                 # Existing tasks replay at their own sealed cutoff.
-                                return build_operating_source_context(
+                                return build_d1_source_context(
                                     root=root, symbol=symbol, now=now, binding=binding)
-                            replayed = build_operating_source_context(
+                            replayed = build_d1_source_context(
                                 root=root, symbol=symbol, now=now, binding=source_binding)
                             if (replayed['source_binding'] != source_binding
                                     or replayed['snapshot_fingerprint'] != context['snapshot_fingerprint']):

@@ -554,3 +554,13 @@ def test_provider_value_error_classification_preserves_reserved_budget(env, mess
     assert Decimal(result["reserved_cost"]) > 0
     assert Decimal(result["settled_cost"]) == 0
     assert result["action"] == "no_order"
+
+
+def test_d1_without_authorization_never_loads_source_or_creates_task(tmp_path):
+    def unexpected(**kwargs):
+        pytest.fail("D1 source selection started before authorization")
+
+    service = mod.LiveOperatingTaskService(tmp_path, source_loader=unexpected)
+    with pytest.raises(PermissionError, match="MODEL_AUTHORIZATION_REQUIRED"):
+        service.create(symbol="600323", request_key="TEST_ONLY_missing_authorization")
+    assert not service.base.exists()
