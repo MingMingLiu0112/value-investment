@@ -721,24 +721,36 @@ function DirectOwnerCashView({ data }: { data: FirstResearchInputResponse }) {
                   仍需附注明细及到期安排核对。
                 </span>
               )}
-              {cash.financing_review.parent_financing_followup && (
+              {cash.financing_review.parent_financing_followup
+                ?.reconciliation_status ===
+                "PARTIAL_MISSING_COMPARABLE_BALANCE_LINES" && (
                 <span>
                   {" "}
-                  后续母公司半年报（
-                  {cash.financing_review.parent_financing_followup.period_end}
-                  ）列示的同四项余额为
-                  {amount(
-                    cash.financing_review.parent_financing_followup
-                      .closing_identified_balance_cny,
-                  )}
-                  元。其相对年末变动与半年内借还现金净额相差
-                  {amount(
-                    cash.financing_review.parent_financing_followup
-                      .unallocated_reconciliation_difference_cny,
-                  )}
-                  元；此为尚未分解的对账差异，不认作已核债务或可续借额度。
+                  母公司融资对账只覆盖两期均有明确金额的科目。缺少完整余额，
+                  暂无法计算完整对账差额或判断续借能力。
                 </span>
               )}
+              {cash.financing_review.parent_financing_followup &&
+                cash.financing_review.parent_financing_followup
+                  .reconciliation_status !==
+                  "PARTIAL_MISSING_COMPARABLE_BALANCE_LINES" && (
+                  <span>
+                    {" "}
+                    后续母公司半年报（
+                    {cash.financing_review.parent_financing_followup.period_end}
+                    ）列示的同四项余额为
+                    {amount(
+                      cash.financing_review.parent_financing_followup
+                        .closing_identified_balance_cny,
+                    )}
+                    元。其相对年末变动与半年内借还现金净额相差
+                    {amount(
+                      cash.financing_review.parent_financing_followup
+                        .unallocated_reconciliation_difference_cny,
+                    )}
+                    元；此为尚未分解的对账差异，不认作已核债务或可续借额度。
+                  </span>
+                )}
               {cash.financing_review.followup_unavailable_reason && (
                 <span>
                   {" "}
@@ -1178,6 +1190,19 @@ export function FirstResearchInputView({
           data.quote_observation.reason
             ? ` · 原因：${data.quote_observation.reason}`
             : ""}
+        </p>
+      )}
+      {data.parent_financing_evidence && (
+        <p aria-label="历史母公司融资对账">
+          历史母公司融资对账：
+          {data.parent_financing_evidence.reconciliation_status ===
+          "SOURCE_NOT_VERIFIED"
+            ? "来源暂未通过复核。"
+            : `${data.parent_financing_evidence.period_start} 至 ${data.parent_financing_evidence.period_end}，可比余额变动 ${amount(data.parent_financing_evidence.identified_balance_change_cny)} 元，借还现金净额 ${amount(data.parent_financing_evidence.reported_net_borrowing_cash_cny)} 元。`}
+          {data.parent_financing_evidence.reconciliation_status ===
+            "PARTIAL_MISSING_COMPARABLE_BALANCE_LINES" &&
+            "部分科目缺少两期金额，完整对账差额暂不可算。"}
+          历史对账未进入估值输入，也未确认续借或分配能力。
         </p>
       )}
       {data.e2_quote_alignment && (

@@ -407,11 +407,13 @@ export type DirectOwnerCash = {
       schema_version: string;
       period_start: string;
       period_end: string;
-      opening_identified_balance_cny: string;
-      closing_identified_balance_cny: string;
-      identified_balance_change_cny: string;
+      opening_identified_balance_cny: string | null;
+      closing_identified_balance_cny: string | null;
+      identified_balance_change_cny: string | null;
       reported_net_borrowing_cash_cny: string;
-      unallocated_reconciliation_difference_cny: string;
+      unallocated_reconciliation_difference_cny: string | null;
+      comparable_balance_fields?: string[];
+      missing_balance_fields_by_period?: Record<string, string[]>;
       reconciliation_status: string;
       complete_debt_scope_verified: boolean;
       maturity_schedule_verified: boolean;
@@ -648,6 +650,16 @@ export type FirstResearchInputResponse = {
     bundle_sha256: string | null;
     price_admitted: boolean;
     comparison_eligible: boolean;
+  };
+  parent_financing_evidence?: {
+    reconciliation_status: string;
+    period_start?: string;
+    period_end?: string;
+    identified_balance_change_cny?: string | null;
+    reported_net_borrowing_cash_cny?: string;
+    formal_eligibility: false;
+    model_inputs_changed: false;
+    action: "no_order";
   };
   e2_quote_alignment?: {
     status: string;

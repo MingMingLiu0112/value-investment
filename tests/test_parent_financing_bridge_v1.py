@@ -51,3 +51,22 @@ def test_bridge_rejects_incomparable_sources(change):
         h1["cash_flow"]["debt_repaid_cny"]["source_refs"]["current_period"] = "2025-12-31"
     with pytest.raises(ValueError, match="PARENT_FINANCING_"):
         reconcile_parent_financing(fy, h1)
+
+
+def test_missing_parent_line_preserves_comparable_evidence_without_full_difference():
+    fy = _statement("2025-12-31", (10, 4, 1, 1))
+    h1 = _statement("2026-06-30", (8, 2, 1, 1),
+                    {"borrowings_received_cny": 20, "debt_repaid_cny": 30})
+    del fy["balance_sheet"][BALANCE_FIELDS[0]]
+    bridge = reconcile_parent_financing(fy, h1)
+    assert bridge["reconciliation_status"] == "PARTIAL_MISSING_COMPARABLE_BALANCE_LINES"
+    assert bridge["missing_balance_fields_by_period"]["2025-12-31"] == [BALANCE_FIELDS[0]]
+    assert bridge["opening_identified_balance_cny"] == "6"
+    assert bridge["closing_identified_balance_cny"] == "4"
+    assert bridge["reported_net_borrowing_cash_cny"] == "-10"
+    assert bridge["unallocated_reconciliation_difference_cny"] is None
+    assert bridge["complete_debt_scope_verified"] is False
+
+    h1["balance_sheet"][BALANCE_FIELDS[0]]["scope"] = "CONSOLIDATED"
+    with pytest.raises(ValueError, match="PARENT_FINANCING_FACT_SCOPE_OR_SOURCE_CHANGED"):
+        reconcile_parent_financing(fy, h1)

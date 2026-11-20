@@ -83,6 +83,15 @@ def register_first_research_input_routes(api:FastAPI,*,project,clock=lambda:date
                 display_price=None, price_admitted=False, comparison_eligible=False)
             return JSONResponse(result, headers={"Cache-Control": "no-store"})
         if result.get("status") == "SOURCE_BOUND_FIRST_INPUT_COMPILED":
+            from ...application.research.parent_financing_bridge_v1 import read_numbered_financing_evidence
+            try:
+                financing = read_numbered_financing_evidence(root=project, symbol=symbol,
+                    financial_basis=result.get("financial_basis"), now=now)
+                if financing is not None:
+                    result["parent_financing_evidence"] = financing
+            except (ValueError, OSError, KeyError, TypeError, ArithmeticError):
+                result["parent_financing_evidence"] = dict(reconciliation_status="SOURCE_NOT_VERIFIED",
+                    formal_eligibility=False, model_inputs_changed=False, action="no_order")
             if result.get("direct_owner_cash") is not None:
                 from ...application.research.direct_owner_cash_alignment_v1 import read_direct_owner_cash_alignment
                 try:
