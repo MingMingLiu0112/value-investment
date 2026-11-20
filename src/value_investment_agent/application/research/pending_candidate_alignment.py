@@ -1801,8 +1801,18 @@ def _assess(analysis, valuation, quote, quote_result, windows, scans, reconcilia
     refs = [item["observation_binding"] for item in windows]
     covering = [(w, s) for w, s in zip(windows, scans)
                 if end is not None and s.scan_from <= start and s.scan_to >= end]
-    if not covering:
+    complete_windows = [
+        w for w, scan in zip(windows, scans, strict=True)
+        if w.get("source_integrity_verified") is True
+        and w["full_calendar_window_elapsed"] and scan.coverage_status == "COMPLETE"
+    ]
+    publication_covered = end is not None and start <= end and _continuous_publication_window(
+        complete_windows, start, end,
+    )
+    if not publication_covered:
         reasons.append("EVENT_WINDOW_DOES_NOT_COVER_VALUATION_TO_QUOTE")
+    elif not covering:
+        reasons.append("MULTI_WINDOW_MATERIALITY_REPLAY_NOT_SUPPORTED")
     # There is no fallback to an older, easier window when any supplied scan is
     # unresolved. Nonempty scans need the existing authenticated review route.
     if any(not w["full_calendar_window_elapsed"] for w in windows):
@@ -1855,7 +1865,8 @@ def _assess(analysis, valuation, quote, quote_result, windows, scans, reconcilia
     checks.append(_check("material_events", "PASS" if event_pass else "BLOCKED",
         list(dict.fromkeys([*reasons, *validity.blockers])),
         "原生扫描重放只确认原件与检索范围；当日快照和待材料性复核公告不能授予模型VALID。",
-        refs, windows=windows, materiality_review_route=materiality_route,
+        refs, windows=windows, publication_window_continuous=publication_covered,
+        materiality_review_route=materiality_route,
         financial_statement_changed=validity.financial_statement_changed,
         capital_structure_changed=validity.capital_structure_changed))
     consumed_hashes = {source["sha256"] for source in analysis["source_bindings"]}

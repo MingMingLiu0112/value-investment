@@ -1761,3 +1761,35 @@ def test_quarterly_unlock_confirmation_requires_completed_listing_in_report_peri
     }]
     assert not list(_reported_unlock_completions([text], "2026-09-27"))
     assert not list(_reported_unlock_completions([text.replace("于 2026", "拟于 2026")], "2026-09-30"))
+
+
+@pytest.mark.parametrize("complete", [True, False])
+def test_adjacent_full_windows_report_coverage_without_materiality_admission(reconciliation, complete):
+    from types import SimpleNamespace
+
+    analysis = reconciliation["analysis"]
+    valuation = ValuationResultCodec().from_payload(analysis["valuation"])
+    start = valuation.valuation_date
+    end = start + timedelta(days=1)
+    windows = [
+        dict(scan_from=day.isoformat(), scan_to=day.isoformat(),
+             source_integrity_verified=True, full_calendar_window_elapsed=True,
+             observation_binding={"sha256": "a" * 64})
+        for day in (start, end)
+    ]
+    scans = [
+        SimpleNamespace(scan_from=day, scan_to=day, announcements=(), blockers=(),
+                        status="COMPLETE_NO_MATERIAL_EVENT_IN_VALIDITY_WINDOW",
+                        coverage_status="COMPLETE" if index == 0 or complete else "INCOMPLETE")
+        for index, day in enumerate((start, end))
+    ]
+    quote = QuoteSnapshot(valuation.symbol, end, Decimal("15"), "verified_close", [dict(id="TEST_ONLY", sha256="b" * 64)])
+    quote_result = dict(status="QUALIFIED", reason_codes=[], explanation="TEST_ONLY",
+                        bundle_binding=None, native_status="TEST_ONLY")
+    checks, validity, _, ready = service._assess(analysis, valuation, quote, quote_result, windows, scans)
+    event = next(check for check in checks if check["id"] == "material_events")
+    assert event["details"]["publication_window_continuous"] is complete
+    assert event["status"] == "BLOCKED" and validity.status != "VALID" and not ready
+    expected = ("MULTI_WINDOW_MATERIALITY_REPLAY_NOT_SUPPORTED" if complete
+                else "EVENT_WINDOW_DOES_NOT_COVER_VALUATION_TO_QUOTE")
+    assert expected in event["reason_codes"]
