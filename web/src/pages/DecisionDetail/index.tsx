@@ -1175,7 +1175,9 @@ export default function DecisionDetail() {
           <CompanyProfilePanel symbol={id} />
           <FirstResearchInputPanel key={"first-" + id} symbol={id} />
           <OperatingAssumptionDraftPanel key={id} symbol={id} />
-          <LiveOperatingResearchPanel key={"live-" + id} symbol={id} />
+          <div id="operating-research">
+            <LiveOperatingResearchPanel key={"live-" + id} symbol={id} />
+          </div>
         </>
       )}
       <RemoteState loading={loading} error={error} retry={retry}>

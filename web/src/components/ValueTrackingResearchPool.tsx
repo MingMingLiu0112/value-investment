@@ -259,6 +259,16 @@ export function ValueTrackingResearchPool({
                           "未提供"}
                       </p>
                       <p>入池理由：{row.reason}</p>
+                      {batchRows.get(row.symbol)?.status ===
+                        "SOURCE_REPLAYED_SELECTION_PROPOSAL" && (
+                        <p>
+                          <a
+                            href={`/decisions/${row.symbol}?strategy=value#operating-research`}
+                          >
+                            前往经营研究
+                          </a>
+                        </p>
+                      )}
                       {batchRows.has(row.symbol) && (
                         <p>
                           财报收据：
