@@ -1793,3 +1793,23 @@ def test_adjacent_full_windows_report_coverage_without_materiality_admission(rec
     expected = ("MULTI_WINDOW_MATERIALITY_REPLAY_NOT_SUPPORTED" if complete
                 else "EVENT_WINDOW_DOES_NOT_COVER_VALUATION_TO_QUOTE")
     assert expected in event["reason_codes"]
+
+def test_opening_share_excerpt_requires_exact_compiler_binding(reconciliation, monkeypatch):
+    from value_investment_agent.infrastructure.filings import pdf_text
+
+    case = reconciliation
+    original = "半年报股本章节：股份总数100股；股份余额仍为100股。"
+    monkeypatch.setattr(pdf_text, "extract_pages", lambda path: [original])
+    excerpt = {**case["anchor"], "excerpt": "股份总数100股"}
+    case["analysis"]["consumed_opening_capital_excerpt"] = {
+        **excerpt, "period_end": case["ledger"]["valuation_date"],
+    }
+    case["ledger"].update(closing_shares=None, opening_pending_actions=None)
+    case["ledger"]["opening_shares"]["evidence"] = [excerpt]
+    result = reconcile(case)
+    assert result["opening_shares_semantics"] == "NATIVE_CONSUMED_FACT_MATCHED"
+    assert result["current_price_basis_compatible"] is False
+
+    case["ledger"]["opening_shares"]["evidence"] = [{**excerpt, "excerpt": "股份余额仍为100股"}]
+    with pytest.raises(ValueError, match="RECONCILIATION_EXCERPT_OR_ISSUER_MISMATCH"):
+        reconcile(case)

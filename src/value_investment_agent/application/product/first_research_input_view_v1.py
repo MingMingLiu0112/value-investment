@@ -144,6 +144,15 @@ def read_first_research_input(*,root,symbol,now:datetime):
             joint_capital_review=dict(economic_path=dict(currency=next(iter(package["facts"]["scenario_inputs"].values()))["currency"])),
             official_fact_anchors=[dict(field="ordinary_shares", source_id=share_fact["source_id"],
                 source_value=share_fact["value"], unit=share_fact["unit"], period_end=share_fact["period_end"])],
+            source_catalog=[dict(kind="official_issuer_filing",
+                issuer_identity=dict(security_code=symbol), local_path=share_source["path"],
+                sha256=share_source["sha256"], location=share_source["source_url"],
+                source_available_at=share_source["available_at"])],
+            consumed_opening_capital_excerpt=dict(
+                binding={key: share_source[key] for key in ("path", "sha256")},
+                source_url=share_source["source_url"], available_at=share_source["available_at"],
+                physical_page=share_fact["physical_page"], excerpt=share_fact["excerpt"],
+                period_end=share_fact["period_end"]),
             opening_capital_original=({key: share_source[key] for key in ("path", "sha256")}
                 if share_source.get("path") else None),
         )

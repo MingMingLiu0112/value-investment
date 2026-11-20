@@ -529,7 +529,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
                 key = (source["path"], source["sha256"], source["source_url"])
                 native_sources[key] = window["acquired_at"]
 
-    def anchors(rows, *, numbers=(), dates=()):
+    def anchors(rows, *, numbers=(), dates=(), consumed_issuer_verified=False):
         if not isinstance(rows, list) or not rows:
             raise ValueError("PUBLIC_ORIGINAL_EXCERPTS_REQUIRED")
         texts = []
@@ -557,8 +557,8 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
             if (type(page) is not int or not 1 <= page <= len(pages)
                     or not isinstance(excerpt, str) or not excerpt.strip()
                     or "".join(excerpt.split()) not in "".join(pages[page - 1].split())
-                    or not re.search(r"(?:证券|公司|股票)代码[:：]?" + analysis["symbol"],
-                                     "".join(pages[0].split()))):
+                    or (not consumed_issuer_verified and not re.search(
+                        r"(?:证券|公司|股票)代码[:：]?" + analysis["symbol"], "".join(pages[0].split())))):
                 raise ValueError("RECONCILIATION_EXCERPT_OR_ISSUER_MISMATCH")
             texts.append(excerpt)
             if binding not in evidence:
@@ -582,7 +582,17 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
             or opening_value != opening_value.to_integral_value()
             or opening_value != Decimal(analysis["consumed_operating_inputs"]["ordinary_shares"])):
         raise ValueError("OPENING_SHARES_DIFFER_FROM_CONSUMED_MODEL")
-    anchors(opening["evidence"], numbers=[opening_value], dates=[start])
+    consumed_excerpt = analysis.get("consumed_opening_capital_excerpt")
+    if consumed_excerpt is not None and consumed_excerpt["period_end"] == start.isoformat():
+        expected_excerpt = {key: value for key, value in consumed_excerpt.items() if key != "period_end"}
+    else:
+        expected_excerpt = None
+    # The cold compiler already verifies the period against the report headers.
+    # Only the exact consumed fact may use that period instead of a date printed
+    # in the share-count sentence itself.
+    exact_consumed_excerpt = expected_excerpt is not None and opening["evidence"] == [expected_excerpt]
+    anchors(opening["evidence"], numbers=[opening_value],
+            dates=[] if exact_consumed_excerpt else [start], consumed_issuer_verified=exact_consumed_excerpt)
     original_hashes = {s["sha256"] for s in analysis["source_bindings"]}
     capital_source_ids = {a["source_id"] for a in analysis.get("official_fact_anchors", [])
                           if a["field"] == "ordinary_shares"}
