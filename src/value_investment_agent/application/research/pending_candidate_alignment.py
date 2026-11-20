@@ -1157,6 +1157,20 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             limitations=["预案不代表已实施、已支付或模型已包含；所列股本仅对应原件日期。"],
                             action="no_order",
                         )
+                    elif allow_quarterly_report and event["title"].endswith("中期权益分派实施公告"):
+                        heading = re.sub(r"\s+", "", pages[0]) if pages else ""
+                        if "中期权益分派实施公告" not in heading:
+                            raise ValueError("INTERIM_IMPLEMENTATION_ORIGINAL_TITLE_MISMATCH")
+                        schedule = _cash_terms(pages, analysis["symbol"])
+                        terms = dict(
+                            event_type="REPORTED_INTERIM_DIVIDEND_IMPLEMENTATION_SCHEDULE",
+                            published_date=schedule["published_date"], effective_date=None,
+                            summary=f"中期分配实施公告列示每股派现{schedule['cash_per_share']}元。",
+                            implication="按公告核对登记、除息及约定发放日，并单独核验实际支付和入模口径。",
+                            terms=schedule, affected_model_fields=["shareholder_distributions"],
+                            limitations=["公告列示日程，不证明实际支付、模型已包含或比较日股本。"],
+                            action="no_order",
+                        )
                     elif allow_quarterly_report and (dividend_title := re.search(
                             r"(20[0-9]{2})年度分红派息实施公告$", event["title"])):
                         from ...infrastructure.filings.native_capital_observation_v1 import parse_native_capital_observation

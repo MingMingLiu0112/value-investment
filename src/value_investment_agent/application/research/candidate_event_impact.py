@@ -109,6 +109,12 @@ def build_candidate_event_impact(analysis, events):
                 rationale = parsed["summary"] + " 预案保留为反证与跟踪事件，不能按已支付分红扣除。"
                 missing = ["有权决议和权益分派实施公告", "除息、支付及实际分配额",
                            "该分配是否已进入同一候选年度现金路径"]
+            elif kind == "REPORTED_INTERIM_DIVIDEND_IMPLEMENTATION_SCHEDULE":
+                judgement = "INTERIM_DISTRIBUTION_PAYMENT_AND_MODEL_REVIEW_REQUIRED"
+                rationale = parsed["summary"] + " 实施日程已披露，仍须按实际支付确认现金影响。"
+                missing = ["实际支付的原件、期次及金额",
+                           "同一候选已消费的分配与现金口径",
+                           "登记日股本与报价日股本连续性"]
             elif kind == "REPORTED_BUYBACK_PROGRESS":
                 judgement = "BUYBACK_CASH_AND_SHARE_BASIS_REVIEW_REQUIRED"
                 rationale = "公告披露的是同一回购计划的累计股数和付款。只将同计划两个截止日的差额用于期间现金核对；实购股数不等于已注销股数。"

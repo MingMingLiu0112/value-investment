@@ -1644,3 +1644,55 @@ def test_dividend_adjustment_without_cancellation_is_not_a_share_action(reconcil
     assert result["covered_share_cancellations"] == []
     assert not any(code.startswith("COVERED_CANCELLATION") for code in result["reason_codes"])
     assert not result["current_price_basis_compatible"]
+
+
+@pytest.mark.parametrize("matches_original_title", [True, False])
+def test_interim_distribution_schedule_is_not_payment(reconciliation, monkeypatch, matches_original_title):
+    from value_investment_agent.infrastructure.filings import pdf_text
+
+    case = reconciliation
+    source = dict(case["anchor"]["binding"],
+                  source_url="https://static.cninfo.com.cn/finalpage/2020-01-02/123.PDF")
+    heading = "中期权益分派实施公告" if matches_original_title else "中期利润分配预案的公告"
+    monkeypatch.setattr(pdf_text, "extract_pages", lambda path: [heading])
+    monkeypatch.setattr(service, "_cash_terms", lambda pages, symbol: dict(
+        published_date="2020-01-02", cash_per_share="0.42", cash_payment_date="2020-01-08"))
+    window = dict(acquired_at="2020-01-03T00:00:00+08:00", announcements=[dict(
+        announcement_id="123", title="TEST_ONLY 中期权益分派实施公告",
+        published_at="2020-01-02T00:00:00+08:00", source_url=source["source_url"], evidence_refs=[source])])
+    row, = service._operating_events(case["analysis"], [window], case["now"],
+        lambda ref: _bound(case["root"], ref))
+
+    assert not row["materiality_approved"] and not row["model_inputs_changed"]
+    if matches_original_title:
+        event = row["facts"][0]["terms"]
+        assert event["event_type"] == "REPORTED_INTERIM_DIVIDEND_IMPLEMENTATION_SCHEDULE"
+        assert event["effective_date"] is None
+        assert event["terms"]["cash_payment_date"] == "2020-01-08"
+        assert event["action"] == "no_order"
+    else:
+        assert not row["facts"]
+
+
+def test_implementation_schedule_requires_actual_cash_review(reconciliation):
+    from value_investment_agent.application.research.candidate_event_impact import build_candidate_event_impact
+
+    analysis = reconciliation["analysis"]
+    candidate = analysis["review_binding"]["candidate_binding"]
+    analysis["joint_capital_review"]["economic_path"]["candidate_binding"] = candidate
+    event = dict(status="SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW",
+                 announcement_id="TEST_ONLY", title="TEST_ONLY", published_at="2020-01-02",
+                 source_url="https://static.cninfo.com.cn/finalpage/2020-01-02/123.PDF",
+                 candidate_binding=candidate, input_descriptor_sha256=analysis["input_descriptor_sha256"],
+                 facts=[dict(terms=dict(
+                     event_type="REPORTED_INTERIM_DIVIDEND_IMPLEMENTATION_SCHEDULE",
+                     summary="每股派现0.42元", effective_date=None,
+                     affected_model_fields=["shareholder_distributions"]),
+                     binding=reconciliation["anchor"]["binding"], source_url=reconciliation["anchor"]["source_url"],
+                     source_available_at=reconciliation["anchor"]["available_at"])])
+    result = build_candidate_event_impact(analysis, [event])
+    item, = result["items"]
+    assert item["status"] == "INTERIM_DISTRIBUTION_PAYMENT_AND_MODEL_REVIEW_REQUIRED"
+    assert "实际支付" in item["rationale"]
+    assert not result["materiality_approved"]
+    assert result["action"] == "no_order"
