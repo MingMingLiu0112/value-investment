@@ -1741,3 +1741,23 @@ def test_interim_dividend_resolution_never_confirms_payment(mutation):
         assert result["meeting_date"] == "2026-11-20"
         assert not result["payment_verified"] and not result["implementation_verified"]
         assert result["action"] == "no_order"
+
+
+def test_quarterly_unlock_confirmation_requires_completed_listing_in_report_period():
+    from value_investment_agent.application.research.pending_candidate_alignment import (
+        _reported_unlock_completions,
+    )
+
+    title = "关于股权激励解除限售股份上市流通的提示性公告"
+    text = (
+        f"2026 年 9 月 23 日，公司披露了《{title}》，"
+        "公司该计划限制性股票于 2026 年 9 月 28 日上市流通。"
+    )
+    assert list(_reported_unlock_completions(["非相关页", text], "2026-09-30")) == [{
+        "notice_date": "2026-09-23",
+        "listing_date": "2026-09-28",
+        "normalized_notice_title": title,
+        "physical_page": 2,
+    }]
+    assert not list(_reported_unlock_completions([text], "2026-09-27"))
+    assert not list(_reported_unlock_completions([text.replace("于 2026", "拟于 2026")], "2026-09-30"))

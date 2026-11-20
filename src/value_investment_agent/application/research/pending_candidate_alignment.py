@@ -1071,6 +1071,24 @@ def _explicit_quarterly_financial_update(pages, symbol, binding):
                 period_basis="YEAR_TO_DATE_9M_NOT_SINGLE_QUARTER", fields=fields)
 
 
+def _reported_unlock_completions(pages, period_end):
+    date_text = r"(20[0-9]{2})年([0-9]{1,2})月([0-9]{1,2})日"
+    pattern = re.compile(
+        date_text + r"，公司披露了《([^《》]{1,240}解除限售股份上市流通的提示性公告)》，"
+        r"公司[^。；]{1,240}限制性股票于" + date_text + r"上市流通。"
+    )
+    for physical_page, page in enumerate(pages, 1):
+        for match in pattern.finditer(re.sub(r"\s+", "", page)):
+            try:
+                notice_date = date(*map(int, match.group(1, 2, 3)))
+                listing_date = date(*map(int, match.group(5, 6, 7)))
+            except ValueError:
+                continue
+            if notice_date <= listing_date <= _day(period_end):
+                yield dict(notice_date=notice_date.isoformat(), listing_date=listing_date.isoformat(),
+                           normalized_notice_title=match[4], physical_page=physical_page)
+
+
 def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=None):
     """Read official originals into research facts, never grant materiality."""
     from ...infrastructure.filings.pdf_text import extract_pages
@@ -1083,6 +1101,7 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
     parser = parser or parse_operating_event_terms
     rows = []
     seen = {}
+    unlock_confirmations = []
     for window in windows:
         acquired = datetime.fromisoformat(window["acquired_at"])
         if acquired.utcoffset() is None or acquired > now:
@@ -1145,6 +1164,9 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                                 or _day(update["period_end"]) > published
                                 or quarter_title[1] != update["period_end"][:4]):
                             raise ValueError("QUARTERLY_ORIGINAL_NOT_VERIFIED_FOR_EVENT")
+                        for completion in _reported_unlock_completions(pages, update["period_end"]):
+                            unlock_confirmations.append(dict(completion, announcement_id=identity,
+                                binding=deepcopy(binding), source_available_at=window["acquired_at"]))
                         revenue = update["fields"]["revenue_cny"]["value"]
                         profit = update["fields"]["parent_profit_cny"]["value"]
                         terms = dict(event_type="REPORTED_QUARTERLY_FINANCIAL_UPDATE",
@@ -1304,6 +1326,18 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                 candidate_binding=deepcopy(analysis["review_binding"]["candidate_binding"]),
                 input_descriptor_sha256=analysis["input_descriptor_sha256"],
                 model_inputs_changed=False, materiality_approved=False, action="no_order"))
+    for row in rows:
+        for fact in row["facts"]:
+            terms = fact["terms"]
+            if terms.get("event_type") != "REPORTED_SHARE_UNLOCK_NOTICE":
+                continue
+            title = re.sub(r"\s+", "", row["title"])
+            matches = [item for item in unlock_confirmations
+                if item["notice_date"] == terms["published_date"]
+                and item["listing_date"] == terms["planned_implementation_date"]
+                and item["normalized_notice_title"] == title]
+            if len(matches) == 1:
+                terms["issuer_reported_listing_confirmation"] = matches[0]
     return rows
 
 
