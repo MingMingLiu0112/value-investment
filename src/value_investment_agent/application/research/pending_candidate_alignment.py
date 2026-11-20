@@ -1968,6 +1968,12 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
             except (OSError, ValueError, TypeError, KeyError, ArithmeticError) as error:
                 result["quote"].update(status="BLOCKED", reason_codes=["QUOTE_REPLAY_FAILED: " + str(error)])
         result["quote_date"] = result["quote"]["quote_date"]
+        closing_export = None
+        if config.get("szse_capital_export_binding") is not None and quote.quote_date is not None:
+            from ...infrastructure.filings.szse_capital_export import replay_szse_capital_export
+
+            closing_export = replay_szse_capital_export(binding=config["szse_capital_export_binding"],
+                symbol=analysis["symbol"], comparison_date=quote.quote_date, now=now, read=read)
         windows, scans, source_windows = [], [], []
         event_error = None
         try:
@@ -1994,6 +2000,11 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
                 review_binding=deepcopy(config.get("materiality_review_binding")), reason=str(error))
         checks, validity, bridge, ready = _assess(analysis, valuation, quote, result["quote"], windows, scans,
             reconciliation, materiality, materiality_route)
+        if closing_export is not None:
+            closing = (reconciliation or {}).get("calculated_closing_shares")
+            if closing is not None and _number(closing) != _number(closing_export["ordinary_a_shares"]):
+                raise ValueError("SZSE_CAPITAL_EXPORT_ROLLFORWARD_DISAGREEMENT")
+            checks[1]["details"]["szse_capital_export"] = closing_export
         if reconciliation_error:
             for index in (1, 2):
                 checks[index]["reason_codes"].append(reconciliation_error)

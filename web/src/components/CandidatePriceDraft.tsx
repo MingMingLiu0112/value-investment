@@ -425,6 +425,17 @@ export function CandidateAlignmentPanel({
             )[text(check.status)] || "状态待核"}
             <p>{text(check.explanation, "未提供检查说明。")}</p>
             <CheckReconciliation id={check.id} details={check.details} />
+            {check.id === "capital_structure" &&
+              object(check.details) &&
+              object(check.details.szse_capital_export) && (
+                <p>
+                  深交所精确 A 股股本{" "}
+                  {text(check.details.szse_capital_export.ordinary_a_shares)}{" "}
+                  股， 目录日期{" "}
+                  {text(check.details.szse_capital_export.comparison_date)}。
+                  日期来自配对目录元数据。整体对齐状态见本项检查。
+                </p>
+              )}
             {check.id === "distributions" && object(check.details) && (
               <OpeningActionChain value={check.details.opening_action_chain} />
             )}

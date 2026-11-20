@@ -630,6 +630,7 @@ jobs:
           tests/test_pending_cash_cross_page.py
           tests/test_first_research_update_view_v1.py
           tests/test_first_research_financial_update_v1.py
+          tests/test_szse_capital_export.py
           tests/test_first_input_quote_alignment_v1.py
           tests/test_first_input_delivery_v1.py
           tests/test_first_input_parent_cash_observation_v1.py
