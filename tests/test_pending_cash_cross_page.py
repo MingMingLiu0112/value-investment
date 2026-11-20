@@ -1,5 +1,6 @@
 """TEST_ONLY layout negatives plus opt-in immutable real original replay."""
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import os
@@ -7,7 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from value_investment_agent.application.research.pending_candidate_alignment import _cash_terms
+from value_investment_agent.application.research.pending_candidate_alignment import _cash_terms, _operating_events
+from value_investment_agent.application.research.value_research_analysis import _bound
 
 
 def pages():
@@ -76,3 +78,61 @@ def test_real_original_cross_page_replay():
     assert result["total_gross_cash"] == "5692824600.30"
     assert result["ex_date"] == result["cash_payment_date"] == "2026-06-05"
     assert path.read_bytes() == raw
+
+def test_numbered_interim_scheme_uses_the_same_reconciliation():
+    changed = [page.replace("(三)分配方案", "3.分配方案").replace(
+        "2025年年度权益分派实施公告", "2026年半年度权益分派实施公告") for page in pages()]
+    result = _cash_terms(changed, "600887")
+    assert result["eligible_distribution_shares"] == "100"
+    assert result["term_pages"]["scheme"] == [1]
+    assert result["cash_payment_status"] == "DECLARED_SCHEDULE_NOT_PROOF_OF_RECEIPT"
+    with pytest.raises(ValueError):
+        _cash_terms([changed[0].replace("90.00元", "91.00元"), changed[1]], "600887")
+
+
+def test_real_numbered_interim_distribution_original():
+    root = os.environ.get("VALUE_REAL_SOURCE_ROOT")
+    if not root:
+        pytest.skip("real original root explicitly required; not a real-data pass")
+    from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
+    path = Path(root) / "runtime/value-f2-replays/parent-q3-scope-20261120/600398-h1-distribution.pdf"
+    raw = path.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == "4d1439d79185c5d7e4daa0eca57b35d3bc4c856f6762da15750cc53f75aa08b8"
+    result = _cash_terms(extract_pages(path), "600398")
+    assert result["eligible_distribution_shares"] == "4802770296"
+    assert result["cash_per_share"] == "0.27"
+    assert result["total_gross_cash"] == "1296747979.92"
+    assert result["record_date"] == "2026-10-13"
+    assert result["ex_date"] == result["cash_payment_date"] == "2026-10-14"
+    assert result["term_pages"] == {"scheme": [1], "chronology": [1, 2]}
+    assert path.read_bytes() == raw
+    index_bytes = path.with_name("600398-distribution-index.json").read_bytes()
+    assert hashlib.sha256(index_bytes).hexdigest() == "41bdfd6bbbe524ef927fdb2a4a4ac687bf0ddddf783924cdc98429b40f6e8fa5"
+    notice, = [row for row in json.loads(index_bytes)["announcements"]
+               if row["announcementId"] == "1225595367" and row["secCode"] == "600398"]
+    source_url = "https://static.cninfo.com.cn/" + notice["adjunctUrl"]
+    published = datetime.fromtimestamp(notice["announcementTime"] / 1000, timezone(timedelta(hours=8)))
+    replay_bytes = path.with_name("600398-distribution-replay.json").read_bytes()
+    assert hashlib.sha256(replay_bytes).hexdigest() == "829aa70e298aad2c0c30d75d1abd71de2939e5a5cd0d2480559b40c9dd6a9435"
+    acquired = datetime.fromisoformat(json.loads(replay_bytes)["captured_at"])
+    ref = dict(path=path.relative_to(root).as_posix(), sha256=hashlib.sha256(raw).hexdigest(),
+               source_url=source_url)
+    window = dict(acquired_at=acquired.isoformat(), announcements=[dict(
+        announcement_id=notice["announcementId"], title=notice["announcementTitle"],
+        published_at=published.isoformat(), source_url=source_url, evidence_refs=[ref])])
+    analysis = dict(symbol="600398", input_descriptor_sha256="a" * 64,
+                    review_binding=dict(candidate_binding={"path": "TEST_ONLY", "sha256": "b" * 64}))
+    event, = _operating_events(analysis, [window], acquired,
+                               lambda binding: _bound(Path(root), binding))
+    assert event["status"] == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
+    assert not event["materiality_approved"] and not event["model_inputs_changed"]
+    fact, = event["facts"]
+    assert fact["terms"]["effective_date"] is None
+    assert fact["terms"]["terms"] == result
+    assert event["action"] == "no_order"
+
+    window["announcements"][0]["title"] = notice["announcementTitle"].replace("半年度", "中期")
+    mismatch, = _operating_events(analysis, [window], acquired,
+                                  lambda binding: _bound(Path(root), binding))
+    assert not mismatch["facts"]
+    assert mismatch["unresolved"][0]["reason"] == "INTERIM_IMPLEMENTATION_ORIGINAL_TITLE_MISMATCH"

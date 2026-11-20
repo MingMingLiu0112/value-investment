@@ -88,8 +88,9 @@ def _cash_terms(pages, symbol):
             or "权益分派实施公告" not in compact(pages[0]) or "差异化分红送转:否" not in text
             or any(word in cash_only_text for word in ("更正", "修订", "取消", "作废", "撤销", "送红股", "转增股本", "配股", "拆股", "合股", "股份转换"))):
         raise ValueError("UNSUPPORTED_CASH_IMPLEMENTATION_LAYOUT")
+    scheme_heading = r"(?:\(三\)|3\.)分配方案:"
     schemes = [(i, m[1]) for i, p in enumerate(pages, 1)
-               if (m := re.search(r"\(三\)分配方案:(.*?)三、相关日期", compact(p)))]
+               if (m := re.search(scheme_heading + r"(.*?)三、相关日期", compact(p)))]
     if not schemes:
         # Strip only a standalone physical page number equal to its own index.
         # Keep every other line and require both complete section boundaries.
@@ -102,8 +103,8 @@ def _cash_terms(pages, symbol):
             return "\n".join(lines)
         joined = "".join(compact(without_edge_page_number(p, i))
                          for i, p in enumerate(pages, 1))
-        spans = list(re.finditer(r"\(三\)分配方案:(.*?)三、相关日期", joined))
-        starts = [i for i, p in enumerate(pages, 1) if "(三)分配方案:" in compact(p)]
+        spans = list(re.finditer(scheme_heading + r"(.*?)三、相关日期", joined))
+        starts = [i for i, p in enumerate(pages, 1) if re.search(scheme_heading, compact(p))]
         if len(spans) == len(starts) == 1:
             schemes = [(starts[0], spans[0][1])]
     number = r"((?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)(?:\.[0-9]+)?)"
@@ -1174,9 +1175,9 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             limitations=["决议仅证明通过议案，不证明最终每股金额、实施或支付。"],
                             action="no_order",
                         )
-                    elif allow_quarterly_report and event["title"].endswith("中期权益分派实施公告"):
+                    elif allow_quarterly_report and (interim_title := re.search(r"(?:中期|半年度)权益分派实施公告$", event["title"])):
                         heading = re.sub(r"\s+", "", pages[0]) if pages else ""
-                        if "中期权益分派实施公告" not in heading:
+                        if interim_title[0] not in heading:
                             raise ValueError("INTERIM_IMPLEMENTATION_ORIGINAL_TITLE_MISMATCH")
                         schedule = _cash_terms(pages, analysis["symbol"])
                         terms = dict(
