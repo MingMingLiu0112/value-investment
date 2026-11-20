@@ -1606,3 +1606,26 @@ def test_covered_cash_notice_variants_require_lineage_resolution(reconciliation,
     ]
     assert "COVERED_CASH_IMPLEMENTATION_LINEAGE_UNRESOLVED: 123" in result["reason_codes"]
     assert not result["current_price_basis_compatible"]
+
+@pytest.mark.parametrize(("effective", "expects_mismatch"), [
+    ("2020-01-02", True), ("2020-01-01", False),
+])
+def test_covered_cancellation_cannot_be_omitted(reconciliation, monkeypatch, effective, expects_mismatch):
+    from value_investment_agent.infrastructure.filings import opening_action_terms
+
+    case = reconciliation
+    anchor = case["anchor"]
+    case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
+        announcements=[dict(announcement_id="123", title="TEST_ONLY完成回购注销公告",
+            published_at="2020-01-01T16:00:00+00:00",
+            evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
+    monkeypatch.setattr(opening_action_terms, "parse_opening_action_terms", lambda pages, symbol: dict(
+        terms=dict(confirmed_cancellation_date=effective), published_date="2020-01-02"))
+
+    result = reconcile(case)
+
+    assert ("COVERED_CANCELLATION_REQUIRES_UNIQUE_LEDGER_ROW: 123" in result["reason_codes"]
+            ) is expects_mismatch
+    assert result["current_price_basis_compatible"] is False
+    assert [row["status"] for row in result["covered_share_cancellations"]] == (
+        ["LEDGER_MISMATCH"] if expects_mismatch else [])

@@ -367,6 +367,54 @@ def _verify_period_buyback_cancellation(row, *, symbol, before, after, end, cach
                 confirmation_physical_pages=confirmation["term_pages"]["confirmed_cancellation"])
 
 
+def _covered_share_cancellations(announced, action_rows, *, symbol, start, end, read, cache):
+    """Match executed cancellations disclosed in the event window against the replayed ledger."""
+    from ...infrastructure.filings.pdf_text import extract_pages
+    from ...infrastructure.filings.official_pdf import validate_pdf_original
+    from ...quote_sessions import CHINA
+    from ...infrastructure.filings.opening_action_terms import parse_opening_action_terms
+
+    observed_cancellations, gaps = [], []
+    for identity, event in announced.items():
+        title = event.get("title", "")
+        cancellation_notice = "回购" in title and any(
+            term in title for term in ("注销完成", "完成回购注销", "调整回购股份注销后")
+        )
+        distribution_adjustment = all(term in title for term in ("调整", "利润分配方案", "每股分红金额"))
+        if not (cancellation_notice or distribution_adjustment):
+            continue
+        try:
+            source, = event["evidence_refs"]
+            original = read(dict(path=source["path"], sha256=source["sha256"]))
+            validate_pdf_original(original)
+            pages = cache.get(source["sha256"])
+            if pages is None:
+                pages = extract_pages(original)
+            parsed = parse_opening_action_terms(pages, symbol=symbol)
+            terms = parsed["terms"]
+            publication = datetime.fromisoformat(event["published_at"]).astimezone(CHINA).date()
+            effective = _day(terms["confirmed_cancellation_date"])
+            if _day(parsed["published_date"]) != publication or effective > publication:
+                raise ValueError("CANCELLATION_PUBLICATION_OR_EFFECTIVE_DATE_MISMATCH")
+        except (ValueError, KeyError):
+            gaps.append("COVERED_CANCELLATION_ORIGINAL_UNRESOLVED: " + identity)
+            observed_cancellations.append(dict(announcement_id=identity, status="ORIGINAL_UNRESOLVED"))
+            continue
+        if not start < effective <= end:
+            continue
+        binding = dict(path=source["path"], sha256=source["sha256"])
+        matches = [row["id"] for row in action_rows
+                   if row.get("native_cancellation", {}).get("status") == "NATIVE_BUYBACK_CANCELLATION_MATCHED"
+                   and row["effective_date"] == effective.isoformat()
+                   and row["native_cancellation"]["confirmation_binding"] == binding]
+        status = "MATCHED" if len(matches) == 1 else "LEDGER_MISMATCH"
+        if status != "MATCHED":
+            gaps.append("COVERED_CANCELLATION_REQUIRES_UNIQUE_LEDGER_ROW: " + identity)
+        observed_cancellations.append(dict(announcement_id=identity, status=status,
+            evidence_binding=binding, effective_date=effective.isoformat(), matched_ledger_ids=matches))
+    return observed_cancellations, gaps
+
+
 def _continuous_publication_window(windows, start, end):
     next_day = start.toordinal()
     intervals = sorted((_day(window["scan_from"]).toordinal(), _day(window["scan_to"]).toordinal())
@@ -780,6 +828,10 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         observed_cash.append(dict(announcement_id=identity, evidence_binding=deepcopy(source),
             status=status, terms=terms,
             matched_ledger_ids=[row["id"] for row in matches]))
+    observed_cancellations, cancellation_gaps = _covered_share_cancellations(
+        announced, action_rows, symbol=analysis["symbol"], start=start, end=end, read=read, cache=cache,
+    )
+    gaps.extend(cancellation_gaps)
     # Exact excerpts/number/date co-occurrence and researcher classifications
     # are not a sealed semantic consumer. No caller-provided review/NO_EFFECT or
     # empty pending list may establish effective-action coverage or price basis.
@@ -887,6 +939,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         native_basis_semantics_verified=same_basis,
         native_source_consumption=native_fields,
         covered_cash_implementations=observed_cash,
+        covered_share_cancellations=observed_cancellations,
         rounded_capital_observation=rounded_capital,
         closing_market_value_corroboration=market_value_capital,
         engineering_gap=None if same_basis else (

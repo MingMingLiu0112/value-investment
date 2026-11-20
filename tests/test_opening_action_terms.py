@@ -200,3 +200,44 @@ def test_real_vote_counts_percentages_and_majority_reconciled(originals):
     assert result["term_pages"]["eligible_votes"] == [1]
     assert not result["terms"]["scheme_determined"]
     assert not result["terms"]["cash_obligation_established"]
+
+
+def test_real_period_cancellation_requires_matching_ledger(originals):
+    from decimal import Decimal
+    from value_investment_agent.application.research import pending_candidate_alignment as alignment
+
+    root, observation, _ = originals
+    scan = json.loads((root / observation["scan_binding"]["path"]).read_bytes())
+    events = {r["announcement_id"]: r for r in scan["announcements"]
+              if r["announcement_id"] in {"1225333825", "1225347653"}}
+    assert set(events) == {"1225333825", "1225347653"}
+
+    def read(binding):
+        path = (root / binding["path"]).resolve(strict=True)
+        assert path.is_relative_to(root)
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == binding["sha256"]
+        return path
+
+    keys, evidence, cache = set(), [], {}
+    for event in events.values():
+        source, = event["evidence_refs"]
+        binding = dict(path=source["path"], sha256=source["sha256"])
+        keys.add((binding["path"], binding["sha256"], event["source_url"]))
+        evidence.append(dict(binding=binding, source_url=event["source_url"]))
+        cache[binding["sha256"]] = extract_pages(read(binding))
+    end = date(2026, 6, 3)
+    row = dict(id="HISTORICAL_TEST_ONLY", effective_date="2026-05-28", evidence=evidence)
+    row["native_cancellation"] = alignment._verify_period_buyback_cancellation(
+        row, symbol="600519", before=Decimal("1252270215"), after=Decimal("1250081601"),
+        end=end, cache=cache, window_sources=keys)
+    assert row["native_cancellation"]["status"] == "NATIVE_BUYBACK_CANCELLATION_MATCHED"
+
+    inputs = dict(symbol="600519", start=date(2026, 5, 27), end=end, read=read, cache=cache)
+    matched, gaps = alignment._covered_share_cancellations(events, [row], **inputs)
+    assert not gaps
+    assert matched[0]["status"] == "MATCHED"
+    omitted, gaps = alignment._covered_share_cancellations(events, [], **inputs)
+    assert gaps == ["COVERED_CANCELLATION_REQUIRES_UNIQUE_LEDGER_ROW: 1225347653"]
+    assert omitted[0]["effective_date"] == "2026-05-28"
+    assert alignment._covered_share_cancellations(events, [], **(
+        inputs | {"start": date(2026, 5, 28)})) == ([], [])
