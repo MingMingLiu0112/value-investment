@@ -1946,11 +1946,22 @@ def _assess(analysis, valuation, quote, quote_result, windows, scans, reconcilia
     consumed_hashes = {source["sha256"] for source in analysis["source_bindings"]}
     fact_source_ids = {anchor["source_id"] for anchor in analysis.get("official_fact_anchors", [])}
     matched, unresolved = [], []
+    reviewed_announcements = {}
     for scan in scans:
         for item in scan.announcements:
             row = dict(announcement_id=item.announcement_id, title=item.title,
                 published_at=item.published_at.isoformat(), source_url=item.source_url,
                 evidence_refs=list(item.evidence_refs))
+            # Overlapping verified windows may retain identical bytes at different paths.
+            fingerprint = (row["published_at"], row["title"], row["source_url"],
+                frozenset((ref["id"], ref["sha256"], ref["source_url"])
+                          for ref in row["evidence_refs"]))
+            identity = row["announcement_id"]
+            if identity in reviewed_announcements:
+                if reviewed_announcements[identity] != fingerprint:
+                    raise ValueError("CONFLICTING_FINANCIAL_EVENT_IDENTITY")
+                continue
+            reviewed_announcements[identity] = fingerprint
             if item.evidence_refs and all(source["sha256"] in consumed_hashes
                     and source.get("id") in fact_source_ids for source in item.evidence_refs):
                 matched.append(dict(row, status="EXACT_FACT_SOURCE_ALREADY_CONSUMED_NOT_EVENT_APPROVAL",

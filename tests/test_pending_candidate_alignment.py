@@ -827,6 +827,29 @@ def test_real_new_complete_window_does_not_grant_semantics_or_materiality(real_c
     assert len(rows) == observation["announcement_count"]
     assert all(r["source_url"].startswith("https://static.cninfo.com.cn/") for r in rows)
 
+    from dataclasses import replace
+
+    scan = scans[0]
+    first = scan.announcements[0]
+    moved = replace(first, evidence_refs=tuple(
+        {**ref, "path": "runtime/alternate-verified-copy.pdf"} for ref in first.evidence_refs
+    ))
+    quote_result = dict(status="QUALIFIED", reason_codes=[], explanation="TEST",
+                        bundle_binding=None, native_status="TEST")
+    valuation = ValuationResultCodec().from_payload(analysis["valuation"])
+    duplicate = replace(scan, announcements=(moved, *scan.announcements[1:]))
+    duplicate_checks, _, _, ready = service._assess(
+        analysis, valuation, quote, quote_result, windows * 2, [scan, duplicate], result)
+    assert not ready
+    assert duplicate_checks[4]["details"]["matched_input_sources"] == checks[4]["details"]["matched_input_sources"]
+    assert duplicate_checks[4]["details"]["unresolved_sources"] == checks[4]["details"]["unresolved_sources"]
+
+    conflict = replace(moved, title=moved.title + " TEST_ONLY conflict")
+    conflicting_scan = replace(duplicate, announcements=(conflict, *duplicate.announcements[1:]))
+    with pytest.raises(ValueError, match="CONFLICTING_FINANCIAL_EVENT_IDENTITY"):
+        service._assess(analysis, valuation, quote, quote_result,
+                        windows * 2, [scan, conflicting_scan], result)
+
 
 @pytest.mark.parametrize("old,new", [
     ("单位：元", "单位：万元"),
