@@ -1157,6 +1157,23 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             limitations=["预案不代表已实施、已支付或模型已包含；所列股本仅对应原件日期。"],
                             action="no_order",
                         )
+                    elif (allow_quarterly_report
+                          and event["title"].endswith(("临时股东会决议公告", "临时股东大会决议公告"))
+                          and "中期利润分配预案" in "".join("".join(pages).split())):
+                        from ...infrastructure.filings.interim_dividend_resolution import parse_interim_dividend_resolution
+
+                        resolution = parse_interim_dividend_resolution(
+                            pages, symbol=analysis["symbol"], published=published,
+                        )
+                        terms = dict(
+                            event_type="REPORTED_INTERIM_DIVIDEND_SHAREHOLDER_APPROVAL",
+                            published_date=published.isoformat(), effective_date=None,
+                            summary=f"股东会于{resolution['meeting_date']}通过中期利润分配预案。",
+                            implication="仍须跟踪登记、除息和约定发放原件，随后核对实际支付。",
+                            terms=resolution, affected_model_fields=["shareholder_distributions"],
+                            limitations=["决议仅证明通过议案，不证明最终每股金额、实施或支付。"],
+                            action="no_order",
+                        )
                     elif allow_quarterly_report and event["title"].endswith("中期权益分派实施公告"):
                         heading = re.sub(r"\s+", "", pages[0]) if pages else ""
                         if "中期权益分派实施公告" not in heading:

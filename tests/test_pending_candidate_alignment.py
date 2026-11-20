@@ -1696,3 +1696,34 @@ def test_implementation_schedule_requires_actual_cash_review(reconciliation):
     assert "实际支付" in item["rationale"]
     assert not result["materiality_approved"]
     assert result["action"] == "no_order"
+
+
+@pytest.mark.parametrize("mutation", [None, "issuer", "vote_count", "outcome", "agenda"])
+def test_interim_dividend_resolution_never_confirms_payment(mutation):
+    from value_investment_agent.infrastructure.filings.interim_dividend_resolution import (
+        parse_interim_dividend_resolution,
+    )
+    pages = [
+        "证券代码：600123\n2026年第二次临时股东会决议公告\n"
+        "股东会召开的时间：2026年11月20日\n"
+        "2、出席会议的股东所持有表决权的股份总数（股） 10,000\n3、其他信息",
+        "1、议案名称：《公司2026年中期利润分配预案》\n审议结果：通过\n"
+        "A 股 9,800 98.00 100 1.00 100 1.00\n"
+        "2、议案名称：《其他议案》\n审议结果：通过\n董事会\n2026年11月21日",
+    ]
+    if mutation:
+        old, new = {
+            "issuer": ("600123", "600124"),
+            "vote_count": ("9,800", "9,999"),
+            "outcome": ("结果：通过", "结果：未通过"),
+            "agenda": ("中期利润分配预案", "回购股份"),
+        }[mutation]
+        with pytest.raises(ValueError, match="INTERIM_DIVIDEND_RESOLUTION"):
+            parse_interim_dividend_resolution([p.replace(old, new, 1) for p in pages],
+                                              symbol="600123", published=date(2026, 11, 21))
+    else:
+        result = parse_interim_dividend_resolution(pages, symbol="600123", published=date(2026, 11, 21))
+        assert result["decision"] == "APPROVED"
+        assert result["meeting_date"] == "2026-11-20"
+        assert not result["payment_verified"] and not result["implementation_verified"]
+        assert result["action"] == "no_order"
