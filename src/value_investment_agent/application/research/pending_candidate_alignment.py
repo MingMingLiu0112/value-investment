@@ -487,7 +487,7 @@ def _market_value_share_corroboration(binding, *, symbol, comparison_date, now, 
                 exact_registry_count=False, continuity_verified=False, action="no_order")
 
 
-def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
+def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), *, closing_export=None):
     """Replay source-anchored public research arithmetic, never approve materiality.
 
     Unknown opening pending state/closing shares remain explicit gaps. Every
@@ -635,9 +635,14 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         raise ValueError("NONPOSITIVE_RECONCILED_SHARE_COUNT")
     closing, closing_value = ledger.get("closing_shares"), None
     gaps = []
-    if closing is None:
+    if closing_export is not None:
+        closing_value = _number(closing_export["ordinary_a_shares"])
+        if _day(closing_export["comparison_date"]) != end or closing_value != total:
+            raise ValueError("SZSE_CAPITAL_EXPORT_ROLLFORWARD_DISAGREEMENT")
+        evidence.append(deepcopy(closing_export["evidence_binding"]))
+    if closing is None and closing_export is None:
         gaps.append("CLOSING_SHARE_COUNT_UNVERIFIED")
-    else:
+    elif closing is not None:
         closing_value = _number(closing["value"])
         closing_date = _day(closing["as_of"])
         if closing_date != end or closing_value != total:
@@ -872,7 +877,10 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
     closing_capital = native_fields["closing_capital"]
     closing_status = closing_capital["status"]
     if closing_status == "EXACT_CLOSING_REPORT_ANCHOR_MISSING":
-        gaps.append("EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING")
+        if closing_export is None:
+            gaps.append("EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING")
+        else:
+            gaps.append("NATIVE_CLOSING_SHARES_OPENING_CONTINUITY_UNVERIFIED")
     elif closing_status == "EXACT_CLOSING_REPORT_ANCHORS_CONFLICT":
         gaps.append("EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHORS_CONFLICT")
     else:
@@ -970,6 +978,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=()):
         native_source_consumption=native_fields,
         covered_cash_implementations=observed_cash,
         covered_share_cancellations=observed_cancellations,
+        szse_exact_closing_capital_observation=deepcopy(closing_export),
         rounded_capital_observation=rounded_capital,
         closing_market_value_corroboration=market_value_capital,
         engineering_gap=None if same_basis else (
@@ -1998,7 +2007,7 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
         if config.get("reconciliation_binding") is not None:
             try:
                 reconciliation = _reconcile(root, analysis, config["reconciliation_binding"],
-                    quote.quote_date, windows, now, read, source_windows)
+                    quote.quote_date, windows, now, read, source_windows, closing_export=closing_export)
             except (OSError, ValueError, TypeError, KeyError, AttributeError, ArithmeticError) as error:
                 reconciliation_error = "RECONCILIATION_REPLAY_FAILED: " + str(error)
         materiality, materiality_route = None, None
@@ -2126,7 +2135,7 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
             if again != windows:
                 raise ValueError("EVENTS_CHANGED_DURING_ALIGNMENT")
         if reconciliation is not None:
-            again = _reconcile(root, analysis, config["reconciliation_binding"], quote.quote_date, windows, now, read, source_windows)
+            again = _reconcile(root, analysis, config["reconciliation_binding"], quote.quote_date, windows, now, read, source_windows, closing_export=closing_export)
             if again != reconciliation:
                 raise ValueError("RECONCILIATION_CHANGED_DURING_ALIGNMENT")
         if source_windows:

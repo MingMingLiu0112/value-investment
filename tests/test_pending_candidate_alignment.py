@@ -1813,3 +1813,29 @@ def test_opening_share_excerpt_requires_exact_compiler_binding(reconciliation, m
     case["ledger"]["opening_shares"]["evidence"] = [{**excerpt, "excerpt": "股份余额仍为100股"}]
     with pytest.raises(ValueError, match="RECONCILIATION_EXCERPT_OR_ISSUER_MISMATCH"):
         reconcile(case)
+
+@pytest.mark.parametrize("count", ["100", "101"])
+def test_exact_szse_end_count_requires_matching_rollforward(reconciliation, count):
+    case = reconciliation
+    case["ledger"].update(closing_shares=None)
+    ref = write(case["root"], "runtime/reconciliation.json", case["ledger"])
+    observation = dict(
+        ordinary_a_shares=count, comparison_date="2020-01-02", evidence_binding=ref,
+    )
+
+    def run():
+        return service._reconcile(
+            case["root"], case["analysis"], ref, date(2020, 1, 2),
+            case["windows"], case["now"], lambda binding: _bound(case["root"], binding),
+            closing_export=observation,
+        )
+
+    if count != "100":
+        with pytest.raises(ValueError, match="SZSE_CAPITAL_EXPORT_ROLLFORWARD_DISAGREEMENT"):
+            run()
+        return
+    result = run()
+    assert result["closing_shares"] == result["calculated_closing_shares"] == "100"
+    assert "CLOSING_SHARE_COUNT_UNVERIFIED" not in result["reason_codes"]
+    assert "NATIVE_CLOSING_SHARES_OPENING_CONTINUITY_UNVERIFIED" in result["reason_codes"]
+    assert result["current_price_basis_compatible"] is False
