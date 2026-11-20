@@ -74,6 +74,7 @@ def test_real_original_cross_page_replay():
     assert hashlib.sha256(raw).hexdigest() == "c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70"
     result = _cash_terms(extract_pages(path), "600887")
     assert result["eligible_distribution_shares"] == "6325360667"
+    assert result["referenced_approval_meeting_date"] == "2026-05-20"
     assert result["cash_per_share"] == "0.90"
     assert result["total_gross_cash"] == "5692824600.30"
     assert result["ex_date"] == result["cash_payment_date"] == "2026-06-05"
@@ -136,3 +137,11 @@ def test_real_numbered_interim_distribution_original():
                                   lambda binding: _bound(Path(root), binding))
     assert not mismatch["facts"]
     assert mismatch["unresolved"][0]["reason"] == "INTERIM_IMPLEMENTATION_ORIGINAL_TITLE_MISMATCH"
+
+@pytest.mark.parametrize("reference", ["2026年5月30日的2025年", "2026年5月20日的2024年"])
+def test_conflicting_annual_approval_reference_rejected(reference):
+    changed = pages()
+    changed[0] = changed[0].replace(
+        "(三)分配方案", f"本次利润分配方案经公司{reference}年度股东会审议通过。\n(三)分配方案")
+    with pytest.raises(ValueError, match="CASH_IMPLEMENTATION_ANNUAL_MEETING_CONFLICT"):
+        _cash_terms(changed, "600887")

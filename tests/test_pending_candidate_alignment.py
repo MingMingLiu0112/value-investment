@@ -1056,12 +1056,12 @@ def test_operating_event_available_local_day_is_not_rejected_by_utc_date(reconci
     assert rows[0]["status"] == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
 
 
-@pytest.mark.parametrize("kind", ["standard", "excluded", "unknown"])
+@pytest.mark.parametrize("kind", ["standard", "excluded", "unknown", "full_annual", "full_interim", "full_wrong_year"])
 def test_opening_chain_maps_only_supported_distribution_object_contracts(kind):
     analysis = dict(valuation_date="2020-06-30", consumed_operating_inputs=dict(ordinary_shares="100"),
         review_binding=dict(candidate_binding=dict(path="TEST_ONLY", sha256="a"*64)))
     terms = dict(currency="CNY", annual_cash_per_share="2", annual_total_cash_cny="200",
-        eligible_distribution_shares="100")
+        eligible_distribution_shares="100", annual_distribution_year="2019")
     rows=[dict(facts=[dict(binding=dict(path="TEST_ONLY",sha256="b"*64),
         terms=dict(published_date="2020-06-01",event_type="TEST_ONLY_ADJUSTMENT",terms=terms))])]
     native=dict(currency="CNY",cash_per_share="2",total_gross_cash="200",
@@ -1071,11 +1071,16 @@ def test_opening_chain_maps_only_supported_distribution_object_contracts(kind):
             event_kind="EXPLICIT_NONDIFFERENTIAL_CASH_ONLY_IMPLEMENTATION", total_shares="100")
     else:
         native.update(parser_version="sse-repurchase-excluded-gross-cash-scheme-v1" if kind=="excluded" else "UNKNOWN",
-            eligible_distribution_shares="100")
+            eligible_distribution_shares="100", annual_distribution_year="2019")
+    if kind.startswith("full_"):
+        native.update(parser_version="sse-full-share-cross-page-cash-scheme-v1",
+            distribution_period="中期" if kind == "full_interim" else "年度",
+            distribution_year="2018" if kind == "full_wrong_year" else "2019",
+            body_terms_reconciled=True)
     reconciliation=dict(distributions=[dict(id="TEST_ONLY_CASH",native_terms=native)])
     result=service._opening_chain_research(analysis,rows,reconciliation)
     assert result["distribution_links"][0]["status"] == (
-        "TERMS_NOT_MATCHED" if kind=="unknown" else "MATCHED_PREVALUATION_IMPLEMENTATION_TERMS")
+        "TERMS_NOT_MATCHED" if kind in {"unknown", "full_interim", "full_wrong_year"} else "MATCHED_PREVALUATION_IMPLEMENTATION_TERMS")
     assert not result["comparison_date_capital_proven"]
     native["total_gross_cash"]="201"
     changed=service._opening_chain_research(analysis,rows,reconciliation)

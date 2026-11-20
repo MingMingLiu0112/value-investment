@@ -148,10 +148,23 @@ def _cash_terms(pages, symbol):
     published = date(*map(int, publication.groups())).isoformat()
     if published > dates["record_date"]:
         raise ValueError("CASH_IMPLEMENTATION_PUBLICATION_AFTER_RECORD")
+    period_titles = re.findall(r"(20[0-9]{2})年(年度|中期|半年度)权益分派实施公告", compact(pages[0]))
+    period = dict(zip(("distribution_year", "distribution_period"), period_titles[0])) if len(period_titles) == 1 else {}
+    meetings = re.findall(
+        r"本次利润分配方案经公司(20[0-9]{2})年([0-9]{1,2})月([0-9]{1,2})日的"
+        r"(20[0-9]{2})年年度股东会审议通过。", text)
+    if meetings:
+        if len(meetings) != 1 or period.get("distribution_period") != "年度":
+            raise ValueError("CASH_IMPLEMENTATION_ANNUAL_MEETING_AMBIGUOUS")
+        meeting_year, meeting_month, meeting_day, fiscal_year = meetings[0]
+        meeting = date(int(meeting_year), int(meeting_month), int(meeting_day))
+        if fiscal_year != period["distribution_year"] or meeting.isoformat() > published:
+            raise ValueError("CASH_IMPLEMENTATION_ANNUAL_MEETING_CONFLICT")
+        period["referenced_approval_meeting_date"] = meeting.isoformat()
     return dict(parser_version=("sse-full-share-cross-page-cash-scheme-v1" if all_shares
                                else "sse-repurchase-excluded-gross-cash-scheme-v1"), symbol=symbol,
         cash_per_share=str(cash), eligible_distribution_shares=str(shares), total_gross_cash=str(total),
-        published_date=published, **dates, currency="CNY", body_terms_reconciled=True,
+        published_date=published, **dates, **period, currency="CNY", body_terms_reconciled=True,
         term_pages=dict(scheme=[schemes[0][0]], chronology=sorted({r["page"] for r in candidates})),
         amendment_chain_verified=False, cash_payment_status="DECLARED_SCHEDULE_NOT_PROOF_OF_RECEIPT",
         action="no_order")
@@ -1443,6 +1456,11 @@ def _opening_chain_research(analysis, rows, reconciliation):
                     if implementation is None:
                         continue
                     if implementation.get("parser_version") == "sse-repurchase-excluded-gross-cash-scheme-v1":
+                        eligible_shares = implementation["eligible_distribution_shares"]
+                    elif (implementation.get("parser_version") == "sse-full-share-cross-page-cash-scheme-v1"
+                            and implementation.get("distribution_period") == "年度"
+                            and implementation.get("distribution_year") == terms.get("annual_distribution_year")
+                            and implementation.get("body_terms_reconciled") is True):
                         eligible_shares = implementation["eligible_distribution_shares"]
                     elif (implementation.get("parser_version") == "sse-explicit-cash-implementation-body-v1"
                             and implementation.get("event_kind") == "EXPLICIT_NONDIFFERENTIAL_CASH_ONLY_IMPLEMENTATION"):
