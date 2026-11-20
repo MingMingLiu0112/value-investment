@@ -711,6 +711,41 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
             native_terms=parsed, field_semantics_reason=parse_error,
             **({"native_entitlement_only": entitlement} if entitlement is not None else {}),
             price_deduction_applied="0", model_inclusion=treatment if parsed and ex <= start and payment <= start else "NOT_NATIVE_VERIFIED"))
+    payable_observation = None
+    if exact_consumed_excerpt and any(row["ex_entitlement_in_period"] for row in cash_rows):
+        opening_binding = expected_excerpt["binding"]
+        opening_pages = cache[opening_binding["sha256"]]
+        headings = [i for i, page in enumerate(opening_pages) if re.search(
+            r"(?m)^\s*2、母公司资产负债表\s*\r?\n单位：元\s*\r?\n项目\s+期末余额\s+期初余额", page)]
+        if len(headings) == 1:
+            index = headings[0]
+            section = "\n".join(opening_pages[index:index + 4]).split("2、母公司资产负债表", 1)[1]
+            parent, separator, _ = section.partition("3、合并利润表")
+            payable = list(re.finditer(
+                r"(?m)^应付股利[ \t]+([0-9,]+\.[0-9]{2})(?:[ \t]+[0-9,]+\.[0-9]{2})?[ \t\r]*$", parent))
+            in_closing_column = False
+            if separator and len(payable) == 1:
+                from ...infrastructure.filings.first_research_fact_replay_v1 import _native_column
+
+                amount = payable[0][1]
+                active_pages = [i + 1 for i in range(index, min(index + 4, len(opening_pages)))
+                                if payable[0][0].strip() in opening_pages[i]]
+                if len(active_pages) == 1:
+                    try:
+                        in_closing_column = _native_column(
+                            read(opening_binding), active_pages[0], amount,
+                            {"header_page": index + 1, "labels": ["期末余额", "期初余额"]},
+                        ) == 0
+                    except ValueError:
+                        pass
+            if in_closing_column:
+                payable_observation = dict(
+                    status="FIRST_INPUT_OPENING_PARENT_DIVIDEND_PAYABLE_REQUIRES_SETTLEMENT_REVIEW",
+                    parent_dividend_payable_cny=amount.replace(",", ""), physical_page=active_pages[0],
+                    as_of=start.isoformat(), original_binding=deepcopy(opening_binding),
+                    cash_payment_proven=False, model_inclusion_verified=False,
+                    disallow_automatic_second_equity_deduction=True, action="no_order",
+                )
     unconsumed_period_cash = period_cash
     distribution_closures = analysis.get("consumed_implemented_distributions", [])
     if distribution_closures is not None:
@@ -969,6 +1004,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
         closing_shares=str(closing_value) if closing_value is not None else None,
         share_actions=action_rows, distributions=cash_rows, period_cash_per_share=str(period_cash),
         unconsumed_period_cash_per_share=str(unconsumed_period_cash),
+        opening_parent_dividend_payable=payable_observation,
         implemented_distribution_inclusion_complete=(
             period_cash > 0 and unconsumed_period_cash == 0
             and all(row["status"] == "MATCHED" for row in observed_cash)

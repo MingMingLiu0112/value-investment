@@ -1862,3 +1862,31 @@ def test_numbered_annual_distribution_resolution_checks_full_votes(yes, approved
     result = parse_annual_dividend_resolution(pages, symbol="000568", published=date(2026, 7, 1))
     assert result["yes_votes"] == 90
     assert result["decision"] == "APPROVED" and result["payment_verified"] is False
+
+@pytest.mark.parametrize("native_column", [0, 1])
+def test_opening_dividend_payable_requires_current_period_column(reconciliation, monkeypatch, native_column):
+    from value_investment_agent.infrastructure.filings import first_research_fact_replay_v1, pdf_text
+
+    case = reconciliation
+    anchor = case["anchor"]
+    opening_pages = [
+        anchor["excerpt"] + "\n2、母公司资产负债表\n单位：元\n项目 期末余额 期初余额",
+        "应付股利 123.45\n3、合并利润表",
+    ]
+    monkeypatch.setattr(pdf_text, "extract_pages", lambda path: opening_pages)
+    monkeypatch.setattr(first_research_fact_replay_v1, "_native_column",
+                        lambda *args: native_column)
+    case["analysis"]["consumed_opening_capital_excerpt"] = {
+        **anchor, "period_end": case["ledger"]["valuation_date"],
+    }
+    case["ledger"]["distributions"] = [cash(case, in_period=True)]
+    result = reconcile(case)
+    payable = result["opening_parent_dividend_payable"]
+    if native_column == 1:
+        assert payable is None
+    else:
+        assert payable["parent_dividend_payable_cny"] == "123.45"
+        assert payable["physical_page"] == 2
+        assert payable["disallow_automatic_second_equity_deduction"]
+        assert payable["cash_payment_proven"] is False
+    assert result["current_price_basis_compatible"] is False
