@@ -1041,7 +1041,13 @@ def test_operating_event_duplicate_id_conflict_is_not_silently_deduplicated(reco
         service._operating_events(case["analysis"], [window, other], case["now"], read)
 
 
-def test_operating_event_available_local_day_is_not_rejected_by_utc_date(reconciliation, monkeypatch):
+@pytest.mark.parametrize("stamp,accepted", [
+    ("2020-01-01T00:00:00+08:00", True),
+    ("2019-12-31T16:00:00+00:00", True),
+    ("2020-01-01T01:00:01+08:00", False),
+    ("2020-01-01T00:00:00", False),
+])
+def test_operating_event_requires_local_day_and_not_after_capture(reconciliation, monkeypatch, stamp, accepted):
     from value_investment_agent.infrastructure.filings import operating_event_terms
     case = reconciliation
     anchor = case["anchor"]
@@ -1049,11 +1055,14 @@ def test_operating_event_available_local_day_is_not_rejected_by_utc_date(reconci
         lambda pages, symbol: dict(published_date="2020-01-01", action="no_order"))
     window = dict(acquired_at="2019-12-31T17:00:00+00:00",
         announcements=[dict(announcement_id="123", title="TEST_ONLY",
-            published_at="2020-01-01T00:00:00+08:00", source_url=anchor["source_url"],
+            published_at=stamp, source_url=anchor["source_url"],
             evidence_refs=[dict(anchor["binding"], source_url=anchor["source_url"])])])
     rows=service._operating_events(case["analysis"], [window],
         datetime.fromisoformat("2019-12-31T18:00:00+00:00"), lambda ref: _bound(case["root"], ref))
-    assert rows[0]["status"] == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
+    if accepted:
+        assert rows[0]["status"] == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
+    else:
+        assert rows[0]["unresolved"][0]["reason"] == "OPERATING_EVENT_PUBLICATION_MISMATCH"
 
 
 @pytest.mark.parametrize("kind", ["standard", "excluded", "unknown", "full_annual", "full_interim", "full_wrong_year"])

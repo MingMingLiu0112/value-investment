@@ -1106,8 +1106,10 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             or url.path.rsplit("/", 1)[1].split(".")[0] != identity):
                         raise ValueError("OPERATING_EVENT_OFFICIAL_IDENTITY_MISMATCH")
                     published = _day(url.path.split("/")[2])
-                    if (published > now.astimezone(CHINA).date() or published > acquired.astimezone(CHINA).date()
-                            or published != datetime.fromisoformat(event["published_at"]).date()):
+                    event_time = datetime.fromisoformat(event["published_at"])
+                    if (event_time.utcoffset() is None or event_time > acquired
+                            or published > acquired.astimezone(CHINA).date()
+                            or event_time.astimezone(CHINA).date() != published):
                         raise ValueError("OPERATING_EVENT_PUBLICATION_MISMATCH")
                     original = read(binding)
                     # The bound read still verifies the file on every pass.
@@ -1997,12 +1999,14 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
         # A covered scan can start before the valuation date. Reuse the verified
         # distribution originals for opening research without treating the rest
         # of the scan as a certified opening-action inventory.
+        from ...quote_sessions import CHINA
+
         opening_cutoff = _day(analysis["valuation_date"])
         distribution_cutoff = quote.quote_date or opening_cutoff
         opening_windows = [*source_windows, *(
             dict(window, announcements=[
                 event for event in window["announcements"]
-                if datetime.fromisoformat(event["published_at"]).date() <= distribution_cutoff
+                if datetime.fromisoformat(event["published_at"]).astimezone(CHINA).date() <= distribution_cutoff
                 and event["title"].endswith((
                     "年度股东会决议公告", "年度股东大会决议公告", "权益分派实施公告",
                 ))
