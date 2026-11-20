@@ -1786,6 +1786,51 @@ def test_quarterly_unlock_confirmation_requires_completed_listing_in_report_peri
     assert not list(_reported_unlock_completions([text.replace("于 2026", "拟于 2026")], "2026-09-30"))
 
 
+@pytest.mark.parametrize("scenario", [
+    "confirmed", "notice_only", "before_confirmation", "at_opening", "nonzero",
+])
+def test_basis_followup_consumes_only_in_period_confirmed_zero_net_unlock(reconciliation, scenario):
+    case = reconciliation
+    analysis = dict(case["analysis"], valuation_date=(
+        "2026-09-28" if scenario == "at_opening" else "2026-06-30"))
+    comparison = date(2026, 10, 29) if scenario == "before_confirmation" else date(2026, 11, 20)
+    notice_binding = case["anchor"]["binding"]
+    confirmation = dict(
+        listing_date="2026-09-28", notice_date="2026-09-23", physical_page=12,
+        announcement_id="TEST_Q3", published_date="2026-10-30",
+        source_available_at="2026-11-20T20:00:00+08:00",
+        source_url="https://static.cninfo.com.cn/finalpage/2026-10-30/456.PDF",
+        binding=dict(path="runtime/q3.pdf", sha256="b" * 64),
+    )
+    terms = dict(event_type="REPORTED_SHARE_UNLOCK_NOTICE", effective_date=None,
+        share_unlock_observation=dict(net_share_change="-5" if scenario == "nonzero" else "0"))
+    if scenario != "notice_only":
+        terms["issuer_reported_listing_confirmation"] = confirmation
+    event = dict(announcement_id="TEST_NOTICE", title="解除限售股份上市流通的提示性公告",
+        published_at="2026-09-23T08:00:00+08:00", facts=[dict(binding=notice_binding,
+            source_url="https://static.cninfo.com.cn/finalpage/2026-09-23/123.PDF",
+            source_available_at="2026-11-20T20:00:00+08:00", terms=terms)])
+    result = service._basis_followup(analysis, None,
+        dict(outstanding_authorizations=[]), [], comparison, [event])
+
+    assert result["latest_capital_checkpoint"] is None
+    assert not result["complete_effective_action_coverage"]
+    assert not result["current_comparison_granted"]
+    assert not result["human_approval_granted"]
+    assert result["action"] == "no_order"
+    if scenario != "confirmed":
+        assert result["capital_event_classifications"] == []
+        return
+    classified, = result["capital_event_classifications"]
+    assert classified["classification"] == "ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK"
+    assert classified["effective_date"] == "2026-09-28"
+    assert classified["net_share_change"] == "0"
+    assert classified["source_binding"] == notice_binding
+    assert classified["issuer_reported_listing_confirmation"] == confirmation
+    assert not classified["window_completeness_granted"]
+    assert classified["action"] == "no_order"
+
+
 @pytest.mark.parametrize("complete", [True, False])
 def test_adjacent_full_windows_report_coverage_without_materiality_admission(reconciliation, complete):
     from types import SimpleNamespace

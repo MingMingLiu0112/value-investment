@@ -1221,7 +1221,8 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             raise ValueError("QUARTERLY_ORIGINAL_NOT_VERIFIED_FOR_EVENT")
                         for completion in _reported_unlock_completions(pages, update["period_end"]):
                             unlock_confirmations.append(dict(completion, announcement_id=identity,
-                                binding=deepcopy(binding), source_available_at=window["acquired_at"]))
+                                binding=deepcopy(binding), source_available_at=window["acquired_at"],
+                                published_date=published.isoformat(), source_url=source["source_url"]))
                         revenue = update["fields"]["revenue_cny"]["value"]
                         profit = update["fields"]["parent_profit_cny"]["value"]
                         terms = dict(event_type="REPORTED_QUARTERLY_FINANCIAL_UPDATE",
@@ -1750,6 +1751,25 @@ def _basis_followup(analysis, reconciliation, opening_chain, windows, comparison
         for fact in event.get("facts", []):
             terms = fact.get("terms") or {}
             event_type = terms.get("event_type")
+            if event_type == "REPORTED_SHARE_UNLOCK_NOTICE":
+                confirmation = terms.get("issuer_reported_listing_confirmation")
+                observation = terms["share_unlock_observation"]
+                if (confirmation and comparison_date is not None
+                        and observation["net_share_change"] == "0"
+                        and _day(analysis["valuation_date"]) < _day(confirmation["listing_date"]) <= comparison_date
+                        and _day(confirmation["published_date"]) <= comparison_date):
+                    capital_events.append(dict(
+                        announcement_id=event["announcement_id"], title=event["title"],
+                        published_at=event["published_at"], event_type=event_type,
+                        source_binding=deepcopy(fact["binding"]), source_url=fact["source_url"],
+                        source_available_at=fact["source_available_at"],
+                        effective_date=confirmation["listing_date"], net_share_change="0",
+                        notice_observation=deepcopy(observation),
+                        issuer_reported_listing_confirmation=deepcopy(confirmation),
+                        issued_share_effect="NO_ISSUED_SHARE_CHANGE_IN_THIS_EVENT",
+                        classification="ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK",
+                        window_completeness_granted=False, action="no_order"))
+                continue
             if event_type not in {
                     "REPORTED_BUYBACK_PROGRESS",
                     "PLAN_SECONDARY_MARKET_SHARE_PURCHASE_COMPLETED",
