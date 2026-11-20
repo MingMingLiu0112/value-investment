@@ -232,3 +232,42 @@ def test_source_arithmetic_ignores_and_preserves_caller_precision(case, annual):
             root=case["root"], receipt_binding=binding, evaluated_at=NOW)
         assert actual == expected
         assert context.prec == 2
+
+
+@pytest.mark.parametrize("invalid", [None, "issuer", "period", "scope", "unit"])
+def test_retained_direct_annual_layout_preserves_source_contract(case, monkeypatch, invalid):
+    from value_investment_agent.application.research import retained_parent_direct_observations as retained
+
+    issuer = "示例股份有限公司"
+    pages = case["pages"][:]
+    for page in (1, 2):
+        lines = pages[page].replace("2026年半年度", "2026年度").replace(
+            "2025年半年度", "2025年度").replace("1—6月", "1—12月").splitlines()
+        pages[page] = "\n".join([issuer + " 2026 年年度报告 93", "财务报告",
+            lines[2], "编制单位：" + issuer, lines[1], *lines[3:]])
+    if invalid:
+        substitutions = {
+            "issuer": ("编制单位：" + issuer, "编制单位：其他发行人"),
+            "period": ("1—12月", "1—6月"),
+            "scope": ("母公司利润表", "合并利润表"),
+            "unit": ("单位：元", "单位：万元"),
+        }
+        old, new = substitutions[invalid]
+        pages[1] = pages[1].replace(old, new)
+        assert old not in pages[1]
+    source = dict(path="runtime/original.pdf", sha256=sha256(case["pdf"].read_bytes()).hexdigest(),
+                  available_at="2027-04-30T00:00:00+00:00")
+    monkeypatch.setattr(retained, "load_retained_official_report", lambda **kwargs: dict(
+        source=source, fetched_at=source["available_at"], completed_at=source["available_at"]))
+    monkeypatch.setattr(retained, "extract_pages", lambda path: pages)
+    args = dict(root=case["root"], symbol="600123", issuer_name=issuer, period_end="2026-12-31",
+                receipt_binding=case["seal"](), income_page=2, cash_page=3, evaluated_at=NOW)
+    if invalid:
+        with pytest.raises(ValueError, match="PARENT_DIRECT_CASH_"):
+            retained.read_retained_parent_direct_observations(**args)
+    else:
+        first, prior = retained.read_retained_parent_direct_observations(**args)
+        assert (first["period_end"], first["cfo"], prior["period_end"], prior["revenue"]) == (
+            "2026-12-31", "30.00", "2025-12-31", "90.00")
+        assert first["source_refs"][0]["income_page"] == 2
+        assert first["classification"] == "FACT"
