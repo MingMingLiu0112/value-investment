@@ -145,3 +145,29 @@ def test_conflicting_annual_approval_reference_rejected(reference):
         "(三)分配方案", f"本次利润分配方案经公司{reference}年度股东会审议通过。\n(三)分配方案")
     with pytest.raises(ValueError, match="CASH_IMPLEMENTATION_ANNUAL_MEETING_CONFLICT"):
         _cash_terms(changed, "600887")
+
+def test_real_annual_distribution_vote_original():
+    root = os.environ.get("VALUE_REAL_SOURCE_ROOT")
+    if not root:
+        pytest.skip("real original root explicitly required; not a real-data pass")
+    path = Path(root) / "runtime/value-f2-replays/yili-2025-annual-approval/resolution.pdf"
+    raw = path.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    assert digest == "bda5690cbb6f81b591c7b731f9091d157071abed3054269000b8c690d68a8934"
+    source_url = "https://static.cninfo.com.cn/finalpage/2026-05-21/1225321219.PDF"
+    ref = dict(path=path.relative_to(root).as_posix(), sha256=digest, source_url=source_url)
+    cutoff = datetime.fromisoformat("2026-11-20T23:59:59+08:00")
+    analysis = dict(symbol="600887", input_descriptor_sha256="a" * 64,
+                    review_binding=dict(candidate_binding={"path": "TEST_ONLY", "sha256": "b" * 64}))
+    window = dict(acquired_at=cutoff.isoformat(), announcements=[dict(
+        announcement_id="1225321219", title="内蒙古伊利实业集团股份有限公司2025年年度股东会决议公告",
+        published_at="2026-05-21T00:00:00+08:00", source_url=source_url, evidence_refs=[ref])])
+    event, = _operating_events(analysis, [window], cutoff, lambda binding: _bound(Path(root), binding))
+    assert event["status"] == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
+    assert event["materiality_approved"] is False
+    fact, = event["facts"]
+    assert fact["terms"]["event_type"] == "REPORTED_ANNUAL_DIVIDEND_SHAREHOLDER_APPROVAL"
+    vote = fact["terms"]["terms"]
+    assert vote["fiscal_year"] == 2025 and vote["meeting_date"] == "2026-05-20"
+    assert vote["yes_votes"] == 2083610013
+    assert vote["implementation_verified"] is False and vote["payment_verified"] is False
