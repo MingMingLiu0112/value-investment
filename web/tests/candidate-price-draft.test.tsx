@@ -1087,3 +1087,30 @@ it("renders both financing amounts only for a verified conflict", () => {
     ),
   ).toBe("");
 });
+
+it("shows the trailing issuer listing confirmation with the comparison gate still blocked", () => {
+  const review = alignmentFixture();
+  review.conditional_price!.alignment!.checks![3].details = {
+    operating_event_research: [
+      {
+        title: "TEST_ONLY 限售解禁",
+        status: "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW",
+        facts: [
+          {
+            terms: {
+              event_type: "REPORTED_SHARE_UNLOCK_NOTICE",
+              issuer_reported_listing_confirmation: {
+                listing_date: "2026-09-28",
+              },
+            },
+          },
+        ],
+      },
+    ],
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("发行人后续报告确认上市流通");
+  expect(html).toContain("2026-09-28");
+  expect(html).toContain("比较日股本仍需独立核验");
+  expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
+});

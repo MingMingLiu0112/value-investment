@@ -1091,6 +1091,7 @@ function OperatingEventResearch({
             facts.length ? (
               facts.map((fact, i) => {
                 const terms = object(fact.terms) ? fact.terms : {};
+                const listing = terms.issuer_reported_listing_confirmation;
                 return (
                   <div key={i}>
                     <p>
@@ -1111,6 +1112,17 @@ function OperatingEventResearch({
                       )}
                       ；取得时间：{text(fact.source_available_at)}。
                     </p>
+                    {terms.event_type === "REPORTED_SHARE_UNLOCK_NOTICE" &&
+                      object(listing) && (
+                        <>
+                          <p>
+                            发行人后续报告确认上市流通：
+                            {text(listing.listing_date)}。
+                            比较日股本仍需独立核验。
+                          </p>
+                          <AlignmentEvidence value={[listing.binding]} />
+                        </>
+                      )}
                     <Reasons value={terms.affected_model_fields} />
                     <Reasons value={terms.limitations} />
                     <details>
