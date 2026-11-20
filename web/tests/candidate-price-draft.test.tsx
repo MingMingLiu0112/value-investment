@@ -6,6 +6,7 @@ const { renderToStaticMarkup } = require("react-dom/server");
 import {
   CandidatePriceDraft,
   FinancialFinancingConflicts,
+  ParentFinancingSchedule,
   candidatePriceMatches,
   candidateResearchComparisonMatches,
 } from "../src/components/CandidatePriceDraft";
@@ -1172,4 +1173,30 @@ it("shows the trailing issuer listing confirmation with the comparison gate stil
   expect(html).toContain("2026-09-28");
   expect(html).toContain("比较日股本仍需独立核验");
   expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
+});
+
+it("distinguishes reported parent financing and scheduled maturities", () => {
+  const value = {
+    schema_version: "parent-financing-schedule-v1",
+    action: "no_order",
+    actual_later_cash_verified: false,
+    period_end: "2026-09-30",
+    reported_ytd_cny: {
+      borrowings_received_cny: "150",
+      debt_repayments_paid_cny: "90",
+    },
+    later_issuance_proceeds_at_issue_price_cny: "98",
+    scheduled_face_principal_by_maturity_cny: { "2026-12-29": "100" },
+  };
+  const html = renderToStaticMarkup(<ParentFinancingSchedule value={value} />);
+  expect(html).toContain("2026-09-30");
+  expect(html).toContain("2026-12-29 合同到期本金");
+  expect(html).toContain("后续实际收付、剩余债务和续借条件待核验");
+  expect(
+    renderToStaticMarkup(
+      <ParentFinancingSchedule
+        value={{ ...value, actual_later_cash_verified: true }}
+      />,
+    ),
+  ).toBe("");
 });

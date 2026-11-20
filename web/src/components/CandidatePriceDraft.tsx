@@ -245,6 +245,59 @@ export function FinancialFinancingConflicts({ value }: { value: unknown }) {
   );
 }
 
+export function ParentFinancingSchedule({ value }: { value: unknown }) {
+  if (
+    !object(value) ||
+    value.schema_version !== "parent-financing-schedule-v1" ||
+    value.action !== "no_order" ||
+    value.actual_later_cash_verified !== false ||
+    !object(value.reported_ytd_cny) ||
+    !object(value.scheduled_face_principal_by_maturity_cny)
+  )
+    return null;
+
+  const cash = value.reported_ytd_cny;
+  const maturity = Object.entries(
+    value.scheduled_face_principal_by_maturity_cny,
+  );
+  const dateText = (date: unknown): date is string =>
+    typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const amountText = (amount: unknown): amount is string =>
+    typeof amount === "string" && /^\d+(?:\.\d+)?$/.test(amount);
+  if (
+    !dateText(value.period_end) ||
+    !amountText(cash.borrowings_received_cny) ||
+    !amountText(cash.debt_repayments_paid_cny) ||
+    !amountText(value.later_issuance_proceeds_at_issue_price_cny) ||
+    !maturity.every(([date, amount]) => dateText(date) && amountText(amount))
+  )
+    return null;
+
+  return (
+    <section aria-label="母公司融资时间表">
+      <p>
+        截至 {value.period_end}，借款收现{" "}
+        {formatMoney(cash.borrowings_received_cny)} 元， 偿债支出{" "}
+        {formatMoney(cash.debt_repayments_paid_cny)} 元。
+      </p>
+      <p>
+        此后披露发行按公告价格折算{" "}
+        {formatMoney(value.later_issuance_proceeds_at_issue_price_cny)} 元。
+      </p>
+      {maturity.length > 0 && (
+        <ul>
+          {maturity.map(([date, amount]) => (
+            <li key={date}>
+              {date} 合同到期本金 {formatMoney(String(amount))} 元
+            </li>
+          ))}
+        </ul>
+      )}
+      <p>后续实际收付、剩余债务和续借条件待核验。</p>
+    </section>
+  );
+}
+
 function AlignmentEvidence({ value }: { value: unknown }) {
   const rows = Array.isArray(value)
     ? value.filter(
@@ -458,6 +511,9 @@ export function CandidateAlignmentPanel({
               <>
                 <FinancialFinancingConflicts
                   value={check.details.recomputation_closure}
+                />
+                <ParentFinancingSchedule
+                  value={check.details.parent_financing_schedule}
                 />
                 <OperatingEventResearch
                   value={check.details.financial_update_research}
