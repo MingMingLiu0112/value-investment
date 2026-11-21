@@ -240,6 +240,9 @@ jobs:
           tests/test_parent_cash_task_v2.py
           tests/test_parent_cash_task_v3.py
           tests/test_parent_cash_history_routes.py
+          tests/test_parent_cash_task_share_anchor_v3.py
+          tests/test_parent_h1_opening_cash_v1.py
+          tests/test_direct_parent_half_year_cash_v1.py
           tests/test_direct_owner_cash_v1.py
           tests/test_direct_owner_cash_input_adapter_v1.py
           tests/test_direct_owner_cash_compilation_v1.py
