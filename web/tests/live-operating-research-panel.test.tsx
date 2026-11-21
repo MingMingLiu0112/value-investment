@@ -22,6 +22,7 @@ const calls = vi.hoisted(() => ({
   start: vi.fn(),
   history: vi.fn(),
   parentCashHistory: vi.fn(),
+  parentCashValuation: vi.fn(),
   refresh: vi.fn(),
   cancel: vi.fn(),
   resume: vi.fn(),
@@ -70,6 +71,7 @@ vi.mock("../src/services/api", async (importOriginal) => {
       operatingResearchTask: calls.refresh,
       operatingResearchTasks: calls.history,
       parentCashTaskHistory: calls.parentCashHistory,
+      parentCashTaskValuation: calls.parentCashValuation,
       cancelOperatingResearchTask: calls.cancel,
       resumeOperatingResearchTask: calls.resume,
     },
@@ -84,6 +86,7 @@ import {
   CurrentCapitalObservationView,
   FiscalDistributionReviewView,
   ParentCashTaskHistoryView,
+  ParentCashTaskValuationRead,
 } from "../src/components/LiveOperatingResearchPanel";
 
 function task(
@@ -1972,3 +1975,107 @@ it("labels transport-normalized research as economically unapproved", () => {
   expect(html).toContain("经济复核尚未通过");
   expect(html).toContain("不认可任何经营假设");
 });
+
+it("offers the valuation read only for a successful V3 history row", async () => {
+  const row = {
+    task_id: "ready",
+    task_contract: "parent-cash-task-v3",
+    status: "SUCCEEDED",
+    source_years: [],
+    completed_stages: [],
+    charges: [],
+  };
+  calls.parentCashHistory.mockResolvedValue({
+    symbol: "600519",
+    items: [
+      row,
+      { ...row, task_id: "failed", status: "FAILED" },
+      { ...row, task_id: "legacy", task_contract: "parent-cash-task-v2" },
+    ],
+  });
+  ParentCashTaskHistoryView({ symbol: "600519" });
+  await Promise.resolve();
+  hooks.cursor = 0;
+  const tree = ParentCashTaskHistoryView({ symbol: "600519" });
+  expect(
+    nodes(tree)
+      .filter((node) => node.type === ParentCashTaskValuationRead)
+      .map((node) => node.props.taskId),
+  ).toEqual(["ready"]);
+  expect(calls.parentCashValuation).not.toHaveBeenCalled();
+});
+
+const valuationScenario = {
+  per_share_value: "12.34567890123456789",
+  annual_years: 8,
+  terminal_method: "stationary",
+};
+const valuationReceipt = {
+  status: "VERIFIED_CONDITIONAL_VALUATION",
+  task_id: "ready",
+  symbol: "600519",
+  valuation_date: "2026-11-21",
+  scenarios: {
+    bear: valuationScenario,
+    base: valuationScenario,
+    bull: valuationScenario,
+  },
+  input_descriptor_sha256: "a".repeat(64),
+  receipt_sha256: "b".repeat(64),
+  action: "no_order",
+  formal_eligibility: false,
+  current_comparable: false,
+  condition_price: null,
+};
+function renderValuation() {
+  hooks.cursor = 0;
+  return ParentCashTaskValuationRead({ symbol: "600519", taskId: "ready" });
+}
+async function readValuation() {
+  await nodes(renderValuation())
+    .find((node) => node.props.children === "读取条件估值")
+    .props.onClick();
+}
+
+it("reads only on click and shows exact reported values and evidence", async () => {
+  calls.parentCashValuation.mockResolvedValue(valuationReceipt);
+  renderValuation();
+  expect(calls.parentCashValuation).not.toHaveBeenCalled();
+  await readValuation();
+  expect(calls.parentCashValuation).toHaveBeenCalledWith(
+    "ready",
+    "600519",
+    expect.any(AbortSignal),
+  );
+  const shown = JSON.stringify(renderValuation());
+  for (const field of [
+    "12.34567890123456789",
+    "2026-11-21",
+    "stationary",
+    valuationReceipt.receipt_sha256,
+    valuationReceipt.input_descriptor_sha256,
+    "不用于当前价格比较",
+  ])
+    expect(shown).toContain(field);
+});
+
+it.each([
+  [
+    new ApiError(404, "NOT_FOUND", null),
+    "研究执行已结束，但还没有封存条件估值回执",
+  ],
+  [new ApiError(422, "UNVERIFIED", null), "无法通过核验"],
+  [{ ...valuationReceipt, symbol: "000568" }, "响应无法核验"],
+  [{ ...valuationReceipt, current_comparable: true }, "响应无法核验"],
+])(
+  "suppresses amounts when the receipt cannot be read or trusted",
+  async (response, message) => {
+    if (response instanceof ApiError)
+      calls.parentCashValuation.mockRejectedValue(response);
+    else calls.parentCashValuation.mockResolvedValue(response);
+    await readValuation();
+    const shown = JSON.stringify(renderValuation());
+    expect(shown).toContain(message);
+    expect(shown).not.toContain(valuationScenario.per_share_value);
+  },
+);

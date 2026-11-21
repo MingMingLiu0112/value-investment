@@ -32,6 +32,25 @@ const example = (): CompanyProfile => ({
   invalidation_conditions: ["TEST_ONLY 收入结构改变"],
   blockers: ["HUMAN_APPROVAL_PENDING"],
 });
+it("explains known reopening codes and allows unrecognized evidence to wrap", () => {
+  const data = example();
+  data.invalidation_conditions = [
+    "BUSINESS_STRUCTURE_OR_CAPITAL_ALLOCATION_CHANGED",
+    "COUNTEREVIDENCE_OR_THESIS_BREAKER_TRIGGERED",
+    "TEST_ONLY_UNKNOWN_REOPENING_CODE",
+  ];
+  const html = renderToStaticMarkup(
+    <CompanyProfileView data={data} symbol="600519" />,
+  );
+  expect(html).toContain("业务结构或资本配置发生变化");
+  expect(html).toContain("出现关键反证或触发投资逻辑失效条件");
+  expect(html).not.toContain(
+    "BUSINESS_STRUCTURE_OR_CAPITAL_ALLOCATION_CHANGED",
+  );
+  expect(html).toContain(
+    'overflow-wrap:anywhere">TEST_ONLY_UNKNOWN_REOPENING_CODE',
+  );
+});
 it("explains actual route, dates, counter evidence and limits without a buy claim", () => {
   const html = renderToStaticMarkup(
     <CompanyProfileView data={example()} symbol="600519" />,

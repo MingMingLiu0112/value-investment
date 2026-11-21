@@ -19,7 +19,258 @@ import {
   type FiscalDistributionReview,
   type FiscalDistributionScenario,
   type ParentCashTaskHistory,
+  type ParentCashH1Sensitivity,
+  type ParentCashTaskValuation,
 } from "../services/api";
+
+const CASH_ALIGNMENT_REASONS: Record<string, string> = {
+  EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING: "这份估值尚未绑定专属核验资料。",
+  CURRENT_SHARE_COUNT_AND_EFFECTIVE_ACTION_CHAIN_NOT_RECONCILED:
+    "估值日至报价日的股本及已生效股本变动尚未完成对账。",
+  SOURCE_BOUND_RECONCILIATION_MISSING: "缺少逐项引用原件的对账记录。",
+  PERIOD_DISTRIBUTIONS_AND_MODEL_INCLUSION_NOT_RECONCILED:
+    "期间分配及其是否已计入估值尚未完成核对。",
+  EVENT_WINDOW_DOES_NOT_COVER_VALUATION_TO_QUOTE:
+    "公告核验未覆盖从估值日至报价日的完整区间。",
+  EXACT_CANDIDATE_MATERIALITY_REVIEW_NOT_BOUND:
+    "这份估值尚未绑定重大事件影响复核。",
+  FINANCIAL_UPDATES_NOT_RECONCILED_TO_EXACT_CANDIDATE:
+    "期间新增财务披露尚未与这份估值逐项核对。",
+};
+
+const CASH_VALUATION_SCENARIOS = [
+  ["bear", "压力"],
+  ["base", "基准"],
+  ["bull", "乐观"],
+] as const;
+
+function ParentCashH1SensitivityRead({
+  symbol,
+  taskId,
+}: {
+  symbol: string;
+  taskId: string;
+}) {
+  const [result, setResult] = useState<ParentCashH1Sensitivity>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+  const request = useRef<AbortController>();
+  useEffect(() => () => request.current?.abort(), []);
+
+  async function read() {
+    if (request.current) return;
+    const controller = new AbortController();
+    request.current = controller;
+    setLoading(true);
+    setError(undefined);
+    setResult(undefined);
+    try {
+      const data = await api.parentCashH1Sensitivity(
+        taskId,
+        symbol,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      if (
+        data?.status !== "RESEARCH_SENSITIVITY_NOT_ADOPTED" ||
+        data.symbol !== symbol ||
+        data.task_id !== taskId ||
+        !/^\d{4}-06-30$/.test(data.period_end) ||
+        data.action !== "no_order" ||
+        data.condition_price !== null ||
+        data.formal_eligibility !== false ||
+        !CASH_VALUATION_SCENARIOS.every(([key]) => {
+          const row = data.scenarios?.[key];
+          return row?.status === "SCENARIO_REJECTED"
+            ? typeof row.reason === "string" && row.reason.length > 0
+            : row?.status === "CONDITIONAL_SENSITIVITY_COMPUTED" &&
+                /^-?\d+(?:\.\d+)?$/.test(row.per_share_value);
+        })
+      )
+        throw new Error("Invalid H1 sensitivity");
+      setResult(data);
+    } catch (cause) {
+      if (!controller.signal.aborted) {
+        setError(
+          cause instanceof ApiError && cause.status === 404
+            ? "此任务尚未登记半年期重估。"
+            : "半年期重估结果无法读取或核验，请重试。",
+        );
+      }
+    } finally {
+      request.current = undefined;
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <Button onClick={read} loading={loading}>
+        读取半年期敏感性结果
+      </Button>
+      {error && <p role="status">{error}</p>}
+      {result && (
+        <section aria-label="未采纳的半年期敏感性">
+          <p>
+            估值基准 {result.period_end} ·
+            敏感性研究，未形成可采用的估值区间或条件价格。
+          </p>
+          <ul>
+            {CASH_VALUATION_SCENARIOS.map(([key, label]) => {
+              const row = result.scenarios[key];
+              if (row.status === "CONDITIONAL_SENSITIVITY_COMPUTED") {
+                return (
+                  <li key={key}>
+                    {label} · {row.per_share_value} 元/股
+                  </li>
+                );
+              }
+              const funding =
+                /^DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:(\d{4})$/.exec(
+                  row.reason,
+                );
+              return (
+                <li key={key}>
+                  {label} ·{" "}
+                  {funding
+                    ? `${funding[1]} 年资金不足，未出值`
+                    : `未出值（${row.reason}）`}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+export function ParentCashTaskValuationRead({
+  symbol,
+  taskId,
+}: {
+  symbol: string;
+  taskId: string;
+}) {
+  const request = useRef<AbortController>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+  const [valuation, setValuation] = useState<ParentCashTaskValuation>();
+
+  useEffect(() => () => request.current?.abort(), []);
+
+  async function readValuation() {
+    if (request.current) return;
+    const controller = new AbortController();
+    request.current = controller;
+    setLoading(true);
+    setError(undefined);
+    setValuation(undefined);
+    try {
+      const value = await api.parentCashTaskValuation(
+        taskId,
+        symbol,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      if (
+        value?.status !== "VERIFIED_CONDITIONAL_VALUATION" ||
+        value.task_id !== taskId ||
+        value.symbol !== symbol ||
+        value.action !== "no_order" ||
+        value.formal_eligibility !== false ||
+        value.current_comparable !== false ||
+        value.condition_price !== null ||
+        typeof value.valuation_date !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(value.valuation_date) ||
+        ![value.input_descriptor_sha256, value.receipt_sha256].every(
+          (hash) => typeof hash === "string" && /^[a-f0-9]{64}$/.test(hash),
+        ) ||
+        !CASH_VALUATION_SCENARIOS.every(([key]) => {
+          const row = value.scenarios?.[key];
+          return (
+            row &&
+            typeof row.per_share_value === "string" &&
+            /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(row.per_share_value) &&
+            Number.isSafeInteger(row.annual_years) &&
+            row.annual_years > 0 &&
+            typeof row.terminal_method === "string" &&
+            row.terminal_method.trim()
+          );
+        })
+      )
+        throw new Error("Invalid conditional valuation receipt");
+      setValuation(value);
+    } catch (cause) {
+      if (controller.signal.aborted) return;
+      const status = cause instanceof ApiError ? cause.status : undefined;
+      setError(
+        status === 404
+          ? "研究执行已结束，但还没有封存条件估值回执。请先查看该任务的研究结论与缺项；重新读取不会再次调用模型。"
+          : status === 422
+            ? "此任务的条件估值无法通过核验。"
+            : "条件估值暂不可读取或响应无法核验，请手动重试。",
+      );
+    } finally {
+      request.current = undefined;
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <Button onClick={readValuation} loading={loading}>
+        读取条件估值
+      </Button>
+      {error && <p role="status">{error}</p>}
+      {valuation && (
+        <section aria-label="已核验的条件估值">
+          <p>
+            估值日期 {valuation.valuation_date} ·
+            仅供条件研究，不用于当前价格比较、正式准入或下单。
+          </p>
+          <ul>
+            {CASH_VALUATION_SCENARIOS.map(([key, label]) => {
+              const row = valuation.scenarios[key];
+              return (
+                <li key={key}>
+                  {label} · {row.per_share_value} 元/股 · {row.annual_years} 年
+                  · 终值方法 {row.terminal_method}
+                </li>
+              );
+            })}
+          </ul>
+          {valuation.alignment_status === "BLOCKED" && (
+            <details open>
+              <summary>当期价格核验待补证</summary>
+              <ul>
+                {valuation.alignment_reason_codes?.map((reason) => (
+                  <li key={reason}>
+                    {CASH_ALIGNMENT_REASONS[reason] ?? reason}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          <ParentCashH1SensitivityRead
+            key={taskId + ":" + symbol}
+            symbol={symbol}
+            taskId={taskId}
+          />
+          <details>
+            <summary>核验证据 SHA-256</summary>
+            <p>
+              输入描述符 <code>{valuation.input_descriptor_sha256}</code>
+            </p>
+            <p>
+              回执 <code>{valuation.receipt_sha256}</code>
+            </p>
+          </details>
+        </section>
+      )}
+    </div>
+  );
+}
 
 export function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
   const [history, setHistory] = useState<ParentCashTaskHistory>();
@@ -63,6 +314,15 @@ export function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
           {item.completed_stages.join("、") || "无"}· 预留 ¥
           {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
           实际使用：未核实
+          {history.symbol === symbol &&
+            item.task_contract === "parent-cash-task-v3" &&
+            item.status === "SUCCEEDED" && (
+              <ParentCashTaskValuationRead
+                key={symbol}
+                symbol={symbol}
+                taskId={item.task_id}
+              />
+            )}
           <ul>
             {item.charges.map((charge, index) => (
               <li key={index}>
@@ -1980,6 +2240,50 @@ export function PublicOperatingResearchView({
     );
   return <LiveOperatingResearchDraft task={value} />;
 }
+function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [revision, setRevision] = useState(0);
+  const pending = useRef(false);
+
+  async function start() {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setMessage("");
+    try {
+      const task = await api.startCompanyParentCashTask(symbol);
+      if (task.action !== "no_order" || !/^rt-[a-f0-9]{32}$/.test(task.task_id))
+        throw new Error("Invalid task");
+      setMessage(
+        `任务 ${task.task_id} · ${task.status}。在下方刷新历史查看进度与估值。`,
+      );
+      setRevision((value) => value + 1);
+    } catch (cause) {
+      setMessage(
+        cause instanceof ApiError && cause.status === 409
+          ? "缺少已绑定的连续年度、母公司现金原件或公司估值输入包；未启动现金任务。"
+          : cause instanceof ApiError && [401, 403].includes(cause.status)
+            ? "请先解锁本机研究会话。"
+            : "现金任务未启动或响应无法核验，请查看研究输入状态。",
+      );
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <Button onClick={start} loading={busy}>
+        启动股东现金估值研究
+      </Button>
+      {message && <p role="status">{message}</p>}
+      <ParentCashTaskHistoryView key={revision} symbol={symbol} />
+    </>
+  );
+}
+
 type Operation =
   "status" | "start" | "history" | "refresh" | "cancel" | "resume" | "finalize";
 export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
@@ -2174,7 +2478,7 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
   const active = task?.status === "QUEUED" || task?.status === "RUNNING";
   return (
     <section aria-label="新Agent经营研究" style={{ marginBlock: 20 }}>
-      <ParentCashTaskHistoryView symbol={symbol} />
+      <CompanyParentCashLaunch key={symbol} symbol={symbol} />
       <h3>新Agent经营研究 · {symbol}</h3>
       <p>
         打开此区仅读取模型状态与已生成公开研究，不发起模型调用；点击启动才可能产生新调用费用。运行中每3秒读取一次真实任务状态，失败时暂停读取；刷新页面后点击读取已有任务即可恢复跟踪，不重复启动研究。研究结果仍需复核，不审批、不下单。

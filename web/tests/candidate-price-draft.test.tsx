@@ -5,6 +5,8 @@ import { expect, it } from "vitest";
 const { renderToStaticMarkup } = require("react-dom/server");
 import {
   CandidatePriceDraft,
+  FinancialFinancingConflicts,
+  ParentFinancingSchedule,
   candidatePriceMatches,
   candidateResearchComparisonMatches,
 } from "../src/components/CandidatePriceDraft";
@@ -423,6 +425,64 @@ it("explains partial source-bound share and distribution arithmetic without clai
   expect(html).toContain("100.00");
   expect(html).toContain("1354");
 });
+it("explains opening cash already net of the booked dividend without proving payment", () => {
+  const review = alignmentFixture();
+  const distributions = review.conditional_price!.alignment!.checks!.find(
+    (check) => check.id === "distributions",
+  )!;
+  distributions.details = {
+    reconciliation: {
+      ...reconciliationExample,
+      opening_parent_dividend_payable: {
+        conditional_opening_cash_match: {
+          scope: "CONDITIONAL_NET_CASH_MATCH_NOT_PAYMENT_PROOF",
+          action: "no_order",
+        },
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("这笔股利不应再扣一次；实际付款仍待核验。");
+});
+it("shows exact share evidence and rollforward conflict without enabling price comparison", () => {
+  const review = alignmentFixture();
+  const capital = review.conditional_price!.alignment!.checks!.find(
+    (check) => check.id === "capital_structure",
+  )!;
+  capital.details = {
+    reconciliation: {
+      ...reconciliationExample,
+      native_source_consumption: {
+        closing_capital: {
+          status: "EXACT_REPORT_DATE_SHARES_VERIFIED",
+          as_of: "2026-11-17",
+          anchors: [
+            {
+              evidence_binding: {
+                path: "TEST_ONLY/closing.pdf",
+                sha256: "a".repeat(64),
+              },
+            },
+          ],
+          rollforward_comparison: {
+            status: "CONFLICT",
+            observed_ordinary_shares: "1250081602",
+            calculated_ordinary_shares: "1250081601",
+          },
+        },
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  for (const term of [
+    "2026-11-17",
+    "与台账滚动值冲突",
+    "1250081602",
+    "1250081601",
+    "TEST_ONLY/closing.pdf",
+  ])
+    expect(html).toContain(term);
+});
 const actualReceipt = resolve(
   "..",
   ".tmp/value-alignment-acceptance/600519-api.json",
@@ -826,6 +886,105 @@ it("shows an explicit unproven interval without revoking interim authority", () 
   expect(html).toContain("不能把期初股数沿用为当前股数");
   expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
 });
+it("only renders confirmed zero-net unlocks from the F2 evidence", () => {
+  const review = alignmentFixture();
+  const confirmed = {
+    announcement_id: "confirmed",
+    classification: "ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK",
+    effective_date: "2026-09-28",
+    net_share_change: "0",
+    action: "no_order",
+    window_completeness_granted: false,
+    issuer_reported_listing_confirmation: {},
+  };
+  review.conditional_price!.alignment!.checks![2].details = {
+    basis_followup: {
+      schema_version: "candidate-basis-followup-v1",
+      action: "no_order",
+      current_comparison_granted: false,
+      capital_event_classifications: [
+        confirmed,
+        {
+          ...confirmed,
+          announcement_id: "nonzero",
+          effective_date: "2026-09-29",
+          net_share_change: "-1",
+        },
+        {
+          ...confirmed,
+          announcement_id: "pending",
+          effective_date: "2026-09-30",
+          issuer_reported_listing_confirmation: null,
+        },
+      ],
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("2026-09-28");
+  expect(html).toContain("已发行股数净变动 0 股");
+  expect(html).toContain("股本全期间连续性仍需核验");
+  expect(html).not.toContain("2026-09-29：发行人已确认");
+  expect(html).not.toContain("2026-09-30：发行人已确认");
+});
+it("shows every capital checkpoint with separate ordinary, issued, treasury, and proposal meanings", () => {
+  const review = alignmentFixture();
+  review.conditional_price!.alignment!.checks![2].details = {
+    basis_followup: {
+      schema_version: "candidate-basis-followup-v1",
+      action: "no_order",
+      current_comparison_granted: false,
+      buyback_checkpoint_deltas: [
+        {
+          after_date: "2026-10-22",
+          through: "2026-10-31",
+          purchase_share_delta: 1680400,
+          disclosed_cash_delta_cny: "49999397.00",
+          scope: "MATCHING_DISCLOSED_PLAN_WINDOW_RESEARCH_ONLY",
+          action: "no_order",
+        },
+      ],
+      capital_checkpoints: [
+        {
+          ordinary_shares: "6325360667",
+          classification: "DERIVED_FACT",
+          derivation: "年度普通股事实 + 半年报总数及结构未变声明",
+          as_of: "2026-06-30",
+          published_date: "2026-08-27",
+        },
+        {
+          ordinary_shares: null,
+          issued_shares: "6325360667",
+          share_scope: "TOTAL_ISSUED_SHARES",
+          treasury_shares: "1800200",
+          proposal_only: true,
+          proposed_cash_per_share_cny: "0.42",
+          classification: "FACT",
+          as_of: "2026-10-22",
+          published_date: "2026-10-30",
+        },
+      ],
+      latest_capital_checkpoint: {
+        ordinary_shares: null,
+        as_of: "2026-10-22",
+        published_date: "2026-10-30",
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("推导的普通股股数：6325360667 股");
+  expect(html).toContain("年度普通股事实 + 半年报总数及结构未变声明");
+  expect(html).toContain("普通股股数：未核实");
+  expect(html).toContain("预案所述总股本：6325360667 股");
+  expect(html).toContain("回购专户库存股：1800200 股");
+  expect(html).toContain("披露回购累计差额");
+  expect(html).toContain("1680400 股");
+  expect(html).toContain("49999397.00 元");
+  expect(html).toContain("预案不是实施或注销证明");
+  expect(html).toContain("每股拟派");
+  expect(html).toContain("未计入已实施分配");
+  expect(html).not.toContain("已核验普通股股数：未提供");
+  expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
+});
 it("shows consumed model fields and never turns event price change into profit forecast", () => {
   const review = alignmentFixture();
   review.conditional_price!.alignment!.checks![3].details = {
@@ -914,3 +1073,173 @@ it.each([
     expect(candidateResearchComparisonMatches(review)).toBe(false);
   },
 );
+
+it("shows single model-consumed distribution without granting period alignment", () => {
+  const review = alignmentFixture();
+  const alignment = review.conditional_price!.alignment!;
+  alignment.implemented_distribution_model_inclusion = {
+    status: "PASS",
+    reason_code: "IMPLEMENTED_DISTRIBUTION_INCLUDED_IN_MODEL",
+    action: "no_order",
+    paid_date: "2026-06-05",
+    per_share_cny: "0.90",
+    total_cny: "5692824600.30",
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("5692824600.30");
+  expect(html).toContain("全期间分配仍须单独核验");
+  alignment.candidate_binding = {
+    path: "TEST_ONLY/other",
+    sha256: "b".repeat(64),
+  };
+  expect(
+    renderToStaticMarkup(<CandidatePriceDraft review={review} />),
+  ).not.toContain("5692824600.30");
+});
+
+it("shows unsigned event review scope only for the current candidate", () => {
+  const review = alignmentFixture();
+  const alignment = review.conditional_price!.alignment!;
+  const check = alignment.checks!.find((row) => row.id === "material_events")!;
+  const route = {
+    status: "EXACT_MATERIALITY_REVIEW_NOT_BOUND",
+    unsigned_handoff: {
+      human_review_required: true,
+      action: "no_order",
+      announcement_count: 119,
+      scan_window: { scan_from: "2025-12-31", scan_to: "2026-11-18" },
+    },
+  };
+  check.details = { materiality_review_route: route };
+  const render = () =>
+    renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(render()).toContain("候选重大事件待复核");
+  expect(render()).toContain("2026-11-18");
+  route.status = "EXISTING_AUTHENTICATED_MATERIALITY_REPLAYED";
+  expect(render()).not.toContain("候选重大事件待复核");
+  route.status = "EXACT_MATERIALITY_REVIEW_NOT_BOUND";
+  alignment.input_descriptor_sha256 = "e".repeat(64);
+  expect(render()).not.toContain("候选重大事件待复核");
+});
+
+it("renders both financing amounts only for a verified conflict", () => {
+  const conflicts = [
+    {
+      scenario: "base",
+      field: "debt_repayment",
+      reported_ytd_cny: "202501881888.99",
+      modeled_full_year_cny: "60000000000",
+    },
+  ];
+  const closure = (status: string) => ({
+    consumed_closure: [{ financing_comparison: { status, conflicts } }],
+  });
+  const html = renderToStaticMarkup(
+    <FinancialFinancingConflicts value={closure("CONFLICT")} />,
+  );
+  expect(html).toContain("基准情景");
+  expect(html).toContain("偿债支出");
+  expect(html).toContain("202,501,881,888.99");
+  expect(html).toContain("60,000,000,000.00");
+  expect(
+    renderToStaticMarkup(
+      <FinancialFinancingConflicts value={closure("NOT_VERIFIED")} />,
+    ),
+  ).toBe("");
+});
+
+it("shows the trailing issuer listing confirmation with the comparison gate still blocked", () => {
+  const review = alignmentFixture();
+  review.conditional_price!.alignment!.checks![3].details = {
+    operating_event_research: [
+      {
+        title: "TEST_ONLY 限售解禁",
+        status: "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW",
+        facts: [
+          {
+            terms: {
+              event_type: "REPORTED_SHARE_UNLOCK_NOTICE",
+              issuer_reported_listing_confirmation: {
+                listing_date: "2026-09-28",
+              },
+            },
+          },
+        ],
+      },
+    ],
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("发行人后续报告确认上市流通");
+  expect(html).toContain("2026-09-28");
+  expect(html).toContain("比较日股本仍需独立核验");
+  expect(html).not.toContain("当前研究比较口径已核验，仍未批准");
+});
+
+it("distinguishes reported parent financing and scheduled maturities", () => {
+  const value = {
+    schema_version: "parent-financing-schedule-v1",
+    action: "no_order",
+    actual_later_cash_verified: false,
+    period_end: "2026-09-30",
+    reported_ytd_cny: {
+      borrowings_received_cny: "150",
+      debt_repayments_paid_cny: "90",
+    },
+    later_issuance_proceeds_at_issue_price_cny: "98",
+    scheduled_face_principal_by_maturity_cny: { "2026-12-29": "100" },
+  };
+  const html = renderToStaticMarkup(<ParentFinancingSchedule value={value} />);
+  expect(html).toContain("2026-09-30");
+  expect(html).toContain("2026-12-29 合同到期本金");
+  expect(html).toContain("后续实际收付、剩余债务和续借条件待核验");
+  expect(
+    renderToStaticMarkup(
+      <ParentFinancingSchedule
+        value={{ ...value, actual_later_cash_verified: true }}
+      />,
+    ),
+  ).toBe("");
+});
+it("shows verified publication coverage without conflating it with capital continuity", () => {
+  const review = alignmentFixture();
+  const capital = review.conditional_price!.alignment!.checks!.find(
+    (check) => check.id === "capital_structure",
+  )!;
+  capital.details = {
+    reconciliation: {
+      ...reconciliationExample,
+      cross_date_action_facts: {
+        schema_version: "cross-date-action-facts-v1",
+        valuation_date: "2026-06-30",
+        comparison_date: "2026-11-20",
+        publication_window_covered: true,
+        effective_action_continuity_proven: false,
+        row_proof_reconciliation: {
+          status: "UNRESOLVED",
+          matched_rows: [{ cash_payment_proven: false }],
+          unmatched_ledger_ids: ["share-action-2"],
+          unmatched_native_proofs: [{ announcement_id: "duplicate" }],
+          duplicate_native_proofs: [{ announcement_id: "duplicate" }],
+        },
+        announcements: [
+          {
+            announcement_id: "example",
+            published_at: "2026-08-20T00:00:00+08:00",
+            title: "分红派息实施公告",
+            status: "SCHEDULE_TERMS_ONLY",
+          },
+        ],
+      },
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("跨日公告逐项核验");
+  expect(html).toContain("披露窗口已覆盖");
+  expect(html).toContain("股本行动连续性和期间变化的估值重算仍待核验");
+  expect(html).toMatch(/账本与原件双向核对：已匹配 .*1/);
+  expect(html).toContain("未匹配账本 1 项");
+  expect(html).toContain("未匹配原件 1 项");
+  expect(html).toContain("重复引用 1 条");
+  expect(html).toContain("分派安排已匹配，实际到账仍待核验。");
+  expect(html).toContain("已核对分派安排，实际支付待核");
+});

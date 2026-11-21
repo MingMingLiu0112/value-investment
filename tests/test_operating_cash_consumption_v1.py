@@ -181,15 +181,41 @@ def no_io_effects():
         yield
 
 
-def test_application_rejects_context_recomputation_diff(case,monkeypatch):
-    context,bridge=case
-    context["snapshot_fingerprint"]="a"*64
-    monkeypatch.setattr(app,"build_operating_source_context",lambda **kw:context)
-    task=dict(status="SUCCEEDED",scope="LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED",
-              symbol="000001",research_as_of="2026-10-31T00:00:00+00:00",
-              source_binding={},context_fingerprint="b"*64,operating_driver_bridge=bridge)
-    with no_io_effects(),pytest.raises(ValueError,match="OPERATING_CONTEXT_CHANGED"):
-        app.read_operating_cash_consumption(root=Path("."),task=task,now=datetime.now(timezone.utc))
+@pytest.mark.parametrize("field, expected", [
+    ("record_binding", "OPERATING_TASK_STATE_MISMATCH"),
+    ("context_fingerprint", "OPERATING_TASK_INPUT_OR_OUTPUT_MISMATCH"),
+    ("source_binding", "OPERATING_TASK_INPUT_OR_OUTPUT_MISMATCH"),
+    ("operating_driver_bridge", "OPERATING_TASK_INPUT_OR_OUTPUT_MISMATCH"),
+    ("research_draft", "OPERATING_TASK_INPUT_OR_OUTPUT_MISMATCH"),
+    ("replayed_context", "OPERATING_CONTEXT_CHANGED"),
+    ("saved_output", "OPERATING_TASK_COLD_REPLAY_FAILED"),
+])
+def test_application_rejects_mismatch_with_cold_store(monkeypatch, field, expected):
+    from types import SimpleNamespace
+
+    stamp = "2026-10-31T00:00:00+00:00"
+    pin = dict(path="TEST_ONLY", sha256="a" * 64)
+    fresh = dict(status="SUCCEEDED", scope="LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED",
+                 task_id="TEST_ONLY", record_binding=pin, symbol="000001", research_as_of=stamp,
+                 source_binding=pin, context_fingerprint="verified",
+                 operating_driver_bridge={}, research_draft={})
+    task = deepcopy(fresh)
+    context = dict(snapshot_fingerprint="verified")
+    if field == "replayed_context":
+        context["snapshot_fingerprint"] = "changed"
+    elif field == "saved_output":
+        fresh.update(status="FAILED", error_code="LIVE_CHECKPOINT_INVALID")
+    else:
+        task[field] = "changed"
+    spec = dict(mode="LIVE_OPERATING", created_at=stamp)
+    state = dict(status="SUCCEEDED", updated_at=stamp)
+    service = SimpleNamespace(
+        _load=lambda task_id, *, recover: (spec, state, pin),
+        _view=lambda *args: fresh, _context=lambda _: context,
+    )
+    monkeypatch.setattr(app, "LiveOperatingTaskService", lambda root: service)
+    with no_io_effects(), pytest.raises(ValueError, match=expected):
+        app.read_operating_cash_consumption(root=Path("."), task=task, now=datetime.now(timezone.utc))
 
 
 def test_issuer_specific_readiness_refuses_600323_cash_followup_without_parent_cash_or_policy(tmp_path, case, monkeypatch):
@@ -201,7 +227,7 @@ def test_issuer_specific_readiness_refuses_600323_cash_followup_without_parent_c
     (tmp_path/"config").mkdir()
     (tmp_path/"config/current-operating-research-sources-v1.json").write_text(
         '{"schema_version":"current-operating-research-sources-v1","action":"no_order","cases":{}}', encoding="utf-8")
-    monkeypatch.setattr(app,"build_operating_source_context",lambda **kwargs:context)
+    monkeypatch.setattr(app,"_cold_task_context",lambda **kwargs:context)
     task=dict(status="SUCCEEDED",scope="LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED",symbol="600323",
               task_id="TEST_ONLY-600323",research_as_of="2026-10-31T00:00:00+00:00",
               source_binding=context["source_binding"],context_fingerprint=context["snapshot_fingerprint"],
@@ -229,7 +255,7 @@ def test_issuer_readiness_preserves_missing_tax_fact_instead_of_raising(tmp_path
     (tmp_path/"config").mkdir()
     (tmp_path/"config/current-operating-research-sources-v1.json").write_text(
         '{"schema_version":"current-operating-research-sources-v1","action":"no_order","cases":{}}', encoding="utf-8")
-    monkeypatch.setattr(app,"build_operating_source_context",lambda **kwargs:context)
+    monkeypatch.setattr(app,"_cold_task_context",lambda **kwargs:context)
     monkeypatch.setattr(app,"consume_operating_earnings",lambda **kwargs:(_ for _ in ()).throw(
         ValueError("UNIQUE_REPORTED_FACT_REQUIRED:tax:2025-12-31")))
     task=dict(status="SUCCEEDED",scope="LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED",symbol="600323",

@@ -30,6 +30,29 @@ def test_publication_registry_checks_snapshot_not_git_cleanliness(tmp_path):
     assert result["checked_count"] == 4
 
 
+def test_registry_identity_does_not_hide_failed_source_validation(tmp_path):
+    import hashlib
+    paths = dict(quote_bridge_pointer="config/current-quote-bridge.json",
+        research_registry="config/current-company-research-registry.json",
+        current_price_conditions="config/current-price-conditions.json",
+        hotspot_structure_rule="config/hotspot-confirmed-structure-v1.json")
+    (tmp_path / "config").mkdir()
+    packet = dict(packet_status="CURRENT", source_bindings_verified=False,
+                  blockers=["CURRENT_PRICE_CASE_UNAVAILABLE:300750"], identity_inputs={})
+    for role, relative in paths.items():
+        raw = b'{"action":"no_order"}'
+        (tmp_path / relative).write_bytes(raw)
+        packet["identity_inputs"][role] = dict(path=relative,
+            observed_sha256=hashlib.sha256(raw).hexdigest())
+    result = identity.publication_registry_status(tmp_path, packet)
+    assert result["status"] == "MATCHED"
+    assert result["checked_count"] == 4
+    assert result["source_validation"]["status"] == "NOT_VERIFIED"
+    assert result["source_validation"]["blockers"] == packet["blockers"]
+    (tmp_path / paths["quote_bridge_pointer"]).write_bytes(b'{}')
+    assert identity.publication_registry_status(tmp_path, packet)["status"] == "MISMATCH"
+
+
 def test_publication_registry_rejects_missing_and_arbitrary_paths(tmp_path):
     assert identity.publication_registry_status(tmp_path, None)["status"] == "UNAVAILABLE"
     packet = dict(packet_status="CURRENT", source_bindings_verified=True,
@@ -99,6 +122,20 @@ def test_runtime_identity_endpoint_is_public_but_never_a_trade_gate(tmp_path):
     assert payload["action"] == "no_order"
     assert payload["publication"]["status"] == "UNAVAILABLE"
     assert payload["status"] == "MISMATCH"
+
+
+def test_endpoint_keeps_source_failure_even_with_matching_registry(tmp_path, monkeypatch):
+    import importlib
+    app_module = importlib.import_module("value_investment_agent.presentation.web_api.app")
+    monkeypatch.setattr(app_module, "publication_registry_status", lambda *args: {
+        "status": "MATCHED", "checked_count": 4, "mismatched_roles": [],
+        "source_validation": {"status": "NOT_VERIFIED", "blockers": ["STALE_SOURCE"]}})
+    payload = TestClient(create_app(root=tmp_path)).get("/api/v1/runtime-identity").json()
+    assert payload["status"] == "MISMATCH"
+    assert "PUBLICATION_SOURCE_VALIDATION_NOT_VERIFIED" in payload["reasons"]
+    assert payload["publication"]["reason"] == "SNAPSHOT_POINTER_MISSING"
+    assert payload["publication_registry"]["source_validation"]["blockers"] == ["STALE_SOURCE"]
+    assert payload["action"] == "no_order"
 
 def test_data_pointer_change_keeps_code_identity_matched(tmp_path, monkeypatch):
     module = tmp_path / "backend.py"

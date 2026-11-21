@@ -100,9 +100,9 @@ def test_unrelated_verified_e1_chain_is_historical_not_current(registered, monke
     from value_investment_agent.presentation.web_api import first_research_input_routes as routes
     calls = []
 
-    def update(*, predecessor_binding=None, **_):
-        calls.append(predecessor_binding)
-        if predecessor_binding is not None:
+    def update(*, displayed_binding=None, **_):
+        calls.append(displayed_binding)
+        if displayed_binding is not None:
             return {"status": "UNASSESSABLE",
                     "reason": "E1 predecessor differs from the currently displayed first input"}
         return {"status": "SOURCE_BOUND_CONDITIONAL_SUCCESSOR", "symbol": "600887",

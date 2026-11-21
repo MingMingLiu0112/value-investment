@@ -2247,6 +2247,8 @@ export interface RuntimeIdentity {
   action: "no_order";
   checked_at: string;
   status: "MATCHED" | "MISMATCH";
+  code_status?: "MATCHED" | "MISMATCH";
+  config_status?: "MATCHED" | "DIRTY" | "UNVERIFIED";
   reasons: string[];
   current_source_head: string | null;
   source_worktree_dirty: boolean | null;
@@ -2263,9 +2265,15 @@ export interface RuntimeIdentity {
     status: "MATCHED" | "MISMATCH" | "UNAVAILABLE";
     checked_count: number;
     mismatched_roles: string[];
+    source_validation?: {
+      status: "VERIFIED" | "NOT_VERIFIED";
+      blockers: string[];
+      scope: string;
+    };
   };
   publication: {
     status: string;
+    reason?: string | null;
     publication_id: string | null;
     packet_sha256: string | null;
     published_at: string | null;

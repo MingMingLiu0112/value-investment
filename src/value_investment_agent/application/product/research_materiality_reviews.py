@@ -11,7 +11,7 @@ from ...m1_valuation_package_builder import build_descriptor, build_validity
 from ...research_input import build_research_run_spec, finalize_input_descriptor
 from ...research_run_contract import canonical_contract_payload
 from ...infrastructure.evidence.trust_root_registry import require_pinned_trust_root
-from .common import require_inside, sha256_file, sha256_bytes
+from .common import require_inside, sha256_file, sha256_bytes, write_new_json
 from .research_reviews import (
     _append_review_json, _strict_review_json, _review_time,
     build_research_review_model_context,
@@ -20,6 +20,8 @@ from .research_reviews import (
 MATERIALITY_RESPONSE_PURPOSE = b'value-investment/materiality-research-response/v1\x00'
 # No legacy materiality transport packet is admitted without reviewed exact bytes.
 _PINNED_LEGACY_MATERIALITY_PACKET_SHA256 = frozenset()
+DIRECT_ENVELOPE_V1 = 'direct-owner-cash-materiality-envelope-v1'
+OWNER_DISTRIBUTION_ENVELOPE_V1 = 'parent-owner-distribution-materiality-envelope-v1'
 
 
 def _binding(root, path, digest=None):
@@ -40,32 +42,179 @@ def _context_key(context):
     return sha256_bytes(canonical_contract_payload(context).encode('utf-8'))
 
 
-def build_materiality_review_descriptor(*, root, package_binding, scan_binding):
+def _direct_review_original(*, root, envelope, now=None):
+    """Require a separately derived review envelope and a cold-replayed original."""
+    replayed_at = now or datetime.now(timezone.utc)
+    schema = envelope.get('schema_version') if isinstance(envelope, dict) else None
+    expected = ({'schema_version', 'action', 'package_binding', 'receipt_binding',
+                 'result_binding', 'model_validity_input'} if schema == DIRECT_ENVELOPE_V1 else
+                {'schema_version', 'action', 'receipt_binding', 'spec_binding',
+                 'result_binding', 'input_descriptor_sha256', 'model_validity_input'})
+    if (schema not in {DIRECT_ENVELOPE_V1, OWNER_DISTRIBUTION_ENVELOPE_V1}
+            or set(envelope) != expected
+            or envelope['action'] != 'no_order'):
+        raise ValueError('direct materiality requires exact review envelope')
+    receipt_ref, result_ref = (envelope[key] for key in ('receipt_binding', 'result_binding'))
+    refs = [receipt_ref, result_ref]
+    if schema == DIRECT_ENVELOPE_V1:
+        package_ref = envelope['package_binding']
+        refs.append(package_ref)
+    else:
+        spec_ref = envelope['spec_binding']
+        refs.append(spec_ref)
+    if any(not isinstance(ref, dict) or set(ref) != {'path', 'sha256'} for ref in refs):
+        raise ValueError('direct review requires exact original bindings')
+    receipt = _load(root, receipt_ref)
+    if (receipt.get('result_binding') != result_ref
+            or (schema == OWNER_DISTRIBUTION_ENVELOPE_V1
+                and receipt.get('spec_binding') != spec_ref)):
+        raise ValueError('direct review result binding differs from receipt')
+    result = _load(root, result_ref)
+    if schema == DIRECT_ENVELOPE_V1:
+        original = _load(root, package_ref)
+        from ..research.direct_owner_cash_research_v1 import replay_direct_owner_cash_receipt
+        replayed = replay_direct_owner_cash_receipt(
+            root=root, receipt_binding=receipt_ref, now=replayed_at)
+    else:
+        from ..research.owner_distribution_read_scope import (
+            replay_parent_owner_distribution_successor,
+        )
+        from ..research.parent_owner_distribution_successor_v2 import RECEIPT_SCHEMA
+        if (receipt.get('schema_version') != RECEIPT_SCHEMA
+                or receipt.get('input_descriptor_sha256') != envelope['input_descriptor_sha256']
+                or receipt.get('formal_eligibility') is not False
+                or receipt.get('successor_adopted') is not False
+                or receipt.get('main_range_adopted') is not False):
+            raise ValueError('owner distribution review receipt boundary changed')
+        replayed = replay_parent_owner_distribution_successor(
+            root=root, receipt_binding=receipt_ref, now=replayed_at)
+        original = replayed['package']
+    if (canonical_contract_payload(replayed['package']) != canonical_contract_payload(result['package'])
+            or canonical_contract_payload(result['package']) != canonical_contract_payload(original)):
+        raise ValueError('direct review original differs from cold replay')
+    validity = envelope['model_validity_input']
+    if schema == DIRECT_ENVELOPE_V1:
+        from ...valuation_models.direct_owner_cash_v1 import MODEL_ID
+    else:
+        from ...valuation_models.direct_owner_cash_v2 import MODEL_ID
+    if (not isinstance(validity, dict) or validity.get('events') or
+            validity.get('model_id') != MODEL_ID or not validity.get('valid_from')):
+        raise ValueError('direct review needs explicit non-conflicting validity')
+    return original, validity
+
+
+def build_direct_owner_cash_materiality_envelope(*, root, package_path, package_sha256,
+        receipt_path, receipt_sha256, model_validity_input, output_path):
+    """Append one derived review input; retain the original economic package bytes."""
+    root = Path(root).resolve()
+    receipt_ref = _binding(root, receipt_path, receipt_sha256)
+    receipt = _load(root, receipt_ref)
+    result_ref = receipt.get('result_binding')
+    if not isinstance(result_ref, dict) or set(result_ref) != {'path', 'sha256'}:
+        raise ValueError('direct review receipt needs exact result binding')
+    _load(root, result_ref)
+    envelope = dict(schema_version=DIRECT_ENVELOPE_V1,
+        action='no_order',
+        package_binding=_binding(root, package_path, package_sha256),
+        receipt_binding=receipt_ref, result_binding=result_ref,
+        model_validity_input=model_validity_input)
+    package, _ = _direct_review_original(root=root, envelope=envelope)
+    from ...valuation_models.direct_owner_cash_v1 import MODEL_VERSION
+    if (package.get('descriptor_version') != 'direct-owner-cash-input-v1'
+            or package.get('dependencies', {}).get('model_version') != MODEL_VERSION
+            or package.get('model_validity_input') is not None):
+        raise ValueError('direct review requires unmodified direct original')
+    output = require_inside(root / 'runtime', Path(output_path), 'direct materiality envelope')
+    write_new_json(output, envelope)
+    return _binding(root, output)
+
+
+def build_parent_owner_distribution_materiality_envelope(*, root, receipt_path,
+        receipt_sha256, model_validity_input, output_path, now=None):
+    """Bind a v2 successor to review without copying or mutating its package."""
+    root = Path(root).resolve()
+    receipt_ref = _binding(root, receipt_path, receipt_sha256)
+    receipt = _load(root, receipt_ref)
+    from ..research.parent_owner_distribution_successor_v2 import (
+        RECEIPT_SCHEMA, replay_parent_owner_distribution_successor,
+    )
+    if (receipt.get('schema_version') != RECEIPT_SCHEMA
+            or receipt.get('action') != 'no_order'
+            or receipt.get('formal_eligibility') is not False
+            or receipt.get('successor_adopted') is not False
+            or receipt.get('main_range_adopted') is not False):
+        raise ValueError('owner distribution review requires exact conditional successor')
+    result = replay_parent_owner_distribution_successor(
+        root=root, receipt_binding=receipt_ref, now=now or datetime.now(timezone.utc))
+    envelope = dict(schema_version=OWNER_DISTRIBUTION_ENVELOPE_V1,
+        action='no_order', receipt_binding=receipt_ref,
+        spec_binding=receipt['spec_binding'], result_binding=receipt['result_binding'],
+        input_descriptor_sha256=receipt['input_descriptor_sha256'],
+        model_validity_input=model_validity_input)
+    original, _ = _direct_review_original(root=root, envelope=envelope, now=now)
+    from ..research.direct_owner_cash_input_adapter_v2 import DESCRIPTOR_VERSION
+    from ...valuation_models.direct_owner_cash_v2 import MODEL_VERSION
+    if (original.get('descriptor_version') != DESCRIPTOR_VERSION
+            or original.get('dependencies', {}).get('model_version') != MODEL_VERSION
+            or original.get('model_validity_input') is not None
+            or result.get('input_descriptor_sha256') != receipt['input_descriptor_sha256']):
+        raise ValueError('owner distribution review requires unmodified v2 original')
+    output = require_inside(root / 'runtime', Path(output_path),
+                            'owner distribution materiality envelope')
+    write_new_json(output, envelope)
+    return _binding(root, output)
+
+
+def build_materiality_review_descriptor(*, root, package_binding, scan_binding, now=None):
     """Validate frozen research first; supplement only its typed validity input.
 
     Post-cutoff disclosures are not historical research sources. In particular,
     never add them to a source-bound package's pre-cutoff source catalog.
     """
     from .source_bound_inputs import verify_package_local_sources
-    package = _load(root, package_binding)
+    supplied = _load(root, package_binding)
+    direct_schema = supplied.get('schema_version')
+    direct = direct_schema in {DIRECT_ENVELOPE_V1, OWNER_DISTRIBUTION_ENVELOPE_V1}
+    package, validity = (_direct_review_original(root=root, envelope=supplied, now=now)
+                         if direct else (supplied, supplied.get('model_validity_input')))
     _load(root, scan_binding)
     verify_package_local_sources(root, package)
     contracts = {row.get('retention_contract') for row in
                  package.get('facts', {}).get('scenario_inputs', {}).values()
                  if isinstance(row, dict)}
     from ..research.v4_input_adapter import RETENTION_CONTRACT
-    if RETENTION_CONTRACT in contracts:
+    if direct:
+        if direct_schema == DIRECT_ENVELOPE_V1:
+            from ..research.direct_owner_cash_input_adapter_v1 import (
+                DESCRIPTOR_VERSION, build_direct_owner_cash_descriptor)
+            from ...valuation_models.direct_owner_cash_v1 import MODEL_VERSION
+        else:
+            from ..research.direct_owner_cash_input_adapter_v2 import (
+                DESCRIPTOR_VERSION, build_direct_owner_cash_descriptor)
+            from ...valuation_models.direct_owner_cash_v2 import MODEL_VERSION
+        if (package.get('descriptor_version') != DESCRIPTOR_VERSION or
+                package.get('dependencies', {}).get('model_version') != MODEL_VERSION or
+                package.get('model_validity_input') is not None):
+            raise ValueError('direct review requires unmodified direct original')
+        original = build_direct_owner_cash_descriptor(package, root=root)
+    elif RETENTION_CONTRACT in contracts:
         if contracts != {RETENTION_CONTRACT}:
             raise ValueError('materiality rejects mixed terminal scenario contracts')
         from ..research.v4_input_adapter import build_descriptor_for_package
         original = build_descriptor_for_package(package, root=root)
     else:
         original = build_descriptor(package, root=root)
-    validity = package.get('model_validity_input')
+    if (validity is None and not direct and 'model_validity_input' not in package
+            and package.get('descriptor_version') == 'first-research-input-spec-v1'
+            and package.get('source_contract', {}).get('schema_version') == 'source-bound-research-inputs-v3'
+            and package.get('dependencies', {}).get('model_version') == 'residual-income-equity-path-v4'
+            and contracts == {RETENTION_CONTRACT}):
+        validity = dict(model_id=package['dependencies']['model_version'],
+                        valid_from=package['point_in_time']['valuation_date'])
     if not isinstance(validity, dict) or validity.get('events'):
         raise ValueError('materiality handoff needs non-conflicting validity inputs')
     existing_scan = validity.get('event_scan_ref') or {}
-    if all(existing_scan.get(key) == scan_binding[key] for key in ('path', 'sha256')):
+    if not direct and all(existing_scan.get(key) == scan_binding[key] for key in ('path', 'sha256')):
         return original
     ref = dict(id='daily-event-' + scan_binding['sha256'], symbol=package['symbol'], **scan_binding)
     supplemented = build_validity(dict(validity, event_scan_ref=ref,
@@ -75,19 +224,20 @@ def build_materiality_review_descriptor(*, root, package_binding, scan_binding):
 
 
 def prepare_materiality_review_handoff(*, root, package_path, package_sha256,
-                                      scan_path, scan_sha256):
+                                      scan_path, scan_sha256, now=None):
     """Bind an effective descriptor without mutating the original research cutoff."""
     root = Path(root).resolve()
     package_ref = _binding(root, package_path, package_sha256)
     scan_ref = _binding(root, scan_path, scan_sha256)
-    package = _load(root, package_ref)
+    supplied = _load(root, package_ref)
+    direct_schema = supplied.get('schema_version')
+    direct = direct_schema in {DIRECT_ENVELOPE_V1, OWNER_DISTRIBUTION_ENVELOPE_V1}
+    package, _ = (_direct_review_original(root=root, envelope=supplied, now=now)
+                         if direct else (supplied, supplied.get('model_validity_input')))
     symbol = package['symbol']
-    validity = package.get('model_validity_input')
-    if not isinstance(validity, dict) or validity.get('events'):
-        raise ValueError('materiality handoff needs non-conflicting validity inputs')
     ref = dict(id='daily-event-' + scan_sha256, symbol=symbol, **scan_ref)
     descriptor = build_materiality_review_descriptor(root=root,
-        package_binding=package_ref, scan_binding=scan_ref)
+        package_binding=package_ref, scan_binding=scan_ref, now=now)
     spec = build_research_run_spec(descriptor)
     scan = spec.model_validity_input.event_scan
     if scan is None or scan.symbol != symbol or scan.coverage_status != 'COMPLETE':
@@ -112,12 +262,22 @@ def prepare_materiality_review_handoff(*, root, package_path, package_sha256,
             source_url=item.source_url, evidence_refs=sources))
     if not announcements:
         raise ValueError('materiality handoff requires acquired announcements')
-    if spec.model_version == 'residual-income-equity-path-v4':
+    if direct:
+        if direct_schema == DIRECT_ENVELOPE_V1:
+            from ..research.direct_owner_cash_review_context_v1 import build_direct_owner_cash_review_model_context
+        else:
+            from ..research.direct_owner_cash_review_context_v2 import build_direct_owner_cash_review_model_context
+        context = build_direct_owner_cash_review_model_context(descriptor=descriptor, spec=spec)
+    elif spec.model_version == 'residual-income-equity-path-v4':
         from ..research.v4_review_context import build_v4_research_review_model_context
         context = build_v4_research_review_model_context(descriptor=descriptor, spec=spec)
     else:
         context = build_research_review_model_context(descriptor=descriptor, spec=spec)
-    fixed = dict(schema_version='materiality-review-handoff-v1', action='no_order',
+    handoff_schema = ('parent-owner-distribution-materiality-review-handoff-v1'
+                      if direct_schema == OWNER_DISTRIBUTION_ENVELOPE_V1 else
+                      'direct-owner-cash-materiality-review-handoff-v1' if direct else
+                      'materiality-review-handoff-v1')
+    fixed = dict(schema_version=handoff_schema, action='no_order',
         symbol=symbol, package_binding=package_ref, scan_binding=scan_ref,
         model_context=context,
         scan_window=dict(scan_from=scan.scan_from.isoformat(), scan_to=scan.scan_to.isoformat(),

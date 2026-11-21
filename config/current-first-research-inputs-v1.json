@@ -10,8 +10,8 @@
     },
     "600887": {
       "receipt": {
-        "path": "runtime/direct-owner-cash-600887-20261117/274637612d5947b1b012e2f73f2c459a/receipt.json",
-        "sha256": "34e7282de7fe774a4800610c3412c6b8eef314e95e76eb2211e05ebb53c7cb1b"
+        "path": "runtime/parent-owner-distribution-successor-600887-20261118-v3/compiled/receipt.json",
+        "sha256": "dcf8dcf4dbf3965d31c5e787d22d103d4fb2e6bc6a8ca3f2fbc682e21eecf027"
       }
     },
     "600519": {

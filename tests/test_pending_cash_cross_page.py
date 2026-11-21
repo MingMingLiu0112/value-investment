@@ -1,0 +1,239 @@
+"""TEST_ONLY layout negatives plus opt-in immutable real original replay."""
+from copy import deepcopy
+from datetime import datetime, timedelta, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+
+import pytest
+
+from value_investment_agent.application.research.pending_candidate_alignment import _cash_terms, _opening_chain_research, _operating_events
+from value_investment_agent.application.research.value_research_analysis import _bound
+
+
+def pages():
+    return [
+        "1\n证券代码：600887 公告编号：临2026-039\n2025年年度权益分派实施公告\n"
+        "A股每股现金红利0.90元\n差异化分红送转：否\n"
+        "股份类别 股权登记日 最后交易日 除权（息）日 现金红利发放日\n"
+        "Ａ股 2026/6/4 － 2026/6/5 2026/6/5\n"
+        "(三)分配方案：本次利润分配以方案实施前的公司总股本100股为基数，"
+        "向全体股东每股派发现金红利0.90元（含税），共计派发现金红利90.00元。",
+        "2\n三、相关日期\n"
+        "股份类别 股权登记日 最后交易日 除权（息）日 现金红利发放日\n"
+        "Ａ股 2026/6/4 － 2026/6/5 2026/6/5\n"
+        "本次权益分派不涉及派送红股或转增股本。\n董事会2026年5月29日",
+    ]
+
+
+def test_complete_cross_page_cash_scheme_reconciles_without_payment_claim():
+    result = _cash_terms(pages(), "600887")
+    assert result["cash_per_share"] == "0.90"
+    assert result["total_gross_cash"] == "90.00"
+    assert result["term_pages"]["chronology"] == [1, 2]
+    assert result["amendment_chain_verified"] is False
+    assert result["cash_payment_status"] == "DECLARED_SCHEDULE_NOT_PROOF_OF_RECEIPT"
+
+
+@pytest.mark.parametrize("old,new", [
+    ("90.00元", "91.00元"),
+    ("A股每股现金红利0.90元", "A股每股现金红利0.91元"),
+    ("三、相关日期", "相关日期不明"),
+    ("不涉及派送红股或转增股本", "涉及派送红股或转增股本"),
+    ("差异化分红送转：否", "差异化分红送转：是"),
+    ("证券代码：600887", "证券代码：600519"),
+    ("董事会2026年5月29日", "董事会2026年6月6日"),
+])
+def test_unknown_or_conflicting_terms_rejected(old, new):
+    with pytest.raises(ValueError):
+        _cash_terms([page.replace(old, new) for page in pages()], "600887")
+
+
+def test_conflicting_duplicate_date_table_rejected():
+    changed = deepcopy(pages())
+    changed[1] = changed[1].replace("2026/6/5", "2026/6/6")
+    with pytest.raises(ValueError):
+        _cash_terms(changed, "600887")
+
+
+def test_additional_non_cash_terms_not_hidden_by_exact_negative_sentence():
+    changed = pages()
+    changed[1] = changed[1].replace("董事会", "另每10股转增股本2股。董事会")
+    with pytest.raises(ValueError):
+        _cash_terms(changed, "600887")
+
+
+def test_real_original_cross_page_replay():
+    root = os.environ.get("VALUE_REAL_SOURCE_ROOT")
+    if not root:
+        pytest.skip("real original root explicitly required; not a real-data pass")
+    from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
+    path = Path(root) / "runtime/value-f2-replays/600887-annual-dividend-20261115T1741423113652Z/original.pdf"
+    raw = path.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == "c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70"
+    result = _cash_terms(extract_pages(path), "600887")
+    assert result["eligible_distribution_shares"] == "6325360667"
+    assert result["referenced_approval_meeting_date"] == "2026-05-20"
+    assert result["cash_per_share"] == "0.90"
+    assert result["total_gross_cash"] == "5692824600.30"
+    assert result["ex_date"] == result["cash_payment_date"] == "2026-06-05"
+    assert path.read_bytes() == raw
+
+def test_numbered_interim_scheme_uses_the_same_reconciliation():
+    changed = [page.replace("(三)分配方案", "3.分配方案").replace(
+        "2025年年度权益分派实施公告", "2026年半年度权益分派实施公告") for page in pages()]
+    result = _cash_terms(changed, "600887")
+    assert result["eligible_distribution_shares"] == "100"
+    assert result["term_pages"]["scheme"] == [1]
+    assert result["cash_payment_status"] == "DECLARED_SCHEDULE_NOT_PROOF_OF_RECEIPT"
+    with pytest.raises(ValueError):
+        _cash_terms([changed[0].replace("90.00元", "91.00元"), changed[1]], "600887")
+
+
+def test_real_numbered_interim_distribution_original():
+    root = os.environ.get("VALUE_REAL_SOURCE_ROOT")
+    if not root:
+        pytest.skip("real original root explicitly required; not a real-data pass")
+    from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
+    path = Path(root) / "runtime/value-f2-replays/parent-q3-scope-20261120/600398-h1-distribution.pdf"
+    raw = path.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == "4d1439d79185c5d7e4daa0eca57b35d3bc4c856f6762da15750cc53f75aa08b8"
+    result = _cash_terms(extract_pages(path), "600398")
+    assert result["eligible_distribution_shares"] == "4802770296"
+    assert result["cash_per_share"] == "0.27"
+    assert result["total_gross_cash"] == "1296747979.92"
+    assert result["record_date"] == "2026-10-13"
+    assert result["ex_date"] == result["cash_payment_date"] == "2026-10-14"
+    assert result["term_pages"] == {"scheme": [1], "chronology": [1, 2]}
+    assert path.read_bytes() == raw
+    index_bytes = path.with_name("600398-distribution-index.json").read_bytes()
+    assert hashlib.sha256(index_bytes).hexdigest() == "41bdfd6bbbe524ef927fdb2a4a4ac687bf0ddddf783924cdc98429b40f6e8fa5"
+    notice, = [row for row in json.loads(index_bytes)["announcements"]
+               if row["announcementId"] == "1225595367" and row["secCode"] == "600398"]
+    source_url = "https://static.cninfo.com.cn/" + notice["adjunctUrl"]
+    published = datetime.fromtimestamp(notice["announcementTime"] / 1000, timezone(timedelta(hours=8)))
+    replay_bytes = path.with_name("600398-distribution-replay.json").read_bytes()
+    assert hashlib.sha256(replay_bytes).hexdigest() == "829aa70e298aad2c0c30d75d1abd71de2939e5a5cd0d2480559b40c9dd6a9435"
+    acquired = datetime.fromisoformat(json.loads(replay_bytes)["captured_at"])
+    ref = dict(path=path.relative_to(root).as_posix(), sha256=hashlib.sha256(raw).hexdigest(),
+               source_url=source_url)
+    window = dict(acquired_at=acquired.isoformat(), announcements=[dict(
+        announcement_id=notice["announcementId"], title=notice["announcementTitle"],
+        published_at=published.isoformat(), source_url=source_url, evidence_refs=[ref])])
+    analysis = dict(symbol="600398", input_descriptor_sha256="a" * 64,
+                    review_binding=dict(candidate_binding={"path": "TEST_ONLY", "sha256": "b" * 64}))
+    event, = _operating_events(analysis, [window], acquired,
+                               lambda binding: _bound(Path(root), binding))
+    assert event["status"] == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
+    assert not event["materiality_approved"] and not event["model_inputs_changed"]
+    fact, = event["facts"]
+    assert fact["terms"]["effective_date"] is None
+    assert fact["terms"]["terms"] == result
+    assert event["action"] == "no_order"
+
+    window["announcements"][0]["title"] = notice["announcementTitle"].replace("半年度", "中期")
+    mismatch, = _operating_events(analysis, [window], acquired,
+                                  lambda binding: _bound(Path(root), binding))
+    assert not mismatch["facts"]
+    assert mismatch["unresolved"][0]["reason"] == "INTERIM_IMPLEMENTATION_ORIGINAL_TITLE_MISMATCH"
+
+@pytest.mark.parametrize("reference", ["2026年5月30日的2025年", "2026年5月20日的2024年"])
+def test_conflicting_annual_approval_reference_rejected(reference):
+    changed = pages()
+    changed[0] = changed[0].replace(
+        "(三)分配方案", f"本次利润分配方案经公司{reference}年度股东会审议通过。\n(三)分配方案")
+    with pytest.raises(ValueError, match="CASH_IMPLEMENTATION_ANNUAL_MEETING_CONFLICT"):
+        _cash_terms(changed, "600887")
+
+def test_real_annual_distribution_vote_original():
+    root = os.environ.get("VALUE_REAL_SOURCE_ROOT")
+    if not root:
+        pytest.skip("real original root explicitly required; not a real-data pass")
+    path = Path(root) / "runtime/value-f2-replays/yili-2025-annual-approval/resolution.pdf"
+    raw = path.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    assert digest == "bda5690cbb6f81b591c7b731f9091d157071abed3054269000b8c690d68a8934"
+    source_url = "https://static.cninfo.com.cn/finalpage/2026-05-21/1225321219.PDF"
+    ref = dict(path=path.relative_to(root).as_posix(), sha256=digest, source_url=source_url)
+    cutoff = datetime.fromisoformat("2026-11-20T23:59:59+08:00")
+    analysis = dict(symbol="600887", input_descriptor_sha256="a" * 64,
+                    review_binding=dict(candidate_binding={"path": "TEST_ONLY", "sha256": "b" * 64}))
+    window = dict(acquired_at=cutoff.isoformat(), announcements=[dict(
+        announcement_id="1225321219", title="内蒙古伊利实业集团股份有限公司2025年年度股东会决议公告",
+        published_at="2026-05-21T00:00:00+08:00", source_url=source_url, evidence_refs=[ref])])
+    event, = _operating_events(analysis, [window], cutoff, lambda binding: _bound(Path(root), binding))
+    assert event["status"] == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
+    assert event["materiality_approved"] is False
+    fact, = event["facts"]
+    assert fact["terms"]["event_type"] == "REPORTED_ANNUAL_DIVIDEND_SHAREHOLDER_APPROVAL"
+    vote = fact["terms"]["terms"]
+    assert vote["fiscal_year"] == 2025 and vote["meeting_date"] == "2026-05-20"
+    assert vote["yes_votes"] == 2083610013
+    assert vote["implementation_verified"] is False and vote["payment_verified"] is False
+
+    from value_investment_agent.infrastructure.filings.opening_action_terms import parse_opening_action_terms
+
+    implementation = Path(root) / "runtime/value-f2-replays/600887-annual-dividend-20261115T1741423113652Z/original.pdf"
+    implementation_url = "https://static.cninfo.com.cn/finalpage/2026-05-29/1225335436.PDF"
+    implementation_binding = dict(path=implementation.relative_to(root).as_posix(),
+        sha256="c8cd69e0a195ec9daa702306a2ba1ebf7cb8b53b1f5cae5d872cd590b0ba3c70")
+    window["announcements"].append(dict(announcement_id="1225335436",
+        title="内蒙古伊利实业集团股份有限公司2025年年度权益分派实施公告",
+        published_at="2026-05-29T00:00:00+08:00", source_url=implementation_url,
+        evidence_refs=[dict(implementation_binding, source_url=implementation_url)]))
+    analysis.update(valuation_date="2026-06-30", consumed_operating_inputs={"ordinary_shares": "6325360667"})
+    events = _operating_events(analysis, [window], cutoff, lambda binding: _bound(Path(root), binding),
+                               parser=parse_opening_action_terms)
+    chain = _opening_chain_research(analysis, events, None)
+    link, = chain["annual_approval_schedule_links"]
+    assert link["approval_evidence_binding"]["sha256"] == digest
+    assert link["implementation_evidence_binding"] == implementation_binding
+    assert link["cash_receipt_proven"] is False
+    assert chain["complete_opening_action_coverage"] is False
+    assert chain["comparison_date_capital_proven"] is False
+    events[0]["facts"][0]["terms"]["terms"]["meeting_date"] = "2026-05-19"
+    assert not _opening_chain_research(analysis, events, None)["annual_approval_schedule_links"]
+
+def test_real_interim_vote_cannot_backfill_comparison_close():
+    root = os.environ.get("VALUE_REAL_SOURCE_ROOT")
+    if not root:
+        pytest.skip("real original root explicitly required; not a real-data pass")
+    from datetime import date
+
+    from value_investment_agent.infrastructure.filings.disclosure_availability import indexed_disclosure_availability
+    from value_investment_agent.infrastructure.filings.interim_dividend_resolution import parse_interim_dividend_resolution
+    from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
+
+    root = Path(root)
+    sources = root / "runtime/f2-yili-interim-vote-20261120"
+    pdf = sources / "resolution.pdf"
+    digest = hashlib.sha256(pdf.read_bytes()).hexdigest()
+    assert digest == "b98fd6c8dfb862bd5a4ceede5c51bb8c67c25ef1e76297000f106e2a3e94a462"
+    index_raw = (sources / "index.json").read_bytes()
+    assert hashlib.sha256(index_raw).hexdigest() == "b8c23e6c57c37eb54b21b571df192844921307d8a227313fde76dfdba6e77d77"
+    index = dict(json.loads(index_raw), url="https://www.cninfo.com.cn/new/hisAnnouncement/query")
+    source_url = "https://static.cninfo.com.cn/finalpage/2026-11-21/1225681447.PDF"
+    availability = indexed_disclosure_availability(index, symbol="600887",
+        source_id="cninfo:1225681447", source_url=source_url)
+    published = date.fromisoformat(availability["disclosure_date"])
+    assert availability["available_from"] == "2026-11-22T00:00:00+08:00"
+    vote = parse_interim_dividend_resolution(extract_pages(pdf), symbol="600887", published=published)
+    assert vote["decision"] == "APPROVED" and vote["yes_votes"] == 2163014000
+    assert not vote["implementation_verified"] and not vote["payment_verified"]
+
+    capture_raw = (sources / "receipt.json").read_bytes()
+    assert hashlib.sha256(capture_raw).hexdigest() == "7c44bea9c81ef6e8dc6728589f74ebf54cb062ef41f1e519c8a3ed186013ddd9"
+    announcement, = [r for r in index["announcements"] if r["announcementId"] == "1225681447"]
+    ref = dict(path=pdf.relative_to(root).as_posix(), sha256=digest, source_url=source_url)
+    window = dict(acquired_at=json.loads(capture_raw)["captured_at"], announcements=[dict(
+        announcement_id="1225681447", title=announcement["announcementTitle"],
+        published_at=f"{published}T00:00:00+08:00", source_url=source_url, evidence_refs=[ref])])
+    analysis = dict(symbol="600887", input_descriptor_sha256="a" * 64,
+                    review_binding=dict(candidate_binding={"path": "TEST_ONLY", "sha256": "b" * 64}))
+    read = lambda binding: _bound(root, binding)
+    with pytest.raises(ValueError, match="OPERATING_EVENT_ACQUISITION_UNAVAILABLE"):
+        _operating_events(analysis, [window], datetime.fromisoformat("2026-11-20T15:00:00+08:00"), read)
+    later, = _operating_events(analysis, [window], datetime.fromisoformat(availability["available_from"]), read)
+    assert not later["facts"] and not later["materiality_approved"]
+    assert later["unresolved"][0]["reason"] == "OPERATING_EVENT_PUBLICATION_MISMATCH"

@@ -22,6 +22,7 @@ import type {
 } from "../types/api";
 import type { CurrentScreening } from "../types/discovery";
 import type { DualStrategySelection } from "../types/selection";
+import type { CandidatePriceAlignment } from "./valuePolicy";
 
 export interface PublicEvidenceStatus {
   schema_version: "public-evidence-status-v1";
@@ -301,7 +302,11 @@ async function post<T>(
   return (await read(response)) as T;
 }
 
-async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
+async function getPrivate<T>(
+  path: string,
+  signal?: AbortSignal,
+  expectedErrorStatuses: readonly number[] = [],
+): Promise<T> {
   let usedToken = "";
   const send = async (): Promise<Response> => {
     usedToken = await operatorToken();
@@ -317,6 +322,9 @@ async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
     // ledger, so one fresh token and one retry is safe.
     forgetRefusedSession(usedToken);
     response = await send();
+  }
+  if (!response.ok && expectedErrorStatuses.includes(response.status)) {
+    throw new ApiError(response.status, "HTTP_ERROR", null);
   }
   return (await read(response)) as T;
 }
@@ -406,11 +414,13 @@ export type DirectOwnerCash = {
       schema_version: string;
       period_start: string;
       period_end: string;
-      opening_identified_balance_cny: string;
-      closing_identified_balance_cny: string;
-      identified_balance_change_cny: string;
+      opening_identified_balance_cny: string | null;
+      closing_identified_balance_cny: string | null;
+      identified_balance_change_cny: string | null;
       reported_net_borrowing_cash_cny: string;
-      unallocated_reconciliation_difference_cny: string;
+      unallocated_reconciliation_difference_cny: string | null;
+      comparable_balance_fields?: string[];
+      missing_balance_fields_by_period?: Record<string, string[]>;
       reconciliation_status: string;
       complete_debt_scope_verified: boolean;
       maturity_schedule_verified: boolean;
@@ -434,30 +444,165 @@ export type DirectOwnerCash = {
       retention_assumption: string;
     }>
   >;
-  assumptions: Array<{
-    name: string;
-    rationale: string;
-    counter_evidence: string;
-  }>;
+  assumptions:
+    | Array<{
+        name: string;
+        rationale: string;
+        counter_evidence: string;
+      }>
+    | Record<FirstResearchScenarioKey, Record<string, unknown>>;
   conditional_price: {
     status: string;
     draft_prices: unknown;
     reason_codes: string[];
     expires_at?: string;
     currentpricecomparison: false;
+    candidate_binding?: { path: string; sha256: string };
+    input_descriptor_sha256?: string;
+    quote_date?: string;
+    approved?: false;
+    registered?: false;
     action: "no_order";
-  };
+  } | null;
   source_refs: Array<Record<string, unknown>>;
 };
 
+type RemainingYearCfoSplit = {
+  total: string;
+  fact_9m: string;
+  forecast_q4: string;
+  fact_classification: "FACT";
+  forecast_classification: "FORECAST_ASSUMPTION";
+};
+
+type RemainingYearLegacyReview = {
+  schema_version: "parent-remaining-year-review-v1";
+  symbol: string;
+  candidate_binding?: { path: string; sha256: string };
+  input_descriptor_sha256?: string;
+  action: "no_order";
+  formal_eligibility: false;
+  successor_adopted: false;
+  current_price_qualified: false;
+  status: string;
+  reason?: string;
+  capital_policy_mode?: string;
+  reported_facts?: {
+    period_start?: string;
+    period_end?: string;
+    period_basis?: string;
+    scope?: string;
+    currency?: string;
+    cash_fields?: { cfo?: { current?: string } };
+  };
+  scenarios?: Partial<
+    Record<
+      FirstResearchScenarioKey,
+      {
+        status: string;
+        reason?: string;
+        reported_9m_parent_profit?: string;
+        retained_annual_parent_profit?: string;
+        implied_q4_parent_profit?: string;
+        economic_review?: {
+          classification: "RETAINED_PLAN_STRESS_NOT_NEW_EARNINGS_FORECAST";
+          warnings?: string[];
+          adopted: false;
+          explanation?: string;
+          next_evidence?: string;
+        };
+        annual?: { full_year?: { cfo?: Partial<RemainingYearCfoSplit> } };
+        calculation?: Record<string, unknown>;
+        capital_policy_changes?: {
+          gross_capex?: {
+            classification?: string;
+            fact_9m?: string;
+            assumed_q4?: string;
+            full_year?: string;
+            rationale?: string;
+          };
+        };
+      }
+    >
+  >;
+  limitation?: string;
+};
+
+type RemainingYearSuccessorReview = {
+  schema_version: "parent-remaining-year-successor-receipt-v1";
+  symbol: string;
+  candidate_binding: { path: string; sha256: string };
+  predecessor_binding: { path: string; sha256: string };
+  input_descriptor_sha256: string;
+  action: "no_order";
+  formal_eligibility: false;
+  successor_adopted: false;
+  current_price_qualified: false;
+  status: "SOURCE_BOUND_CONDITIONAL_SUCCESSOR";
+  annual_recalculations: Record<
+    FirstResearchScenarioKey,
+    {
+      symbol: string;
+      action: "no_order";
+      formal_eligibility: false;
+      scope: string;
+      currency: string;
+      current_nine_months: {
+        period_start: string;
+        period_end: string;
+        classification: "FACT";
+        cfo: string;
+      };
+      conditional_q4: {
+        period_start: string;
+        period_end: string;
+        classification: "FORECAST_ASSUMPTION";
+        cfo: string;
+      };
+      full_year: { cfo: RemainingYearCfoSplit };
+      annualized_nine_months: false;
+    }
+  >;
+  scenarios: Record<FirstResearchScenarioKey, Record<string, unknown>>;
+};
+
 export type FirstResearchInputResponse = {
-  direct_owner_cash?: DirectOwnerCash;
+  pending_candidate_alignment?: CandidatePriceAlignment;
+  receipt_binding?: { path: string; sha256: string };
+  direct_owner_cash?: DirectOwnerCash & {
+    remaining_year_review?:
+      RemainingYearLegacyReview | RemainingYearSuccessorReview;
+  };
+  direct_cash_alignment?: CandidatePriceAlignment & {
+    research_artifact_kind?:
+      | "DIRECT_OWNER_CASH_RECEIPT"
+      | "PARENT_OWNER_DISTRIBUTION_SUCCESSOR_RECEIPT";
+    receipt_binding?: { path: string; sha256: string };
+  };
   schema_version?: string;
+  receipt_schema_version?: string;
+  predecessor_binding?: { path: string; sha256: string };
+  annual_recalculations?: RemainingYearSuccessorReview["annual_recalculations"];
   symbol: string;
   status: "NOT_STARTED" | "SOURCE_BOUND_FIRST_INPUT_COMPILED" | "UNASSESSABLE";
   scope: string;
   action: "no_order";
   successor_update?: {
+    displayed_version_role?: "PREDECESSOR" | "SUCCESSOR" | null;
+    changed_assumptions?: {
+      spec_path: string;
+      successor: Record<string, unknown>;
+      evidence_anchors: Record<string, Record<string, unknown>>;
+    }[];
+    yearly_changes?: Partial<
+      Record<
+        FirstResearchScenarioKey,
+        {
+          predecessor: Record<string, unknown>[];
+          successor: Record<string, unknown>[];
+        }
+      >
+    >;
     status:
       "NOT_STARTED" | "SOURCE_BOUND_CONDITIONAL_SUCCESSOR" | "UNASSESSABLE";
     reason?: string;
@@ -513,6 +658,16 @@ export type FirstResearchInputResponse = {
     price_admitted: boolean;
     comparison_eligible: boolean;
   };
+  parent_financing_evidence?: {
+    reconciliation_status: string;
+    period_start?: string;
+    period_end?: string;
+    identified_balance_change_cny?: string | null;
+    reported_net_borrowing_cash_cny?: string;
+    formal_eligibility: false;
+    model_inputs_changed: false;
+    action: "no_order";
+  };
   e2_quote_alignment?: {
     status: string;
     reason: string | null;
@@ -551,15 +706,20 @@ export type FirstResearchInputResponse = {
     price_admitted: false;
     action: "no_order";
   } | null;
-  condition_price: null;
+  condition_price: DirectOwnerCash["conditional_price"];
+  condition_price_status?: string;
+  condition_price_blockers?: string[];
   personal_quantity: null;
   parent_cash_observation?: {
     status: string;
     reason?: string;
     whole_statement_reconciled?: boolean;
     periods?: {
-      period: string;
-      flows: Record<string, string>;
+      period?: string;
+      flows?: Record<string, string>;
+      report_period?: string;
+      rows?: Record<string, unknown>;
+      unknown_fields?: unknown;
       closing_cash_and_equivalents_cny?: string;
       physical_pages?: Record<string, number>;
       source_sha256?: string;
@@ -1737,6 +1897,44 @@ export type ValueWorkbenchTaskHistory = {
     record: Record<string, unknown>;
   }[];
 };
+export interface ParentCashTaskValuation {
+  status: "VERIFIED_CONDITIONAL_VALUATION";
+  task_id: string;
+  symbol: string;
+  valuation_date: string;
+  scenarios: Record<
+    "bear" | "base" | "bull",
+    {
+      per_share_value: string;
+      annual_years: number;
+      terminal_method: string;
+    }
+  >;
+  input_descriptor_sha256: string;
+  receipt_sha256: string;
+  action: "no_order";
+  formal_eligibility: false;
+  current_comparable: false;
+  condition_price: null;
+  alignment_status?: string;
+  alignment_reason_codes?: string[];
+}
+
+export interface ParentCashH1Sensitivity {
+  status: "RESEARCH_SENSITIVITY_NOT_ADOPTED";
+  symbol: string;
+  task_id: string;
+  period_end: string;
+  scenarios: Record<
+    "bear" | "base" | "bull",
+    | { status: "CONDITIONAL_SENSITIVITY_COMPUTED"; per_share_value: string }
+    | { status: "SCENARIO_REJECTED"; reason: string }
+  >;
+  formal_eligibility: false;
+  condition_price: null;
+  action: "no_order";
+}
+
 export interface ParentCashTaskHistory {
   action: "no_order";
   symbol: string;
@@ -2080,11 +2278,42 @@ export const api = {
       "research-tasks?symbol=" + encodeURIComponent(symbol),
       signal,
     ),
+  startCompanyParentCashTask: (symbol: string) =>
+    post<{ task_id: string; status: string; action: string }>(
+      "operating-research/parent-cash-tasks/by-company",
+      { symbol },
+    ),
   parentCashTaskHistory: (symbol: string, signal?: AbortSignal) =>
     getPrivate<ParentCashTaskHistory>(
       "operating-research/parent-cash-tasks/history?symbol=" +
         encodeURIComponent(symbol),
       signal,
+    ),
+  parentCashTaskValuation: (
+    taskId: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<ParentCashTaskValuation>(
+      "operating-research/parent-cash-tasks/v3/" +
+        encodeURIComponent(taskId) +
+        "/valuation?symbol=" +
+        encodeURIComponent(symbol),
+      signal,
+      [404, 422],
+    ),
+  parentCashH1Sensitivity: (
+    taskId: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<ParentCashH1Sensitivity>(
+      "operating-research/parent-cash-tasks/v3/" +
+        encodeURIComponent(taskId) +
+        "/h1-sensitivity?symbol=" +
+        encodeURIComponent(symbol),
+      signal,
+      [404, 422],
     ),
   researchTask: (taskId: string, signal?: AbortSignal) =>
     getPrivate<ResearchTaskResponse>(

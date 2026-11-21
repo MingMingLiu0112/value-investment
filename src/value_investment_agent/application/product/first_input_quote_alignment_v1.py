@@ -51,7 +51,8 @@ def read_first_input_quote_alignment(*, root: Path, symbol: str, first_input: di
                       quote_date=verdict.get("quote_date"),
                       display_price=verdict.get("display_price"),
                       quote_binding={"path": path.relative_to(root).as_posix(), "sha256": expected},
-                      quote_source_verified=verdict.get("status") in {
+                      quote_source_verified=verdict.get("display_scope") == "VERIFIED_ARCHIVE_NOT_CURRENT_PRICE"
+                      or verdict.get("status") in {
                           "QUOTE_VERIFIED_FOR_RESEARCH_INPUT",
                           "QUOTE_VERIFIED_BUT_RESEARCH_STALE",
                           "HISTORICAL_VERIFIED_CLOSE_DISPLAY_ONLY"})

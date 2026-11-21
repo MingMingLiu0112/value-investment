@@ -46,6 +46,7 @@ from ...application.hotspot.independent_price_conditions import (
     project_independent_price_conditions,
 )
 from ...application.decision.current_value_plan import revalidate_current_value_plan
+from ...application.research.pending_candidate_alignment import pending_alignment_read_scope
 from ...application.decision.value_action_plan import CoreValuePublicReviews
 from ...application.decision.strategy_readiness import attach_strategy_readiness
 from ...infrastructure.hotspot.sina_price_case import load_historical_case
@@ -453,6 +454,7 @@ def create_app(
             "items": items, "blockers": gaps}
 
     @api.get("/api/v1/daily-decisions")
+    @pending_alignment_read_scope()
     def daily_decisions(core_reviews: CoreValuePublicReviews = Depends(core_public_reviews)):
         packet, _ = _load_snapshot(project)
         empty = {"action": "no_order", "status": "UNAVAILABLE", "as_of": None,
@@ -982,11 +984,11 @@ def create_app(
 
     @api.get("/api/v1/value-screening/sse-main/research-queue")
     def sse_main_research_queue():
-        from ...application.research.sse_research_pipeline_v1 import read_sse_research_pool
+        from ...application.research.sse_research_pipeline_v2 import read_sse_research_pool_for_web
         from ...application.research.agent_review.horizon_queue_receipts_v2 import read_queue_receipt_batch
         from .live_operating_research_routes import resolve_research_task_root
         now = datetime.now(timezone.utc)
-        view = read_sse_research_pool(root=project, now=now)
+        view = read_sse_research_pool_for_web(root=project, now=now)
         if view["status"] == "AVAILABLE":
             try:
                 batch = read_queue_receipt_batch(research_root=resolve_research_task_root(project),
@@ -1154,6 +1156,7 @@ def create_app(
         snapshot = _snapshot_metadata(project)
         identity["publication"] = {
             "status": snapshot["status"],
+            "reason": snapshot.get("reason"),
             "publication_id": snapshot["publication_id"],
             "packet_sha256": snapshot["packet_sha256"],
             "published_at": snapshot["published_at"],
@@ -1166,6 +1169,9 @@ def create_app(
         if registry["status"] != "MATCHED":
             identity["status"] = "MISMATCH"
             identity["reasons"].append("PUBLICATION_REGISTRY_" + registry["status"])
+        if registry.get("source_validation", {}).get("status") == "NOT_VERIFIED":
+            identity["status"] = "MISMATCH"
+            identity["reasons"].append("PUBLICATION_SOURCE_VALIDATION_NOT_VERIFIED")
         return identity
 
     @api.get("/api/v1/research-funnel-status")

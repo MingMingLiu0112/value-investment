@@ -487,7 +487,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                 detail = str(error).replace("PARENT_V2_", "PARENT_V3_", 1)
                                 code = ("PARENT_V3_ECONOMIC_" + detail
                                     if isinstance(error, ValueError) and re.fullmatch(
-                                        r"DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:20[0-9]{2}", detail)
+                                        r"(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:20[0-9]{2}|"
+                                    r"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:20[0-9]{2}:"
+                                    r"(?:debt_repayment|new_borrowing))", detail)
                                     else detail if isinstance(error, ValueError) and re.fullmatch(
                                         r"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:20[0-9]{2}:(?:new_borrowing|debt_repayment)", detail)
                                     else "PARENT_V3_ANNUAL_CASH_PREFLIGHT_REJECTED")
@@ -579,7 +581,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         detail = str(error).replace("PARENT_V2_", "PARENT_V3_", 1)
                         code = ("PARENT_V3_ECONOMIC_" + detail
                                 if isinstance(error, ValueError) and re.fullmatch(
-                                    r"DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:20[0-9]{2}", detail)
+                                    r"(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:20[0-9]{2}|"
+                                    r"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:20[0-9]{2}:"
+                                    r"(?:debt_repayment|new_borrowing))", detail)
                                 else detail if isinstance(error, ValueError)
                                 and re.fullmatch(r"PARENT_V3_[A-Z0-9_]{1,90}", detail)
                                 else "PARENT_DRAFT_REJECTED_OR_UNPUBLISHED")

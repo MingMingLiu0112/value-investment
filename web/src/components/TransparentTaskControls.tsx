@@ -107,6 +107,7 @@ const OPERATION_LABELS: Record<string, string> = {
   VALUE_RESEARCH_REFRESH: "自动筛选与研究补证",
   REPLAY_SELECTION: "重放已绑定筛选",
   RECALCULATE_MAIN: "重算条件估值",
+  RECOMPILE_REGISTERED_E1: "重算已登记研究修订（E1）",
   SIMULATE_ASSUMPTIONS: "调整假设并独立模拟",
   VERIFY_EVIDENCE: "核验原件闭包",
   REVIEW_NOTE: "追加人工复核意见（非批准）",
@@ -380,6 +381,41 @@ export function TransparentTaskResult({
     );
   let body: React.ReactNode;
   switch (task.operation) {
+    case "RECOMPILE_REGISTERED_E1": {
+      if (
+        data.status !== "SUCCESSOR_CONDITIONAL_RESEARCH_PENDING_REVIEW" ||
+        data.action !== "no_order" ||
+        data.formal_eligibility !== false ||
+        data.main_range_adopted !== false ||
+        data.price_admitted !== false
+      ) {
+        body = (
+          <Alert type="warning" message="E1 重算尚未形成可复核的后继版本" />
+        );
+        break;
+      }
+      const before = resultObject(data.predecessor_valuation);
+      const after = resultObject(data.successor_valuation);
+      body = (
+        <section>
+          <h4>E1 后继研究已重算，待复核</h4>
+          <p>
+            中性条件估值：{textValue(before.base_value)} →{" "}
+            {textValue(after.base_value)} 元/股
+          </p>
+          <p>{textValue(data.change_rationale)}</p>
+          <p>反证：{textValue(data.countercase)}</p>
+          <p>
+            前驱指纹{" "}
+            <code>{textValue(data.predecessor_input_fingerprint)}</code>
+          </p>
+          <p>
+            后继指纹 <code>{textValue(data.successor_input_fingerprint)}</code>
+          </p>
+        </section>
+      );
+      break;
+    }
     case "RECALCULATE_MAIN":
       body = (
         <MainValuationRevalidationPanel value={data} symbol={task.symbol} />

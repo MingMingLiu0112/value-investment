@@ -1,5 +1,6 @@
 """Bounded, read-only projection of existing parent cash task checkpoints."""
 import re
+import logging
 import json
 from itertools import islice
 from pathlib import Path
@@ -7,6 +8,9 @@ from pathlib import Path
 from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from ...application.research.parent_cash_task_completion_v1 import (
+    registered_cash_task_spec, run_and_seal_parent_cash_task, valuation_receipt_path,
+)
 from .live_operating_research_routes import resolve_research_task_root
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
@@ -34,6 +38,14 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                          401 if error.code == AUTHORIZATION_REQUIRED else 403)
         return None
 
+    def run_numbered(task_id):
+        try:
+            run_and_seal_parent_cash_task(numbered_service, task_id)
+        except (ValueError, KeyError, TypeError, OSError, ArithmeticError) as error:
+            logging.getLogger(__name__).warning(
+                "Parent cash valuation unavailable for %s (%s)", task_id, type(error).__name__
+            )
+
     @api.post("/api/v1/operating-research/parent-cash-tasks/v3")
     async def create_numbered(request: Request, background: BackgroundTasks):
         error = denied(request)
@@ -47,12 +59,42 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
             if not isinstance(body, dict) or set(body) != {"spec_binding", "request_key"}:
                 raise ValueError("PARENT_V3_REQUEST_INVALID")
             task = numbered_service.create(**body)
-            if task["status"] == "QUEUED":
-                background.add_task(numbered_service.run, task["task_id"])
+            if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                background.add_task(run_numbered, task["task_id"])
             return reply(task, 202)
         except (ValueError, TypeError, KeyError, OSError, PermissionError) as exc:
             return reply({"action": "no_order", "status": "PARENT_V3_TASK_REJECTED",
                           "reason": str(exc)}, 422)
+
+    @api.post("/api/v1/operating-research/parent-cash-tasks/by-company")
+    async def create_numbered_for_company(request: Request, background: BackgroundTasks):
+        error = denied(request)
+        if error is not None:
+            return error
+        try:
+            raw = await request.body()
+            if len(raw) > 128:
+                raise ValueError("PARENT_V3_REQUEST_TOO_LARGE")
+            body = json.loads(raw)
+            if (not isinstance(body, dict) or set(body) != {"symbol"}
+                    or not isinstance(body["symbol"], str)
+                    or not re.fullmatch(r"[0-9]{6}", body["symbol"])):
+                raise ValueError("PARENT_V3_REQUEST_INVALID")
+            symbol = body["symbol"]
+            binding = registered_cash_task_spec(numbered_service, symbol)
+            if binding is None:
+                return reply(dict(status="BLOCKED", reason="PARENT_V3_BOUND_COMPANY_INPUTS_MISSING",
+                                  symbol=symbol, action="no_order"), 409)
+            task = numbered_service.create(
+                spec_binding=binding, request_key="value-web-" + binding["sha256"])
+            if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                background.add_task(run_numbered, task["task_id"])
+            return reply(task, 202)
+        except (ValueError, TypeError, KeyError, OSError) as exc:
+            reason = str(exc)
+            return reply(dict(status="PARENT_V3_TASK_REJECTED", action="no_order",
+                              reason=reason if re.fullmatch(r"[A-Z0-9_]{3,120}", reason)
+                              else "PARENT_V3_INPUT_VERIFICATION_FAILED"), 422)
 
     @api.get("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}")
     def read_numbered(task_id: str, request: Request):
@@ -70,6 +112,115 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         except (ValueError, TypeError, KeyError, OSError, PermissionError):
             return reply({"action": "no_order", "status": "PARENT_V3_TASK_UNAVAILABLE"}, 422)
 
+    @api.get("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/valuation")
+    def read_numbered_valuation(task_id: str, symbol: str, request: Request):
+        error = denied(request)
+        if error is not None:
+            return error
+        if not re.fullmatch(r"rt-[0-9a-f]{32}", task_id) or not re.fullmatch(r"[0-9]{6}", symbol):
+            return reply(dict(status="INVALID_TASK_OR_SYMBOL", action="no_order"), 422)
+        from datetime import datetime, timezone
+        from hashlib import sha256
+        from ...application.research.parent_cash_task_alignment_v3 import _align_verified_parent_cash_task
+        from ...application.research.parent_cash_task_receipt_v3 import replay_parent_cash_task_receipt
+
+        try:
+            candidates = [(task_root, valuation_receipt_path(task_root, task_id))
+                          for task_root in dict.fromkeys((Path(root).resolve(), code_root))]
+            available = [(task_root, path) for task_root, path in candidates if path.is_file()]
+            if not available:
+                return reply(dict(status="PARENT_TASK_VALUATION_NOT_SEALED", action="no_order"), 404)
+            if len(available) != 1:
+                raise ValueError("PARENT_TASK_DUPLICATE_VALUATION_RECEIPT")
+            task_root, path = available[0]
+            if path.stat().st_size > 64 * 1024:
+                raise ValueError("PARENT_TASK_VALUATION_RECEIPT_TOO_LARGE")
+            binding = dict(path=path.relative_to(task_root).as_posix(),
+                           sha256=sha256(path.read_bytes()).hexdigest())
+            now = datetime.now(timezone.utc)
+            result = replay_parent_cash_task_receipt(root=task_root, receipt_binding=binding, now=now)
+            if (result["symbol"] != symbol or result["provenance"]["task_id"] != task_id
+                    or result["action"] != "no_order" or result["formal_eligibility"] is not False
+                    or result["main_range_adopted"] is not False):
+                raise ValueError("PARENT_TASK_VALUATION_IDENTITY_MISMATCH")
+            valuations = result["valuation"]["assumptions"]["scenario_calculations"]
+            scenarios = {name: dict(per_share_value=valuations[name]["per_share_value"],
+                                    annual_years=len(valuations[name]["annual_rows"]),
+                                    terminal_method=valuations[name]["terminal_method"])
+                         for name in ("bear", "base", "bull")}
+            alignment = _align_verified_parent_cash_task(
+                root=task_root, receipt_binding=binding, result=result, now=now)
+            return reply(dict(status="VERIFIED_CONDITIONAL_VALUATION",
+                alignment_status=alignment["status"], alignment_reason_codes=alignment["reason_codes"],
+                task_id=task_id, symbol=symbol, valuation_date=result["descriptor"]["point_in_time"]["valuation_date"],
+                scenarios=scenarios, receipt_sha256=binding["sha256"],
+                input_descriptor_sha256=result["input_descriptor_sha256"], action="no_order",
+                formal_eligibility=False, current_comparable=False, condition_price=None))
+        except (ValueError, TypeError, KeyError, OSError, ArithmeticError):
+            return reply(dict(status="PARENT_TASK_VALUATION_UNAVAILABLE", action="no_order"), 422)
+
+    @api.get("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/h1-sensitivity")
+    def read_numbered_h1_sensitivity(task_id: str, symbol: str, request: Request):
+        error = denied(request)
+        if error is not None:
+            return error
+        if not re.fullmatch(r"rt-[0-9a-f]{32}", task_id) or not re.fullmatch(r"[0-9]{6}", symbol):
+            return reply(dict(status="INVALID_TASK_OR_SYMBOL", action="no_order"), 422)
+        from datetime import datetime, timezone
+        from hashlib import sha256
+        from ...application.product.common import require_inside
+        from ...application.research.direct_owner_cash_research_v1 import _read
+        from ...application.research.parent_h1_valuation_sensitivity_v1 import (
+            replay_parent_h1_valuation_sensitivity,
+        )
+
+        directory = Path("runtime") / "parent-cash-task-backed-receipts" / task_id
+        try:
+            available = []
+            for task_root in dict.fromkeys((Path(root).resolve(), code_root)):
+                path = require_inside(task_root / directory, task_root / directory / "h1-sensitivity.json",
+                                      "H1 task sensitivity registration")
+                if path.is_file():
+                    available.append((task_root, path))
+            if not available:
+                return reply(dict(status="PARENT_TASK_H1_SENSITIVITY_NOT_REGISTERED", action="no_order"), 404)
+            if len(available) != 1:
+                raise ValueError("PARENT_TASK_DUPLICATE_H1_SENSITIVITY")
+            task_root, path = available[0]
+            if path.stat().st_size > 16 * 1024:
+                raise ValueError("PARENT_TASK_H1_SENSITIVITY_REGISTRATION_TOO_LARGE")
+            reg = json.loads(path.read_bytes())
+            if (reg["symbol"] != symbol or reg["task_id"] != task_id
+                    or reg["action"] != "no_order"
+                    or reg["schema_version"] != "parent-h1-task-sensitivity-registration-v1"):
+                raise ValueError("PARENT_TASK_H1_SENSITIVITY_IDENTITY_MISMATCH")
+            predecessor = require_inside(task_root / directory, task_root / directory / "receipt.json",
+                                         "H1 sensitivity predecessor")
+            predecessor_binding = dict(path=predecessor.relative_to(task_root).as_posix(),
+                                       sha256=sha256(predecessor.read_bytes()).hexdigest())
+            receipt = _read(task_root, predecessor_binding)
+            if receipt["inputs"]["task_id"] != task_id:
+                raise ValueError("PARENT_TASK_H1_PREDECESSOR_IDENTITY_MISMATCH")
+            result = replay_parent_h1_valuation_sensitivity(
+                root=task_root, predecessor_binding=predecessor_binding,
+                assumptions_binding=reg["assumptions_binding"],
+                share_evidence_binding=reg.get("share_evidence_binding"), now=datetime.now(timezone.utc))
+            if result["symbol"] != symbol:
+                raise ValueError("PARENT_TASK_H1_SENSITIVITY_ISSUER_MISMATCH")
+            scenarios = {}
+            for name, row in result["scenarios"].items():
+                item = {"status": row["status"]}
+                if "valuation" in row:
+                    item["per_share_value"] = row["valuation"]["per_share_value"]
+                else:
+                    item["reason"] = row["reason"]
+                scenarios[name] = item
+            return reply(dict(status=result["status"], symbol=symbol, task_id=task_id,
+                period_end=result["period_end"], scenarios=scenarios, formal_eligibility=False,
+                condition_price=None, action="no_order"))
+        except (ValueError, TypeError, KeyError, OSError, ArithmeticError):
+            return reply(dict(status="PARENT_TASK_H1_SENSITIVITY_UNAVAILABLE", action="no_order"), 422)
+
     @api.post("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/{operation}")
     def control_numbered(task_id: str, operation: str, request: Request,
                          background: BackgroundTasks):
@@ -86,8 +237,8 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         try:
             task = (numbered_service.cancel(task_id) if operation == "cancel"
                     else numbered_service.resume(task_id))
-            if operation == "resume" and task["status"] == "QUEUED":
-                background.add_task(numbered_service.run, task_id)
+            if operation == "resume" and task["status"] in {"QUEUED", "SUCCEEDED"}:
+                background.add_task(run_numbered, task_id)
             return reply(task)
         except (ValueError, TypeError, KeyError, OSError, PermissionError):
             return reply({"action": "no_order", "status": "PARENT_V3_TASK_UNAVAILABLE"}, 422)
@@ -189,6 +340,10 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                      "reserved_cny": row.get("cost"),
                                      "settled_cny": row.get("actual_cost")}
                                     for row in reservations.values()],
+                        "valuation_receipt_status": (
+                            "SEALED_REPLAY_REQUIRED"
+                            if valuation_receipt_path(code_root if archived else Path(root), directory.name).is_file()
+                            else "NOT_SEALED"),
                         "candidate_status": ("COMPILED_CONDITIONAL_NOT_MAIN" if state["status"] == "SUCCEEDED"
                                              else "NOT_COMPILED"),
                         "e2_consumption": "UNVERIFIED", "formal": False, "action": "no_order"})

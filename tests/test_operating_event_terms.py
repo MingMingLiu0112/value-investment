@@ -197,7 +197,7 @@ def test_real_bound_originals(announcement_id, kind, published):
         pytest.skip("Set VALUE_ALIGNMENT_REAL_ROOT to replay retained originals")
     from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
     root = Path(configured)
-    base = root / "runtime/value-alignment-event-observation/20261030T034906348838Z"
+    base = root / "runtime/value-alignment-event-observation/600519-20260630-20261113-20261115T132948687168Z"
     scan = json.loads((base / "event-scan.json").read_text(encoding="utf-8"))
     item = next(a for a in scan["announcements"] if a["announcement_id"] == announcement_id)
     source = item["evidence_refs"][0]
@@ -325,3 +325,188 @@ def test_completed_buyback_keeps_planned_cancellation_out_of_effective_shares():
         parse([page.replace("10月22日", "10月24日")])
     with pytest.raises(ValueError, match="ISSUER_CODE_MISMATCH"):
         parse([page.replace("000777", "000778")])
+
+
+def _plan_purchase_page(*, plan="第六期长期服务计划"):
+    return (
+        "证券代码：000777 证券简称：示例 公告编号：临2026-087 "
+        f"示例股份有限公司关于{plan}完成股票购买的公告"
+        "本公司董事会及全体董事保证本公告内容不存在任何虚假记载、误导性陈述或者"
+        "重大遗漏，并对其内容的真实性、准确性和完整性承担法律责任。"
+        "一、本期计划基本情况公司已按照相关规则完成必要程序。"
+        "二、本期计划完成股票购买的情况"
+        f"截至2026年11月12日，公司通过上海证券交易所证券交易系统购买公司股票10,156,369股，"
+        "成交金额285,672,468.67元（不含交易费用），占公司总股本的比例为0.16%，"
+        f"成交均价为28.127元/股，公司{plan}标的股票的购买已全部完成。"
+        "三、后续安排公司将持续关注计划实施进展。"
+        "特此公告示例股份有限公司董事会2026年11月14日"
+    )
+
+
+@pytest.mark.parametrize("plan", ["第六期长期服务计划", "第三期员工持股计划"])
+def test_plan_purchase_requires_exchange_system_existing_share_purchase(plan):
+    page = _plan_purchase_page(plan=plan)
+    result = parse([page])
+    assert result["event_type"] == "PLAN_SECONDARY_MARKET_SHARE_PURCHASE_COMPLETED"
+    assert result["effective_date"] == "2026-11-12"
+    assert result["terms"] == {
+        "plan_name": plan,
+        "completion_date": "2026-11-12",
+        "purchase_method": "EXCHANGE_SECURITIES_TRADING_SYSTEM_EXISTING_SHARES",
+        "exchange": "上海证券交易所",
+        "purchased_shares": 10156369,
+        "paid_cny": "285672468.67",
+        "average_price_cny_per_share": "28.127",
+        "disclosed_total_share_percent": "0.16",
+        "issued_share_effect": "NO_ISSUANCE_OR_CANCELLATION_IN_THIS_PURCHASE_EVENT",
+    }
+    assert result["action"] == "no_order"
+    assert "不得据此调减" in result["limitations"][1]
+    assert_evidence(result, [page])
+
+
+def test_plan_purchase_accepts_strict_chinese_numeral_publication_date():
+    page = _plan_purchase_page().replace("2026年11月14日", "二〇二六年十一月十四日")
+    result = parse([page])
+    assert result["published_date"] == "2026-11-14"
+    assert result["effective_date"] == "2026-11-12"
+
+
+@pytest.mark.parametrize("old,new", [
+    ("通过上海证券交易所证券交易系统购买", "通过未披露方式购买"),
+    ("通过上海证券交易所证券交易系统购买", "通过协议转让取得"),
+    ("一、本期计划基本情况", "一、本期计划基本情况本次发行新股"),
+    ("一、本期计划基本情况", "一、本期计划基本情况本次注销股份"),
+    ("公司第六期长期服务计划标的股票", "公司第五期长期服务计划标的股票"),
+])
+def test_plan_purchase_unknown_transfer_issuance_cancellation_or_identity_rejected(old, new):
+    page = _plan_purchase_page()
+    assert old in page
+    with pytest.raises(ValueError, match="OPERATING_EVENT_"):
+        parse([page.replace(old, new)])
+
+
+@pytest.mark.parametrize("old,new", [
+    ("2026年11月12日", "2026年11月15日"),
+    ("285,672,468.67元", "100,000,000.00元"),
+    ("10,156,369股", "20,156,369股"),
+    ("0.16%", "0%"),
+])
+def test_plan_purchase_date_and_arithmetic_must_reconcile(old, new):
+    page = _plan_purchase_page()
+    with pytest.raises(ValueError, match="OPERATING_EVENT_"):
+        parse([page.replace(old, new)])
+
+
+def test_creditor_notice_keeps_cancellation_pending():
+    page = (
+        "证券代码：000777 证券简称：示例 公告编号：临2026-090 "
+        "示例股份有限公司关于回购股份减少注册资本通知债权人的公告"
+        "本公司董事会及全体董事保证本公告内容不存在任何虚假记载、误导性陈述或者"
+        "重大遗漏，并对其内容的真实性、准确性和完整性承担法律责任。"
+        "待回购完成后，本次回购的股份将依法全部予以注销并减少公司注册资本。"
+        "申报时间：2026年9月17日至2026年10月31日。"
+        "特此公告 示例股份有限公司董事会二○二六年九月十七日"
+    )
+    result = parse([page])
+    assert result["event_type"] == "BUYBACK_CAPITAL_REDUCTION_CREDITOR_NOTICE"
+    assert result["terms"] == {
+        "claim_start": "2026-09-17", "claim_end": "2026-10-31",
+        "cancellation_status": "PLANNED",
+    }
+    assert result["effective_date"] is None
+    assert result["action"] == "no_order"
+    with pytest.raises(ValueError, match="CLAIM_WINDOW_INVALID"):
+        parse([page.replace("2026年9月17日", "2026年9月18日")])
+
+
+@pytest.mark.parametrize(
+    "proposal,approval,expected",
+    [
+        (True, False, "PROPOSED_SUBJECT_TO_SHAREHOLDER_APPROVAL"),
+        (False, True, "SHAREHOLDER_APPROVED_PLAN"),
+        (False, False, None),
+        (True, True, None),
+    ],
+)
+def test_buyback_plan_requires_matching_approval_evidence(proposal, approval, expected):
+    from value_investment_agent.infrastructure.filings.operating_event_terms import (
+        BUYBACK_PLAN_TITLES, parse_buyback_cancellation_plan,
+    )
+
+    decision = (
+        "2026年9月16日，公司召开2026年第一次临时股东会，"
+        "审议通过了《关于以集中竞价交易方式回购公司股份方案的议案》。"
+        if approval else "本次回购股份方案尚需提交公司股东会审议通过。"
+    )
+    title = BUYBACK_PLAN_TITLES[0 if proposal else 1]
+    page = (
+        "证券代码：000777 证券简称：示例酒业 公告编号：临2026-031"
+        f"示例酒业股份有限公司{title}"
+        "●回购股份金额：不低于人民币1亿元（含）且不超过人民币2亿元（含），"
+        "实际金额以回购完毕为准。"
+        "●回购股份资金来源：公司自有资金。"
+        "●回购股份用途：本次回购股份将依法全部予以注销并减少公司注册资本。"
+        "●回购股份价格：不超过人民币39.53元/股（含）。"
+        "●回购股份期限：自公司股东会审议通过回购方案之日起不超过6个月。"
+        f"{decision}特此公告。示例酒业股份有限公司董事会2026年9月17日"
+    )
+    if expected is None:
+        with pytest.raises(ValueError, match="APPROVAL"):
+            parse_buyback_cancellation_plan([page], symbol="000777")
+        return
+    result = parse_buyback_cancellation_plan([page], symbol="000777")
+    assert result["terms"]["plan_state"] == expected
+    assert result["terms"]["shareholder_approved_on"] == ("2026-09-16" if approval else None)
+    assert result["effective_date"] is None
+    assert result["action"] == "no_order"
+
+
+@pytest.mark.parametrize("fault", [None, "missing_rate", "wrong_days", "duplicate_code"])
+def test_financing_issuance_extracts_only_complete_consistent_terms(fault):
+    header = PRICE[0].split(" 根据《", 1)[0].replace(
+        "重大事项公告", "关于2026年度第五期科技创新债券发行结果的公告",
+    )
+    row = ("代码102600001期限380天起息日2026年10月28日兑付日2027年11月12日"
+           "计划发行总额35亿元实际发行总额35亿元发行利率1.37%发行价格100元/百元面值")
+    if fault == "missing_rate":
+        row = row.replace("发行利率1.37%", "")
+    if fault == "wrong_days":
+        row = row.replace("380天", "379天")
+    if fault == "duplicate_code":
+        row += row
+    pages = [header + row + "特此公告示例酒业股份有限公司董事会2026年10月30日"]
+    if fault:
+        with pytest.raises(ValueError, match="OPERATING_EVENT_FINANCING_ISSUANCE_"):
+            parse(pages)
+    else:
+        result = parse(pages)
+        assert result["event_type"] == "REPORTED_ISSUER_FINANCING_ISSUANCE"
+        assert result["financing_issues"] == [dict(code="102600001",
+            interest_start="2026-10-28", maturity="2027-11-12", term_days=380,
+            face_value_cny="3500000000", coupon_percent="1.37",
+            issue_price_per_100_face_cny="100")]
+        assert_evidence(result, pages)
+
+
+@pytest.mark.parametrize("reported", ["26,100.00", "100.00"])
+def test_financing_redemption_uses_payment_date_and_checks_principal(reported):
+    header = PRICE[0].split(" 根据《", 1)[0].replace(
+        "重大事项公告", "关于2026年度第十期超短期融资券兑付完成的公告",
+    )
+    pages = [header
+        + "公司2026年度第十期超短期融资券0.0002亿元1.29%89天"
+        + "2026年7月2日2026年9月29日临2026-046"
+        + "2026年9月29日，公司完成了2026年度第十期超短期融资券的兑付工作，"
+        + f"本息兑付总额为人民币{reported}元，由银行间市场清算所股份有限公司"
+        + "代理划付至债券持有人指定的银行账户。"
+        + "特此公告示例酒业股份有限公司董事会2026年10月1日"]
+    if reported == "100.00":
+        with pytest.raises(ValueError, match="FINANCING_REDEMPTION_TERMS_CONFLICT"):
+            parse(pages)
+        return
+    result = parse(pages)
+    assert result["effective_date"] == "2026-09-29"
+    assert result["published_date"] == "2026-10-01"
+    assert result["financing_redemptions"][0]["inferred_interest_cny"] == "6100.00"
+    assert_evidence(result, pages)

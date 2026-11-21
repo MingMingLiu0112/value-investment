@@ -107,7 +107,7 @@ def source_case(tmp_path, monkeypatch):
                 decoded=decoded, manifest=manifest)
 
 
-def guarded_build(root, **kwargs):
+def guarded_build(root, *, builder=None, **kwargs):
     """Fail on write/network attempts, including transient changes, at call boundary."""
     def denied(*args, **kw):
         raise AssertionError("Operating context attempted write/network")
@@ -134,7 +134,7 @@ def guarded_build(root, **kwargs):
         stack.enter_context(patch.object(socket.socket, "connect", denied))
         stack.enter_context(patch.object(socket.socket, "connect_ex", denied))
         stack.enter_context(patch.object(requests.sessions.Session, "request", denied))
-        return operating.build_operating_source_context(root=root, **kwargs)
+        return (builder or operating.build_operating_source_context)(root=root, **kwargs)
 
 
 def build(case, binding=None, symbol="000001"):
@@ -598,17 +598,19 @@ def test_fixed_registry_context_unchanged_and_no_public_fallback(source_case,mon
 
 
 def test_real_registered_public_operating_context_readonly():
+    from value_investment_agent.application.research.agent_review.operating_sources_d1_v2 import build_d1_source_context
+
     root_env=os.environ.get("OPERATING_PUBLIC_SOURCES_REAL_ROOT")
     if not root_env:
         pytest.skip("Explicit real public-source root required; not real acceptance")
     root=Path(root_env)
     now=datetime.now(timezone.utc)
-    context=guarded_build(root,symbol="600323",now=now)
+    context=guarded_build(root,builder=build_d1_source_context,symbol="600323",now=now)
     assert context["symbol"]=="600323" and context["financial_basis"]=="2025-12-31"
     adopted=[r for r in context["evidence"] if r["kind"]=="VERIFIED_ADOPTED_FINANCIAL_FACT"]
     assert {"debt_ratio","net_income"}<={r["field"] for r in adopted}
     assert any(r["kind"]=="OFFICIAL_EXCERPT_NOT_VERIFIED_CLAIM" for r in context["evidence"])
-    assert guarded_build(root,symbol="600323",now=now,binding=context["source_binding"])==context
+    assert guarded_build(root,builder=build_d1_source_context,symbol="600323",now=now,binding=context["source_binding"])==context
 
 def test_public_adoption_without_registry_supports_auto_and_explicit_binding(public_adoption_case):
     case=public_adoption_case
@@ -750,21 +752,61 @@ def test_statement_interface_binding_cannot_upgrade_or_switch_source(public_adop
 
 
 def test_real_registered_public_two_period_statement_basis_readonly():
+    from value_investment_agent.application.research.agent_review.operating_sources_d1_v2 import build_d1_source_context
+
     root_env=os.environ.get("OPERATING_PUBLIC_SOURCES_REAL_ROOT")
     if not root_env:
         pytest.skip("Explicit real source root required; never count synthetic as actual")
     from value_investment_agent.domain.research.operating_driver_bridge_v1 import build_basis,FIELDS
     from value_investment_agent.infrastructure.filings import operating_statement_basis_v1 as statement
     root=Path(root_env);now=datetime.now(timezone.utc)
-    context=guarded_build(root,symbol="600323",now=now)
+    context=guarded_build(root,builder=build_d1_source_context,symbol="600323",now=now)
     basis=build_basis(context)
     assert set(basis["baselines"])=={"2025-12-31","2024-12-31"}
     assert not basis["gaps"] and context["statement_basis_gaps"]==[]
     rows=[r for r in context["evidence"] if r["kind"]=="VERIFIED_REPORTED_FACT"]
-    assert len(rows)==14
+    basis_rows=[r for r in rows if r["field"] in FIELDS]
+    assert len(basis_rows)==2*len(FIELDS)
     for period in basis["baselines"]:
-        assert {r["field"] for r in rows if r["period"]==period}==set(FIELDS)
+        assert {r["field"] for r in basis_rows if r["period"]==period}==set(FIELDS)
     assert {"debt_ratio","net_income"}<={r.get("field") for r in context["evidence"]}
     assert context["implementation_sha256"][statement.__name__]==digest(Path(statement.__file__).read_bytes())
     assert all(r["formal_eligibility"] is False and r["financial_quality_granted"] is False for r in rows)
-    assert guarded_build(root,symbol="600323",now=now,binding=context["source_binding"])==context
+    assert guarded_build(root,builder=build_d1_source_context,symbol="600323",now=now,binding=context["source_binding"])==context
+
+
+def test_real_600323_d1_reuses_sealed_parent_profit_and_replays_legacy():
+    from value_investment_agent.application.research.agent_review import operating_task_v2 as task
+    from value_investment_agent.application.research.agent_review.operating_sources_d1_v2 import build_d1_source_context
+
+    configured = os.environ.get("OPERATING_PUBLIC_SOURCES_REAL_ROOT")
+    if not configured:
+        pytest.skip("Explicit retained 600323 source root required")
+    root = Path(configured)
+    now = datetime.fromisoformat("2026-11-20T21:55:25.482152+00:00")
+    legacy = guarded_build(root, symbol="600323", now=now)
+    assert legacy["snapshot_fingerprint"] == "c3465c39e4815ad2212d4608eaaee801b9fa68339623e87e41a1fb17176fd317"
+    pin = legacy["source_binding"]
+    upgraded = guarded_build(root, builder=build_d1_source_context, symbol="600323", now=now, binding=pin)
+    assert upgraded["d1_projection_version"] == "existing-parent-profit-v2"
+    assert upgraded["action"] == "no_order"
+    assert upgraded == guarded_build(root, builder=build_d1_source_context, symbol="600323", now=now)
+    model_input = task.research_context(upgraded)
+    fact, = [row for row in model_input["evidence"] if row.get("field") == "net_income"]
+    assert fact["id"] == "income-input:9d6bc4420f51560a1c0333320ab176a2a7292c8c7750814163a9b0f8ac720154"
+    assert (fact["value"], fact["period"], fact["scope"], fact["unit"]) == (
+        "1973065482.52", "2025-12-31", "consolidated", "CNY")
+    assert fact["pdf_sha256"] == "aa9972a1838548cb10edf1408f6442da07a3d1ad96b00d88243c44db6400285c"
+
+    service = task.LiveOperatingTaskService(root)
+    old_implementation = {name: digest for name, digest in task.implementation().items()
+                          if name.rsplit(".", 1)[-1] not in {"operating_sources_d1_v2", "income_source_correlation"}}
+    old_implementation[task.__name__] = "24557bc66f41851333333d5c88a9a4fbf87933dccaf71a3977e640f31db08753"
+    spec = dict(symbol="600323", source_binding=pin, created_at=now.isoformat(),
+                implementation_sha256=old_implementation, context_fingerprint=legacy["snapshot_fingerprint"])
+    assert guarded_build(root, builder=lambda **_: service._context(spec)) == legacy
+    with pytest.raises(ValueError, match="LIVE_SOURCE_CONTEXT_CHANGED"):
+        guarded_build(root, builder=lambda **_: service._context(
+            dict(spec, context_fingerprint=upgraded["snapshot_fingerprint"])))
+    with pytest.raises(ValueError, match="LIVE_IMPLEMENTATION_CHANGED_NEW_TASK_REQUIRED"):
+        service._context(dict(spec, implementation_sha256=dict(old_implementation, unknown="0" * 64)))

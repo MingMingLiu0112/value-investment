@@ -279,6 +279,8 @@ def _quarter_update(pages, normalized, period):
 
 
 def _announcement(pages, normalized, symbol):
+    if re.match(r"证券代码:.*?关于部分限制性股票回购注销完成的公告本公司", normalized[0]):
+        return _completed_restricted_share_cancellation(pages, normalized, symbol)
     head = "".join(normalized[:2])
     codes = set(re.findall(r"证券代码:?([0-9]{6})(?![0-9])", head))
     names = re.findall(r"[\u4e00-\u9fff]+股份(?:有限公司|公司)", head)
@@ -401,3 +403,45 @@ def _announcement(pages, normalized, symbol):
     result["unknowns"].append("dividend_policy")
     result["kind"] = result["report_kind"]
     return result
+
+def _completed_restricted_share_cancellation(pages, normalized, symbol):
+    cover = normalized[0]
+    title = re.match(
+        r"证券代码:([0-9]{6})证券简称:[\u4e00-\u9fff]+公告编号:(20\d{2})-[0-9]+"
+        r"([\u4e00-\u9fff]+股份有限公司)关于部分限制性股票回购注销完成的公告本公司",
+        cover,
+    )
+    if not title or title[1] != symbol:
+        raise ValueError("NATIVE_CANCELLATION_NOTICE_ISSUER_INVALID")
+    signed = re.search(re.escape(title[3]) +
+        r"董事会(20\d{2})年(\d{1,2})月(\d{1,2})日$", normalized[-1])
+    if not signed or signed[1] != title[2]:
+        raise ValueError("NATIVE_CANCELLATION_NOTICE_SIGNED_DATE_INVALID")
+
+    # Use the operative notice box. Historical examples elsewhere may contain
+    # completion text and figures from different plans.
+    box = cover.partition("特别提示:")[2].partition("根据")[0]
+    amounts = list(re.finditer(r"本次回购注销的限制性股票数量为" + INTEGER + r"股", box))
+    transitions = list(re.finditer(
+        r"截至本公告披露日,经中国(?:证券)?登记结算有限责任公司深圳分公司"
+        r"审核确认,本次限制性股票回购注销事宜已办理完成,公司股份总数由"
+        + INTEGER + r"股减少至" + INTEGER + r"股", box))
+    if len(amounts) != 1 or len(transitions) != 1:
+        raise ValueError("NATIVE_CANCELLATION_NOTICE_OPERATIVE_FIELDS_REQUIRED")
+    cancelled = _decimal(amounts[0][1])
+    before, after = map(_decimal, transitions[0].groups())
+    if after <= 0 or cancelled <= 0 or before - after != cancelled:
+        raise ValueError("NATIVE_CANCELLATION_NOTICE_SHARE_DELTA_MISMATCH")
+    signed_date = date(*map(int, signed.groups())).isoformat()
+    return dict(parser_version=VERSION, kind="restricted_share_cancellation_notice",
+        status="VERIFIED", symbol=symbol, issuer_name=title[3], observation_date=signed_date,
+        completed_by=signed_date, shares_before=str(before), issued_shares_after=str(after),
+        cancelled_shares=str(cancelled), share_scope="TOTAL_ISSUED_SHARES",
+        closing_continuity_proven=False, formal_eligibility=False, action="no_order",
+        evidence_refs=[
+            dict(field="cancelled_shares", physical_page=1, excerpt=_raw_excerpt(pages[0], amounts[0][0])),
+            dict(field="completion_and_share_delta", physical_page=1,
+                 excerpt=_raw_excerpt(pages[0], transitions[0][0])),
+            dict(field="observation_date", physical_page=len(pages),
+                 excerpt=_raw_excerpt(pages[-1], signed[0])),
+        ])

@@ -17,6 +17,29 @@ from .current_scan import _bound_json, current_scan_details
 from .public_financial_input import verify_public_supplement
 
 
+def registered_value_screen(run: dict, *, now: datetime) -> tuple[dict, bool]:
+    """Validate the run and select its explicit current or historical screen."""
+    if (run['schema_version'] != 'daily-workbench-run-v1' or run['action'] != 'no_order'
+            or run['mode'] not in {'SAFE_REFRESH', 'READ_ONLY'}):
+        raise ValueError('unsupported latest run')
+    if now.utcoffset() is None:
+        raise ValueError('timezone-aware cutoff required')
+    for field in ('started_at', 'finished_at'):
+        if run.get(field) is not None:
+            when = datetime.fromisoformat(run[field])
+            if when.utcoffset() is None or when > now:
+                raise ValueError('latest attempt not available at cutoff')
+    if (run.get('started_at') is not None and run.get('finished_at') is not None
+            and datetime.fromisoformat(run['started_at']) > datetime.fromisoformat(run['finished_at'])):
+        raise ValueError('inverted latest attempt times')
+    attempt = run.get('marketwide_screen') or {}
+    current = run['mode'] == 'SAFE_REFRESH' and attempt.get('status') == 'RESEARCH_ONLY'
+    screen = attempt if current else run['retained_marketwide_screen']
+    if screen['status'] != 'RESEARCH_ONLY':
+        raise ValueError('unsupported retained screen')
+    return screen, current
+
+
 def select_current_value_candidates(*, root: Path, now: datetime, limit: int = 30) -> dict:
     """Separate the latest attempt from its explicitly retained research snapshot."""
     root = root.resolve()
@@ -28,24 +51,8 @@ def select_current_value_candidates(*, root: Path, now: datetime, limit: int = 3
         if len(raw) > 512_000:
             raise ValueError('oversized latest-run pointer')
         run = json.loads(raw.decode('utf-8-sig'))
-        if (run['schema_version'] != 'daily-workbench-run-v1' or run['action'] != 'no_order'
-                or run['mode'] not in {'SAFE_REFRESH', 'READ_ONLY'}):
-            raise ValueError('unsupported latest run')
-        if now.utcoffset() is None:
-            raise ValueError('timezone-aware cutoff required')
-        for field in ('started_at', 'finished_at'):
-            if run.get(field) is not None:
-                when = datetime.fromisoformat(run[field])
-                if when.utcoffset() is None or when > now:
-                    raise ValueError('latest attempt not available at cutoff')
-        if (run.get('started_at') is not None and run.get('finished_at') is not None
-                and datetime.fromisoformat(run['started_at']) > datetime.fromisoformat(run['finished_at'])):
-            raise ValueError('inverted latest attempt times')
+        screen, current = registered_value_screen(run, now=now)
         attempt = run.get('marketwide_screen') or {}
-        current = run['mode'] == 'SAFE_REFRESH' and attempt.get('status') == 'RESEARCH_ONLY'
-        screen = attempt if current else run['retained_marketwide_screen']
-        if screen['status'] != 'RESEARCH_ONLY':
-            raise ValueError('unsupported retained screen')
         binding = dict(path=screen['manifest_path'], sha256=screen['manifest_sha256'])
         result = select_value_candidates(root=root, manifest_binding=binding, now=now, limit=limit)
         if current:

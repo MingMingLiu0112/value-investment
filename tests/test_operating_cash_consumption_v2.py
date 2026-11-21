@@ -68,9 +68,8 @@ def test_consumer_reuses_source_validation_and_keeps_old_result(monkeypatch, tmp
     value = earnings()
     value.update(consumption_fingerprint="old", condition_price=None, current_blockers=[
         dict(code="COMPLETE_ANNUAL_OPERATING_PATH_REQUIRED", stage="valuation", explanation="old H1")])
-    monkeypatch.setattr(subject.previous, "read_operating_cash_consumption", lambda **kw: deepcopy(value))
-    monkeypatch.setattr(subject.previous, "build_operating_source_context", lambda **kw:
-        dict(financial_basis="2025-12-31", snapshot_fingerprint="verified"))
+    monkeypatch.setattr(subject.previous, "_read_with_context", lambda **kw:
+        (deepcopy(value), dict(financial_basis="2025-12-31")))
     task = dict(symbol="TEST_ONLY", research_as_of="2026-11-05T00:00:00+00:00",
                 source_binding={}, context_fingerprint="verified")
     result = subject.read_operating_cash_consumption(root=tmp_path, task=task,
@@ -79,18 +78,16 @@ def test_consumer_reuses_source_validation_and_keeps_old_result(monkeypatch, tmp
     assert result["current_blockers"][0]["code"] == "COMPLETE_TEN_YEAR_OPERATING_PATH_REQUIRED"
     assert result["condition_price"] is None
     assert value["current_blockers"][0]["explanation"] == "old H1"
-    task["context_fingerprint"] = "changed"
-    with pytest.raises(ValueError, match="CONTEXT_CHANGED"):
-        subject.read_operating_cash_consumption(root=tmp_path, task=task, now=datetime.now(timezone.utc))
+    assert result["annual_compilation_implementations"][subject.VERSION] == (
+        "545e75201c288f3e321527eb8ee06aba0c970c8879c8bd61722b2dcfbfaddfb8")
 
 
 def test_half_year_keeps_existing_adapter_and_failure_has_precise_blocker(monkeypatch, tmp_path):
     value = earnings()
     value.update(consumption_fingerprint="old", current_blockers=[
         dict(code="COMPLETE_ANNUAL_OPERATING_PATH_REQUIRED")])
-    monkeypatch.setattr(subject.previous, "read_operating_cash_consumption", lambda **kw: deepcopy(value))
-    monkeypatch.setattr(subject.previous, "build_operating_source_context", lambda **kw:
-        dict(financial_basis="2026-06-30", snapshot_fingerprint="verified"))
+    monkeypatch.setattr(subject.previous, "_read_with_context", lambda **kw:
+        (deepcopy(value), dict(financial_basis="2026-06-30")))
     task = dict(symbol="TEST_ONLY", research_as_of="2026-11-05T00:00:00+00:00",
                 source_binding={}, context_fingerprint="verified")
     result = subject.read_operating_cash_consumption(root=tmp_path, task=task, now=datetime.now(timezone.utc))

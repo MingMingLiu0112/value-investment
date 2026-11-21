@@ -286,5 +286,13 @@ it("distinguishes replayed alternate parent cash statements from a rejected sour
   const html = render(view);
   expect(html).toContain("已核验两期母公司现金表（17 项）");
   expect(html).toContain("此批次尚未核验 D2 现金政策");
+  expect(html).not.toContain("前往经营研究");
+  view.source_receipt_batch.items[0].status =
+    "SOURCE_REPLAYED_SELECTION_PROPOSAL";
+  const ready = render(view);
+  expect(ready).toContain("前往经营研究");
+  expect(ready).toContain(
+    "/decisions/600001?strategy=value#operating-research",
+  );
   expect(html).not.toContain("来源重放未通过");
 });

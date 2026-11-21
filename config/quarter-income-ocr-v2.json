@@ -26,6 +26,13 @@
             "sha256": "aa15449fd587f0ce827c5730f19166dab2f00dfd66b3b4d4f24a8050f47885be"
           }
         }
+      },
+      "prior_year_original": {
+        "path": "runtime/e1-q3-comparative-600519-20261120/1224764517.PDF",
+        "sha256": "622935d03b23310dcde1ba3c3d398b130c3fbf73b753fb79fab934999524307a",
+        "source_url": "https://static.cninfo.com.cn/finalpage/2025-10-30/1224764517.PDF",
+        "available_at": "2026-11-19T22:32:04.127196+00:00",
+        "report_period": "2025-09-30"
       }
     }
   }

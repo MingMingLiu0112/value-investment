@@ -67,6 +67,40 @@ export default function SystemStatus() {
                       : "运行状态存在差异；请查看下方版本问题",
               },
               {
+                key: "code-status",
+                label: "代码与构建核对",
+                children: runtime.data?.code_status || "未核验",
+              },
+              {
+                key: "config-status",
+                label: "本机配置版本",
+                children: runtime.data?.config_status || "未核验",
+              },
+              {
+                key: "registry-status",
+                label: "发布引用一致性",
+                children:
+                  runtime.data?.publication_registry?.status || "未核验",
+              },
+              {
+                key: "source-validation",
+                label: "来源与价格校验（独立门禁）",
+                children: (
+                  <>
+                    {runtime.data?.publication_registry?.source_validation
+                      ?.status || "未核验"}
+                    <p>{runtime.data?.publication.reason}</p>
+                    <ul>
+                      {runtime.data?.publication_registry?.source_validation?.blockers.map(
+                        (reason) => (
+                          <li key={reason}>{describeCode(reason)}</li>
+                        ),
+                      )}
+                    </ul>
+                  </>
+                ),
+              },
+              {
                 key: "client",
                 label: "当前页面前端构建",
                 children: `${clientBuild.commit?.slice(0, 12) || "未知"} · ${clientBuild.built_at || "未知时间"}`,

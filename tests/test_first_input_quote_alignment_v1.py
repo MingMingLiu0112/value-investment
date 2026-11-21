@@ -55,6 +55,7 @@ def test_new_e2_cutoff_uses_verified_close_without_inheriting_invalid_legacy_pac
                                                 first_input=research, now=NOW)
     assert damaged["status"] == "UNASSESSABLE"
     assert damaged["quote_usable_for_e2_research"] is False
+    assert damaged["quote_source_verified"] is False
 
 
 def test_quote_after_e2_cutoff_cannot_be_used_for_that_research(tmp_path, monkeypatch):
@@ -82,3 +83,20 @@ def test_same_day_quote_collected_after_e2_computation_requires_new_revalidation
     assert result["quote_usable_for_e2_research"] is False
     assert result["display_price"] == "1457.70"
     assert result["current_valuation_comparable"] is False
+
+
+def test_verified_archive_remains_source_verified_without_current_eligibility(tmp_path, monkeypatch):
+    _, research = _case(tmp_path)
+    monkeypatch.setattr(quote_bridge, "quote_snapshot_from_bundle_file", lambda *a, **k:
+        SimpleNamespace(status=QUOTE_STATUS_VERIFIED_CLOSE, quote_date=date(2026, 11, 17),
+                        current_price="1457.70", blockers=[], evidence_refs=[]))
+    monkeypatch.setattr(quote_bridge, "resolve_session_reference", lambda *a:
+        {"calendar_exchange": "SSE", "calendar_documents": {}})
+    monkeypatch.setattr(quote_bridge, "latest_sse_2026_session", lambda *a: ("2026-11-18", {}))
+    result = read_first_input_quote_alignment(root=tmp_path, symbol="600519",
+        first_input=research, now=datetime(2026, 11, 18, 9, tzinfo=timezone.utc))
+    assert result["status"] == "NOT_ADMITTED"
+    assert result["quote_source_verified"] is True
+    assert result["quote_usable_for_e2_research"] is False
+    assert result["current_valuation_comparable"] is False
+    assert result["condition_price"] is None

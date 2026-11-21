@@ -94,3 +94,30 @@ it("lists one company's bounded task history using an explicit authenticated GET
     "TEST_ONLY_SESSION",
   );
 });
+
+it.each([404, 422])(
+  "uses a private valuation GET and preserves HTTP %i",
+  async (status) => {
+    const fetcher = vi.fn(
+      async (_url: string, _init: RequestInit) =>
+        new Response(JSON.stringify({ detail: "unavailable" }), { status }),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    const { api } = await import("../src/services/api");
+    const signal = new AbortController().signal;
+    await expect(
+      api.parentCashTaskValuation("id/a", "000568 &", signal),
+    ).rejects.toMatchObject({ status });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    const [url, init] = fetcher.mock.calls[0];
+    expect(url).toBe(
+      "/api/v1/operating-research/parent-cash-tasks/v3/id%2Fa/valuation?symbol=000568%20%26",
+    );
+    expect(init.method ?? "GET").toBe("GET");
+    expect(init.body).toBeUndefined();
+    expect(init.signal).toBe(signal);
+    expect(new Headers(init.headers).get("X-Local-Session")).toBe(
+      "TEST_ONLY_SESSION",
+    );
+  },
+);

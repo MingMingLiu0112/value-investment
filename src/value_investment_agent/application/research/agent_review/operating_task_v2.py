@@ -11,6 +11,7 @@ import re
 from urllib.error import HTTPError
 from .task_execution_v1 import ResearchTaskService, VERSION, STATES, _bytes, _hash, _now
 from .operating_sources_v1 import build_operating_source_context
+from .operating_sources_d1_v2 import build_d1_source_context
 from ....infrastructure.agent_runtime.provider import OpenAICompatibleChatProvider, LLMResponse
 from ...product.common import require_inside, write_new_bytes
 
@@ -77,7 +78,9 @@ def implementation():
     from ....infrastructure.agent_runtime import provider
     from . import operating_driver_draft_v2
     from ....domain.research import operating_driver_bridge_v1
-    modules=(operating_draft_v1,operating_sources_v1,provider,task_execution_v1,
+    from . import operating_sources_d1_v2
+    from .. import income_source_correlation
+    modules=(operating_sources_d1_v2,income_source_correlation,operating_draft_v1,operating_sources_v1,provider,task_execution_v1,
              operating_driver_draft_v2,operating_driver_bridge_v1)
     return {**{m.__name__:_hash(Path(m.__file__).read_bytes()) for m in modules},
             __name__:_hash(Path(__file__).read_bytes())}
@@ -88,7 +91,9 @@ class LiveOperatingTaskService(ResearchTaskService):
         super().__init__(root)
         self.base=require_inside(self.root,self.base/"live-operating-v1","live workflow")
         self.test_provider=test_provider
-        self.source_loader=source_loader or build_operating_source_context
+        self.source_loader=source_loader or build_d1_source_context
+        self.legacy_source_loader=(source_loader if test_provider is not None and source_loader is not None
+                                   else build_operating_source_context)
 
     def _daily_budget(self,day,reservation,amount,cfg,*,settle=False):
         """Cross-task durable CNY cap. Unsettled requests remain charged after crashes."""
@@ -127,9 +132,23 @@ class LiveOperatingTaskService(ResearchTaskService):
             self._head(directory,self._binding(path))
 
     def _context(self,spec):
-        if spec["implementation_sha256"]!=implementation():
-            raise ValueError("LIVE_IMPLEMENTATION_CHANGED_NEW_TASK_REQUIRED")
-        ctx=self.source_loader(root=self.root,symbol=spec["symbol"],
+        current = implementation()
+        sealed = spec["implementation_sha256"]
+        loader = self.source_loader
+        if sealed != current:
+            # Only the exact prior D1 task implementation is compatible.
+            # All other original dependency hashes must still agree.
+            legacy = {name: digest for name, digest in current.items()
+                      if name.rsplit(".", 1)[-1] not in {"operating_sources_d1_v2", "income_source_correlation"}}
+            prior_task_hashes = {
+                "1f8cc8e7a94b9d73d6a02744995ecf8fafab5fefff9146505e853bdbd6bd502c",
+                "24557bc66f41851333333d5c88a9a4fbf87933dccaf71a3977e640f31db08753",
+                "298b4f65c79cf5afcceef8d9a31a7b65fd901e6920306b6898571a422fb4fbb9",
+            }
+            if sealed.get(__name__) not in prior_task_hashes or sealed != dict(legacy, **{__name__: sealed.get(__name__)}):
+                raise ValueError("LIVE_IMPLEMENTATION_CHANGED_NEW_TASK_REQUIRED")
+            loader = self.legacy_source_loader
+        ctx=loader(root=self.root,symbol=spec["symbol"],
             binding=spec["source_binding"],now=datetime.fromisoformat(spec["created_at"]))
         if ctx["snapshot_fingerprint"]!=spec["context_fingerprint"]:
             raise ValueError("LIVE_SOURCE_CONTEXT_CHANGED")

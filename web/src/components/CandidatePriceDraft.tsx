@@ -3,6 +3,8 @@ import type {
   JointCapitalReview,
 } from "../services/valuePolicy";
 
+import { formatMoney } from "../utils/format";
+
 type Review = Readonly<JointCapitalReview>;
 const numberText = (value: unknown) =>
   typeof value === "string" &&
@@ -202,6 +204,100 @@ function Reasons({ value }: { value: unknown }) {
     </ul>
   ) : null;
 }
+export function FinancialFinancingConflicts({ value }: { value: unknown }) {
+  if (!object(value) || !Array.isArray(value.consumed_closure)) return null;
+  const rows = value.consumed_closure.flatMap((closure: unknown) => {
+    if (!object(closure) || !object(closure.financing_comparison)) return [];
+    const financing = closure.financing_comparison;
+    return financing.status === "CONFLICT" && Array.isArray(financing.conflicts)
+      ? financing.conflicts.filter(object)
+      : [];
+  });
+  const scenarios = { bear: "悲观", base: "基准", bull: "乐观" };
+  const fields = { new_borrowing: "借款收现", debt_repayment: "偿债支出" };
+  const valid = rows.filter(
+    (row) =>
+      typeof row.scenario === "string" &&
+      Object.prototype.hasOwnProperty.call(scenarios, row.scenario) &&
+      typeof row.field === "string" &&
+      Object.prototype.hasOwnProperty.call(fields, row.field) &&
+      numberText(row.reported_ytd_cny) &&
+      (row.modeled_full_year_cny === "0" ||
+        numberText(row.modeled_full_year_cny)),
+  );
+  if (!valid.length) return null;
+  return (
+    <div>
+      <p>
+        母公司已披露的借还款超过全年模型金额。更新融资路径后才能完成当前价格核验。
+      </p>
+      <ul>
+        {valid.map((row, index) => (
+          <li key={index}>
+            {scenarios[row.scenario as keyof typeof scenarios]}情景
+            {fields[row.field as keyof typeof fields]}，已发生{" "}
+            {formatMoney(String(row.reported_ytd_cny))} 元，全年模型{" "}
+            {formatMoney(String(row.modeled_full_year_cny))} 元。
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function ParentFinancingSchedule({ value }: { value: unknown }) {
+  if (
+    !object(value) ||
+    value.schema_version !== "parent-financing-schedule-v1" ||
+    value.action !== "no_order" ||
+    value.actual_later_cash_verified !== false ||
+    !object(value.reported_ytd_cny) ||
+    !object(value.scheduled_face_principal_by_maturity_cny)
+  )
+    return null;
+
+  const cash = value.reported_ytd_cny;
+  const maturity = Object.entries(
+    value.scheduled_face_principal_by_maturity_cny,
+  );
+  const dateText = (date: unknown): date is string =>
+    typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const amountText = (amount: unknown): amount is string =>
+    typeof amount === "string" && /^\d+(?:\.\d+)?$/.test(amount);
+  if (
+    !dateText(value.period_end) ||
+    !amountText(cash.borrowings_received_cny) ||
+    !amountText(cash.debt_repayments_paid_cny) ||
+    !amountText(value.later_issuance_proceeds_at_issue_price_cny) ||
+    !maturity.every(([date, amount]) => dateText(date) && amountText(amount))
+  )
+    return null;
+
+  return (
+    <section aria-label="母公司融资时间表">
+      <p>
+        截至 {value.period_end}，借款收现{" "}
+        {formatMoney(cash.borrowings_received_cny)} 元， 偿债支出{" "}
+        {formatMoney(cash.debt_repayments_paid_cny)} 元。
+      </p>
+      <p>
+        此后披露发行按公告价格折算{" "}
+        {formatMoney(value.later_issuance_proceeds_at_issue_price_cny)} 元。
+      </p>
+      {maturity.length > 0 && (
+        <ul>
+          {maturity.map(([date, amount]) => (
+            <li key={date}>
+              {date} 合同到期本金 {formatMoney(String(amount))} 元
+            </li>
+          ))}
+        </ul>
+      )}
+      <p>后续实际收付、剩余债务和续借条件待核验。</p>
+    </section>
+  );
+}
+
 function AlignmentEvidence({ value }: { value: unknown }) {
   const rows = Array.isArray(value)
     ? value.filter(
@@ -279,6 +375,7 @@ export function CandidateAlignmentPanel({
         </p>
       </section>
     );
+  const distribution = alignment.implemented_distribution_model_inclusion;
   const quote = alignment.quote;
   const checks = Array.isArray(alignment.checks)
     ? alignment.checks.filter(
@@ -305,6 +402,18 @@ export function CandidateAlignmentPanel({
         估值日期：{text(alignment.valuation_date)}；核验时点：
         {text(alignment.evaluated_at)}。
       </p>
+      {object(distribution) &&
+        distribution.reason_code ===
+          "IMPLEMENTED_DISTRIBUTION_INCLUDED_IN_MODEL" &&
+        distribution.status === "PASS" &&
+        distribution.action === "no_order" && (
+          <p>
+            已计入当前估值的已实施分配：{text(distribution.paid_date)}，每股{" "}
+            {nativeAmount(distribution.per_share_cny, "元")}，合计{" "}
+            {nativeAmount(distribution.total_cny, "元")}
+            。全期间分配仍须单独核验。
+          </p>
+        )}
       <details>
         <summary>原始对齐状态与比较标记</summary>
         <p>
@@ -369,6 +478,17 @@ export function CandidateAlignmentPanel({
             )[text(check.status)] || "状态待核"}
             <p>{text(check.explanation, "未提供检查说明。")}</p>
             <CheckReconciliation id={check.id} details={check.details} />
+            {check.id === "capital_structure" &&
+              object(check.details) &&
+              object(check.details.szse_capital_export) && (
+                <p>
+                  深交所精确 A 股股本{" "}
+                  {text(check.details.szse_capital_export.ordinary_a_shares)}{" "}
+                  股， 目录日期{" "}
+                  {text(check.details.szse_capital_export.comparison_date)}。
+                  日期来自配对目录元数据。整体对齐状态见本项检查。
+                </p>
+              )}
             {check.id === "distributions" && object(check.details) && (
               <OpeningActionChain value={check.details.opening_action_chain} />
             )}
@@ -382,10 +502,23 @@ export function CandidateAlignmentPanel({
               <BasisFollowup value={check.details.basis_followup} />
             )}
             <CheckInputSources id={check.id} details={check.details} />
-            {check.id === "financial_updates" && object(check.details) && (
-              <OperatingEventResearch
-                value={check.details.financial_update_research}
+            {check.id === "material_events" && object(check.details) && (
+              <UnsignedMaterialitySummary
+                route={check.details.materiality_review_route}
               />
+            )}
+            {check.id === "financial_updates" && object(check.details) && (
+              <>
+                <FinancialFinancingConflicts
+                  value={check.details.recomputation_closure}
+                />
+                <ParentFinancingSchedule
+                  value={check.details.parent_financing_schedule}
+                />
+                <OperatingEventResearch
+                  value={check.details.financial_update_research}
+                />
+              </>
             )}
             {check.id === "material_events" && object(check.details) && (
               <OperatingEventResearch
@@ -620,6 +753,40 @@ const nativeAmount = (value: unknown, unit: string) =>
     ? `${value} ${unit}`
     : "未提供";
 
+function ClosingCapital({ value }: { value: unknown }) {
+  if (!object(value)) return null;
+  const comparison = object(value.rollforward_comparison)
+    ? value.rollforward_comparison
+    : null;
+  const labels: Record<string, string> = {
+    EXACT_CLOSING_REPORT_ANCHOR_MISSING: "缺少比较日精确普通股原件",
+    EXACT_CLOSING_REPORT_ANCHORS_CONFLICT: "多份比较日股本原件不一致",
+    EXACT_REPORT_DATE_SHARES_VERIFIED: "已取得比较日精确普通股原件",
+  };
+  const anchors = Array.isArray(value.anchors)
+    ? value.anchors.filter(object)
+    : [];
+  return (
+    <section aria-label="比较日股本原件对账">
+      <p>
+        比较日 {text(value.as_of)}：{labels[text(value.status)] || "待核验"}。
+      </p>
+      {comparison && (
+        <p>
+          {comparison.status === "MATCH"
+            ? "与台账滚动值一致"
+            : "与台账滚动值冲突"}
+          ：原件 {text(comparison.observed_ordinary_shares)} 股，台账{" "}
+          {text(comparison.calculated_ordinary_shares)} 股。
+        </p>
+      )}
+      {anchors.length > 0 && (
+        <AlignmentEvidence value={anchors.map((row) => row.evidence_binding)} />
+      )}
+    </section>
+  );
+}
+
 function NativeSourceConsumption({
   id,
   value,
@@ -662,6 +829,9 @@ function NativeSourceConsumption({
       <p>
         以下仅为已列中报披露范围内的事实，非截至当前完整证明；不证明其他待生效方案、后续行动或修订已全部覆盖，不代表重大性批准或当前比较获准。
       </p>
+      {id === "capital_structure" && (
+        <ClosingCapital value={value.closing_capital} />
+      )}
       {reports.length ? (
         <ul>
           {reports.map((report, index) => {
@@ -798,6 +968,77 @@ function NativeSourceConsumption({
   );
 }
 
+function CrossDateRowProofs({ value }: { value: unknown }) {
+  if (!object(value) || value.status === "NO_IN_PERIOD_ROWS") return null;
+  const matched = Array.isArray(value.matched_rows)
+    ? value.matched_rows.filter(object)
+    : [];
+  const unmatched = Array.isArray(value.unmatched_ledger_ids)
+    ? value.unmatched_ledger_ids
+    : [];
+  const ambiguous = Array.isArray(value.ambiguous_ledger_ids)
+    ? value.ambiguous_ledger_ids
+    : [];
+  const extra = Array.isArray(value.unmatched_native_proofs)
+    ? value.unmatched_native_proofs.length
+    : 0;
+  const duplicates = Array.isArray(value.duplicate_native_proofs)
+    ? value.duplicate_native_proofs.length
+    : 0;
+  return (
+    <div>
+      <p>
+        账本与原件双向核对：已匹配 {matched.length} 项
+        {unmatched.length > 0 && `，未匹配账本 ${unmatched.length} 项`}
+        {extra > 0 && `，未匹配原件 ${extra} 项`}
+        {ambiguous.length > 0 && `，歧义账本 ${ambiguous.length} 项`}
+        {duplicates > 0 && `，重复引用 ${duplicates} 条`}。
+      </p>
+      {matched.some((row) => row.cash_payment_proven === false) && (
+        <p>分派安排已匹配，实际到账仍待核验。</p>
+      )}
+    </div>
+  );
+}
+
+function CrossDateActionFacts({ value }: { value: unknown }) {
+  if (
+    !object(value) ||
+    value.schema_version !== "cross-date-action-facts-v1" ||
+    !Array.isArray(value.announcements)
+  )
+    return null;
+  const rows = value.announcements.filter(object);
+  const labels: Record<string, string> = {
+    NATIVE_TERMINAL_MATCHED: "原件已核对行动终态",
+    SCHEDULE_TERMS_ONLY: "已核对分派安排，实际支付待核",
+    ANNOUNCEMENT_METADATA_CONFLICT: "公告或原件身份冲突",
+    UNRESOLVED: "行动影响待核",
+  };
+  return (
+    <details aria-label="跨日公告逐项核验">
+      <summary>跨日公告逐项核验（{rows.length} 份）</summary>
+      <p>
+        {text(value.valuation_date)} 至 {text(value.comparison_date)}。
+        {value.publication_window_covered === true
+          ? "披露窗口已覆盖。"
+          : "披露窗口尚未完整覆盖。"}
+        {value.effective_action_continuity_proven !== true &&
+          "股本行动连续性和期间变化的估值重算仍待核验。"}
+      </p>
+      <CrossDateRowProofs value={value.row_proof_reconciliation} />
+      <ul>
+        {rows.map((row) => (
+          <li key={text(row.announcement_id)}>
+            {text(row.published_at).slice(0, 10)} · {text(row.title)} ·{" "}
+            {labels[text(row.status)] ?? "核验状态待确认"}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 function CheckReconciliation({
   id,
   details,
@@ -810,6 +1051,7 @@ function CheckReconciliation({
   if (id === "capital_structure")
     return (
       <section aria-label="已核验股本与当前缺口">
+        <CrossDateActionFacts value={ledger.cross_date_action_facts} />
         <NativeSourceConsumption
           id={id}
           value={ledger.native_source_consumption}
@@ -855,6 +1097,17 @@ function CheckReconciliation({
         value={ledger.native_source_consumption}
       />
       <h6>已列公告分配条款</h6>
+      {object(ledger.opening_parent_dividend_payable) &&
+        object(
+          ledger.opening_parent_dividend_payable.conditional_opening_cash_match,
+        ) &&
+        ledger.opening_parent_dividend_payable.conditional_opening_cash_match
+          .scope === "CONDITIONAL_NET_CASH_MATCH_NOT_PAYMENT_PROOF" && (
+          <p>
+            三个估值情景的期初现金均按母公司披露现金减去已挂账应付股利后的余额计算。
+            这笔股利不应再扣一次；实际付款仍待核验。
+          </p>
+        )}
       {rows.length ? (
         <ul>
           {rows.map((row, index) => (
@@ -927,6 +1180,34 @@ function CheckReconciliation({
   );
 }
 
+function UnsignedMaterialitySummary({ route }: { route: unknown }) {
+  if (!object(route) || route.status !== "EXACT_MATERIALITY_REVIEW_NOT_BOUND")
+    return null;
+  const handoff = route.unsigned_handoff;
+  if (
+    !object(handoff) ||
+    handoff.human_review_required !== true ||
+    handoff.action !== "no_order" ||
+    typeof handoff.announcement_count !== "number" ||
+    !Number.isSafeInteger(handoff.announcement_count) ||
+    handoff.announcement_count < 1 ||
+    !object(handoff.scan_window)
+  )
+    return null;
+
+  return (
+    <section aria-label="候选重大事件待复核">
+      <p>
+        当前候选有 {handoff.announcement_count} 条公告待人工复核。 扫描范围{" "}
+        {text(handoff.scan_window.scan_from)} 至{" "}
+        {text(handoff.scan_window.scan_to)}。
+      </p>
+      <AlignmentEvidence
+        value={[handoff.scan_binding, handoff.package_binding]}
+      />
+    </section>
+  );
+}
 function OperatingEventResearch({
   value,
   opening = false,
@@ -960,6 +1241,7 @@ function OperatingEventResearch({
             facts.length ? (
               facts.map((fact, i) => {
                 const terms = object(fact.terms) ? fact.terms : {};
+                const listing = terms.issuer_reported_listing_confirmation;
                 return (
                   <div key={i}>
                     <p>
@@ -980,6 +1262,17 @@ function OperatingEventResearch({
                       )}
                       ；取得时间：{text(fact.source_available_at)}。
                     </p>
+                    {terms.event_type === "REPORTED_SHARE_UNLOCK_NOTICE" &&
+                      object(listing) && (
+                        <>
+                          <p>
+                            发行人后续报告确认上市流通：
+                            {text(listing.listing_date)}。
+                            比较日股本仍需独立核验。
+                          </p>
+                          <AlignmentEvidence value={[listing.binding]} />
+                        </>
+                      )}
                     <Reasons value={terms.affected_model_fields} />
                     <Reasons value={terms.limitations} />
                     <details>
@@ -1024,7 +1317,20 @@ function OpeningActionChain({ value }: { value: unknown }) {
     : [];
   return (
     <section aria-label="已知期初行动对账">
-      <h6>已知期初行动对账 · 不等于当前完整股本链</h6>
+      <h6>已知期初行动对账</h6>
+      {object(value.completed_cancellation_in_opening_basis) &&
+        value.completed_cancellation_in_opening_basis.status ===
+          "MATCHED_COMPLETED_IN_CONSUMED_OPENING_CAPITAL" && (
+          <p>
+            已注销{" "}
+            {text(
+              value.completed_cancellation_in_opening_basis.cancelled_shares,
+            )}
+            股已计入估值期初的{" "}
+            {text(value.completed_cancellation_in_opening_basis.opening_shares)}
+            股，本次注销的期间股本变动计零。比较日股本连续性仍需核验。
+          </p>
+        )}
       {purchases.map((row, i) => (
         <div key={i}>
           <p>
@@ -1089,24 +1395,101 @@ function BasisFollowup({ value }: { value: unknown }) {
     value.current_comparison_granted !== false
   )
     return null;
-  const checkpoint = object(value.latest_capital_checkpoint)
-    ? value.latest_capital_checkpoint
-    : null;
+  const listedCheckpoints = Array.isArray(value.capital_checkpoints)
+    ? value.capital_checkpoints.filter(object)
+    : [];
+  const checkpoints = listedCheckpoints.length
+    ? listedCheckpoints
+    : object(value.latest_capital_checkpoint)
+      ? [value.latest_capital_checkpoint]
+      : [];
   const interval = object(value.uncovered_capital_interval)
     ? value.uncovered_capital_interval
     : null;
   const reports = Array.isArray(value.interim_report_followups)
     ? value.interim_report_followups.filter(object)
     : [];
+  const confirmedUnlocks = Array.isArray(value.capital_event_classifications)
+    ? value.capital_event_classifications.filter(
+        (row) =>
+          object(row) &&
+          row.classification === "ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK" &&
+          row.net_share_change === "0" &&
+          row.action === "no_order" &&
+          row.window_completeness_granted === false &&
+          object(row.issuer_reported_listing_confirmation),
+      )
+    : [];
+  const buybackDeltas = Array.isArray(value.buyback_checkpoint_deltas)
+    ? value.buyback_checkpoint_deltas.filter(
+        (row) =>
+          object(row) &&
+          row.scope === "MATCHING_DISCLOSED_PLAN_WINDOW_RESEARCH_ONLY" &&
+          row.action === "no_order" &&
+          typeof row.purchase_share_delta === "number" &&
+          Number.isSafeInteger(row.purchase_share_delta) &&
+          row.purchase_share_delta >= 0 &&
+          (row.disclosed_cash_delta_cny === "0" ||
+            row.disclosed_cash_delta_cny === "0.00" ||
+            numberText(row.disclosed_cash_delta_cny)),
+      )
+    : [];
   return (
     <section aria-label="股本与中期分配后续核验">
       <h6>已证实到哪一天，后续还缺什么</h6>
-      {checkpoint ? (
-        <p>
-          已核验普通股股数：{text(checkpoint.ordinary_shares)} 股，事实时点{" "}
-          {text(checkpoint.as_of)}， 披露日期 {text(checkpoint.published_date)}
-          。{text(checkpoint.limitation)}
-        </p>
+      {checkpoints.length ? (
+        checkpoints.map((checkpoint, index) => {
+          const ordinary = numberText(checkpoint.ordinary_shares);
+          const issued = numberText(checkpoint.issued_shares);
+          const treasury = numberText(checkpoint.treasury_shares);
+          const proposal = checkpoint.proposal_only === true;
+          const proposedCash = numberText(
+            checkpoint.proposed_cash_per_share_cny,
+          );
+          const derived = checkpoint.classification === "DERIVED_FACT";
+          const verified =
+            checkpoint.classification === "FACT" ||
+            checkpoint.classification == null;
+          return (
+            <div
+              key={`${text(checkpoint.as_of)}-${text(checkpoint.published_date)}-${index}`}
+            >
+              <p>
+                {proposal ? "预案所述股本检查点" : "股本检查点"}：事实时点{" "}
+                {text(checkpoint.as_of)}，披露日期{" "}
+                {text(checkpoint.published_date)}。
+                {ordinary
+                  ? `${proposal ? "预案所述" : derived ? "推导的" : verified ? "已核验" : "待核实"}普通股股数：${checkpoint.ordinary_shares} 股。`
+                  : "普通股股数：未核实。"}
+                {proposal && proposedCash && (
+                  <>
+                    每股拟派 {String(checkpoint.proposed_cash_per_share_cny)}{" "}
+                    元（含税），此原件仅为预案，未计入已实施分配。
+                  </>
+                )}
+                {derived && ordinary && (
+                  <>推导依据：{text(checkpoint.derivation, "未提供")}。</>
+                )}
+                {issued && (
+                  <>
+                    {proposal ? "预案所述" : "原件所述"}总股本：
+                    {checkpoint.issued_shares} 股；口径：
+                    {text(checkpoint.share_scope)}。
+                  </>
+                )}
+                {treasury && (
+                  <>
+                    回购专户库存股：{checkpoint.treasury_shares}{" "}
+                    股，尚不能等同已注销股份。
+                  </>
+                )}
+                {proposal && "预案不是实施或注销证明。"}
+                {text(checkpoint.limitation, "")}
+              </p>
+              <AlignmentEvidence value={[checkpoint.evidence_binding]} />
+            </div>
+          );
+        })
       ) : (
         <p>尚无可消费的原件股本时点。</p>
       )}
@@ -1115,6 +1498,41 @@ function BasisFollowup({ value }: { value: unknown }) {
           尚未证明连续性的区间：{text(interval.after)} 之后至{" "}
           {text(interval.through)}。 不能把期初股数沿用为当前股数。
         </p>
+      )}
+      {confirmedUnlocks.map((row) => (
+        <div key={text(row.announcement_id)}>
+          <p>
+            {text(row.effective_date)}：发行人已确认本次解除限售股份上市流通，
+            已发行股数净变动 0 股。股本全期间连续性仍需核验。
+          </p>
+          <AlignmentEvidence
+            value={[
+              row.source_binding,
+              object(row.issuer_reported_listing_confirmation)
+                ? row.issuer_reported_listing_confirmation.binding
+                : null,
+            ]}
+          />
+        </div>
+      ))}
+      {buybackDeltas.length > 0 && (
+        <div>
+          <p>
+            披露回购累计差额，仅用于现金与库存股核对，注销及估值调整另行验证。
+          </p>
+          {buybackDeltas.map((row, i) => (
+            <div key={`${text(row.after_date)}-${text(row.through)}-${i}`}>
+              <p>
+                {text(row.after_date)} 至 {text(row.through)}：累计购回增加
+                {String(row.purchase_share_delta)} 股，披露支付增加
+                {text(row.disclosed_cash_delta_cny)} 元。
+              </p>
+              <AlignmentEvidence
+                value={[row.before_binding, row.after_binding]}
+              />
+            </div>
+          ))}
+        </div>
       )}
       {reports.map((row, i) => (
         <div key={i}>

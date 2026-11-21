@@ -296,3 +296,29 @@ it("shows a real bounded value refresh outcome without claiming investment readi
   expect(html).toContain("/strategy/value");
   expect(html).toContain("不能据此买入");
 });
+
+it("renders an unapproved E1 recompilation with distinct valuations and fingerprints", () => {
+  const data = {
+    status: "SUCCESSOR_CONDITIONAL_RESEARCH_PENDING_REVIEW",
+    action: "no_order",
+    formal_eligibility: false,
+    main_range_adopted: false,
+    price_admitted: false,
+    predecessor_valuation: { base_value: "10.25" },
+    successor_valuation: { base_value: "9.75" },
+    predecessor_input_fingerprint: "TEST_OLD_FINGERPRINT",
+    successor_input_fingerprint: "TEST_NEW_FINGERPRINT",
+  };
+  const value = task("RECOMPILE_REGISTERED_E1", data);
+  const html = renderToStaticMarkup(<TransparentTaskResult task={value} />);
+  expect(html).toContain("E1 后继研究已重算，待复核");
+  expect(html).toContain("10.25 → 9.75");
+  expect(html).toContain("TEST_NEW_FINGERPRINT");
+  const invalid = task("RECOMPILE_REGISTERED_E1", {
+    ...data,
+    price_admitted: true,
+  });
+  expect(
+    renderToStaticMarkup(<TransparentTaskResult task={invalid} />),
+  ).not.toContain("10.25 → 9.75");
+});

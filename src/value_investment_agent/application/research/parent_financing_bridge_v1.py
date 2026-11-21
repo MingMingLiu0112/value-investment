@@ -46,29 +46,46 @@ def reconcile_parent_financing(fy, followup):
                 != date.fromisoformat(fy["period_end"]).year + 1
             or followup["opening_balance_as_of"] != fy["period_end"]):
         raise ValueError("PARENT_FINANCING_PERIOD_OR_ISSUER_MISMATCH")
+    statements = (fy, followup)
+    missing = {row["period_end"]: [field for field in BALANCE_FIELDS if field not in row["balance_sheet"]]
+               for row in statements}
+    comparable = [field for field in BALANCE_FIELDS
+                  if all(field in row["balance_sheet"] for row in statements)]
     refs = []
     totals = []
-    for row in (fy, followup):
+    for row in statements:
         values = []
         for field in BALANCE_FIELDS:
+            if field in missing[row["period_end"]]:
+                continue
             value, source = _fact(row, "balance_sheet", field)
-            values.append(value)
+            if field in comparable:
+                values.append(value)
             refs.append(source)
-        totals.append(sum(values, Decimal(0)))
+        totals.append(sum(values, Decimal(0)) if comparable else None)
     received, received_ref = _fact(followup, "cash_flow", FLOW_FIELDS[0])
     repaid, repaid_ref = _fact(followup, "cash_flow", FLOW_FIELDS[1])
     refs.extend((received_ref, repaid_ref))
-    balance_change = totals[1] - totals[0]
     net_borrowing = received - repaid
+    complete_lines = len(comparable) == len(BALANCE_FIELDS)
+    balance_change = totals[1] - totals[0] if comparable else None
+    difference = balance_change - net_borrowing if complete_lines else None
+    if not complete_lines:
+        status = "PARTIAL_MISSING_COMPARABLE_BALANCE_LINES"
+    elif difference:
+        status = "PARTIAL_SCOPE_NOT_BALANCED"
+    else:
+        status = "IDENTIFIED_LINES_MATCH_REPORTED_NET_CASH_NOT_COMPLETE_SCOPE"
     return dict(schema_version="parent-financing-bridge-v1", symbol=fy["symbol"],
         period_start=fy["period_end"], period_end=followup["period_end"],
         scope=SCOPE, currency="CNY", action="no_order",
-        opening_identified_balance_cny=str(totals[0]),
-        closing_identified_balance_cny=str(totals[1]),
-        identified_balance_change_cny=str(balance_change),
+        opening_identified_balance_cny=str(totals[0]) if comparable else None,
+        closing_identified_balance_cny=str(totals[1]) if comparable else None,
+        identified_balance_change_cny=str(balance_change) if comparable else None,
+        comparable_balance_fields=comparable, missing_balance_fields_by_period=missing,
         reported_net_borrowing_cash_cny=str(net_borrowing),
-        unallocated_reconciliation_difference_cny=str(balance_change-net_borrowing),
-        reconciliation_status="PARTIAL_SCOPE_NOT_BALANCED" if balance_change != net_borrowing else "IDENTIFIED_LINES_MATCH_REPORTED_NET_CASH_NOT_COMPLETE_SCOPE",
+        unallocated_reconciliation_difference_cny=str(difference) if complete_lines else None,
+        reconciliation_status=status,
         complete_debt_scope_verified=False, maturity_schedule_verified=False,
         actual_refinancing_capacity_verified=False, source_refs=refs)
 
@@ -108,3 +125,37 @@ def read_registered_parent_financing_bridge(*, root, fy_statement, now):
     bridge = reconcile_parent_financing(fy_statement, followup)
     bridge["followup_receipt_binding"] = matches[0]["receipt_binding"]
     return bridge
+
+
+def read_numbered_financing_evidence(*, root, symbol, financial_basis, now):
+    """Read same-basis historical evidence for the first-input review page."""
+    from .agent_review.operating_horizon_sources_v1 import _selection
+    from .parent_direct_owner_cash_sources_v2 import read_parent_direct_owner_cash_sources_v2
+
+    root = Path(root).resolve()
+    registry_path = root / "config/current-operating-horizon-sources-v1.json"
+    if not registry_path.is_file() or not isinstance(financial_basis, str) or not financial_basis.endswith("-06-30"):
+        return None
+    raw = registry_path.read_bytes()
+    registry = json.loads(raw, object_pairs_hook=_unique)
+    if registry.get("schema_version") != "operating-horizon-sources-v1" or registry.get("action") != "no_order":
+        raise ValueError("PARENT_FINANCING_HORIZON_REGISTRY_INVALID")
+    case = registry["cases"].get(symbol)
+    if case is None:
+        return None
+    case = _selection(case)
+    layout = dict(cash=case.get("parent_cash_layout"), balance=case.get("parent_balance_layout"),
+                  income=case.get("parent_income_layout"))
+    if layout != {"cash": "NUMBERED_CNINFO_V2", "balance": "NUMBERED_CNINFO_V2", "income": "NUMBERED_CNINFO_V1"}:
+        return None
+    opening = f"{date.fromisoformat(financial_basis).year - 1}-12-31"
+    receipts = [dict(period_end=row["period"], receipt_binding=row["receipt_binding"], layout=layout)
+                for row in case["parent_cash_observation_receipts"] if row["period"] in {opening, financial_basis}]
+    if len(receipts) != 2:
+        return None
+    evidence = read_parent_direct_owner_cash_sources_v2(root=root, symbol=symbol,
+        issuer_name=case["issuer_name"], sources=receipts, evaluated_at=now)
+    if registry_path.read_bytes() != raw:
+        raise ValueError("PARENT_FINANCING_REGISTRY_CHANGED_DURING_READ")
+    bridge = reconcile_parent_financing(*evidence["statements"])
+    return dict(bridge, scope="ISSUER_PARENT_STANDALONE", model_inputs_changed=False, formal_eligibility=False)

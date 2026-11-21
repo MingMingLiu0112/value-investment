@@ -37,7 +37,11 @@ class Provider:
             raise TimeoutError("ambiguous transport")
         fields = packet["required_fields"]
         if packet["stage"] == "terminal":
-            body = dict(terminal=dict(policy={key: term(1) for key in fields},
+            policy = {key: term(1) for key in fields}
+            # Stable terminal cash covers recurring outflows and excludes finite commitments.
+            policy["commitments_outside_capex"]["values"] = ["0"]
+            policy["operating_cash"]["values"] = ["3.75"]
+            body = dict(terminal=dict(policy=policy,
                 remaining_scheduled_events=[], max_transition_years=10, financing=None,
                 rationale="Terminal cash mechanism", counter_evidence="Debt may change",
                 reopen_condition="Reopen on new filing"), cost_of_equity=term(1))

@@ -43,6 +43,12 @@ describe("actual runtime evidence separate from capability descriptions", () => 
     expect(html).toContain("SHARE_CONTINUITY_MISSING");
     expect(html).toContain("E1 · 未提供产物 · NO_VERIFIED_RECORD");
     expect(html).toContain("不证明今日执行过扫描");
+    const withE1 = renderToStaticMarkup(
+      <RuntimeResults data={data} e1={<details>实际 E1 回执</details>} />,
+    );
+    expect(withE1).toContain("实际 E1 回执");
+    expect(withE1).not.toContain("E1 · 未提供产物 · NO_VERIFIED_RECORD");
+    expect(withE1).toContain("SHARE_CONTINUITY_MISSING");
   });
   it("initial render does not read authorized task history or start work", () => {
     const tasks = vi.spyOn(api, "valueWorkbenchTasks");

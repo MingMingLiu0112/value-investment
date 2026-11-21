@@ -54,6 +54,8 @@ def test_numbered_parent_cash_task_api_runs_only_on_explicit_post(tmp_path, monk
     calls = []
     task_id = "rt-" + "b" * 32
 
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", lambda service, task: service.run(task))
+
     class NumberedService:
         def __init__(self, root):
             assert root == tmp_path
@@ -193,3 +195,52 @@ def test_sibling_execution_root_keeps_code_checkout_v3_history_read_only(tmp_pat
     assert ("read", code_root, task_id) in calls
     assert ("read", task_root, task_id) not in calls
     assert client.post(f"/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/cancel").status_code == 422
+
+def test_h1_sensitivity_requires_local_authorization(tmp_path, monkeypatch):
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda _: tmp_path)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=8001)
+    client = TestClient(app)
+    endpoint = "/api/v1/operating-research/parent-cash-tasks/v3/rt-" + "1" * 32 + "/h1-sensitivity"
+    denied = client.get(endpoint, params={"symbol": "000568"})
+    assert denied.status_code in (401, 403)
+    assert denied.json()["action"] == "no_order"
+    monkeypatch.setattr(routes, "authorize", lambda *_, **__: None)
+    missing = client.get(endpoint, params={"symbol": "000568"})
+    assert missing.status_code == 404
+    assert missing.json()["status"] == "PARENT_TASK_H1_SENSITIVITY_NOT_REGISTERED"
+
+
+
+def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkeypatch):
+    binding = {"path": "runtime/spec.json", "sha256": "a" * 64}
+    task_id = "rt-" + "b" * 32
+    calls = []
+
+    class Service:
+        def __init__(self, root):
+            self.root = root
+
+        def create(self, *, spec_binding, request_key):
+            calls.append((spec_binding, request_key))
+            return {"status": "QUEUED", "task_id": task_id, "action": "no_order"}
+
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV2", Service)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV3", Service)
+    monkeypatch.setattr(routes, "authorize", lambda *args, **kwargs: None)
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda project: project)
+    monkeypatch.setattr(routes, "registered_cash_task_spec",
+                        lambda service, symbol: binding if symbol == "600323" else None)
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task",
+                        lambda service, identifier: calls.append(identifier))
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=8001)
+    client = TestClient(app)
+    path = "/api/v1/operating-research/parent-cash-tasks/by-company"
+    assert client.post(path, json={"symbol": "600066"}).status_code == 409
+    assert client.post(path, json={"symbol": "600323", "spec_binding": binding}).status_code == 422
+    assert not calls
+    for _ in range(2):
+        response = client.post(path, json={"symbol": "600323"})
+        assert response.status_code == 202 and response.json()["task_id"] == task_id
+    assert calls == [(binding, "value-web-" + binding["sha256"]), task_id] * 2

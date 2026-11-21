@@ -1,0 +1,23 @@
+{
+  "schema_version": "parent-remaining-year-alignment-input-v1",
+  "candidate_binding": {
+    "path": "runtime/remaining-q4-successor-20261118/20261118T000059574371Z/compiled/receipt.json",
+    "sha256": "b39c98491c0bbc0feba0bc3394e42ac1d6593682ad063b3d320f576f7681ed2d"
+  },
+  "input_descriptor_sha256": "10e46dff56a6cf6ba5d7e9be9946795b82a3680e9585ca6fb41cabec7336d26d",
+  "quote_bundle_binding": {
+    "path": "runtime/quote-sessions/20261117T085927371800Z/bundle.json",
+    "sha256": "5b83288d1d765979e1664f587d5c7f55829106faeded6b92181843041043ada1"
+  },
+  "event_observation_bindings": [
+    {
+      "path": "runtime/direct-cash-600887-recovery-20261117T172437931869Z-073bd450-full-window/observation.json",
+      "sha256": "004452ae892533f199daba1611921f9298bee471b796f853b563d0312ffd9357"
+    }
+  ],
+  "source_observation_bindings": [],
+  "reconciliation_binding": {
+    "path": "runtime/remaining-q4-successor-f2-20261118/basis-ledger.json",
+    "sha256": "8c54db24ebe8e7c3e622d2ac51f0b30e54de17e5d389f595a94e4eb62fa2d4e6"
+  }
+}

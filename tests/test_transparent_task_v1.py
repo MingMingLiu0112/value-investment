@@ -463,7 +463,9 @@ def test_actual_owned_subprocess_cancel_is_reaped_and_logs_retained(case, monkey
         thread.join(5)
 
 
-def test_prepare_missing_inputs_is_independent_readonly_and_fresh_not_authorized(tmp_path):
+def test_prepare_missing_inputs_is_independent_readonly_and_fresh_not_authorized(tmp_path, monkeypatch):
+    when = datetime.fromisoformat('2026-11-20T15:05:00+08:00')
+    monkeypatch.setattr(mod.base, '_now', lambda value=None: when if value is None else value)
     service = mod.TransparentTaskService(tmp_path)
     prepared = service.prepare(symbol='000568')
     rows = {x['operation']: x for x in prepared['operations']}
@@ -691,11 +693,24 @@ def test_receipt_resume_clears_old_attempt_clock_and_new_attempt_gets_new_id(cas
     assert datetime.fromisoformat(second['started_at']) >= datetime.fromisoformat(first['started_at'])
 
 
+def test_e1_task_rejects_unregistered_revision_before_creating_task(tmp_path):
+    service = mod.TransparentTaskService(tmp_path)
+    registered = put(tmp_path, 'runtime/e1-public/registered.json', {})
+    unregistered = put(tmp_path, 'runtime/e1-public/other.json', {})
+    put(tmp_path, 'config/current-first-research-updates-v1.json', {
+        'schema_version': 'current-first-research-updates-v1', 'action': 'no_order',
+        'cases': {'600519': registered}})
+    with pytest.raises(ValueError, match='EXACT_REGISTERED_E1_UPDATE_REQUIRED'):
+        service.create(symbol='600519', operation='RECOMPILE_REGISTERED_E1',
+            payload={'update_binding': unregistered}, request_key='test-e1-unregistered')
+    assert not service.base.exists()
+
+
 def test_operation_module_mapping_is_bounded():
     assert mod.OPERATION_MODULES == {
         'VERIFY_EVIDENCE': 'A', 'REPLAY_SELECTION': 'B', 'FRESH_PUBLIC_SCAN': 'B',
         'RECALCULATE_MAIN': 'F1', 'SIMULATE_ASSUMPTIONS': 'F1', 'REVIEW_NOTE': 'G2',
-        'VALUE_RESEARCH_REFRESH': 'B'}
+        'VALUE_RESEARCH_REFRESH': 'B', 'RECOMPILE_REGISTERED_E1': 'E1'}
 
 
 @pytest.mark.parametrize('damage', [None, 'changed', 'missing_binding'])
@@ -1026,3 +1041,42 @@ def test_refresh_nonpublic_pointer_target_rejected_before_read(refresh_case,monk
     monkeypatch.setattr(Path,'read_bytes',read)
     with pytest.raises(ValueError):refresh_task(refresh_case)
     assert not service.base.exists()
+
+
+@pytest.mark.parametrize('update_schema,receipt_schema', [
+    ('first-research-input-update-v1', 'first-research-input-receipt-v1'),
+    ('first-research-input-update-v2', 'first-research-input-receipt-v2'),
+    ('direct-owner-cash-update-v1', 'direct-owner-cash-first-input-receipt-v1'),
+])
+@pytest.mark.parametrize('wrong_receipt', [False, True])
+def test_e1_prepare_requires_matching_registered_receipt_version(
+        tmp_path, update_schema, receipt_schema, wrong_receipt):
+    service = mod.TransparentTaskService(tmp_path)
+    spec = put(tmp_path, 'runtime/e1-public/spec.json', {'symbol': '600519'})
+    successor = put(tmp_path, 'runtime/e1-public/successor.json', {
+        'schema_version': 'unknown' if wrong_receipt else receipt_schema,
+        'symbol': '600519', 'spec_binding': spec})
+    update = put(tmp_path, 'runtime/e1-public/update.json', {
+        'schema_version': update_schema, 'symbol': '600519', 'action': 'no_order',
+        'status': 'SUCCESSOR_CONDITIONAL_RESEARCH_PENDING_REVIEW',
+        'formal_eligibility': False, 'main_range_adopted': False, 'price_admitted': False,
+        'successor_binding': successor})
+    put(tmp_path, 'config/current-first-research-updates-v1.json', {
+        'schema_version': 'current-first-research-updates-v1', 'action': 'no_order',
+        'cases': {'600519': update}})
+
+    prepared = service.prepare(symbol='600519')
+    operation = next(row for row in prepared['operations']
+                     if row['operation'] == 'RECOMPILE_REGISTERED_E1')
+    assert operation['enabled'] is not wrong_receipt
+    assert operation['reason'] == ('REGISTERED_E1_INVALID' if wrong_receipt else None)
+
+
+def test_prepare_fresh_scan_before_official_list_cutoff(tmp_path, monkeypatch):
+    when = datetime.fromisoformat('2026-11-20T15:04:59+08:00')
+    monkeypatch.setattr(mod.base, '_now', lambda value=None: when if value is None else value)
+    prepared = mod.TransparentTaskService(tmp_path).prepare(symbol='600519')
+    row = next(item for item in prepared['operations'] if item['operation'] == 'FRESH_PUBLIC_SCAN')
+    assert row['enabled'] is False and row['payload'] is None
+    assert '15:05' in row['reason']
+    assert prepared['tasks_started'] == 0 and not list(tmp_path.iterdir())

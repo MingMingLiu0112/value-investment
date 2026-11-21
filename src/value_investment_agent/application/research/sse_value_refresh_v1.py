@@ -127,10 +127,9 @@ def run_value_research_refresh(*, root, output_dir, source_mode='RETAINED',
             latest = prepare('consumption')
             queue = pipeline._bound(root, latest['queue'])
             if operating_budget:
-                from .agent_review.operating_sources_v1 import build_operating_source_context
+                from .agent_review.operating_sources_d1_v2 import build_d1_source_context
                 from .agent_review.operating_task_v2 import (LiveOperatingTaskService, implementation,
                     model_configuration, research_context)
-                service = LiveOperatingTaskService(root)
                 started_model_tasks = 0
                 for row in _selected(queue):
                     check_cancel()
@@ -139,10 +138,12 @@ def run_value_research_refresh(*, root, output_dir, source_mode='RETAINED',
                     symbol = row['symbol']
                     executed = False
                     task_id = None
+                    source_binding = None
                     # A partial financial packet may support explicit research questions;
                     # this does NOT mean quality/G3/valuation prerequisites have passed.
                     try:
-                        context = build_operating_source_context(root=root, symbol=symbol, now=_now())
+                        cutoff = _now()
+                        context = build_d1_source_context(root=root, symbol=symbol, now=cutoff)
                         cfg = model_configuration(root)
                         # Deterministic financial prerequisites before task/budget creation.
                         # A source-only candidate cannot bypass a quantitative driver contract.
@@ -152,10 +153,24 @@ def run_value_research_refresh(*, root, output_dir, source_mode='RETAINED',
                             from .agent_review.operating_driver_draft_v2 import calendar_plan
                             from ...domain.research.operating_driver_bridge_v1 import build_basis
                             calendar_plan(build_basis(model_context), model_context)
-                        identity = dict(symbol=symbol, source=context['source_binding'],
+                        source_binding = context['source_binding']
+                        identity = dict(symbol=symbol, source=source_binding,
                                         workflow=implementation())
                         key = 'sse-auto-' + sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
-                        task = service.create(symbol=symbol, request_key=key, now=_now())
+                        def load_pinned_context(*, root, symbol, now, binding=None):
+                            if binding is not None:
+                                # Existing tasks replay at their own sealed cutoff.
+                                return build_d1_source_context(
+                                    root=root, symbol=symbol, now=now, binding=binding)
+                            replayed = build_d1_source_context(
+                                root=root, symbol=symbol, now=now, binding=source_binding)
+                            if (replayed['source_binding'] != source_binding
+                                    or replayed['snapshot_fingerprint'] != context['snapshot_fingerprint']):
+                                raise ValueError('OPERATING_PREFLIGHT_CONTEXT_CHANGED')
+                            return replayed
+
+                        service = LiveOperatingTaskService(root, source_loader=load_pinned_context)
+                        task = service.create(symbol=symbol, request_key=key, now=cutoff)
                         task_id = task['task_id']
                         previous_calls = task.get('new_llm_calls', 0)
                         if task['status'] == 'QUEUED':
@@ -163,7 +178,8 @@ def run_value_research_refresh(*, root, output_dir, source_mode='RETAINED',
                             executed = True
                             task = service.run(task_id)
                         research.append(dict(symbol=symbol, task_id=task['task_id'],
-                            status=task['status'], source_binding=context['source_binding'],
+                            status=task['status'], source_binding=task['source_binding'],
+                            task_record_binding=task['record_binding'], queue_binding=latest['queue'],
                             new_llm_calls=(max(0, task.get('new_llm_calls', 0) - previous_calls) if executed else 0),
                             cumulative_task_llm_calls=task.get('new_llm_calls', 0), reused=not executed,
                             action='no_order', formal_eligibility=False))
@@ -173,7 +189,8 @@ def run_value_research_refresh(*, root, output_dir, source_mode='RETAINED',
                         # Inspect at most the tracked pool; a missing source cannot starve peers.
                         research.append(dict(symbol=symbol, status='BLOCKED',
                             reason=type(error).__name__ + ':' + str(error)[:220],
-                            task_id=task_id, new_llm_calls=None if executed else 0,
+                            task_id=task_id, source_binding=source_binding, queue_binding=latest['queue'],
+                            new_llm_calls=None if executed else 0,
                             call_accounting='TASK_LEDGER_RECHECK_REQUIRED' if executed else 'NO_TASK_EXECUTION',
                             action='no_order'))
             event('CONSUMPTION', 'SUCCESS', queue=latest['queue'],

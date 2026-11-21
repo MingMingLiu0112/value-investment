@@ -27,10 +27,10 @@ from ..product.common import require_inside, write_new_bytes
 VERSION = 'transparent-task-v1'
 _SESSION = uuid4().hex
 OPERATIONS = ('REPLAY_SELECTION', 'FRESH_PUBLIC_SCAN', 'RECALCULATE_MAIN',
-              'SIMULATE_ASSUMPTIONS', 'VERIFY_EVIDENCE', 'REVIEW_NOTE', 'VALUE_RESEARCH_REFRESH')
+              'SIMULATE_ASSUMPTIONS', 'VERIFY_EVIDENCE', 'REVIEW_NOTE', 'VALUE_RESEARCH_REFRESH', 'RECOMPILE_REGISTERED_E1')
 OPERATION_MODULES = {'VERIFY_EVIDENCE': 'A', 'REPLAY_SELECTION': 'B',
     'FRESH_PUBLIC_SCAN': 'B', 'RECALCULATE_MAIN': 'F1',
-    'SIMULATE_ASSUMPTIONS': 'F1', 'REVIEW_NOTE': 'G2', 'VALUE_RESEARCH_REFRESH': 'B'}
+    'SIMULATE_ASSUMPTIONS': 'F1', 'REVIEW_NOTE': 'G2', 'VALUE_RESEARCH_REFRESH': 'B', 'RECOMPILE_REGISTERED_E1': 'E1'}
 PUBLIC_STATUSES = ('IDLE', 'QUEUED', 'RUNNING', 'SUCCESS', 'PARTIAL',
                    'BLOCKED', 'FAILED', 'CANCELLED')
 CASH_OVERRIDES = {'target_payout_ratio', 'accessible_profit_ratio', 'reserve_ratio',
@@ -118,6 +118,15 @@ def _source_contract(operation):
         for module_name in implementation_fingerprints():
             module = importlib.import_module(module_name)
             names.add(Path(module.__file__).resolve().relative_to(package).as_posix())
+    if operation == 'RECOMPILE_REGISTERED_E1':
+        from .first_research_input_v2 import _implementations
+        for module_name in _implementations():
+            if module_name.endswith('issuer_identity_registry.json'):
+                names.add('domain/research/issuer_identity_registry.json')
+            else:
+                module = importlib.import_module(module_name)
+                names.add(Path(module.__file__).resolve().relative_to(package).as_posix())
+        names.add('application/research/first_research_input_update_v2.py')
     if operation in {'VERIFY_EVIDENCE', 'REVIEW_NOTE'}:
         names.update({'application/research/public_evidence.py',
             'application/research/value_evidence_enrichment_v1.py',
@@ -220,12 +229,32 @@ class TransparentTaskService(base.ResearchTaskService):
             for op in ops:
                 rows[op]['reason'] = prefix + '_' + suffix
 
-        ready('FRESH_PUBLIC_SCAN', dict(network_authorized=False, max_per_channel=50),
-              ('network_authorized',))
+        from ...domain.discovery.official_list_calendar import completed_list_session
+
+        try:
+            completed_list_session(base._now())
+        except ValueError as error:
+            rows['FRESH_PUBLIC_SCAN']['reason'] = (
+                '正式证券名单须在交易日 15:05 后采集。'
+                if str(error) == 'Official universe requires a completed trading day (15:05 buffer)'
+                else '当前官方证券名单采集日历无法核验。'
+            )
+        else:
+            ready('FRESH_PUBLIC_SCAN', dict(network_authorized=False, max_per_channel=50),
+                  ('network_authorized',))
         ready('VALUE_RESEARCH_REFRESH', dict(source_mode='FRESH', network_authorized=False,
             tracking_budget=30, enrichment_batches=1, comparison_batches=1, operating_budget=0),
             ('source_mode', 'network_authorized', 'tracking_budget', 'enrichment_batches',
              'comparison_batches', 'operating_budget'))
+        try:
+            from ..product.first_research_update_view_v1 import REGISTRY
+            registry = self._bound(self._binding(self.root / REGISTRY))
+            payload = dict(update_binding=registry['cases'][symbol])
+            self._registered_e1_inputs(symbol, payload['update_binding'])
+            ready('RECOMPILE_REGISTERED_E1', payload)
+        except (ValueError, OSError, KeyError, TypeError) as error:
+            failed(('RECOMPILE_REGISTERED_E1',), 'REGISTERED_E1', error)
+
         main_ref = None
         try:
             from .main_valuation_revalidation_v1 import REGISTRY, VERSION as MAIN_VERSION
@@ -281,22 +310,27 @@ class TransparentTaskService(base.ResearchTaskService):
                 failed(('REVIEW_NOTE',), 'REVIEW_TARGET', error)
 
         try:
+            from ..discovery.current_scan import current_scan_details
+            from ..discovery.value_candidate_selection import registered_value_screen
             from ..discovery.value_module_adapter_v1 import validate
+
             pointer_path = self.root / '.tmp/daily-workbench-latest-run.json'
-            raw = pointer_path.read_bytes()
-            pointer = json.loads(raw.decode('utf-8-sig'))
-            if (pointer.get('schema_version') != 'daily-workbench-run-v1'
-                    or pointer.get('action') != 'no_order'):
+            if pointer_path.is_symlink() or pointer_path.stat().st_size > 512_000:
                 raise ValueError('INVALID_SCAN_REGISTRATION')
-            # A registered restoration is explicitly historical replay, never fresh.
-            entry = (pointer['marketwide_screen'] if 'marketwide_screen' in pointer
-                     else pointer['retained_marketwide_screen'])
+            raw = pointer_path.read_bytes()
+            if len(raw) > 512_000:
+                raise ValueError('INVALID_SCAN_REGISTRATION')
+            pointer = json.loads(raw.decode('utf-8-sig'))
+            now = base._now()
+            entry, _ = registered_value_screen(pointer, now=now)
             ref = dict(path=entry['manifest_path'], sha256=entry['manifest_sha256'])
-            payload = dict(manifest_binding=ref, evaluation_at=base._now().isoformat(), limit=50)
+            payload = dict(manifest_binding=ref, evaluation_at=now.isoformat(), limit=50)
             validate(root=self.root, payload=dict(payload, symbol=symbol))
             manifest = self._bound(ref)
             for source_ref in manifest['files'].values():
                 self._raw_binding(source_ref)
+            if current_scan_details(self.root, manifest)['status'] != 'SOURCE_REVALIDATED':
+                raise ValueError('ORIGINAL_SOURCES_NOT_REPLAYABLE')
             if pointer_path.read_bytes() != raw:
                 raise ValueError('SCAN_REGISTRATION_CHANGED')
             ready('REPLAY_SELECTION', payload)
@@ -304,6 +338,30 @@ class TransparentTaskService(base.ResearchTaskService):
             failed(('REPLAY_SELECTION',), 'REGISTERED_SCAN', error)
         return dict(schema_version=VERSION, action='no_order', formal_eligibility=False,
                     symbol=symbol, operations=[rows[op] for op in OPERATIONS], tasks_started=0)
+
+    def _registered_e1_inputs(self, symbol, update_binding):
+        from ..product.first_research_update_view_v1 import REGISTRY, SCHEMA
+        registry = self._bound(self._binding(self.root / REGISTRY))
+        if (registry.get('schema_version') != SCHEMA or registry.get('action') != 'no_order'
+                or registry['cases'].get(symbol) != update_binding):
+            raise ValueError('EXACT_REGISTERED_E1_UPDATE_REQUIRED')
+        update = self._bound(update_binding)
+        version = update.get('schema_version')
+        receipt_versions = {
+            'first-research-input-update-v1': 'first-research-input-receipt-v1',
+            'first-research-input-update-v2': 'first-research-input-receipt-v2',
+            'direct-owner-cash-update-v1': 'direct-owner-cash-first-input-receipt-v1',
+        }
+        if (version not in receipt_versions
+                or update.get('symbol') != symbol or update.get('action') != 'no_order'
+                or update.get('status') != 'SUCCESSOR_CONDITIONAL_RESEARCH_PENDING_REVIEW'
+                or any(update.get(key) is not False for key in
+                       ('formal_eligibility', 'main_range_adopted', 'price_admitted'))):
+            raise ValueError('REGISTERED_E1_SCOPE_MISMATCH')
+        successor = self._bound(update['successor_binding'])
+        if successor.get('schema_version') != receipt_versions[version] or successor.get('symbol') != symbol:
+            raise ValueError('REGISTERED_E1_SUCCESSOR_RECEIPT_MISMATCH')
+        return update, successor['spec_binding']
 
     def _validate_payload(self, symbol, operation, payload):
         if operation not in OPERATIONS or not isinstance(payload, dict):
@@ -316,6 +374,7 @@ class TransparentTaskService(base.ResearchTaskService):
             'VERIFY_EVIDENCE': {'bundle_binding'},
             'REVIEW_NOTE': {'target_binding', 'opinion'},
             'RECALCULATE_MAIN': {'registry_binding', 'spec_binding'},
+            'RECOMPILE_REGISTERED_E1': {'update_binding'},
             'SIMULATE_ASSUMPTIONS': {'registry_binding', 'spec_binding', 'scenario',
                                      'changes', 'rationale'},
         }[operation]
@@ -365,6 +424,8 @@ class TransparentTaskService(base.ResearchTaskService):
                 matched = isinstance(target, dict) and target.get('symbol') == symbol
             if not matched or target.get('action') != 'no_order':
                 raise ValueError('REVIEW_TARGET_SYMBOL_OR_SCOPE_MISMATCH')
+        elif operation == 'RECOMPILE_REGISTERED_E1':
+            self._registered_e1_inputs(symbol, payload['update_binding'])
         elif operation == 'VERIFY_EVIDENCE':
             ref = payload['bundle_binding']
             require_inside(self.root / 'runtime/public-evidence', self.root / ref['path'],
@@ -969,6 +1030,48 @@ def _dispatch(service, spec, attempt):
                       scope='REQUESTED_REPORTS_ONLY_NOT_FACT_COMPLETENESS')
         outcome = ('BLOCKED' if not any(x.get('receipt') for x in packet['items']) else
                    'SUCCESS' if packet['status'] == 'VERIFIED' else 'PARTIAL')
+    elif operation == 'RECOMPILE_REGISTERED_E1':
+        update_binding = payload['update_binding']
+        registered, revised = service._registered_e1_inputs(spec['symbol'], update_binding)
+        output = require_inside(attempt, attempt / 'e1-recompilation', 'owned E1 output')
+        predecessor = registered['predecessor_binding']
+        now = base._now()
+        receipt_path = output / 'update.json'
+        if registered['schema_version'] == 'direct-owner-cash-update-v1':
+            from .direct_owner_cash_update_v1 import build_direct_owner_cash_update, replay_direct_owner_cash_update
+            from .direct_owner_cash_research_v1 import build_direct_owner_cash_receipt
+            from ..product.common import write_new_json
+
+            replay_direct_owner_cash_update(service.root, update_binding, now)
+            compiled = build_direct_owner_cash_receipt(root=service.root, spec_binding=revised,
+                output_dir=output / 'compiled', now=now)
+            rationale = service._bound(registered['change_binding'])
+            rationale_path = output / 'replayed-rationale.json'
+            write_new_json(rationale_path, dict(rationale, successor_binding=compiled['receipt_binding']))
+            rationale_binding = service._binding(rationale_path)
+            artifacts.extend([registered['change_binding'], rationale_binding])
+            result = build_direct_owner_cash_update(root=service.root, predecessor_binding=predecessor,
+                successor_binding=compiled['receipt_binding'], change_binding=rationale_binding,
+                output_dir=output / 'update', now=now)['update']
+            receipt_path = output / 'update/update.json'
+        elif registered['schema_version'] == 'first-research-input-update-v1':
+            from .first_research_input_update_v1 import build_first_research_input_update
+
+            result = build_first_research_input_update(root=service.root,
+                predecessor_binding=predecessor, successor_spec_binding=revised,
+                output_dir=output, now=now)
+        else:
+            from .first_research_input_update_v2 import build_first_research_input_update_v2
+
+            result = build_first_research_input_update_v2(root=service.root,
+                predecessor_binding=predecessor, successor_spec_binding=revised,
+                output_dir=output, now=now)
+            receipt_path = output / 'update/update.json'
+        if result.get('status') == 'SUCCESSOR_CONDITIONAL_RESEARCH_PENDING_REVIEW':
+            artifacts.extend([update_binding, result['predecessor_binding'],
+                              result['successor_binding'], service._binding(receipt_path)])
+        else:
+            outcome = 'BLOCKED'
     elif operation == 'RECALCULATE_MAIN':
         from .main_valuation_revalidation_v1 import SUCCESS
         result = _main_baseline(service, spec)
