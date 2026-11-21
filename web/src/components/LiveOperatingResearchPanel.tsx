@@ -22,6 +22,21 @@ import {
   type ParentCashTaskValuation,
 } from "../services/api";
 
+const CASH_ALIGNMENT_REASONS: Record<string, string> = {
+  EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING: "这份估值尚未绑定专属核验资料。",
+  CURRENT_SHARE_COUNT_AND_EFFECTIVE_ACTION_CHAIN_NOT_RECONCILED:
+    "估值日至报价日的股本及已生效股本变动尚未完成对账。",
+  SOURCE_BOUND_RECONCILIATION_MISSING: "缺少逐项引用原件的对账记录。",
+  PERIOD_DISTRIBUTIONS_AND_MODEL_INCLUSION_NOT_RECONCILED:
+    "期间分配及其是否已计入估值尚未完成核对。",
+  EVENT_WINDOW_DOES_NOT_COVER_VALUATION_TO_QUOTE:
+    "公告核验未覆盖从估值日至报价日的完整区间。",
+  EXACT_CANDIDATE_MATERIALITY_REVIEW_NOT_BOUND:
+    "这份估值尚未绑定重大事件影响复核。",
+  FINANCIAL_UPDATES_NOT_RECONCILED_TO_EXACT_CANDIDATE:
+    "期间新增财务披露尚未与这份估值逐项核对。",
+};
+
 const CASH_VALUATION_SCENARIOS = [
   ["bear", "压力"],
   ["base", "基准"],
@@ -123,6 +138,18 @@ export function ParentCashTaskValuationRead({
               );
             })}
           </ul>
+          {valuation.alignment_status === "BLOCKED" && (
+            <details open>
+              <summary>当期价格核验待补证</summary>
+              <ul>
+                {valuation.alignment_reason_codes?.map((reason) => (
+                  <li key={reason}>
+                    {CASH_ALIGNMENT_REASONS[reason] ?? reason}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
           <details>
             <summary>核验证据 SHA-256</summary>
             <p>

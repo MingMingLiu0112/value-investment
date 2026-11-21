@@ -80,6 +80,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         from datetime import datetime, timezone
         from hashlib import sha256
         from ...application.product.common import require_inside
+        from ...application.research.parent_cash_task_alignment_v3 import _align_verified_parent_cash_task
         from ...application.research.parent_cash_task_receipt_v3 import replay_parent_cash_task_receipt
 
         def retained_receipt(task_root):
@@ -99,8 +100,8 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 raise ValueError("PARENT_TASK_VALUATION_RECEIPT_TOO_LARGE")
             binding = dict(path=path.relative_to(task_root).as_posix(),
                            sha256=sha256(path.read_bytes()).hexdigest())
-            result = replay_parent_cash_task_receipt(
-                root=task_root, receipt_binding=binding, now=datetime.now(timezone.utc))
+            now = datetime.now(timezone.utc)
+            result = replay_parent_cash_task_receipt(root=task_root, receipt_binding=binding, now=now)
             if (result["symbol"] != symbol or result["provenance"]["task_id"] != task_id
                     or result["action"] != "no_order" or result["formal_eligibility"] is not False
                     or result["main_range_adopted"] is not False):
@@ -110,7 +111,10 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                     annual_years=len(valuations[name]["annual_rows"]),
                                     terminal_method=valuations[name]["terminal_method"])
                          for name in ("bear", "base", "bull")}
+            alignment = _align_verified_parent_cash_task(
+                root=task_root, receipt_binding=binding, result=result, now=now)
             return reply(dict(status="VERIFIED_CONDITIONAL_VALUATION",
+                alignment_status=alignment["status"], alignment_reason_codes=alignment["reason_codes"],
                 task_id=task_id, symbol=symbol, valuation_date=result["descriptor"]["point_in_time"]["valuation_date"],
                 scenarios=scenarios, receipt_sha256=binding["sha256"],
                 input_descriptor_sha256=result["input_descriptor_sha256"], action="no_order",

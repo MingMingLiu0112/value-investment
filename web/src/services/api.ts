@@ -1916,6 +1916,8 @@ export interface ParentCashTaskValuation {
   formal_eligibility: false;
   current_comparable: false;
   condition_price: null;
+  alignment_status?: string;
+  alignment_reason_codes?: string[];
 }
 
 export interface ParentCashTaskHistory {
