@@ -70,6 +70,54 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         except (ValueError, TypeError, KeyError, OSError, PermissionError):
             return reply({"action": "no_order", "status": "PARENT_V3_TASK_UNAVAILABLE"}, 422)
 
+    @api.get("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/valuation")
+    def read_numbered_valuation(task_id: str, symbol: str, request: Request):
+        error = denied(request)
+        if error is not None:
+            return error
+        if not re.fullmatch(r"rt-[0-9a-f]{32}", task_id) or not re.fullmatch(r"[0-9]{6}", symbol):
+            return reply(dict(status="INVALID_TASK_OR_SYMBOL", action="no_order"), 422)
+        from datetime import datetime, timezone
+        from hashlib import sha256
+        from ...application.product.common import require_inside
+        from ...application.research.parent_cash_task_receipt_v3 import replay_parent_cash_task_receipt
+
+        def retained_receipt(task_root):
+            directory = task_root / "runtime" / "parent-cash-task-backed-receipts"
+            return require_inside(directory, directory / task_id / "receipt.json", "parent cash task receipt")
+
+        try:
+            candidates = [(task_root, retained_receipt(task_root))
+                          for task_root in dict.fromkeys((Path(root).resolve(), code_root))]
+            available = [(task_root, path) for task_root, path in candidates if path.is_file()]
+            if not available:
+                return reply(dict(status="PARENT_TASK_VALUATION_NOT_SEALED", action="no_order"), 404)
+            if len(available) != 1:
+                raise ValueError("PARENT_TASK_DUPLICATE_VALUATION_RECEIPT")
+            task_root, path = available[0]
+            if path.stat().st_size > 64 * 1024:
+                raise ValueError("PARENT_TASK_VALUATION_RECEIPT_TOO_LARGE")
+            binding = dict(path=path.relative_to(task_root).as_posix(),
+                           sha256=sha256(path.read_bytes()).hexdigest())
+            result = replay_parent_cash_task_receipt(
+                root=task_root, receipt_binding=binding, now=datetime.now(timezone.utc))
+            if (result["symbol"] != symbol or result["provenance"]["task_id"] != task_id
+                    or result["action"] != "no_order" or result["formal_eligibility"] is not False
+                    or result["main_range_adopted"] is not False):
+                raise ValueError("PARENT_TASK_VALUATION_IDENTITY_MISMATCH")
+            valuations = result["valuation"]["assumptions"]["scenario_calculations"]
+            scenarios = {name: dict(per_share_value=valuations[name]["per_share_value"],
+                                    annual_years=len(valuations[name]["annual_rows"]),
+                                    terminal_method=valuations[name]["terminal_method"])
+                         for name in ("bear", "base", "bull")}
+            return reply(dict(status="VERIFIED_CONDITIONAL_VALUATION",
+                task_id=task_id, symbol=symbol, valuation_date=result["descriptor"]["point_in_time"]["valuation_date"],
+                scenarios=scenarios, receipt_sha256=binding["sha256"],
+                input_descriptor_sha256=result["input_descriptor_sha256"], action="no_order",
+                formal_eligibility=False, current_comparable=False, condition_price=None))
+        except (ValueError, TypeError, KeyError, OSError, ArithmeticError):
+            return reply(dict(status="PARENT_TASK_VALUATION_UNAVAILABLE", action="no_order"), 422)
+
     @api.post("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/{operation}")
     def control_numbered(task_id: str, operation: str, request: Request,
                          background: BackgroundTasks):

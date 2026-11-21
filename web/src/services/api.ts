@@ -302,7 +302,11 @@ async function post<T>(
   return (await read(response)) as T;
 }
 
-async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
+async function getPrivate<T>(
+  path: string,
+  signal?: AbortSignal,
+  expectedErrorStatuses: readonly number[] = [],
+): Promise<T> {
   let usedToken = "";
   const send = async (): Promise<Response> => {
     usedToken = await operatorToken();
@@ -318,6 +322,9 @@ async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
     // ledger, so one fresh token and one retry is safe.
     forgetRefusedSession(usedToken);
     response = await send();
+  }
+  if (!response.ok && expectedErrorStatuses.includes(response.status)) {
+    throw new ApiError(response.status, "HTTP_ERROR", null);
   }
   return (await read(response)) as T;
 }
@@ -1890,6 +1897,27 @@ export type ValueWorkbenchTaskHistory = {
     record: Record<string, unknown>;
   }[];
 };
+export interface ParentCashTaskValuation {
+  status: "VERIFIED_CONDITIONAL_VALUATION";
+  task_id: string;
+  symbol: string;
+  valuation_date: string;
+  scenarios: Record<
+    "bear" | "base" | "bull",
+    {
+      per_share_value: string;
+      annual_years: number;
+      terminal_method: string;
+    }
+  >;
+  input_descriptor_sha256: string;
+  receipt_sha256: string;
+  action: "no_order";
+  formal_eligibility: false;
+  current_comparable: false;
+  condition_price: null;
+}
+
 export interface ParentCashTaskHistory {
   action: "no_order";
   symbol: string;
@@ -2238,6 +2266,19 @@ export const api = {
       "operating-research/parent-cash-tasks/history?symbol=" +
         encodeURIComponent(symbol),
       signal,
+    ),
+  parentCashTaskValuation: (
+    taskId: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<ParentCashTaskValuation>(
+      "operating-research/parent-cash-tasks/v3/" +
+        encodeURIComponent(taskId) +
+        "/valuation?symbol=" +
+        encodeURIComponent(symbol),
+      signal,
+      [404, 422],
     ),
   researchTask: (taskId: string, signal?: AbortSignal) =>
     getPrivate<ResearchTaskResponse>(

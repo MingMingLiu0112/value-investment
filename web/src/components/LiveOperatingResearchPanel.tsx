@@ -19,7 +19,124 @@ import {
   type FiscalDistributionReview,
   type FiscalDistributionScenario,
   type ParentCashTaskHistory,
+  type ParentCashTaskValuation,
 } from "../services/api";
+
+const CASH_VALUATION_SCENARIOS = [
+  ["bear", "压力"],
+  ["base", "基准"],
+  ["bull", "乐观"],
+] as const;
+
+export function ParentCashTaskValuationRead({
+  symbol,
+  taskId,
+}: {
+  symbol: string;
+  taskId: string;
+}) {
+  const request = useRef<AbortController>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+  const [valuation, setValuation] = useState<ParentCashTaskValuation>();
+
+  useEffect(() => () => request.current?.abort(), []);
+
+  async function readValuation() {
+    if (request.current) return;
+    const controller = new AbortController();
+    request.current = controller;
+    setLoading(true);
+    setError(undefined);
+    setValuation(undefined);
+    try {
+      const value = await api.parentCashTaskValuation(
+        taskId,
+        symbol,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      if (
+        value?.status !== "VERIFIED_CONDITIONAL_VALUATION" ||
+        value.task_id !== taskId ||
+        value.symbol !== symbol ||
+        value.action !== "no_order" ||
+        value.formal_eligibility !== false ||
+        value.current_comparable !== false ||
+        value.condition_price !== null ||
+        typeof value.valuation_date !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(value.valuation_date) ||
+        ![value.input_descriptor_sha256, value.receipt_sha256].every(
+          (hash) => typeof hash === "string" && /^[a-f0-9]{64}$/.test(hash),
+        ) ||
+        !CASH_VALUATION_SCENARIOS.every(([key]) => {
+          const row = value.scenarios?.[key];
+          return (
+            row &&
+            typeof row.per_share_value === "string" &&
+            /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(row.per_share_value) &&
+            Number.isSafeInteger(row.annual_years) &&
+            row.annual_years > 0 &&
+            typeof row.terminal_method === "string" &&
+            row.terminal_method.trim()
+          );
+        })
+      )
+        throw new Error("Invalid conditional valuation receipt");
+      setValuation(value);
+    } catch (cause) {
+      if (controller.signal.aborted) return;
+      const status = cause instanceof ApiError ? cause.status : undefined;
+      setError(
+        status === 404
+          ? "未找到此任务的条件估值回执。"
+          : status === 422
+            ? "此任务的条件估值无法通过核验。"
+            : "条件估值暂不可读取或响应无法核验，请手动重试。",
+      );
+    } finally {
+      request.current = undefined;
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <Button onClick={readValuation} loading={loading}>
+        读取条件估值
+      </Button>
+      {error && <p role="status">{error}</p>}
+      {valuation && (
+        <section aria-label="已核验的条件估值">
+          <p>
+            估值日期 {valuation.valuation_date} ·
+            仅供条件研究，不用于当前价格比较、正式准入或下单。
+          </p>
+          <ul>
+            {CASH_VALUATION_SCENARIOS.map(([key, label]) => {
+              const row = valuation.scenarios[key];
+              return (
+                <li key={key}>
+                  {label} · {row.per_share_value} 元/股 · {row.annual_years} 年
+                  · 终值方法 {row.terminal_method}
+                </li>
+              );
+            })}
+          </ul>
+          <details>
+            <summary>核验证据 SHA-256</summary>
+            <p>
+              输入描述符 <code>{valuation.input_descriptor_sha256}</code>
+            </p>
+            <p>
+              回执 <code>{valuation.receipt_sha256}</code>
+            </p>
+          </details>
+        </section>
+      )}
+    </div>
+  );
+}
 
 export function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
   const [history, setHistory] = useState<ParentCashTaskHistory>();
@@ -63,6 +180,15 @@ export function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
           {item.completed_stages.join("、") || "无"}· 预留 ¥
           {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
           实际使用：未核实
+          {history.symbol === symbol &&
+            item.task_contract === "parent-cash-task-v3" &&
+            item.status === "SUCCEEDED" && (
+              <ParentCashTaskValuationRead
+                key={symbol}
+                symbol={symbol}
+                taskId={item.task_id}
+              />
+            )}
           <ul>
             {item.charges.map((charge, index) => (
               <li key={index}>
