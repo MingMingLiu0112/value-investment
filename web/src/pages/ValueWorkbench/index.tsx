@@ -312,13 +312,18 @@ export default function ValueWorkbench() {
           )}
           <Space wrap>
             {registeredItems.map((row) => (
-              <Button
-                key={row.symbol}
-                aria-pressed={symbol === row.symbol}
-                onClick={() => setPicked(row.symbol)}
-              >
-                {row.name || "已登记研究"} · {row.symbol}
-              </Button>
+              <Space key={row.symbol}>
+                <Link to={`/decisions/${row.symbol}?strategy=value`}>
+                  {row.name || "已登记研究"} · {row.symbol}
+                </Link>
+                <Button
+                  aria-label={`在工作台研究 ${row.name || row.symbol}`}
+                  aria-pressed={symbol === row.symbol}
+                  onClick={() => setPicked(row.symbol)}
+                >
+                  在工作台研究
+                </Button>
+              </Space>
             ))}
           </Space>
           {!registered.loading &&

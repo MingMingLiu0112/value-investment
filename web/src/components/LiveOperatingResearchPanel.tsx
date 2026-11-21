@@ -206,7 +206,7 @@ export function ParentCashTaskValuationRead({
       const status = cause instanceof ApiError ? cause.status : undefined;
       setError(
         status === 404
-          ? "未找到此任务的条件估值回执。"
+          ? "研究执行已结束，但还没有封存条件估值回执。请先查看该任务的研究结论与缺项；重新读取不会再次调用模型。"
           : status === 422
             ? "此任务的条件估值无法通过核验。"
             : "条件估值暂不可读取或响应无法核验，请手动重试。",
