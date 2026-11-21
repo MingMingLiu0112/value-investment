@@ -10,7 +10,7 @@ from ...valuation_models.residual_income import valuation_time_factor
 
 def value_parent_half_year_cash(
     *, valuation_date: date, first_period_start: date, first_period_end: date,
-    **cash_inputs,
+    minimum_distribution_by_year: dict[int, str] | None = None, **cash_inputs,
 ) -> dict:
     """Consume explicit H2 stub flows and subsequent complete fiscal years.
 
@@ -28,6 +28,19 @@ def value_parent_half_year_cash(
     if not years or years[0].get("year") != valuation_date.year:
         raise ValueError("DIRECT_OWNER_H2_STUB_YEAR_REQUIRED")
     calculation = compile_direct_owner_cash_path(**cash_inputs)
+    floor_inputs = {} if minimum_distribution_by_year is None else minimum_distribution_by_year
+    fiscal_years = {row["year"] for row in calculation["annual_rows"]}
+    if not isinstance(floor_inputs, dict) or any(
+        type(year) is not int or year not in fiscal_years for year in floor_inputs
+    ):
+        raise ValueError("DIRECT_OWNER_H2_DISTRIBUTION_FLOOR_YEARS_INVALID")
+    floors = {year: _number(amount) for year, amount in floor_inputs.items()}
+    if any(amount < 0 for amount in floors.values()):
+        raise ValueError("DIRECT_OWNER_H2_NEGATIVE_DISTRIBUTION_FLOOR")
+    for row in calculation["annual_rows"]:
+        year = row["year"]
+        if year in floors and _number(row["total_owner_distribution_cny"]) < floors[year]:
+            raise ValueError(f"DIRECT_OWNER_H2_DISTRIBUTION_BELOW_DECLARED_FLOOR:{year}")
     cost = _number(cash_inputs["cost_of_equity"])
     year = valuation_date.year
     with localcontext() as context:
@@ -60,6 +73,7 @@ def value_parent_half_year_cash(
                     valuation_date=valuation_date.isoformat(), first_period_start=first_period_start.isoformat(),
                     first_period_end=first_period_end.isoformat(), annual_rows=rows,
                     terminal_value_date=rows[-1]["payment_date"],
+                    minimum_distribution_by_year={k: str(v) for k, v in floors.items()},
                     conditional_equity_value_cny=str(equity),
                     per_share_value=str(equity / _number(cash_inputs["ordinary_shares"])),
                     dividend_crosscheck_equity_value_cny=str(equity),

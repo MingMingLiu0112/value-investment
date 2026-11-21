@@ -49,3 +49,12 @@ def test_half_year_cash_rejects_whole_year_input_and_preserves_funding_constrain
     inputs["years"][0]["policy"]["other_mandatory_cash"] = "41"
     with pytest.raises(ValueError, match="DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2026"):
         value_parent_half_year_cash(**inputs)
+
+def test_declared_distribution_floor_is_checked_on_actual_payout():
+    assert value_parent_half_year_cash(
+        **cash_inputs(), minimum_distribution_by_year={2026: "40"}
+    )["minimum_distribution_by_year"] == {2026: "40"}
+    with pytest.raises(ValueError, match="DISTRIBUTION_BELOW_DECLARED_FLOOR:2026"):
+        value_parent_half_year_cash(**cash_inputs(), minimum_distribution_by_year={2026: "41"})
+    with pytest.raises(ValueError, match="DISTRIBUTION_FLOOR_YEARS_INVALID"):
+        value_parent_half_year_cash(**cash_inputs(), minimum_distribution_by_year={2027: "40"})

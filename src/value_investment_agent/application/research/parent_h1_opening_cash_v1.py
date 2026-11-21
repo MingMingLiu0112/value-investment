@@ -44,7 +44,10 @@ def read_parent_h1_opening_cash(*, root: Path, spec_binding: dict,
         scope="issuer_parent_standalone", unit="CNY", currency="CNY",
         **{key: fact["current"] for key, fact in fields.items()},
     ))
+    capital = h1.get("balance_sheet", {}).get("book_equity_cny")
+    shares = h1.get("ordinary_shares_evidence")
     return dict(
+        book_equity_fact=capital, ordinary_shares_fact=shares,
         status="HISTORICAL_H1_OPENING_CASH_VERIFIED", period_end=period_end,
         source_spec=dict(spec_binding), reconciliation=reconciliation,
         field_sources={key: fact["source_refs"] for key, fact in fields.items()},

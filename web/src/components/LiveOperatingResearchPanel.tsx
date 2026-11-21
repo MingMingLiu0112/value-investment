@@ -19,6 +19,7 @@ import {
   type FiscalDistributionReview,
   type FiscalDistributionScenario,
   type ParentCashTaskHistory,
+  type ParentCashH1Sensitivity,
   type ParentCashTaskValuation,
 } from "../services/api";
 
@@ -42,6 +43,107 @@ const CASH_VALUATION_SCENARIOS = [
   ["base", "基准"],
   ["bull", "乐观"],
 ] as const;
+
+function ParentCashH1SensitivityRead({
+  symbol,
+  taskId,
+}: {
+  symbol: string;
+  taskId: string;
+}) {
+  const [result, setResult] = useState<ParentCashH1Sensitivity>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+  const request = useRef<AbortController>();
+  useEffect(() => () => request.current?.abort(), []);
+
+  async function read() {
+    if (request.current) return;
+    const controller = new AbortController();
+    request.current = controller;
+    setLoading(true);
+    setError(undefined);
+    setResult(undefined);
+    try {
+      const data = await api.parentCashH1Sensitivity(
+        taskId,
+        symbol,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      if (
+        data?.status !== "RESEARCH_SENSITIVITY_NOT_ADOPTED" ||
+        data.symbol !== symbol ||
+        data.task_id !== taskId ||
+        !/^\d{4}-06-30$/.test(data.period_end) ||
+        data.action !== "no_order" ||
+        data.condition_price !== null ||
+        data.formal_eligibility !== false ||
+        !CASH_VALUATION_SCENARIOS.every(([key]) => {
+          const row = data.scenarios?.[key];
+          return row?.status === "SCENARIO_REJECTED"
+            ? typeof row.reason === "string" && row.reason.length > 0
+            : row?.status === "CONDITIONAL_SENSITIVITY_COMPUTED" &&
+                /^-?\d+(?:\.\d+)?$/.test(row.per_share_value);
+        })
+      )
+        throw new Error("Invalid H1 sensitivity");
+      setResult(data);
+    } catch (cause) {
+      if (!controller.signal.aborted) {
+        setError(
+          cause instanceof ApiError && cause.status === 404
+            ? "此任务尚未登记半年期重估。"
+            : "半年期重估结果无法读取或核验，请重试。",
+        );
+      }
+    } finally {
+      request.current = undefined;
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <Button onClick={read} loading={loading}>
+        读取半年期敏感性结果
+      </Button>
+      {error && <p role="status">{error}</p>}
+      {result && (
+        <section aria-label="未采纳的半年期敏感性">
+          <p>
+            估值基准 {result.period_end} ·
+            敏感性研究，未形成可采用的估值区间或条件价格。
+          </p>
+          <ul>
+            {CASH_VALUATION_SCENARIOS.map(([key, label]) => {
+              const row = result.scenarios[key];
+              if (row.status === "CONDITIONAL_SENSITIVITY_COMPUTED") {
+                return (
+                  <li key={key}>
+                    {label} · {row.per_share_value} 元/股
+                  </li>
+                );
+              }
+              const funding =
+                /^DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:(\d{4})$/.exec(
+                  row.reason,
+                );
+              return (
+                <li key={key}>
+                  {label} ·{" "}
+                  {funding
+                    ? `${funding[1]} 年资金不足，未出值`
+                    : `未出值（${row.reason}）`}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
 
 export function ParentCashTaskValuationRead({
   symbol,
@@ -150,6 +252,11 @@ export function ParentCashTaskValuationRead({
               </ul>
             </details>
           )}
+          <ParentCashH1SensitivityRead
+            key={taskId + ":" + symbol}
+            symbol={symbol}
+            taskId={taskId}
+          />
           <details>
             <summary>核验证据 SHA-256</summary>
             <p>

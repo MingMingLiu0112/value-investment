@@ -122,6 +122,68 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         except (ValueError, TypeError, KeyError, OSError, ArithmeticError):
             return reply(dict(status="PARENT_TASK_VALUATION_UNAVAILABLE", action="no_order"), 422)
 
+    @api.get("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/h1-sensitivity")
+    def read_numbered_h1_sensitivity(task_id: str, symbol: str, request: Request):
+        error = denied(request)
+        if error is not None:
+            return error
+        if not re.fullmatch(r"rt-[0-9a-f]{32}", task_id) or not re.fullmatch(r"[0-9]{6}", symbol):
+            return reply(dict(status="INVALID_TASK_OR_SYMBOL", action="no_order"), 422)
+        from datetime import datetime, timezone
+        from hashlib import sha256
+        from ...application.product.common import require_inside
+        from ...application.research.direct_owner_cash_research_v1 import _read
+        from ...application.research.parent_h1_valuation_sensitivity_v1 import (
+            replay_parent_h1_valuation_sensitivity,
+        )
+
+        directory = Path("runtime") / "parent-cash-task-backed-receipts" / task_id
+        try:
+            available = []
+            for task_root in dict.fromkeys((Path(root).resolve(), code_root)):
+                path = require_inside(task_root / directory, task_root / directory / "h1-sensitivity.json",
+                                      "H1 task sensitivity registration")
+                if path.is_file():
+                    available.append((task_root, path))
+            if not available:
+                return reply(dict(status="PARENT_TASK_H1_SENSITIVITY_NOT_REGISTERED", action="no_order"), 404)
+            if len(available) != 1:
+                raise ValueError("PARENT_TASK_DUPLICATE_H1_SENSITIVITY")
+            task_root, path = available[0]
+            if path.stat().st_size > 16 * 1024:
+                raise ValueError("PARENT_TASK_H1_SENSITIVITY_REGISTRATION_TOO_LARGE")
+            reg = json.loads(path.read_bytes())
+            if (reg["symbol"] != symbol or reg["task_id"] != task_id
+                    or reg["action"] != "no_order"
+                    or reg["schema_version"] != "parent-h1-task-sensitivity-registration-v1"):
+                raise ValueError("PARENT_TASK_H1_SENSITIVITY_IDENTITY_MISMATCH")
+            predecessor = require_inside(task_root / directory, task_root / directory / "receipt.json",
+                                         "H1 sensitivity predecessor")
+            predecessor_binding = dict(path=predecessor.relative_to(task_root).as_posix(),
+                                       sha256=sha256(predecessor.read_bytes()).hexdigest())
+            receipt = _read(task_root, predecessor_binding)
+            if receipt["inputs"]["task_id"] != task_id:
+                raise ValueError("PARENT_TASK_H1_PREDECESSOR_IDENTITY_MISMATCH")
+            result = replay_parent_h1_valuation_sensitivity(
+                root=task_root, predecessor_binding=predecessor_binding,
+                assumptions_binding=reg["assumptions_binding"],
+                share_evidence_binding=reg.get("share_evidence_binding"), now=datetime.now(timezone.utc))
+            if result["symbol"] != symbol:
+                raise ValueError("PARENT_TASK_H1_SENSITIVITY_ISSUER_MISMATCH")
+            scenarios = {}
+            for name, row in result["scenarios"].items():
+                item = {"status": row["status"]}
+                if "valuation" in row:
+                    item["per_share_value"] = row["valuation"]["per_share_value"]
+                else:
+                    item["reason"] = row["reason"]
+                scenarios[name] = item
+            return reply(dict(status=result["status"], symbol=symbol, task_id=task_id,
+                period_end=result["period_end"], scenarios=scenarios, formal_eligibility=False,
+                condition_price=None, action="no_order"))
+        except (ValueError, TypeError, KeyError, OSError, ArithmeticError):
+            return reply(dict(status="PARENT_TASK_H1_SENSITIVITY_UNAVAILABLE", action="no_order"), 422)
+
     @api.post("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/{operation}")
     def control_numbered(task_id: str, operation: str, request: Request,
                          background: BackgroundTasks):

@@ -193,3 +193,17 @@ def test_sibling_execution_root_keeps_code_checkout_v3_history_read_only(tmp_pat
     assert ("read", code_root, task_id) in calls
     assert ("read", task_root, task_id) not in calls
     assert client.post(f"/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/cancel").status_code == 422
+
+def test_h1_sensitivity_requires_local_authorization(tmp_path, monkeypatch):
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda _: tmp_path)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=8001)
+    client = TestClient(app)
+    endpoint = "/api/v1/operating-research/parent-cash-tasks/v3/rt-" + "1" * 32 + "/h1-sensitivity"
+    denied = client.get(endpoint, params={"symbol": "000568"})
+    assert denied.status_code in (401, 403)
+    assert denied.json()["action"] == "no_order"
+    monkeypatch.setattr(routes, "authorize", lambda *_, **__: None)
+    missing = client.get(endpoint, params={"symbol": "000568"})
+    assert missing.status_code == 404
+    assert missing.json()["status"] == "PARENT_TASK_H1_SENSITIVITY_NOT_REGISTERED"

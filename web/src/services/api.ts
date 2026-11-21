@@ -1920,6 +1920,21 @@ export interface ParentCashTaskValuation {
   alignment_reason_codes?: string[];
 }
 
+export interface ParentCashH1Sensitivity {
+  status: "RESEARCH_SENSITIVITY_NOT_ADOPTED";
+  symbol: string;
+  task_id: string;
+  period_end: string;
+  scenarios: Record<
+    "bear" | "base" | "bull",
+    | { status: "CONDITIONAL_SENSITIVITY_COMPUTED"; per_share_value: string }
+    | { status: "SCENARIO_REJECTED"; reason: string }
+  >;
+  formal_eligibility: false;
+  condition_price: null;
+  action: "no_order";
+}
+
 export interface ParentCashTaskHistory {
   action: "no_order";
   symbol: string;
@@ -2278,6 +2293,19 @@ export const api = {
       "operating-research/parent-cash-tasks/v3/" +
         encodeURIComponent(taskId) +
         "/valuation?symbol=" +
+        encodeURIComponent(symbol),
+      signal,
+      [404, 422],
+    ),
+  parentCashH1Sensitivity: (
+    taskId: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<ParentCashH1Sensitivity>(
+      "operating-research/parent-cash-tasks/v3/" +
+        encodeURIComponent(taskId) +
+        "/h1-sensitivity?symbol=" +
         encodeURIComponent(symbol),
       signal,
       [404, 422],
