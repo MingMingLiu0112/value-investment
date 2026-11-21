@@ -54,6 +54,8 @@ def test_numbered_parent_cash_task_api_runs_only_on_explicit_post(tmp_path, monk
     calls = []
     task_id = "rt-" + "b" * 32
 
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", lambda service, task: service.run(task))
+
     class NumberedService:
         def __init__(self, root):
             assert root == tmp_path
