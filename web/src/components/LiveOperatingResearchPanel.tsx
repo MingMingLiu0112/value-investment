@@ -2240,6 +2240,50 @@ export function PublicOperatingResearchView({
     );
   return <LiveOperatingResearchDraft task={value} />;
 }
+function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [revision, setRevision] = useState(0);
+  const pending = useRef(false);
+
+  async function start() {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setMessage("");
+    try {
+      const task = await api.startCompanyParentCashTask(symbol);
+      if (task.action !== "no_order" || !/^rt-[a-f0-9]{32}$/.test(task.task_id))
+        throw new Error("Invalid task");
+      setMessage(
+        `任务 ${task.task_id} · ${task.status}。在下方刷新历史查看进度与估值。`,
+      );
+      setRevision((value) => value + 1);
+    } catch (cause) {
+      setMessage(
+        cause instanceof ApiError && cause.status === 409
+          ? "缺少已绑定的连续年度、母公司现金原件或公司估值输入包；未启动现金任务。"
+          : cause instanceof ApiError && [401, 403].includes(cause.status)
+            ? "请先解锁本机研究会话。"
+            : "现金任务未启动或响应无法核验，请查看研究输入状态。",
+      );
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <Button onClick={start} loading={busy}>
+        启动股东现金估值研究
+      </Button>
+      {message && <p role="status">{message}</p>}
+      <ParentCashTaskHistoryView key={revision} symbol={symbol} />
+    </>
+  );
+}
+
 type Operation =
   "status" | "start" | "history" | "refresh" | "cancel" | "resume" | "finalize";
 export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
@@ -2434,7 +2478,7 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
   const active = task?.status === "QUEUED" || task?.status === "RUNNING";
   return (
     <section aria-label="新Agent经营研究" style={{ marginBlock: 20 }}>
-      <ParentCashTaskHistoryView symbol={symbol} />
+      <CompanyParentCashLaunch key={symbol} symbol={symbol} />
       <h3>新Agent经营研究 · {symbol}</h3>
       <p>
         打开此区仅读取模型状态与已生成公开研究，不发起模型调用；点击启动才可能产生新调用费用。运行中每3秒读取一次真实任务状态，失败时暂停读取；刷新页面后点击读取已有任务即可恢复跟踪，不重复启动研究。研究结果仍需复核，不审批、不下单。

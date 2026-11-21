@@ -9,7 +9,7 @@ from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from ...application.research.parent_cash_task_completion_v1 import (
-    run_and_seal_parent_cash_task, valuation_receipt_path,
+    registered_cash_task_spec, run_and_seal_parent_cash_task, valuation_receipt_path,
 )
 from .live_operating_research_routes import resolve_research_task_root
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
@@ -65,6 +65,36 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         except (ValueError, TypeError, KeyError, OSError, PermissionError) as exc:
             return reply({"action": "no_order", "status": "PARENT_V3_TASK_REJECTED",
                           "reason": str(exc)}, 422)
+
+    @api.post("/api/v1/operating-research/parent-cash-tasks/by-company")
+    async def create_numbered_for_company(request: Request, background: BackgroundTasks):
+        error = denied(request)
+        if error is not None:
+            return error
+        try:
+            raw = await request.body()
+            if len(raw) > 128:
+                raise ValueError("PARENT_V3_REQUEST_TOO_LARGE")
+            body = json.loads(raw)
+            if (not isinstance(body, dict) or set(body) != {"symbol"}
+                    or not isinstance(body["symbol"], str)
+                    or not re.fullmatch(r"[0-9]{6}", body["symbol"])):
+                raise ValueError("PARENT_V3_REQUEST_INVALID")
+            symbol = body["symbol"]
+            binding = registered_cash_task_spec(numbered_service, symbol)
+            if binding is None:
+                return reply(dict(status="BLOCKED", reason="PARENT_V3_BOUND_COMPANY_INPUTS_MISSING",
+                                  symbol=symbol, action="no_order"), 409)
+            task = numbered_service.create(
+                spec_binding=binding, request_key="value-web-" + binding["sha256"])
+            if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                background.add_task(run_numbered, task["task_id"])
+            return reply(task, 202)
+        except (ValueError, TypeError, KeyError, OSError) as exc:
+            reason = str(exc)
+            return reply(dict(status="PARENT_V3_TASK_REJECTED", action="no_order",
+                              reason=reason if re.fullmatch(r"[A-Z0-9_]{3,120}", reason)
+                              else "PARENT_V3_INPUT_VERIFICATION_FAILED"), 422)
 
     @api.get("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}")
     def read_numbered(task_id: str, request: Request):

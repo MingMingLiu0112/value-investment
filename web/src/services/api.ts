@@ -2278,6 +2278,11 @@ export const api = {
       "research-tasks?symbol=" + encodeURIComponent(symbol),
       signal,
     ),
+  startCompanyParentCashTask: (symbol: string) =>
+    post<{ task_id: string; status: string; action: string }>(
+      "operating-research/parent-cash-tasks/by-company",
+      { symbol },
+    ),
   parentCashTaskHistory: (symbol: string, signal?: AbortSignal) =>
     getPrivate<ParentCashTaskHistory>(
       "operating-research/parent-cash-tasks/history?symbol=" +
