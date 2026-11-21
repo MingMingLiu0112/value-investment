@@ -211,21 +211,36 @@ export default function ValueWorkbench() {
   return (
     <Workbench>
       <div className="value-workbench">
-        <Typography.Title level={2}>价值研究透明工作台</Typography.Title>
-        <p>
-          从为什么关注一家公司，到经营假设、股东现金、条件估值与当前决定，逐环节查看依据和未解决的问题。
-        </p>
-        <Space wrap>
-          <Link to="/project">模块进度与实现说明</Link>
-          <Link to="/system">当前服务与数据状态</Link>
-          <Link to="/daily">全部研究候选</Link>
-        </Space>
+        <header className="workbench-hero">
+          <Typography.Title level={2}>价值研究透明工作台</Typography.Title>
+          <p>
+            从为什么关注一家公司，到经营假设、股东现金、条件估值与当前决定，逐环节查看依据和未解决的问题。
+          </p>
+          <Space wrap>
+            <Link to="/project">模块进度与实现说明</Link>
+            <Link to="/system">当前服务与数据状态</Link>
+            <Link to="/daily">全部研究候选</Link>
+          </Space>
+          <nav className="workbench-jump" aria-label="价值研究导航">
+            <a href="#value-tracking">长期跟踪池</a>
+            <a href="#value-screening">沪市初筛</a>
+            <a href="#value-registered">已登记研究</a>
+          </nav>
+        </header>
         <Alert
           type="warning"
           message="本工作台提供研究解释与真实任务操作，不批准投资、不读取个人账户、不下单。"
         />
-        <ValueTrackingResearchPool load={api.sseResearchQueue} />
-        <SseMainScreeningPanel load={api.sseMainScreening} />
+        <div
+          id="value-tracking"
+          className="workbench-surface"
+          style={{ marginTop: 16 }}
+        >
+          <ValueTrackingResearchPool load={api.sseResearchQueue} />
+        </div>
+        <div id="value-screening" className="workbench-surface">
+          <SseMainScreeningPanel load={api.sseMainScreening} />
+        </div>
         <section aria-label="封存D2研究任务（非当前候选）">
           <h2>封存D2研究任务（非当前候选）</h2>
           <p>
@@ -283,7 +298,11 @@ export default function ValueWorkbench() {
             />
           </>
         )}
-        <section aria-label="已登记研究">
+        <section
+          id="value-registered"
+          className="workbench-surface"
+          aria-label="已登记研究"
+        >
           <h2>已登记研究（非当前入池）</h2>
           <p>
             按证券代码排序，不是推荐顺序；登记仅说明有研究入口，打开后才重新核验原件与当前实现。不会因当前筛选排除就隐藏旧研究。

@@ -270,7 +270,7 @@ export default function DailyDecisions() {
     "正式发布链尚未就绪。";
   return (
     <Workbench>
-      <header className="opportunity-page-head">
+      <header className="opportunity-page-head workbench-hero">
         <div>
           <Typography.Title level={2} className="opportunity-title">
             今日投资决策

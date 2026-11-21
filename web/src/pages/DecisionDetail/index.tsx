@@ -1167,19 +1167,35 @@ export default function DecisionDetail() {
       : undefined;
   return (
     <Workbench>
-      <Typography.Title level={2}>
-        {strategy === "hotspot" ? "热点波段跟踪" : "公司研究与条件判断"}
-      </Typography.Title>
+      <header className="workbench-hero">
+        <Typography.Title level={2}>
+          {strategy === "hotspot" ? "热点波段跟踪" : "公司研究与条件判断"}
+        </Typography.Title>
+        {strategy !== "hotspot" && /^[0-9]{6}$/.test(id) && (
+          <nav className="workbench-jump" aria-label="公司研究导航">
+            <Link to="/strategy/value">返回价值策略</Link>
+            <a href="#company-profile">企业画像</a>
+            <a href="#company-valuation">估值与来源</a>
+            <a href="#operating-research">经营研究</a>
+            <a href="#company-decision">条件判断</a>
+          </nav>
+        )}
+      </header>
       {strategy !== "hotspot" && /^[0-9]{6}$/.test(id) && (
         <>
-          <CompanyProfilePanel symbol={id} />
-          <FirstResearchInputPanel key={"first-" + id} symbol={id} />
-          <OperatingAssumptionDraftPanel key={id} symbol={id} />
-          <div id="operating-research">
+          <div id="company-profile" className="workbench-surface">
+            <CompanyProfilePanel symbol={id} />
+          </div>
+          <div id="company-valuation" className="workbench-surface">
+            <FirstResearchInputPanel key={"first-" + id} symbol={id} />
+          </div>
+          <div id="operating-research" className="workbench-surface">
+            <OperatingAssumptionDraftPanel key={id} symbol={id} />
             <LiveOperatingResearchPanel key={"live-" + id} symbol={id} />
           </div>
         </>
       )}
+      <div id="company-decision" />
       <RemoteState loading={loading} error={error} retry={retry}>
         {!decision ? (
           <Alert

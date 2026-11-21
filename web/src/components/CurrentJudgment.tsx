@@ -16,7 +16,6 @@ import {
 } from "../utils/currentJudgment";
 import { firstResearchText } from "../utils/opportunityView";
 import { DetailSection } from "./DetailSection";
-import { PriceChart } from "../pages/HistoricalPrice";
 import { decisionEligibility } from "../utils/decisionEligibility";
 import {
   formatScenarioValue,
@@ -700,28 +699,6 @@ export function CurrentJudgmentChart({ decision }: { decision: DecisionItem }) {
             ；量比 {formatDecimal(level.volume_ratio)}。 规则要求：
             {priceRuleText(level.entry_confirmation_rule)}
             {priceRuleText(level.invalidation_rule)}
-          </p>
-          <PriceChart
-            bars={bars}
-            period={period}
-            trigger={Number(level.entry_trigger_price)}
-            invalidation={Number(level.invalidation_price)}
-            reference={
-              value.current_reference_price == null
-                ? null
-                : Number(value.current_reference_price)
-            }
-            scope="已完成行情与未来条件观察"
-          />
-          <p>
-            TradingView Lightweight Charts™ ·{" "}
-            <a
-              href="https://www.tradingview.com/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              TradingView
-            </a>
           </p>
           <p>
             周期规则 {level.rule_version}；窗口 {level.window} 根；最后已完成 K
