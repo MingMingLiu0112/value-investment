@@ -2060,7 +2060,10 @@ it("reads only on click and shows exact reported values and evidence", async () 
 });
 
 it.each([
-  [new ApiError(404, "NOT_FOUND", null), "未找到此任务"],
+  [
+    new ApiError(404, "NOT_FOUND", null),
+    "研究执行已结束，但还没有封存条件估值回执",
+  ],
   [new ApiError(422, "UNVERIFIED", null), "无法通过核验"],
   [{ ...valuationReceipt, symbol: "000568" }, "响应无法核验"],
   [{ ...valuationReceipt, current_comparable: true }, "响应无法核验"],
