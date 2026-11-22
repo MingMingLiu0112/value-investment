@@ -85,8 +85,20 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
             if binding is None:
                 return reply(dict(status="BLOCKED", reason="PARENT_V3_BOUND_COMPANY_INPUTS_MISSING",
                                   symbol=symbol, action="no_order"), 409)
+            from hashlib import sha256
+            request_key = "value-web-" + binding["sha256"]
+            former_id = "rt-" + sha256(("parent-cash-task-v3:" + request_key)
+                                       .encode("utf-8")).hexdigest()[:32]
+            options = {}
+            base = getattr(numbered_service, "base", None)
+            if base is not None and (Path(base) / former_id / "input.json").is_file():
+                former = numbered_service.read(former_id)
+                if (former.get("status") == "FAILED" and
+                        former.get("error_code") == "BEAR_OPERATING_PARENT_V3_CONFLICTING_JSON_KEY"):
+                    request_key = "value-wire1-" + binding["sha256"]
+                    options["seed_task_id"] = former_id
             task = numbered_service.create(
-                spec_binding=binding, request_key="value-web-" + binding["sha256"])
+                spec_binding=binding, request_key=request_key, **options)
             if task["status"] in {"QUEUED", "SUCCEEDED"}:
                 background.add_task(run_numbered, task["task_id"])
             return reply(task, 202)

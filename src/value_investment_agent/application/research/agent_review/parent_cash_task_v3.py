@@ -19,6 +19,7 @@ def read_parent_cash_agent_facts_v2(**kwargs):
 from ..direct_owner_cash_staged_v2 import (
     STAGES, parse_staged_parent_cash_response,
 )
+from .. import direct_owner_cash_operating_wire_v1 as operating_wire
 from ..direct_owner_cash_staged_v3 import (
     preflight_annual_cash_upper_bound_v3, merge_staged_parent_cash_v3,
     staged_parent_cash_request_v3, preflight_terminal_forecast_debt_v3,
@@ -31,6 +32,7 @@ from ...product.common import require_inside, write_new_bytes
 
 VERSION = "parent-cash-task-v3"
 STAGE_ORDER = tuple(f"{scenario}.{stage}" for scenario in SCENARIOS for stage in STAGES)
+LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3bac68d06b"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 
 
@@ -63,7 +65,7 @@ def _implementation():
                     parent_direct_owner_cash_sources as unnumbered_native)
     return {module.__name__: _hash(Path(module.__file__).read_bytes())
             for module in (draft_prior, draft, facts, sources, staged, staged_numbered,
-                           request, compiler, compiler_numbered, unnumbered, unnumbered_native)} | {
+                           request, compiler, compiler_numbered, unnumbered, unnumbered_native, operating_wire)} | {
         __name__: _hash(Path(__file__).read_bytes())}
 
 
@@ -98,17 +100,34 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             return False
         if pinned == current:
             return True
+        legacy_wire = {name: digest for name, digest in current.items()
+                       if name != operating_wire.__name__}
+        legacy_wire[__name__] = LEGACY_WIRE_SERVICE
+        if pinned == legacy_wire:
+            return True
         if any(current.get(name) != digest
                for name, digest in _REVIEWED_NUMBERED_COMPATIBILITY_HASHES.items()):
             return False
         legacy = {name: digest for name, digest in current.items()
-                  if name.rsplit(".", 1)[-1] not in {
+                  if name != operating_wire.__name__ and name.rsplit(".", 1)[-1] not in {
                       "parent_direct_owner_cash_unnumbered_v1", "parent_direct_owner_cash_sources"}}
         legacy.update(_PRE_UNNUMBERED_HASHES)
         if pinned != legacy:
             return False
         source = self._bound(spec["spec_binding"])
         return source.get("source_adapter_version") == "NUMBERED_CNINFO_V2"
+
+    @staticmethod
+    def _wire(spec, stage, request):
+        if stage == "operating" and operating_wire.__name__ in spec["implementation_sha256"]:
+            return operating_wire.operating_wire_request(request)
+        return request
+
+    def _parse_stage(self, spec, stage, response, request, source_fingerprint):
+        parse = (operating_wire.parse_operating_wire
+                 if self._wire(spec, stage, request) is not request
+                 else parse_staged_parent_cash_response)
+        return parse(response, request=request, source_fingerprint=source_fingerprint)
 
     def _context(self, spec, now):
         if (self._configuration() != spec["config"]
@@ -231,10 +250,10 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 verified_context=context,
                 max_completion_tokens=spec["config"]["max_completion_tokens_cap"])
             if (packet.get("scenario") != stage_id or packet.get("request_sha256") !=
-                    _hash(_bytes(request.__dict__)) or packet.get("source_fingerprint") !=
+                    _hash(_bytes(self._wire(spec, stage, request).__dict__)) or packet.get("source_fingerprint") !=
                     context["input_fingerprint"] or packet.get("action") != "no_order"):
                 raise ValueError("PARENT_RESPONSE_BINDING_INVALID")
-            parsed = parse_staged_parent_cash_response(
+            parsed = self._parse_stage(spec, stage,
                 LLMResponse(**packet["response"]), request=request,
                 source_fingerprint=context["input_fingerprint"])
             if stage == "terminal":
@@ -545,7 +564,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         prior_drafts=prior, generated_at=datetime.fromisoformat(spec["created_at"]),
                         verified_context=context,
                         max_completion_tokens=cfg["max_completion_tokens_cap"])
-                    prompt_cap = len(_bytes(request.__dict__)) + 4096
+                    wire_request = self._wire(spec, stage, request)
+                    prompt_cap = len(_bytes(wire_request.__dict__)) + 4096
                     reserve = (Decimal(prompt_cap) * Decimal(str(cfg["input_cost_per_million"])) +
                         Decimal(request.max_completion_tokens) * Decimal(str(cfg["output_cost_per_million"]))) / Decimal(1000000)
                     if (state["provider_requests"] >= len(STAGE_ORDER) or
@@ -569,7 +589,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     provider = self.test_provider or OpenAICompatibleChatProvider(**{k:cfg[k]
                         for k in ("endpoint", "model_id", "api_key_env", "timeout_seconds",
                                   "max_completion_tokens_cap", "response_format_mode", "thinking_mode") if k in cfg})
-                    response = provider.complete(request)
+                    response = provider.complete(wire_request)
                     if (not isinstance(response, LLMResponse) or response.tool_calls
                             or type(response.prompt_tokens) is not int or type(response.completion_tokens) is not int
                             or not 0 <= response.prompt_tokens <= prompt_cap
@@ -588,7 +608,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         state, binding = self._save(spec, state, binding, _now(), reservations=reservations,
                             usage=usage, reserved_cost=str(Decimal(state["reserved_cost"]) - reserve),
                             settled_cost=str(Decimal(state["settled_cost"]) + actual))
-                        packet = dict(scenario=stage_id, request_sha256=_hash(_bytes(request.__dict__)),
+                        packet = dict(scenario=stage_id, request_sha256=_hash(_bytes(wire_request.__dict__)),
                             source_fingerprint=spec["source_fingerprint"], response=response.__dict__, action="no_order")
                         path = directory / ("response-" + reservation + ".json")
                         write_new_bytes(path, _bytes(packet))
@@ -596,7 +616,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         response_binding = self._binding(path)
                         state, binding = self._save(spec, state, binding, _now(),
                             returned_responses=state.get("returned_responses", []) + [response_binding])
-                    parsed_stage = parse_staged_parent_cash_response(response, request=request,
+                    parsed_stage = self._parse_stage(spec, stage, response, request=request,
                         source_fingerprint=spec["source_fingerprint"])
                     if stage == "terminal":
                         preflight_terminal_forecast_debt_v3(request=request, parsed_stage=parsed_stage)
