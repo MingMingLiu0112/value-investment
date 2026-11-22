@@ -631,6 +631,24 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
       <Typography.Title level={2}>
         {strategy === "value" ? "价值策略 · 模块交付进度" : flow.title}
       </Typography.Title>
+      <nav aria-label="策略开发进度入口" className="architecture-links">
+        <Link to="/project">价值策略开发进度</Link>
+        <Link to="/strategy/hotspot">热点波段开发进度</Link>
+        <Link to="/strategy/value">价值研究工作台</Link>
+      </nav>
+      {strategy === "value" && (
+        <Card title="最近交付 · 2026-11-22" size="small">
+          <p>
+            伊利 V3 已从公司页发起真实研究，刷新后能找回同一任务。旧版 000568
+            回执冷重放通过。
+          </p>
+          <p>
+            最新任务在 D2 拒绝冲突的 JSON 字段。E2、F1 自动封存及 F2
+            跨日判断尚未取得本轮结果。
+          </p>
+          <Link to="/decisions/600887?strategy=value">打开伊利研究详情</Link>
+        </Card>
+      )}
       {strategy === "value" && (
         <DeliveryOverview stages={flow.stages} onSelect={selectStage} />
       )}
