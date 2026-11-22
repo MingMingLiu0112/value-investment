@@ -26,7 +26,10 @@ def operating_wire_request(request):
         "Return one JSON object with exactly these four unique top-level keys: "
         "years, series, annual_notes, scenario_review. "
         "Use the required ten consecutive years, ten annual notes and required series. "
-        "Keep the exact series term schema. The scenario_review array has exactly three "
+        "Use exactly the series keys listed in required_fields. Each series term has "
+        "values, evidence_anchors, mechanism, counter_evidence and reopen_condition. "
+        "Values is an array of ten decimal strings in required_years order. "
+        "The scenario_review array has exactly three "
         "strings in this order: scenario rationale, counter evidence, reopen condition. "
         "Never repeat any key or emit the three review statements as named top-level fields."
     ))
