@@ -97,6 +97,10 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                         former.get("error_code") == "BEAR_OPERATING_PARENT_V3_CONFLICTING_JSON_KEY"):
                     request_key = "value-wire1-" + binding["sha256"]
                     options["seed_task_id"] = former_id
+                elif (former.get("status") == "FAILED" and former.get("error_code") ==
+                      "BEAR_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"):
+                    request_key = "value-tail1-" + binding["sha256"]
+                    options.update(seed_task_id=former_id, replay_from_stage="bear.terminal")
             task = numbered_service.create(
                 spec_binding=binding, request_key=request_key, **options)
             if task["status"] in {"QUEUED", "SUCCEEDED"}:

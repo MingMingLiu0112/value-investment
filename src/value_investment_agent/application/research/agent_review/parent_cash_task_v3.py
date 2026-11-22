@@ -20,6 +20,7 @@ from ..direct_owner_cash_staged_v2 import (
     STAGES, parse_staged_parent_cash_response,
 )
 from .. import direct_owner_cash_operating_wire_v1 as operating_wire
+from .. import direct_owner_cash_terminal_wire_v1 as terminal_wire
 from ..direct_owner_cash_staged_v3 import (
     preflight_annual_cash_upper_bound_v3, merge_staged_parent_cash_v3,
     staged_parent_cash_request_v3, preflight_terminal_forecast_debt_v3,
@@ -33,6 +34,7 @@ from ...product.common import require_inside, write_new_bytes
 VERSION = "parent-cash-task-v3"
 STAGE_ORDER = tuple(f"{scenario}.{stage}" for scenario in SCENARIOS for stage in STAGES)
 LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3bac68d06b"
+PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 
 
@@ -65,7 +67,7 @@ def _implementation():
                     parent_direct_owner_cash_sources as unnumbered_native)
     return {module.__name__: _hash(Path(module.__file__).read_bytes())
             for module in (draft_prior, draft, facts, sources, staged, staged_numbered,
-                           request, compiler, compiler_numbered, unnumbered, unnumbered_native, operating_wire)} | {
+                           request, compiler, compiler_numbered, unnumbered, unnumbered_native, operating_wire, terminal_wire)} | {
         __name__: _hash(Path(__file__).read_bytes())}
 
 
@@ -100,7 +102,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             return False
         if pinned == current:
             return True
-        legacy_wire = {name: digest for name, digest in current.items()
+        before_terminal = {name: digest for name, digest in current.items()
+                           if name != terminal_wire.__name__}
+        before_terminal[__name__] = PRE_TERMINAL_WIRE_SERVICE
+        if pinned == before_terminal:
+            return True
+        legacy_wire = {name: digest for name, digest in before_terminal.items()
                        if name != operating_wire.__name__}
         legacy_wire[__name__] = LEGACY_WIRE_SERVICE
         if pinned == legacy_wire:
@@ -109,7 +116,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                for name, digest in _REVIEWED_NUMBERED_COMPATIBILITY_HASHES.items()):
             return False
         legacy = {name: digest for name, digest in current.items()
-                  if name != operating_wire.__name__ and name.rsplit(".", 1)[-1] not in {
+                  if name not in {operating_wire.__name__, terminal_wire.__name__} and name.rsplit(".", 1)[-1] not in {
                       "parent_direct_owner_cash_unnumbered_v1", "parent_direct_owner_cash_sources"}}
         legacy.update(_PRE_UNNUMBERED_HASHES)
         if pinned != legacy:
@@ -121,11 +128,13 @@ class ParentCashTaskServiceV3(ResearchTaskService):
     def _wire(spec, stage, request):
         if stage == "operating" and operating_wire.__name__ in spec["implementation_sha256"]:
             return operating_wire.operating_wire_request(request)
+        if stage == "terminal" and terminal_wire.__name__ in spec["implementation_sha256"]:
+            return terminal_wire.terminal_wire_request(request)
         return request
 
     def _parse_stage(self, spec, stage, response, request, source_fingerprint):
         parse = (operating_wire.parse_operating_wire
-                 if self._wire(spec, stage, request) is not request
+                 if stage == "operating" and operating_wire.__name__ in spec["implementation_sha256"]
                  else parse_staged_parent_cash_response)
         return parse(response, request=request, source_fingerprint=source_fingerprint)
 
