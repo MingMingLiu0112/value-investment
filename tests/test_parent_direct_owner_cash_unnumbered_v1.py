@@ -40,6 +40,7 @@ def test_real_unnumbered_yili_reports(tmp_path):
     annual, half_year = result["statements"]
     assert annual["cash_flow"]["closing_cash_and_equivalents_cny"]["current"] == "13404587376.75"
     assert half_year["cash_flow"]["opening_cash_and_equivalents_cny"]["current"] == "13404587376.75"
+    assert annual["ordinary_shares_evidence"]["count"] == "6325360667"
     assert annual["cash_flow"]["supplier_cash_cny"]["current"] == "96773109786.96"
     assert half_year["cash_flow"]["customer_cash_cny"]["current"] == "58600086377.25"
     assert all(all(s["checks"].values()) for s in result["statements"])

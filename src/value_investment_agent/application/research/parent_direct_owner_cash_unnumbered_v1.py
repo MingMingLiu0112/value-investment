@@ -1,5 +1,7 @@
 """Replay official unnumbered parent statements without changing numbered receipts."""
 from datetime import datetime
+from decimal import Decimal
+import re
 from pathlib import Path
 
 from .parent_cash_research import _receipt_issuer_query
@@ -8,6 +10,64 @@ from ...infrastructure.filings.pdf_text import extract_pages
 from ...infrastructure.filings.official_report_acquisition import load_retained_official_report
 
 VERSION = "UNNUMBERED_OFFICIAL_CNINFO_V1"
+
+
+def _annual_share_anchor(pages, statement):
+    if statement["period_basis"] != "FY":
+        return None
+    headings = [
+        (index, text) for index, text in enumerate(pages, 1)
+        if all(key in parent._compact(text) for key in (
+            "第六节股份变动及股东情况", "股份变动情况表", "单位:股",
+            "本次变动前", "本次变动后",
+        ))
+    ]
+    preferred = [
+        index for index, text in enumerate(pages, 1)
+        if "九、优先股相关情况□适用√不适用" in parent._compact(text)
+    ]
+    if len(headings) != 1 or len(preferred) != 1:
+        return None
+    page, text = headings[0]
+    if not page <= preferred[0] <= page + 8:
+        return None
+    amounts = r"([0-9][0-9,]*)"
+    ratio = r"[0-9]+(?:\.[0-9]+)?"
+    movement = r"(-?[0-9][0-9,]*)"
+    patterns = {
+        "restricted": rf"(?:.*比例\(%\)\s+)?一、有限售条件股份\s+{amounts}\s+{ratio}\s+{amounts}\s+{ratio}",
+        "unrestricted": rf"二、无限售条件流通股份\s+{amounts}\s+{ratio}\s+{movement}\s+{movement}\s+{amounts}\s+{ratio}",
+        "ordinary": rf"1、人民币普通股\s+{amounts}\s+{ratio}\s+{movement}\s+{movement}\s+{amounts}\s+{ratio}",
+        "total": rf"三、股份总数\s+{amounts}\s+100\s+{movement}\s+{movement}\s+{amounts}\s+100",
+    }
+    rows = {}
+    refs = []
+    source = statement["source_binding"]
+    for key, pattern in patterns.items():
+        matches = [(line, match) for line in text.splitlines()
+                   if (match := re.fullmatch(pattern, line.strip()))]
+        if len(matches) != 1:
+            return None
+        line, match = matches[0]
+        rows[key] = [int(value.replace(",", "")) for value in match.groups()]
+        refs.append(dict(source, physical_page=page, excerpt=line.strip()))
+    start, change, subtotal, closing = rows["total"]
+    restricted_start, restricted_end = rows["restricted"]
+    unrestricted_start, unrestricted_change, unrestricted_subtotal, unrestricted_end = rows["unrestricted"]
+    capital = statement["balance_sheet"].get("share_capital_cny")
+    if (rows["ordinary"] != rows["unrestricted"] or change != subtotal
+            or unrestricted_change != unrestricted_subtotal
+            or unrestricted_start + unrestricted_subtotal != unrestricted_end
+            or restricted_start + unrestricted_start != start or start + subtotal != closing
+            or restricted_end + unrestricted_end != closing or closing <= 0
+            or capital is None or Decimal(capital["current"]) != Decimal(closing)):
+        raise ValueError("UNNUMBERED_PARENT_ANNUAL_SHARE_RECONCILIATION_CHANGED")
+    refs.append(dict(source, physical_page=preferred[0], excerpt="九、优先股相关情况：不适用"))
+    refs.append(capital["source_refs"])
+    return dict(classification="DERIVED_FACT", period_end=statement["period_end"],
+                unit="shares", scope="TOTAL_ISSUED_ORDINARY_SHARES", count=str(closing),
+                derivation="ANNUAL_SHARE_TABLE_AND_NO_PREFERRED",
+                treasury_excluded=False, source_refs=refs)
 
 
 def read_unnumbered_parent_cash(*, root, symbol, issuer_name, sources, evaluated_at,
@@ -44,9 +104,12 @@ def read_unnumbered_parent_cash(*, root, symbol, issuer_name, sources, evaluated
                 raise ValueError("UNNUMBERED_PARENT_REQUIRED_CASH_FACT_MISSING:" + field)
         source = statement["source_binding"]
         path, _ = parent._bound(root, source)
+        pages = extract_pages(path)
         table = parent._statement(
-            extract_pages(path), "母公司现金流量表", issuer_name, statement["period_end"])
+            pages, "母公司现金流量表", issuer_name, statement["period_end"])
         parent._bound(root, source)
+        if statement.get("ordinary_shares_evidence") is None:
+            statement["ordinary_shares_evidence"] = _annual_share_anchor(pages, statement)
         for field, label in (
             ("customer_cash_cny", "销售商品、提供劳务收到的现金"),
             ("supplier_cash_cny", "购买商品、接受劳务支付的现金"),

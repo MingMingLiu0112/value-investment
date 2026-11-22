@@ -34,6 +34,21 @@ STAGE_ORDER = tuple(f"{scenario}.{stage}" for scenario in SCENARIOS for stage in
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 
 
+_PRE_UNNUMBERED_HASHES = {
+    "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2": "32d3052ce84815f47ccd5284b43b511e227c234992875d69e5621930c446de3d",
+    "value_investment_agent.application.research.direct_owner_cash_staged_v3": "242347a19bea4369d3f8b26da14628c455773922edac94326b0d000a6a4ea5de",
+    "value_investment_agent.application.research.direct_owner_cash_compilation_v2": "85e7f4fe51c022c5caa2065fef7fcdef0402258322181e927762b7822ba7e00a",
+    "value_investment_agent.application.research.agent_review.parent_cash_task_v3": "128c61d0993303dbb441c30ea4423aaefc5ce24f4231ec54a0c1e559f996e12f",
+}
+
+
+_REVIEWED_NUMBERED_COMPATIBILITY_HASHES = {
+    "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2": "03c7d1dcbdd61128e73f442727c4f22fe48abc10701e6f10170c17a5fe93e3e0",
+    "value_investment_agent.application.research.direct_owner_cash_staged_v3": "7f11ce13add09c9686e389f84ee5782bbe6d14c8962be32f2cae3696827b0d5a",
+    "value_investment_agent.application.research.direct_owner_cash_compilation_v2": "1a72bb69c4aa62712b6379d689a3611fa9dcbe565c0d08270561d24c46739044",
+}
+
+
 def _implementation():
     from .. import (direct_owner_cash_agent_draft_v1 as draft_prior,
                     direct_owner_cash_agent_draft_v2 as draft,
@@ -43,10 +58,12 @@ def _implementation():
                     direct_owner_cash_staged_v3 as staged_numbered,
                     direct_owner_cash_compilation_v2 as compiler_numbered,
                     direct_owner_cash_agent_request_v1 as request,
-                    direct_owner_cash_compilation_v1 as compiler)
+                    direct_owner_cash_compilation_v1 as compiler,
+                    parent_direct_owner_cash_unnumbered_v1 as unnumbered,
+                    parent_direct_owner_cash_sources as unnumbered_native)
     return {module.__name__: _hash(Path(module.__file__).read_bytes())
             for module in (draft_prior, draft, facts, sources, staged, staged_numbered,
-                           request, compiler, compiler_numbered)} | {
+                           request, compiler, compiler_numbered, unnumbered, unnumbered_native)} | {
         __name__: _hash(Path(__file__).read_bytes())}
 
 
@@ -74,9 +91,28 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             raise PermissionError("PARENT_SHARED_COMPLETION_CONFIG_INVALID")
         return {**cfg, "max_completion_tokens_cap": 8192}
 
+    def _implementation_matches(self, spec):
+        current = _implementation()
+        pinned = spec.get("implementation_sha256")
+        if not isinstance(current, dict) or not isinstance(pinned, dict):
+            return False
+        if pinned == current:
+            return True
+        if any(current.get(name) != digest
+               for name, digest in _REVIEWED_NUMBERED_COMPATIBILITY_HASHES.items()):
+            return False
+        legacy = {name: digest for name, digest in current.items()
+                  if name.rsplit(".", 1)[-1] not in {
+                      "parent_direct_owner_cash_unnumbered_v1", "parent_direct_owner_cash_sources"}}
+        legacy.update(_PRE_UNNUMBERED_HASHES)
+        if pinned != legacy:
+            return False
+        source = self._bound(spec["spec_binding"])
+        return source.get("source_adapter_version") == "NUMBERED_CNINFO_V2"
+
     def _context(self, spec, now):
         if (self._configuration() != spec["config"]
-                or spec.get("implementation_sha256") != _implementation()
+                or not self._implementation_matches(spec)
                 or spec.get("shared_budget_root") != str(self.shared_budget_root)):
             raise PermissionError("MODEL_AUTHORIZATION_CHANGED")
         context = read_parent_cash_agent_facts_v2(root=self.root,
@@ -293,7 +329,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if spec.get("seed") is not None:
             view["reused_stages"] = list(spec["seed"]["responses"])
             view["reused_from_task_id"] = spec["seed"]["task_id"]
-        if spec.get("implementation_sha256") != _implementation():
+        if not self._implementation_matches(spec):
             view.update(historical_status=state["status"],
                         historical_error_code=state.get("error_code"),
                         status="FAILED", error_code="PARENT_IMPLEMENTATION_CHANGED_REPLAY_REQUIRED")

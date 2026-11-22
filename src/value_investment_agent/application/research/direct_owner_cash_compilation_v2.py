@@ -2,6 +2,7 @@
 from datetime import date
 from decimal import Decimal, localcontext
 from .parent_direct_owner_cash_sources_v2 import read_parent_direct_owner_cash_sources_v2
+from .parent_direct_owner_cash_unnumbered_v1 import VERSION as UNNUMBERED_SOURCE, read_unnumbered_parent_cash
 from ...domain.valuation.parent_direct_operating_cash import forecast_parent_operating_cash, SCOPE
 from ...domain.valuation.direct_parent_owner_cash_v1 import compile_direct_owner_cash_path, FLOW_KEYS
 
@@ -56,7 +57,7 @@ def compile_source_bound_owner_cash_v2(*, root, spec, now):
     if (spec.get("schema_version") != SCHEMA or spec.get("action") != "no_order"
             or spec.get("currency") != "CNY" or spec.get("scope") != SCOPE):
         raise ValueError("DIRECT_INPUT_SPEC_CONTRACT_INVALID")
-    if (spec.get("source_adapter_version") != "NUMBERED_CNINFO_V2"
+    if (spec.get("source_adapter_version") not in {"NUMBERED_CNINFO_V2", UNNUMBERED_SOURCE}
             or spec.get("operating_sources") != []):
         raise ValueError("DIRECT_INPUT_NUMBERED_SOURCE_REQUIRED")
     if now.utcoffset() is None:
@@ -65,7 +66,9 @@ def compile_source_bound_owner_cash_v2(*, root, spec, now):
         raise ValueError("DIRECT_INPUT_YEAR_END_BASIS_REQUIRED")
     if date.fromisoformat(spec["valuation_date"]) > now.date():
         raise ValueError("DIRECT_INPUT_FUTURE_BASIS")
-    evidence = read_parent_direct_owner_cash_sources_v2(
+    reader = (read_unnumbered_parent_cash if spec["source_adapter_version"] == UNNUMBERED_SOURCE
+              else read_parent_direct_owner_cash_sources_v2)
+    evidence = reader(
         root=root, symbol=spec["symbol"], issuer_name=spec["issuer_name"],
         sources=spec["owner_sources"], evaluated_at=now,
         constraint_binding=spec.get("constraint_binding"),
