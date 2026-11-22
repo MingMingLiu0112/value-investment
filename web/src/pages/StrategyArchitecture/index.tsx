@@ -644,8 +644,9 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
             回执冷重放通过。
           </p>
           <p>
-            最新重试已通过 Bear 经营与现金政策。终值现金与归属利润不一致，D2
-            拒绝该情景。E2、F1 自动封存和 F2 跨日判断尚未取得本轮结果。
+            最新续跑复用了 Bear 经营与现金政策。终值草案存在 1.81
+            亿元稳态资金缺口，D2 拒绝该情景。E2、F1 自动封存和 F2
+            跨日判断尚未取得本轮结果。
           </p>
           <Link to="/decisions/600887?strategy=value">打开伊利研究详情</Link>
         </Card>
