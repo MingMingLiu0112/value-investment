@@ -53,6 +53,8 @@ class Provider:
                     rationale="Scenario parent cash rationale",
                     counter_evidence="Cash conversion may weaken",
                     reopen_condition="Reopen on new parent filing")
+        if "scenario_review" in request.output_schema["required"]:
+            body["scenario_review"] = [body.pop(key) for key in target.operating_wire.REVIEW_FIELDS]
         return LLMResponse(json.dumps(body), 100, 100, "deepseek-flash")
 
 
@@ -412,3 +414,21 @@ def test_v3_namespace_does_not_open_v2_task(task, monkeypatch):
     with pytest.raises(FileNotFoundError):
         legacy.read(new_task["task_id"])
     assert legacy.read(old_task["task_id"])["status"] == "QUEUED"
+
+
+def test_operating_wire_rejects_duplicate_keys_after_sealing(task):
+    service, _ = task
+
+    class DuplicateReviewProvider(Provider):
+        def complete(self, request):
+            response = super().complete(request)
+            return LLMResponse(response.text[:-1] + ', "scenario_review": []}',
+                               100, 100, "deepseek-flash")
+
+    service.test_provider = DuplicateReviewProvider()
+    created = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+                             request_key="duplicate-wire-stage", now=NOW)
+    result = service.run(created["task_id"], now=NOW)
+    assert result["error_code"] == "BEAR_OPERATING_PARENT_V3_CONFLICTING_JSON_KEY"
+    assert result["completed_stages"] == []
+    assert len(service._load(created["task_id"])[1]["returned_responses"]) == 1

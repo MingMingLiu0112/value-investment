@@ -258,7 +258,7 @@ it("records the current driver bridge arithmetic acceptance without adopting par
     expect(stage.deliveryReview?.done).toContain(
       "年度经营、现金政策和三情景分步任务已实际运行",
     );
-    expect(stage.deliveryReview?.gap).toContain("三个解释字段重复且值冲突");
+    expect(stage.deliveryReview?.gap).toContain("不在本次允许事实 ID 中");
     expect(stage.deliveryReview?.gap).toContain("尚未交给 E2");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
