@@ -55,7 +55,7 @@ export interface DeliveryReview {
 }
 export const deliveryReviewMeta = {
   reviewedAt: "2026-11-22",
-  baseline: "2927aa51",
+  baseline: "3f376a4f",
   kind: "人工交付复核，不是实时运行状态",
 } as const;
 export interface Stage {
@@ -747,7 +747,7 @@ export const catalog: Record<
           how: "区分事实与预测，推导量价成本及资金路径，保留反例。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
           done: "年度经营、现金政策和三情景分步任务已实际运行；母公司FY/H1原件可重放，股数、现金流、所选负债分项和历史借款收现/偿债现金均有原页引用。空白借款列保持未知；历史借还净额不是债务余额变化或未来续借保证。模型响应、费用和失败原因均已封存。",
-          gap: "重复键修复经真实重试验证；Bear 草稿通过 JSON 结构检查，随后因 revenue、cost 不在本次允许事实 ID 中被拒绝，尚未交给 E2。",
+          gap: "伊利收入和成本引用已在真实任务通过。Bear 终值可分配现金约 227.82 亿元，超过模型给出的母公司利润 53 亿元，现有经济校验拒绝，尚未交给 E2。",
           acceptance:
             "来源绑定的经营假设、三情景、反证和重开条件可被模型消费。",
           evidence: [
