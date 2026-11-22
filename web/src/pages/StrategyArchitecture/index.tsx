@@ -1,3 +1,4 @@
+import { DualStrategySelection } from "../../components/DualStrategySelection";
 import { useState } from "react";
 import { Link } from "@umijs/max";
 import { Alert, Card, Descriptions, Space, Tag, Typography } from "antd";
@@ -653,6 +654,7 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
         <DeliveryOverview stages={flow.stages} onSelect={selectStage} />
       )}
       {strategy === "value" && <ModuleRuntimePanel />}
+      {strategy === "hotspot" && <DualStrategySelection mode="hotspot" />}
       <details open={strategy !== "value"}>
         <summary>流程关系与历史审查说明</summary>
         <Typography.Paragraph>{flow.summary}</Typography.Paragraph>

@@ -1,12 +1,5 @@
 .value-workbench {
   min-width: 0;
-  background: #f8dada;
-  padding: clamp(12px, 2vw, 24px);
-  border-radius: 12px;
-}
-.value-workbench .workbench-hero {
-  background: #f4bcbc;
-  border-color: #d98b8b;
 }
 .value-workbench section {
   min-width: 0;

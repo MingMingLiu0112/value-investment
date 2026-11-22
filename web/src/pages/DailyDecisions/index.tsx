@@ -1,33 +1,22 @@
 import { Link } from "@umijs/max";
-import { useState } from "react";
-import { Button, Empty, Input, Skeleton, Typography } from "antd";
+import { Button, Skeleton, Typography } from "antd";
 import { DecisionCard } from "../../components/DecisionCard";
 import { HoldingsAttention } from "../../components/HoldingsAttention";
 import { ConfirmationTasks } from "../../components/ConfirmationTasks";
-import { DailyStrategyReadiness } from "../../components/StrategyReadiness";
-import { CurrentScreening } from "../../components/CurrentScreening";
-import { DualStrategySelection } from "../../components/DualStrategySelection";
 import { Workbench } from "../../components/Workbench";
 import { useApi } from "../../hooks/useApi";
 import { usePrivateState } from "../../hooks/usePrivateState";
 import { api } from "../../services/api";
-import type { DailyEvaluationItem, DecisionItem } from "../../types/api";
 import { describeCode } from "../../utils/codes";
-import { hasValuationResult } from "../../utils/opportunityView";
 import { blockerText } from "../../utils/packet";
 import {
   dailyResearchDates,
   dailyMachineResearchReview,
 } from "../../utils/dailyResearchDates";
-import {
-  readinessDetailUrl,
-  readinessStrategy,
-} from "../../utils/strategyReadiness";
+import { readinessStrategy } from "../../utils/strategyReadiness";
 import {
   judgmentGroup,
-  judgmentGroups,
   publicationVersionsMatch,
-  hotspotOpportunityQuality,
 } from "../../utils/currentJudgment";
 import "./opportunities.css";
 
@@ -45,7 +34,7 @@ function unavailableDependencyText(value?: string | null): string {
     code === "VALUE_DISCOVERY_RECEIPT_BINDING_UNAVAILABLE" ||
     code === "VALUE_DISCOVERY_RECEIPT_UNAVAILABLE"
   )
-    return "正式决策快照依赖的价值初筛回执缺失或未通过核验；上方独立候选池按自身来源单独核验，仍可查看历史研究候选。";
+    return "正式决策快照依赖的价值初筛回执缺失或未通过核验；策略页的候选池按自身来源单独核验，仍可查看历史研究候选。";
   // Only translate the code; backend diagnostics can contain local source paths.
   if (code && /^[A-Za-z][A-Za-z0-9_.]*$/.test(code)) {
     const translated = blockerText(describeCode(code));
@@ -54,155 +43,10 @@ function unavailableDependencyText(value?: string | null): string {
   return "当前结果所需的来源依赖缺失或未通过核验。";
 }
 
-function StrategySection({
-  title,
-  horizon,
-  items,
-  empty,
-  id,
-  foldUnvalued = false,
-  evaluations = [],
-}: {
-  title: string;
-  horizon: string;
-  items: DecisionItem[];
-  empty: string;
-  id: string;
-  foldUnvalued?: boolean;
-  evaluations?: DailyEvaluationItem[];
-}) {
-  const evaluationFor = (item: DecisionItem) =>
-    evaluations.find(
-      (row) =>
-        row.symbol === item.symbol &&
-        readinessStrategy(row.strategy) === readinessStrategy(item.strategy),
-    );
-  const groupFor = (item: DecisionItem) =>
-    evaluationFor(item)?.decision_action === "NO_TRADE"
-      ? 5
-      : judgmentGroup(item);
-  const card = (item: DecisionItem) => (
-    <DecisionCard key={item.id} item={item} evaluation={evaluationFor(item)} />
-  );
-  const main = foldUnvalued
-    ? items.filter(hasValuationResult)
-    : [...items].sort((a, b) => {
-        const score = (item: DecisionItem) => {
-          const code = hotspotOpportunityQuality(item)?.code;
-          return code ? { D: 4, C: 3, B: 2, A: 1, E: 0 }[code] : -1;
-        };
-        return score(b) - score(a);
-      });
-  const other = foldUnvalued
-    ? items.filter((item) => !hasValuationResult(item))
-    : [];
-  const counts = {
-    formal: items.filter((item) => groupFor(item) === 0).length,
-    pending: items.filter((item) => [1, 2].includes(groupFor(item))).length,
-    watch: items.filter((item) => [3, 4].includes(groupFor(item))).length,
-    noTrade: items.filter((item) => groupFor(item) === 5).length,
-  };
-  return (
-    <section id={id} className="opportunity-strategy" aria-label={title}>
-      <div className="opportunity-strategy-head">
-        <div>
-          <span className="opportunity-horizon">{horizon}</span>
-          <h2>{title}</h2>
-        </div>
-        <div className="opportunity-counts" aria-label="候选数量">
-          <span>
-            <strong>{counts.formal}</strong> 正式复核
-          </span>
-          <span>
-            <strong>{counts.pending}</strong> 待确认
-          </span>
-          <span>
-            <strong>{counts.watch}</strong> 研究观察
-          </span>
-          {!!counts.noTrade && (
-            <span>
-              <strong>{counts.noTrade}</strong> 暂不新建仓
-            </span>
-          )}
-        </div>
-      </div>
-      {!foldUnvalued &&
-        !items.some((item) =>
-          ["B", "C", "D"].includes(hotspotOpportunityQuality(item)?.code ?? ""),
-        ) && (
-          <p role="status">
-            当前展示的热点计划中，尚无已确认的入场结构；未覆盖证券不作结论。
-          </p>
-        )}
-      {main.length ? (
-        <div className="opportunity-list">
-          {judgmentGroups.map((label, group) => {
-            const rows = main.filter((item) => groupFor(item) === group);
-            if (group === 4 && rows.length)
-              return (
-                <details key={label} aria-label="已失效或等待补齐数据">
-                  <summary>
-                    已失效 / 等待重新形成结构或补齐数据（{rows.length}）
-                  </summary>
-                  {rows.map(card)}
-                </details>
-              );
-            return rows.length ? (
-              <section key={label} aria-label={label}>
-                <h3>
-                  {group === 5 &&
-                  rows.some(
-                    (item) =>
-                      evaluationFor(item)?.decision_action === "NO_TRADE",
-                  )
-                    ? "已评价，暂不新建仓"
-                    : label}
-                </h3>
-                {rows.map(card)}
-              </section>
-            ) : null;
-          })}
-        </div>
-      ) : (
-        <div className="opportunity-empty">
-          {other.length ? (
-            <>
-              <p>
-                {other.length}{" "}
-                家公司尚无可用的价值投资操作价；可查看已发布研究及未满足条件。
-              </p>
-              <nav aria-label="价值研究快捷入口">
-                {other.map((item) => (
-                  <span key={item.id}>
-                    <Link to={`/decisions/${encodeURIComponent(item.id)}`}>
-                      {item.name} {item.symbol}
-                    </Link>{" "}
-                  </span>
-                ))}
-              </nav>
-            </>
-          ) : (
-            <Empty description={empty} image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          )}
-        </div>
-      )}
-      {!!other.length && (
-        <details aria-label="其他待研究公司">
-          <summary>其他待研究公司（{other.length}）</summary>
-          {other.map(card)}
-        </details>
-      )}
-    </section>
-  );
-}
-
 export default function DailyDecisions() {
-  const [researchSymbol, setResearchSymbol] = useState("");
-  const [selectionRevision, setSelectionRevision] = useState(0);
   const { data, loading, error, retry } = useApi(api.daily);
   const packet = useApi(api.packet);
   const update = useApi(api.updateStatus);
-  const historical = useApi(api.historicalCases);
   const state = usePrivateState();
   const packetCurrent =
     packet.data?.packet_status === "CURRENT" && !!packet.data.publication_id;
@@ -238,6 +82,23 @@ export default function DailyDecisions() {
       ].join("、")
     : "";
   const quoteFresh = packet.data?.data_freshness.quote.status === "FRESH";
+  const actions =
+    usable && quoteFresh && data
+      ? [...data.sections.value, ...hotspotItems].flatMap((item) => {
+          const evaluation = data.actionable_evaluation?.items.find(
+            (row) =>
+              row.symbol === item.symbol &&
+              readinessStrategy(row.strategy) ===
+                readinessStrategy(item.strategy),
+          );
+          return judgmentGroup(item) === 0 &&
+            evaluation?.decision_action === "CONDITIONAL_MANUAL_REVIEW" &&
+            evaluation.public_action_intent &&
+            evaluation.public_action_intent !== "HOLD"
+            ? [{ item, evaluation }]
+            : [];
+        })
+      : [];
   const subtitle =
     quoteFresh && researchDates.researchCovered && quoteDate
       ? `价值研究价格参考截至 ${quoteDate} 收盘；研究日期覆盖不等于估值、事件或交易获准。`
@@ -291,9 +152,7 @@ export default function DailyDecisions() {
               retry();
               packet.retry();
               update.retry();
-              historical.retry();
               state.retry();
-              setSelectionRevision((value) => value + 1);
             }}
             aria-label="刷新页面数据"
           >
@@ -302,12 +161,10 @@ export default function DailyDecisions() {
           <Link to="/system">数据状态</Link>
         </div>
       </header>
-      <DualStrategySelection key={selectionRevision} />
       <nav className="daily-navigation" aria-label="今日工作入口">
         {usable && (
           <>
-            <a href="#daily-value">价值投资观察</a>
-            <a href="#daily-hotspot">热点波段观察</a>
+            <a href="#daily-actions">今日操作复核</a>
             <a href="#confirmations">待我确认</a>
           </>
         )}
@@ -464,23 +321,6 @@ export default function DailyDecisions() {
           </details>
         </section>
       )}
-      <section aria-label="公司公开研究查询">
-        <Typography.Title level={3}>查看公司公开研究</Typography.Title>
-        <p>
-          输入六位证券代码，查看已有来源绑定的条件研究。正式操作资格在公司详情中单独核验。
-        </p>
-        <Input
-          aria-label="研究证券代码"
-          placeholder="六位证券代码"
-          maxLength={6}
-          value={researchSymbol}
-          onChange={(event) => setResearchSymbol(event.target.value.trim())}
-          style={{ maxWidth: 240 }}
-        />
-        {/^[0-9]{6}$/.test(researchSymbol) && (
-          <Link to={`/decisions/${researchSymbol}`}>查看该公司研究</Link>
-        )}
-      </section>
       {(loading || packet.loading) && (
         <Skeleton active paragraph={{ rows: 8 }} />
       )}
@@ -555,53 +395,7 @@ export default function DailyDecisions() {
               公共计划不包含个人账户容量，不能计为个人可操作机会。
               暂不新建仓不代表应继续持有；已有持仓的加减仓与退出须独立复核。
             </p>
-            <details>
-              <summary>逐公司结论与统计范围</summary>
-              <ul>
-                {data.actionable_evaluation?.items.map((item) => (
-                  <li key={`${item.strategy}-${item.symbol}`}>
-                    <Link
-                      to={readinessDetailUrl(
-                        item,
-                        [...data.sections.value, ...data.sections.hotspot].find(
-                          (row) =>
-                            row.symbol === item.symbol &&
-                            readinessStrategy(row.strategy) ===
-                              readinessStrategy(item.strategy),
-                        ),
-                      )}
-                    >
-                      {item.company_name || item.symbol} · {item.symbol}
-                    </Link>
-                    {item.decision_action === "CONDITIONAL_MANUAL_REVIEW"
-                      ? ` · 条件性人工复核${item.public_action_intent ? `（${{ OPEN: "建仓", ADD: "加仓", HOLD: "持有", REDUCE: "减仓", EXIT: "退出" }[item.public_action_intent]}）` : ""} — `
-                      : item.decision_action === "NO_TRADE"
-                        ? " · 暂不新建仓 — "
-                        : " · 无法评价 — "}
-                    {item.decision_reason}
-                  </li>
-                ))}
-              </ul>
-            </details>
           </section>
-          <DailyStrategyReadiness
-            items={data.actionable_evaluation?.items ?? []}
-            decisions={[...data.sections.value, ...data.sections.hotspot]}
-            companyStatuses={
-              packet.data?.source_bindings_verified === true
-                ? packet.data.company_statuses
-                : undefined
-            }
-          />
-          {update.data?.last_run?.screening && (
-            <details>
-              <summary>原始初筛与来源核验</summary>
-              <CurrentScreening
-                scan={update.data.last_run.screening}
-                decisions={data.sections.value}
-              />
-            </details>
-          )}
           {update.data?.last_run?.research_priority && (
             <section aria-label="证据研究队列">
               <h3>研究推进</h3>
@@ -705,7 +499,7 @@ export default function DailyDecisions() {
             <h2>今天需要做什么</h2>
             <p>
               {quoteFresh
-                ? "查看候选的确认与失效条件；未满足就继续观察。"
+                ? "复核下方已触发条件的股票。"
                 : "先更新或核验行情；旧快照不能当作今天的新判断。"}{" "}
               {state.portfolio?.status === "CONNECTED"
                 ? "复核持仓风险，并录入你已经实际完成的成交。"
@@ -713,32 +507,24 @@ export default function DailyDecisions() {
             </p>
             <a href="#confirmations">查看需要我确认的事项</a>
           </section>
-          {![...data.sections.value, ...hotspotItems].some(
-            (item) => judgmentGroup(item) === 0,
-          ) && (
-            <p className="opportunity-no-action">
-              当前正式操作候选为 0。以下为研究观察，不是买卖指令。
-            </p>
-          )}
-          <div className="opportunity-grid">
-            <StrategySection
-              id="daily-value"
-              foldUnvalued
-              title="价值投资"
-              horizon="中长期"
-              items={data.sections.value}
-              evaluations={data.actionable_evaluation?.items}
-              empty="当前没有可展示的价值投资线索"
-            />
-            <StrategySection
-              id="daily-hotspot"
-              title="热点波段"
-              horizon="短中期"
-              items={hotspotItems}
-              evaluations={data.actionable_evaluation?.items}
-              empty="当前没有通过观察条件的热点候选；不会凑出买点"
-            />
-          </div>
+          <section id="daily-actions" aria-label="今日操作复核">
+            <h2>今日操作复核</h2>
+            {actions.length ? (
+              actions.map(({ item, evaluation }) => (
+                <DecisionCard
+                  key={item.id}
+                  item={item}
+                  evaluation={evaluation}
+                />
+              ))
+            ) : (
+              <p>
+                {quoteFresh
+                  ? "当前已核验发布中没有需要操作复核的股票。"
+                  : "行情尚未通过当日核验，暂不展示操作股票。"}
+              </p>
+            )}
+          </section>
           {data.sections.holdings.length > 0 && (
             <section className="opportunity-held-list">
               <h2>持仓复核事项</h2>
@@ -747,28 +533,18 @@ export default function DailyDecisions() {
               ))}
             </section>
           )}
-          {!!historical.data?.items.length && (
-            <details
-              className="opportunity-historical"
-              aria-label="历史价格结构验证"
-            >
-              <summary>历史价格结构验证（非当前候选）</summary>
-              <p>以下是已归档行情的计算案例，不计入今天的候选或正式复核。</p>
-              {historical.data.items.map((item) => (
-                <Link
-                  key={`${item.symbol}-${item.market_trade_date}`}
-                  to={`/historical-price/${item.symbol}/${item.market_trade_date}`}
-                >
-                  {item.symbol} · {item.market_trade_date} · 60 分钟突破观察{" "}
-                  {item.levels["60m"].entry_trigger_price} / 失效参考{" "}
-                  {item.levels["60m"].invalidation_price}
-                </Link>
-              ))}
-            </details>
-          )}
           <ConfirmationTasks
-            decisions={data.sections.value}
-            hotspotDecisions={hotspotItems}
+            decisions={actions
+              .map(({ item }) => item)
+              .filter(
+                (item) => readinessStrategy(item.strategy) === "CORE_VALUE",
+              )}
+            hotspotDecisions={actions
+              .map(({ item }) => item)
+              .filter(
+                (item) =>
+                  readinessStrategy(item.strategy) === "HOTSPOT_SATELLITE",
+              )}
             connected={state.portfolio?.status === "CONNECTED"}
             privateReadable={!!state.portfolio}
           />

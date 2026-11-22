@@ -190,7 +190,10 @@ export function SwingWaitExplanation({ row }: { row: SelectionRow }) {
     </section>
   );
 }
-export function DualStrategySelection() {
+export function DualStrategySelection({
+  mode,
+}: { mode?: "value" | "hotspot" } = {}) {
+  if (mode) return <SelectionPool mode={mode} />;
   return (
     <section
       aria-label="双策略选股"

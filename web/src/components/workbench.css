@@ -16,7 +16,7 @@
   box-sizing: border-box;
   overflow: auto;
   padding: 28px 16px;
-  background: #102b26;
+  background: #901d2b;
 }
 .workbench-brand {
   display: flex;
@@ -33,8 +33,8 @@
   height: 30px;
   place-items: center;
   border-radius: 8px;
-  background: #bde6d3;
-  color: #102b26;
+  background: #ffe1e4;
+  color: #901d2b;
 }
 .workbench-brand:hover {
   color: #fff;
@@ -46,22 +46,22 @@
 }
 .workbench-nav-group p {
   margin: 0 0 3px 10px;
-  color: #a3c1b6;
+  color: #ffccd2;
   font-size: 12px;
 }
 .workbench-nav-group a {
   border-radius: 7px;
   padding: 9px 10px;
-  color: #e1eee9;
+  color: #fff0f2;
   white-space: nowrap;
 }
 .workbench-nav-group a:hover,
 .workbench-nav-group a[aria-current="page"] {
-  background: #24483e;
+  background: #b33042;
   color: #fff;
 }
 .workbench-nav-group a[aria-current="page"] {
-  box-shadow: inset 3px 0 #9ed6ba;
+  box-shadow: inset 3px 0 #ffc1ca;
   font-weight: 700;
 }
 .workbench-content {
