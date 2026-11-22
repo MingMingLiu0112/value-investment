@@ -258,11 +258,8 @@ it("records the current driver bridge arithmetic acceptance without adopting par
     expect(stage.deliveryReview?.done).toContain(
       "年度经营、现金政策和三情景分步任务已实际运行",
     );
-    expect(stage.deliveryReview?.gap).toContain(
-      "Base目标分红超过经常性股东现金",
-    );
-    expect(stage.deliveryReview?.gap).toContain("Bull把有限承诺延伸到永久终值");
-    expect(stage.deliveryReview?.gap).toContain("三情景未进入E2/F1/F2");
+    expect(stage.deliveryReview?.gap).toContain("三个解释字段重复且值冲突");
+    expect(stage.deliveryReview?.gap).toContain("尚未交给 E2");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
   expect(d1.evidenceStatus).toContain("当前版本三角色研究");
