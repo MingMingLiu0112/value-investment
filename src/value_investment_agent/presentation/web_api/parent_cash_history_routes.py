@@ -122,7 +122,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         from datetime import datetime, timezone
         from hashlib import sha256
         from ...application.research.parent_cash_task_alignment_v3 import _align_verified_parent_cash_task
-        from ...application.research.parent_cash_task_receipt_v3 import replay_parent_cash_task_receipt
+        from ...application.research.parent_cash_task_distribution_receipt_v1 import replay as replay_parent_cash_task_receipt
 
         try:
             candidates = [(task_root, valuation_receipt_path(task_root, task_id))

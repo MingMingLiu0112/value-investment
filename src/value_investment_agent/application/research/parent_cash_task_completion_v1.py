@@ -6,6 +6,7 @@ from pathlib import Path
 from tempfile import mkdtemp
 
 from .parent_cash_task_receipt_v3 import build_parent_cash_task_receipt
+from .parent_cash_task_distribution_receipt_v1 import build as build_distribution_receipt
 from ..product.common import require_inside
 
 
@@ -54,6 +55,14 @@ def registered_cash_task_spec(service, symbol):
             or case.get("schema_version") != "m1-valuation-package-v2"
             or case.get("research_case", {}).get("symbol") != symbol):
         raise ValueError("PARENT_TASK_CASE_PROFILE_OR_ISSUER_MISMATCH")
+    _distribution_binding(matches[0], spec)
+    return binding
+
+
+def _distribution_binding(entry, research_spec):
+    binding = entry.get("implemented_distribution_receipt_binding")
+    if binding is None and research_spec.get("source_adapter_version") == "UNNUMBERED_OFFICIAL_CNINFO_V1":
+        raise ValueError("PARENT_TASK_IMPLEMENTED_DISTRIBUTION_BINDING_REQUIRED")
     return binding
 
 
@@ -74,7 +83,13 @@ def run_and_seal_parent_cash_task(service, task_id):
             return
         retained.parent.mkdir(parents=True, exist_ok=True)
         attempt = Path(mkdtemp(prefix="valuation-attempt-", dir=retained.parent)) / "sealed"
-        built = build_parent_cash_task_receipt(
+        registry = json.loads((root / "config" / "parent-cash-task-case-bindings-v1.json").read_bytes())
+        entry = registry["specs"][spec["spec_binding"]["sha256"]]
+        binding = entry.get("implemented_distribution_receipt_binding")
+        options = {} if binding is None else {"distribution_binding": binding}
+        builder = build_parent_cash_task_receipt if binding is None else build_distribution_receipt
+        built = builder(
+            **options,
             root=root, task_id=task_id, task_head=head, case_package_binding=case_binding,
             output_dir=attempt, now=datetime.now(timezone.utc),
         )

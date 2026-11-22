@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .direct_owner_cash_research_v1 import _read
-from .parent_cash_task_receipt_v3 import replay_parent_cash_task_receipt
+from .parent_cash_task_distribution_receipt_v1 import replay as replay_parent_cash_task_receipt
 from .parent_cash_task_share_anchor_v3 import read_task_share_anchors
 from .pending_candidate_alignment import _load_bound_alignment
 

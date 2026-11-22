@@ -7,6 +7,7 @@ from unicodedata import normalize
 
 from .direct_owner_cash_agent_facts_v2 import read_parent_cash_agent_facts_v2
 from .parent_cash_task_receipt_v3 import RECEIPT_SCHEMA
+from .parent_cash_task_distribution_receipt_v1 import RECEIPT_SCHEMA as DISTRIBUTION_RECEIPT_SCHEMA
 from ...domain.research.issuer_identity import source_identity_matches_registered_issuer
 
 
@@ -28,7 +29,7 @@ def read_task_share_anchors(*, root: Path, result: dict) -> list[dict]:
             or valuation["status"] != "conditional_research_only"
             or valuation["symbol"] != symbol or descriptor["symbol"] != symbol
             or descriptor["point_in_time"]["valuation_date"] != period
-            or contract["schema_version"] != RECEIPT_SCHEMA
+            or contract["schema_version"] not in {RECEIPT_SCHEMA, DISTRIBUTION_RECEIPT_SCHEMA}
             or any(contract.get(key) != provenance[key]
                    for key in ("task_id", "spec_binding"))
             or datetime.fromisoformat(contract["completed_at"]) != completed_at
