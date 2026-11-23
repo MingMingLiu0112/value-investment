@@ -1246,6 +1246,21 @@ export function FirstResearchInputView({
           <p>
             原件行列、同期列及利润勾稽已核验；这些历史金额尚未转成未来现金预测。
           </p>
+          {officialUrl(
+            data.financial_update_observation.verified_income_observation
+              .source_bindings?.original?.source_url,
+          ) && (
+            <a
+              href={officialUrl(
+                data.financial_update_observation.verified_income_observation
+                  .source_bindings?.original?.source_url,
+              )}
+              target="_blank"
+              rel="noreferrer"
+            >
+              查看三季报原件
+            </a>
+          )}
           {Object.entries(
             data.financial_update_observation.verified_income_observation.facts,
           ).map(([year, facts]) => (
@@ -1259,14 +1274,33 @@ export function FirstResearchInputView({
                   selling: "销售费用",
                   admin: "管理费用",
                   research: "研发费用",
+                  finance: "财务费用",
                   pre_tax_profit: "税前利润",
                   tax: "所得税",
+                  group_profit: "合并净利润",
+                  nci: "少数股东损益",
                   parent_profit: "归母利润",
-                }).map(([field, label]) => (
-                  <li key={field}>
-                    {label}：{amount(facts[field])}
-                  </li>
-                ))}
+                })
+                  .filter(([field]) => facts[field] != null)
+                  .map(([field, label]) => (
+                    <li key={field}>
+                      {label}：{amount(facts[field])}
+                      {data.financial_update_observation
+                        ?.verified_income_observation?.original_rows?.[field]
+                        ?.physical_page && (
+                        <>
+                          {" "}
+                          · 原件第{" "}
+                          {
+                            data.financial_update_observation
+                              .verified_income_observation.original_rows[field]
+                              .physical_page
+                          }{" "}
+                          页
+                        </>
+                      )}
+                    </li>
+                  ))}
               </ul>
             </div>
           ))}

@@ -694,6 +694,8 @@ export type FirstResearchInputResponse = {
       status: string;
       report_period: string;
       facts: Record<string, Record<string, string>>;
+      source_bindings?: { original?: { source_url?: string } };
+      original_rows?: Record<string, { physical_page: number }>;
     } | null;
     e1_recompile_requirements?: {
       current_ytd_source_fields_missing: string[];
