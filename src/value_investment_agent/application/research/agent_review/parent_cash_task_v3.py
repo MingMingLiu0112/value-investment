@@ -42,7 +42,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "342f4bc99a24d0586de5867942565d5f74acb8f2044cc34c2ec48cb7b2c719ff"
+REVIEWED_CAPITAL_SERVICE = "cf586104a8ab4f873e1921384d052bc5967a6f5b68c83f7915c5b8c375df9560"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -151,6 +151,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "40a3d19ae65d2d41e1c40ff642ba5e402e00de70e26f5f32f39707f5a6979241",
+            "f69114fbfa585e50d7e05e3218de5741eb0537b5d63116956fc1ad7467127eb3",
             "3b67006f29f92bb8715fad6be677df44193744314970f836b0aaa861b37b0955",
             "a4e4243a479e13014ce85b72ec1073265ccca5a43bcaa020f37309517ebae830",
             "28ccdd5b30d471b1c0ae1b0ddeda0d6c6affa37d484e1d926c8a3330b2560867",
@@ -794,12 +796,41 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     status="CANCELLED", error_code="USER_CANCELLED")
             return self._view(spec, state, binding, now)
 
+    def revalidate_interrupted_financing(self, task_id, *, now=None):
+        """Record a failed policy recheck without sending a provider request."""
+        now = _now(now)
+        directory = self._directory(task_id)
+        with self._lock(directory, "execution"), self._lock(directory):
+            spec, state, binding = self._load(task_id)
+            if (state["status"] != "RUNNING" or "bear.policy" not in state["responses"]
+                    or any(row["status"] == "RESERVED" for row in state["reservations"].values())):
+                return self._view(spec, state, binding, now)
+            context = self._context(spec, now)
+            schedule = financing_schedule.disclosed_schedule_from_context(context)
+            if schedule is None:
+                return self._view(spec, state, binding, now)
+            policy = self._stage_outputs(spec, state, now, verified_context=context)["bear"]["policy"]
+            try:
+                financing_schedule.validate_disclosed_financing_policy(schedule, policy)
+            except ValueError as error:
+                reason = str(error)
+                if not re.fullmatch(
+                    r"PARENT_FINANCING_(?:ABOVE_DISCLOSED_PROCEEDS|BELOW_CONTRACTUAL_PRINCIPAL):20[0-9]{2}",
+                    reason,
+                ):
+                    raise
+                state, binding = self._save(
+                    spec, state, binding, now, status="FAILED", error_code="BEAR_POLICY_" + reason,
+                )
+            return self._view(spec, state, binding, now)
+
     def resume(self, task_id, *, now=None):
         now = _now(now)
         directory = self._directory(task_id)
         with self._lock(directory):
             spec, state, binding = self._load(task_id, recover=True)
-            if state["status"] in {"SUCCEEDED", "CANCELLED"}:
+            if (state["status"] in {"SUCCEEDED", "CANCELLED"}
+                    or (state.get("error_code") or "").startswith("BEAR_POLICY_PARENT_FINANCING_")):
                 return self._view(spec, state, binding, now)
             self._drafts(spec, state, now)
             if any(row["scenario"] not in state["responses"] for row in state["reservations"].values()):

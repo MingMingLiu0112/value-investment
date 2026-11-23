@@ -12,6 +12,7 @@ from ...application.research.parent_cash_task_completion_v1 import (
     registered_cash_task_spec, run_and_seal_parent_cash_task, valuation_receipt_path,
     preflight_parent_cash_task, read_valuation_publication, valuation_blockage_path,
 )
+from ...application.portfolio.private_journal_lock import LockTimeout
 from .live_operating_research_routes import resolve_research_task_root
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
@@ -96,6 +97,17 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
             base = getattr(numbered_service, "base", None)
             if base is not None and (Path(base) / former_id / "input.json").is_file():
                 former = numbered_service.read(former_id)
+                if (former.get("status") == "RUNNING" and
+                        "bear.policy" in former.get("completed_stages", ())):
+                    try:
+                        former = numbered_service.revalidate_interrupted_financing(former_id)
+                    except LockTimeout:
+                        return reply(former, 202)
+                if (former.get("status") == "FAILED" and re.fullmatch(
+                        r"BEAR_POLICY_PARENT_FINANCING_(?:ABOVE_DISCLOSED_PROCEEDS|BELOW_CONTRACTUAL_PRINCIPAL):20[0-9]{2}",
+                        former.get("error_code") or "")):
+                    request_key = "value-fin1-" + binding["sha256"]
+                    options.update(seed_task_id=former_id, replay_from_stage="bear.policy")
                 if (former.get("status") == "FAILED" and
                         former.get("error_code") == "BEAR_OPERATING_PARENT_V3_CONFLICTING_JSON_KEY"):
                     request_key = "value-wire1-" + binding["sha256"]

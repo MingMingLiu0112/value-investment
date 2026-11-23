@@ -215,7 +215,7 @@ def test_h1_sensitivity_requires_local_authorization(tmp_path, monkeypatch):
 
 
 
-@pytest.mark.parametrize("failure", [None, "invalid_json", "unsettled", "operating_series"])
+@pytest.mark.parametrize("failure", [None, "invalid_json", "unsettled", "operating_series", "financing"])
 def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkeypatch, failure):
     from hashlib import sha256
 
@@ -233,6 +233,9 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
                 (root / former_id / "input.json").touch()
 
         def read(self, _):
+            if failure == "financing":
+                return dict(status="FAILED",
+                            error_code="BEAR_POLICY_PARENT_FINANCING_ABOVE_DISCLOSED_PROCEEDS:2026")
             return dict(status="FAILED", error_code=(
                 "BEAR_OPERATING_PARENT_V3_YEARS_OR_SERIES_INVALID" if failure == "operating_series"
                 else "BEAR_POLICY_PARENT_V3_INVALID_JSON"),
@@ -264,11 +267,12 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
         assert response.status_code == 202 and response.json()["task_id"] == task_id
     key = "value-web-" + binding["sha256"]
     options = {}
-    if failure in {"invalid_json", "operating_series"}:
+    if failure in {"invalid_json", "operating_series", "financing"}:
         former_id = "rt-" + sha256(("parent-cash-task-v3:" + key).encode()).hexdigest()[:32]
-        key = ("value-policy1-" if failure == "invalid_json" else "value-op1-") + binding["sha256"]
+        key = {"invalid_json": "value-policy1-", "operating_series": "value-op1-",
+               "financing": "value-fin1-"}[failure] + binding["sha256"]
         options = dict(seed_task_id=former_id,
-                       replay_from_stage="bear.policy" if failure == "invalid_json" else "bear.operating")
+                       replay_from_stage="bear.operating" if failure == "operating_series" else "bear.policy")
     assert calls == [(binding, key, options), task_id] * 2
 
 
