@@ -43,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "82c1e8ce56c384bc77865add95d30422957953985b61d85a8bb8db326a90a096"
+REVIEWED_CAPITAL_SERVICE = "ece4f01d9c6f6afc185eca473abe65556c7a4e01e3c0afb4d8c5004fa70893f3"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -152,6 +152,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "001fe55b377083de2e577a4bef570fba9eb2f4ce3dced927128e13d52dbe6673",
+            "0a941f5287c6d786a1fa36149e09418b4cf4ef5a063190fc011c0e34290f2625",
             "788c0f698b6ac66aed9e3f6689e2009652f71ce26ddb35dc60b3fb643c697301",
             "83faf15fbc2f95a2376fb3ceb35bdd2db3101fb05992f05e75bac907d19c319b",
             "7e7adc609379ce2a67f272130906ae354e9b62557437df84d93af0247dced12e",
@@ -374,7 +376,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         return source.get("source_adapter_version") == "NUMBERED_CNINFO_V2"
 
     @staticmethod
-    def _wire(spec, stage, request):
+    def _wire(spec, stage, request, *, root=None):
         if stage == "operating" and operating_wire.__name__ in spec["implementation_sha256"]:
             wire = operating_wire.operating_wire_request(request)
             wire_version = spec.get("operating_series_wire")
@@ -392,7 +394,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     "Never use objects, year keys or nested evidence_anchors in annual_notes. "
                     "Return exactly one JSON object with no trailing text or closing brace.")
             if (spec.get("replay_from_stage") == "base.operating"
-                    or spec.get("base_operating_wire") == "SOURCE_RESIDUAL_V1"):
+                    or spec.get("base_operating_wire") in {"SOURCE_RESIDUAL_V1", "MATCHED_QUARTER_V2"}):
                 payload = json.loads(wire.user)
                 if payload.get("scenario") == "base":
                     source = payload["source_context"]
@@ -417,6 +419,43 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         "observed_residual_to_revenue": str(ratio),
                         "classification": "HISTORICAL_DIAGNOSTIC_NOT_FORECAST",
                     }
+                    if spec.get("base_operating_wire") == "MATCHED_QUARTER_V2":
+                        from .quarterly_parent_cash_source import replay_quarterly_parent_cash
+                        from ....infrastructure.filings.pdf_text import extract_pages
+                        from ....infrastructure.filings.quarterly_parent_operating_facts import (
+                            build_quarterly_parent_operating_observations,
+                        )
+                        source_spec = staged_numbered._load_spec(root, spec["spec_binding"])
+                        quarterly = source_spec["quarterly_financing_source"]
+                        period_end = f"{int(source['valuation_date'][:4]) + 1}-09-30"
+                        identity = dict(symbol=source["symbol"], issuer_name=source_spec["issuer_name"],
+                                        period_end=period_end)
+                        verified = replay_quarterly_parent_cash(root=root, source=quarterly,
+                            now=datetime.fromisoformat(spec["created_at"]), **identity)
+                        path = root / verified["source"]["path"]
+                        pages = extract_pages(path)
+                        if _hash(path.read_bytes()) != quarterly["sha256"]:
+                            raise ValueError("PARENT_QUARTER_SOURCE_HASH_CHANGED")
+                        observed = []
+                        with localcontext() as arithmetic:
+                            arithmetic.prec = 48
+                            for period in build_quarterly_parent_operating_observations(pages, **identity):
+                                revenue = Decimal(period["revenue"])
+                                cost = Decimal(period["cost"])
+                                collected = Decimal(period["customer_cash"])
+                                paid = Decimal(period["supplier_cash"])
+                                other = Decimal(period["cfo"]) - collected + paid
+                                observed.append(dict(period_end=period["period_end"],
+                                    customer_cash_to_revenue=str(collected / revenue),
+                                    supplier_cash_to_cost=str(paid / cost),
+                                    other_operating_cash_to_revenue=str(other / revenue)))
+                        payload["matched_quarter_cash_conversion"] = dict(
+                            classification="HISTORICAL_NOT_ANNUALISED_NOT_TERMINAL",
+                            source_sha256=quarterly["sha256"], observations=observed)
+                        wire = replace(wire, transport_output_contract=wire.transport_output_contract +
+                            " Use the matched quarter observations to challenge durable supplier "
+                            "payment improvements and changes in other operating cash. Do not "
+                            "annualise nine-month coefficients. Distinguish timing from recurrence.")
                     wire = replace(wire, user=json.dumps(payload, ensure_ascii=False,
                         sort_keys=True, separators=(",", ":")),
                         transport_output_contract=wire.transport_output_contract +
@@ -718,7 +757,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 verified_context=context,
                 max_completion_tokens=spec["config"]["max_completion_tokens_cap"])
             if (packet.get("scenario") != stage_id or packet.get("request_sha256") !=
-                    _hash(_bytes(self._wire(spec, stage, request).__dict__)) or packet.get("source_fingerprint") !=
+                    _hash(_bytes(self._wire(spec, stage, request, root=self.root).__dict__)) or packet.get("source_fingerprint") !=
                     context["input_fingerprint"] or packet.get("action") != "no_order"):
                 raise ValueError("PARENT_RESPONSE_BINDING_INVALID")
             parsed = self._parse_stage(spec, stage,
@@ -894,9 +933,14 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 trial_spec["operating_series_wire"] = "INPUTS_ONLY_V2"
             elif "operating_series_wire" in old_spec:
                 trial_spec["operating_series_wire"] = old_spec["operating_series_wire"]
-            if (old_spec.get("replay_from_stage") == "base.operating"
-                    or old_spec.get("base_operating_wire") == "SOURCE_RESIDUAL_V1"):
-                trial_spec["base_operating_wire"] = "SOURCE_RESIDUAL_V1"
+            if (replay_from_stage == "base.operating"
+                    and old_spec.get("base_policy_wire") == "ANNUAL_EARNINGS_BRIDGE_V2"
+                    and old_state.get("error_code") ==
+                    "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"):
+                trial_spec["base_operating_wire"] = "MATCHED_QUARTER_V2"
+            elif (old_spec.get("replay_from_stage") == "base.operating"
+                    or "base_operating_wire" in old_spec):
+                trial_spec["base_operating_wire"] = old_spec.get("base_operating_wire", "SOURCE_RESIDUAL_V1")
             if replay_from_stage == "base.policy" and old_state.get("error_code") == (
                     "BASE_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE"):
                 trial_spec["base_policy_wire"] = "ANNUAL_EARNINGS_BRIDGE_V2"
@@ -1102,7 +1146,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         state, binding = self._save(spec, state, binding, _now(), status="FAILED",
                             error_code=f"{scenario.upper()}_TERMINAL_PARENT_V3_FORECAST_DEBT_NEGATIVE")
                         return self._view(spec, state, binding, _now())
-                    wire_request = self._wire(spec, stage, request)
+                    wire_request = self._wire(spec, stage, request, root=self.root)
                     prompt_cap = len(_bytes(wire_request.__dict__)) + 4096
                     reserve = (Decimal(prompt_cap) * Decimal(str(cfg["input_cost_per_million"])) +
                         Decimal(request.max_completion_tokens) * Decimal(str(cfg["output_cost_per_million"]))) / Decimal(1000000)
