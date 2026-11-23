@@ -131,21 +131,22 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             return False
         if pinned == current:
             return True
-        if (pinned == (current | PRE_QUARTER_FINANCING_IMPLEMENTATION)
-                and current.get("value_investment_agent.application.research.direct_owner_cash_agent_facts_v2")
-                == REVIEWED_FINANCING_IMPLEMENTATION[
-                    "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2"]
-                and "quarterly_financing_source" not in self._bound(spec["spec_binding"])):
-            return True
-        if (all(current.get(name) == digest for name, digest in REVIEWED_FINANCING_IMPLEMENTATION.items())
-                and self._bound(spec["spec_binding"]).get("source_adapter_version")
-                != "UNNUMBERED_OFFICIAL_CNINFO_V2"):
-            current = current | PRE_FINANCING_IMPLEMENTATION
-            if pinned.keys() == current.keys():
+        reviewed = all(current.get(name) == digest for name, digest in REVIEWED_FINANCING_IMPLEMENTATION.items())
+        if reviewed and __name__ in pinned:
+            source = self._bound(spec["spec_binding"])
+            historical = {}
+            if "quarterly_financing_source" not in source:
+                if pinned[__name__] == PRE_QUARTER_FINANCING_IMPLEMENTATION[__name__]:
+                    historical = PRE_QUARTER_FINANCING_IMPLEMENTATION
+                elif source.get("source_adapter_version") != "UNNUMBERED_OFFICIAL_CNINFO_V2":
+                    historical = PRE_FINANCING_IMPLEMENTATION
+            current = current | historical
+            if historical and pinned.keys() == current.keys():
                 compatible = dict(current)
                 for name, digest in pinned.items():
-                    if name in PRE_FINANCING_IMPLEMENTATION:
-                        if digest == PRE_FINANCING_WINDOWS_OVERRIDES.get(name):
+                    if name in historical:
+                        if (historical is PRE_FINANCING_IMPLEMENTATION
+                                and digest == PRE_FINANCING_WINDOWS_OVERRIDES.get(name)):
                             compatible[name] = digest
                         continue
                     if (name == terminal_wire.__name__
