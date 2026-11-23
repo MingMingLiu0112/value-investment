@@ -43,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "08d1b0679beb589683ef0bd85b4823efdca3377cc78af385968ba28d427fa87e"
+REVIEWED_CAPITAL_SERVICE = "fddeac621cc70fcd4642530e96e822aa77ca16a3091f92e52b51dd07d481ad24"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -152,6 +152,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "3774af9243786fc9d53b055deaa3cd2c2af6c9a31f7b4accba4a096827db9bed",
+            "126bab52f86ebec41d690e1411a4dd7381d6e78522a597d934f7e7deb4a31984",
             "dbf7b1d76e3aa0a3c92bbbfee16df2a07a9bfee6ee12d8d165b479384f10f427",
             "4c6eb47c765ba255cfa9a3143b45c684993b1a7c2217d248a7d4abb6c303f7ea",
             "9c8955c8e3193b2a542f27795e693608ba3f794c735e7df32350e3875246fd8f",
@@ -428,6 +430,39 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             schedule = financing_schedule.disclosed_schedule_from_context(payload["source_context"])
             if schedule is None:
                 return wire
+            if (spec.get("base_policy_wire") == "ANNUAL_EARNINGS_BRIDGE_V1"
+                    and payload["scenario"] == "base"):
+                source = payload["source_context"]
+                history = [row for row in source["parent_operating_cash_observations"]
+                           if row["period_end"] == source["valuation_date"]
+                           and row["scope"] == terminal_wire.SCOPE and row["symbol"] == source["symbol"]]
+                if len(history) != 1 or "profit_and_operating_cash" not in history[0]:
+                    raise ValueError("PARENT_POLICY_ANNUAL_PROFIT_SOURCE_REQUIRED")
+                row = history[0]
+                scenarios = payload["prior_forecast_assumptions_not_facts"]["operating"]
+                with localcontext() as arithmetic:
+                    arithmetic.prec = 48
+                    gross = Decimal(row["revenue"]) - Decimal(row["cost"])
+                    profit = Decimal(row["profit_and_operating_cash"]["parent_profit_cny"])
+                    payload["annual_earnings_bridge"] = {
+                        "classification": "HISTORICAL_DIAGNOSTIC_AND_CONDITIONAL_DRIVERS",
+                        "historical_period_end": row["period_end"],
+                        "historical_gross_profit_cny": str(gross),
+                        "historical_parent_net_profit_cny": str(profit),
+                        "historical_net_less_gross_cny": str(profit - gross),
+                        "scenario_gross_profit_cny": [
+                            dict(year=year, amount_cny=str(Decimal(revenue) - Decimal(cost)))
+                            for year, revenue, cost in zip(payload["required_years"],
+                                scenarios["revenue"], scenarios["cost"], strict=True)
+                        ],
+                    }
+                wire = replace(wire, transport_output_contract=wire.transport_output_contract +
+                    " Derive each year's parent_profit from the same scenario gross-profit path. "
+                    "Explain expenses, finance income, investment income and taxes below gross "
+                    "profit. The historical residual is a scale check, not a plug or forecast. "
+                    "Separate realised gross capex from future maintenance and growth. A missing "
+                    "plan does not imply zero maintenance. Do not place observed gross capex into "
+                    "one component without a defensible conditional split or use it as terminal proof.")
             year, ceiling, floors = financing_schedule.disclosed_financing_limits(schedule)
             payload["disclosed_financing_limits"] = {
                 "borrowing_ceiling_year": year,
@@ -798,6 +833,10 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             if (old_spec.get("replay_from_stage") == "base.operating"
                     or old_spec.get("base_operating_wire") == "SOURCE_RESIDUAL_V1"):
                 trial_spec["base_operating_wire"] = "SOURCE_RESIDUAL_V1"
+            if (old_spec.get("base_policy_wire") == "ANNUAL_EARNINGS_BRIDGE_V1"
+                    or (replay_from_stage == "base.policy" and old_state.get("error_code") ==
+                        "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION")):
+                trial_spec["base_policy_wire"] = "ANNUAL_EARNINGS_BRIDGE_V1"
             for stage_id in STAGE_ORDER:
                 if replay_from_stage is not None:
                     replay_scenario, replay_stage = replay_from_stage.split(".")
@@ -848,6 +887,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if seed is not None:
             if "base_operating_wire" in trial_spec:
                 spec["base_operating_wire"] = trial_spec["base_operating_wire"]
+            if "base_policy_wire" in trial_spec:
+                spec["base_policy_wire"] = trial_spec["base_policy_wire"]
             spec.update(forked_at=now.isoformat(), seed=seed,
                         replay_from_stage=replay_from_stage,
                         ancestor_spend=str(ancestor_spend))

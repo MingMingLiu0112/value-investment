@@ -323,9 +323,15 @@ export function ParentCashTaskHistoryView({
           {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
           实际使用：未核实
           {onContinue &&
+            !item.read_only_archive &&
             item.status === "FAILED" &&
-            item.error_code ===
-              "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS" &&
+            (item.error_code ===
+              "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS" ||
+              (item.error_code ===
+                "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION" &&
+                item.completed_stages.includes("base.policy") &&
+                item.reused_stages?.includes("base.operating") &&
+                !item.reused_stages.includes("base.policy"))) &&
             item.completed_stages.includes("base.operating") && (
               <Popconfirm
                 title="从 Base 现金政策继续？"

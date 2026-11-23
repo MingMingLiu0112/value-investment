@@ -95,12 +95,21 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 if not isinstance(predecessor, str) or not re.fullmatch(r"rt-[0-9a-f]{32}", predecessor):
                     raise ValueError("PARENT_V3_INVALID_CONTINUATION_TASK")
                 prior = numbered_service.read(predecessor)
+                is_earnings_rebuild = prior.get("error_code") == (
+                    "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION")
                 if (prior["status"] != "FAILED"
                         or prior.get("spec_binding") != binding
-                        or prior.get("error_code") != "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS"
+                        or (not is_earnings_rebuild and prior.get("error_code") !=
+                            "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS")
                         or "base.operating" not in prior.get("completed_stages", ())):
                     raise ValueError("PARENT_V3_CONTINUATION_NOT_AVAILABLE")
-                key = "value-policy-recovery-" + sha256(predecessor.encode()).hexdigest()[:56]
+                reused = prior.get("reused_stages", ())
+                if is_earnings_rebuild and (
+                        "base.policy" not in prior.get("completed_stages", ())
+                        or "base.operating" not in reused or "base.policy" in reused):
+                    raise ValueError("PARENT_V3_CONTINUATION_NOT_AVAILABLE")
+                key = ("value-earn1-" + binding["sha256"] if is_earnings_rebuild else
+                       "value-policy-recovery-" + sha256(predecessor.encode()).hexdigest()[:56])
                 task = numbered_service.create(spec_binding=binding, request_key=key,
                     seed_task_id=predecessor, replay_from_stage="base.policy")
                 if task["status"] in {"QUEUED", "SUCCEEDED"}:
@@ -425,6 +434,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                         raise ValueError("PARENT_V3_TASK_PROJECTION_LIMIT_EXCEEDED")
                     items.append({"task_id": directory.name, "task_contract": "parent-cash-task-v3",
                         "read_only_archive": archived,
+                        "reused_stages": sorted((spec.get("seed") or {}).get("responses", {})),
                         "status": state["status"],
                         "stage": next((row.get("scenario") for row in reservations.values()
                                        if row.get("status") == "RESERVED"), None),

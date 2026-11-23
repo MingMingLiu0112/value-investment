@@ -301,6 +301,18 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
         assert calls == [(binding, key, dict(seed_task_id=task_id,
                           replay_from_stage="base.policy")), task_id] * 2
 
+        calls.clear()
+        terminal = dict(status="FAILED", spec_binding=binding,
+            error_code="BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
+            completed_stages=["base.operating", "base.policy"],
+            reused_stages=["base.operating", "base.policy"])
+        monkeypatch.setattr(Service, "read", lambda *_: terminal)
+        assert client.post(path, json=body).status_code == 422
+        terminal["reused_stages"] = ["base.operating"]
+        assert client.post(path, json=body).status_code == 202
+        assert calls == [(binding, "value-earn1-" + binding["sha256"],
+                          dict(seed_task_id=task_id, replay_from_stage="base.policy")), task_id]
+
 
 def test_current_parent_cash_spec_keeps_historical_case_binding(tmp_path):
     from types import SimpleNamespace

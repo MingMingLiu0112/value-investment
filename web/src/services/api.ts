@@ -1944,6 +1944,8 @@ export interface ParentCashTaskHistory {
   items: Array<{
     task_id: string;
     task_contract?: "parent-cash-task-v2" | "parent-cash-task-v3";
+    read_only_archive?: boolean;
+    reused_stages?: string[];
     candidate_status?: "COMPILED_CONDITIONAL_NOT_MAIN" | "NOT_COMPILED";
     status: string;
     stage: string | null;
