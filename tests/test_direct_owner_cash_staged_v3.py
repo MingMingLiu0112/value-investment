@@ -180,3 +180,14 @@ def test_policy_request_separates_cash_drivers_and_reserves(monkeypatch):
 
     assert "working-capital residual again" in revised.transport_output_contract
     assert "not a minimum operating reserve" in revised.transport_output_contract
+
+
+def test_policy_money_wire_rejects_extra_billion_multiplier():
+    policy = {"years": [2026, 2027], "series": {
+        "growth_capex": {"values": ["6500000000.0000", "6000000000000000000.00"]},
+        "payout_ratio": {"values": ["0.70", "0.68"]},
+    }}
+    with pytest.raises(ValueError, match="PARENT_V3_POLICY_CNY_WIRE_INVALID:2027:growth_capex"):
+        staged.validate_policy_money_wire(policy)
+    policy["series"]["growth_capex"]["values"][1] = "6000000000.00"
+    staged.validate_policy_money_wire(policy)

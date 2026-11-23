@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import replace
 from decimal import Decimal, localcontext
 import json
+import re
 from pathlib import Path
 
 from .direct_owner_cash_agent_draft_v1 import _load_spec
@@ -25,6 +26,18 @@ from ...domain.valuation.parent_direct_operating_cash import (
 )
 
 VERSION = "direct-owner-cash-staged-v3"
+POLICY_MONEY_WIRE = "CNY_YUAN_CENT_V1"
+_POLICY_CNY = re.compile(r"[0-9]{1,15}(?:\.[0-9]{1,2}0*)?")
+
+
+def validate_policy_money_wire(policy):
+    """Reject transport-scale errors without repairing the submitted series."""
+    for field, term in policy["series"].items():
+        if field in {"payout_ratio", "reserve_ratio"}:
+            continue
+        for year, value in zip(policy["years"], term["values"], strict=True):
+            if not isinstance(value, str) or not _POLICY_CNY.fullmatch(value):
+                raise ValueError(f"PARENT_V3_POLICY_CNY_WIRE_INVALID:{year}:{field}")
 
 
 def staged_parent_cash_request_v3(**kwargs):
@@ -38,6 +51,12 @@ def staged_parent_cash_request_v3(**kwargs):
     if kwargs["stage"] == "policy":
         payload = json.loads(request.user)
         context = payload["source_context"]
+        if context.get("policy_money_wire") == POLICY_MONEY_WIRE:
+            request = replace(request, transport_output_contract=request.transport_output_contract +
+                " Policy cash amounts and parent_profit are decimal strings in CNY yuan, "
+                "at most 15 digits before and two digits after the decimal point. "
+                "Example: 6 billion yuan is 6000000000.00; never multiply a value already "
+                "in yuan by one billion. Payout and reserve ratios remain decimal fractions.")
         floors = []
         for observation in context.get("historical_financing_observations", []):
             cash = observation["financing_cash_flows"]
@@ -302,6 +321,8 @@ def preflight_annual_cash_upper_bound_v3(*, root: Path, spec_binding: dict,
     if (opening.get("field") != "closing_cash_and_equivalents_cny"
             or opening.get("period_end") != basis or opening.get("scope") != SCOPE):
         raise ValueError("PARENT_V3_OPENING_CASH_SCOPE_INVALID")
+    if context.get("policy_money_wire") == POLICY_MONEY_WIRE:
+        validate_policy_money_wire(policy)
     if operating["years"] != policy["years"]:
         raise ValueError("PARENT_V3_YEAR_MISMATCH")
     # Annual forecasts cover the full calendar year. A known interim parent

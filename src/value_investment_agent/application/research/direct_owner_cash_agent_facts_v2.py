@@ -302,5 +302,9 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
         fund_commitment_evidence=evidence["fund_commitment_evidence"],
         action="no_order", formal_eligibility=False,
         scope=SCOPE, currency="CNY", forecast_scenarios_present=False)
+    if "policy_money_wire" in spec:
+        if spec["policy_money_wire"] != "CNY_YUAN_CENT_V1":
+            raise ValueError("PARENT_AGENT_POLICY_MONEY_WIRE_UNSUPPORTED")
+        projected["policy_money_wire"] = spec["policy_money_wire"]
     projected["input_fingerprint"] = hashlib.sha256(_canonical(projected)).hexdigest()
     return projected
