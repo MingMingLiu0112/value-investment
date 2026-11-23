@@ -239,6 +239,7 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
                         reservations={"policy": {"status": "RESERVED"}} if failure == "unsettled" else {})
 
         def create(self, *, spec_binding, request_key, **options):
+            assert 8 <= len(request_key) <= 80
             calls.append((spec_binding, request_key, options))
             return {"status": "QUEUED", "task_id": task_id, "action": "no_order"}
 
@@ -264,7 +265,7 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
     options = {}
     if failure in {"invalid_json", "operating_series"}:
         former_id = "rt-" + sha256(("parent-cash-task-v3:" + key).encode()).hexdigest()[:32]
-        key = ("value-policy1-" if failure == "invalid_json" else "value-operating1-") + binding["sha256"]
+        key = ("value-policy1-" if failure == "invalid_json" else "value-op1-") + binding["sha256"]
         options = dict(seed_task_id=former_id,
                        replay_from_stage="bear.policy" if failure == "invalid_json" else "bear.operating")
     assert calls == [(binding, key, options), task_id] * 2
