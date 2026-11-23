@@ -263,6 +263,36 @@ def _constraints(root, binding, symbol, issuer, evaluated_at):
                               issue_date=candidates[0]["period"], source_refs=dict(packet["financing_source"], physical_page=item["physical_page"]),
                               actual_settlement_verified=False, refinancing_verified=False,
                               outstanding_at_evaluation_cny=None))
+    if "supplemental_financing_sources_v1" in packet:
+        from ...infrastructure.filings.operating_event_terms import parse_operating_event_terms
+
+        sources = packet["supplemental_financing_sources_v1"]
+        if not isinstance(sources, list) or not sources:
+            _fail("SUPPLEMENTAL_FINANCING_SOURCES_INVALID")
+        seen = {item["code"] for item in financing}
+        for source in sources:
+            _clock(source["available_at"], evaluated_at)
+            path, _ = _bound(root, source)
+            parsed = parse_operating_event_terms(extract_pages(path), symbol=symbol)
+            _bound(root, source)
+            if (parsed["event_type"] != "REPORTED_ISSUER_FINANCING_ISSUANCE"
+                    or _compact(parsed["issuer_name"]) != _compact(issuer)
+                    or parsed["published_date"] > source["available_at"][:10]):
+                _fail("SUPPLEMENTAL_FINANCING_DISCLOSURE_INVALID")
+            for item in parsed["financing_issues"]:
+                code = item["code"]
+                if code in seen:
+                    _fail("SUPPLEMENTAL_FINANCING_DUPLICATE_CODE")
+                seen.add(code)
+                principal = Decimal(item["face_value_cny"])
+                gross = principal * Decimal(item["issue_price_per_100_face_cny"]) / 100
+                financing.append(dict(
+                    code=code, issue_date=item["interest_start"], maturity=item["maturity"],
+                    principal_cny=str(principal), gross_issue_price_amount_cny=str(gross),
+                    classification="FACT", scope="ISSUER_FINANCING_DISCLOSURE", currency="CNY",
+                    source_refs=dict(source), actual_settlement_verified=False,
+                    unrestricted_cash_receipt_verified=False, refinancing_verified=False,
+                    outstanding_at_evaluation_cny=None))
     return dict(receipt_binding=binding, charter_rules=rules, issued_financing=financing,
                 excluded_parent_claims=[dict(field="statutory_surplus_reserve_cny", value=None,
                     reason="RESERVE_NOTE_NOT_ADMITTED_AS_PARENT_COMPONENT; matching parent total is not statutory-component proof",

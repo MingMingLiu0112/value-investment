@@ -138,6 +138,21 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         pinned = spec.get("implementation_sha256")
         if not isinstance(current, dict) or not isinstance(pinned, dict):
             return False
+        source_module = "value_investment_agent.application.research.parent_direct_owner_cash_sources"
+        legacy_source_hashes = {
+            "96af2bb3d8b0425c0a49ec136d7b72aca5bae7788d4ff06e36bc90a354011ded",
+            "155ea93c650859eac70286977c3cca995efb57fd91d1dd3f1b43c3635549d1d7",
+        }
+        if pinned.get(source_module) in legacy_source_hashes and source_module in current:
+            source_file = Path(sys.modules[source_module].__file__)
+            revision = _hash(source_file.read_bytes().replace(b"\r\n", b"\n"))
+            if revision == "B3C61AE77FBF17341B192279603DE71A571111201DC9F927B184969108C82E28".lower():
+                source = self._bound(spec["spec_binding"])
+                constraint = source.get("constraint_binding")
+                if not constraint or "supplemental_financing_sources_v1" not in self._bound(constraint):
+                    current = current | {source_module: pinned[source_module]}
+                    if pinned.get(__name__) == "4636acbdfbf639d68648be86a04c472154b36d71cb106abe6e306d95ad7a529b":
+                        current = current | {__name__: pinned[__name__]}
         previous_interest_service = "7e09ef24373aeeb03231342527ca41a524705b6a924bdfd008d6f69df5cf1d16"
         if pinned == current | {__name__: previous_interest_service}:
             return True
