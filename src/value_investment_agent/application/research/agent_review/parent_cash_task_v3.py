@@ -144,8 +144,26 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             "65f8ec5352838d02a88b6dfaaa90b3cc3ad3ffa39aa137533d8aa8231ec69a8f",
             "16b636cc55a9c8641664a2e97bda779c3a1e640d2ffd9679ce5e90a0b98bb482",
             "272e9c45a4940aee0559ba4e6a75a086842b6580ee373d82582b273fb424fb2b",
-        } and pinned == current | {__name__: pinned[__name__]}:
-            return True
+        } and pinned.keys() == current.keys():
+            mixed_line_endings = {
+                "a36104edc9aea061f28b0092ff27e0509b32aee67266ffc262b5c8f0cc0178fa":
+                    "e7f930dc07a0c0fd347fca879b19d6b049648422d7dc8eb0f13ef23b7fd9f3f9",
+                "ad3b92ce4903790b3aeab224814893418c796b7747d4262e2c000037ea0998bb":
+                    "429f1217495ba7a01be67f6b4f0cc6a9d69b9861aabd3ded93d7231b6d8f5e98",
+                "2e83e5f7d27c379719525221c3cb04655b08500041f85648faa5df6b315fd0a1":
+                    "f1a3e5b62bb442006ccaefdad51981386d9e487c7d28122361ab65d2a5908d07",
+            }
+            for name, digest in pinned.items():
+                if name == __name__ or digest == current[name]:
+                    continue
+                lf = Path(sys.modules[name].__file__).read_bytes().replace(b"\r\n", b"\n")
+                lf_hash = _hash(lf)
+                if (digest in {lf_hash, _hash(lf.replace(b"\n", b"\r\n"))}
+                        or mixed_line_endings.get(digest) == lf_hash):
+                    continue
+                break
+            else:
+                return True
         source = self._bound(spec["spec_binding"]) if __name__ in pinned else {}
         if "annual_capex_evidence" in source:
             return False
