@@ -122,7 +122,7 @@ def compare_aligned_quarter_update(*, symbol: str, financial_basis: str,
                     "consolidated", "consolidated_parent", "CNY", "CNY"):
                 continue
             binding = fact["binding"]
-            candidates[binding["sha256"]] = {
+            observation = {
                 "status": "VERIFIED_OBSERVATION_ONLY", "symbol": symbol,
                 "source_bindings": {"original": {**binding, "source_url": fact["source_url"],
                                                     "available_at": fact["source_available_at"]}},
@@ -134,6 +134,14 @@ def compare_aligned_quarter_update(*, symbol: str, financial_basis: str,
                               "attributable_profit_ytd_cny": profit["value"]},
                 },
             }
+            previous = candidates.setdefault(binding["sha256"], observation)
+            if (previous["ytd_9m_observation"] != observation["ytd_9m_observation"]
+                    or previous["source_bindings"]["original"]["source_url"] != fact["source_url"]):
+                return compare_first_input_financial_update(
+                    symbol=symbol, financial_basis=financial_basis, native_facts=native_facts,
+                    q3_read_model={"status": "UNASSESSABLE",
+                                   "reason": "CONFLICTING_BOUND_QUARTER_FINANCIAL_FACTS"},
+                )
     if len(candidates) != 1:
         return None
     return compare_first_input_financial_update(
