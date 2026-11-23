@@ -170,3 +170,22 @@ def test_terminal_wire_uses_last_year_with_first_year_method_configured():
     assert result["source_context"] == context
     assert result["terminal_transition_reference"]["year"] == 2035
     assert result["terminal_transition_reference"]["operating_cash_cny"] == "13"
+
+
+def test_versioned_base_policy_rejects_zero_interest_with_existing_principal(monkeypatch):
+    from value_investment_agent.application.research.agent_review import parent_cash_task_v3 as task
+
+    draft = policy(["0", "0", "0"], ["50", "50", "0"])
+    draft["series"]["interest_outside_cfo"] = {"values": ["2", "0", "0"]}
+    monkeypatch.setattr(task, "parse_staged_parent_cash_response", lambda *args, **kwargs: draft)
+    spec = {"policy_capital_basis": {"amount_cny": "100"},
+            "implementation_sha256": {capital.__name__: "fixture"}}
+    request = LLMRequest(role="FUNDAMENTAL", system="fixture", user='{"scenario":"base"}',
+                         output_schema={"type":"object"})
+    parse = task.ParentCashTaskServiceV3._parse_stage
+    assert parse(None, spec, "policy", None, request, "fixture") == draft
+    revised = dict(spec, base_interest_wire="ISSUER_FINANCING_INTEREST_V1")
+    with pytest.raises(ValueError, match="PARENT_V3_POLICY_DEBT_INTEREST_UNSUPPORTED:2027"):
+        parse(None, revised, "policy", None, request, "fixture")
+    draft["series"]["interest_outside_cfo"]["values"][1] = "1"
+    assert parse(None, revised, "policy", None, request, "fixture") == draft

@@ -43,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "d79f944499cbde79bec9a773700e16e27ded6e523ab88abc2af3e783964f70df"
+REVIEWED_CAPITAL_SERVICE = "82a3a2cc1522640663faafee8ee194130a8b677ae18c2406d3ae254104e304a1"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -152,6 +152,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "3ca0ec5018979fc0b080b2da08269b4de8ce8619d682f205fe54d194bffde9a2",
+            "d765bdf379aa69498dc67e9e7c7b2fc599850feead57ab07ad2de484ee9b046a",
             "d7c211740c28a813998434fb64829693a265da6016a5c6da7d2655b5f3ba635f",
             "e2465dbb3234967208bad139ebafe6b514e5eacfcde51179d0435e20f623c9f5",
             "001fe55b377083de2e577a4bef570fba9eb2f4ce3dced927128e13d52dbe6673",
@@ -575,6 +577,18 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 "repayment_minimum_by_year_cny": {str(y): str(v) for y, v in floors.items()},
                 "classification": "CONDITIONAL_NOT_ACTUAL_SETTLEMENT",
             }
+            if (spec.get("base_interest_wire") == "ISSUER_FINANCING_INTEREST_V1"
+                    and payload["scenario"] == "base"):
+                maturity_years = sorted({
+                    int(issue["terms"]["maturity"][:4]) for issue in schedule["later_issues"].values()
+                })
+                payload["conditional_issuer_note_interest_years"] = maturity_years
+                wire = replace(wire, transport_output_contract=wire.transport_output_contract +
+                    " The selected policy models parent borrowing outside operating cash. "
+                    "For later disclosed borrowing carried through contractual maturity, "
+                    "provide a supported conditional cash interest estimate in maturity years "
+                    "and whenever parent principal remains outstanding. Treat uncertain "
+                    "interest as unresolved, not zero; do not double count it in operating cash.")
             return replace(wire, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
                 separators=(",", ":")), transport_output_contract=wire.transport_output_contract +
                 " Use the computed disclosed_financing_limits without re-summing note amounts. "
@@ -635,7 +649,15 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 )
                 if schedule is not None:
                     financing_schedule.validate_disclosed_financing_policy(schedule, parsed)
-            policy_capital.validate_policy_debt(spec["policy_capital_basis"], parsed)
+            debt_path = policy_capital.validate_policy_debt(spec["policy_capital_basis"], parsed)
+            if (spec.get("base_interest_wire") == "ISSUER_FINANCING_INTEREST_V1"
+                    and json.loads(request.user)["scenario"] == "base"):
+                amounts = parsed["series"]["interest_outside_cfo"]["values"]
+                for row, amount in zip(debt_path, amounts, strict=True):
+                    if ((Decimal(row["opening_debt_cny"]) > 0
+                            or Decimal(row["new_borrowing_cny"]) > 0)
+                            and Decimal(amount) <= 0):
+                        raise ValueError(f"PARENT_V3_POLICY_DEBT_INTEREST_UNSUPPORTED:{row['year']}")
         return parsed
 
     def _context(self, spec, now):
@@ -950,6 +972,14 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     or (replay_from_stage == "base.policy" and old_state.get("error_code") ==
                         "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION")):
                 trial_spec["base_policy_wire"] = old_spec.get("base_policy_wire", "ANNUAL_EARNINGS_BRIDGE_V1")
+            if (old_spec.get("base_interest_wire") == "ISSUER_FINANCING_INTEREST_V1"
+                    or (replay_from_stage == "base.policy"
+                        and old_spec.get("base_operating_wire") == "MATCHED_QUARTER_V2"
+                        and old_state.get("error_code") in {
+                            "BASE_POLICY_PARENT_DRAFT_REJECTED_OR_UNPUBLISHED",
+                            "BASE_POLICY_PARENT_FINANCING_ABOVE_DISCLOSED_PROCEEDS:2026",
+                        })):
+                trial_spec["base_interest_wire"] = "ISSUER_FINANCING_INTEREST_V1"
             for stage_id in STAGE_ORDER:
                 if replay_from_stage is not None:
                     replay_scenario, replay_stage = replay_from_stage.split(".")
@@ -1002,6 +1032,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 spec["base_operating_wire"] = trial_spec["base_operating_wire"]
             if "base_policy_wire" in trial_spec:
                 spec["base_policy_wire"] = trial_spec["base_policy_wire"]
+            if "base_interest_wire" in trial_spec:
+                spec["base_interest_wire"] = trial_spec["base_interest_wire"]
             spec.update(forked_at=now.isoformat(), seed=seed,
                         replay_from_stage=replay_from_stage,
                         ancestor_spend=str(ancestor_spend))
@@ -1231,6 +1263,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                      or re.fullmatch(
                                          r"PARENT_FINANCING_(?:ABOVE_DISCLOSED_PROCEEDS|BELOW_CONTRACTUAL_PRINCIPAL):20[0-9]{2}",
                                          detail)
+                                     or re.fullmatch(r"PARENT_V3_POLICY_DEBT_INTEREST_UNSUPPORTED:20[0-9]{2}", detail)
                                      or (re.fullmatch(r"PARENT_V3_POLICY_CNY_WIRE_INVALID:20[0-9]{2}:[a-z_]+", detail)
                                          and detail.rsplit(":", 1)[-1] in POLICY))
                                 else "PARENT_DRAFT_REJECTED_OR_UNPUBLISHED")
