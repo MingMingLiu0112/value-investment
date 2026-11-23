@@ -128,6 +128,12 @@ def test_numbered_annual_history_drives_cash_preflight(monkeypatch, tmp_path):
         staged.preflight_annual_cash_upper_bound_v3(**args)
     policy["series"]["debt_repayment"]["values"] = ["25"]
     staged.preflight_annual_cash_upper_bound_v3(**args)
+    context["annual_capex_floor"] = {"year": 2026, "minimum_cny": "5"}
+    with pytest.raises(ValueError, match="PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH:2026"):
+        staged.preflight_annual_cash_upper_bound_v3(**args)
+    policy["series"]["maintenance_capex"]["values"] = ["2"]
+    policy["series"]["growth_capex"]["values"] = ["3"]
+    staged.preflight_annual_cash_upper_bound_v3(**args)
     policy["series"]["maintenance_capex"]["values"] = ["40"]
     with pytest.raises(ValueError, match="UNFUNDED_CASH_REQUIREMENT:2026"):
         staged.preflight_annual_cash_upper_bound_v3(**args)

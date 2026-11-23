@@ -106,6 +106,13 @@ def staged_parent_cash_request_v3(**kwargs):
                         historical, context, operating, index, year)))
                     for index, year in enumerate(operating["years"])
                 ]
+        capex_floor = context.get("annual_capex_floor")
+        if capex_floor and capex_floor["year"] in payload["required_years"]:
+            payload["realised_annual_capex_floor"] = capex_floor
+            request = replace(request, transport_output_contract=request.transport_output_contract +
+                " The sum of maintenance_capex and growth_capex for the supplied year must "
+                "cover realised_annual_capex_floor.minimum_cny. The source reports gross capex "
+                "and does not establish the maintenance/growth split. Do not add gross capex twice.")
         if floors or history:
             payload["realised_annual_financing_floors"] = floors
             return replace(request, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
@@ -367,6 +374,14 @@ def preflight_annual_cash_upper_bound_v3(*, root: Path, spec_binding: dict,
                     < Decimal(movement["value_cny"])):
                 raise ValueError(
                     f"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:{year}:{forecast_field}")
+    capex_floor = context.get("annual_capex_floor")
+    if capex_floor and capex_floor["year"] in policy["years"]:
+        year = capex_floor["year"]
+        index = policy["years"].index(year)
+        capex = sum(Decimal(policy["series"][field]["values"][index])
+                    for field in ("maintenance_capex", "growth_capex"))
+        if capex < Decimal(capex_floor["minimum_cny"]):
+            raise ValueError(f"PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH:{year}")
     mandatory = ("maintenance_capex", "growth_capex", "commitments_outside_capex",
                  "debt_repayment", "interest_outside_cfo", "other_mandatory_cash")
     with localcontext() as arithmetic:

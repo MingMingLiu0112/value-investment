@@ -139,6 +139,39 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             return False
         if pinned == current:
             return True
+        source = self._bound(spec["spec_binding"]) if __name__ in pinned else {}
+        if "annual_capex_evidence" in source:
+            return False
+        # The capex input and policy checks are opt-in. The prior file bytes
+        # remain valid for source specs that predate this contract.
+        compatible_after_capex = {
+            "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2":
+                "e7f930dc07a0c0fd347fca879b19d6b049648422d7dc8eb0f13ef23b7fd9f3f9",
+            "value_investment_agent.application.research.direct_owner_cash_staged_v3":
+                "429f1217495ba7a01be67f6b4f0cc6a9d69b9861aabd3ded93d7231b6d8f5e98",
+        }
+        if any(name not in current
+               or _hash(Path(sys.modules[name].__file__).read_bytes().replace(b"\r\n", b"\n")) != digest
+               for name, digest in compatible_after_capex.items()):
+            return False
+        prior = {
+            "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2": (
+                "70f63e800f161176cc9329ad53b929e06498de8075da906c2a133cb5dffb192c",
+                REVIEWED_FINANCING_IMPLEMENTATION[
+                    "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2"]),
+            "value_investment_agent.application.research.direct_owner_cash_staged_v3": (
+                "5848b01a9b567bc193472b2fddf7b6ca048c0b058ac4fa15d75ee7a1312379b1",
+                REVIEWED_FINANCING_IMPLEMENTATION[
+                    "value_investment_agent.application.research.direct_owner_cash_staged_v3"]),
+            __name__: (
+                "7ee419c4aca91882d53b64648f0a5e514079e78636e534a013fa6e3f56aaaa7a",
+                "93cf408e660e9affac70d70eb6ac4a911e58f14bcff31060d46d3cf77d3fd145"),
+        }
+        previous = {name: pinned.get(name) for name, hashes in prior.items()
+                    if pinned.get(name) in hashes}
+        if len(previous) == len(prior) and pinned == current | previous:
+            return True
+        current = current | {name: hashes[1] for name, hashes in prior.items() if name != __name__}
         reviewed = all(current.get(name) == digest for name, digest in REVIEWED_FINANCING_IMPLEMENTATION.items())
         if reviewed and __name__ in pinned:
             source = self._bound(spec["spec_binding"])
@@ -628,7 +661,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                 detail = str(error).replace("PARENT_V2_", "PARENT_V3_", 1)
                                 code = ("PARENT_V3_ECONOMIC_" + detail
                                     if isinstance(error, ValueError) and re.fullmatch(
-                                        r"(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:20[0-9]{2}|"
+                                        r"(?:(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT|PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH):20[0-9]{2}|"
                                     r"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:20[0-9]{2}:"
                                     r"(?:debt_repayment|new_borrowing))", detail)
                                     else detail if isinstance(error, ValueError) and re.fullmatch(
@@ -723,7 +756,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         detail = str(error).replace("PARENT_V2_", "PARENT_V3_", 1)
                         code = ("PARENT_V3_ECONOMIC_" + detail
                                 if isinstance(error, ValueError) and re.fullmatch(
-                                    r"(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:20[0-9]{2}|"
+                                    r"(?:(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT|PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH):20[0-9]{2}|"
                                     r"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:20[0-9]{2}:"
                                     r"(?:debt_repayment|new_borrowing))", detail)
                                 else detail if isinstance(error, ValueError)

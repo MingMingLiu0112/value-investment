@@ -62,6 +62,31 @@ def replay_quarterly_parent_cash(*, root, source, symbol, issuer_name, period_en
     return {**result, "source": dict(source), "available_at": acquired.isoformat()}
 
 
+def quarterly_parent_annual_capex_floor(facts):
+    """Project a realised gross capex floor without inventing its split."""
+
+    capex = facts["fields"]["cash_capex"]
+    amount = Decimal(capex["current"])
+    if not amount.is_finite() or amount < 0:
+        raise ValueError("PARENT_QUARTER_CAPEX_NOT_GROSS_CASH")
+    return {
+        "symbol": facts["symbol"],
+        "year": int(facts["period_end"][:4]),
+        "period_start": facts["period_start"],
+        "observed_through": facts["period_end"],
+        "minimum_cny": str(amount),
+        "annual_policy_fields": ["maintenance_capex", "growth_capex"],
+        "scope": capex["scope"],
+        "currency": capex["currency"],
+        "source_ref": {
+            **facts["source"],
+            "available_at": facts["available_at"],
+            "physical_page": capex["physical_page"],
+            "excerpt": capex["excerpt"],
+        },
+    }
+
+
 def quarterly_parent_cash_evidence(*, root, source, symbol, issuer_name, period_end, now):
     """Build D2 rows while preserving standalone scope and both YTD periods."""
     facts = replay_quarterly_parent_cash(

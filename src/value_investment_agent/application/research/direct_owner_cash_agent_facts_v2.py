@@ -306,5 +306,12 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
         if spec["policy_money_wire"] != "CNY_YUAN_CENT_V1":
             raise ValueError("PARENT_AGENT_POLICY_MONEY_WIRE_UNSUPPORTED")
         projected["policy_money_wire"] = spec["policy_money_wire"]
+    if "annual_capex_evidence" in spec:
+        if (spec["annual_capex_evidence"] != "PARENT_QUARTER_GROSS_CAPEX_V1"
+                or "quarterly_financing_source" not in spec):
+            raise ValueError("PARENT_AGENT_ANNUAL_CAPEX_EVIDENCE_UNSUPPORTED")
+        from .agent_review.quarterly_parent_cash_source import quarterly_parent_annual_capex_floor
+
+        projected["annual_capex_floor"] = quarterly_parent_annual_capex_floor(quarter)
     projected["input_fingerprint"] = hashlib.sha256(_canonical(projected)).hexdigest()
     return projected
