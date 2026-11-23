@@ -3,6 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 import re
 from pathlib import Path
+from functools import partial
 
 from .parent_cash_research import _receipt_issuer_query
 from . import parent_direct_owner_cash_sources as parent
@@ -10,6 +11,8 @@ from ...infrastructure.filings.pdf_text import extract_pages
 from ...infrastructure.filings.official_report_acquisition import load_retained_official_report
 
 VERSION = "UNNUMBERED_OFFICIAL_CNINFO_V1"
+FINANCING_VERSION = "UNNUMBERED_OFFICIAL_CNINFO_V2"
+UNNUMBERED_VERSIONS = {VERSION, FINANCING_VERSION}
 
 
 def _annual_share_anchor(pages, statement):
@@ -71,7 +74,10 @@ def _annual_share_anchor(pages, statement):
 
 
 def read_unnumbered_parent_cash(*, root, symbol, issuer_name, sources, evaluated_at,
-                                constraint_binding=None, fund_selection=None):
+                                constraint_binding=None, fund_selection=None,
+                                source_adapter_version=VERSION):
+    if source_adapter_version not in UNNUMBERED_VERSIONS:
+        raise ValueError("UNNUMBERED_PARENT_SOURCE_VERSION_INVALID")
     if not isinstance(evaluated_at, datetime) or evaluated_at.utcoffset() is None or not sources:
         raise ValueError("UNNUMBERED_PARENT_AWARE_CLOCK_AND_RECEIPTS_REQUIRED")
     root = Path(root).resolve()
@@ -110,10 +116,15 @@ def read_unnumbered_parent_cash(*, root, symbol, issuer_name, sources, evaluated
         parent._bound(root, source)
         if statement.get("ordinary_shares_evidence") is None:
             statement["ordinary_shares_evidence"] = _annual_share_anchor(pages, statement)
-        for field, label in (
+        required_rows = (
             ("customer_cash_cny", "销售商品、提供劳务收到的现金"),
             ("supplier_cash_cny", "购买商品、接受劳务支付的现金"),
-        ):
+        )
+        financing_rows = (
+            ("borrowings_received_cny", "取得借款收到的现金"),
+            ("debt_repayments_paid_cny", "偿还债务支付的现金"),
+        ) if source_adapter_version == FINANCING_VERSION else ()
+        for field, label in required_rows + financing_rows:
             row, _ = parent._row(table, label)
             if row is None:
                 raise ValueError("UNNUMBERED_PARENT_REQUIRED_CASH_FACT_MISSING:" + field)
@@ -121,4 +132,9 @@ def read_unnumbered_parent_cash(*, root, symbol, issuer_name, sources, evaluated
                 **row, "classification": "FACT", "scope": parent.SCOPE, "currency": "CNY",
                 "source_refs": parent._source_refs(source, field, row, statement["period_end"]),
             }
-    return {**result, "source_adapter_version": VERSION}
+    return {**result, "source_adapter_version": source_adapter_version}
+
+
+read_unnumbered_parent_financing = partial(
+    read_unnumbered_parent_cash, source_adapter_version=FINANCING_VERSION,
+)

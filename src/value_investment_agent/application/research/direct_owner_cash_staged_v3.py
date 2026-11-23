@@ -16,7 +16,10 @@ from .direct_owner_cash_staged_v2 import (
     merge_staged_parent_cash, staged_parent_cash_request,
 )
 from .parent_direct_owner_cash_sources_v2 import read_parent_direct_owner_cash_sources_v2
-from .parent_direct_owner_cash_unnumbered_v1 import VERSION as UNNUMBERED_SOURCE, read_unnumbered_parent_cash
+from .parent_direct_owner_cash_unnumbered_v1 import (
+    VERSION as UNNUMBERED_SOURCE, FINANCING_VERSION, UNNUMBERED_VERSIONS,
+    read_unnumbered_parent_cash, read_unnumbered_parent_financing,
+)
 from ...domain.valuation.parent_direct_operating_cash import (
     SCOPE, forecast_parent_operating_cash,
 )
@@ -226,11 +229,14 @@ def merge_staged_parent_cash_v3(**kwargs):
 
 
 def _historical_parent_operating_cash(*, root, spec, evaluated_at):
-    if (spec.get("source_adapter_version") not in {"NUMBERED_CNINFO_V2", UNNUMBERED_SOURCE}
+    if (spec.get("source_adapter_version") not in {"NUMBERED_CNINFO_V2", *UNNUMBERED_VERSIONS}
             or spec.get("operating_sources") != []):
         raise ValueError("PARENT_V3_NUMBERED_SOURCE_REQUIRED")
-    reader = (read_unnumbered_parent_cash if spec["source_adapter_version"] == UNNUMBERED_SOURCE
-              else read_parent_direct_owner_cash_sources_v2)
+    reader = {
+        UNNUMBERED_SOURCE: read_unnumbered_parent_cash,
+        FINANCING_VERSION: read_unnumbered_parent_financing,
+        "NUMBERED_CNINFO_V2": read_parent_direct_owner_cash_sources_v2,
+    }[spec["source_adapter_version"]]
     evidence = reader(
         root=root, symbol=spec["symbol"], issuer_name=spec["issuer_name"],
         sources=spec["owner_sources"], evaluated_at=evaluated_at,

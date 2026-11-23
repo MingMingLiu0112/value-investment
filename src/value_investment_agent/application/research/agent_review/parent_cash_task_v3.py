@@ -53,6 +53,28 @@ _REVIEWED_NUMBERED_COMPATIBILITY_HASHES = {
 }
 
 
+PRE_FINANCING_IMPLEMENTATION = {
+    "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2": "03c7d1dcbdd61128e73f442727c4f22fe48abc10701e6f10170c17a5fe93e3e0",
+    "value_investment_agent.application.research.direct_owner_cash_compilation_v2": "b9f4d8f98d514fa358865274b8d72073b1e0e83b42ef14ad69ebcddb628d3a5e",
+    "value_investment_agent.application.research.direct_owner_cash_staged_v3": "7f11ce13add09c9686e389f84ee5782bbe6d14c8962be32f2cae3696827b0d5a",
+    "value_investment_agent.application.research.parent_direct_owner_cash_unnumbered_v1": "6f5f6c6b42a8cae9545668f98bcb29a8bed012aca2a5bfcd392113b85fc74557",
+    "value_investment_agent.application.research.agent_review.parent_cash_task_v3": "f72520a5d57674cce511cd0066c5650408394a333240fbf3014cfde8539d5793",
+}
+
+PRE_FINANCING_WINDOWS_OVERRIDES = {
+    "value_investment_agent.application.research.agent_review.parent_cash_task_v3": "e53bc6e6c48cee0db24f21225079d21095937b1a220ffe993ca623b7283ddd89",
+    "value_investment_agent.application.research.direct_owner_cash_compilation_v2": "1a72bb69c4aa62712b6379d689a3611fa9dcbe565c0d08270561d24c46739044",
+    "value_investment_agent.application.research.parent_direct_owner_cash_unnumbered_v1": "fb5efbabb334369fd28515063c95cb753e8f13709edb9724fc9542fad14f88a8",
+}
+
+REVIEWED_FINANCING_IMPLEMENTATION = {
+    "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2": "d7e05f7cf18b877a2fa1828e3197b1d324114e4a29fa7dfbde211a5f1d07d1fd",
+    "value_investment_agent.application.research.direct_owner_cash_compilation_v2": "fbb7ad124181d540def843a9877773f653ea21d04581c246551a034887f742a1",
+    "value_investment_agent.application.research.direct_owner_cash_staged_v3": "2b5dac58c1a56a20481661978dc1616b42555a73921cf29aa08060c7f18ff5d8",
+    "value_investment_agent.application.research.parent_direct_owner_cash_unnumbered_v1": "56f60cbf9cc00fc84d2fe8687c2dd5dd213186b15df17ded77d7d311202ff160",
+}
+
+
 def _implementation():
     from .. import (direct_owner_cash_agent_draft_v1 as draft_prior,
                     direct_owner_cash_agent_draft_v2 as draft,
@@ -102,6 +124,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             return False
         if pinned == current:
             return True
+        if (all(current.get(name) == digest for name, digest in REVIEWED_FINANCING_IMPLEMENTATION.items())
+                and self._bound(spec["spec_binding"]).get("source_adapter_version")
+                != "UNNUMBERED_OFFICIAL_CNINFO_V2"):
+            current = current | PRE_FINANCING_IMPLEMENTATION
+            if pinned in (current, current | PRE_FINANCING_WINDOWS_OVERRIDES):
+                return True
         before_terminal = {name: digest for name, digest in current.items()
                            if name != terminal_wire.__name__}
         before_terminal[__name__] = PRE_TERMINAL_WIRE_SERVICE

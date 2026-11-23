@@ -14,7 +14,10 @@ import re
 
 from .direct_owner_cash_compilation_v1 import SCHEMA
 from .parent_direct_owner_cash_sources_v2 import read_parent_direct_owner_cash_sources_v2
-from .parent_direct_owner_cash_unnumbered_v1 import VERSION as UNNUMBERED_SOURCE, read_unnumbered_parent_cash
+from .parent_direct_owner_cash_unnumbered_v1 import (
+    VERSION as UNNUMBERED_SOURCE, FINANCING_VERSION, UNNUMBERED_VERSIONS,
+    read_unnumbered_parent_cash, read_unnumbered_parent_financing,
+)
 from ...domain.valuation.parent_direct_operating_cash import SCOPE
 from ..product.common import require_inside
 
@@ -138,14 +141,17 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
             or not spec.get("model_applicability_evidence")
             or not re.fullmatch(r"[0-9]{6}", spec.get("symbol", ""))):
         raise ValueError("PARENT_AGENT_SOURCE_SCOPE_INVALID")
-    if (spec.get("source_adapter_version") not in {"NUMBERED_CNINFO_V2", UNNUMBERED_SOURCE}
+    if (spec.get("source_adapter_version") not in {"NUMBERED_CNINFO_V2", *UNNUMBERED_VERSIONS}
             or spec.get("operating_sources") != []):
         raise ValueError("PARENT_AGENT_V2_NUMBERED_SOURCE_REQUIRED")
     at = datetime.fromisoformat(spec["computed_at"])
     if at.utcoffset() is None or at > now:
         raise ValueError("PARENT_AGENT_FUTURE_SOURCE")
-    reader = (read_unnumbered_parent_cash if spec["source_adapter_version"] == UNNUMBERED_SOURCE
-              else read_parent_direct_owner_cash_sources_v2)
+    reader = {
+        UNNUMBERED_SOURCE: read_unnumbered_parent_cash,
+        FINANCING_VERSION: read_unnumbered_parent_financing,
+        "NUMBERED_CNINFO_V2": read_parent_direct_owner_cash_sources_v2,
+    }[spec["source_adapter_version"]]
     evidence = reader(
         root=root, symbol=spec["symbol"], issuer_name=spec["issuer_name"],
         sources=spec["owner_sources"], evaluated_at=at,

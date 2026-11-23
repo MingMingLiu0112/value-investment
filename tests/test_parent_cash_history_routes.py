@@ -1,3 +1,5 @@
+import json
+import pytest
 """The company history projection is read-only and bounded."""
 from pathlib import Path
 
@@ -244,3 +246,40 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
         response = client.post(path, json={"symbol": "600323"})
         assert response.status_code == 202 and response.json()["task_id"] == task_id
     assert calls == [(binding, "value-web-" + binding["sha256"]), task_id] * 2
+
+
+def test_current_parent_cash_spec_keeps_historical_case_binding(tmp_path):
+    from types import SimpleNamespace
+    from value_investment_agent.application.research.parent_cash_task_completion_v1 import (
+        _case_binding, registered_cash_task_spec,
+    )
+
+    config = tmp_path / "config"
+    config.mkdir()
+    path = config / "parent-cash-task-case-bindings-v1.json"
+    old = {"path": "old.json", "sha256": "1" * 64}
+    current = {"path": "new.json", "sha256": "2" * 64}
+    case = {"path": "case.json", "sha256": "3" * 64}
+    payload = {"schema_version": "parent-cash-task-case-bindings-v1", "specs": {
+        binding["sha256"]: {"symbol": "600887", "spec_binding": binding,
+                             "case_package_binding": case}
+        for binding in (old, current)
+    }}
+    documents = {
+        "new.json": {"symbol": "600887", "action": "no_order", "model_applicable": True},
+        "case.json": {"symbol": "600887", "profile_id": "quality_compounder",
+                      "schema_version": "m1-valuation-package-v2",
+                      "research_case": {"symbol": "600887"}},
+    }
+    service = SimpleNamespace(root=tmp_path, _bound=lambda binding: documents[binding["path"]])
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="PARENT_TASK_AMBIGUOUS_COMPANY_BINDING"):
+        registered_cash_task_spec(service, "600887")
+    payload["active_spec_by_symbol"] = {"600887": current["sha256"]}
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    assert registered_cash_task_spec(service, "600887") == current
+    assert _case_binding(tmp_path, old) == case
+    payload["active_spec_by_symbol"]["600887"] = "4" * 64
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="PARENT_TASK_ACTIVE_SPEC_INVALID"):
+        registered_cash_task_spec(service, "600887")

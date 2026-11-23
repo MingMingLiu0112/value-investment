@@ -38,14 +38,27 @@ def registered_cash_task_spec(service, symbol):
     document = json.loads(registry.read_bytes())
     if document["schema_version"] != "parent-cash-task-case-bindings-v1":
         raise ValueError("PARENT_TASK_CASE_REGISTRY_SCHEMA")
-    matches = [entry for entry in document["specs"].values() if entry.get("symbol") == symbol]
-    if not matches:
-        return None
-    if len(matches) != 1:
-        raise ValueError("PARENT_TASK_AMBIGUOUS_COMPANY_BINDING")
-    binding = matches[0]["spec_binding"]
+    entries = document["specs"]
+    active = document.get("active_spec_by_symbol", {})
+    if not isinstance(active, dict):
+        raise ValueError("PARENT_TASK_ACTIVE_SPEC_INVALID")
+    if symbol in active:
+        key = active[symbol]
+        if not isinstance(key, str) or key not in entries:
+            raise ValueError("PARENT_TASK_ACTIVE_SPEC_INVALID")
+        entry = entries[key]
+        if entry.get("symbol") != symbol or entry.get("spec_binding", {}).get("sha256") != key:
+            raise ValueError("PARENT_TASK_ACTIVE_SPEC_INVALID")
+    else:
+        matches = [entry for entry in entries.values() if entry.get("symbol") == symbol]
+        if not matches:
+            return None
+        if len(matches) != 1:
+            raise ValueError("PARENT_TASK_AMBIGUOUS_COMPANY_BINDING")
+        entry = matches[0]
+    binding = entry["spec_binding"]
     case_binding = _case_binding(root, binding)
-    if case_binding != matches[0]["case_package_binding"]:
+    if case_binding != entry["case_package_binding"]:
         raise ValueError("PARENT_TASK_CASE_BINDING_MISMATCH")
     spec = service._bound(binding)
     case = service._bound(case_binding)
@@ -55,13 +68,15 @@ def registered_cash_task_spec(service, symbol):
             or case.get("schema_version") != "m1-valuation-package-v2"
             or case.get("research_case", {}).get("symbol") != symbol):
         raise ValueError("PARENT_TASK_CASE_PROFILE_OR_ISSUER_MISMATCH")
-    _distribution_binding(matches[0], spec)
+    _distribution_binding(entry, spec)
     return binding
 
 
 def _distribution_binding(entry, research_spec):
     binding = entry.get("implemented_distribution_receipt_binding")
-    if binding is None and research_spec.get("source_adapter_version") == "UNNUMBERED_OFFICIAL_CNINFO_V1":
+    if binding is None and research_spec.get("source_adapter_version") in {
+        "UNNUMBERED_OFFICIAL_CNINFO_V1", "UNNUMBERED_OFFICIAL_CNINFO_V2",
+    }:
         raise ValueError("PARENT_TASK_IMPLEMENTED_DISTRIBUTION_BINDING_REQUIRED")
     return binding
 

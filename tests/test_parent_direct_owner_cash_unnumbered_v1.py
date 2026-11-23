@@ -45,3 +45,13 @@ def test_real_unnumbered_yili_reports(tmp_path):
     assert half_year["cash_flow"]["customer_cash_cny"]["current"] == "58600086377.25"
     assert all(all(s["checks"].values()) for s in result["statements"])
     assert result["owner_cash_cny"] is None and result["action"] == "no_order"
+
+    assert "debt_repayments_paid_cny" not in half_year["cash_flow"]
+    financing = adapter.read_unnumbered_parent_financing(**kwargs)
+    assert financing["source_adapter_version"] == adapter.FINANCING_VERSION
+    fy, h1 = financing["statements"]
+    assert fy["cash_flow"]["debt_repayments_paid_cny"]["current"] == "176750148216.76"
+    repayment = h1["cash_flow"]["debt_repayments_paid_cny"]
+    assert repayment["current"] == "143377489906.35"
+    assert repayment["source_refs"]["physical_page"] == 57
+    assert h1["cash_flow"]["borrowings_received_cny"]["current"] == "124697925031.54"
