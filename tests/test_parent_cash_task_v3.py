@@ -5,6 +5,7 @@ import types
 from pathlib import Path
 from datetime import datetime, timezone
 from decimal import Decimal
+from urllib.error import HTTPError, URLError
 
 import pytest
 
@@ -34,7 +35,7 @@ class Provider:
         packet = json.loads(request.user)
         self.calls.append((packet["scenario"], packet["stage"]))
         if len(self.calls) == self.fail_at:
-            raise TimeoutError("ambiguous transport")
+            raise getattr(self, "failure", TimeoutError("ambiguous transport"))
         fields = packet["required_fields"]
         if packet["stage"] == "terminal":
             policy = {key: term(1) for key in fields}
@@ -129,14 +130,22 @@ def test_old_implementation_retains_original_failure_without_replay(task, monkey
     assert "candidate" not in historical
 
 
-def test_ambiguous_stage_never_resends(task):
+@pytest.mark.parametrize(("error", "code"), [
+    (TimeoutError("transport"), "TIMEOUT_AMBIGUOUS"),
+    (HTTPError("https://example.invalid", 429, "private provider detail", {}, None), "HTTP_429_UNSETTLED"),
+    (URLError(TimeoutError("transport")), "TIMEOUT_AMBIGUOUS"),
+    (URLError("private provider detail"), "CONNECTION_AMBIGUOUS"),
+])
+def test_ambiguous_stage_never_resends(task, error, code):
     service, provider = task
     provider.fail_at = 2
+    provider.failure = error
     created = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
         request_key="parentcashv3002", now=NOW)
     failed = service.run(created["task_id"], now=NOW)
     assert failed["status"] == "FAILED"
-    assert failed["error_code"].startswith("BEAR_POLICY_PARENT_PROVIDER_TIMEOUT")
+    assert failed["error_code"] == f"BEAR_POLICY_PARENT_PROVIDER_{code}"
+    assert Decimal(failed["reserved_cost"]) > 0
     assert failed["completed_stages"] == ["bear.operating"]
     assert service.resume(created["task_id"], now=NOW)["status"] == "FAILED"
     assert len(provider.calls) == 2

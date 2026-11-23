@@ -10,6 +10,7 @@ import sys
 import os
 from pathlib import Path
 import re
+from urllib.error import HTTPError, URLError
 from zoneinfo import ZoneInfo
 
 from .task_execution_v1 import ResearchTaskService, _bytes, _hash, _now
@@ -42,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "1796071a16cc85a2f33d73290668765697b5e688a77fe854d7ecba61df8b9c7a"
+REVIEWED_CAPITAL_SERVICE = "2a786f025b83c0cfba1a92edb71388e5c49e6eeecc043f5b690ffedb78e6529f"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -151,6 +152,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "9c8955c8e3193b2a542f27795e693608ba3f794c735e7df32350e3875246fd8f",
+            "31f286f615b144036173388233648b8a2413d1c5ee9da87dff1b4eab72c60812",
             "22bb04a6f97a7e38bf1c13c21339fc2639a28bc28a75fce8e03c421a38c0f608",
             "411b7a79bf683bf741302bd50b72aed2aed9a8962a6535e504525ec5733b28ce",
             "4e9790c3e6ceaaeee9058277bf3133f346fd0c78d9eb4f9ccf3fff565b47950c",
@@ -1004,11 +1007,13 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         provider_requests=state["provider_requests"] + 1,
                         new_llm_calls=state["new_llm_calls"] + (self.test_provider is None))
                 response_recorded = False
+                provider_returned = False
                 try:
                     provider = self.test_provider or OpenAICompatibleChatProvider(**{k:cfg[k]
                         for k in ("endpoint", "model_id", "api_key_env", "timeout_seconds",
                                   "max_completion_tokens_cap", "response_format_mode", "thinking_mode") if k in cfg})
                     response = provider.complete(wire_request)
+                    provider_returned = True
                     if (not isinstance(response, LLMResponse) or response.tool_calls
                             or type(response.prompt_tokens) is not int or type(response.completion_tokens) is not int
                             or not 0 <= response.prompt_tokens <= prompt_cap
@@ -1064,12 +1069,25 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                      or (re.fullmatch(r"PARENT_V3_POLICY_CNY_WIRE_INVALID:20[0-9]{2}:[a-z_]+", detail)
                                          and detail.rsplit(":", 1)[-1] in POLICY))
                                 else "PARENT_DRAFT_REJECTED_OR_UNPUBLISHED")
+                    elif not provider_returned and isinstance(error, HTTPError):
+                        status = error.code
+                        code = (f"PARENT_PROVIDER_HTTP_{status}_UNSETTLED"
+                                if type(status) is int and 100 <= status <= 599
+                                else "PARENT_PROVIDER_HTTP_ERROR_UNSETTLED")
+                    elif not provider_returned and isinstance(error, URLError):
+                        code = ("PARENT_PROVIDER_TIMEOUT_AMBIGUOUS"
+                                if isinstance(error.reason, TimeoutError)
+                                else "PARENT_PROVIDER_CONNECTION_AMBIGUOUS")
+                    elif provider_returned and isinstance(error, OSError):
+                        code = "PARENT_RESPONSE_SETTLEMENT_OR_PERSISTENCE_FAILED"
                     elif isinstance(error, TimeoutError):
                         code = "PARENT_PROVIDER_TIMEOUT_AMBIGUOUS"
                     elif isinstance(error, ValueError) and "completion token cap" in str(error):
                         code = "PARENT_PROVIDER_COMPLETION_CAP_REACHED"
                     elif isinstance(error, ValueError) and "truncated" in str(error):
                         code = "PARENT_PROVIDER_RESPONSE_INCOMPLETE"
+                    elif provider_returned and isinstance(error, ValueError) and str(error) == "PARENT_PROVIDER_RESPONSE_INVALID":
+                        code = "PARENT_PROVIDER_RESPONSE_INVALID"
                     else:
                         code = "PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS"
                     with self._lock(directory):
