@@ -432,3 +432,17 @@ def test_operating_wire_rejects_duplicate_keys_after_sealing(task):
     assert result["error_code"] == "BEAR_OPERATING_PARENT_V3_CONFLICTING_JSON_KEY"
     assert result["completed_stages"] == []
     assert len(service._load(created["task_id"])[1]["returned_responses"]) == 1
+
+
+def test_policy_wire_error_preserves_year_and_allowed_field(task, monkeypatch):
+    service, _ = task
+
+    def reject(**_kwargs):
+        raise ValueError("PARENT_V3_POLICY_CNY_WIRE_INVALID:2027:growth_capex")
+
+    monkeypatch.setattr(target, "preflight_annual_cash_upper_bound_v3", reject)
+    created = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+                             request_key="parentcash-wire-reason", now=NOW)
+    result = service.run(created["task_id"], now=NOW)
+    assert result["status"] == "FAILED"
+    assert result["error_code"] == "BEAR_POLICY_PARENT_V3_POLICY_CNY_WIRE_INVALID:2027:growth_capex"

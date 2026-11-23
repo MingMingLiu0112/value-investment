@@ -27,7 +27,7 @@ from ..direct_owner_cash_staged_v3 import (
     staged_parent_cash_request_v3, preflight_terminal_forecast_debt_v3,
 )
 from ..direct_owner_cash_agent_draft_v2 import (
-    SCENARIOS, assemble_parent_cash_drafts_v2,
+    POLICY, SCENARIOS, assemble_parent_cash_drafts_v2,
 )
 from ....infrastructure.agent_runtime.provider import LLMResponse, OpenAICompatibleChatProvider
 from ...product.common import require_inside, write_new_bytes
@@ -143,7 +143,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if reviewed and __name__ in pinned:
             source = self._bound(spec["spec_binding"])
             historical = {}
-            if ("policy_money_wire" not in source
+            if pinned[__name__] == "680690b3c064a2491b1c0b983927c7a2ec7a094e10738758ce4e8a9825eaa722":
+                historical = {__name__: pinned[__name__]}
+            elif ("policy_money_wire" not in source
                     and pinned[__name__] == PRE_POLICY_MONEY_IMPLEMENTATION[__name__]):
                 historical = PRE_POLICY_MONEY_IMPLEMENTATION
             elif "quarterly_financing_source" not in source and "policy_money_wire" not in source:
@@ -720,7 +722,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                     r"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:20[0-9]{2}:"
                                     r"(?:debt_repayment|new_borrowing))", detail)
                                 else detail if isinstance(error, ValueError)
-                                and re.fullmatch(r"PARENT_V3_[A-Z0-9_]{1,90}", detail)
+                                and (re.fullmatch(r"PARENT_V3_[A-Z0-9_]{1,90}", detail)
+                                     or (re.fullmatch(r"PARENT_V3_POLICY_CNY_WIRE_INVALID:20[0-9]{2}:[a-z_]+", detail)
+                                         and detail.rsplit(":", 1)[-1] in POLICY))
                                 else "PARENT_DRAFT_REJECTED_OR_UNPUBLISHED")
                     elif isinstance(error, TimeoutError):
                         code = "PARENT_PROVIDER_TIMEOUT_AMBIGUOUS"
