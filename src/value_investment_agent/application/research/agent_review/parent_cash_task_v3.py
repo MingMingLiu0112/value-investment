@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import replace
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal, localcontext
 import json
 import sys
@@ -43,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "82a3a2cc1522640663faafee8ee194130a8b677ae18c2406d3ae254104e304a1"
+REVIEWED_CAPITAL_SERVICE = "96fc60342a37bd7ecec6a5947e9f019bb0b2edba2be338c4ae1d2fa837be6461"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -95,6 +95,45 @@ PRE_POLICY_MONEY_IMPLEMENTATION = {
     "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2": "47f9fd729b717a59ddcd3c286d60711c1945672b698531bc312a65de43454f45",
     "value_investment_agent.application.research.direct_owner_cash_staged_v3": "2b5dac58c1a56a20481661978dc1616b42555a73921cf29aa08060c7f18ff5d8",
 }
+
+
+def _conditional_coupon_calendar(root, schedule, *, symbol, as_of):
+    from ....infrastructure.filings.operating_event_terms import parse_operating_event_terms
+    from ....infrastructure.filings.pdf_text import extract_pages
+
+    if root is None:
+        raise ValueError("PARENT_COUPON_SOURCE_ROOT_REQUIRED")
+    originals = {}
+    rows = []
+    with localcontext() as arithmetic:
+        arithmetic.prec = 48
+        for code, issue in sorted(schedule["later_issues"].items()):
+            matches = []
+            for binding in issue["sources"]:
+                available = datetime.fromisoformat(binding["available_at"])
+                if available.utcoffset() is None or available > as_of:
+                    raise ValueError("PARENT_COUPON_SOURCE_NOT_AVAILABLE")
+                path = require_inside(root / "runtime", root / binding["path"], "coupon original")
+                if _hash(path.read_bytes()) != binding["sha256"]:
+                    raise ValueError("PARENT_COUPON_SOURCE_HASH_CHANGED")
+                if path not in originals:
+                    event = parse_operating_event_terms(extract_pages(path), symbol=symbol)
+                    originals[path] = event["financing_issues"]
+                matches.extend(term for term in originals[path] if term["code"] == code)
+            if not matches or any(term != matches[0] for term in matches):
+                raise ValueError("PARENT_COUPON_ISSUE_NOT_UNIQUE")
+            term = matches[0]
+            if any(term[name] != value for name, value in issue["terms"].items()):
+                raise ValueError("PARENT_COUPON_TERMS_CHANGED")
+            start, due = map(date.fromisoformat, (term["interest_start"], term["maturity"]))
+            days = (due - start).days
+            coupon = Decimal(term["face_value_cny"]) * Decimal(term["coupon_percent"]) * days / 36500
+            rows.append(dict(code=code, maturity=due.isoformat(),
+                             coupon_percent=term["coupon_percent"],
+                             conditional_act365_cash_cny=str(coupon.quantize(Decimal(".01"))),
+                             source_sha256=sorted({ref["sha256"] for ref in issue["sources"]})))
+    return dict(classification="CONDITIONAL_ACT365_NOT_CONTRACT_DAY_COUNT_OR_PAYMENT",
+                cash_payment_verified=False, remaining_debt_interest_verified=False, issues=rows)
 
 
 def _implementation():
@@ -152,6 +191,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "4607c1b46dece2c82406f1822b8054c360dc7a5bdc14b61e93f68fb7c9f42048",
+            "1dca8a72779713bfc21f67e5e11d924fec54ecdbb7dde645eaac727b94ed80c2",
             "3ca0ec5018979fc0b080b2da08269b4de8ce8619d682f205fe54d194bffde9a2",
             "d765bdf379aa69498dc67e9e7c7b2fc599850feead57ab07ad2de484ee9b046a",
             "d7c211740c28a813998434fb64829693a265da6016a5c6da7d2655b5f3ba635f",
@@ -577,12 +618,16 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 "repayment_minimum_by_year_cny": {str(y): str(v) for y, v in floors.items()},
                 "classification": "CONDITIONAL_NOT_ACTUAL_SETTLEMENT",
             }
-            if (spec.get("base_interest_wire") == "ISSUER_FINANCING_INTEREST_V1"
+            if (spec.get("base_interest_wire") in {"ISSUER_FINANCING_INTEREST_V1", "ISSUER_FINANCING_INTEREST_V2"}
                     and payload["scenario"] == "base"):
                 maturity_years = sorted({
                     int(issue["terms"]["maturity"][:4]) for issue in schedule["later_issues"].values()
                 })
                 payload["conditional_issuer_note_interest_years"] = maturity_years
+                if spec["base_interest_wire"] == "ISSUER_FINANCING_INTEREST_V2":
+                    payload["conditional_issuer_note_coupon_calendar"] = _conditional_coupon_calendar(
+                        root, schedule, symbol=payload["source_context"]["symbol"],
+                        as_of=datetime.fromisoformat(spec["created_at"]))
                 wire = replace(wire, transport_output_contract=wire.transport_output_contract +
                     " The selected policy models parent borrowing outside operating cash. "
                     "For later disclosed borrowing carried through contractual maturity, "
@@ -650,7 +695,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 if schedule is not None:
                     financing_schedule.validate_disclosed_financing_policy(schedule, parsed)
             debt_path = policy_capital.validate_policy_debt(spec["policy_capital_basis"], parsed)
-            if (spec.get("base_interest_wire") == "ISSUER_FINANCING_INTEREST_V1"
+            if (spec.get("base_interest_wire") in {"ISSUER_FINANCING_INTEREST_V1", "ISSUER_FINANCING_INTEREST_V2"}
                     and json.loads(request.user)["scenario"] == "base"):
                 amounts = parsed["series"]["interest_outside_cfo"]["values"]
                 for row, amount in zip(debt_path, amounts, strict=True):
@@ -972,14 +1017,14 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     or (replay_from_stage == "base.policy" and old_state.get("error_code") ==
                         "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION")):
                 trial_spec["base_policy_wire"] = old_spec.get("base_policy_wire", "ANNUAL_EARNINGS_BRIDGE_V1")
-            if (old_spec.get("base_interest_wire") == "ISSUER_FINANCING_INTEREST_V1"
+            if (old_spec.get("base_interest_wire") in {"ISSUER_FINANCING_INTEREST_V1", "ISSUER_FINANCING_INTEREST_V2"}
                     or (replay_from_stage == "base.policy"
                         and old_spec.get("base_operating_wire") == "MATCHED_QUARTER_V2"
                         and old_state.get("error_code") in {
                             "BASE_POLICY_PARENT_DRAFT_REJECTED_OR_UNPUBLISHED",
                             "BASE_POLICY_PARENT_FINANCING_ABOVE_DISCLOSED_PROCEEDS:2026",
                         })):
-                trial_spec["base_interest_wire"] = "ISSUER_FINANCING_INTEREST_V1"
+                trial_spec["base_interest_wire"] = old_spec.get("base_interest_wire", "ISSUER_FINANCING_INTEREST_V2")
             for stage_id in STAGE_ORDER:
                 if replay_from_stage is not None:
                     replay_scenario, replay_stage = replay_from_stage.split(".")
