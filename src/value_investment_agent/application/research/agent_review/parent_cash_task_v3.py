@@ -43,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "5530bac6ef6bb19a08d2555ea339dbe7221038318bce4dd99647e94d9f02674e"
+REVIEWED_CAPITAL_SERVICE = "82c1e8ce56c384bc77865add95d30422957953985b61d85a8bb8db326a90a096"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -152,6 +152,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "788c0f698b6ac66aed9e3f6689e2009652f71ce26ddb35dc60b3fb643c697301",
+            "83faf15fbc2f95a2376fb3ceb35bdd2db3101fb05992f05e75bac907d19c319b",
             "7e7adc609379ce2a67f272130906ae354e9b62557437df84d93af0247dced12e",
             "8c74402d9c0a235d9e946a54e9f4405c4146059d26fa2324841cdfac80bc4d20",
             "3774af9243786fc9d53b055deaa3cd2c2af6c9a31f7b4accba4a096827db9bed",
@@ -458,6 +460,42 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                 scenarios["revenue"], scenarios["cost"], strict=True)
                         ],
                     }
+                if spec["base_policy_wire"] == "ANNUAL_EARNINGS_BRIDGE_V2":
+                    with localcontext() as arithmetic:
+                        arithmetic.prec = 48
+                        historical_revenue = Decimal(row["revenue"])
+                        historical_cost = Decimal(row["cost"])
+                        historical_collections = Decimal(row["customer_cash"])
+                        historical_supplier_cash = Decimal(row["supplier_cash"])
+                        historical_other = Decimal(row["cfo"]) - historical_collections + historical_supplier_cash
+                        cash_bridge = []
+                        # The first forecast year uses a separate actuals and
+                        # remaining-period bridge. These coefficients are full-year only.
+                        for forecast_year, revenue, cost, other in zip(
+                                payload["required_years"], scenarios["revenue"], scenarios["cost"],
+                                scenarios["other_operating_cash"], strict=True):
+                            if forecast_year == payload["required_years"][0]:
+                                continue
+                            sales = Decimal(revenue)
+                            collected = sales * historical_collections / historical_revenue
+                            paid = Decimal(cost) * historical_supplier_cash / historical_cost
+                            forecast_other = Decimal(other)
+                            scaled_other = sales * historical_other / historical_revenue
+                            cash_bridge.append(dict(year=forecast_year,
+                                customer_cash_cny=str(collected), supplier_cash_cny=str(paid),
+                                forecast_other_operating_cash_cny=str(forecast_other),
+                                scenario_operating_cash_cny=str(collected - paid + forecast_other),
+                                historical_intensity_other_cash_cny=str(scaled_other),
+                                historical_intensity_operating_cash_cny=str(collected - paid + scaled_other)))
+                    payload["operating_cash_conversion_diagnostic"] = dict(
+                        classification="CONDITIONAL_SENSITIVITY_NOT_ADOPTED",
+                        historical_period_end=row["period_end"], annual=cash_bridge)
+                    wire = replace(wire, transport_output_contract=wire.transport_output_contract +
+                        " Review the operating cash conversion diagnostic. The historical "
+                        "intensity path is only a counterfactual. Explain any long-run divergence "
+                        "in payroll, taxes or other operating cash without treating it as a "
+                        "separate expense or cash flow. If durable conversion cannot be explained, "
+                        "the operating premise requires revision before a terminal can be adopted.")
                 wire = replace(wire, transport_output_contract=wire.transport_output_contract +
                     " Derive each year's parent_profit from the same scenario gross-profit path. "
                     "Explain expenses, finance income, investment income and taxes below gross "
