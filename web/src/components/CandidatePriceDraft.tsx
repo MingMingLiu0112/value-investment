@@ -352,6 +352,33 @@ function CandidateAlignment({ review }: { review: Review }) {
   );
 }
 
+const alignmentBlockerLabels = new Map([
+  [
+    "EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING",
+    "缺少报价日精确股本原件。",
+  ],
+  [
+    "OPENING_PENDING_SCHEMES_AND_EFFECTIVE_ACTION_CHAIN_INCOMPLETE",
+    "估值日待生效事项及之后的股本变动尚未核对完整。",
+  ],
+  [
+    "PERIOD_DISTRIBUTIONS_AND_MODEL_INCLUSION_NOT_RECONCILED",
+    "尚未核清期间分配及其中哪些已计入估值。",
+  ],
+  [
+    "EXACT_CANDIDATE_MATERIALITY_REVIEW_NOT_BOUND",
+    "尚无绑定到这份估值的重大事件影响复核。",
+  ],
+  [
+    "REPORTED_PARENT_FINANCING_EXCEEDS_FULL_YEAR_POLICY",
+    "母公司已披露融资超过模型的全年假设，须重验现金路径。",
+  ],
+  [
+    "ISSUER_FINANCING_AFTER_RECOMPUTED_PERIOD_REQUIRES_CASH_RECONCILIATION",
+    "重算期间之后的新增融资仍需与母公司现金流核对。",
+  ],
+]);
+
 export function CandidateAlignmentPanel({
   alignment,
   matches,
@@ -375,6 +402,9 @@ export function CandidateAlignmentPanel({
         </p>
       </section>
     );
+  const knownBlockers = strings(alignment.reason_codes)
+    .map((reason) => alignmentBlockerLabels.get(reason))
+    .filter((reason): reason is string => reason !== undefined);
   const distribution = alignment.implemented_distribution_model_inclusion;
   const quote = alignment.quote;
   const checks = Array.isArray(alignment.checks)
@@ -429,6 +459,12 @@ export function CandidateAlignmentPanel({
           "报价、股本、分配、事件与模型有效性分别核验。",
         )}
       </p>
+      {!researchComparison && knownBlockers.length > 0 && (
+        <div>
+          <p>本次比较还需要核对：</p>
+          <Reasons value={knownBlockers} />
+        </div>
+      )}
       <details>
         <summary>对齐未完成的原因代码</summary>
         <Reasons value={alignment.reason_codes} />

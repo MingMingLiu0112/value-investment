@@ -176,7 +176,10 @@ function alignmentFixture() {
       blockers: ["CURRENT_BASIS_NOT_ALIGNED"],
       margin_to_bear: "DO_NOT_RENDER_MARGIN",
     },
-    reason_codes: ["ALIGNMENT_INCOMPLETE"],
+    reason_codes: [
+      "ALIGNMENT_INCOMPLETE",
+      "EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING",
+    ],
   };
   return review;
 }
@@ -199,6 +202,8 @@ it("shows a qualified quote independently of blocked alignment and preserves his
     "issuer_claim_only",
     "不重复扣减",
     "口径待核，不能进行当前价值比较",
+    "缺少报价日精确股本原件。",
+    "EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING",
   ])
     expect(html).toContain(value);
   expect(html).toContain("报价已核验");
