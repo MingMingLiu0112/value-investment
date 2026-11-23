@@ -138,6 +138,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         pinned = spec.get("implementation_sha256")
         if not isinstance(current, dict) or not isinstance(pinned, dict):
             return False
+        previous_interest_service = "7e09ef24373aeeb03231342527ca41a524705b6a924bdfd008d6f69df5cf1d16"
+        if pinned == current | {__name__: previous_interest_service}:
+            return True
         if pinned == current:
             return True
         source = self._bound(spec["spec_binding"]) if __name__ in pinned else {}
@@ -743,11 +746,18 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     prior = self._stage_outputs(spec, state, _now(), verified_context=context)[scenario]
                     if set(prior) != set(STAGES[:STAGES.index(stage)]):
                         raise ValueError("PARENT_V3_STAGE_ORDER_INVALID")
-                    request = staged_parent_cash_request_v3(root=self.root,
-                        spec_binding=spec["spec_binding"], scenario=scenario, stage=stage,
-                        prior_drafts=prior, generated_at=datetime.fromisoformat(spec["created_at"]),
-                        verified_context=context,
-                        max_completion_tokens=cfg["max_completion_tokens_cap"])
+                    try:
+                        request = staged_parent_cash_request_v3(root=self.root,
+                            spec_binding=spec["spec_binding"], scenario=scenario, stage=stage,
+                            prior_drafts=prior, generated_at=datetime.fromisoformat(spec["created_at"]),
+                            verified_context=context,
+                            max_completion_tokens=cfg["max_completion_tokens_cap"])
+                    except ValueError as error:
+                        if stage != "terminal" or str(error) != "PARENT_V3_FORECAST_DEBT_NEGATIVE":
+                            raise
+                        state, binding = self._save(spec, state, binding, _now(), status="FAILED",
+                            error_code=f"{scenario.upper()}_TERMINAL_PARENT_V3_FORECAST_DEBT_NEGATIVE")
+                        return self._view(spec, state, binding, _now())
                     wire_request = self._wire(spec, stage, request)
                     prompt_cap = len(_bytes(wire_request.__dict__)) + 4096
                     reserve = (Decimal(prompt_cap) * Decimal(str(cfg["input_cost_per_million"])) +

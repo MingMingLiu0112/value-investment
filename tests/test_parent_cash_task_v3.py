@@ -446,3 +446,23 @@ def test_policy_wire_error_preserves_year_and_allowed_field(task, monkeypatch):
     result = service.run(created["task_id"], now=NOW)
     assert result["status"] == "FAILED"
     assert result["error_code"] == "BEAR_POLICY_PARENT_V3_POLICY_CNY_WIRE_INVALID:2027:growth_capex"
+
+
+def test_negative_debt_before_terminal_request_persists_failure(task, monkeypatch):
+    service, provider = task
+    build = target.staged_parent_cash_request_v3
+
+    def reject_terminal(**kwargs):
+        if kwargs["stage"] == "terminal":
+            raise ValueError("PARENT_V3_FORECAST_DEBT_NEGATIVE")
+        return build(**kwargs)
+
+    monkeypatch.setattr(target, "staged_parent_cash_request_v3", reject_terminal)
+    created = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+        request_key="parentcashdebtguard", now=NOW)
+    result = service.run(created["task_id"], now=NOW)
+    assert result["status"] == "FAILED"
+    assert result["error_code"] == "BEAR_TERMINAL_PARENT_V3_FORECAST_DEBT_NEGATIVE"
+    assert result["completed_stages"] == ["bear.operating", "bear.policy"]
+    assert len(provider.calls) == 2
+    assert service.read(created["task_id"])["error_code"] == result["error_code"]
