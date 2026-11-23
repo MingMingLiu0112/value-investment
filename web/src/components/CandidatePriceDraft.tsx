@@ -1083,6 +1083,8 @@ function CheckReconciliation({
   const treatments: Record<string, string> = {
     BEFORE_VALUATION_DATE_ALREADY_OUTSIDE_INTERVAL:
       "公告列示的除息日、现金发放日均在估值日前；不重复扣减，未验证个人实际到账",
+    IN_PERIOD_MODEL_INCLUSION_VERIFIED:
+      "此笔期间现金分配已核验并进入候选估值，不重复扣减；全期间覆盖仍需独立核验",
     IN_PERIOD_MODEL_INCLUSION_REQUIRES_RECOMPUTATION:
       "区间内分配，是否已内含需重新核验",
     MIXED_PAYMENT_SCOPE_REQUIRES_REVIEW: "代派与自行派发分开核验，实际到账待核",

@@ -425,6 +425,27 @@ it("explains partial source-bound share and distribution arithmetic without clai
   expect(html).toContain("100.00");
   expect(html).toContain("1354");
 });
+it("shows exact in-model dividend without granting full period coverage", () => {
+  const review = alignmentFixture();
+  const distributions = review.conditional_price!.alignment!.checks!.find(
+    (check) => check.id === "distributions",
+  )!;
+  distributions.details = {
+    reconciliation: {
+      ...reconciliationExample,
+      distributions: [
+        {
+          ...reconciliationExample.distributions[0],
+          period_treatment: "IN_PERIOD_MODEL_INCLUSION_VERIFIED",
+        },
+      ],
+    },
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("此笔期间现金分配已核验并进入候选估值");
+  expect(html).toContain("全期间覆盖仍需独立核验");
+  expect(html).not.toContain("当前研究比较口径已核验");
+});
 it("explains opening cash already net of the booked dividend without proving payment", () => {
   const review = alignmentFixture();
   const distributions = review.conditional_price!.alignment!.checks!.find(
