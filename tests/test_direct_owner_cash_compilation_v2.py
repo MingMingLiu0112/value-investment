@@ -68,3 +68,32 @@ def test_numbered_report_rejects_share_and_cash_source_gaps(monkeypatch, tmp_pat
     del statement["cash_flow"]["customer_cash_cny"]
     with pytest.raises(ValueError, match="NUMBERED_OPERATING_FACT_MISSING"):
         compiler.compile_source_bound_owner_cash_v2(root=tmp_path, spec=spec, now=NOW)
+
+
+def test_quarter_bridge_is_consumed_and_source_is_retained(monkeypatch, tmp_path):
+    from value_investment_agent.application.research.agent_review import quarterly_parent_cash_source
+
+    spec, _ = _numbered_spec(monkeypatch)
+    spec["first_year_operating_cash_method"] = "OBSERVED_9M_PLUS_CONDITIONAL_Q4_V1"
+    source = {"path": "runtime/TEST_ONLY_q3.pdf", "sha256": "b" * 64}
+    calls = []
+
+    def project(*, forecast, **kwargs):
+        calls.append(forecast["period_end"])
+        if not forecast["period_end"].startswith("2026-"):
+            return compiler.forecast_parent_operating_cash(
+                historical=kwargs["historical"], forecast=forecast)
+        return {
+            "operating_cash": "101",
+            "assumptions": forecast,
+            "remaining_year_bridge": {"quarter_source": source},
+        }
+
+    monkeypatch.setattr(quarterly_parent_cash_source, "project_parent_annual_operating_cash", project)
+    result = compiler.compile_source_bound_owner_cash_v2(root=tmp_path, spec=spec, now=NOW)
+    assert calls.count("2026-12-31") == 3
+    for scenario, detail in result["scenarios"].items():
+        assert detail["years"][0]["policy"]["operating_cash"] == "101"
+        assert result["operating_forecasts"][scenario][0]["assumptions"]["revenue"]
+    assert source in result["source_bindings"]
+    assert result["action"] == "no_order" and result["formal_eligibility"] is False

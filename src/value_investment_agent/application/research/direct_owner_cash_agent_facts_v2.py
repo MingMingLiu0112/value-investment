@@ -313,5 +313,10 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
         from .agent_review.quarterly_parent_cash_source import quarterly_parent_annual_capex_floor
 
         projected["annual_capex_floor"] = quarterly_parent_annual_capex_floor(quarter)
+    if "first_year_operating_cash_method" in spec:
+        if (spec["first_year_operating_cash_method"] != "OBSERVED_9M_PLUS_CONDITIONAL_Q4_V1"
+                or "quarterly_financing_source" not in spec):
+            raise ValueError("PARENT_AGENT_ANNUAL_OPERATING_CASH_METHOD_UNSUPPORTED")
+        projected["first_year_operating_cash_method"] = spec["first_year_operating_cash_method"]
     projected["input_fingerprint"] = hashlib.sha256(_canonical(projected)).hexdigest()
     return projected

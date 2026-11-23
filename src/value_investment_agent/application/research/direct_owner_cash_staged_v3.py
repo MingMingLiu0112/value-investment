@@ -103,7 +103,11 @@ def staged_parent_cash_request_v3(**kwargs):
                 arithmetic.prec = 48
                 payload["derived_annual_operating_cash_path"] = [
                     dict(year=year, operating_cash_cny=str(_annual_operating_cash(
-                        historical, context, operating, index, year)))
+                        historical, context, operating, index, year,
+                        root=kwargs["root"],
+                        spec=_load_spec(kwargs["root"], kwargs["spec_binding"])
+                        if context.get("first_year_operating_cash_method") else None,
+                        now=kwargs["generated_at"])))
                     for index, year in enumerate(operating["years"])
                 ]
         capex_floor = context.get("annual_capex_floor")
@@ -309,7 +313,7 @@ def _historical_parent_operating_cash(*, root, spec, evaluated_at):
     return observed
 
 
-def _annual_operating_cash(historical, context, operating, index, year):
+def _annual_operating_cash(historical, context, operating, index, year, *, root=None, spec=None, now=None):
     forecast = dict(symbol=context["symbol"], scope=SCOPE, currency="CNY",
                     classification="FORECAST_ASSUMPTION", period_start=f"{year}-01-01",
                     period_end=f"{year}-12-31",
@@ -318,6 +322,11 @@ def _annual_operating_cash(historical, context, operating, index, year):
                     reopen_condition="Reopen after new parent-company filing",
                     **{field: operating["series"][field]["values"][index]
                        for field in ("revenue", "cost", "other_operating_cash")})
+    if context.get("first_year_operating_cash_method"):
+        from .agent_review.quarterly_parent_cash_source import project_parent_annual_operating_cash
+        prediction = project_parent_annual_operating_cash(
+            root=root, spec=spec, now=now, historical=historical, forecast=forecast)
+        return Decimal(prediction["operating_cash"])
     return Decimal(forecast_parent_operating_cash(
         historical=historical, forecast=forecast)["operating_cash"])
 
@@ -388,7 +397,8 @@ def preflight_annual_cash_upper_bound_v3(*, root: Path, spec_binding: dict,
         arithmetic.prec = 48
         cash = Decimal(opening["value_cny"])
         for index, year in enumerate(operating["years"]):
-            cfo = _annual_operating_cash(historical, context, operating, index, year)
+            cfo = _annual_operating_cash(historical, context, operating, index, year,
+                                         root=root, spec=spec, now=evaluated_at)
             amounts = {field: Decimal(term["values"][index])
                        for field, term in policy["series"].items()}
             if any(value < 0 for value in amounts.values()):

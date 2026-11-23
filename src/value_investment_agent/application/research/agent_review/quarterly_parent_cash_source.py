@@ -62,6 +62,98 @@ def replay_quarterly_parent_cash(*, root, source, symbol, issuer_name, period_en
     return {**result, "source": dict(source), "available_at": acquired.isoformat()}
 
 
+def bridge_quarterly_parent_operating_cash(*, root, source, symbol, issuer_name,
+                                           period_end, now, historical, annual_forecast):
+    """Rebase annual operating drivers on verified nine-month flows."""
+    from decimal import localcontext
+    from ....domain.valuation.parent_remaining_year_cash import build_parent_remaining_year_cash
+    from ....infrastructure.filings.quarterly_parent_operating_facts import (
+        build_quarterly_parent_operating_observations,
+    )
+
+    bound = replay_quarterly_parent_cash(
+        root=root, source=source, symbol=symbol, issuer_name=issuer_name,
+        period_end=period_end, now=now)
+    path = require_inside(root / "runtime", root / source["path"], "parent quarter source")
+    pages = extract_pages(path)
+    if sha256(path.read_bytes()).hexdigest() != bound["source"]["sha256"]:
+        raise ValueError("PARENT_QUARTER_SOURCE_HASH_CHANGED")
+    current, prior = build_quarterly_parent_operating_observations(
+        pages, symbol=symbol, issuer_name=issuer_name, period_end=period_end)
+    for row in (current, prior):
+        row["source_refs"] = [
+            {**ref, **bound["source"], "available_at": bound["available_at"]}
+            for ref in row["source_refs"]
+        ]
+    year = period_end[:4]
+    if (annual_forecast.get("symbol") != symbol
+            or annual_forecast.get("period_start") != f"{year}-01-01"
+            or annual_forecast.get("period_end") != f"{year}-12-31"):
+        raise ValueError("PARENT_QUARTER_ANNUAL_FORECAST_IDENTITY_INVALID")
+    with localcontext() as arithmetic:
+        arithmetic.prec = 48
+        observed_other = (Decimal(current["cfo"]) - Decimal(current["customer_cash"])
+                          + Decimal(current["supplier_cash"]))
+        q4 = {
+            **annual_forecast,
+            "period_start": f"{year}-10-01",
+            "source_refs": [*annual_forecast["source_refs"], *current["source_refs"]],
+            "revenue": str(Decimal(annual_forecast["revenue"]) - Decimal(current["revenue"])),
+            "cost": str(Decimal(annual_forecast["cost"]) - Decimal(current["cost"])),
+            "other_operating_cash": str(Decimal(annual_forecast["other_operating_cash"])
+                                        - observed_other),
+        }
+    return build_parent_remaining_year_cash(
+        historical_full_year=historical, historical_nine_months=prior,
+        current_nine_months=current, q4_forecast=q4, as_of=now.date())
+
+
+def project_parent_annual_operating_cash(*, root, spec, now, historical, forecast):
+    """Use identical annual cash arithmetic for preflight and compilation."""
+    from datetime import date
+    from zoneinfo import ZoneInfo
+    from ....domain.valuation.parent_direct_operating_cash import forecast_parent_operating_cash
+
+    method = spec.get("first_year_operating_cash_method")
+    if method is None:
+        return forecast_parent_operating_cash(historical=historical, forecast=forecast)
+    if method != "OBSERVED_9M_PLUS_CONDITIONAL_Q4_V1":
+        raise ValueError("PARENT_ANNUAL_OPERATING_CASH_METHOD_UNSUPPORTED")
+    year = int(spec["valuation_date"][:4]) + 1
+    if forecast["period_end"] != f"{year}-12-31":
+        return forecast_parent_operating_cash(historical=historical, forecast=forecast)
+    source = spec["quarterly_financing_source"]
+    period_end = f"{year}-09-30"
+    published = date.fromisoformat(source["url"].rsplit("/", 2)[-2])
+    acquired = datetime.fromisoformat(source["acquired_at"])
+    if (acquired.utcoffset() is None or not date.fromisoformat(period_end) <= published
+            <= acquired.astimezone(ZoneInfo("Asia/Shanghai")).date()):
+        raise ValueError("PARENT_QUARTER_SOURCE_DATE_UNVERIFIED")
+    bridge = bridge_quarterly_parent_operating_cash(
+        root=root, source=source, symbol=spec["symbol"], issuer_name=spec["issuer_name"],
+        period_end=period_end, now=now, historical=historical,
+        annual_forecast={**forecast, "source_refs": historical["source_refs"]})
+    annual = bridge["full_year"]
+    return {
+        "schema_version": bridge["schema_version"],
+        "symbol": bridge["symbol"],
+        "scope": bridge["scope"],
+        "currency": bridge["currency"],
+        "period_start": bridge["period_start"],
+        "period_end": bridge["period_end"],
+        "classification": bridge["classification"],
+        "assumptions": dict(forecast),
+        "source_refs": [*historical["source_refs"], *bridge["current_nine_months"]["source_refs"]],
+        "customer_cash": annual["customer_cash"]["total"],
+        "supplier_cash": annual["supplier_cash"]["total"],
+        "other_operating_cash": forecast["other_operating_cash"],
+        "operating_cash": annual["cfo"]["total"],
+        "remaining_year_bridge": bridge,
+        "action": "no_order",
+        "formal_eligibility": False,
+    }
+
+
 def quarterly_parent_annual_capex_floor(facts):
     """Project a realised gross capex floor without inventing its split."""
 

@@ -179,13 +179,19 @@ def compile_source_bound_owner_cash_v2(*, root, spec, now):
                 if len(selected) != 1:
                     raise ValueError("DIRECT_INPUT_UNIQUE_OPERATING_HISTORY_REQUIRED")
                 _explanation(driver)
-                prediction = forecast_parent_operating_cash(historical=selected[0], forecast=dict(
+                forecast = dict(
                     symbol=spec["symbol"], scope=SCOPE, currency="CNY",
                     classification="FORECAST_ASSUMPTION",
                     period_start=f"{year}-01-01", period_end=f"{year}-12-31",
                     revenue=str(resolve(driver["revenue"])), cost=str(resolve(driver["cost"])),
                     other_operating_cash=str(resolve(driver["other_operating_cash"])),
-                    **{key: driver[key] for key in ("rationale", "counter_evidence", "reopen_condition")}))
+                    **{key: driver[key] for key in ("rationale", "counter_evidence", "reopen_condition")})
+                if "first_year_operating_cash_method" in spec:
+                    from .agent_review.quarterly_parent_cash_source import project_parent_annual_operating_cash
+                    prediction = project_parent_annual_operating_cash(
+                        root=root, spec=spec, now=now, historical=selected[0], forecast=forecast)
+                else:
+                    prediction = forecast_parent_operating_cash(historical=selected[0], forecast=forecast)
                 if set(item["policy"]) != FLOW_KEYS - {"operating_cash"}:
                     raise ValueError("DIRECT_INPUT_EXACT_OWNER_POLICY_REQUIRED")
                 policy = {key: str(resolve(value)) for key,value in item["policy"].items()}
@@ -221,6 +227,8 @@ def compile_source_bound_owner_cash_v2(*, root, spec, now):
             for item in value:collect(item)
     collect(evidence)
     collect(spec["operating_sources"])
+    if "first_year_operating_cash_method" in spec:
+        collect(cash_forecasts)
     return dict(compiler_version=VERSION, symbol=spec["symbol"], evidence=evidence,
         opening=opening, ordinary_shares=shares,
         scenarios=scenarios, operating_forecasts=cash_forecasts, assumptions=explanations,

@@ -140,10 +140,35 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             return False
         if pinned == current:
             return True
+        source = self._bound(spec["spec_binding"]) if __name__ in pinned else {}
+        if "first_year_operating_cash_method" in source:
+            return False
+        # The compiler and forecast additions below are gated by the spec.
+        # Only these reviewed source revisions may replay the former wording.
+        annual_changes = {
+            "direct_owner_cash_agent_facts_v2": (
+                "76310f21c9a23272f50e0102893626040d141c71375d357631178a5335cb1d9c",
+                "a36104edc9aea061f28b0092ff27e0509b32aee67266ffc262b5c8f0cc0178fa"),
+            "direct_owner_cash_staged_v3": (
+                "265f74defdda2f284771dc4265a2fddb8264314bafe6cfad5fc6ede9206d01d2",
+                "ad3b92ce4903790b3aeab224814893418c796b7747d4262e2c000037ea0998bb"),
+            "direct_owner_cash_compilation_v2": (
+                "ba38d058b1f7de2039fe244ceb0378ea97f4bac1f12d07c0b18cbd1c4f408050",
+                "fbb7ad124181d540def843a9877773f653ea21d04581c246551a034887f742a1"),
+        }
+        names = {name: annual_changes[name.rsplit(".", 1)[-1]] for name in current
+                 if name.rsplit(".", 1)[-1] in annual_changes}
+        if (len(names) != len(annual_changes)
+                or any(_hash(Path(sys.modules[name].__file__).read_bytes().replace(b"\r\n", b"\n")) != pair[0]
+                       for name, pair in names.items())):
+            return False
+        current = current | {name: pair[1] for name, pair in names.items()}
         if pinned.get(__name__) in {
             "65f8ec5352838d02a88b6dfaaa90b3cc3ad3ffa39aa137533d8aa8231ec69a8f",
             "16b636cc55a9c8641664a2e97bda779c3a1e640d2ffd9679ce5e90a0b98bb482",
             "272e9c45a4940aee0559ba4e6a75a086842b6580ee373d82582b273fb424fb2b",
+            "023721d29de2415825f6650b86e9b343098066efd2ceabd08854f2165b5c9d79",
+            "c9664e8f35b451f3d7f0840de189cedb0d71c491054e073ee35c1cecdeb4ab51",
         } and pinned.keys() == current.keys():
             mixed_line_endings = {
                 "a36104edc9aea061f28b0092ff27e0509b32aee67266ffc262b5c8f0cc0178fa":
@@ -164,21 +189,11 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 break
             else:
                 return True
-        source = self._bound(spec["spec_binding"]) if __name__ in pinned else {}
+
         if "annual_capex_evidence" in source:
             return False
         # The capex input and policy checks are opt-in. The prior file bytes
         # remain valid for source specs that predate this contract.
-        compatible_after_capex = {
-            "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2":
-                "e7f930dc07a0c0fd347fca879b19d6b049648422d7dc8eb0f13ef23b7fd9f3f9",
-            "value_investment_agent.application.research.direct_owner_cash_staged_v3":
-                "429f1217495ba7a01be67f6b4f0cc6a9d69b9861aabd3ded93d7231b6d8f5e98",
-        }
-        if any(name not in current
-               or _hash(Path(sys.modules[name].__file__).read_bytes().replace(b"\r\n", b"\n")) != digest
-               for name, digest in compatible_after_capex.items()):
-            return False
         prior = {
             "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2": (
                 "70f63e800f161176cc9329ad53b929e06498de8075da906c2a133cb5dffb192c",
