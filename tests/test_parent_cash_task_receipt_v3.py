@@ -61,6 +61,13 @@ def test_successful_task_publishes_a_single_receipt_after_run(tmp_path, monkeypa
     class Service:
         root = tmp_path
 
+        def _bound(self, binding):
+            if binding == spec_binding:
+                return dict(symbol="000568", action="no_order", model_applicable=True)
+            assert binding == case_binding
+            return dict(symbol="000568", profile_id="quality_compounder",
+                        schema_version="m1-valuation-package-v2", research_case=dict(symbol="000568"))
+
         def run(self, identifier):
             assert identifier == task_id
 
@@ -82,7 +89,8 @@ def test_successful_task_publishes_a_single_receipt_after_run(tmp_path, monkeypa
         return {"path": path.relative_to(root).as_posix(), "sha256": sha256(b"complete").hexdigest()}
 
     monkeypatch.setattr(completion, "build_parent_cash_task_receipt", build)
-    completion.run_and_seal_parent_cash_task(Service(), task_id)
+    with pytest.raises(ValueError, match="PARENT_TASK_CASE_BINDING_REQUIRED"):
+        completion.run_and_seal_parent_cash_task(Service(), task_id)
     assert not calls
     registry = tmp_path / "config" / "parent-cash-task-case-bindings-v1.json"
     registry.parent.mkdir()

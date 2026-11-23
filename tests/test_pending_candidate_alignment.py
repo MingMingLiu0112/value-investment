@@ -1739,6 +1739,10 @@ def test_covered_cash_original_requires_exactly_one_ledger_row(reconciliation, m
         cash_per_share="2", total_gross_cash="200")
     monkeypatch.setattr(service, "_cash_terms", lambda pages, symbol: terms)
 
+    if row_count > 1:
+        with pytest.raises(ValueError, match="DUPLICATE_NATIVE_CASH_IMPLEMENTATION_ORIGINAL"):
+            reconcile(case)
+        return
     result = reconcile(case)
 
     observed, = result["covered_cash_implementations"]
@@ -2140,3 +2144,78 @@ def test_opening_dividend_payable_requires_current_period_column(reconciliation,
         assert payable["disallow_automatic_second_equity_deduction"]
         assert payable["cash_payment_proven"] is False
     assert result["current_price_basis_compatible"] is False
+
+
+@pytest.mark.parametrize("in_period", [False, True])
+@pytest.mark.parametrize("alias", ["single", "new_id", "copied_original"])
+def test_native_cash_original_identity_precedes_ledger_ids(
+    reconciliation, monkeypatch, in_period, alias
+):
+    """TEST_ONLY PDF extraction; native terms and reconciliation run unchanged."""
+    from pypdf import PdfWriter
+    from value_investment_agent.infrastructure.filings import pdf_text
+
+    case = reconciliation
+    row = cash(case, in_period=in_period)
+    published = "2020-01-01" if in_period else "2019-12-28"
+    publication_text = "2020年1月1日" if in_period else "2019年12月28日"
+    native_dates = {key: date.fromisoformat(row[key]).strftime("%Y年%m月%d日")
+                    for key in ("record_date", "ex_date", "cash_payment_date")}
+    text = (
+        "证券代码：600519 公告编号：2020-001 TEST_ONLY 权益分派实施公告\n"
+        "差异化分红送转：否 A股每股现金红利2元（含税）\n"
+        "（三）分配方案：本次利润分配以方案实施前的公司总股本100股为基数，"
+        "每股派发现金红利2元（含税），共计派发现金红利200元（含税）。\n"
+        "三、相关日期\n"
+        f"股权登记日：{native_dates['record_date']}\n除息日：{native_dates['ex_date']}\n"
+        f"现金红利发放日：{native_dates['cash_payment_date']}\n董事会{publication_text}"
+    )
+    original = case["root"] / "runtime/cash.pdf"
+    pdf = PdfWriter()
+    pdf.add_blank_page(width=100, height=100)
+    pdf.add_metadata({"/Title": "TEST_ONLY cash"})
+    with original.open("wb") as stream:
+        pdf.write(stream)
+    binding = dict(path="runtime/cash.pdf", sha256=sha256_file(original))
+    anchor = dict(case["anchor"], binding=binding, excerpt=text,
+        source_url=f"https://static.cninfo.com.cn/finalpage/{published}/456.PDF")
+    source = dict(case["analysis"]["source_catalog"][0], local_path=binding["path"],
+                  sha256=binding["sha256"], location=anchor["source_url"])
+    case["analysis"]["source_catalog"].append(source)
+    row["evidence"] = [anchor]
+    case["ledger"]["distributions"] = [row]
+    opening_text = case["anchor"]["excerpt"]
+    monkeypatch.setattr(pdf_text, "extract_pages", lambda path:
+        [text] if sha256_file(path) == binding["sha256"] else [opening_text])
+    # No stubbed native parser or invented action-coverage proof.
+    assert service._cash_terms([text], "600519")["total_gross_cash"] == "200"
+    if alias != "single":
+        duplicate = deepcopy(row)
+        duplicate["id"] = "TEST_ONLY_DIFFERENT_LEDGER_ID"
+        if alias == "copied_original":
+            copied = case["root"] / "runtime/copied-cash.pdf"
+            copied.write_bytes(original.read_bytes())
+            duplicate["evidence"][0]["binding"]["path"] = "runtime/copied-cash.pdf"
+            case["analysis"]["source_catalog"].append(dict(source, local_path="runtime/copied-cash.pdf"))
+        case["ledger"]["distributions"].append(duplicate)
+        with pytest.raises(ValueError, match="DUPLICATE_NATIVE_CASH_IMPLEMENTATION_ORIGINAL"):
+            reconcile(case)
+    else:
+        result = reconcile(case)
+        assert result["distributions"][0]["native_terms"] is not None
+        assert result["period_cash_per_share"] == ("2" if in_period else "0")
+        assert result["distributions"][0]["price_deduction_applied"] == "0"
+        assert not result["current_price_basis_compatible"]
+
+
+def test_cross_date_caller_completeness_flags_are_not_a_native_contract(reconciliation):
+    case = reconciliation
+    case["windows"][0].update(source_integrity_verified=True, coverage_status="COMPLETE")
+    case["ledger"].update(complete_action_coverage=True, no_change=True,
+        effective_action_continuity_proven=True, period_cash_coverage_complete=True)
+    result = reconcile(case)
+    assert result["cross_date_action_facts"]["publication_window_covered"]
+    assert not result["native_basis_semantics_verified"]
+    assert not result["period_cash_coverage_complete"]
+    assert not result["current_price_basis_compatible"]
+    assert "OPENING_PENDING_SCHEMES_AND_EFFECTIVE_ACTION_CHAIN_INCOMPLETE" in result["reason_codes"]

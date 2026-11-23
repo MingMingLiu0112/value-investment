@@ -23,6 +23,8 @@ from ..direct_owner_cash_staged_v2 import (
 )
 from .. import direct_owner_cash_operating_wire_v1 as operating_wire
 from .. import direct_owner_cash_terminal_wire_v1 as terminal_wire
+from .. import direct_owner_cash_policy_capital_v1 as policy_capital
+from .. import direct_owner_cash_staged_v3 as staged_numbered
 from ..direct_owner_cash_staged_v3 import (
     preflight_annual_cash_upper_bound_v3, merge_staged_parent_cash_v3,
     staged_parent_cash_request_v3, preflight_terminal_forecast_debt_v3,
@@ -38,6 +40,8 @@ STAGE_ORDER = tuple(f"{scenario}.{stage}" for scenario in SCENARIOS for stage in
 LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3bac68d06b"
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
+# Hash of normalized service bytes with this one revision literal zeroed.
+REVIEWED_CAPITAL_SERVICE = "75169728455e3b9b6426e0b154919d1193063134980d3045b2ce4fe3339ccbf4"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -105,7 +109,7 @@ def _implementation():
                     parent_direct_owner_cash_sources as unnumbered_native)
     return {module.__name__: _hash(Path(module.__file__).read_bytes())
             for module in (draft_prior, draft, facts, sources, staged, staged_numbered,
-                           request, compiler, compiler_numbered, unnumbered, unnumbered_native, operating_wire, terminal_wire)} | {
+                           request, compiler, compiler_numbered, unnumbered, unnumbered_native, operating_wire, terminal_wire, policy_capital)} | {
         __name__: _hash(Path(__file__).read_bytes())}
 
 
@@ -138,6 +142,26 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         pinned = spec.get("implementation_sha256")
         if not isinstance(current, dict) or not isinstance(pinned, dict):
             return False
+        # Pre-capital-context tasks retain their exact former request behavior.
+        # All other pinned modules still pass the existing compatibility checks.
+        if policy_capital.__name__ not in pinned:
+            if spec.get("policy_capital_basis") is not None:
+                return False
+            raw = Path(__file__).read_bytes()
+            normalized = re.sub(
+                rb'REVIEWED_CAPITAL_SERVICE = "[0-9a-f]{64}"',
+                b'REVIEWED_CAPITAL_SERVICE = "' + b"0" * 64 + b'"',
+                raw.replace(b"\r\n", b"\n"), count=1)
+            if current.get(__name__) != _hash(raw) or _hash(normalized) != REVIEWED_CAPITAL_SERVICE:
+                return False
+            current = {name: digest for name, digest in current.items()
+                       if name != policy_capital.__name__}
+            prior_service = pinned.get(__name__)
+            current[__name__] = (
+                prior_service if prior_service in {
+                    "af998baf6d5a8192afc5218a670c2694b1d474efc7283782841546822c2ad384",
+                    "38cd85ac4835bf0494e8682798d3e25903b64dd7e59ce1c1c130c26ae81e03b0",
+                } else "af998baf6d5a8192afc5218a670c2694b1d474efc7283782841546822c2ad384")
         source_module = "value_investment_agent.application.research.parent_direct_owner_cash_unnumbered_v1"
         legacy_source_hashes = {
             "28eb119c1fa0f9f59a559ecf688f71c94701ee23cd5293c4c3c9f795151edfba",
@@ -331,6 +355,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     " Output only revenue, cost and other_operating_cash inside series; "
                     "never emit operating_cash, even as an explanatory series.")
             return wire
+        if stage == "policy" and policy_capital.__name__ in spec["implementation_sha256"]:
+            return policy_capital.policy_capital_request(request, spec["policy_capital_basis"])
         if stage == "terminal" and terminal_wire.__name__ in spec["implementation_sha256"]:
             return terminal_wire.terminal_wire_request(request)
         return request
@@ -339,7 +365,10 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         parse = (operating_wire.parse_operating_wire
                  if stage == "operating" and operating_wire.__name__ in spec["implementation_sha256"]
                  else parse_staged_parent_cash_response)
-        return parse(response, request=request, source_fingerprint=source_fingerprint)
+        parsed = parse(response, request=request, source_fingerprint=source_fingerprint)
+        if stage == "policy" and policy_capital.__name__ in spec["implementation_sha256"]:
+            policy_capital.validate_policy_debt(spec["policy_capital_basis"], parsed)
+        return parsed
 
     def _context(self, spec, now):
         if (self._configuration() != spec["config"]
@@ -605,6 +634,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if self.test_provider is None and not os.environ.get(cfg["api_key_env"]):
             raise PermissionError("MODEL_CREDENTIAL_REQUIRED")
         context = read_parent_cash_agent_facts_v2(root=self.root, spec_binding=spec_binding, now=now)
+        capital_basis = None
         seed = None
         ancestor_spend = Decimal(0)
         seed_created_at = now.isoformat()
@@ -617,6 +647,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                                 else "LIVE_PARENT_CASH_V3")):
                 raise ValueError("PARENT_SEED_INCOMPATIBLE")
             self._verify_charges(old_state)
+            source_spec = staged_numbered._load_spec(self.root, spec_binding)
+            capital_basis = policy_capital.opening_debt_basis(source_spec["opening"], context["facts"])
             ancestor_spend = (Decimal(old_spec.get("ancestor_spend", "0"))
                 + Decimal(old_state["reserved_cost"]) + Decimal(old_state["settled_cost"]))
             if ancestor_spend >= Decimal(str(cfg["max_run_cost"])):
@@ -629,7 +661,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             trial_spec = dict(spec_binding=spec_binding, source_fingerprint=context["input_fingerprint"],
                               config=cfg, created_at=seed_created_at,
                               shared_budget_root=str(self.shared_budget_root),
-                              implementation_sha256=_implementation())
+                              implementation_sha256=_implementation(), policy_capital_basis=capital_basis)
             if replay_from_stage == "bear.operating":
                 trial_spec["operating_series_wire"] = "INPUTS_ONLY_V1"
             for stage_id in STAGE_ORDER:
@@ -666,11 +698,14 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             # before publishing a new task or permitting another model call.
             trial_spec.update(task_id="new-task-preview", mode=old_spec["mode"], seed=seed)
             self._stage_outputs(trial_spec, trial, now, verified_context=context)
+        if capital_basis is None:
+            source_spec = staged_numbered._load_spec(self.root, spec_binding)
+            capital_basis = policy_capital.opening_debt_basis(source_spec["opening"], context["facts"])
         spec = dict(schema_version=VERSION, task_id=task_id, mode="TEST_ONLY_PARENT_CASH_V3"
             if self.test_provider is not None else "LIVE_PARENT_CASH_V3", spec_binding=spec_binding,
             source_fingerprint=context["input_fingerprint"], config=cfg,
             shared_budget_root=str(self.shared_budget_root),
-            implementation_sha256=_implementation(),
+            implementation_sha256=_implementation(), policy_capital_basis=capital_basis,
             created_at=seed_created_at, action="no_order")
         if seed is not None and replay_from_stage == "bear.operating":
             spec["operating_series_wire"] = "INPUTS_ONLY_V1"

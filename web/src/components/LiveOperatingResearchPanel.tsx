@@ -314,6 +314,17 @@ export function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
           {item.completed_stages.join("、") || "无"}· 预留 ¥
           {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
           实际使用：未核实
+          {item.status === "SUCCEEDED" &&
+            item.valuation_receipt_status === "BLOCKED" && (
+              <p>
+                估值封存受阻：
+                {item.valuation_blockage?.reason_code || "未记录原因"}
+              </p>
+            )}
+          {item.status === "SUCCEEDED" &&
+            item.valuation_receipt_status === "NOT_SEALED" && (
+              <p>研究已执行完成，估值回执尚未封存。</p>
+            )}
           {history.symbol === symbol &&
             item.task_contract === "parent-cash-task-v3" &&
             item.status === "SUCCEEDED" && (

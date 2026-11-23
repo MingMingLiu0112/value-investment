@@ -854,6 +854,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
             raise ValueError("SHARE_ROLLFORWARD_DOES_NOT_RECONCILE")
         anchors(closing["evidence"], numbers=[closing_value], dates=[closing_date])
     period_cash, cash_rows = Decimal(0), []
+    native_cash_originals = set()
     for row in cash:
         if not isinstance(row["id"], str) or not row["id"] or row["id"] in ids:
             raise ValueError("UNIQUE_ACTION_ID_REQUIRED")
@@ -887,6 +888,15 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
                     or any(parsed[k] != row[k] for k in ("record_date", "ex_date", "cash_payment_date"))
                     or any('/finalpage/' + parsed["published_date"] + '/' not in e["source_url"] for e in row["evidence"])):
                 raise ValueError("CASH_LEDGER_DIFFERS_FROM_NATIVE_IMPLEMENTATION_FIELDS")
+        # Each supported native parser describes one implementation per original.
+        # Ledger IDs and local archive paths are not economic action identities.
+        # Reject aliases before summing or consuming a model-inclusion closure,
+        # including distributions before valuation (outside the covered window).
+        if parsed is not None or entitlement is not None:
+            original_hash, = hashes
+            if original_hash in native_cash_originals:
+                raise ValueError("DUPLICATE_NATIVE_CASH_IMPLEMENTATION_ORIGINAL")
+            native_cash_originals.add(original_hash)
         # Ex-date entitlement and payment timing are independent. Pending
         # payment must not hide an entitlement inside (valuation, comparison].
         ex_in_period = start < ex <= end

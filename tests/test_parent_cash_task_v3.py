@@ -193,7 +193,8 @@ def test_unfunded_policy_stops_before_terminal_call(task, monkeypatch):
     service, provider = task
     monkeypatch.setattr(staged_numbered, "_load_spec", lambda *_args: {
         "symbol": "600887", "valuation_date": "2025-12-31",
-        "opening": {"cash": {"classification": "FACT", "anchor": "cash"}}})
+        "opening": {"cash": {"classification": "FACT", "anchor": "cash"},
+                    "debt": {"classification": "FORECAST_ASSUMPTION", "value": "1000"}}})
     monkeypatch.setattr(staged_numbered, "_historical_parent_operating_cash",
         lambda **_kwargs: dict(symbol="600887", scope="ISSUER_PARENT_STANDALONE",
             currency="CNY", classification="FACT", period_start="2025-01-01",
@@ -465,4 +466,26 @@ def test_negative_debt_before_terminal_request_persists_failure(task, monkeypatc
     assert result["error_code"] == "BEAR_TERMINAL_PARENT_V3_FORECAST_DEBT_NEGATIVE"
     assert result["completed_stages"] == ["bear.operating", "bear.policy"]
     assert len(provider.calls) == 2
+    assert service.read(created["task_id"])["error_code"] == result["error_code"]
+
+def test_policy_debt_failure_is_sealed_without_terminal_request(task):
+    service, _ = task
+    class NegativeDebtProvider(Provider):
+        def complete(self, request):
+            response = super().complete(request)
+            if json.loads(request.user)["stage"] != "policy":
+                return response
+            assert json.loads(request.user)["opening_debt_basis"]["amount_cny"] == "0"
+            body = json.loads(response.text)
+            body["series"]["debt_repayment"]["values"][0] = "2.25"
+            return LLMResponse(json.dumps(body), 100, 100, "deepseek-flash")
+    provider = NegativeDebtProvider()
+    service.test_provider = provider
+    created = service.create(spec_binding=dict(path="runtime/spec.json",sha256="b"*64),
+        request_key="policynegative001",now=NOW)
+    result = service.run(created["task_id"],now=NOW)
+    assert result["status"] == "FAILED"
+    assert result["error_code"] == "BEAR_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE"
+    assert provider.calls == [("bear","operating"),("bear","policy")]
+    assert len(result["returned_responses"]) == 2
     assert service.read(created["task_id"])["error_code"] == result["error_code"]

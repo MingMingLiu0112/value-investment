@@ -2,8 +2,10 @@
 from datetime import datetime, timezone
 from hashlib import sha256
 import json
+import os
+import re
 from pathlib import Path
-from tempfile import mkdtemp
+from tempfile import mkdtemp, mkstemp
 
 from .parent_cash_task_receipt_v3 import build_parent_cash_task_receipt
 from .parent_cash_task_distribution_receipt_v1 import build as build_distribution_receipt
@@ -15,7 +17,56 @@ def valuation_receipt_path(root, task_id):
     return require_inside(directory, directory / task_id / "receipt.json", "parent cash task receipt")
 
 
-def _case_binding(root, spec_binding):
+def valuation_blockage_path(root, task_id):
+    receipt = valuation_receipt_path(root, task_id)
+    return require_inside(receipt.parent, receipt.parent / "publication-blocked.json",
+                          "parent cash publication blockage")
+
+
+def read_valuation_publication(root, task_id, task_head):
+    """Read publication metadata only; a receipt always supersedes an old failure."""
+    if valuation_receipt_path(root, task_id).is_file():
+        return dict(valuation_receipt_status="SEALED_REPLAY_REQUIRED", valuation_blockage=None)
+    path = valuation_blockage_path(root, task_id)
+    missing = dict(valuation_receipt_status="NOT_SEALED", valuation_blockage=None)
+    if not path.is_file():
+        return missing
+    if path.stat().st_size > 8192:
+        raise ValueError("PARENT_TASK_PUBLICATION_STATUS_INVALID")
+    row = json.loads(path.read_bytes())
+    if (row.get("schema_version") != "parent-cash-publication-blockage-v1"
+            or row.get("task_id") != task_id or row.get("status") != "BLOCKED"
+            or row.get("action") != "no_order"
+            or not re.fullmatch(r"[A-Z0-9_]{3,120}", str(row.get("reason_code", "")))):
+        raise ValueError("PARENT_TASK_PUBLICATION_STATUS_INVALID")
+    if row.get("task_record_binding") != task_head:
+        return missing
+    return dict(valuation_receipt_status="BLOCKED", valuation_blockage=row)
+
+
+def _record_publication_blockage(root, task_id, head, error):
+    reason = str(error)
+    if not re.fullmatch(r"[A-Z0-9_]{3,120}", reason):
+        reason = ("PARENT_TASK_PUBLICATION_IO_ERROR" if isinstance(error, OSError)
+                  else "PARENT_TASK_PUBLICATION_VERIFICATION_FAILED")
+    row = dict(schema_version="parent-cash-publication-blockage-v1", task_id=task_id,
+               task_record_binding=head, status="BLOCKED", reason_code=reason,
+               updated_at=datetime.now(timezone.utc).isoformat(), action="no_order")
+    path = valuation_blockage_path(root, task_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, name = mkstemp(prefix=".publication-", suffix=".part", dir=path.parent)
+    temporary = Path(name)
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(json.dumps(row, sort_keys=True).encode("utf-8"))
+            stream.flush()
+            os.fsync(stream.fileno())
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _case_entry(root, spec_binding):
     registry = root / "config" / "parent-cash-task-case-bindings-v1.json"
     if not registry.is_file():
         return None
@@ -27,7 +78,12 @@ def _case_binding(root, spec_binding):
         return None
     if entry["spec_binding"] != spec_binding:
         raise ValueError("PARENT_TASK_SPEC_BINDING_MISMATCH")
-    return entry["case_package_binding"]
+    return entry
+
+
+def _case_binding(root, spec_binding):
+    entry = _case_entry(root, spec_binding)
+    return None if entry is None else entry["case_package_binding"]
 
 
 def registered_cash_task_spec(service, symbol):
@@ -57,19 +113,37 @@ def registered_cash_task_spec(service, symbol):
             raise ValueError("PARENT_TASK_AMBIGUOUS_COMPANY_BINDING")
         entry = matches[0]
     binding = entry["spec_binding"]
-    case_binding = _case_binding(root, binding)
-    if case_binding != entry["case_package_binding"]:
-        raise ValueError("PARENT_TASK_CASE_BINDING_MISMATCH")
-    spec = service._bound(binding)
-    case = service._bound(case_binding)
-    if (spec.get("symbol") != symbol or spec.get("action") != "no_order"
-            or spec.get("model_applicable") is not True
-            or case.get("symbol") != symbol or case.get("profile_id") != "quality_compounder"
-            or case.get("schema_version") != "m1-valuation-package-v2"
-            or case.get("research_case", {}).get("symbol") != symbol):
-        raise ValueError("PARENT_TASK_CASE_PROFILE_OR_ISSUER_MISMATCH")
-    _distribution_binding(entry, spec)
+    preflight_parent_cash_task(service, binding, symbol=symbol)
     return binding
+
+
+def preflight_parent_cash_task(service, spec_binding, *, symbol=None):
+    """Verify the exact requested registration and pinned inputs before creation."""
+    entry = _case_entry(Path(service.root).resolve(), spec_binding)
+    if entry is None or not entry.get("case_package_binding"):
+        raise ValueError("PARENT_TASK_CASE_BINDING_REQUIRED")
+    case_binding = entry["case_package_binding"]
+    spec = service._bound(spec_binding)
+    case = service._bound(case_binding)
+    issuer = spec.get("symbol")
+    if (not issuer or (symbol is not None and issuer != symbol)
+            or entry.get("symbol", issuer) != issuer
+            or spec.get("action") != "no_order" or spec.get("model_applicable") is not True
+            or case.get("symbol") != issuer or case.get("profile_id") != "quality_compounder"
+            or case.get("schema_version") != "m1-valuation-package-v2"
+            or case.get("research_case", {}).get("symbol") != issuer):
+        raise ValueError("PARENT_TASK_CASE_PROFILE_OR_ISSUER_MISMATCH")
+    distribution_binding = _distribution_binding(entry, spec)
+    if distribution_binding is not None:
+        from .parent_owner_distribution_successor_v2 import RECEIPT_SCHEMA
+        receipt = service._bound(distribution_binding)
+        if (receipt.get("schema_version") != RECEIPT_SCHEMA
+                or receipt.get("symbol") != issuer or receipt.get("action") != "no_order"
+                or receipt.get("formal_eligibility") is not False
+                or receipt.get("successor_adopted") is not False
+                or receipt.get("main_range_adopted") is not False):
+            raise ValueError("PARENT_TASK_DISTRIBUTION_RECEIPT_INVALID")
+    return case_binding, distribution_binding
 
 
 def _distribution_binding(entry, research_spec):
@@ -93,24 +167,23 @@ def run_and_seal_parent_cash_task(service, task_id):
         retained = valuation_receipt_path(root, task_id)
         if retained.exists():
             return
-        case_binding = _case_binding(root, spec["spec_binding"])
-        if case_binding is None:
-            return
-        retained.parent.mkdir(parents=True, exist_ok=True)
-        attempt = Path(mkdtemp(prefix="valuation-attempt-", dir=retained.parent)) / "sealed"
-        registry = json.loads((root / "config" / "parent-cash-task-case-bindings-v1.json").read_bytes())
-        entry = registry["specs"][spec["spec_binding"]["sha256"]]
-        binding = entry.get("implemented_distribution_receipt_binding")
-        options = {} if binding is None else {"distribution_binding": binding}
-        builder = build_parent_cash_task_receipt if binding is None else build_distribution_receipt
-        built = builder(
-            **options,
-            root=root, task_id=task_id, task_head=head, case_package_binding=case_binding,
-            output_dir=attempt, now=datetime.now(timezone.utc),
-        )
-        receipt = (root / built["path"]).read_bytes()
-        if sha256(receipt).hexdigest() != built["sha256"]:
-            raise ValueError("PARENT_TASK_BUILT_RECEIPT_HASH_MISMATCH")
-        # Same-volume hard link publishes an already complete file atomically
-        # and refuses to replace a retained result.
-        retained.hardlink_to(root / built["path"])
+        try:
+            case_binding, binding = preflight_parent_cash_task(service, spec["spec_binding"])
+            retained.parent.mkdir(parents=True, exist_ok=True)
+            attempt = Path(mkdtemp(prefix="valuation-attempt-", dir=retained.parent)) / "sealed"
+            options = {} if binding is None else {"distribution_binding": binding}
+            builder = build_parent_cash_task_receipt if binding is None else build_distribution_receipt
+            built = builder(
+                **options,
+                root=root, task_id=task_id, task_head=head, case_package_binding=case_binding,
+                output_dir=attempt, now=datetime.now(timezone.utc),
+            )
+            receipt = (root / built["path"]).read_bytes()
+            if sha256(receipt).hexdigest() != built["sha256"]:
+                raise ValueError("PARENT_TASK_BUILT_RECEIPT_HASH_MISMATCH")
+            # Same-volume hard link publishes an already complete file atomically
+            # and refuses to replace a retained result.
+            retained.hardlink_to(root / built["path"])
+        except (ValueError, KeyError, TypeError, OSError, ArithmeticError) as error:
+            _record_publication_blockage(root, task_id, head, error)
+            raise

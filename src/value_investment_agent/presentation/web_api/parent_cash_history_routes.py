@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from ...application.research.parent_cash_task_completion_v1 import (
     registered_cash_task_spec, run_and_seal_parent_cash_task, valuation_receipt_path,
+    preflight_parent_cash_task, read_valuation_publication, valuation_blockage_path,
 )
 from .live_operating_research_routes import resolve_research_task_root
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
@@ -43,7 +44,8 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
             run_and_seal_parent_cash_task(numbered_service, task_id)
         except (ValueError, KeyError, TypeError, OSError, ArithmeticError) as error:
             logging.getLogger(__name__).warning(
-                "Parent cash valuation unavailable for %s (%s)", task_id, type(error).__name__
+                "Parent cash valuation unavailable for %s (%s)", task_id,
+                str(error) if re.fullmatch(r"[A-Z0-9_]{3,120}", str(error)) else type(error).__name__
             )
 
     @api.post("/api/v1/operating-research/parent-cash-tasks/v3")
@@ -58,6 +60,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
             body = json.loads(raw)
             if not isinstance(body, dict) or set(body) != {"spec_binding", "request_key"}:
                 raise ValueError("PARENT_V3_REQUEST_INVALID")
+            preflight_parent_cash_task(numbered_service, body["spec_binding"])
             task = numbered_service.create(**body)
             if task["status"] in {"QUEUED", "SUCCEEDED"}:
                 background.add_task(run_numbered, task["task_id"])
@@ -159,6 +162,24 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                           for task_root in dict.fromkeys((Path(root).resolve(), code_root))]
             available = [(task_root, path) for task_root, path in candidates if path.is_file()]
             if not available:
+                blocked = []
+                for task_root, _ in candidates:
+                    if not valuation_blockage_path(task_root, task_id).is_file():
+                        continue
+                    task_service = (numbered_service if task_root == Path(root).resolve()
+                                    else archived_numbered_service)
+                    spec, state, head = task_service._load(task_id)
+                    source = task_service._bound(spec["spec_binding"])
+                    if source.get("symbol") != symbol:
+                        raise ValueError("PARENT_TASK_VALUATION_IDENTITY_MISMATCH")
+                    publication = read_valuation_publication(task_root, task_id, head)
+                    if publication["valuation_receipt_status"] == "BLOCKED":
+                        blocked.append(publication)
+                if len(blocked) > 1:
+                    raise ValueError("PARENT_TASK_DUPLICATE_PUBLICATION_STATUS")
+                if blocked:
+                    return reply(dict(status="PARENT_TASK_VALUATION_BLOCKED", action="no_order",
+                                      task_id=task_id, symbol=symbol, **blocked[0]), 409)
                 return reply(dict(status="PARENT_TASK_VALUATION_NOT_SEALED", action="no_order"), 404)
             if len(available) != 1:
                 raise ValueError("PARENT_TASK_DUPLICATE_VALUATION_RECEIPT")
@@ -370,10 +391,8 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                      "reserved_cny": row.get("cost"),
                                      "settled_cny": row.get("actual_cost")}
                                     for row in reservations.values()],
-                        "valuation_receipt_status": (
-                            "SEALED_REPLAY_REQUIRED"
-                            if valuation_receipt_path(code_root if archived else Path(root), directory.name).is_file()
-                            else "NOT_SEALED"),
+                        **read_valuation_publication(
+                            code_root if archived else Path(root), directory.name, binding),
                         "candidate_status": ("COMPILED_CONDITIONAL_NOT_MAIN" if state["status"] == "SUCCEEDED"
                                              else "NOT_COMPILED"),
                         "e2_consumption": "UNVERIFIED", "formal": False, "action": "no_order"})
