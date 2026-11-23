@@ -136,6 +136,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         if digest == PRE_FINANCING_WINDOWS_OVERRIDES.get(name):
                             compatible[name] = digest
                         continue
+                    if (name == terminal_wire.__name__
+                            and current[name] == "68819cfc23750c0120f9b73191f60ad7ffe1c5d7288bc16bc17dc582d950b540"
+                            and digest == "2e83e5f7d27c379719525221c3cb04655b08500041f85648faa5df6b315fd0a1"):
+                        # This historical checkout combined LF and CRLF in this file.
+                        compatible[name] = digest
+                        continue
                     raw = Path(sys.modules[name].__file__).read_bytes()
                     lf = raw.replace(b"\r\n", b"\n")
                     if digest in {_hash(lf), _hash(lf.replace(b"\n", b"\r\n"))}:
