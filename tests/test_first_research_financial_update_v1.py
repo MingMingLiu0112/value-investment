@@ -5,8 +5,8 @@ from value_investment_agent.application.research.first_research_financial_update
 
 def inputs():
     native = {"symbol": "600519", "financial_basis": "2026-06-30", "facts": [
-        {"field": "revenue", "period_end": "2026-06-30", "unit": "CNY", "value": "90"},
-        {"field": "parent_profit", "period_end": "2026-06-30", "unit": "CNY", "value": "44"},
+        {"field": "revenue", "scope": "consolidated", "period_end": "2026-06-30", "unit": "CNY", "value": "90"},
+        {"field": "parent_profit", "scope": "consolidated_parent", "period_end": "2026-06-30", "unit": "CNY", "value": "44"},
     ]}
     q3 = {"status": "VERIFIED_OBSERVATION_ONLY", "symbol": "600519",
           "source_bindings": {"original": {"path": "runtime/q3.pdf", "sha256": "a" * 64}},
@@ -46,6 +46,16 @@ def test_mismatched_scope_or_missing_h1_does_not_claim_update():
     q3["ytd_9m_observation"]["report_period"] = "2027-09-30"
     assert compare_first_input_financial_update(symbol="600519", financial_basis="2026-06-30",
         native_facts=native, q3_read_model=q3)["status"] == "UNASSESSABLE"
+
+
+def test_parent_standalone_profit_cannot_be_subtracted_from_consolidated_ytd():
+    native, q3 = inputs()
+    native["facts"][1]["scope"] = "parent_standalone"
+    result = compare_first_input_financial_update(symbol="600519", financial_basis="2026-06-30",
+                                                   native_facts=native, q3_read_model=q3)
+    assert result["status"] == "UNASSESSABLE"
+    assert result["reason"] == "FINANCIAL_UPDATE_H1_SCOPE_MISMATCH:parent_profit"
+    assert "derived_q3_quarter_cny" not in result
 
 
 def test_unsupported_issuer_has_no_q3_claim():

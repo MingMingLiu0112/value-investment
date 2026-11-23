@@ -14,7 +14,7 @@ from ...domain.valuation.joint_capital_cash_path_v4 import HISTORICAL_FIELDS
 _SOURCE_FINANCIAL_FIELDS = HISTORICAL_FIELDS - {
     "scope", "currency", "opening_cash", "opening_distribution_capacity", "cash_floor"
 }
-_Q3_VERIFIED_FIELDS = {"revenue", "parent_profit"}
+_OPERATING_SCOPES = {"revenue": "consolidated", "parent_profit": "consolidated_parent"}
 
 
 def compare_first_input_financial_update(*, symbol: str, financial_basis: str,
@@ -50,6 +50,8 @@ def compare_first_input_financial_update(*, symbol: str, financial_basis: str,
                     and row.get("period_end") == financial_basis]
             if len(rows) != 1 or rows[0].get("unit") != "CNY":
                 raise ValueError("FINANCIAL_UPDATE_UNIQUE_H1_FACT_REQUIRED:" + field)
+            if rows[0].get("scope") != _OPERATING_SCOPES[field]:
+                raise ValueError("FINANCIAL_UPDATE_H1_SCOPE_MISMATCH:" + field)
             return Decimal(rows[0]["value"])
         q3 = observation["facts"]
         revenue_9m, profit_9m = (Decimal(q3[key]) for key in
@@ -59,7 +61,7 @@ def compare_first_input_financial_update(*, symbol: str, financial_basis: str,
                     (revenue_9m, profit_9m, revenue_h1, profit_h1))
                 or revenue_9m < revenue_h1 or revenue_h1 < 0):
             raise ValueError("FINANCIAL_UPDATE_INVALID_REPORTED_VALUES")
-        verified_fields = set(_Q3_VERIFIED_FIELDS)
+        verified_fields = set(_OPERATING_SCOPES)
         income = None
         if income_read_model and income_read_model.get("status") == "VERIFIED_REPORTED_Q3_INCOME_FACTS_ONLY":
             if (income_read_model.get("symbol") != symbol or
