@@ -114,3 +114,27 @@ def test_legacy_capital_compatibility_accepts_reviewed_line_endings(monkeypatch,
     # Accepting service line endings must not waive unrelated module pins.
     pinned[task.operating_wire.__name__] = "f" * 64
     assert service._implementation_matches(spec) is False
+
+
+def test_operating_retry_contract_preserves_historical_wire():
+    from value_investment_agent.application.research.agent_review import parent_cash_task_v3 as service
+
+    fields = ("years", "series", "annual_notes", "rationale", "counter_evidence", "reopen_condition")
+    request = LLMRequest(
+        role="FUNDAMENTAL", system="Historical system", user="{}",
+        output_schema={"properties": dict.fromkeys(fields, {}), "required": list(fields)},
+    )
+    pinned = {"implementation_sha256": {service.operating_wire.__name__: "fixture"}}
+    legacy = service.ParentCashTaskServiceV3._wire(pinned, "operating", request)
+    v1 = service.ParentCashTaskServiceV3._wire(
+        dict(pinned, operating_series_wire="INPUTS_ONLY_V1"), "operating", request,
+    )
+    v2 = service.ParentCashTaskServiceV3._wire(
+        dict(pinned, operating_series_wire="INPUTS_ONLY_V2"), "operating", request,
+    )
+    assert "never emit operating_cash" not in legacy.transport_output_contract
+    assert "never emit operating_cash" in v1.transport_output_contract
+    assert "exactly ten plain JSON strings" not in v1.transport_output_contract
+    assert "exactly ten plain JSON strings" in v2.transport_output_contract
+    assert v2.output_schema == v1.output_schema == legacy.output_schema
+    assert v2.user == v1.user == legacy.user
