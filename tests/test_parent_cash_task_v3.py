@@ -368,6 +368,35 @@ def test_terminal_replay_keeps_independent_scenarios(task, monkeypatch):
     assert fork["provider_requests"] == 0 and len(provider.calls) == 10
 
 
+def test_policy_fork_retains_source_anchored_base_operating(task, monkeypatch):
+    service, provider = task
+    reader = target.read_parent_cash_agent_facts_v2
+    monkeypatch.setattr(target, "read_parent_cash_agent_facts_v2", lambda **kwargs:
+        dict(reader(**kwargs), parent_operating_cash_observations=[
+            dict(symbol="600887", scope="ISSUER_PARENT_STANDALONE",
+                 period_end="2025-12-31", cfo="3", customer_cash="10",
+                 supplier_cash="5", revenue="10", cost="10", source_refs=[{"sha256": "a" * 64}]),
+        ]))
+    binding = dict(path="runtime/spec.json", sha256="b" * 64)
+    original = service.create(spec_binding=binding, request_key="base-original", now=NOW)
+    provider.fail_at = 4
+    assert service.run(original["task_id"], now=NOW)["status"] == "FAILED"
+
+    operating = service.create(spec_binding=binding, request_key="base-operating",
+        seed_task_id=original["task_id"], replay_from_stage="base.operating", now=NOW)
+    provider.fail_at = 6
+    failure = service.run(operating["task_id"], now=NOW)
+    assert failure["error_code"] == "BASE_POLICY_PARENT_PROVIDER_TIMEOUT_AMBIGUOUS"
+    assert failure["completed_stages"] == list(target.STAGE_ORDER[:4])
+
+    policy = service.create(spec_binding=binding, request_key="base-policy",
+        seed_task_id=operating["task_id"], replay_from_stage="base.policy", now=NOW)
+    assert policy["completed_stages"] == failure["completed_stages"]
+    assert len(provider.calls) == 6
+    assert service._load(policy["task_id"])[0]["seed"]["responses"]["base.operating"] == (
+        service._load(operating["task_id"])[1]["responses"]["base.operating"])
+
+
 def test_fork_run_cost_counts_ancestor_reservations(task, monkeypatch):
     service, provider = task
     monkeypatch.setitem(CFG, "input_cost_per_million", "100")

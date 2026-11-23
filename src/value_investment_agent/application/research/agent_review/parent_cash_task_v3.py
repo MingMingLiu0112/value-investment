@@ -43,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "2a786f025b83c0cfba1a92edb71388e5c49e6eeecc043f5b690ffedb78e6529f"
+REVIEWED_CAPITAL_SERVICE = "08d1b0679beb589683ef0bd85b4823efdca3377cc78af385968ba28d427fa87e"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -152,6 +152,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "dbf7b1d76e3aa0a3c92bbbfee16df2a07a9bfee6ee12d8d165b479384f10f427",
+            "4c6eb47c765ba255cfa9a3143b45c684993b1a7c2217d248a7d4abb6c303f7ea",
             "9c8955c8e3193b2a542f27795e693608ba3f794c735e7df32350e3875246fd8f",
             "31f286f615b144036173388233648b8a2413d1c5ee9da87dff1b4eab72c60812",
             "22bb04a6f97a7e38bf1c13c21339fc2639a28bc28a75fce8e03c421a38c0f608",
@@ -383,7 +385,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     "Each string explains that year's assumptions in at least 12 characters. "
                     "Never use objects, year keys or nested evidence_anchors in annual_notes. "
                     "Return exactly one JSON object with no trailing text or closing brace.")
-            if spec.get("replay_from_stage") == "base.operating":
+            if (spec.get("replay_from_stage") == "base.operating"
+                    or spec.get("base_operating_wire") == "SOURCE_RESIDUAL_V1"):
                 payload = json.loads(wire.user)
                 if payload.get("scenario") == "base":
                     source = payload["source_context"]
@@ -792,6 +795,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 trial_spec["operating_series_wire"] = "INPUTS_ONLY_V2"
             elif "operating_series_wire" in old_spec:
                 trial_spec["operating_series_wire"] = old_spec["operating_series_wire"]
+            if (old_spec.get("replay_from_stage") == "base.operating"
+                    or old_spec.get("base_operating_wire") == "SOURCE_RESIDUAL_V1"):
+                trial_spec["base_operating_wire"] = "SOURCE_RESIDUAL_V1"
             for stage_id in STAGE_ORDER:
                 if replay_from_stage is not None:
                     replay_scenario, replay_stage = replay_from_stage.split(".")
@@ -840,6 +846,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         elif "operating_series_wire" in trial_spec:
             spec["operating_series_wire"] = trial_spec["operating_series_wire"]
         if seed is not None:
+            if "base_operating_wire" in trial_spec:
+                spec["base_operating_wire"] = trial_spec["base_operating_wire"]
             spec.update(forked_at=now.isoformat(), seed=seed,
                         replay_from_stage=replay_from_stage,
                         ancestor_spend=str(ancestor_spend))
