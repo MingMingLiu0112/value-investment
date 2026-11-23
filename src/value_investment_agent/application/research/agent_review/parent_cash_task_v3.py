@@ -146,12 +146,26 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if pinned.get(source_module) in legacy_source_hashes and source_module in current:
             source_file = Path(sys.modules[source_module].__file__)
             revision = _hash(source_file.read_bytes().replace(b"\r\n", b"\n"))
-            if revision == "B3C61AE77FBF17341B192279603DE71A571111201DC9F927B184969108C82E28".lower():
+            if revision == "3f1529cc0e5f62f6eb4b41cbe7736ac6c104b7404c40b586fb39fa00ad0c7372":
                 source = self._bound(spec["spec_binding"])
                 constraint = source.get("constraint_binding")
                 if not constraint or "supplemental_financing_sources_v1" not in self._bound(constraint):
                     current = current | {source_module: pinned[source_module]}
                     if pinned.get(__name__) == "4636acbdfbf639d68648be86a04c472154b36d71cb106abe6e306d95ad7a529b":
+                        current = current | {__name__: pinned[__name__]}
+        staged_module = "value_investment_agent.application.research.direct_owner_cash_staged_v3"
+        staged_legacy = {
+            "2c396c68efd948f7093f26a70e2c4c1ffa0c377adc771a568815d89a80d6658d",
+            "ad3b92ce4903790b3aeab224814893418c796b7747d4262e2c000037ea0998bb",
+        }
+        if staged_module in current and pinned.get(staged_module) in staged_legacy:
+            staged_file = Path(sys.modules[staged_module].__file__)
+            if _hash(staged_file.read_bytes().replace(b"\r\n", b"\n")) == "55335d685a2045c2b33c9b3446e1eecfac4f690223427c35b079afaa4c0f135b":
+                source = self._bound(spec["spec_binding"])
+                constraint = source.get("constraint_binding")
+                if not constraint or "supplemental_financing_sources_v1" not in self._bound(constraint):
+                    current = current | {staged_module: pinned[staged_module]}
+                    if pinned.get(__name__) == "975631602fcd2f41149176b2cce3cd000343f3be91559dfc24a351dcbc9bd836":
                         current = current | {__name__: pinned[__name__]}
         previous_interest_service = "7e09ef24373aeeb03231342527ca41a524705b6a924bdfd008d6f69df5cf1d16"
         if pinned == current | {__name__: previous_interest_service}:

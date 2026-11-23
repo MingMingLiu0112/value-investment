@@ -269,7 +269,23 @@ def _constraints(root, binding, symbol, issuer, evaluated_at):
         sources = packet["supplemental_financing_sources_v1"]
         if not isinstance(sources, list) or not sources:
             _fail("SUPPLEMENTAL_FINANCING_SOURCES_INVALID")
-        seen = {item["code"] for item in financing}
+        primary = parse_operating_event_terms(originals["financing_source"], symbol=symbol)
+        if (primary["event_type"] != "REPORTED_ISSUER_FINANCING_ISSUANCE"
+                or primary["published_date"] > packet["financing_source"]["available_at"][:10]):
+            _fail("PRIMARY_FINANCING_DISCLOSURE_INVALID")
+        primary_terms = {item["code"]: item for item in primary["financing_issues"]}
+        if primary_terms.keys() != {item["code"] for item in financing}:
+            _fail("PRIMARY_FINANCING_CODES_CHANGED")
+        for item in financing:
+            terms = primary_terms[item["code"]]
+            principal = Decimal(terms["face_value_cny"])
+            if (principal != Decimal(item["principal_cny"])
+                    or terms["interest_start"] != item["issue_date"]
+                    or terms["maturity"] != item["maturity"]):
+                _fail("PRIMARY_FINANCING_TERMS_CHANGED")
+            gross = principal * Decimal(terms["issue_price_per_100_face_cny"]) / 100
+            item["gross_issue_price_amount_cny"] = str(gross)
+        seen = set(primary_terms)
         for source in sources:
             _clock(source["available_at"], evaluated_at)
             path, _ = _bound(root, source)

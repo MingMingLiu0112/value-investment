@@ -66,6 +66,24 @@ def staged_parent_cash_request_v3(**kwargs):
                 "at most 15 digits before and two digits after the decimal point. "
                 "Example: 6 billion yuan is 6000000000.00; never multiply a value already "
                 "in yuan by one billion. Payout and reserve ratios remain decimal fractions.")
+        issued = (context.get("constraints") or {}).get("issued_financing", [])
+        if any("gross_issue_price_amount_cny" in issue for issue in issued):
+            payload["issuer_financing_cash_scenario"] = [
+                dict(code=issue["code"], issue_date=issue["issue_date"],
+                     maturity=issue["maturity"], principal_due_cny=issue["principal_cny"],
+                     gross_issue_price_amount_cny=issue.get("gross_issue_price_amount_cny"),
+                     actual_unrestricted_receipt_cny=None)
+                for issue in issued
+            ]
+            request = replace(request, transport_output_contract=request.transport_output_contract +
+                " Reconcile each issuer_financing_cash_scenario issue with the annual cash policy. "
+                "Separate observed cumulative parent borrowing from post-observation conditional "
+                "gross proceeds, fees and restrictions, and scheduled principal by maturity year. "
+                "The stated gross issue-price amount is a conditional input, not evidence of "
+                "actual unrestricted receipts. Do not treat an unknown gross amount or actual "
+                "receipt as zero. Explain the evidence and rationale for forecast proceeds or "
+                "their exclusion in each scenario. Never double count issues covered by the "
+                "observed cash period, move a maturity across years, or assume future refinancing.")
         floors = []
         for observation in context.get("historical_financing_observations", []):
             cash = observation["financing_cash_flows"]
@@ -131,7 +149,7 @@ def staged_parent_cash_request_v3(**kwargs):
                 " For the observed year interest_outside_cfo must include the disclosed paid "
                 "note coupons once. Debt repayment is principal only for those notes. "
                 "Do not add these coupons again in other cash or infer all-year interest.")
-        if floors or history:
+        if floors or history or "issuer_financing_cash_scenario" in payload:
             payload["realised_annual_financing_floors"] = floors
             return replace(request, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
                                                     separators=(",", ":")),
