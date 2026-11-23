@@ -42,7 +42,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "e5f880044ce9e1fe50d327c40d1626157019e469db546ed4d731b9d258d84128"
+REVIEWED_CAPITAL_SERVICE = "1796071a16cc85a2f33d73290668765697b5e688a77fe854d7ecba61df8b9c7a"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -151,6 +151,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "22bb04a6f97a7e38bf1c13c21339fc2639a28bc28a75fce8e03c421a38c0f608",
+            "411b7a79bf683bf741302bd50b72aed2aed9a8962a6535e504525ec5733b28ce",
             "4e9790c3e6ceaaeee9058277bf3133f346fd0c78d9eb4f9ccf3fff565b47950c",
             "98096bf08faef5c7b27967be5275edc210a0eac557a1411c6f9ff539cee0df59",
             "30442d7943b4b817f6b97b41bc968e96e41a592da6843f41083470cbbcde1714",
@@ -378,6 +380,39 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     "Each string explains that year's assumptions in at least 12 characters. "
                     "Never use objects, year keys or nested evidence_anchors in annual_notes. "
                     "Return exactly one JSON object with no trailing text or closing brace.")
+            if spec.get("replay_from_stage") == "base.operating":
+                payload = json.loads(wire.user)
+                if payload.get("scenario") == "base":
+                    source = payload["source_context"]
+                    rows = [
+                        row for row in source.get("parent_operating_cash_observations", [])
+                        if row["period_end"] == source["valuation_date"]
+                        and row["symbol"] == source["symbol"]
+                        and row["scope"] == terminal_wire.SCOPE
+                    ]
+                    if len(rows) != 1:
+                        raise ValueError("PARENT_OPERATING_RESIDUAL_SOURCE_REQUIRED")
+                    row = rows[0]
+                    with localcontext() as arithmetic:
+                        arithmetic.prec = 48
+                        residual = (Decimal(row["cfo"]) - Decimal(row["customer_cash"])
+                                    + Decimal(row["supplier_cash"]))
+                        ratio = residual / Decimal(row["revenue"])
+                    payload["operating_residual_reference"] = {
+                        "period_end": row["period_end"], "scope": row["scope"],
+                        "formula": "cfo - customer_cash + supplier_cash",
+                        "observed_residual_cny": str(residual),
+                        "observed_residual_to_revenue": str(ratio),
+                        "classification": "HISTORICAL_DIAGNOSTIC_NOT_FORECAST",
+                    }
+                    wire = replace(wire, user=json.dumps(payload, ensure_ascii=False,
+                        sort_keys=True, separators=(",", ":")),
+                        transport_output_contract=wire.transport_output_contract +
+                        " Forecast other_operating_cash as the net of staff, taxes, and other "
+                        "operating receipts and payments outside customer and supplier cash. "
+                        "Use the historical diagnostic as a scale check. Explain material "
+                        "changes in the component drivers and why they persist; do not treat "
+                        "the residual as only working capital or target a terminal value.")
             return wire
         if stage == "policy" and policy_capital.__name__ in spec["implementation_sha256"]:
             wire = policy_capital.policy_capital_request(request, spec["policy_capital_basis"])

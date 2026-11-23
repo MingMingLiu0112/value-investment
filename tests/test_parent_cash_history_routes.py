@@ -245,7 +245,7 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
         def create(self, *, spec_binding, request_key, **options):
             assert 8 <= len(request_key) <= 80
             calls.append((spec_binding, request_key, options))
-            if failure == "base_terminal" and request_key.startswith("value-fin1-"):
+            if failure == "base_terminal" and request_key.startswith(("value-fin1-", "value-fin2-")):
                 return {"status": "FAILED", "task_id": task_id,
                         "error_code": "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
                         "action": "no_order"}
@@ -281,6 +281,8 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
     if failure == "base_terminal":
         expected.append((binding, "value-fin2-" + binding["sha256"],
                          dict(seed_task_id=task_id, replay_from_stage="base.terminal")))
+        expected.append((binding, "value-fin3-" + binding["sha256"],
+                         dict(seed_task_id=task_id, replay_from_stage="base.operating")))
     assert calls == (expected + [task_id]) * 2
 
 
