@@ -97,9 +97,14 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 prior = numbered_service.read(predecessor)
                 is_earnings_rebuild = prior.get("error_code") == (
                     "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION")
+                earnings_request_key = "value-earn1-" + binding["sha256"]
+                earnings_task_id = "rt-" + sha256(
+                    ("parent-cash-task-v3:" + earnings_request_key).encode()).hexdigest()[:32]
+                is_financing_rebuild = (predecessor == earnings_task_id and prior.get("error_code") ==
+                                        "BASE_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE")
                 if (prior["status"] != "FAILED"
                         or prior.get("spec_binding") != binding
-                        or (not is_earnings_rebuild and prior.get("error_code") !=
+                        or (not is_earnings_rebuild and not is_financing_rebuild and prior.get("error_code") !=
                             "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS")
                         or "base.operating" not in prior.get("completed_stages", ())):
                     raise ValueError("PARENT_V3_CONTINUATION_NOT_AVAILABLE")
@@ -108,7 +113,8 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                         "base.policy" not in prior.get("completed_stages", ())
                         or "base.operating" not in reused or "base.policy" in reused):
                     raise ValueError("PARENT_V3_CONTINUATION_NOT_AVAILABLE")
-                key = ("value-earn1-" + binding["sha256"] if is_earnings_rebuild else
+                key = ("value-earn2-" + binding["sha256"] if is_financing_rebuild else
+                       earnings_request_key if is_earnings_rebuild else
                        "value-policy-recovery-" + sha256(predecessor.encode()).hexdigest()[:56])
                 task = numbered_service.create(spec_binding=binding, request_key=key,
                     seed_task_id=predecessor, replay_from_stage="base.policy")
@@ -435,6 +441,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                     items.append({"task_id": directory.name, "task_contract": "parent-cash-task-v3",
                         "read_only_archive": archived,
                         "reused_stages": sorted((spec.get("seed") or {}).get("responses", {})),
+                        "base_policy_wire": spec.get("base_policy_wire"),
                         "status": state["status"],
                         "stage": next((row.get("scenario") for row in reservations.values()
                                        if row.get("status") == "RESERVED"), None),

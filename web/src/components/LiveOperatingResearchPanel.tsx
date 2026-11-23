@@ -328,6 +328,9 @@ export function ParentCashTaskHistoryView({
             (item.error_code ===
               "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS" ||
               (item.error_code ===
+                "BASE_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE" &&
+                item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V1") ||
+              (item.error_code ===
                 "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION" &&
                 item.completed_stages.includes("base.policy") &&
                 item.reused_stages?.includes("base.operating") &&
