@@ -57,7 +57,7 @@ it("a failed value lane does not hide a verified empty hotspot lane", () => {
   expect(html).toContain("候选池 0 家");
   expect(html).toContain("暂无符合条件且来源可核验的研究候选");
 });
-it("places discovery before private controls and opens research before action template", () => {
+it("keeps discovery off today and opens research before action template", () => {
   const daily = readFileSync("src/pages/DailyDecisions/index.tsx", "utf8");
   expect(daily.indexOf("<DualStrategySelection")).toBeLessThan(
     daily.indexOf('<nav className="daily-navigation"'),
