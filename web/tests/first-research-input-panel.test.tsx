@@ -975,11 +975,11 @@ it("does not render an incomplete annual compilation as a successful range", () 
   expect(html).not.toContain("22.22");
 });
 
-it("keeps loading invisible and read errors scoped to this panel", () => {
+it("shows evidence loading and keeps read errors scoped to this panel", () => {
   state.value.loading = true;
   expect(
     renderToStaticMarkup(<FirstResearchInputPanel symbol="600519" />),
-  ).toBe("");
+  ).toContain('role="status">正在核验估值、季度财务及原始证据…');
   state.value = { loading: false, error: "TEST_ONLY_NETWORK", retry: vi.fn() };
   const html = renderToStaticMarkup(
     <FirstResearchInputPanel symbol="000568" />,

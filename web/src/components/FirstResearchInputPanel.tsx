@@ -1470,7 +1470,8 @@ export function FirstResearchInputPanel({ symbol }: { symbol: string }) {
     [symbol],
   );
   const result = useApi(load);
-  if (result.loading) return null;
+  if (result.loading)
+    return <p role="status">正在核验估值、季度财务及原始证据…</p>;
   if (result.error || !result.data)
     return (
       <Alert
