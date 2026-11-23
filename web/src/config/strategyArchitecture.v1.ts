@@ -54,8 +54,8 @@ export interface DeliveryReview {
   runHref: string;
 }
 export const deliveryReviewMeta = {
-  reviewedAt: "2026-11-22",
-  baseline: "ef6ec527",
+  reviewedAt: "2026-11-23",
+  baseline: "f58bf84b",
   kind: "人工交付复核，不是实时运行状态",
 } as const;
 export interface Stage {
@@ -747,7 +747,7 @@ export const catalog: Record<
           how: "区分事实与预测，推导量价成本及资金路径，保留反例。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
           done: "年度经营、现金政策和三情景分步任务已实际运行；母公司FY/H1原件可重放，股数、现金流、所选负债分项和历史借款收现/偿债现金均有原页引用。空白借款列保持未知；历史借还净额不是债务余额变化或未来续借保证。模型响应、费用和失败原因均已封存。",
-          gap: "已复用 Bear 经营和现金政策。按原件现金转换重算末年并续跑终值，最新草案稳态现金缺口约 1.81 亿元，经济校验拒绝，尚未交给 E2。",
+          gap: "已复用 Bear 经营和现金政策。按原件现金转换重算末年并续跑终值，最新草案稳态现金缺口约 1.81 亿元，经济校验拒绝，尚未交给 E2。母公司原件仅支持总资本开支及股利和利息混合项；税款已在经营现金内，其他支出尚未分清。",
           acceptance:
             "来源绑定的经营假设、三情景、反证和重开条件可被模型消费。",
           evidence: [

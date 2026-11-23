@@ -638,7 +638,7 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
         <Link to="/strategy/value">价值研究工作台</Link>
       </nav>
       {strategy === "value" && (
-        <Card title="最近交付 · 2026-11-22" size="small">
+        <Card title="最近交付 · 2026-11-23" size="small">
           <p>
             伊利 V3 已从公司页发起真实研究，刷新后能找回同一任务。旧版 000568
             回执冷重放通过。
@@ -647,6 +647,9 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
             最新续跑复用了 Bear 经营与现金政策。终值草案存在 1.81
             亿元稳态资金缺口，D2 拒绝该情景。E2、F1 自动封存和 F2
             跨日判断尚未取得本轮结果。
+          </p>
+          <p>
+            原件复核确认经营税已计入经营现金，不能再次扣除。总资本开支与混合付息行仍缺稳态拆分，现有证据不足以支持调低支出。
           </p>
           <Link to="/decisions/600887?strategy=value">打开伊利研究详情</Link>
         </Card>
