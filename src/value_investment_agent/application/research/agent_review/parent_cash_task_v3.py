@@ -24,6 +24,7 @@ from ..direct_owner_cash_staged_v2 import (
 from .. import direct_owner_cash_operating_wire_v1 as operating_wire
 from .. import direct_owner_cash_terminal_wire_v1 as terminal_wire
 from .. import direct_owner_cash_policy_capital_v1 as policy_capital
+from .. import parent_financing_schedule_v1 as financing_schedule
 from .. import direct_owner_cash_staged_v3 as staged_numbered
 from ..direct_owner_cash_staged_v3 import (
     preflight_annual_cash_upper_bound_v3, merge_staged_parent_cash_v3,
@@ -41,7 +42,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "fc3358d0e35d01f34b308400f2c52c71b8ebcc34aa8c4a88e4fbf4f08e5a9944"
+REVIEWED_CAPITAL_SERVICE = "342f4bc99a24d0586de5867942565d5f74acb8f2044cc34c2ec48cb7b2c719ff"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -109,7 +110,7 @@ def _implementation():
                     parent_direct_owner_cash_sources as unnumbered_native)
     return {module.__name__: _hash(Path(module.__file__).read_bytes())
             for module in (draft_prior, draft, facts, sources, staged, staged_numbered,
-                           request, compiler, compiler_numbered, unnumbered, unnumbered_native, operating_wire, terminal_wire, policy_capital)} | {
+                           request, compiler, compiler_numbered, unnumbered, unnumbered_native, operating_wire, terminal_wire, policy_capital, financing_schedule)} | {
         __name__: _hash(Path(__file__).read_bytes())}
 
 
@@ -150,6 +151,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "3b67006f29f92bb8715fad6be677df44193744314970f836b0aaa861b37b0955",
+            "a4e4243a479e13014ce85b72ec1073265ccca5a43bcaa020f37309517ebae830",
             "28ccdd5b30d471b1c0ae1b0ddeda0d6c6affa37d484e1d926c8a3330b2560867",
             "3eada6ab1703a400969ded6ddc6fa6f94205207c99d2db79d9e733a58b376f59",
             "fa4ce1d888b9170fdc0ac7b8936a4efb7220cb084bafe8caa87d57ade02784e5",
@@ -157,6 +160,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         }
         if reviewed and pinned.get(__name__) in previous_service:
             current[__name__] = pinned[__name__]
+        if financing_schedule.__name__ not in pinned:
+            current.pop(financing_schedule.__name__, None)
         if policy_capital.__name__ not in pinned:
             if spec.get("policy_capital_basis") is not None or not reviewed:
                 return False
@@ -369,7 +374,27 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     "Return exactly one JSON object with no trailing text or closing brace.")
             return wire
         if stage == "policy" and policy_capital.__name__ in spec["implementation_sha256"]:
-            return policy_capital.policy_capital_request(request, spec["policy_capital_basis"])
+            wire = policy_capital.policy_capital_request(request, spec["policy_capital_basis"])
+            if financing_schedule.__name__ not in spec["implementation_sha256"]:
+                return wire
+            payload = json.loads(wire.user)
+            schedule = financing_schedule.disclosed_schedule_from_context(payload["source_context"])
+            if schedule is None:
+                return wire
+            year, ceiling, floors = financing_schedule.disclosed_financing_limits(schedule)
+            payload["disclosed_financing_limits"] = {
+                "borrowing_ceiling_year": year,
+                "borrowing_ceiling_cny": str(ceiling),
+                "repayment_minimum_by_year_cny": {str(y): str(v) for y, v in floors.items()},
+                "classification": "CONDITIONAL_NOT_ACTUAL_SETTLEMENT",
+            }
+            return replace(wire, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
+                separators=(",", ":")), transport_output_contract=wire.transport_output_contract +
+                " Use the computed disclosed_financing_limits without re-summing note amounts. "
+                "The borrowing ceiling includes full gross disclosed proceeds as an upper "
+                "conditional input; it does not verify actual cash receipt. Annual repayment "
+                "minimums already include observed principal and applicable later maturities. "
+                "Do not add those amounts again or insert balancing debt.")
         if stage == "terminal" and terminal_wire.__name__ in spec["implementation_sha256"]:
             return terminal_wire.terminal_wire_request(request)
         return request
@@ -380,6 +405,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                  else parse_staged_parent_cash_response)
         parsed = parse(response, request=request, source_fingerprint=source_fingerprint)
         if stage == "policy" and policy_capital.__name__ in spec["implementation_sha256"]:
+            if financing_schedule.__name__ in spec["implementation_sha256"]:
+                schedule = financing_schedule.disclosed_schedule_from_context(
+                    json.loads(request.user)["source_context"],
+                )
+                if schedule is not None:
+                    financing_schedule.validate_disclosed_financing_policy(schedule, parsed)
             policy_capital.validate_policy_debt(spec["policy_capital_basis"], parsed)
         return parsed
 

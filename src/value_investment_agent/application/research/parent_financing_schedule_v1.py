@@ -51,3 +51,84 @@ def project_parent_financing_schedule(*, period_end, reported_ytd, issuance_even
             formal_eligibility=False,
             action="no_order",
         )
+
+
+def disclosed_financing_limits(schedule):
+    """Derive the policy bounds for disclosed issues and observed financing."""
+    observed_year = date.fromisoformat(schedule["period_end"]).year
+    reported = schedule["reported_ytd_cny"]
+    with localcontext() as context:
+        context.prec = 48
+        borrowing_limit = (
+            Decimal(reported["borrowings_received_cny"])
+            + Decimal(schedule["later_issuance_proceeds_at_issue_price_cny"])
+        )
+        repayment_floors = {
+            observed_year: Decimal(reported["debt_repayments_paid_cny"]),
+        }
+        for maturity, value in schedule["scheduled_face_principal_by_maturity_cny"].items():
+            year = date.fromisoformat(maturity).year
+            repayment_floors[year] = repayment_floors.get(year, Decimal(0)) + Decimal(value)
+
+    return observed_year, borrowing_limit, repayment_floors
+
+
+def validate_disclosed_financing_policy(schedule, policy):
+    observed_year, borrowing_limit, repayment_floors = disclosed_financing_limits(schedule)
+    years = policy["years"]
+    series = policy["series"]
+    if not repayment_floors.keys() <= set(years):
+        raise ValueError("PARENT_FINANCING_SCHEDULE_YEAR_MISSING")
+    for year, borrowed, repaid in zip(
+        years, series["new_borrowing"]["values"], series["debt_repayment"]["values"],
+        strict=True,
+    ):
+        borrowing = Decimal(borrowed)
+        repayment = Decimal(repaid)
+        if any(not value.is_finite() or value < 0 for value in (borrowing, repayment)):
+            raise ValueError("PARENT_FINANCING_SCHEDULE_INVALID_POLICY_AMOUNT")
+        if year == observed_year and borrowing > borrowing_limit:
+            raise ValueError(f"PARENT_FINANCING_ABOVE_DISCLOSED_PROCEEDS:{year}")
+        if year in repayment_floors and repayment < repayment_floors[year]:
+            raise ValueError(f"PARENT_FINANCING_BELOW_CONTRACTUAL_PRINCIPAL:{year}")
+
+def disclosed_schedule_from_context(context):
+    issues = (context.get("constraints") or {}).get("issued_financing", [])
+    observations = [
+        row["financing_cash_flows"]
+        for row in context.get("historical_financing_observations", [])
+        if row["financing_cash_flows"]["period_end"].endswith("-09-30")
+    ]
+    if len(observations) != 1 or not issues:
+        return None
+    cash = observations[0]
+    cutoff = date.fromisoformat(cash["period_end"])
+    selected = [
+        row for row in issues
+        if cutoff < date.fromisoformat(row["issue_date"]) <= date(cutoff.year, 12, 31)
+    ]
+    if not selected or any(row.get("gross_issue_price_amount_cny") is None for row in selected):
+        return None
+    fields = ("borrowings_received_cny", "debt_repayments_paid_cny")
+    flows = cash["components"]
+    if cash["period_start"] != f"{cutoff.year}-01-01" or any(
+        flows[field]["classification"] != "FACT" for field in fields
+    ):
+        return None
+    events = []
+    for row in selected:
+        principal = Decimal(row["principal_cny"])
+        gross = Decimal(row["gross_issue_price_amount_cny"])
+        if not principal.is_finite() or principal <= 0 or not gross.is_finite() or gross <= 0:
+            raise ValueError("PARENT_FINANCING_INVALID_LATER_ISSUE")
+        events.append({
+            "issue": {"code": row["code"], "interest_start": row["issue_date"],
+                      "maturity": row["maturity"], "face_value_cny": str(principal),
+                      "issue_price_per_100_face_cny": str(gross * 100 / principal)},
+            "source_binding": row.get("source_refs", []),
+        })
+    return project_parent_financing_schedule(
+        period_end=cash["period_end"],
+        reported_ytd={field: {"current": flows[field]["value_cny"]} for field in fields},
+        issuance_events=events,
+    )
