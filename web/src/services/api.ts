@@ -1958,7 +1958,8 @@ export interface ParentCashTaskHistory {
       reserved_cny: string;
       settled_cny?: string;
     }>;
-    valuation_receipt_status?: "SEALED_REPLAY_REQUIRED" | "NOT_SEALED" | "BLOCKED";
+    valuation_receipt_status?:
+      "SEALED_REPLAY_REQUIRED" | "NOT_SEALED" | "BLOCKED";
     valuation_blockage?: { reason_code: string } | null;
     e2_consumption: "UNVERIFIED";
     formal: false;
