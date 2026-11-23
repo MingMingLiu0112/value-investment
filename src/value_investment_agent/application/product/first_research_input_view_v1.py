@@ -160,6 +160,13 @@ def read_first_research_input(*,root,symbol,now:datetime):
         view["pending_candidate_alignment"] = _load_bound_alignment(
             root=root, analysis=analysis, now=now, input_schema="first-research-input-alignment-input-v1")
         alignment = view["pending_candidate_alignment"]
+        if financial_update is None:
+            from ..research.first_research_financial_update_v1 import compare_aligned_quarter_update
+
+            view["financial_update_observation"] = compare_aligned_quarter_update(
+                symbol=symbol, financial_basis=native["financial_basis"],
+                native_facts=native, alignment=alignment)
+
         for check in alignment["checks"]:
             reconciliation = check["details"].get("reconciliation") or {}
             payable = reconciliation.get("opening_parent_dividend_payable")

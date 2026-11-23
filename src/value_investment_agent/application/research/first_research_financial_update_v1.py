@@ -97,3 +97,46 @@ def compare_first_input_financial_update(*, symbol: str, financial_basis: str,
                 "fact_classification": "REPORTED_YTD_AND_DERIVED_QUARTER_NOT_FORECAST"}
     except (ValueError, KeyError, TypeError, InvalidOperation) as error:
         return {**base, "reason": str(error)}
+
+
+
+def compare_aligned_quarter_update(*, symbol: str, financial_basis: str,
+                                   native_facts: dict, alignment: dict) -> dict | None:
+    """Consume only the quarterly facts already reopened by the same candidate's F2."""
+    check, = (row for row in alignment["checks"] if row["id"] == "financial_updates")
+    candidates = {}
+    for event in check["details"].get("financial_update_research", ()):
+        if event.get("status") != "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW":
+            continue
+        for fact in event["facts"]:
+            update = fact["terms"]["financial_update"]
+            if (update.get("status") != "VERIFIED"
+                    or update.get("period_basis") != "YEAR_TO_DATE_9M_NOT_SINGLE_QUARTER"
+                    or update.get("action") != "no_order"
+                    or update["period_start"] != financial_basis[:4] + "-01-01"
+                    or update["period_end"] != financial_basis[:4] + "-09-30"):
+                continue
+            revenue = update["fields"]["revenue_cny"]
+            profit = update["fields"]["parent_profit_cny"]
+            if (revenue["scope"], profit["scope"], revenue["unit"], profit["unit"]) != (
+                    "consolidated", "consolidated_parent", "CNY", "CNY"):
+                continue
+            binding = fact["binding"]
+            candidates[binding["sha256"]] = {
+                "status": "VERIFIED_OBSERVATION_ONLY", "symbol": symbol,
+                "source_bindings": {"original": {**binding, "source_url": fact["source_url"],
+                                                    "available_at": fact["source_available_at"]}},
+                "ytd_9m_observation": {
+                    "symbol": symbol, "status": "VERIFIED_REPORTED_Q3_UNAUDITED_OBSERVATION",
+                    "report_period": update["period_end"], "period_basis": "YTD_9M",
+                    "unit": "yuan", "currency": "CNY",
+                    "facts": {"revenue_ytd_cny": revenue["value"],
+                              "attributable_profit_ytd_cny": profit["value"]},
+                },
+            }
+    if len(candidates) != 1:
+        return None
+    return compare_first_input_financial_update(
+        symbol=symbol, financial_basis=financial_basis, native_facts=native_facts,
+        q3_read_model=next(iter(candidates.values())),
+    )
