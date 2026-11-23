@@ -154,6 +154,29 @@ def project_parent_annual_operating_cash(*, root, spec, now, historical, forecas
     }
 
 
+def quarterly_parent_annual_investment_receipts_floor(facts):
+    """Project gross cash already received, without assuming recurrence."""
+    item = facts["fields"]["investment_income_cash_cny"]
+    amount = Decimal(item["current"])
+    if not amount.is_finite() or amount < 0:
+        raise ValueError("PARENT_QUARTER_INVESTMENT_RECEIPTS_NOT_GROSS_CASH")
+    return {
+        "symbol": facts["symbol"],
+        "year": int(facts["period_end"][:4]),
+        "period_start": facts["period_start"],
+        "observed_through": facts["period_end"],
+        "minimum_cny": str(amount),
+        "scope": item["scope"],
+        "currency": item["currency"],
+        "source_ref": {
+            **facts["source"],
+            "available_at": facts["available_at"],
+            "physical_page": item["physical_page"],
+            "excerpt": item["excerpt"],
+        },
+    }
+
+
 def quarterly_parent_annual_capex_floor(facts):
     """Project a realised gross capex floor without inventing its split."""
 

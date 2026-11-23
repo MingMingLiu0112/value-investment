@@ -117,6 +117,13 @@ def staged_parent_cash_request_v3(**kwargs):
                 " The sum of maintenance_capex and growth_capex for the supplied year must "
                 "cover realised_annual_capex_floor.minimum_cny. The source reports gross capex "
                 "and does not establish the maintenance/growth split. Do not add gross capex twice.")
+        receipts_floor = context.get("annual_investment_receipts_floor")
+        if receipts_floor and receipts_floor["year"] in payload["required_years"]:
+            payload["realised_annual_investment_receipts_floor"] = receipts_floor
+            request = replace(request, transport_output_contract=request.transport_output_contract +
+                " First-year investment_cash_received must include the disclosed gross receipts "
+                "already received in realised_annual_investment_receipts_floor, once only. "
+                "Do not assume future receipts, recurrence, principal recycling or distributability.")
         if floors or history:
             payload["realised_annual_financing_floors"] = floors
             return replace(request, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
@@ -391,6 +398,13 @@ def preflight_annual_cash_upper_bound_v3(*, root: Path, spec_binding: dict,
                     for field in ("maintenance_capex", "growth_capex"))
         if capex < Decimal(capex_floor["minimum_cny"]):
             raise ValueError(f"PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH:{year}")
+    receipts_floor = context.get("annual_investment_receipts_floor")
+    if receipts_floor and receipts_floor["year"] in policy["years"]:
+        year = receipts_floor["year"]
+        index = policy["years"].index(year)
+        if Decimal(policy["series"]["investment_cash_received"]["values"][index]) < Decimal(
+                receipts_floor["minimum_cny"]):
+            raise ValueError(f"PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_BELOW_REALISED_CASH:{year}")
     mandatory = ("maintenance_capex", "growth_capex", "commitments_outside_capex",
                  "debt_repayment", "interest_outside_cfo", "other_mandatory_cash")
     with localcontext() as arithmetic:

@@ -318,5 +318,14 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
                 or "quarterly_financing_source" not in spec):
             raise ValueError("PARENT_AGENT_ANNUAL_OPERATING_CASH_METHOD_UNSUPPORTED")
         projected["first_year_operating_cash_method"] = spec["first_year_operating_cash_method"]
+    if "first_year_cash_receipts_evidence" in spec:
+        if (spec["first_year_cash_receipts_evidence"] != "PARENT_QUARTER_INVESTMENT_RECEIPTS_V1"
+                or "quarterly_financing_source" not in spec):
+            raise ValueError("PARENT_AGENT_ANNUAL_INVESTMENT_RECEIPTS_EVIDENCE_UNSUPPORTED")
+        from .agent_review.quarterly_parent_cash_source import (
+            quarterly_parent_annual_investment_receipts_floor,
+        )
+
+        projected["annual_investment_receipts_floor"] = quarterly_parent_annual_investment_receipts_floor(quarter)
     projected["input_fingerprint"] = hashlib.sha256(_canonical(projected)).hexdigest()
     return projected
