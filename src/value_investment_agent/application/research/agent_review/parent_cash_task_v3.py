@@ -43,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "fddeac621cc70fcd4642530e96e822aa77ca16a3091f92e52b51dd07d481ad24"
+REVIEWED_CAPITAL_SERVICE = "5530bac6ef6bb19a08d2555ea339dbe7221038318bce4dd99647e94d9f02674e"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -152,6 +152,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "7e7adc609379ce2a67f272130906ae354e9b62557437df84d93af0247dced12e",
+            "8c74402d9c0a235d9e946a54e9f4405c4146059d26fa2324841cdfac80bc4d20",
             "3774af9243786fc9d53b055deaa3cd2c2af6c9a31f7b4accba4a096827db9bed",
             "126bab52f86ebec41d690e1411a4dd7381d6e78522a597d934f7e7deb4a31984",
             "dbf7b1d76e3aa0a3c92bbbfee16df2a07a9bfee6ee12d8d165b479384f10f427",
@@ -430,7 +432,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             schedule = financing_schedule.disclosed_schedule_from_context(payload["source_context"])
             if schedule is None:
                 return wire
-            if (spec.get("base_policy_wire") == "ANNUAL_EARNINGS_BRIDGE_V1"
+            if (spec.get("base_policy_wire") in {"ANNUAL_EARNINGS_BRIDGE_V1", "ANNUAL_EARNINGS_BRIDGE_V2"}
                     and payload["scenario"] == "base"):
                 source = payload["source_context"]
                 history = [row for row in source["parent_operating_cash_observations"]
@@ -464,6 +466,30 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     "plan does not imply zero maintenance. Do not place observed gross capex into "
                     "one component without a defensible conditional split or use it as terminal proof.")
             year, ceiling, floors = financing_schedule.disclosed_financing_limits(schedule)
+            if (spec.get("base_policy_wire") == "ANNUAL_EARNINGS_BRIDGE_V2"
+                    and payload["scenario"] == "base"):
+                with localcontext() as arithmetic:
+                    arithmetic.prec = 48
+                    opening = Decimal(spec["policy_capital_basis"]["amount_cny"])
+                    observed = Decimal(schedule["reported_ytd_cny"]["borrowings_received_cny"])
+                    repayment = floors[year]
+                    payload["financing_principal_diagnostic"] = {
+                        "classification": "FORECAST_ARITHMETIC_NOT_FINANCING_FACT",
+                        "observed_through": schedule["period_end"],
+                        "observed_borrowing_cny": str(observed),
+                        "later_disclosed_gross_ceiling_increment_cny": str(ceiling - observed),
+                        "closing_principal_if_only_observed_borrowing_cny": str(opening + observed - repayment),
+                        "minimum_borrowing_for_nonnegative_principal_cny": str(
+                            max(observed, repayment - opening)),
+                        "minimum_borrowing_if_no_new_debt_through_next_year_cny": str(
+                            max(observed, repayment + floors.get(year + 1, Decimal(0)) - opening)),
+                        "cash_receipt_verified": False,
+                    }
+                wire = replace(wire, transport_output_contract=wire.transport_output_contract +
+                    " The observed borrowing is only through observed_through and excludes "
+                    "later announced issues. The minimum is a diagnostic, not a funding source. "
+                    "Use a separately justified conditional financing assumption or acknowledge "
+                    "that the policy cannot be supported. Do not manufacture borrowing.")
             payload["disclosed_financing_limits"] = {
                 "borrowing_ceiling_year": year,
                 "borrowing_ceiling_cny": str(ceiling),
@@ -833,10 +859,13 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             if (old_spec.get("replay_from_stage") == "base.operating"
                     or old_spec.get("base_operating_wire") == "SOURCE_RESIDUAL_V1"):
                 trial_spec["base_operating_wire"] = "SOURCE_RESIDUAL_V1"
-            if (old_spec.get("base_policy_wire") == "ANNUAL_EARNINGS_BRIDGE_V1"
+            if replay_from_stage == "base.policy" and old_state.get("error_code") == (
+                    "BASE_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE"):
+                trial_spec["base_policy_wire"] = "ANNUAL_EARNINGS_BRIDGE_V2"
+            elif (old_spec.get("base_policy_wire") in {"ANNUAL_EARNINGS_BRIDGE_V1", "ANNUAL_EARNINGS_BRIDGE_V2"}
                     or (replay_from_stage == "base.policy" and old_state.get("error_code") ==
                         "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION")):
-                trial_spec["base_policy_wire"] = "ANNUAL_EARNINGS_BRIDGE_V1"
+                trial_spec["base_policy_wire"] = old_spec.get("base_policy_wire", "ANNUAL_EARNINGS_BRIDGE_V1")
             for stage_id in STAGE_ORDER:
                 if replay_from_stage is not None:
                     replay_scenario, replay_stage = replay_from_stage.split(".")
