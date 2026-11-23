@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import replace
 from datetime import datetime
 from decimal import Decimal
 import json
@@ -139,6 +140,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             return False
         if pinned == current:
             return True
+        if pinned.get(__name__) in {
+            "65f8ec5352838d02a88b6dfaaa90b3cc3ad3ffa39aa137533d8aa8231ec69a8f",
+            "16b636cc55a9c8641664a2e97bda779c3a1e640d2ffd9679ce5e90a0b98bb482",
+            "272e9c45a4940aee0559ba4e6a75a086842b6580ee373d82582b273fb424fb2b",
+        } and pinned == current | {__name__: pinned[__name__]}:
+            return True
         source = self._bound(spec["spec_binding"]) if __name__ in pinned else {}
         if "annual_capex_evidence" in source:
             return False
@@ -249,7 +256,15 @@ class ParentCashTaskServiceV3(ResearchTaskService):
     @staticmethod
     def _wire(spec, stage, request):
         if stage == "operating" and operating_wire.__name__ in spec["implementation_sha256"]:
-            return operating_wire.operating_wire_request(request)
+            wire = operating_wire.operating_wire_request(request)
+            if spec.get("operating_series_wire") == "INPUTS_ONLY_V1":
+                return replace(wire, system=wire.system.replace(
+                    "Keep operating_cash distinct from the required other_operating_cash component.",
+                    "The application computes total operating cash. Do not emit operating_cash or CFO.",
+                ), transport_output_contract=wire.transport_output_contract +
+                    " Output only revenue, cost and other_operating_cash inside series; "
+                    "never emit operating_cash, even as an explanatory series.")
+            return wire
         if stage == "terminal" and terminal_wire.__name__ in spec["implementation_sha256"]:
             return terminal_wire.terminal_wire_request(request)
         return request
@@ -549,6 +564,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                               config=cfg, created_at=seed_created_at,
                               shared_budget_root=str(self.shared_budget_root),
                               implementation_sha256=_implementation())
+            if replay_from_stage == "bear.operating":
+                trial_spec["operating_series_wire"] = "INPUTS_ONLY_V1"
             for stage_id in STAGE_ORDER:
                 if replay_from_stage is not None:
                     replay_scenario, replay_stage = replay_from_stage.split(".")
@@ -589,6 +606,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             shared_budget_root=str(self.shared_budget_root),
             implementation_sha256=_implementation(),
             created_at=seed_created_at, action="no_order")
+        if seed is not None and replay_from_stage == "bear.operating":
+            spec["operating_series_wire"] = "INPUTS_ONLY_V1"
         if seed is not None:
             spec.update(forked_at=now.isoformat(), seed=seed,
                         replay_from_stage=replay_from_stage,

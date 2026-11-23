@@ -214,7 +214,7 @@ def test_h1_sensitivity_requires_local_authorization(tmp_path, monkeypatch):
 
 
 
-@pytest.mark.parametrize("failure", [None, "invalid_json", "unsettled"])
+@pytest.mark.parametrize("failure", [None, "invalid_json", "unsettled", "operating_series"])
 def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkeypatch, failure):
     from hashlib import sha256
 
@@ -232,7 +232,9 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
                 (root / former_id / "input.json").touch()
 
         def read(self, _):
-            return dict(status="FAILED", error_code="BEAR_POLICY_PARENT_V3_INVALID_JSON",
+            return dict(status="FAILED", error_code=(
+                "BEAR_OPERATING_PARENT_V3_YEARS_OR_SERIES_INVALID" if failure == "operating_series"
+                else "BEAR_POLICY_PARENT_V3_INVALID_JSON"),
                         completed_stages=["bear.operating"],
                         reservations={"policy": {"status": "RESERVED"}} if failure == "unsettled" else {})
 
@@ -260,10 +262,11 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
         assert response.status_code == 202 and response.json()["task_id"] == task_id
     key = "value-web-" + binding["sha256"]
     options = {}
-    if failure == "invalid_json":
+    if failure in {"invalid_json", "operating_series"}:
         former_id = "rt-" + sha256(("parent-cash-task-v3:" + key).encode()).hexdigest()[:32]
-        key = "value-policy1-" + binding["sha256"]
-        options = dict(seed_task_id=former_id, replay_from_stage="bear.policy")
+        key = ("value-policy1-" if failure == "invalid_json" else "value-operating1-") + binding["sha256"]
+        options = dict(seed_task_id=former_id,
+                       replay_from_stage="bear.policy" if failure == "invalid_json" else "bear.operating")
     assert calls == [(binding, key, options), task_id] * 2
 
 

@@ -109,6 +109,12 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                     # One deterministic retry is tied to the original task.
                     request_key = "value-policy1-" + binding["sha256"]
                     options.update(seed_task_id=former_id, replay_from_stage="bear.policy")
+                elif (former.get("status") == "FAILED" and
+                      former.get("error_code") == "BEAR_OPERATING_PARENT_V3_YEARS_OR_SERIES_INVALID" and
+                      not any(row["status"] == "RESERVED"
+                              for row in former.get("reservations", {}).values())):
+                    request_key = "value-operating1-" + binding["sha256"]
+                    options.update(seed_task_id=former_id, replay_from_stage="bear.operating")
             task = numbered_service.create(
                 spec_binding=binding, request_key=request_key, **options)
             if task["status"] in {"QUEUED", "SUCCEEDED"}:
