@@ -43,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "ece4f01d9c6f6afc185eca473abe65556c7a4e01e3c0afb4d8c5004fa70893f3"
+REVIEWED_CAPITAL_SERVICE = "d79f944499cbde79bec9a773700e16e27ded6e523ab88abc2af3e783964f70df"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -152,6 +152,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "d7c211740c28a813998434fb64829693a265da6016a5c6da7d2655b5f3ba635f",
+            "e2465dbb3234967208bad139ebafe6b514e5eacfcde51179d0435e20f623c9f5",
             "001fe55b377083de2e577a4bef570fba9eb2f4ce3dced927128e13d52dbe6673",
             "0a941f5287c6d786a1fa36149e09418b4cf4ef5a063190fc011c0e34290f2625",
             "788c0f698b6ac66aed9e3f6689e2009652f71ce26ddb35dc60b3fb643c697301",
@@ -1226,6 +1228,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                     r"(?:debt_repayment|new_borrowing))", detail)
                                 else detail if isinstance(error, ValueError)
                                 and (re.fullmatch(r"PARENT_V3_[A-Z0-9_]{1,90}", detail)
+                                     or re.fullmatch(
+                                         r"PARENT_FINANCING_(?:ABOVE_DISCLOSED_PROCEEDS|BELOW_CONTRACTUAL_PRINCIPAL):20[0-9]{2}",
+                                         detail)
                                      or (re.fullmatch(r"PARENT_V3_POLICY_CNY_WIRE_INVALID:20[0-9]{2}:[a-z_]+", detail)
                                          and detail.rsplit(":", 1)[-1] in POLICY))
                                 else "PARENT_DRAFT_REJECTED_OR_UNPUBLISHED")
