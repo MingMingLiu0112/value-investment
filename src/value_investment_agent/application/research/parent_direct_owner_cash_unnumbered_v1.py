@@ -1,6 +1,7 @@
 """Replay official unnumbered parent statements without changing numbered receipts."""
 from datetime import datetime
 from decimal import Decimal
+import json
 import re
 from pathlib import Path
 from functools import partial
@@ -102,6 +103,57 @@ def read_unnumbered_parent_cash(*, root, symbol, issuer_name, sources, evaluated
         root=root, symbol=symbol, issuer_name=issuer_name, sources=originals,
         evaluated_at=evaluated_at, constraint_binding=constraint_binding, fund_selection=fund_selection,
     )
+    if constraint_binding is not None:
+        _, raw = parent._bound(root, constraint_binding)
+        packet = json.loads(raw, object_pairs_hook=parent._unique)
+        financing = result["constraints"]["issued_financing"]
+        if "supplemental_financing_sources_v1" in packet:
+            from ...infrastructure.filings.operating_event_terms import parse_operating_event_terms
+
+            sources = packet["supplemental_financing_sources_v1"]
+            if not isinstance(sources, list) or not sources:
+                raise ValueError("SUPPLEMENTAL_FINANCING_SOURCES_INVALID")
+            primary_path, _ = parent._bound(root, packet["financing_source"])
+            primary = parse_operating_event_terms(extract_pages(primary_path), symbol=symbol)
+            if (primary["event_type"] != "REPORTED_ISSUER_FINANCING_ISSUANCE"
+                    or primary["published_date"] > packet["financing_source"]["available_at"][:10]):
+                raise ValueError("PRIMARY_FINANCING_DISCLOSURE_INVALID")
+            primary_terms = {item["code"]: item for item in primary["financing_issues"]}
+            if primary_terms.keys() != {item["code"] for item in financing}:
+                raise ValueError("PRIMARY_FINANCING_CODES_CHANGED")
+            for item in financing:
+                terms = primary_terms[item["code"]]
+                principal = Decimal(terms["face_value_cny"])
+                if (principal != Decimal(item["principal_cny"])
+                        or terms["interest_start"] != item["issue_date"]
+                        or terms["maturity"] != item["maturity"]):
+                    raise ValueError("PRIMARY_FINANCING_TERMS_CHANGED")
+                gross = principal * Decimal(terms["issue_price_per_100_face_cny"]) / 100
+                item["gross_issue_price_amount_cny"] = str(gross)
+            seen = set(primary_terms)
+            for source in sources:
+                parent._clock(source["available_at"], evaluated_at)
+                path, _ = parent._bound(root, source)
+                parsed = parse_operating_event_terms(extract_pages(path), symbol=symbol)
+                parent._bound(root, source)
+                if (parsed["event_type"] != "REPORTED_ISSUER_FINANCING_ISSUANCE"
+                        or parent._compact(parsed["issuer_name"]) != parent._compact(issuer_name)
+                        or parsed["published_date"] > source["available_at"][:10]):
+                    raise ValueError("SUPPLEMENTAL_FINANCING_DISCLOSURE_INVALID")
+                for item in parsed["financing_issues"]:
+                    code = item["code"]
+                    if code in seen:
+                        raise ValueError("SUPPLEMENTAL_FINANCING_DUPLICATE_CODE")
+                    seen.add(code)
+                    principal = Decimal(item["face_value_cny"])
+                    gross = principal * Decimal(item["issue_price_per_100_face_cny"]) / 100
+                    financing.append(dict(
+                        code=code, issue_date=item["interest_start"], maturity=item["maturity"],
+                        principal_cny=str(principal), gross_issue_price_amount_cny=str(gross),
+                        classification="FACT", scope="ISSUER_FINANCING_DISCLOSURE", currency="CNY",
+                        source_refs=dict(source), actual_settlement_verified=False,
+                        unrestricted_cash_receipt_verified=False, refinancing_verified=False,
+                        outstanding_at_evaluation_cny=None))
     for statement in result["statements"]:
         if not all(statement["checks"].values()):
             raise ValueError("UNNUMBERED_PARENT_STATEMENT_NOT_RECONCILED")

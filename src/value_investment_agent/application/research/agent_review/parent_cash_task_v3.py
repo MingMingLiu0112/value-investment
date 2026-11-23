@@ -138,15 +138,15 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         pinned = spec.get("implementation_sha256")
         if not isinstance(current, dict) or not isinstance(pinned, dict):
             return False
-        source_module = "value_investment_agent.application.research.parent_direct_owner_cash_sources"
+        source_module = "value_investment_agent.application.research.parent_direct_owner_cash_unnumbered_v1"
         legacy_source_hashes = {
-            "96af2bb3d8b0425c0a49ec136d7b72aca5bae7788d4ff06e36bc90a354011ded",
-            "155ea93c650859eac70286977c3cca995efb57fd91d1dd3f1b43c3635549d1d7",
+            "28eb119c1fa0f9f59a559ecf688f71c94701ee23cd5293c4c3c9f795151edfba",
+            "56f60cbf9cc00fc84d2fe8687c2dd5dd213186b15df17ded77d7d311202ff160",
         }
         if pinned.get(source_module) in legacy_source_hashes and source_module in current:
             source_file = Path(sys.modules[source_module].__file__)
             revision = _hash(source_file.read_bytes().replace(b"\r\n", b"\n"))
-            if revision == "3f1529cc0e5f62f6eb4b41cbe7736ac6c104b7404c40b586fb39fa00ad0c7372":
+            if revision == "4cdc7a127c81e9392851b98c01f9b3595b0433cd2b919cf1425ccc03dfad4c99":
                 source = self._bound(spec["spec_binding"])
                 constraint = source.get("constraint_binding")
                 if not constraint or "supplemental_financing_sources_v1" not in self._bound(constraint):
