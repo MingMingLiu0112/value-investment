@@ -1947,6 +1947,7 @@ export interface ParentCashTaskHistory {
     read_only_archive?: boolean;
     reused_stages?: string[];
     base_policy_wire?: string | null;
+    base_operating_wire?: string | null;
     candidate_status?: "COMPILED_CONDITIONAL_NOT_MAIN" | "NOT_COMPILED";
     status: string;
     stage: string | null;

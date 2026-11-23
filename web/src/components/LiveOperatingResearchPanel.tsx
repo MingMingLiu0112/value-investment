@@ -324,6 +324,7 @@ export function ParentCashTaskHistoryView({
           实际使用：未核实
           {onContinue &&
             !item.read_only_archive &&
+            item.base_operating_wire !== "MATCHED_QUARTER_V2" &&
             item.status === "FAILED" &&
             (item.error_code ===
               "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS" ||
@@ -337,11 +338,19 @@ export function ParentCashTaskHistoryView({
                 !item.reused_stages.includes("base.policy"))) &&
             item.completed_stages.includes("base.operating") && (
               <Popconfirm
-                title="从 Base 现金政策继续？"
+                title={
+                  item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V2"
+                    ? "从 Base 经营开始重建？"
+                    : "从 Base 现金政策继续？"
+                }
                 description="将复用已核验阶段并保留原调用的未结算预留。本次可能产生新费用，仍计入每日总预算。"
                 onConfirm={() => onContinue(item.task_id)}
               >
-                <Button disabled={busy}>从 Base 现金政策续跑</Button>
+                <Button disabled={busy}>
+                  {item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V2"
+                    ? "从 Base 经营重建"
+                    : "从 Base 现金政策续跑"}
+                </Button>
               </Popconfirm>
             )}
           {item.status === "SUCCEEDED" &&

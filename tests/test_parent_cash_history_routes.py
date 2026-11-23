@@ -325,6 +325,16 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
         assert calls == [(binding, "value-earn2-" + binding["sha256"],
                           dict(seed_task_id=predecessor, replay_from_stage="base.policy")), task_id] * 2
 
+        calls.clear()
+        terminal["error_code"] = "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"
+        second_key = "value-earn2-" + binding["sha256"]
+        predecessor = "rt-" + sha256(("parent-cash-task-v3:" + second_key).encode()).hexdigest()[:32]
+        continuation = dict(body, continue_from_task_id=predecessor)
+        for _ in range(2):
+            assert client.post(path, json=continuation).status_code == 202
+        assert calls == [(binding, "value-cash-rebuild-" + binding["sha256"][:60],
+                          dict(seed_task_id=predecessor, replay_from_stage="base.operating")), task_id] * 2
+
 
 def test_current_parent_cash_spec_keeps_historical_case_binding(tmp_path):
     from types import SimpleNamespace
