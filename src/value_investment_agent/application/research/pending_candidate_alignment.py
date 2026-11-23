@@ -690,7 +690,8 @@ def _market_value_share_corroboration(binding, *, symbol, comparison_date, now, 
                 exact_registry_count=False, continuity_verified=False, action="no_order")
 
 
-def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), *, closing_export=None):
+def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), *,
+               closing_export=None, verified_pdf_pages=None):
     """Replay source-anchored public research arithmetic, never approve materiality.
 
     Unknown opening pending state/closing shares remain explicit gaps. Every
@@ -713,7 +714,8 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
             or end is None or _day(ledger["comparison_date"]) != end or end < start
             or ledger["currency"] != "CNY" or ledger["share_basis"] != "ordinary_share_unadjusted"):
         raise ValueError("RECONCILIATION_EXACT_BASIS_MISMATCH")
-    cache, evidence = {}, []
+    cache = {} if verified_pdf_pages is None else verified_pdf_pages
+    evidence = []
     native_sources = {}
     for source in analysis.get("source_catalog", []):
         if (source.get("kind") == "official_issuer_filing"
@@ -2312,10 +2314,12 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
         source_windows, _ = _event_windows(root, analysis,
             config.get("source_observation_bindings", []), now, read)
         reconciliation, reconciliation_error = None, None
+        reconciliation_pages = {}
         if config.get("reconciliation_binding") is not None:
             try:
                 reconciliation = _reconcile(root, analysis, config["reconciliation_binding"],
-                    quote.quote_date, windows, now, read, source_windows, closing_export=closing_export)
+                    quote.quote_date, windows, now, read, source_windows, closing_export=closing_export,
+                    verified_pdf_pages=reconciliation_pages)
             except (OSError, ValueError, TypeError, KeyError, AttributeError, ArithmeticError) as error:
                 reconciliation_error = "RECONCILIATION_REPLAY_FAILED: " + str(error)
         materiality, materiality_route = None, None
@@ -2463,7 +2467,8 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
             if again != windows:
                 raise ValueError("EVENTS_CHANGED_DURING_ALIGNMENT")
         if reconciliation is not None:
-            again = _reconcile(root, analysis, config["reconciliation_binding"], quote.quote_date, windows, now, read, source_windows, closing_export=closing_export)
+            again = _reconcile(root, analysis, config["reconciliation_binding"], quote.quote_date, windows, now, read, source_windows, closing_export=closing_export,
+                    verified_pdf_pages=reconciliation_pages)
             if again != reconciliation:
                 raise ValueError("RECONCILIATION_CHANGED_DURING_ALIGNMENT")
         if source_windows:
