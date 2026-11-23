@@ -4,7 +4,7 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, localcontext
 import json
 import sys
 import os
@@ -42,7 +42,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "4e4da8ff976bd51ac9a378faa3b7661b93941b50c3f42dc8efcb976b1b149704"
+REVIEWED_CAPITAL_SERVICE = "e5f880044ce9e1fe50d327c40d1626157019e469db546ed4d731b9d258d84128"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -151,6 +151,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "4e9790c3e6ceaaeee9058277bf3133f346fd0c78d9eb4f9ccf3fff565b47950c",
+            "98096bf08faef5c7b27967be5275edc210a0eac557a1411c6f9ff539cee0df59",
             "30442d7943b4b817f6b97b41bc968e96e41a592da6843f41083470cbbcde1714",
             "f86d050459aa38d62a1c6aff927855c07fea9826720047e0827fc8e68b3b8dcf",
             "40a3d19ae65d2d41e1c40ff642ba5e402e00de70e26f5f32f39707f5a6979241",
@@ -414,6 +416,27 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 wire = terminal_wire.terminal_wire_request(replace(request, user=json.dumps(payload)))
                 result = json.loads(wire.user)
                 result["source_context"] = source
+                reference = result.get("terminal_transition_reference")
+                if (spec.get("replay_from_stage") == "base.terminal" and reference is not None
+                        and payload.get("scenario") == "base"):
+                    policy = reference["policy_cash_inputs_cny"]
+                    fields = ("maintenance_capex", "growth_capex", "interest_outside_cfo",
+                              "other_mandatory_cash", "commitments_outside_capex", "debt_repayment")
+                    with localcontext() as arithmetic:
+                        arithmetic.prec = 48
+                        operating = Decimal(reference["operating_cash_cny"])
+                        receipts = Decimal(policy["investment_cash_received"])
+                        net = operating + receipts + Decimal(policy["new_borrowing"]) - sum(
+                            Decimal(policy[field]) for field in fields
+                        )
+                        reference["annual_net_cash_cny"] = str(net)
+                        reference["annual_cash_minus_profit_cny"] = str(net - Decimal(policy["parent_profit"]))
+                    wire = replace(wire, transport_output_contract=wire.transport_output_contract +
+                        " The computed bridge is the last annual forecast diagnostic only. "
+                        "Year-to-date investment cash and capex floors do not establish terminal "
+                        "recurrence. Explain supported changes in collection, payments, investment "
+                        "remittances and reinvestment separately. If evidence cannot reconcile "
+                        "stationary cash and profit, do not invent balancing cash or expenses.")
                 return replace(wire, user=json.dumps(result, ensure_ascii=False,
                     sort_keys=True, separators=(",", ":")))
             return terminal_wire.terminal_wire_request(request)
@@ -725,7 +748,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             trial_spec = dict(spec_binding=spec_binding, source_fingerprint=context["input_fingerprint"],
                               config=cfg, created_at=seed_created_at,
                               shared_budget_root=str(self.shared_budget_root),
-                              implementation_sha256=_implementation(), policy_capital_basis=capital_basis)
+                              implementation_sha256=_implementation(), policy_capital_basis=capital_basis,
+                              replay_from_stage=replay_from_stage)
             if replay_from_stage == "bear.operating":
                 trial_spec["operating_series_wire"] = "INPUTS_ONLY_V2"
             elif "operating_series_wire" in old_spec:

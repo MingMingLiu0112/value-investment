@@ -132,7 +132,15 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                     options.update(seed_task_id=former_id, replay_from_stage="bear.operating")
             task = numbered_service.create(
                 spec_binding=binding, request_key=request_key, **options)
-            if (request_key.startswith("value-fin1-") and task["status"] == "RUNNING"):
+            if (request_key.startswith("value-fin1-") and task["status"] == "FAILED"
+                    and task.get("error_code") ==
+                    "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"):
+                request_key = "value-fin2-" + binding["sha256"]
+                task = numbered_service.create(
+                    spec_binding=binding, request_key=request_key,
+                    seed_task_id=task["task_id"], replay_from_stage="base.terminal",
+                )
+            if (request_key.startswith(("value-fin1-", "value-fin2-")) and task["status"] == "RUNNING"):
                 try:
                     task = numbered_service.resume_if_interrupted(task["task_id"])
                 except LockTimeout:
