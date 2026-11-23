@@ -309,81 +309,88 @@ export function ParentCashTaskHistoryView({
       </p>
       {error && <p>任务历史暂不可读取。</p>}
       {history?.items.length === 0 && <p>暂无相关记录。</p>}
-      {history?.items.map((item) => (
-        <div key={item.task_id}>
-          <strong>{item.task_id}</strong> · {item.task_contract || "历史任务"} ·{" "}
-          {item.status}
-          {item.candidate_status === "COMPILED_CONDITIONAL_NOT_MAIN" &&
-            " · 条件现金候选已编译，主估值未采用"}{" "}
-          · 当前阶段：
-          {item.stage || "未记录"}· 来源年份：
-          {item.source_years.join("、") || "未记录"}· 错误：
-          {item.error_code || "无"}· 完成阶段：
-          {item.completed_stages.join("、") || "无"}· 预留 ¥
-          {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
-          实际使用：未核实
-          {onContinue &&
-            !item.read_only_archive &&
-            item.base_operating_wire !== "MATCHED_QUARTER_V2" &&
-            item.status === "FAILED" &&
-            (item.error_code ===
-              "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS" ||
-              (item.error_code ===
-                "BASE_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE" &&
-                item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V1") ||
-              (item.error_code ===
-                "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION" &&
-                item.completed_stages.includes("base.policy") &&
-                item.reused_stages?.includes("base.operating") &&
-                !item.reused_stages.includes("base.policy"))) &&
-            item.completed_stages.includes("base.operating") && (
-              <Popconfirm
-                title={
-                  item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V2"
-                    ? "从 Base 经营开始重建？"
-                    : "从 Base 现金政策继续？"
-                }
-                description="将复用已核验阶段并保留原调用的未结算预留。本次可能产生新费用，仍计入每日总预算。"
-                onConfirm={() => onContinue(item.task_id)}
-              >
-                <Button disabled={busy}>
-                  {item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V2"
-                    ? "从 Base 经营重建"
-                    : "从 Base 现金政策续跑"}
-                </Button>
-              </Popconfirm>
-            )}
-          {item.status === "SUCCEEDED" &&
-            item.valuation_receipt_status === "BLOCKED" && (
-              <p>
-                估值封存受阻：
-                {item.valuation_blockage?.reason_code || "未记录原因"}
-              </p>
-            )}
-          {item.status === "SUCCEEDED" &&
-            item.valuation_receipt_status === "NOT_SEALED" && (
-              <p>研究已执行完成，估值回执尚未封存。</p>
-            )}
-          {history.symbol === symbol &&
-            item.task_contract === "parent-cash-task-v3" &&
-            item.status === "SUCCEEDED" && (
-              <ParentCashTaskValuationRead
-                key={symbol}
-                symbol={symbol}
-                taskId={item.task_id}
-              />
-            )}
-          <ul>
-            {item.charges.map((charge, index) => (
-              <li key={index}>
-                {charge.stage} {charge.status} · 预留 ¥{charge.reserved_cny}
-                {charge.settled_cny != null &&
-                  ` · 已结算 ¥${charge.settled_cny}`}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+      {history?.items.map((item) => {
+        const rebuildInterest =
+          item.base_operating_wire === "MATCHED_QUARTER_V2" &&
+          !item.base_interest_wire &&
+          (item.error_code ===
+            "BASE_POLICY_PARENT_DRAFT_REJECTED_OR_UNPUBLISHED" ||
+            item.error_code ===
+              "BASE_POLICY_PARENT_FINANCING_ABOVE_DISCLOSED_PROCEEDS:2026");
+        const resumeLabel = rebuildInterest
+          ? "从 Base 付息政策续跑"
+          : item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V2"
+            ? "从 Base 经营重建"
+            : "从 Base 现金政策续跑";
+        return (
+          <div key={item.task_id}>
+            <strong>{item.task_id}</strong> · {item.task_contract || "历史任务"}{" "}
+            · {item.status}
+            {item.candidate_status === "COMPILED_CONDITIONAL_NOT_MAIN" &&
+              " · 条件现金候选已编译，主估值未采用"}{" "}
+            · 当前阶段：
+            {item.stage || "未记录"}· 来源年份：
+            {item.source_years.join("、") || "未记录"}· 错误：
+            {item.error_code || "无"}· 完成阶段：
+            {item.completed_stages.join("、") || "无"}· 预留 ¥
+            {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
+            实际使用：未核实
+            {onContinue &&
+              !item.read_only_archive &&
+              item.status === "FAILED" &&
+              (rebuildInterest ||
+                (item.base_operating_wire !== "MATCHED_QUARTER_V2" &&
+                  (item.error_code ===
+                    "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS" ||
+                    (item.error_code ===
+                      "BASE_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE" &&
+                      item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V1") ||
+                    (item.error_code ===
+                      "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION" &&
+                      item.completed_stages.includes("base.policy") &&
+                      item.reused_stages?.includes("base.operating") &&
+                      !item.reused_stages.includes("base.policy"))))) &&
+              item.completed_stages.includes("base.operating") && (
+                <Popconfirm
+                  title={`${resumeLabel}？`}
+                  description="将复用已核验阶段并保留原调用的未结算预留。本次可能产生新费用，仍计入每日总预算。"
+                  onConfirm={() => onContinue(item.task_id)}
+                >
+                  <Button disabled={busy}>{resumeLabel}</Button>
+                </Popconfirm>
+              )}
+            {item.status === "SUCCEEDED" &&
+              item.valuation_receipt_status === "BLOCKED" && (
+                <p>
+                  估值封存受阻：
+                  {item.valuation_blockage?.reason_code || "未记录原因"}
+                </p>
+              )}
+            {item.status === "SUCCEEDED" &&
+              item.valuation_receipt_status === "NOT_SEALED" && (
+                <p>研究已执行完成，估值回执尚未封存。</p>
+              )}
+            {history.symbol === symbol &&
+              item.task_contract === "parent-cash-task-v3" &&
+              item.status === "SUCCEEDED" && (
+                <ParentCashTaskValuationRead
+                  key={symbol}
+                  symbol={symbol}
+                  taskId={item.task_id}
+                />
+              )}
+            <ul>
+              {item.charges.map((charge, index) => (
+                <li key={index}>
+                  {charge.stage} {charge.status} · 预留 ¥{charge.reserved_cny}
+                  {charge.settled_cny != null &&
+                    ` · 已结算 ¥${charge.settled_cny}`}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
     </section>
   );
 }

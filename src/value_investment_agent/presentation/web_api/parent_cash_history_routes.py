@@ -106,9 +106,17 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 financing_task_id = "rt-" + sha256(
                     ("parent-cash-task-v3:" + financing_request_key).encode()).hexdigest()[:32]
                 rebuild_operating = is_earnings_rebuild and predecessor == financing_task_id
+                cash_rebuild_key = "value-cash-rebuild-" + binding["sha256"][:60]
+                cash_rebuild_id = "rt-" + sha256(
+                    ("parent-cash-task-v3:" + cash_rebuild_key).encode()).hexdigest()[:32]
+                rebuild_interest = predecessor == cash_rebuild_id and prior.get("error_code") in {
+                    "BASE_POLICY_PARENT_DRAFT_REJECTED_OR_UNPUBLISHED",
+                    "BASE_POLICY_PARENT_FINANCING_ABOVE_DISCLOSED_PROCEEDS:2026",
+                }
                 if (prior["status"] != "FAILED"
                         or prior.get("spec_binding") != binding
-                        or (not is_earnings_rebuild and not is_financing_rebuild and prior.get("error_code") !=
+                        or (not is_earnings_rebuild and not is_financing_rebuild and not rebuild_interest
+                            and prior.get("error_code") !=
                             "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS")
                         or "base.operating" not in prior.get("completed_stages", ())):
                     raise ValueError("PARENT_V3_CONTINUATION_NOT_AVAILABLE")
@@ -117,7 +125,8 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                         "base.policy" not in prior.get("completed_stages", ())
                         or "base.operating" not in reused or "base.policy" in reused):
                     raise ValueError("PARENT_V3_CONTINUATION_NOT_AVAILABLE")
-                key = ("value-cash-rebuild-" + binding["sha256"][:60] if rebuild_operating else
+                key = ("value-interest1-" + binding["sha256"][:60] if rebuild_interest else
+                       cash_rebuild_key if rebuild_operating else
                        financing_request_key if is_financing_rebuild else
                        earnings_request_key if is_earnings_rebuild else
                        "value-policy-recovery-" + sha256(predecessor.encode()).hexdigest()[:56])
@@ -449,6 +458,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                         "reused_stages": sorted((spec.get("seed") or {}).get("responses", {})),
                         "base_policy_wire": spec.get("base_policy_wire"),
                         "base_operating_wire": spec.get("base_operating_wire"),
+                        "base_interest_wire": spec.get("base_interest_wire"),
                         "status": state["status"],
                         "stage": next((row.get("scenario") for row in reservations.values()
                                        if row.get("status") == "RESERVED"), None),
