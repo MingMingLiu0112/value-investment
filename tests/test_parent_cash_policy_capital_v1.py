@@ -189,3 +189,12 @@ def test_versioned_base_policy_rejects_zero_interest_with_existing_principal(mon
         parse(None, revised, "policy", None, request, "fixture")
     draft["series"]["interest_outside_cfo"]["values"][1] = "1"
     assert parse(None, revised, "policy", None, request, "fixture") == draft
+
+    locked = dict(revised, base_principal_reference={
+        "years": [2026, 2027, 2028], "new_borrowing": ["0", "0", "0"],
+        "debt_repayment": ["40", "60", "0"],
+    })
+    with pytest.raises(ValueError, match="PARENT_V3_LOCKED_CONDITIONAL_PRINCIPAL_CHANGED"):
+        parse(None, locked, "policy", None, request, "fixture")
+    locked["base_principal_reference"]["debt_repayment"] = ["50", "50", "0"]
+    assert parse(None, locked, "policy", None, request, "fixture") == draft

@@ -43,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "96fc60342a37bd7ecec6a5947e9f019bb0b2edba2be338c4ae1d2fa837be6461"
+REVIEWED_CAPITAL_SERVICE = "e7bb54ba1c4cc88cadd64f53331ba2611826ad3dda867c0648071f92899b37ab"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -191,6 +191,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "98f19101f67dbfa66747b0667f36829aa511fc08316222c2fee340dae4421245",
+            "2d049a3e65e0b7aefd65acd156ea3a86cc895ff84f1dcbcd06d51f1ae7d542ab",
             "4607c1b46dece2c82406f1822b8054c360dc7a5bdc14b61e93f68fb7c9f42048",
             "1dca8a72779713bfc21f67e5e11d924fec54ecdbb7dde645eaac727b94ed80c2",
             "3ca0ec5018979fc0b080b2da08269b4de8ce8619d682f205fe54d194bffde9a2",
@@ -624,6 +626,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     int(issue["terms"]["maturity"][:4]) for issue in schedule["later_issues"].values()
                 })
                 payload["conditional_issuer_note_interest_years"] = maturity_years
+                if "base_principal_reference" in spec:
+                    payload["locked_conditional_principal"] = spec["base_principal_reference"]
+                    wire = replace(wire, transport_output_contract=wire.transport_output_contract +
+                        " Use the locked conditional new_borrowing and debt_repayment arrays "
+                        "exactly. They are a verified arithmetic scenario, not actual funding. "
+                        "If inconsistent with the other assumptions, the policy must be reopened.")
                 if spec["base_interest_wire"] == "ISSUER_FINANCING_INTEREST_V2":
                     payload["conditional_issuer_note_coupon_calendar"] = _conditional_coupon_calendar(
                         root, schedule, symbol=payload["source_context"]["symbol"],
@@ -695,6 +703,13 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 if schedule is not None:
                     financing_schedule.validate_disclosed_financing_policy(schedule, parsed)
             debt_path = policy_capital.validate_policy_debt(spec["policy_capital_basis"], parsed)
+            locked = spec.get("base_principal_reference")
+            if locked is not None and json.loads(request.user)["scenario"] == "base":
+                if (parsed["years"] != locked["years"] or any(
+                        list(map(Decimal, parsed["series"][field]["values"])) !=
+                        list(map(Decimal, locked[field]))
+                        for field in ("new_borrowing", "debt_repayment"))):
+                    raise ValueError("PARENT_V3_LOCKED_CONDITIONAL_PRINCIPAL_CHANGED")
             if (spec.get("base_interest_wire") in {"ISSUER_FINANCING_INTEREST_V1", "ISSUER_FINANCING_INTEREST_V2"}
                     and json.loads(request.user)["scenario"] == "base"):
                 amounts = parsed["series"]["interest_outside_cfo"]["values"]
@@ -1025,6 +1040,24 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                             "BASE_POLICY_PARENT_FINANCING_ABOVE_DISCLOSED_PROCEEDS:2026",
                         })):
                 trial_spec["base_interest_wire"] = old_spec.get("base_interest_wire", "ISSUER_FINANCING_INTEREST_V2")
+            if "base_principal_reference" in old_spec:
+                trial_spec["base_principal_reference"] = old_spec["base_principal_reference"]
+            elif trial_spec.get("base_interest_wire") == "ISSUER_FINANCING_INTEREST_V2":
+                predecessor = old_spec["seed"]
+                financing_spec, financing_state, financing_head = self._load(predecessor["task_id"])
+                if (financing_head != predecessor["head"]
+                        or financing_spec["spec_binding"] != spec_binding
+                        or financing_spec["source_fingerprint"] != context["input_fingerprint"]
+                        or financing_spec.get("base_policy_wire") != "ANNUAL_EARNINGS_BRIDGE_V2"):
+                    raise ValueError("PARENT_V3_LOCKED_CONDITIONAL_PRINCIPAL_SOURCE_CHANGED")
+                financing = self._stage_outputs(financing_spec, financing_state, now,
+                                                verified_context=context)["base"]["policy"]
+                trial_spec["base_principal_reference"] = dict(
+                    classification="CONDITIONAL_NOT_VERIFIED_CASH_RECEIPT",
+                    task_head=financing_head, response_binding=financing_state["responses"]["base.policy"],
+                    years=financing["years"],
+                    new_borrowing=financing["series"]["new_borrowing"]["values"],
+                    debt_repayment=financing["series"]["debt_repayment"]["values"])
             for stage_id in STAGE_ORDER:
                 if replay_from_stage is not None:
                     replay_scenario, replay_stage = replay_from_stage.split(".")
@@ -1079,6 +1112,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 spec["base_policy_wire"] = trial_spec["base_policy_wire"]
             if "base_interest_wire" in trial_spec:
                 spec["base_interest_wire"] = trial_spec["base_interest_wire"]
+            if "base_principal_reference" in trial_spec:
+                spec["base_principal_reference"] = trial_spec["base_principal_reference"]
             spec.update(forked_at=now.isoformat(), seed=seed,
                         replay_from_stage=replay_from_stage,
                         ancestor_spend=str(ancestor_spend))
