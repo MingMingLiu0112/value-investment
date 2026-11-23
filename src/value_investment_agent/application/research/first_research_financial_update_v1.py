@@ -42,7 +42,8 @@ def compare_first_input_financial_update(*, symbol: str, financial_basis: str,
         if period <= basis:
             return {**base, "status": "NO_NEWER_FINANCIAL_PERIOD",
                     "reported_period": period.isoformat(), "reason": None}
-        if (period.year != basis.year or period.month != 9 or basis.month != 6):
+        if (period.year != basis.year or (period.month, period.day) != (9, 30)
+                or (basis.month, basis.day) != (6, 30)):
             raise ValueError("FINANCIAL_UPDATE_NONCOMPARABLE_PERIODS")
         facts = native_facts["facts"]
         def h1(field: str) -> Decimal:

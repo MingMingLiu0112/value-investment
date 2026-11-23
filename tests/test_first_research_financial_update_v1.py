@@ -58,6 +58,20 @@ def test_parent_standalone_profit_cannot_be_subtracted_from_consolidated_ytd():
     assert "derived_q3_quarter_cny" not in result
 
 
+def test_only_exact_quarter_end_dates_produce_single_quarter_values():
+    for basis, period in (("2026-06-29", "2026-09-30"), ("2026-06-30", "2026-09-29")):
+        native, q3 = inputs()
+        native["financial_basis"] = basis
+        for fact in native["facts"]:
+            fact["period_end"] = basis
+        q3["ytd_9m_observation"]["report_period"] = period
+        result = compare_first_input_financial_update(
+            symbol="600519", financial_basis=basis, native_facts=native, q3_read_model=q3,
+        )
+        assert result["reason"] == "FINANCIAL_UPDATE_NONCOMPARABLE_PERIODS"
+        assert "derived_q3_quarter_cny" not in result
+
+
 def test_unsupported_issuer_has_no_q3_claim():
     native, _ = inputs()
     assert compare_first_input_financial_update(symbol="600519", financial_basis="2026-06-30",
