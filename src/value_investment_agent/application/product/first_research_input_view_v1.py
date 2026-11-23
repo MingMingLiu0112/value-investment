@@ -165,7 +165,7 @@ def read_first_research_input(*,root,symbol,now:datetime):
 
             view["financial_update_observation"] = compare_aligned_quarter_update(
                 symbol=symbol, financial_basis=native["financial_basis"],
-                native_facts=native, alignment=alignment)
+                native_facts=native, alignment=alignment, root=root, now=now)
 
         for check in alignment["checks"]:
             reconciliation = check["details"].get("reconciliation") or {}

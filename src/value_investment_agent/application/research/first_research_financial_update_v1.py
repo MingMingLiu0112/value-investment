@@ -5,7 +5,8 @@ replace assumptions, or make an existing E2/F1 candidate current.
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
+from pathlib import Path
 from decimal import Decimal, InvalidOperation
 
 from ...domain.valuation.joint_capital_cash_path_v4 import HISTORICAL_FIELDS
@@ -101,8 +102,43 @@ def compare_first_input_financial_update(*, symbol: str, financial_basis: str,
 
 
 
+def _read_aligned_operating_income(root, now, native_facts, observation):
+    from ..product.common import require_inside, sha256_file
+    from ...infrastructure.filings.pdf_text import extract_pages
+    from ...infrastructure.filings.quarterly_operating_facts_v1 import FIELDS, parse_quarterly_operating_facts
+
+    basis = native_facts["financial_basis"]
+    revenue_rows = [row for row in native_facts["facts"] if row["field"] == "revenue"
+                    and row["period_end"] == basis and row["scope"] == "consolidated"]
+    if len(revenue_rows) != 1:
+        raise ValueError("Q3_CURRENCY_BASIS_UNVERIFIED")
+    source, = (row for row in native_facts["sources"] if row["id"] == revenue_rows[0]["source_id"]
+               and row["symbol"] == observation["symbol"] and row["report_period"] == basis)
+    current = observation["source_bindings"]["original"]
+    def reopen(binding):
+        path = require_inside(root, root / binding["path"], "quarter operating original")
+        if datetime.fromisoformat(binding["available_at"]) > now or sha256_file(path) != binding["sha256"]:
+            raise ValueError("Q3_OPERATING_ORIGINAL_BINDING_INVALID")
+        return extract_pages(path, limit=80)
+
+    currency_refs = [dict(path=source["path"], sha256=source["sha256"], physical_page=n, excerpt=line.strip())
+                     for n, page in enumerate(reopen(source), 1) for line in page.splitlines()
+                     if "以人民币为记账本位币" in line]
+    parsed = parse_quarterly_operating_facts(reopen(current), symbol=observation["symbol"],
+                                            currency_basis={"currency": "CNY", "evidence_refs": currency_refs})
+    if parsed["period_end"] != observation["ytd_9m_observation"]["report_period"]:
+        raise ValueError("Q3_OPERATING_REPORT_PERIOD_MISMATCH")
+    return dict(status="VERIFIED_REPORTED_Q3_INCOME_FACTS_ONLY", symbol=parsed["symbol"],
+                report_period=parsed["period_end"], period_basis="YTD_9M", currency="CNY", unit="yuan",
+                facts={parsed[period][:4]: {name: parsed["fields"][name][column] for name in FIELDS}
+                       for period, column in (("period_end", "current"), ("comparative_end", "comparative"))},
+                source_bindings={"original": current, "currency_basis": currency_refs},
+                original_rows={name: parsed["fields"][name] for name in FIELDS}, action="no_order")
+
+
 def compare_aligned_quarter_update(*, symbol: str, financial_basis: str,
-                                   native_facts: dict, alignment: dict) -> dict | None:
+                                   native_facts: dict, alignment: dict,
+                                   root: Path | None = None, now: datetime | None = None) -> dict | None:
     """Consume only the quarterly facts already reopened by the same candidate's F2."""
     check, = (row for row in alignment["checks"] if row["id"] == "financial_updates")
     candidates = {}
@@ -145,7 +181,14 @@ def compare_aligned_quarter_update(*, symbol: str, financial_basis: str,
                 )
     if len(candidates) != 1:
         return None
+    observation = next(iter(candidates.values()))
+    income = None
+    if root is not None and now is not None:
+        try:
+            income = _read_aligned_operating_income(root, now, native_facts, observation)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            income = {"status": "UNASSESSABLE", "reason": str(error)}
     return compare_first_input_financial_update(
         symbol=symbol, financial_basis=financial_basis, native_facts=native_facts,
-        q3_read_model=next(iter(candidates.values())),
+        q3_read_model=observation, income_read_model=income,
     )
