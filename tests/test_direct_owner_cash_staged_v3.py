@@ -191,3 +191,18 @@ def test_policy_money_wire_rejects_extra_billion_multiplier():
         staged.validate_policy_money_wire(policy)
     policy["series"]["growth_capex"]["values"][1] = "6000000000.00"
     staged.validate_policy_money_wire(policy)
+
+
+def test_q3_repayment_floor_adds_only_later_issues_due_same_year():
+    from decimal import Decimal
+
+    def issue(code, start, maturity, amount):
+        return dict(code=code, issue_date=start, maturity=maturity, principal_cny=amount,
+                    classification="FACT", scope="ISSUER_FINANCING_DISCLOSURE", currency="CNY")
+
+    context = {"constraints": {"issued_financing": [
+        issue("IN_YTD", "2026-06-30", "2026-09-29", "70"),
+        issue("LATER", "2026-10-12", "2026-12-30", "80"),
+        issue("NEXT_YEAR", "2026-10-28", "2027-11-12", "90"),
+    ]}}
+    assert staged._post_observation_repayment_floor(context, 2026, "2026-09-30", "200") == Decimal("280")

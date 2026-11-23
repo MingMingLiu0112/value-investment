@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .direct_owner_cash_agent_draft_v1 import _load_spec
 from .direct_owner_cash_agent_draft_v2 import VERSION as DRAFT_VERSION_V2
+from .direct_owner_cash_compilation_v2 import financing_maturity_floor
 from .direct_owner_cash_staged_v2 import (
     merge_staged_parent_cash, staged_parent_cash_request,
 )
@@ -38,6 +39,14 @@ def validate_policy_money_wire(policy):
         for year, value in zip(policy["years"], term["values"], strict=True):
             if not isinstance(value, str) or not _POLICY_CNY.fullmatch(value):
                 raise ValueError(f"PARENT_V3_POLICY_CNY_WIRE_INVALID:{year}:{field}")
+
+
+def _post_observation_repayment_floor(context, year, period, observed):
+    """Only add obligations issued after the cumulative cash observation."""
+    constraints = context.get("constraints") or {}
+    issues = [issue for issue in constraints.get("issued_financing", [])
+              if issue.get("issue_date", "") > period]
+    return Decimal(observed) + financing_maturity_floor({"issued_financing": issues}, year)
 
 
 def staged_parent_cash_request_v3(**kwargs):
@@ -73,6 +82,12 @@ def staged_parent_cash_request_v3(**kwargs):
                 if movement["classification"] == "FACT":
                     floors.append(dict(year=year, field=forecast_field,
                                        minimum_cny=movement["value_cny"], observed_through=period))
+                    if (context.get("policy_money_wire") == POLICY_MONEY_WIRE
+                            and (context.get("constraints") or {}).get("issued_financing")
+                            and forecast_field == "debt_repayment" and period.endswith("-09-30")):
+                        minimum = _post_observation_repayment_floor(context, year, period, movement["value_cny"])
+                        floors.append(dict(year=year, field=forecast_field, minimum_cny=str(minimum),
+                                           observed_through=period, includes_later_contractual_principal=True))
         history = [
             row for row in context.get("parent_operating_cash_observations", [])
             if row["period_end"] == context["valuation_date"]
@@ -340,6 +355,13 @@ def preflight_annual_cash_upper_bound_v3(*, root: Path, spec_binding: dict,
             ("debt_repayments_paid_cny", "debt_repayment"),
         ):
             movement = cash["components"][observed_field]
+            if (context.get("policy_money_wire") == POLICY_MONEY_WIRE
+                    and (context.get("constraints") or {}).get("issued_financing")
+                    and forecast_field == "debt_repayment" and period.endswith("-09-30")
+                    and movement["classification"] == "FACT"
+                    and Decimal(policy["series"][forecast_field]["values"][index])
+                    < _post_observation_repayment_floor(context, year, period, movement["value_cny"])):
+                raise ValueError(f"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:{year}:{forecast_field}")
             if (movement["classification"] == "FACT"
                     and Decimal(policy["series"][forecast_field]["values"][index])
                     < Decimal(movement["value_cny"])):

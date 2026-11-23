@@ -71,7 +71,7 @@ PRE_FINANCING_WINDOWS_OVERRIDES = {
 REVIEWED_FINANCING_IMPLEMENTATION = {
     "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2": "6633ab4499590c7a773d2ec25c7af10eba8d503e1b5f738de3d0cc2a67721643",
     "value_investment_agent.application.research.direct_owner_cash_compilation_v2": "fbb7ad124181d540def843a9877773f653ea21d04581c246551a034887f742a1",
-    "value_investment_agent.application.research.direct_owner_cash_staged_v3": "90d458591a1e58105a163fde8704f2483c827e16fa2776f97cef019fe550a50f",
+    "value_investment_agent.application.research.direct_owner_cash_staged_v3": "33f2ede2ffadea2fc49aeb7bedb184b3fce3954223a5a2ad05982921c99b8478",
     "value_investment_agent.application.research.parent_direct_owner_cash_unnumbered_v1": "56f60cbf9cc00fc84d2fe8687c2dd5dd213186b15df17ded77d7d311202ff160",
 }
 
@@ -143,8 +143,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if reviewed and __name__ in pinned:
             source = self._bound(spec["spec_binding"])
             historical = {}
-            if pinned[__name__] == "680690b3c064a2491b1c0b983927c7a2ec7a094e10738758ce4e8a9825eaa722":
-                historical = {__name__: pinned[__name__]}
+            if pinned[__name__] in {"680690b3c064a2491b1c0b983927c7a2ec7a094e10738758ce4e8a9825eaa722", "1d412c35b83df1a1d7518c5beea03b9793daf2effae5b69e95f04b3c902152d9"}:
+                historical = {__name__: pinned[__name__], "value_investment_agent.application.research.direct_owner_cash_staged_v3": "1bb262ddf5b4737b69a9c74e20f7d328ad332f3c31d225ab9422b6479d26c92c"}
             elif ("policy_money_wire" not in source
                     and pinned[__name__] == PRE_POLICY_MONEY_IMPLEMENTATION[__name__]):
                 historical = PRE_POLICY_MONEY_IMPLEMENTATION
