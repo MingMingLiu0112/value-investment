@@ -248,6 +248,36 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
             or shares.get("classification") not in {"FACT", "DERIVED_FACT"}):
         raise ValueError("PARENT_AGENT_SHARE_SCOPE_INVALID")
     financing = [_historical_financing_range(row) for row in evidence["statements"]]
+    if "quarterly_financing_source" in spec:
+        from .agent_review.quarterly_parent_cash_source import replay_quarterly_parent_cash
+
+        quarter_end = f"{int(spec['valuation_date'][:4]) + 1}-09-30"
+        source = spec["quarterly_financing_source"]
+        if not isinstance(source, dict) or not isinstance(source.get("url"), str):
+            raise ValueError("PARENT_AGENT_QUARTER_SOURCE_INVALID")
+        from datetime import date
+        from zoneinfo import ZoneInfo
+
+        published = date.fromisoformat(source["url"].rsplit("/", 2)[-2])
+        acquired = datetime.fromisoformat(source["acquired_at"])
+        if (acquired.utcoffset() is None or not date.fromisoformat(quarter_end) <= published
+                <= acquired.astimezone(ZoneInfo("Asia/Shanghai")).date()):
+            raise ValueError("PARENT_AGENT_QUARTER_SOURCE_DATE_UNVERIFIED")
+        quarter = replay_quarterly_parent_cash(
+            root=root, source=source, symbol=spec["symbol"],
+            issuer_name=spec["issuer_name"], period_end=quarter_end, now=at,
+            include_financing=True,
+        )
+        source = quarter["source"]
+        flows = {
+            name: {**row, "source_refs": {**source, "available_at": quarter["available_at"],
+                                          "physical_page": row["physical_page"], "excerpt": row["excerpt"]}}
+            for name, row in quarter["financing"].items()
+        }
+        financing.append(_historical_financing_range({
+            "period_start": quarter_end[:4] + "-01-01", "period_end": quarter_end,
+            "cash_flow": flows,
+        }))
     basis_financing = [row for row in financing
                        if row["period_end"] == spec["valuation_date"]]
     if len(basis_financing) != 1:

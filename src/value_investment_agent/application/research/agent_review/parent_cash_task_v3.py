@@ -69,10 +69,16 @@ PRE_FINANCING_WINDOWS_OVERRIDES = {
 }
 
 REVIEWED_FINANCING_IMPLEMENTATION = {
-    "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2": "d7e05f7cf18b877a2fa1828e3197b1d324114e4a29fa7dfbde211a5f1d07d1fd",
+    "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2": "47f9fd729b717a59ddcd3c286d60711c1945672b698531bc312a65de43454f45",
     "value_investment_agent.application.research.direct_owner_cash_compilation_v2": "fbb7ad124181d540def843a9877773f653ea21d04581c246551a034887f742a1",
     "value_investment_agent.application.research.direct_owner_cash_staged_v3": "2b5dac58c1a56a20481661978dc1616b42555a73921cf29aa08060c7f18ff5d8",
     "value_investment_agent.application.research.parent_direct_owner_cash_unnumbered_v1": "56f60cbf9cc00fc84d2fe8687c2dd5dd213186b15df17ded77d7d311202ff160",
+}
+
+
+PRE_QUARTER_FINANCING_IMPLEMENTATION = {
+    "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2": "d7e05f7cf18b877a2fa1828e3197b1d324114e4a29fa7dfbde211a5f1d07d1fd",
+    "value_investment_agent.application.research.agent_review.parent_cash_task_v3": "69b3f187d674adc4d119088bfc810644a378d52758af93ec8450205960f01a18",
 }
 
 
@@ -124,6 +130,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if not isinstance(current, dict) or not isinstance(pinned, dict):
             return False
         if pinned == current:
+            return True
+        if (pinned == (current | PRE_QUARTER_FINANCING_IMPLEMENTATION)
+                and current.get("value_investment_agent.application.research.direct_owner_cash_agent_facts_v2")
+                == REVIEWED_FINANCING_IMPLEMENTATION[
+                    "value_investment_agent.application.research.direct_owner_cash_agent_facts_v2"]
+                and "quarterly_financing_source" not in self._bound(spec["spec_binding"])):
             return True
         if (all(current.get(name) == digest for name, digest in REVIEWED_FINANCING_IMPLEMENTATION.items())
                 and self._bound(spec["spec_binding"]).get("source_adapter_version")
