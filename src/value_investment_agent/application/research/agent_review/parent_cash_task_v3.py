@@ -141,16 +141,17 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if pinned == current:
             return True
         source = self._bound(spec["spec_binding"]) if __name__ in pinned else {}
-        if {"first_year_operating_cash_method", "first_year_cash_receipts_evidence"} & source.keys():
+        if {"first_year_operating_cash_method", "first_year_cash_receipts_evidence",
+            "paid_note_interest_sources"} & source.keys():
             return False
         # The compiler and forecast additions below are gated by the spec.
         # Only these reviewed source revisions may replay the former wording.
         annual_changes = {
             "direct_owner_cash_agent_facts_v2": (
-                "e0e909ec774326dea6dab2b9c5f476deafe7fe639d0396416e6d2d09675291af",
+                "269f3c8f2c7abadffcbb392a160041918b89c58af3681ae5380059f10ef8f529",
                 "a36104edc9aea061f28b0092ff27e0509b32aee67266ffc262b5c8f0cc0178fa"),
             "direct_owner_cash_staged_v3": (
-                "25a8b8f8b2cfc54c95da635451f2858bb6874806712b61d9356cfec08169b1b9",
+                "2c396c68efd948f7093f26a70e2c4c1ffa0c377adc771a568815d89a80d6658d",
                 "ad3b92ce4903790b3aeab224814893418c796b7747d4262e2c000037ea0998bb"),
             "direct_owner_cash_compilation_v2": (
                 "ba38d058b1f7de2039fe244ceb0378ea97f4bac1f12d07c0b18cbd1c4f408050",
@@ -725,7 +726,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                 detail = str(error).replace("PARENT_V2_", "PARENT_V3_", 1)
                                 code = ("PARENT_V3_ECONOMIC_" + detail
                                     if isinstance(error, ValueError) and re.fullmatch(
-                                        r"(?:(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT|PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH|PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_BELOW_REALISED_CASH):20[0-9]{2}|"
+                                        r"(?:(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT|PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH|PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_BELOW_REALISED_CASH|PARENT_V3_ANNUAL_INTEREST_BELOW_REALISED_CASH):20[0-9]{2}|"
                                     r"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:20[0-9]{2}:"
                                     r"(?:debt_repayment|new_borrowing))", detail)
                                     else detail if isinstance(error, ValueError) and re.fullmatch(
@@ -820,7 +821,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         detail = str(error).replace("PARENT_V2_", "PARENT_V3_", 1)
                         code = ("PARENT_V3_ECONOMIC_" + detail
                                 if isinstance(error, ValueError) and re.fullmatch(
-                                    r"(?:(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT|PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH|PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_BELOW_REALISED_CASH):20[0-9]{2}|"
+                                    r"(?:(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT|PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH|PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_BELOW_REALISED_CASH|PARENT_V3_ANNUAL_INTEREST_BELOW_REALISED_CASH):20[0-9]{2}|"
                                     r"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:20[0-9]{2}:"
                                     r"(?:debt_repayment|new_borrowing))", detail)
                                 else detail if isinstance(error, ValueError)

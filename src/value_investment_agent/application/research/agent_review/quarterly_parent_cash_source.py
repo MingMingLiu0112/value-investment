@@ -154,6 +154,55 @@ def project_parent_annual_operating_cash(*, root, spec, now, historical, forecas
     }
 
 
+def replay_parent_paid_note_interest(*, root, sources, symbol, issuer_name, period_end, now):
+    """Return a partial realised coupon floor from unique issuer redemptions."""
+    from datetime import date
+    from zoneinfo import ZoneInfo
+    from ....infrastructure.filings.operating_event_terms import parse_operating_event_terms
+
+    observed = date.fromisoformat(period_end)
+    if not 1 <= len(sources) <= 12 or now.utcoffset() is None:
+        raise ValueError("PARENT_PAID_NOTE_INTEREST_INVALID_SCOPE")
+    floor = Decimal(0)
+    evidence = []
+    issues = set()
+    for source in sources:
+        if (set(source) != {"path", "sha256", "url", "acquired_at"}
+                or not re.fullmatch(r"https://static\.cninfo\.com\.cn/finalpage/\d{4}-\d{2}-\d{2}/\d+\.PDF",
+                                    source["url"])):
+            raise ValueError("PARENT_PAID_NOTE_INTEREST_INVALID_SOURCE")
+        acquired = datetime.fromisoformat(source["acquired_at"])
+        published = date.fromisoformat(source["url"].rsplit("/", 2)[-2])
+        if (acquired.utcoffset() is None or acquired > now
+                or published > acquired.astimezone(ZoneInfo("Asia/Shanghai")).date()):
+            raise ValueError("PARENT_PAID_NOTE_INTEREST_SOURCE_NOT_AVAILABLE")
+        path = require_inside(root / "runtime", root / source["path"], "parent note redemption")
+        raw_hash = sha256(path.read_bytes()).hexdigest()
+        if raw_hash != source["sha256"]:
+            raise ValueError("PARENT_PAID_NOTE_INTEREST_SOURCE_CHANGED")
+        result = parse_operating_event_terms(extract_pages(path), symbol=symbol)
+        if sha256(path.read_bytes()).hexdigest() != raw_hash:
+            raise ValueError("PARENT_PAID_NOTE_INTEREST_SOURCE_CHANGED")
+        paid = date.fromisoformat(result["effective_date"])
+        if (result["issuer_name"] != issuer_name
+                or result["event_type"] != "REPORTED_ISSUER_FINANCING_REDEMPTION"
+                or date.fromisoformat(result["published_date"]) != published
+                or not date(observed.year, 1, 1) <= paid <= observed):
+            raise ValueError("PARENT_PAID_NOTE_INTEREST_SOURCE_MISMATCH")
+        for row in result["financing_redemptions"]:
+            issue = row["issue"]
+            if issue in issues:
+                raise ValueError("PARENT_PAID_NOTE_INTEREST_DUPLICATE_ISSUE")
+            issues.add(issue)
+            floor += Decimal(row["inferred_interest_cny"])
+        evidence.append({"source": dict(source), "paid_date": paid.isoformat(),
+                         "redemptions": result["financing_redemptions"],
+                         "physical_pages": result["physical_pages"]})
+    return {"year": observed.year, "minimum_cny": str(floor), "currency": "CNY",
+            "scope": "ISSUER_PARENT_NOTE_REDEMPTIONS_ONLY",
+            "observed_through": period_end, "evidence": evidence, "action": "no_order"}
+
+
 def quarterly_parent_annual_investment_receipts_floor(facts):
     """Project gross cash already received, without assuming recurrence."""
     item = facts["fields"]["investment_income_cash_cny"]

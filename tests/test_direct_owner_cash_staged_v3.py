@@ -139,6 +139,11 @@ def test_numbered_annual_history_drives_cash_preflight(monkeypatch, tmp_path):
         staged.preflight_annual_cash_upper_bound_v3(**args)
     policy["series"]["investment_cash_received"]["values"] = ["4"]
     staged.preflight_annual_cash_upper_bound_v3(**args)
+    context["annual_paid_note_interest_floor"] = {"year": 2026, "minimum_cny": "1"}
+    with pytest.raises(ValueError, match="PARENT_V3_ANNUAL_INTEREST_BELOW_REALISED_CASH:2026"):
+        staged.preflight_annual_cash_upper_bound_v3(**args)
+    policy["series"]["interest_outside_cfo"]["values"] = ["1"]
+    staged.preflight_annual_cash_upper_bound_v3(**args)
     policy["series"]["maintenance_capex"]["values"] = ["40"]
     with pytest.raises(ValueError, match="UNFUNDED_CASH_REQUIREMENT:2026"):
         staged.preflight_annual_cash_upper_bound_v3(**args)

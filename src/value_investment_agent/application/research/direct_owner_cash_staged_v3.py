@@ -124,6 +124,13 @@ def staged_parent_cash_request_v3(**kwargs):
                 " First-year investment_cash_received must include the disclosed gross receipts "
                 "already received in realised_annual_investment_receipts_floor, once only. "
                 "Do not assume future receipts, recurrence, principal recycling or distributability.")
+        interest_floor = context.get("annual_paid_note_interest_floor")
+        if interest_floor and interest_floor["year"] in payload["required_years"]:
+            payload["realised_annual_paid_note_interest_floor"] = interest_floor
+            request = replace(request, transport_output_contract=request.transport_output_contract +
+                " For the observed year interest_outside_cfo must include the disclosed paid "
+                "note coupons once. Debt repayment is principal only for those notes. "
+                "Do not add these coupons again in other cash or infer all-year interest.")
         if floors or history:
             payload["realised_annual_financing_floors"] = floors
             return replace(request, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
@@ -405,6 +412,13 @@ def preflight_annual_cash_upper_bound_v3(*, root: Path, spec_binding: dict,
         if Decimal(policy["series"]["investment_cash_received"]["values"][index]) < Decimal(
                 receipts_floor["minimum_cny"]):
             raise ValueError(f"PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_BELOW_REALISED_CASH:{year}")
+    interest_floor = context.get("annual_paid_note_interest_floor")
+    if interest_floor and interest_floor["year"] in policy["years"]:
+        year = interest_floor["year"]
+        index = policy["years"].index(year)
+        if Decimal(policy["series"]["interest_outside_cfo"]["values"][index]) < Decimal(
+                interest_floor["minimum_cny"]):
+            raise ValueError(f"PARENT_V3_ANNUAL_INTEREST_BELOW_REALISED_CASH:{year}")
     mandatory = ("maintenance_capex", "growth_capex", "commitments_outside_capex",
                  "debt_repayment", "interest_outside_cfo", "other_mandatory_cash")
     with localcontext() as arithmetic:

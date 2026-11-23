@@ -327,5 +327,13 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
         )
 
         projected["annual_investment_receipts_floor"] = quarterly_parent_annual_investment_receipts_floor(quarter)
+    if "paid_note_interest_sources" in spec:
+        if "quarterly_financing_source" not in spec or not isinstance(spec["paid_note_interest_sources"], list):
+            raise ValueError("PARENT_AGENT_PAID_NOTE_INTEREST_EVIDENCE_UNSUPPORTED")
+        from .agent_review.quarterly_parent_cash_source import replay_parent_paid_note_interest
+
+        projected["annual_paid_note_interest_floor"] = replay_parent_paid_note_interest(
+            root=root, sources=spec["paid_note_interest_sources"], symbol=spec["symbol"],
+            issuer_name=spec["issuer_name"], period_end=quarter["period_end"], now=at)
     projected["input_fingerprint"] = hashlib.sha256(_canonical(projected)).hexdigest()
     return projected
