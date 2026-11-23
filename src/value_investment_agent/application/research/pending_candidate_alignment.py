@@ -1456,6 +1456,29 @@ def _operating_events(analysis, windows, now, read, *, parser=None, page_cache=N
                             limitations=["前三季度累计披露，不视为单季、全年或预测。"], action="no_order")
                     elif allow_quarterly_report and event["title"].endswith(BUYBACK_PLAN_TITLES):
                         terms = parse_buyback_cancellation_plan(pages, symbol=analysis["symbol"])
+                    elif allow_quarterly_report and event["title"].endswith("关于出资设立风险投资基金的进展公告"):
+                        header = "".join(pages[0].split())
+                        body = "".join("".join(pages[1:]).split())
+                        if (not re.search(rf"证券代码[:：]{analysis['symbol']}(?![0-9])", header)
+                                or "关于出资设立风险投资基金的进展公告" not in header
+                                or "完成了私募投资基金变更事项备案手续" not in body):
+                            raise ValueError("FUND_AMENDMENT_ORIGINAL_IDENTITY_MISMATCH")
+                        registration = re.findall(r"备案编码[:：]([A-Z0-9]{6})(?![A-Z0-9])", body)
+                        dates = re.findall(r"变更备案完成日期[:：](20[0-9]{2})年([0-9]{1,2})月([0-9]{1,2})日", body)
+                        if len(registration) != 1 or len(dates) != 1:
+                            raise ValueError("FUND_AMENDMENT_UNIQUE_REGISTRATION_REQUIRED")
+                        completed = date(*(int(value) for value in dates[0]))
+                        if completed > published:
+                            raise ValueError("FUND_AMENDMENT_DATE_AFTER_PUBLICATION")
+                        terms = dict(
+                            event_type="REPORTED_FUND_AMENDMENT_REGISTRATION",
+                            published_date=published.isoformat(), effective_date=None,
+                            summary=f"原件披露基金{registration[0]}于{completed}完成变更备案。",
+                            implication="核对合伙条款和未来资金调用日期；备案本身不证明母公司新增出资或实际付现。",
+                            terms=dict(registration_code=registration[0], registration_date=completed.isoformat(),
+                                       incremental_parent_cash_verified=False),
+                            affected_model_fields=["commitments_outside_capex"],
+                            limitations=["不改变候选现金流，不授予重大性批准。"], action="no_order")
                     elif allow_quarterly_report and event["title"].endswith("中期利润分配预案的公告"):
                         from ...infrastructure.filings.sse_capital_checkpoint_v1 import parse_sse_capital_checkpoint
 
