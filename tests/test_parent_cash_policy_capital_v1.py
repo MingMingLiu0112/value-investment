@@ -138,3 +138,35 @@ def test_operating_retry_contract_preserves_historical_wire():
     assert "exactly ten plain JSON strings" in v2.transport_output_contract
     assert v2.output_schema == v1.output_schema == legacy.output_schema
     assert v2.user == v1.user == legacy.user
+
+
+def test_terminal_wire_uses_last_year_with_first_year_method_configured():
+    from value_investment_agent.application.research.agent_review import parent_cash_task_v3 as service
+
+    scope = service.terminal_wire.SCOPE
+    context = {
+        "valuation_date": "2025-12-31",
+        "symbol": "600887",
+        "first_year_operating_cash_method": "OBSERVED_9M_PLUS_CONDITIONAL_Q4_V1",
+        "parent_operating_cash_observations": [{
+            "period_end": "2025-12-31", "scope": scope, "symbol": "600887",
+            "revenue": "10", "cost": "10", "customer_cash": "10",
+            "supplier_cash": "10", "cfo": "10", "source_refs": [{"sha256": "a" * 64}],
+        }],
+    }
+    request = LLMRequest(
+        role="FUNDAMENTAL", system="", output_schema={},
+        transport_output_contract="Return terminal cash policy.",
+        user=json.dumps({
+            "source_context": context, "terminal_reference_year": 2035,
+            "prior_forecast_assumptions_not_facts": {
+                "operating": {"revenue": "20", "cost": "10", "other_operating_cash": "3"},
+                "policy": {},
+            },
+        }),
+    )
+    spec = {"implementation_sha256": {service.terminal_wire.__name__: "fixture"}}
+    result = json.loads(service.ParentCashTaskServiceV3._wire(spec, "terminal", request).user)
+    assert result["source_context"] == context
+    assert result["terminal_transition_reference"]["year"] == 2035
+    assert result["terminal_transition_reference"]["operating_cash_cny"] == "13"

@@ -132,6 +132,11 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                     options.update(seed_task_id=former_id, replay_from_stage="bear.operating")
             task = numbered_service.create(
                 spec_binding=binding, request_key=request_key, **options)
+            if (request_key.startswith("value-fin1-") and task["status"] == "RUNNING"):
+                try:
+                    task = numbered_service.resume_if_interrupted(task["task_id"])
+                except LockTimeout:
+                    return reply(task, 202)
             if task["status"] in {"QUEUED", "SUCCEEDED"}:
                 background.add_task(run_numbered, task["task_id"])
             return reply(task, 202)

@@ -42,7 +42,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "cf586104a8ab4f873e1921384d052bc5967a6f5b68c83f7915c5b8c375df9560"
+REVIEWED_CAPITAL_SERVICE = "4e4da8ff976bd51ac9a378faa3b7661b93941b50c3f42dc8efcb976b1b149704"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -151,6 +151,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "30442d7943b4b817f6b97b41bc968e96e41a592da6843f41083470cbbcde1714",
+            "f86d050459aa38d62a1c6aff927855c07fea9826720047e0827fc8e68b3b8dcf",
             "40a3d19ae65d2d41e1c40ff642ba5e402e00de70e26f5f32f39707f5a6979241",
             "f69114fbfa585e50d7e05e3218de5741eb0537b5d63116956fc1ad7467127eb3",
             "3b67006f29f92bb8715fad6be677df44193744314970f836b0aaa861b37b0955",
@@ -398,6 +400,22 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 "minimums already include observed principal and applicable later maturities. "
                 "Do not add those amounts again or insert balancing debt.")
         if stage == "terminal" and terminal_wire.__name__ in spec["implementation_sha256"]:
+            payload = json.loads(request.user)
+            source = payload["source_context"]
+            if source.get("first_year_operating_cash_method"):
+                # The terminal reference is the last forecast year. The partial-year
+                # actuals method applies only to the first forecast year.
+                if payload["terminal_reference_year"] <= int(source["valuation_date"][:4]) + 1:
+                    raise ValueError("PARENT_TERMINAL_REFERENCE_YEAR_INVALID")
+                payload["source_context"] = {
+                    key: value for key, value in source.items()
+                    if key != "first_year_operating_cash_method"
+                }
+                wire = terminal_wire.terminal_wire_request(replace(request, user=json.dumps(payload)))
+                result = json.loads(wire.user)
+                result["source_context"] = source
+                return replace(wire, user=json.dumps(result, ensure_ascii=False,
+                    sort_keys=True, separators=(",", ":")))
             return terminal_wire.terminal_wire_request(request)
         return request
 
@@ -823,6 +841,11 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     spec, state, binding, now, status="FAILED", error_code="BEAR_POLICY_" + reason,
                 )
             return self._view(spec, state, binding, now)
+
+    def resume_if_interrupted(self, task_id, *, now=None):
+        directory = self._directory(task_id)
+        with self._lock(directory, "execution"):
+            return self.resume(task_id, now=now)
 
     def resume(self, task_id, *, now=None):
         now = _now(now)
