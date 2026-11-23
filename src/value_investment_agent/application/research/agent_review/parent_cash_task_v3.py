@@ -41,7 +41,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "0ee8dcc1e42ab2efe47541ccd94e25d23366621421f1e74dcb2419dd158584d5"
+REVIEWED_CAPITAL_SERVICE = "fc3358d0e35d01f34b308400f2c52c71b8ebcc34aa8c4a88e4fbf4f08e5a9944"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -149,7 +149,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             raw.replace(b"\r\n", b"\n"), count=1)
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
-        previous_service = ('28ccdd5b30d471b1c0ae1b0ddeda0d6c6affa37d484e1d926c8a3330b2560867', 'fa4ce1d888b9170fdc0ac7b8936a4efb7220cb084bafe8caa87d57ade02784e5')
+        previous_service = {
+            "28ccdd5b30d471b1c0ae1b0ddeda0d6c6affa37d484e1d926c8a3330b2560867",
+            "3eada6ab1703a400969ded6ddc6fa6f94205207c99d2db79d9e733a58b376f59",
+            "fa4ce1d888b9170fdc0ac7b8936a4efb7220cb084bafe8caa87d57ade02784e5",
+            "fb3eb8ae12f42c63a2a57ec35a330c55721f846d45999ae70305e30c93057aac",
+        }
         if reviewed and pinned.get(__name__) in previous_service:
             current[__name__] = pinned[__name__]
         if policy_capital.__name__ not in pinned:
@@ -672,6 +677,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                               implementation_sha256=_implementation(), policy_capital_basis=capital_basis)
             if replay_from_stage == "bear.operating":
                 trial_spec["operating_series_wire"] = "INPUTS_ONLY_V2"
+            elif "operating_series_wire" in old_spec:
+                trial_spec["operating_series_wire"] = old_spec["operating_series_wire"]
             for stage_id in STAGE_ORDER:
                 if replay_from_stage is not None:
                     replay_scenario, replay_stage = replay_from_stage.split(".")
@@ -715,8 +722,10 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             shared_budget_root=str(self.shared_budget_root),
             implementation_sha256=_implementation(), policy_capital_basis=capital_basis,
             created_at=seed_created_at, action="no_order")
-        if seed is not None and replay_from_stage == "bear.operating":
+        if seed is None:
             spec["operating_series_wire"] = "INPUTS_ONLY_V2"
+        elif "operating_series_wire" in trial_spec:
+            spec["operating_series_wire"] = trial_spec["operating_series_wire"]
         if seed is not None:
             spec.update(forked_at=now.isoformat(), seed=seed,
                         replay_from_stage=replay_from_stage,
