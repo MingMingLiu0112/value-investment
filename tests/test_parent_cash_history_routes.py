@@ -285,6 +285,22 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
                          dict(seed_task_id=task_id, replay_from_stage="base.operating")))
     assert calls == (expected + [task_id]) * 2
 
+    if failure is None:
+        calls.clear()
+        body = {"symbol": "600323", "continue_from_task_id": task_id}
+        assert client.post(path, json=body).status_code == 422
+        assert not calls
+        monkeypatch.setattr(Service, "read", lambda *_: dict(
+            status="FAILED", spec_binding=binding,
+            error_code="BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS",
+            completed_stages=["base.operating"],
+        ))
+        for _ in range(2):
+            assert client.post(path, json=body).status_code == 202
+        key = "value-policy-recovery-" + sha256(task_id.encode()).hexdigest()[:56]
+        assert calls == [(binding, key, dict(seed_task_id=task_id,
+                          replay_from_stage="base.policy")), task_id] * 2
+
 
 def test_current_parent_cash_spec_keeps_historical_case_binding(tmp_path):
     from types import SimpleNamespace

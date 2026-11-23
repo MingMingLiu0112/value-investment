@@ -80,7 +80,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
             if len(raw) > 128:
                 raise ValueError("PARENT_V3_REQUEST_TOO_LARGE")
             body = json.loads(raw)
-            if (not isinstance(body, dict) or set(body) != {"symbol"}
+            if (not isinstance(body, dict) or set(body) not in ({"symbol"}, {"symbol", "continue_from_task_id"})
                     or not isinstance(body["symbol"], str)
                     or not re.fullmatch(r"[0-9]{6}", body["symbol"])):
                 raise ValueError("PARENT_V3_REQUEST_INVALID")
@@ -90,6 +90,22 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 return reply(dict(status="BLOCKED", reason="PARENT_V3_BOUND_COMPANY_INPUTS_MISSING",
                                   symbol=symbol, action="no_order"), 409)
             from hashlib import sha256
+            if "continue_from_task_id" in body:
+                predecessor = body["continue_from_task_id"]
+                if not isinstance(predecessor, str) or not re.fullmatch(r"rt-[0-9a-f]{32}", predecessor):
+                    raise ValueError("PARENT_V3_INVALID_CONTINUATION_TASK")
+                prior = numbered_service.read(predecessor)
+                if (prior["status"] != "FAILED"
+                        or prior.get("spec_binding") != binding
+                        or prior.get("error_code") != "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS"
+                        or "base.operating" not in prior.get("completed_stages", ())):
+                    raise ValueError("PARENT_V3_CONTINUATION_NOT_AVAILABLE")
+                key = "value-policy-recovery-" + sha256(predecessor.encode()).hexdigest()[:56]
+                task = numbered_service.create(spec_binding=binding, request_key=key,
+                    seed_task_id=predecessor, replay_from_stage="base.policy")
+                if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                    background.add_task(run_numbered, task["task_id"])
+                return reply(task, 202)
             request_key = "value-web-" + binding["sha256"]
             former_id = "rt-" + sha256(("parent-cash-task-v3:" + request_key)
                                        .encode("utf-8")).hexdigest()[:32]

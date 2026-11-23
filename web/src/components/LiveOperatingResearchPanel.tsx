@@ -1,7 +1,7 @@
 import { MainValuationRevalidationPanel } from "./MainValuationRevalidationPanel";
 import { ParentFundingResearchPanel } from "./ParentFundingResearchPanel";
 import { useEffect, useRef, useState } from "react";
-import { Alert, Button, Space, Table } from "antd";
+import { Alert, Button, Popconfirm, Space, Table } from "antd";
 import {
   api,
   ApiError,
@@ -272,7 +272,15 @@ export function ParentCashTaskValuationRead({
   );
 }
 
-export function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
+export function ParentCashTaskHistoryView({
+  symbol,
+  onContinue,
+  busy,
+}: {
+  symbol: string;
+  onContinue?: (taskId: string) => Promise<void>;
+  busy?: boolean;
+}) {
   const [history, setHistory] = useState<ParentCashTaskHistory>();
   const [error, setError] = useState(false);
   useEffect(() => {
@@ -314,6 +322,19 @@ export function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
           {item.completed_stages.join("、") || "无"}· 预留 ¥
           {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
           实际使用：未核实
+          {onContinue &&
+            item.status === "FAILED" &&
+            item.error_code ===
+              "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS" &&
+            item.completed_stages.includes("base.operating") && (
+              <Popconfirm
+                title="从 Base 现金政策继续？"
+                description="将复用已核验阶段并保留原调用的未结算预留。本次可能产生新费用，仍计入每日总预算。"
+                onConfirm={() => onContinue(item.task_id)}
+              >
+                <Button disabled={busy}>从 Base 现金政策续跑</Button>
+              </Popconfirm>
+            )}
           {item.status === "SUCCEEDED" &&
             item.valuation_receipt_status === "BLOCKED" && (
               <p>
@@ -2257,13 +2278,13 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
   const [revision, setRevision] = useState(0);
   const pending = useRef(false);
 
-  async function start() {
+  async function start(continueFrom?: string) {
     if (pending.current) return;
     pending.current = true;
     setBusy(true);
     setMessage("");
     try {
-      const task = await api.startCompanyParentCashTask(symbol);
+      const task = await api.startCompanyParentCashTask(symbol, continueFrom);
       if (task.action !== "no_order" || !/^rt-[a-f0-9]{32}$/.test(task.task_id))
         throw new Error("Invalid task");
       setMessage(
@@ -2286,11 +2307,16 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
 
   return (
     <>
-      <Button onClick={start} loading={busy}>
+      <Button onClick={() => void start()} loading={busy}>
         启动股东现金估值研究
       </Button>
       {message && <p role="status">{message}</p>}
-      <ParentCashTaskHistoryView key={revision} symbol={symbol} />
+      <ParentCashTaskHistoryView
+        key={revision}
+        symbol={symbol}
+        onContinue={start}
+        busy={busy}
+      />
     </>
   );
 }
