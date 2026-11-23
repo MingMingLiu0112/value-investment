@@ -5,6 +5,7 @@ from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal
 import json
+import sys
 import os
 from pathlib import Path
 import re
@@ -128,8 +129,19 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 and self._bound(spec["spec_binding"]).get("source_adapter_version")
                 != "UNNUMBERED_OFFICIAL_CNINFO_V2"):
             current = current | PRE_FINANCING_IMPLEMENTATION
-            if pinned in (current, current | PRE_FINANCING_WINDOWS_OVERRIDES):
-                return True
+            if pinned.keys() == current.keys():
+                compatible = dict(current)
+                for name, digest in pinned.items():
+                    if name in PRE_FINANCING_IMPLEMENTATION:
+                        if digest == PRE_FINANCING_WINDOWS_OVERRIDES.get(name):
+                            compatible[name] = digest
+                        continue
+                    raw = Path(sys.modules[name].__file__).read_bytes()
+                    lf = raw.replace(b"\r\n", b"\n")
+                    if digest in {_hash(lf), _hash(lf.replace(b"\n", b"\r\n"))}:
+                        compatible[name] = digest
+                if pinned == compatible:
+                    return True
         before_terminal = {name: digest for name, digest in current.items()
                            if name != terminal_wire.__name__}
         before_terminal[__name__] = PRE_TERMINAL_WIRE_SERVICE
