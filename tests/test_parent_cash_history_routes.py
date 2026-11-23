@@ -214,17 +214,30 @@ def test_h1_sensitivity_requires_local_authorization(tmp_path, monkeypatch):
 
 
 
-def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkeypatch):
+@pytest.mark.parametrize("failure", [None, "invalid_json", "unsettled"])
+def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkeypatch, failure):
+    from hashlib import sha256
+
     binding = {"path": "runtime/spec.json", "sha256": "a" * 64}
     task_id = "rt-" + "b" * 32
     calls = []
 
     class Service:
         def __init__(self, root):
-            self.root = root
+            self.root = self.base = root
+            if failure:
+                key = "value-web-" + binding["sha256"]
+                former_id = "rt-" + sha256(("parent-cash-task-v3:" + key).encode()).hexdigest()[:32]
+                (root / former_id).mkdir(exist_ok=True)
+                (root / former_id / "input.json").touch()
 
-        def create(self, *, spec_binding, request_key):
-            calls.append((spec_binding, request_key))
+        def read(self, _):
+            return dict(status="FAILED", error_code="BEAR_POLICY_PARENT_V3_INVALID_JSON",
+                        completed_stages=["bear.operating"],
+                        reservations={"policy": {"status": "RESERVED"}} if failure == "unsettled" else {})
+
+        def create(self, *, spec_binding, request_key, **options):
+            calls.append((spec_binding, request_key, options))
             return {"status": "QUEUED", "task_id": task_id, "action": "no_order"}
 
     monkeypatch.setattr(routes, "ParentCashTaskServiceV2", Service)
@@ -245,7 +258,13 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
     for _ in range(2):
         response = client.post(path, json={"symbol": "600323"})
         assert response.status_code == 202 and response.json()["task_id"] == task_id
-    assert calls == [(binding, "value-web-" + binding["sha256"]), task_id] * 2
+    key = "value-web-" + binding["sha256"]
+    options = {}
+    if failure == "invalid_json":
+        former_id = "rt-" + sha256(("parent-cash-task-v3:" + key).encode()).hexdigest()[:32]
+        key = "value-policy1-" + binding["sha256"]
+        options = dict(seed_task_id=former_id, replay_from_stage="bear.policy")
+    assert calls == [(binding, key, options), task_id] * 2
 
 
 def test_current_parent_cash_spec_keeps_historical_case_binding(tmp_path):

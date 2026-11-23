@@ -101,6 +101,14 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                       "BEAR_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"):
                     request_key = "value-tail1-" + binding["sha256"]
                     options.update(seed_task_id=former_id, replay_from_stage="bear.terminal")
+                elif (former.get("status") == "FAILED" and
+                      former.get("error_code") == "BEAR_POLICY_PARENT_V3_INVALID_JSON" and
+                      "bear.operating" in former.get("completed_stages", ()) and
+                      not any(row["status"] == "RESERVED"
+                              for row in former.get("reservations", {}).values())):
+                    # One deterministic retry is tied to the original task.
+                    request_key = "value-policy1-" + binding["sha256"]
+                    options.update(seed_task_id=former_id, replay_from_stage="bear.policy")
             task = numbered_service.create(
                 spec_binding=binding, request_key=request_key, **options)
             if task["status"] in {"QUEUED", "SUCCEEDED"}:
