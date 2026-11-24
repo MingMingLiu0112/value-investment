@@ -473,6 +473,28 @@ def test_operating_wire_rejects_duplicate_keys_after_sealing(task):
     assert len(service._load(created["task_id"])[1]["returned_responses"]) == 1
 
 
+def test_policy_wire_preserves_strict_term_rejection(task):
+    service, _ = task
+
+    class ExtraPolicyFieldProvider(Provider):
+        def complete(self, request):
+            response = super().complete(request)
+            if json.loads(request.user)["stage"] != "policy":
+                return response
+            payload = json.loads(response.text)
+            payload["series"]["cash_floor"]["counter_evidence_na"] = None
+            return LLMResponse(json.dumps(payload), 100, 100, "deepseek-flash")
+
+    service.test_provider = ExtraPolicyFieldProvider()
+    created = service.create(spec_binding=dict(path="runtime/spec.json", sha256="b" * 64),
+                             request_key="extra-policy-term-field", now=NOW)
+    result = service.run(created["task_id"], now=NOW)
+    assert result["status"] == "FAILED"
+    assert result["error_code"] == "BEAR_POLICY_PARENT_DRAFT_TERM_SOURCE_INVALID"
+    assert result["completed_stages"] == ["bear.operating"]
+    assert service.read(created["task_id"])["error_code"] == result["error_code"]
+
+
 def test_policy_wire_error_preserves_year_and_allowed_field(task, monkeypatch):
     service, _ = task
 

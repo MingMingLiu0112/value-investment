@@ -43,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "e7bb54ba1c4cc88cadd64f53331ba2611826ad3dda867c0648071f92899b37ab"
+REVIEWED_CAPITAL_SERVICE = "b1e53a2173f3082bdc436679baa1d70d2c520f77194f5ff93fbeba5cb0bff8d9"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -191,6 +191,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "648de0ee3db959a3e54c49d854b90ae3cc04d2ff5322813e05bc8b3cd154f794",
+            "f47401bbffaebf89d26ecaf011e03d18f1026b7b46af5b79a61f222f6c201d5f",
             "98f19101f67dbfa66747b0667f36829aa511fc08316222c2fee340dae4421245",
             "2d049a3e65e0b7aefd65acd156ea3a86cc895ff84f1dcbcd06d51f1ae7d542ab",
             "4607c1b46dece2c82406f1822b8054c360dc7a5bdc14b61e93f68fb7c9f42048",
@@ -1339,7 +1341,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                     r"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:20[0-9]{2}:"
                                     r"(?:debt_repayment|new_borrowing))", detail)
                                 else detail if isinstance(error, ValueError)
-                                and (re.fullmatch(r"PARENT_V3_[A-Z0-9_]{1,90}", detail)
+                                and (detail == "PARENT_DRAFT_TERM_SOURCE_INVALID"
+                                     or re.fullmatch(r"PARENT_V3_[A-Z0-9_]{1,90}", detail)
                                      or re.fullmatch(
                                          r"PARENT_FINANCING_(?:ABOVE_DISCLOSED_PROCEEDS|BELOW_CONTRACTUAL_PRINCIPAL):20[0-9]{2}",
                                          detail)
