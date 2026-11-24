@@ -43,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "0c85e2904aa83c379db7581ed6382c3353615819328e3f32458cf4cdc77e15bd"
+REVIEWED_CAPITAL_SERVICE = "54c5b55644f129cafc9e7de051ee483e240b209f5c05e2befd572896fec669a2"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -136,6 +136,23 @@ def _conditional_coupon_calendar(root, schedule, *, symbol, as_of):
                 cash_payment_verified=False, remaining_debt_interest_verified=False, issues=rows)
 
 
+def _validate_scenario_interest(parsed, debt_path, source, calendar):
+    floors = {}
+    paid = source.get("annual_paid_note_interest_floor")
+    if paid is not None:
+        floors[paid["year"]] = Decimal(paid["minimum_cny"])
+    for issue in calendar["issues"]:
+        year = date.fromisoformat(issue["maturity"]).year
+        floors[year] = floors.get(year, Decimal(0)) + Decimal(issue["conditional_act365_cash_cny"])
+    for row, raw in zip(debt_path, parsed["series"]["interest_outside_cfo"]["values"], strict=True):
+        year, amount = row["year"], Decimal(raw)
+        if amount < floors.get(year, Decimal(0)):
+            raise ValueError(f"PARENT_V3_POLICY_COUPON_COVERAGE_LOW:{year}")
+        if (amount <= 0 and (Decimal(row["opening_debt_cny"]) > 0
+                             or Decimal(row["new_borrowing_cny"]) > 0)):
+            raise ValueError(f"PARENT_V3_POLICY_DEBT_INTEREST_UNSUPPORTED:{year}")
+
+
 def _implementation():
     from .. import (direct_owner_cash_agent_draft_v1 as draft_prior,
                     direct_owner_cash_agent_draft_v2 as draft,
@@ -191,6 +208,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "efb254950943325621bfc2c3326c0a398fbbfac52f69cff83b36d22179267647",
+            "8cf04890cd76c7102e0c47bde9779499196e65b5b1e3ab98bbbd2c3462781fbc",
             "e2106301d5f0a6d2dd1c722ba1658ec1ec748286855938bb517fbec92f73d8ab",
             "e06f05e8c811d8a59aec6ab672e7373165aa251cd6cb1ed6199b9726efd000d3",
             "648de0ee3db959a3e54c49d854b90ae3cc04d2ff5322813e05bc8b3cd154f794",
@@ -626,6 +645,16 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 "repayment_minimum_by_year_cny": {str(y): str(v) for y, v in floors.items()},
                 "classification": "CONDITIONAL_NOT_ACTUAL_SETTLEMENT",
             }
+            if spec.get("scenario_interest_wire") == "CONDITIONAL_COUPON_COVERAGE_V1":
+                payload["conditional_issuer_note_coupon_calendar"] = _conditional_coupon_calendar(
+                    root, schedule, symbol=payload["source_context"]["symbol"],
+                    as_of=datetime.fromisoformat(spec["created_at"]))
+                wire = replace(wire, transport_output_contract=wire.transport_output_contract +
+                    " Interest outside CFO must cover already paid interest plus the shown "
+                    "conditional coupons in each applicable year, without counting either twice. "
+                    "Explain the interest on residual debt or its documented repayment path. "
+                    "An unknown residual interest payment cannot be entered as zero. "
+                    "Use only the exact declared series properties.")
             if (spec.get("base_interest_wire") in {"ISSUER_FINANCING_INTEREST_V1", "ISSUER_FINANCING_INTEREST_V2"}
                     and payload["scenario"] == "base"):
                 maturity_years = sorted({
@@ -702,6 +731,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                  else parse_staged_parent_cash_response)
         parsed = parse(response, request=request, source_fingerprint=source_fingerprint)
         if stage == "policy" and policy_capital.__name__ in spec["implementation_sha256"]:
+            schedule = None
             if financing_schedule.__name__ in spec["implementation_sha256"]:
                 schedule = financing_schedule.disclosed_schedule_from_context(
                     json.loads(request.user)["source_context"],
@@ -709,6 +739,13 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 if schedule is not None:
                     financing_schedule.validate_disclosed_financing_policy(schedule, parsed)
             debt_path = policy_capital.validate_policy_debt(spec["policy_capital_basis"], parsed)
+            if spec.get("scenario_interest_wire") == "CONDITIONAL_COUPON_COVERAGE_V1":
+                if schedule is None:
+                    raise ValueError("PARENT_V3_POLICY_COUPON_SOURCE_REQUIRED")
+                source = json.loads(request.user)["source_context"]
+                calendar = _conditional_coupon_calendar(self.root, schedule, symbol=source["symbol"],
+                    as_of=datetime.fromisoformat(spec["created_at"]))
+                _validate_scenario_interest(parsed, debt_path, source, calendar)
             locked = spec.get("base_principal_reference")
             if locked is not None and json.loads(request.user)["scenario"] == "base":
                 if (parsed["years"] != locked["years"] or any(
@@ -1028,6 +1065,14 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 trial_spec["bear_financing_wire"] = "MATCHED_PRINCIPAL_WINDOW_V1"
             elif "bear_financing_wire" in old_spec:
                 trial_spec["bear_financing_wire"] = old_spec["bear_financing_wire"]
+            if "scenario_interest_wire" in old_spec:
+                trial_spec["scenario_interest_wire"] = old_spec["scenario_interest_wire"]
+            elif (replay_from_stage == "bear.policy"
+                  and old_spec.get("bear_financing_wire") == "MATCHED_PRINCIPAL_WINDOW_V1"
+                  and old_state.get("error_code") == "BASE_POLICY_PARENT_DRAFT_TERM_SOURCE_INVALID"
+                  and any(row["source"].get("redemption_wire") == "MULTI_LAYOUT_V1"
+                          for row in (context.get("annual_paid_note_interest_floor") or {}).get("evidence", ()))):
+                trial_spec["scenario_interest_wire"] = "CONDITIONAL_COUPON_COVERAGE_V1"
             if (replay_from_stage == "base.operating"
                     and old_spec.get("base_policy_wire") == "ANNUAL_EARNINGS_BRIDGE_V2"
                     and old_state.get("error_code") ==
@@ -1114,9 +1159,14 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             created_at=seed_created_at, action="no_order")
         if seed is None:
             spec["operating_series_wire"] = "INPUTS_ONLY_V2"
+            if any(row["source"].get("redemption_wire") == "MULTI_LAYOUT_V1"
+                   for row in (context.get("annual_paid_note_interest_floor") or {}).get("evidence", ())):
+                spec["scenario_interest_wire"] = "CONDITIONAL_COUPON_COVERAGE_V1"
         elif "operating_series_wire" in trial_spec:
             spec["operating_series_wire"] = trial_spec["operating_series_wire"]
         if seed is not None:
+            if "scenario_interest_wire" in trial_spec:
+                spec["scenario_interest_wire"] = trial_spec["scenario_interest_wire"]
             if "bear_financing_wire" in trial_spec:
                 spec["bear_financing_wire"] = trial_spec["bear_financing_wire"]
             if "base_operating_wire" in trial_spec:
@@ -1357,7 +1407,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                      or re.fullmatch(
                                          r"PARENT_FINANCING_(?:ABOVE_DISCLOSED_PROCEEDS|BELOW_CONTRACTUAL_PRINCIPAL):20[0-9]{2}",
                                          detail)
-                                     or re.fullmatch(r"PARENT_V3_POLICY_DEBT_INTEREST_UNSUPPORTED:20[0-9]{2}", detail)
+                                     or re.fullmatch(r"PARENT_V3_POLICY_(?:DEBT_INTEREST_UNSUPPORTED|COUPON_COVERAGE_LOW):20[0-9]{2}", detail)
                                      or (re.fullmatch(r"PARENT_V3_POLICY_CNY_WIRE_INVALID:20[0-9]{2}:[a-z_]+", detail)
                                          and detail.rsplit(":", 1)[-1] in POLICY))
                                 else "PARENT_DRAFT_REJECTED_OR_UNPUBLISHED")

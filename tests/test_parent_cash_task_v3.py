@@ -26,6 +26,28 @@ def term(count):
         reopen_condition="Reopen on new official filing")
 
 
+@pytest.mark.parametrize(("amounts", "error"), [
+    (["100", "20", "1"], "COUPON_COVERAGE_LOW:2026"),
+    (["125", "0", "1"], "COUPON_COVERAGE_LOW:2027"),
+    (["125", "20", "0"], "DEBT_INTEREST_UNSUPPORTED:2028"),
+    (["125", "20", "1"], None),
+])
+def test_scenario_interest_covers_paid_and_conditional_coupons(amounts, error):
+    debt = [dict(year=year, opening_debt_cny="50", new_borrowing_cny="0")
+            for year in (2026, 2027, 2028)]
+    source = {"annual_paid_note_interest_floor": {"year": 2026, "minimum_cny": "100"}}
+    calendar = {"issues": [
+        {"maturity": "2026-12-30", "conditional_act365_cash_cny": "25"},
+        {"maturity": "2027-11-12", "conditional_act365_cash_cny": "20"},
+    ]}
+    policy = {"series": {"interest_outside_cfo": {"values": amounts}}}
+    if error is None:
+        target._validate_scenario_interest(policy, debt, source, calendar)
+    else:
+        with pytest.raises(ValueError, match=error):
+            target._validate_scenario_interest(policy, debt, source, calendar)
+
+
 class Provider:
     def __init__(self, fail_at=None):
         self.calls = []
