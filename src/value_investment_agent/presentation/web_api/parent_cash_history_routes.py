@@ -191,6 +191,16 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                     options.update(seed_task_id=former_id, replay_from_stage="bear.operating")
             task = numbered_service.create(
                 spec_binding=binding, request_key=request_key, **options)
+            if (request_key.startswith("value-bop2-") and task["status"] == "FAILED"
+                    and task.get("error_code") ==
+                    "BASE_POLICY_PARENT_V3_ECONOMIC_DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027"
+                    and "bear.terminal" in task.get("completed_stages", ())
+                    and not any(row["status"] == "RESERVED"
+                                for row in task.get("reservations", {}).values())):
+                task = numbered_service.create(
+                    spec_binding=binding, request_key="value-basecash1-" + binding["sha256"],
+                    seed_task_id=task["task_id"], replay_from_stage="base.operating",
+                )
             if (request_key.startswith("value-bfin1-") and task["status"] == "FAILED"
                     and task.get("error_code") == "BASE_POLICY_PARENT_DRAFT_TERM_SOURCE_INVALID"
                     and "bear.operating" in task.get("completed_stages", ())
