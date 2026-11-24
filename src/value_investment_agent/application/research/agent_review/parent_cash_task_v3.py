@@ -43,7 +43,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "b1e53a2173f3082bdc436679baa1d70d2c520f77194f5ff93fbeba5cb0bff8d9"
+REVIEWED_CAPITAL_SERVICE = "0c85e2904aa83c379db7581ed6382c3353615819328e3f32458cf4cdc77e15bd"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -191,6 +191,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "e2106301d5f0a6d2dd1c722ba1658ec1ec748286855938bb517fbec92f73d8ab",
+            "e06f05e8c811d8a59aec6ab672e7373165aa251cd6cb1ed6199b9726efd000d3",
             "648de0ee3db959a3e54c49d854b90ae3cc04d2ff5322813e05bc8b3cd154f794",
             "f47401bbffaebf89d26ecaf011e03d18f1026b7b46af5b79a61f222f6c201d5f",
             "98f19101f67dbfa66747b0667f36829aa511fc08316222c2fee340dae4421245",
@@ -592,8 +594,10 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     "plan does not imply zero maintenance. Do not place observed gross capex into "
                     "one component without a defensible conditional split or use it as terminal proof.")
             year, ceiling, floors = financing_schedule.disclosed_financing_limits(schedule)
-            if (spec.get("base_policy_wire") == "ANNUAL_EARNINGS_BRIDGE_V2"
-                    and payload["scenario"] == "base"):
+            if ((spec.get("base_policy_wire") == "ANNUAL_EARNINGS_BRIDGE_V2"
+                 and payload["scenario"] == "base")
+                    or (spec.get("bear_financing_wire") == "MATCHED_PRINCIPAL_WINDOW_V1"
+                        and payload["scenario"] == "bear")):
                 with localcontext() as arithmetic:
                     arithmetic.prec = 48
                     opening = Decimal(spec["policy_capital_basis"]["amount_cny"])
@@ -1019,6 +1023,11 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 trial_spec["operating_series_wire"] = "INPUTS_ONLY_V2"
             elif "operating_series_wire" in old_spec:
                 trial_spec["operating_series_wire"] = old_spec["operating_series_wire"]
+            if (replay_from_stage == "bear.policy" and old_state.get("error_code") ==
+                    "BEAR_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE"):
+                trial_spec["bear_financing_wire"] = "MATCHED_PRINCIPAL_WINDOW_V1"
+            elif "bear_financing_wire" in old_spec:
+                trial_spec["bear_financing_wire"] = old_spec["bear_financing_wire"]
             if (replay_from_stage == "base.operating"
                     and old_spec.get("base_policy_wire") == "ANNUAL_EARNINGS_BRIDGE_V2"
                     and old_state.get("error_code") ==
@@ -1108,6 +1117,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         elif "operating_series_wire" in trial_spec:
             spec["operating_series_wire"] = trial_spec["operating_series_wire"]
         if seed is not None:
+            if "bear_financing_wire" in trial_spec:
+                spec["bear_financing_wire"] = trial_spec["bear_financing_wire"]
             if "base_operating_wire" in trial_spec:
                 spec["base_operating_wire"] = trial_spec["base_operating_wire"]
             if "base_policy_wire" in trial_spec:

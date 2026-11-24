@@ -154,6 +154,13 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                         former.get("error_code") or "")):
                     request_key = "value-fin1-" + binding["sha256"]
                     options.update(seed_task_id=former_id, replay_from_stage="bear.policy")
+                elif (former.get("status") == "FAILED"
+                      and former.get("error_code") == "BEAR_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE"
+                      and "bear.operating" in former.get("completed_stages", ())
+                      and not any(row["status"] == "RESERVED"
+                                  for row in former.get("reservations", {}).values())):
+                    request_key = "value-bfin1-" + binding["sha256"]
+                    options.update(seed_task_id=former_id, replay_from_stage="bear.policy")
                 if (former.get("status") == "FAILED" and
                         former.get("error_code") == "BEAR_OPERATING_PARENT_V3_CONFLICTING_JSON_KEY"):
                     request_key = "value-wire1-" + binding["sha256"]
