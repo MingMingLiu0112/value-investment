@@ -509,4 +509,63 @@ def test_financing_redemption_uses_payment_date_and_checks_principal(reported):
     assert result["effective_date"] == "2026-09-29"
     assert result["published_date"] == "2026-10-01"
     assert result["financing_redemptions"][0]["inferred_interest_cny"] == "6100.00"
+
+
+@pytest.mark.parametrize("second_payment", ["2026年6月26日", "2026年6月25日"])
+def test_grouped_financing_redemption_checks_individual_payment_dates(second_payment):
+    header = PRICE[0].split(" 根据《", 1)[0].replace(
+        "重大事项公告", "关于2026年度第五、六期超短期融资券兑付完成的公告",
+    )
+    pages = [header
+        + "公司2026年度第五期超短期融资券1亿元1.40%84天"
+        + "2026年4月2日2026年6月25日临2026-015"
+        + "公司2026年度第六期超短期融资券1亿元1.40%85天"
+        + "2026年4月2日2026年6月26日临2026-015"
+        + "2026年6月25日，公司完成了2026年度第五期超短期融资券的兑付工作，"
+        + "本息兑付总额为人民币100,100,000.00元；"
+        + f"{second_payment}，公司完成了2026年度第六期超短期融资券的兑付工作，"
+        + "本息兑付总额为人民币100,200,000.00元，均由银行间市场清算所股份有限公司"
+        + "代理划付至债券持有人指定的银行账户。"
+        + "特此公告示例酒业股份有限公司董事会2026年6月30日"]
+    with pytest.raises(ValueError, match="REDEMPTION_ROWS_INCOMPLETE"):
+        parse(pages)
+    if second_payment.endswith("25日"):
+        with pytest.raises(ValueError, match="REDEMPTION_TERMS_CONFLICT"):
+            parse_operating_event_terms(pages, symbol="000777", grouped_redemptions=True)
+        return
+    result = parse_operating_event_terms(pages, symbol="000777", grouped_redemptions=True)
+    assert [(r["paid_date"], r["inferred_interest_cny"]) for r in result["financing_redemptions"]] == [
+        ("2026-06-25", "100000.00"), ("2026-06-26", "200000.00"),
+    ]
+    assert_evidence(result, pages)
+
+
+@pytest.mark.parametrize("second_kind", ["超短期融资券", "科技创新债券"])
+def test_mixed_financing_redemption_requires_exact_instrument_identity(second_kind):
+    header = PRICE[0].split(" 根据《", 1)[0].replace(
+        "重大事项公告",
+        "关于2025年度第十一期科技创新债券(乡村振兴)、十六期超短期融资券兑付完成的公告",
+    )
+    pages = [header
+        + "公司2025年度第十一期科技创新债券(乡村振兴)1亿元1.48%182天"
+        + "2025年7月15日2026年1月13日临2025-057"
+        + f"公司2025年度第十六期{second_kind}1亿元1.50%89天"
+        + "2025年10月16日2026年1月13日临2025-071"
+        + "2026年1月13日，公司完成了2025年度第十一期科技创新债券(乡村振兴)、"
+        + "十六期超短期融资券的兑付工作，本息兑付总额分别为人民币"
+        + "100,100,000.00元、100,200,000.00元，均由银行间市场清算所股份有限公司"
+        + "代理划付至债券持有人指定的银行账户。"
+        + "特此公告示例酒业股份有限公司董事会2026年1月15日"]
+    with pytest.raises(ValueError, match="UNSUPPORTED_OR_AMBIGUOUS_LAYOUT"):
+        parse(pages)
+    if second_kind != "超短期融资券":
+        with pytest.raises(ValueError, match="REDEMPTION_GROUP_ROWS_INCOMPLETE"):
+            parse_operating_event_terms(pages, symbol="000777", grouped_redemptions=True)
+        return
+    result = parse_operating_event_terms(pages, symbol="000777", grouped_redemptions=True)
+    assert result["effective_date"] == "2026-01-13"
+    assert [row["inferred_interest_cny"] for row in result["financing_redemptions"]] == [
+        "100000.00", "200000.00",
+    ]
+    assert_evidence(result, pages)
     assert_evidence(result, pages)

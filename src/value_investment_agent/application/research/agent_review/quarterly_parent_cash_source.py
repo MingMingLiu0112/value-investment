@@ -167,7 +167,9 @@ def replay_parent_paid_note_interest(*, root, sources, symbol, issuer_name, peri
     evidence = []
     issues = set()
     for source in sources:
-        if (set(source) != {"path", "sha256", "url", "acquired_at"}
+        fields = {"path", "sha256", "url", "acquired_at"}
+        versioned = source.get("redemption_wire") == "MULTI_LAYOUT_V1"
+        if (set(source) != (fields | {"redemption_wire"} if versioned else fields)
                 or not re.fullmatch(r"https://static\.cninfo\.com\.cn/finalpage/\d{4}-\d{2}-\d{2}/\d+\.PDF",
                                     source["url"])):
             raise ValueError("PARENT_PAID_NOTE_INTEREST_INVALID_SOURCE")
@@ -180,7 +182,8 @@ def replay_parent_paid_note_interest(*, root, sources, symbol, issuer_name, peri
         raw_hash = sha256(path.read_bytes()).hexdigest()
         if raw_hash != source["sha256"]:
             raise ValueError("PARENT_PAID_NOTE_INTEREST_SOURCE_CHANGED")
-        result = parse_operating_event_terms(extract_pages(path), symbol=symbol)
+        result = parse_operating_event_terms(extract_pages(path), symbol=symbol,
+                                             grouped_redemptions=versioned)
         if sha256(path.read_bytes()).hexdigest() != raw_hash:
             raise ValueError("PARENT_PAID_NOTE_INTEREST_SOURCE_CHANGED")
         paid = date.fromisoformat(result["effective_date"])
@@ -190,6 +193,9 @@ def replay_parent_paid_note_interest(*, root, sources, symbol, issuer_name, peri
                 or not date(observed.year, 1, 1) <= paid <= observed):
             raise ValueError("PARENT_PAID_NOTE_INTEREST_SOURCE_MISMATCH")
         for row in result["financing_redemptions"]:
+            row_paid = date.fromisoformat(row.get("paid_date", result["effective_date"]))
+            if not date(observed.year, 1, 1) <= row_paid <= observed:
+                raise ValueError("PARENT_PAID_NOTE_INTEREST_SOURCE_MISMATCH")
             issue = row["issue"]
             if issue in issues:
                 raise ValueError("PARENT_PAID_NOTE_INTEREST_DUPLICATE_ISSUE")
