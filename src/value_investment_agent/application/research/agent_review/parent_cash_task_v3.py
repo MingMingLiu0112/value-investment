@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "3714f2400613b5d7dfb476ed40a996e91eb2165ebd3c4d57b8426fb8ee36115d"
+REVIEWED_CAPITAL_SERVICE = "4822ff1be4a4350fa29c00ca23a732f59df93c04674b7b5ce1d08dec89dd5f7c"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -209,6 +209,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "c2e36379b8929f82f085d4f759405939b567e185bc623d356e63180f9026748a",
+            "e45f628b4e7f58f2cda12db6c4f2ca05ec4e97051b4e8d915aa8cd5cf0b1f06c",
             "2d0fc6e3dbf90043eb3406b9b67c9137d65087e7917adaf67be01fac53aa7c59",
             "bd6b85db9e181e473e50afd3fd6a78c16476f51dbc8a57e4d0dbc7d63e069005",
             "898bbeaf8c6a62b9466fc04d9b7562b17489f4054e7d86f9bfc553a2c8bca3bc",
@@ -759,6 +761,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         )
                         reference["annual_net_cash_cny"] = str(net)
                         reference["annual_cash_minus_profit_cny"] = str(net - Decimal(policy["parent_profit"]))
+                        if spec.get("base_cash_transition_wire") == "FY_AFTER_OBSERVED_9M_V1":
+                            # Counterfactual arithmetic, not a projected terminal cash amount.
+                            without_receipts = net - receipts
+                            reference["cash_without_investment_receipts_cny"] = str(without_receipts)
+                            reference["cash_without_receipts_minus_profit_cny"] = str(
+                                without_receipts - Decimal(policy["parent_profit"]))
                     wire = replace(wire, transport_output_contract=wire.transport_output_contract +
                         " The computed bridge is the last annual forecast diagnostic only. "
                         "Year-to-date investment cash and capex floors do not establish terminal "

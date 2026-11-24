@@ -219,7 +219,7 @@ def test_h1_sensitivity_requires_local_authorization(tmp_path, monkeypatch):
     None, "invalid_json", "unsettled", "operating_series", "financing",
     "base_terminal", "bear_debt", "bear_debt_unsettled", "coupon_rebuild",
     "bear_terminal_rebuild", "bear_terminal_unsettled", "base_cash_rebuild",
-    "base_cash_unsettled",
+    "base_cash_unsettled", "base_tail_rebuild", "base_tail_unsettled",
 ])
 def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkeypatch, failure):
     from hashlib import sha256
@@ -239,7 +239,7 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
 
         def read(self, _):
             if failure in {"bear_terminal_rebuild", "bear_terminal_unsettled",
-                           "base_cash_rebuild", "base_cash_unsettled"}:
+                           "base_cash_rebuild", "base_cash_unsettled", "base_tail_rebuild", "base_tail_unsettled"}:
                 return dict(
                     status="FAILED",
                     error_code="BEAR_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
@@ -265,11 +265,16 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
         def create(self, *, spec_binding, request_key, **options):
             assert 8 <= len(request_key) <= 80
             calls.append((spec_binding, request_key, options))
-            if failure in {"base_cash_rebuild", "base_cash_unsettled"} and request_key.startswith("value-bop2-"):
+            if failure in {"base_cash_rebuild", "base_cash_unsettled", "base_tail_rebuild", "base_tail_unsettled"} and request_key.startswith("value-bop2-"):
                 return dict(status="FAILED", task_id=task_id,
                     error_code="BASE_POLICY_PARENT_V3_ECONOMIC_DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027",
                     completed_stages=["bear.terminal"],
                     reservations={"policy": {"status": "RESERVED"}} if failure == "base_cash_unsettled" else {})
+            if failure in {"base_tail_rebuild", "base_tail_unsettled"} and request_key.startswith("value-basecash1-"):
+                return dict(status="FAILED", task_id=task_id,
+                    error_code="BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
+                    completed_stages=["base.policy"],
+                    reservations={"tail": {"status": "RESERVED"}} if failure == "base_tail_unsettled" else {})
             if failure == "coupon_rebuild" and request_key.startswith("value-bfin1-"):
                 return dict(status="FAILED", task_id=task_id,
                             error_code="BASE_POLICY_PARENT_DRAFT_TERM_SOURCE_INVALID",
@@ -307,7 +312,7 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
                "bear_debt": "value-bfin1-", "coupon_rebuild": "value-bfin1-"}[failure] + binding["sha256"]
         options = dict(seed_task_id=former_id,
                        replay_from_stage="bear.operating" if failure == "operating_series" else "bear.policy")
-    if failure in {"bear_terminal_rebuild", "base_cash_rebuild", "base_cash_unsettled"}:
+    if failure in {"bear_terminal_rebuild", "base_cash_rebuild", "base_cash_unsettled", "base_tail_rebuild", "base_tail_unsettled"}:
         former_id = "rt-" + sha256(("parent-cash-task-v3:" + key).encode()).hexdigest()[:32]
         key = "value-bop2-" + binding["sha256"]
         options = dict(seed_task_id=former_id, replay_from_stage="bear.operating")
@@ -320,10 +325,13 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
                          dict(seed_task_id=task_id, replay_from_stage="base.terminal")))
         expected.append((binding, "value-fin3-" + binding["sha256"],
                          dict(seed_task_id=task_id, replay_from_stage="base.operating")))
-    if failure == "base_cash_rebuild":
+    if failure in {"base_cash_rebuild", "base_tail_rebuild", "base_tail_unsettled"}:
         expected.append((binding, "value-basecash1-" + binding["sha256"],
                          dict(seed_task_id=task_id, replay_from_stage="base.operating")))
-    background_calls = [] if failure == "base_cash_unsettled" else [task_id]
+    if failure == "base_tail_rebuild":
+        expected.append((binding, "value-basetail1-" + binding["sha256"],
+                         dict(seed_task_id=task_id, replay_from_stage="base.terminal")))
+    background_calls = [] if failure in {"base_cash_unsettled", "base_tail_unsettled"} else [task_id]
     assert calls == (expected + background_calls) * 2
 
     if failure is None:
