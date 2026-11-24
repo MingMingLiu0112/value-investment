@@ -218,6 +218,7 @@ def test_h1_sensitivity_requires_local_authorization(tmp_path, monkeypatch):
 @pytest.mark.parametrize("failure", [
     None, "invalid_json", "unsettled", "operating_series", "financing",
     "base_terminal", "bear_debt", "bear_debt_unsettled", "coupon_rebuild",
+    "bear_terminal_rebuild", "bear_terminal_unsettled",
 ])
 def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkeypatch, failure):
     from hashlib import sha256
@@ -236,6 +237,16 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
                 (root / former_id / "input.json").touch()
 
         def read(self, _):
+            if failure in {"bear_terminal_rebuild", "bear_terminal_unsettled"}:
+                return dict(
+                    status="FAILED",
+                    error_code="BEAR_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
+                    fixed_financing_research=True,
+                    reservations=(
+                        {"terminal": {"status": "RESERVED"}}
+                        if failure == "bear_terminal_unsettled" else {}
+                    ),
+                )
             if failure in {"bear_debt", "bear_debt_unsettled", "coupon_rebuild"}:
                 return dict(status="FAILED", error_code="BEAR_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE",
                     completed_stages=["bear.operating"], reservations=(
@@ -289,6 +300,10 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
                "bear_debt": "value-bfin1-", "coupon_rebuild": "value-bfin1-"}[failure] + binding["sha256"]
         options = dict(seed_task_id=former_id,
                        replay_from_stage="bear.operating" if failure == "operating_series" else "bear.policy")
+    if failure == "bear_terminal_rebuild":
+        former_id = "rt-" + sha256(("parent-cash-task-v3:" + key).encode()).hexdigest()[:32]
+        key = "value-bop2-" + binding["sha256"]
+        options = dict(seed_task_id=former_id, replay_from_stage="bear.operating")
     expected = [(binding, key, options)]
     if failure == "coupon_rebuild":
         expected.append((binding, "value-coupon1-" + binding["sha256"],

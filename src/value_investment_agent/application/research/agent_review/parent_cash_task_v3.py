@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "af421ca051aeb00d4ea4c824163bae2a79bc269eb083ec48fbb284aca41a0f3f"
+REVIEWED_CAPITAL_SERVICE = "a611f8faec9ad57537707c7012fa59c5ccaf52146aec86261f8bd4e7b5492f6e"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -209,6 +209,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "898bbeaf8c6a62b9466fc04d9b7562b17489f4054e7d86f9bfc553a2c8bca3bc",
+            "2ecfbc057485bced15d3d021db6fbb27174a3b4ca5b5b5874338292f15b2be59",
             "cfa16989259b138a5c133b6e9a1273201ff75e24d772a7afb4ab80055ef15000",
             "9c6c1824a05f0588fedf72add13eef86decf0e37c267c21671239e06367f0119",
             "efb254950943325621bfc2c3326c0a398fbbfac52f69cff83b36d22179267647",
@@ -467,9 +469,16 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     "Never use objects, year keys or nested evidence_anchors in annual_notes. "
                     "Return exactly one JSON object with no trailing text or closing brace.")
             if (spec.get("replay_from_stage") == "base.operating"
-                    or spec.get("base_operating_wire") in {"SOURCE_RESIDUAL_V1", "MATCHED_QUARTER_V2"}):
+                    or spec.get("base_operating_wire") in {"SOURCE_RESIDUAL_V1", "MATCHED_QUARTER_V2"}
+                    or spec.get("bear_operating_wire") == "MATCHED_QUARTER_V2"):
                 payload = json.loads(wire.user)
-                if payload.get("scenario") == "base":
+                scenario = payload.get("scenario")
+                bear_rebuild = scenario == "bear" and spec.get("bear_operating_wire") == "MATCHED_QUARTER_V2"
+                base_rebuild = scenario == "base" and (
+                    spec.get("replay_from_stage") == "base.operating"
+                    or spec.get("base_operating_wire") in {"SOURCE_RESIDUAL_V1", "MATCHED_QUARTER_V2"}
+                )
+                if base_rebuild or bear_rebuild:
                     source = payload["source_context"]
                     rows = [
                         row for row in source.get("parent_operating_cash_observations", [])
@@ -492,7 +501,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         "observed_residual_to_revenue": str(ratio),
                         "classification": "HISTORICAL_DIAGNOSTIC_NOT_FORECAST",
                     }
-                    if spec.get("base_operating_wire") == "MATCHED_QUARTER_V2":
+                    if bear_rebuild or spec.get("base_operating_wire") == "MATCHED_QUARTER_V2":
                         from .quarterly_parent_cash_source import replay_quarterly_parent_cash
                         from ....infrastructure.filings.pdf_text import extract_pages
                         from ....infrastructure.filings.quarterly_parent_operating_facts import (
@@ -529,6 +538,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                             " Use the matched quarter observations to challenge durable supplier "
                             "payment improvements and changes in other operating cash. Do not "
                             "annualise nine-month coefficients. Distinguish timing from recurrence.")
+                    if bear_rebuild:
+                        wire = replace(wire, transport_output_contract=wire.transport_output_contract +
+                            " Match the actual cash collection and supplier payment basis. "
+                            "Only include cash flows already classified within operating cash in "
+                            "other_operating_cash. Leave note interest, financing and separately "
+                            "deducted mandatory cash outside this component.")
                     wire = replace(wire, user=json.dumps(payload, ensure_ascii=False,
                         sort_keys=True, separators=(",", ":")),
                         transport_output_contract=wire.transport_output_contract +
@@ -1005,6 +1020,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if spec.get("seed") is not None:
             view["reused_stages"] = list(spec["seed"]["responses"])
             view["reused_from_task_id"] = spec["seed"]["task_id"]
+        if "conditional_financing_stress" in spec:
+            view["fixed_financing_research"] = True
         if not self._implementation_matches(spec):
             view.update(historical_status=state["status"],
                         historical_error_code=state.get("error_code"),
@@ -1093,6 +1110,11 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             if "conditional_financing_stress" in old_spec:
                 trial_spec["conditional_financing_stress"] = old_spec["conditional_financing_stress"]
                 trial_spec["financing_wire_sha256"] = old_spec["financing_wire_sha256"]
+                if (replay_from_stage == "bear.operating" and old_state.get("error_code") ==
+                        "BEAR_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"):
+                    trial_spec["bear_operating_wire"] = "MATCHED_QUARTER_V2"
+                elif "bear_operating_wire" in old_spec:
+                    trial_spec["bear_operating_wire"] = old_spec["bear_operating_wire"]
             elif (replay_from_stage == "bear.policy"
                   and old_spec.get("bear_financing_wire") == "MATCHED_PRINCIPAL_WINDOW_V1"
                   and old_state.get("error_code") == "BASE_POLICY_PARENT_DRAFT_TERM_SOURCE_INVALID"
@@ -1206,6 +1228,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             if "conditional_financing_stress" in trial_spec:
                 spec["conditional_financing_stress"] = trial_spec["conditional_financing_stress"]
                 spec["financing_wire_sha256"] = trial_spec["financing_wire_sha256"]
+            if "bear_operating_wire" in trial_spec:
+                spec["bear_operating_wire"] = trial_spec["bear_operating_wire"]
             if "scenario_interest_wire" in trial_spec:
                 spec["scenario_interest_wire"] = trial_spec["scenario_interest_wire"]
             if "bear_financing_wire" in trial_spec:

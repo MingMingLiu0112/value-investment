@@ -167,8 +167,14 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                     options["seed_task_id"] = former_id
                 elif (former.get("status") == "FAILED" and former.get("error_code") ==
                       "BEAR_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"):
-                    request_key = "value-tail1-" + binding["sha256"]
-                    options.update(seed_task_id=former_id, replay_from_stage="bear.terminal")
+                    if (former.get("fixed_financing_research") is True
+                            and not any(row["status"] == "RESERVED"
+                                        for row in former.get("reservations", {}).values())):
+                        request_key = "value-bop2-" + binding["sha256"]
+                        options.update(seed_task_id=former_id, replay_from_stage="bear.operating")
+                    elif not former.get("fixed_financing_research"):
+                        request_key = "value-tail1-" + binding["sha256"]
+                        options.update(seed_task_id=former_id, replay_from_stage="bear.terminal")
                 elif (former.get("status") == "FAILED" and
                       former.get("error_code") == "BEAR_POLICY_PARENT_V3_INVALID_JSON" and
                       "bear.operating" in former.get("completed_stages", ()) and
