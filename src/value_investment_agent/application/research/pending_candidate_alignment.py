@@ -2204,14 +2204,15 @@ def _assess(analysis, valuation, quote, quote_result, windows, scans, reconcilia
         analysis["source_bindings"], valuation_ordinary_shares=str(shares),
         current_ordinary_shares=reconciliation["closing_shares"] if basis_pass else None,
         currency=currency, share_basis="ordinary_share_unadjusted", reconciliation=reconciliation))
-    checks.append(_check("distributions", "PASS" if basis_pass else "BLOCKED",
-        [] if basis_pass else list(dict.fromkeys(["PERIOD_DISTRIBUTIONS_AND_MODEL_INCLUSION_NOT_RECONCILED", *basis_reasons])),
+    distribution_pass = basis_pass and reconciliation.get("period_cash_coverage_complete") is True
+    checks.append(_check("distributions", "PASS" if distribution_pass else "BLOCKED",
+        [] if distribution_pass else list(dict.fromkeys(["PERIOD_DISTRIBUTIONS_AND_MODEL_INCLUSION_NOT_RECONCILED", *basis_reasons])),
         "估值已包含条件分配路径；须核验期间实际除息、支付及其是否已内含，不能把预测分红再加回，也不能仅凭本期无公告认定无分配。",
         analysis["source_bindings"], period_from=start.isoformat(), period_to=end.isoformat() if end else None,
         actual_cash_per_share=reconciliation["period_cash_per_share"]
-            if reconciliation and reconciliation["period_cash_coverage_complete"] else None,
+            if distribution_pass else None,
         known_listed_period_cash_per_share=reconciliation["period_cash_per_share"] if reconciliation else None,
-        inclusion_status="SOURCE_RECONCILED_NO_UNCONSUMED_PERIOD_CASH" if basis_pass else "NOT_RECONCILED",
+        inclusion_status="SOURCE_RECONCILED_NO_UNCONSUMED_PERIOD_CASH" if distribution_pass else "NOT_RECONCILED",
         adjustment_applied=False, reconciliation=reconciliation))
     checks.append(_check("material_events", "PASS" if event_pass else "BLOCKED",
         list(dict.fromkeys([*reasons, *validity.blockers])),

@@ -47,7 +47,7 @@ def test_receipt_requires_cold_replay_and_immutable_result(tmp_path, monkeypatch
 
 def test_successful_task_publishes_a_single_receipt_after_run(tmp_path, monkeypatch):
     from contextlib import nullcontext
-    from hashlib import sha256
+    from pathlib import Path
     import json
     from value_investment_agent.application.research import parent_cash_task_completion_v1 as completion
 
@@ -81,15 +81,14 @@ def test_successful_task_publishes_a_single_receipt_after_run(tmp_path, monkeypa
         def _load(self, identifier):
             return {"spec_binding": spec_binding, "mode": "LIVE_PARENT_CASH_V3"}, {"status": status}, head
 
-    def build(*, root, task_id, task_head, case_package_binding, output_dir, now):
+    def execute(*, root, task_id, task_head, case_package_binding, now):
+        assert root == Path(tmp_path).resolve()
         assert task_head == head and case_package_binding == case_binding
         calls.append(task_head)
-        output_dir.mkdir()
-        path = output_dir / "receipt.json"
-        path.write_bytes(b"complete")
-        return {"path": path.relative_to(root).as_posix(), "sha256": sha256(b"complete").hexdigest()}
+        return dict(action="no_order", formal_eligibility=False,
+                    provenance=dict(task_id=task_id, task_record_binding=task_head))
 
-    monkeypatch.setattr(completion, "build_parent_cash_task_receipt", build)
+    monkeypatch.setattr(connector, "execute_parent_cash_task_research", execute)
     with pytest.raises(ValueError, match="PARENT_TASK_CASE_BINDING_REQUIRED"):
         completion.run_and_seal_parent_cash_task(Service(), task_id)
     assert not calls
@@ -115,9 +114,9 @@ def test_successful_task_publishes_a_single_receipt_after_run(tmp_path, monkeypa
     status = "SUCCEEDED"
     completion.run_and_seal_parent_cash_task(Service(), task_id)
     path = completion.valuation_receipt_path(tmp_path, task_id)
-    assert path.read_bytes() == b"complete"
+    assert json.loads(path.read_bytes())["inputs"]["task_head"] == head
     completion.run_and_seal_parent_cash_task(Service(), task_id)
-    assert calls == [head]
+    assert calls == [head, head]  # Build and mandatory cold replay, once each.
     assert worker_calls == [task_id]  # The cancelled fixture alone entered the worker.
     assert completion.read_valuation_publication(tmp_path, task_id, head) == {
         "valuation_receipt_status": "SEALED_REPLAY_REQUIRED",

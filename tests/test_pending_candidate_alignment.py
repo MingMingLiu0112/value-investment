@@ -587,6 +587,16 @@ def test_native_raw_window_stays_pending_and_does_not_approve_reconciled_basis(r
     assert checks[1]["status"] == checks[2]["status"] == "BLOCKED"
     assert validity.status == "UNKNOWN" and not ready and bridge.bridge_status != "READY"
 
+    # A verified share basis cannot stand in for period-distribution evidence.
+    result.update(native_basis_semantics_verified=True, current_price_basis_compatible=True,
+                  closing_shares="100", period_cash_coverage_complete=False)
+    checks, _, _, ready = service._assess(case["analysis"],
+        ValuationResultCodec().from_payload(case["analysis"]["valuation"]), quote, q, windows, scans, result)
+    assert checks[1]["status"] == "PASS"
+    assert checks[2]["status"] == "BLOCKED"
+    assert checks[2]["details"]["actual_cash_per_share"] is None
+    assert not ready
+
 
 def test_legacy_draft_comparison_flags_and_thresholds_stay_unchanged(reconciliation, monkeypatch):
     case = reconciliation
