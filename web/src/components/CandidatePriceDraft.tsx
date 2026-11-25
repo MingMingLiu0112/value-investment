@@ -354,6 +354,14 @@ function CandidateAlignment({ review }: { review: Review }) {
 
 const alignmentBlockerLabels = new Map([
   [
+    "SHANGHAI_CLEARING_DIVIDEND_PAYMENT_UNVERIFIED",
+    "缺少中国结算上海分公司实际划付的凭证。",
+  ],
+  [
+    "ISSUER_DIRECT_DIVIDEND_PAYMENT_UNVERIFIED",
+    "缺少发行人自行发放股息的实际付款凭证。",
+  ],
+  [
     "EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING",
     "缺少报价日精确股本原件。",
   ],

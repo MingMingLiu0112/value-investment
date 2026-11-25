@@ -1767,6 +1767,10 @@ def test_covered_cash_original_requires_exactly_one_ledger_row(
     if mixed_shanghai:
         assert observed["issuer_direct_payment_verified"] is False
         assert observed["clearing_house_payment_verified"] is False
+    for code in ("SHANGHAI_CLEARING_DIVIDEND_PAYMENT_UNVERIFIED",
+                 "ISSUER_DIRECT_DIVIDEND_PAYMENT_UNVERIFIED"):
+        assert (code in result["reason_codes"]) == (mixed_shanghai and row_count == 1)
+    if mixed_shanghai:
         assert result["current_price_basis_compatible"] is False
     assert ("COVERED_CASH_IMPLEMENTATION_REQUIRES_UNIQUE_LEDGER_ROW: 123" in
             result["reason_codes"]) == (row_count != 1)
