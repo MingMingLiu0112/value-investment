@@ -571,3 +571,65 @@ def test_policy_debt_failure_is_sealed_without_terminal_request(task):
     assert provider.calls == [("bear","operating"),("bear","policy")]
     assert len(result["returned_responses"]) == 2
     assert service.read(created["task_id"])["error_code"] == result["error_code"]
+
+
+@pytest.mark.parametrize("unit,expect_error", [("元", False), ("万元", True)])
+def test_terminal_cost_method_income_requires_parent_note_and_cny_columns(unit, expect_error):
+    from value_investment_agent.application.research import parent_direct_owner_cash_sources as source
+    from value_investment_agent.application.research.agent_review.parent_cash_task_v3 import (
+        _parent_cost_method_income,
+    )
+
+    header = "样本股份有限公司2025年年度报告"
+    pages = [
+        header + "\n投资收益\n成本法核算的长期股权投资收益 100.00 90.00",
+        header + "\n十九、母公司财务报表主要项目注释\n一、合营企业",
+        header + f"\n单位：{unit} 币种：人民币\n项目 本期发生额 上期发生额"
+        + "\n成本法核算的长期股权投资收益 8.00 7.00",
+        header + "\n二十、补充资料\n成本法核算的长期股权投资收益 200.00 190.00",
+    ]
+    if expect_error:
+        with pytest.raises(ValueError, match="PARENT_TERMINAL_COST_METHOD_NOTE_HEADER_CHANGED"):
+            _parent_cost_method_income(pages, source, "样本股份有限公司", "2025-12-31")
+    else:
+        row = _parent_cost_method_income(pages, source, "样本股份有限公司", "2025-12-31")
+        assert (row["current"], row["comparative"], row["physical_page"]) == ("8.00", "7.00", 3)
+
+
+def test_terminal_driver_wire_derives_cfo_without_accepting_a_model_total():
+    from value_investment_agent.infrastructure.agent_runtime.provider import LLMRequest
+
+    template = {"type": "object"}
+    schema = {"properties": {"terminal": {"properties": {"policy": {
+        "required": ["operating_cash", "parent_profit"],
+        "properties": {"operating_cash": template, "parent_profit": template},
+    }}}}}
+    request = LLMRequest(
+        role="terminal", system="fixture", user=json.dumps({
+            "required_fields": ["operating_cash", "parent_profit"],
+            "source_context": {"facts": {"profit": {}}},
+        }), output_schema=schema, transport_output_contract="fixture",
+    )
+    wire = target._terminal_driver_wire(request)
+    assert "operating_cash" not in json.loads(wire.user)["required_fields"]
+    terms = {
+        key: dict(term(1), values=[value])
+        for key, value in (("customer_cash", "100"), ("supplier_cash", "70"),
+                           ("operating_tax_refunds", "0"), ("other_operating_receipts", "5"),
+                           ("employee_cash_paid", "6"),
+                           ("operating_tax_paid", "4"), ("other_operating_payments", "5"),
+                           ("parent_profit", "25"))
+    }
+
+    def response():
+        return LLMResponse(json.dumps({"terminal": {"policy": terms}}), 100, 100, "deepseek-flash")
+
+    actual = target._merge_terminal_driver_response(response(), request)
+    assert json.loads(actual.text)["terminal"]["policy"]["operating_cash"]["values"] == ["20"]
+    terms["operating_cash"] = term(1)
+    with pytest.raises(ValueError, match="TERMINAL_DRIVER_FIELDS_INVALID"):
+        target._merge_terminal_driver_response(response(), request)
+    terms.pop("operating_cash")
+    terms["supplier_cash"]["values"] = ["-70"]
+    with pytest.raises(ValueError, match="TERMINAL_NEGATIVE_GROSS_CASH_DRIVER"):
+        target._merge_terminal_driver_response(response(), request)

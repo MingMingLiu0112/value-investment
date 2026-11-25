@@ -110,7 +110,10 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                 or any(row["status"] == "RESERVED"
                                        for row in prior.get("reservations", {}).values())):
                             raise ValueError("PARENT_V3_CONTINUATION_NOT_AVAILABLE")
-                        digest = sha256(json.dumps([binding, annual_pin], sort_keys=True)
+                        inputs = [binding, annual_pin]
+                        if "terminal_parent_cash_method" in entry:
+                            inputs.append(entry["terminal_parent_cash_method"])
+                        digest = sha256(json.dumps(inputs, sort_keys=True)
                                         .encode("utf-8")).hexdigest()
                         task = numbered_service.create(
                             spec_binding=binding, request_key="value-cohort-" + digest[:60],
@@ -545,8 +548,10 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
 
                         entry = _case_entry(Path(numbered.root), spec["spec_binding"]) or {}
                         annual_pin = entry.get("terminal_parent_prior_annual_receipt")
-                        cohort_continuation = (annual_pin is not None and
-                                               annual_pin != spec.get("terminal_parent_prior_annual_receipt"))
+                        cohort_continuation = annual_pin is not None and (
+                            annual_pin != spec.get("terminal_parent_prior_annual_receipt")
+                            or entry.get("terminal_parent_cash_method") != spec.get("terminal_parent_cash_method")
+                        )
                     items.append({"task_id": directory.name, "task_contract": "parent-cash-task-v3",
                         "terminal_cohort_continuation": cohort_continuation,
                         "read_only_archive": archived,

@@ -21,7 +21,7 @@ def read_parent_cash_agent_facts_v2(**kwargs):
     return reader(**kwargs)
 
 from ..direct_owner_cash_staged_v2 import (
-    STAGES, parse_staged_parent_cash_response,
+    STAGES, _term, _identical_prose_duplicate_only, parse_staged_parent_cash_response,
 )
 from .. import direct_owner_cash_operating_wire_v1 as operating_wire
 from .. import direct_owner_cash_terminal_wire_v1 as terminal_wire
@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "04ed63482558cb960c396faa76e95e901d25db8fa0f94a592b79190184d29568"
+REVIEWED_CAPITAL_SERVICE = "3fb7b9ab7310ee16f3d5e4a5de6e3af92d9f61b3449df9833acb0344a57208f2"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -204,6 +204,33 @@ def _terminal_parent_cash_history(root, binding, valuation_date):
                 classification="HISTORICAL_DIAGNOSTIC_NOT_FORECAST")
 
 
+def _parent_cost_method_income(pages, parent, issuer, period):
+    """Extract the two accrual columns only within the parent notes."""
+    scope_heading = re.compile(r"[一二三四五六七八九十]+、母公司财务报表主要项目注释")
+    end_heading = re.compile(r"[一二三四五六七八九十]+、补充资料")
+    target = "成本法核算的长期股权投资收益"
+    expected_header = parent._compact(issuer) + period[:4] + "年年度报告"
+    in_parent = False
+    matches = []
+    for page, text in enumerate(pages, 1):
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        compact = [parent._compact(line) for line in lines]
+        for index, line in enumerate(compact):
+            if scope_heading.fullmatch(line):
+                in_parent = True
+            elif end_heading.fullmatch(line):
+                in_parent = False
+            elif in_parent and line.startswith(target):
+                if (compact[0] != expected_header or index < 2 or
+                        compact[index - 2:index] != ["单位:元币种:人民币", "项目本期发生额上期发生额"]):
+                    raise ValueError("PARENT_TERMINAL_COST_METHOD_NOTE_HEADER_CHANGED")
+                matches.append((page, lines[index]))
+    row, _ = parent._row(matches, target)
+    if row is None:
+        raise ValueError("PARENT_TERMINAL_COST_METHOD_NOTE_MISSING_OR_AMBIGUOUS")
+    return row
+
+
 def _terminal_parent_cash_cohort(root, spec, valuation_date):
     """Reconcile adjacent audited annual parent cash and income tables."""
     from .. import parent_direct_owner_cash_sources as parent
@@ -225,6 +252,18 @@ def _terminal_parent_cash_cohort(root, spec, valuation_date):
         "gross_capex": ("母公司现金流量表", "购建固定资产、无形资产和其他长期资产支付的现金"),
     }
 
+    accrual_bridge = spec.get("terminal_parent_cash_method") == "ACCRUAL_SPLIT_V1"
+    if accrual_bridge:
+        fields.update(
+            investment_accrual=("母公司利润表", "投资收益"),
+            investment_principal_recovery=("母公司现金流量表", "收回投资收到的现金"),
+            operating_tax_refunds=("母公司现金流量表", "收到的税费返还"),
+            other_operating_receipts=("母公司现金流量表", "收到其他与经营活动有关的现金"),
+            employee_cash_paid=("母公司现金流量表", "支付给职工及为职工支付的现金"),
+            operating_tax_paid=("母公司现金流量表", "支付的各项税费"),
+            other_operating_payments=("母公司现金流量表", "支付其他与经营活动有关的现金"),
+        )
+
     def read(period, pin):
         packet = load_retained_official_report(
             root=root, receipt_binding=pin, symbol=source["symbol"],
@@ -242,10 +281,13 @@ def _terminal_parent_cash_cohort(root, spec, valuation_date):
                   for title in {item[0] for item in fields.values()}}
         rows = {}
         for metric, (title, label) in fields.items():
-            row, _ = parent._row(tables[title], label, prefix=metric == "profit")
+            row, _ = parent._row(tables[title], label, prefix=metric in {"profit", "investment_accrual"})
             if row is None:
                 raise ValueError(f"PARENT_TERMINAL_COHORT_FIELD_MISSING:{metric}")
             rows[metric] = row
+        if accrual_bridge:
+            rows["cost_method_investment_accrual"] = _parent_cost_method_income(
+                pages, parent, source["issuer_name"], period)
         refs = {key: dict(ref, physical_page=row["physical_page"], excerpt=row["excerpt"])
                 for key, row in rows.items()}
         return [{key: str(Decimal(row[column])) for key, row in rows.items()}
@@ -253,15 +295,111 @@ def _terminal_parent_cash_cohort(root, spec, valuation_date):
 
     recent, recent_refs = read(valuation_date, current["receipt_binding"])
     prior, prior_refs = read(f"{year-1}-12-31", spec["terminal_parent_prior_annual_receipt"])
-    if any(Decimal(recent[1][key]) != Decimal(prior[0][key]) for key in fields):
+    if any(Decimal(recent[1][key]) != Decimal(prior[0][key]) for key in recent[1]):
         raise ValueError("PARENT_TERMINAL_COHORT_OVERLAP_CONFLICT")
+    observations = [dict(period_end=f"{year-offset}-12-31", values_cny=values)
+                    for offset, values in enumerate((*recent, prior[1]))]
+    if accrual_bridge:
+        for observation in observations:
+            values = {key: Decimal(value) for key, value in observation["values_cny"].items()}
+            with localcontext() as arithmetic:
+                arithmetic.prec = 48
+                accrual_ex_investment = values["profit"] - values["investment_accrual"]
+                operating_residual = values["cfo"] - accrual_ex_investment
+                investment_residual = values["investment_cash"] - values["investment_accrual"]
+                cash_gap = operating_residual + investment_residual - values["gross_capex"]
+                reconstructed_cfo = _terminal_cfo_from_drivers(values)
+                if reconstructed_cfo != values["cfo"]:
+                    raise ValueError("PARENT_TERMINAL_HISTORICAL_OPERATING_CASH_NOT_RECONCILED")
+            observation["arithmetic_bridge_cny"] = dict(
+                classification="HISTORICAL_UNATTRIBUTED_DIFFERENCES_NOT_FORECAST",
+                reconstructed_operating_cash=str(reconstructed_cfo),
+                profit_less_accrual_investment_income=str(accrual_ex_investment),
+                operating_cash_less_profit_ex_investment_unattributed=str(operating_residual),
+                investment_cash_less_accrual_investment_income_unattributed=str(investment_residual),
+                total_investment_accrual_excluding_cost_method=str(
+                    values["investment_accrual"] - values["cost_method_investment_accrual"]),
+                cash_less_profit_before_other_obligations=str(cash_gap),
+            )
     return dict(
         classification="ANNUAL_PARENT_HISTORICAL_CASH_COHORT_NOT_FORECAST",
         scope=parent.SCOPE, currency="CNY",
-        observations=[dict(period_end=f"{year-offset}-12-31", values_cny=values)
-                      for offset, values in enumerate((*recent, prior[1]))],
+        observations=observations,
         source_refs=[recent_refs, prior_refs],
     )
+
+
+_TERMINAL_OPERATING_RECEIPTS = ("customer_cash", "operating_tax_refunds", "other_operating_receipts")
+_TERMINAL_OPERATING_PAYMENTS = (
+    "supplier_cash", "employee_cash_paid", "operating_tax_paid", "other_operating_payments",
+)
+_TERMINAL_OPERATING_INPUTS = _TERMINAL_OPERATING_RECEIPTS + _TERMINAL_OPERATING_PAYMENTS
+
+
+def _terminal_cfo_from_drivers(values):
+    if any(values[field] < 0 for field in _TERMINAL_OPERATING_INPUTS):
+        raise ValueError("PARENT_V3_TERMINAL_NEGATIVE_GROSS_CASH_DRIVER")
+    return (sum(values[field] for field in _TERMINAL_OPERATING_RECEIPTS)
+            - sum(values[field] for field in _TERMINAL_OPERATING_PAYMENTS))
+
+
+def _terminal_driver_wire(wire):
+    """Ask for evidenced operating drivers and keep CFO arithmetic local."""
+    schema = deepcopy(wire.output_schema)
+    policy = schema["properties"]["terminal"]["properties"]["policy"]
+    template = policy["properties"].pop("operating_cash")
+    policy["required"] = [entry for entry in policy["required"] if entry != "operating_cash"]
+    policy["properties"].update({key: deepcopy(template) for key in _TERMINAL_OPERATING_INPUTS})
+    policy["required"].extend(_TERMINAL_OPERATING_INPUTS)
+    payload = json.loads(wire.user)
+    payload["required_fields"] = list(policy["required"])
+    payload["terminal_cash_driver_rule"] = {
+        "scope": "ISSUER_PARENT_STANDALONE",
+        "formula": " + ".join(_TERMINAL_OPERATING_RECEIPTS) + " - ("
+            + " + ".join(_TERMINAL_OPERATING_PAYMENTS) + ")",
+        "classification": "SCENARIO_ASSUMPTIONS_NOT_OBSERVED_CASH",
+    }
+    return replace(wire, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
+        separators=(",", ":")), output_schema=schema,
+        transport_output_contract=wire.transport_output_contract +
+        " Return seven parent-only cash drivers in terminal.policy instead of "
+        "operating_cash. Provide sources and justification for each gross line. "
+        "Other receipts and payments must each have economic drivers; neither is a balancing item. "
+        "Exclude investment receipts, debt cash flows and capex from operating drivers. "
+        "The application derives operating_cash. Neither a missing approval nor a "
+        "proposed research payout establishes a fact about actual dividends. "
+        "Read terminal_distribution_policy_evidence: do not mechanically apply the issuer charter's "
+        "percentage or a dated plan ratio to parent profit. For a positive conditional payout, "
+        "justify the forecast cash capacity and distributable profit separately; for zero, "
+        "identify the economic restriction. Do not infer perpetual zero from lack of approval.")
+
+
+def _merge_terminal_driver_response(response, request):
+    if response.tool_calls:
+        raise ValueError("PARENT_V3_TERMINAL_DRIVER_TOOL_CALL_FORBIDDEN")
+    data = json.loads(response.text, object_pairs_hook=_identical_prose_duplicate_only)
+    terminal = data.get("terminal") if isinstance(data, dict) else None
+    policy = terminal.get("policy") if isinstance(terminal, dict) else None
+    payload = json.loads(request.user)
+    expected = (set(payload["required_fields"]) - {"operating_cash"}) | set(_TERMINAL_OPERATING_INPUTS)
+    if not isinstance(policy, dict) or set(policy) != expected:
+        raise ValueError("PARENT_V3_TERMINAL_DRIVER_FIELDS_INVALID")
+    terms = {key: policy.pop(key) for key in _TERMINAL_OPERATING_INPUTS}
+    anchors = set(payload["source_context"]["facts"])
+    for term in terms.values():
+        _term(term, anchors, 1)
+    with localcontext() as arithmetic:
+        arithmetic.prec = 48
+        values = {key: Decimal(term["values"][0]) for key, term in terms.items()}
+        operating_cash = _terminal_cfo_from_drivers(values)
+    policy["operating_cash"] = {
+        "values": [str(operating_cash)],
+        "evidence_anchors": sorted({anchor for term in terms.values() for anchor in term["evidence_anchors"]}),
+        **{name: " | ".join(f"{key}={term['values'][0]} CNY: {term[name]}" for key, term in terms.items())
+           for name in ("mechanism", "counter_evidence", "reopen_condition")},
+    }
+    return replace(response, text=json.dumps(data, ensure_ascii=False, sort_keys=True,
+                                               separators=(",", ":")))
 
 
 def _terminal_payout_conditions(root, context):
@@ -393,6 +531,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "8f8a213a312f0d7ab01edb4e663a3d7ed92f6dac31637a3e17424bfb67c02edd",
+            "9c57a49947aa25cfab95928f2154262f95d94b310c6ee2a983c4ad19f3d1a6db",
             "205f1372199546d378996dce0e2f2941497fdf266e1e52c1b50d8e4bb363a9c8",
             "f8345651e111034bb0d1c1bd5ee0db5240b0c1cd762e88363b7199fee4c63957",
             "80455330ada22a50ee3697fec6e2b60bc21d6b1b1fd9d30eacc293011eb8700b",
@@ -980,8 +1120,22 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 if payload.get("scenario") == "base" and "terminal_parent_prior_annual_receipt" in spec:
                     result["terminal_parent_cash_cohort"] = _terminal_parent_cash_cohort(
                         root, spec, source["valuation_date"])
-                return replace(wire, user=json.dumps(result, ensure_ascii=False,
+                uses_accrual_split = (payload.get("scenario") == "base"
+                    and spec.get("terminal_parent_cash_method") == "ACCRUAL_SPLIT_V1")
+                if uses_accrual_split:
+                    conditions = _terminal_payout_conditions(root, source)
+                    if conditions is None:
+                        raise ValueError("PARENT_TERMINAL_DISTRIBUTION_POLICY_SOURCE_REQUIRED")
+                    result["terminal_distribution_policy_evidence"] = {
+                        "issuer_charter": conditions,
+                        "financial_scope": "ISSUER_PARENT_STANDALONE",
+                        "forecast_payout_is_approved": False,
+                        "charter_percentage_is_not_parent_payout_ratio": True,
+                        "future_distributable_profit_and_cash_capacity_not_established": True,
+                    }
+                wire = replace(wire, user=json.dumps(result, ensure_ascii=False,
                     sort_keys=True, separators=(",", ":")))
+                return _terminal_driver_wire(wire) if uses_accrual_split else wire
             return terminal_wire.terminal_wire_request(request)
         return request
 
@@ -1004,6 +1158,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if stage == "policy" and "conditional_financing_stress" in spec:
             wire = self._wire(spec, stage, request, root=self.root)
             response = fixed_financing.merge_financing_policy_response(response, wire)
+        if (stage == "terminal" and spec.get("terminal_parent_cash_method") == "ACCRUAL_SPLIT_V1"
+                and json.loads(request.user)["scenario"] == "base"):
+            response = _merge_terminal_driver_response(response, request)
         parsed = parse(response, request=request, source_fingerprint=source_fingerprint)
         if stage == "policy" and policy_capital.__name__ in spec["implementation_sha256"]:
             schedule = None
@@ -1402,6 +1559,11 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         terminal_cohort_cutoff=now.isoformat(),
                         terminal_q3_cash_bridge=True,
                     )
+                    method = entry.get("terminal_parent_cash_method")
+                    if method is not None:
+                        if method != "ACCRUAL_SPLIT_V1":
+                            raise ValueError("PARENT_TERMINAL_COHORT_METHOD_UNSUPPORTED")
+                        trial_spec["terminal_parent_cash_method"] = method
                     _terminal_parent_cash_cohort(self.root, trial_spec, context["valuation_date"])
             if replay_from_stage == "bear.operating":
                 trial_spec["operating_series_wire"] = "INPUTS_ONLY_V2"
@@ -1567,6 +1729,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     terminal_cohort_cutoff=trial_spec["terminal_cohort_cutoff"],
                     terminal_q3_cash_bridge=True,
                 )
+            if "terminal_parent_cash_method" in trial_spec:
+                spec["terminal_parent_cash_method"] = trial_spec["terminal_parent_cash_method"]
             if trial_spec.get("terminal_distribution_preflight") is True:
                 spec["terminal_distribution_preflight"] = True
             if "base_cash_transition_wire" in trial_spec:

@@ -326,7 +326,7 @@ export function ParentCashTaskHistoryView({
   busy?: boolean;
 }) {
   const [history, setHistory] = useState<ParentCashTaskHistory>();
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<"authorization" | "history">();
   const [sealing, setSealing] = useState<string>();
   const [sealMessage, setSealMessage] = useState("");
   const [revision, setRevision] = useState(0);
@@ -352,13 +352,18 @@ export function ParentCashTaskHistoryView({
   useEffect(() => {
     let active = true;
     setHistory(undefined);
-    setError(false);
+    setError(undefined);
     void api.parentCashTaskHistory(symbol).then(
       (value) => {
         if (active) setHistory(value);
       },
-      () => {
-        if (active) setError(true);
+      (failure: unknown) => {
+        if (!active) return;
+        setError(
+          failure instanceof ApiError && failure.status === 401
+            ? "authorization"
+            : "history",
+        );
       },
     );
     return () => {
@@ -373,7 +378,12 @@ export function ParentCashTaskHistoryView({
         成功只表示条件现金候选完成编译。 费用为任务记录，E2
         实际使用仍需核验，不构成正式结论或下单依据。
       </p>
-      {error && <p>任务历史暂不可读取。</p>}
+      {error === "authorization" && (
+        <p role="alert">
+          本机研究会话未解锁或已过期。请在此浏览器打开本机启动时生成的授权链接，再返回公司研究页刷新任务历史。
+        </p>
+      )}
+      {error === "history" && <p role="alert">任务历史暂不可读取。</p>}
       {sealMessage && <p role="status">{sealMessage}</p>}
       <Button onClick={() => setRevision((value) => value + 1)}>
         刷新现金任务历史
