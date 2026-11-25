@@ -1135,6 +1135,8 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
         settlement = {}
         text = re.sub(r"\s+", "", "".join(pages))
         if _shanghai_mixed_cash_schedule(text):
+            if status == "MATCHED":
+                status = "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"
             settlement = dict(settlement_scope="SHANGHAI_CLEARING_AND_ISSUER_DIRECT",
                               issuer_direct_payment_verified=False,
                               clearing_house_payment_verified=False)

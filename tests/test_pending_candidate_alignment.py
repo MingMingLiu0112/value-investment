@@ -1734,7 +1734,11 @@ def test_reconciliation_uses_exchange_local_day_for_publication(reconciliation, 
 
 
 @pytest.mark.parametrize("row_count", [0, 1, 2])
-def test_covered_cash_original_requires_exactly_one_ledger_row(reconciliation, monkeypatch, row_count):
+@pytest.mark.parametrize("mixed_shanghai", [False, True])
+def test_covered_cash_original_requires_exactly_one_ledger_row(
+    reconciliation, monkeypatch, row_count, mixed_shanghai,
+):
+    monkeypatch.setattr(service, "_shanghai_mixed_cash_schedule", lambda text: mixed_shanghai)
     case = reconciliation
     anchor = case["anchor"]
     case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
@@ -1758,7 +1762,12 @@ def test_covered_cash_original_requires_exactly_one_ledger_row(reconciliation, m
     observed, = result["covered_cash_implementations"]
     assert observed["terms"] == terms
     assert len(observed["matched_ledger_ids"]) == row_count
-    assert observed["status"] == ("MATCHED" if row_count == 1 else "LEDGER_MISMATCH")
+    expected = "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED" if mixed_shanghai else "MATCHED"
+    assert observed["status"] == (expected if row_count == 1 else "LEDGER_MISMATCH")
+    if mixed_shanghai:
+        assert observed["issuer_direct_payment_verified"] is False
+        assert observed["clearing_house_payment_verified"] is False
+        assert result["current_price_basis_compatible"] is False
     assert ("COVERED_CASH_IMPLEMENTATION_REQUIRES_UNIQUE_LEDGER_ROW: 123" in
             result["reason_codes"]) == (row_count != 1)
     assert result["period_cash_coverage_complete"] is False
