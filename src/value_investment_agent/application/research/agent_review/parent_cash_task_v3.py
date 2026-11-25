@@ -47,7 +47,7 @@ BASE_INVESTMENT_RECEIPTS_V1 = "PARENT_YTD_ACTUAL_ONLY_V1"
 BASE_CAPITAL_EVIDENCE_V1 = "PARENT_CAPITAL_EVIDENCE_REVIEW_V1"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "341595036d226b5db8b19dfb57fb1045e39b012e6a2ca643345bd9d0768d46aa"
+REVIEWED_CAPITAL_SERVICE = "6bf92bde6196fd4310c2aa6b7e0586e8f175dba01b3ec405c2ca8b1fbc1ce32d"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -218,7 +218,8 @@ def project_base_capital_evidence_v1(*, root, spec_binding, context, ir_receipt_
     year_end = context["valuation_date"]
     floor = context.get("annual_capex_floor")
     observed_year = int(year_end[:4]) + 1
-    if (context["symbol"] != "600887" or floor is None
+    symbol = context["symbol"]
+    if (not isinstance(symbol, str) or not re.fullmatch(r"[0-9]{6}", symbol) or floor is None
             or floor["symbol"] != context["symbol"] or floor["scope"] != terminal_wire.SCOPE
             or floor["currency"] != "CNY" or floor["year"] != observed_year
             or floor["period_start"] != f"{observed_year}-01-01"
@@ -251,7 +252,7 @@ def project_base_capital_evidence_v1(*, root, spec_binding, context, ir_receipt_
     pages = ["".join(page.split()) for page in extract_pages(original)]
     expected = {"持续地进行低温业务上的投入": 7, "未来五年的深加工发展战略目标": 8}
     findings = receipt["findings"]
-    if (len(pages) < 8 or "证券代码：600887" not in pages[0]
+    if (len(pages) < 8 or f"证券代码：{symbol}" not in pages[0]
             or "投资者关系活动记录表" not in pages[0] or "编号：20261030" not in pages[0]
             or set(findings) != set(expected)
             or any(findings[phrase]["physical_page"] != page
@@ -814,6 +815,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "f6711213d85922901c2b1a35d06de52447c4588fceeeee6c1deaa4054c7da594",
+            "9ad43884f77abd742a22cc5b51dc60012d3021d34584a5dfa1374a4e5da4ef10",
             "06981acaca5c6f7a50305964d07e36a2b42df4499b9eaf4583648c6a1c91c8d3",
             "191425ca88183f2ee1527c590973c63aa3b6bf57eb44e17a21137fbcb1699b23",
             "adc02b6b7d2310007c27b7cf9f0cb7e4877be4d824e01070f9392557e4b0d867",

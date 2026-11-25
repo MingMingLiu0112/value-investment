@@ -904,6 +904,7 @@ def test_v4_policy_successor_versions_only_base_policy_without_provider_call(tas
     ("receipt", "PARENT_V3_CAPITAL_IR_RECEIPT_CHANGED"),
     ("original", "PARENT_V3_CAPITAL_IR_ORIGINAL_CHANGED"),
     ("excerpt", "PARENT_V3_CAPITAL_IR_EXCERPT_INVALID"),
+    ("issuer", "PARENT_V3_CAPITAL_IR_EXCERPT_INVALID"),
     ("cutoff", "PARENT_V3_CAPITAL_IR_SOURCE_INVALID"),
     ("scope", "PARENT_V3_CAPITAL_EVIDENCE_Q3_INVALID"),
 ])
@@ -920,6 +921,8 @@ def test_base_capital_evidence_projects_dated_totals_and_separate_group_outlook(
     deep_processing = "未来五年的深加工发展战略目标"
     pages = ["证券代码：600887 投资者关系活动记录表 编号：20261030"] + [""] * 5
     pages += [low_temp, deep_processing]
+    if change == "issuer":
+        pages[0] = pages[0].replace("600887", "600519")
     monkeypatch.setattr(pdf_text, "extract_pages", lambda path: pages)
     acquired = "2026-11-25T07:39:03+00:00"
     receipt = dict(
