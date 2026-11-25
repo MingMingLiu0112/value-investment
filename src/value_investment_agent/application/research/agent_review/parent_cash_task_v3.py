@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "bee1da6143e63e8efe66f31ff135c172ca625fe6a4c681c3f259c21205fde57d"
+REVIEWED_CAPITAL_SERVICE = "01063c266871696795b380d4d973370e756b541bb1e9a0d0e5d5ffefe2e7cb59"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -714,6 +714,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "e748c2ef5a3e91ba8dcf635dc7ffb6c0ab31831b2f3e8158c8bde294fc077094",
             "85c0d7ed760726996952e05f9ea28503bfe49b1a6ef5cd4b0cac8d0cc0475f82",
             "d0346d62979b83332489780692201f4f8cf8504e7024f8a3e6ff7805bb0db5a8",
             "1dbfc634df2bd4d6e929996616c489f623a06e1dc7cd6bab3bebcc51fb0fcb85",
@@ -1461,6 +1462,16 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reserve = Decimal(policy["reserve_ratio"]["values"][0])
         if min(profit, payout, 1 - reserve) <= 0:
             raise ValueError("PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION")
+        if spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V4":
+            investment = policy["investment_cash_received"]
+            if Decimal(investment["values"][0]) > 0:
+                source_facts = json.loads(request.user)["source_context"]["facts"]
+                cash_fields = {"investment_income_cash_cny", "parent_investment_cash"}
+                if not any(
+                    source_facts.get(anchor, {}).get("field") in cash_fields
+                    for anchor in investment["evidence_anchors"]
+                ):
+                    raise ValueError("PARENT_V3_TERMINAL_INVESTMENT_CASH_ANCHOR_REQUIRED")
 
     def _parse_stage(self, spec, stage, response, request, source_fingerprint):
         parse = (operating_wire.parse_operating_wire

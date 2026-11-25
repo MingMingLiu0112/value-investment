@@ -798,3 +798,29 @@ def test_terminal_retained_reference_checks_reconciled_parent_profit(monkeypatch
         assert result["closing_retained_cny"] == "120"
         assert result["profit_source"]["physical_page"] == 13
         assert result["classification"] == "HISTORICAL_PARENT_RETAINED_EARNINGS_NOT_CASH_OR_FUTURE_CAPACITY"
+
+
+@pytest.mark.parametrize("review, payout, investment, anchor, error", [
+    ("RESEARCH_PAYOUT_V3", "0.3", "1", "revenue", None),
+    ("RESEARCH_PAYOUT_V4", "0", "1", "revenue", "PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION"),
+    ("RESEARCH_PAYOUT_V4", "0.3", "1", "revenue", "PARENT_V3_TERMINAL_INVESTMENT_CASH_ANCHOR_REQUIRED"),
+    ("RESEARCH_PAYOUT_V4", "0.3", "0", "revenue", None),
+    ("RESEARCH_PAYOUT_V4", "0.3", "1", "observed_receipt", None),
+])
+def test_terminal_investment_cash_requires_relevant_evidence(review, payout, investment, anchor, error):
+    request = types.SimpleNamespace(user=json.dumps({"source_context": {"facts": {
+        "revenue": {"field": "revenue"},
+        "observed_receipt": {"field": "investment_income_cash_cny"},
+    }}}))
+    policy = {
+        "parent_profit": {"values": ["10"]},
+        "payout_ratio": {"values": [payout]},
+        "reserve_ratio": {"values": ["0.1"]},
+        "investment_cash_received": {"values": [investment], "evidence_anchors": [anchor]},
+    }
+    spec = dict(terminal_cash_review=review, terminal_distribution_preflight=True)
+    if error is None:
+        target.ParentCashTaskServiceV3._preflight_terminal(spec, request, {"terminal": {"policy": policy}})
+    else:
+        with pytest.raises(ValueError, match=error):
+            target.ParentCashTaskServiceV3._preflight_terminal(spec, request, {"terminal": {"policy": policy}})
