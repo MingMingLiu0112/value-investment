@@ -1425,21 +1425,39 @@ def test_shenzhen_clearing_date_does_not_verify_issuer_direct_payment():
         parse_mixed_cash_entitlement([*pages, "更正"], symbol="000001")
 
 
-def test_mixed_payment_ledger_does_not_claim_issuer_payment(reconciliation, monkeypatch):
+@pytest.mark.parametrize("live_task", [False, True])
+def test_mixed_payment_ledger_does_not_claim_issuer_payment(reconciliation, monkeypatch, live_task):
     from value_investment_agent.infrastructure.filings import szse_cash_entitlement
 
     case = reconciliation
     case["ledger"]["distributions"] = [cash(case, in_period=True)]
     terms = dict(cash_per_share="2", record_date="2020-01-01", ex_date="2020-01-02",
                  published_date="2020-01-01", clearing_house_scheduled_payment_date="2020-01-02",
-                 issuer_direct_payment_date=None, cash_payment_status="ISSUER_DIRECT_PAYMENT_UNVERIFIED")
+                 gross_declared_cash_cny="200", issuer_direct_payment_date=None, cash_payment_status="ISSUER_DIRECT_PAYMENT_UNVERIFIED")
     monkeypatch.setattr(szse_cash_entitlement, "parse_mixed_cash_entitlement", lambda *a, **k: terms)
     anchor = case["anchor"]
     case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
         announcements=[dict(announcement_id="123", title="TEST_ONLY年度分红派息实施公告",
             published_at="2019-12-31T16:00:00+00:00",
             evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
+    if live_task:
+        closure = dict(
+            status="PASS", reason_code="IMPLEMENTED_DISTRIBUTION_INCLUDED_IN_MODEL",
+            scope="EXACT_IMPLEMENTED_DISTRIBUTION_ONLY_NOT_PERIOD_COMPLETENESS",
+            paid_date="2020-01-02", per_share_cny="2", total_cny="200",
+            original_binding=anchor["binding"], formal_eligibility=False, action="no_order")
+        case["analysis"]["distribution_model_inclusion"] = lambda start, end: [closure]
     result = reconcile(case)
+    assert not result["implemented_distribution_inclusion_complete"]
+    assert not result["period_cash_coverage_complete"]
+    if live_task:
+        assert result["unconsumed_period_cash_per_share"] == "0"
+        assert result["distributions"][0]["model_inclusion"] == (
+            "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE")
+        terms["gross_declared_cash_cny"] = "201"
+        with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
+            reconcile(case)
+        terms["gross_declared_cash_cny"] = "200"
     observed, = result["covered_cash_implementations"]
     assert observed["status"] == "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"
     assert observed["matched_ledger_ids"] == ["TEST_ONLY_CASH"]

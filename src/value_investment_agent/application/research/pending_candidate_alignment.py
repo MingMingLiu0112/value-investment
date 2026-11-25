@@ -1015,10 +1015,17 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
                 raise ValueError("CONSUMED_IMPLEMENTED_DISTRIBUTION_CLOSURE_INVALID")
             matches = [index for index, cash_row in enumerate(cash_rows)
                 if cash_row["ex_entitlement_in_period"]
-                and not cash_row["payment_pending_at_comparison"]
-                and cash_row["native_terms"] is not None
-                and Decimal(cash_row["native_terms"]["total_gross_cash"])
-                    == Decimal(closure.get("total_cny", "NaN"))
+                and (
+                    (cash_row["native_terms"] is not None
+                     and not cash_row["payment_pending_at_comparison"]
+                     and Decimal(cash_row["native_terms"]["total_gross_cash"])
+                         == Decimal(closure.get("total_cny", "NaN")))
+                    or (model_inclusion is not None
+                        and cash_row.get("native_entitlement_only", {}).get("gross_declared_cash_cny")
+                            is not None
+                        and Decimal(cash_row["native_entitlement_only"]["gross_declared_cash_cny"])
+                            == Decimal(closure.get("total_cny", "NaN")))
+                )
                 and cash_row["cash_payment_date"] == closure.get("paid_date")
                 and Decimal(cash_row["arithmetic_cash_per_share"])
                     == Decimal(closure.get("per_share_cny", "NaN"))
@@ -1029,7 +1036,8 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
             index = matches[0]
             matched_rows.add(index)
             cash_rows[index]["model_inclusion"] = "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE"
-            cash_rows[index]["period_treatment"] = "IN_PERIOD_MODEL_INCLUSION_VERIFIED"
+            if "native_entitlement_only" not in cash_rows[index]:
+                cash_rows[index]["period_treatment"] = "IN_PERIOD_MODEL_INCLUSION_VERIFIED"
             with localcontext() as context:
                 context.prec = 80
                 unconsumed_period_cash -= Decimal(cash_rows[index]["arithmetic_cash_per_share"])
