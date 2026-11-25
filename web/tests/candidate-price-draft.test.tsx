@@ -430,9 +430,14 @@ it("explains partial source-bound share and distribution arithmetic without clai
   expect(html).toContain("100.00");
   expect(html).toContain("1354");
 });
-it.each([true, false])(
-  "links mixed Shanghai settlement by ledger row (%s)",
-  (matches) => {
+it.each([
+  [true, false, false],
+  [true, true, false],
+  [true, false, true],
+  [false, true, true],
+])(
+  "links mixed Shanghai settlement by ledger row (%s) with clearing=%s and issuer=%s",
+  (matches, clearing, issuer) => {
     const review = alignmentFixture();
     const check = review.conditional_price!.alignment!.checks!.find(
       (item) => item.id === "distributions",
@@ -443,8 +448,8 @@ it.each([true, false])(
         covered_cash_implementations: [
           {
             settlement_scope: "SHANGHAI_CLEARING_AND_ISSUER_DIRECT",
-            issuer_direct_payment_verified: false,
-            clearing_house_payment_verified: false,
+            issuer_direct_payment_verified: issuer,
+            clearing_house_payment_verified: clearing,
             matched_ledger_ids: [matches ? "TEST_ONLY/dividend" : "unrelated"],
           },
         ],
@@ -453,6 +458,8 @@ it.each([true, false])(
     const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
     expect(html.includes("中国结算上海分公司代发")).toBe(matches);
     expect(html.includes("发行人自行发放")).toBe(matches);
+    expect(html.includes("实际划付已核验")).toBe(matches && clearing);
+    expect(html.includes("实际付款已核验")).toBe(matches && issuer);
     expect(html).toContain("不证明全期间完整覆盖");
   },
 );
