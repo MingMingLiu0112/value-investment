@@ -12,7 +12,7 @@ from starlette.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
 from ...application.research.parent_cash_task_completion_v1 import (
-    registered_cash_task_spec, run_and_seal_parent_cash_task, seal_completed_parent_cash_task,
+    _case_entry, registered_cash_task_spec, run_and_seal_parent_cash_task, seal_completed_parent_cash_task,
     valuation_receipt_path,
     preflight_parent_cash_task, read_valuation_publication, valuation_blockage_path,
 )
@@ -153,6 +153,24 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 if not isinstance(predecessor, str) or not re.fullmatch(r"rt-[0-9a-f]{32}", predecessor):
                     raise ValueError("PARENT_V3_INVALID_CONTINUATION_TASK")
                 prior = numbered_service.read(predecessor)
+                if (prior.get("terminal_cash_review") == "RESEARCH_PAYOUT_V4"
+                        and prior.get("error_code") == "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID"):
+                    if prior.get("status") != "FAILED" or prior.get("spec_binding") != binding:
+                        raise ValueError("PARENT_V3_CONTINUATION_NOT_AVAILABLE")
+                    entry = _case_entry(Path(root).resolve(), binding)
+                    plan = (entry or {}).get("gross_capex_plan_binding")
+                    if plan is None:
+                        return reply(dict(status="BLOCKED", reason="PARENT_V3_GROSS_CAPEX_PLAN_REQUIRED",
+                                          symbol=symbol, action="no_order"), 409)
+                    digest = sha256(json.dumps([predecessor, plan], sort_keys=True).encode()).hexdigest()
+                    task = numbered_service.create(
+                        spec_binding=binding, request_key="value-gross-capex-v1-" + digest[:48],
+                        seed_task_id=predecessor, replay_from_stage="base.policy",
+                        gross_capex_plan_binding=plan,
+                    )
+                    if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                        background.add_task(run_numbered, task["task_id"])
+                    return reply(task, 202)
                 if prior.get("terminal_cash_review") == "RESEARCH_PAYOUT_V4":
                     reservations = prior.get("reservations")
                     if (prior.get("status") != "FAILED" or prior.get("spec_binding") != binding
@@ -205,7 +223,6 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 is_earnings_rebuild = prior.get("error_code") == (
                     "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION")
                 if is_earnings_rebuild and prior.get("spec_binding") == binding:
-                    from ...application.research.parent_cash_task_completion_v1 import _case_entry
 
                     entry = _case_entry(Path(numbered_service.root), binding) or {}
                     annual_pin = entry.get("terminal_parent_prior_annual_receipt")
@@ -671,7 +688,6 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                             "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"
                             and "base.policy" in state["responses"]
                             and not any(row["status"] == "RESERVED" for row in reservations.values())):
-                        from ...application.research.parent_cash_task_completion_v1 import _case_entry
 
                         entry = _case_entry(Path(numbered.root), spec["spec_binding"]) or {}
                         annual_pin = entry.get("terminal_parent_prior_annual_receipt")

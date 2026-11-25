@@ -603,6 +603,8 @@ def test_verified_valuation_api_preserves_annual_cash_and_total_distribution(
     ("reserved_cost", 422),
     ("malformed_cost", 422),
     ("budget_exhausted", 422),
+    ("aggregate_registered", 202),
+    ("aggregate_missing", 409),
 ])
 def test_v4_policy_successor_requires_authorized_settled_predecessor(
         tmp_path, monkeypatch, case, expected):
@@ -645,6 +647,11 @@ def test_v4_policy_successor_requires_authorized_settled_predecessor(
         prior["reserved_cost"] = "0.01"
     elif case == "malformed_cost":
         prior["reserved_cost"] = "invalid"
+    aggregate_plan = dict(path="runtime/capex-plan.json", sha256="3" * 64)
+    if case in {"aggregate_registered", "aggregate_missing"}:
+        prior["error_code"] = "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID"
+        entry = {"gross_capex_plan_binding": aggregate_plan} if case == "aggregate_registered" else {}
+        monkeypatch.setattr(routes, "_case_entry", lambda root, pin: entry)
     calls, reads, runs = [], [], []
 
     class Service:
@@ -693,13 +700,20 @@ def test_v4_policy_successor_requires_authorized_settled_predecessor(
         if case == "legacy_v3":
             assert first["replay_from_stage"] == "base.terminal"
             assert first["request_key"].startswith("value-payout-review-v4-")
+        elif case == "aggregate_registered":
+            assert first["replay_from_stage"] == "base.policy"
+            assert first["gross_capex_plan_binding"] == aggregate_plan
+            assert first["request_key"].startswith("value-gross-capex-v1-")
         else:
             assert first["replay_from_stage"] == "base.policy"
             assert first["request_key"].startswith("value-base-receipts-v1-")
         assert runs == [successor, successor]
     else:
         assert not runs
-        if case == "budget_exhausted":
+        if case == "aggregate_missing":
+            assert response.json()["reason"] == "PARENT_V3_GROSS_CAPEX_PLAN_REQUIRED"
+            assert not calls
+        elif case == "budget_exhausted":
             assert response.json()["reason"] == "PARENT_TASK_BUDGET_EXHAUSTED"
             assert len(calls) == 1 and calls[0]["replay_from_stage"] == "base.policy"
         else:

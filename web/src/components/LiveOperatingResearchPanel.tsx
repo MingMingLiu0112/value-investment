@@ -496,15 +496,23 @@ export function ParentCashTaskHistoryView({
             "BASE_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION" &&
           item.completed_stages.includes("base.policy") &&
           (item.charges || []).every((charge) => charge.status === "SETTLED");
-        const resumeLabel = rebuildAnnualCash
-          ? "从 Base 年度现金政策重建"
-          : rebuildPayout || item.terminal_cohort_continuation
-            ? "用新增证据从 Base 终值续跑"
-            : rebuildInterest
-              ? "从 Base 付息政策续跑"
-              : item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V2"
-                ? "从 Base 经营重建"
-                : "从 Base 现金政策续跑";
+        const rebuildGrossCapex =
+          item.terminal_cash_review === "RESEARCH_PAYOUT_V4" &&
+          item.error_code ===
+            "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID" &&
+          item.completed_stages.includes("base.policy") &&
+          (item.charges || []).every((charge) => charge.status === "SETTLED");
+        const resumeLabel = rebuildGrossCapex
+          ? "核验总额投入计划并续跑"
+          : rebuildAnnualCash
+            ? "从 Base 年度现金政策重建"
+            : rebuildPayout || item.terminal_cohort_continuation
+              ? "用新增证据从 Base 终值续跑"
+              : rebuildInterest
+                ? "从 Base 付息政策续跑"
+                : item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V2"
+                  ? "从 Base 经营重建"
+                  : "从 Base 现金政策续跑";
         return (
           <div key={item.task_id}>
             <strong>{item.task_id}</strong> · {item.task_contract || "历史任务"}{" "}
@@ -528,6 +536,7 @@ export function ParentCashTaskHistoryView({
                     "PARENT_V3_ECONOMIC_DIRECT_OWNER_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION")) ||
                 item.terminal_cohort_continuation ||
                 rebuildAnnualCash ||
+                rebuildGrossCapex ||
                 rebuildPayout ||
                 rebuildInterest ||
                 (item.base_operating_wire !== "MATCHED_QUARTER_V2" &&
