@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "4b7721e5f986ca568262999079239fb94b68e9d1e7aea8c81dedf5c0dc9ca058"
+REVIEWED_CAPITAL_SERVICE = "80956556934263f22224de33398f613445601decc7b74b282d44d5824b41a07a"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -676,6 +676,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "d0346d62979b83332489780692201f4f8cf8504e7024f8a3e6ff7805bb0db5a8",
             "1dbfc634df2bd4d6e929996616c489f623a06e1dc7cd6bab3bebcc51fb0fcb85",
             "b9e52a64302c44a9513965d411ebc6d191877d48648e224bdb99e7f74ed00487",
             "85870518fcd6ec43dbb271b84257adeaf2ea1fe77d02bb59c0ac881c2543b341",
@@ -1593,6 +1594,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
     def _drafts(self, spec, state, now):
         context = self._context(spec, now)
         outputs = self._stage_outputs(spec, state, now, verified_context=context)
+        return self._assemble_verified_stages(spec, context, outputs)
+
+    def _assemble_verified_stages(self, spec, context, outputs):
         drafts = {}
         for scenario, stages in outputs.items():
             if not stages:
@@ -1667,7 +1671,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     if row["records"].get(reservation) != expected:
                         raise ValueError("PARENT_BUDGET_CHARGE_MISMATCH")
 
-    def _terminal_failure_cash_bridge(self, spec, state, now):
+    def _terminal_failure_cash_bridge(self, spec, state, context, outputs):
         error = state.get("error_code") or ""
         scenario, _, detail = error.lower().partition("_terminal_")
         if scenario not in SCENARIOS or detail not in {
@@ -1680,8 +1684,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                    if (packet := self._bound(pin)).get("scenario") == stage_id]
         if len(packets) != 1:
             return None
-        context = self._context(spec, now)
-        stages = self._stage_outputs(spec, state, now, verified_context=context)[scenario]
+        stages = outputs[scenario]
         request = staged_parent_cash_request_v3(
             root=self.root, spec_binding=spec["spec_binding"], scenario=scenario,
             stage="terminal", prior_drafts=stages, generated_at=datetime.fromisoformat(spec["created_at"]),
@@ -1767,7 +1770,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         status="FAILED", error_code="PARENT_IMPLEMENTATION_CHANGED_REPLAY_REQUIRED")
             return view
         try:
-            drafts = self._drafts(spec, state, now)
+            context = self._context(spec, now)
+            outputs = self._stage_outputs(spec, state, now, verified_context=context)
+            drafts = self._assemble_verified_stages(spec, context, outputs)
             view["completed_stages"] = [stage for stage in STAGE_ORDER
                 if stage in state["responses"]]
             view["completed_scenarios"] = sorted(drafts)
@@ -1781,9 +1786,10 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 view["candidate"] = self._assemble(spec, drafts, now)
         except (ValueError, OSError, KeyError, TypeError, PermissionError):
             view.update(status="FAILED", error_code="PARENT_SOURCE_OR_CHECKPOINT_INVALID")
+            return view
         if view.get("status") == "FAILED":
             try:
-                bridge = self._terminal_failure_cash_bridge(spec, state, now)
+                bridge = self._terminal_failure_cash_bridge(spec, state, context, outputs)
             except (ValueError, OSError, KeyError, TypeError, PermissionError):
                 bridge = None
             if bridge is not None:
