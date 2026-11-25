@@ -42,9 +42,10 @@ VERSION = "parent-cash-task-v3"
 STAGE_ORDER = tuple(f"{scenario}.{stage}" for scenario in SCENARIOS for stage in STAGES)
 LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3bac68d06b"
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
+BASE_INVESTMENT_RECEIPTS_V1 = "PARENT_YTD_ACTUAL_ONLY_V1"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "01063c266871696795b380d4d973370e756b541bb1e9a0d0e5d5ffefe2e7cb59"
+REVIEWED_CAPITAL_SERVICE = "83785720e9f20d0c1b8d8868821678ba15e60ffec383a28a4eb4a4e89105c59c"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -714,6 +715,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "33587ef83bc4a5ce879aedaecc79404ec8bc776cc55035587aa616e50590f5c7",
+            "7ec3a71dd0c96742cecdd15837a10212e62197ff287bccb2c78276866eb8209f",
             "e748c2ef5a3e91ba8dcf635dc7ffb6c0ab31831b2f3e8158c8bde294fc077094",
             "85c0d7ed760726996952e05f9ea28503bfe49b1a6ef5cd4b0cac8d0cc0475f82",
             "d0346d62979b83332489780692201f4f8cf8504e7024f8a3e6ff7805bb0db5a8",
@@ -1011,6 +1014,20 @@ class ParentCashTaskServiceV3(ResearchTaskService):
     @staticmethod
     def _wire(spec, stage, request, *, root=None):
         wire = ParentCashTaskServiceV3._base_wire(spec, stage, request, root=root)
+        if (stage == "policy" and spec.get("base_investment_receipts_wire") == BASE_INVESTMENT_RECEIPTS_V1
+                and json.loads(request.user)["scenario"] == "base"):
+            payload = json.loads(request.user)
+            source = payload["source_context"]
+            floor = source.get("annual_investment_receipts_floor")
+            if (floor is None or floor["scope"] != terminal_wire.SCOPE
+                    or floor["currency"] != "CNY" or floor["symbol"] != source["symbol"]
+                    or floor["year"] not in payload["required_years"]):
+                raise ValueError("PARENT_V3_ANNUAL_INVESTMENT_ACTUAL_SOURCE_INVALID")
+            wire = replace(wire, transport_output_contract=wire.transport_output_contract +
+                " Base investment_cash_received may include the verified parent year-to-date "
+                "actual once, in its own year. This contract supports no additional positive "
+                "forecast receipts. Do not treat missing evidence as proof of zero future "
+                "receipts or invent cash to close a funding gap.")
         if (stage == "terminal" and spec.get("terminal_cash_review") in {
                 "RESEARCH_PAYOUT_V2", "RESEARCH_PAYOUT_V3", "RESEARCH_PAYOUT_V4"}
                 and json.loads(request.user)["scenario"] == "base"):
@@ -1492,6 +1509,18 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 response = _unpack_flat_terminal_review_response(response, verified_cash_lines=lines)
             response = _merge_terminal_driver_response(response, request)
         parsed = parse(response, request=request, source_fingerprint=source_fingerprint)
+        if (stage == "policy" and spec.get("base_investment_receipts_wire") == BASE_INVESTMENT_RECEIPTS_V1
+                and json.loads(request.user)["scenario"] == "base"):
+            floor = json.loads(request.user)["source_context"]["annual_investment_receipts_floor"]
+            actual = Decimal(floor["minimum_cny"])
+            values = parsed["series"]["investment_cash_received"]["values"]
+            for year, value in zip(parsed["years"], values, strict=True):
+                supported = actual if year == floor["year"] else Decimal(0)
+                amount = Decimal(value)
+                if amount > supported:
+                    raise ValueError(f"PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_UNSUPPORTED:{year}")
+                if year == floor["year"] and amount < actual:
+                    raise ValueError(f"PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_BELOW_REALISED_CASH:{year}")
         if stage == "policy" and policy_capital.__name__ in spec["implementation_sha256"]:
             schedule = None
             if financing_schedule.__name__ in spec["implementation_sha256"]:
@@ -2054,6 +2083,19 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     if key in old_spec:
                         trial_spec[key] = old_spec[key]
                 trial_spec["terminal_cash_review"] = "RESEARCH_PAYOUT_V4"
+            if (old_spec.get("base_investment_receipts_wire") == BASE_INVESTMENT_RECEIPTS_V1
+                    or (replay_from_stage == "base.policy"
+                    and old_spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V4"
+                    and old_state.get("error_code") ==
+                        "BASE_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION"
+                    and "base.policy" in old_state["responses"])):
+                for key in ("terminal_cash_review", "terminal_parent_cash_method",
+                            "terminal_parent_prior_annual_receipt", "terminal_cohort_cutoff",
+                            "terminal_q3_cash_bridge", "implemented_distribution_receipt_binding",
+                            "mandatory_cash_classification", "terminal_distribution_preflight"):
+                    if key in old_spec:
+                        trial_spec[key] = old_spec[key]
+                trial_spec["base_investment_receipts_wire"] = BASE_INVESTMENT_RECEIPTS_V1
             for stage_id in STAGE_ORDER:
                 if (trial_spec.get("terminal_cash_review") in {"RESEARCH_PAYOUT_V3", "RESEARCH_PAYOUT_V4"}
                         and stage_id in {"bull.policy", "bull.terminal"}):
@@ -2091,7 +2133,15 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             # before publishing a new task or permitting another model call.
             trial_spec.update(task_id="new-task-preview", mode=old_spec["mode"], seed=seed)
             stages = self._stage_outputs(trial_spec, trial, now, verified_context=context)
-            if trial_spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V4":
+            if (trial_spec.get("base_investment_receipts_wire") == BASE_INVESTMENT_RECEIPTS_V1
+                    and "policy" not in stages["base"]):
+                request = staged_parent_cash_request_v3(
+                    root=self.root, spec_binding=spec_binding, scenario="base", stage="policy",
+                    prior_drafts=stages["base"], generated_at=datetime.fromisoformat(seed_created_at),
+                    verified_context=context, max_completion_tokens=cfg["max_completion_tokens_cap"],
+                )
+                self._wire(trial_spec, "policy", request, root=self.root)
+            elif trial_spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V4":
                 request = staged_parent_cash_request_v3(
                     root=self.root, spec_binding=spec_binding, scenario="base", stage="terminal",
                     prior_drafts=stages["base"], generated_at=datetime.fromisoformat(seed_created_at),
@@ -2137,6 +2187,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         elif "operating_series_wire" in trial_spec:
             spec["operating_series_wire"] = trial_spec["operating_series_wire"]
         if seed is not None:
+            if "base_investment_receipts_wire" in trial_spec:
+                spec["base_investment_receipts_wire"] = trial_spec["base_investment_receipts_wire"]
             if "terminal_cash_review" in trial_spec:
                 spec["terminal_cash_review"] = trial_spec["terminal_cash_review"]
             if "mandatory_cash_classification" in trial_spec:
@@ -2310,7 +2362,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                 detail = str(error).replace("PARENT_V2_", "PARENT_V3_", 1)
                                 code = ("PARENT_V3_ECONOMIC_" + detail
                                     if isinstance(error, ValueError) and re.fullmatch(
-                                        r"(?:(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT|PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH|PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_BELOW_REALISED_CASH|PARENT_V3_ANNUAL_INTEREST_BELOW_REALISED_CASH):20[0-9]{2}|"
+                                        r"(?:(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT|PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH|PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_(?:BELOW_REALISED_CASH|UNSUPPORTED)|PARENT_V3_ANNUAL_INTEREST_BELOW_REALISED_CASH):20[0-9]{2}|"
                                     r"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:20[0-9]{2}:"
                                     r"(?:debt_repayment|new_borrowing))", detail)
                                     else detail if isinstance(error, ValueError) and re.fullmatch(
@@ -2414,7 +2466,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         detail = str(error).replace("PARENT_V2_", "PARENT_V3_", 1)
                         code = ("PARENT_V3_ECONOMIC_" + detail
                                 if isinstance(error, ValueError) and re.fullmatch(
-                                    r"(?:(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT|PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH|PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_BELOW_REALISED_CASH|PARENT_V3_ANNUAL_INTEREST_BELOW_REALISED_CASH):20[0-9]{2}|"
+                                    r"(?:(?:DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT|PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH|PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_(?:BELOW_REALISED_CASH|UNSUPPORTED)|PARENT_V3_ANNUAL_INTEREST_BELOW_REALISED_CASH):20[0-9]{2}|"
                                     r"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:20[0-9]{2}:"
                                     r"(?:debt_repayment|new_borrowing))", detail)
                                 else detail if isinstance(error, ValueError)

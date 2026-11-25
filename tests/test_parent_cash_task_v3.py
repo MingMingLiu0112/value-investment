@@ -824,3 +824,76 @@ def test_terminal_investment_cash_requires_relevant_evidence(review, payout, inv
     else:
         with pytest.raises(ValueError, match=error):
             target.ParentCashTaskServiceV3._preflight_terminal(spec, request, {"terminal": {"policy": policy}})
+
+
+@pytest.mark.parametrize(("amounts", "error"), [
+    (["4.00", "0.00"], None),
+    (["4.01", "0.00"], "PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_UNSUPPORTED:2026"),
+    (["4.00", "4.00"], "PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_UNSUPPORTED:2027"),
+    (["0.00", "0.00"], "PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_BELOW_REALISED_CASH:2026"),
+])
+def test_base_investment_receipts_wire_uses_only_own_year_actual(task, monkeypatch, amounts, error):
+    service, _ = task
+    request = types.SimpleNamespace(user=json.dumps(dict(
+        scenario="base", required_years=[2026, 2027], source_context=dict(
+            symbol="600887", annual_investment_receipts_floor=dict(
+                symbol="600887", scope=target.terminal_wire.SCOPE, currency="CNY",
+                year=2026, observed_through="2026-09-30", minimum_cny="4.00")))))
+    parsed = dict(years=[2026, 2027], series={"investment_cash_received": dict(values=amounts)})
+    monkeypatch.setattr(target, "parse_staged_parent_cash_response", lambda *_a, **_kw: parsed)
+    legacy = {"implementation_sha256": {}}
+    revised = dict(legacy, base_investment_receipts_wire=target.BASE_INVESTMENT_RECEIPTS_V1)
+    assert service._parse_stage(legacy, "policy", None, request, "fixture") == parsed
+    if error:
+        with pytest.raises(ValueError, match=error):
+            service._parse_stage(revised, "policy", None, request, "fixture")
+    else:
+        assert service._parse_stage(revised, "policy", None, request, "fixture") == parsed
+
+
+def test_v4_policy_successor_versions_only_base_policy_without_provider_call(task, monkeypatch):
+    service, provider = task
+    reader = target.read_parent_cash_agent_facts_v2
+    floor = dict(symbol="600887", scope=target.terminal_wire.SCOPE, currency="CNY",
+                 year=2026, observed_through="2026-09-30", minimum_cny="4.00")
+    monkeypatch.setattr(target, "read_parent_cash_agent_facts_v2",
+                        lambda **kwargs: dict(reader(**kwargs), annual_investment_receipts_floor=floor))
+    binding = dict(path="runtime/spec.json", sha256="b" * 64)
+    original = service.create(spec_binding=binding, request_key="old-v4-policy", now=NOW)
+    provider.fail_at = 6
+    failed = service.run(original["task_id"], now=NOW)
+    assert "base.policy" in failed["completed_stages"]
+    load = service._load
+
+    def sealed_v4(task_id, **kwargs):
+        spec, state, head = load(task_id, **kwargs)
+        if task_id == original["task_id"]:
+            spec = dict(spec, terminal_cash_review="RESEARCH_PAYOUT_V4")
+            state = dict(state, error_code="BASE_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION")
+        return spec, state, head
+
+    monkeypatch.setattr(service, "_load", sealed_v4)
+    successor = service.create(spec_binding=binding, request_key="new-v4-policy", now=NOW,
+                               seed_task_id=original["task_id"], replay_from_stage="base.policy")
+    spec, state, _ = load(successor["task_id"])
+    assert spec["base_investment_receipts_wire"] == target.BASE_INVESTMENT_RECEIPTS_V1
+    assert spec["terminal_cash_review"] == "RESEARCH_PAYOUT_V4"
+    assert spec["seed"]["responses"] == {key: ref for key, ref in load(original["task_id"])[1]["responses"].items()
+                                         if key != "base.policy"}
+    assert state["provider_requests"] == 0
+    assert len(provider.calls) == 6
+
+    complete = provider.complete
+
+    def repeat_actual(request):
+        response = complete(request)
+        body = json.loads(response.text)
+        body["series"]["investment_cash_received"]["values"] = ["4.00"] * 10
+        return LLMResponse(json.dumps(body), response.prompt_tokens,
+                           response.completion_tokens, response.model_id)
+
+    monkeypatch.setattr(provider, "complete", repeat_actual)
+    rejected = service.run(successor["task_id"], now=NOW)
+    assert rejected["error_code"] == "BASE_POLICY_PARENT_V3_ECONOMIC_PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_UNSUPPORTED:2027"
+    assert provider.calls[6:] == [("base", "policy")]
+    assert service.read(original["task_id"])["status"] == "FAILED"
