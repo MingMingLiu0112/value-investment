@@ -112,6 +112,20 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                     if task["status"] in {"QUEUED", "SUCCEEDED"}:
                         background.add_task(run_numbered, task["task_id"])
                     return reply(task, 202)
+                if (prior.get("status") == "FAILED" and prior.get("spec_binding") == binding
+                        and prior.get("terminal_cash_review") == "RESEARCH_PAYOUT_V3"
+                        and prior.get("error_code") ==
+                            "BASE_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION"
+                        and "base.policy" in prior.get("completed_stages", ())
+                        and all(row["status"] == "SETTLED" for row in prior.get("reservations", {}).values())):
+                    digest = sha256(predecessor.encode()).hexdigest()
+                    task = numbered_service.create(
+                        spec_binding=binding, request_key="value-payout-review-v4-" + digest[:54],
+                        seed_task_id=predecessor, replay_from_stage="base.terminal",
+                    )
+                    if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                        background.add_task(run_numbered, task["task_id"])
+                    return reply(task, 202)
                 is_earnings_rebuild = prior.get("error_code") == (
                     "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION")
                 if is_earnings_rebuild and prior.get("spec_binding") == binding:
@@ -569,6 +583,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                         )
                     items.append({"task_id": directory.name, "task_contract": "parent-cash-task-v3",
                         "terminal_cohort_continuation": cohort_continuation,
+                        "terminal_cash_review": spec.get("terminal_cash_review"),
                         "read_only_archive": archived,
                         "reused_stages": sorted((spec.get("seed") or {}).get("responses", {})),
                         "base_policy_wire": spec.get("base_policy_wire"),

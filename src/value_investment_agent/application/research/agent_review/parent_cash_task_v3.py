@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "80956556934263f22224de33398f613445601decc7b74b282d44d5824b41a07a"
+REVIEWED_CAPITAL_SERVICE = "bee1da6143e63e8efe66f31ff135c172ca625fe6a4c681c3f259c21205fde57d"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -639,6 +639,44 @@ def _parent_third_quarter_cash_change(root, spec, context):
                 half_year_source_refs=half[0]["source_refs"], nine_month_source=quarter["source"])
 
 
+def _terminal_parent_retained_reference(root, spec, context, distribution):
+    from ..parent_direct_owner_cash_sources import read_parent_direct_owner_cash_sources
+
+    opening = context["valuation_date"]
+    period = f"{int(opening[:4]) + 1}-09-30"
+    source_spec = staged_numbered._load_spec(root, spec["spec_binding"])
+    source = source_spec["quarterly_financing_source"]
+    if not opening.endswith("-12-31") or not opening < distribution["paid_date"] <= period:
+        raise ValueError("PARENT_V3_RETAINED_EARNINGS_PERIOD_MISMATCH")
+    statement = read_parent_direct_owner_cash_sources(
+        root=root, symbol=context["symbol"], issuer_name=source_spec["issuer_name"],
+        sources=[dict(path=source["path"], sha256=source["sha256"], period_end=period,
+                      available_at=source["acquired_at"])],
+        evaluated_at=datetime.fromisoformat(spec["created_at"]),
+    )["statements"][0]
+    retained = statement["balance_sheet"]["retained_earnings_cny"]
+    profit = statement["income"]["parent_net_profit_cny"]
+    with localcontext() as arithmetic:
+        arithmetic.prec = 48
+        observed = Decimal(retained["current"])
+        reconstructed = (Decimal(retained["comparative"]) + Decimal(profit["current"])
+                         - Decimal(distribution["total_cny"]))
+    if reconstructed != observed:
+        raise ValueError("PARENT_V3_RETAINED_EARNINGS_ROLLFORWARD_UNRECONCILED")
+    cash = statement["cash_flow"]
+    return dict(
+        classification="HISTORICAL_PARENT_RETAINED_EARNINGS_NOT_CASH_OR_FUTURE_CAPACITY",
+        same_period_cash_facts={
+            field: cash[field] for field in (
+                "cfo_cny", "gross_capex_cny", "mixed_distribution_interest_paid_cny")
+        },
+        period_end=period, opening_retained_cny=retained["comparative"],
+        closing_retained_cny=retained["current"], period_net_profit_cny=profit["current"],
+        retained_source=retained["source_refs"], profit_source=profit["source_refs"],
+        source_url=source["url"],
+    )
+
+
 class ParentCashTaskServiceV3(ResearchTaskService):
     def __init__(self, root, *, test_provider=None):
         super().__init__(root)
@@ -676,6 +714,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "85c0d7ed760726996952e05f9ea28503bfe49b1a6ef5cd4b0cac8d0cc0475f82",
             "d0346d62979b83332489780692201f4f8cf8504e7024f8a3e6ff7805bb0db5a8",
             "1dbfc634df2bd4d6e929996616c489f623a06e1dc7cd6bab3bebcc51fb0fcb85",
             "b9e52a64302c44a9513965d411ebc6d191877d48648e224bdb99e7f74ed00487",
@@ -972,7 +1011,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
     def _wire(spec, stage, request, *, root=None):
         wire = ParentCashTaskServiceV3._base_wire(spec, stage, request, root=root)
         if (stage == "terminal" and spec.get("terminal_cash_review") in {
-                "RESEARCH_PAYOUT_V2", "RESEARCH_PAYOUT_V3"}
+                "RESEARCH_PAYOUT_V2", "RESEARCH_PAYOUT_V3", "RESEARCH_PAYOUT_V4"}
                 and json.loads(request.user)["scenario"] == "base"):
             from ..parent_owner_distribution_successor_v2 import replay_parent_owner_distribution_successor
 
@@ -986,11 +1025,27 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             if (reference["symbol"] != context["symbol"]
                     or Decimal(report["total_cny"]) <= 0):
                 raise ValueError("PARENT_V3_TERMINAL_HISTORICAL_DISTRIBUTION_INVALID")
+            mode = spec["terminal_cash_review"]
+            if mode == "RESEARCH_PAYOUT_V4":
+                payload = json.loads(wire.user)
+                payload["historical_parent_retained_earnings"] = _terminal_parent_retained_reference(
+                    root, spec, context, report)
+                wire = replace(
+                    wire,
+                    user=json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+                    system=wire.system + (
+                        " The reconciled historical parent retained earnings are an accrual balance. "
+                        "Use it only to explain the reported-period profit can coexist with past "
+                        "distribution. Independently test projected legal capacity and recurring net "
+                        "cash after reinvestment, interest and reserves. Use neither historical payout "
+                        "as a minimum nor future approval as an economic forecast assumption."
+                    ),
+                )
             return _flat_terminal_review_request(wire, distribution_reference={
                 "classification": "IMPLEMENTED_YEAR_PAYMENT_REFERENCE_NOT_FORECAST",
                 "paid_date": report["paid_date"], "cash_cny": report["total_cny"],
                 "source_binding": binding,
-            }, scalar_cohort=spec["terminal_cash_review"] == "RESEARCH_PAYOUT_V3")
+            }, scalar_cohort=mode in {"RESEARCH_PAYOUT_V3", "RESEARCH_PAYOUT_V4"})
         if (stage == "terminal" and spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V1"
                 and json.loads(request.user)["scenario"] == "base"):
             return replace(wire, transport_output_contract=wire.transport_output_contract +
@@ -1418,9 +1473,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             response = fixed_financing.merge_financing_policy_response(response, wire)
         if (stage == "terminal" and spec.get("terminal_parent_cash_method") in {"ACCRUAL_SPLIT_V1", "ACCRUAL_SPLIT_V2"}
                 and json.loads(request.user)["scenario"] == "base"):
-            if spec.get("terminal_cash_review") in {"RESEARCH_PAYOUT_V2", "RESEARCH_PAYOUT_V3"}:
+            if spec.get("terminal_cash_review") in {"RESEARCH_PAYOUT_V2", "RESEARCH_PAYOUT_V3", "RESEARCH_PAYOUT_V4"}:
                 lines = None
-                if spec["terminal_cash_review"] == "RESEARCH_PAYOUT_V3":
+                if spec["terminal_cash_review"] in {"RESEARCH_PAYOUT_V3", "RESEARCH_PAYOUT_V4"}:
                     wire = self._wire(spec, stage, request, root=self.root)
                     lines = json.loads(wire.user)["terminal_verified_cash_lines"]
                 response = _unpack_flat_terminal_review_response(response, verified_cash_lines=lines)
@@ -1762,6 +1817,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if spec.get("seed") is not None:
             view["reused_stages"] = list(spec["seed"]["responses"])
             view["reused_from_task_id"] = spec["seed"]["task_id"]
+        if "terminal_cash_review" in spec:
+            view["terminal_cash_review"] = spec["terminal_cash_review"]
         if "conditional_financing_stress" in spec:
             view["fixed_financing_research"] = True
         if not self._implementation_matches(spec):
@@ -1973,8 +2030,21 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                   mandatory_cash_classification="BULL_DISJOINT_V1",
                                   terminal_distribution_preflight=True,
                                   implemented_distribution_receipt_binding=distribution)
+            if (replay_from_stage == "base.terminal"
+                    and old_spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V3"
+                    and old_state.get("error_code") ==
+                        "BASE_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION"
+                    and "base.policy" in old_state["responses"]
+                    and all(r["status"] == "SETTLED" for r in old_state["reservations"].values())):
+                for key in ("terminal_parent_cash_method", "terminal_parent_prior_annual_receipt",
+                            "terminal_cohort_cutoff", "terminal_q3_cash_bridge",
+                            "implemented_distribution_receipt_binding",
+                            "mandatory_cash_classification", "terminal_distribution_preflight"):
+                    if key in old_spec:
+                        trial_spec[key] = old_spec[key]
+                trial_spec["terminal_cash_review"] = "RESEARCH_PAYOUT_V4"
             for stage_id in STAGE_ORDER:
-                if (trial_spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V3"
+                if (trial_spec.get("terminal_cash_review") in {"RESEARCH_PAYOUT_V3", "RESEARCH_PAYOUT_V4"}
                         and stage_id in {"bull.policy", "bull.terminal"}):
                     continue
                 if replay_from_stage is not None:
@@ -2009,7 +2079,14 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             # Check the predecessor head, ledger and all selected lineage now,
             # before publishing a new task or permitting another model call.
             trial_spec.update(task_id="new-task-preview", mode=old_spec["mode"], seed=seed)
-            self._stage_outputs(trial_spec, trial, now, verified_context=context)
+            stages = self._stage_outputs(trial_spec, trial, now, verified_context=context)
+            if trial_spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V4":
+                request = staged_parent_cash_request_v3(
+                    root=self.root, spec_binding=spec_binding, scenario="base", stage="terminal",
+                    prior_drafts=stages["base"], generated_at=datetime.fromisoformat(seed_created_at),
+                    verified_context=context, max_completion_tokens=cfg["max_completion_tokens_cap"],
+                )
+                self._wire(trial_spec, "terminal", request, root=self.root)
         if capital_basis is None:
             source_spec = staged_numbered._load_spec(self.root, spec_binding)
             capital_basis = policy_capital.opening_debt_basis(source_spec["opening"], context["facts"])

@@ -764,3 +764,37 @@ def test_audited_terminal_cash_reference_excludes_investment_and_financing():
     assert row["cash_after_gross_capex_cny"] == "70"
     assert row["headroom_after_nominal_payment_cny"] == "-10"
     assert "cash_floor" in reference["excludes"]
+
+
+@pytest.mark.parametrize("closing", ["120", "121"])
+def test_terminal_retained_reference_checks_reconciled_parent_profit(monkeypatch, tmp_path, closing):
+    from value_investment_agent.application.research import parent_direct_owner_cash_sources as sources
+
+    report = dict(path="runtime/quarter.pdf", sha256="a" * 64,
+                  url="https://example.test/quarter.pdf", acquired_at=NOW.isoformat())
+    monkeypatch.setattr(target.staged_numbered, "_load_spec",
+                        lambda *_: dict(quarterly_financing_source=report, issuer_name="Issuer"))
+
+    def read(**kwargs):
+        assert kwargs["symbol"] == "600887"
+        assert kwargs["sources"][0]["period_end"] == "2026-09-30"
+        return {"statements": [{
+            "balance_sheet": {"retained_earnings_cny": {
+                "current": closing, "comparative": "100", "source_refs": {"physical_page": 12}}},
+            "income": {"parent_net_profit_cny": {"current": "50", "source_refs": {"physical_page": 13}}},
+            "cash_flow": {field: {"current": "40"} for field in (
+                "cfo_cny", "gross_capex_cny", "mixed_distribution_interest_paid_cny")},
+        }]}
+
+    monkeypatch.setattr(sources, "read_parent_direct_owner_cash_sources", read)
+    spec = dict(spec_binding={}, created_at=NOW.isoformat())
+    context = dict(valuation_date="2025-12-31", symbol="600887")
+    distribution = dict(total_cny="30", paid_date="2026-06-05")
+    if closing == "121":
+        with pytest.raises(ValueError, match="PARENT_V3_RETAINED_EARNINGS_ROLLFORWARD_UNRECONCILED"):
+            target._terminal_parent_retained_reference(tmp_path, spec, context, distribution)
+    else:
+        result = target._terminal_parent_retained_reference(tmp_path, spec, context, distribution)
+        assert result["closing_retained_cny"] == "120"
+        assert result["profit_source"]["physical_page"] == 13
+        assert result["classification"] == "HISTORICAL_PARENT_RETAINED_EARNINGS_NOT_CASH_OR_FUTURE_CAPACITY"

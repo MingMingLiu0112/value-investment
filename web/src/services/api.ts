@@ -1950,6 +1950,7 @@ export interface ParentCashTaskHistory {
     base_operating_wire?: string | null;
     base_interest_wire?: string | null;
     terminal_cohort_continuation?: boolean;
+    terminal_cash_review?: string | null;
     candidate_status?: "COMPILED_CONDITIONAL_NOT_MAIN" | "NOT_COMPILED";
     status: string;
     stage: string | null;
