@@ -99,6 +99,26 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 prior = numbered_service.read(predecessor)
                 is_earnings_rebuild = prior.get("error_code") == (
                     "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION")
+                if is_earnings_rebuild and prior.get("spec_binding") == binding:
+                    from ...application.research.parent_cash_task_completion_v1 import _case_entry
+
+                    entry = _case_entry(Path(numbered_service.root), binding) or {}
+                    annual_pin = entry.get("terminal_parent_prior_annual_receipt")
+                    if annual_pin is not None:
+                        if (prior["status"] != "FAILED"
+                                or "base.policy" not in prior.get("completed_stages", ())
+                                or any(row["status"] == "RESERVED"
+                                       for row in prior.get("reservations", {}).values())):
+                            raise ValueError("PARENT_V3_CONTINUATION_NOT_AVAILABLE")
+                        digest = sha256(json.dumps([binding, annual_pin], sort_keys=True)
+                                        .encode("utf-8")).hexdigest()
+                        task = numbered_service.create(
+                            spec_binding=binding, request_key="value-cohort-" + digest[:60],
+                            seed_task_id=predecessor, replay_from_stage="base.terminal",
+                        )
+                        if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                            background.add_task(run_numbered, task["task_id"])
+                        return reply(task, 202)
                 earnings_request_key = "value-earn1-" + binding["sha256"]
                 earnings_task_id = "rt-" + sha256(
                     ("parent-cash-task-v3:" + earnings_request_key).encode()).hexdigest()[:32]
@@ -515,7 +535,20 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                     reservations = state.get("reservations", {})
                     if len(reservations) > 32 or len(state.get("responses", {})) > 9:
                         raise ValueError("PARENT_V3_TASK_PROJECTION_LIMIT_EXCEEDED")
+                    cohort_continuation = False
+                    if (not archived and state["status"] == "FAILED"
+                            and state.get("error_code") ==
+                            "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"
+                            and "base.policy" in state["responses"]
+                            and not any(row["status"] == "RESERVED" for row in reservations.values())):
+                        from ...application.research.parent_cash_task_completion_v1 import _case_entry
+
+                        entry = _case_entry(Path(numbered.root), spec["spec_binding"]) or {}
+                        annual_pin = entry.get("terminal_parent_prior_annual_receipt")
+                        cohort_continuation = (annual_pin is not None and
+                                               annual_pin != spec.get("terminal_parent_prior_annual_receipt"))
                     items.append({"task_id": directory.name, "task_contract": "parent-cash-task-v3",
+                        "terminal_cohort_continuation": cohort_continuation,
                         "read_only_archive": archived,
                         "reused_stages": sorted((spec.get("seed") or {}).get("responses", {})),
                         "base_policy_wire": spec.get("base_policy_wire"),

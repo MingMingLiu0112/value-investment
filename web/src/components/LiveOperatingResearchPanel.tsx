@@ -336,8 +336,12 @@ export function ParentCashTaskHistoryView({
     setSealMessage("");
     try {
       const result = await api.sealParentCashTaskValuation(taskId);
-      if (result.task_id !== taskId || result.action !== "no_order" ||
-          result.status !== "VALUATION_SEAL_REQUESTED") throw new Error("Invalid seal receipt");
+      if (
+        result.task_id !== taskId ||
+        result.action !== "no_order" ||
+        result.status !== "VALUATION_SEAL_REQUESTED"
+      )
+        throw new Error("Invalid seal receipt");
       setSealMessage("已请求重新封存同一任务。刷新任务历史查看结果。");
     } catch {
       setSealMessage("封存请求未受理，请检查本机授权及任务状态。");
@@ -383,11 +387,13 @@ export function ParentCashTaskHistoryView({
             "BASE_POLICY_PARENT_DRAFT_REJECTED_OR_UNPUBLISHED" ||
             item.error_code ===
               "BASE_POLICY_PARENT_FINANCING_ABOVE_DISCLOSED_PROCEEDS:2026");
-        const resumeLabel = rebuildInterest
-          ? "从 Base 付息政策续跑"
-          : item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V2"
-            ? "从 Base 经营重建"
-            : "从 Base 现金政策续跑";
+        const resumeLabel = item.terminal_cohort_continuation
+          ? "用新增年报从 Base 终值续跑"
+          : rebuildInterest
+            ? "从 Base 付息政策续跑"
+            : item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V2"
+              ? "从 Base 经营重建"
+              : "从 Base 现金政策续跑";
         return (
           <div key={item.task_id}>
             <strong>{item.task_id}</strong> · {item.task_contract || "历史任务"}{" "}
@@ -404,7 +410,8 @@ export function ParentCashTaskHistoryView({
             {onContinue &&
               !item.read_only_archive &&
               item.status === "FAILED" &&
-              (rebuildInterest ||
+              (item.terminal_cohort_continuation ||
+                rebuildInterest ||
                 (item.base_operating_wire !== "MATCHED_QUARTER_V2" &&
                   (item.error_code ===
                     "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS" ||

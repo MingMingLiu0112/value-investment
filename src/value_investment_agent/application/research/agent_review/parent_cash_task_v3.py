@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "a133a0d5692916e78bf65fd988aaed44c0dd9b3f03366018bb06172893355700"
+REVIEWED_CAPITAL_SERVICE = "04ed63482558cb960c396faa76e95e901d25db8fa0f94a592b79190184d29568"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -204,6 +204,66 @@ def _terminal_parent_cash_history(root, binding, valuation_date):
                 classification="HISTORICAL_DIAGNOSTIC_NOT_FORECAST")
 
 
+def _terminal_parent_cash_cohort(root, spec, valuation_date):
+    """Reconcile adjacent audited annual parent cash and income tables."""
+    from .. import parent_direct_owner_cash_sources as parent
+    from ..parent_cash_research import _receipt_issuer_query
+    from ....infrastructure.filings.official_report_acquisition import load_retained_official_report
+    from ....infrastructure.filings.pdf_text import extract_pages
+
+    source = staged_numbered._load_spec(root, spec["spec_binding"])
+    year = int(valuation_date[:4])
+    current, = [row for row in source["owner_sources"] if row["period_end"] == valuation_date]
+    fields = {
+        "revenue": ("母公司利润表", "一、营业收入"),
+        "cost": ("母公司利润表", "减：营业成本"),
+        "profit": ("母公司利润表", "四、净利润"),
+        "customer_cash": ("母公司现金流量表", "销售商品、提供劳务收到的现金"),
+        "supplier_cash": ("母公司现金流量表", "购买商品、接受劳务支付的现金"),
+        "cfo": ("母公司现金流量表", "经营活动产生的现金流量净额"),
+        "investment_cash": ("母公司现金流量表", "取得投资收益收到的现金"),
+        "gross_capex": ("母公司现金流量表", "购建固定资产、无形资产和其他长期资产支付的现金"),
+    }
+
+    def read(period, pin):
+        packet = load_retained_official_report(
+            root=root, receipt_binding=pin, symbol=source["symbol"],
+            issuer_name=_receipt_issuer_query(root=root, receipt_binding=pin), period=period,
+        )
+        cutoff = datetime.fromisoformat(spec.get("terminal_cohort_cutoff", spec["created_at"]))
+        if datetime.fromisoformat(packet["completed_at"]) > cutoff:
+            raise ValueError("PARENT_TERMINAL_COHORT_AFTER_CUTOFF")
+        ref = packet["source"]
+        parent._clock(ref["available_at"], cutoff)
+        path, _ = parent._bound(root, ref)
+        pages = extract_pages(path)
+        parent._bound(root, ref)
+        tables = {title: parent._statement(pages, title, source["issuer_name"], period)
+                  for title in {item[0] for item in fields.values()}}
+        rows = {}
+        for metric, (title, label) in fields.items():
+            row, _ = parent._row(tables[title], label, prefix=metric == "profit")
+            if row is None:
+                raise ValueError(f"PARENT_TERMINAL_COHORT_FIELD_MISSING:{metric}")
+            rows[metric] = row
+        refs = {key: dict(ref, physical_page=row["physical_page"], excerpt=row["excerpt"])
+                for key, row in rows.items()}
+        return [{key: str(Decimal(row[column])) for key, row in rows.items()}
+                for column in ("current", "comparative")], refs
+
+    recent, recent_refs = read(valuation_date, current["receipt_binding"])
+    prior, prior_refs = read(f"{year-1}-12-31", spec["terminal_parent_prior_annual_receipt"])
+    if any(Decimal(recent[1][key]) != Decimal(prior[0][key]) for key in fields):
+        raise ValueError("PARENT_TERMINAL_COHORT_OVERLAP_CONFLICT")
+    return dict(
+        classification="ANNUAL_PARENT_HISTORICAL_CASH_COHORT_NOT_FORECAST",
+        scope=parent.SCOPE, currency="CNY",
+        observations=[dict(period_end=f"{year-offset}-12-31", values_cny=values)
+                      for offset, values in enumerate((*recent, prior[1]))],
+        source_refs=[recent_refs, prior_refs],
+    )
+
+
 def _terminal_payout_conditions(root, context):
     """Read policy text separately from the financial ability to distribute."""
     from .. import parent_direct_owner_cash_sources as parent
@@ -265,6 +325,37 @@ def _historical_mixed_financing_cash(root, context):
     )
 
 
+def _parent_third_quarter_cash_change(root, spec, context):
+    """Subtract the matched H1 change from the verified parent nine-month change."""
+    from .quarterly_parent_cash_source import replay_quarterly_parent_cash
+
+    year = int(context["valuation_date"][:4]) + 1
+    half = [row for row in context["parent_operating_cash_observations"]
+            if row["period_end"] == f"{year}-06-30" and row["symbol"] == context["symbol"]
+            and row["scope"] == "ISSUER_PARENT_STANDALONE"]
+    if len(half) != 1 or "cash_change_explanation" not in half[0]:
+        return None
+    source = staged_numbered._load_spec(root, spec["spec_binding"])
+    quarter = replay_quarterly_parent_cash(
+        root=root, source=source["quarterly_financing_source"], symbol=context["symbol"],
+        issuer_name=source["issuer_name"], period_end=f"{year}-09-30",
+        now=datetime.fromisoformat(spec["created_at"]))
+    fields = quarter["fields"]
+    h1 = half[0]["cash_change_explanation"]
+    changes = {}
+    for metric, field, half_metric, sign in (
+        ("customer_cash", "customer_cash", "customer_receipt_change_cny", 1),
+        ("supplier_cash", "supplier_cash", "lower_supplier_payments_contribution_cny", -1),
+        ("operating_cash", "cfo", "cfo_change_cny", 1),
+    ):
+        row = fields[field]
+        changes[metric] = str(Decimal(row["current"]) - Decimal(row["comparative"])
+                              - sign * Decimal(h1[half_metric]))
+    return dict(classification="DERIVED_SINGLE_QUARTER_YOY_NOT_STEADY_STATE",
+                period_end=f"{year}-09-30", currency="CNY", changes_cny=changes,
+                half_year_source_refs=half[0]["source_refs"], nine_month_source=quarter["source"])
+
+
 class ParentCashTaskServiceV3(ResearchTaskService):
     def __init__(self, root, *, test_provider=None):
         super().__init__(root)
@@ -302,6 +393,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "205f1372199546d378996dce0e2f2941497fdf266e1e52c1b50d8e4bb363a9c8",
+            "f8345651e111034bb0d1c1bd5ee0db5240b0c1cd762e88363b7199fee4c63957",
             "80455330ada22a50ee3697fec6e2b60bc21d6b1b1fd9d30eacc293011eb8700b",
             "bc2b20d76b2e0e4c13d1cbde170b5a71522cba42806d80be73ec6c847a6dc685",
             "02a30c3d31108e788a59522048030382a78a9af490caef41666aba40455841df",
@@ -881,6 +974,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 if payload.get("scenario") == "base" and spec.get("base_terminal_history_wire") is True:
                     result["terminal_parent_cash_history"] = _terminal_parent_cash_history(
                         root, spec["spec_binding"], source["valuation_date"])
+                if payload.get("scenario") == "base" and spec.get("terminal_q3_cash_bridge") is True:
+                    result["third_quarter_operating_cash_change"] = _parent_third_quarter_cash_change(
+                        root, spec, source)
+                if payload.get("scenario") == "base" and "terminal_parent_prior_annual_receipt" in spec:
+                    result["terminal_parent_cash_cohort"] = _terminal_parent_cash_cohort(
+                        root, spec, source["valuation_date"])
                 return replace(wire, user=json.dumps(result, ensure_ascii=False,
                     sort_keys=True, separators=(",", ":")))
             return terminal_wire.terminal_wire_request(request)
@@ -1291,6 +1390,19 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                               shared_budget_root=str(self.shared_budget_root),
                               implementation_sha256=_implementation(), policy_capital_basis=capital_basis,
                               replay_from_stage=replay_from_stage)
+            if (replay_from_stage == "base.terminal" and old_state.get("error_code") ==
+                    "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"):
+                from ..parent_cash_task_completion_v1 import _case_entry
+
+                entry = _case_entry(self.root, spec_binding) or {}
+                prior_annual = entry.get("terminal_parent_prior_annual_receipt")
+                if prior_annual is not None:
+                    trial_spec.update(
+                        terminal_parent_prior_annual_receipt=prior_annual,
+                        terminal_cohort_cutoff=now.isoformat(),
+                        terminal_q3_cash_bridge=True,
+                    )
+                    _terminal_parent_cash_cohort(self.root, trial_spec, context["valuation_date"])
             if replay_from_stage == "bear.operating":
                 trial_spec["operating_series_wire"] = "INPUTS_ONLY_V2"
             elif "operating_series_wire" in old_spec:
@@ -1449,6 +1561,12 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 spec["bear_financing_wire"] = trial_spec["bear_financing_wire"]
             if trial_spec.get("base_terminal_history_wire") is True:
                 spec["base_terminal_history_wire"] = True
+            if "terminal_parent_prior_annual_receipt" in trial_spec:
+                spec.update(
+                    terminal_parent_prior_annual_receipt=trial_spec["terminal_parent_prior_annual_receipt"],
+                    terminal_cohort_cutoff=trial_spec["terminal_cohort_cutoff"],
+                    terminal_q3_cash_bridge=True,
+                )
             if trial_spec.get("terminal_distribution_preflight") is True:
                 spec["terminal_distribution_preflight"] = True
             if "base_cash_transition_wire" in trial_spec:

@@ -444,3 +444,58 @@ def test_current_parent_cash_spec_keeps_historical_case_binding(tmp_path):
     path.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="PARENT_TASK_ACTIVE_SPEC_INVALID"):
         registered_cash_task_spec(service, "600887")
+
+@pytest.mark.parametrize("reserved", [False, True])
+def test_company_continuation_with_new_annual_evidence_restarts_only_terminal(tmp_path, monkeypatch, reserved):
+    import json
+
+    binding = {"path": "runtime/spec.json", "sha256": "a" * 64}
+    annual = {"path": "runtime/annual.json", "sha256": "b" * 64}
+    predecessor = "rt-" + "c" * 32
+    successor = "rt-" + "d" * 32
+    calls = []
+    config = tmp_path / "config"
+    config.mkdir()
+    (config / "parent-cash-task-case-bindings-v1.json").write_text(json.dumps({
+        "schema_version": "parent-cash-task-case-bindings-v1",
+        "specs": {binding["sha256"]: {"spec_binding": binding, "terminal_parent_prior_annual_receipt": annual}},
+    }), encoding="utf-8")
+
+    class Service:
+        def __init__(self, root):
+            self.root = root
+
+        def read(self, task_id):
+            assert task_id == predecessor
+            return dict(status="FAILED", spec_binding=binding, completed_stages=["base.policy"],
+                        error_code="BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
+                        reservations={"terminal": {"status": "RESERVED"}} if reserved else {})
+
+        def create(self, **options):
+            calls.append(options)
+            return dict(status="QUEUED", task_id=successor, action="no_order")
+
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV2", Service)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV3", Service)
+    monkeypatch.setattr(routes, "authorize", lambda *args, **kwargs: None)
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda project: project)
+    monkeypatch.setattr(routes, "registered_cash_task_spec", lambda service, symbol: binding)
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", lambda service, identifier: None)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=8001)
+    client = TestClient(app)
+    url = "/api/v1/operating-research/parent-cash-tasks/by-company"
+    body = {"symbol": "600887", "continue_from_task_id": predecessor}
+    response = client.post(url, json=body)
+    if reserved:
+        assert response.status_code == 422
+        assert response.json()["reason"] == "PARENT_V3_CONTINUATION_NOT_AVAILABLE"
+        assert not calls
+    else:
+        assert response.status_code == 202
+        assert response.json()["task_id"] == successor
+        assert client.post(url, json=body).status_code == 202
+        assert calls[0] == calls[1]
+        assert calls[0]["request_key"].startswith("value-cohort-")
+        assert calls[0]["seed_task_id"] == predecessor
+        assert calls[0]["replay_from_stage"] == "base.terminal"
