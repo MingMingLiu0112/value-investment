@@ -172,7 +172,7 @@ def test_terminal_wire_uses_last_year_with_first_year_method_configured():
     assert result["terminal_transition_reference"]["operating_cash_cny"] == "13"
 
 
-def test_versioned_base_policy_rejects_zero_interest_with_existing_principal(monkeypatch):
+def test_versioned_base_policy_rejects_zero_interest_with_existing_principal(monkeypatch, tmp_path):
     from value_investment_agent.application.research.agent_review import parent_cash_task_v3 as task
 
     draft = policy(["0", "0", "0"], ["50", "50", "0"])
@@ -182,19 +182,19 @@ def test_versioned_base_policy_rejects_zero_interest_with_existing_principal(mon
             "implementation_sha256": {capital.__name__: "fixture"}}
     request = LLMRequest(role="FUNDAMENTAL", system="fixture", user='{"scenario":"base"}',
                          output_schema={"type":"object"})
-    parse = task.ParentCashTaskServiceV3._parse_stage
-    assert parse(None, spec, "policy", None, request, "fixture") == draft
+    parse = task.ParentCashTaskServiceV3(tmp_path, test_provider=object())._parse_stage
+    assert parse(spec, "policy", None, request, "fixture") == draft
     revised = dict(spec, base_interest_wire="ISSUER_FINANCING_INTEREST_V1")
     with pytest.raises(ValueError, match="PARENT_V3_POLICY_DEBT_INTEREST_UNSUPPORTED:2027"):
-        parse(None, revised, "policy", None, request, "fixture")
+        parse(revised, "policy", None, request, "fixture")
     draft["series"]["interest_outside_cfo"]["values"][1] = "1"
-    assert parse(None, revised, "policy", None, request, "fixture") == draft
+    assert parse(revised, "policy", None, request, "fixture") == draft
 
     locked = dict(revised, base_principal_reference={
         "years": [2026, 2027, 2028], "new_borrowing": ["0", "0", "0"],
         "debt_repayment": ["40", "60", "0"],
     })
     with pytest.raises(ValueError, match="PARENT_V3_LOCKED_CONDITIONAL_PRINCIPAL_CHANGED"):
-        parse(None, locked, "policy", None, request, "fixture")
+        parse(locked, "policy", None, request, "fixture")
     locked["base_principal_reference"]["debt_repayment"] = ["50", "50", "0"]
-    assert parse(None, locked, "policy", None, request, "fixture") == draft
+    assert parse(locked, "policy", None, request, "fixture") == draft
