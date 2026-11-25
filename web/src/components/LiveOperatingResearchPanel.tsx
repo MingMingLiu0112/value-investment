@@ -2538,6 +2538,16 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
       );
       setRevision((value) => value + 1);
     } catch (cause) {
+      if (
+        cause instanceof ApiError &&
+        cause.status === 409 &&
+        cause.detail === "PARENT_V3_GROSS_CAPEX_PLAN_REQUIRED"
+      ) {
+        setMessage(
+          "缺少已核验的母公司资本开支总额计划，需补齐逐年投入与终值依据。未启动现金任务。",
+        );
+        return;
+      }
       setMessage(
         cause instanceof ApiError && cause.status === 409
           ? "缺少已绑定的连续年度、母公司现金原件或公司估值输入包；未启动现金任务。"
