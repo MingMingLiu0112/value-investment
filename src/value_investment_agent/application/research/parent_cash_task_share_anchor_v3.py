@@ -5,7 +5,12 @@ from pathlib import Path
 import re
 from unicodedata import normalize
 
+from hashlib import sha256
+
 from .direct_owner_cash_agent_facts_v2 import read_parent_cash_agent_facts_v2
+from .direct_owner_cash_research_v1 import _bytes, _read
+from .direct_owner_gross_capex_v1 import WIRE_VERSION as AGGREGATE_WIRE_VERSION
+from .parent_cash_task_aggregate_receipt_v1 import RECEIPT_SCHEMA as AGGREGATE_RECEIPT_SCHEMA
 from .parent_cash_task_receipt_v3 import RECEIPT_SCHEMA
 from .parent_cash_task_distribution_receipt_v1 import RECEIPT_SCHEMA as DISTRIBUTION_RECEIPT_SCHEMA
 from ...domain.research.issuer_identity import source_identity_matches_registered_issuer
@@ -29,12 +34,31 @@ def read_task_share_anchors(*, root: Path, result: dict) -> list[dict]:
             or valuation["status"] != "conditional_research_only"
             or valuation["symbol"] != symbol or descriptor["symbol"] != symbol
             or descriptor["point_in_time"]["valuation_date"] != period
-            or contract["schema_version"] not in {RECEIPT_SCHEMA, DISTRIBUTION_RECEIPT_SCHEMA}
+            or contract["schema_version"] not in {
+                RECEIPT_SCHEMA, DISTRIBUTION_RECEIPT_SCHEMA, AGGREGATE_RECEIPT_SCHEMA}
             or any(contract.get(key) != provenance[key]
                    for key in ("task_id", "spec_binding"))
             or datetime.fromisoformat(contract["completed_at"]) != completed_at
             or completed_at.utcoffset() is None):
         raise ValueError("TASK_SHARE_REPLAY_IDENTITY_MISMATCH")
+
+    if contract["schema_version"] == AGGREGATE_RECEIPT_SCHEMA:
+        pin = provenance["gross_capex_plan_binding"]
+        payload = {key: value for key, value in descriptor.items() if key != "input_sha256"}
+        if (result.get("schema_version") != AGGREGATE_RECEIPT_SCHEMA
+                or descriptor["descriptor_version"] != AGGREGATE_RECEIPT_SCHEMA
+                or contract["gross_capex_plan_binding"] != pin or pin not in result["source_bindings"]
+                or contract["task_record_binding"] != provenance["task_record_binding"]
+                or contract["task_input_sha256"] != provenance["task_input_sha256"]
+                or contract["source_fingerprint"] != provenance["source_fingerprint"]
+                or sha256(_bytes(payload)).hexdigest() != descriptor["input_sha256"]
+                or descriptor["input_sha256"] != result["input_descriptor_sha256"]
+                or descriptor["facts"]["scenario_inputs"]["base"] != result["aggregate_base_receipt"]["scenario"]):
+            raise ValueError("TASK_SHARE_AGGREGATE_REPLAY_IDENTITY_MISMATCH")
+        plan = _read(root, pin)
+        if (plan["schema_version"] != AGGREGATE_WIRE_VERSION
+                or plan["source_fingerprint"] != provenance["source_fingerprint"]):
+            raise ValueError("TASK_SHARE_AGGREGATE_PLAN_MISMATCH")
 
     facts = read_parent_cash_agent_facts_v2(
         root=root, spec_binding=provenance["spec_binding"], now=completed_at)

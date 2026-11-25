@@ -897,3 +897,91 @@ def test_v4_policy_successor_versions_only_base_policy_without_provider_call(tas
     assert rejected["error_code"] == "BASE_POLICY_PARENT_V3_ECONOMIC_PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_UNSUPPORTED:2027"
     assert provider.calls[6:] == [("base", "policy")]
     assert service.read(original["task_id"])["status"] == "FAILED"
+
+
+@pytest.mark.parametrize(("change", "error"), [
+    ("none", None),
+    ("receipt", "PARENT_V3_CAPITAL_IR_RECEIPT_CHANGED"),
+    ("original", "PARENT_V3_CAPITAL_IR_ORIGINAL_CHANGED"),
+    ("excerpt", "PARENT_V3_CAPITAL_IR_EXCERPT_INVALID"),
+    ("cutoff", "PARENT_V3_CAPITAL_IR_SOURCE_INVALID"),
+    ("scope", "PARENT_V3_CAPITAL_EVIDENCE_Q3_INVALID"),
+])
+def test_base_capital_evidence_projects_dated_totals_and_separate_group_outlook(
+        tmp_path, monkeypatch, change, error):
+    from value_investment_agent.infrastructure.filings import pdf_text
+
+    scope = target.terminal_wire.SCOPE
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    original = runtime / "ir.pdf"
+    original.write_bytes(b"test-only original")
+    low_temp = "持续地进行低温业务上的投入"
+    deep_processing = "未来五年的深加工发展战略目标"
+    pages = ["证券代码：600887 投资者关系活动记录表 编号：20261030"] + [""] * 5
+    pages += [low_temp, deep_processing]
+    monkeypatch.setattr(pdf_text, "extract_pages", lambda path: pages)
+    acquired = "2026-11-25T07:39:03+00:00"
+    receipt = dict(
+        symbol="600887", action="no_order", original="runtime/ir.pdf", acquired_at=acquired,
+        classification="ISSUER_GROUP_MANAGEMENT_OUTLOOK_NOT_PARENT_CASH_PROOF",
+        source_url=("https://dataclouds.cninfo.com.cn/shgonggao/investor/"
+                    "2026/20261103/e794e53c3792fc41fc8068baba3e31fc.pdf"),
+        source_sha256=target._hash(original.read_bytes()),
+        findings={low_temp: dict(physical_page=7, excerpt=low_temp),
+                  deep_processing: dict(physical_page=8, excerpt=deep_processing)},
+    )
+    if change == "excerpt":
+        receipt["findings"][low_temp]["physical_page"] = 8
+    path = runtime / "receipt.json"
+    path.write_bytes(target._bytes(receipt))
+    ir = dict(path="runtime/receipt.json", sha256=target._hash(path.read_bytes()))
+    if change == "receipt":
+        path.write_bytes(path.read_bytes() + b" ")
+    if change == "original":
+        original.write_bytes(b"changed")
+    fy_source = dict(available_at="2026-04-30T00:00:00+00:00", physical_page=91)
+    monkeypatch.setattr(target, "_terminal_parent_cash_history", lambda *_: dict(
+        scope=scope, currency="CNY", source_refs={"gross_capex_cny": fy_source},
+        observations=[dict(period_end="2025-12-31", values_cny={"gross_capex_cny": "631984543.41",
+                      "mixed_distribution_interest_paid_cny": "111"})]))
+    context = dict(symbol="600887", valuation_date="2025-12-31", annual_capex_floor=dict(
+        symbol="600887", scope="GROUP" if change == "scope" else scope, currency="CNY",
+        year=2026, period_start="2026-01-01", observed_through="2026-09-30",
+        minimum_cny="1410074492.50", source_ref=dict(
+            available_at="2026-11-15T00:00:00+00:00", physical_page=14)))
+    arguments = dict(root=tmp_path, spec_binding={}, context=context, ir_receipt_binding=ir,
+                     as_of=NOW if change == "cutoff" else datetime.fromisoformat(acquired))
+    if error is not None:
+        with pytest.raises(ValueError, match=error):
+            target.project_base_capital_evidence_v1(**arguments)
+        return
+
+    projected = target.project_base_capital_evidence_v1(**arguments)
+    assert projected["schema_version"] == target.BASE_CAPITAL_EVIDENCE_V1
+    assert projected["status"] == "BLOCKED"
+    assert projected["replay_from_stage"] == "base.policy"
+    assert projected["affected_stages"] == ["base.policy", "base.terminal"]
+    assert projected["parent_gross_capex"]["annual_observations"] == [
+        {"period_end": "2025-12-31", "gross_capex_cny": "631984543.41"}]
+    assert projected["parent_gross_capex"]["ytd_observation"]["gross_capex_cny"] == "1410074492.50"
+    assert projected["group_management_outlook"]["findings"] == receipt["findings"]
+    for field in ("maintenance_capex", "growth_capex", "interest_outside_cfo", "payout_ratio"):
+        assert field not in json.dumps(projected)
+
+
+@pytest.mark.parametrize(("stage", "scenario", "blocked"), [
+    ("policy", "base", True), ("terminal", "base", True),
+    ("operating", "base", False), ("policy", "bear", False),
+])
+def test_base_capital_review_blocks_request_and_cache_reconstruction(monkeypatch, stage, scenario, blocked):
+    request = types.SimpleNamespace(user=json.dumps({"scenario": scenario}))
+    monkeypatch.setattr(target.ParentCashTaskServiceV3, "_base_wire", lambda *_a, **_kw: request)
+    historical = {"implementation_sha256": {}}
+    reviewed = dict(historical, base_capital_evidence_review=target.BASE_CAPITAL_EVIDENCE_V1)
+    assert target.ParentCashTaskServiceV3._wire(historical, stage, request) is request
+    if blocked:
+        with pytest.raises(ValueError, match="PARENT_V3_BASE_CAPITAL_EVIDENCE_REVIEW_BLOCKED"):
+            target.ParentCashTaskServiceV3._wire(reviewed, stage, request)
+    else:
+        assert target.ParentCashTaskServiceV3._wire(reviewed, stage, request) is request

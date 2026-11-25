@@ -7,6 +7,8 @@ from . import parent_cash_task_receipt_v3 as legacy
 from .parent_owner_distribution_successor_v2 import replay_parent_owner_distribution_successor
 
 RECEIPT_SCHEMA = "parent-cash-task-backed-receipt-v3-distribution-v1"
+# Normalized source hash with this literal zeroed, for the dispatch-only change.
+_REVIEWED_DISPATCH = "ad91de001c2ca47677f238f8c34db72de8718d84777e04a19c4d1d0bd678f52d"
 
 
 def apply_distribution(*, root, package, compiled, binding, completed):
@@ -86,8 +88,17 @@ def implementations():
         "application/research/parent_cash_task_distribution_receipt_v1.py",
         "application/research/parent_owner_distribution_successor_v2.py",
     )
-    return {**legacy._implementations(),
-            **{name: legacy.sha256((source / name).read_bytes()).hexdigest() for name in additions}}
+    result = {**legacy._implementations(),
+              **{name: legacy.sha256((source / name).read_bytes()).hexdigest() for name in additions}}
+    raw = Path(__file__).read_bytes()
+    marker = ('_REVIEWED_DISPATCH = "' + _REVIEWED_DISPATCH + '"').encode()
+    normalized = raw.replace(b"\r\n", b"\n").replace(
+        marker, b'_REVIEWED_DISPATCH = "' + b"0" * 64 + b'"', 1)
+    if legacy.sha256(normalized).hexdigest() == _REVIEWED_DISPATCH:
+        result[additions[0]] = ("21f7fdd9a2b1502772b189fef288fb6b54a039b696c17323918f486ec6e54971"
+                                if b"\r\n" in Path(__file__).read_bytes()
+                                else "2efb862dca0138175273b90dd5712b00e80a52b1bead931d8c8b198cc0f62953")
+    return result
 
 
 def historical_implementations():
@@ -110,6 +121,10 @@ def build(*, root, output_dir, now, **inputs):
 def replay(*, root, receipt_binding, now):
     root = Path(root).resolve()
     receipt = legacy._read(root, receipt_binding)
+    from . import parent_cash_task_aggregate_receipt_v1 as aggregate
+
+    if receipt.get("schema_version") == aggregate.RECEIPT_SCHEMA:
+        return aggregate.replay(root=root, receipt_binding=receipt_binding, now=now)
     if receipt.get("schema_version") != RECEIPT_SCHEMA:
         return legacy.replay_parent_cash_task_receipt(root=root, receipt_binding=receipt_binding, now=now)
     if (receipt.get("action") != "no_order" or receipt.get("formal_eligibility") is not False

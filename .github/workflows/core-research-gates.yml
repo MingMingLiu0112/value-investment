@@ -237,6 +237,8 @@ jobs:
           tests/test_direct_owner_cash_staged_v3.py
           tests/test_direct_owner_cash_agent_draft_v2.py
           tests/test_direct_owner_cash_compilation_v2.py
+          tests/test_direct_owner_gross_capex_v1.py
+          tests/test_parent_cash_task_aggregate_receipt_v1.py
           tests/test_parent_cash_task_v2.py
           tests/test_parent_cash_task_v3.py
           tests/test_parent_cash_policy_capital_v1.py

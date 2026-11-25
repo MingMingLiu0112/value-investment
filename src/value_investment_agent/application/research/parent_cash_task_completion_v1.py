@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 from tempfile import mkdtemp, mkstemp
 
+from .parent_cash_task_aggregate_receipt_v1 import build as build_aggregate_receipt
 from .parent_cash_task_receipt_v3 import build_parent_cash_task_receipt
 from .parent_cash_task_distribution_receipt_v1 import (
     build as build_distribution_receipt,
@@ -187,8 +188,6 @@ def seal_completed_parent_cash_task(service, task_id):
             return
         retained = valuation_receipt_path(root, task_id)
         try:
-            if spec.get("gross_capex_plan_binding") is not None:
-                raise ValueError("GROSS_CAPEX_E2_ONLY_LEGACY_PUBLICATION_BLOCKED")
             now = datetime.now(timezone.utc)
             if retained.exists():
                 if not retained.is_file() or retained.stat().st_size > 64 * 1024:
@@ -202,6 +201,10 @@ def seal_completed_parent_cash_task(service, task_id):
             attempt = Path(mkdtemp(prefix="valuation-attempt-", dir=retained.parent)) / "sealed"
             options = {} if binding is None else {"distribution_binding": binding}
             builder = build_parent_cash_task_receipt if binding is None else build_distribution_receipt
+            if spec.get("gross_capex_plan_binding") is not None:
+                if binding is None or spec.get("implemented_distribution_receipt_binding") != binding:
+                    raise ValueError("GROSS_CAPEX_F1_TASK_OR_DISTRIBUTION_BINDING_MISMATCH")
+                builder = build_aggregate_receipt
             built = builder(
                 **options,
                 root=root, task_id=task_id, task_head=head, case_package_binding=case_binding,

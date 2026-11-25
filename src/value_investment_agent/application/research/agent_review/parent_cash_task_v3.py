@@ -23,6 +23,7 @@ def read_parent_cash_agent_facts_v2(**kwargs):
 from ..direct_owner_cash_staged_v2 import (
     STAGES, _term, _identical_prose_duplicate_only, parse_staged_parent_cash_response,
 )
+from .. import direct_owner_gross_capex_v1 as aggregate_capex
 from .. import direct_owner_cash_operating_wire_v1 as operating_wire
 from .. import direct_owner_cash_terminal_wire_v1 as terminal_wire
 from .. import direct_owner_cash_policy_capital_v1 as policy_capital
@@ -43,9 +44,10 @@ STAGE_ORDER = tuple(f"{scenario}.{stage}" for scenario in SCENARIOS for stage in
 LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3bac68d06b"
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 BASE_INVESTMENT_RECEIPTS_V1 = "PARENT_YTD_ACTUAL_ONLY_V1"
+BASE_CAPITAL_EVIDENCE_V1 = "PARENT_CAPITAL_EVIDENCE_REVIEW_V1"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "83785720e9f20d0c1b8d8868821678ba15e60ffec383a28a4eb4a4e89105c59c"
+REVIEWED_CAPITAL_SERVICE = "341595036d226b5db8b19dfb57fb1045e39b012e6a2ca643345bd9d0768d46aa"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -203,6 +205,101 @@ def _terminal_parent_cash_history(root, binding, valuation_date):
     return dict(scope=statement["scope"], currency="CNY", observations=rows,
                 source_refs={key: row["source_refs"] for key, row in fields.items()},
                 classification="HISTORICAL_DIAGNOSTIC_NOT_FORECAST")
+
+
+def project_base_capital_evidence_v1(*, root, spec_binding, context, ir_receipt_binding, as_of,
+                                     ir_archive_root=None):
+    """Project bounded evidence for offline Base policy and terminal review."""
+    from ....infrastructure.filings.pdf_text import extract_pages
+
+    root = Path(root).resolve()
+    if as_of.utcoffset() is None:
+        raise ValueError("PARENT_V3_CAPITAL_EVIDENCE_CUTOFF_INVALID")
+    year_end = context["valuation_date"]
+    floor = context.get("annual_capex_floor")
+    observed_year = int(year_end[:4]) + 1
+    if (context["symbol"] != "600887" or floor is None
+            or floor["symbol"] != context["symbol"] or floor["scope"] != terminal_wire.SCOPE
+            or floor["currency"] != "CNY" or floor["year"] != observed_year
+            or floor["period_start"] != f"{observed_year}-01-01"
+            or floor["observed_through"] != f"{observed_year}-09-30"):
+        raise ValueError("PARENT_V3_CAPITAL_EVIDENCE_Q3_INVALID")
+    ytd = Decimal(floor["minimum_cny"])
+    if not ytd.is_finite() or ytd < 0:
+        raise ValueError("PARENT_V3_CAPITAL_EVIDENCE_Q3_INVALID")
+
+    archive = Path(ir_archive_root).resolve() if ir_archive_root is not None else root
+    receipt_path = require_inside(
+        archive / "runtime", archive / ir_receipt_binding["path"], "capital IR receipt",
+    )
+    raw = receipt_path.read_bytes()
+    if _hash(raw) != ir_receipt_binding["sha256"]:
+        raise ValueError("PARENT_V3_CAPITAL_IR_RECEIPT_CHANGED")
+    receipt = json.loads(raw)
+    acquired = datetime.fromisoformat(receipt["acquired_at"])
+    q3_available = datetime.fromisoformat(floor["source_ref"]["available_at"])
+    if (receipt["symbol"] != context["symbol"] or receipt["action"] != "no_order"
+            or receipt["classification"] != "ISSUER_GROUP_MANAGEMENT_OUTLOOK_NOT_PARENT_CASH_PROOF"
+            or acquired.utcoffset() is None or acquired > as_of
+            or q3_available.utcoffset() is None or q3_available > as_of
+            or receipt["source_url"] != "https://dataclouds.cninfo.com.cn/shgonggao/investor/"
+                "2026/20261103/e794e53c3792fc41fc8068baba3e31fc.pdf"):
+        raise ValueError("PARENT_V3_CAPITAL_IR_SOURCE_INVALID")
+    original = require_inside(receipt_path.parent, archive / receipt["original"], "capital IR original")
+    if _hash(original.read_bytes()) != receipt["source_sha256"]:
+        raise ValueError("PARENT_V3_CAPITAL_IR_ORIGINAL_CHANGED")
+    pages = ["".join(page.split()) for page in extract_pages(original)]
+    expected = {"持续地进行低温业务上的投入": 7, "未来五年的深加工发展战略目标": 8}
+    findings = receipt["findings"]
+    if (len(pages) < 8 or "证券代码：600887" not in pages[0]
+            or "投资者关系活动记录表" not in pages[0] or "编号：20261030" not in pages[0]
+            or set(findings) != set(expected)
+            or any(findings[phrase]["physical_page"] != page
+                   or phrase not in "".join(findings[phrase]["excerpt"].split())
+                   or "".join(findings[phrase]["excerpt"].split()) not in pages[page - 1]
+                   for phrase, page in expected.items())):
+        raise ValueError("PARENT_V3_CAPITAL_IR_EXCERPT_INVALID")
+
+    history = _terminal_parent_cash_history(root, spec_binding, year_end)
+    fy_source = history["source_refs"]["gross_capex_cny"]
+    fy_available = datetime.fromisoformat(fy_source["available_at"])
+    if (history["scope"] != terminal_wire.SCOPE or history["currency"] != "CNY"
+            or fy_available.utcoffset() is None or fy_available > as_of):
+        raise ValueError("PARENT_V3_CAPITAL_EVIDENCE_FY_INVALID")
+    return dict(
+        schema_version=BASE_CAPITAL_EVIDENCE_V1, classification="EVIDENCE_REVIEW_ONLY",
+        status="BLOCKED", action="no_order", as_of=as_of.isoformat(), replay_from_stage="base.policy",
+        affected_stages=["base.policy", "base.terminal"],
+        parent_gross_capex=dict(
+            scope=terminal_wire.SCOPE, currency="CNY",
+            annual_observations=[
+                dict(period_end=row["period_end"], gross_capex_cny=row["values_cny"]["gross_capex_cny"])
+                for row in history["observations"]
+            ],
+            annual_source=deepcopy(fy_source),
+            ytd_observation=dict(period_start=floor["period_start"],
+                observed_through=floor["observed_through"], gross_capex_cny=str(ytd),
+                source=deepcopy(floor["source_ref"])),
+        ),
+        group_management_outlook=dict(
+            classification=receipt["classification"], receipt_binding=deepcopy(ir_receipt_binding),
+            original=dict(path=receipt["original"], sha256=receipt["source_sha256"]),
+            source_url=receipt["source_url"], available_at=receipt["acquired_at"],
+            findings=deepcopy(findings),
+        ),
+        reason_codes=[
+            "PARENT_GROSS_CAPEX_SPLIT_UNPROVEN",
+            "PARENT_ANNUAL_CAPEX_AMOUNTS_OR_CONDITIONS_UNPROVEN",
+            "PARENT_TERMINAL_REINVESTMENT_MECHANISM_UNPROVEN",
+        ],
+        consumption_boundary=(
+            "Use FY and YTD as dated gross parent observations. The YTD amount constrains "
+            "only the corresponding year's combined capex. Group outlook challenges an "
+            "unexplained zero but sets no parent amount or perpetual run rate. A new annual "
+            "or terminal assumption, zero or positive, requires period-specific parent evidence "
+            "or a separately supported conditional mechanism. UNKNOWN supplies no amount."
+        ),
+    )
 
 
 def _parent_cost_method_income(pages, parent, issuer, period):
@@ -705,6 +802,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
     def _implementation_matches(self, spec):
         current = _implementation()
         pinned = spec.get("implementation_sha256")
+        if "gross_capex_plan_binding" in spec:
+            current[aggregate_capex.__name__] = _hash(Path(aggregate_capex.__file__).read_bytes())
         if not isinstance(current, dict) or not isinstance(pinned, dict):
             return False
         raw = Path(__file__).read_bytes()
@@ -715,6 +814,10 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "06981acaca5c6f7a50305964d07e36a2b42df4499b9eaf4583648c6a1c91c8d3",
+            "191425ca88183f2ee1527c590973c63aa3b6bf57eb44e17a21137fbcb1699b23",
+            "adc02b6b7d2310007c27b7cf9f0cb7e4877be4d824e01070f9392557e4b0d867",
+            "ef72cddfb8aa7f3d423efd7c4b5f7352215ab7f6a728771998109627cbd8337e",
             "33587ef83bc4a5ce879aedaecc79404ec8bc776cc55035587aa616e50590f5c7",
             "7ec3a71dd0c96742cecdd15837a10212e62197ff287bccb2c78276866eb8209f",
             "e748c2ef5a3e91ba8dcf635dc7ffb6c0ab31831b2f3e8158c8bde294fc077094",
@@ -1012,7 +1115,28 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             variant == "BULL_DISJOINT_V1" and json.loads(request.user)["scenario"] == "bull")
 
     @staticmethod
+    def _gross_capex_plan(spec, stage, request, root):
+        pin = spec.get("gross_capex_plan_binding")
+        if pin is None or stage not in {"policy", "terminal"} or json.loads(request.user)["scenario"] != "base":
+            return None
+        return aggregate_capex.load_wire_plan(root, pin, source_fingerprint=spec["source_fingerprint"],
+            as_of=datetime.fromisoformat(spec["gross_capex_cutoff"]))
+
+    @staticmethod
     def _wire(spec, stage, request, *, root=None):
+        wire = ParentCashTaskServiceV3._legacy_wire(spec, stage, request, root=root)
+        plan = ParentCashTaskServiceV3._gross_capex_plan(spec, stage, request, root)
+        if plan is not None:
+            return aggregate_capex.aggregate_wire(wire, stage, plan, spec["gross_capex_plan_binding"])
+        return wire
+
+    @staticmethod
+    def _legacy_wire(spec, stage, request, *, root=None):
+        if (spec.get("base_capital_evidence_review") == BASE_CAPITAL_EVIDENCE_V1
+                and stage in {"policy", "terminal"} and json.loads(request.user)["scenario"] == "base"):
+            # The review carries observations but no admissible future split or mechanism.
+            # Blocking request reconstruction also invalidates reuse of the old Base policy.
+            raise ValueError("PARENT_V3_BASE_CAPITAL_EVIDENCE_REVIEW_BLOCKED")
         wire = ParentCashTaskServiceV3._base_wire(spec, stage, request, root=root)
         if (stage == "policy" and spec.get("base_investment_receipts_wire") == BASE_INVESTMENT_RECEIPTS_V1
                 and json.loads(request.user)["scenario"] == "base"):
@@ -1491,6 +1615,11 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     raise ValueError("PARENT_V3_TERMINAL_INVESTMENT_CASH_ANCHOR_REQUIRED")
 
     def _parse_stage(self, spec, stage, response, request, source_fingerprint):
+        plan = self._gross_capex_plan(spec, stage, request, self.root)
+        if plan is not None:
+            response = aggregate_capex.private_legacy_response(response, stage, plan,
+                flat_terminal=spec.get("terminal_cash_review") in {
+                    "RESEARCH_PAYOUT_V2", "RESEARCH_PAYOUT_V3", "RESEARCH_PAYOUT_V4"})
         parse = (operating_wire.parse_operating_wire
                  if stage == "operating" and operating_wire.__name__ in spec["implementation_sha256"]
                  else parse_staged_parent_cash_response)
@@ -1843,9 +1972,20 @@ class ParentCashTaskServiceV3(ResearchTaskService):
     def _assemble(self, spec, drafts, now):
         binding = spec.get("implemented_distribution_receipt_binding")
         options = {} if binding is None else {"implemented_distribution": binding}
-        return assemble_parent_cash_drafts_v2(
+        candidate = assemble_parent_cash_drafts_v2(
             root=self.root, spec_binding=spec["spec_binding"], drafts=drafts,
             generated_at=now, **options)
+        pin = spec.get("gross_capex_plan_binding")
+        if pin is None:
+            return candidate
+        cutoff = datetime.fromisoformat(spec["gross_capex_cutoff"])
+        if cutoff > now or binding is None:
+            raise ValueError("GROSS_CAPEX_E2_CUTOFF_OR_DISTRIBUTION_MISSING")
+        plan = aggregate_capex.load_wire_plan(self.root, pin,
+            source_fingerprint=candidate["source_fingerprint"], as_of=cutoff)
+        source = candidate["candidate_spec"]["quarterly_financing_source"]
+        return aggregate_capex.compile_aggregate_e2(self.root, candidate, plan, pin=pin,
+            source={key: source[key] for key in ("path", "sha256", "url", "acquired_at")}, as_of=cutoff)
 
     def _view(self, spec, state, binding, now):
         view = deepcopy(state)
@@ -1894,8 +2034,10 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         return view
 
     def create(self, *, spec_binding, request_key, now=None, seed_task_id=None,
-               replay_from_stage=None):
+               replay_from_stage=None, gross_capex_plan_binding=None):
         now = _now(now)
+        if gross_capex_plan_binding is not None and replay_from_stage != "base.policy":
+            raise ValueError("GROSS_CAPEX_REQUIRES_BASE_POLICY_REPLAY")
         if not isinstance(request_key, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,80}", request_key):
             raise ValueError("PARENT_REQUEST_KEY_INVALID")
         if replay_from_stage is not None and (seed_task_id is None
@@ -1909,6 +2051,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 if (old["spec_binding"] != spec_binding
                         or (old.get("seed") or {}).get("task_id") != seed_task_id
                         or old.get("replay_from_stage") != replay_from_stage
+                        or old.get("gross_capex_plan_binding") != gross_capex_plan_binding
                         or old["mode"] != ("TEST_ONLY_PARENT_CASH_V3"
                             if self.test_provider is not None else "LIVE_PARENT_CASH_V3")):
                     raise ValueError("PARENT_REQUEST_KEY_CONFLICT")
@@ -1931,6 +2074,16 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     or old_spec["mode"] != ("TEST_ONLY_PARENT_CASH_V3" if self.test_provider is not None
                                                 else "LIVE_PARENT_CASH_V3")):
                 raise ValueError("PARENT_SEED_INCOMPATIBLE")
+            if old_spec.get("gross_capex_plan_binding") is not None:
+                raise ValueError("GROSS_CAPEX_NESTED_CONTINUATION_NOT_SUPPORTED")
+            if gross_capex_plan_binding is not None and (
+                    old_spec.get("terminal_cash_review") != "RESEARCH_PAYOUT_V4"
+                    or old_state.get("error_code") != "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID"
+                    or "base.policy" not in old_state["responses"]
+                    or Decimal(old_state["reserved_cost"]) != 0
+                    or any(row["status"] != "SETTLED" for row in old_state["reservations"].values())
+                    or not old_spec.get("implemented_distribution_receipt_binding")):
+                raise ValueError("GROSS_CAPEX_PREDECESSOR_NOT_ELIGIBLE")
             self._verify_charges(old_state)
             source_spec = staged_numbered._load_spec(self.root, spec_binding)
             capital_basis = policy_capital.opening_debt_basis(source_spec["opening"], context["facts"])
@@ -2096,6 +2249,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     if key in old_spec:
                         trial_spec[key] = old_spec[key]
                 trial_spec["base_investment_receipts_wire"] = BASE_INVESTMENT_RECEIPTS_V1
+            if gross_capex_plan_binding is not None:
+                trial_spec.update(gross_capex_plan_binding=deepcopy(gross_capex_plan_binding),
+                                  gross_capex_cutoff=now.isoformat())
             for stage_id in STAGE_ORDER:
                 if (trial_spec.get("terminal_cash_review") in {"RESEARCH_PAYOUT_V3", "RESEARCH_PAYOUT_V4"}
                         and stage_id in {"bull.policy", "bull.terminal"}):
@@ -2187,6 +2343,11 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         elif "operating_series_wire" in trial_spec:
             spec["operating_series_wire"] = trial_spec["operating_series_wire"]
         if seed is not None:
+            if gross_capex_plan_binding is not None:
+                spec.update(gross_capex_plan_binding=trial_spec["gross_capex_plan_binding"],
+                            gross_capex_cutoff=trial_spec["gross_capex_cutoff"])
+                spec["implementation_sha256"][aggregate_capex.__name__] = _hash(
+                    Path(aggregate_capex.__file__).read_bytes())
             if "base_investment_receipts_wire" in trial_spec:
                 spec["base_investment_receipts_wire"] = trial_spec["base_investment_receipts_wire"]
             if "terminal_cash_review" in trial_spec:
