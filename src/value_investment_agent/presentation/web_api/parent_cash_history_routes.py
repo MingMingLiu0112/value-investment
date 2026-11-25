@@ -208,8 +208,19 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                     and "base.policy" in task.get("completed_stages", ())
                     and not any(row["status"] == "RESERVED"
                                 for row in task.get("reservations", {}).values())):
+                request_key = "value-basetail1-" + binding["sha256"]
                 task = numbered_service.create(
-                    spec_binding=binding, request_key="value-basetail1-" + binding["sha256"],
+                    spec_binding=binding, request_key=request_key,
+                    seed_task_id=task["task_id"], replay_from_stage="base.terminal",
+                )
+            if (request_key.startswith("value-basetail1-") and task["status"] == "FAILED"
+                    and task.get("error_code") ==
+                    "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"
+                    and "base.policy" in task.get("completed_stages", ())
+                    and not any(row["status"] == "RESERVED"
+                                for row in task.get("reservations", {}).values())):
+                task = numbered_service.create(
+                    spec_binding=binding, request_key="value-basehist1-" + binding["sha256"],
                     seed_task_id=task["task_id"], replay_from_stage="base.terminal",
                 )
             if (request_key.startswith("value-bfin1-") and task["status"] == "FAILED"

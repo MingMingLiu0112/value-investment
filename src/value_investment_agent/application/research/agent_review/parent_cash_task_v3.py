@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "4822ff1be4a4350fa29c00ca23a732f59df93c04674b7b5ce1d08dec89dd5f7c"
+REVIEWED_CAPITAL_SERVICE = "90b7f233144ec6898605566e4301ba95b8b92a0004267d599690ceae8e07d651"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -172,6 +172,38 @@ def _implementation():
         __name__: _hash(Path(__file__).read_bytes())}
 
 
+def _terminal_parent_cash_history(root, binding, valuation_date):
+    """Replay parent-only historical cash without asserting a recurring run rate."""
+    from ..parent_direct_owner_cash_unnumbered_v1 import read_unnumbered_parent_cash
+
+    spec = staged_numbered._load_spec(root, binding)
+    annual = [row for row in spec["owner_sources"] if row["period_end"] == valuation_date]
+    if len(annual) != 1 or not valuation_date.endswith("-12-31"):
+        raise ValueError("PARENT_TERMINAL_ANNUAL_SOURCE_REQUIRED")
+    evidence = read_unnumbered_parent_cash(
+        root=root, symbol=spec["symbol"], issuer_name=spec["issuer_name"],
+        sources=annual, evaluated_at=datetime.fromisoformat(spec["computed_at"]),
+    )
+    statement, = evidence["statements"]
+    fields = {key: statement["cash_flow"][key] for key in (
+        "cfo_cny", "investment_income_cash_cny", "gross_capex_cny",
+    )}
+    fields["parent_net_profit_cny"] = statement["income"]["parent_net_profit_cny"]
+    rows = []
+    for offset, column in enumerate(("current", "comparative")):
+        values = {key: Decimal(row[column]) for key, row in fields.items()}
+        spread = (values["cfo_cny"] + values["investment_income_cash_cny"]
+                  - values["gross_capex_cny"] - values["parent_net_profit_cny"])
+        rows.append(dict(
+            period_end=f"{int(valuation_date[:4]) - offset}-12-31",
+            values_cny={key: str(value) for key, value in values.items()},
+            cash_before_outside_obligations_minus_profit_cny=str(spread),
+        ))
+    return dict(scope=statement["scope"], currency="CNY", observations=rows,
+                source_refs={key: row["source_refs"] for key, row in fields.items()},
+                classification="HISTORICAL_DIAGNOSTIC_NOT_FORECAST")
+
+
 class ParentCashTaskServiceV3(ResearchTaskService):
     def __init__(self, root, *, test_provider=None):
         super().__init__(root)
@@ -209,6 +241,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "cc327715c9d00117159fc798a9bfb4da2ccb049fb987f8b20d34823340b26077",
+            "d86fb3c1b4f6113a84e30187beb3a88636084dbd914baa4997c8de6d152e37e9",
             "c2e36379b8929f82f085d4f759405939b567e185bc623d356e63180f9026748a",
             "e45f628b4e7f58f2cda12db6c4f2ca05ec4e97051b4e8d915aa8cd5cf0b1f06c",
             "2d0fc6e3dbf90043eb3406b9b67c9137d65087e7917adaf67be01fac53aa7c59",
@@ -773,6 +807,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                         "recurrence. Explain supported changes in collection, payments, investment "
                         "remittances and reinvestment separately. If evidence cannot reconcile "
                         "stationary cash and profit, do not invent balancing cash or expenses.")
+                if payload.get("scenario") == "base" and spec.get("base_terminal_history_wire") is True:
+                    result["terminal_parent_cash_history"] = _terminal_parent_cash_history(
+                        root, spec["spec_binding"], source["valuation_date"])
                 return replace(wire, user=json.dumps(result, ensure_ascii=False,
                     sort_keys=True, separators=(",", ":")))
             return terminal_wire.terminal_wire_request(request)
@@ -1139,6 +1176,13 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                   and any(row["source"].get("redemption_wire") == "MULTI_LAYOUT_V1"
                           for row in (context.get("annual_paid_note_interest_floor") or {}).get("evidence", ()))):
                 trial_spec["scenario_interest_wire"] = "CONDITIONAL_COUPON_COVERAGE_V1"
+            if old_spec.get("base_terminal_history_wire") is True or (
+                    replay_from_stage == "base.terminal"
+                    and old_spec.get("replay_from_stage") == "base.terminal"
+                    and old_spec.get("base_cash_transition_wire") == "FY_AFTER_OBSERVED_9M_V1"
+                    and old_state.get("error_code") ==
+                    "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"):
+                trial_spec["base_terminal_history_wire"] = True
             if "base_cash_transition_wire" in old_spec:
                 trial_spec["base_cash_transition_wire"] = old_spec["base_cash_transition_wire"]
             if (replay_from_stage == "base.operating"
@@ -1260,6 +1304,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 spec["scenario_interest_wire"] = trial_spec["scenario_interest_wire"]
             if "bear_financing_wire" in trial_spec:
                 spec["bear_financing_wire"] = trial_spec["bear_financing_wire"]
+            if trial_spec.get("base_terminal_history_wire") is True:
+                spec["base_terminal_history_wire"] = True
             if "base_cash_transition_wire" in trial_spec:
                 spec["base_cash_transition_wire"] = trial_spec["base_cash_transition_wire"]
             if "base_operating_wire" in trial_spec:
