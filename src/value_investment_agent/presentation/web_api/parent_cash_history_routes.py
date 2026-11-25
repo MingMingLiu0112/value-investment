@@ -6,6 +6,7 @@ from itertools import islice
 from pathlib import Path
 
 from fastapi import BackgroundTasks, FastAPI, Request
+from starlette.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
 from ...application.research.parent_cash_task_completion_v1 import (
@@ -56,8 +57,10 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         error = denied(request)
         if error is not None:
             return error
+        return await run_in_threadpool(prepare_numbered, await request.body(), background)
+
+    def prepare_numbered(raw, background):
         try:
-            raw = await request.body()
             if len(raw) > 2048:
                 raise ValueError("PARENT_V3_REQUEST_TOO_LARGE")
             body = json.loads(raw)
@@ -77,8 +80,10 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         error = denied(request)
         if error is not None:
             return error
+        return await run_in_threadpool(prepare_numbered_for_company, await request.body(), background)
+
+    def prepare_numbered_for_company(raw, background):
         try:
-            raw = await request.body()
             if len(raw) > 128:
                 raise ValueError("PARENT_V3_REQUEST_TOO_LARGE")
             body = json.loads(raw)

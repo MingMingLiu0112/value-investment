@@ -53,11 +53,17 @@ def test_parent_cash_history_projects_failed_checkpoint_without_execution(tmp_pa
 
 
 def test_numbered_parent_cash_task_api_runs_only_on_explicit_post(tmp_path, monkeypatch):
+    import asyncio
+
     calls = []
     task_id = "rt-" + "b" * 32
 
+    def preflight(service, binding):
+        with pytest.raises(RuntimeError, match="no running event loop"):
+            asyncio.get_running_loop()
+
     monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", lambda service, task: service.run(task))
-    monkeypatch.setattr(routes, "preflight_parent_cash_task", lambda service, binding: None)
+    monkeypatch.setattr(routes, "preflight_parent_cash_task", preflight)
     monkeypatch.setattr(routes, "seal_completed_parent_cash_task",
                         lambda service, task: calls.append(("seal", task)))
 
