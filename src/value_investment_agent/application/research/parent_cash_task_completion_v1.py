@@ -27,6 +27,13 @@ def valuation_blockage_path(root, task_id):
                           "parent cash publication blockage")
 
 
+def _safe_publication_reason(reason):
+    return re.fullmatch(
+        r"(?:[A-Z0-9_]{3,120}|DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:[0-9]{4})",
+        reason,
+    ) is not None
+
+
 def read_valuation_publication(root, task_id, task_head):
     """Read publication metadata only; a receipt always supersedes an old failure."""
     if valuation_receipt_path(root, task_id).is_file():
@@ -41,7 +48,7 @@ def read_valuation_publication(root, task_id, task_head):
     if (row.get("schema_version") != "parent-cash-publication-blockage-v1"
             or row.get("task_id") != task_id or row.get("status") != "BLOCKED"
             or row.get("action") != "no_order"
-            or not re.fullmatch(r"[A-Z0-9_]{3,120}", str(row.get("reason_code", "")))):
+            or not _safe_publication_reason(str(row.get("reason_code", "")))):
         raise ValueError("PARENT_TASK_PUBLICATION_STATUS_INVALID")
     if row.get("task_record_binding") != task_head:
         return missing
@@ -50,7 +57,7 @@ def read_valuation_publication(root, task_id, task_head):
 
 def _record_publication_blockage(root, task_id, head, error):
     reason = str(error)
-    if not re.fullmatch(r"[A-Z0-9_]{3,120}", reason):
+    if not _safe_publication_reason(reason):
         reason = ("PARENT_TASK_PUBLICATION_IO_ERROR" if isinstance(error, OSError)
                   else "PARENT_TASK_PUBLICATION_VERIFICATION_FAILED")
     row = dict(schema_version="parent-cash-publication-blockage-v1", task_id=task_id,

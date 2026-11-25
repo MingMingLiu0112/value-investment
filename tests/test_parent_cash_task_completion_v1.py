@@ -338,3 +338,24 @@ def test_blockage_is_head_bound_and_does_not_expose_raw_errors(setup, monkeypatc
     assert completion.read_valuation_publication(
         x["tmp_path"], x["task_id"], dict(head, sha256="b" * 64)) == dict(
             valuation_receipt_status="NOT_SEALED", valuation_blockage=None)
+
+
+@pytest.mark.parametrize(("message", "public_reason"), [
+    ("DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027",
+     "DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027"),
+    ("DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027:local details",
+     "PARENT_TASK_PUBLICATION_VERIFICATION_FAILED"),
+])
+def test_cash_floor_blockage_retains_only_known_year(setup, monkeypatch, message, public_reason):
+    x = setup
+
+    def fail(**kwargs):
+        raise ValueError(message)
+
+    monkeypatch.setattr(completion, "build_distribution_receipt", fail)
+    service = x["Service"]()
+    with pytest.raises(ValueError):
+        completion.run_and_seal_parent_cash_task(service, x["task_id"])
+    head = service._load(x["task_id"])[2]
+    receipt = completion.read_valuation_publication(x["tmp_path"], x["task_id"], head)
+    assert receipt["valuation_blockage"]["reason_code"] == public_reason

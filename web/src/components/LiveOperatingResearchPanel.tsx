@@ -38,6 +38,17 @@ const CASH_ALIGNMENT_REASONS: Record<string, string> = {
     "期间新增财务披露尚未与这份估值逐项核对。",
 };
 
+function cashFundingYear(reason: string): string | undefined {
+  return /^DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:([0-9]{4})$/.exec(
+    reason,
+  )?.[1];
+}
+
+function publicationBlockageLabel(reason: string): string {
+  const year = cashFundingYear(reason);
+  return year ? `${year} 年现金低于模型底线` : reason;
+}
+
 const CASH_VALUATION_SCENARIOS = [
   ["bear", "压力"],
   ["base", "基准"],
@@ -125,15 +136,12 @@ function ParentCashH1SensitivityRead({
                   </li>
                 );
               }
-              const funding =
-                /^DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:(\d{4})$/.exec(
-                  row.reason,
-                );
+              const fundingYear = cashFundingYear(row.reason);
               return (
                 <li key={key}>
                   {label} ·{" "}
-                  {funding
-                    ? `${funding[1]} 年资金不足，未出值`
+                  {fundingYear
+                    ? `${fundingYear} 年资金不足，未出值`
                     : `未出值（${row.reason}）`}
                 </li>
               );
@@ -218,8 +226,10 @@ export function ParentCashTaskValuationRead({
       ) {
         const reason = apiError.detail;
         setError(
-          typeof reason === "string" && /^[A-Z0-9_]{3,120}$/.test(reason)
-            ? `此任务的估值封存受阻（${reason}）。请在任务历史查看封存状态。`
+          typeof reason === "string" &&
+            (/^[A-Z0-9_]{3,120}$/.test(reason) ||
+              cashFundingYear(reason) !== undefined)
+            ? `此任务的估值封存受阻（${publicationBlockageLabel(reason)}）。请在任务历史查看封存状态。`
             : "此任务的估值封存受阻，请在任务历史查看封存状态。",
         );
         return;
@@ -571,7 +581,9 @@ export function ParentCashTaskHistoryView({
               item.valuation_receipt_status === "BLOCKED" && (
                 <p>
                   估值封存受阻：
-                  {item.valuation_blockage?.reason_code || "未记录原因"}
+                  {publicationBlockageLabel(
+                    item.valuation_blockage?.reason_code || "未记录原因",
+                  )}
                 </p>
               )}
             {item.status === "SUCCEEDED" &&

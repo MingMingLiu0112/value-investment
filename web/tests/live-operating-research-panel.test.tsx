@@ -2175,6 +2175,14 @@ it.each([
     ),
     "此任务的估值封存受阻（PARENT_TASK_CASE_BINDING_REQUIRED）",
   ],
+  [
+    new ApiError(
+      409,
+      "PARENT_TASK_VALUATION_BLOCKED",
+      "DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027",
+    ),
+    "此任务的估值封存受阻（2027 年现金低于模型底线）",
+  ],
   [{ ...valuationReceipt, symbol: "000568" }, "响应无法核验"],
   [{ ...valuationReceipt, current_comparable: true }, "响应无法核验"],
 ])(
