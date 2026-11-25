@@ -2041,7 +2041,10 @@ def test_cross_date_unlock_requires_exact_notice_and_q3_originals(variant):
 
 
 @pytest.mark.parametrize("complete", [True, False])
-def test_adjacent_full_windows_report_coverage_without_materiality_admission(reconciliation, complete):
+@pytest.mark.parametrize("incomplete_enclosing_window", [False, True])
+def test_adjacent_full_windows_report_coverage_without_materiality_admission(
+    reconciliation, complete, incomplete_enclosing_window,
+):
     from types import SimpleNamespace
 
     analysis = reconciliation["analysis"]
@@ -2060,6 +2063,12 @@ def test_adjacent_full_windows_report_coverage_without_materiality_admission(rec
                         coverage_status="COMPLETE" if index == 0 or complete else "INCOMPLETE")
         for index, day in enumerate((start, end))
     ]
+    if incomplete_enclosing_window:
+        windows.insert(0, dict(windows[0], scan_to=end.isoformat()))
+        scans.insert(0, SimpleNamespace(
+            scan_from=start, scan_to=end, announcements=(), blockers=(),
+            status="COMPLETE_NO_MATERIAL_EVENT_IN_VALIDITY_WINDOW", coverage_status="INCOMPLETE",
+        ))
     quote = QuoteSnapshot(valuation.symbol, end, Decimal("15"), "verified_close", [dict(id="TEST_ONLY", sha256="b" * 64)])
     quote_result = dict(status="QUALIFIED", reason_codes=[], explanation="TEST_ONLY",
                         bundle_binding=None, native_status="TEST_ONLY")

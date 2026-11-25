@@ -2192,13 +2192,14 @@ def _assess(analysis, valuation, quote, quote_result, windows, scans, reconcilia
     start, end = valuation.valuation_date, quote.quote_date
     reasons = []
     refs = [item["observation_binding"] for item in windows]
-    covering = [(w, s) for w, s in zip(windows, scans)
-                if end is not None and s.scan_from <= start and s.scan_to >= end]
-    complete_windows = [
-        w for w, scan in zip(windows, scans, strict=True)
-        if w.get("source_integrity_verified") is True
-        and w["full_calendar_window_elapsed"] and scan.coverage_status == "COMPLETE"
+    complete_observations = [
+        (window, scan) for window, scan in zip(windows, scans, strict=True)
+        if window.get("source_integrity_verified") is True
+        and window["full_calendar_window_elapsed"] and scan.coverage_status == "COMPLETE"
     ]
+    covering = [(window, scan) for window, scan in complete_observations
+                if end is not None and scan.scan_from <= start and scan.scan_to >= end]
+    complete_windows = [window for window, _ in complete_observations]
     publication_covered = end is not None and start <= end and _continuous_publication_window(
         complete_windows, start, end,
     )
