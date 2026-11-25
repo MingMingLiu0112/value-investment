@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from value_investment_agent.infrastructure.filings.operating_event_terms import (
-    VERSION, parse_operating_event_terms,
+    VERSION, parse_fund_amendment_pair, parse_operating_event_terms,
 )
 
 # TEST_ONLY complete prose fixtures; issuer/symbol differ from the real sources.
@@ -569,3 +569,81 @@ def test_mixed_financing_redemption_requires_exact_instrument_identity(second_ki
     ]
     assert_evidence(result, pages)
     assert_evidence(result, pages)
+
+@pytest.fixture
+def yili_fund_pages():
+    from value_investment_agent.infrastructure.filings.official_pdf import validate_pdf_original
+    from value_investment_agent.infrastructure.filings.pdf_text import extract_pages
+
+    directory = os.environ.get("VALUE_FUND_AMENDMENT_REAL_ROOT")
+    if not directory:
+        pytest.skip("VALUE_FUND_AMENDMENT_REAL_ROOT unset")
+    originals = (
+        ("1225598739", "06d7cda0a54663d851fba04762dd72b3cbd197398ce2f24feb4853188a316901"),
+        ("1225679757", "2a34ab72b5071194dda562225417d8ffd5f9061b37a3bfa098158471e4982ab0"),
+    )
+    pages = []
+    for number, sha256 in originals:
+        path = Path(directory) / f"yili-f2-{number}.pdf"
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == sha256
+        validate_pdf_original(path)
+        pages.append(extract_pages(path))
+    return pages
+
+
+def test_yili_fund_amendment_pair_cold_replay(yili_fund_pages):
+    amendment_pages, registration_pages = yili_fund_pages
+    pair = parse_fund_amendment_pair(amendment_pages, registration_pages, symbol="600887")
+    amendment, registration = pair["amendment"], pair["registration"]
+    assert amendment == parse_operating_event_terms(amendment_pages, symbol="600887")
+    assert registration == parse_operating_event_terms(registration_pages, symbol="600887")
+    assert amendment["announcement_number"] == "2026-074"
+    assert amendment["published_date"] == "2026-10-10"
+    assert registration["published_date"] == "2026-11-20"
+    assert registration["terms"]["registration_date"] == "2026-11-17"
+    terms = amendment["terms"]
+    assert terms["registration_code"] == registration["terms"]["registration_code"] == "SJW808"
+    assert terms["board_approval_date"] == "2026-10-09"
+    assert terms["joint_commitment_cny"] == "670000000"
+    assert terms["fund_paid_in_cny"] == "268000000"
+    assert terms["fund_paid_in_as_of"] == "2026-06-30"
+    assert terms["previous_investment_years_from_first_draw"] == 5
+    assert terms["revised_investment_years_from_first_draw"] == 9
+    assert terms["investment_end_date"] is None
+    for row, pages in zip((amendment, registration), yili_fund_pages):
+        assert row["terms"]["standalone_parent_commitment_cny"] is None
+        assert row["terms"]["standalone_parent_paid_cny"] is None
+        assert row["terms"]["incremental_parent_cash_verified"] is False
+        assert row["effective_date"] is None
+        assert row["action"] == "no_order"
+        for excerpt in row["evidence_excerpts"]:
+            assert excerpt["text"] in pages[excerpt["physical_page"] - 1]
+    assert {e["physical_page"] for e in amendment["evidence_excerpts"]
+            if e["field"] == "revised_investment_period"} == {2, 3}
+    assert {e["physical_page"] for e in registration["evidence_excerpts"]
+            if e["field"] == "amendment_registration_completion"} == {2}
+
+
+@pytest.mark.parametrize("document, old, new, error", [
+    (0, "SJW808", "SJW809", "FUND_AMENDMENT_PAIR_MISMATCH"),
+    (1, "SJW808", "SJW809", "FUND_AMENDMENT_PAIR_MISMATCH"),
+    (1, "2026-074", "2026-075", "FUND_AMENDMENT_PAIR_MISMATCH"),
+    (1, "17 日", "27 日", "FUND_CHRONOLOGY_MISMATCH"),
+    (0, "26,800", "26,800美元", "FUND_UNSUPPORTED_OR_AMBIGUOUS_TERMS"),
+])
+def test_yili_fund_amendment_disallows_conflicting_terms(yili_fund_pages, document, old, new, error):
+    pages = list(yili_fund_pages)
+    pages[document] = replace(pages[document], old, new)
+    with pytest.raises(ValueError, match=error):
+        parse_fund_amendment_pair(*pages, symbol="600887")
+
+
+def test_yili_fund_registration_requires_matching_original_code_and_complete_pages(yili_fund_pages):
+    amendment, registration = yili_fund_pages
+    registration[1] = registration[1].replace("SJW808", "SJW809")
+    with pytest.raises(ValueError, match="FUND_REGISTRATION_IDENTITY_MISMATCH"):
+        parse_fund_amendment_pair(amendment, registration, symbol="600887")
+    with pytest.raises(ValueError, match="OPERATING_EVENT_"):
+        parse_operating_event_terms(amendment[:3], symbol="600887")
+    with pytest.raises(ValueError, match="ISSUER_CODE_MISMATCH"):
+        parse_operating_event_terms(amendment, symbol="600519")

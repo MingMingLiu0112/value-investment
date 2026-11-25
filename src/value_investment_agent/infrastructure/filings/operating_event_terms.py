@@ -738,6 +738,134 @@ def _mixed_financing_redemption(body, published, title):
         limitations=["仅证明公告列示的兑付款项。"], _evidence=evidence)
 
 
+_FUND_CHANGE_TITLE = "关于出资设立风险投资基金相关事项变更的公告"
+_FUND_PROGRESS_TITLE = "关于出资设立风险投资基金的进展公告"
+
+
+def parse_fund_amendment_terms(pages, *, symbol):
+    """Parse one issuer notice; pairing and external source identity are separate."""
+    original = _Original(pages, max_pages=4)
+    header = _match(
+        r"证券代码:(?P<code>[0-9]{6})证券简称:[^:]{1,30}公告编号:临(?P<number>20[0-9]{2}-[0-9]{3})"
+        r"(?P<issuer>[\u4e00-\u9fff]{2,80}股份有限公司)"
+        rf"(?P<title>{_FUND_CHANGE_TITLE}|{_FUND_PROGRESS_TITLE})"
+        + re.escape(_GUARANTEE) + r"(?P<body>.+)特此公告。?(?P=issuer)董事会"
+        + _PUBLICATION_DATE.format(name="published"), original.text,
+    )
+    if header["code"] != symbol or original.text.count("证券代码:") != 1:
+        _reject("ISSUER_CODE_MISMATCH")
+    published = _day(header["published"])
+    if published[:4] != header["number"][:4]:
+        _reject("ANNOUNCEMENT_YEAR_MISMATCH")
+    body = header["body"]
+
+    def unique(pattern):
+        matches = list(re.finditer(unicodedata.normalize("NFKC", pattern), body))
+        if len(matches) != 1:
+            _reject("FUND_UNSUPPORTED_OR_AMBIGUOUS_TERMS")
+        return matches[0]
+
+    common = unique(
+        rf"同意公司及控股子公司共同出资(?P<commitment>{_MONEY})亿元设立"
+        r"(?P<fund>[\u4e00-\u9fff]{2,80}合伙企业\(有限合伙\))"
+        r"\(简称“合伙企业”或“健瓴基金”\)。(?P<year>20[0-9]{2})年(?P<month>[0-9]{1,2})月,"
+        r"健瓴基金在中国证券投资基金业协会完成了私募投资基金备案手续,备案编码:(?P<code>[A-Z0-9]{6})。"
+    )
+    initial_month = _day(f'{common["year"]}年{common["month"]}月1日')[:7]
+    commitment = Decimal(common["commitment"]) * 100_000_000
+    terms = dict(fund_name=common["fund"], registration_code=common["code"],
+                 initial_registration_month=initial_month,
+                 joint_commitment_cny=format(commitment.normalize(), "f"),
+                 commitment_scope="ISSUER_AND_CONTROLLED_SUBSIDIARY_JOINT",
+                 standalone_parent_commitment_cny=None, standalone_parent_paid_cny=None,
+                 incremental_parent_cash_verified=False)
+    if commitment <= 0:
+        _reject("FUND_INVALID_COMMITMENT")
+    evidence = original.evidence(original.text[:header.start("body")], "issuer_code_and_heading")
+    evidence.extend(original.evidence(common[0], "joint_commitment_and_original_registration"))
+
+    if header["title"] == _FUND_CHANGE_TITLE:
+        if len(pages) != 4:
+            _reject("FUND_COMPLETE_AMENDMENT_PAGES_REQUIRED")
+        paid = unique(r"截至" + _DATE.format(name="as_of") +
+                      r",健瓴基金实缴出资合计(?P<amount>[0-9]{1,3}(?:,[0-9]{3})+(?:\.[0-9]+)?)万元,")
+        previous = unique(r"修订前:2\.7\.2自设立日起至以下情形中较早的一日为合伙企业的“投资期”:"
+                          r"\(1\)自首次提款到账日起满伍\(5\)年之日;"
+                          r"\(2\)普通合伙人确认并宣布全体合伙人届时认缴出资余额"
+                          r"\(违约合伙人之认缴出资余额除外\)都已实际使用或为合理预留之日。")
+        revised = unique(r"修订后:2\.7\.2合伙企业的投资期:自首次提款到账日起满玖\(9\)年之日;"
+                         r"或普通合伙人确认并宣布全体合伙人届时认缴出资余额"
+                         r"\(违约合伙人之认缴出资余额除外\)都已实际使用或为合理预留之日。")
+        approval = unique(r"公司于" + _DATE.format(name="approval") +
+                          r"召开了第十二届董事会临时会议,以11票同意、0票反对、0票弃权审议通过了"
+                          r"《公司关于出资设立风险投资基金相关事项变更的议案》。")
+        evidence.extend(original.evidence(paid[0], "historic_fund_paid_in"))
+        evidence.extend(original.evidence(previous[0], "previous_investment_period"))
+        evidence.extend(original.evidence(revised[0], "revised_investment_period"))
+        evidence.extend(original.evidence(approval[0], "board_approval"))
+        as_of, approved = _day(paid["as_of"]), _day(approval["approval"])
+        if initial_month > as_of[:7] or not as_of <= approved <= published:
+            _reject("FUND_CHRONOLOGY_MISMATCH")
+        terms.update(fund_paid_in_cny=format(Decimal(paid["amount"].replace(",", "")) * 10_000, "f"),
+                     fund_paid_in_as_of=as_of, paid_in_scope="FUND_TOTAL",
+                     board_approval_date=approved, previous_investment_years_from_first_draw=5,
+                     revised_investment_years_from_first_draw=9,
+                     commitment_use_or_reservation_clause_retained=True,
+                     first_draw_date=None, investment_end_date=None, registration_date=None)
+        event_type = "REPORTED_FUND_INVESTMENT_PERIOD_AMENDMENT"
+    else:
+        if len(pages) != 3:
+            _reject("FUND_COMPLETE_REGISTRATION_PAGES_REQUIRED")
+        approval = unique(_DATE.format(name="approval") + r",公司召开第十二届董事会临时会议,审议通过了"
+                          r"《公司关于出资设立风险投资基金相关事项变更的议案》,同意合伙企业相关期限实施延期及其他变更事项。")
+        reference = unique(r"《" + re.escape(header["issuer"] + _FUND_CHANGE_TITLE)
+                           + r"》\(公告编号:临(?P<number>20[0-9]{2}-[0-9]{3})\)。")
+        registration = unique(r"已在中国证券投资基金业协会完成了私募投资基金变更事项备案手续,备案信息如下:"
+                              r"基金名称:(?P<fund>[\u4e00-\u9fff]{2,80}合伙企业\(有限合伙\))"
+                              r"管理人名称:[^:]{2,100}托管人名称:[^:]{2,100}"
+                              r"备案编码:(?P<code>[A-Z0-9]{6})变更备案完成日期:" + _DATE.format(name="completed"))
+        approved, completed = _day(approval["approval"]), _day(registration["completed"])
+        if (registration["code"], registration["fund"]) != (terms["registration_code"], terms["fund_name"]):
+            _reject("FUND_REGISTRATION_IDENTITY_MISMATCH")
+        if initial_month > approved[:7] or not approved <= completed <= published:
+            _reject("FUND_CHRONOLOGY_MISMATCH")
+        for match, field in ((approval, "board_approval"), (reference, "amendment_announcement_reference"),
+                             (registration, "amendment_registration_completion")):
+            evidence.extend(original.evidence(match[0], field))
+        terms.update(board_approval_date=approved, registration_date=completed,
+                     amendment_announcement_number=reference["number"])
+        event_type = "REPORTED_FUND_AMENDMENT_REGISTRATION"
+
+    evidence.extend(original.evidence(original.text[header.end("body"):], "issuer_and_publication_date"))
+    return dict(parser_version="fund-amendment-terms-v1", event_type=event_type, symbol=symbol,
+                issuer_name=header["issuer"], announcement_number=header["number"],
+                published_date=published, effective_date=None, terms=terms,
+                summary=f'{terms["fund_name"]}（{terms["registration_code"]}）披露投资期限变更相关事项。',
+                implication="复核投资期限、未来资金调用及母公司出资范围。",
+                affected_model_fields=["commitments_outside_capex"],
+                evidence_excerpts=evidence, physical_pages=sorted({row["physical_page"] for row in evidence}),
+                limitations=["共同出资及历史基金实缴均未拆至母公司。",
+                             "原件未验证本次新增实付、首次提款日或模型影响。"], action="no_order")
+
+
+def parse_fund_amendment_pair(amendment_pages, registration_pages, *, symbol):
+    """Cross-check the original terms against the issuer's later registration."""
+    amendment = parse_fund_amendment_terms(amendment_pages, symbol=symbol)
+    registration = parse_fund_amendment_terms(registration_pages, symbol=symbol)
+    first, second = amendment["terms"], registration["terms"]
+    if (amendment["event_type"] != "REPORTED_FUND_INVESTMENT_PERIOD_AMENDMENT"
+            or registration["event_type"] != "REPORTED_FUND_AMENDMENT_REGISTRATION"
+            or amendment["issuer_name"] != registration["issuer_name"]
+            or amendment["announcement_number"] != second["amendment_announcement_number"]
+            or amendment["published_date"] > second["registration_date"]
+            or any(first[key] != second[key] for key in (
+                "fund_name", "registration_code", "initial_registration_month", "board_approval_date",
+                "joint_commitment_cny",
+            ))):
+        _reject("FUND_AMENDMENT_PAIR_MISMATCH")
+    return dict(amendment=amendment, registration=registration, action="no_order")
+
+
 def parse_operating_event_terms(pages, *, symbol, grouped_redemptions=False):
     """Extract bounded source terms; ValueError rejects unsupported prose.
 
@@ -747,6 +875,11 @@ def parse_operating_event_terms(pages, *, symbol, grouped_redemptions=False):
     """
     if not isinstance(symbol, str) or not re.fullmatch(r"[0-9]{6}", symbol):
         _reject("EXPECTED_SYMBOL_REQUIRED")
+    if isinstance(pages, (list, tuple)) and pages and isinstance(pages[0], str):
+        heading = re.sub(r"\s+", "", unicodedata.normalize("NFKC", pages[0])).split(
+            unicodedata.normalize("NFKC", _GUARANTEE), 1)[0]
+        if heading.endswith((_FUND_CHANGE_TITLE, _FUND_PROGRESS_TITLE)):
+            return parse_fund_amendment_terms(pages, symbol=symbol)
     original = _Original(pages)
     text = original.text
     redemption_kind = r"(?:超短期融资券|科技创新债券)" if grouped_redemptions else "超短期融资券"
