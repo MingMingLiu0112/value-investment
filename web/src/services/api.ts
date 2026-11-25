@@ -2295,6 +2295,17 @@ export const api = {
         ? { symbol, continue_from_task_id: continueFrom }
         : { symbol },
     ),
+  parentCashTaskTerminalFailure: (taskId: string) =>
+    getPrivate<{
+      task_id: string;
+      terminal_cash_failure?: {
+        scenario: string;
+        net_cash_cny: string;
+        net_cash_minus_profit_cny: string;
+        net_cash_excluding_investment_receipts_minus_profit_cny: string;
+        action: "no_order";
+      };
+    }>("operating-research/parent-cash-tasks/v3/" + encodeURIComponent(taskId)),
   parentCashTaskHistory: (symbol: string, signal?: AbortSignal) =>
     getPrivate<ParentCashTaskHistory>(
       "operating-research/parent-cash-tasks/history?symbol=" +

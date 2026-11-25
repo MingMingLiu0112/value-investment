@@ -272,6 +272,50 @@ export function ParentCashTaskValuationRead({
   );
 }
 
+function ParentCashTerminalFailure({ taskId }: { taskId: string }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function read() {
+    setBusy(true);
+    try {
+      const task = await api.parentCashTaskTerminalFailure(taskId);
+      const bridge = task.terminal_cash_failure;
+      if (task.task_id !== taskId || bridge?.action !== "no_order") {
+        setMessage("暂时无法核验这份终值拆解。");
+        return;
+      }
+      const amounts = [
+        bridge.net_cash_cny,
+        bridge.net_cash_minus_profit_cny,
+        bridge.net_cash_excluding_investment_receipts_minus_profit_cny,
+      ].map(Number);
+      if (!amounts.every(Number.isFinite)) {
+        setMessage("终值拆解金额无法核验。");
+        return;
+      }
+      const [net, gap, withoutReceipts] = amounts.map((value) =>
+        (value / 100_000_000).toFixed(2),
+      );
+      setMessage(
+        `终值净现金 ${net} 亿元，净现金减利润 ${gap} 亿元。剔除投资收现后，差额为 ${withoutReceipts} 亿元。请核对持续性投资收现、资本投入和经营现金转换。`,
+      );
+    } catch {
+      setMessage("无法读取终值拆解，请检查本机研究授权后重试。");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <>
+      <Button loading={busy} onClick={() => void read()}>
+        查看终值现金拆解
+      </Button>
+      {message && <p role="status">{message}</p>}
+    </>
+  );
+}
+
 export function ParentCashTaskHistoryView({
   symbol,
   onContinue,
@@ -359,6 +403,11 @@ export function ParentCashTaskHistoryView({
                   <Button disabled={busy}>{resumeLabel}</Button>
                 </Popconfirm>
               )}
+            {item.task_contract === "parent-cash-task-v3" &&
+              item.status === "FAILED" &&
+              item.error_code?.endsWith(
+                "_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
+              ) && <ParentCashTerminalFailure taskId={item.task_id} />}
             {item.status === "SUCCEEDED" &&
               item.valuation_receipt_status === "BLOCKED" && (
                 <p>

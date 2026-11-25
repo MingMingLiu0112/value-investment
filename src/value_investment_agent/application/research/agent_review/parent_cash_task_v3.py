@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "90b7f233144ec6898605566e4301ba95b8b92a0004267d599690ceae8e07d651"
+REVIEWED_CAPITAL_SERVICE = "5ae9eb85ad3326823ef13c41837896967ee87e4575e117f6c42318a04e3ae02f"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -241,6 +241,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "0af5902a856d40207a67a6b8f497f8743442f561be80bb4c19d88adbc6c597bd",
+            "2fb338ef74e4fedad865e16241955abc5b8afb9c6c51e0789123768b7d782ec1",
             "cc327715c9d00117159fc798a9bfb4da2ccb049fb987f8b20d34823340b26077",
             "d86fb3c1b4f6113a84e30187beb3a88636084dbd914baa4997c8de6d152e37e9",
             "c2e36379b8929f82f085d4f759405939b567e185bc623d356e63180f9026748a",
@@ -1065,6 +1067,48 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     if row["records"].get(reservation) != expected:
                         raise ValueError("PARENT_BUDGET_CHARGE_MISMATCH")
 
+    def _terminal_failure_cash_bridge(self, spec, state, now):
+        error = state.get("error_code") or ""
+        scenario, _, detail = error.lower().partition("_terminal_")
+        if detail != "parent_v3_unsupported_stationary_cash_conversion" or scenario not in SCENARIOS:
+            return None
+        stage_id = scenario + ".terminal"
+        packets = [packet for pin in state.get("returned_responses", ())
+                   if (packet := self._bound(pin)).get("scenario") == stage_id]
+        if len(packets) != 1:
+            return None
+        context = self._context(spec, now)
+        stages = self._stage_outputs(spec, state, now, verified_context=context)[scenario]
+        request = staged_parent_cash_request_v3(
+            root=self.root, spec_binding=spec["spec_binding"], scenario=scenario,
+            stage="terminal", prior_drafts=stages, generated_at=datetime.fromisoformat(spec["created_at"]),
+            verified_context=context, max_completion_tokens=spec["config"]["max_completion_tokens_cap"])
+        packet = packets[0]
+        wire = self._wire(spec, "terminal", request, root=self.root)
+        if (packet.get("request_sha256") != _hash(_bytes(wire.__dict__))
+                or packet.get("source_fingerprint") != context["input_fingerprint"]
+                or packet.get("action") != "no_order"):
+            return None
+        parsed = self._parse_stage(spec, "terminal", LLMResponse(**packet["response"]),
+                                   request=request, source_fingerprint=context["input_fingerprint"])
+        policy = parsed["terminal"]["policy"]
+        with localcontext() as arithmetic:
+            arithmetic.prec = 48
+            required = ("maintenance_capex", "growth_capex", "interest_outside_cfo",
+                        "other_mandatory_cash", "debt_repayment")
+            values = {field: Decimal(policy[field]["values"][0]) for field in (
+                "operating_cash", "investment_cash_received", "new_borrowing", "parent_profit", *required)}
+            no_receipts = values["operating_cash"] + values["new_borrowing"] - sum(
+                values[field] for field in required)
+            net = no_receipts + values["investment_cash_received"]
+            return dict(
+                classification="REJECTED_FORECAST_DIAGNOSTIC_NOT_VALUATION",
+                scenario=scenario, currency="CNY", action="no_order",
+                request_sha256=packet["request_sha256"], policy_cny={k: str(v) for k,v in values.items()},
+                net_cash_cny=str(net), net_cash_minus_profit_cny=str(net - values["parent_profit"]),
+                net_cash_excluding_investment_receipts_minus_profit_cny=str(
+                    no_receipts - values["parent_profit"]))
+
     def _view(self, spec, state, binding, now):
         view = deepcopy(state)
         view.update(record_binding=binding, mode=spec["mode"],
@@ -1094,6 +1138,13 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     spec_binding=spec["spec_binding"], drafts=drafts, generated_at=now)
         except (ValueError, OSError, KeyError, TypeError, PermissionError):
             view.update(status="FAILED", error_code="PARENT_SOURCE_OR_CHECKPOINT_INVALID")
+        if view.get("status") == "FAILED":
+            try:
+                bridge = self._terminal_failure_cash_bridge(spec, state, now)
+            except (ValueError, OSError, KeyError, TypeError, PermissionError):
+                bridge = None
+            if bridge is not None:
+                view["terminal_cash_failure"] = bridge
         return view
 
     def create(self, *, spec_binding, request_key, now=None, seed_task_id=None,
