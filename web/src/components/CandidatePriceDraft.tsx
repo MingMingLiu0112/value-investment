@@ -547,9 +547,14 @@ export function CandidateAlignmentPanel({
             )}
             <CheckInputSources id={check.id} details={check.details} />
             {check.id === "material_events" && object(check.details) && (
-              <UnsignedMaterialitySummary
-                route={check.details.materiality_review_route}
-              />
+              <>
+                <MissingPublicationWindows
+                  value={check.details.missing_publication_windows}
+                />
+                <UnsignedMaterialitySummary
+                  route={check.details.materiality_review_route}
+                />
+              </>
             )}
             {check.id === "financial_updates" && object(check.details) && (
               <>
@@ -674,6 +679,25 @@ export function candidateResearchComparisonMatches(review: Review): boolean {
     bridge.valuation_bear_value === price.draft!.basis.bear &&
     bridge.valuation_base_value === price.draft!.basis.base
   );
+}
+
+function MissingPublicationWindows({ value }: { value: unknown }) {
+  if (!Array.isArray(value)) return null;
+  const ranges = value.flatMap((row) => {
+    if (
+      !object(row) ||
+      typeof row.from_date !== "string" ||
+      typeof row.to_date !== "string"
+    ) {
+      return [];
+    }
+    return row.from_date === row.to_date
+      ? [row.from_date]
+      : [`${row.from_date} 至 ${row.to_date}`];
+  });
+  return ranges.length > 0 ? (
+    <p>尚缺已结束且完整核验的公告窗口：{ranges.join("、")}。</p>
+  ) : null;
 }
 
 function CheckInputSources({ id, details }: { id: string; details: unknown }) {

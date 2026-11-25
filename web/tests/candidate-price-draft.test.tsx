@@ -211,6 +211,23 @@ it("shows a qualified quote independently of blocked alignment and preserves his
   expect(html).not.toContain("DO_NOT_RENDER_MARGIN");
   expect(html).not.toContain("当前研究比较口径已核验");
 });
+it("shows the exact unsupported publication intervals returned by F2", () => {
+  const review = alignmentFixture();
+  const event = review.conditional_price?.alignment?.checks?.find(
+    (check) => check.id === "material_events",
+  );
+  if (!event) throw new Error("missing fixture event check");
+  event.details = {
+    ...event.details,
+    missing_publication_windows: [
+      { from_date: "2026-10-26", to_date: "2026-10-27" },
+      { from_date: "2026-10-29", to_date: "2026-10-29" },
+    ],
+  };
+  const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("2026-10-26 至 2026-10-27、2026-10-29");
+  expect(html).toContain("口径待核，不能进行当前价值比较");
+});
 it("accepts future evidence-backed cross-date alignment without hiding the unapproved draft", () => {
   const review = readyAlignmentFixture(),
     price = review.conditional_price!;

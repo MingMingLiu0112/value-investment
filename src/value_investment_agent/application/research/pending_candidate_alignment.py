@@ -443,17 +443,31 @@ def _covered_share_cancellations(announced, action_rows, *, symbol, start, end, 
     return observed_cancellations, gaps
 
 
-def _continuous_publication_window(windows, start, end):
+def _publication_window_gaps(windows, start, end):
     next_day = start.toordinal()
+    last_required = end.toordinal()
+    gaps = []
     intervals = sorted((_day(window["scan_from"]).toordinal(), _day(window["scan_to"]).toordinal())
                        for window in windows)
     for first, last in intervals:
+        if last < next_day:
+            continue
+        if first > last_required:
+            break
         if first > next_day:
-            return False
+            gaps.append((next_day, first - 1))
         next_day = max(next_day, last + 1)
-        if next_day > end.toordinal():
-            return True
-    return False
+        if next_day > last_required:
+            break
+    if next_day <= last_required:
+        gaps.append((next_day, last_required))
+    return [dict(from_date=start.fromordinal(first).isoformat(),
+                 to_date=end.fromordinal(last).isoformat()) for first, last in gaps]
+
+
+def _continuous_publication_window(windows, start, end):
+    return not _publication_window_gaps(windows, start, end)
+
 
 def _cross_date_row_proofs(*, start, end, action_rows, cash_rows, cancellations,
                            cash_implementations, announcements, dispositions, complete_ids,
@@ -2200,9 +2214,9 @@ def _assess(analysis, valuation, quote, quote_result, windows, scans, reconcilia
     covering = [(window, scan) for window, scan in complete_observations
                 if end is not None and scan.scan_from <= start and scan.scan_to >= end]
     complete_windows = [window for window, _ in complete_observations]
-    publication_covered = end is not None and start <= end and _continuous_publication_window(
-        complete_windows, start, end,
-    )
+    publication_gaps = (_publication_window_gaps(complete_windows, start, end)
+                        if end is not None and start <= end else None)
+    publication_covered = publication_gaps == []
     if not publication_covered:
         reasons.append("EVENT_WINDOW_DOES_NOT_COVER_VALUATION_TO_QUOTE")
     elif not covering:
@@ -2261,6 +2275,7 @@ def _assess(analysis, valuation, quote, quote_result, windows, scans, reconcilia
         list(dict.fromkeys([*reasons, *validity.blockers])),
         "原生扫描重放只确认原件与检索范围；当日快照和待材料性复核公告不能授予模型VALID。",
         refs, windows=windows, publication_window_continuous=publication_covered,
+        missing_publication_windows=publication_gaps,
         materiality_review_route=materiality_route,
         financial_statement_changed=validity.financial_statement_changed,
         capital_structure_changed=validity.capital_structure_changed))

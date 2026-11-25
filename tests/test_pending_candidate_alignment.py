@@ -2075,6 +2075,9 @@ def test_adjacent_full_windows_report_coverage_without_materiality_admission(
     checks, validity, _, ready = service._assess(analysis, valuation, quote, quote_result, windows, scans)
     event = next(check for check in checks if check["id"] == "material_events")
     assert event["details"]["publication_window_continuous"] is complete
+    assert event["details"]["missing_publication_windows"] == (
+        [] if complete else [{"from_date": end.isoformat(), "to_date": end.isoformat()}]
+    )
     assert event["status"] == "BLOCKED" and validity.status != "VALID" and not ready
     expected = ("MULTI_WINDOW_MATERIALITY_REPLAY_NOT_SUPPORTED" if complete
                 else "EVENT_WINDOW_DOES_NOT_COVER_VALUATION_TO_QUOTE")
