@@ -420,7 +420,12 @@ export function ParentCashTaskHistoryView({
             {onContinue &&
               !item.read_only_archive &&
               item.status === "FAILED" &&
-              (item.terminal_cohort_continuation ||
+              ((item.completed_stages.length === 9 &&
+                (item.error_code ===
+                  "PARENT_V3_ECONOMIC_DIRECT_INPUT_DATED_SHARE_FACT_REQUIRED" ||
+                  item.error_code ===
+                    "PARENT_V3_ECONOMIC_DIRECT_OWNER_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION")) ||
+                item.terminal_cohort_continuation ||
                 rebuildInterest ||
                 (item.base_operating_wire !== "MATCHED_QUARTER_V2" &&
                   (item.error_code ===

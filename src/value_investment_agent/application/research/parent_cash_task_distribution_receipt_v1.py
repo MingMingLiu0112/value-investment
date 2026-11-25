@@ -48,8 +48,10 @@ def execute(*, root, task_id, task_head, case_package_binding, distribution_bind
         spec, state, head = service._load(task_id)
         completed = legacy._completion(spec, state, head, task_head, now)
         drafts = service._drafts(spec, state, completed)
-        candidate = legacy.assemble_parent_cash_drafts_v2(
-            root=root, spec_binding=spec["spec_binding"], drafts=drafts, generated_at=completed)
+        pinned_distribution = spec.get("implemented_distribution_receipt_binding")
+        if pinned_distribution is not None and pinned_distribution != distribution_binding:
+            raise ValueError("PARENT_TASK_DISTRIBUTION_BINDING_CHANGED")
+        candidate = service._assemble(spec, drafts, completed)
     provenance = dict(task_id=task_id, task_record_binding=head,
         task_input_sha256=state["input_sha256"], completed_at=completed.isoformat(),
         spec_binding=spec["spec_binding"], source_fingerprint=candidate["source_fingerprint"],
@@ -69,10 +71,13 @@ def execute(*, root, task_id, task_head, case_package_binding, distribution_bind
     if valuation["assumptions"]["scenario_calculations"] != {
             name: row["calculation"] for name, row in compiled["scenarios"].items()}:
         raise ValueError("PARENT_TASK_V2_SCENARIO_CONSUMPTION_MISMATCH")
-    return dict(symbol=package["symbol"], action="no_order", formal_eligibility=False,
+    result = dict(symbol=package["symbol"], action="no_order", formal_eligibility=False,
                 main_range_adopted=False, provenance=provenance, source_bindings=compiled["source_bindings"],
                 input_descriptor_sha256=descriptor.input_sha256, descriptor=descriptor.as_policy(),
                 valuation=valuation)
+    if "annual_payout_reservations" in compiled:
+        result["annual_payout_reservations"] = compiled["annual_payout_reservations"]
+    return result
 
 
 def implementations():
@@ -83,6 +88,12 @@ def implementations():
     )
     return {**legacy._implementations(),
             **{name: legacy.sha256((source / name).read_bytes()).hexdigest() for name in additions}}
+
+
+def historical_implementations():
+    return {**implementations(),
+            "application/research/parent_cash_task_receipt_v3.py": "dcbab3f6aa849b4385916bb8788f37a4adea9e300f146255e47ea46a3a7d69b0",
+            "application/research/parent_cash_task_distribution_receipt_v1.py": "d5802901d20928e1ad91d4f62c81e6cd6ea41f976684d46822597f22ab8e1a76"}
 
 
 def build(*, root, output_dir, now, **inputs):
@@ -102,7 +113,7 @@ def replay(*, root, receipt_binding, now):
     if receipt.get("schema_version") != RECEIPT_SCHEMA:
         return legacy.replay_parent_cash_task_receipt(root=root, receipt_binding=receipt_binding, now=now)
     if (receipt.get("action") != "no_order" or receipt.get("formal_eligibility") is not False
-            or receipt.get("implementation_sha256") != implementations()):
+            or receipt.get("implementation_sha256") not in (implementations(), historical_implementations())):
         raise ValueError("PARENT_TASK_RECEIPT_OR_IMPLEMENTATION_CHANGED")
     stored = legacy._read(root, receipt["result_binding"])
     result = execute(root=root, now=now, **receipt["inputs"])

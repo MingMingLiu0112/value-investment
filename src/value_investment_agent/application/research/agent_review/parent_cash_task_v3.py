@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "7bac2b533f8b1af07eb7aa0949c159dbfc6cba11558d65b27331a79ecd603ba2"
+REVIEWED_CAPITAL_SERVICE = "ddd16203130f759d4404d8fad85621f50087d296363f505a099130d0435cc21f"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -546,6 +546,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "4f697aa4fea9b2c16f4baff133a9eb33e6ad2e0142720f9a0df308d1a5f28975",
+            "4f20dca0f15ad2df4acbc726e6a46bbb413b52b1e12a1e7dccc90e8a043e4232",
             "ab101d2bbc6fc6f1f5a41d66e28a26face5bfcbdacf110f310fd2119ae28783b",
             "d3edde60f471412eeff64c1a161f143db8eb950435d42215770310f46933bca6",
             "8f8a213a312f0d7ab01edb4e663a3d7ed92f6dac31637a3e17424bfb67c02edd",
@@ -613,6 +615,23 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             "fa4ce1d888b9170fdc0ac7b8936a4efb7220cb084bafe8caa87d57ade02784e5",
             "fb3eb8ae12f42c63a2a57ec35a330c55721f846d45999ae70305e30c93057aac",
         }
+        compiler_module = "value_investment_agent.application.research.direct_owner_cash_compilation_v2"
+        compiler_digest = pinned.get(compiler_module)
+        if (reviewed and compiler_module in current and compiler_digest in {
+                "ba38d058b1f7de2039fe244ceb0378ea97f4bac1f12d07c0b18cbd1c4f408050",
+                "bf6dffa28f99cf591221b6992022cf36e157f5bbdf9be35b91fbab6e5ae5a89f",
+        } and _hash(Path(sys.modules[compiler_module].__file__).read_bytes().replace(
+                b"\r\n", b"\n")) == "acc15045890849cac15572bcdbb71634175b2423f642aee286cc19fbb6ffc2c5"):
+            # Share-class validation and the opt-in distribution path differ. Historical
+            # requests and the compiler's already accepted share paths are unchanged.
+            current[compiler_module] = compiler_digest
+        draft_module = "value_investment_agent.application.research.direct_owner_cash_agent_draft_v2"
+        if (reviewed and draft_module in current
+                and pinned.get(draft_module) == "9871409e5a8149c84a13465ccf2de3e59fc160cb2bdf2a4234269161496452bd"
+                and _hash(Path(sys.modules[draft_module].__file__).read_bytes().replace(
+                    b"\r\n", b"\n")) == "6d6c773b16793c686a8c46f48f2277aa9d6f4c3b9ab1fc3e0a0950ad7dc49d89"):
+            # Historical tasks omit the new optional distribution argument.
+            current[draft_module] = pinned[draft_module]
         if reviewed and pinned.get(__name__) in previous_service:
             current[__name__] = pinned[__name__]
         if financing_schedule.__name__ not in pinned:
@@ -810,7 +829,69 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         return source.get("source_adapter_version") == "NUMBERED_CNINFO_V2"
 
     @staticmethod
+    def _uses_disjoint_cash(spec, request):
+        variant = spec.get("mandatory_cash_classification")
+        return variant == "DISJOINT_V1" or (
+            variant == "BULL_DISJOINT_V1" and json.loads(request.user)["scenario"] == "bull")
+
+    @staticmethod
     def _wire(spec, stage, request, *, root=None):
+        wire = ParentCashTaskServiceV3._base_wire(spec, stage, request, root=root)
+        if (stage == "terminal" and spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V1"
+                and json.loads(request.user)["scenario"] == "base"):
+            return replace(wire, transport_output_contract=wire.transport_output_contract +
+                " This is a conditional long-term forecast. Model a positive payout only if "
+                "supported by standalone profit and cash after recurring reinvestment. "
+                "Separate the historical paid amounts, dated 2025-2027 policy, and scenario "
+                "assumptions after that policy expires. Missing future approval alone is not "
+                "an economic reason for an assumed zero payout. If the estimate cannot be "
+                "supported, explain which financial input is unresolved; never assume approval.")
+        if stage != "policy" or not ParentCashTaskServiceV3._uses_disjoint_cash(spec, request):
+            return wire
+        schema = deepcopy(wire.output_schema)
+        term = schema["properties"]["series"]["properties"]["other_mandatory_cash"]
+        term["properties"]["cash_class_by_year"] = {
+            "type": "array", "items": {"type": "string", "enum": [
+                "NONE", "NON_FINANCING", "FINANCING_INTEREST"]},
+        }
+        term["required"].append("cash_class_by_year")
+        return replace(wire, output_schema=schema,
+            transport_output_contract=wire.transport_output_contract +
+            " Exception to the exact common term keys: other_mandatory_cash also requires "
+            "cash_class_by_year with one entry per year. Use NONE only for a zero amount, "
+            "NON_FINANCING for evidenced non-financing mandatory costs, and FINANCING_INTEREST "
+            "to disclose any interest mistakenly included; such a response is rejected. "
+            "Paid interest, note coupons and residual interest belong only in interest_outside_cfo. "
+            "Do not move them into operating cash, capex, commitments or other mandatory cash.")
+
+    @staticmethod
+    def _strip_mandatory_cash_classification(response):
+        packet = json.loads(response.text, object_pairs_hook=_identical_prose_duplicate_only)
+        try:
+            term = packet["series"]["other_mandatory_cash"]
+            amounts = term["values"]
+            classes = term.pop("cash_class_by_year")
+            years = packet["years"]
+            if not all(isinstance(value, list) for value in (years, amounts, classes)):
+                raise ValueError("PARENT_V3_MANDATORY_CASH_CLASSIFICATION_INVALID")
+            if not len(years) == len(amounts) == len(classes):
+                raise ValueError("PARENT_V3_MANDATORY_CASH_CLASSIFICATION_INVALID")
+            for year, amount, kind in zip(years, amounts, classes, strict=True):
+                if type(year) is not int or not isinstance(amount, str):
+                    raise ValueError("PARENT_V3_MANDATORY_CASH_CLASSIFICATION_INVALID")
+                if kind == "FINANCING_INTEREST":
+                    raise ValueError(f"PARENT_V3_MANDATORY_CASH_DUPLICATES_FINANCING_INTEREST:{year}")
+                if ((kind == "NONE" and Decimal(amount) == 0)
+                        or (kind == "NON_FINANCING" and Decimal(amount) > 0)):
+                    continue
+                raise ValueError("PARENT_V3_MANDATORY_CASH_CLASSIFICATION_INVALID")
+        except (KeyError, TypeError, ArithmeticError) as error:
+            raise ValueError("PARENT_V3_MANDATORY_CASH_CLASSIFICATION_INVALID") from error
+        return replace(response, text=json.dumps(packet, ensure_ascii=False, sort_keys=True,
+                                                  separators=(",", ":")))
+
+    @staticmethod
+    def _base_wire(spec, stage, request, *, root=None):
         if stage == "operating" and operating_wire.__name__ in spec["implementation_sha256"]:
             wire = operating_wire.operating_wire_request(request)
             wire_version = spec.get("operating_series_wire")
@@ -1176,6 +1257,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         parse = (operating_wire.parse_operating_wire
                  if stage == "operating" and operating_wire.__name__ in spec["implementation_sha256"]
                  else parse_staged_parent_cash_response)
+        if stage == "policy" and self._uses_disjoint_cash(spec, request):
+            response = self._strip_mandatory_cash_classification(response)
         if stage == "policy" and "conditional_financing_stress" in spec:
             wire = self._wire(spec, stage, request, root=self.root)
             response = fixed_financing.merge_financing_policy_response(response, wire)
@@ -1475,6 +1558,32 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 net_cash_excluding_investment_receipts_minus_profit_cny=str(
                     no_receipts - values["parent_profit"]))
 
+    @staticmethod
+    def _terminal_distribution_rejections(drafts):
+        rows = []
+        for scenario in SCENARIOS:
+            policy = drafts[scenario]["terminal"]["policy"]
+            fields = ("parent_profit", "payout_ratio", "reserve_ratio")
+            amounts = {field: Decimal(policy[field]["values"][0]) for field in fields}
+            reasons = [
+                code for fails, code in (
+                    (amounts["parent_profit"] <= 0, "NONPOSITIVE_PARENT_PROFIT"),
+                    (amounts["payout_ratio"] <= 0, "NONPOSITIVE_PAYOUT_ASSUMPTION"),
+                    (amounts["reserve_ratio"] >= 1, "NO_DISTRIBUTABLE_PROFIT_AFTER_RESERVE"),
+                ) if fails
+            ]
+            if reasons:
+                rows.append(dict(scenario=scenario, reasons=reasons,
+                                 **{key: str(value) for key, value in amounts.items()}))
+        return rows
+
+    def _assemble(self, spec, drafts, now):
+        binding = spec.get("implemented_distribution_receipt_binding")
+        options = {} if binding is None else {"implemented_distribution": binding}
+        return assemble_parent_cash_drafts_v2(
+            root=self.root, spec_binding=spec["spec_binding"], drafts=drafts,
+            generated_at=now, **options)
+
     def _view(self, spec, state, binding, now):
         view = deepcopy(state)
         view.update(record_binding=binding, mode=spec["mode"],
@@ -1497,11 +1606,14 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             view["completed_stages"] = [stage for stage in STAGE_ORDER
                 if stage in state["responses"]]
             view["completed_scenarios"] = sorted(drafts)
+            if (state.get("error_code") ==
+                    "PARENT_V3_ECONOMIC_DIRECT_OWNER_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION"
+                    and set(drafts) == set(SCENARIOS)):
+                view["terminal_distribution_input_rejections"] = self._terminal_distribution_rejections(drafts)
             if state["status"] == "SUCCEEDED":
                 if set(drafts) != set(SCENARIOS):
                     raise ValueError("PARENT_RESULT_INCOMPLETE")
-                view["candidate"] = assemble_parent_cash_drafts_v2(root=self.root,
-                    spec_binding=spec["spec_binding"], drafts=drafts, generated_at=now)
+                view["candidate"] = self._assemble(spec, drafts, now)
         except (ValueError, OSError, KeyError, TypeError, PermissionError):
             view.update(status="FAILED", error_code="PARENT_SOURCE_OR_CHECKPOINT_INVALID")
         if view.get("status") == "FAILED":
@@ -1597,6 +1709,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 trial_spec["bear_financing_wire"] = old_spec["bear_financing_wire"]
             if "scenario_interest_wire" in old_spec:
                 trial_spec["scenario_interest_wire"] = old_spec["scenario_interest_wire"]
+            if "mandatory_cash_classification" in old_spec:
+                trial_spec["mandatory_cash_classification"] = old_spec["mandatory_cash_classification"]
             if "conditional_financing_stress" in old_spec:
                 trial_spec["conditional_financing_stress"] = old_spec["conditional_financing_stress"]
                 trial_spec["financing_wire_sha256"] = old_spec["financing_wire_sha256"]
@@ -1668,7 +1782,24 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     years=financing["years"],
                     new_borrowing=financing["series"]["new_borrowing"]["values"],
                     debt_repayment=financing["series"]["debt_repayment"]["values"])
+            if (replay_from_stage == "base.terminal"
+                    and old_spec.get("terminal_parent_cash_method") == "ACCRUAL_SPLIT_V2"
+                    and old_state.get("error_code") in {
+                        "PARENT_V3_ECONOMIC_DIRECT_INPUT_DATED_SHARE_FACT_REQUIRED",
+                        "PARENT_V3_ECONOMIC_DIRECT_OWNER_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION",
+                    } and set(old_state["responses"]) == set(STAGE_ORDER)
+                    and all(r["status"] == "SETTLED" for r in old_state["reservations"].values())):
+                for key in ("terminal_parent_cash_method", "terminal_parent_prior_annual_receipt",
+                            "terminal_cohort_cutoff", "terminal_q3_cash_bridge"):
+                    if key in old_spec:
+                        trial_spec[key] = old_spec[key]
+                trial_spec.update(terminal_cash_review="RESEARCH_PAYOUT_V1",
+                                  mandatory_cash_classification="BULL_DISJOINT_V1",
+                                  terminal_distribution_preflight=True)
             for stage_id in STAGE_ORDER:
+                if (trial_spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V1"
+                        and stage_id in {"bull.policy", "bull.terminal"}):
+                    continue
                 if replay_from_stage is not None:
                     replay_scenario, replay_stage = replay_from_stage.split(".")
                     scenario, stage = stage_id.split(".")
@@ -1711,6 +1842,14 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             shared_budget_root=str(self.shared_budget_root),
             implementation_sha256=_implementation(), policy_capital_basis=capital_basis,
             created_at=seed_created_at, action="no_order")
+        if self.test_provider is None:
+            from ..parent_cash_task_completion_v1 import preflight_parent_cash_task
+
+            _, paid_distribution = preflight_parent_cash_task(self, spec_binding)
+            if paid_distribution is not None:
+                spec["implemented_distribution_receipt_binding"] = paid_distribution
+                if seed is None:
+                    spec["mandatory_cash_classification"] = "DISJOINT_V1"
         if seed is None:
             if self.test_provider is None:
                 spec["terminal_distribution_preflight"] = True
@@ -1733,6 +1872,10 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         elif "operating_series_wire" in trial_spec:
             spec["operating_series_wire"] = trial_spec["operating_series_wire"]
         if seed is not None:
+            if "terminal_cash_review" in trial_spec:
+                spec["terminal_cash_review"] = trial_spec["terminal_cash_review"]
+            if "mandatory_cash_classification" in trial_spec:
+                spec["mandatory_cash_classification"] = trial_spec["mandatory_cash_classification"]
             if "conditional_financing_stress" in trial_spec:
                 spec["conditional_financing_stress"] = trial_spec["conditional_financing_stress"]
                 spec["financing_wire_sha256"] = trial_spec["financing_wire_sha256"]
@@ -1827,6 +1970,27 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     spec, state, binding, now, status="FAILED", error_code="BEAR_POLICY_" + reason,
                 )
             return self._view(spec, state, binding, now)
+
+    def recompile_share_fact_failure(self, task_id, *, now=None):
+        """Append a successful compilation to a fully settled nine-stage task."""
+        now = _now(now)
+        directory = self._directory(task_id)
+        with self._lock(directory, "execution"), self._lock(directory):
+            spec, state, head = self._load(task_id)
+            if state["status"] == "SUCCEEDED":
+                return head
+            if (spec["mode"] != "LIVE_PARENT_CASH_V3" or state["status"] != "FAILED"
+                    or state["error_code"] != "PARENT_V3_ECONOMIC_DIRECT_INPUT_DATED_SHARE_FACT_REQUIRED"
+                    or set(state["responses"]) != set(STAGE_ORDER)
+                    or any(row["status"] != "SETTLED" for row in state["reservations"].values())):
+                raise ValueError("PARENT_V3_SHARE_FACT_RECOMPILE_NOT_AVAILABLE")
+            drafts = self._drafts(spec, state, now)
+            if set(drafts) != set(SCENARIOS):
+                raise ValueError("PARENT_V3_INCOMPLETE_THREE_SCENARIOS")
+            assemble_parent_cash_drafts_v2(root=self.root, spec_binding=spec["spec_binding"],
+                                           drafts=drafts, generated_at=now)
+            _, binding = self._save(spec, state, head, now, status="SUCCEEDED", error_code=None)
+            return binding
 
     def resume_if_interrupted(self, task_id, *, now=None):
         directory = self._directory(task_id)
@@ -1995,6 +2159,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                                          r"PARENT_FINANCING_(?:ABOVE_DISCLOSED_PROCEEDS|BELOW_CONTRACTUAL_PRINCIPAL):20[0-9]{2}",
                                          detail)
                                      or re.fullmatch(r"PARENT_V3_POLICY_(?:DEBT_INTEREST_UNSUPPORTED|COUPON_COVERAGE_LOW):20[0-9]{2}", detail)
+                                     or re.fullmatch(r"PARENT_V3_MANDATORY_CASH_DUPLICATES_FINANCING_INTEREST:20[0-9]{2}", detail)
                                      or (re.fullmatch(r"PARENT_V3_POLICY_CNY_WIRE_INVALID:20[0-9]{2}:[a-z_]+", detail)
                                          and detail.rsplit(":", 1)[-1] in POLICY))
                                 else "PARENT_DRAFT_REJECTED_OR_UNPUBLISHED")
@@ -2033,8 +2198,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     drafts = self._drafts(spec, state, _now())
                     if set(drafts) != set(SCENARIOS):
                         raise ValueError("PARENT_V3_INCOMPLETE_THREE_SCENARIOS")
-                    assemble_parent_cash_drafts_v2(root=self.root, spec_binding=spec["spec_binding"],
-                        drafts=drafts, generated_at=_now())
+                    self._assemble(spec, drafts, _now())
                 except (ValueError, KeyError, TypeError, OSError) as error:
                     detail = str(error).replace("PARENT_V2_", "PARENT_V3_", 1)
                     code = ("PARENT_V3_ECONOMIC_" + detail

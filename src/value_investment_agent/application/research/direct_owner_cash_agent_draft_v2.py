@@ -90,7 +90,7 @@ def _load_spec(root, binding):
 
 
 def assemble_parent_cash_drafts_v2(*, root: Path, spec_binding: dict, drafts: dict,
-                                   generated_at: datetime) -> dict:
+                                   generated_at: datetime, implemented_distribution=None) -> dict:
     """Return an unapproved source-bound E2 candidate with all three paths.
 
     A caller must separately retain the raw model responses, provider usage and
@@ -179,7 +179,10 @@ def assemble_parent_cash_drafts_v2(*, root: Path, spec_binding: dict, drafts: di
             years=annual, terminal=tail)
     # Existing compiler reopens the originals and enforces all cash, debt,
     # distribution and terminal equations. Its rejection is never bypassed.
-    compiled = compile_source_bound_owner_cash_v2(root=root, spec=spec, now=generated_at)
+    distribution_input = ({"implemented_distribution": implemented_distribution}
+                          if implemented_distribution is not None else {})
+    compiled = compile_source_bound_owner_cash_v2(
+        root=root, spec=spec, now=generated_at, **distribution_input)
     return dict(schema_version=VERSION, symbol=context["symbol"],
         source_fingerprint=context["input_fingerprint"],
         scenario_draft_sha256={name: hashlib.sha256(_canonical(drafts[name])).hexdigest()

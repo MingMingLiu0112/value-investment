@@ -640,3 +640,66 @@ def test_terminal_driver_wire_derives_cfo_without_accepting_a_model_total():
     terms["supplier_cash"]["values"] = ["-70"]
     with pytest.raises(ValueError, match="TERMINAL_NEGATIVE_GROSS_CASH_DRIVER"):
         target._merge_terminal_driver_response(response(), request)
+
+
+
+def test_terminal_distribution_rejections_distinguish_profit_payout_and_reserve():
+    def draft(profit, payout, reserve):
+        return {"terminal": {"policy": {
+            field: {"values": [value]} for field, value in {
+                "parent_profit": profit, "payout_ratio": payout, "reserve_ratio": reserve,
+            }.items()
+        }}}
+
+    rows = target.ParentCashTaskServiceV3._terminal_distribution_rejections({
+        "bear": draft("10", ".5", ".1"),
+        "base": draft("11", "0.00", ".1"),
+        "bull": draft("0", ".7", "1"),
+    })
+    assert {row["scenario"]: row["reasons"] for row in rows} == {
+        "base": ["NONPOSITIVE_PAYOUT_ASSUMPTION"],
+        "bull": ["NONPOSITIVE_PARENT_PROFIT", "NO_DISTRIBUTABLE_PROFIT_AFTER_RESERVE"],
+    }
+
+
+
+
+def test_v3_assembly_consumes_pinned_distribution(task, monkeypatch):
+    service, _ = task
+    spec_binding = {"path": "runtime/spec.json", "sha256": "b" * 64}
+    distribution = {"path": "runtime/distribution.json", "sha256": "c" * 64}
+    seen = []
+
+    def assemble(**kwargs):
+        seen.append(kwargs)
+        return {"action": "no_order"}
+
+    monkeypatch.setattr(target, "assemble_parent_cash_drafts_v2", assemble)
+    spec = {"spec_binding": spec_binding}
+    assert service._assemble(spec, {}, NOW)["action"] == "no_order"
+    service._assemble({**spec, "implemented_distribution_receipt_binding": distribution}, {}, NOW)
+    assert "implemented_distribution" not in seen[0]
+    assert seen[1]["implemented_distribution"] == distribution
+
+
+
+@pytest.mark.parametrize(("amount", "category", "error"), [
+    ("0", "NONE", None),
+    ("15", "NON_FINANCING", None),
+    ("15", "FINANCING_INTEREST", "DUPLICATES_FINANCING_INTEREST:2027"),
+    ("15", "NONE", "CLASSIFICATION_INVALID"),
+    ("0", "NON_FINANCING", "CLASSIFICATION_INVALID"),
+])
+def test_mandatory_cash_categories_are_checked_before_cash_compilation(amount, category, error):
+    body = {"years": [2027], "series": {"other_mandatory_cash": {
+        "values": [amount], "cash_class_by_year": [category],
+    }}}
+    response = LLMResponse(json.dumps(body), 100, 100, "deepseek-flash")
+    normalize = target.ParentCashTaskServiceV3._strip_mandatory_cash_classification
+    if error:
+        with pytest.raises(ValueError, match=error):
+            normalize(response)
+    else:
+        parsed = json.loads(normalize(response).text)
+        assert parsed["series"]["other_mandatory_cash"] == {"values": [amount]}
+    assert json.loads(response.text) == body

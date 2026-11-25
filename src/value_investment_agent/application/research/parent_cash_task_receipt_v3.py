@@ -85,6 +85,8 @@ def _package_for_candidate(root, candidate, case_package_binding, task_id, head,
         computed_at=completed.isoformat())
     package = _package(package_spec, compiled)
     for row in compiled["scenarios"].values():
+        if all("scheduled_owner_distribution_cny" in year for year in row["years"]):
+            continue
         row["years"] = [dict(year, scheduled_owner_distribution_cny="0") for year in row["years"]]
         calculation = compile_direct_owner_cash_path(**{key: row[key] for key in (
             "opening", "years", "terminal", "ordinary_shares", "cost_of_equity", "scope", "currency")})
@@ -147,7 +149,9 @@ def replay_parent_cash_task_receipt(*, root, receipt_binding, now):
     receipt = _read(root, receipt_binding)
     if (receipt.get("schema_version") != RECEIPT_SCHEMA or receipt.get("action") != "no_order"
             or receipt.get("formal_eligibility") is not False
-            or receipt.get("implementation_sha256") != _implementations()):
+            or receipt.get("implementation_sha256") not in (
+                _implementations(), {**_implementations(), IMPLEMENTATION_FILES[0]:
+                    "dcbab3f6aa849b4385916bb8788f37a4adea9e300f146255e47ea46a3a7d69b0"})):
         raise ValueError("PARENT_TASK_RECEIPT_OR_IMPLEMENTATION_CHANGED")
     stored = _read(root, receipt["result_binding"])
     result = execute_parent_cash_task_research(root=root, now=now, **receipt["inputs"])

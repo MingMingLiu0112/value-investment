@@ -97,6 +97,21 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 if not isinstance(predecessor, str) or not re.fullmatch(r"rt-[0-9a-f]{32}", predecessor):
                     raise ValueError("PARENT_V3_INVALID_CONTINUATION_TASK")
                 prior = numbered_service.read(predecessor)
+                if (prior.get("status") == "FAILED" and prior.get("spec_binding") == binding
+                        and prior.get("error_code") in {
+                            "PARENT_V3_ECONOMIC_DIRECT_INPUT_DATED_SHARE_FACT_REQUIRED",
+                            "PARENT_V3_ECONOMIC_DIRECT_OWNER_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION",
+                        }
+                        and len(prior.get("completed_stages", ())) == 9
+                        and all(row["status"] == "SETTLED" for row in prior.get("reservations", {}).values())):
+                    digest = sha256(predecessor.encode()).hexdigest()
+                    task = numbered_service.create(
+                        spec_binding=binding, request_key="value-payout-review-" + digest[:56],
+                        seed_task_id=predecessor, replay_from_stage="base.terminal",
+                    )
+                    if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                        background.add_task(run_numbered, task["task_id"])
+                    return reply(task, 202)
                 is_earnings_rebuild = prior.get("error_code") == (
                     "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION")
                 if is_earnings_rebuild and prior.get("spec_binding") == binding:

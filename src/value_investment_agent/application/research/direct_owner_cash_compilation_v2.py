@@ -1,6 +1,6 @@
 """Compile numbered, source-replayed parent cash into the existing valuation domain."""
 from datetime import date
-from decimal import Decimal, localcontext
+from decimal import Decimal, ROUND_DOWN, localcontext
 from .parent_direct_owner_cash_sources_v2 import read_parent_direct_owner_cash_sources_v2
 from .parent_direct_owner_cash_unnumbered_v1 import (
     VERSION as UNNUMBERED_SOURCE, FINANCING_VERSION, UNNUMBERED_VERSIONS,
@@ -55,7 +55,56 @@ def _explanation(row):
             raise ValueError("DIRECT_INPUT_ASSUMPTION_EXPLANATION_REQUIRED:" + name)
 
 
-def compile_source_bound_owner_cash_v2(*, root, spec, now):
+def _reserve_annual_cash_before_optional_payout(opening, rows, shares, cost):
+    from ...domain.valuation.direct_parent_owner_cash_v2 import _flow, _step
+
+    opening_state = {key: _number(value) for key, value in opening.items()}
+    flows = [_flow(row["policy"]) for row in rows]
+    scheduled = [_number(row["scheduled_owner_distribution_cny"]) for row in rows]
+    minimum_closing = [Decimal(0)] * len(rows)
+    fixed = []
+    state = opening_state
+    for row, flow, payment in zip(rows, flows, scheduled, strict=True):
+        calculation, state = _step(state, dict(flow, payout_ratio=Decimal(0)),
+                                   scheduled=payment, year=row["year"], shares=shares, cost=cost)
+        fixed.append(Decimal(calculation["net_cash_before_distribution_cny"]))
+    required_opening = Decimal(0)
+    for index in range(len(rows) - 1, -1, -1):
+        flow = flows[index]
+        minimum_closing[index] = max(flow["cash_floor"], required_opening)
+        unspendable_borrowing = max(Decimal(0), flow["new_borrowing"] - flow["debt_repayment"])
+        mandatory_limit = flow["cash_floor"]
+        if scheduled[index] > 0:
+            mandatory_limit += unspendable_borrowing
+        required_opening = max(minimum_closing[index], mandatory_limit) + scheduled[index] - fixed[index]
+
+    state = opening_state
+    adjustments = []
+    for index, (row, flow, payment) in enumerate(zip(rows, flows, scheduled, strict=True)):
+        nonborrowed = max(Decimal(0), flow["new_borrowing"] - flow["debt_repayment"])
+        headroom = state["cash"] + fixed[index] - payment - max(
+            minimum_closing[index], flow["cash_floor"] + nonborrowed)
+        target = flow["payout_ratio"]
+        if headroom < flow["parent_profit"] * target:
+            with localcontext() as conservative:
+                conservative.rounding = ROUND_DOWN
+                ratio = max(Decimal(0), headroom) / flow["parent_profit"]
+            row["policy"]["payout_ratio"] = str(ratio)
+            flow = dict(flow, payout_ratio=ratio)
+        calculation, state = _step(state, flow, scheduled=payment, year=row["year"],
+                                   shares=shares, cost=cost)
+        adjustments.append(dict(
+            year=row["year"], target_ratio=str(target), applied_ratio=str(flow["payout_ratio"]),
+            original_cash_floor_cny=str(flow["cash_floor"]),
+            minimum_closing_cash_cny=str(minimum_closing[index]),
+            cash_available_for_optional_distribution_cny=str(max(Decimal(0), headroom)),
+            scheduled_distribution_cny=str(payment),
+            actual_optional_distribution_cny=calculation["conditional_distribution_cny"],
+        ))
+    return adjustments
+
+
+def compile_source_bound_owner_cash_v2(*, root, spec, now, implemented_distribution=None):
     """Reparse pinned financial originals and recompute all annual cash inputs."""
     if (spec.get("schema_version") != SCHEMA or spec.get("action") != "no_order"
             or spec.get("currency") != "CNY" or spec.get("scope") != SCOPE):
@@ -67,8 +116,21 @@ def compile_source_bound_owner_cash_v2(*, root, spec, now):
         raise ValueError("DIRECT_INPUT_AWARE_CLOCK_REQUIRED")
     if not spec["valuation_date"].endswith("-12-31"):
         raise ValueError("DIRECT_INPUT_YEAR_END_BASIS_REQUIRED")
-    if date.fromisoformat(spec["valuation_date"]) > now.date():
+    basis = date.fromisoformat(spec["valuation_date"])
+    if basis > now.date():
         raise ValueError("DIRECT_INPUT_FUTURE_BASIS")
+    scheduled = None
+    if implemented_distribution is not None:
+        from .parent_owner_distribution_successor_v2 import replay_parent_owner_distribution_successor
+
+        distribution = replay_parent_owner_distribution_successor(
+            root=root, receipt_binding=implemented_distribution, now=now)
+        report = distribution["distribution"]
+        paid = date.fromisoformat(report["paid_date"])
+        if (distribution["symbol"] != spec["symbol"] or paid.year != basis.year + 1
+                or not basis < paid <= now.date() or _number(report["total_cny"]) <= 0):
+            raise ValueError("DIRECT_INPUT_IMPLEMENTED_DISTRIBUTION_MISMATCH")
+        scheduled = report["total_cny"]
     reader = {
         UNNUMBERED_SOURCE: read_unnumbered_parent_cash,
         FINANCING_VERSION: read_unnumbered_parent_financing,
@@ -152,16 +214,18 @@ def compile_source_bound_owner_cash_v2(*, root, spec, now):
                     or anchor["field"] != field):
                 raise ValueError("DIRECT_INPUT_OPENING_DATE_OR_SCOPE_MISMATCH")
         share_spec=spec["ordinary_shares"]
-        if share_spec!={"classification":"DERIVED_FACT","period_end":spec["valuation_date"]}:
+        share_class = share_spec.get("classification") if isinstance(share_spec, dict) else None
+        if (share_class not in ("FACT", "DERIVED_FACT")
+                or share_spec != {"classification": share_class, "period_end": spec["valuation_date"]}):
             raise ValueError("DIRECT_INPUT_DATED_SHARE_FACT_REQUIRED")
         share_fact=statements[spec["valuation_date"]].get("ordinary_shares_evidence")
         if (not isinstance(share_fact,dict) or share_fact.get("period_end")!=spec["valuation_date"]
                 or share_fact.get("unit")!="shares" or share_fact.get("scope")!="TOTAL_ISSUED_ORDINARY_SHARES"
-                or share_fact.get("classification")!="DERIVED_FACT"
+                or share_fact.get("classification") != share_class
                 or not share_fact.get("source_refs")):
             raise ValueError("DIRECT_INPUT_SHARE_UNIT_SCOPE_OR_PROOF_MISSING")
         shares=str(_number(share_fact["count"]))
-        scenarios, cash_forecasts = {}, {}
+        scenarios, cash_forecasts, payout_reservations = {}, {}, {}
         if set(spec["scenarios"]) != {"bear", "base", "bull"}:
             raise ValueError("DIRECT_INPUT_THREE_SCENARIOS_REQUIRED")
         for name, scenario in spec["scenarios"].items():
@@ -208,7 +272,16 @@ def compile_source_bound_owner_cash_v2(*, root, spec, now):
                 rationale=terminal["rationale"], max_transition_years=terminal["max_transition_years"])
             if "financing" in terminal:tail["financing"]=terminal["financing"]
             cost = str(resolve(scenario["cost_of_equity"]))
-            calculation = compile_direct_owner_cash_path(opening=opening, years=rows, terminal=tail,
+            compute = compile_direct_owner_cash_path
+            if scheduled is not None:
+                from ...domain.valuation.direct_parent_owner_cash_v2 import compile_direct_owner_cash_path_v2
+
+                compute = compile_direct_owner_cash_path_v2
+                for index, row in enumerate(rows):
+                    row["scheduled_owner_distribution_cny"] = scheduled if index == 0 else "0"
+                payout_reservations[name] = _reserve_annual_cash_before_optional_payout(
+                    opening, rows, _number(shares), _number(cost))
+            calculation = compute(opening=opening, years=rows, terminal=tail,
                 ordinary_shares=shares, cost_of_equity=cost, scope=SCOPE, currency="CNY")
             scenarios[name] = dict(symbol=spec["symbol"], opening=opening, years=rows, terminal=tail,
                 ordinary_shares=shares, cost_of_equity=cost, currency="CNY", scope=SCOPE,
@@ -227,10 +300,16 @@ def compile_source_bound_owner_cash_v2(*, root, spec, now):
             for item in value:collect(item)
     collect(evidence)
     collect(spec["operating_sources"])
+    if scheduled is not None:
+        collect(implemented_distribution)
+        collect(distribution["distribution_evidence"])
     if "first_year_operating_cash_method" in spec:
         collect(cash_forecasts)
-    return dict(compiler_version=VERSION, symbol=spec["symbol"], evidence=evidence,
+    result = dict(compiler_version=VERSION, symbol=spec["symbol"], evidence=evidence,
         opening=opening, ordinary_shares=shares,
         scenarios=scenarios, operating_forecasts=cash_forecasts, assumptions=explanations,
         action="no_order", formal_eligibility=False, main_range_adopted=False,
         valuation_date=spec["valuation_date"], source_bindings=closure)
+    if scheduled is not None:
+        result["annual_payout_reservations"] = payout_reservations
+    return result
