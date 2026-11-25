@@ -1116,6 +1116,8 @@ function CheckReconciliation({
 }) {
   if (!object(details) || !object(details.reconciliation)) return null;
   const ledger = details.reconciliation;
+  const checkpoint = ledger.native_closing_capital_checkpoint;
+  const checkpointStatus = object(checkpoint) ? checkpoint.status : undefined;
   if (id === "capital_structure")
     return (
       <section aria-label="已核验股本与当前缺口">
@@ -1129,9 +1131,12 @@ function CheckReconciliation({
           <dd>{text(ledger.opening_shares)} 股</dd>
           <dt>当前股本</dt>
           <dd>
-            {ledger.closing_shares == null
-              ? "尚未核验，不能认定股本未变"
-              : text(ledger.closing_shares) + " 股"}
+            {checkpointStatus === "CONFLICT"
+              ? "期末精确股本原件冲突，待复核"
+              : checkpointStatus === "UNVERIFIED" ||
+                  ledger.closing_shares == null
+                ? "尚未核验，不能认定股本未变"
+                : text(ledger.closing_shares) + " 股"}
           </dd>
           <dt>仅按已列行动计算的期末股数</dt>
           <dd>

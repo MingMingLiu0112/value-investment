@@ -2185,10 +2185,127 @@ def test_exact_szse_end_count_requires_matching_rollforward(reconciliation, coun
             run()
         return
     result = run()
+    checkpoint = result["native_closing_capital_checkpoint"]
+    assert checkpoint["status"] == "NATIVE_ENDPOINT_MATCHES_ROLLFORWARD"
+    assert checkpoint["ordinary_shares"] == "100"
+    assert checkpoint["evidence_bindings"] == [ref]
     assert result["closing_shares"] == result["calculated_closing_shares"] == "100"
     assert "CLOSING_SHARE_COUNT_UNVERIFIED" not in result["reason_codes"]
     assert "NATIVE_CLOSING_SHARES_OPENING_CONTINUITY_UNVERIFIED" in result["reason_codes"]
     assert result["current_price_basis_compatible"] is False
+
+@pytest.mark.parametrize("observations, status", [
+    ([], "UNVERIFIED"),
+    (["100"], "NATIVE_ENDPOINT_MATCHES_ROLLFORWARD"),
+    (["101"], "CONFLICT"),
+    (["100", "101"], "CONFLICT"),
+])
+def test_native_report_closing_checkpoint_is_independent_of_interval_closure(
+        reconciliation, monkeypatch, observations, status):
+    case = reconciliation
+    case["ledger"]["closing_shares"] = None
+    end = date(2020, 1, 2)
+    reports = [
+        dict(status="NATIVE_REPORT_FIELDS_VERIFIED", published_date=end.isoformat(),
+             terms=dict(period_end=end.isoformat(), ordinary_shares=shares),
+             binding=dict(path=f"runtime/report-{index}.pdf", sha256=str(index) * 64))
+        for index, shares in enumerate(observations, 1)
+    ]
+    native_basis_fields = service._native_basis_fields
+
+    def replay(*args, **kwargs):
+        result = native_basis_fields(*args, **kwargs)
+        result["closing_capital"] = service._close_report_checkpoint(reports, end)
+        result["reports"] = reports
+        return result
+
+    monkeypatch.setattr(service, "_native_basis_fields", replay)
+    result = reconcile(case)
+    checkpoint = result["native_closing_capital_checkpoint"]
+    assert checkpoint["status"] == status
+    if status == "NATIVE_ENDPOINT_MATCHES_ROLLFORWARD":
+        assert checkpoint["ordinary_shares"] == result["closing_shares"] == "100"
+        assert checkpoint["evidence_bindings"] == [reports[0]["binding"]]
+        assert "CLOSING_SHARE_COUNT_UNVERIFIED" not in result["reason_codes"]
+    else:
+        assert checkpoint["ordinary_shares"] is None
+        assert result["closing_shares"] is None
+    assert "CROSS_DATE_NATIVE_CAPITAL_AND_DISTRIBUTION_CLOSURE_NOT_SUPPORTED" in result["reason_codes"]
+    assert not result["native_basis_semantics_verified"]
+    assert not result["period_cash_coverage_complete"]
+    assert not result["current_price_basis_compatible"]
+
+
+@pytest.mark.parametrize("export_shares", [None, "2000"])
+def test_native_report_checkpoint_replays_report_and_detects_export_conflict(
+        reconciliation, monkeypatch, export_shares):
+    from pypdf import PdfWriter
+    from value_investment_agent.infrastructure.filings import pdf_text
+
+    case = reconciliation
+    end = date(2020, 6, 30)
+    case["ledger"].update(comparison_date=end.isoformat(), closing_shares=None)
+    case["windows"][0]["scan_to"] = end.isoformat()
+    opening = case["anchor"]
+    opening_shares = export_shares or "1000"
+    case["analysis"]["consumed_operating_inputs"]["ordinary_shares"] = opening_shares
+    case["analysis"]["official_fact_anchors"][0]["source_value"] = opening_shares
+    opening["excerpt"] += " " + format(int(opening_shares), ",")
+    case["ledger"]["opening_shares"]["value"] = opening_shares
+
+    report = case["root"] / "runtime/interim.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    with report.open("wb") as stream:
+        writer.write(stream)
+    report_ref = dict(path="runtime/interim.pdf", sha256=sha256_file(report))
+    case["analysis"]["source_catalog"].append(dict(
+        kind="official_issuer_filing", local_path=report_ref["path"], sha256=report_ref["sha256"],
+        location="https://static.cninfo.com.cn/finalpage/2020-06-30/124.PDF",
+        issuer_identity=dict(security_code="600519"),
+        source_available_at="2020-06-30T14:00:00+08:00"))
+    # Stub only PDF text extraction. The native interim parser and source
+    # admission still execute, including share-class and table reconciliation.
+    capital = "2,000 100 - 1,000 - 1,000 1,000 100"
+    pages = [
+        "公司代码：600519 公司简称 TEST_ONLY 2020年半年度报告",
+        "报告期指2020年1月1日至2020年6月30日",
+        f"单位：股 本次变动前 本次变动增减 1、人民币普通股 {capital} 2、境内上市的外资股 "
+        f"三、股份总数 {capital} 2、股份变动情况说明",
+        "截至资产负债表日，公司已累计回购股份1,000股，已支付总金额100.00元（不含交易费用），"
+        "并已在中国证券登记结算有限责任公司上海分公司办理完成注销。",
+        "半年度拟定的利润分配预案、公积金转增股本预案是否分配或转增否三、",
+        "十六、资产负债表日后事项1、重要的非调整事项□适用√不适用2、利润分配情况□适用√不适用3、销售退回",
+        "报告期后到半年报披露日期间发生股份变动对每股收益、每股净资产等财务指标的影响（如有）□适用√不适用4、",
+        "42、未分配利润√适用□不适用单位：元币种：人民币项目本期上年度"
+        "应付普通股股利1.002.00转作股本的普通股股利43、营业收入和营业成本",
+    ]
+    monkeypatch.setattr(pdf_text, "extract_pages",
+                        lambda path: pages if path == report else [opening["excerpt"]])
+    ref = write(case["root"], "runtime/reconciliation.json", case["ledger"])
+    export = (dict(ordinary_a_shares=export_shares, comparison_date=end.isoformat(), evidence_binding=ref)
+              if export_shares is not None else None)
+    result = service._reconcile(case["root"], case["analysis"], ref, end,
+        case["windows"], case["now"], lambda binding: _bound(case["root"], binding), closing_export=export)
+
+    report_fact, = result["native_source_consumption"]["reports"]
+    assert report_fact["status"] == "NATIVE_REPORT_FIELDS_VERIFIED"
+    assert report_fact["binding"] == report_ref
+    checkpoint = result["native_closing_capital_checkpoint"]
+    if export is None:
+        assert checkpoint["status"] == "NATIVE_ENDPOINT_MATCHES_ROLLFORWARD"
+        assert checkpoint["ordinary_shares"] == "1000"
+        assert checkpoint["evidence_bindings"] == [report_ref]
+    else:
+        assert result["closing_shares"] == result["calculated_closing_shares"] == export_shares
+        assert checkpoint["status"] == "CONFLICT"
+        assert checkpoint["ordinary_shares"] is None
+        assert checkpoint["evidence_bindings"] == [report_ref, ref]
+        assert "NATIVE_CLOSING_SHARE_COUNT_DIFFERS_FROM_ROLLFORWARD" in result["reason_codes"]
+    assert not result["native_basis_semantics_verified"]
+    assert not result["period_cash_coverage_complete"]
+    assert not result["current_price_basis_compatible"]
+
 
 @pytest.mark.parametrize("yes, approved", [(90, True), (89, False)])
 def test_numbered_annual_distribution_resolution_checks_full_votes(yes, approved):

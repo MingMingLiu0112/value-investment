@@ -883,9 +883,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
         if _day(closing_export["comparison_date"]) != end or closing_value != total:
             raise ValueError("SZSE_CAPITAL_EXPORT_ROLLFORWARD_DISAGREEMENT")
         evidence.append(deepcopy(closing_export["evidence_binding"]))
-    if closing is None and closing_export is None:
-        gaps.append("CLOSING_SHARE_COUNT_UNVERIFIED")
-    elif closing is not None:
+    if closing is not None:
         closing_value = _number(closing["value"])
         closing_date = _day(closing["as_of"])
         if closing_date != end or closing_value != total:
@@ -1185,6 +1183,11 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
             evidence.append(deepcopy(report["binding"]))
     closing_capital = native_fields["closing_capital"]
     closing_status = closing_capital["status"]
+    if start < end and closing_status == "EXACT_REPORT_DATE_SHARES_VERIFIED" and (
+            _number(closing_capital["ordinary_shares"]) == total):
+        closing_value = total
+    if closing_value is None:
+        gaps.append("CLOSING_SHARE_COUNT_UNVERIFIED")
     if closing_status == "EXACT_CLOSING_REPORT_ANCHOR_MISSING":
         if closing_export is None:
             gaps.append("EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING")
@@ -1274,6 +1277,22 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
         gaps.append("IN_PERIOD_CASH_FLOW_INCLUSION_REQUIRES_CANDIDATE_RECOMPUTATION")
     cross_date_facts = {}
     if start < end:
+        # A closing checkpoint certifies the endpoint only. Ledger excerpts and
+        # rounded/corroborating sources cannot satisfy this native prerequisite.
+        originals = [anchor["evidence_binding"] for anchor in closing_capital["anchors"]]
+        if closing_export is not None:
+            originals.append(closing_export["evidence_binding"])
+        checkpoint = dict(schema_version="native-closing-capital-checkpoint-v1",
+                          as_of=end.isoformat(), ordinary_shares=None,
+                          evidence_bindings=deepcopy(originals), status="UNVERIFIED")
+        if closing_status == "EXACT_CLOSING_REPORT_ANCHORS_CONFLICT" or (
+                closing_status == "EXACT_REPORT_DATE_SHARES_VERIFIED"
+                and _number(closing_capital["ordinary_shares"]) != total):
+            checkpoint["status"] = "CONFLICT"
+        elif originals:
+            checkpoint.update(status="NATIVE_ENDPOINT_MATCHES_ROLLFORWARD",
+                              ordinary_shares=str(total))
+        cross_date_facts["native_closing_capital_checkpoint"] = checkpoint
         cross_date_facts["cross_date_action_facts"] = _cross_date_action_facts(
             ledger_binding=ref, ledger=ledger, start=start, end=end, windows=windows,
             action_rows=action_rows, cash_rows=cash_rows, cancellations=observed_cancellations,

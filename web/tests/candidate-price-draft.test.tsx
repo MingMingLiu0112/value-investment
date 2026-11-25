@@ -529,6 +529,7 @@ it("shows exact share evidence and rollforward conflict without enabling price c
   capital.details = {
     reconciliation: {
       ...reconciliationExample,
+      native_closing_capital_checkpoint: { status: "CONFLICT" },
       native_source_consumption: {
         closing_capital: {
           status: "EXACT_REPORT_DATE_SHARES_VERIFIED",
@@ -551,6 +552,7 @@ it("shows exact share evidence and rollforward conflict without enabling price c
     },
   };
   const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(html).toContain("期末精确股本原件冲突，待复核");
   for (const term of [
     "2026-11-17",
     "与台账滚动值冲突",
