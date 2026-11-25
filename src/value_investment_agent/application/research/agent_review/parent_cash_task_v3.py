@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "ddd16203130f759d4404d8fad85621f50087d296363f505a099130d0435cc21f"
+REVIEWED_CAPITAL_SERVICE = "24053412a30402690ff5e546738e4410d70ce7f8fcd6b6855b80e7f6963b3b62"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -389,6 +389,53 @@ def _terminal_driver_wire(wire, *, replace_legacy_contract=False):
         "identify the economic restriction. Do not infer perpetual zero from lack of approval.")
 
 
+def _flat_terminal_review_request(wire, *, distribution_reference):
+    schema = deepcopy(wire.output_schema)
+    terminal = schema["properties"].pop("terminal")
+    schema["properties"].update(terminal["properties"])
+    schema["required"] = ["cost_of_equity", *terminal["required"]]
+    payload = json.loads(wire.user)
+    payload["terminal_response_fields"] = schema["required"]
+    payload["historical_distribution_reference"] = distribution_reference
+    return replace(wire, output_schema=schema,
+        user=json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+        system=wire.system + " For this request use the flat terminal_response_fields shape.",
+        transport_output_contract=(
+            "Return exactly one complete JSON object, with these top-level keys once each: "
+            + ", ".join(schema["required"]) + ". Do not wrap them in a terminal key or append text. "
+            "The policy object has exactly these keys: "
+            + ", ".join(schema["properties"]["policy"]["required"]) + ". "
+            "Each policy item and cost_of_equity uses values (one decimal string), "
+            "evidence_anchors (allowed source_context IDs), mechanism, counter_evidence, "
+            "and reopen_condition. Keep each explanation concise. Use all seven gross parent cash "
+            "drivers; exclude financing and investment receipts from operating cash. "
+            "Keep ongoing reinvestment, reserve and non-financing outflows separate. "
+            "Treat future distributions as conditional research: justify standalone cash capacity "
+            "and distributable profit. Missing future approval alone does not imply zero. "
+            "Use historical_distribution_reference only as a nominal sensitivity anchor. "
+            "It is cash paid for a prior fiscal year, and neither a current forecast nor a "
+            "minimum perpetuity payout. Explain the forecast cash limit separately, including "
+            "ongoing reinvestment and reserve. Do not transfer a charter or dated policy percentage "
+            "mechanically to parent profit. If cash or distributable profit is unsupported, "
+            "identify the unresolved economic input."))
+
+
+def _unpack_flat_terminal_review_response(response):
+    if response.tool_calls:
+        raise ValueError("PARENT_V3_TERMINAL_DRIVER_TOOL_CALL_FORBIDDEN")
+    try:
+        packet = json.loads(response.text, object_pairs_hook=_identical_prose_duplicate_only)
+    except json.JSONDecodeError as error:
+        raise ValueError("PARENT_V3_TERMINAL_REVIEW_INVALID_JSON") from error
+    fields = {"policy", "remaining_scheduled_events", "max_transition_years",
+              "financing", "rationale", "counter_evidence", "reopen_condition"}
+    if not isinstance(packet, dict) or set(packet) != fields | {"cost_of_equity"}:
+        raise ValueError("PARENT_V3_TERMINAL_REVIEW_FIELDS_INVALID")
+    result = {"cost_of_equity": packet.pop("cost_of_equity"), "terminal": packet}
+    return replace(response, text=json.dumps(result, ensure_ascii=False, sort_keys=True,
+                                              separators=(",", ":")))
+
+
 def _merge_terminal_driver_response(response, request):
     if response.tool_calls:
         raise ValueError("PARENT_V3_TERMINAL_DRIVER_TOOL_CALL_FORBIDDEN")
@@ -546,6 +593,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "85870518fcd6ec43dbb271b84257adeaf2ea1fe77d02bb59c0ac881c2543b341",
             "4f697aa4fea9b2c16f4baff133a9eb33e6ad2e0142720f9a0df308d1a5f28975",
             "4f20dca0f15ad2df4acbc726e6a46bbb413b52b1e12a1e7dccc90e8a043e4232",
             "ab101d2bbc6fc6f1f5a41d66e28a26face5bfcbdacf110f310fd2119ae28783b",
@@ -837,6 +885,25 @@ class ParentCashTaskServiceV3(ResearchTaskService):
     @staticmethod
     def _wire(spec, stage, request, *, root=None):
         wire = ParentCashTaskServiceV3._base_wire(spec, stage, request, root=root)
+        if (stage == "terminal" and spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V2"
+                and json.loads(request.user)["scenario"] == "base"):
+            from ..parent_owner_distribution_successor_v2 import replay_parent_owner_distribution_successor
+
+            binding = spec.get("implemented_distribution_receipt_binding")
+            if binding is None:
+                raise ValueError("PARENT_V3_TERMINAL_HISTORICAL_DISTRIBUTION_REQUIRED")
+            reference = replay_parent_owner_distribution_successor(
+                root=root, receipt_binding=binding, now=datetime.fromisoformat(spec["created_at"]))
+            context = json.loads(request.user)["source_context"]
+            report = reference["distribution"]
+            if (reference["symbol"] != context["symbol"]
+                    or Decimal(report["total_cny"]) <= 0):
+                raise ValueError("PARENT_V3_TERMINAL_HISTORICAL_DISTRIBUTION_INVALID")
+            return _flat_terminal_review_request(wire, distribution_reference={
+                "classification": "IMPLEMENTED_YEAR_PAYMENT_REFERENCE_NOT_FORECAST",
+                "paid_date": report["paid_date"], "cash_cny": report["total_cny"],
+                "source_binding": binding,
+            })
         if (stage == "terminal" and spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V1"
                 and json.loads(request.user)["scenario"] == "base"):
             return replace(wire, transport_output_contract=wire.transport_output_contract +
@@ -1264,6 +1331,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             response = fixed_financing.merge_financing_policy_response(response, wire)
         if (stage == "terminal" and spec.get("terminal_parent_cash_method") in {"ACCRUAL_SPLIT_V1", "ACCRUAL_SPLIT_V2"}
                 and json.loads(request.user)["scenario"] == "base"):
+            if spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V2":
+                response = _unpack_flat_terminal_review_response(response)
             response = _merge_terminal_driver_response(response, request)
         parsed = parse(response, request=request, source_fingerprint=source_fingerprint)
         if stage == "policy" and policy_capital.__name__ in spec["implementation_sha256"]:
@@ -1793,11 +1862,17 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                             "terminal_cohort_cutoff", "terminal_q3_cash_bridge"):
                     if key in old_spec:
                         trial_spec[key] = old_spec[key]
-                trial_spec.update(terminal_cash_review="RESEARCH_PAYOUT_V1",
+                from ..parent_cash_task_completion_v1 import preflight_parent_cash_task
+
+                _, distribution = preflight_parent_cash_task(self, spec_binding)
+                if distribution is None:
+                    raise ValueError("PARENT_V3_TERMINAL_HISTORICAL_DISTRIBUTION_REQUIRED")
+                trial_spec.update(terminal_cash_review="RESEARCH_PAYOUT_V2",
                                   mandatory_cash_classification="BULL_DISJOINT_V1",
-                                  terminal_distribution_preflight=True)
+                                  terminal_distribution_preflight=True,
+                                  implemented_distribution_receipt_binding=distribution)
             for stage_id in STAGE_ORDER:
-                if (trial_spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V1"
+                if (trial_spec.get("terminal_cash_review") == "RESEARCH_PAYOUT_V2"
                         and stage_id in {"bull.policy", "bull.terminal"}):
                     continue
                 if replay_from_stage is not None:

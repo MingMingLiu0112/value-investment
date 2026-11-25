@@ -703,3 +703,25 @@ def test_mandatory_cash_categories_are_checked_before_cash_compilation(amount, c
         parsed = json.loads(normalize(response).text)
         assert parsed["series"]["other_mandatory_cash"] == {"values": [amount]}
     assert json.loads(response.text) == body
+
+
+def test_flat_terminal_review_requires_exact_single_complete_object():
+    terminal = {
+        "policy": {}, "remaining_scheduled_events": [], "max_transition_years": 20,
+        "financing": None, "rationale": "TEST_ONLY", "counter_evidence": "TEST_ONLY",
+        "reopen_condition": "TEST_ONLY",
+    }
+    full = {**terminal, "cost_of_equity": {}}
+    original = json.dumps(full)
+    response = LLMResponse(original, 100, 100, "deepseek-flash")
+    normalized = target._unpack_flat_terminal_review_response(response)
+    assert json.loads(normalized.text) == {"terminal": terminal, "cost_of_equity": {}}
+    assert response.text == original
+    # A prematurely closed outer object followed by duplicated terminal metadata.
+    trailing = original + ",\"financing\":null}"
+    with pytest.raises(ValueError, match="TERMINAL_REVIEW_INVALID_JSON"):
+        target._unpack_flat_terminal_review_response(
+            LLMResponse(trailing, 100, 100, "deepseek-flash"))
+    with pytest.raises(ValueError, match="TERMINAL_REVIEW_FIELDS_INVALID"):
+        target._unpack_flat_terminal_review_response(
+            LLMResponse(normalized.text, 100, 100, "deepseek-flash"))

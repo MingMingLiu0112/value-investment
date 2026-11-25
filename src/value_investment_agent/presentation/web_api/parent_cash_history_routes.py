@@ -106,7 +106,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                         and all(row["status"] == "SETTLED" for row in prior.get("reservations", {}).values())):
                     digest = sha256(predecessor.encode()).hexdigest()
                     task = numbered_service.create(
-                        spec_binding=binding, request_key="value-payout-review-" + digest[:56],
+                        spec_binding=binding, request_key="value-payout-review-v2-" + digest[:54],
                         seed_task_id=predecessor, replay_from_stage="base.terminal",
                     )
                     if task["status"] in {"QUEUED", "SUCCEEDED"}:
