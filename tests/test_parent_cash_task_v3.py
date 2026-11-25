@@ -725,3 +725,42 @@ def test_flat_terminal_review_requires_exact_single_complete_object():
     with pytest.raises(ValueError, match="TERMINAL_REVIEW_FIELDS_INVALID"):
         target._unpack_flat_terminal_review_response(
             LLMResponse(normalized.text, 100, 100, "deepseek-flash"))
+
+
+
+def test_scalar_terminal_review_normalizes_only_verified_gross_cash_ids():
+    term = {"value": "1.25", "evidence_anchors": ["operating_tax_paid", "book"],
+            "mechanism": "TEST_ONLY source-aware forecast", "counter_evidence": "Assumption may fail",
+            "reopen_condition": "Recheck when annual filing arrives"}
+    body = {"policy": {"operating_tax_refunds": term},
+            "remaining_scheduled_events": [], "max_transition_years": 20, "financing": None,
+            "rationale": "TEST_ONLY", "counter_evidence": "TEST_ONLY", "reopen_condition": "TEST_ONLY",
+            "cost_of_equity": {**term, "evidence_anchors": ["book"]}}
+    original = LLMResponse(json.dumps(body), 100, 100, "deepseek-flash")
+    result = target._unpack_flat_terminal_review_response(
+        original, verified_cash_lines={"operating_tax_paid": {}})
+    converted = json.loads(result.text)["terminal"]["policy"]["operating_tax_refunds"]
+    assert converted["values"] == ["1.25"]
+    assert converted["evidence_anchors"] == ["cfo", "book"]
+    assert "operating_tax_paid" in converted["mechanism"]
+    assert json.loads(original.text) == body
+    term["values"] = ["1.25"]
+    with pytest.raises(ValueError, match="TERM_SOURCE_INVALID"):
+        target._unpack_flat_terminal_review_response(
+            LLMResponse(json.dumps(body), 100, 100, "deepseek-flash"),
+            verified_cash_lines={"operating_tax_paid": {}})
+
+
+
+
+def test_audited_terminal_cash_reference_excludes_investment_and_financing():
+    cohort = {"observations": [{
+        "period_end": "2025-12-31",
+        "values_cny": {"cfo": "100", "gross_capex": "30",
+                       "investment_cash": "999", "new_borrowing": "999"},
+    }]}
+    reference = target._audited_distribution_cash_reference(cohort, {"cash_cny": "80"})
+    row, = reference["observations"]
+    assert row["cash_after_gross_capex_cny"] == "70"
+    assert row["headroom_after_nominal_payment_cny"] == "-10"
+    assert "cash_floor" in reference["excludes"]
