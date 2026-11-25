@@ -899,6 +899,57 @@ def test_v4_policy_successor_versions_only_base_policy_without_provider_call(tas
     assert service.read(original["task_id"])["status"] == "FAILED"
 
 
+@pytest.mark.parametrize(("invalid_operating", "expected"), [
+    (False, "GROSS_CAPEX_PLAN_HORIZON_MISMATCH"),
+    (True, "GROSS_CAPEX_BASE_OPERATING_REPLAY_REQUIRED"),
+])
+def test_gross_capex_successor_checks_annual_policy_before_task_creation(
+        task, monkeypatch, invalid_operating, expected):
+    service, provider = task
+    binding = dict(path="runtime/spec.json", sha256="b" * 64)
+    original = service.create(spec_binding=binding, request_key="old-gross-capex", now=NOW)
+    complete = provider.complete
+
+    def invalid_terminal(request):
+        response = complete(request)
+        if len(provider.calls) == 6:
+            return LLMResponse("{}", response.prompt_tokens, response.completion_tokens, response.model_id)
+        return response
+
+    monkeypatch.setattr(provider, "complete", invalid_terminal)
+    failed = service.run(original["task_id"], now=NOW)
+    assert "base.policy" in failed["completed_stages"]
+    load = service._load
+
+    def sealed_predecessor(task_id, **kwargs):
+        spec, state, head = load(task_id, **kwargs)
+        if task_id == original["task_id"]:
+            spec = dict(spec, terminal_cash_review="RESEARCH_PAYOUT_V4",
+                        implemented_distribution_receipt_binding=binding)
+            state = dict(state, error_code="BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID")
+        return spec, state, head
+
+    wire = service._wire
+
+    def reject_invalid_annual_plan(spec, stage, request, *, root=None):
+        if spec.get("gross_capex_plan_binding") and json.loads(request.user)["scenario"] == "base":
+            if stage == "operating" and invalid_operating:
+                raise ValueError("TEST_ONLY_CHANGED_OPERATING_REQUEST")
+            if stage != "operating":
+                assert not invalid_operating
+                assert stage == "policy"
+                raise ValueError("GROSS_CAPEX_PLAN_HORIZON_MISMATCH")
+        return wire(spec, stage, request, root=root)
+
+    monkeypatch.setattr(service, "_load", sealed_predecessor)
+    monkeypatch.setattr(service, "_wire", reject_invalid_annual_plan)
+    with pytest.raises(ValueError, match=expected):
+        service.create(spec_binding=binding, request_key="new-gross-capex", now=NOW,
+                       seed_task_id=original["task_id"], replay_from_stage="base.policy",
+                       gross_capex_plan_binding=binding)
+    assert len(provider.calls) == 6
+
+
 @pytest.mark.parametrize(("change", "error"), [
     ("none", None),
     ("receipt", "PARENT_V3_CAPITAL_IR_RECEIPT_CHANGED"),

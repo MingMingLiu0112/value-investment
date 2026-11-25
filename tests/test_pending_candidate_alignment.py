@@ -2078,6 +2078,39 @@ def test_opening_share_excerpt_requires_exact_compiler_binding(reconciliation, m
     with pytest.raises(ValueError, match="RECONCILIATION_EXCERPT_OR_ISSUER_MISMATCH"):
         reconcile(case)
 
+def test_opening_share_period_cannot_be_borrowed_from_a_different_source(reconciliation):
+    case = reconciliation
+    fact = case["analysis"]["official_fact_anchors"][0]
+    case["analysis"]["official_fact_anchors"] = [
+        {**fact, "period_end": "2019-12-31"},
+        {**fact, "source_id": "cninfo:456"},
+    ]
+
+    result = reconcile(case)
+
+    assert result["opening_shares_semantics"] == "NOT_VERIFIED"
+    assert "OPENING_SHARES_NOT_MATCHED_TO_NATIVE_FACT_ANCHOR" in result["reason_codes"]
+    assert result["current_price_basis_compatible"] is False
+
+
+def test_opening_share_document_identity_cannot_borrow_another_consumed_hash(reconciliation):
+    case = reconciliation
+    anchor = case["anchor"]
+    alternative = case["root"] / "runtime/alternative.pdf"
+    original = case["root"] / anchor["binding"]["path"]
+    alternative.write_bytes(original.read_bytes() + b"\n")
+    binding = dict(path="runtime/alternative.pdf", sha256=sha256_file(alternative))
+    case["analysis"]["source_bindings"].append(binding)
+    case["ledger"]["opening_shares"]["evidence"] = [{**anchor, "binding": binding}]
+    case["windows"][0]["announcements"] = [
+        dict(evidence_refs=[{**binding, "source_url": anchor["source_url"]}]),
+    ]
+    case["windows"][0]["acquired_at"] = anchor["available_at"]
+
+    with pytest.raises(ValueError, match="OPENING_CAPITAL_SOURCE_NOT_CONSUMED"):
+        reconcile(case)
+
+
 @pytest.mark.parametrize("count", ["100", "101"])
 def test_exact_szse_end_count_requires_matching_rollforward(reconciliation, count):
     case = reconciliation

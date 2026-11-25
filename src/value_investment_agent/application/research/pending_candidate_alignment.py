@@ -799,19 +799,33 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
     anchors(opening["evidence"], numbers=[opening_value],
             dates=[] if exact_consumed_excerpt else [start], consumed_issuer_verified=exact_consumed_excerpt)
     original_hashes = {s["sha256"] for s in analysis["source_bindings"]}
-    capital_source_ids = {a["source_id"] for a in analysis.get("official_fact_anchors", [])
-                          if a["field"] == "ordinary_shares"}
-    # A separately retained copy is the same consumed original only when both
-    # its bytes and official document identity match the consumed capital anchor.
-    if any(e["binding"]["sha256"] not in original_hashes or
-            "cninfo:" + urlparse(e["source_url"]).path.rsplit("/", 1)[1].split(".")[0] not in capital_source_ids
-            for e in opening["evidence"]):
-        raise ValueError("OPENING_CAPITAL_SOURCE_NOT_CONSUMED")
-    native_opening = any(a.get("field") == "ordinary_shares"
-        and a.get("source_id") in capital_source_ids
-        and a.get("source_value") == opening["value"]
-        and a.get("unit") == "shares" and a.get("period_end") == start.isoformat()
-        for a in analysis.get("official_fact_anchors", []))
+    valuation_capital_anchors = {
+        anchor["source_id"] for anchor in analysis.get("official_fact_anchors", [])
+        if anchor.get("field") == "ordinary_shares"
+        and anchor.get("source_value") == opening["value"]
+        and anchor.get("unit") == "shares" and anchor.get("period_end") == start.isoformat()
+    }
+    consumed_capital_originals = {
+        (source["location"], source["sha256"])
+        for source in analysis.get("source_catalog", [])
+        if source.get("kind") == "official_issuer_filing"
+        and (source.get("issuer_identity") or {}).get("security_code") == analysis["symbol"]
+        and source["sha256"] in original_hashes
+    }
+    capital_source_ids = {
+        anchor["source_id"] for anchor in analysis.get("official_fact_anchors", [])
+        if anchor.get("field") == "ordinary_shares"
+    }
+    catalogued_urls = {url for url, _ in consumed_capital_originals}
+    native_opening = True
+    for excerpt in opening["evidence"]:
+        source_url, digest = excerpt["source_url"], excerpt["binding"]["sha256"]
+        source_id = "cninfo:" + urlparse(source_url).path.rsplit("/", 1)[1].split(".")[0]
+        exact_original = (source_url, digest) in consumed_capital_originals
+        if (digest not in original_hashes or source_id not in capital_source_ids
+                or (source_url in catalogued_urls and not exact_original)):
+            raise ValueError("OPENING_CAPITAL_SOURCE_NOT_CONSUMED")
+        native_opening = native_opening and exact_original and source_id in valuation_capital_anchors
     actions, cash = ledger["share_actions"], ledger["distributions"]
     if not isinstance(actions, list) or not isinstance(cash, list):
         raise ValueError("RECONCILIATION_ACTION_ARRAYS_REQUIRED")

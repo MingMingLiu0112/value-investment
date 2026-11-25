@@ -2292,7 +2292,10 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             # before publishing a new task or permitting another model call.
             trial_spec.update(task_id="new-task-preview", mode=old_spec["mode"], seed=seed)
             stages = self._stage_outputs(trial_spec, trial, now, verified_context=context)
-            if (trial_spec.get("base_investment_receipts_wire") == BASE_INVESTMENT_RECEIPTS_V1
+            if gross_capex_plan_binding is not None and "operating" not in stages["base"]:
+                raise ValueError("GROSS_CAPEX_BASE_OPERATING_REPLAY_REQUIRED")
+            if ((trial_spec.get("base_investment_receipts_wire") == BASE_INVESTMENT_RECEIPTS_V1
+                    or trial_spec.get("gross_capex_plan_binding") is not None)
                     and "policy" not in stages["base"]):
                 request = staged_parent_cash_request_v3(
                     root=self.root, spec_binding=spec_binding, scenario="base", stage="policy",

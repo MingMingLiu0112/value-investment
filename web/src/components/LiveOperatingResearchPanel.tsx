@@ -2548,6 +2548,25 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
         );
         return;
       }
+      if (
+        cause instanceof ApiError &&
+        cause.status === 422 &&
+        typeof cause.detail === "string"
+      ) {
+        const reasons: Record<string, string> = {
+          GROSS_CAPEX_BASE_OPERATING_REPLAY_REQUIRED:
+            "已封存的 Base 经营响应无法按当前研究输入重放。未创建任务，也未发起模型调用。",
+          GROSS_CAPEX_PLAN_HORIZON_MISMATCH:
+            "母公司资本开支计划未覆盖 Base 情景的全部预测年度。未创建任务。",
+          GROSS_CAPEX_BELOW_FIRST_YEAR_REALIZED:
+            "资本开支计划首年金额低于已核验的实际支出。未创建任务。",
+        };
+        const reason = reasons[cause.detail];
+        if (reason) {
+          setMessage(reason);
+          return;
+        }
+      }
       setMessage(
         cause instanceof ApiError && cause.status === 409
           ? "缺少已绑定的连续年度、母公司现金原件或公司估值输入包；未启动现金任务。"
