@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "3fb7b9ab7310ee16f3d5e4a5de6e3af92d9f61b3449df9833acb0344a57208f2"
+REVIEWED_CAPITAL_SERVICE = "7bac2b533f8b1af07eb7aa0949c159dbfc6cba11558d65b27331a79ecd603ba2"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -252,7 +252,7 @@ def _terminal_parent_cash_cohort(root, spec, valuation_date):
         "gross_capex": ("母公司现金流量表", "购建固定资产、无形资产和其他长期资产支付的现金"),
     }
 
-    accrual_bridge = spec.get("terminal_parent_cash_method") == "ACCRUAL_SPLIT_V1"
+    accrual_bridge = spec.get("terminal_parent_cash_method") in {"ACCRUAL_SPLIT_V1", "ACCRUAL_SPLIT_V2"}
     if accrual_bridge:
         fields.update(
             investment_accrual=("母公司利润表", "投资收益"),
@@ -343,10 +343,11 @@ def _terminal_cfo_from_drivers(values):
             - sum(values[field] for field in _TERMINAL_OPERATING_PAYMENTS))
 
 
-def _terminal_driver_wire(wire):
+def _terminal_driver_wire(wire, *, replace_legacy_contract=False):
     """Ask for evidenced operating drivers and keep CFO arithmetic local."""
     schema = deepcopy(wire.output_schema)
     policy = schema["properties"]["terminal"]["properties"]["policy"]
+    old_fields = tuple(policy["required"])
     template = policy["properties"].pop("operating_cash")
     policy["required"] = [entry for entry in policy["required"] if entry != "operating_cash"]
     policy["properties"].update({key: deepcopy(template) for key in _TERMINAL_OPERATING_INPUTS})
@@ -359,9 +360,23 @@ def _terminal_driver_wire(wire):
             + " + ".join(_TERMINAL_OPERATING_PAYMENTS) + ")",
         "classification": "SCENARIO_ASSUMPTIONS_NOT_OBSERVED_CASH",
     }
+    system = wire.system
+    contract = wire.transport_output_contract
+    if replace_legacy_contract:
+        # The provider's JSON-object transport sends this prose instead of
+        # output_schema. It must enumerate the same fields as the local schema.
+        field_prefix = "policy has exactly these keys: "
+        preceding = field_prefix + ", ".join(old_fields) + "."
+        if contract.count(preceding) != 1:
+            raise ValueError("PARENT_V3_TERMINAL_TRANSPORT_FIELDS_UNBOUND")
+        contract = contract.replace(preceding, field_prefix + ", ".join(policy["required"]) + ".", 1)
+        legacy_system = "Keep operating_cash distinct from the required other_operating_cash component. "
+        if system.count(legacy_system) != 1:
+            raise ValueError("PARENT_V3_TERMINAL_TRANSPORT_SYSTEM_UNBOUND")
+        system = system.replace(legacy_system, "")
     return replace(wire, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
-        separators=(",", ":")), output_schema=schema,
-        transport_output_contract=wire.transport_output_contract +
+        separators=(",", ":")), output_schema=schema, system=system,
+        transport_output_contract=contract +
         " Return seven parent-only cash drivers in terminal.policy instead of "
         "operating_cash. Provide sources and justification for each gross line. "
         "Other receipts and payments must each have economic drivers; neither is a balancing item. "
@@ -531,6 +546,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "ab101d2bbc6fc6f1f5a41d66e28a26face5bfcbdacf110f310fd2119ae28783b",
+            "d3edde60f471412eeff64c1a161f143db8eb950435d42215770310f46933bca6",
             "8f8a213a312f0d7ab01edb4e663a3d7ed92f6dac31637a3e17424bfb67c02edd",
             "9c57a49947aa25cfab95928f2154262f95d94b310c6ee2a983c4ad19f3d1a6db",
             "205f1372199546d378996dce0e2f2941497fdf266e1e52c1b50d8e4bb363a9c8",
@@ -1121,7 +1138,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     result["terminal_parent_cash_cohort"] = _terminal_parent_cash_cohort(
                         root, spec, source["valuation_date"])
                 uses_accrual_split = (payload.get("scenario") == "base"
-                    and spec.get("terminal_parent_cash_method") == "ACCRUAL_SPLIT_V1")
+                    and spec.get("terminal_parent_cash_method") in {"ACCRUAL_SPLIT_V1", "ACCRUAL_SPLIT_V2"})
                 if uses_accrual_split:
                     conditions = _terminal_payout_conditions(root, source)
                     if conditions is None:
@@ -1135,7 +1152,11 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     }
                 wire = replace(wire, user=json.dumps(result, ensure_ascii=False,
                     sort_keys=True, separators=(",", ":")))
-                return _terminal_driver_wire(wire) if uses_accrual_split else wire
+                if not uses_accrual_split:
+                    return wire
+                return _terminal_driver_wire(wire, replace_legacy_contract=(
+                    spec["terminal_parent_cash_method"] == "ACCRUAL_SPLIT_V2"
+                ))
             return terminal_wire.terminal_wire_request(request)
         return request
 
@@ -1158,7 +1179,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         if stage == "policy" and "conditional_financing_stress" in spec:
             wire = self._wire(spec, stage, request, root=self.root)
             response = fixed_financing.merge_financing_policy_response(response, wire)
-        if (stage == "terminal" and spec.get("terminal_parent_cash_method") == "ACCRUAL_SPLIT_V1"
+        if (stage == "terminal" and spec.get("terminal_parent_cash_method") in {"ACCRUAL_SPLIT_V1", "ACCRUAL_SPLIT_V2"}
                 and json.loads(request.user)["scenario"] == "base"):
             response = _merge_terminal_driver_response(response, request)
         parsed = parse(response, request=request, source_fingerprint=source_fingerprint)
@@ -1561,7 +1582,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     )
                     method = entry.get("terminal_parent_cash_method")
                     if method is not None:
-                        if method != "ACCRUAL_SPLIT_V1":
+                        if method not in {"ACCRUAL_SPLIT_V1", "ACCRUAL_SPLIT_V2"}:
                             raise ValueError("PARENT_TERMINAL_COHORT_METHOD_UNSUPPORTED")
                         trial_spec["terminal_parent_cash_method"] = method
                     _terminal_parent_cash_cohort(self.root, trial_spec, context["valuation_date"])

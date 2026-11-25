@@ -605,12 +605,19 @@ def test_terminal_driver_wire_derives_cfo_without_accepting_a_model_total():
         "properties": {"operating_cash": template, "parent_profit": template},
     }}}}}
     request = LLMRequest(
-        role="terminal", system="fixture", user=json.dumps({
+        role="terminal",
+        system="Keep operating_cash distinct from the required other_operating_cash component. ",
+        user=json.dumps({
             "required_fields": ["operating_cash", "parent_profit"],
             "source_context": {"facts": {"profit": {}}},
-        }), output_schema=schema, transport_output_contract="fixture",
+        }), output_schema=schema,
+        transport_output_contract="policy has exactly these keys: operating_cash, parent_profit.",
     )
-    wire = target._terminal_driver_wire(request)
+    wire = target._terminal_driver_wire(request, replace_legacy_contract=True)
+    sent_fields = wire.transport_output_contract.split(".", 1)[0].split(": ", 1)[1].split(", ")
+    assert sent_fields == json.loads(wire.user)["required_fields"]
+    assert "operating_cash" not in sent_fields and "Keep operating_cash distinct" not in wire.system
+    assert "operating_cash, parent_profit" in target._terminal_driver_wire(request).transport_output_contract
     assert "operating_cash" not in json.loads(wire.user)["required_fields"]
     terms = {
         key: dict(term(1), values=[value])
