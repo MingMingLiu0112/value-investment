@@ -2,6 +2,8 @@
 import re
 import logging
 import json
+from datetime import date
+from decimal import Decimal
 from itertools import islice
 from pathlib import Path
 
@@ -19,6 +21,20 @@ from .live_operating_research_routes import resolve_research_task_root
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
 from ...application.research.agent_review.parent_cash_task_v3 import ParentCashTaskServiceV3
+
+
+def _comparison_quote(alignment):
+    if (alignment.get("status") != "ALIGNED_FOR_RESEARCH_COMPARISON"
+            or alignment.get("currentpricecomparison") is not True):
+        return None
+    quote = alignment["quote"]
+    session = quote["quote_date"]
+    amount = Decimal(quote["current_price"])
+    if (quote["status"] != "QUALIFIED" or session != quote["latest_completed_session"]
+            or date.fromisoformat(session).isoformat() != session
+            or not amount.is_finite() or amount <= 0):
+        raise ValueError("PARENT_TASK_ALIGNMENT_QUOTE_INVALID")
+    return dict(trade_date=session, close_cny=str(amount))
 
 
 def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port):
@@ -394,12 +410,14 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                          for name in ("bear", "base", "bull")}
             alignment = _align_verified_parent_cash_task(
                 root=task_root, receipt_binding=binding, result=result, now=now)
+            comparison_quote = _comparison_quote(alignment)
             return reply(dict(status="VERIFIED_CONDITIONAL_VALUATION",
-                alignment_status=alignment["status"], alignment_reason_codes=alignment["reason_codes"],
+                comparison_quote=comparison_quote, alignment_status=alignment["status"], alignment_reason_codes=alignment["reason_codes"],
                 task_id=task_id, symbol=symbol, valuation_date=result["descriptor"]["point_in_time"]["valuation_date"],
                 scenarios=scenarios, receipt_sha256=binding["sha256"],
                 input_descriptor_sha256=result["input_descriptor_sha256"], action="no_order",
-                formal_eligibility=False, current_comparable=False, condition_price=None))
+                formal_eligibility=False, current_comparable=comparison_quote is not None,
+                condition_price=None))
         except (ValueError, TypeError, KeyError, OSError, ArithmeticError):
             return reply(dict(status="PARENT_TASK_VALUATION_UNAVAILABLE", action="no_order"), 422)
 

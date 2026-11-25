@@ -179,7 +179,14 @@ export function ParentCashTaskValuationRead({
         value.symbol !== symbol ||
         value.action !== "no_order" ||
         value.formal_eligibility !== false ||
-        value.current_comparable !== false ||
+        typeof value.current_comparable !== "boolean" ||
+        (value.current_comparable
+          ? value.alignment_status !== "ALIGNED_FOR_RESEARCH_COMPARISON" ||
+            !value.comparison_quote ||
+            !/^\d{4}-\d{2}-\d{2}$/.test(value.comparison_quote.trade_date) ||
+            !Number.isFinite(Number(value.comparison_quote.close_cny)) ||
+            Number(value.comparison_quote.close_cny) <= 0
+          : value.comparison_quote != null) ||
         value.condition_price !== null ||
         typeof value.valuation_date !== "string" ||
         !/^\d{4}-\d{2}-\d{2}$/.test(value.valuation_date) ||
@@ -227,7 +234,9 @@ export function ParentCashTaskValuationRead({
         <section aria-label="已核验的条件估值">
           <p>
             估值日期 {valuation.valuation_date} ·
-            仅供条件研究，不用于当前价格比较、正式准入或下单。
+            {valuation.current_comparable
+              ? "已完成当前价格研究对齐，仍待正式准入。"
+              : "当前价格比较待核验，估值仅供历史条件研究。"}
           </p>
           <ul>
             {CASH_VALUATION_SCENARIOS.map(([key, label]) => {
@@ -240,6 +249,12 @@ export function ParentCashTaskValuationRead({
               );
             })}
           </ul>
+          {valuation.comparison_quote && (
+            <p>
+              同口径收盘 {valuation.comparison_quote.close_cny} 元/股 ·{" "}
+              {valuation.comparison_quote.trade_date}
+            </p>
+          )}
           {valuation.alignment_status === "BLOCKED" && (
             <details open>
               <summary>当期价格核验待补证</summary>

@@ -1916,7 +1916,8 @@ export interface ParentCashTaskValuation {
   receipt_sha256: string;
   action: "no_order";
   formal_eligibility: false;
-  current_comparable: false;
+  current_comparable: boolean;
+  comparison_quote: { trade_date: string; close_cny: string } | null;
   condition_price: null;
   alignment_status?: string;
   alignment_reason_codes?: string[];

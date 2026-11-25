@@ -505,3 +505,24 @@ def test_company_continuation_with_new_annual_evidence_restarts_only_terminal(tm
         assert calls[0]["request_key"].startswith("value-cohort-")
         assert calls[0]["seed_task_id"] == predecessor
         assert calls[0]["replay_from_stage"] == "base.terminal"
+
+
+@pytest.mark.parametrize("status, comparison, quote_status, latest, expected", [
+    ("ALIGNED_FOR_RESEARCH_COMPARISON", True, "QUALIFIED", "2026-11-25",
+     {"trade_date": "2026-11-25", "close_cny": "33.20"}),
+    ("BLOCKED", True, "QUALIFIED", "2026-11-25", None),
+    ("ALIGNED_FOR_RESEARCH_COMPARISON", False, "QUALIFIED", "2026-11-25", None),
+    ("ALIGNED_FOR_RESEARCH_COMPARISON", True, "QUALIFIED", "2026-11-24", "invalid"),
+    ("ALIGNED_FOR_RESEARCH_COMPARISON", True, "BLOCKED", "2026-11-25", "invalid"),
+])
+def test_valuation_comparison_requires_shared_f2_and_latest_qualified_quote(
+    status, comparison, quote_status, latest, expected,
+):
+    alignment = dict(status=status, currentpricecomparison=comparison,
+                     quote=dict(status=quote_status, quote_date="2026-11-25",
+                                current_price="33.20", latest_completed_session=latest))
+    if expected == "invalid":
+        with pytest.raises(ValueError, match="PARENT_TASK_ALIGNMENT_QUOTE_INVALID"):
+            routes._comparison_quote(alignment)
+    else:
+        assert routes._comparison_quote(alignment) == expected
