@@ -1292,6 +1292,33 @@ function CheckReconciliation({
 }
 
 function UnsignedMaterialitySummary({ route }: { route: unknown }) {
+  if (
+    object(route) &&
+    route.status === "UNSIGNED_TASK_MATERIALITY_REVIEW_REQUIRED"
+  ) {
+    const handoff = route.unsigned_task_handoff;
+    if (
+      !object(handoff) ||
+      handoff.status !== "UNSIGNED_REVIEW_REQUIRED" ||
+      handoff.materiality_approved !== false ||
+      handoff.formal_eligibility !== false ||
+      handoff.action !== "no_order" ||
+      !Array.isArray(handoff.announcements) ||
+      !object(handoff.scan_window)
+    )
+      return null;
+
+    return (
+      <section aria-label="候选重大事件待复核">
+        <p>
+          任务 {text(handoff.task_id)} 已准备 {handoff.announcements.length}{" "}
+          条公告供人工复核。扫描范围 {text(handoff.scan_window.scan_from)} 至{" "}
+          {text(handoff.scan_window.scan_to)}。目前仍未获得比较资格。
+        </p>
+        <AlignmentEvidence value={[handoff.scan_binding]} />
+      </section>
+    );
+  }
   if (!object(route) || route.status !== "EXACT_MATERIALITY_REVIEW_NOT_BOUND")
     return null;
   const handoff = route.unsigned_handoff;

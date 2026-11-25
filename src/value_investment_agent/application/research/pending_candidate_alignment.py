@@ -2157,6 +2157,15 @@ def _materiality(root, analysis, ref, windows, scans, now, read):
     scan_ref = windows[0]["scan_binding"]
     package_ref = analysis["review_binding"].get("package_binding")
     if package_ref is None:
+        prepare_unsigned = analysis.get("prepare_unsigned_task_materiality")
+        if ref is None and prepare_unsigned is not None:
+            try:
+                route["unsigned_task_handoff"] = prepare_unsigned(windows[0])
+            except (ValueError, OSError) as error:
+                route.update(status="NATIVE_MATERIALITY_HANDOFF_REJECTED", reason=str(error))
+            else:
+                route["status"] = "UNSIGNED_TASK_MATERIALITY_REVIEW_REQUIRED"
+            return None, route
         route.update(status="NATIVE_MATERIALITY_CANDIDATE_ADAPTER_UNSUPPORTED",
                      reason="EXACT_RESEARCH_PACKAGE_MATERIALITY_HANDOFF_NOT_BOUND",
                      engineering_gap="当前研究回执尚未绑定既有材料性复核输入；不能复用其他候选的批准。")

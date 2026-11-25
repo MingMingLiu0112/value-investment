@@ -1201,6 +1201,34 @@ it("shows unsigned event review scope only for the current candidate", () => {
   expect(render()).not.toContain("候选重大事件待复核");
 });
 
+it("shows unsigned V3 task material only while it awaits human review", () => {
+  const review = alignmentFixture();
+  const alignment = review.conditional_price!.alignment!;
+  const check = alignment.checks!.find((row) => row.id === "material_events")!;
+  const handoff = {
+    status: "UNSIGNED_REVIEW_REQUIRED",
+    task_id: "rt-test-only",
+    materiality_approved: false,
+    formal_eligibility: false,
+    action: "no_order",
+    announcements: [{}],
+    scan_window: { scan_from: "2025-12-31", scan_to: "2026-11-18" },
+  };
+  check.details = {
+    materiality_review_route: {
+      status: "UNSIGNED_TASK_MATERIALITY_REVIEW_REQUIRED",
+      unsigned_task_handoff: handoff,
+    },
+  };
+  const render = () =>
+    renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+  expect(render()).toContain("rt-test-only");
+  expect(render()).toContain("2026-11-18");
+  expect(render()).toContain("目前仍未获得比较资格");
+  handoff.materiality_approved = true;
+  expect(render()).not.toContain("候选重大事件待复核");
+});
+
 it("renders both financing amounts only for a verified conflict", () => {
   const conflicts = [
     {
