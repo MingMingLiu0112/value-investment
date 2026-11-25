@@ -37,6 +37,32 @@ def _comparison_quote(alignment):
     return dict(trade_date=session, close_cny=str(amount))
 
 
+
+def _settled_base_policy(service, predecessor, prior):
+    response = prior.get("responses", {}).get("base.policy")
+    if not isinstance(response, dict):
+        return False
+    match = re.fullmatch(
+        r"runtime/research-task-execution-v1/parent-cash-task-v3/"
+        r"(rt-[0-9a-f]{32})/response-([0-9a-f]{64})\.json", response.get("path", ""),
+    )
+    if match is None:
+        return False
+    owner, reservation = match.groups()
+    state = prior
+    if owner != predecessor:
+        # read() has verified the inherited response against the seed lineage.
+        if "base.policy" not in prior.get("reused_stages", ()):
+            return False
+        _, state, _ = service._load(owner)
+        if (state["responses"].get("base.policy") != response
+                and response not in state.get("returned_responses", ())):
+            return False
+    charge = state["reservations"].get(reservation)
+    return (isinstance(charge, dict) and charge.get("scenario") == "base.policy"
+            and charge.get("status") == "SETTLED")
+
+
 def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port):
     root = resolve_research_task_root(project)
     service = ParentCashTaskServiceV2(root)
@@ -118,6 +144,26 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 if not isinstance(predecessor, str) or not re.fullmatch(r"rt-[0-9a-f]{32}", predecessor):
                     raise ValueError("PARENT_V3_INVALID_CONTINUATION_TASK")
                 prior = numbered_service.read(predecessor)
+                if prior.get("terminal_cash_review") == "RESEARCH_PAYOUT_V4":
+                    reservations = prior.get("reservations")
+                    if (prior.get("status") != "FAILED" or prior.get("spec_binding") != binding
+                            or prior.get("error_code") !=
+                                "BASE_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION"
+                            or "base.policy" not in prior.get("completed_stages", ())
+                            or Decimal(prior["reserved_cost"]) != 0
+                            or not isinstance(reservations, dict)
+                            or any(not isinstance(row, dict) or row.get("status") != "SETTLED"
+                                   for row in reservations.values())
+                            or not _settled_base_policy(numbered_service, predecessor, prior)):
+                        raise ValueError("PARENT_V3_CONTINUATION_NOT_AVAILABLE")
+                    digest = sha256(predecessor.encode()).hexdigest()
+                    task = numbered_service.create(
+                        spec_binding=binding, request_key="value-base-receipts-v1-" + digest[:54],
+                        seed_task_id=predecessor, replay_from_stage="base.policy",
+                    )
+                    if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                        background.add_task(run_numbered, task["task_id"])
+                    return reply(task, 202)
                 if (prior.get("status") == "FAILED" and prior.get("spec_binding") == binding
                         and prior.get("error_code") in {
                             "PARENT_V3_ECONOMIC_DIRECT_INPUT_DATED_SHARE_FACT_REQUIRED",
@@ -332,7 +378,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
             if task["status"] in {"QUEUED", "SUCCEEDED"}:
                 background.add_task(run_numbered, task["task_id"])
             return reply(task, 202)
-        except (ValueError, TypeError, KeyError, OSError) as exc:
+        except (ValueError, TypeError, KeyError, OSError, ArithmeticError) as exc:
             reason = str(exc)
             return reply(dict(status="PARENT_V3_TASK_REJECTED", action="no_order",
                               reason=reason if re.fullmatch(r"[A-Z0-9_]{3,120}", reason)

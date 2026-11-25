@@ -526,3 +526,123 @@ def test_valuation_comparison_requires_shared_f2_and_latest_qualified_quote(
             routes._comparison_quote(alignment)
     else:
         assert routes._comparison_quote(alignment) == expected
+
+@pytest.mark.parametrize(("case", "expected"), [
+    ("inherited", 202),
+    ("direct", 202),
+    ("legacy_v3", 202),
+    ("unauthorized", 401),
+    ("cross_site", 403),
+    ("wrong_spec", 422),
+    ("wrong_failure", 422),
+    ("not_failed", 422),
+    ("missing_policy", 422),
+    ("missing_policy_charge", 422),
+    ("owner_unsettled", 422),
+    ("unsettled", 422),
+    ("reserved_cost", 422),
+    ("malformed_cost", 422),
+    ("budget_exhausted", 422),
+])
+def test_v4_policy_successor_requires_authorized_settled_predecessor(
+        tmp_path, monkeypatch, case, expected):
+    from value_investment_agent.presentation.web_api.local_auth import LocalOperatorSession, SESSION_HEADER
+
+    binding = dict(path="runtime/spec.json", sha256="a" * 64)
+    predecessor, ancestor, successor = ("rt-" + digit * 32 for digit in "bcd")
+    owner = predecessor if case == "direct" else ancestor
+    reservation = "e" * 64
+    policy = dict(path=f"runtime/research-task-execution-v1/parent-cash-task-v3/{owner}/"
+                       f"response-{reservation}.json", sha256="f" * 64)
+    charge = dict(scenario="base.policy", status="SETTLED")
+    owner_state = dict(responses={"base.policy": policy},
+                       reservations={reservation: charge})
+    prior = dict(status="FAILED", spec_binding=binding, terminal_cash_review="RESEARCH_PAYOUT_V4",
+                 error_code="BASE_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION",
+                 responses={"base.policy": policy}, completed_stages=["base.operating", "base.policy"],
+                 reused_stages=[] if case == "direct" else ["base.policy"],
+                 reserved_cost="0", reservations={
+                     "1" * 64: dict(scenario="base.terminal", status="SETTLED")})
+    if case == "direct":
+        prior["reservations"][reservation] = charge
+    elif case == "legacy_v3":
+        prior["terminal_cash_review"] = "RESEARCH_PAYOUT_V3"
+    elif case == "wrong_spec":
+        prior["spec_binding"] = dict(binding, sha256="2" * 64)
+    elif case == "wrong_failure":
+        prior["error_code"] = "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS"
+    elif case == "not_failed":
+        prior["status"] = "RUNNING"
+    elif case == "missing_policy":
+        prior["completed_stages"].remove("base.policy")
+    elif case == "missing_policy_charge":
+        owner_state["reservations"].clear()
+    elif case == "owner_unsettled":
+        charge["status"] = "RESERVED"
+    elif case == "unsettled":
+        prior["reservations"]["1" * 64]["status"] = "RESERVED"
+    elif case == "reserved_cost":
+        prior["reserved_cost"] = "0.01"
+    elif case == "malformed_cost":
+        prior["reserved_cost"] = "invalid"
+    calls, reads, runs = [], [], []
+
+    class Service:
+        def __init__(self, root):
+            self.root = root
+
+        def read(self, task_id):
+            assert task_id == predecessor
+            reads.append(task_id)
+            return prior
+
+        def _load(self, task_id):
+            assert task_id == ancestor
+            return {}, owner_state, {}
+
+        def create(self, **kwargs):
+            calls.append(kwargs)
+            if case == "budget_exhausted":
+                raise ValueError("PARENT_TASK_BUDGET_EXHAUSTED")
+            return dict(status="QUEUED", task_id=successor, action="no_order")
+
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV2", Service)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV3", Service)
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda project: project)
+    monkeypatch.setattr(routes, "registered_cash_task_spec", lambda service, symbol: binding)
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", lambda service, task_id: runs.append(task_id))
+    sessions = LocalOperatorSession(bootstrap_secret="test-bootstrap")
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=sessions, port=8001)
+    client = TestClient(app, base_url="http://127.0.0.1:8001", client=("127.0.0.1", 50000))
+    headers = {} if case == "unauthorized" else {SESSION_HEADER: sessions.unlock("test-bootstrap")}
+    if case == "cross_site":
+        headers["sec-fetch-site"] = "cross-site"
+    url = "/api/v1/operating-research/parent-cash-tasks/by-company"
+    body = dict(symbol="600887", continue_from_task_id=predecessor)
+
+    response = client.post(url, json=body, headers=headers)
+
+    assert response.status_code == expected
+    if expected == 202:
+        assert client.post(url, json=body, headers=headers).status_code == 202
+        first, second = calls
+        assert first == second
+        assert first["spec_binding"] == binding
+        assert first["seed_task_id"] == predecessor
+        if case == "legacy_v3":
+            assert first["replay_from_stage"] == "base.terminal"
+            assert first["request_key"].startswith("value-payout-review-v4-")
+        else:
+            assert first["replay_from_stage"] == "base.policy"
+            assert first["request_key"].startswith("value-base-receipts-v1-")
+        assert runs == [successor, successor]
+    else:
+        assert not runs
+        if case == "budget_exhausted":
+            assert response.json()["reason"] == "PARENT_TASK_BUDGET_EXHAUSTED"
+            assert len(calls) == 1 and calls[0]["replay_from_stage"] == "base.policy"
+        else:
+            assert not calls
+        if expected in {401, 403}:
+            assert not reads

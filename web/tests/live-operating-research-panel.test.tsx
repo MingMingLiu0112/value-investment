@@ -2005,6 +2005,45 @@ it("offers the valuation read only for a successful V3 history row", async () =>
   expect(calls.parentCashValuation).not.toHaveBeenCalled();
 });
 
+it("offers the annual cash rebuild only for the eligible failed V4 history row", async () => {
+  const row = {
+    task_id: "annual-cash",
+    task_contract: "parent-cash-task-v3",
+    terminal_cash_review: "RESEARCH_PAYOUT_V4",
+    status: "FAILED",
+    error_code:
+      "BASE_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION",
+    source_years: [],
+    completed_stages: ["base.operating", "base.policy"],
+    charges: [{ status: "SETTLED" }],
+  };
+  calls.parentCashHistory.mockResolvedValue({
+    symbol: "600887",
+    items: [
+      row,
+      { ...row, task_id: "still-reserved", charges: [{ status: "RESERVED" }] },
+      { ...row, task_id: "historical", read_only_archive: true },
+      {
+        ...row,
+        task_id: "missing-policy",
+        completed_stages: ["base.operating"],
+      },
+    ],
+  });
+  const onContinue = vi.fn();
+  ParentCashTaskHistoryView({ symbol: "600887", onContinue });
+  await Promise.resolve();
+  hooks.cursor = 0;
+  const tree = ParentCashTaskHistoryView({ symbol: "600887", onContinue });
+  const actions = nodes(tree).filter(
+    (node) => node.props.title === "从 Base 年度现金政策重建？",
+  );
+  expect(actions).toHaveLength(1);
+  expect(onContinue).not.toHaveBeenCalled();
+  await actions[0].props.onConfirm();
+  expect(onContinue.mock.calls).toEqual([["annual-cash"]]);
+});
+
 const valuationScenario = {
   per_share_value: "12.34567890123456789",
   annual_years: 8,
