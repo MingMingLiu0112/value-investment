@@ -2311,6 +2311,19 @@ export const api = {
   parentCashTaskTerminalFailure: (taskId: string) =>
     getPrivate<{
       task_id: string;
+      observed_investing_cash?:
+        | {
+            classification: "HISTORICAL_STANDALONE_NOT_FORECAST";
+            period_end: string;
+            currency: "CNY";
+            recovered_cny: string;
+            invested_cny: string;
+            net_principal_cash_cny: string;
+            cash_investment_income_cny: string;
+            source_binding: { sha256: string };
+            physical_pages: number[];
+          }
+        | { classification: "SOURCE_NOT_REPLAYABLE" };
       terminal_cash_failure?: {
         scenario: string;
         net_cash_cny: string;

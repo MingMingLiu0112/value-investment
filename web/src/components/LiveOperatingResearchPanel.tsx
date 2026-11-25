@@ -352,14 +352,38 @@ export function ParentCashTaskValuationRead({
   );
 }
 
-function ParentCashTerminalFailure({ taskId }: { taskId: string }) {
+function ParentCashTerminalFailure({
+  taskId,
+  investingOnly = false,
+}: {
+  taskId: string;
+  investingOnly?: boolean;
+}) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+
+  const [investing, setInvesting] =
+    useState<
+      Awaited<
+        ReturnType<typeof api.parentCashTaskTerminalFailure>
+      >["observed_investing_cash"]
+    >();
 
   async function read() {
     setBusy(true);
     try {
       const task = await api.parentCashTaskTerminalFailure(taskId);
+      setInvesting(
+        task.task_id === taskId ? task.observed_investing_cash : undefined,
+      );
+      if (investingOnly) {
+        setMessage(
+          task.task_id === taskId && task.observed_investing_cash
+            ? ""
+            : "该任务没有可读取的母公司投资现金原件。",
+        );
+        return;
+      }
       const bridge = task.terminal_cash_failure;
       if (task.task_id !== taskId || bridge?.action !== "no_order") {
         setMessage("暂时无法核验这份终值拆解。");
@@ -406,9 +430,35 @@ function ParentCashTerminalFailure({ taskId }: { taskId: string }) {
   return (
     <>
       <Button loading={busy} onClick={() => void read()}>
-        查看终值现金拆解
+        {investingOnly ? "查看母公司投资现金" : "查看终值现金拆解"}
       </Button>
       {message && <p role="status">{message}</p>}
+      {investing?.classification === "SOURCE_NOT_REPLAYABLE" && (
+        <p role="status">母公司投资现金原件暂无法重放。</p>
+      )}
+      {investing?.classification === "HISTORICAL_STANDALONE_NOT_FORECAST" && (
+        <section aria-label="母公司投资现金">
+          <p>截至 {investing.period_end} 的母公司累计投资现金（元）</p>
+          <dl>
+            <dt>收回投资</dt>
+            <dd>{investing.recovered_cny}</dd>
+            <dt>投资支付</dt>
+            <dd>{investing.invested_cny}</dd>
+            <dt>本金收付净额</dt>
+            <dd>{investing.net_principal_cash_cny}</dd>
+            <dt>投资收益收现</dt>
+            <dd>{investing.cash_investment_income_cny}</dd>
+          </dl>
+          <p>以上为历史收付。未来可回收金额和现金分配能力仍须核验。</p>
+          <details>
+            <summary>原件页码与校验值</summary>
+            <p>
+              第 {investing.physical_pages.join("、")} 页 · SHA-256{" "}
+              <code>{investing.source_binding.sha256}</code>
+            </p>
+          </details>
+        </section>
+      )}
     </>
   );
 }
@@ -577,6 +627,10 @@ export function ParentCashTaskHistoryView({
                 item.error_code?.endsWith(
                   "_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION",
                 )) && <ParentCashTerminalFailure taskId={item.task_id} />}
+            {item.error_code ===
+              "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID" && (
+              <ParentCashTerminalFailure taskId={item.task_id} investingOnly />
+            )}
             {item.status === "SUCCEEDED" &&
               item.valuation_receipt_status === "BLOCKED" && (
                 <p>
