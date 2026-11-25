@@ -2,7 +2,7 @@
 import re
 import logging
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from itertools import islice
 from pathlib import Path
@@ -21,6 +21,46 @@ from .live_operating_research_routes import resolve_research_task_root
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
 from ...application.research.agent_review.parent_cash_task_v3 import ParentCashTaskServiceV3
+
+
+def _numbered_task_with_observed_investing_cash(service, task_id):
+    task = service.read(task_id)
+    if "spec_binding" not in task or task.get("error_code") in {
+            "PARENT_IMPLEMENTATION_CHANGED_REPLAY_REQUIRED", "PARENT_SOURCE_OR_CHECKPOINT_INVALID"}:
+        return task
+
+    from ...application.research.direct_owner_cash_staged_v3 import _load_spec
+    from ...application.research.parent_direct_owner_cash_sources import read_parent_direct_owner_cash_sources
+
+    spec = _load_spec(service.root, task["spec_binding"])
+    source = spec.get("quarterly_financing_source")
+    if source is None:
+        return task
+    try:
+        year = date.fromisoformat(spec["valuation_date"]).year + 1
+        period_end = f"{year}-09-30"
+        statement = read_parent_direct_owner_cash_sources(
+            root=service.root, symbol=spec["symbol"], issuer_name=spec["issuer_name"],
+            sources=[dict(path=source["path"], sha256=source["sha256"], period_end=period_end,
+                          available_at=source["acquired_at"])],
+            evaluated_at=datetime.now(timezone.utc),
+        )["statements"][0]
+        fields = statement["cash_flow"]
+        proceeds = fields["investment_recovery_cash_cny"]
+        payments = fields["investment_paid_cny"]
+        income = fields["investment_income_cash_cny"]
+        task["observed_investing_cash"] = dict(
+            classification="HISTORICAL_STANDALONE_NOT_FORECAST",
+            period_end=period_end, currency="CNY",
+            recovered_cny=proceeds["current"], invested_cny=payments["current"],
+            net_principal_cash_cny=str(Decimal(proceeds["current"]) - Decimal(payments["current"])),
+            cash_investment_income_cny=income["current"],
+            source_binding=statement["source_binding"],
+            physical_pages=sorted({row["physical_page"] for row in (proceeds, payments, income)}),
+        )
+    except (ValueError, TypeError, KeyError, OSError, ArithmeticError):
+        task["observed_investing_cash"] = dict(classification="SOURCE_NOT_REPLAYABLE")
+    return task
 
 
 def _comparison_quote(alignment):
@@ -421,8 +461,8 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
             primary_base = getattr(numbered_service, "base", None)
             if (primary_base is None or (Path(primary_base) / task_id).exists()
                     or archived_numbered_service is None):
-                return reply(numbered_service.read(task_id))
-            return reply(archived_numbered_service.read(task_id))
+                return reply(_numbered_task_with_observed_investing_cash(numbered_service, task_id))
+            return reply(_numbered_task_with_observed_investing_cash(archived_numbered_service, task_id))
         except (ValueError, TypeError, KeyError, OSError, PermissionError):
             return reply({"action": "no_order", "status": "PARENT_V3_TASK_UNAVAILABLE"}, 422)
 
