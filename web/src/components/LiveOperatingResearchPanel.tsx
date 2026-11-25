@@ -210,7 +210,20 @@ export function ParentCashTaskValuationRead({
       setValuation(value);
     } catch (cause) {
       if (controller.signal.aborted) return;
-      const status = cause instanceof ApiError ? cause.status : undefined;
+      const apiError = cause instanceof ApiError ? cause : undefined;
+      const status = apiError?.status;
+      if (
+        status === 409 &&
+        apiError?.code === "PARENT_TASK_VALUATION_BLOCKED"
+      ) {
+        const reason = apiError.detail;
+        setError(
+          typeof reason === "string" && /^[A-Z0-9_]{3,120}$/.test(reason)
+            ? `此任务的估值封存受阻（${reason}）。请在任务历史查看封存状态。`
+            : "此任务的估值封存受阻，请在任务历史查看封存状态。",
+        );
+        return;
+      }
       setError(
         status === 404
           ? "研究执行已结束，但还没有封存条件估值回执。请先查看该任务的研究结论与缺项；重新读取不会再次调用模型。"
@@ -245,6 +258,42 @@ export function ParentCashTaskValuationRead({
                 <li key={key}>
                   {label} · {row.per_share_value} 元/股 · {row.annual_years} 年
                   · 终值方法 {row.terminal_method}
+                  {!!row.annual_cash_path?.length && (
+                    <details>
+                      <summary>{label} · 年度股东现金路径</summary>
+                      <p>
+                        终值稳态年度分配 {row.terminal_steady_distribution_cny}{" "}
+                        元
+                      </p>
+                      <div style={{ overflowX: "auto" }}>
+                        <table>
+                          <caption>现金与权益预测（元）</caption>
+                          <thead>
+                            <tr>
+                              <th scope="col">年度</th>
+                              <th scope="col">母公司经营现金</th>
+                              <th scope="col">股东分配</th>
+                              <th scope="col">期末现金</th>
+                              <th scope="col">期末债务</th>
+                              <th scope="col">期末权益</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {row.annual_cash_path.map((year) => (
+                              <tr key={year.year}>
+                                <th scope="row">{year.year}</th>
+                                <td>{year.direct_operating_cash_cny}</td>
+                                <td>{year.total_owner_distribution_cny}</td>
+                                <td>{year.closing_cash_cny}</td>
+                                <td>{year.closing_debt_cny}</td>
+                                <td>{year.closing_book_equity_cny}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </details>
+                  )}
                 </li>
               );
             })}
@@ -253,6 +302,12 @@ export function ParentCashTaskValuationRead({
             <p>
               同口径收盘 {valuation.comparison_quote.close_cny} 元/股 ·{" "}
               {valuation.comparison_quote.trade_date}
+            </p>
+          )}
+          {!valuation.comparison_quote && valuation.qualified_close && (
+            <p>
+              已核验收盘 {valuation.qualified_close.close_cny} 元/股 ·{" "}
+              {valuation.qualified_close.trade_date} · 估值口径待核验
             </p>
           )}
           {valuation.alignment_status === "BLOCKED" && (

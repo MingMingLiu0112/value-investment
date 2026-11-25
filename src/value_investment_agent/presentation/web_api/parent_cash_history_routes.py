@@ -27,10 +27,19 @@ def _comparison_quote(alignment):
     if (alignment.get("status") != "ALIGNED_FOR_RESEARCH_COMPARISON"
             or alignment.get("currentpricecomparison") is not True):
         return None
-    quote = alignment["quote"]
+    quote = _qualified_close(alignment)
+    if quote is None:
+        raise ValueError("PARENT_TASK_ALIGNMENT_QUOTE_INVALID")
+    return quote
+
+
+def _qualified_close(alignment):
+    quote = alignment.get("quote")
+    if not quote or quote.get("status") != "QUALIFIED":
+        return None
     session = quote["quote_date"]
     amount = Decimal(quote["current_price"])
-    if (quote["status"] != "QUALIFIED" or session != quote["latest_completed_session"]
+    if (session != quote["latest_completed_session"]
             or date.fromisoformat(session).isoformat() != session
             or not amount.is_finite() or amount <= 0):
         raise ValueError("PARENT_TASK_ALIGNMENT_QUOTE_INVALID")
@@ -434,7 +443,9 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                     raise ValueError("PARENT_TASK_DUPLICATE_PUBLICATION_STATUS")
                 if blocked:
                     return reply(dict(status="PARENT_TASK_VALUATION_BLOCKED", action="no_order",
-                                      task_id=task_id, symbol=symbol, **blocked[0]), 409)
+                                      task_id=task_id, symbol=symbol,
+                                      reason=blocked[0]["valuation_blockage"]["reason_code"],
+                                      **blocked[0]), 409)
                 return reply(dict(status="PARENT_TASK_VALUATION_NOT_SEALED", action="no_order"), 404)
             if len(available) != 1:
                 raise ValueError("PARENT_TASK_DUPLICATE_VALUATION_RECEIPT")
@@ -452,13 +463,31 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
             valuations = result["valuation"]["assumptions"]["scenario_calculations"]
             scenarios = {name: dict(per_share_value=valuations[name]["per_share_value"],
                                     annual_years=len(valuations[name]["annual_rows"]),
-                                    terminal_method=valuations[name]["terminal_method"])
+                                    terminal_method=valuations[name]["terminal_method"],
+                                    terminal_steady_distribution_cny=(
+                                        valuations[name]["terminal_steady_distribution_cny"]),
+                                    annual_cash_path=[
+                                        dict(
+                                            year=row["year"],
+                                            direct_operating_cash_cny=row["direct_operating_cash_cny"],
+                                            closing_cash_cny=row["closing_cash_cny"],
+                                            closing_debt_cny=row["closing_debt_cny"],
+                                            closing_book_equity_cny=row["closing_book_equity_cny"],
+                                            total_owner_distribution_cny=(
+                                                row["total_owner_distribution_cny"]
+                                                if "total_owner_distribution_cny" in row
+                                                else row["conditional_distribution_cny"]
+                                            ),
+                                        )
+                                        for row in valuations[name]["annual_rows"]
+                                    ])
                          for name in ("bear", "base", "bull")}
             alignment = _align_verified_parent_cash_task(
                 root=task_root, receipt_binding=binding, result=result, now=now)
             comparison_quote = _comparison_quote(alignment)
             return reply(dict(status="VERIFIED_CONDITIONAL_VALUATION",
-                comparison_quote=comparison_quote, alignment_status=alignment["status"], alignment_reason_codes=alignment["reason_codes"],
+                comparison_quote=comparison_quote, qualified_close=_qualified_close(alignment),
+                alignment_status=alignment["status"], alignment_reason_codes=alignment["reason_codes"],
                 task_id=task_id, symbol=symbol, valuation_date=result["descriptor"]["point_in_time"]["valuation_date"],
                 scenarios=scenarios, receipt_sha256=binding["sha256"],
                 input_descriptor_sha256=result["input_descriptor_sha256"], action="no_order",

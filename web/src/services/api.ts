@@ -1910,6 +1910,15 @@ export interface ParentCashTaskValuation {
       per_share_value: string;
       annual_years: number;
       terminal_method: string;
+      terminal_steady_distribution_cny?: string;
+      annual_cash_path?: {
+        year: number;
+        direct_operating_cash_cny: string;
+        total_owner_distribution_cny: string;
+        closing_cash_cny: string;
+        closing_debt_cny: string;
+        closing_book_equity_cny: string;
+      }[];
     }
   >;
   input_descriptor_sha256: string;
@@ -1918,6 +1927,7 @@ export interface ParentCashTaskValuation {
   formal_eligibility: false;
   current_comparable: boolean;
   comparison_quote: { trade_date: string; close_cny: string } | null;
+  qualified_close?: { trade_date: string; close_cny: string } | null;
   condition_price: null;
   alignment_status?: string;
   alignment_reason_codes?: string[];

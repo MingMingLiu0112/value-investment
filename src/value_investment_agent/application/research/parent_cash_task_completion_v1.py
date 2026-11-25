@@ -168,6 +168,14 @@ def run_and_seal_parent_cash_task(service, task_id):
     seal_completed_parent_cash_task(service, task_id)
 
 
+def _verify_publication(root, binding, *, task_id, head, now):
+    replay = replay_task_receipt(root=root, receipt_binding=binding, now=now)
+    provenance = replay["provenance"]
+    if (provenance["task_id"] != task_id or provenance["task_record_binding"] != head
+            or replay["action"] != "no_order" or replay["formal_eligibility"] is not False):
+        raise ValueError("PARENT_TASK_BUILT_RECEIPT_IDENTITY_MISMATCH")
+
+
 def seal_completed_parent_cash_task(service, task_id):
     """Retry only deterministic publication, even if task state has changed."""
     root = Path(service.root).resolve()
@@ -178,26 +186,29 @@ def seal_completed_parent_cash_task(service, task_id):
         if state["status"] != "SUCCEEDED" or spec["mode"] != "LIVE_PARENT_CASH_V3":
             return
         retained = valuation_receipt_path(root, task_id)
-        if retained.exists():
-            return
         try:
+            if spec.get("gross_capex_plan_binding") is not None:
+                raise ValueError("GROSS_CAPEX_E2_ONLY_LEGACY_PUBLICATION_BLOCKED")
+            now = datetime.now(timezone.utc)
+            if retained.exists():
+                if not retained.is_file() or retained.stat().st_size > 64 * 1024:
+                    raise ValueError("PARENT_TASK_RETAINED_RECEIPT_INVALID")
+                binding = dict(path=retained.relative_to(root).as_posix(),
+                               sha256=sha256(retained.read_bytes()).hexdigest())
+                _verify_publication(root, binding, task_id=task_id, head=head, now=now)
+                return
             case_binding, binding = preflight_parent_cash_task(service, spec["spec_binding"])
             retained.parent.mkdir(parents=True, exist_ok=True)
             attempt = Path(mkdtemp(prefix="valuation-attempt-", dir=retained.parent)) / "sealed"
             options = {} if binding is None else {"distribution_binding": binding}
             builder = build_parent_cash_task_receipt if binding is None else build_distribution_receipt
-            now = datetime.now(timezone.utc)
             built = builder(
                 **options,
                 root=root, task_id=task_id, task_head=head, case_package_binding=case_binding,
                 output_dir=attempt, now=now,
             )
             built_path = require_inside(attempt, root / built["path"], "built parent cash receipt")
-            replay = replay_task_receipt(root=root, receipt_binding=built, now=now)
-            provenance = replay["provenance"]
-            if (provenance["task_id"] != task_id or provenance["task_record_binding"] != head
-                    or replay["action"] != "no_order" or replay["formal_eligibility"] is not False):
-                raise ValueError("PARENT_TASK_BUILT_RECEIPT_IDENTITY_MISMATCH")
+            _verify_publication(root, built, task_id=task_id, head=head, now=now)
             with service._lock(directory):
                 _, current_state, current_head = service._load(task_id)
                 if current_state["status"] != "SUCCEEDED" or current_head != head:

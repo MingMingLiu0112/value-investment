@@ -2098,6 +2098,55 @@ it("reads only on click and shows exact reported values and evidence", async () 
     expect(shown).toContain(field);
 });
 
+it("shows the receipt's annual cash and terminal distribution without rounding", async () => {
+  calls.parentCashValuation.mockResolvedValue({
+    ...valuationReceipt,
+    scenarios: {
+      ...valuationReceipt.scenarios,
+      base: {
+        ...valuationScenario,
+        terminal_steady_distribution_cny: "612345678.012345",
+        annual_cash_path: [
+          {
+            year: 2027,
+            direct_operating_cash_cny: "3123456789.012345",
+            total_owner_distribution_cny: "1234567890.012345",
+            closing_cash_cny: "54321.012345",
+            closing_debt_cny: "987654321.012345",
+            closing_book_equity_cny: "2876543210.012345",
+          },
+        ],
+      },
+    },
+  });
+  await readValuation();
+  const shown = JSON.stringify(renderValuation());
+  for (const text of [
+    "年度股东现金路径",
+    "612345678.012345",
+    "3123456789.012345",
+    "1234567890.012345",
+    "987654321.012345",
+    "2876543210.012345",
+  ])
+    expect(shown).toContain(text);
+});
+
+it("shows an independently verified quote without claiming comparability", async () => {
+  calls.parentCashValuation.mockResolvedValue({
+    ...valuationReceipt,
+    alignment_status: "BLOCKED",
+    alignment_reason_codes: ["TEST_MISSING_SHARE_BASIS"],
+    qualified_close: { trade_date: "2026-11-25", close_cny: "33.58" },
+  });
+  await readValuation();
+  const shown = JSON.stringify(renderValuation());
+  expect(shown).toContain("已核验收盘");
+  expect(shown).toContain("33.58");
+  expect(shown).toContain("TEST_MISSING_SHARE_BASIS");
+  expect(shown).not.toContain("同口径收盘");
+});
+
 it("shows the aligned closing quote without granting formal eligibility", async () => {
   calls.parentCashValuation.mockResolvedValue({
     ...valuationReceipt,
@@ -2118,6 +2167,14 @@ it.each([
     "研究执行已结束，但还没有封存条件估值回执",
   ],
   [new ApiError(422, "UNVERIFIED", null), "无法通过核验"],
+  [
+    new ApiError(
+      409,
+      "PARENT_TASK_VALUATION_BLOCKED",
+      "PARENT_TASK_CASE_BINDING_REQUIRED",
+    ),
+    "此任务的估值封存受阻（PARENT_TASK_CASE_BINDING_REQUIRED）",
+  ],
   [{ ...valuationReceipt, symbol: "000568" }, "响应无法核验"],
   [{ ...valuationReceipt, current_comparable: true }, "响应无法核验"],
 ])(

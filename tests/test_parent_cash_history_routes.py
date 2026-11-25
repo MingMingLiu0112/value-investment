@@ -527,6 +527,66 @@ def test_valuation_comparison_requires_shared_f2_and_latest_qualified_quote(
     else:
         assert routes._comparison_quote(alignment) == expected
 
+@pytest.mark.parametrize("scheduled", [False, True])
+def test_verified_valuation_api_preserves_annual_cash_and_total_distribution(
+    tmp_path, monkeypatch, scheduled,
+):
+    from value_investment_agent.application.research import parent_cash_task_alignment_v3
+    from value_investment_agent.application.research import parent_cash_task_distribution_receipt_v1
+
+    task_id = "rt-" + "e" * 32
+    receipt_path = routes.valuation_receipt_path(tmp_path, task_id)
+    receipt_path.parent.mkdir(parents=True)
+    receipt_path.write_bytes(b"fixture validated by replay stub")
+    row = dict(year=2027, direct_operating_cash_cny="100.001", closing_cash_cny="40.123",
+               closing_debt_cny="12.345", closing_book_equity_cny="60.987",
+               conditional_distribution_cny="2.10")
+    if scheduled:
+        row["total_owner_distribution_cny"] = "5.75"
+    scenario = dict(per_share_value="10.12", annual_rows=[row], terminal_method="stationary",
+                    terminal_steady_distribution_cny="9.876")
+
+    def replay(**kwargs):
+        assert kwargs["root"] == tmp_path
+        return dict(
+            symbol="600887", provenance=dict(task_id=task_id), action="no_order",
+            formal_eligibility=False, main_range_adopted=False,
+            descriptor=dict(point_in_time=dict(valuation_date="2025-12-31")),
+            input_descriptor_sha256="a" * 64,
+            valuation=dict(assumptions=dict(scenario_calculations=dict.fromkeys(
+                ("bear", "base", "bull"), scenario))),
+        )
+
+    monkeypatch.setattr(parent_cash_task_distribution_receipt_v1, "replay", replay)
+    monkeypatch.setattr(parent_cash_task_alignment_v3, "_align_verified_parent_cash_task",
+                        lambda **_: dict(status="BLOCKED", reason_codes=["TEST_MISSING_SHARE_BASIS"],
+                            quote=dict(status="QUALIFIED", quote_date="2026-11-25",
+                                       current_price="33.58", latest_completed_session="2026-11-25")))
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda _: tmp_path)
+    monkeypatch.setattr(routes, "authorize", lambda *args, **kwargs: None)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=0)
+    response = TestClient(app).get(
+        f"/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/valuation",
+        params=dict(symbol="600887"),
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["condition_price"] is None
+    assert payload["formal_eligibility"] is False
+    assert payload["alignment_reason_codes"] == ["TEST_MISSING_SHARE_BASIS"]
+    assert payload["current_comparable"] is False
+    assert payload["qualified_close"] == {"trade_date": "2026-11-25", "close_cny": "33.58"}
+    assert payload["comparison_quote"] is None
+    for value in payload["scenarios"].values():
+        assert value["terminal_steady_distribution_cny"] == "9.876"
+        assert value["annual_cash_path"] == [{
+            "year": 2027, "direct_operating_cash_cny": "100.001", "closing_cash_cny": "40.123",
+            "closing_debt_cny": "12.345", "closing_book_equity_cny": "60.987",
+            "total_owner_distribution_cny": "5.75" if scheduled else "2.10",
+        }]
+
+
 @pytest.mark.parametrize(("case", "expected"), [
     ("inherited", 202),
     ("direct", 202),

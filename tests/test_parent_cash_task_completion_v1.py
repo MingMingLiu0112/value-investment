@@ -142,7 +142,6 @@ def test_successful_unsealed_task_explicitly_rejects_missing_bindings(setup, mon
 def _mock_verified_replay(x):
     def replay(*, root, receipt_binding, now):
         assert (root / receipt_binding["path"]).is_file()
-        assert not completion.valuation_receipt_path(root, x["task_id"]).exists()
         head = x["Service"]()._load(x["task_id"])[2]
         return dict(provenance=dict(task_id=x["task_id"], task_record_binding=head),
                     action="no_order", formal_eligibility=False)
@@ -206,6 +205,27 @@ def test_publication_failure_retries_distribution_builder_and_is_idempotent(setu
     assert path.read_bytes() == retained
     assert len(attempts) == 2
     assert attempts[0]["output_dir"] != attempts[1]["output_dir"]
+
+
+def test_seal_retry_does_not_accept_or_overwrite_a_corrupt_retained_receipt(setup, monkeypatch):
+    x = setup
+    path = completion.valuation_receipt_path(x["tmp_path"], x["task_id"])
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b"damaged immutable receipt")
+
+    def reject(**kwargs):
+        assert kwargs["receipt_binding"]["path"] == path.relative_to(x["tmp_path"]).as_posix()
+        raise ValueError("PARENT_TASK_RECEIPT_COLD_REPLAY_CHANGED")
+
+    monkeypatch.setattr(completion, "replay_task_receipt", reject)
+    monkeypatch.setattr(completion, "build_distribution_receipt",
+                        lambda **_: pytest.fail("must preserve original receipt"))
+    with pytest.raises(ValueError, match="PARENT_TASK_RECEIPT_COLD_REPLAY_CHANGED"):
+        completion.seal_completed_parent_cash_task(x["Service"](), x["task_id"])
+    assert path.read_bytes() == b"damaged immutable receipt"
+    failure = json.loads(completion.valuation_blockage_path(
+        x["tmp_path"], x["task_id"]).read_bytes())
+    assert failure["reason_code"] == "PARENT_TASK_RECEIPT_COLD_REPLAY_CHANGED"
 
 
 def test_exact_historical_spec_is_not_replaced_by_active_company_spec(setup):
@@ -295,6 +315,7 @@ def test_blockage_survives_api_restart_and_gets_are_read_only(setup, monkeypatch
         assert response.status_code == 409
         assert response.json()["status"] == "PARENT_TASK_VALUATION_BLOCKED"
         assert response.json()["valuation_blockage"]["reason_code"] == reason
+        assert response.json()["reason"] == reason
         assert client.get(url, params=dict(symbol="000568")).status_code == 422
     assert snapshot() == before
     assert x["calls"] == calls
