@@ -1694,6 +1694,11 @@ def test_sse_closing_value_corroboration_requires_same_day_and_integral_shares(t
                    read=lambda ref: _bound(tmp_path, ref))
     result = service._market_value_share_corroboration(binding, **options)
     assert result["share_count"] == 6325360667
+    assert service._market_value_share_corroboration(
+        binding, **options, qualified_close=Decimal("32.9100"),
+    )["share_count"] == 6325360667
+    with pytest.raises(ValueError, match="SSE_CLOSING_VALUE_CONFLICTS_WITH_QUALIFIED_CLOSE"):
+        service._market_value_share_corroboration(binding, **options, qualified_close=Decimal("32.90"))
     assert not result["exact_registry_count"] and not result["continuity_verified"]
     with pytest.raises(ValueError, match="SSE_CLOSING_VALUE_SOURCE_OR_CLOCK_INVALID"):
         service._market_value_share_corroboration(

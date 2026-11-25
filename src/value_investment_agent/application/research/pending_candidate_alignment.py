@@ -672,7 +672,7 @@ def _attach_confirmed_unlock_facts(reconciliation, windows, capital_events):
             facts["reason_codes"].remove(unresolved)
 
 
-def _market_value_share_corroboration(binding, *, symbol, comparison_date, now, read):
+def _market_value_share_corroboration(binding, *, symbol, comparison_date, now, read, qualified_close=None):
     """Replay closing market-value arithmetic without certifying registered capital."""
     from fractions import Fraction
 
@@ -703,6 +703,8 @@ def _market_value_share_corroboration(binding, *, symbol, comparison_date, now, 
             or not all(isinstance(value, Decimal) and value.is_finite() and value > 0
                        for value in (snap[1], snap[5]))):
         raise ValueError("SSE_CLOSING_VALUE_FIELDS_INVALID")
+    if qualified_close is not None and snap[1] != qualified_close:
+        raise ValueError("SSE_CLOSING_VALUE_CONFLICTS_WITH_QUALIFIED_CLOSE")
     implied = Fraction(snap[5]) / Fraction(snap[1])
     if implied.denominator != 1:
         raise ValueError("SSE_CLOSING_VALUE_SHARE_COUNT_NOT_INTEGRAL")
@@ -713,7 +715,7 @@ def _market_value_share_corroboration(binding, *, symbol, comparison_date, now, 
 
 
 def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), *,
-               closing_export=None, verified_pdf_pages=None):
+               closing_export=None, verified_pdf_pages=None, qualified_close=None):
     """Replay source-anchored public research arithmetic, never approve materiality.
 
     Unknown opening pending state/closing shares remain explicit gaps. Every
@@ -1249,6 +1251,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
     if (market_binding := ledger.get("closing_market_value_observation")) is not None:
         market_value_capital = _market_value_share_corroboration(
             market_binding, symbol=analysis["symbol"], comparison_date=end, now=now, read=read,
+            qualified_close=qualified_close,
         )
         consistent = market_value_capital["share_count"] == total
         market_value_capital["rollforward_matches"] = consistent
@@ -2422,7 +2425,8 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
             try:
                 reconciliation = _reconcile(root, analysis, config["reconciliation_binding"],
                     quote.quote_date, windows, now, read, source_windows, closing_export=closing_export,
-                    verified_pdf_pages=reconciliation_pages)
+                    verified_pdf_pages=reconciliation_pages,
+                    qualified_close=quote.current_price if result["quote"]["status"] == "QUALIFIED" else None)
             except (OSError, ValueError, TypeError, KeyError, AttributeError, ArithmeticError) as error:
                 reconciliation_error = "RECONCILIATION_REPLAY_FAILED: " + str(error)
         materiality, materiality_route = None, None
@@ -2575,7 +2579,8 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
                 raise ValueError("EVENTS_CHANGED_DURING_ALIGNMENT")
         if reconciliation is not None:
             again = _reconcile(root, analysis, config["reconciliation_binding"], quote.quote_date, windows, now, read, source_windows, closing_export=closing_export,
-                    verified_pdf_pages=reconciliation_pages)
+                    verified_pdf_pages=reconciliation_pages,
+                    qualified_close=quote.current_price if result["quote"]["status"] == "QUALIFIED" else None)
             if again != reconciliation:
                 raise ValueError("RECONCILIATION_CHANGED_DURING_ALIGNMENT")
         if source_windows:
