@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "5ae9eb85ad3326823ef13c41837896967ee87e4575e117f6c42318a04e3ae02f"
+REVIEWED_CAPITAL_SERVICE = "a133a0d5692916e78bf65fd988aaed44c0dd9b3f03366018bb06172893355700"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -204,6 +204,67 @@ def _terminal_parent_cash_history(root, binding, valuation_date):
                 classification="HISTORICAL_DIAGNOSTIC_NOT_FORECAST")
 
 
+def _terminal_payout_conditions(root, context):
+    """Read policy text separately from the financial ability to distribute."""
+    from .. import parent_direct_owner_cash_sources as parent
+    from ....infrastructure.filings.pdf_text import extract_pages
+
+    rules = (context.get("constraints") or {}).get("charter_rules", ())
+    matches = [rule for rule in rules if rule["field"] == "cash_distribution_conditions"]
+    if len(matches) != 1:
+        return None
+    rule = matches[0]
+    ref = rule["source_refs"]
+    path, _ = parent._bound(root, ref)
+    page = parent._compact(extract_pages(path, limit=ref["physical_page"])[-1])
+    start = "3、现金分红比例"
+    end = "当年未分配的可分配利润"
+    if page.count(start) != 1 or page.count(end) != 1 or page.index(start) >= page.index(end):
+        return None
+    return dict(
+        source_ref=ref, conditions=rule["text"], excerpt=page[page.index(start):page.index(end)],
+        classification="ISSUER_POLICY_CONDITIONAL_NOT_DISTRIBUTION_CAPACITY",
+    )
+
+
+def _historical_mixed_financing_cash(root, context):
+    """Identify a parent cash remainder only when actual dividends are explicit."""
+    from .. import parent_direct_owner_cash_sources as parent
+    from ....infrastructure.filings.pdf_text import extract_pages
+
+    as_of = context["valuation_date"]
+    candidates = [row for row in context["parent_operating_cash_observations"]
+                  if row["period_end"] == as_of and row["scope"] == parent.SCOPE]
+    if len(candidates) != 1 or not as_of.endswith("-12-31"):
+        return None
+    ref = candidates[0]["source_refs"]["cfo"]
+    path, _ = parent._bound(root, ref)
+    pages = extract_pages(path)
+    scope = parent._statement(pages, "母公司现金流量表", context["issuer_name"], as_of)
+    row, _ = parent._row(scope, "分配股利、利润或偿付利息支付的现金")
+    if row is None:
+        return None
+    year = int(as_of[:4])
+    pattern = rf"派发{year - 1}年度及{year}年度中期现金红利([0-9,]+\.[0-9]{{2}})元"
+    paid = [(index, match) for index, page in enumerate(pages[:8], 1)
+            for match in re.findall(pattern, parent._compact(page))]
+    if len(paid) != 1:
+        return None
+    page, amount = paid[0]
+    dividends = Decimal(amount.replace(",", ""))
+    combined = Decimal(row["current"])
+    if not 0 < dividends <= combined:
+        return None
+    return dict(
+        classification="HISTORICAL_MIXED_OUTFLOW_RESIDUAL_NOT_INTEREST",
+        period_end=as_of, scope=parent.SCOPE, currency="CNY",
+        combined_cny=str(combined), paid_dividends_cny=str(dividends),
+        unallocated_cash_cny=str(combined - dividends),
+        source_refs=[dict(ref, physical_page=row["physical_page"], excerpt=row["excerpt"]),
+                     dict(ref, physical_page=page)],
+    )
+
+
 class ParentCashTaskServiceV3(ResearchTaskService):
     def __init__(self, root, *, test_provider=None):
         super().__init__(root)
@@ -241,6 +302,14 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "80455330ada22a50ee3697fec6e2b60bc21d6b1b1fd9d30eacc293011eb8700b",
+            "bc2b20d76b2e0e4c13d1cbde170b5a71522cba42806d80be73ec6c847a6dc685",
+            "02a30c3d31108e788a59522048030382a78a9af490caef41666aba40455841df",
+            "047d13c99feafb6018581eeebfd0c36972347fc187feb128d66be01576419d43",
+            "03f3112ccc345b17ae412cf13da0917a4ded522adfafe56f82d297e7ee77b366",
+            "cd6c6875169bf619127033ae287fa39b452355b356979104ba92edb6e581023d",
+            "8b36596f81729ac0fa0143ec616ed5be292b4ca07ecdc783cd0bbabdc04d7566",
+            "9710bc16c15019381b1c8b00dc15ad9c8d61522613ec99b404f26bdd3b4b4458",
             "0af5902a856d40207a67a6b8f497f8743442f561be80bb4c19d88adbc6c597bd",
             "2fb338ef74e4fedad865e16241955abc5b8afb9c6c51e0789123768b7d782ec1",
             "cc327715c9d00117159fc798a9bfb4da2ccb049fb987f8b20d34823340b26077",
@@ -817,6 +886,18 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             return terminal_wire.terminal_wire_request(request)
         return request
 
+    @staticmethod
+    def _preflight_terminal(spec, request, parsed):
+        preflight_terminal_forecast_debt_v3(request=request, parsed_stage=parsed)
+        if spec.get("terminal_distribution_preflight") is not True:
+            return
+        policy = parsed["terminal"]["policy"]
+        profit = Decimal(policy["parent_profit"]["values"][0])
+        payout = Decimal(policy["payout_ratio"]["values"][0])
+        reserve = Decimal(policy["reserve_ratio"]["values"][0])
+        if min(profit, payout, 1 - reserve) <= 0:
+            raise ValueError("PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION")
+
     def _parse_stage(self, spec, stage, response, request, source_fingerprint):
         parse = (operating_wire.parse_operating_wire
                  if stage == "operating" and operating_wire.__name__ in spec["implementation_sha256"]
@@ -986,7 +1067,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 LLMResponse(**packet["response"]), request=request,
                 source_fingerprint=context["input_fingerprint"])
             if stage == "terminal":
-                preflight_terminal_forecast_debt_v3(request=request, parsed_stage=parsed)
+                self._preflight_terminal(spec, request, parsed)
             outputs[scenario][stage] = parsed
         return outputs
 
@@ -1101,7 +1182,15 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             no_receipts = values["operating_cash"] + values["new_borrowing"] - sum(
                 values[field] for field in required)
             net = no_receipts + values["investment_cash_received"]
+            payout_ratio = Decimal(policy["payout_ratio"]["values"][0])
+            reserve_ratio = Decimal(policy["reserve_ratio"]["values"][0])
+            profit = values["parent_profit"]
+            steady_upper_bound = min(profit * payout_ratio, net, profit * (1 - reserve_ratio))
             return dict(
+                payout_conditions=_terminal_payout_conditions(self.root, context),
+                historical_mixed_financing_cash=_historical_mixed_financing_cash(self.root, context),
+                payout_ratio=str(payout_ratio),
+                stationary_distribution_upper_bound_cny=str(steady_upper_bound),
                 classification="REJECTED_FORECAST_DIAGNOSTIC_NOT_VALUATION",
                 scenario=scenario, currency="CNY", action="no_order",
                 request_sha256=packet["request_sha256"], policy_cny={k: str(v) for k,v in values.items()},
@@ -1234,6 +1323,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     and old_state.get("error_code") ==
                     "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"):
                 trial_spec["base_terminal_history_wire"] = True
+            trial_spec["terminal_distribution_preflight"] = old_spec.get("terminal_distribution_preflight", False)
             if "base_cash_transition_wire" in old_spec:
                 trial_spec["base_cash_transition_wire"] = old_spec["base_cash_transition_wire"]
             if (replay_from_stage == "base.operating"
@@ -1327,6 +1417,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
             implementation_sha256=_implementation(), policy_capital_basis=capital_basis,
             created_at=seed_created_at, action="no_order")
         if seed is None:
+            if self.test_provider is None:
+                spec["terminal_distribution_preflight"] = True
             spec["operating_series_wire"] = "INPUTS_ONLY_V2"
             if any(row["source"].get("redemption_wire") == "MULTI_LAYOUT_V1"
                    for row in (context.get("annual_paid_note_interest_floor") or {}).get("evidence", ())):
@@ -1357,6 +1449,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 spec["bear_financing_wire"] = trial_spec["bear_financing_wire"]
             if trial_spec.get("base_terminal_history_wire") is True:
                 spec["base_terminal_history_wire"] = True
+            if trial_spec.get("terminal_distribution_preflight") is True:
+                spec["terminal_distribution_preflight"] = True
             if "base_cash_transition_wire" in trial_spec:
                 spec["base_cash_transition_wire"] = trial_spec["base_cash_transition_wire"]
             if "base_operating_wire" in trial_spec:
@@ -1570,7 +1664,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     parsed_stage = self._parse_stage(spec, stage, response, request=request,
                         source_fingerprint=spec["source_fingerprint"])
                     if stage == "terminal":
-                        preflight_terminal_forecast_debt_v3(request=request, parsed_stage=parsed_stage)
+                        self._preflight_terminal(spec, request, parsed_stage)
                     with self._lock(directory):
                         spec, state, binding = self._load(task_id)
                         if state["status"] == "CANCELLED":

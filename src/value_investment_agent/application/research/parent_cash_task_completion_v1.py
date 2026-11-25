@@ -156,9 +156,12 @@ def _distribution_binding(entry, research_spec):
 
 
 def run_and_seal_parent_cash_task(service, task_id):
-    service.run(task_id)
     root = Path(service.root).resolve()
     directory = service._directory(task_id)
+    with service._lock(directory):
+        _, state, _ = service._load(task_id)
+    if state["status"] != "SUCCEEDED":
+        service.run(task_id)
     with service._lock(directory, "valuation-publication"):
         with service._lock(directory):
             spec, state, head = service._load(task_id)

@@ -57,6 +57,7 @@ def test_successful_task_publishes_a_single_receipt_after_run(tmp_path, monkeypa
     head = {"path": "runtime/head.json", "sha256": "c" * 64}
     status = "SUCCEEDED"
     calls = []
+    worker_calls = []
 
     class Service:
         root = tmp_path
@@ -69,7 +70,7 @@ def test_successful_task_publishes_a_single_receipt_after_run(tmp_path, monkeypa
                         schema_version="m1-valuation-package-v2", research_case=dict(symbol="000568"))
 
         def run(self, identifier):
-            assert identifier == task_id
+            worker_calls.append(identifier)
 
         def _directory(self, identifier):
             return tmp_path / identifier
@@ -92,6 +93,10 @@ def test_successful_task_publishes_a_single_receipt_after_run(tmp_path, monkeypa
     with pytest.raises(ValueError, match="PARENT_TASK_CASE_BINDING_REQUIRED"):
         completion.run_and_seal_parent_cash_task(Service(), task_id)
     assert not calls
+    assert not worker_calls
+    failed = completion.read_valuation_publication(tmp_path, task_id, head)
+    assert failed["valuation_receipt_status"] == "BLOCKED"
+    assert failed["valuation_blockage"]["reason_code"] == "PARENT_TASK_CASE_BINDING_REQUIRED"
     registry = tmp_path / "config" / "parent-cash-task-case-bindings-v1.json"
     registry.parent.mkdir()
     registry.write_text(json.dumps({
@@ -109,3 +114,8 @@ def test_successful_task_publishes_a_single_receipt_after_run(tmp_path, monkeypa
     assert path.read_bytes() == b"complete"
     completion.run_and_seal_parent_cash_task(Service(), task_id)
     assert calls == [head]
+    assert worker_calls == [task_id]  # The cancelled fixture alone entered the worker.
+    assert completion.read_valuation_publication(tmp_path, task_id, head) == {
+        "valuation_receipt_status": "SEALED_REPLAY_REQUIRED",
+        "valuation_blockage": None,
+    }

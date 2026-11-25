@@ -74,7 +74,7 @@ def test_numbered_parent_cash_task_api_runs_only_on_explicit_post(tmp_path, monk
         def read(self, value):
             calls.append(("read", value))
             return {"task_id": value, "status": "SUCCEEDED", "action": "no_order",
-                    "formal_eligibility": False, "main_range_adopted": False}
+                    "mode": "LIVE_PARENT_CASH_V3", "formal_eligibility": False, "main_range_adopted": False}
 
         def cancel(self, value):
             calls.append(("cancel", value))
@@ -100,6 +100,16 @@ def test_numbered_parent_cash_task_api_runs_only_on_explicit_post(tmp_path, monk
     assert client.post(f"{path}/{task_id}/cancel").json()["status"] == "CANCELLED"
     assert client.post(f"{path}/{task_id}/resume").json()["status"] == "QUEUED"
     assert calls[-2:] == [("resume", task_id), ("run", task_id)]
+    sealed = client.post(f"{path}/{task_id}/seal")
+    assert sealed.status_code == 202
+    assert sealed.json() == dict(status="VALUATION_SEAL_REQUESTED", task_id=task_id, action="no_order")
+    assert calls[-2:] == [("read", task_id), ("run", task_id)]
+    monkeypatch.setattr(NumberedService, "read", lambda *_: {
+        "status": "FAILED", "mode": "LIVE_PARENT_CASH_V3",
+    })
+    before = list(calls)
+    assert client.post(f"{path}/{task_id}/seal").status_code == 409
+    assert calls == before
     assert client.post(path, json={"request_key": "x", "extra": 1}).status_code == 422
     assert client.get(f"{path}/invalid").status_code == 422
 

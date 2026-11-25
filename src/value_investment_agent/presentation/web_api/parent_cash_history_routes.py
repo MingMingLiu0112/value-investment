@@ -412,7 +412,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         error = denied(request)
         if error is not None:
             return error
-        if not re.fullmatch(r"rt-[0-9a-f]{32}", task_id) or operation not in {"cancel", "resume"}:
+        if not re.fullmatch(r"rt-[0-9a-f]{32}", task_id) or operation not in {"cancel", "resume", "seal"}:
             return reply({"action": "no_order", "status": "INVALID_TASK_CONTROL"}, 422)
         primary_base = getattr(numbered_service, "base", None)
         if (primary_base is not None and archived_numbered_service is not None
@@ -420,6 +420,12 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 and (archived_numbered_service.base / task_id).exists()):
             return reply({"action": "no_order", "status": "ARCHIVED_TASK_READ_ONLY"}, 422)
         try:
+            if operation == "seal":
+                task = numbered_service.read(task_id)
+                if task["status"] != "SUCCEEDED" or task.get("mode") != "LIVE_PARENT_CASH_V3":
+                    return reply(dict(status="PARENT_TASK_LIVE_SUCCESS_REQUIRED", action="no_order"), 409)
+                background.add_task(run_numbered, task_id)
+                return reply(dict(status="VALUATION_SEAL_REQUESTED", task_id=task_id, action="no_order"), 202)
             task = (numbered_service.cancel(task_id) if operation == "cancel"
                     else numbered_service.resume(task_id))
             if operation == "resume" and task["status"] in {"QUEUED", "SUCCEEDED"}:

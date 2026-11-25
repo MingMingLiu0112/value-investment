@@ -327,6 +327,24 @@ export function ParentCashTaskHistoryView({
 }) {
   const [history, setHistory] = useState<ParentCashTaskHistory>();
   const [error, setError] = useState(false);
+  const [sealing, setSealing] = useState<string>();
+  const [sealMessage, setSealMessage] = useState("");
+  const [revision, setRevision] = useState(0);
+
+  async function seal(taskId: string) {
+    setSealing(taskId);
+    setSealMessage("");
+    try {
+      const result = await api.sealParentCashTaskValuation(taskId);
+      if (result.task_id !== taskId || result.action !== "no_order" ||
+          result.status !== "VALUATION_SEAL_REQUESTED") throw new Error("Invalid seal receipt");
+      setSealMessage("已请求重新封存同一任务。刷新任务历史查看结果。");
+    } catch {
+      setSealMessage("封存请求未受理，请检查本机授权及任务状态。");
+    } finally {
+      setSealing(undefined);
+    }
+  }
   useEffect(() => {
     let active = true;
     setHistory(undefined);
@@ -342,7 +360,7 @@ export function ParentCashTaskHistoryView({
     return () => {
       active = false;
     };
-  }, [symbol]);
+  }, [symbol, revision]);
   return (
     <section aria-label="母公司现金任务历史">
       <h4>母公司现金任务历史 · 非正式研究</h4>
@@ -352,6 +370,10 @@ export function ParentCashTaskHistoryView({
         实际使用仍需核验，不构成正式结论或下单依据。
       </p>
       {error && <p>任务历史暂不可读取。</p>}
+      {sealMessage && <p role="status">{sealMessage}</p>}
+      <Button onClick={() => setRevision((value) => value + 1)}>
+        刷新现金任务历史
+      </Button>
       {history?.items.length === 0 && <p>暂无相关记录。</p>}
       {history?.items.map((item) => {
         const rebuildInterest =
@@ -418,6 +440,19 @@ export function ParentCashTaskHistoryView({
             {item.status === "SUCCEEDED" &&
               item.valuation_receipt_status === "NOT_SEALED" && (
                 <p>研究已执行完成，估值回执尚未封存。</p>
+              )}
+            {item.task_contract === "parent-cash-task-v3" &&
+              !item.read_only_archive &&
+              item.status === "SUCCEEDED" &&
+              (item.valuation_receipt_status === "BLOCKED" ||
+                item.valuation_receipt_status === "NOT_SEALED") && (
+                <Button
+                  loading={sealing === item.task_id}
+                  disabled={Boolean(sealing)}
+                  onClick={() => void seal(item.task_id)}
+                >
+                  重试封存估值
+                </Button>
               )}
             {history.symbol === symbol &&
               item.task_contract === "parent-cash-task-v3" &&

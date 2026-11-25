@@ -2306,6 +2306,13 @@ export const api = {
         action: "no_order";
       };
     }>("operating-research/parent-cash-tasks/v3/" + encodeURIComponent(taskId)),
+  sealParentCashTaskValuation: (taskId: string) =>
+    post<{ status: string; task_id: string; action: "no_order" }>(
+      "operating-research/parent-cash-tasks/v3/" +
+        encodeURIComponent(taskId) +
+        "/seal",
+      {},
+    ),
   parentCashTaskHistory: (symbol: string, signal?: AbortSignal) =>
     getPrivate<ParentCashTaskHistory>(
       "operating-research/parent-cash-tasks/history?symbol=" +
