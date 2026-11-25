@@ -139,6 +139,39 @@ def test_successful_unsealed_task_explicitly_rejects_missing_bindings(setup, mon
     assert publication["valuation_blockage"]["reason_code"] == error
 
 
+def _mock_verified_replay(x):
+    def replay(*, root, receipt_binding, now):
+        assert (root / receipt_binding["path"]).is_file()
+        assert not completion.valuation_receipt_path(root, x["task_id"]).exists()
+        head = x["Service"]()._load(x["task_id"])[2]
+        return dict(provenance=dict(task_id=x["task_id"], task_record_binding=head),
+                    action="no_order", formal_eligibility=False)
+    return replay
+
+
+def test_invalid_cold_replay_leaves_no_published_valuation(setup, monkeypatch):
+    x = setup
+
+    def build(*, output_dir, **kwargs):
+        path = output_dir / "receipt.json"
+        path.parent.mkdir()
+        raw = b"complete-looking but not replayable"
+        path.write_bytes(raw)
+        return dict(path=path.relative_to(x["tmp_path"]).as_posix(), sha256=sha256(raw).hexdigest())
+
+    def replay(**kwargs):
+        raise ValueError("PARENT_TASK_RECEIPT_COLD_REPLAY_CHANGED")
+
+    monkeypatch.setattr(completion, "build_distribution_receipt", build)
+    monkeypatch.setattr(completion, "replay_task_receipt", replay)
+    with pytest.raises(ValueError, match="PARENT_TASK_RECEIPT_COLD_REPLAY_CHANGED"):
+        completion.seal_completed_parent_cash_task(x["Service"](), x["task_id"])
+    assert not completion.valuation_receipt_path(x["tmp_path"], x["task_id"]).exists()
+    head = x["Service"]()._load(x["task_id"])[2]
+    publication = completion.read_valuation_publication(x["tmp_path"], x["task_id"], head)
+    assert publication["valuation_blockage"]["reason_code"] == "PARENT_TASK_RECEIPT_COLD_REPLAY_CHANGED"
+
+
 def test_publication_failure_retries_distribution_builder_and_is_idempotent(setup, monkeypatch):
     x = setup
     attempts = []
@@ -156,6 +189,7 @@ def test_publication_failure_retries_distribution_builder_and_is_idempotent(setu
         return dict(path=path.relative_to(x["tmp_path"]).as_posix(), sha256=sha256(raw).hexdigest())
 
     monkeypatch.setattr(completion, "build_distribution_receipt", build)
+    monkeypatch.setattr(completion, "replay_task_receipt", _mock_verified_replay(x))
     monkeypatch.setattr(completion, "build_parent_cash_task_receipt",
                         lambda **kw: pytest.fail("wrong builder"))
     with pytest.raises(OSError, match="interruption"):
@@ -205,6 +239,7 @@ def test_valid_direct_post_preflights_then_creates_and_seals(setup, monkeypatch)
 
     monkeypatch.setattr(routes, "preflight_parent_cash_task", preflight)
     monkeypatch.setattr(completion, "build_distribution_receipt", build)
+    monkeypatch.setattr(completion, "replay_task_receipt", _mock_verified_replay(x))
     monkeypatch.setattr(routes, "resolve_research_task_root", lambda _: x["tmp_path"])
     monkeypatch.setattr(routes, "ParentCashTaskServiceV3", lambda _: x["Service"]())
     monkeypatch.setattr(routes, "authorize", lambda *a, **k: None)

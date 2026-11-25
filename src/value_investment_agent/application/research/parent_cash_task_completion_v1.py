@@ -8,7 +8,10 @@ from pathlib import Path
 from tempfile import mkdtemp, mkstemp
 
 from .parent_cash_task_receipt_v3 import build_parent_cash_task_receipt
-from .parent_cash_task_distribution_receipt_v1 import build as build_distribution_receipt
+from .parent_cash_task_distribution_receipt_v1 import (
+    build as build_distribution_receipt,
+    replay as replay_task_receipt,
+)
 from ..product.common import require_inside
 
 
@@ -183,17 +186,25 @@ def seal_completed_parent_cash_task(service, task_id):
             attempt = Path(mkdtemp(prefix="valuation-attempt-", dir=retained.parent)) / "sealed"
             options = {} if binding is None else {"distribution_binding": binding}
             builder = build_parent_cash_task_receipt if binding is None else build_distribution_receipt
+            now = datetime.now(timezone.utc)
             built = builder(
                 **options,
                 root=root, task_id=task_id, task_head=head, case_package_binding=case_binding,
-                output_dir=attempt, now=datetime.now(timezone.utc),
+                output_dir=attempt, now=now,
             )
-            receipt = (root / built["path"]).read_bytes()
-            if sha256(receipt).hexdigest() != built["sha256"]:
-                raise ValueError("PARENT_TASK_BUILT_RECEIPT_HASH_MISMATCH")
-            # Same-volume hard link publishes an already complete file atomically
-            # and refuses to replace a retained result.
-            retained.hardlink_to(root / built["path"])
+            built_path = require_inside(attempt, root / built["path"], "built parent cash receipt")
+            replay = replay_task_receipt(root=root, receipt_binding=built, now=now)
+            provenance = replay["provenance"]
+            if (provenance["task_id"] != task_id or provenance["task_record_binding"] != head
+                    or replay["action"] != "no_order" or replay["formal_eligibility"] is not False):
+                raise ValueError("PARENT_TASK_BUILT_RECEIPT_IDENTITY_MISMATCH")
+            with service._lock(directory):
+                _, current_state, current_head = service._load(task_id)
+                if current_state["status"] != "SUCCEEDED" or current_head != head:
+                    raise ValueError("PARENT_TASK_HEAD_CHANGED_BEFORE_PUBLICATION")
+                if sha256(built_path.read_bytes()).hexdigest() != built["sha256"]:
+                    raise ValueError("PARENT_TASK_BUILT_RECEIPT_HASH_MISMATCH")
+                retained.hardlink_to(built_path)
         except (ValueError, KeyError, TypeError, OSError, ArithmeticError) as error:
             _record_publication_blockage(root, task_id, head, error)
             raise
