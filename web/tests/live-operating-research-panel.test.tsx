@@ -2054,9 +2054,23 @@ it("reads only on click and shows exact reported values and evidence", async () 
     "stationary",
     valuationReceipt.receipt_sha256,
     valuationReceipt.input_descriptor_sha256,
-    "不用于当前价格比较",
+    "当前价格比较待核验，估值仅供历史条件研究。",
   ])
     expect(shown).toContain(field);
+});
+
+it("shows the aligned closing quote without granting formal eligibility", async () => {
+  calls.parentCashValuation.mockResolvedValue({
+    ...valuationReceipt,
+    current_comparable: true,
+    alignment_status: "ALIGNED_FOR_RESEARCH_COMPARISON",
+    comparison_quote: { trade_date: "2026-11-25", close_cny: "33.20" },
+  });
+  await readValuation();
+  const shown = JSON.stringify(renderValuation());
+  expect(shown).toContain("已完成当前价格研究对齐，仍待正式准入。");
+  expect(shown).toContain("33.20");
+  expect(shown).toContain("2026-11-25");
 });
 
 it.each([
