@@ -449,6 +449,36 @@ function ParentCashTerminalFailure({
             <dt>投资收益收现</dt>
             <dd>{investing.cash_investment_income_cny}</dd>
           </dl>
+          {investing.reconciled_ytd_cash && (
+            <details>
+              <summary>期初至期末现金对账</summary>
+              <dl>
+                <dt>期初现金及现金等价物</dt>
+                <dd>
+                  {
+                    investing.reconciled_ytd_cash
+                      .opening_cash_and_equivalents_cny
+                  }
+                </dd>
+                <dt>经营现金净额</dt>
+                <dd>{investing.reconciled_ytd_cash.cfo_cny}</dd>
+                <dt>投资现金净额</dt>
+                <dd>{investing.reconciled_ytd_cash.cfi_cny}</dd>
+                <dt>筹资现金净额</dt>
+                <dd>{investing.reconciled_ytd_cash.cff_cny}</dd>
+                <dt>汇率影响</dt>
+                <dd>{investing.reconciled_ytd_cash.fx_cny}</dd>
+                <dt>期末现金及现金等价物</dt>
+                <dd>
+                  {
+                    investing.reconciled_ytd_cash
+                      .closing_cash_and_equivalents_cny
+                  }
+                </dd>
+              </dl>
+              <p>从期末余额推算下一期时，已发生的现金流不再计入。</p>
+            </details>
+          )}
           <p>以上为历史收付。未来可回收金额和现金分配能力仍须核验。</p>
           <details>
             <summary>原件页码与校验值</summary>

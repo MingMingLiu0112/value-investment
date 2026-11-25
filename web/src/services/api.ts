@@ -2320,6 +2320,14 @@ export const api = {
             invested_cny: string;
             net_principal_cash_cny: string;
             cash_investment_income_cny: string;
+            reconciled_ytd_cash?: {
+              opening_cash_and_equivalents_cny: string;
+              cfo_cny: string;
+              cfi_cny: string;
+              cff_cny: string;
+              fx_cny: string;
+              closing_cash_and_equivalents_cny: string;
+            };
             source_binding: { sha256: string };
             physical_pages: number[];
           }

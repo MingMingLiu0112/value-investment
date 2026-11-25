@@ -58,6 +58,14 @@ def _numbered_task_with_observed_investing_cash(service, task_id):
             source_binding=statement["source_binding"],
             physical_pages=sorted({row["physical_page"] for row in (proceeds, payments, income)}),
         )
+        if statement["checks"]["cash_statement_reconciled"]:
+            task["observed_investing_cash"]["reconciled_ytd_cash"] = {
+                key: fields[key]["current"]
+                for key in (
+                    "opening_cash_and_equivalents_cny", "cfo_cny", "cfi_cny",
+                    "cff_cny", "fx_cny", "closing_cash_and_equivalents_cny",
+                )
+            }
     except (ValueError, TypeError, KeyError, OSError, ArithmeticError):
         task["observed_investing_cash"] = dict(classification="SOURCE_NOT_REPLAYABLE")
     return task
