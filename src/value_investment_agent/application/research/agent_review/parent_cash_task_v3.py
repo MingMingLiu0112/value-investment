@@ -44,7 +44,7 @@ LEGACY_WIRE_SERVICE = "74b81ab8641985ac2e641442322dc599f721f5d87352d032f74d2e3ba
 PRE_TERMINAL_WIRE_SERVICE = "c1ab9217121595980da1396cb78bfaa5df0226b53b7f58fd2bb86711439db264"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "56d736ca99dad8f09ad7656a51d4f493fed1d149a0f469ba83ec1446a9423581"
+REVIEWED_CAPITAL_SERVICE = "4b7721e5f986ca568262999079239fb94b68e9d1e7aea8c81dedf5c0dc9ca058"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -676,6 +676,7 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "1dbfc634df2bd4d6e929996616c489f623a06e1dc7cd6bab3bebcc51fb0fcb85",
             "b9e52a64302c44a9513965d411ebc6d191877d48648e224bdb99e7f74ed00487",
             "85870518fcd6ec43dbb271b84257adeaf2ea1fe77d02bb59c0ac881c2543b341",
             "4f697aa4fea9b2c16f4baff133a9eb33e6ad2e0142720f9a0df308d1a5f28975",
@@ -1669,7 +1670,10 @@ class ParentCashTaskServiceV3(ResearchTaskService):
     def _terminal_failure_cash_bridge(self, spec, state, now):
         error = state.get("error_code") or ""
         scenario, _, detail = error.lower().partition("_terminal_")
-        if detail != "parent_v3_unsupported_stationary_cash_conversion" or scenario not in SCENARIOS:
+        if scenario not in SCENARIOS or detail not in {
+            "parent_v3_unsupported_stationary_cash_conversion",
+            "parent_v3_no_positive_supported_terminal_distribution",
+        }:
             return None
         stage_id = scenario + ".terminal"
         packets = [packet for pin in state.get("returned_responses", ())
@@ -1711,6 +1715,9 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 stationary_distribution_upper_bound_cny=str(steady_upper_bound),
                 classification="REJECTED_FORECAST_DIAGNOSTIC_NOT_VALUATION",
                 scenario=scenario, currency="CNY", action="no_order",
+                rejection_code=error,
+                net_cash_excluding_financing_and_investment_cny=str(
+                    no_receipts - values["new_borrowing"] + values["debt_repayment"]),
                 request_sha256=packet["request_sha256"], policy_cny={k: str(v) for k,v in values.items()},
                 net_cash_cny=str(net), net_cash_minus_profit_cny=str(net - values["parent_profit"]),
                 net_cash_excluding_investment_receipts_minus_profit_cny=str(

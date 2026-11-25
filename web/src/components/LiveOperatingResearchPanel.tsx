@@ -297,6 +297,23 @@ function ParentCashTerminalFailure({ taskId }: { taskId: string }) {
       const [net, gap, withoutReceipts] = amounts.map((value) =>
         (value / 100_000_000).toFixed(2),
       );
+      if (
+        bridge.rejection_code?.endsWith(
+          "_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION",
+        )
+      ) {
+        const operating = Number(
+          bridge.net_cash_excluding_financing_and_investment_cny,
+        );
+        if (!Number.isFinite(operating)) {
+          setMessage("无法核验剔除投资和融资收支后的终值现金。");
+          return;
+        }
+        setMessage(
+          `草案终值净现金 ${net} 亿元，剔除投资和融资收支后为 ${(operating / 100_000_000).toFixed(2)} 亿元。草案未形成有依据的正分配，估值未生成。该金额仍需核对持续投入、法定分配能力及储备约束。`,
+        );
+        return;
+      }
       setMessage(
         `终值净现金 ${net} 亿元，净现金减利润 ${gap} 亿元。剔除投资收现后，差额为 ${withoutReceipts} 亿元。请核对持续性投资收现、资本投入和经营现金转换。`,
       );
@@ -449,9 +466,12 @@ export function ParentCashTaskHistoryView({
               )}
             {item.task_contract === "parent-cash-task-v3" &&
               item.status === "FAILED" &&
-              item.error_code?.endsWith(
+              (item.error_code?.endsWith(
                 "_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
-              ) && <ParentCashTerminalFailure taskId={item.task_id} />}
+              ) ||
+                item.error_code?.endsWith(
+                  "_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION",
+                )) && <ParentCashTerminalFailure taskId={item.task_id} />}
             {item.status === "SUCCEEDED" &&
               item.valuation_receipt_status === "BLOCKED" && (
                 <p>

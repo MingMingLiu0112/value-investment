@@ -2302,6 +2302,8 @@ export const api = {
       terminal_cash_failure?: {
         scenario: string;
         net_cash_cny: string;
+        rejection_code?: string;
+        net_cash_excluding_financing_and_investment_cny?: string;
         net_cash_minus_profit_cny: string;
         net_cash_excluding_investment_receipts_minus_profit_cny: string;
         action: "no_order";
