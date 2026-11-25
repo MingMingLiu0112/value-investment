@@ -58,6 +58,8 @@ def test_numbered_parent_cash_task_api_runs_only_on_explicit_post(tmp_path, monk
 
     monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", lambda service, task: service.run(task))
     monkeypatch.setattr(routes, "preflight_parent_cash_task", lambda service, binding: None)
+    monkeypatch.setattr(routes, "seal_completed_parent_cash_task",
+                        lambda service, task: calls.append(("seal", task)))
 
     class NumberedService:
         def __init__(self, root):
@@ -103,7 +105,7 @@ def test_numbered_parent_cash_task_api_runs_only_on_explicit_post(tmp_path, monk
     sealed = client.post(f"{path}/{task_id}/seal")
     assert sealed.status_code == 202
     assert sealed.json() == dict(status="VALUATION_SEAL_REQUESTED", task_id=task_id, action="no_order")
-    assert calls[-2:] == [("read", task_id), ("run", task_id)]
+    assert calls[-2:] == [("read", task_id), ("seal", task_id)]
     monkeypatch.setattr(NumberedService, "read", lambda *_: {
         "status": "FAILED", "mode": "LIVE_PARENT_CASH_V3",
     })

@@ -9,7 +9,8 @@ from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from ...application.research.parent_cash_task_completion_v1 import (
-    registered_cash_task_spec, run_and_seal_parent_cash_task, valuation_receipt_path,
+    registered_cash_task_spec, run_and_seal_parent_cash_task, seal_completed_parent_cash_task,
+    valuation_receipt_path,
     preflight_parent_cash_task, read_valuation_publication, valuation_blockage_path,
 )
 from ...application.portfolio.private_journal_lock import LockTimeout
@@ -40,9 +41,10 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                          401 if error.code == AUTHORIZATION_REQUIRED else 403)
         return None
 
-    def run_numbered(task_id):
+    def run_numbered(task_id, *, publication_only=False):
         try:
-            run_and_seal_parent_cash_task(numbered_service, task_id)
+            execute = seal_completed_parent_cash_task if publication_only else run_and_seal_parent_cash_task
+            execute(numbered_service, task_id)
         except (ValueError, KeyError, TypeError, OSError, ArithmeticError) as error:
             logging.getLogger(__name__).warning(
                 "Parent cash valuation unavailable for %s (%s)", task_id,
@@ -424,7 +426,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 task = numbered_service.read(task_id)
                 if task["status"] != "SUCCEEDED" or task.get("mode") != "LIVE_PARENT_CASH_V3":
                     return reply(dict(status="PARENT_TASK_LIVE_SUCCESS_REQUIRED", action="no_order"), 409)
-                background.add_task(run_numbered, task_id)
+                background.add_task(run_numbered, task_id, publication_only=True)
                 return reply(dict(status="VALUATION_SEAL_REQUESTED", task_id=task_id, action="no_order"), 202)
             task = (numbered_service.cancel(task_id) if operation == "cancel"
                     else numbered_service.resume(task_id))

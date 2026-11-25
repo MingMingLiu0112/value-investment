@@ -105,6 +105,10 @@ def test_successful_task_publishes_a_single_receipt_after_run(tmp_path, monkeypa
             "spec_binding": spec_binding, "case_package_binding": case_binding,
         }},
     }), encoding="utf-8")
+    status = "QUEUED"
+    completion.seal_completed_parent_cash_task(Service(), task_id)
+    assert not calls
+    assert not worker_calls
     status = "CANCELLED"
     completion.run_and_seal_parent_cash_task(Service(), task_id)
     assert not calls

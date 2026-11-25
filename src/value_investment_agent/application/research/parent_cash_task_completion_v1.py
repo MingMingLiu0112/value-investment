@@ -162,6 +162,13 @@ def run_and_seal_parent_cash_task(service, task_id):
         _, state, _ = service._load(task_id)
     if state["status"] != "SUCCEEDED":
         service.run(task_id)
+    seal_completed_parent_cash_task(service, task_id)
+
+
+def seal_completed_parent_cash_task(service, task_id):
+    """Retry only deterministic publication, even if task state has changed."""
+    root = Path(service.root).resolve()
+    directory = service._directory(task_id)
     with service._lock(directory, "valuation-publication"):
         with service._lock(directory):
             spec, state, head = service._load(task_id)
