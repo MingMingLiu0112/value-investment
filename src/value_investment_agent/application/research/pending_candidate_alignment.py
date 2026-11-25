@@ -1862,7 +1862,8 @@ def _opening_chain_research(analysis, rows, reconciliation):
                     outside_comparison_interval=max(_day(terms["ex_date"]), _day(terms["cash_payment_date"])) <= start,
                     cash_receipt_proven=False))
             if terms.get("purchase_state") == "COMPLETED" and terms.get("cancellation_state") == "SCHEDULED_UNCONFIRMED":
-                purchases.append(dict(binding=fact["binding"], terms=terms, published_date=parsed["published_date"]))
+                purchases.append(dict(binding=fact["binding"], terms=terms,
+                    published_date=parsed["published_date"], source_url=fact.get("source_url")))
             if "confirmed_cancellation_date" in terms:
                 confirmations.append(dict(evidence_binding=fact["binding"],
                     effective_date=terms["confirmed_cancellation_date"],
@@ -1920,7 +1921,16 @@ def _opening_chain_research(analysis, rows, reconciliation):
                    and Decimal(confirmation["issued_shares"]) == terms["planned_post_cancellation_shares"]
                    and confirmation["matches_consumed_opening_shares"]
                    and confirmation["completed_before_valuation"]]
+        # A pre-cutoff notice with a future schedule establishes a named
+        # opening follow-up. An elapsed or same-day schedule gives no opening
+        # status without a separate registration confirmation.
+        pending_at_opening = (
+            _day(purchase["published_date"]) < start < _day(terms["scheduled_cancellation_date"])
+        )
         purchase_links.append(dict(purchase_binding=purchase["binding"],
+            source_url=purchase["source_url"], published_date=purchase["published_date"],
+            opening_status=("DISCLOSED_CANCELLATION_SCHEDULE_AFTER_OPENING"
+                            if pending_at_opening else "OPENING_PENDING_STATUS_NOT_ESTABLISHED"),
             cancellation_binding=matches[0]["evidence_binding"] if len(matches) == 1 else None,
             status="MATCHED_COMPLETED_BEFORE_VALUATION" if len(matches) == 1 else "CANCELLATION_NOT_UNIQUELY_RECONCILED",
             purchase_through=terms["through"], scheduled_cancellation_date=terms["scheduled_cancellation_date"],
@@ -2442,10 +2452,14 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
         opening_windows = [*source_windows, *(
             dict(window, announcements=[
                 event for event in window["announcements"]
-                if datetime.fromisoformat(event["published_at"]).astimezone(CHINA).date() <= distribution_cutoff
-                and event["title"].endswith((
-                    "年度股东会决议公告", "年度股东大会决议公告", "权益分派实施公告",
-                ))
+                if (datetime.fromisoformat(event["published_at"]).astimezone(CHINA).date() <= distribution_cutoff
+                    and event["title"].endswith((
+                        "年度股东会决议公告", "年度股东大会决议公告", "权益分派实施公告",
+                    )))
+                or (datetime.fromisoformat(event["published_at"]).astimezone(CHINA).date() <= opening_cutoff
+                    and re.search(r"(?:关于股份回购实施结果暨股份变动的公告|"
+                                  r"关于调整20[0-9]{2}年年度利润分配方案每股分红金额的公告)$",
+                                  event["title"]))
             ]) for window in windows
         )]
         opening_actions = _operating_events(analysis, opening_windows, now, read,

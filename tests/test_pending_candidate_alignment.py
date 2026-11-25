@@ -2229,3 +2229,30 @@ def test_cross_date_caller_completeness_flags_are_not_a_native_contract(reconcil
     assert not result["period_cash_coverage_complete"]
     assert not result["current_price_basis_compatible"]
     assert "OPENING_PENDING_SCHEMES_AND_EFFECTIVE_ACTION_CHAIN_INCOMPLETE" in result["reason_codes"]
+
+@pytest.mark.parametrize("published,scheduled,expected", [
+    ("2019-12-29", "2020-01-02", "DISCLOSED_CANCELLATION_SCHEDULE_AFTER_OPENING"),
+    ("2019-12-29", "2020-01-01", "OPENING_PENDING_STATUS_NOT_ESTABLISHED"),
+    ("2019-12-29", "2019-12-30", "OPENING_PENDING_STATUS_NOT_ESTABLISHED"),
+    ("2020-01-01", "2020-01-02", "OPENING_PENDING_STATUS_NOT_ESTABLISHED"),
+    ("2020-01-02", "2020-01-03", None),
+])
+def test_opening_purchase_schedule_retains_only_dated_native_followup(
+        reconciliation, published, scheduled, expected):
+    binding = {"path": "runtime/buyback.pdf", "sha256": "a" * 64}
+    url = f"https://static.cninfo.com.cn/finalpage/{published}/123.PDF"
+    purchase = dict(binding=binding, source_url=url, terms=dict(published_date=published,
+        terms=dict(purchase_state="COMPLETED", cancellation_state="SCHEDULED_UNCONFIRMED",
+            through="2019-12-28", scheduled_cancellation_date=scheduled,
+            cumulative_purchased_shares=2, cumulative_paid_cny="20", planned_post_cancellation_shares=98)))
+    result = service._opening_chain_research(reconciliation["analysis"], [{"facts": [purchase]}], None)
+    if expected is None:
+        assert result["purchase_links"] == []
+    else:
+        link, = result["purchase_links"]
+        assert link["opening_status"] == expected
+        assert link["purchase_binding"] == binding
+        assert link["source_url"] == url
+        assert link["cancellation_binding"] is None
+    assert not result["complete_opening_action_coverage"]
+    assert not result["comparison_date_capital_proven"]
