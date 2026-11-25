@@ -448,16 +448,21 @@ def test_period_cancellation_requires_pair_and_post_publication_cutoff(monkeypat
         assert proof["status"] == "NATIVE_CANCELLATION_PAIR_UNVERIFIED"
 
 
-def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconciliation, monkeypatch):
+@pytest.mark.parametrize("live_task", [False, True])
+def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconciliation, monkeypatch, live_task):
     case = reconciliation
     case["ledger"]["distributions"] = [cash(case, in_period=True)]
-    case["analysis"]["consumed_implemented_distributions"] = [dict(
+    closures = [dict(
         status="PASS", reason_code="IMPLEMENTED_DISTRIBUTION_INCLUDED_IN_MODEL",
         scope="EXACT_IMPLEMENTED_DISTRIBUTION_ONLY_NOT_PERIOD_COMPLETENESS",
         paid_date="2020-01-02", per_share_cny="2", total_cny="200",
         original_binding=case["anchor"]["binding"], period_cash_coverage_complete=False,
         capital_structure_aligned=False, materiality_approved=False,
         financial_updates_reconciled=False, formal_eligibility=False, action="no_order")]
+    if live_task:
+        case["analysis"]["distribution_model_inclusion"] = lambda start, end: closures
+    else:
+        case["analysis"]["consumed_implemented_distributions"] = closures
     with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
         reconcile(case)
     terms = dict(published_date="2020-01-01", record_date="2020-01-01",
@@ -468,7 +473,7 @@ def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconcil
         reconcile(case)
     terms["total_gross_cash"] = "200"
     case["ledger"]["distributions"][0]["cash_payment_date"] = "2020-01-03"
-    case["analysis"]["consumed_implemented_distributions"][0]["paid_date"] = "2020-01-03"
+    closures[0]["paid_date"] = "2020-01-03"
     terms["cash_payment_date"] = "2020-01-03"
     case["anchor"]["excerpt"] += " 2020-01-03"
     from value_investment_agent.infrastructure.filings import pdf_text
@@ -478,7 +483,7 @@ def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconcil
     with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
         reconcile(case)
     case["ledger"]["distributions"][0]["cash_payment_date"] = "2020-01-02"
-    case["analysis"]["consumed_implemented_distributions"][0]["paid_date"] = "2020-01-02"
+    closures[0]["paid_date"] = "2020-01-02"
     terms["cash_payment_date"] = "2020-01-02"
 
     result = reconcile(case)

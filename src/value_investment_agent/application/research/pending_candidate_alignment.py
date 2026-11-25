@@ -999,6 +999,9 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
                 )
     unconsumed_period_cash = period_cash
     distribution_closures = analysis.get("consumed_implemented_distributions", [])
+    model_inclusion = analysis.get("distribution_model_inclusion")
+    if model_inclusion is not None:
+        distribution_closures = [*distribution_closures, *model_inclusion(start, end)]
     if distribution_closures is not None:
         if not isinstance(distribution_closures, list):
             raise ValueError("CONSUMED_IMPLEMENTED_DISTRIBUTIONS_INVALID")

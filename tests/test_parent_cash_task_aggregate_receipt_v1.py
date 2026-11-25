@@ -160,3 +160,35 @@ def test_aggregate_cannot_publish_with_different_identity_or_failed_task(sealed_
     with pytest.raises(ValueError, match="GROSS_CAPEX_F1_TASK_OR_DISTRIBUTION|PARENT_TASK_EXACT_LIVE_SUCCESS"):
         target.build(output_dir=out, **inputs)
     assert not out.exists()
+
+
+def test_v3_distribution_projection_uses_the_task_valuation(monkeypatch):
+    from datetime import date
+    from value_investment_agent.application.research import (
+        parent_cash_task_alignment_v3 as alignment,
+        parent_owner_distribution_alignment_v2 as consumer,
+        parent_owner_distribution_successor_v2 as successor,
+    )
+
+    distribution = {"paid_date": "2027-06-01", "total_cny": "10"}
+    evidence = {"original": CASE}
+    source = {"symbol": "600887", "distribution": distribution, "distribution_evidence": evidence}
+    result = {"symbol": "600887", "provenance": {"distribution_receipt_binding": PAID},
+              "descriptor": {"source_contract": {"implemented_distribution": distribution,
+                                                 "distribution_receipt_binding": PAID}},
+              "source_bindings": [PAID, CASE], "valuation": {"identity": "live V3"}}
+    monkeypatch.setattr(alignment, "_read", lambda root, pin: {"spec_binding": CASE})
+    monkeypatch.setattr(successor, "replay_parent_owner_distribution_successor", lambda **kw: source)
+
+    def verify_inclusion(model_source, spec, receipt, root):
+        assert model_source["valuation"] is result["valuation"]
+        assert model_source["distribution_evidence"] == evidence
+        return {"status": "PASS"}
+
+    monkeypatch.setattr(consumer, "_implemented_distribution", verify_inclusion)
+    args = {"root": None, "result": result, "start": date(2027, 1, 1), "now": None}
+    assert alignment._distribution_model_inclusion(**args, end=date(2027, 5, 31)) == []
+    assert alignment._distribution_model_inclusion(**args, end=date(2027, 6, 1)) == [{"status": "PASS"}]
+    result["source_bindings"].remove(CASE)
+    with pytest.raises(ValueError, match="PARENT_TASK_DISTRIBUTION_SOURCE_IDENTITY_MISMATCH"):
+        alignment._distribution_model_inclusion(**args, end=date(2027, 6, 1))
