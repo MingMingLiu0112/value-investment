@@ -63,6 +63,14 @@ def _day(value):
     return parsed
 
 
+def _shanghai_mixed_cash_schedule(compact_text):
+    return (
+        "委托中国结算上海分公司通过其资金清算系统" in compact_text
+        and "自行发放对象" in compact_text
+        and "红利由公司自行发放" in compact_text
+    )
+
+
 def _cash_terms(pages, symbol):
     """Narrow SSE cash scheme, including an explicitly excluded repurchase account.
 
@@ -1124,9 +1132,15 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
             status = "LEDGER_MISMATCH"
         elif term_field == "native_entitlement_only":
             status = "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"
+        settlement = {}
+        text = re.sub(r"\s+", "", "".join(pages))
+        if _shanghai_mixed_cash_schedule(text):
+            settlement = dict(settlement_scope="SHANGHAI_CLEARING_AND_ISSUER_DIRECT",
+                              issuer_direct_payment_verified=False,
+                              clearing_house_payment_verified=False)
         observed_cash.append(dict(announcement_id=identity, evidence_binding=deepcopy(source),
             status=status, terms=terms,
-            matched_ledger_ids=[row["id"] for row in matches]))
+            matched_ledger_ids=[row["id"] for row in matches], **settlement))
     observed_cancellations, cancellation_gaps = _covered_share_cancellations(
         announced, action_rows, symbol=analysis["symbol"], start=start, end=end, read=read, cache=cache,
     )

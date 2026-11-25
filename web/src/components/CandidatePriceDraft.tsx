@@ -1116,6 +1116,17 @@ function CheckReconciliation({
   const rows = Array.isArray(ledger.distributions)
     ? ledger.distributions.filter(object)
     : [];
+  const mixedSseSettlements = Array.isArray(ledger.covered_cash_implementations)
+    ? ledger.covered_cash_implementations
+        .filter(
+          (row) =>
+            object(row) &&
+            row.settlement_scope === "SHANGHAI_CLEARING_AND_ISSUER_DIRECT" &&
+            row.clearing_house_payment_verified === false &&
+            row.issuer_direct_payment_verified === false,
+        )
+        .filter(object)
+    : [];
   const treatments: Record<string, string> = {
     BEFORE_VALUATION_DATE_ALREADY_OUTSIDE_INTERVAL:
       "公告列示的除息日、现金发放日均在估值日前；不重复扣减，未验证个人实际到账",
@@ -1181,6 +1192,19 @@ function CheckReconciliation({
                       {text(row.record_date)} / {text(row.ex_date)} /{" "}
                       {text(row.cash_payment_date)}
                     </dd>
+                  </>
+                )}
+                {mixedSseSettlements.some(
+                  (proof) =>
+                    typeof row.id === "string" &&
+                    Array.isArray(proof.matched_ledger_ids) &&
+                    proof.matched_ledger_ids.includes(row.id),
+                ) && (
+                  <>
+                    <dt>中国结算上海分公司代发</dt>
+                    <dd>实际划付待核验</dd>
+                    <dt>发行人自行发放</dt>
+                    <dd>实际付款待核验</dd>
                   </>
                 )}
                 <dt>区间处理</dt>

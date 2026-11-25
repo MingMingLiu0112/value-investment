@@ -430,6 +430,33 @@ it("explains partial source-bound share and distribution arithmetic without clai
   expect(html).toContain("100.00");
   expect(html).toContain("1354");
 });
+it.each([true, false])(
+  "links mixed Shanghai settlement by ledger row (%s)",
+  (matches) => {
+    const review = alignmentFixture();
+    const check = review.conditional_price!.alignment!.checks!.find(
+      (item) => item.id === "distributions",
+    )!;
+    check.details = {
+      reconciliation: {
+        ...reconciliationExample,
+        covered_cash_implementations: [
+          {
+            settlement_scope: "SHANGHAI_CLEARING_AND_ISSUER_DIRECT",
+            issuer_direct_payment_verified: false,
+            clearing_house_payment_verified: false,
+            matched_ledger_ids: [matches ? "TEST_ONLY/dividend" : "unrelated"],
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(<CandidatePriceDraft review={review} />);
+    expect(html.includes("中国结算上海分公司代发")).toBe(matches);
+    expect(html.includes("发行人自行发放")).toBe(matches);
+    expect(html).toContain("不证明全期间完整覆盖");
+  },
+);
+
 it("shows exact in-model dividend without granting full period coverage", () => {
   const review = alignmentFixture();
   const distributions = review.conditional_price!.alignment!.checks!.find(
