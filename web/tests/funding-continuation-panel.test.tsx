@@ -42,6 +42,7 @@ const url =
   "/replay?symbol=" +
   props.symbol;
 const versionUrl = url + "&version=maturity-v1";
+const installmentUrl = url + "&version=installment-v1";
 const hash = (ch: string) => ch.repeat(64);
 const fetcher = vi.fn<(url: string, init: RequestInit) => Promise<Response>>();
 const json = (body: object, status = 200) =>
@@ -73,15 +74,22 @@ function mountPanel(input = props) {
     (n) => typeof n.type === "function" && n.props.task === input.task,
   );
 }
-function mountContent(maturity: boolean) {
-  const element = mountPanel().find(
-    (n) => Boolean(n.props.maturity) === maturity,
-  )!;
+function mountContent(version: boolean | "installment") {
+  const panels = mountPanel();
+  const legacyType = panels.find(
+    (panel) => panel.props.maturity === true,
+  )!.type;
+  const element = panels.find((panel) =>
+    version === "installment"
+      ? panel.type !== legacyType
+      : panel.type === legacyType && Boolean(panel.props.maturity) === version,
+  );
+  expect(element).toBeDefined();
   reset();
   return () => {
     hooks.cursor = 0;
-    return (element.type as React.FunctionComponent)(
-      element.props,
+    return (element!.type as React.FunctionComponent)(
+      element!.props,
     ) as React.ReactElement;
   };
 }
@@ -268,13 +276,22 @@ it("renders the bound F2 snapshot's accounting reconciliation and constant-share
     "尚缺本候选材料性批准 " +
       subject.material_event_review.without_candidate_approval +
       " 份",
-    subject.material_event_review.earliest_full_day_recheck,
     "财务报表勾稽",
     "仍需分渠道付款凭证",
     "恒定分母假设",
     "逐日登记股数仍待登记凭证核验",
   ])
     expect(html).toContain(v);
+  const events = subject.material_event_review;
+  if (events.full_day_elapsed) {
+    expect(html).toContain("当日已结束。");
+    expect(html).not.toContain("最早完整日复核时间");
+    expect(html).not.toContain(events.earliest_full_day_recheck);
+  } else {
+    expect(html).toContain("当日尚未结束，最早完整日复核时间");
+    expect(html).toContain(events.earliest_full_day_recheck);
+    expect(html).not.toContain("当日已结束。");
+  }
   expect(fetcher).not.toHaveBeenCalled();
 });
 
@@ -292,12 +309,101 @@ afterEach(() => {
 });
 
 it("offers the versioned panel only for the bound receipt and symbol and keeps the fixed-payment panel", () => {
-  expect(mountPanel().map((e) => !!e.props.maturity)).toEqual([false, true]);
+  const [fixed, installment, maturity] = mountPanel();
+  expect(mountPanel()).toHaveLength(3);
+  expect(maturity.type).toBe(fixed.type);
+  expect(maturity.props.maturity).toBe(true);
+  expect(fixed.props.maturity).toBeUndefined();
+  expect(installment.type).not.toBe(fixed.type);
+  expect(installment.props).toEqual(props);
   for (const change of [{ symbol: "000001" }, { receipt: hash("b") }])
     expect(
-      mountPanel({ ...props, ...change }).map((e) => !!e.props.maturity),
-    ).toEqual([false]);
+      mountPanel({ ...props, ...change }).map((e) => [
+        e.type,
+        e.props.maturity,
+      ]),
+    ).toEqual([[fixed.type, undefined]]);
   expect(fetcher).not.toHaveBeenCalled();
+});
+
+it("loads, explicitly seals and refreshes the installment panel through its own authenticated endpoint", async () => {
+  const { maturity_recheck: source, ...parent } = receipt();
+  const fixed = {
+    ...parent,
+    continuation_version: "installment-v1",
+    installment_recheck: {
+      schema_version: "parent-cash-installment-recheck-v1",
+      task_id: source.task_id,
+      parent_receipt: source.parent_receipt,
+      predecessor_input: source.predecessor_input,
+      symbol: source.symbol,
+      valuation_date: source.valuation_date,
+      status: source.status,
+      action: "no_order",
+      formal_eligibility: false,
+      current_comparable: false,
+      current_research_range_adopted: false,
+      base_basis: "TEST_ONLY 经营现金约束首笔分期",
+      scenarios: source.scenarios,
+    },
+  };
+  const refreshed = {
+    ...fixed,
+    continuation_sha256: hash("f"),
+    installment_recheck: {
+      ...fixed.installment_recheck,
+      base_basis: "TEST_ONLY 刷新后复算依据",
+    },
+  };
+  fetcher
+    .mockResolvedValueOnce(absent())
+    .mockResolvedValueOnce(json(fixed))
+    .mockResolvedValueOnce(json(refreshed));
+  const render = mountContent("installment");
+  render();
+  await settle();
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(renderToStaticMarkup(render())).toContain("按经营现金分期续算并封存");
+
+  click(render(), "按经营现金分期续算并封存");
+  await settle();
+  const html = renderToStaticMarkup(render());
+  for (const text of [
+    "分期偿债研究",
+    fixed.installment_recheck.base_basis,
+    "2032 年资金约束未通过，距现金底线 1.50 亿元",
+    "条件估值 29.1234 元/股",
+    "期限未明本金假设偿还 1.50 亿元",
+    fixed.continuation_sha256,
+  ])
+    expect(html).toContain(text);
+
+  // The installment panel refreshes by mounting again, so it must read the seal.
+  const reopened = mountContent("installment");
+  reopened();
+  await settle();
+  const afterRefresh = renderToStaticMarkup(reopened());
+  expect(afterRefresh).toContain(refreshed.continuation_sha256);
+  expect(afterRefresh).toContain(refreshed.installment_recheck.base_basis);
+  expect(afterRefresh).not.toContain(fixed.continuation_sha256);
+  expect(afterRefresh).not.toContain("按经营现金分期续算并封存");
+  expect(
+    fetcher.mock.calls.map(([request, init]) => [
+      request,
+      init.method ?? "GET",
+      init.body,
+    ]),
+  ).toEqual([
+    [installmentUrl, "GET", undefined],
+    [installmentUrl, "POST", "{}"],
+    [installmentUrl, "GET", undefined],
+  ]);
+  for (const [, init] of fetcher.mock.calls) {
+    expect(new Headers(init.headers).get("X-Local-Session")).toBe(
+      "TEST_ONLY_SESSION",
+    );
+    expect(init.credentials).toBe("same-origin");
+  }
 });
 
 it("GET, explicit POST, refresh and reopen use only the versioned authenticated replay", async () => {
