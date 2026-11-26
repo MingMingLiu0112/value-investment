@@ -1062,9 +1062,23 @@ function CrossDateRowProofs({ value }: { value: unknown }) {
         {ambiguous.length > 0 && `，歧义账本 ${ambiguous.length} 项`}
         {duplicates > 0 && `，重复引用 ${duplicates} 条`}。
       </p>
-      {matched.some((row) => row.cash_payment_proven === false) && (
-        <p>分派安排已匹配，实际到账仍待核验。</p>
-      )}
+      {Array.isArray(value.unverified_cash_payment_ledger_ids)
+        ? value.unverified_cash_payment_ledger_ids.length > 0 && (
+            <p>
+              实际付款待核：
+              {value.unverified_cash_payment_ledger_ids.join("、")}
+            </p>
+          )
+        : matched.some((row) => row.cash_payment_proven === false) && (
+            <p>分派安排已匹配，实际到账仍待核验。</p>
+          )}
+      {Array.isArray(value.unverified_cash_model_inclusion_ledger_ids) &&
+        value.unverified_cash_model_inclusion_ledger_ids.length > 0 && (
+          <p>
+            估值入账待核：
+            {value.unverified_cash_model_inclusion_ledger_ids.join("、")}
+          </p>
+        )}
     </div>
   );
 }

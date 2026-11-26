@@ -1325,6 +1325,8 @@ it("shows verified publication coverage without conflating it with capital conti
           status: "UNRESOLVED",
           matched_rows: [{ cash_payment_proven: false }],
           unmatched_ledger_ids: ["share-action-2"],
+          unverified_cash_payment_ledger_ids: ["cash-payment-1"],
+          unverified_cash_model_inclusion_ledger_ids: ["cash-model-2"],
           unmatched_native_proofs: [{ announcement_id: "duplicate" }],
           duplicate_native_proofs: [{ announcement_id: "duplicate" }],
         },
@@ -1347,6 +1349,7 @@ it("shows verified publication coverage without conflating it with capital conti
   expect(html).toContain("未匹配账本 1 项");
   expect(html).toContain("未匹配原件 1 项");
   expect(html).toContain("重复引用 1 条");
-  expect(html).toContain("分派安排已匹配，实际到账仍待核验。");
+  expect(html).toContain("实际付款待核：cash-payment-1");
+  expect(html).toContain("估值入账待核：cash-model-2");
   expect(html).toContain("已核对分派安排，实际支付待核");
 });
