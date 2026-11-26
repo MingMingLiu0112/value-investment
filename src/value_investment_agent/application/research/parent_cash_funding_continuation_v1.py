@@ -28,6 +28,9 @@ def _implementation(checker):
     modules = [revision, checker]
     if checker.__name__.endswith(".parent_cash_maturity_recheck"):
         modules.append(_checker())
+    if checker.__name__.endswith(".parent_cash_installment_recheck"):
+        from . import parent_cash_maturity_recheck
+        modules.extend([_checker(), parent_cash_maturity_recheck])
     return {module.__name__: sha256(Path(module.__file__).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
             for module in modules}
 
@@ -72,6 +75,9 @@ def replay_or_read(source_root, write_root, identity, *, create, now, version=VE
     elif version == MATURITY_VERSION:
         from . import parent_cash_maturity_recheck as checker
         result_key, schema = "maturity_recheck", "parent-cash-maturity-recheck-v1"
+    elif version == "installment-v1":
+        from . import parent_cash_installment_recheck as checker
+        result_key, schema = "installment_recheck", "parent-cash-installment-recheck-v1"
     else:
         raise ValueError("CONTINUATION_VERSION_UNSUPPORTED")
     folder = (write_root / "runtime" / "parent-cash-task-backed-receipts" / task_id

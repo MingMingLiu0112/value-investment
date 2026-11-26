@@ -3,7 +3,7 @@
   "date": "2026-11-26",
   "parent_receipt": "ed62be290ebcffebf47e1c22cd235d77767e42f1d8b13ff4f1273875257c0a19",
   "registered_candidate": "dcf8dcf4dbf3965d31c5e787d22d103d4fb2e6bc6a8ca3f2fbc682e21eecf027",
-  "report_sha256": "7f850bb6461d596b0c1ae0bd97fab960cb8a4a12abcb44db7b8bedf581bac5da",
+  "report_sha256": "7cce438e7bb2c3c6c9a43a9a8f8bd58934eb39bcd08deaf2018203f1721e1ccb",
   "quote_source": "https://www.cninfo.com.cn/new/disclosure/stock?orgId=gssh0600887&stockCode=600887",
   "observed": "2026-11-26T13:58:07.849852+00:00",
   "close": 33.43,
@@ -15,8 +15,8 @@
   "settled": null,
   "matched": 123,
   "materiality": 0,
-  "past_complete": "2026-11-25",
-  "latest_snapshot": "2026-11-26T14:57:05.702072+00:00",
+  "past_complete": "2026-11-26",
+  "latest_snapshot": "2026-11-26T23:37:44.823770+00:00",
   "gates": [
     {
       "id": "quote",
@@ -30,8 +30,6 @@
         "CURRENT_SHARE_COUNT_AND_EFFECTIVE_ACTION_CHAIN_NOT_RECONCILED",
         "OPENING_PENDING_ACTION_STATE_UNVERIFIED",
         "PUBLIC_ACTION_REVIEW_DOES_NOT_COVER_ALL_ANNOUNCEMENTS",
-        "ACTION_PUBLICATION_WINDOW_MISSING",
-        "ACTION_COVERAGE_IS_RETRIEVAL_SNAPSHOT_ONLY",
         "SHANGHAI_CLEARING_DIVIDEND_PAYMENT_UNVERIFIED",
         "ISSUER_DIRECT_DIVIDEND_PAYMENT_UNVERIFIED",
         "CLOSING_SHARE_COUNT_UNVERIFIED",
@@ -48,8 +46,6 @@
         "PERIOD_DISTRIBUTIONS_AND_MODEL_INCLUSION_NOT_RECONCILED",
         "OPENING_PENDING_ACTION_STATE_UNVERIFIED",
         "PUBLIC_ACTION_REVIEW_DOES_NOT_COVER_ALL_ANNOUNCEMENTS",
-        "ACTION_PUBLICATION_WINDOW_MISSING",
-        "ACTION_COVERAGE_IS_RETRIEVAL_SNAPSHOT_ONLY",
         "SHANGHAI_CLEARING_DIVIDEND_PAYMENT_UNVERIFIED",
         "ISSUER_DIRECT_DIVIDEND_PAYMENT_UNVERIFIED",
         "CLOSING_SHARE_COUNT_UNVERIFIED",
@@ -63,8 +59,7 @@
       "id": "material_events",
       "status": "BLOCKED",
       "reason_codes": [
-        "EVENT_WINDOW_DOES_NOT_COVER_VALUATION_TO_QUOTE",
-        "INTRADAY_SNAPSHOT_NOT_FULL_WINDOW",
+        "MULTI_WINDOW_MATERIALITY_REPLAY_NOT_SUPPORTED",
         "EXACT_CANDIDATE_MATERIALITY_REVIEW_NOT_BOUND",
         "NATIVE_EVENT_REVIEW_NOT_COMPLETE",
         "material event scan evidence missing"
@@ -75,8 +70,7 @@
       "status": "BLOCKED",
       "reason_codes": [
         "REPORTED_PARENT_FINANCING_EXCEEDS_FULL_YEAR_POLICY",
-        "ISSUER_FINANCING_AFTER_RECOMPUTED_PERIOD_REQUIRES_CASH_RECONCILIATION",
-        "FINANCIAL_DISCLOSURE_WINDOW_INCOMPLETE"
+        "ISSUER_FINANCING_AFTER_RECOMPUTED_PERIOD_REQUIRES_CASH_RECONCILIATION"
       ]
     }
   ],
@@ -119,12 +113,12 @@
     "scope": "matched_public_announcements_for_registered_candidate",
     "new_ids": 0,
     "removed_ids": 0,
-    "complete_through": "2026-11-25",
-    "cninfo_day_observed_at": "2026-11-26T14:57:04.910345+00:00",
-    "sse_day_observed_at": "2026-11-26T14:57:05.988705+00:00",
+    "complete_through": "2026-11-26",
+    "cninfo_day_observed_at": "2026-11-26T23:37:44.588653+00:00",
+    "sse_day_observed_at": "2026-11-26T23:37:44.823770+00:00",
     "cninfo_day_count": 0,
     "sse_day_count": 0,
-    "full_day_elapsed": false,
+    "full_day_elapsed": true,
     "earliest_full_day_recheck": "2026-11-27T00:00:00+08:00"
   }
 }

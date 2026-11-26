@@ -4,6 +4,7 @@ import {
   api,
   ApiError,
   type FundingContinuation,
+  type InstallmentContinuation,
   type MaturityContinuation,
 } from "../services/api";
 
@@ -578,6 +579,104 @@ function Content({
   );
 }
 
+function InstallmentPanel({ task, receipt, symbol }: PanelProps) {
+  const [record, setRecord] = useState<InstallmentContinuation>();
+  const [status, setStatus] = useState("reading");
+  const [message, setMessage] = useState("");
+  useEffect(() => {
+    const controller = new AbortController();
+    api
+      .readInstallmentContinuation(task, receipt, symbol, controller.signal)
+      .then((value) => {
+        if (!controller.signal.aborted) {
+          setRecord(value);
+          setStatus("done");
+        }
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        if (
+          error instanceof ApiError &&
+          error.status === 404 &&
+          error.code === "CONTINUATION_NOT_SEALED"
+        )
+          setStatus("ready");
+        else {
+          setMessage(String(error));
+          setStatus("error");
+        }
+      });
+    return () => controller.abort();
+  }, [task, receipt, symbol]);
+  async function run() {
+    setStatus("running");
+    try {
+      setRecord(await api.runInstallmentContinuation(task, receipt, symbol));
+      setStatus("done");
+    } catch (error) {
+      setMessage(String(error));
+      setStatus("error");
+    }
+  }
+  const linked =
+    record?.task_id === task &&
+    record?.receipt_sha256 === receipt &&
+    record.symbol === symbol &&
+    record.action === "no_order" &&
+    record.continuation_version === "installment-v1";
+  return (
+    <section aria-label="分期偿债研究">
+      <h5>分期偿债研究</h5>
+      {status === "ready" && (
+        <button onClick={run}>按经营现金分期续算并封存</button>
+      )}
+      {status === "reading" && <p>正在读取分期研究历史…</p>}
+      {status === "running" && (
+        <p role="status">正在核验原件、复算并保存三种情景…</p>
+      )}
+      {status === "error" && (
+        <p role="alert">分期研究读取或执行失败。{message}</p>
+      )}
+      {status === "done" && !linked && <p>回执与当前研究版本无法核对。</p>}
+      {linked && record && (
+        <>
+          <p>{record.installment_recheck.base_basis}</p>
+          {(["bear", "base", "bull"] as const).map((name) => {
+            const row = record.installment_recheck.scenarios[name];
+            return (
+              <div key={name}>
+                <strong>
+                  {{ bear: "承压", base: "中心", bull: "乐观" }[name]}
+                </strong>
+                {row.status === "CALCULATED" ? (
+                  <span>　条件估值 {row.per_share_value} 元/股</span>
+                ) : (
+                  <span>
+                    　{row.first_failed_year} 年资金约束未通过
+                    {row.ledger &&
+                      "，距现金底线 " + yi(row.ledger.shortfall_cny) + " 亿元"}
+                  </span>
+                )}
+                {name === "base" &&
+                  row.financing_rows.slice(0, 2).map((year) => (
+                    <p key={year.year}>
+                      {year.year} 年 · 合同本金 {yi(year.known_principal_cny)}{" "}
+                      亿元，期限未明本金假设偿还{" "}
+                      {yi(year.assumed_proxy_repayment_cny)} 亿元，假设付息{" "}
+                      {yi(year.interest_cny)} 亿元，剩余期限未明本金{" "}
+                      {yi(year.closing_proxy_residual_cny)} 亿元。
+                    </p>
+                  ))}
+              </div>
+            );
+          })}
+          <small>未批准条件研究 · 封存回执 {record.continuation_sha256}</small>
+        </>
+      )}
+    </section>
+  );
+}
+
 export function FundingContinuationPanel(props: {
   task: string;
   receipt: string;
@@ -602,6 +701,10 @@ export function FundingContinuationPanel(props: {
           <section>
             {opened && (
               <section aria-label="偿债期限复核">
+                <InstallmentPanel
+                  key={props.receipt + props.task + props.symbol}
+                  {...props}
+                />
                 <h5>偿债期限复核</h5>
                 <Content
                   key={

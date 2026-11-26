@@ -2089,11 +2089,39 @@ export interface MaturityContinuation extends Pick<
   };
 }
 
+export interface InstallmentContinuation {
+  task_id: string;
+  symbol: string;
+  receipt_sha256: string;
+  continuation_sha256: string;
+  continuation_version: "installment-v1";
+  action: "no_order";
+  installment_recheck: {
+    base_basis: string;
+    scenarios: Record<
+      "bear" | "base" | "bull",
+      {
+        status: "CALCULATED" | "REJECTED";
+        per_share_value?: string;
+        first_failed_year: number | null;
+        ledger?: { shortfall_cny: string };
+        financing_rows: Array<{
+          year: number;
+          known_principal_cny: string;
+          assumed_proxy_repayment_cny: string;
+          interest_cny: string;
+          closing_proxy_residual_cny: string;
+        }>;
+      }
+    >;
+  };
+}
+
 function fundingContinuationPath(
   task: string,
   receipt: string,
   symbol: string,
-  version?: "maturity-v1",
+  version?: "maturity-v1" | "installment-v1",
 ) {
   return (
     "operating-research/parent-cash-tasks/v3/" +
@@ -2640,6 +2668,21 @@ export const api = {
   runFundingContinuation: (task: string, receipt: string, symbol: string) =>
     post<FundingContinuation>(
       fundingContinuationPath(task, receipt, symbol),
+      {},
+    ),
+  readInstallmentContinuation: (
+    task: string,
+    receipt: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<InstallmentContinuation>(
+      fundingContinuationPath(task, receipt, symbol, "installment-v1"),
+      signal,
+    ),
+  runInstallmentContinuation: (task: string, receipt: string, symbol: string) =>
+    post<InstallmentContinuation>(
+      fundingContinuationPath(task, receipt, symbol, "installment-v1"),
       {},
     ),
   readMaturityContinuation: (

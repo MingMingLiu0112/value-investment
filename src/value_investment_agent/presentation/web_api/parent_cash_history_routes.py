@@ -809,7 +809,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
             if body.strip() and not re.fullmatch(rb"\s*\{\s*\}\s*", body):
                 return reply(dict(status="INVALID_REPLAY_REQUEST", action="no_order"), 422)
         versions = request.query_params.getlist("version")
-        if versions and versions not in (["fixed-payment-v1"], ["maturity-v1"]):
+        if versions and versions not in (["fixed-payment-v1"], ["maturity-v1"], ["installment-v1"]):
             return reply(dict(status="CONTINUATION_VERSION_UNSUPPORTED", action="no_order"), 422)
         return await run_in_threadpool(funding_continuation, task_id, receipt_sha256, symbol, create,
                                        versions[0] if versions else "fixed-payment-v1")

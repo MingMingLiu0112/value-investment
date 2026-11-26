@@ -248,3 +248,26 @@ def test_maturity_post_is_sealed_separately_and_keeps_prior_get(page, monkeypatc
     assert current == page.client.get(url).json() == page.client.post(url).json()
     assert page.client.get(page.url).json() == legacy
     assert page.performed == ["fixed", "fixed"]
+
+
+def test_installment_replay_reopens_exact_task_and_keeps_old_history(page, monkeypatch):
+    from value_investment_agent.application.research import parent_cash_installment_recheck as installment
+
+    allow(monkeypatch)
+    old = page.client.post(page.url, json={}).json()
+    url = page.url + "&version=installment-v1"
+    assert page.client.get(url).status_code == 404
+
+    def installment_result(*args):
+        return dict(page.checker.run_check(*args), schema_version=installment.VERSION)
+
+    monkeypatch.setattr(installment, "run_check", installment_result)
+    response = page.client.post(url, json={})
+    assert response.status_code == 200, response.text
+    current = response.json()
+    assert current["task_id"] == old["task_id"]
+    assert current["continuation_sha256"] != old["continuation_sha256"]
+    assert current["installment_recheck"]["status"] == "REJECTED"
+    assert current == page.client.get(url).json() == page.client.post(url).json()
+    assert old == page.client.get(page.url).json()
+    assert page.performed == ["fixed", "fixed"]
