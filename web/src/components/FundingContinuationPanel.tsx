@@ -229,8 +229,9 @@ export function FundingContinuationPanel(props: {
             <p>
               上交所与巨潮公告目录匹配 {closeEvidence.matched}{" "}
               条；完整自然日覆盖至 {closeEvidence.past_complete}
-              ，已完成候选材料性批准 {closeEvidence.materiality} 条。登记候选{" "}
-              {closeEvidence.registered_candidate.slice(0, 12)}{" "}
+              ，已完成候选材料性批准 {
+                closeEvidence.materiality
+              } 条。登记候选 {closeEvidence.registered_candidate.slice(0, 12)}{" "}
               与本次融资修订分别核验，当前条件价留空。
             </p>
             <small>
