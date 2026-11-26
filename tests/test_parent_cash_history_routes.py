@@ -170,12 +170,13 @@ def test_numbered_history_is_visible_without_old_task_store(tmp_path, monkeypatc
     folder = tmp_path / "runtime/parent-cash-task-backed-receipts" / directory.name
     folder.mkdir(parents=True)
     receipt = folder / "conditional.json"
+    annual_row = dict(year=2027, cash_policy=dict(debt_repayment="3500000000"), cash_distribution_limit_cny="10", total_owner_distribution_cny="0", closing_cash_cny="20", closing_debt_cny="30")
     receipt.write_text(json.dumps(dict(
         scope="CONDITIONAL_SENSITIVITY_NOT_CURRENT_VALUATION",
         f2_status="NOT_EVALUATED_FOR_THIS_SENSITIVITY", action="no_order",
         valuation_basis="conditional_2026_year_end",
         cases={"fade": {"result": {"action": "no_order", "formal_eligibility": False,
-                                   "per_share_value": "1.37"}}})), encoding="utf-8")
+                                   "per_share_value": "1.37", "annual_rows": [annual_row]}}})), encoding="utf-8")
     registration = folder / "debt-timing-sensitivity.json"
     registration.write_text(json.dumps(dict(
         symbol="000568", task_id=directory.name, task_head=row["record_binding"],
@@ -187,6 +188,7 @@ def test_numbered_history_is_visible_without_old_task_store(tmp_path, monkeypatc
     assert item == client.get(url).json()["items"][0]
     sensitivity = item["debt_timing_sensitivity"]
     assert sensitivity["cases"]["fade"]["per_share_value"] == "1.37"
+    assert sensitivity["cases"]["fade"]["annual_cash"][0]["debt_repayment_cny"] == "3500000000"
     assert item["valuation_receipt_status"] == "NOT_SEALED"
     receipt.write_text("{}", encoding="utf-8")
     assert client.get(url).json()["items"][0]["debt_timing_sensitivity"] == {

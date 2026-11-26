@@ -1969,7 +1969,19 @@ export interface ParentCashTaskHistory {
       valuation_basis?: string;
       cases?: Record<
         string,
-        { status: string; per_share_value?: string; reason?: string }
+        {
+          status: string;
+          per_share_value?: string;
+          reason?: string;
+          annual_cash?: Array<{
+            year: number;
+            debt_repayment_cny: string;
+            cash_distribution_limit_cny: string;
+            total_owner_distribution_cny: string;
+            closing_cash_cny: string;
+            closing_debt_cny: string;
+          }>;
+        }
       >;
     } | null;
     status: string;

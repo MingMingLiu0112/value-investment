@@ -637,6 +637,23 @@ export function ParentCashTaskHistoryView({
                         {result.status === "CALCULATED"
                           ? `条件值 ${result.per_share_value} 元/股`
                           : `未形成条件值（${result.reason}）`}
+                        {!!result.annual_cash?.length && (
+                          <details>
+                            <summary>逐年现金、偿债与分配（元）</summary>
+                            <ul>
+                              {result.annual_cash.map((row) => (
+                                <li key={row.year}>
+                                  {row.year} 年 · 偿还本金{" "}
+                                  {row.debt_repayment_cny} · 现金分配上限{" "}
+                                  {row.cash_distribution_limit_cny} · 情景分配{" "}
+                                  {row.total_owner_distribution_cny} · 期末现金{" "}
+                                  {row.closing_cash_cny} · 期末债务{" "}
+                                  {row.closing_debt_cny}
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        )}
                       </li>
                     ),
                   )}

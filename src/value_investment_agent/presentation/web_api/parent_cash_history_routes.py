@@ -154,7 +154,21 @@ def _read_debt_timing_sensitivity(root, task_id, symbol, head):
                 value = Decimal(result["per_share_value"])
                 if not value.is_finite() or value < 0:
                     raise ValueError("SENSITIVITY_VALUE_INVALID")
-                cases[name] = {"status": "CALCULATED", "per_share_value": str(value)}
+                annual_cash = [
+                    {
+                        "year": row["year"],
+                        "debt_repayment_cny": row["cash_policy"]["debt_repayment"],
+                        "cash_distribution_limit_cny": row["cash_distribution_limit_cny"],
+                        "total_owner_distribution_cny": row["total_owner_distribution_cny"],
+                        "closing_cash_cny": row["closing_cash_cny"],
+                        "closing_debt_cny": row["closing_debt_cny"],
+                    }
+                    for row in result.get("annual_rows", [])
+                ]
+                cases[name] = {
+                    "status": "CALCULATED", "per_share_value": str(value),
+                    "annual_cash": annual_cash,
+                }
         return {"status": "VERIFIED_CONDITIONAL_SENSITIVITY", "cases": cases,
                 "receipt_sha256": binding["sha256"], "f2_status": receipt["f2_status"],
                 "valuation_basis": receipt["valuation_basis"]}
