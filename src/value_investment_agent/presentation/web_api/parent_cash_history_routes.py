@@ -123,7 +123,7 @@ def _settled_base_policy(service, predecessor, prior):
 def _read_debt_timing_sensitivity(root, task_id, symbol, head):
     """Read an explicitly registered, task-bound sensitivity without sealing a valuation."""
     from ...application.product.common import require_inside
-    from ...application.research.direct_owner_cash_research_v1 import _read
+    from ...application.research.direct_owner_cash_research_v1 import _bound, _read
 
     directory = root / "runtime" / "parent-cash-task-backed-receipts" / task_id
     path = require_inside(root / "runtime", directory / "debt-timing-sensitivity.json",
@@ -169,11 +169,73 @@ def _read_debt_timing_sensitivity(root, task_id, symbol, head):
                     "status": "CALCULATED", "per_share_value": str(value),
                     "annual_cash": annual_cash,
                 }
-        return {"status": "VERIFIED_CONDITIONAL_SENSITIVITY", "cases": cases,
+        base = {"status": "VERIFIED_CONDITIONAL_SENSITIVITY", "cases": cases,
                 "receipt_sha256": binding["sha256"], "f2_status": receipt["f2_status"],
                 "valuation_basis": receipt["valuation_basis"]}
     except (OSError, ValueError, TypeError, KeyError, ArithmeticError):
         return {"status": "SENSITIVITY_UNAVAILABLE"}
+
+    payout_registration = directory / "payout-stress.json"
+    try:
+        payout_registration = require_inside(directory, payout_registration, "payout stress registration")
+        if not payout_registration.exists():
+            return base
+        if payout_registration.stat().st_size > 4096:
+            raise ValueError("PAYOUT_STRESS_REGISTRATION_TOO_LARGE")
+        successor = json.loads(payout_registration.read_bytes())
+        if (successor["schema_version"] != "yili-interim-payout-stress-registration-v1"
+                or successor["task_id"] != task_id or successor["symbol"] != symbol
+                or successor["task_head"] != head or successor["parent_receipt_binding"] != binding):
+            raise ValueError("PAYOUT_STRESS_IDENTITY_CHANGED")
+        payout_binding = successor["receipt_binding"]
+        require_inside(directory, root / payout_binding["path"], "payout stress receipt")
+        payout = _read(root, payout_binding)
+        if (payout["schema_version"] != "yili-interim-payout-stress-v1"
+                or payout["scope"] != receipt["scope"] or payout["f2_status"] != receipt["f2_status"]
+                or payout["valuation_basis"] != receipt["valuation_basis"]
+                or payout["predecessor_binding"]["sha256"] != binding["sha256"]
+                or payout["action"] != "no_order" or payout["formal_eligibility"] is not False):
+            raise ValueError("PAYOUT_STRESS_SCOPE_INVALID")
+        sources = successor["source_bindings"]
+        if set(sources) != {"proposal", "resolution"} or set(payout["source_bindings"]) != set(sources):
+            raise ValueError("PAYOUT_STRESS_SOURCE_SET_INVALID")
+        for name, source in sources.items():
+            if source["sha256"] != payout["source_bindings"][name]["sha256"]:
+                raise ValueError("PAYOUT_STRESS_SOURCE_IDENTITY_CHANGED")
+            require_inside(directory, root / source["path"], "payout stress original")
+            _bound(root, source)
+        assumption = payout["cash_assumption"]
+        amount, year = assumption["gross_amount_cny"], assumption["year"]
+        if (assumption["classification"] != "HYPOTHETICAL_OWNER_DISTRIBUTION_STRESS"
+                or assumption["actual_payment_verified"] is not False
+                or assumption["implementation_verified"] is not False
+                or assumption["actual_payment_date"] is not None
+                or assumption["actual_record_date"] is not None
+                or type(year) is not int or year != 2027
+                or not isinstance(amount, str) or not re.fullmatch(r"[0-9]{1,18}\.[0-9]{2}", amount)
+                or Decimal(amount) <= 0 or set(payout["cases"]) != set(cases)):
+            raise ValueError("PAYOUT_STRESS_ASSUMPTION_INVALID")
+        rejected_years = {}
+        for name, case in payout["cases"].items():
+            error = case["result"].get("error")
+            if error is None:
+                if case["result"]["formal_eligibility"] is not False or case["result"]["action"] != "no_order":
+                    raise ValueError("PAYOUT_STRESS_RESULT_SCOPE_INVALID")
+                continue
+            rejected = re.fullmatch(
+                r"DIRECT_OWNER_(?:UNFUNDED_CASH_REQUIREMENT|SCHEDULED_DISTRIBUTION_REQUIRES_BORROWING_OR_CASH"
+                r"|SCHEDULED_DISTRIBUTION_EXCEEDS_CAPACITY):([0-9]{4})", error,
+            )
+            if not rejected or int(rejected[1]) not in {row["year"] for row in case["years"]}:
+                raise ValueError("PAYOUT_STRESS_REJECTION_INVALID")
+            rejected_years[name] = int(rejected[1])
+        base["payout_stress"] = dict(
+            status="VERIFIED", amount_cny=amount, year=year, actual_payment_verified=False,
+            receipt_sha256=payout_binding["sha256"], rejected_years=rejected_years,
+        )
+    except (OSError, ValueError, TypeError, KeyError, ArithmeticError):
+        base["payout_stress"] = {"status": "UNAVAILABLE"}
+    return base
 
 
 def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port):

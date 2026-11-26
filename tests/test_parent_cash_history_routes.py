@@ -757,3 +757,59 @@ def test_v4_policy_successor_requires_authorized_settled_predecessor(
             assert not calls
         if expected in {401, 403}:
             assert not reads
+
+@pytest.mark.parametrize("fault", [None, "missing", "head", "parent", "receipt", "source", "payment"])
+def test_payout_stress_history_validates_successor_without_hiding_parent(tmp_path, fault):
+    from hashlib import sha256
+
+    task = "rt-" + "a" * 32
+    directory = tmp_path / "runtime" / "parent-cash-task-backed-receipts" / task
+    directory.mkdir(parents=True)
+
+    def bind(name, value):
+        path = directory / name
+        data = value if isinstance(value, bytes) else json.dumps(value).encode("utf-8")
+        path.write_bytes(data)
+        return {"path": path.relative_to(tmp_path).as_posix(), "sha256": sha256(data).hexdigest()}
+
+    head = {"path": "runtime/head.json", "sha256": "a" * 64}
+    scope = "CONDITIONAL_SENSITIVITY_NOT_CURRENT_VALUATION"
+    f2 = "NOT_EVALUATED_FOR_THIS_SENSITIVITY"
+    original_result = dict(formal_eligibility=False, action="no_order", per_share_value="1.37")
+    parent = bind("parent.json", dict(scope=scope, action="no_order", f2_status=f2,
+                  valuation_basis="conditional_2026_year_end", cases={"fade": {"result": original_result}}))
+    identity = dict(task_id=task, symbol="600887", task_head=head)
+    bind("debt-timing-sensitivity.json", dict(**identity, receipt_binding=parent))
+    sources = {name: bind(name + ".pdf", name.encode()) for name in ("proposal", "resolution")}
+    payout = bind("payout.json", dict(
+        schema_version="yili-interim-payout-stress-v1", scope=scope, action="no_order",
+        f2_status=f2, formal_eligibility=False, valuation_basis="conditional_2026_year_end",
+        predecessor_binding=parent, source_bindings=sources,
+        cash_assumption=dict(classification="HYPOTHETICAL_OWNER_DISTRIBUTION_STRESS",
+                             year=2027, gross_amount_cny="2655895396.14", actual_payment_verified=fault == "payment",
+                             implementation_verified=False, actual_payment_date=None, actual_record_date=None),
+        cases={"fade": {"years": [{"year": 2029}],
+                        "result": {"error": "DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2029"}}},
+    ))
+    registration = dict(**identity, schema_version="yili-interim-payout-stress-registration-v1",
+                        parent_receipt_binding=parent, receipt_binding=payout, source_bindings=sources)
+    if fault == "head":
+        registration["task_head"] = dict(head, sha256="b" * 64)
+    if fault == "parent":
+        registration["parent_receipt_binding"] = dict(parent, sha256="b" * 64)
+    if fault != "missing":
+        bind("payout-stress.json", registration)
+    if fault in {"receipt", "source"}:
+        (directory / ("payout.json" if fault == "receipt" else "proposal.pdf")).write_bytes(b"tampered")
+    history = routes._read_debt_timing_sensitivity(tmp_path, task, "600887", head)
+    assert history["status"] == "VERIFIED_CONDITIONAL_SENSITIVITY"
+    assert history["cases"]["fade"]["per_share_value"] == "1.37"
+    if fault == "missing":
+        assert "payout_stress" not in history
+    elif fault:
+        assert history["payout_stress"] == {"status": "UNAVAILABLE"}
+    else:
+        assert history["payout_stress"] == dict(
+            status="VERIFIED", amount_cny="2655895396.14", year=2027, actual_payment_verified=False,
+            receipt_sha256=payout["sha256"], rejected_years={"fade": 2029},
+        )
