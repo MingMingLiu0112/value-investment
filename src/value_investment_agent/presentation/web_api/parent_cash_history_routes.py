@@ -120,6 +120,48 @@ def _settled_base_policy(service, predecessor, prior):
             and charge.get("status") == "SETTLED")
 
 
+def _read_debt_timing_sensitivity(root, task_id, symbol, head):
+    """Read an explicitly registered, task-bound sensitivity without sealing a valuation."""
+    from ...application.product.common import require_inside
+    from ...application.research.direct_owner_cash_research_v1 import _read
+
+    directory = root / "runtime" / "parent-cash-task-backed-receipts" / task_id
+    path = require_inside(root / "runtime", directory / "debt-timing-sensitivity.json",
+                          "debt timing sensitivity registration")
+    if not path.is_file():
+        return None
+    try:
+        if path.stat().st_size > 4096:
+            raise ValueError("SENSITIVITY_REGISTRATION_TOO_LARGE")
+        registration = json.loads(path.read_bytes())
+        if (registration["symbol"] != symbol or registration["task_id"] != task_id
+                or registration["task_head"] != head):
+            raise ValueError("SENSITIVITY_TASK_IDENTITY_CHANGED")
+        binding = registration["receipt_binding"]
+        receipt = _read(root, binding)
+        if (receipt["scope"] != "CONDITIONAL_SENSITIVITY_NOT_CURRENT_VALUATION"
+                or receipt["action"] != "no_order"
+                or receipt["f2_status"] != "NOT_EVALUATED_FOR_THIS_SENSITIVITY"):
+            raise ValueError("SENSITIVITY_SCOPE_INVALID")
+        cases = {}
+        for name, case in receipt["cases"].items():
+            result = case["result"]
+            if "error" in result:
+                cases[name] = {"status": "REJECTED", "reason": result["error"]}
+            else:
+                if result["formal_eligibility"] is not False or result["action"] != "no_order":
+                    raise ValueError("SENSITIVITY_RESULT_SCOPE_INVALID")
+                value = Decimal(result["per_share_value"])
+                if not value.is_finite() or value < 0:
+                    raise ValueError("SENSITIVITY_VALUE_INVALID")
+                cases[name] = {"status": "CALCULATED", "per_share_value": str(value)}
+        return {"status": "VERIFIED_CONDITIONAL_SENSITIVITY", "cases": cases,
+                "receipt_sha256": binding["sha256"], "f2_status": receipt["f2_status"],
+                "valuation_basis": receipt["valuation_basis"]}
+    except (OSError, ValueError, TypeError, KeyError, ArithmeticError):
+        return {"status": "SENSITIVITY_UNAVAILABLE"}
+
+
 def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port):
     root = resolve_research_task_root(project)
     service = ParentCashTaskServiceV2(root)
@@ -769,6 +811,8 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                     for row in reservations.values()],
                         **read_valuation_publication(
                             code_root if archived else Path(root), directory.name, binding),
+                        "debt_timing_sensitivity": _read_debt_timing_sensitivity(
+                            code_root if archived else Path(root).resolve(), directory.name, symbol, binding),
                         "candidate_status": ("COMPILED_CONDITIONAL_NOT_MAIN" if state["status"] == "SUCCEEDED"
                                              else "NOT_COMPILED"),
                         "e2_consumption": "UNVERIFIED", "formal": False, "action": "no_order"})

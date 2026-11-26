@@ -1963,6 +1963,15 @@ export interface ParentCashTaskHistory {
     terminal_cohort_continuation?: boolean;
     terminal_cash_review?: string | null;
     candidate_status?: "COMPILED_CONDITIONAL_NOT_MAIN" | "NOT_COMPILED";
+    debt_timing_sensitivity?: {
+      status: "VERIFIED_CONDITIONAL_SENSITIVITY" | "SENSITIVITY_UNAVAILABLE";
+      receipt_sha256?: string;
+      valuation_basis?: string;
+      cases?: Record<
+        string,
+        { status: string; per_share_value?: string; reason?: string }
+      >;
+    } | null;
     status: string;
     stage: string | null;
     completed_stages: string[];

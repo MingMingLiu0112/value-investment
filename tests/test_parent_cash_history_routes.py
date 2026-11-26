@@ -165,6 +165,34 @@ def test_numbered_history_is_visible_without_old_task_store(tmp_path, monkeypatc
     assert row["e2_consumption"] == "UNVERIFIED"
     assert row["action"] == "no_order"
 
+    from hashlib import sha256
+
+    folder = tmp_path / "runtime/parent-cash-task-backed-receipts" / directory.name
+    folder.mkdir(parents=True)
+    receipt = folder / "conditional.json"
+    receipt.write_text(json.dumps(dict(
+        scope="CONDITIONAL_SENSITIVITY_NOT_CURRENT_VALUATION",
+        f2_status="NOT_EVALUATED_FOR_THIS_SENSITIVITY", action="no_order",
+        valuation_basis="conditional_2026_year_end",
+        cases={"fade": {"result": {"action": "no_order", "formal_eligibility": False,
+                                   "per_share_value": "1.37"}}})), encoding="utf-8")
+    registration = folder / "debt-timing-sensitivity.json"
+    registration.write_text(json.dumps(dict(
+        symbol="000568", task_id=directory.name, task_head=row["record_binding"],
+        receipt_binding=dict(path=receipt.relative_to(tmp_path).as_posix(),
+                             sha256=sha256(receipt.read_bytes()).hexdigest()))), encoding="utf-8")
+    url = "/api/v1/operating-research/parent-cash-tasks/history?symbol=000568"
+    client = TestClient(app)
+    item = client.get(url).json()["items"][0]
+    assert item == client.get(url).json()["items"][0]
+    sensitivity = item["debt_timing_sensitivity"]
+    assert sensitivity["cases"]["fade"]["per_share_value"] == "1.37"
+    assert item["valuation_receipt_status"] == "NOT_SEALED"
+    receipt.write_text("{}", encoding="utf-8")
+    assert client.get(url).json()["items"][0]["debt_timing_sensitivity"] == {
+        "status": "SENSITIVITY_UNAVAILABLE",
+    }
+
 
 def test_sibling_execution_root_keeps_code_checkout_v3_history_read_only(tmp_path, monkeypatch):
     code_root = tmp_path / "code"

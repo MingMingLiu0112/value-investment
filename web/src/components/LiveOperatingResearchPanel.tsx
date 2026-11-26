@@ -616,6 +616,43 @@ export function ParentCashTaskHistoryView({
             {item.completed_stages.join("、") || "无"}· 预留 ¥
             {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
             实际使用：未核实
+            {item.debt_timing_sensitivity?.status ===
+              "VERIFIED_CONDITIONAL_SENSITIVITY" && (
+              <section aria-label="债务期限条件试算">
+                <h5>债务期限条件试算 · 未批准</h5>
+                <p>
+                  以 2026 年情景年末为基准。已证本金按披露日期偿还，
+                  其余本金按假设分期。仅供压力复核，当前价格不可比较。
+                </p>
+                <ul>
+                  {Object.entries(item.debt_timing_sensitivity.cases ?? {}).map(
+                    ([name, result]) => (
+                      <li key={name}>
+                        {name === "FADE_TO_HISTORICAL_FY25"
+                          ? "资本开支回落"
+                          : name === "PERSIST_AT_CONDITIONAL_FY26"
+                            ? "资本开支持续偏高"
+                            : name}
+                        {" · "}
+                        {result.status === "CALCULATED"
+                          ? `条件值 ${result.per_share_value} 元/股`
+                          : `未形成条件值（${result.reason}）`}
+                      </li>
+                    ),
+                  )}
+                </ul>
+                <p>
+                  回执 SHA-256：{item.debt_timing_sensitivity.receipt_sha256}
+                </p>
+                <p>
+                  正式 V3 仍须封存；跨日股本、分配和重大事件按 F2 结果复核。
+                </p>
+              </section>
+            )}
+            {item.debt_timing_sensitivity?.status ===
+              "SENSITIVITY_UNAVAILABLE" && (
+              <p role="alert">债务期限试算回执暂无法核验。</p>
+            )}
             {onContinue &&
               !item.read_only_archive &&
               item.status === "FAILED" &&
