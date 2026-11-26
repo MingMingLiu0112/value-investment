@@ -567,7 +567,23 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                       task_id=task_id, symbol=symbol,
                                       reason=blocked[0]["valuation_blockage"]["reason_code"],
                                       **blocked[0]), 409)
-                return reply(dict(status="PARENT_TASK_VALUATION_NOT_SEALED", action="no_order"), 404)
+                response = dict(status="PARENT_TASK_VALUATION_NOT_SEALED", action="no_order")
+                task_services = [
+                    service for service in (numbered_service, archived_numbered_service)
+                    if getattr(service, "base", None) is not None
+                    and (Path(service.base) / task_id).is_dir()
+                ]
+                if len(task_services) > 1:
+                    raise ValueError("PARENT_TASK_DUPLICATE_TASK_STATE")
+                if task_services:
+                    task_service = task_services[0]
+                    spec, state, _ = task_service._load(task_id)
+                    if task_service._bound(spec["spec_binding"]).get("symbol") == symbol:
+                        response["task_status"] = state["status"]
+                        code = state.get("error_code")
+                        if isinstance(code, str) and re.fullmatch(r"[A-Z0-9_]{3,120}", code):
+                            response["task_error_code"] = code
+                return reply(response, 404)
             if len(available) != 1:
                 raise ValueError("PARENT_TASK_DUPLICATE_VALUATION_RECEIPT")
             task_root, path = available[0]

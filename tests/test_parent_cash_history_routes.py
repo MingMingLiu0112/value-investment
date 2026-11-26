@@ -190,6 +190,13 @@ def test_numbered_history_is_visible_without_old_task_store(tmp_path, monkeypatc
     assert sensitivity["cases"]["fade"]["per_share_value"] == "1.37"
     assert sensitivity["cases"]["fade"]["annual_cash"][0]["debt_repayment_cny"] == "3500000000"
     assert item["valuation_receipt_status"] == "NOT_SEALED"
+    valuation_url = f"/api/v1/operating-research/parent-cash-tasks/v3/{directory.name}/valuation"
+    not_sealed = client.get(valuation_url, params={"symbol": "000568"})
+    assert not_sealed.status_code == 404
+    assert not_sealed.json()["task_status"] == "SUCCEEDED"
+    wrong_company = client.get(valuation_url, params={"symbol": "600887"})
+    assert wrong_company.status_code == 404
+    assert "task_status" not in wrong_company.json()
     receipt.write_text("{}", encoding="utf-8")
     assert client.get(url).json()["items"][0]["debt_timing_sensitivity"] == {
         "status": "SENSITIVITY_UNAVAILABLE",
