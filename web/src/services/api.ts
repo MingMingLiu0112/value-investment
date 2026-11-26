@@ -2387,7 +2387,7 @@ export const api = {
         "/valuation?symbol=" +
         encodeURIComponent(symbol),
       signal,
-      [404, 422],
+      [422],
     ),
   parentCashH1Sensitivity: (
     taskId: string,
