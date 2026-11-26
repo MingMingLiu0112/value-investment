@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from value_investment_agent.application.research import yili_interim_payout_stress_v1 as service
+from value_investment_agent.infrastructure.evidence import yili_interim_payout_stress_v1 as service
 
 
 def test_hypothetical_payment_changes_only_the_first_year_and_rejects_overlap():

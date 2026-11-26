@@ -12,7 +12,7 @@ from ...infrastructure.filings.interim_dividend_resolution import parse_interim_
 from ...infrastructure.filings.official_pdf import validate_pdf_original
 from ...infrastructure.filings.pdf_text import extract_pages
 from ...infrastructure.filings.sse_capital_checkpoint_v1 import parse_sse_capital_checkpoint
-from ..product.common import require_inside
+from .historical_price_correspondence import require_inside
 
 VERSION = "yili-interim-payout-stress-v1"
 SCOPE = "CONDITIONAL_SENSITIVITY_NOT_CURRENT_VALUATION"
