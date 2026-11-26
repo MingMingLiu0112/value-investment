@@ -525,7 +525,16 @@ def _cross_date_row_proofs(*, start, end, action_rows, cash_rows, cancellations,
         "UNRESOLVED" if ledger or proof_rows else "NO_IN_PERIOD_ROWS")
     return dict(status=status, matched_rows=matched, unmatched_ledger_ids=unmatched_ledger,
                 unmatched_native_proofs=unmatched_proofs, ambiguous_ledger_ids=ambiguous_ledger,
-                duplicate_native_proofs=[proof_rows[i] for i in sorted(duplicate_proofs)])
+                duplicate_native_proofs=[proof_rows[i] for i in sorted(duplicate_proofs)],
+                unverified_cash_payment_ledger_ids=sorted(
+                    row["ledger_id"] for row in matched
+                    if row["kind"] == "CASH_DISTRIBUTION" and not row["cash_payment_proven"]
+                ),
+                unverified_cash_model_inclusion_ledger_ids=sorted(
+                    row["ledger_id"] for row in matched
+                    if row["kind"] == "CASH_DISTRIBUTION"
+                    and row["model_inclusion"] != "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE"
+                ))
 
 
 def _cross_date_action_facts(*, ledger_binding, ledger, start, end, windows, action_rows,

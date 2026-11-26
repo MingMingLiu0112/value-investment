@@ -214,6 +214,18 @@ def test_cross_date_facts_use_native_terminal_observations_and_reject_conflictin
     assert proof["status"] == "MATCHED"
     assert [row["ledger_id"] for row in proof["matched_rows"]] == ["cancel", "cash"]
     assert proof["matched_rows"][1]["cash_payment_proven"] is False
+    assert proof["unverified_cash_payment_ledger_ids"] == ["cash"]
+    assert proof["unverified_cash_model_inclusion_ledger_ids"] == ["cash"]
+
+    included = deepcopy(inputs)
+    included["cash_rows"][0]["model_inclusion"] = (
+        "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE"
+    )
+    included_proof = service._cross_date_action_facts(
+        **included, windows=[window],
+    )["row_proof_reconciliation"]
+    assert included_proof["unverified_cash_model_inclusion_ledger_ids"] == []
+    assert included_proof["unverified_cash_payment_ledger_ids"] == ["cash"]
     assert facts["status"] == "BLOCKED"
     assert not facts["current_price_basis_compatible"]
 
