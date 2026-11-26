@@ -1,0 +1,84 @@
+{
+  "symbol": "600887",
+  "date": "2026-11-26",
+  "parent_receipt": "ed62be290ebcffebf47e1c22cd235d77767e42f1d8b13ff4f1273875257c0a19",
+  "registered_candidate": "dcf8dcf4dbf3965d31c5e787d22d103d4fb2e6bc6a8ca3f2fbc682e21eecf027",
+  "report_sha256": "3368e64bf167d466f44fb78d5721d265573e9c4eb30970409d21129d233443d7",
+  "quote_source": "https://www.cninfo.com.cn/new/disclosure/stock?orgId=gssh0600887&stockCode=600887",
+  "observed": "2026-11-26T13:58:07.849852+00:00",
+  "close": 33.43,
+  "quoted_shares": 6325360667,
+  "registered_shares": null,
+  "market_frame_sha": "c18dd4e57eb8762d3151f1156da45c5cfe18de799b742a3367e355b55f21e202",
+  "direct_gross": "28287851.40",
+  "clearing_gross": "5664536748.90",
+  "settled": null,
+  "matched": 123,
+  "materiality": 0,
+  "past_complete": "2026-11-25",
+  "latest_snapshot": "2026-11-26T13:46:47.055507+00:00",
+  "gates": [
+    {
+      "id": "quote",
+      "status": "PASS",
+      "reason_codes": []
+    },
+    {
+      "id": "capital_structure",
+      "status": "BLOCKED",
+      "reason_codes": [
+        "CURRENT_SHARE_COUNT_AND_EFFECTIVE_ACTION_CHAIN_NOT_RECONCILED",
+        "OPENING_PENDING_ACTION_STATE_UNVERIFIED",
+        "PUBLIC_ACTION_REVIEW_DOES_NOT_COVER_ALL_ANNOUNCEMENTS",
+        "ACTION_PUBLICATION_WINDOW_MISSING",
+        "ACTION_COVERAGE_IS_RETRIEVAL_SNAPSHOT_ONLY",
+        "SHANGHAI_CLEARING_DIVIDEND_PAYMENT_UNVERIFIED",
+        "ISSUER_DIRECT_DIVIDEND_PAYMENT_UNVERIFIED",
+        "CLOSING_SHARE_COUNT_UNVERIFIED",
+        "EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING",
+        "OPENING_PENDING_SCHEMES_AND_EFFECTIVE_ACTION_CHAIN_INCOMPLETE",
+        "PERIOD_DISTRIBUTION_COVERAGE_AND_MODEL_INCLUSION_UNVERIFIED",
+        "CROSS_DATE_NATIVE_CAPITAL_AND_DISTRIBUTION_CLOSURE_NOT_SUPPORTED"
+      ]
+    },
+    {
+      "id": "distributions",
+      "status": "BLOCKED",
+      "reason_codes": [
+        "PERIOD_DISTRIBUTIONS_AND_MODEL_INCLUSION_NOT_RECONCILED",
+        "OPENING_PENDING_ACTION_STATE_UNVERIFIED",
+        "PUBLIC_ACTION_REVIEW_DOES_NOT_COVER_ALL_ANNOUNCEMENTS",
+        "ACTION_PUBLICATION_WINDOW_MISSING",
+        "ACTION_COVERAGE_IS_RETRIEVAL_SNAPSHOT_ONLY",
+        "SHANGHAI_CLEARING_DIVIDEND_PAYMENT_UNVERIFIED",
+        "ISSUER_DIRECT_DIVIDEND_PAYMENT_UNVERIFIED",
+        "CLOSING_SHARE_COUNT_UNVERIFIED",
+        "EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING",
+        "OPENING_PENDING_SCHEMES_AND_EFFECTIVE_ACTION_CHAIN_INCOMPLETE",
+        "PERIOD_DISTRIBUTION_COVERAGE_AND_MODEL_INCLUSION_UNVERIFIED",
+        "CROSS_DATE_NATIVE_CAPITAL_AND_DISTRIBUTION_CLOSURE_NOT_SUPPORTED"
+      ]
+    },
+    {
+      "id": "material_events",
+      "status": "BLOCKED",
+      "reason_codes": [
+        "EVENT_WINDOW_DOES_NOT_COVER_VALUATION_TO_QUOTE",
+        "INTRADAY_SNAPSHOT_NOT_FULL_WINDOW",
+        "EXACT_CANDIDATE_MATERIALITY_REVIEW_NOT_BOUND",
+        "NATIVE_EVENT_REVIEW_NOT_COMPLETE",
+        "material event scan evidence missing"
+      ]
+    },
+    {
+      "id": "financial_updates",
+      "status": "BLOCKED",
+      "reason_codes": [
+        "REPORTED_PARENT_FINANCING_EXCEEDS_FULL_YEAR_POLICY",
+        "ISSUER_FINANCING_AFTER_RECOMPUTED_PERIOD_REQUIRES_CASH_RECONCILIATION",
+        "FINANCIAL_DISCLOSURE_WINDOW_INCOMPLETE"
+      ]
+    }
+  ],
+  "action": "no_order"
+}

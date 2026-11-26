@@ -1,3 +1,4 @@
+import closeEvidence from "../config/valueCloseEvidence.v1.json";
 import { useEffect, useState } from "react";
 import { api, ApiError, type FundingContinuation } from "../services/api";
 
@@ -191,6 +192,52 @@ export function FundingContinuationPanel(props: {
     >
       <summary>V3 续跑 · 已付款与偿债对账</summary>
       {opened && <Content {...props} />}
+      {props.symbol === closeEvidence.symbol &&
+        props.receipt === closeEvidence.parent_receipt && (
+          <section>
+            <h5>F2 收盘证据快照 · {closeEvidence.date}</h5>
+            <p>
+              <a
+                href={closeEvidence.quote_source}
+                target="_blank"
+                rel="noreferrer"
+              >
+                巨潮收盘行情
+              </a>{" "}
+              {closeEvidence.close.toFixed(2)} 元，行情字段直接给出总股本{" "}
+              {closeEvidence.quoted_shares.toLocaleString("zh-CN")}{" "}
+              股。与发行人此前披露一致；当日登记股数及期间注销生效链仍待核。
+            </p>
+            <p>
+              <a
+                href="https://static.cninfo.com.cn/finalpage/2026-05-29/1225335436.PDF"
+                target="_blank"
+                rel="noreferrer"
+              >
+                年度分红实施公告
+              </a>
+              对应的公司自发毛额测算{" "}
+              {Number(closeEvidence.direct_gross).toLocaleString("zh-CN", {
+                minimumFractionDigits: 2,
+              })}{" "}
+              元，结算机构代发毛额测算{" "}
+              {Number(closeEvidence.clearing_gross).toLocaleString("zh-CN", {
+                minimumFractionDigits: 2,
+              })}{" "}
+              元。两路实付凭证待核，中期方案尚缺付款证明。
+            </p>
+            <p>
+              上交所与巨潮公告目录匹配 {closeEvidence.matched}{" "}
+              条；完整自然日覆盖至 {closeEvidence.past_complete}
+              ，已完成候选材料性批准 {closeEvidence.materiality} 条。登记候选{" "}
+              {closeEvidence.registered_candidate.slice(0, 12)}{" "}
+              与本次融资修订分别核验，当前条件价留空。
+            </p>
+            <small>
+              收盘后取证 · F2 回执 {closeEvidence.report_sha256.slice(0, 12)}
+            </small>
+          </section>
+        )}
     </details>
   );
 }
