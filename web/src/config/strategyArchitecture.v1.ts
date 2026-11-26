@@ -54,8 +54,8 @@ export interface DeliveryReview {
   runHref: string;
 }
 export const deliveryReviewMeta = {
-  reviewedAt: "2026-11-23",
-  baseline: "f58bf84b",
+  reviewedAt: "2026-11-26",
+  baseline: "9a895dd9",
   kind: "人工交付复核，不是实时运行状态",
 } as const;
 export interface Stage {
@@ -1219,7 +1219,7 @@ export const catalog: Record<
           how: "核对股本、期间分配、事件、模型有效性和合格报价。",
           scope: "已列明的真实能力；尚不标模块整体完成。",
           done: "已支持以实施公告逐笔匹配候选分配，并用登记日和除息日两条未复权收盘重放单次全股本现金分红。公司页可查每股权益、理论除息参考价、实际收盘与原始依据；回购、注销与计划购股分别核对。",
-          gap: "报价与财务更新已通过，已实施分配已进入模型；比较日股本连续性、期间全部行动/分配覆盖及精确候选材料性仍未闭合，因此不输出当前买价。",
+          gap: "最近收盘报价已核验，六月分配已在候选中复算。比较日股本、全期间分配、融资现金影响与重大事件复核仍有缺口，当前无法判断价格吸引力。",
           acceptance: "完整对齐正例能产未批准条件价；不齐时准确拒绝。",
           evidence: ["docs/current/value-mainline-p0-20261101/d2-f-audit.md"],
           runHref: "/strategy/value",

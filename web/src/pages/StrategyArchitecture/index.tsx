@@ -638,18 +638,22 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
         <Link to="/strategy/value">价值研究工作台</Link>
       </nav>
       {strategy === "value" && (
-        <Card title="最近交付 · 2026-11-23" size="small">
+        <Card
+          title={`最近交付 · ${deliveryReviewMeta.reviewedAt}`}
+          size="small"
+        >
           <p>
-            伊利 V3 已从公司页发起真实研究，刷新后能找回同一任务。旧版 000568
-            回执冷重放通过。
+            伊利原任务历史已保存中期分红压力复算。假设 2027 年按预案参考金额支付
+            26.56 亿元，资本开支回落时 2029 年出现资金缺口，持续高投入时提前至
+            2028 年。付款时间与最终金额待核。
           </p>
           <p>
-            最新续跑复用了 Bear 经营与现金政策。终值草案存在 1.81
-            亿元稳态资金缺口，D2 拒绝该情景。E2、F1 自动封存和 F2
-            跨日判断尚未取得本轮结果。
+            D2 的 Base 终值仍缺长期投入及纯利息依据。E2、F1
+            已消费条件路径，本次正式三情景估值尚未封存。
           </p>
           <p>
-            原件复核确认经营税已计入经营现金，不能再次扣除。总资本开支与混合付息行仍缺稳态拆分，现有证据不足以支持调低支出。
+            F2
+            已复算一次历史除息。最新报价与当前估值能否比较，见公司详情的股本、分配与事件检查。
           </p>
           <Link to="/decisions/600887?strategy=value">打开伊利研究详情</Link>
         </Card>
