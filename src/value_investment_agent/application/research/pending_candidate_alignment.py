@@ -2480,10 +2480,10 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
         if reconciliation_error:
             for index in (1, 2):
                 checks[index]["reason_codes"].append(reconciliation_error)
-            ready = False
+                checks[index]["status"] = "BLOCKED"
         if event_error:
             checks[3]["reason_codes"].append(event_error)
-            ready = False
+            checks[3]["status"] = "BLOCKED"
         # Official event terms are a separate research result. A parser success
         # neither changes frozen assumptions nor signs the materiality review.
         operating_events = _operating_events(analysis, windows, now, read, page_cache=event_pages)
@@ -2587,12 +2587,15 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
                 checks[index]["reason_codes"].append("INTERIM_DISTRIBUTION_AUTHORIZATION_FOLLOWUP_NOT_RECONCILED")
                 checks[index]["status"] = "BLOCKED"
                 ready = False
+        late_blockers = [reason for reason in (reconciliation_error, event_error) if reason]
         if opening_chain["outstanding_authorizations"]:
-            followup_blockers = list(dict.fromkeys([*validity.blockers,
-                "INTERIM_DISTRIBUTION_AUTHORIZATION_FOLLOWUP_NOT_RECONCILED"]))
+            late_blockers.append("INTERIM_DISTRIBUTION_AUTHORIZATION_FOLLOWUP_NOT_RECONCILED")
+        if late_blockers:
+            blockers = list(dict.fromkeys([*bridge.blockers, *validity.blockers, *late_blockers]))
             validity = replace(validity, status="UNKNOWN" if validity.status == "VALID" else validity.status,
-                blockers=followup_blockers)
-            bridge = bridge_with_quote(valuation, validity, quote, blockers=followup_blockers)
+                blockers=blockers)
+            bridge = bridge_with_quote(valuation, validity, quote, blockers=blockers)
+            ready = False
         result.update(checks=checks, model_validity=json.loads(validity.to_json()),
             price_bridge=json.loads(bridge.to_json()), currentpricecomparison=ready,
             status="ALIGNED_FOR_RESEARCH_COMPARISON" if ready else "BLOCKED",

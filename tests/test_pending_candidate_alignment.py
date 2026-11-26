@@ -622,6 +622,38 @@ def test_native_raw_window_stays_pending_and_does_not_approve_reconciled_basis(r
     assert not ready
 
 
+def test_replay_failures_block_checks_and_price_bridge(reconciliation, monkeypatch):
+    case = reconciliation
+    root, analysis = case["root"], case["analysis"]
+    candidate = analysis["review_binding"]["candidate_binding"]
+    event = write(root, "runtime/events/broken.json", {"TEST_ONLY": True})
+    ledger = write(root, "runtime/reconciliation.json", case["ledger"])
+    write(root, f"{service.CONFIG_DIRECTORY}/{candidate['sha256']}.json", dict(
+        schema_version=service.INPUT_SCHEMA, candidate_binding=candidate,
+        input_descriptor_sha256=analysis["input_descriptor_sha256"],
+        event_observation_bindings=[event], reconciliation_binding=ledger,
+    ))
+    (root / event["path"]).write_bytes(b"changed event")
+    (root / ledger["path"]).write_bytes(b"changed reconciliation")
+
+    def replay_windows(root, analysis, bindings, now, read):
+        for binding in bindings:
+            read(binding)
+        return [], []
+
+    monkeypatch.setattr(service, "_event_windows", replay_windows)
+    result = service.load_pending_candidate_alignment(root=root, analysis=analysis, now=case["now"])
+    assert result["status"] == "BLOCKED" and not result["currentpricecomparison"]
+    for index, prefix in ((1, "RECONCILIATION_REPLAY_FAILED:"),
+                          (2, "RECONCILIATION_REPLAY_FAILED:"),
+                          (3, "EVENT_SOURCE_REPLAY_FAILED:")):
+        check = result["checks"][index]
+        assert check["status"] == "BLOCKED"
+        reason, = [reason for reason in check["reason_codes"] if reason.startswith(prefix)]
+        assert reason in result["model_validity"]["blockers"]
+        assert reason in result["price_bridge"]["blockers"]
+
+
 def test_legacy_draft_comparison_flags_and_thresholds_stay_unchanged(reconciliation, monkeypatch):
     case = reconciliation
     price = dict(draft_prices=dict(entry="10", reduce="30", add=None, exit=None),
