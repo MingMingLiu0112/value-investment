@@ -1968,6 +1968,17 @@ export interface ParentCashTaskHistory {
     candidate_status?: "COMPILED_CONDITIONAL_NOT_MAIN" | "NOT_COMPILED";
     debt_timing_sensitivity?: {
       status: "VERIFIED_CONDITIONAL_SENSITIVITY" | "SENSITIVITY_UNAVAILABLE";
+      payout_stress?:
+        | { status: "UNAVAILABLE" }
+        | {
+            status: "VERIFIED";
+            amount_cny: string;
+            year: number;
+            actual_payment_verified: false;
+            receipt_sha256: string;
+            rejected_years: Record<string, number>;
+          }
+        | null;
       receipt_sha256?: string;
       valuation_basis?: string;
       cases?: Record<
@@ -2357,12 +2368,21 @@ export const api = {
           }
         | { classification: "SOURCE_NOT_REPLAYABLE" };
       terminal_cash_failure?: {
+        classification?: string;
+        issues?: {
+          field: string;
+          submitted_value: string;
+          source_supported_value_cny: string;
+          source_period_end: string;
+          source_binding: { physical_page: number; sha256: string };
+          source_support: string;
+        }[];
         scenario: string;
-        net_cash_cny: string;
+        net_cash_cny?: string;
         rejection_code?: string;
         net_cash_excluding_financing_and_investment_cny?: string;
-        net_cash_minus_profit_cny: string;
-        net_cash_excluding_investment_receipts_minus_profit_cny: string;
+        net_cash_minus_profit_cny?: string;
+        net_cash_excluding_investment_receipts_minus_profit_cny?: string;
         action: "no_order";
       };
     }>("operating-research/parent-cash-tasks/v3/" + encodeURIComponent(taskId)),

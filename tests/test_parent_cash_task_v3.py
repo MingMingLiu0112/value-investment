@@ -753,6 +753,35 @@ def test_scalar_terminal_review_normalizes_only_verified_gross_cash_ids():
 
 
 
+@pytest.mark.parametrize("anchor, fields", [
+    ("gross_capex", ["growth_capex", "maintenance_capex", "interest_outside_cfo"]),
+    ("unrelated_capex", ["interest_outside_cfo"]),
+])
+def test_terminal_evidence_diagnostic_retains_scope_and_source_binding(anchor, fields):
+    from types import SimpleNamespace
+
+    ref = dict(path="runtime/quarter.pdf", sha256="1" * 64, physical_page=14)
+    historical = dict(period_end="2026-09-30", same_period_cash_facts={
+        "gross_capex_cny": dict(current="100", source_refs=dict(ref, excerpt="gross")),
+        "mixed_distribution_interest_paid_cny": dict(current="200", source_refs=dict(ref, excerpt="mixed")),
+    })
+    wire = SimpleNamespace(user=json.dumps({"historical_parent_retained_earnings": historical}))
+    response = SimpleNamespace(text=json.dumps(dict(policy={
+        "growth_capex": dict(value="0.00", evidence_anchors=[anchor]),
+        "maintenance_capex": dict(value="100", evidence_anchors=[anchor]),
+        "interest_outside_cfo": dict(value="0.00", evidence_anchors=["mixed_distribution_interest_paid_cny"]),
+    })))
+    rows = target.ParentCashTaskServiceV3._terminal_evidence_issues(wire, response)
+    assert [row["field"] for row in rows] == fields
+    assert all(row["scenario"] == "base" and row["stage"] == "terminal"
+               and row["source_period_end"] == "2026-09-30" for row in rows)
+    assert rows[-1]["source_binding"] == dict(ref, excerpt="mixed")
+    assert rows[-1]["source_supported_value_cny"] == "200"
+    assert rows[-1]["submitted_value"] == "0.00"
+    assert rows[-1]["source_support"] == "HISTORICAL_PARENT_DISTRIBUTION_PROFIT_OR_INTEREST_CASH_ONLY"
+    assert "separately verified" in rows[-1]["correction"]
+
+
 def test_audited_terminal_cash_reference_excludes_investment_and_financing():
     cohort = {"observations": [{
         "period_end": "2025-12-31",

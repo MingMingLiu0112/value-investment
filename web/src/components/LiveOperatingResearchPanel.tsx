@@ -376,6 +376,14 @@ function ParentCashTerminalFailure({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
+  type TerminalIssue = NonNullable<
+    NonNullable<
+      Awaited<
+        ReturnType<typeof api.parentCashTaskTerminalFailure>
+      >["terminal_cash_failure"]
+    >["issues"]
+  >[number];
+  const [issues, setIssues] = useState<TerminalIssue[]>([]);
   const [investing, setInvesting] =
     useState<
       Awaited<
@@ -389,6 +397,14 @@ function ParentCashTerminalFailure({
       const task = await api.parentCashTaskTerminalFailure(taskId);
       setInvesting(
         task.task_id === taskId ? task.observed_investing_cash : undefined,
+      );
+      const diagnostic = task.terminal_cash_failure;
+      setIssues(
+        task.task_id === taskId &&
+          diagnostic?.action === "no_order" &&
+          diagnostic.classification === "REJECTED_FORECAST_EVIDENCE_DIAGNOSTIC"
+          ? (diagnostic.issues ?? [])
+          : [],
       );
       if (investingOnly) {
         setMessage(
@@ -436,6 +452,8 @@ function ParentCashTerminalFailure({
         `终值净现金 ${net} 亿元，净现金减利润 ${gap} 亿元。剔除投资收现后，差额为 ${withoutReceipts} 亿元。请核对持续性投资收现、资本投入和经营现金转换。`,
       );
     } catch {
+      setInvesting(undefined);
+      setIssues([]);
       setMessage("无法读取终值拆解，请检查本机研究授权后重试。");
     } finally {
       setBusy(false);
@@ -447,6 +465,30 @@ function ParentCashTerminalFailure({
         {investingOnly ? "查看母公司投资现金" : "查看终值现金拆解"}
       </Button>
       {message && <p role="status">{message}</p>}
+      {!!issues.length && (
+        <section aria-label="终值假设与原件核对">
+          <h5>Base 终值假设与原件核对</h5>
+          <ul>
+            {issues.map((issue) => (
+              <li key={issue.field}>
+                {(
+                  {
+                    growth_capex: "增长投入",
+                    maintenance_capex: "维护投入",
+                    interest_outside_cfo: "经营现金外的利息",
+                  } as Record<string, string>
+                )[issue.field] ?? issue.field}
+                ：草案填入 {issue.submitted_value} 元。{issue.source_period_end}{" "}
+                截至当期累计数为 {issue.source_supported_value_cny} 元 （原件第{" "}
+                {issue.source_binding.physical_page} 页）。
+                {issue.source_support === "HISTORICAL_PARENT_GROSS_CAPEX_ONLY"
+                  ? "该行仅披露母公司购建总额。须说明稳态总投入依据，单列增长或维护还须说明拆分依据。"
+                  : "该行合列股息、利润和利息。纯利息须以独立付款证据或适用债务条款推算。"}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {investing?.classification === "SOURCE_NOT_REPLAYABLE" && (
         <p role="status">母公司投资现金原件暂无法重放。</p>
       )}
@@ -672,6 +714,46 @@ export function ParentCashTaskHistoryView({
                     ),
                   )}
                 </ul>
+                {item.debt_timing_sensitivity.payout_stress?.status ===
+                  "VERIFIED" && (
+                  <section aria-label="中期分红对现金底线的影响">
+                    <h6>中期分红对现金底线的影响</h6>
+                    <p>
+                      假设在 {item.debt_timing_sensitivity.payout_stress.year}{" "}
+                      年按预案参考股数支付
+                      {
+                        item.debt_timing_sensitivity.payout_stress.amount_cny
+                      }{" "}
+                      元。实际付款日与最终金额待核。
+                    </p>
+                    <ul>
+                      {Object.entries(
+                        item.debt_timing_sensitivity.payout_stress
+                          .rejected_years,
+                      ).map(([name, year]) => (
+                        <li key={name}>
+                          {name === "FADE_TO_HISTORICAL_FY25"
+                            ? "资本开支回落"
+                            : name === "PERSIST_AT_CONDITIONAL_FY26"
+                              ? "资本开支持续偏高"
+                              : name}
+                          ：{year} 年首次低于现金底线。
+                        </li>
+                      ))}
+                    </ul>
+                    <details>
+                      <summary>查看压力重算版本</summary>
+                      {
+                        item.debt_timing_sensitivity.payout_stress
+                          .receipt_sha256
+                      }
+                    </details>
+                  </section>
+                )}
+                {item.debt_timing_sensitivity.payout_stress?.status ===
+                  "UNAVAILABLE" && (
+                  <p>中期付款压力回执未通过核验，原偿债情景仍可查看。</p>
+                )}
                 <p>
                   回执 SHA-256：{item.debt_timing_sensitivity.receipt_sha256}
                 </p>

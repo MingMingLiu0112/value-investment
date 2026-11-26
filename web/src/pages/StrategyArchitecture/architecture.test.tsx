@@ -258,8 +258,9 @@ it("records the current driver bridge arithmetic acceptance without adopting par
     expect(stage.deliveryReview?.done).toContain(
       "年度经营、现金政策和三情景分步任务已实际运行",
     );
-    expect(stage.deliveryReview?.gap).toContain("现金缺口约 1.81 亿元");
-    expect(stage.deliveryReview?.gap).toContain("尚未交给 E2");
+    expect(stage.deliveryReview?.gap).toContain("Base 终值");
+    expect(stage.deliveryReview?.gap).toContain("股息与利息合计");
+    expect(stage.deliveryReview?.gap).toContain("正式三情景仍待核验");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
   expect(d1.evidenceStatus).toContain("当前版本三角色研究");

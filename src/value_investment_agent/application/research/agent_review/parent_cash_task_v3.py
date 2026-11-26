@@ -47,7 +47,7 @@ BASE_INVESTMENT_RECEIPTS_V1 = "PARENT_YTD_ACTUAL_ONLY_V1"
 BASE_CAPITAL_EVIDENCE_V1 = "PARENT_CAPITAL_EVIDENCE_REVIEW_V1"
 STATES = {"QUEUED", "RUNNING", "FAILED", "SUCCEEDED", "CANCELLED"}
 # Hash of normalized service bytes with this one revision literal zeroed.
-REVIEWED_CAPITAL_SERVICE = "e4ca19d8153a2067bb9ef41adc467d64f212fd8b803e56df828910f102ee8fd4"
+REVIEWED_CAPITAL_SERVICE = "604260e32c16c0caef6adc23d71bf3f3e51c6e45dc6f012af02b08376f79ce4f"
 
 
 _PRE_UNNUMBERED_HASHES = {
@@ -815,6 +815,8 @@ class ParentCashTaskServiceV3(ResearchTaskService):
         reviewed = current.get(__name__) == _hash(raw) and _hash(normalized) == REVIEWED_CAPITAL_SERVICE
         # Preserve exact request reconstruction for the previous service revision.
         previous_service = {
+            "08fdf5df1a98d5dfbdb599defa26fd79b448d8355ad4354e2bdca8d435ac4b0b",
+            "3ea85bf7c28272095df7bc84cd328376eea28c626736f8f12bddb6299b3cbbf4",
             "f6711213d85922901c2b1a35d06de52447c4588fceeeee6c1deaa4054c7da594",
             "9ad43884f77abd742a22cc5b51dc60012d3021d34584a5dfa1374a4e5da4ef10",
             "06981acaca5c6f7a50305964d07e36a2b42df4499b9eaf4583648c6a1c91c8d3",
@@ -1898,12 +1900,46 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                     if row["records"].get(reservation) != expected:
                         raise ValueError("PARENT_BUDGET_CHARGE_MISMATCH")
 
+    @staticmethod
+    def _terminal_evidence_issues(wire, response):
+        payload = json.loads(wire.user)
+        historical = payload.get("historical_parent_retained_earnings")
+        if historical is None:
+            return []
+        policy = json.loads(response.text, object_pairs_hook=_identical_prose_duplicate_only)["policy"]
+        issues = []
+        definitions = (
+            ("growth_capex", "gross_capex", "gross_capex_cny",
+             "HISTORICAL_PARENT_GROSS_CAPEX_ONLY",
+             "Use a source-bound unallocated gross capex plan with a recurring reinvestment mechanism; "
+             "a split requires independent allocation evidence."),
+            ("maintenance_capex", "gross_capex", "gross_capex_cny",
+             "HISTORICAL_PARENT_GROSS_CAPEX_ONLY",
+             "Use the observed gross amount only as the first-year floor in an unallocated plan; "
+             "support any steady-state amount separately."),
+            ("interest_outside_cfo", "mixed_distribution_interest_paid_cny", "mixed_distribution_interest_paid_cny",
+             "HISTORICAL_PARENT_DISTRIBUTION_PROFIT_OR_INTEREST_CASH_ONLY",
+             "Use separately verified parent interest cash and applicable contractual debt service; "
+             "leave unsupported interest unresolved and retain the financing rejection."),
+        )
+        for field, anchor, cash_field, supports, correction in definitions:
+            term = policy.get(field)
+            if not isinstance(term, dict) or term.get("evidence_anchors") != [anchor]:
+                continue
+            source = historical["same_period_cash_facts"][cash_field]
+            issues.append(dict(scenario="base", stage="terminal", field=field, cited_anchor=anchor,
+                submitted_value=str(Decimal(term["value"])), source_supported_value_cny=source["current"],
+                source_period_end=historical["period_end"], source_binding=deepcopy(source["source_refs"]),
+                source_support=supports, correction=correction))
+        return issues
+
     def _terminal_failure_cash_bridge(self, spec, state, context, outputs):
         error = state.get("error_code") or ""
         scenario, _, detail = error.lower().partition("_terminal_")
         if scenario not in SCENARIOS or detail not in {
             "parent_v3_unsupported_stationary_cash_conversion",
             "parent_v3_no_positive_supported_terminal_distribution",
+            "parent_draft_term_source_invalid",
         }:
             return None
         stage_id = scenario + ".terminal"
@@ -1922,7 +1958,18 @@ class ParentCashTaskServiceV3(ResearchTaskService):
                 or packet.get("source_fingerprint") != context["input_fingerprint"]
                 or packet.get("action") != "no_order"):
             return None
-        parsed = self._parse_stage(spec, "terminal", LLMResponse(**packet["response"]),
+        response = LLMResponse(**packet["response"])
+        if detail == "parent_draft_term_source_invalid":
+            if scenario != "base" or spec.get("terminal_cash_review") != "RESEARCH_PAYOUT_V4":
+                return None
+            issues = self._terminal_evidence_issues(wire, response)
+            if not issues:
+                return None
+            return dict(classification="REJECTED_FORECAST_EVIDENCE_DIAGNOSTIC",
+                        scenario=scenario, stage="terminal", action="no_order",
+                        rejection_code=error, request_sha256=packet["request_sha256"],
+                        source_fingerprint=context["input_fingerprint"], issues=issues)
+        parsed = self._parse_stage(spec, "terminal", response,
                                    request=request, source_fingerprint=context["input_fingerprint"])
         policy = parsed["terminal"]["policy"]
         with localcontext() as arithmetic:
