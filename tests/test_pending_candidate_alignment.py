@@ -1470,6 +1470,20 @@ def test_mixed_payment_ledger_does_not_claim_issuer_payment(reconciliation, monk
         with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
             reconcile(case)
         terms["gross_declared_cash_cny"] = "200"
+        from value_investment_agent.infrastructure.filings import pdf_text
+
+        anchor["excerpt"] += " 2020/1/3"
+        monkeypatch.setattr(pdf_text, "extract_pages", lambda _: [anchor["excerpt"]])
+        # A forecast may already include a distribution scheduled after the
+        # comparison date, but that schedule cannot close this cash interval.
+        terms["clearing_house_scheduled_payment_date"] = "2020-01-03"
+        case["ledger"]["distributions"][0]["cash_payment_date"] = "2020-01-03"
+        closure["paid_date"] = "2020-01-03"
+        with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
+            reconcile(case)
+        terms["clearing_house_scheduled_payment_date"] = "2020-01-02"
+        case["ledger"]["distributions"][0]["cash_payment_date"] = "2020-01-02"
+        closure["paid_date"] = "2020-01-02"
     observed, = result["covered_cash_implementations"]
     assert observed["status"] == "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"
     assert observed["matched_ledger_ids"] == ["TEST_ONLY_CASH"]

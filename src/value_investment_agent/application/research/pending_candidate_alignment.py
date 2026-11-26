@@ -1036,6 +1036,7 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
                             == Decimal(closure.get("total_cny", "NaN")))
                 )
                 and cash_row["cash_payment_date"] == closure.get("paid_date")
+                and _day(cash_row["cash_payment_date"]) <= end
                 and Decimal(cash_row["arithmetic_cash_per_share"])
                     == Decimal(closure.get("per_share_cny", "NaN"))
                 and any(e.get("binding") == closure.get("original_binding")
