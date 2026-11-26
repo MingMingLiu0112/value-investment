@@ -234,6 +234,20 @@ export function ParentCashTaskValuationRead({
         );
         return;
       }
+      if (
+        status === 404 &&
+        apiError?.code === "PARENT_TASK_VALUATION_NOT_SEALED" &&
+        typeof apiError.detail === "string" &&
+        /^[A-Z0-9_]{3,120}$/.test(apiError.detail)
+      ) {
+        const reason = apiError.detail;
+        setError(
+          reason === "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID"
+            ? "Base 情景终值的来源引用未通过核验，研究未完成，尚无估值回执。"
+            : `研究未完成（${reason}），尚无估值回执。`,
+        );
+        return;
+      }
       setError(
         status === 404
           ? "研究执行已结束，但还没有封存条件估值回执。请先查看该任务的研究结论与缺项；重新读取不会再次调用模型。"
@@ -743,7 +757,10 @@ export function ParentCashTaskHistoryView({
               )}
             {history.symbol === symbol &&
               item.task_contract === "parent-cash-task-v3" &&
-              item.status === "SUCCEEDED" && (
+              (item.status === "SUCCEEDED" ||
+                (item.status === "FAILED" &&
+                  item.error_code ===
+                    "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID")) && (
                 <ParentCashTaskValuationRead
                   key={symbol}
                   symbol={symbol}

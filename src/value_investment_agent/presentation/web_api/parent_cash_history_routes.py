@@ -583,6 +583,8 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                         code = state.get("error_code")
                         if isinstance(code, str) and re.fullmatch(r"[A-Z0-9_]{3,120}", code):
                             response["task_error_code"] = code
+                            if state["status"] == "FAILED":
+                                response["reason"] = code
                 return reply(response, 404)
             if len(available) != 1:
                 raise ValueError("PARENT_TASK_DUPLICATE_VALUATION_RECEIPT")

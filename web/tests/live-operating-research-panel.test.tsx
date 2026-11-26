@@ -2166,6 +2166,14 @@ it.each([
     new ApiError(404, "NOT_FOUND", null),
     "研究执行已结束，但还没有封存条件估值回执",
   ],
+  [
+    new ApiError(
+      404,
+      "PARENT_TASK_VALUATION_NOT_SEALED",
+      "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID",
+    ),
+    "Base 情景终值的来源引用未通过核验",
+  ],
   [new ApiError(422, "UNVERIFIED", null), "无法通过核验"],
   [
     new ApiError(
