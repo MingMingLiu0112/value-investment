@@ -226,6 +226,13 @@ def test_cross_date_facts_use_native_terminal_observations_and_reject_conflictin
     )["row_proof_reconciliation"]
     assert included_proof["unverified_cash_model_inclusion_ledger_ids"] == []
     assert included_proof["unverified_cash_payment_ledger_ids"] == ["cash"]
+    incomplete_window = dict(window, scan_from="2020-01-02")
+    incomplete = service._cross_date_action_facts(**included, windows=[incomplete_window])
+    proof_without_coverage = incomplete["row_proof_reconciliation"]
+    assert proof_without_coverage["matched_rows"] == []
+    assert proof_without_coverage["unverified_cash_payment_ledger_ids"] == ["cash"]
+    assert proof_without_coverage["unverified_cash_model_inclusion_ledger_ids"] == []
+    assert not incomplete["current_price_basis_compatible"]
     assert facts["status"] == "BLOCKED"
     assert not facts["current_price_basis_compatible"]
 

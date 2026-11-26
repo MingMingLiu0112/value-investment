@@ -523,17 +523,27 @@ def _cross_date_row_proofs(*, start, end, action_rows, cash_rows, cancellations,
     ambiguous_ledger = sorted(row_id for row_id, indices in by_ledger.items() if len(indices) > 1)
     status = "MATCHED" if matched and not (unmatched_ledger or unmatched_proofs) else (
         "UNRESOLVED" if ledger or proof_rows else "NO_IN_PERIOD_ROWS")
+    # A native implementation can identify a specific unpaid/unverified row
+    # even when full-period coverage is incomplete. It cannot certify the interval.
+    observed_cash_ids = {
+        row_id
+        for proof in proof_rows
+        if proof["kind"] == "CASH_DISTRIBUTION"
+        and proof["native_status"] in {"MATCHED", "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"}
+        and proof["announcement_id"] not in conflicts
+        and proof["source_url"] is not None
+        and len(proof["ledger_ids"]) == 1
+        for row_id in proof["ledger_ids"]
+        if row_id in ledger and ledger[row_id][0] == "CASH_DISTRIBUTION"
+    }
     return dict(status=status, matched_rows=matched, unmatched_ledger_ids=unmatched_ledger,
                 unmatched_native_proofs=unmatched_proofs, ambiguous_ledger_ids=ambiguous_ledger,
                 duplicate_native_proofs=[proof_rows[i] for i in sorted(duplicate_proofs)],
-                unverified_cash_payment_ledger_ids=sorted(
-                    row["ledger_id"] for row in matched
-                    if row["kind"] == "CASH_DISTRIBUTION" and not row["cash_payment_proven"]
-                ),
+                unverified_cash_payment_ledger_ids=sorted(observed_cash_ids),
                 unverified_cash_model_inclusion_ledger_ids=sorted(
-                    row["ledger_id"] for row in matched
-                    if row["kind"] == "CASH_DISTRIBUTION"
-                    and row["model_inclusion"] != "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE"
+                    row_id for row_id in observed_cash_ids
+                    if ledger[row_id][1]["model_inclusion"] !=
+                    "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE"
                 ))
 
 
