@@ -138,7 +138,7 @@ export function ParentCashFundingRevisionRead({
               ? "运行失败（FAILED）"
               : "状态为 " + result.original_task_status}
             。修订按期初普通股计算整体股东分配，尚未批准。F2
-            尚未对齐此版本，不能与当前收盘价比较。
+            尚未对齐此版本，不能与当前收盘价比较。核验须使用本回执的输入版本，逐项确认比较日股本、期间每笔分配的模型处理和重大事件影响。
           </p>
           {!result.revisions.length && <p>此任务暂无已登记修订。</p>}
           {result.revisions.map((version) => (
@@ -183,6 +183,17 @@ export function ParentCashFundingRevisionRead({
                                   " · 分配前现金 " + row.before + " 元"}
                                 {row.floor !== undefined &&
                                   " · 现金底线 " + row.floor + " 元"}
+                                {row.status === "REJECTED" &&
+                                  row.floor !== undefined &&
+                                  row.before !== undefined &&
+                                  Number(row.floor) - Number(row.before) >=
+                                    1e8 &&
+                                  " · 资金缺口约 " +
+                                    (
+                                      (Number(row.floor) - Number(row.before)) /
+                                      1e8
+                                    ).toFixed(2) +
+                                    " 亿元"}
                                 {row.per_share_value !== undefined &&
                                   " · 此情景单项结果 " +
                                     Number(row.per_share_value).toFixed(2) +

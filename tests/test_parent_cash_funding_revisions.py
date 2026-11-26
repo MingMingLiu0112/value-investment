@@ -1,5 +1,10 @@
 """Task history integration with synthetic versioned financing receipts."""
 import json
+import os
+import shutil
+from copy import deepcopy
+from datetime import datetime, timezone
+from decimal import Decimal
 from hashlib import sha256
 from pathlib import Path
 
@@ -8,6 +13,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from value_investment_agent.presentation.web_api import parent_cash_history_routes as routes
 from value_investment_agent.presentation.web_api import parent_cash_funding_revisions as funding
+from value_investment_agent.application.research import parent_cash_funding_revision_v1 as replay
 from value_investment_agent.research_run_contract import canonical_contract_payload
 
 TASK = "rt-" + "a" * 32
@@ -16,7 +22,7 @@ HEAD = {"path": "runtime/task.json", "sha256": "a" * 64}
 SPEC = {"path": "runtime/spec.json", "sha256": "b" * 64}
 
 
-def pack(root, *, fault="", assess=True):
+def pack(root, *, fault="", assess=True, matrix_mode=None):
     def raw(obj):
         return json.dumps(obj, ensure_ascii=False, sort_keys=True).encode()
     siblings = {}
@@ -33,7 +39,18 @@ def pack(root, *, fault="", assess=True):
     pin = dict(path="runtime/source.pdf", sha256=sha256(source.read_bytes()).hexdigest())
     date = "2025-12-31"
     identity = dict(symbol=SYMBOL, valuation_date=date)
-    spec = bind("spec", dict(**identity, financing_revision=dict(source_spec=SPEC)))
+    financing = dict(source_spec=SPEC)
+    if matrix_mode:
+        matrix = {"action": "no_order", "sources": {"report": {"pdf_sha256": pin["sha256"]}}, "flag": [True]}
+        compact = bind("financing-evidence", matrix)
+        if matrix_mode == "different":
+            matrix["flag"] = [1]
+        original = json.dumps(matrix, indent=2).encode()
+        original_sha = sha256(original).hexdigest()
+        financing["originals_matrix_sha256"] = compact["sha256"] if matrix_mode == "same" else original_sha
+        if matrix_mode not in ("same", "missing"):
+            siblings[f"source-matrix-{original_sha}.json"] = b"{}" if matrix_mode == "corrupt" else original
+    spec = bind("spec", dict(**identity, financing_revision=financing))
     contract = dict(schema_version=funding.SCHEMA, predecessor_task=TASK, predecessor_task_head=HEAD,
                     registered_spec=SPEC, spec_sha256=spec["sha256"], raw_source_bindings=[pin])
     descriptor = dict(symbol=SYMBOL, source_contract=contract, point_in_time=dict(valuation_date=date))
@@ -48,6 +65,8 @@ def pack(root, *, fault="", assess=True):
                    completed_at="2026-01-02T01:00:00+00:00", input_descriptor_sha256=digest, inputs=[pin],
                    revision_spec=spec, descriptor=desc, valuation=value, provenance="DETERMINISTIC_RESEARCH_REVISION",
                    action="no_order", formal_eligibility=False, current_comparable=False)
+    if matrix_mode:
+        receipt["originals_matrix"] = compact
     if assess:
         receipt["current_reassessment"] = dict(status="REJECTED", reason="OPERATING_CASH_REASSESSMENT_REJECTED",
             scenario_rows={"base":dict(status="REJECTED", reason="CASH_FLOOR", year="2027", floor="90",
@@ -151,3 +170,165 @@ def test_current_rejection_is_independent_of_historical_receipt(tmp_path):
         status="REJECTED", reason="CASH_FLOOR", year=2027, floor="90", before="40")
     assert set(row["scenarios"]) == {"bear", "base", "bull"} and not row["current_comparable"]
     assert not row["current_reassessment"]["current_research_range_adopted"]
+
+
+@pytest.mark.parametrize(("mode", "error"), [
+    ("same", None), ("repacked", None), ("missing", "SOURCE_MATRIX_HASH"),
+    ("corrupt", "SOURCE_MATRIX_HASH"), ("different", "SOURCE_BINDING"),
+])
+def test_original_matrix_bytes_and_content_agree_in_both_readers(tmp_path, mode, error):
+    version = pack(tmp_path, matrix_mode=mode)
+    folder = funding.directory(tmp_path, TASK) / version
+    public, = funding.read_revisions(tmp_path, TASK, SYMBOL, HEAD, SPEC)
+    assert public["status"] == ("UNAVAILABLE" if error else "VERIFIED")
+    assert public.get("reason") == error
+
+    receipt = replay._sibling(folder, "receipt", version)
+    spec = replay._sibling(folder, "spec", receipt["revision_spec"])
+    matrix_pin = receipt["originals_matrix"]
+    matrix = replay._sibling(folder, "financing-evidence", matrix_pin)
+
+    def read_original(digest):
+        assert mode != "same"
+        return replay._sibling(folder, "source-matrix", dict(file=f"source-matrix-{digest}.json", sha256=digest))
+
+    def check():
+        replay.verify_source_set(receipt["inputs"], receipt["inputs"], spec["financing_revision"],
+                                 matrix, matrix_pin["sha256"], read_original)
+    if error:
+        with pytest.raises((ValueError, FileNotFoundError)):
+            check()
+    else:
+        check()
+
+
+REAL_TASK = "rt-07724f7f1c8566420935f07b70c846a1"
+REAL_VERSION = "ed62be290ebcffebf47e1c22cd235d77767e42f1d8b13ff4f1273875257c0a19"
+
+
+@pytest.fixture
+def real_bundle():
+    directory = os.environ.get("VALUE_FUNDING_REVISION_REAL_ROOT")
+    if not directory:
+        pytest.skip("Set VALUE_FUNDING_REVISION_REAL_ROOT to the vf1 source tree for the real replay")
+    root = Path(directory).resolve()
+    folder = funding.directory(root, REAL_TASK) / REAL_VERSION
+    return root, folder, replay._sibling(folder, "receipt", REAL_VERSION)
+
+
+def test_real_ed62_each_scenario_unchanged_and_unadopted(real_bundle, monkeypatch):
+    root, folder, receipt = real_bundle
+    claim = receipt["current_reassessment"]
+    revised = replay._sibling(folder, "reassessment-spec", claim["revised_spec"])
+    original_compiler = replay.compile_source_bound_owner_cash_v2
+    orders = []
+    financing_rows = []
+
+    def compile_spec(**kwargs):
+        if orders or kwargs["spec"] == revised:
+            assert kwargs["spec"] == revised
+            orders.append(next(iter(kwargs["spec"]["scenarios"])))
+        return original_compiler(**kwargs)
+
+    original_split = replay.annual_financing_row_v1
+
+    def split(**row):
+        details = original_split(**row)
+        financing_rows.append(details)
+        return details
+
+    monkeypatch.setattr(replay, "compile_source_bound_owner_cash_v2", compile_spec)
+    monkeypatch.setattr(replay, "annual_financing_row_v1", split)
+    actual = replay.replay(root, REAL_TASK, REAL_VERSION, datetime.now(timezone.utc))
+    assert sorted(orders) == ["base", "bear", "bull"]
+    assert actual["verified_source_count"] == 21 and actual["valuation_date"] == "2025-12-31"
+    assert actual["action"] == "no_order" and actual["current_comparable"] is actual["formal_eligibility"] is False
+    assert actual["values"]["base"] == "11.5116817435840185224103788855316406659002247626"
+    assert receipt["previous_task_status"] == "FAILED" and actual["current_reassessment"] == {
+        "status": "REJECTED", "current_research_range_adopted": False,
+        "scenario_rows": {
+            "bear": dict(status="REJECTED", reason="DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027",
+                         year=2027, before="6306969832.537425", floor="13404587376.75", scheduled="0"),
+            "base": dict(status="CALCULATED", per_share_value="9.32912100924600589279659166699807236074544452357"),
+            "bull": dict(status="CALCULATED", per_share_value="12.8321399850801461433074380515963999675776921102"),
+        },
+    }
+    for year in range(2027, 2036):
+        annual = [row for row in financing_rows if row["year"] == year]
+        assert len(annual) == 6
+        for row in annual:
+            assert Decimal(row["disclosed_unsettled_maturities_cny"]) == (3500000000 if year == 2027 else 0)
+            if year == 2027:
+                assert row["other_forecast_principal_payments_cny"] == "8779665769.24"
+    for name, key, bad in [
+        ("bear", "year", 2028), ("bear", "before", "0"), ("bear", "floor", "0"),
+        ("bear", "reason", "DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2028"),
+        ("base", "per_share_value", "11.51"), ("bull", "per_share_value", "14.67"),
+    ]:
+        changed = deepcopy(claim)
+        changed["scenario_rows"][name][key] = bad
+        with pytest.raises(ValueError, match=f"SCENARIO_CHANGED:{name}"):
+            replay._compare_rows(changed, actual["current_reassessment"]["scenario_rows"])
+    with pytest.raises(ValueError, match="SCOPE_CHANGED"):
+        replay._compare_rows(dict(claim, current_research_range_adopted=True), claim["scenario_rows"])
+
+
+@pytest.mark.parametrize(("fault", "error"), [
+    ("parent_head", "PARENT_NOT_IN_CHAIN"), ("previous_task_status", "PARENT_CHANGED"),
+    ("registered_spec", "PARENT_CHANGED"), ("valuation_date", "CONTEXT_CHANGED"),
+    ("filename", "FILENAME_CHANGED"), ("missing_extra", "SOURCE_SET_CHANGED"),
+    ("duplicate", "SOURCE_BINDING"), ("unrelated", "SOURCE_SET_CHANGED"),
+    ("missing_matrix", "MATRIX_MISSING"),
+])
+def test_resealed_ed62_counterexamples(tmp_path, real_bundle, monkeypatch, fault, error):
+    real_root, folder, receipt = real_bundle
+    original_inputs = list(receipt["inputs"])
+    if fault == "filename":
+        receipt["descriptor"]["file"] = receipt["valuation"]["file"]
+    elif fault == "missing_extra":
+        spec = replay._sibling(folder, "spec", receipt["revision_spec"])
+        receipt["inputs"].remove(spec["financing_revision"]["extra_source_bindings"][0])
+    elif fault == "duplicate":
+        receipt["inputs"].append(receipt["inputs"][0])
+    elif fault == "unrelated":
+        receipt["inputs"].append(dict(receipt["inputs"][0], path="runtime/unrelated.pdf"))
+    elif fault == "missing_matrix":
+        del receipt["originals_matrix"]
+    else:
+        receipt[fault] = {"parent_head": SPEC, "previous_task_status": "COMPLETED", "registered_spec": HEAD,
+                          "valuation_date": "2025-12-30"}[fault]
+    data = json.dumps(receipt, sort_keys=True).encode()
+    version = sha256(data).hexdigest()
+    copy = Path(funding._native_path(funding.directory(tmp_path, REAL_TASK) / version))
+    copy.mkdir(parents=True)
+    for item in Path(funding._native_path(folder)).iterdir():
+        if item.name != "receipt.json":
+            shutil.copyfile(item, copy / item.name)
+    (copy / "receipt.json").write_bytes(data)
+    if fault == "valuation_date":
+        for pin in original_inputs:
+            destination = tmp_path / pin["path"]
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(real_root / pin["path"], destination)
+    # Keep the real verified task chain in place. Only the revision copy is resealed.
+    verify_parent = replay._verify_parent
+    monkeypatch.setattr(replay, "_verify_parent", lambda _, r, task_id: verify_parent(real_root, r, task_id))
+    with pytest.raises(ValueError, match=error):
+        replay.replay(tmp_path, REAL_TASK, version, datetime.now(timezone.utc))
+
+
+def test_replay_refuses_wrong_annual_split(real_bundle, monkeypatch):
+    _, folder, receipt = real_bundle
+    matrix = replay._sibling(folder, "financing-evidence", receipt["originals_matrix"])
+    spec = replay._sibling(folder, "spec", receipt["revision_spec"])
+    monkeypatch.setattr(replay, "annual_financing_row_v1", lambda **row: {"other_forecast_principal_payments_cny": "0"})
+    with pytest.raises(ValueError, match="OTHER_PRINCIPAL_CHANGED"):
+        replay._verify_debt_service(spec, matrix)
+
+
+def test_unrecognized_diagnostic_version_and_error_fail_closed(monkeypatch):
+    monkeypatch.setattr(replay, "_DIAGNOSTIC_SOURCES", [(replay.kernel, "0" * 64)])
+    with pytest.raises(ValueError, match="DIAGNOSTIC_VERSION"):
+        replay._rerun_reassessment(None, {}, None, None)
+    with pytest.raises(ValueError, match="DIAGNOSTIC_FRAME"):
+        replay._rejected_run(ValueError("DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027"), {}, "bear")

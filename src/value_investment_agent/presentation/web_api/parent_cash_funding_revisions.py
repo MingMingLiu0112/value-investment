@@ -9,6 +9,7 @@ import re
 from stat import FILE_ATTRIBUTE_REPARSE_POINT, S_ISLNK, S_ISREG
 
 from ...application.product.common import _native_path
+from ...application.research.parent_cash_funding_revision_v1 import load_matrix, verify_source_set
 
 from ...research_run_contract import canonical_contract_payload
 
@@ -158,7 +159,7 @@ def _project(root, folder, task_id, symbol, head, original, cache):
     def document(label, path, digest, limit):
         raw = verified_bytes(root, path, digest, limit, label)
         try:
-            parsed = json.loads(raw)
+            parsed = load_matrix(raw) if label in ("FINANCING-EVIDENCE_HASH", "SOURCE_MATRIX_HASH") else json.loads(raw)
         except (ValueError, RecursionError):
             raise RevisionError(label) from None
         require(isinstance(parsed, dict), label)
@@ -199,30 +200,28 @@ def _project(root, folder, task_id, symbol, head, original, cache):
             and contract.get("registered_spec") == original
             and spec["financing_revision"]["source_spec"] == original, "SOURCE_IDENTITY")
     inputs = r.get("inputs")
-    core = contract.get("raw_source_bindings")
-    require(isinstance(inputs, list) and 1 <= len(inputs) <= 96 and isinstance(core, list)
-            and core and all(pin in inputs for pin in core), "SOURCE_BINDING")
-    matrix = None
-    matrix_hashes = set()
-    if "originals_matrix" in r:
-        matrix = sibling("originals_matrix", "financing-evidence")
-        included = {pin["sha256"] for pin in inputs}
-        require(matrix.get("action") == "no_order" and matrix.get("sources")
-                and all(source["pdf_sha256"] in included for source in matrix["sources"].values())
-                and all(pin in inputs for pin in spec["financing_revision"].get("extra_source_bindings", [])),
-                "SOURCE_BINDING")
-        matrix_hashes = {row["pdf_sha256"] for row in matrix["sources"].values()}
-    extras = spec["financing_revision"].get("extra_source_bindings", [])
-    require(all(pin in core or pin in extras or (
-        pin["sha256"] in matrix_hashes and pin["path"].startswith("runtime/public-evidence/")
-        and Path(pin["path"]).name == pin["sha256"] + ".pdf"
-    ) for pin in inputs), "SOURCE_BINDING")
+    matrix = sibling("originals_matrix", "financing-evidence") if "originals_matrix" in r else None
+    matrix_digest = r.get("originals_matrix", {}).get("sha256")
+
+    def read_original(digest):
+        return document("SOURCE_MATRIX_HASH", folder / f"source-matrix-{digest}.json", digest, 2 * MIB)
+
+    def check_sources(financing):
+        try:
+            verify_source_set(inputs, contract["raw_source_bindings"], financing, matrix, matrix_digest, read_original)
+        except RevisionError:
+            raise
+        except (KeyError, TypeError, ValueError, AttributeError, RecursionError):
+            raise RevisionError("SOURCE_BINDING") from None
+
+    check_sources(spec["financing_revision"])
     reassessment = _reassessment(r)
     if reassessment and isinstance(r.get("current_reassessment"), dict) and "revised_spec" in r["current_reassessment"]:
         try:
             adjusted = sibling("revised_spec", "reassessment-spec", r["current_reassessment"])
             require(adjusted["symbol"] == symbol and adjusted["valuation_date"] == date_text
                     and adjusted["financing_revision"]["source_spec"] == original, "REASSESSMENT_SPEC")
+            check_sources(adjusted["financing_revision"])
         except (RevisionError, KeyError, TypeError):
             reassessment = dict(status="UNAVAILABLE", reason="REASSESSMENT_SPEC", scenario_rows={},
                                 current_research_range_adopted=False)
