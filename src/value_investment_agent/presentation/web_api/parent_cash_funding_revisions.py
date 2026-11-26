@@ -221,10 +221,11 @@ def _project(root, folder, task_id, symbol, head, original, cache):
             adjusted = sibling("revised_spec", "reassessment-spec", r["current_reassessment"])
             require(adjusted["symbol"] == symbol and adjusted["valuation_date"] == date_text
                     and adjusted["financing_revision"]["source_spec"] == original, "REASSESSMENT_SPEC")
-            check_sources(adjusted["financing_revision"])
         except (RevisionError, KeyError, TypeError):
             reassessment = dict(status="UNAVAILABLE", reason="REASSESSMENT_SPEC", scenario_rows={},
                                 current_research_range_adopted=False)
+        else:
+            check_sources(adjusted["financing_revision"])
     total = 0
     for pin in inputs:
         require(isinstance(pin, dict) and set(pin) == {"path", "sha256"}, "SOURCE_BINDING")

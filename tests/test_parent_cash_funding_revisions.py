@@ -50,6 +50,8 @@ def pack(root, *, fault="", assess=True, matrix_mode=None):
         financing["originals_matrix_sha256"] = compact["sha256"] if matrix_mode == "same" else original_sha
         if matrix_mode not in ("same", "missing"):
             siblings[f"source-matrix-{original_sha}.json"] = b"{}" if matrix_mode == "corrupt" else original
+    if fault == "missing_extra":
+        financing["extra_source_bindings"] = [dict(pin, path="runtime/other.pdf")]
     spec = bind("spec", dict(**identity, financing_revision=financing))
     contract = dict(schema_version=funding.SCHEMA, predecessor_task=TASK, predecessor_task_head=HEAD,
                     registered_spec=SPEC, spec_sha256=spec["sha256"], raw_source_bindings=[pin])
@@ -87,7 +89,7 @@ def pack(root, *, fault="", assess=True, matrix_mode=None):
 
 @pytest.mark.parametrize(("fault", "reason"), [("identity", "TASK_IDENTITY"), ("path", "VALUATION_HASH"),
     ("source", "SOURCE_BINDING"), ("fingerprint", "DESCRIPTOR_IDENTITY"), ("receipt", "RECEIPT_HASH"),
-    ("valuation", "VALUATION_HASH")])
+    ("valuation", "VALUATION_HASH"), ("missing_extra", "SOURCE_BINDING")])
 def test_bad_revision_leaves_valid_neighbor_and_failed_task(tmp_path, monkeypatch, fault, reason):
     good = pack(tmp_path, assess=False)
     bad = pack(tmp_path, fault=fault)
@@ -139,10 +141,10 @@ def test_reparse_directory_cannot_supply_even_correctly_hashed_bytes(tmp_path):
     version = pack(tmp_path)
     folder = funding.directory(tmp_path, TASK) / version
     outside = tmp_path / "elsewhere"
-    folder.rename(outside)
+    Path(funding._native_path(folder)).rename(funding._native_path(outside))
     if os.name == "nt":
         import _winapi
-        _winapi.CreateJunction(str(outside), str(folder))
+        _winapi.CreateJunction(str(outside), funding._native_path(folder))
     else:
         folder.symlink_to(outside, target_is_directory=True)
     row, = funding.read_revisions(tmp_path, TASK, SYMBOL, HEAD, SPEC)

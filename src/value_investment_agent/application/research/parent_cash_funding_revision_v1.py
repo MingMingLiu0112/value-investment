@@ -159,7 +159,7 @@ def verify_source_set(inputs, core, financing, matrix, matrix_digest, read_origi
         raise ValueError("FUNDING_REVISION_SOURCE_SET_CHANGED")
     expected |= _source_pairs(financing.get("extra_source_bindings", []))
     original_digest = financing.get("originals_matrix_sha256")
-    if original_digest is not None and matrix is None:
+    if (original_digest is not None or "known_maturities" in financing) and matrix is None:
         raise ValueError("FUNDING_REVISION_MATRIX_MISSING")
     if matrix is not None:
         if not isinstance(original_digest, str) or not re.fullmatch(r"[0-9a-f]{64}", original_digest):
