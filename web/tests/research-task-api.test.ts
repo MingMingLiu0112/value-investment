@@ -121,3 +121,28 @@ it.each([404, 422])(
     );
   },
 );
+
+it("preserves a structured unsealed valuation failure", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            action: "no_order",
+            status: "PARENT_TASK_VALUATION_NOT_SEALED",
+            detail: "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID",
+          }),
+          { status: 404 },
+        ),
+    ),
+  );
+  const { api } = await import("../src/services/api");
+  await expect(
+    api.parentCashTaskValuation("id", "600887"),
+  ).rejects.toMatchObject({
+    status: 404,
+    code: "PARENT_TASK_VALUATION_NOT_SEALED",
+    detail: "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID",
+  });
+});

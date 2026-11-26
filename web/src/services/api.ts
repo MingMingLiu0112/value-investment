@@ -97,7 +97,10 @@ export class ApiError extends Error {
   }
 }
 
-async function read(response: Response): Promise<Record<string, unknown>> {
+async function read(
+  response: Response,
+  legacyErrorStatuses: readonly number[] = [],
+): Promise<Record<string, unknown>> {
   let body: unknown = null;
   try {
     body = await response.json();
@@ -109,6 +112,9 @@ async function read(response: Response): Promise<Record<string, unknown>> {
     typeof body !== "object" ||
     (body as Record<string, unknown>).action !== "no_order"
   ) {
+    if (!response.ok && legacyErrorStatuses.includes(response.status)) {
+      throw new ApiError(response.status, "HTTP_ERROR", null);
+    }
     throw new Error("服务响应不符合只读决策契约");
   }
   const record = body as Record<string, unknown>;
@@ -323,10 +329,7 @@ async function getPrivate<T>(
     forgetRefusedSession(usedToken);
     response = await send();
   }
-  if (!response.ok && expectedErrorStatuses.includes(response.status)) {
-    throw new ApiError(response.status, "HTTP_ERROR", null);
-  }
-  return (await read(response)) as T;
+  return (await read(response, expectedErrorStatuses)) as T;
 }
 
 export type QuotePlanObservation = {
@@ -2387,7 +2390,7 @@ export const api = {
         "/valuation?symbol=" +
         encodeURIComponent(symbol),
       signal,
-      [422],
+      [404, 422],
     ),
   parentCashH1Sensitivity: (
     taskId: string,
