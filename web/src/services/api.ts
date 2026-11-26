@@ -1951,6 +1951,68 @@ export interface ParentCashH1Sensitivity {
   action: "no_order";
 }
 
+export type FundingDeficitLedger = Record<
+  | "opening_cash_cny"
+  | "operating_cash_cny"
+  | "investment_cash_cny"
+  | "new_borrowing_cny"
+  | "known_principal_cny"
+  | "assumed_other_repayment_cny"
+  | "interest_cny"
+  | "maintenance_capex_cny"
+  | "growth_capex_cny"
+  | "commitments_cny"
+  | "other_required_cash_cny"
+  | "cash_before_distribution_cny"
+  | "floor_cny"
+  | "shortfall_cny"
+  | "scheduled_distribution_cny"
+  | "coupon_component_cny"
+  | "other_interest_cny"
+  | "cash_if_unknown_not_due_cny"
+  | "coverage_before_unknown_repayment_cny",
+  string
+> & {
+  year: number;
+  maturity_dates: string[];
+  floor_equals_opening_basis: boolean;
+};
+export interface FundingContinuation {
+  status: "REPLAYED";
+  task_id: string;
+  receipt_sha256: string;
+  action: "no_order";
+  new_llm_calls: 0;
+  continuation_sha256: string;
+  fixed_payment_recheck: {
+    status: string;
+    predecessor_shortfall_cny: string;
+    source_payment: { through: string; paid_cny: string };
+    scenarios: Record<
+      "bear" | "base" | "bull",
+      {
+        status: string;
+        per_share_value?: string;
+        ledger?: FundingDeficitLedger;
+      }
+    >;
+  };
+}
+function fundingContinuationPath(
+  task: string,
+  receipt: string,
+  symbol: string,
+) {
+  return (
+    "operating-research/parent-cash-tasks/v3/" +
+    encodeURIComponent(task) +
+    "/funding-revisions/" +
+    encodeURIComponent(receipt) +
+    "/replay?symbol=" +
+    encodeURIComponent(symbol)
+  );
+}
+
 export type FundingRevision =
   | { status: "UNAVAILABLE"; receipt_sha256: string; reason: string }
   | {
@@ -2471,6 +2533,21 @@ export const api = {
       "operating-research/parent-cash-tasks/history?symbol=" +
         encodeURIComponent(symbol),
       signal,
+    ),
+  readFundingContinuation: (
+    task: string,
+    receipt: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<FundingContinuation>(
+      fundingContinuationPath(task, receipt, symbol),
+      signal,
+    ),
+  runFundingContinuation: (task: string, receipt: string, symbol: string) =>
+    post<FundingContinuation>(
+      fundingContinuationPath(task, receipt, symbol),
+      {},
     ),
   parentCashFundingRevisions: (
     taskId: string,

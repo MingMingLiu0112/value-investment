@@ -334,3 +334,38 @@ def test_unrecognized_diagnostic_version_and_error_fail_closed(monkeypatch):
         replay._rerun_reassessment(None, {}, None, None)
     with pytest.raises(ValueError, match="DIAGNOSTIC_FRAME"):
         replay._rejected_run(ValueError("DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027"), {}, "bear")
+
+
+def test_paid_buyback_cannot_disappear_or_be_counted_in_optional_payout_twice():
+    from test_direct_parent_owner_cash_v1 import inputs
+    from value_investment_agent.application.research.parent_cash_fixed_payment_recheck import _scenario
+
+    ctx = inputs()
+    ctx["years"][0]["scheduled_owner_distribution_cny"] = "0"
+    source = {"years": [{"year": 2027, "policy": {"payout_ratio": {"value": "1"}}}]}
+    result = _scenario(ctx, source, Decimal(10), Decimal(70), {}, [])
+    row = result["calculation"]["annual_rows"][0]
+    assert Decimal(row["scheduled_owner_distribution_cny"]) == 10
+    assert Decimal(row["conditional_distribution_cny"]) == 70
+    assert Decimal(row["closing_cash_cny"]) == 20
+    assert Decimal(result["per_share_value"]) == 10
+    with pytest.raises(ValueError, match="OPTIONAL_TARGET_DOES_NOT_RECONCILE"):
+        _scenario(ctx, source, Decimal(10), Decimal(80), {}, [])
+
+
+def test_fixed_payment_deficit_explains_known_principal_unknown_timing_and_interest():
+    from value_investment_agent.application.research.parent_cash_fixed_payment_recheck import _ledger
+
+    flow = {k:Decimal(v) for k,v in dict(operating_cash="44", investment_cash_received="0", new_borrowing="0",
+        maintenance_capex="6", growth_capex="0", commitments_outside_capex="0", other_mandatory_cash="0",
+        debt_repayment="123", interest_outside_cfo="5", cash_floor="134").items()}
+    terms = [{"maturity":"2027-11-12", "principal_cny":"35"}]
+    matrix = {"prospective_debt_service":{"issues":[{"due":"2027-11-12","coupon_if_act365_to_maturity":"0.5"}]}}
+    row = _ledger({"cash":Decimal("153")}, flow, 2027, Decimal(0), matrix, terms)
+    assert Decimal(row["cash_before_distribution_cny"]) == 63
+    assert Decimal(row["assumed_other_repayment_cny"]) == 88
+    assert Decimal(row["coverage_before_unknown_repayment_cny"]) == 17
+    assert Decimal(row["shortfall_cny"]) == 71
+    assert Decimal(row["other_interest_cny"]) == Decimal("4.5")
+    with pytest.raises(ValueError, match="KNOWN_MATURITY_UNCOVERED"):
+        _ledger({"cash":Decimal("153")}, dict(flow, debt_repayment=Decimal(34)), 2027, Decimal(0), matrix, terms)

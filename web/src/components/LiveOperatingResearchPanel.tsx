@@ -24,6 +24,8 @@ import {
   type ParentCashTaskValuation,
 } from "../services/api";
 
+import { FundingContinuationPanel } from "./FundingContinuationPanel";
+
 const CASH_ALIGNMENT_REASONS: Record<string, string> = {
   EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING: "这份估值尚未绑定专属核验资料。",
   CURRENT_SHARE_COUNT_AND_EFFECTIVE_ACTION_CHAIN_NOT_RECONCILED:
@@ -207,6 +209,14 @@ export function ParentCashFundingRevisionRead({
                   ) : (
                     <p>此回执缺少当前经营假设重验记录，当前研究区间未采用。</p>
                   )}
+                  {version.current_reassessment?.status === "REJECTED" &&
+                    version.financing_terms?.status === "VERIFIED" && (
+                      <FundingContinuationPanel
+                        task={taskId}
+                        receipt={version.receipt_sha256}
+                        symbol={symbol}
+                      />
+                    )}
                   <p>历史基准条件估值 · 沿用注册经营假设</p>
                   <p>
                     估值基准日 {version.valuation_date} · 完成时间{" "}

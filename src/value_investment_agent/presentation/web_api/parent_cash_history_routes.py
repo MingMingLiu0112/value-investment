@@ -788,6 +788,78 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         except (ValueError, TypeError, KeyError, OSError, PermissionError):
             return reply({"action": "no_order", "status": "PARENT_V3_TASK_UNAVAILABLE"}, 422)
 
+    replay_path = "/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/funding-revisions/{receipt_sha256}/replay"
+
+    @api.get(replay_path)
+    @api.post(replay_path)
+    async def replay_funding_continuation(request: Request, task_id: str, receipt_sha256: str, symbol: str):
+        error = denied(request)
+        if error is not None:
+            return error
+        if (not re.fullmatch(r"rt-[0-9a-f]{32}", task_id) or not funding.SHA.fullmatch(receipt_sha256)
+                or not re.fullmatch(r"[0-9]{6}", symbol)):
+            return reply(dict(status="INVALID_TASK_IDENTITY", action="no_order"), 422)
+        create = request.method == "POST"
+        if create:
+            body = bytearray()
+            async for chunk in request.stream():
+                if len(body) + len(chunk) > 32:
+                    return reply(dict(status="INVALID_REPLAY_REQUEST", action="no_order"), 422)
+                body.extend(chunk)
+            if body.strip() and not re.fullmatch(rb"\s*\{\s*\}\s*", body):
+                return reply(dict(status="INVALID_REPLAY_REQUEST", action="no_order"), 422)
+        return await run_in_threadpool(funding_continuation, task_id, receipt_sha256, symbol, create)
+
+    def funding_continuation(task_id, digest, symbol, create):
+        from ...application.research import parent_cash_funding_continuation_v1 as continuation
+        from ...application.research import parent_cash_funding_revision_v1 as revision
+
+        try:
+            owners = [owner for owner in (numbered_service, archived_numbered_service)
+                      if owner is not None and (owner.base / task_id / "input.json").is_file()]
+            if not owners:
+                return reply(dict(status="TASK_NOT_FOUND", action="no_order"), 404)
+            if len(owners) != 1:
+                return reply(dict(status="TASK_OWNER_AMBIGUOUS",
+                                  action="no_order"), 409)
+            owner, = owners
+            source_root = Path(owner.root).resolve()
+            spec, state, _ = owner._load(task_id)
+            binding = spec["spec_binding"]
+            if owner._bound(binding).get("symbol") != symbol:
+                return reply(dict(status="TASK_NOT_FOUND", action="no_order"), 404)
+            folder = funding.directory(source_root, task_id) / digest
+            revision._checked_path(source_root, folder)
+            receipt = revision._sibling(folder, "receipt", digest)
+            if spec["mode"] != "LIVE_PARENT_CASH_V3" or receipt["registered_spec"] != binding:
+                raise ValueError("CONTINUATION_PARENT_CHANGED")
+            revision._verify_parent(source_root, receipt, task_id)
+            parent_head = receipt["parent_head"]
+            projected = funding._project(source_root, folder, task_id, symbol, parent_head, binding, {})
+            adjustment = receipt["current_reassessment"]["revised_spec"]
+            revised = revision._sibling(folder, "reassessment-spec", adjustment)
+            matrix = revision._sibling(folder, "financing-evidence", receipt["originals_matrix"])
+            terms = funding._financing_terms(revised, matrix)
+            if not terms or terms["status"] != "VERIFIED":
+                raise ValueError("CONTINUATION_FINANCING_TERMS_UNAVAILABLE")
+            identity = dict(task_id=task_id, receipt_sha256=digest, symbol=symbol, parent_head_sha256=parent_head["sha256"],
+                            registered_spec_sha256=binding["sha256"], reassessment_spec_sha256=adjustment["sha256"],
+                            input_descriptor_sha256=projected["input_descriptor_sha256"], financing_terms=terms,
+                            original_task_status=receipt["previous_task_status"], valuation_date=projected["valuation_date"],
+                            current_reassessment=projected["current_reassessment"])
+            result = continuation.replay_or_read(source_root, Path(root).resolve(), identity, create=create,
+                                                 now=datetime.now(timezone.utc))
+            if result is None:
+                return reply(dict(status="CONTINUATION_NOT_SEALED", action="no_order"), 404)
+            return reply(dict(result, paid_task_status=state["status"],
+                              source_owner="EXECUTION_ROOT" if owner is numbered_service else "READ_ONLY_ARCHIVE"))
+        except LockTimeout:
+            return reply(dict(status="CONTINUATION_IN_PROGRESS", action="no_order"), 409)
+        except FileNotFoundError:
+            return reply(dict(status="CONTINUATION_INPUT_MISSING", action="no_order"), 404)
+        except (OSError, ValueError, KeyError, TypeError, RuntimeError, ArithmeticError, ImportError):
+            return reply(dict(status="CONTINUATION_VERIFICATION_FAILED", action="no_order"), 422)
+
     @api.get("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/funding-revisions")
     def funding_revisions(request: Request, task_id: str, symbol: str):
         rejection = denied(request)
