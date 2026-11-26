@@ -19,6 +19,7 @@ import {
   type FiscalDistributionReview,
   type FiscalDistributionScenario,
   type ParentCashTaskHistory,
+  type ParentCashFundingRevisions,
   type ParentCashH1Sensitivity,
   type ParentCashTaskValuation,
 } from "../services/api";
@@ -54,6 +55,288 @@ const CASH_VALUATION_SCENARIOS = [
   ["base", "基准"],
   ["bull", "乐观"],
 ] as const;
+
+const revisionErrors: Record<string, string> = {
+  RECEIPT_HASH: "回执文件或其哈希校验失败",
+  SPEC_HASH: "修订规格文件校验失败",
+  DESCRIPTOR_HASH: "输入描述符文件校验失败",
+  VALUATION_HASH: "估值文件校验失败",
+  DESCRIPTOR_IDENTITY: "输入描述符指纹不一致",
+  TASK_IDENTITY: "原任务、任务版本或登记规格不匹配",
+  REVISION_SCOPE: "回执的条件研究范围不符",
+  "FINANCING-EVIDENCE_HASH": "融资证据包文件或哈希校验失败",
+  REASSESSMENT_SPEC: "经营现金重验规格的文件或来源校验失败",
+  REASSESSMENT_FORMAT: "经营现金重验记录格式无效",
+  SOURCE_IDENTITY: "修订来源与原任务绑定不一致",
+  SOURCE_BINDING: "来源文件缺失或绑定校验失败",
+  VALUATION_IDENTITY: "公司、估值日期或结果状态不匹配",
+  SCENARIO_CASH: "三情景或逐年现金校验失败",
+  REVISION_DATE: "研究完成时间或估值日期无效",
+  REVISION_FORMAT: "回执结构无效",
+};
+
+export function ParentCashFundingRevisionRead({
+  taskId,
+  symbol,
+}: {
+  taskId: string;
+  symbol: string;
+}) {
+  const [result, setResult] = useState<ParentCashFundingRevisions>();
+  const [error, setError] = useState("");
+  const active = useRef<AbortController | null>(null);
+  useEffect(() => () => active.current?.abort(), [taskId, symbol]);
+  async function toggle(open: boolean) {
+    active.current?.abort();
+    if (!open) return;
+    const controller = new AbortController();
+    active.current = controller;
+    setResult(undefined);
+    setError("");
+    try {
+      const data = await api.parentCashFundingRevisions(
+        taskId,
+        symbol,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      if (
+        data.task_id !== taskId ||
+        data.symbol !== symbol ||
+        data.action !== "no_order" ||
+        data.current_comparable !== false ||
+        !Array.isArray(data.revisions)
+      )
+        throw new Error();
+      setResult(data);
+    } catch (cause) {
+      if (!controller.signal.aborted)
+        setError(
+          cause instanceof ApiError && cause.status === 401
+            ? "本机研究会话需重新解锁。"
+            : "修订目录读取失败，收起后可重新读取。",
+        );
+    }
+  }
+  return (
+    <details
+      onToggle={(event) => {
+        if (event.target === event.currentTarget)
+          void toggle(event.currentTarget.open);
+      }}
+    >
+      <summary>历史基准条件估值 · 沿用注册经营假设</summary>
+      {error ? (
+        <p role="alert">{error}</p>
+      ) : !result ? (
+        <p>正在核对修订来源…</p>
+      ) : (
+        <>
+          <p>
+            原 V3 任务
+            {result.original_task_status === "FAILED"
+              ? "运行失败（FAILED）"
+              : "状态为 " + result.original_task_status}
+            。修订按期初普通股计算整体股东分配，尚未批准。F2
+            尚未对齐此版本，不能与当前收盘价比较。
+          </p>
+          {!result.revisions.length && <p>此任务暂无已登记修订。</p>}
+          {result.revisions.map((version) => (
+            <section key={version.receipt_sha256}>
+              <h5>修订版本 {version.receipt_sha256.slice(0, 12)}</h5>
+              {version.status === "UNAVAILABLE" ? (
+                <p role="alert">
+                  {revisionErrors[version.reason] ?? "版本校验失败"}
+                </p>
+              ) : (
+                <>
+                  {version.current_reassessment ? (
+                    <section aria-label="当前经营假设重验">
+                      <p>
+                        <strong>
+                          {version.current_reassessment.status === "REJECTED"
+                            ? "当前经营假设重验被拒"
+                            : "当前经营假设重验不可用"}
+                        </strong>
+                        {" · "}
+                        {revisionErrors[version.current_reassessment.reason] ??
+                          version.current_reassessment.reason}
+                        {" · 当前研究区间未采用"}
+                      </p>
+                      <ul>
+                        {CASH_VALUATION_SCENARIOS.map(([key, label]) => {
+                          const row =
+                            version.current_reassessment?.scenario_rows[key];
+                          return (
+                            row && (
+                              <li key={key}>
+                                {label} ·{" "}
+                                {row.status === "REJECTED"
+                                  ? "未通过"
+                                  : row.status === "CALCULATED"
+                                    ? "单项已计算"
+                                    : row.status}
+                                {row.reason &&
+                                  " · " + publicationBlockageLabel(row.reason)}
+                                {row.year && " · " + row.year + " 年"}
+                                {row.before !== undefined &&
+                                  " · 分配前现金 " + row.before + " 元"}
+                                {row.floor !== undefined &&
+                                  " · 现金底线 " + row.floor + " 元"}
+                                {row.per_share_value !== undefined &&
+                                  " · 此情景单项结果 " +
+                                    Number(row.per_share_value).toFixed(2) +
+                                    " 元/期初普通股"}
+                              </li>
+                            )
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  ) : (
+                    <p>此回执缺少当前经营假设重验记录，当前研究区间未采用。</p>
+                  )}
+                  <p>历史基准条件估值 · 沿用注册经营假设</p>
+                  <p>
+                    估值基准日 {version.valuation_date} · 完成时间{" "}
+                    {version.completed_at} · 技术回执绑定已核验
+                  </p>
+                  {CASH_VALUATION_SCENARIOS.map(([key, label]) => {
+                    const scenario = version.scenarios[key];
+                    return (
+                      <details key={key}>
+                        <summary>
+                          {label}（{key}） ·{" "}
+                          {Number(scenario.per_share_value).toFixed(2)}{" "}
+                          元/期初普通股
+                        </summary>
+                        <table>
+                          <caption>{label}情景逐年现金（元）</caption>
+                          <thead>
+                            <tr>
+                              {[
+                                "年度",
+                                "期初现金",
+                                "经营现金流",
+                                "股东总分配",
+                                "期末现金",
+                                "期末债务",
+                              ].map((name) => (
+                                <th key={name} scope="col">
+                                  {name}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {scenario.annual_rows.map((row) => (
+                              <tr key={row.year}>
+                                <th scope="row">{row.year}</th>
+                                <td>{row.opening_cash_cny}</td>
+                                <td>{row.direct_operating_cash_cny}</td>
+                                <td>{row.total_owner_distribution_cny}</td>
+                                <td>{row.closing_cash_cny}</td>
+                                <td>{row.closing_debt_cny}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </details>
+                    );
+                  })}
+                  {version.financing_terms?.status === "VERIFIED" ? (
+                    <details>
+                      <summary>已知到期本金、期限未知本金与利息口径</summary>
+                      <table>
+                        <caption>已披露的合同到期本金（元）</caption>
+                        <thead>
+                          <tr>
+                            <th>债券代码</th>
+                            <th>合同到期日</th>
+                            <th>本金</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {version.financing_terms.known_maturities.map(
+                            (issue) => (
+                              <tr key={issue.code}>
+                                <td>{issue.code}</td>
+                                <td>{issue.maturity}</td>
+                                <td>{issue.principal_cny}</td>
+                              </tr>
+                            ),
+                          )}
+                        </tbody>
+                      </table>
+                      <p>
+                        期限未知本金{" "}
+                        {version.financing_terms.residual_principal_cny}{" "}
+                        元，为历史基准情景测算余额，实际到期日待核。
+                      </p>
+                      <p>
+                        前三季度可核实已付票息下限{" "}
+                        {
+                          version.financing_terms
+                            .cash_interest_9m_verified_floor
+                        }{" "}
+                        元。 混合付现扣除已实施股利后的余额{" "}
+                        {version.financing_terms.mixed_less_dividend_cny}{" "}
+                        元，仍含未逐笔归类支出。
+                      </p>
+                      <p>
+                        期限未知本金的年利率假设：
+                        {Object.entries(
+                          version.financing_terms.unknown_rate_assumptions,
+                        )
+                          .map(
+                            ([key, rate]) =>
+                              (CASH_VALUATION_SCENARIOS.find(
+                                ([name]) => name === key,
+                              )?.[1] ?? key) +
+                              " " +
+                              (Number(rate) * 100).toFixed(2) +
+                              "%",
+                          )
+                          .join("、")}
+                        。基准采用历史利息费用率代理。
+                      </p>
+                      {version.financing_terms
+                        .five_scp_conditional_coupon_2026Q4 && (
+                        <p>
+                          2026 年四季度五笔短融条件票息{" "}
+                          {
+                            version.financing_terms
+                              .five_scp_conditional_coupon_2026Q4
+                          }{" "}
+                          元。
+                        </p>
+                      )}
+                      {version.financing_terms.mtn_conditional_coupon_2027 && (
+                        <p>
+                          2027 年已知中票条件票息{" "}
+                          {version.financing_terms.mtn_conditional_coupon_2027}{" "}
+                          元；全年母公司付息总额待核。
+                        </p>
+                      )}
+                    </details>
+                  ) : (
+                    <p>此版本的本金与利息明细暂不可核验。</p>
+                  )}
+                  <p>
+                    输入指纹 <code>{version.input_descriptor_sha256}</code>
+                  </p>
+                </>
+              )}
+              <p>
+                回执 SHA-256 <code>{version.receipt_sha256}</code>
+              </p>
+            </section>
+          ))}
+        </>
+      )}
+    </details>
+  );
+}
 
 function ParentCashH1SensitivityRead({
   symbol,
@@ -672,6 +955,13 @@ export function ParentCashTaskHistoryView({
             {item.completed_stages.join("、") || "无"}· 预留 ¥
             {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
             实际使用：未核实
+            {history.symbol === symbol && item.has_funding_revisions && (
+              <ParentCashFundingRevisionRead
+                key={symbol + item.task_id}
+                taskId={item.task_id}
+                symbol={symbol}
+              />
+            )}
             {item.debt_timing_sensitivity?.status ===
               "VERIFIED_CONDITIONAL_SENSITIVITY" && (
               <section aria-label="债务期限条件试算">

@@ -169,6 +169,7 @@ def test_cross_date_facts_keep_empty_verified_window_blocked(reconciliation, ela
     assert facts["ledger_binding"]["sha256"] == sha256_file(case["root"] / "runtime/reconciliation.json")
     assert facts["announcements"] == []
     assert facts["row_proof_reconciliation"]["status"] == "NO_IN_PERIOD_ROWS"
+    assert facts["row_proof_reconciliation"]["closed_window_matched_rows"] == []
     assert "NATIVE_ANNOUNCEMENT_DISPOSITIONS_UNRESOLVED" in facts["reason_codes"]
     assert facts["status"] == "BLOCKED"
     assert not facts["effective_action_continuity_proven"]
@@ -230,9 +231,33 @@ def test_cross_date_facts_use_native_terminal_observations_and_reject_conflictin
     incomplete = service._cross_date_action_facts(**included, windows=[incomplete_window])
     proof_without_coverage = incomplete["row_proof_reconciliation"]
     assert proof_without_coverage["matched_rows"] == []
+    assert incomplete["missing_publication_windows"] == [{"from_date": "2020-01-01", "to_date": "2020-01-01"}]
+    action, distribution = proof_without_coverage["closed_window_matched_rows"]
+    assert action["ledger_id"] == "cancel"
+    assert distribution["ledger_id"] == "cash"
+    assert distribution["cash_payment_proven"] is False
+    assert distribution["model_inclusion"] == "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE"
     assert proof_without_coverage["unverified_cash_payment_ledger_ids"] == ["cash"]
     assert proof_without_coverage["unverified_cash_model_inclusion_ledger_ids"] == []
     assert not incomplete["current_price_basis_compatible"]
+    no_cash_review = deepcopy(included)
+    no_cash_review["ledger"]["reviewed_documents"] = [
+        row for row in no_cash_review["ledger"]["reviewed_documents"]
+        if row["disposition"] != "CASH_DISTRIBUTION"
+    ]
+    partial = service._cross_date_action_facts(**no_cash_review, windows=[incomplete_window])
+    partial_proof = partial["row_proof_reconciliation"]
+    assert partial_proof["matched_rows"] == []
+    assert [row["ledger_id"] for row in partial_proof["closed_window_matched_rows"]] == ["cancel", "cash"]
+    schedule = next(row for row in partial["announcements"] if row["announcement_id"] == "3")
+    assert schedule["disposition"] is None
+    assert schedule["status"] == "SCHEDULE_TERMS_ONLY"
+    assert not schedule["facts"][0]["cash_payment_proven"]
+    invalid = deepcopy(no_cash_review)
+    invalid["cash_implementations"][0]["evidence_binding"] = unrelated
+    mismatched = service._cross_date_action_facts(**invalid, windows=[incomplete_window])
+    assert next(row for row in mismatched["announcements"] if row["announcement_id"] == "3")["status"] == "UNRESOLVED"
+    assert not partial["effective_action_continuity_proven"]
     assert facts["status"] == "BLOCKED"
     assert not facts["current_price_basis_compatible"]
 

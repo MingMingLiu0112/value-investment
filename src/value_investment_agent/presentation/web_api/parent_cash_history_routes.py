@@ -18,6 +18,7 @@ from ...application.research.parent_cash_task_completion_v1 import (
 )
 from ...application.portfolio.private_journal_lock import LockTimeout
 from .live_operating_research_routes import resolve_research_task_root
+from . import parent_cash_funding_revisions as funding
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
 from ...application.research.agent_review.parent_cash_task_v3 import ParentCashTaskServiceV3
@@ -787,6 +788,33 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         except (ValueError, TypeError, KeyError, OSError, PermissionError):
             return reply({"action": "no_order", "status": "PARENT_V3_TASK_UNAVAILABLE"}, 422)
 
+    @api.get("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/funding-revisions")
+    def funding_revisions(request: Request, task_id: str, symbol: str):
+        rejection = denied(request)
+        if rejection is not None:
+            return rejection
+        if not re.fullmatch(r"rt-[0-9a-f]{32}", task_id) or not re.fullmatch(r"[0-9]{6}", symbol):
+            return reply({"status": "INVALID_TASK_IDENTITY"}, 422)
+        try:
+            owners = [owner for owner in (numbered_service, archived_numbered_service)
+                      if owner is not None and (owner.base / task_id / "input.json").is_file()]
+            if not owners:
+                return reply({"status": "TASK_NOT_FOUND"}, 404)
+            if len(owners) != 1:
+                return reply({"status": "TASK_OWNER_AMBIGUOUS"}, 409)
+            owner, = owners
+            spec, state, head = owner._load(task_id)
+            original = spec["spec_binding"]
+            if owner._bound(original).get("symbol") != symbol:
+                return reply({"status": "TASK_NOT_FOUND"}, 404)
+            versions = funding.read_revisions(Path(owner.root).resolve(), task_id, symbol, head, original)
+            return reply(dict(task_id=task_id, symbol=symbol, original_task_status=state["status"],
+                              revisions=versions, action="no_order", current_comparable=False))
+        except funding.RevisionError as error:
+            return reply({"status": error.args[0]}, 422)
+        except (OSError, ValueError, KeyError, TypeError, RuntimeError):
+            return reply({"status": "TASK_BINDING_UNAVAILABLE"}, 422)
+
     @api.get("/api/v1/operating-research/parent-cash-tasks/history")
     def history(request: Request, symbol: str):
         try:
@@ -905,6 +933,8 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                     for row in reservations.values()],
                         **read_valuation_publication(
                             code_root if archived else Path(root), directory.name, binding),
+                        "has_funding_revisions": funding.directory(
+                            code_root if archived else Path(root).resolve(), directory.name).is_dir(),
                         "debt_timing_sensitivity": _read_debt_timing_sensitivity(
                             code_root if archived else Path(root).resolve(), directory.name, symbol, binding),
                         "candidate_status": ("COMPILED_CONDITIONAL_NOT_MAIN" if state["status"] == "SUCCEEDED"

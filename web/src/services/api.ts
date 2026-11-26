@@ -1951,6 +1951,78 @@ export interface ParentCashH1Sensitivity {
   action: "no_order";
 }
 
+export type FundingRevision =
+  | { status: "UNAVAILABLE"; receipt_sha256: string; reason: string }
+  | {
+      status: "VERIFIED";
+      receipt_sha256: string;
+      input_descriptor_sha256: string;
+      valuation_date: string;
+      completed_at: string;
+      provenance: "DETERMINISTIC_RESEARCH_REVISION";
+      financing_terms?:
+        | null
+        | { status: "UNAVAILABLE" }
+        | {
+            status: "VERIFIED";
+            known_maturities: {
+              code: string;
+              maturity: string;
+              principal_cny: string;
+            }[];
+            residual_principal_cny: string;
+            cash_interest_9m_verified_floor: string;
+            mixed_less_dividend_cny: string;
+            unknown_rate_assumptions: Record<"bear" | "base" | "bull", string>;
+            five_scp_conditional_coupon_2026Q4?: string;
+            mtn_conditional_coupon_2027?: string;
+          };
+      current_reassessment: null | {
+        status: "REJECTED" | "UNAVAILABLE";
+        reason: string;
+        current_research_range_adopted: false;
+        scenario_rows: Partial<
+          Record<
+            "bear" | "base" | "bull",
+            {
+              status: string;
+              per_share_value?: string;
+              reason?: string;
+              year?: number;
+              floor?: string;
+              before?: string;
+            }
+          >
+        >;
+      };
+      formal_eligibility: false;
+      current_comparable: false;
+      action: "no_order";
+      scenarios: Record<
+        "bear" | "base" | "bull",
+        {
+          per_share_value: string;
+          annual_rows: {
+            year: number;
+            opening_cash_cny: string;
+            direct_operating_cash_cny: string;
+            total_owner_distribution_cny: string;
+            closing_cash_cny: string;
+            closing_debt_cny: string;
+          }[];
+        }
+      >;
+    };
+
+export interface ParentCashFundingRevisions {
+  task_id: string;
+  symbol: string;
+  original_task_status: string;
+  revisions: FundingRevision[];
+  action: "no_order";
+  current_comparable: false;
+}
+
 export interface ParentCashTaskHistory {
   action: "no_order";
   symbol: string;
@@ -1966,6 +2038,7 @@ export interface ParentCashTaskHistory {
     terminal_cohort_continuation?: boolean;
     terminal_cash_review?: string | null;
     candidate_status?: "COMPILED_CONDITIONAL_NOT_MAIN" | "NOT_COMPILED";
+    has_funding_revisions?: boolean;
     debt_timing_sensitivity?: {
       status: "VERIFIED_CONDITIONAL_SENSITIVITY" | "SENSITIVITY_UNAVAILABLE";
       payout_stress?:
@@ -2396,6 +2469,18 @@ export const api = {
   parentCashTaskHistory: (symbol: string, signal?: AbortSignal) =>
     getPrivate<ParentCashTaskHistory>(
       "operating-research/parent-cash-tasks/history?symbol=" +
+        encodeURIComponent(symbol),
+      signal,
+    ),
+  parentCashFundingRevisions: (
+    taskId: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<ParentCashFundingRevisions>(
+      "operating-research/parent-cash-tasks/v3/" +
+        encodeURIComponent(taskId) +
+        "/funding-revisions?symbol=" +
         encodeURIComponent(symbol),
       signal,
     ),

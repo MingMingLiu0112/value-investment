@@ -23,6 +23,7 @@ const calls = vi.hoisted(() => ({
   history: vi.fn(),
   parentCashHistory: vi.fn(),
   parentCashValuation: vi.fn(),
+  fundingRevisions: vi.fn(),
   refresh: vi.fn(),
   cancel: vi.fn(),
   resume: vi.fn(),
@@ -72,6 +73,7 @@ vi.mock("../src/services/api", async (importOriginal) => {
       operatingResearchTasks: calls.history,
       parentCashTaskHistory: calls.parentCashHistory,
       parentCashTaskValuation: calls.parentCashValuation,
+      parentCashFundingRevisions: calls.fundingRevisions,
       cancelOperatingResearchTask: calls.cancel,
       resumeOperatingResearchTask: calls.resume,
     },
@@ -87,6 +89,7 @@ import {
   FiscalDistributionReviewView,
   ParentCashTaskHistoryView,
   ParentCashTaskValuationRead,
+  ParentCashFundingRevisionRead,
 } from "../src/components/LiveOperatingResearchPanel";
 
 function task(
@@ -2043,6 +2046,89 @@ it("offers the annual cash rebuild only for the eligible failed V4 history row",
   await actions[0].props.onConfirm();
   expect(onContinue.mock.calls).toEqual([["annual-cash"]]);
 });
+
+it.each([true, false])(
+  "keeps the historical benchmark separate from reassessment on expand (%s)",
+  async (hasReview) => {
+    const scenario = {
+      per_share_value: "11.51168",
+      annual_rows: [
+        {
+          year: 2027,
+          opening_cash_cny: "11",
+          direct_operating_cash_cny: "22",
+          total_owner_distribution_cny: "33",
+          closing_cash_cny: "44",
+          closing_debt_cny: "55",
+        },
+      ],
+    };
+    calls.fundingRevisions.mockResolvedValue({
+      task_id: "failed",
+      symbol: "600887",
+      original_task_status: "FAILED",
+      action: "no_order",
+      current_comparable: false,
+      revisions: [
+        {
+          status: "VERIFIED",
+          receipt_sha256: "a".repeat(64),
+          input_descriptor_sha256: "b".repeat(64),
+          valuation_date: "2025-12-31",
+          completed_at: "2026-11-26T12:00:00Z",
+          current_reassessment: hasReview
+            ? {
+                status: "REJECTED",
+                reason: "悲观情景还本后现金低于底线",
+                current_research_range_adopted: false,
+                scenario_rows: {
+                  bear: {
+                    status: "REJECTED",
+                    year: 2027,
+                    reason: "DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027",
+                    before: "40",
+                    floor: "90",
+                  },
+                },
+              }
+            : null,
+          scenarios: { bear: scenario, base: scenario, bull: scenario },
+        },
+        {
+          status: "UNAVAILABLE",
+          reason: "SOURCE_BINDING",
+          receipt_sha256: "c".repeat(64),
+        },
+      ],
+    });
+    const renderRevision = () => {
+      hooks.cursor = 0;
+      return ParentCashFundingRevisionRead({
+        taskId: "failed",
+        symbol: "600887",
+      });
+    };
+    const tree = renderRevision();
+    expect(calls.fundingRevisions).not.toHaveBeenCalled();
+    const target = { open: true };
+    tree.props.onToggle({ target, currentTarget: target });
+    await Promise.resolve();
+    const { renderToStaticMarkup } = require("react-dom/server");
+    const html = renderToStaticMarkup(renderRevision());
+    expect(html).toContain("历史基准条件估值 · 沿用注册经营假设");
+    expect(html).toContain("FAILED");
+    expect(html).toContain("F2 尚未对齐此版本");
+    expect(html).toContain("11.51 元/期初普通股");
+    expect(html).toContain("来源文件缺失或绑定校验失败");
+    expect(html.match(/情景逐年现金（元）/g)).toHaveLength(3);
+    if (hasReview) {
+      expect(html.indexOf("当前经营假设重验被拒")).toBeLessThan(
+        html.indexOf("11.51"),
+      );
+      expect(html).toContain("现金底线 90 元");
+    } else expect(html).toContain("缺少当前经营假设重验记录");
+  },
+);
 
 const valuationScenario = {
   per_share_value: "12.34567890123456789",

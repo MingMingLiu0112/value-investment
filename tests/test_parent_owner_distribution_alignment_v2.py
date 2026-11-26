@@ -278,6 +278,22 @@ def test_total_f2_remains_blocked_and_no_order_with_financial_closure(aligned_ca
     assert result["action"] == "no_order"
 
 
+def test_recomputed_quarter_cannot_pass_financial_gate_without_a_covered_window(aligned_case, monkeypatch):
+    from value_investment_agent.application.research import pending_candidate_alignment as alignment
+
+    _, _, _, _, closure = financial_closure(aligned_case)
+    monkeypatch.setattr(alignment, "_financial_update_closure_status", lambda *args, **kwargs: {
+        "status": "PASS", "reason_codes": [], "consumed_closure": closure,
+    })
+    result = read(aligned_case)
+    financial = next(check for check in result["checks"] if check["id"] == "financial_updates")
+    assert financial["details"]["recomputation_closure"]["status"] == "PASS"
+    assert financial["status"] == "BLOCKED"
+    assert "FINANCIAL_DISCLOSURE_WINDOW_INCOMPLETE" in financial["reason_codes"]
+    assert "FINANCIAL_DISCLOSURE_WINDOW_INCOMPLETE" in result["price_bridge"]["blockers"]
+    assert not result["currentpricecomparison"]
+
+
 def test_reported_parent_financing_conflict_blocks_financial_update(aligned_case):
     _, receipt, _, result, closure = financial_closure(aligned_case)
     closure[0]["financing_comparison"] = {"status": "CONFLICT"}

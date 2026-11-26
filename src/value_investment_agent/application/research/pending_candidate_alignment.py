@@ -495,9 +495,10 @@ def _cross_date_row_proofs(*, start, end, action_rows, cash_rows, cancellations,
             proof_rows.append(proof)
             if source_url is not None:
                 by_original.setdefault((identity, source_url, digest), []).append(index)
-            if (not publication_window_covered or identity not in complete_ids
+            if (identity not in complete_ids
                     or identity in conflicts or source_url is None
-                    or dispositions.get(identity) != kind or len(ids) != 1 or observation["status"] not in {
+                    or dispositions.get(identity) not in {None, kind} or len(ids) != 1
+                    or observation["status"] not in {
                         "MATCHED", "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"
                     }):
                 continue
@@ -506,18 +507,24 @@ def _cross_date_row_proofs(*, start, end, action_rows, cash_rows, cancellations,
                 by_ledger.setdefault(row_id, []).append(index)
 
     duplicate_proofs = {i for indices in by_original.values() if len(indices) > 1 for i in indices}
-    matched, used = [], set()
+    matched = []
     for row_id, (kind, row) in ledger.items():
         indices = by_ledger.get(row_id, [])
         if len(indices) != 1 or indices[0] in duplicate_proofs:
             continue
         index, = indices
-        used.add(index)
         match = dict(ledger_id=row_id, **proof_rows[index])
         if kind == "CASH_DISTRIBUTION":
             match.update(cash_payment_proven=False, model_inclusion=row["model_inclusion"])
         matched.append(match)
 
+    # Keep local proof matches visible without promoting them to a full-period reconciliation.
+    closed_window_matches = matched
+    matched = [
+        row for row in closed_window_matches
+        if publication_window_covered and dispositions.get(row["announcement_id"]) == row["kind"]
+    ]
+    used = {by_ledger[row["ledger_id"]][0] for row in matched}
     unmatched_ledger = sorted(set(ledger) - {row["ledger_id"] for row in matched})
     unmatched_proofs = [row for index, row in enumerate(proof_rows) if index not in used]
     ambiguous_ledger = sorted(row_id for row_id, indices in by_ledger.items() if len(indices) > 1)
@@ -536,7 +543,8 @@ def _cross_date_row_proofs(*, start, end, action_rows, cash_rows, cancellations,
         for row_id in proof["ledger_ids"]
         if row_id in ledger and ledger[row_id][0] == "CASH_DISTRIBUTION"
     }
-    return dict(status=status, matched_rows=matched, unmatched_ledger_ids=unmatched_ledger,
+    return dict(status=status, matched_rows=matched, closed_window_matched_rows=closed_window_matches,
+                unmatched_ledger_ids=unmatched_ledger,
                 unmatched_native_proofs=unmatched_proofs, ambiguous_ledger_ids=ambiguous_ledger,
                 duplicate_native_proofs=[proof_rows[i] for i in sorted(duplicate_proofs)],
                 unverified_cash_payment_ledger_ids=sorted(observed_cash_ids),
@@ -554,7 +562,8 @@ def _cross_date_action_facts(*, ledger_binding, ledger, start, end, windows, act
                 if window.get("source_integrity_verified") is True
                 and window["full_calendar_window_elapsed"] is True
                 and window.get("coverage_status") == "COMPLETE"]
-    covered = _continuous_publication_window(complete, start, end)
+    publication_gaps = _publication_window_gaps(complete, start, end)
+    covered = not publication_gaps
     dispositions = {row["announcement_id"]: row["disposition"]
                     for row in ledger["reviewed_documents"]}
     complete_ids = {event["announcement_id"] for window in complete
@@ -609,6 +618,14 @@ def _cross_date_action_facts(*, ledger_binding, ledger, start, end, windows, act
             kind="CASH_ENTITLEMENT_AND_SCHEDULE", ledger_id=row_id, terms=observation["terms"],
             cash_payment_proven=False, model_inclusion=row["model_inclusion"]))
 
+    proofs = _cross_date_row_proofs(
+        start=start, end=end, action_rows=action_rows, cash_rows=cash_rows,
+        cancellations=cancellations, cash_implementations=cash_implementations,
+        announcements=announcements, dispositions=dispositions,
+        complete_ids=complete_ids, conflicts=conflicts, publication_window_covered=covered,
+    )
+    cash_schedules = {(row["announcement_id"], row["ledger_id"])
+                      for row in proofs["closed_window_matched_rows"] if row["kind"] == "CASH_DISTRIBUTION"}
     rows = []
     for identity, (title, published_at, originals) in sorted(announcements.items()):
         facts = facts_by_announcement.get(identity, [])
@@ -618,9 +635,11 @@ def _cross_date_action_facts(*, ledger_binding, ledger, start, end, windows, act
             status = "ANNOUNCEMENT_METADATA_CONFLICT"
         elif identity in complete_ids and len(facts) == 1:
             kind = facts[0]["kind"]
-            expected = "CASH_DISTRIBUTION" if kind == "CASH_ENTITLEMENT_AND_SCHEDULE" else "SHARE_ACTION"
-            if disposition == expected:
-                status = "SCHEDULE_TERMS_ONLY" if expected == "CASH_DISTRIBUTION" else "NATIVE_TERMINAL_MATCHED"
+            if kind == "CASH_ENTITLEMENT_AND_SCHEDULE":
+                if (identity, facts[0]["ledger_id"]) in cash_schedules:
+                    status = "SCHEDULE_TERMS_ONLY"
+            elif disposition == "SHARE_ACTION":
+                status = "NATIVE_TERMINAL_MATCHED"
         rows.append(dict(announcement_id=identity, title=title, published_at=published_at,
                          originals=[dict(source_url=url, sha256=sha) for url, sha in originals],
                          disposition=disposition, status=status, facts=facts))
@@ -630,12 +649,9 @@ def _cross_date_action_facts(*, ledger_binding, ledger, start, end, windows, act
                 input_descriptor_sha256=ledger["input_descriptor_sha256"],
                 ledger_binding=deepcopy(ledger_binding), valuation_date=start.isoformat(),
                 comparison_date=end.isoformat(), publication_window_covered=covered,
+                missing_publication_windows=publication_gaps,
                 coverage_observation_bindings=[deepcopy(w["observation_binding"]) for w in complete],
-                announcements=rows, row_proof_reconciliation=_cross_date_row_proofs(
-                    start=start, end=end, action_rows=action_rows, cash_rows=cash_rows,
-                    cancellations=cancellations, cash_implementations=cash_implementations,
-                    announcements=announcements, dispositions=dispositions,
-                    complete_ids=complete_ids, conflicts=conflicts, publication_window_covered=covered),
+                announcements=rows, row_proof_reconciliation=proofs,
                 effective_action_continuity_proven=False,
                 current_price_basis_compatible=False,
                 status="BLOCKED", reason_codes=[
@@ -2500,10 +2516,14 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
         )
         if financial_closure is not None:
             checks[4]["status"] = financial_closure["status"]
-            checks[4]["reason_codes"] = financial_closure["reason_codes"]
+            checks[4]["reason_codes"] = list(financial_closure["reason_codes"])
+            coverage = checks[3]["details"]
+            checks[4]["details"]["missing_publication_windows"] = coverage["missing_publication_windows"]
+            if not coverage["publication_window_continuous"]:
+                checks[4]["status"] = "BLOCKED"
+                checks[4]["reason_codes"].append("FINANCIAL_DISCLOSURE_WINDOW_INCOMPLETE")
             checks[4]["explanation"] = (
-                "财务更新只有在精确原件、期间、候选、描述符及冷重算前驱全部一致时才通过；"
-                "来源存在本身不证明已消费。"
+                "财务更新须覆盖估值日至报价日的公告，并核对财报原件、报告期、候选、描述符及前驱重算结果。"
             )
             checks[4]["details"]["recomputation_closure"] = financial_closure
             if len(financial_closure["consumed_closure"]) == 1:
