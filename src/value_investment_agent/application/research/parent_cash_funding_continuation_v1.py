@@ -10,6 +10,7 @@ from ..product.common import _native_path, write_new_bytes
 from . import parent_cash_funding_revision_v1 as revision
 
 VERSION = "fixed-payment-v1"
+MATURITY_VERSION = "maturity-v1"
 LIMIT = 2 * 1024**2
 
 
@@ -24,8 +25,11 @@ def _checker():
 
 
 def _implementation(checker):
+    modules = [revision, checker]
+    if checker.__name__.endswith(".parent_cash_maturity_recheck"):
+        modules.append(_checker())
     return {module.__name__: sha256(Path(module.__file__).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
-            for module in (revision, checker)}
+            for module in modules}
 
 
 def _read_seal(write_root, folder, identity):
@@ -57,15 +61,22 @@ def _read_seal(write_root, folder, identity):
     return dict(record, continuation_sha256=digest)
 
 
-def replay_or_read(source_root, write_root, identity, *, create, now):
+def replay_or_read(source_root, write_root, identity, *, create, now, version=VERSION):
     """Resume a sealed correction. The source owner and publication root may differ."""
     task_id, digest = identity["task_id"], identity["receipt_sha256"]
     if not re.fullmatch(r"rt-[a-f0-9]{32}", task_id) or not re.fullmatch(r"[a-f0-9]{64}", digest):
         raise ValueError("CONTINUATION_ID_INVALID")
+    if version == VERSION:
+        checker = _checker()
+        result_key, schema = "fixed_payment_recheck", "fixed-owner-payment-cash-recheck-v1"
+    elif version == MATURITY_VERSION:
+        from . import parent_cash_maturity_recheck as checker
+        result_key, schema = "maturity_recheck", "parent-cash-maturity-recheck-v1"
+    else:
+        raise ValueError("CONTINUATION_VERSION_UNSUPPORTED")
     folder = (write_root / "runtime" / "parent-cash-task-backed-receipts" / task_id
-              / "funding-continuations" / digest / VERSION)
-    checker = _checker()
-    identity = dict(identity, continuation_version=VERSION, action="no_order", formal_eligibility=False,
+              / "funding-continuations" / digest / version)
+    identity = dict(identity, continuation_version=version, action="no_order", formal_eligibility=False,
                     current_comparable=False, new_llm_calls=0, status="REPLAYED",
                     implementation_sha256=_implementation(checker))
     retained = _read_seal(write_root, folder, identity)
@@ -89,7 +100,7 @@ def replay_or_read(source_root, write_root, identity, *, create, now):
             return retained
         # run_check cold-replays the predecessor itself before applying the fixed payment.
         corrected = checker.run_check(source_root, task_id, digest, now)
-        if (corrected["schema_version"] != "fixed-owner-payment-cash-recheck-v1"
+        if (corrected["schema_version"] != schema
                 or corrected["parent_receipt"] != digest or corrected["task_id"] != task_id
                 or corrected["predecessor_input"] != identity["reassessment_spec_sha256"]
                 or corrected["symbol"] != identity["symbol"] or corrected["valuation_date"] != identity["valuation_date"]
@@ -102,9 +113,14 @@ def replay_or_read(source_root, write_root, identity, *, create, now):
                 or corrected["status"] != ("REJECTED" if any(row["status"] == "REJECTED"
                     for row in scenarios.values()) else "CALCULATED")):
             raise ValueError("CONTINUATION_FIXED_PAYMENT_RESULT_INVALID")
+        if version == MATURITY_VERSION:
+            alternative = corrected["alternative_scenarios"]
+            if (set(alternative) != set(scenarios) or corrected["current_research_range_adopted"] is not False
+                    or any(row["status"] not in {"CALCULATED", "REJECTED"} for row in alternative.values())):
+                raise ValueError("CONTINUATION_MATURITY_ALTERNATIVES_INVALID")
         if _implementation(checker) != identity["implementation_sha256"]:
             raise ValueError("CONTINUATION_IMPLEMENTATION_CHANGED")
-        record = dict(identity, completed_at=now.isoformat(), fixed_payment_recheck=corrected)
+        record = dict(identity, completed_at=now.isoformat(), **{result_key: corrected})
         data = _bytes(record)
         if len(data) > LIMIT:
             raise ValueError("CONTINUATION_SEAL_TOO_LARGE")

@@ -217,3 +217,34 @@ def test_reopening_requires_intact_revised_spec(page, monkeypatch):
     (page.folder / f"reassessment-spec-{page.adj}.json").write_bytes(b"{}")
     assert page.client.get(page.url).status_code == page.client.post(page.url).status_code == 422
     assert page.performed == ["fixed"]
+
+
+def test_version_selection_cannot_fall_back_to_existing_seal(page, monkeypatch):
+    allow(monkeypatch)
+    legacy = page.client.post(page.url, json={}).json()
+    assert legacy["continuation_version"] == "fixed-payment-v1"
+    assert page.client.get(page.url + "&version=maturity-v1").status_code == 404
+    for query in ("&version=unknown", "&version=maturity-v1&version=fixed-payment-v1"):
+        assert page.client.post(page.url + query, json={}).status_code == 422
+    assert page.client.get(page.url).json() == legacy
+
+
+def test_maturity_post_is_sealed_separately_and_keeps_prior_get(page, monkeypatch):
+    from value_investment_agent.application.research import parent_cash_maturity_recheck as maturity
+
+    allow(monkeypatch)
+    legacy = page.client.post(page.url, json={}).json()
+    def changed(*args):
+        checked = page.checker.run_check(*args)
+        return dict(checked, schema_version="parent-cash-maturity-recheck-v1",
+                    alternative_scenarios=checked["scenarios"], current_research_range_adopted=False)
+    monkeypatch.setattr(maturity, "run_check", changed)
+    url = page.url + "&version=maturity-v1"
+    result = page.client.post(url, json={})
+    assert result.status_code == 200, result.text
+    current = result.json()
+    assert current["continuation_sha256"] != legacy["continuation_sha256"]
+    assert current["maturity_recheck"]["status"] == "REJECTED"
+    assert current == page.client.get(url).json() == page.client.post(url).json()
+    assert page.client.get(page.url).json() == legacy
+    assert page.performed == ["fixed", "fixed"]

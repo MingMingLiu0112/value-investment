@@ -3,7 +3,7 @@
   "date": "2026-11-26",
   "parent_receipt": "ed62be290ebcffebf47e1c22cd235d77767e42f1d8b13ff4f1273875257c0a19",
   "registered_candidate": "dcf8dcf4dbf3965d31c5e787d22d103d4fb2e6bc6a8ca3f2fbc682e21eecf027",
-  "report_sha256": "3368e64bf167d466f44fb78d5721d265573e9c4eb30970409d21129d233443d7",
+  "report_sha256": "7f850bb6461d596b0c1ae0bd97fab960cb8a4a12abcb44db7b8bedf581bac5da",
   "quote_source": "https://www.cninfo.com.cn/new/disclosure/stock?orgId=gssh0600887&stockCode=600887",
   "observed": "2026-11-26T13:58:07.849852+00:00",
   "close": 33.43,
@@ -16,7 +16,7 @@
   "matched": 123,
   "materiality": 0,
   "past_complete": "2026-11-25",
-  "latest_snapshot": "2026-11-26T13:46:47.055507+00:00",
+  "latest_snapshot": "2026-11-26T14:57:05.702072+00:00",
   "gates": [
     {
       "id": "quote",
@@ -80,5 +80,51 @@
       ]
     }
   ],
-  "action": "no_order"
+  "action": "no_order",
+  "market_cap_continuity_check": {
+    "from_date": "2026-06-30",
+    "through_date": "2026-11-26",
+    "sessions": 102,
+    "method": "intersection_of_rounded_daily_market_cap_ranges_assuming_constant_shares",
+    "constant_total_shares": 6325360667,
+    "constant_float_shares": 6293929721,
+    "receipt_sha256": "552e1b4c7f3a9bd156eb130116e2c5514533eecf6a5e1abc91662a4f3cd1776e",
+    "market_cap_rounding_step_cny": "100.00",
+    "matched_sessions": 102,
+    "last_exact_issuer_date": "2026-10-22",
+    "close_day_total_shares_range": [6325360666, 6325360668],
+    "close_day_observed_at": "2026-11-26T15:02:56.833714+00:00"
+  },
+  "ordinary_dividend_cash_reconciliation": {
+    "period_end": "2026-06-30",
+    "scope": "ordinary_share_cash_derived_from_financial_statements",
+    "cash_decrease_cny": "5704275493.14",
+    "minority_dividend_cash_paid_cny": "39738744.24",
+    "ordinary_share_cash_cny": "5664536748.90",
+    "source_url": "https://static.cninfo.com.cn/finalpage/2026-08-27/1225511409.PDF",
+    "source_sha256": "423af4d63f2b620a03ed9d0080adbb063f3ef14d874abeca8097d0e0d1441ac2",
+    "receipt_sha256": "94a3ae1cdc3d8c01958639ce4b74daa6b2673e52c41f9f83dfb22ba26113c829",
+    "payables_implied_cash_cny": "5664536748.90",
+    "reconciliation_difference_cny": "0.00",
+    "ordinary_payable_net_increase_cny": "28287851.40",
+    "route_settlement_cny": {
+      "issuer_direct": null,
+      "china_clear_shanghai": null
+    }
+  },
+  "material_event_review": {
+    "matched_originals": 123,
+    "candidate_approved": 0,
+    "without_candidate_approval": 123,
+    "scope": "matched_public_announcements_for_registered_candidate",
+    "new_ids": 0,
+    "removed_ids": 0,
+    "complete_through": "2026-11-25",
+    "cninfo_day_observed_at": "2026-11-26T14:57:04.910345+00:00",
+    "sse_day_observed_at": "2026-11-26T14:57:05.988705+00:00",
+    "cninfo_day_count": 0,
+    "sse_day_count": 0,
+    "full_day_elapsed": false,
+    "earliest_full_day_recheck": "2026-11-27T00:00:00+08:00"
+  }
 }

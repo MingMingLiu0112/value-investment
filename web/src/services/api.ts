@@ -1998,10 +1998,102 @@ export interface FundingContinuation {
     >;
   };
 }
+export interface MaturityFinancingRow {
+  payment_status:
+    | "CALCULATED_CONDITIONAL"
+    | "BEFORE_FIRST_FAILURE"
+    | "NOT_COMPLETED"
+    | "NOT_REACHED";
+  year: number;
+  known_principal_cny: string;
+  opening_proxy_residual_cny: string;
+  assumed_proxy_repayment_cny: string;
+  closing_proxy_residual_cny: string;
+  new_borrowing_cny: string;
+  interest_cny: string;
+}
+
+export type MaturityScenario = {
+  financing_rows: MaturityFinancingRow[];
+  financing_rows_basis: "CONDITIONAL_PAYMENT_PLAN";
+  first_failed_year: number | null;
+} & (
+  | { status: "CALCULATED"; per_share_value: string }
+  | { status: "REJECTED"; reason: string; ledger?: FundingDeficitLedger }
+);
+
+type MaturityScenarios = Record<"bear" | "base" | "bull", MaturityScenario>;
+
+export interface MaturityContinuation extends Pick<
+  FundingContinuation,
+  | "status"
+  | "task_id"
+  | "receipt_sha256"
+  | "action"
+  | "new_llm_calls"
+  | "continuation_sha256"
+> {
+  symbol: string;
+  continuation_version: "maturity-v1";
+  completed_at: string;
+  valuation_date: string;
+  paid_task_status: string;
+  reassessment_spec_sha256: string;
+  formal_eligibility: false;
+  current_comparable: false;
+  maturity_recheck: {
+    schema_version: "parent-cash-maturity-recheck-v1";
+    task_id: string;
+    parent_receipt: string;
+    predecessor_input: string;
+    symbol: string;
+    valuation_date: string;
+    action: "no_order";
+    formal_eligibility: false;
+    current_comparable: false;
+    current_research_range_adopted: boolean;
+    status: "REJECTED" | "CALCULATED";
+    scenario_basis: string;
+    alternative_basis: string;
+    scenarios: MaturityScenarios;
+    alternative_scenarios: MaturityScenarios;
+    maturity_evidence: {
+      year: number;
+      known_principal_cny: string;
+      proxy_residual_cny: string;
+      opening_reported_debt_cny: string;
+      reported_9m_borrowing_cny: string;
+      reported_9m_repayment_cny: string;
+      q3_carrying_basket_cny: string;
+      q3_basket_components_cny: Record<string, string>;
+      proxy_minus_basket_cny: string;
+      q3_short_borrowing_cny: string;
+      short_borrowing_window_start: string;
+      short_borrowing_window_end: string;
+      registration_ceiling_cny: string;
+      observed_issuance_cny: string;
+      assumed_future_borrowing_cny: string;
+      total_repayment_min_cny: string;
+      total_repayment_max_cny: string;
+      sources: Record<string, string>;
+      zero_new_borrowing_from_year: number;
+      first_year: number;
+      first_year_issue_proceeds_assumed_at_par_cny: string;
+      first_year_contractual_maturities_cny: string;
+      proxy_repayment_min_cny: string;
+      proxy_repayment_max_cny: string;
+      actual_unknown_maturity_cny: string | null;
+      actual_total_principal_upper_cny: string | null;
+      source_matrix_sha256: string;
+    };
+  };
+}
+
 function fundingContinuationPath(
   task: string,
   receipt: string,
   symbol: string,
+  version?: "maturity-v1",
 ) {
   return (
     "operating-research/parent-cash-tasks/v3/" +
@@ -2009,7 +2101,8 @@ function fundingContinuationPath(
     "/funding-revisions/" +
     encodeURIComponent(receipt) +
     "/replay?symbol=" +
-    encodeURIComponent(symbol)
+    encodeURIComponent(symbol) +
+    (version ? "&version=" + version : "")
   );
 }
 
@@ -2547,6 +2640,21 @@ export const api = {
   runFundingContinuation: (task: string, receipt: string, symbol: string) =>
     post<FundingContinuation>(
       fundingContinuationPath(task, receipt, symbol),
+      {},
+    ),
+  readMaturityContinuation: (
+    task: string,
+    receipt: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<MaturityContinuation>(
+      fundingContinuationPath(task, receipt, symbol, "maturity-v1"),
+      signal,
+    ),
+  runMaturityContinuation: (task: string, receipt: string, symbol: string) =>
+    post<MaturityContinuation>(
+      fundingContinuationPath(task, receipt, symbol, "maturity-v1"),
       {},
     ),
   parentCashFundingRevisions: (

@@ -808,9 +808,13 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 body.extend(chunk)
             if body.strip() and not re.fullmatch(rb"\s*\{\s*\}\s*", body):
                 return reply(dict(status="INVALID_REPLAY_REQUEST", action="no_order"), 422)
-        return await run_in_threadpool(funding_continuation, task_id, receipt_sha256, symbol, create)
+        versions = request.query_params.getlist("version")
+        if versions and versions not in (["fixed-payment-v1"], ["maturity-v1"]):
+            return reply(dict(status="CONTINUATION_VERSION_UNSUPPORTED", action="no_order"), 422)
+        return await run_in_threadpool(funding_continuation, task_id, receipt_sha256, symbol, create,
+                                       versions[0] if versions else "fixed-payment-v1")
 
-    def funding_continuation(task_id, digest, symbol, create):
+    def funding_continuation(task_id, digest, symbol, create, version):
         from ...application.research import parent_cash_funding_continuation_v1 as continuation
         from ...application.research import parent_cash_funding_revision_v1 as revision
 
@@ -847,7 +851,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                             input_descriptor_sha256=projected["input_descriptor_sha256"], financing_terms=terms,
                             original_task_status=receipt["previous_task_status"], valuation_date=projected["valuation_date"],
                             current_reassessment=projected["current_reassessment"])
-            result = continuation.replay_or_read(source_root, Path(root).resolve(), identity, create=create,
+            result = continuation.replay_or_read(source_root, Path(root).resolve(), identity, create=create, version=version,
                                                  now=datetime.now(timezone.utc))
             if result is None:
                 return reply(dict(status="CONTINUATION_NOT_SEALED", action="no_order"), 404)
