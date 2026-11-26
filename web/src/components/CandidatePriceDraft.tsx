@@ -1203,6 +1203,45 @@ function CheckReconciliation({
         id={id}
         value={ledger.native_source_consumption}
       />
+      {object(ledger.historical_cash_close_pair) && (
+        <section aria-label="历史分红与收盘价复算">
+          <h6>历史分红与收盘价复算</h6>
+          {ledger.historical_cash_close_pair.status === "REPLAYED" ? (
+            <>
+              <p>
+                登记日 {text(ledger.historical_cash_close_pair.record_date)}{" "}
+                收盘 {text(ledger.historical_cash_close_pair.record_close_cny)}{" "}
+                元，减去每股含税股息{" "}
+                {text(ledger.historical_cash_close_pair.gross_per_share_cny)}{" "}
+                元，除息参考价为{" "}
+                {text(
+                  ledger.historical_cash_close_pair
+                    .theoretical_ex_reference_cny,
+                )}{" "}
+                元。
+              </p>
+              <p>
+                除息日 {text(ledger.historical_cash_close_pair.ex_date)}{" "}
+                实际收盘 {text(ledger.historical_cash_close_pair.ex_close_cny)}{" "}
+                元，相对除息参考价变动{" "}
+                {text(ledger.historical_cash_close_pair.market_move_cny)}{" "}
+                元。该复算仅覆盖本次分红。
+              </p>
+              <AlignmentEvidence
+                value={[
+                  ledger.historical_cash_close_pair.original_binding,
+                  ledger.historical_cash_close_pair.price_binding,
+                ]}
+              />
+            </>
+          ) : (
+            <p>
+              历史收盘与分红无法复算：
+              {text(ledger.historical_cash_close_pair.reason)}
+            </p>
+          )}
+        </section>
+      )}
       <h6>已列公告分配条款</h6>
       {object(ledger.opening_parent_dividend_payable) &&
         object(

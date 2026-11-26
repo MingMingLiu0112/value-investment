@@ -2528,3 +2528,39 @@ def test_opening_purchase_schedule_retains_only_dated_native_followup(
         assert link["cancellation_binding"] is None
     assert not result["complete_opening_action_coverage"]
     assert not result["comparison_date_capital_proven"]
+
+
+@pytest.mark.parametrize("variant", ["complete", "adjusted", "changed_url", "duplicate", "early_capture", "hash"])
+def test_historical_single_cash_event_uses_two_unadjusted_closes(tmp_path, variant):
+    from value_investment_agent.application.research.historical_cash_close_pair import replay_cash_close_pair
+
+    # TEST_ONLY event; the separate actual receipt is replayed against issuer and vendor bytes.
+    symbol = "600000"
+    original = write(tmp_path, "runtime/implementation.json", {"issuer": symbol})
+    bars = [["2020-01-02", "10.2", "10"], ["2020-01-03", "9.1", "9.4"]]
+    field = "qfqday" if variant == "adjusted" else "day"
+    price = write(tmp_path, "runtime/raw.json", {"code": 0, "data": {"sh600000": {field: bars}}})
+    terms = dict(symbol=symbol, currency="CNY", body_terms_reconciled=True,
+                 parser_version="sse-explicit-cash-implementation-body-v1",
+                 record_date="2020-01-02", ex_date="2020-01-03", cash_per_share="1")
+    row = dict(native_terms=terms, evidence=[dict(binding=original)], model_inclusion="NOT_NATIVE_VERIFIED")
+    binding = dict(original_binding=original, price_binding=price, acquired_at="2020-01-03T08:00:00Z",
+                   url="https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=sh600000,day,2020-01-02,2020-01-03,2,")
+    if variant == "changed_url":
+        binding["url"] += "qfq"
+    elif variant == "early_capture":
+        binding["acquired_at"] = "2020-01-03T01:00:00Z"
+    elif variant == "hash":
+        (tmp_path / price["path"]).write_bytes(b"{}")
+    args = dict(root=tmp_path, read=lambda ref: _bound(tmp_path, ref), binding=binding,
+                symbol=symbol, distributions=[row, row] if variant == "duplicate" else [row],
+                end=date(2020, 1, 6), now=datetime(2020, 1, 6, tzinfo=timezone.utc))
+    if variant != "complete":
+        with pytest.raises(ValueError):
+            replay_cash_close_pair(**args)
+        return
+    pair = replay_cash_close_pair(**args)
+    assert Decimal(pair["theoretical_ex_reference_cny"]) == 9
+    assert Decimal(pair["market_move_cny"]) == Decimal("0.4")
+    assert pair["model_inclusion"] == "NOT_NATIVE_VERIFIED"
+    assert not pair["current_price_comparison"] and not pair["settlement_proven"]

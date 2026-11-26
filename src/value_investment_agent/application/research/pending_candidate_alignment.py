@@ -2628,6 +2628,18 @@ def _load_bound_alignment(*, root, analysis, now, input_schema):
             again, route_again = _materiality(root, analysis, config["materiality_review_binding"], windows, scans, now, read)
             if again != materiality or route_again != materiality_route:
                 raise ValueError("MATERIALITY_CHANGED_DURING_ALIGNMENT")
+        historical_pair = config.get("historical_cash_close_pair")
+        if historical_pair is not None and reconciliation is not None:
+            from .historical_cash_close_pair import replay_cash_close_pair
+
+            try:
+                pair = replay_cash_close_pair(
+                    root=root, binding=historical_pair, symbol=analysis["symbol"],
+                    distributions=reconciliation["distributions"], end=quote.quote_date,
+                    now=now, read=read)
+            except (ValueError, OSError, KeyError, TypeError, IndexError, AttributeError, ArithmeticError) as error:
+                pair = dict(status="UNASSESSABLE", reason=str(error), action="no_order")
+            reconciliation["historical_cash_close_pair"] = pair
         for path, sha in list(verified.items()):
             _bound(root, dict(path=path, sha256=sha))
         _attach_confirmed_unlock_facts(
