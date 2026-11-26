@@ -713,9 +713,11 @@ def _market_value_share_corroboration(binding, *, symbol, comparison_date, now, 
     time = packet.get("time")
     cutoff = int(observed.astimezone(CHINA).strftime("%H%M%S"))
     if (packet.get("code") != symbol or packet.get("date") != int(comparison_date.strftime("%Y%m%d"))
-            or type(time) is not int or not 150000 <= time <= cutoff
+            or type(time) is not int or not 150000 <= time <= 235959
             or time % 100 >= 60 or (time // 100) % 100 >= 60):
         raise ValueError("SSE_CLOSING_VALUE_SYMBOL_OR_SESSION_MISMATCH")
+    if time > cutoff:
+        raise ValueError("SSE_CLOSING_VALUE_CLOCK_AHEAD_OF_ACQUISITION")
     snap = packet.get("snap")
     if (not isinstance(snap, list) or len(snap) != 7 or not isinstance(snap[6], str)
             or snap[6].strip() != "E110"
@@ -1272,16 +1274,23 @@ def _reconcile(root, analysis, ref, end, windows, now, read, source_windows=(), 
             same_basis = False
     market_value_capital = None
     if (market_binding := ledger.get("closing_market_value_observation")) is not None:
-        market_value_capital = _market_value_share_corroboration(
-            market_binding, symbol=analysis["symbol"], comparison_date=end, now=now, read=read,
-            qualified_close=qualified_close,
-        )
-        consistent = market_value_capital["share_count"] == total
-        market_value_capital["rollforward_matches"] = consistent
-        evidence.append(market_value_capital["evidence_binding"])
-        if not consistent:
-            gaps.append("SSE_CLOSING_VALUE_IMPLIED_SHARES_CONFLICT_WITH_ROLLFORWARD")
+        try:
+            market_value_capital = _market_value_share_corroboration(
+                market_binding, symbol=analysis["symbol"], comparison_date=end, now=now, read=read,
+                qualified_close=qualified_close,
+            )
+        except ValueError as error:
+            if str(error) != "SSE_CLOSING_VALUE_CLOCK_AHEAD_OF_ACQUISITION":
+                raise
+            gaps.append(str(error))
             same_basis = False
+        else:
+            consistent = market_value_capital["share_count"] == total
+            market_value_capital["rollforward_matches"] = consistent
+            evidence.append(market_value_capital["evidence_binding"])
+            if not consistent:
+                gaps.append("SSE_CLOSING_VALUE_IMPLIED_SHARES_CONFLICT_WITH_ROLLFORWARD")
+                same_basis = False
     if same_basis:
         closing_value = opening_value
     compatible = same_basis

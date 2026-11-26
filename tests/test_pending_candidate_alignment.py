@@ -1737,6 +1737,10 @@ def test_sse_closing_value_corroboration_requires_same_day_and_integral_shares(t
         service._market_value_share_corroboration(
             binding, **{**options, "comparison_date": date(2026, 11, 18)},
         )
+    with pytest.raises(ValueError, match="SSE_CLOSING_VALUE_CLOCK_AHEAD_OF_ACQUISITION"):
+        service._market_value_share_corroboration(
+            dict(binding, observed_at="2026-11-19T16:28:59.999+08:00"), **options,
+        )
     packet["snap"][5] = 208167619550.98
     binding["response_binding"] = write(tmp_path, "runtime/TEST_ONLY-fractional.json", packet)
     with pytest.raises(ValueError, match="SSE_CLOSING_VALUE_SHARE_COUNT_NOT_INTEGRAL"):
