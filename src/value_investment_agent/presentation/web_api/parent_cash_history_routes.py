@@ -24,7 +24,7 @@ from . import parent_cash_funding_revisions as funding
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
 from ...application.research import parent_cash_corrected_continuation_v1 as continued
-from ...application.research.parent_note_grid_terminal_resume import ParentCashService as ParentCashTaskServiceV3
+from ...application.research.parent_note_grid_terminal_service_v2 import ParentCashService as ParentCashTaskServiceV3
 
 
 def _numbered_task_with_observed_investing_cash(service, task_id):
@@ -344,10 +344,14 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 raise ValueError("PARENT_V3_REQUEST_TOO_LARGE")
             body = json.loads(raw)
             continuation_keys = {"symbol", "continue_from_task_id", "policy_correction_receipt_sha256"}
-            if len(raw) > 128 and (not isinstance(body, dict) or set(body) != continuation_keys):
+            terminal_keys = {"symbol", "continue_from_task_id", "retry_sealed_terminal"}
+            if isinstance(body, dict) and "retry_sealed_terminal" in body:
+                if set(body) != terminal_keys or body["retry_sealed_terminal"] is not True:
+                    raise ValueError("PARENT_V3_REQUEST_INVALID")
+            if len(raw) > 128 and (not isinstance(body, dict) or set(body) not in (continuation_keys, terminal_keys)):
                 raise ValueError("PARENT_V3_REQUEST_TOO_LARGE")
             if (not isinstance(body, dict) or set(body) not in ({"symbol"}, {"symbol", "continue_from_task_id"},
-                                                                {"symbol", "new_run_id"}, continuation_keys)
+                                                                {"symbol", "new_run_id"}, continuation_keys, terminal_keys)
                     or not isinstance(body["symbol"], str)
                     or not re.fullmatch(r"[0-9]{6}", body["symbol"])):
                 raise ValueError("PARENT_V3_REQUEST_INVALID")
@@ -370,6 +374,11 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 predecessor = body["continue_from_task_id"]
                 if not isinstance(predecessor, str) or not re.fullmatch(r"rt-[0-9a-f]{32}", predecessor):
                     raise ValueError("PARENT_V3_INVALID_CONTINUATION_TASK")
+                if body.get("retry_sealed_terminal") is True:
+                    task = numbered_service.continue_bear_terminal_v2(predecessor, binding)
+                    if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                        background.add_task(run_numbered, task["task_id"])
+                    return reply(task, 202)
                 if "policy_correction_receipt_sha256" in body:
                     try:
                         task = numbered_service.continue_policy(predecessor, body["policy_correction_receipt_sha256"], binding)
@@ -698,7 +707,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         from datetime import datetime, timezone
         from hashlib import sha256
         from ...application.research.parent_cash_task_alignment_v3 import _align_verified_parent_cash_task
-        from ...application.research.parent_note_grid_task_receipt_v1 import replay as replay_parent_cash_task_receipt
+        from ...application.research.parent_cash_task_completion_v1 import replay_task_receipt as replay_parent_cash_task_receipt
 
         try:
             candidates = [(task_root, valuation_receipt_path(task_root, task_id))

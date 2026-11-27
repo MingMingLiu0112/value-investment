@@ -12,7 +12,9 @@ from .parent_cash_task_aggregate_receipt_v1 import build as build_aggregate_rece
 from .parent_cash_task_receipt_v3 import build_parent_cash_task_receipt
 from .parent_cash_task_distribution_receipt_v1 import build as build_distribution_receipt
 from .parent_cash_corrected_receipt_v1 import build as build_corrected_receipt
-from .parent_note_grid_task_receipt_v1 import build as build_note_grid_receipt, replay as replay_task_receipt
+from .parent_note_grid_task_receipt_v1 import build as build_note_grid_receipt
+from .parent_note_grid_task_receipt_v2 import build as build_note_grid_receipt_v2, replay as replay_task_receipt
+from .parent_note_grid_terminal_service_v2 import WIRE as NOTE_GRID_TERMINAL_V2
 from .parent_note_grid_task_service_v1 import MARKER as NOTE_GRID_MARKER
 from .parent_cash_corrected_continuation_v1 import MARKER as CORRECTED_POLICY
 from ..portfolio.private_journal_lock import LockTimeout
@@ -247,7 +249,8 @@ def _seal_completed_task(service, task_id):
             if NOTE_GRID_MARKER in spec:
                 if binding is None or binding != spec.get("implemented_distribution_receipt_binding"):
                     raise ValueError("NOTE_GRID_RECEIPT_TASK_OR_DISTRIBUTION_MISMATCH")
-                builder = build_note_grid_receipt
+                builder = (build_note_grid_receipt_v2 if spec.get("terminal_response_wire") == NOTE_GRID_TERMINAL_V2
+                           else build_note_grid_receipt)
             elif CORRECTED_POLICY in spec:
                 if binding is None or spec.get("implemented_distribution_receipt_binding") != binding:
                     raise ValueError("PARENT_CORRECTED_DISTRIBUTION_BINDING_CHANGED")

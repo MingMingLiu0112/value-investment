@@ -953,3 +953,33 @@ def test_explicit_bear_quarter_continuation(tmp_path, monkeypatch, fault):
     assert client.post(prefix + "/by-company", json=dict(body, continue_from_task_id=child_id)).status_code == 422
     assert ran == [child_id]
     assert owner._load(seed_id)[2] == head
+
+
+def test_bear_terminal_retry_requires_explicit_true(tmp_path, monkeypatch):
+    calls = []
+    task_id = "rt-" + "f" * 32
+    active = {"path": "runtime/spec.json", "sha256": "a" * 64}
+
+    class Service:
+        def __init__(self, root):
+            self.root = root
+
+        def continue_bear_terminal_v2(self, predecessor, binding):
+            calls.append((predecessor, binding))
+            return {"task_id": task_id, "status": "QUEUED", "action": "no_order"}
+
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda _: tmp_path)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV3", Service)
+    monkeypatch.setattr(routes, "registered_cash_task_spec", lambda _, symbol: active)
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", lambda _, child: calls.append(child))
+    monkeypatch.setattr(routes, "authorize", lambda *_, **__: None)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=0)
+    client = TestClient(app)
+    path = "/api/v1/operating-research/parent-cash-tasks/by-company"
+    body = {"symbol": "600809", "continue_from_task_id": "rt-" + "b" * 32}
+    for invalid in (False, "true", 1):
+        assert client.post(path, json=dict(body, retry_sealed_terminal=invalid)).status_code == 422
+    assert calls == []
+    assert client.post(path, json=dict(body, retry_sealed_terminal=True)).status_code == 202
+    assert calls == [(body["continue_from_task_id"], active), task_id]

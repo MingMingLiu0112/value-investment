@@ -879,7 +879,11 @@ export function ParentCashTaskHistoryView({
   busy,
 }: {
   symbol: string;
-  onContinue?: (taskId: string, correctionReceipt?: string) => Promise<void>;
+  onContinue?: (
+    taskId: string,
+    correctionReceipt?: string,
+    retryTerminal?: boolean,
+  ) => Promise<void>;
   busy?: boolean;
 }) {
   const [history, setHistory] = useState<ParentCashTaskHistory>();
@@ -999,12 +1003,23 @@ export function ParentCashTaskHistoryView({
             {onContinue &&
               !item.read_only_archive &&
               item.terminal_debt_reconciliation && (
-                <Button
-                  disabled={busy}
-                  onClick={() => onContinue(item.task_id)}
-                >
-                  重验封存终值与融资口径（免费）
-                </Button>
+                <>
+                  <Button
+                    disabled={busy}
+                    onClick={() => onContinue(item.task_id)}
+                  >
+                    重验封存终值与融资口径（免费）
+                  </Button>
+                  <Popconfirm
+                    title="复用已通过的两个阶段，请求新的悲观终值？"
+                    description="按当日预算计费。上界情景单独核算；母公司融资口径未核实时不能进入基准估值。"
+                    onConfirm={() => onContinue(item.task_id, undefined, true)}
+                  >
+                    <Button disabled={busy}>
+                      续跑悲观终值（deepseek-flash）
+                    </Button>
+                  </Popconfirm>
+                </>
               )}
             {item.terminal_debt_reconciliation && (
               <details>
@@ -1024,6 +1039,13 @@ export function ParentCashTaskHistoryView({
                   ))}
                 </ul>
               </details>
+            )}
+            {item.error_code ===
+              "PARENT_V3_BASE_OPENING_FINANCING_BALANCE_UNVERIFIED" && (
+              <p>
+                悲观终值已封存。基准情景缺母公司期初融资余额，本次在 Base
+                调用前停止计费。 三情景尚未编齐，F2 无本次估值可与收盘价比较。
+              </p>
             )}
             {history.symbol === symbol && item.has_funding_revisions && (
               <ParentCashFundingRevisionRead
@@ -3245,6 +3267,7 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
     continueFrom?: string,
     fresh = false,
     correctionReceipt?: string,
+    retryTerminal = false,
   ) {
     if (pending.current) return;
     pending.current = true;
@@ -3263,6 +3286,7 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
             symbol,
             continueFrom,
             correctionReceipt,
+            retryTerminal,
           );
       if (task.action !== "no_order" || !/^rt-[a-f0-9]{32}$/.test(task.task_id))
         throw new Error("Invalid task");
@@ -3336,7 +3360,9 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
       <ParentCashTaskHistoryView
         key={revision}
         symbol={symbol}
-        onContinue={(taskId, receipt) => start(taskId, false, receipt)}
+        onContinue={(taskId, receipt, retryTerminal) =>
+          start(taskId, false, receipt, retryTerminal)
+        }
         busy={busy}
       />
     </>

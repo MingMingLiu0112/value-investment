@@ -2694,6 +2694,7 @@ export const api = {
     symbol: string,
     continueFrom?: string,
     correctionReceipt?: string,
+    retryTerminal = false,
   ) =>
     post<{ task_id: string; status: string; action: string }>(
       "operating-research/parent-cash-tasks/by-company",
@@ -2701,6 +2702,7 @@ export const api = {
         ? {
             symbol,
             continue_from_task_id: continueFrom,
+            ...(retryTerminal ? { retry_sealed_terminal: true } : {}),
             ...(correctionReceipt
               ? { policy_correction_receipt_sha256: correctionReceipt }
               : {}),
