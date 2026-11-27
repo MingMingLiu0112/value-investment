@@ -59,15 +59,12 @@ it("a failed value lane does not hide a verified empty hotspot lane", () => {
 });
 it("keeps discovery off today and opens research before action template", () => {
   const daily = readFileSync("src/pages/DailyDecisions/index.tsx", "utf8");
-  expect(daily.indexOf("<DualStrategySelection")).toBeLessThan(
-    daily.indexOf('<nav className="daily-navigation"'),
-  );
+  expect(daily).not.toContain("<DualStrategySelection");
   const detail = readFileSync("src/pages/DecisionDetail/index.tsx", "utf8");
+  expect(detail).toContain("<ValueResearchAnalysis decision={decision}");
   expect(
     detail.indexOf("<ValueResearchAnalysis decision={decision}"),
-  ).toBeLessThan(
-    detail.indexOf("<JudgmentSummary\n              decision={decision}"),
-  );
+  ).toBeLessThan(detail.indexOf("<JudgmentSummary"));
 });
 function waitRow(): SelectionRow {
   return {

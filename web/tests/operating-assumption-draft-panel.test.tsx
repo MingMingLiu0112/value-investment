@@ -224,8 +224,11 @@ it("keeps loading and failed public reads local to D2 with an explicit retry", (
 
 it("mounts D2 immediately after the profile only inside the existing non-hotspot public guard", () => {
   const detail = readFileSync("src/pages/DecisionDetail/index.tsx", "utf8");
+  expect(detail).toMatch(
+    /const valuePage =\s*strategy !== "hotspot" &&\s*\/\^\[0-9\]\{6\}\$\/\.test\(id\)/,
+  );
   const start = detail.indexOf(
-    '{strategy !== "hotspot" && /^[0-9]{6}$/.test(id) && (',
+    '{valuePage && (\n        <div className="workbench-surface value-tracking-modules"',
   );
   expect(start).toBeGreaterThan(-1);
   const guarded = detail.slice(start, detail.indexOf("<RemoteState", start));

@@ -1003,15 +1003,18 @@ it("only makes safe official source URLs clickable", () => {
 
 it("places E2 next to C/D2 only in the existing non-hotspot value-company guard", () => {
   const page = readFileSync("src/pages/DecisionDetail/index.tsx", "utf8");
+  expect(page).toMatch(
+    /const valuePage =\s*strategy !== "hotspot" &&\s*\/\^\[0-9\]\{6\}\$\/\.test\(id\)/,
+  );
   const start = page.indexOf(
-    '{strategy !== "hotspot" && /^[0-9]{6}$/.test(id) && (',
+    '{valuePage && (\n        <div className="workbench-surface value-tracking-modules"',
   );
   expect(start).toBeGreaterThan(-1);
   const guarded = page.slice(start, page.indexOf("<RemoteState", start));
   expect(guarded.indexOf("<CompanyProfilePanel")).toBeLessThan(
     guarded.indexOf("<OperatingAssumptionDraftPanel"),
   );
-  expect(guarded.indexOf("<FirstResearchInputPanel")).toBeLessThan(
+  expect(guarded.indexOf("<FirstResearchInputPanel")).toBeGreaterThan(
     guarded.indexOf("<OperatingAssumptionDraftPanel"),
   );
   expect(guarded).toContain(
