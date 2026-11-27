@@ -2010,14 +2010,21 @@ it("offers the valuation read only for a successful V3 history row", async () =>
 
 it("confirms a terminal retry for the eligible V2 predecessor only", async () => {
   const row = {
-    task_id: "v2-parent", task_contract: "parent-cash-task-v3", status: "FAILED",
-    source_years: [], completed_stages: ["bear.operating", "bear.policy"],
-    charges: [], bear_terminal_v3_retry: true,
+    task_id: "v2-parent",
+    task_contract: "parent-cash-task-v3",
+    status: "FAILED",
+    source_years: [],
+    completed_stages: ["bear.operating", "bear.policy"],
+    charges: [],
+    bear_terminal_v3_retry: true,
   };
   calls.parentCashHistory.mockResolvedValue({
     symbol: "600809",
-    items: [row, { ...row, read_only_archive: true, task_id: "archive" },
-      { ...row, bear_terminal_v3_retry: false, task_id: "ineligible" }],
+    items: [
+      row,
+      { ...row, read_only_archive: true, task_id: "archive" },
+      { ...row, bear_terminal_v3_retry: false, task_id: "ineligible" },
+    ],
   });
   const onContinue = vi.fn();
   ParentCashTaskHistoryView({ symbol: "600809", onContinue });
