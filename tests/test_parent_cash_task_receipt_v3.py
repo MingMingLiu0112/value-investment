@@ -108,16 +108,16 @@ def test_successful_task_publishes_a_single_receipt_after_run(tmp_path, monkeypa
     completion.seal_completed_parent_cash_task(Service(), task_id)
     assert not calls
     assert not worker_calls
-    status = "CANCELLED"
-    completion.run_and_seal_parent_cash_task(Service(), task_id)
-    assert not calls
+    for status in ("CANCELLED", "FAILED", "RUNNING"):
+        completion.run_and_seal_parent_cash_task(Service(), task_id)
+        assert not calls and not worker_calls
     status = "SUCCEEDED"
     completion.run_and_seal_parent_cash_task(Service(), task_id)
     path = completion.valuation_receipt_path(tmp_path, task_id)
     assert json.loads(path.read_bytes())["inputs"]["task_head"] == head
     completion.run_and_seal_parent_cash_task(Service(), task_id)
     assert calls == [head, head, head]  # Build, cold replay, then retained-receipt retry verification.
-    assert worker_calls == [task_id]  # The cancelled fixture alone entered the worker.
+    assert not worker_calls
     assert completion.read_valuation_publication(tmp_path, task_id, head) == {
         "valuation_receipt_status": "SEALED_REPLAY_REQUIRED",
         "valuation_blockage": None,

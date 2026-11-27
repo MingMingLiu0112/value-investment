@@ -4,6 +4,7 @@ from hashlib import sha256
 import json
 import os
 import re
+from time import monotonic, sleep
 from pathlib import Path
 from tempfile import mkdtemp, mkstemp
 
@@ -13,6 +14,7 @@ from .parent_cash_task_distribution_receipt_v1 import (
     build as build_distribution_receipt,
     replay as replay_task_receipt,
 )
+from ..portfolio.private_journal_lock import LockTimeout
 from ..product.common import require_inside
 
 
@@ -166,13 +168,30 @@ def _distribution_binding(entry, research_spec):
     return binding
 
 
-def run_and_seal_parent_cash_task(service, task_id):
-    root = Path(service.root).resolve()
-    directory = service._directory(task_id)
-    with service._lock(directory):
+def _retry_lock_contention(operation, *args):
+    """Only retry a read or deterministic publication; never re-enter the paid worker."""
+    deadline = monotonic() + 10
+    while True:
+        try:
+            return operation(*args)
+        except LockTimeout:
+            if monotonic() >= deadline:
+                raise
+            sleep(0.1)
+
+
+def _task_status(service, task_id):
+    with service._lock(service._directory(task_id)):
         _, state, _ = service._load(task_id)
-    if state["status"] != "SUCCEEDED":
+        return state["status"]
+
+
+def run_and_seal_parent_cash_task(service, task_id):
+    status = _retry_lock_contention(_task_status, service, task_id)
+    if status == "QUEUED":
         service.run(task_id)
+    elif status != "SUCCEEDED":
+        return
     seal_completed_parent_cash_task(service, task_id)
 
 
@@ -185,7 +204,11 @@ def _verify_publication(root, binding, *, task_id, head, now):
 
 
 def seal_completed_parent_cash_task(service, task_id):
-    """Retry only deterministic publication, even if task state has changed."""
+    """Recheck the durable head before publishing; lock contention cannot resend model work."""
+    return _retry_lock_contention(_seal_completed_task, service, task_id)
+
+
+def _seal_completed_task(service, task_id):
     root = Path(service.root).resolve()
     directory = service._directory(task_id)
     with service._lock(directory, "valuation-publication"):

@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from value_investment_agent.application.research import parent_cash_task_completion_v1 as completion
+from value_investment_agent.application.research import parent_cash_task_distribution_receipt_v1 as distribution
 from value_investment_agent.application.research.agent_review.parent_cash_task_v3 import ParentCashTaskServiceV3
 from value_investment_agent.presentation.web_api import parent_cash_history_routes as routes
 
@@ -359,3 +360,73 @@ def test_cash_floor_blockage_retains_only_known_year(setup, monkeypatch, message
     head = service._load(x["task_id"])[2]
     receipt = completion.read_valuation_publication(x["tmp_path"], x["task_id"], head)
     assert receipt["valuation_blockage"]["reason_code"] == public_reason
+
+
+@pytest.mark.parametrize("contended", ["initial_state", "publication"])
+def test_queued_task_seals_once_after_transient_reader_contention(setup, monkeypatch, contended):
+    from value_investment_agent.application.portfolio.private_journal_lock import LockTimeout
+
+    x = setup
+    calls = []
+    head = {"path": "runtime/finished.json", "sha256": "e" * 64}
+
+    class Service(x["Service"]):
+        status = "QUEUED"
+        reader_interrupted = False
+
+        def _load(self, identifier):
+            spec, _, _ = super()._load(identifier)
+            return spec, {"status": self.status}, head
+
+        def _lock(self, directory, name="state"):
+            conflict = (contended == "initial_state" and self.status == "QUEUED" or
+                        contended == "publication" and name == "valuation-publication")
+            if conflict and not self.reader_interrupted:
+                self.reader_interrupted = True
+                raise LockTimeout("TEST_ONLY_TRANSIENT_CONTENTION")
+            return nullcontext()
+
+        def run(self, identifier):
+            assert self.status == "QUEUED" and identifier == x["task_id"]
+            calls.append("worker")
+            self.status = "SUCCEEDED"
+            return {"status": self.status}
+
+    def execute(*, root, task_id, task_head, distribution_binding, case_package_binding, now):
+        assert task_id == x["task_id"] and task_head == head
+        assert distribution_binding == x["entry"]["implemented_distribution_receipt_binding"]
+        assert case_package_binding == x["entry"]["case_package_binding"]
+        calls.append("calculate")
+        return dict(symbol="600887", action="no_order", formal_eligibility=False,
+                    provenance=dict(task_id=task_id, task_record_binding=task_head))
+
+    service = Service()
+    # Keep the live distribution builder, file bindings, replay dispatch and publisher.
+    monkeypatch.setattr(distribution, "execute", execute)
+    completion.run_and_seal_parent_cash_task(service, x["task_id"])
+    retained = completion.valuation_receipt_path(x["tmp_path"], x["task_id"])
+    sealed = retained.read_bytes()
+    assert json.loads(sealed)["schema_version"] == distribution.RECEIPT_SCHEMA
+    assert service.reader_interrupted and calls == ["worker", "calculate", "calculate"]
+    completion.run_and_seal_parent_cash_task(service, x["task_id"])
+    assert retained.read_bytes() == sealed
+    assert calls == ["worker", "calculate", "calculate", "calculate"]
+
+
+def test_worker_lock_timeout_is_not_an_authorization_to_run_again(setup, monkeypatch):
+    from value_investment_agent.application.portfolio.private_journal_lock import LockTimeout
+
+    x = setup
+    service = x["Service"]()
+    spec, _, head = service._load(x["task_id"])
+    monkeypatch.setattr(service, "_load", lambda _: (spec, {"status": "QUEUED"}, head))
+    calls = []
+    def busy(task_id):
+        calls.append(task_id)
+        raise LockTimeout("TEST_ONLY_EXECUTION_BUSY")
+
+    monkeypatch.setattr(service, "run", busy)
+    with pytest.raises(LockTimeout, match="TEST_ONLY_EXECUTION_BUSY"):
+        completion.run_and_seal_parent_cash_task(service, x["task_id"])
+    assert calls == [x["task_id"]]
+    assert not completion.valuation_receipt_path(x["tmp_path"], x["task_id"]).exists()
