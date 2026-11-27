@@ -18,6 +18,7 @@ from ...application.research.parent_cash_task_completion_v1 import (
 )
 from ...application.portfolio.private_journal_lock import LockTimeout
 from .live_operating_research_routes import resolve_research_task_root
+from ...application.research import parent_cash_policy_correction_v1 as correction
 from . import parent_cash_funding_revisions as funding
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
@@ -364,6 +365,17 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 if not isinstance(predecessor, str) or not re.fullmatch(r"rt-[0-9a-f]{32}", predecessor):
                     raise ValueError("PARENT_V3_INVALID_CONTINUATION_TASK")
                 prior = numbered_service.read(predecessor)
+                if prior.get("error_code") == correction.ERROR:
+                    spec, state, _ = numbered_service._load(predecessor)
+                    pin = correction._source_pin(numbered_service, spec, state)
+                    if spec["spec_binding"] != binding or pin is None:
+                        raise ValueError("CORRECTION_PREDECESSOR_INELIGIBLE")
+                    try:
+                        result = correction.correct_or_read(numbered_service, predecessor, pin["sha256"], create=True)
+                    except LockTimeout:
+                        return reply(dict(status="CORRECTION_BUSY", task_id=predecessor, stage="bear.policy",
+                                          paid_task_status="FAILED", action="no_order"), 409)
+                    return reply(result)
                 if prior.get("error_code") == _BEAR_QUARTER_ERROR:
                     spec, state, _ = numbered_service._load(predecessor)
                     if not _bear_quarter_eligible(numbered_service, symbol, spec, state, active_binding=binding):
@@ -846,6 +858,22 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         except (ValueError, TypeError, KeyError, OSError, PermissionError):
             return reply({"action": "no_order", "status": "PARENT_V3_TASK_UNAVAILABLE"}, 422)
 
+    @api.get("/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/bear-policy-correction-v1/{failed_response_sha256}")
+    def read_policy_correction(task_id: str, failed_response_sha256: str, request: Request):
+        error = denied(request)
+        if error is not None:
+            return error
+        if not re.fullmatch(r"[0-9a-f]{64}", failed_response_sha256):
+            return reply(dict(status="INVALID_CORRECTION_DIGEST", action="no_order"), 422)
+        try:
+            return reply(correction.correct_or_read(numbered_service, task_id, failed_response_sha256, create=False))
+        except FileNotFoundError:
+            return reply(dict(status="CORRECTION_SOURCE_NOT_FOUND", action="no_order"), 404)
+        except LockTimeout:
+            return reply(dict(status="CORRECTION_BUSY", action="no_order"), 409)
+        except (ValueError, OSError, KeyError, TypeError, ArithmeticError):
+            return reply(dict(status="CORRECTION_REPLAY_UNAVAILABLE", action="no_order"), 422)
+
     replay_path = "/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/funding-revisions/{receipt_sha256}/replay"
 
     @api.get(replay_path)
@@ -990,7 +1018,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                     if isinstance(error_code, str) and error_code.startswith(
                                         stage.upper().replace(".", "_") + "_")), None)
                 items.append({"task_id": directory.name, "status": state["status"],
-                    "bear_quarter_continuation": False,
+                    "bear_quarter_continuation": False, "financing_policy_correction_available": False,
                     "task_contract": "parent-cash-task-v2",
                     "stage": next((row.get("scenario") for row in reservations.values()
                                    if row.get("status") == "RESERVED"), error_stage),
@@ -1043,6 +1071,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                             or entry.get("terminal_parent_cash_method") != spec.get("terminal_parent_cash_method")
                         )
                     items.append({"task_id": directory.name, "task_contract": "parent-cash-task-v3",
+                        **correction.history_fields(numbered, symbol, spec, state, archived=archived),
                         "bear_quarter_continuation": _bear_quarter_eligible(
                             numbered, symbol, spec, state, archived=archived),
                         "terminal_cohort_continuation": cohort_continuation,

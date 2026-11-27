@@ -2276,6 +2276,8 @@ export interface ParentCashTaskHistory {
     base_interest_wire?: string | null;
     terminal_cohort_continuation?: boolean;
     bear_quarter_continuation?: boolean;
+    financing_policy_correction_available?: boolean;
+    financing_policy_correction_source_sha256?: string;
     terminal_cash_review?: string | null;
     candidate_status?: "COMPILED_CONDITIONAL_NOT_MAIN" | "NOT_COMPILED";
     has_funding_revisions?: boolean;
@@ -2648,6 +2650,18 @@ export const api = {
     getPrivate<ResearchTaskHistoryResponse>(
       "research-tasks?symbol=" + encodeURIComponent(symbol),
       signal,
+    ),
+  parentCashPolicyCorrection: (taskId: string, sourceHash: string) =>
+    getPrivate<{
+      task_id: string;
+      action: string;
+      stage: string;
+      status: string;
+      reason?: string;
+      receipt_sha256?: string;
+      settled_cost_cny?: string;
+    }>(
+      `operating-research/parent-cash-tasks/v3/${taskId}/bear-policy-correction-v1/${sourceHash}`,
     ),
   newCompanyParentCashTask: (symbol: string, intent: string) =>
     post<{ task_id: string; status: string; action: string }>(

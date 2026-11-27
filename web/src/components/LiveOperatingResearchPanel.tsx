@@ -1077,6 +1077,23 @@ export function ParentCashTaskHistoryView({
               "SENSITIVITY_UNAVAILABLE" && (
               <p role="alert">债务期限试算回执暂无法核验。</p>
             )}
+            {item.financing_policy_correction_source_sha256 && (
+              <PolicyCorrectionReceipt
+                taskId={item.task_id}
+                source={item.financing_policy_correction_source_sha256}
+              />
+            )}
+            {onContinue &&
+              !item.read_only_archive &&
+              item.financing_policy_correction_available && (
+                <Popconfirm
+                  title="核对封存原文并纠正年度政策结构？"
+                  description="仅允许一次模型调用。所有逐年数值、依据和说明必须与原件相同，终值意见单独保留。费用计入当日预算。"
+                  onConfirm={() => onContinue(item.task_id)}
+                >
+                  <Button disabled={busy}>纠正年度政策结构</Button>
+                </Popconfirm>
+              )}
             {onContinue &&
               !item.read_only_archive &&
               item.bear_quarter_continuation && (
@@ -3088,6 +3105,57 @@ export function PublicOperatingResearchView({
       </>
     );
   return <LiveOperatingResearchDraft task={value} />;
+}
+function PolicyCorrectionReceipt({
+  taskId,
+  source,
+}: {
+  taskId: string;
+  source: string;
+}) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function read() {
+    setBusy(true);
+    try {
+      const row = await api.parentCashPolicyCorrection(taskId, source);
+      if (
+        row.task_id !== taskId ||
+        row.stage !== "bear.policy" ||
+        row.action !== "no_order"
+      ) {
+        throw new Error("unexpected receipt");
+      }
+      const states: Record<string, string> = {
+        CORRECTION_NOT_STARTED: "尚未执行年度政策结构纠正。",
+        CORRECTION_PENDING: "纠正结果尚未封存。",
+        CORRECTION_VERIFIED: "年度政策已按原值复核，下一阶段为悲观终值。",
+        CORRECTION_REJECTED: "年度政策纠正未通过。",
+      };
+      setText(
+        [
+          states[row.status] || row.status,
+          row.reason,
+          row.receipt_sha256,
+          row.settled_cost_cny && `结算 ¥${row.settled_cost_cny}`,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      );
+    } catch {
+      setText("纠正回执无法核验，请检查研究会话并重新读取。");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <>
+      <Button loading={busy} onClick={() => void read()}>
+        查看年度政策纠正记录
+      </Button>
+      {text && <p role="status">{text}</p>}
+    </>
+  );
 }
 function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
   const [busy, setBusy] = useState(false);
