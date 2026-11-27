@@ -148,3 +148,22 @@ def test_facts_codec_rejects_cross_version_scenarios():
     payload["scenario_inputs"]["base"]["scenario_contract"] = "direct-owner-cash-scenario-v1"
     with pytest.raises(ValueError):
         model.facts_from_payload(payload)
+
+
+def test_opening_payable_settlement_reduces_cash_without_a_second_equity_distribution():
+    from value_investment_agent.domain.valuation.direct_parent_owner_cash_v2 import _flow, _step
+
+    data = inputs()
+    policy = {**data["years"][0]["policy"], "payout_ratio": "0", "operating_cash": "100"}
+    opening = dict(book=D("1000"), cash=D("100"), capacity=D("100"), debt=D("0"))
+    arguments = dict(year=data["years"][0]["year"], shares=D("100"), cost=D("0.08"))
+    clean, _ = _step(opening, _flow(policy), scheduled=D("0"), **arguments)
+    settlement_policy = {**policy, "other_mandatory_cash": str(D(policy["other_mandatory_cash"]) + 18)}
+    settled, _ = _step(opening, _flow(settlement_policy), scheduled=D("0"), **arguments)
+    incorrectly_recognized, _ = _step(opening, _flow(policy), scheduled=D("18"), **arguments)
+
+    assert D(clean["closing_cash_cny"]) - D(settled["closing_cash_cny"]) == D("18")
+    assert settled["closing_book_equity_cny"] == clean["closing_book_equity_cny"]
+    assert settled["closing_distribution_capacity_cny"] == clean["closing_distribution_capacity_cny"]
+    assert settled["total_owner_distribution_cny"] == "0"
+    assert D(settled["closing_book_equity_cny"]) - D(incorrectly_recognized["closing_book_equity_cny"]) == D("18")

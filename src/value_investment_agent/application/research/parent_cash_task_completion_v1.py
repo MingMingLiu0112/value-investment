@@ -11,7 +11,9 @@ from tempfile import mkdtemp, mkstemp
 from .parent_cash_task_aggregate_receipt_v1 import build as build_aggregate_receipt
 from .parent_cash_task_receipt_v3 import build_parent_cash_task_receipt
 from .parent_cash_task_distribution_receipt_v1 import build as build_distribution_receipt
-from .parent_cash_corrected_receipt_v1 import build as build_corrected_receipt, replay as replay_task_receipt
+from .parent_cash_corrected_receipt_v1 import build as build_corrected_receipt
+from .parent_note_grid_task_receipt_v1 import build as build_note_grid_receipt, replay as replay_task_receipt
+from .parent_note_grid_task_service_v1 import MARKER as NOTE_GRID_MARKER
 from .parent_cash_corrected_continuation_v1 import MARKER as CORRECTED_POLICY
 from ..portfolio.private_journal_lock import LockTimeout
 from ..product.common import require_inside
@@ -137,16 +139,28 @@ def preflight_parent_cash_task(service, spec_binding, *, symbol=None):
     case_binding = entry["case_package_binding"]
     spec = service._bound(spec_binding)
     case = service._bound(case_binding)
+    from .parent_note_grid_sources_v1 import VERSION as NOTE_GRID_VERSION
+    note_grid = spec.get("source_adapter_version") == NOTE_GRID_VERSION
     issuer = spec.get("symbol")
     if (not issuer or (symbol is not None and issuer != symbol)
             or entry.get("symbol", issuer) != issuer
-            or spec.get("action") != "no_order" or spec.get("model_applicable") is not True
+            or spec.get("action") != "no_order"
+            or (not note_grid and spec.get("model_applicable") is not True)
             or case.get("symbol") != issuer or case.get("profile_id") != "quality_compounder"
             or case.get("schema_version") != "m1-valuation-package-v2"
             or case.get("research_case", {}).get("symbol") != issuer):
         raise ValueError("PARENT_TASK_CASE_PROFILE_OR_ISSUER_MISMATCH")
     distribution_binding = _distribution_binding(entry, spec)
-    if distribution_binding is not None:
+    if note_grid:
+        if spec.get("model_applicable") is not True:
+            raise ValueError("NOTE_GRID_SOURCE_BOUND_APPLICABILITY_REQUIRED")
+        if not distribution_binding or distribution_binding != spec.get("implemented_distribution_receipt_binding"):
+            raise ValueError("NOTE_GRID_IMPLEMENTED_DISTRIBUTION_RECEIPT_REQUIRED")
+        from .fresh_issuer_distribution_v1 import VERSION as DISTRIBUTION_VERSION
+        receipt = service._bound(distribution_binding)
+        if receipt.get("schema_version") != DISTRIBUTION_VERSION or receipt.get("source", {}).get("symbol") != issuer:
+            raise ValueError("PARENT_TASK_DISTRIBUTION_RECEIPT_INVALID")
+    elif distribution_binding is not None:
         from .parent_owner_distribution_successor_v2 import RECEIPT_SCHEMA
         receipt = service._bound(distribution_binding)
         if (receipt.get("schema_version") != RECEIPT_SCHEMA
@@ -230,7 +244,11 @@ def _seal_completed_task(service, task_id):
             attempt = Path(mkdtemp(prefix="valuation-attempt-", dir=retained.parent)) / "sealed"
             options = {} if binding is None else {"distribution_binding": binding}
             builder = build_parent_cash_task_receipt if binding is None else build_distribution_receipt
-            if CORRECTED_POLICY in spec:
+            if NOTE_GRID_MARKER in spec:
+                if binding is None or binding != spec.get("implemented_distribution_receipt_binding"):
+                    raise ValueError("NOTE_GRID_RECEIPT_TASK_OR_DISTRIBUTION_MISMATCH")
+                builder = build_note_grid_receipt
+            elif CORRECTED_POLICY in spec:
                 if binding is None or spec.get("implemented_distribution_receipt_binding") != binding:
                     raise ValueError("PARENT_CORRECTED_DISTRIBUTION_BINDING_CHANGED")
                 builder = build_corrected_receipt

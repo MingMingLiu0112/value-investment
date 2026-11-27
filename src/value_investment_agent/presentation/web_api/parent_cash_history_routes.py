@@ -23,7 +23,7 @@ from . import parent_cash_funding_revisions as funding
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
 from ...application.research import parent_cash_corrected_continuation_v1 as continued
-from ...application.research.parent_cash_corrected_continuation_v1 import ContinuationService as ParentCashTaskServiceV3
+from ...application.research.parent_note_grid_task_service_v1 import ParentCashService as ParentCashTaskServiceV3
 
 
 def _numbered_task_with_observed_investing_cash(service, task_id):
@@ -686,7 +686,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         from datetime import datetime, timezone
         from hashlib import sha256
         from ...application.research.parent_cash_task_alignment_v3 import _align_verified_parent_cash_task
-        from ...application.research.parent_cash_corrected_receipt_v1 import replay as replay_parent_cash_task_receipt
+        from ...application.research.parent_note_grid_task_receipt_v1 import replay as replay_parent_cash_task_receipt
 
         try:
             candidates = [(task_root, valuation_receipt_path(task_root, task_id))

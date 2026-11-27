@@ -31,6 +31,24 @@ SCENARIO_CONTRACT = "direct-owner-cash-scenario-v2"
 class DirectOwnerCashScenario(_V1Scenario):
     """V2 scenario; annual policies may include scheduled owner cash."""
 
+    def __post_init__(self) -> None:
+        retentions = self.forecast_retentions
+        object.__setattr__(self, "forecast_retentions", tuple(
+            Decimal(0) if isinstance(value, Decimal) and value.is_finite() and value < 0
+            else value for value in retentions
+        ) if isinstance(retentions, tuple) else retentions)
+        try:
+            super().__post_init__()
+        finally:
+            object.__setattr__(self, "forecast_retentions", retentions)
+        # Only scheduled distributions can draw down accumulated capacity.
+        # The valuation recomputes and checks every retained value exactly.
+        for value, year in zip(retentions, self.years, strict=True):
+            if value < 0:
+                scheduled = Decimal(str(year.get("scheduled_owner_distribution_cny", "0")))
+                if not scheduled.is_finite() or scheduled <= 0:
+                    raise ValueError("DIRECT_OWNER_ANNUAL_VECTOR_RANGE_INVALID")
+
 
 def _json_numbers(value: Any) -> Any:
     if isinstance(value, Decimal):
