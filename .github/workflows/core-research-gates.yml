@@ -239,6 +239,7 @@ jobs:
           tests/test_parent_cash_funding_continuation_v1.py
           tests/test_parent_cash_maturity_recheck.py
           tests/test_parent_cash_installment_recheck.py
+          tests/test_parent_cash_multiyear_recheck.py
           tests/test_direct_owner_cash_financing_rows_v1.py
           tests/test_direct_owner_cash_agent_draft_v2.py
           tests/test_direct_owner_cash_compilation_v2.py

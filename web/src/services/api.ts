@@ -2117,11 +2117,67 @@ export interface InstallmentContinuation {
   };
 }
 
+export type MultiyearScenario = {
+  financing_rows: MaturityFinancingRow[];
+  financing_rows_basis: "CONDITIONAL_PAYMENT_PLAN";
+  first_failed_year: number | null;
+} & (
+  | {
+      status: "CALCULATED";
+      per_share_value: string;
+      annual_rows: {
+        year: number;
+        closing_cash_cny: string;
+        closing_debt_cny: string;
+      }[];
+    }
+  | {
+      status: "REJECTED";
+      reason: string;
+      ledger?: {
+        shortfall_cny?: string;
+        remaining_proxy_principal_cny?: string;
+      };
+    }
+);
+
+export interface MultiyearContinuation extends Omit<
+  MaturityContinuation,
+  "continuation_version" | "maturity_recheck"
+> {
+  continuation_version: "multiyear-v1";
+  new_model_cost_cny: 0;
+  multiyear_recheck: Pick<
+    MaturityContinuation["maturity_recheck"],
+    | "task_id"
+    | "parent_receipt"
+    | "predecessor_input"
+    | "valuation_date"
+    | "symbol"
+    | "formal_eligibility"
+    | "current_comparable"
+    | "current_research_range_adopted"
+    | "action"
+    | "status"
+  > & {
+    schema_version: "parent-cash-multiyear-recheck-v1";
+    financing_condition_verified: false;
+    unverified_financing_fallback_status: "CALCULATED" | "REJECTED";
+    base_basis: string;
+    scenarios: Record<"bear" | "base" | "bull", MultiyearScenario>;
+    original_installment_stress: Record<
+      "bear" | "base" | "bull",
+      MultiyearScenario
+    >;
+    early_maturity_stress: Record<"bear" | "base" | "bull", MultiyearScenario>;
+  };
+}
+
 function fundingContinuationPath(
   task: string,
   receipt: string,
   symbol: string,
-  version?: "maturity-v1" | "installment-v1",
+  version?: "maturity-v1" | "installment-v1" | "multiyear-v1",
 ) {
   return (
     "operating-research/parent-cash-tasks/v3/" +
@@ -2683,6 +2739,21 @@ export const api = {
   runInstallmentContinuation: (task: string, receipt: string, symbol: string) =>
     post<InstallmentContinuation>(
       fundingContinuationPath(task, receipt, symbol, "installment-v1"),
+      {},
+    ),
+  readMultiyearContinuation: (
+    task: string,
+    receipt: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<MultiyearContinuation>(
+      fundingContinuationPath(task, receipt, symbol, "multiyear-v1"),
+      signal,
+    ),
+  runMultiyearContinuation: (task: string, receipt: string, symbol: string) =>
+    post<MultiyearContinuation>(
+      fundingContinuationPath(task, receipt, symbol, "multiyear-v1"),
       {},
     ),
   readMaturityContinuation: (

@@ -152,7 +152,8 @@ def test_interruption_retries_same_version_and_overlapping_post_cannot_publish(p
 
 
 @pytest.mark.skipif(not os.environ.get("VALUE_FUNDING_REVISION_REAL_ROOT"), reason="requires registered source tree")
-def test_native_fixed_payment_archive_replay_persists_only_in_execution_root(tmp_path, monkeypatch):
+@pytest.mark.parametrize("version", [continuation.VERSION, continuation.MULTIYEAR_VERSION])
+def test_native_fixed_payment_archive_replay_persists_only_in_execution_root(tmp_path, monkeypatch, version):
     from decimal import Decimal
 
     archive = Path(os.environ["VALUE_FUNDING_REVISION_REAL_ROOT"]).resolve()
@@ -174,6 +175,8 @@ def test_native_fixed_payment_archive_replay_persists_only_in_execution_root(tmp
 
     client = open_page()
     url = f"/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/funding-revisions/{digest}/replay?symbol=600887"
+    if version == continuation.MULTIYEAR_VERSION:
+        url += "&version=" + version
     assert client.get(url).status_code == 404 and not (tmp_path / "runtime").exists()
     response = client.post(url, json={})
     assert response.status_code == 200, response.text
@@ -182,14 +185,33 @@ def test_native_fixed_payment_archive_replay_persists_only_in_execution_root(tmp
     assert seal["original_task_status"] == seal["paid_task_status"] == "FAILED"
     assert seal["new_llm_calls"] == 0 and seal["action"] == "no_order"
     assert seal["current_reassessment"]["scenario_rows"]["bear"]["before"] == "6306969832.537425"
-    result = seal["fixed_payment_recheck"]
+    if version == continuation.MULTIYEAR_VERSION:
+        result = seal["multiyear_recheck"]
+        assert result["schema_version"] == "parent-cash-multiyear-recheck-v1"
+        assert seal["new_model_cost_cny"] == 0 and result["current_research_range_adopted"] is False
+        for group in (result["scenarios"], result["early_maturity_stress"], result["original_installment_stress"]):
+            assert set(group) == {"bear", "base", "bull"}
+        assert result["status"] == "CALCULATED"
+        assert result["financing_condition_verified"] is False and result["unverified_financing_fallback_status"] == "REJECTED"
+        for name, last_payment in (("bear", 2034), ("base", 2033), ("bull", 2033)):
+            row = result["scenarios"][name]
+            assert len(row["financing_rows"]) == len(row["annual_rows"]) - 1
+            assert max(r["year"] for r in row["financing_rows"] if Decimal(r["assumed_proxy_repayment_cny"])) == last_payment
+        rejection = result["original_installment_stress"]["bear"]
+        assert rejection["status"] == "REJECTED" and rejection["first_failed_year"] == 2028
+        assert Decimal(rejection["ledger"]["shortfall_cny"]) > 0
+    else:
+        result = seal["fixed_payment_recheck"]
     assert result["parent_receipt"] == digest and result["predecessor_input"] == seal["reassessment_spec_sha256"]
-    assert Decimal(result["source_payment"]["paid_cny"]) == 99_994_405
-    assert result["status"] == "REJECTED" and set(result["scenarios"]) == {"bear", "base", "bull"}
-    ledger = result["scenarios"]["bear"]["ledger"]
-    assert Decimal(ledger["shortfall_cny"]) == Decimal(ledger["floor_cny"]) - Decimal(ledger["cash_before_distribution_cny"])
-    assert Decimal(ledger["shortfall_cny"]) > Decimal(result["predecessor_shortfall_cny"])
-    assert result["scenarios"]["base"]["status"] == result["scenarios"]["bull"]["status"] == "CALCULATED"
+    if version == continuation.VERSION:
+        assert Decimal(result["source_payment"]["paid_cny"]) == 99_994_405
+    assert set(result["scenarios"]) == {"bear", "base", "bull"}
+    if version == continuation.VERSION:
+        assert result["status"] == "REJECTED"
+        ledger = result["scenarios"]["bear"]["ledger"]
+        assert Decimal(ledger["shortfall_cny"]) == Decimal(ledger["floor_cny"]) - Decimal(ledger["cash_before_distribution_cny"])
+        assert Decimal(ledger["shortfall_cny"]) > Decimal(result["predecessor_shortfall_cny"])
+        assert result["scenarios"]["base"]["status"] == result["scenarios"]["bull"]["status"] == "CALCULATED"
     assert open_page().get(url).json() == client.post(url, json={}).json() == seal
     assert snapshot() == before
     files = list(Path(funding._native_path(tmp_path / "runtime")).rglob("*.json"))
@@ -271,3 +293,43 @@ def test_installment_replay_reopens_exact_task_and_keeps_old_history(page, monke
     assert current == page.client.get(url).json() == page.client.post(url).json()
     assert old == page.client.get(page.url).json()
     assert page.performed == ["fixed", "fixed"]
+
+
+def test_multiyear_direct_route_isolated_idempotent_and_binding_checked(page, monkeypatch):
+    from value_investment_agent.application.research import parent_cash_multiyear_recheck as checker
+
+    url = page.url + "&version=multiyear-v1"
+    assert page.client.post(url, json={}).status_code in (401, 403)
+    allow(monkeypatch)
+    assert page.client.get(url).json()["status"] == "CONTINUATION_NOT_SEALED"
+    assert page.client.post(url + "&version=installment-v1").status_code == 422
+    assert page.client.post(url, json={"version": "installment-v1"}).status_code == 422
+    assert not page.performed
+
+    def multiyear(*args):
+        checked = page.checker.run_check(*args)
+        for row in checked["scenarios"].values():
+            row.update(financing_rows=[], financing_rows_basis="CONDITIONAL_PAYMENT_PLAN")
+            if row["status"] == "REJECTED":
+                row.update(first_failed_year=2026, reason="DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2026")
+            else:
+                row.update(first_failed_year=None, annual_rows=[{"year": 2026}], per_share_value="1.00")
+        return dict(checked, schema_version=checker.VERSION, base_basis="TEST_ONLY", current_research_range_adopted=False,
+                    financing_condition_verified=False, unverified_financing_fallback_status="REJECTED",
+                    original_installment_stress=checked["scenarios"], early_maturity_stress=checked["scenarios"])
+
+    monkeypatch.setattr(checker, "run_check", lambda *a: dict(multiyear(*a), schema_version="parent-cash-installment-recheck-v1"))
+    assert page.client.post(url).status_code == 422
+    assert page.client.get(url).status_code == 404
+    monkeypatch.setattr(checker, "run_check", multiyear)
+    response = page.client.post(url, json={})
+    assert response.status_code == 200, response.text
+    seal = response.json()
+    assert seal["multiyear_recheck"]["status"] == "REJECTED" and seal["status"] == "REPLAYED"
+    assert seal["paid_task_status"] == "FAILED" and seal["new_model_cost_cny"] == seal["new_llm_calls"] == 0
+    assert page.client.get(url).json() == page.client.post(url).json() == seal
+    assert page.performed == ["fixed", "fixed"]
+    assert page.client.get(page.url + "&version=installment-v1").status_code == 404
+    assert page.client.get(page.url).status_code == 404
+    assert any(key.endswith(".parent_cash_installment_recheck") for key in seal["implementation_sha256"])
+    assert any(key.endswith(".parent_cash_multiyear_recheck") for key in seal["implementation_sha256"])

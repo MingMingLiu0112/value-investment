@@ -1,3 +1,4 @@
+import { MultiyearResult, verifyMultiyear } from "./MultiyearResult";
 import closeEvidence from "../config/valueCloseEvidence.v1.json";
 import { useEffect, useState } from "react";
 import {
@@ -5,6 +6,7 @@ import {
   ApiError,
   type FundingContinuation,
   type InstallmentContinuation,
+  type MultiyearContinuation,
   type MaturityContinuation,
 } from "../services/api";
 
@@ -579,14 +581,34 @@ function Content({
   );
 }
 
-function InstallmentPanel({ task, receipt, symbol }: PanelProps) {
-  const [record, setRecord] = useState<InstallmentContinuation>();
+function InstallmentPanel({
+  task,
+  receipt,
+  symbol,
+  multiyear = false,
+}: PanelProps & { multiyear?: boolean }) {
+  const [record, setRecord] = useState<
+    InstallmentContinuation | MultiyearContinuation
+  >();
+  const title = multiyear ? "多年度分期偿债研究" : "分期偿债研究";
+  const label = multiyear
+    ? "按多年经营现金续算并封存"
+    : "按经营现金分期续算并封存";
   const [status, setStatus] = useState("reading");
   const [message, setMessage] = useState("");
   useEffect(() => {
     const controller = new AbortController();
-    api
-      .readInstallmentContinuation(task, receipt, symbol, controller.signal)
+    (multiyear
+      ? api
+          .readMultiyearContinuation(task, receipt, symbol, controller.signal)
+          .then((value) => verifyMultiyear(value, task, receipt, symbol))
+      : api.readInstallmentContinuation(
+          task,
+          receipt,
+          symbol,
+          controller.signal,
+        )
+    )
       .then((value) => {
         if (!controller.signal.aborted) {
           setRecord(value);
@@ -607,11 +629,19 @@ function InstallmentPanel({ task, receipt, symbol }: PanelProps) {
         }
       });
     return () => controller.abort();
-  }, [task, receipt, symbol]);
+  }, [task, receipt, symbol, multiyear]);
   async function run() {
     setStatus("running");
     try {
-      setRecord(await api.runInstallmentContinuation(task, receipt, symbol));
+      const value = multiyear
+        ? verifyMultiyear(
+            await api.runMultiyearContinuation(task, receipt, symbol),
+            task,
+            receipt,
+            symbol,
+          )
+        : await api.runInstallmentContinuation(task, receipt, symbol);
+      setRecord(value);
       setStatus("done");
     } catch (error) {
       setMessage(String(error));
@@ -623,13 +653,12 @@ function InstallmentPanel({ task, receipt, symbol }: PanelProps) {
     record?.receipt_sha256 === receipt &&
     record.symbol === symbol &&
     record.action === "no_order" &&
-    record.continuation_version === "installment-v1";
+    record.continuation_version ===
+      (multiyear ? "multiyear-v1" : "installment-v1");
   return (
-    <section aria-label="分期偿债研究">
-      <h5>分期偿债研究</h5>
-      {status === "ready" && (
-        <button onClick={run}>按经营现金分期续算并封存</button>
-      )}
+    <section aria-label={title}>
+      <h5>{title}</h5>
+      {status === "ready" && <button onClick={run}>{label}</button>}
       {status === "reading" && <p>正在读取分期研究历史…</p>}
       {status === "running" && (
         <p role="status">正在核验原件、复算并保存三种情景…</p>
@@ -638,7 +667,10 @@ function InstallmentPanel({ task, receipt, symbol }: PanelProps) {
         <p role="alert">分期研究读取或执行失败。{message}</p>
       )}
       {status === "done" && !linked && <p>回执与当前研究版本无法核对。</p>}
-      {linked && record && (
+      {linked && record.continuation_version === "multiyear-v1" && (
+        <MultiyearResult record={record} />
+      )}
+      {linked && record.continuation_version === "installment-v1" && (
         <>
           <p>{record.installment_recheck.base_basis}</p>
           {(["bear", "base", "bull"] as const).map((name) => {
@@ -704,6 +736,13 @@ export function FundingContinuationPanel(props: {
                 <InstallmentPanel
                   key={props.receipt + props.task + props.symbol}
                   {...props}
+                />
+                <InstallmentPanel
+                  key={
+                    "multiyear-v1" + props.receipt + props.task + props.symbol
+                  }
+                  {...props}
+                  multiyear
                 />
                 <h5>偿债期限复核</h5>
                 <Content
@@ -793,6 +832,18 @@ export function FundingContinuationPanel(props: {
               "matched_public_announcements_for_registered_candidate" && (
               <section>
                 <h5>候选材料性审核</h5>
+                <ul>
+                  {closeEvidence.public_event_followup.map(
+                    ({ summary, source_url }) => (
+                      <li key={source_url}>
+                        {summary}{" "}
+                        <a href={source_url} target="_blank" rel="noreferrer">
+                          公告原件
+                        </a>
+                      </li>
+                    ),
+                  )}
+                </ul>
                 <p>
                   两站目录匹配原件 {events.matched_originals} 份，本候选已批准{" "}
                   {events.candidate_approved} 份，尚缺本候选材料性批准{" "}

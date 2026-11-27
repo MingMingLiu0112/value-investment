@@ -3,7 +3,7 @@
   "date": "2026-11-26",
   "parent_receipt": "ed62be290ebcffebf47e1c22cd235d77767e42f1d8b13ff4f1273875257c0a19",
   "registered_candidate": "dcf8dcf4dbf3965d31c5e787d22d103d4fb2e6bc6a8ca3f2fbc682e21eecf027",
-  "report_sha256": "7cce438e7bb2c3c6c9a43a9a8f8bd58934eb39bcd08deaf2018203f1721e1ccb",
+  "report_sha256": "0eb24d3a50ff4ff67da1a67f14f553680b178c025a5923772e94e99e74623735",
   "quote_source": "https://www.cninfo.com.cn/new/disclosure/stock?orgId=gssh0600887&stockCode=600887",
   "observed": "2026-11-26T13:58:07.849852+00:00",
   "close": 33.43,
@@ -120,5 +120,19 @@
     "sse_day_count": 0,
     "full_day_elapsed": true,
     "earliest_full_day_recheck": "2026-11-27T00:00:00+08:00"
-  }
+  },
+  "public_event_followup": [
+    {
+      "summary": "截至 10 月末已回购 3,480,600 股，实付 99,994,405 元（不含费用）。该公告未确认注销生效。",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-11-03/1225653072.PDF"
+    },
+    {
+      "summary": "11 月 20 日股东会通过 2026 年中期分红预案。登记日、除息日及实付仍待实施与付款凭证核验。",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-11-21/1225681447.PDF"
+    },
+    {
+      "summary": "基金于 11 月 17 日完成变更备案。披露的 6.7 亿元为参与出资规模，本次公告未确认母公司新增实付。",
+      "source_url": "https://static.cninfo.com.cn/finalpage/2026-11-20/1225679757.PDF"
+    }
+  ]
 }

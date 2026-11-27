@@ -43,6 +43,7 @@ const url =
   props.symbol;
 const versionUrl = url + "&version=maturity-v1";
 const installmentUrl = url + "&version=installment-v1";
+const multiyearUrl = url + "&version=multiyear-v1";
 const hash = (ch: string) => ch.repeat(64);
 const fetcher = vi.fn<(url: string, init: RequestInit) => Promise<Response>>();
 const json = (body: object, status = 200) =>
@@ -74,14 +75,15 @@ function mountPanel(input = props) {
     (n) => typeof n.type === "function" && n.props.task === input.task,
   );
 }
-function mountContent(version: boolean | "installment") {
+function mountContent(version: boolean | "installment" | "multiyear") {
   const panels = mountPanel();
   const legacyType = panels.find(
     (panel) => panel.props.maturity === true,
   )!.type;
   const element = panels.find((panel) =>
-    version === "installment"
-      ? panel.type !== legacyType
+    typeof version === "string"
+      ? panel.type !== legacyType &&
+        Boolean(panel.props.multiyear) === (version === "multiyear")
       : panel.type === legacyType && Boolean(panel.props.maturity) === version,
   );
   expect(element).toBeDefined();
@@ -257,6 +259,34 @@ it("renders the bound F2 snapshot's accounting reconciliation and constant-share
       maximumFractionDigits: 2,
     });
   expect(html).toContain("静态收盘证据快照");
+  expect(subject.public_event_followup.length).toBeGreaterThanOrEqual(3);
+  for (const { summary, source_url } of subject.public_event_followup) {
+    expect(html).toContain(summary);
+    expect(html).toContain('href="' + source_url + '"');
+  }
+  expect(subject.registered_shares).toBeNull();
+  expect(subject.settled).toBeNull();
+  expect(accounting.route_settlement_cny).toEqual({
+    issuer_direct: null,
+    china_clear_shanghai: null,
+  });
+  expect(subject.material_event_review).toMatchObject({
+    complete_through: "2026-11-26",
+    full_day_elapsed: true,
+    cninfo_day_count: 0,
+    sse_day_count: 0,
+    matched_originals: 123,
+    candidate_approved: 0,
+  });
+  expect(subject.gates.map(({ id, status }) => [id, status])).toEqual([
+    ["quote", "PASS"],
+    ["capital_structure", "BLOCKED"],
+    ["distributions", "BLOCKED"],
+    ["material_events", "BLOCKED"],
+    ["financial_updates", "BLOCKED"],
+  ]);
+  expect(html).toContain("目录完整覆盖至 2026-11-26");
+  expect(html).toContain(subject.report_sha256.slice(0, 12));
   for (const v of [
     accounting.period_end,
     amount(accounting.cash_decrease_cny),
@@ -309,8 +339,10 @@ afterEach(() => {
 });
 
 it("offers the versioned panel only for the bound receipt and symbol and keeps the fixed-payment panel", () => {
-  const [fixed, installment, maturity] = mountPanel();
-  expect(mountPanel()).toHaveLength(3);
+  const [fixed, installment, multiyear, maturity] = mountPanel();
+  expect(mountPanel()).toHaveLength(4);
+  expect(multiyear.type).toBe(installment.type);
+  expect(multiyear.props.multiyear).toBe(true);
   expect(maturity.type).toBe(fixed.type);
   expect(maturity.props.maturity).toBe(true);
   expect(fixed.props.maturity).toBeUndefined();
@@ -475,6 +507,158 @@ it("GET, explicit POST, refresh and reopen use only the versioned authenticated 
     expect(init.credentials).toBe("same-origin");
   }
 });
+
+function multiyearReceipt() {
+  const { maturity_recheck: source, ...parent } = receipt();
+  const installments = source.scenarios.base.financing_rows[0];
+  const plan = (end: number) => {
+    const annual_rows = Array.from({ length: 10 }, (_, i) => ({
+      year: 2026 + i,
+      closing_cash_cny: "111000000",
+      closing_debt_cny: "120000000",
+    }));
+    return {
+      ...source.scenarios.base,
+      annual_rows,
+      financing_rows: annual_rows.slice(1).map(({ year }) => ({
+        ...installments,
+        year,
+        assumed_proxy_repayment_cny: year <= end ? "1000000" : "0",
+      })),
+    };
+  };
+  const bear = plan(2034),
+    base = plan(2033);
+  const failed = {
+    ...source.scenarios.bear,
+    first_failed_year: 2028,
+    reason: "DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2028",
+  };
+  return {
+    ...parent,
+    continuation_version: "multiyear-v1",
+    new_model_cost_cny: 0,
+    multiyear_recheck: {
+      ...source,
+      status: "CALCULATED",
+      schema_version: "parent-cash-multiyear-recheck-v1",
+      base_basis: "TEST_ONLY 多年度条件",
+      scenarios: { bear, base, bull: base },
+      financing_condition_verified: false,
+      unverified_financing_fallback_status: "REJECTED",
+      original_installment_stress: { bear: failed, base, bull: base },
+      early_maturity_stress: { bear: failed, base: failed, bull: failed },
+    },
+  };
+}
+
+it("replays and reopens multiyear with every year, cost, extension conditions and separate rejected stresses", async () => {
+  const result = multiyearReceipt();
+  fetcher
+    .mockResolvedValueOnce(absent())
+    .mockResolvedValueOnce(json(result))
+    .mockResolvedValueOnce(json(result));
+  const render = mountContent("multiyear");
+  render();
+  await settle();
+  click(render(), "按多年经营现金续算并封存");
+  await settle();
+  const html = renderToStaticMarkup(render());
+  for (const text of [
+    "基准（Base）至 2033 年",
+    "承压（Bear）至 2034 年",
+    "连续展期条件",
+    "展期条件未核实 · 提前到期回退结果已拒绝",
+    "新增模型费用 0 元",
+    "DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2028",
+    "距现金底线 1.50 亿元",
+    "当前研究区间未采用",
+    "602.15 亿元",
+    "65e1b00158579b76.pdf#page=130",
+    "1225511409.PDF#page=189",
+    "P020260915489390859483.pdf#page=2",
+  ])
+    expect(html).toContain(text);
+  for (let year = 2026; year <= 2035; year++)
+    expect(html).toContain('<th scope="row">' + year + "</th>");
+  const reopened = mountContent("multiyear");
+  reopened();
+  await settle();
+  expect(renderToStaticMarkup(reopened())).toContain(
+    result.continuation_sha256,
+  );
+  expect(
+    fetcher.mock.calls.map(([path, init]) => [
+      path,
+      init.method ?? "GET",
+      init.body,
+    ]),
+  ).toEqual([
+    [multiyearUrl, "GET", undefined],
+    [multiyearUrl, "POST", "{}"],
+    [multiyearUrl, "GET", undefined],
+  ]);
+  for (const [, init] of fetcher.mock.calls) {
+    expect(new Headers(init.headers).get("X-Local-Session")).toBe(
+      "TEST_ONLY_SESSION",
+    );
+    expect(init.credentials).toBe("same-origin");
+  }
+});
+
+it("shows a terminal principal rejection without inventing a cash shortfall", async () => {
+  const result = multiyearReceipt();
+  const terminal = {
+    ...result.multiyear_recheck.original_installment_stress.bear,
+    first_failed_year: 2036,
+    reason: "MULTIYEAR_TERMINAL_PRINCIPAL_REMAINS",
+    ledger: { remaining_proxy_principal_cny: "200000000" },
+  };
+  fetcher.mockResolvedValueOnce(
+    json({
+      ...result,
+      multiyear_recheck: {
+        ...result.multiyear_recheck,
+        status: "REJECTED",
+        scenarios: { ...result.multiyear_recheck.scenarios, base: terminal },
+      },
+    }),
+  );
+  const render = mountContent("multiyear");
+  render();
+  await settle();
+  const html = renderToStaticMarkup(render());
+  expect(html).toContain("MULTIYEAR_TERMINAL_PRINCIPAL_REMAINS");
+  expect(html).toContain("终值前尚余本金 2.00 亿元");
+  expect(html).not.toContain("NaN");
+});
+
+it.each(["schema", "cost", "parent", "wrong version", "stress missing"])(
+  "fails closed for multiyear %s",
+  async (fault) => {
+    const record = multiyearReceipt();
+    if (fault === "schema")
+      record.multiyear_recheck.schema_version =
+        "parent-cash-installment-recheck-v1";
+    if (fault === "cost") record.new_model_cost_cny = 1;
+    if (fault === "parent") record.multiyear_recheck.parent_receipt = hash("f");
+    if (fault === "wrong version")
+      record.continuation_version = "installment-v1";
+    if (fault === "stress missing")
+      Reflect.deleteProperty(
+        record.multiyear_recheck,
+        "original_installment_stress",
+      );
+    fetcher.mockResolvedValueOnce(json(record));
+    const render = mountContent("multiyear");
+    render();
+    await settle();
+    const html = renderToStaticMarkup(render());
+    expect(html).toContain("无法核验");
+    expect(html).not.toContain("条件估值");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  },
+);
 
 it("preserves the unversioned GET and POST", async () => {
   const fixed = {

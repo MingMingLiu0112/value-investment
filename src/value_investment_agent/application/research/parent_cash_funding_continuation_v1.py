@@ -11,6 +11,7 @@ from . import parent_cash_funding_revision_v1 as revision
 
 VERSION = "fixed-payment-v1"
 MATURITY_VERSION = "maturity-v1"
+MULTIYEAR_VERSION = "multiyear-v1"
 LIMIT = 2 * 1024**2
 
 
@@ -28,9 +29,13 @@ def _implementation(checker):
     modules = [revision, checker]
     if checker.__name__.endswith(".parent_cash_maturity_recheck"):
         modules.append(_checker())
-    if checker.__name__.endswith(".parent_cash_installment_recheck"):
+    multiyear = checker.__name__.endswith(".parent_cash_multiyear_recheck")
+    if multiyear or checker.__name__.endswith(".parent_cash_installment_recheck"):
         from . import parent_cash_maturity_recheck
         modules.extend([_checker(), parent_cash_maturity_recheck])
+    if multiyear:
+        from . import parent_cash_installment_recheck, direct_owner_cash_input_adapter_v2
+        modules.extend([parent_cash_installment_recheck, direct_owner_cash_input_adapter_v2, checker.kernel, checker.model])
     return {module.__name__: sha256(Path(module.__file__).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
             for module in modules}
 
@@ -78,6 +83,9 @@ def replay_or_read(source_root, write_root, identity, *, create, now, version=VE
     elif version == "installment-v1":
         from . import parent_cash_installment_recheck as checker
         result_key, schema = "installment_recheck", "parent-cash-installment-recheck-v1"
+    elif version == MULTIYEAR_VERSION:
+        from . import parent_cash_multiyear_recheck as checker
+        result_key, schema = "multiyear_recheck", "parent-cash-multiyear-recheck-v1"
     else:
         raise ValueError("CONTINUATION_VERSION_UNSUPPORTED")
     folder = (write_root / "runtime" / "parent-cash-task-backed-receipts" / task_id
@@ -85,6 +93,8 @@ def replay_or_read(source_root, write_root, identity, *, create, now, version=VE
     identity = dict(identity, continuation_version=version, action="no_order", formal_eligibility=False,
                     current_comparable=False, new_llm_calls=0, status="REPLAYED",
                     implementation_sha256=_implementation(checker))
+    if version == MULTIYEAR_VERSION:
+        identity["new_model_cost_cny"] = 0
     retained = _read_seal(write_root, folder, identity)
     if retained is not None or not create:
         return retained
@@ -124,6 +134,25 @@ def replay_or_read(source_root, write_root, identity, *, create, now, version=VE
             if (set(alternative) != set(scenarios) or corrected["current_research_range_adopted"] is not False
                     or any(row["status"] not in {"CALCULATED", "REJECTED"} for row in alternative.values())):
                 raise ValueError("CONTINUATION_MATURITY_ALTERNATIVES_INVALID")
+        if version == MULTIYEAR_VERSION:
+            fallback = corrected["early_maturity_stress"]
+            fallback_status = "REJECTED" if any(r["status"] == "REJECTED" for r in fallback.values()) else "CALCULATED"
+            if (corrected["financing_condition_verified"] is not False
+                    or corrected["unverified_financing_fallback_status"] != fallback_status
+                    or corrected["current_research_range_adopted"] is not False or not corrected["base_basis"]):
+                raise ValueError("CONTINUATION_MULTIYEAR_RESULT_INVALID")
+            for group in (scenarios, corrected["original_installment_stress"], corrected["early_maturity_stress"]):
+                if set(group) != set(scenarios):
+                    raise ValueError("CONTINUATION_MULTIYEAR_SCENARIOS_INVALID")
+                for row in group.values():
+                    if (row["status"] not in {"CALCULATED", "REJECTED"}
+                            or row["financing_rows_basis"] != "CONDITIONAL_PAYMENT_PLAN"
+                            or not isinstance(row["financing_rows"], list)
+                            or (row["status"] == "REJECTED" and
+                                (not row["reason"] or not isinstance(row["first_failed_year"], int)))
+                            or (row["status"] == "CALCULATED" and
+                                (row["first_failed_year"] is not None or not row["annual_rows"] or not row["per_share_value"]))):
+                        raise ValueError("CONTINUATION_MULTIYEAR_SCENARIOS_INVALID")
         if _implementation(checker) != identity["implementation_sha256"]:
             raise ValueError("CONTINUATION_IMPLEMENTATION_CHANGED")
         record = dict(identity, completed_at=now.isoformat(), **{result_key: corrected})
