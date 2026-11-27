@@ -2008,6 +2008,31 @@ it("offers the valuation read only for a successful V3 history row", async () =>
   expect(calls.parentCashValuation).not.toHaveBeenCalled();
 });
 
+it("confirms a terminal retry for the eligible V2 predecessor only", async () => {
+  const row = {
+    task_id: "v2-parent", task_contract: "parent-cash-task-v3", status: "FAILED",
+    source_years: [], completed_stages: ["bear.operating", "bear.policy"],
+    charges: [], bear_terminal_v3_retry: true,
+  };
+  calls.parentCashHistory.mockResolvedValue({
+    symbol: "600809",
+    items: [row, { ...row, read_only_archive: true, task_id: "archive" },
+      { ...row, bear_terminal_v3_retry: false, task_id: "ineligible" }],
+  });
+  const onContinue = vi.fn();
+  ParentCashTaskHistoryView({ symbol: "600809", onContinue });
+  await Promise.resolve();
+  hooks.cursor = 0;
+  const tree = ParentCashTaskHistoryView({ symbol: "600809", onContinue });
+  const actions = nodes(tree).filter(
+    (node) => node.props.title === "复用已通过的两个阶段，请求新的悲观终值？",
+  );
+  expect(actions).toHaveLength(1);
+  expect(onContinue).not.toHaveBeenCalled();
+  actions[0].props.onConfirm();
+  expect(onContinue.mock.calls).toEqual([["v2-parent", undefined, true]]);
+});
+
 it("offers the annual cash rebuild only for the eligible failed V4 history row", async () => {
   const row = {
     task_id: "annual-cash",

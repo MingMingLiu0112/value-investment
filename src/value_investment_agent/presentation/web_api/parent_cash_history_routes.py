@@ -24,7 +24,9 @@ from . import parent_cash_funding_revisions as funding
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
 from ...application.research import parent_cash_corrected_continuation_v1 as continued
-from ...application.research.parent_note_grid_terminal_service_v2 import ParentCashService as ParentCashTaskServiceV3
+from ...application.research import parent_note_grid_terminal_service_v2 as terminal_v2
+
+from ...application.research.parent_note_grid_terminal_service_v3 import ParentCashService as ParentCashTaskServiceV3
 
 
 def _numbered_task_with_observed_investing_cash(service, task_id):
@@ -375,7 +377,11 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 if not isinstance(predecessor, str) or not re.fullmatch(r"rt-[0-9a-f]{32}", predecessor):
                     raise ValueError("PARENT_V3_INVALID_CONTINUATION_TASK")
                 if body.get("retry_sealed_terminal") is True:
-                    task = numbered_service.continue_bear_terminal_v2(predecessor, binding)
+                    prior, _, _ = numbered_service._load(predecessor)
+                    if prior.get("terminal_response_wire") == terminal_v2.WIRE:
+                        task = numbered_service.continue_bear_terminal_v3(predecessor, binding)
+                    else:
+                        task = numbered_service.continue_bear_terminal_v2(predecessor, binding)
                     if task["status"] in {"QUEUED", "SUCCEEDED"}:
                         background.add_task(run_numbered, task["task_id"])
                     return reply(task, 202)
@@ -1129,6 +1135,12 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                             numbered, symbol, spec, state, archived=archived),
                         "terminal_cohort_continuation": cohort_continuation,
                         "terminal_cash_review": spec.get("terminal_cash_review"),
+                        "bear_terminal_v3_retry": (not archived and spec.get("mode") == "LIVE_PARENT_CASH_V3"
+                            and spec.get("terminal_response_wire") == terminal_v2.WIRE
+                            and state["status"] == "FAILED" and state.get("error_code") == terminal_v2.ERROR
+                            and Decimal(state["reserved_cost"]) == 0 and spec.get("seed") is not None
+                            and set(state["responses"]) == terminal_v2.frozen.PREFIX
+                            and all(row["status"] == "SETTLED" for row in reservations.values())),
                         "read_only_archive": archived,
                         "reused_stages": sorted((spec.get("seed") or {}).get("responses", {})),
                         "base_policy_wire": spec.get("base_policy_wire"),

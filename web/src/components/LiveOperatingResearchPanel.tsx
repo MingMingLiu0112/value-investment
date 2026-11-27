@@ -1002,14 +1002,14 @@ export function ParentCashTaskHistoryView({
             实际使用：未核实
             {onContinue &&
               !item.read_only_archive &&
-              item.terminal_debt_reconciliation && (
+              (item.terminal_debt_reconciliation || item.bear_terminal_v3_retry) && (
                 <>
-                  <Button
+                  {item.terminal_debt_reconciliation && <Button
                     disabled={busy}
                     onClick={() => onContinue(item.task_id)}
                   >
                     重验封存终值与融资口径（免费）
-                  </Button>
+                  </Button>}
                   <Popconfirm
                     title="复用已通过的两个阶段，请求新的悲观终值？"
                     description="按当日预算计费。上界情景单独核算；母公司融资口径未核实时不能进入基准估值。"

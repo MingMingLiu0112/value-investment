@@ -964,6 +964,13 @@ def test_bear_terminal_retry_requires_explicit_true(tmp_path, monkeypatch):
         def __init__(self, root):
             self.root = root
 
+        def _load(self, predecessor):
+            return {"terminal_response_wire": wire}, {}, {}
+
+        def continue_bear_terminal_v3(self, predecessor, binding):
+            calls.append("v3")
+            return self.continue_bear_terminal_v2(predecessor, binding)
+
         def continue_bear_terminal_v2(self, predecessor, binding):
             calls.append((predecessor, binding))
             return {"task_id": task_id, "status": "QUEUED", "action": "no_order"}
@@ -981,5 +988,10 @@ def test_bear_terminal_retry_requires_explicit_true(tmp_path, monkeypatch):
     for invalid in (False, "true", 1):
         assert client.post(path, json=dict(body, retry_sealed_terminal=invalid)).status_code == 422
     assert calls == []
+    wire = "NOTE_GRID_FLAT_TERMINAL_V1"
     assert client.post(path, json=dict(body, retry_sealed_terminal=True)).status_code == 202
     assert calls == [(body["continue_from_task_id"], active), task_id]
+    calls.clear()
+    wire = routes.terminal_v2.WIRE
+    assert client.post(path, json=dict(body, retry_sealed_terminal=True)).status_code == 202
+    assert calls == ["v3", (body["continue_from_task_id"], active), task_id]

@@ -2283,6 +2283,7 @@ export interface ParentCashTaskHistory {
     base_operating_wire?: string | null;
     base_interest_wire?: string | null;
     terminal_cohort_continuation?: boolean;
+    bear_terminal_v3_retry?: boolean;
     terminal_debt_reconciliation?: {
       status: "FINANCING_BALANCE_UNVERIFIED";
       stress_closing_cny: string;

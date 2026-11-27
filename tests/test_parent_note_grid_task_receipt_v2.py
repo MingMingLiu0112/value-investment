@@ -29,7 +29,8 @@ def service_head(root, wire):
                            _lock=lambda *args: nullcontext(), _load=lambda _: (spec, state, HEAD)), spec, state
 
 
-@pytest.mark.parametrize("wire,builder", [(receipt.terminal.WIRE, "build_note_grid_receipt_v2"),
+@pytest.mark.parametrize("wire,builder", [("NOTE_GRID_FLAT_TERMINAL_V3", "build_note_grid_receipt_v3"),
+    (receipt.terminal.WIRE, "build_note_grid_receipt_v2"),
     (receipt.terminal.frozen.WIRE, "build_note_grid_receipt"), (None, "build_note_grid_receipt")])
 def test_completion_selects_exact_builder_before_publication(tmp_path, monkeypatch, wire, builder):
     service, _, _ = service_head(tmp_path, wire)
@@ -77,7 +78,8 @@ def test_no_result_for_ineligible_task(tmp_path, monkeypatch, fault, code):
     assert not output.exists()
 
 
-@pytest.mark.parametrize("schema,reason", [(receipt.SCHEMA, "NOTE_GRID_V2_RECEIPT_IMPLEMENTATION_CHANGED"),
+@pytest.mark.parametrize("schema,reason", [("parent-note-grid-task-receipt-v3", "NOTE_GRID_V3_RECEIPT_IMPLEMENTATION_CHANGED"),
+    (receipt.SCHEMA, "NOTE_GRID_V2_RECEIPT_IMPLEMENTATION_CHANGED"),
     (receipt.v1.SCHEMA, "NOTE_GRID_RECEIPT_IMPLEMENTATION_CHANGED")])
 def test_exported_reader_enforces_own_version_before_opening_result(tmp_path, schema, reason):
     bad = write(tmp_path, "invalid-header.json", {"schema_version": schema, "implementation_sha256": {}})
