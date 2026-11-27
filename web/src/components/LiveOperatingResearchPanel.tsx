@@ -492,6 +492,7 @@ export function ParentCashTaskValuationRead({
         value.action !== "no_order" ||
         value.formal_eligibility !== false ||
         typeof value.current_comparable !== "boolean" ||
+        (value.adoptable_valuation === false && value.current_comparable) ||
         (value.current_comparable
           ? value.alignment_status !== "ALIGNED_FOR_RESEARCH_COMPARISON" ||
             !value.comparison_quote ||
@@ -573,6 +574,22 @@ export function ParentCashTaskValuationRead({
       {error && <p role="status">{error}</p>}
       {valuation && (
         <section aria-label="已核验的条件估值">
+          {valuation.adoptable_valuation === false && (
+            <p>
+              该研究区间尚未采用，不能与现价判断高低。
+              {valuation.annual_input_limitations?.map((row) => (
+                <span key={row.field}>
+                  {" "}
+                  {row.field === "total_capex" ? "资本开支" : "投资收现"}在{" "}
+                  {row.first_year}–{row.through_year} 年沿用同一年度假设
+                  {row.observed_through
+                    ? `，观察依据截至 ${row.observed_through}`
+                    : ""}
+                  。
+                </span>
+              ))}
+            </p>
+          )}
           <p>
             估值日期 {valuation.valuation_date} ·
             {valuation.current_comparable
@@ -859,7 +876,7 @@ export function ParentCashTaskHistoryView({
   busy,
 }: {
   symbol: string;
-  onContinue?: (taskId: string) => Promise<void>;
+  onContinue?: (taskId: string, correctionReceipt?: string) => Promise<void>;
   busy?: boolean;
 }) {
   const [history, setHistory] = useState<ParentCashTaskHistory>();
@@ -1077,6 +1094,22 @@ export function ParentCashTaskHistoryView({
               "SENSITIVITY_UNAVAILABLE" && (
               <p role="alert">债务期限试算回执暂无法核验。</p>
             )}
+            {onContinue &&
+              item.financing_policy_terminal_continuation_available &&
+              item.financing_policy_correction_receipt_sha256 && (
+                <Popconfirm
+                  title="从已核验年度政策继续研究？"
+                  description="仅作条件研究。年度投资收现和资本支出沿用期中金额，长期可重复性待核，结果不能采用为当前公允价值。将从悲观终值开始调用模型，计入当日总预算。"
+                  onConfirm={() =>
+                    onContinue(
+                      item.task_id,
+                      item.financing_policy_correction_receipt_sha256,
+                    )
+                  }
+                >
+                  <Button disabled={busy}>从政策回执继续终值研究</Button>
+                </Popconfirm>
+              )}
             {item.financing_policy_correction_source_sha256 && (
               <PolicyCorrectionReceipt
                 taskId={item.task_id}
@@ -3163,7 +3196,11 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
   const [revision, setRevision] = useState(0);
   const pending = useRef(false);
 
-  async function start(continueFrom?: string, fresh = false) {
+  async function start(
+    continueFrom?: string,
+    fresh = false,
+    correctionReceipt?: string,
+  ) {
     if (pending.current) return;
     pending.current = true;
     setBusy(true);
@@ -3177,7 +3214,11 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
       }
       const task = intent
         ? await api.newCompanyParentCashTask(symbol, intent)
-        : await api.startCompanyParentCashTask(symbol, continueFrom);
+        : await api.startCompanyParentCashTask(
+            symbol,
+            continueFrom,
+            correctionReceipt,
+          );
       if (task.action !== "no_order" || !/^rt-[a-f0-9]{32}$/.test(task.task_id))
         throw new Error("Invalid task");
       if (intent) sessionStorage.removeItem(slot);
@@ -3240,7 +3281,7 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
       <ParentCashTaskHistoryView
         key={revision}
         symbol={symbol}
-        onContinue={start}
+        onContinue={(taskId, receipt) => start(taskId, false, receipt)}
         busy={busy}
       />
     </>

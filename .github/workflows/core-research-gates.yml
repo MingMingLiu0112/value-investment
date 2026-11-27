@@ -254,6 +254,7 @@ jobs:
           tests/test_parent_direct_owner_cash_unnumbered_v1.py
           tests/test_parent_cash_history_routes.py
           tests/test_parent_cash_policy_correction_v1.py
+          tests/test_parent_cash_corrected_continuation_v1.py
           tests/test_yili_interim_payout_stress_v1.py
           tests/test_parent_cash_task_alignment_v3.py
           tests/test_parent_cash_task_share_anchor_v3.py

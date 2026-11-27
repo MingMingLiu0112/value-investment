@@ -6,7 +6,7 @@ from ...research_run_contract import canonical_contract_payload
 from ..product.common import sha256_bytes
 
 from .direct_owner_cash_research_v1 import _read
-from .parent_cash_task_distribution_receipt_v1 import replay as replay_parent_cash_task_receipt
+from .parent_cash_corrected_receipt_v1 import replay as replay_parent_cash_task_receipt
 from .parent_cash_task_share_anchor_v3 import read_task_share_anchors
 from .pending_candidate_alignment import _event_windows, _load_bound_alignment
 from .value_research_analysis import _bound

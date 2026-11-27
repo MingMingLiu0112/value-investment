@@ -10,10 +10,9 @@ from tempfile import mkdtemp, mkstemp
 
 from .parent_cash_task_aggregate_receipt_v1 import build as build_aggregate_receipt
 from .parent_cash_task_receipt_v3 import build_parent_cash_task_receipt
-from .parent_cash_task_distribution_receipt_v1 import (
-    build as build_distribution_receipt,
-    replay as replay_task_receipt,
-)
+from .parent_cash_task_distribution_receipt_v1 import build as build_distribution_receipt
+from .parent_cash_corrected_receipt_v1 import build as build_corrected_receipt, replay as replay_task_receipt
+from .parent_cash_corrected_continuation_v1 import MARKER as CORRECTED_POLICY
 from ..portfolio.private_journal_lock import LockTimeout
 from ..product.common import require_inside
 
@@ -231,7 +230,11 @@ def _seal_completed_task(service, task_id):
             attempt = Path(mkdtemp(prefix="valuation-attempt-", dir=retained.parent)) / "sealed"
             options = {} if binding is None else {"distribution_binding": binding}
             builder = build_parent_cash_task_receipt if binding is None else build_distribution_receipt
-            if spec.get("gross_capex_plan_binding") is not None:
+            if CORRECTED_POLICY in spec:
+                if binding is None or spec.get("implemented_distribution_receipt_binding") != binding:
+                    raise ValueError("PARENT_CORRECTED_DISTRIBUTION_BINDING_CHANGED")
+                builder = build_corrected_receipt
+            elif spec.get("gross_capex_plan_binding") is not None:
                 if binding is None or spec.get("implemented_distribution_receipt_binding") != binding:
                     raise ValueError("GROSS_CAPEX_F1_TASK_OR_DISTRIBUTION_BINDING_MISMATCH")
                 builder = build_aggregate_receipt

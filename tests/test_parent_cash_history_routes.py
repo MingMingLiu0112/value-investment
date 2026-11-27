@@ -573,9 +573,15 @@ def test_valuation_comparison_requires_shared_f2_and_latest_qualified_quote(
     else:
         assert routes._comparison_quote(alignment) == expected
 
-@pytest.mark.parametrize("scheduled", [False, True])
+@pytest.mark.parametrize("scheduled,aligned,restricted", [
+    (False, False, False),
+    (True, False, False),
+    (True, True, False),
+    (True, True, True),
+    (True, False, True),
+])
 def test_verified_valuation_api_preserves_annual_cash_and_total_distribution(
-    tmp_path, monkeypatch, scheduled,
+    tmp_path, monkeypatch, scheduled, aligned, restricted,
 ):
     from value_investment_agent.application.research import parent_cash_task_alignment_v3
     from value_investment_agent.application.research import parent_cash_task_distribution_receipt_v1
@@ -583,7 +589,7 @@ def test_verified_valuation_api_preserves_annual_cash_and_total_distribution(
     task_id = "rt-" + "e" * 32
     receipt_path = routes.valuation_receipt_path(tmp_path, task_id)
     receipt_path.parent.mkdir(parents=True)
-    receipt_path.write_bytes(b"fixture validated by replay stub")
+    receipt_path.write_bytes(b'{"schema_version":"legacy-test-fixture"}')
     row = dict(year=2027, direct_operating_cash_cny="100.001", closing_cash_cny="40.123",
                closing_debt_cny="12.345", closing_book_equity_cny="60.987",
                conditional_distribution_cny="2.10")
@@ -592,9 +598,15 @@ def test_verified_valuation_api_preserves_annual_cash_and_total_distribution(
     scenario = dict(per_share_value="10.12", annual_rows=[row], terminal_method="stationary",
                     terminal_steady_distribution_cny="9.876")
 
+    limits = [dict(field=field, annual_cny=cny, observed_through="2026-09-30",
+                  first_year=2026, through_year=2035,
+                  classification="INTERIM_CASH_REPEATED_AS_ANNUAL_FORECAST_RECURRENCE_UNVERIFIED")
+             for field, cny in (("investment_cash_received", "4987544886.74"), ("total_capex", "1410074492.50"))]
+
     def replay(**kwargs):
         assert kwargs["root"] == tmp_path
         return dict(
+            **(dict(adoptable_valuation=False, annual_input_limitations=limits) if restricted else {}),
             symbol="600887", provenance=dict(task_id=task_id), action="no_order",
             formal_eligibility=False, main_range_adopted=False,
             descriptor=dict(point_in_time=dict(valuation_date="2025-12-31")),
@@ -604,10 +616,11 @@ def test_verified_valuation_api_preserves_annual_cash_and_total_distribution(
         )
 
     monkeypatch.setattr(parent_cash_task_distribution_receipt_v1, "replay", replay)
-    monkeypatch.setattr(parent_cash_task_alignment_v3, "_align_verified_parent_cash_task",
-                        lambda **_: dict(status="BLOCKED", reason_codes=["TEST_MISSING_SHARE_BASIS"],
-                            quote=dict(status="QUALIFIED", quote_date="2026-11-25",
-                                       current_price="33.58", latest_completed_session="2026-11-25")))
+    alignment = dict(status="ALIGNED_FOR_RESEARCH_COMPARISON" if aligned else "BLOCKED",
+                     currentpricecomparison=aligned, reason_codes=[] if aligned else ["TEST_MISSING_SHARE_BASIS"],
+                     quote=dict(status="QUALIFIED", quote_date="2026-11-25", current_price="33.58",
+                                latest_completed_session="2026-11-25"))
+    monkeypatch.setattr(parent_cash_task_alignment_v3, "_align_verified_parent_cash_task", lambda **_: alignment)
     monkeypatch.setattr(routes, "resolve_research_task_root", lambda _: tmp_path)
     monkeypatch.setattr(routes, "authorize", lambda *args, **kwargs: None)
     app = FastAPI()
@@ -620,10 +633,18 @@ def test_verified_valuation_api_preserves_annual_cash_and_total_distribution(
     payload = response.json()
     assert payload["condition_price"] is None
     assert payload["formal_eligibility"] is False
-    assert payload["alignment_reason_codes"] == ["TEST_MISSING_SHARE_BASIS"]
-    assert payload["current_comparable"] is False
-    assert payload["qualified_close"] == {"trade_date": "2026-11-25", "close_cny": "33.58"}
-    assert payload["comparison_quote"] is None
+    assert payload["action"] == "no_order"
+    quote = {"trade_date": "2026-11-25", "close_cny": "33.58"}
+    assert payload["qualified_close"] == quote
+    assert payload["current_comparable"] is (aligned and not restricted)
+    assert payload["comparison_quote"] == (quote if aligned and not restricted else None)
+    if not aligned:
+        assert "TEST_MISSING_SHARE_BASIS" in payload["alignment_reason_codes"]
+    if restricted:
+        assert payload["adoptable_valuation"] is False
+        assert payload["annual_input_limitations"] == limits
+        assert payload["alignment_status"] == "BLOCKED"
+        assert set(payload["alignment_reason_codes"]) - {"TEST_MISSING_SHARE_BASIS"}
     for value in payload["scenarios"].values():
         assert value["terminal_steady_distribution_cny"] == "9.876"
         assert value["annual_cash_path"] == [{

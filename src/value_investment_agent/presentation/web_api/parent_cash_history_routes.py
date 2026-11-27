@@ -22,7 +22,8 @@ from ...application.research import parent_cash_policy_correction_v1 as correcti
 from . import parent_cash_funding_revisions as funding
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
-from ...application.research.agent_review.parent_cash_task_v3 import ParentCashTaskServiceV3
+from ...application.research import parent_cash_corrected_continuation_v1 as continued
+from ...application.research.parent_cash_corrected_continuation_v1 import ContinuationService as ParentCashTaskServiceV3
 
 
 def _numbered_task_with_observed_investing_cash(service, task_id):
@@ -338,10 +339,14 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
 
     def prepare_numbered_for_company(raw, background):
         try:
-            if len(raw) > 128:
+            if len(raw) > 256:
                 raise ValueError("PARENT_V3_REQUEST_TOO_LARGE")
             body = json.loads(raw)
-            if (not isinstance(body, dict) or set(body) not in ({"symbol"}, {"symbol", "continue_from_task_id"}, {"symbol", "new_run_id"})
+            continuation_keys = {"symbol", "continue_from_task_id", "policy_correction_receipt_sha256"}
+            if len(raw) > 128 and (not isinstance(body, dict) or set(body) != continuation_keys):
+                raise ValueError("PARENT_V3_REQUEST_TOO_LARGE")
+            if (not isinstance(body, dict) or set(body) not in ({"symbol"}, {"symbol", "continue_from_task_id"},
+                                                                {"symbol", "new_run_id"}, continuation_keys)
                     or not isinstance(body["symbol"], str)
                     or not re.fullmatch(r"[0-9]{6}", body["symbol"])):
                 raise ValueError("PARENT_V3_REQUEST_INVALID")
@@ -364,6 +369,14 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 predecessor = body["continue_from_task_id"]
                 if not isinstance(predecessor, str) or not re.fullmatch(r"rt-[0-9a-f]{32}", predecessor):
                     raise ValueError("PARENT_V3_INVALID_CONTINUATION_TASK")
+                if "policy_correction_receipt_sha256" in body:
+                    try:
+                        task = numbered_service.continue_policy(predecessor, body["policy_correction_receipt_sha256"], binding)
+                    except LockTimeout:
+                        return reply(dict(status="CONTINUATION_BUSY", action="no_order"), 409)
+                    if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                        background.add_task(run_numbered, task["task_id"])
+                    return reply(task, 202)
                 prior = numbered_service.read(predecessor)
                 if prior.get("error_code") == correction.ERROR:
                     spec, state, _ = numbered_service._load(predecessor)
@@ -673,7 +686,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
         from datetime import datetime, timezone
         from hashlib import sha256
         from ...application.research.parent_cash_task_alignment_v3 import _align_verified_parent_cash_task
-        from ...application.research.parent_cash_task_distribution_receipt_v1 import replay as replay_parent_cash_task_receipt
+        from ...application.research.parent_cash_corrected_receipt_v1 import replay as replay_parent_cash_task_receipt
 
         try:
             candidates = [(task_root, valuation_receipt_path(task_root, task_id))
@@ -756,7 +769,12 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                          for name in ("bear", "base", "bull")}
             alignment = _align_verified_parent_cash_task(
                 root=task_root, receipt_binding=binding, result=result, now=now)
-            comparison_quote = _comparison_quote(alignment)
+            if result.get("adoptable_valuation") is False:
+                alignment = dict(alignment, status="RESEARCH_RANGE_NOT_ADOPTED", reason_codes=list(dict.fromkeys(
+                    [*alignment["reason_codes"], "RESEARCH_RANGE_NOT_ADOPTED"])))
+                comparison_quote = None
+            else:
+                comparison_quote = _comparison_quote(alignment)
             return reply(dict(status="VERIFIED_CONDITIONAL_VALUATION",
                 comparison_quote=comparison_quote, qualified_close=_qualified_close(alignment),
                 alignment_status=alignment["status"], alignment_reason_codes=alignment["reason_codes"],
@@ -764,7 +782,8 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 scenarios=scenarios, receipt_sha256=binding["sha256"],
                 input_descriptor_sha256=result["input_descriptor_sha256"], action="no_order",
                 formal_eligibility=False, current_comparable=comparison_quote is not None,
-                condition_price=None))
+                condition_price=None, **{key: result[key] for key in ("adoptable_valuation", "annual_input_limitations")
+                                         if key in result}))
         except (ValueError, TypeError, KeyError, OSError, ArithmeticError):
             return reply(dict(status="PARENT_TASK_VALUATION_UNAVAILABLE", action="no_order"), 422)
 
@@ -1019,6 +1038,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                         stage.upper().replace(".", "_") + "_")), None)
                 items.append({"task_id": directory.name, "status": state["status"],
                     "bear_quarter_continuation": False, "financing_policy_correction_available": False,
+                    "financing_policy_terminal_continuation_available": False,
                     "task_contract": "parent-cash-task-v2",
                     "stage": next((row.get("scenario") for row in reservations.values()
                                    if row.get("status") == "RESERVED"), error_stage),
@@ -1070,8 +1090,13 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                             annual_pin != spec.get("terminal_parent_prior_annual_receipt")
                             or entry.get("terminal_parent_cash_method") != spec.get("terminal_parent_cash_method")
                         )
+                    fields = correction.history_fields(numbered, symbol, spec, state, archived=archived)
+                    fields.update(continued.history_fields(numbered, directory.name, binding, fields))
+                    if continued.MARKER in spec:
+                        fields.update(corrected_policy_continuation=spec[continued.MARKER], adoptable_valuation=False,
+                                      annual_input_limitations=spec[continued.MARKER]["annual_input_limitations"])
                     items.append({"task_id": directory.name, "task_contract": "parent-cash-task-v3",
-                        **correction.history_fields(numbered, symbol, spec, state, archived=archived),
+                        **fields,
                         "bear_quarter_continuation": _bear_quarter_eligible(
                             numbered, symbol, spec, state, archived=archived),
                         "terminal_cohort_continuation": cohort_continuation,

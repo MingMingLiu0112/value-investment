@@ -1929,6 +1929,14 @@ export interface ParentCashTaskValuation {
   action: "no_order";
   formal_eligibility: false;
   current_comparable: boolean;
+  adoptable_valuation?: false;
+  annual_input_limitations?: {
+    field: string;
+    first_year: number;
+    through_year: number;
+    annual_cny: string;
+    observed_through?: string;
+  }[];
   comparison_quote: { trade_date: string; close_cny: string } | null;
   qualified_close?: { trade_date: string; close_cny: string } | null;
   condition_price: null;
@@ -2277,6 +2285,9 @@ export interface ParentCashTaskHistory {
     terminal_cohort_continuation?: boolean;
     bear_quarter_continuation?: boolean;
     financing_policy_correction_available?: boolean;
+    financing_policy_terminal_continuation_available?: boolean;
+    financing_policy_correction_receipt_sha256?: string;
+    financing_policy_terminal_task_id?: string;
     financing_policy_correction_source_sha256?: string;
     terminal_cash_review?: string | null;
     candidate_status?: "COMPILED_CONDITIONAL_NOT_MAIN" | "NOT_COMPILED";
@@ -2668,11 +2679,21 @@ export const api = {
       "operating-research/parent-cash-tasks/by-company",
       { symbol, new_run_id: intent },
     ),
-  startCompanyParentCashTask: (symbol: string, continueFrom?: string) =>
+  startCompanyParentCashTask: (
+    symbol: string,
+    continueFrom?: string,
+    correctionReceipt?: string,
+  ) =>
     post<{ task_id: string; status: string; action: string }>(
       "operating-research/parent-cash-tasks/by-company",
       continueFrom
-        ? { symbol, continue_from_task_id: continueFrom }
+        ? {
+            symbol,
+            continue_from_task_id: continueFrom,
+            ...(correctionReceipt
+              ? { policy_correction_receipt_sha256: correctionReceipt }
+              : {}),
+          }
         : { symbol },
     ),
   parentCashTaskTerminalFailure: (taskId: string) =>
