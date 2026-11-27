@@ -101,9 +101,11 @@ export function CompanyProfileView({
   symbol: string;
 }) {
   if (
-    !["company-research-profile-v1", "source-company-profile-v1"].includes(
-      data.schema_version,
-    ) ||
+    ![
+      "company-research-profile-v1",
+      "source-company-profile-v1",
+      "source-company-profile-v2",
+    ].includes(data.schema_version) ||
     data.symbol !== symbol ||
     data.action !== "no_order" ||
     data.formal_eligibility !== false
