@@ -1,0 +1,19 @@
+.value-tracking-modules > details {
+  padding: 0 1rem;
+  border-bottom: 1px solid #dedad5;
+}
+.value-tracking-modules > details:last-child {
+  border-bottom: 0;
+}
+.value-tracking-modules > details > summary {
+  padding: 1rem 0;
+  color: #47403d;
+  cursor: pointer;
+  line-height: 1.65;
+}
+.value-tracking-modules summary strong {
+  color: #752d2d;
+}
+.value-tracking-modules details[open] > p {
+  padding-bottom: 1rem;
+}
