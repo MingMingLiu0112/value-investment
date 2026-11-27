@@ -183,7 +183,7 @@ export default function DailyDecisions() {
         <summary>数据更新说明</summary>
         {usable && (
           <p>
-            热点行情：{hotspotDates || "待核验"}。
+            热点已完成交易日 {hotspotDates || "待核验"}。
             {quoteFresh &&
               researchDates.researchCovered &&
               "研究日期覆盖不等于估值、事件或交易获准。"}
