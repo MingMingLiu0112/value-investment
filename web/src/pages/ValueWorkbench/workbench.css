@@ -13,7 +13,7 @@
 .value-workbench nav a {
   display: inline-block;
   padding: 6px 10px;
-  border: 1px solid #d9e6e1;
+  border: 1px solid var(--wb-border);
   border-radius: 6px;
 }
 .value-workbench label {
@@ -30,7 +30,7 @@
   max-width: 100%;
   min-width: 0;
   padding: 8px;
-  border: 1px solid #b8c8c0;
+  border: 1px solid #c6b5b7;
   border-radius: 6px;
   font: inherit;
   background: #fff;
@@ -51,7 +51,7 @@
   gap: 12px;
   margin-block: 16px;
   padding: 14px;
-  border: 1px solid #d9e6e1;
+  border: 1px solid var(--wb-border);
   border-radius: 8px;
   min-width: 0;
 }
@@ -130,7 +130,7 @@
 .value-workbench .task-result-scroll th,
 .value-workbench .task-result-scroll td {
   padding: 8px;
-  border-bottom: 1px solid #d9e6e1;
+  border-bottom: 1px solid var(--wb-border);
   text-align: start;
   vertical-align: top;
 }

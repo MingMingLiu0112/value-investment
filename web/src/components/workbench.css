@@ -1,13 +1,13 @@
 .workbench-shell {
-  --wb-ink: #172825;
-  --wb-muted: #536660;
-  --wb-border: #dce5e2;
-  --wb-accent: #12604d;
+  --wb-ink: #302427;
+  --wb-muted: #685a5c;
+  --wb-border: #e5d9db;
+  --wb-accent: #901d2b;
   display: grid;
   grid-template-columns: 208px minmax(0, 1fr);
   min-height: 100vh;
   color: var(--wb-ink);
-  background: #edf2f0;
+  background: #f7f3f3;
 }
 .workbench-sidebar {
   position: sticky;
@@ -161,4 +161,11 @@
 }
 [id^="portfolio-"] {
   scroll-margin-top: 20px;
+}
+
+.workbench-content a:not(.ant-btn) {
+  color: var(--wb-accent);
+}
+.workbench-content :focus-visible {
+  outline-color: var(--wb-accent);
 }

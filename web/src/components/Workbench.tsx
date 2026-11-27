@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@umijs/max";
 import type { PropsWithChildren } from "react";
+import { ConfigProvider } from "antd";
 import "./workbench.css";
 
 const groups = [
@@ -42,30 +43,40 @@ export function Workbench({ children }: PropsWithChildren) {
       (pathname === "/daily" && hash === "#confirmations" ? hash : "");
 
   return (
-    <div className="workbench-shell">
-      <aside className="workbench-sidebar">
-        <Link className="workbench-brand" to="/daily">
-          <span aria-hidden="true">研</span>
-          投资研究工作台
-        </Link>
-        <nav aria-label="工作台主导航" className="workbench-nav">
-          {groups.map((group) => (
-            <div className="workbench-nav-group" key={group.title}>
-              <p>{group.title}</p>
-              {group.links.map(([href, name]) => (
-                <Link
-                  key={href}
-                  to={href}
-                  aria-current={section === href ? "page" : undefined}
-                >
-                  {name}
-                </Link>
-              ))}
-            </div>
-          ))}
-        </nav>
-      </aside>
-      <main className="workbench-content">{children}</main>
-    </div>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: "#901d2b",
+          colorLink: "#901d2b",
+          colorLinkHover: "#b33042",
+        },
+      }}
+    >
+      <div className="workbench-shell">
+        <aside className="workbench-sidebar">
+          <Link className="workbench-brand" to="/daily">
+            <span aria-hidden="true">研</span>
+            投资研究工作台
+          </Link>
+          <nav aria-label="工作台主导航" className="workbench-nav">
+            {groups.map((group) => (
+              <div className="workbench-nav-group" key={group.title}>
+                <p>{group.title}</p>
+                {group.links.map(([href, name]) => (
+                  <Link
+                    key={href}
+                    to={href}
+                    aria-current={section === href ? "page" : undefined}
+                  >
+                    {name}
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </nav>
+        </aside>
+        <main className="workbench-content">{children}</main>
+      </div>
+    </ConfigProvider>
   );
 }

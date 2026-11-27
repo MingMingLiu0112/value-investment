@@ -100,9 +100,9 @@ export default function DailyDecisions() {
         })
       : [];
   const subtitle =
-    quoteFresh && researchDates.researchCovered && quoteDate
-      ? `价值研究价格参考截至 ${quoteDate} 收盘；研究日期覆盖不等于估值、事件或交易获准。`
-      : `研究截至 ${researchDate ?? "日期待核验"}；${quoteDate ? `行情日期 ${quoteDate}` : "行情日期待核验"}，未满足的条件不会转成操作建议。`;
+    !researchDate && !quoteDate
+      ? "研究与行情日期待核验"
+      : `研究 ${researchDate ?? "待核验"} · 收盘 ${quoteDate ?? "待核验"}`;
   const dailyUnavailable =
     data?.status === "UNAVAILABLE" ||
     data?.publication?.packet_status === "UNAVAILABLE";
@@ -137,15 +137,8 @@ export default function DailyDecisions() {
             今日投资决策
           </Typography.Title>
           <p className="opportunity-subtitle">{subtitle}</p>
-          {usable && (
-            <p className="opportunity-subtitle">
-              价值价格核验日期 {quoteDate ?? "未提供"}；热点已完成交易日{" "}
-              {hotspotDates || "当前行情尚未核验"}。
-            </p>
-          )}
         </div>
         <div className="opportunity-freshness">
-          <span>研究 {researchDate ?? "未核验"}</span>
           <Button
             size="small"
             onClick={() => {
@@ -156,7 +149,7 @@ export default function DailyDecisions() {
             }}
             aria-label="刷新页面数据"
           >
-            刷新页面
+            刷新
           </Button>
           <Link to="/system">数据状态</Link>
         </div>
@@ -187,7 +180,15 @@ export default function DailyDecisions() {
           "以下只能作为旧快照参考，不能当作本次成功更新。"}
       </p>
       <details className="daily-update-help">
-        <summary>更新今日数据与首次连接持仓</summary>
+        <summary>数据更新说明</summary>
+        {usable && (
+          <p>
+            热点行情：{hotspotDates || "待核验"}。
+            {quoteFresh &&
+              researchDates.researchCovered &&
+              "研究日期覆盖不等于估值、事件或交易获准。"}
+          </p>
+        )}
         <p>刷新页面只读取已发布数据；更新行情和计算请在本机终端运行：</p>
         <Typography.Paragraph
           className="daily-command"
