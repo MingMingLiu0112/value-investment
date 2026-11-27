@@ -1132,6 +1132,19 @@ export function ParentCashTaskHistoryView({
               )}
             {onContinue &&
               !item.read_only_archive &&
+              item.error_code === "BEAR_TERMINAL_PARENT_V3_INVALID_JSON" &&
+              item.completed_stages.includes("bear.operating") &&
+              item.completed_stages.includes("bear.policy") && (
+                <Popconfirm
+                  title="复用经营和现金政策，从悲观终值续跑？"
+                  description="已完成的两阶段沿用原响应。后续模型调用计入当日预算。"
+                  onConfirm={() => onContinue(item.task_id)}
+                >
+                  <Button disabled={busy}>从悲观终值续跑</Button>
+                </Popconfirm>
+              )}
+            {onContinue &&
+              !item.read_only_archive &&
               item.bear_quarter_continuation && (
                 <Popconfirm
                   title="用可比季度原件重建悲观经营预测？"

@@ -188,3 +188,40 @@ def test_reject_changed_source_before_task_or_transport(retained,change,reason):
     with pytest.raises(ValueError,match=reason):
         worker.create(spec_binding=pin,request_key="negative-grid-probe",now=now)
     assert provider.calls == [] and not list(worker.base.glob("*/input.json"))
+
+def test_resume_terminal_keeps_settled_prefix(retained):
+    from dataclasses import replace
+    from value_investment_agent.application.research.parent_note_grid_terminal_resume import ParentCashService
+
+    class TerminalProvider(FixtureProvider):
+        def complete(self, request):
+            response = super().complete(request)
+            payload = json.loads(request.user)
+            if payload["stage"] != "terminal":
+                return response
+            body = json.loads(response.text)
+            if "terminal_response_fields" in payload:
+                assert "terminal" not in request.output_schema["properties"]
+                return replace(response, text=json.dumps(dict(body["terminal"], cost_of_equity=body["cost_of_equity"])))
+            return replace(response, text=json.dumps({"terminal": body["terminal"]}) + ', "cost_of_equity": {}')
+
+    root, spec, now = retained
+    pin = write(root, "resume-spec.json", spec)
+    template = "runtime/600809-public-report-sources-20261127/v3-case-template-fenjiu-historical-v1.json"
+    case = dict(path=template, sha256=sha256((root/template).read_bytes()).hexdigest())
+    entry = dict(symbol=spec["symbol"], spec_binding=pin, case_package_binding=case,
+                 implemented_distribution_receipt_binding=spec["implemented_distribution_receipt_binding"])
+    (root/"config/parent-cash-task-case-bindings-v1.json").write_text(json.dumps(dict(
+        schema_version="parent-cash-task-case-bindings-v1", specs={pin["sha256"]:entry})), encoding="utf-8")
+    provider = TerminalProvider()
+    worker = ParentCashService(root, test_provider=provider)
+    task = worker.create(spec_binding=pin, request_key="resume-terminal-test", now=now)
+    failed = worker.run(task["task_id"])
+    assert failed["error_code"] == "BEAR_TERMINAL_PARENT_V3_INVALID_JSON"
+    child = worker.continue_terminal(task["task_id"], pin)
+    assert worker.continue_terminal(task["task_id"], pin)["task_id"] == child["task_id"]
+    result = worker.run(child["task_id"])
+    assert (result["status"],result["error_code"]) == ("SUCCEEDED",None)
+    assert result["provider_requests"] == 7
+    assert provider.calls.count(("bear","operating")) == provider.calls.count(("bear","policy")) == 1
+    assert worker.read(task["task_id"])["status"] == "FAILED"

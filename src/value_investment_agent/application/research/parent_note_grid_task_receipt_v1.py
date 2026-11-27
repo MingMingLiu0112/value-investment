@@ -4,7 +4,8 @@ from pathlib import Path
 from . import parent_cash_corrected_receipt_v1 as previous
 from . import parent_cash_task_receipt_v3 as legacy
 from .parent_note_grid_case_v1 import package_candidate, run_registered_research
-from .parent_note_grid_task_service_v1 import ParentCashService, MARKER, VERSION, implementation
+from .parent_note_grid_task_service_v1 import MARKER, VERSION, implementation
+from .parent_note_grid_terminal_resume import ParentCashService
 
 SCHEMA = "parent-note-grid-task-receipt-v1"
 

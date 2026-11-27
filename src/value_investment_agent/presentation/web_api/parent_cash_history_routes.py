@@ -23,7 +23,7 @@ from . import parent_cash_funding_revisions as funding
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
 from ...application.research import parent_cash_corrected_continuation_v1 as continued
-from ...application.research.parent_note_grid_task_service_v1 import ParentCashService as ParentCashTaskServiceV3
+from ...application.research.parent_note_grid_terminal_resume import ParentCashService as ParentCashTaskServiceV3
 
 
 def _numbered_task_with_observed_investing_cash(service, task_id):
@@ -378,6 +378,11 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                         background.add_task(run_numbered, task["task_id"])
                     return reply(task, 202)
                 prior = numbered_service.read(predecessor)
+                if prior.get("error_code") == "BEAR_TERMINAL_PARENT_V3_INVALID_JSON":
+                    task = numbered_service.continue_terminal(predecessor, binding)
+                    if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                        background.add_task(run_numbered, task["task_id"])
+                    return reply(task, 202)
                 if prior.get("error_code") == correction.ERROR:
                     spec, state, _ = numbered_service._load(predecessor)
                     pin = correction._source_pin(numbered_service, spec, state)
