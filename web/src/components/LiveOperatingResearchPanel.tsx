@@ -996,6 +996,35 @@ export function ParentCashTaskHistoryView({
             {item.completed_stages.join("、") || "无"}· 预留 ¥
             {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
             实际使用：未核实
+            {onContinue &&
+              !item.read_only_archive &&
+              item.terminal_debt_reconciliation && (
+                <Button
+                  disabled={busy}
+                  onClick={() => onContinue(item.task_id)}
+                >
+                  重验封存终值与融资口径（免费）
+                </Button>
+              )}
+            {item.terminal_debt_reconciliation && (
+              <details>
+                <summary>终值融资待核 · 查看压力余额的年度推导</summary>
+                <p>
+                  期初使用母公司总负债作压力上界。按年度假设滚算的期末上界为
+                  {item.terminal_debt_reconciliation.stress_closing_cny} 元。
+                  实际融资余额、偿付及续借仍需母公司同口径证据。
+                </p>
+                <ul>
+                  {item.terminal_debt_reconciliation.annual_path.map((row) => (
+                    <li key={row.year}>
+                      {row.year} 年（元）：期初 {row.opening_debt_cny} ＋ 新借{" "}
+                      {row.new_borrowing_cny}－ 假设偿还{" "}
+                      {row.debt_repayment_cny} ＝ 期末 {row.closing_debt_cny}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
             {history.symbol === symbol && item.has_funding_revisions && (
               <ParentCashFundingRevisionRead
                 key={symbol + item.task_id}
@@ -3243,6 +3272,16 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
       );
       setRevision((value) => value + 1);
     } catch (cause) {
+      if (
+        cause instanceof ApiError &&
+        cause.status === 409 &&
+        cause.detail === "NOTE_GRID_FINANCING_BALANCE_UNVERIFIED"
+      ) {
+        setMessage(
+          "封存终值的单值格式已重放。期末使用总负债压力上界，缺母公司融资余额及到期勾稽，无法生成可采用的三情景。未重复调用模型。",
+        );
+        return;
+      }
       if (
         cause instanceof ApiError &&
         cause.status === 409 &&

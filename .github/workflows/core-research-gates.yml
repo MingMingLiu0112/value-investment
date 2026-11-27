@@ -35,6 +35,7 @@ jobs:
       - name: Verify full offline research gates
         run: >-
           mkdir -p .tmp && python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest --junitxml=.tmp/offline-core-results.xml
+          tests/test_parent_note_grid_debt_reconciliation.py tests/test_parent_bear_terminal_response_v2.py
           tests/test_research_gate.py
           tests/test_strategy_readiness.py
           tests/test_first_use_value_analysis.py

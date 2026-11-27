@@ -19,6 +19,7 @@ from ...application.research.parent_cash_task_completion_v1 import (
 from ...application.portfolio.private_journal_lock import LockTimeout
 from .live_operating_research_routes import resolve_research_task_root
 from ...application.research import parent_cash_policy_correction_v1 as correction
+from ...application.research.parent_note_grid_debt_reconciliation import review_sealed_terminal, stress_reconciliation
 from . import parent_cash_funding_revisions as funding
 from .local_auth import authorize, LocalAuthorizationError, AUTHORIZATION_REQUIRED
 from ...application.research.agent_review.parent_cash_task_v2 import ParentCashTaskServiceV2, STAGE_ORDER
@@ -378,6 +379,12 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                         background.add_task(run_numbered, task["task_id"])
                     return reply(task, 202)
                 prior = numbered_service.read(predecessor)
+                if prior.get("error_code") == "BEAR_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID":
+                    raw_spec, state, _ = numbered_service._load(predecessor)
+                    if stress_reconciliation(numbered_service, raw_spec, state) is not None:
+                        result = review_sealed_terminal(numbered_service, predecessor, binding,
+                                                        datetime.now(timezone.utc))
+                        return reply(result, 409)
                 if prior.get("error_code") == "BEAR_TERMINAL_PARENT_V3_INVALID_JSON":
                     task = numbered_service.continue_terminal(predecessor, binding)
                     if task["status"] in {"QUEUED", "SUCCEEDED"}:
@@ -1097,6 +1104,13 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                         )
                     fields = correction.history_fields(numbered, symbol, spec, state, archived=archived)
                     fields.update(continued.history_fields(numbered, directory.name, binding, fields))
+                    try:
+                        debt_review = stress_reconciliation(numbered, spec, state)
+                    except (ValueError, KeyError, TypeError, ArithmeticError, OSError):
+                        debt_review = None
+                        fields['debt_reconciliation_error'] = 'PARENT_POLICY_EVIDENCE_UNREADABLE'
+                    if debt_review is not None:
+                        fields["terminal_debt_reconciliation"] = debt_review
                     if continued.MARKER in spec:
                         fields.update(corrected_policy_continuation=spec[continued.MARKER], adoptable_valuation=False,
                                       annual_input_limitations=spec[continued.MARKER]["annual_input_limitations"])
