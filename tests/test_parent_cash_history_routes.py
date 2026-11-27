@@ -589,7 +589,8 @@ def test_verified_valuation_api_preserves_annual_cash_and_total_distribution(
     task_id = "rt-" + "e" * 32
     receipt_path = routes.valuation_receipt_path(tmp_path, task_id)
     receipt_path.parent.mkdir(parents=True)
-    receipt_path.write_bytes(b'{"schema_version":"legacy-test-fixture"}')
+    fixture_schema = "restricted-corrected-test-fixture" if restricted else "legacy-test-fixture"
+    receipt_path.write_text(json.dumps({"schema_version": fixture_schema}), encoding="utf-8")
     row = dict(year=2027, direct_operating_cash_cny="100.001", closing_cash_cny="40.123",
                closing_debt_cny="12.345", closing_book_equity_cny="60.987",
                conditional_distribution_cny="2.10")
@@ -643,8 +644,15 @@ def test_verified_valuation_api_preserves_annual_cash_and_total_distribution(
     if restricted:
         assert payload["adoptable_valuation"] is False
         assert payload["annual_input_limitations"] == limits
-        assert payload["alignment_status"] == "BLOCKED"
-        assert set(payload["alignment_reason_codes"]) - {"TEST_MISSING_SHARE_BASIS"}
+        assert payload["alignment_status"] == "RESEARCH_RANGE_NOT_ADOPTED"
+        assert payload["alignment_reason_codes"] == [
+            *alignment["reason_codes"], "RESEARCH_RANGE_NOT_ADOPTED",
+        ]
+    else:
+        assert "adoptable_valuation" not in payload
+        assert "annual_input_limitations" not in payload
+        assert payload["alignment_status"] == alignment["status"]
+        assert payload["alignment_reason_codes"] == alignment["reason_codes"]
     for value in payload["scenarios"].values():
         assert value["terminal_steady_distribution_cny"] == "9.876"
         assert value["annual_cash_path"] == [{
