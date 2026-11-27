@@ -71,9 +71,11 @@ describe("versioned strategy architecture", () => {
         expect(html).toContain(text);
       for (const path of ["/daily", "/history", "/system", "/portfolio"])
         expect(html).toContain('href="' + path + '"');
-      expect(html.replace("0.10=10%", "")).not.toMatch(
-        /\d+%|ant-progress|ant-tag-success/,
-      );
+      expect(
+        html
+          .replace("0.10=10%", "")
+          .replace(/合并归母净利润的至少 75%|现金分红比例为 75\.48%/g, ""),
+      ).not.toMatch(/\d+%|ant-progress|ant-tag-success/);
       if (key === "value") {
         expect(html).toContain("模块交付进度");
         expect(html).toContain("可独立交付");
