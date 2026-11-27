@@ -785,6 +785,9 @@ function ParentCashTerminalFailure({
       <Button loading={busy} onClick={() => void read()}>
         {investingOnly ? "查看母公司投资现金" : "查看终值现金拆解"}
       </Button>
+      {busy && (
+        <p role="status">正在核对封存的原件和任务输入，完成后显示现金拆解。</p>
+      )}
       {message && <p role="status">{message}</p>}
       {!!issues.length && (
         <section aria-label="终值假设与原件核对">
