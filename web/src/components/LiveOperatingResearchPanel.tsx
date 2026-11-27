@@ -1079,6 +1079,17 @@ export function ParentCashTaskHistoryView({
             )}
             {onContinue &&
               !item.read_only_archive &&
+              item.bear_quarter_continuation && (
+                <Popconfirm
+                  title="用可比季度原件重建悲观经营预测？"
+                  description="创建关联任务，重新核验经营与终值。可能产生模型费用，计入每日总预算。"
+                  onConfirm={() => onContinue(item.task_id)}
+                >
+                  <Button disabled={busy}>按可比季度重建悲观情景</Button>
+                </Popconfirm>
+              )}
+            {onContinue &&
+              !item.read_only_archive &&
               item.status === "FAILED" &&
               ((item.completed_stages.length === 9 &&
                 (item.error_code ===

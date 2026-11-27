@@ -822,3 +822,105 @@ def test_payout_stress_history_validates_successor_without_hiding_parent(tmp_pat
             status="VERIFIED", amount_cny="2655895396.14", year=2027, actual_payment_verified=False,
             receipt_sha256=payout["sha256"], rejected_years={"fade": 2029},
         )
+
+
+@pytest.mark.parametrize("fault", [None, "reserved", "missing_terminal", "packet_changed", "already_matched",
+                                   "superseded_spec", "wrong_failure", "archive"])
+def test_explicit_bear_quarter_continuation(tmp_path, monkeypatch, fault):
+    from datetime import datetime, timezone
+    from value_investment_agent.application.research.agent_review import parent_cash_task_v3 as native
+    from value_investment_agent.application.research import parent_cash_task_completion_v1 as completion
+
+    now = datetime(2026, 11, 27, tzinfo=timezone.utc)
+    from value_investment_agent.application.product.common import _native_path
+
+    tmp_path = Path(_native_path(tmp_path))
+    seed_id = "rt-" + "7" * 32
+    monkeypatch.setenv("VALUE_AGENT_SHARED_RESEARCH_ROOT", str(tmp_path))
+    root = tmp_path / "archive" if fault == "archive" else tmp_path
+    owner = native.ParentCashTaskServiceV3(root)
+    directory = owner._directory(seed_id)
+    directory.mkdir(parents=True)
+    source = root / "runtime/spec.json"
+    source.write_bytes(native._bytes(dict(symbol="600887", action="no_order")))
+    binding = owner._binding(source)
+    cfg = dict(model_id="deepseek-flash", max_completion_tokens_cap=8192, max_run_cost="10",
+               api_key_env="TEST_BEAR_QUARTER_CREDENTIAL")
+    monkeypatch.setenv(cfg["api_key_env"], "offline-test")
+    spec = dict(schema_version=native.VERSION, task_id=seed_id, mode="LIVE_PARENT_CASH_V3",
+                config=cfg, spec_binding=binding, source_fingerprint="a" * 64, action="no_order",
+                created_at=now.isoformat(), implementation_sha256=native._implementation(),
+                conditional_financing_stress={"residual_stress_rate": "0.03"},
+                financing_wire_sha256=native._hash(Path(native.fixed_financing.__file__).read_bytes()),
+                shared_budget_root=str(tmp_path), mandatory_cash_classification="DISJOINT_V1")
+    if fault == "already_matched":
+        spec["bear_operating_wire"] = "MATCHED_QUARTER_V2"
+    (directory / "input.json").write_bytes(native._bytes(spec))
+    charges, pins = {}, {}
+    for index, stage in enumerate(("bear.operating", "bear.policy", "bear.terminal"), 1):
+        key = str(index) * 64
+        path = directory / f"response-{key}.json"
+        path.write_bytes(native._bytes(dict(scenario=stage, action="no_order", source_fingerprint="a" * 64)))
+        pins[stage] = owner._binding(path)
+        charges[key] = dict(scenario=stage, status="SETTLED", cost="0.1", actual_cost="0.05", day="2026-11-27")
+    if fault == "reserved":
+        charges[key]["status"] = "RESERVED"
+    if fault == "packet_changed":
+        path.write_bytes(b"{}")
+    reason = routes._BEAR_QUARTER_ERROR if fault != "wrong_failure" else "BEAR_POLICY_OTHER"
+    _, head = owner._save(spec, dict(status="FAILED", error_code=reason, formal_eligibility=False,
+        action="no_order", responses={k: v for k, v in pins.items() if k != "bear.terminal"},
+        reservations=charges, returned_responses=list(pins.values())[:2 if fault == "missing_terminal" else 3],
+        reserved_cost="0.1" if fault == "reserved" else "0", settled_cost="0.15"), None, now)
+    ledger = owner.daily.base / "budget/2026-11-27"
+    raw = native._bytes(dict(version=1, previous=None, day="2026-11-27", currency="CNY",
+        records={k: dict(status="SETTLED", cost=v["actual_cost"]) for k, v in charges.items()}))
+    (ledger / "versions").mkdir(parents=True)
+    budget_version = ledger / "versions" / f"0001-{native._hash(raw)}.json"
+    budget_version.write_bytes(raw)
+    owner.daily._head(ledger, owner.daily._binding(budget_version))
+
+    monkeypatch.setattr(routes, "authorize", lambda *a, **kw: None)
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda project: tmp_path)
+    monkeypatch.setattr(routes, "registered_cash_task_spec", lambda service, symbol:
+                        dict(binding, sha256="f" * 64) if fault == "superseded_spec" else binding)
+    monkeypatch.setattr(native.ParentCashTaskServiceV3, "_configuration", lambda self: cfg)
+    monkeypatch.setattr(native, "read_parent_cash_agent_facts_v2", lambda **kw:
+                        dict(input_fingerprint=spec["source_fingerprint"], facts={}))
+    monkeypatch.setattr(native.staged_numbered, "_load_spec", lambda *a:
+                        {"opening": {"debt": {"value": "1", "classification": "FORECAST_ASSUMPTION"}}})
+    monkeypatch.setattr(completion, "preflight_parent_cash_task", lambda *a: (binding, None))
+    # The parent packets stand in for the three provider outputs. Exercise native child creation,
+    # seed selection and ledger verification without a provider or an economic re-parse of fixtures.
+    monkeypatch.setattr(native.ParentCashTaskServiceV3, "read", lambda self, task_id: self._load(task_id)[1])
+    ran = []
+    def reject_offline(service, task_id):
+        child, state, current = service._load(task_id)
+        ran.append(task_id)
+        service._save(child, state, current, now, status="FAILED", error_code=routes._BEAR_QUARTER_ERROR)
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", reject_offline)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=root, sessions=None, port=8001)
+    client = TestClient(app)
+    prefix = "/api/v1/operating-research/parent-cash-tasks"
+    hist = client.get(prefix + "/history", params={"symbol": "600887"})
+    assert hist.status_code == 200
+    assert hist.json()["items"][0]["bear_quarter_continuation"] is (fault is None)
+    body = dict(symbol="600887", continue_from_task_id=seed_id)
+    post = client.post(prefix + "/by-company", json=body)
+    if fault is not None:
+        assert post.status_code == 422
+        assert not ran
+        return
+    assert post.status_code == 202, post.text
+    child_id = post.json()["task_id"]
+    child, state, _ = owner._load(child_id)
+    assert child["seed"] == dict(task_id=seed_id, head=head, responses={})
+    assert child["spec_binding"] == binding and child["ancestor_spend"] == "0.15"
+    assert child["replay_from_stage"] == "bear.operating" and child["bear_operating_wire"] == "MATCHED_QUARTER_V2"
+    assert child["mandatory_cash_classification"] == "DISJOINT_V1"
+    assert state["provider_requests"] == 0 and state["action"] == "no_order"
+    assert client.post(prefix + "/by-company", json=body).json()["task_id"] == child_id
+    assert client.post(prefix + "/by-company", json=dict(body, continue_from_task_id=child_id)).status_code == 422
+    assert ran == [child_id]
+    assert owner._load(seed_id)[2] == head

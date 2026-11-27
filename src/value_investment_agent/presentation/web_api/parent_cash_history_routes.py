@@ -96,6 +96,41 @@ def _qualified_close(alignment):
 
 
 
+_BEAR_QUARTER_ERROR = "BEAR_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"
+
+
+def _bear_quarter_eligible(service, symbol, spec, state, *, archived=False, active_binding=None):
+    """Offer one operating rebuild of a settled, first-generation Bear rejection."""
+    if (archived or state.get("status") != "FAILED" or state.get("error_code") != _BEAR_QUARTER_ERROR
+            or spec.get("mode") != "LIVE_PARENT_CASH_V3" or spec.get("seed") is not None
+            or spec.get("bear_operating_wire") is not None or not spec.get("conditional_financing_stress")
+            or set(state.get("responses", {})) != {"bear.operating", "bear.policy"}):
+        return False
+    try:
+        charges = state["reservations"]
+        returned = state["returned_responses"]
+        if (len(charges) != 3 or len(returned) != 3 or Decimal(state["reserved_cost"]) != 0
+                or {r["scenario"] for r in charges.values()} != {"bear.operating", "bear.policy", "bear.terminal"}
+                or any(r["status"] != "SETTLED" for r in charges.values())
+                or not service._implementation_matches(spec)
+                or spec["spec_binding"] != (active_binding or registered_cash_task_spec(service, symbol))):
+            return False
+        folder = (service.base / spec["task_id"]).relative_to(service.root).as_posix()
+        for charge, record in charges.items():
+            stage = record["scenario"]
+            path = f"{folder}/response-{charge}.json"
+            pins = [pin for pin in returned if pin["path"] == path]
+            if len(pins) != 1 or (stage != "bear.terminal" and state["responses"][stage] != pins[0]):
+                return False
+            packet = service._bound(pins[0])
+            if (packet.get("scenario") != stage or packet.get("action") != "no_order"
+                    or packet.get("source_fingerprint") != spec["source_fingerprint"]):
+                return False
+        return True
+    except (ValueError, TypeError, KeyError, OSError, ArithmeticError):
+        return False
+
+
 def _settled_base_policy(service, predecessor, prior):
     response = prior.get("responses", {}).get("base.policy")
     if not isinstance(response, dict):
@@ -329,6 +364,20 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 if not isinstance(predecessor, str) or not re.fullmatch(r"rt-[0-9a-f]{32}", predecessor):
                     raise ValueError("PARENT_V3_INVALID_CONTINUATION_TASK")
                 prior = numbered_service.read(predecessor)
+                if prior.get("error_code") == _BEAR_QUARTER_ERROR:
+                    spec, state, _ = numbered_service._load(predecessor)
+                    if not _bear_quarter_eligible(numbered_service, symbol, spec, state, active_binding=binding):
+                        raise ValueError("PARENT_V3_CONTINUATION_NOT_AVAILABLE")
+                    # A legacy company launch already has a deterministic child for its own seed.
+                    legacy_id = "rt-" + sha256(("parent-cash-task-v3:value-web-" + binding["sha256"])
+                                               .encode("ascii")).hexdigest()[:32]
+                    key = ("value-bop2-" + binding["sha256"] if predecessor == legacy_id else
+                           "value-bear-quarter-v2-" + predecessor)
+                    task = numbered_service.create(spec_binding=binding, request_key=key,
+                                                   seed_task_id=predecessor, replay_from_stage="bear.operating")
+                    if task["status"] in {"QUEUED", "SUCCEEDED"}:
+                        background.add_task(run_numbered, task["task_id"])
+                    return reply(task, 202)
                 if (prior.get("terminal_cash_review") == "RESEARCH_PAYOUT_V4"
                         and prior.get("error_code") == "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID"):
                     if prior.get("status") != "FAILED" or prior.get("spec_binding") != binding:
@@ -941,6 +990,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                                     if isinstance(error_code, str) and error_code.startswith(
                                         stage.upper().replace(".", "_") + "_")), None)
                 items.append({"task_id": directory.name, "status": state["status"],
+                    "bear_quarter_continuation": False,
                     "task_contract": "parent-cash-task-v2",
                     "stage": next((row.get("scenario") for row in reservations.values()
                                    if row.get("status") == "RESERVED"), error_stage),
@@ -993,6 +1043,8 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                             or entry.get("terminal_parent_cash_method") != spec.get("terminal_parent_cash_method")
                         )
                     items.append({"task_id": directory.name, "task_contract": "parent-cash-task-v3",
+                        "bear_quarter_continuation": _bear_quarter_eligible(
+                            numbered, symbol, spec, state, archived=archived),
                         "terminal_cohort_continuation": cohort_continuation,
                         "terminal_cash_review": spec.get("terminal_cash_review"),
                         "read_only_archive": archived,
