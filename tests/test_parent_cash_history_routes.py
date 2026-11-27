@@ -391,6 +391,15 @@ def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkey
 
     if failure is None:
         calls.clear()
+        for intent in ("a" * 32, "a" * 32, "b" * 32):
+            response = client.post(path, json={"symbol": "600323", "new_run_id": intent})
+            assert response.status_code == 202
+        first, replay, other = calls[::2]
+        assert first == replay and first != other
+        assert first[2] == other[2] == {}  # No seeded responses on a fresh run.
+        for invalid in ("x", None):
+            assert client.post(path, json={"symbol": "600323", "new_run_id": invalid}).status_code == 422
+        calls.clear()
         body = {"symbol": "600323", "continue_from_task_id": task_id}
         assert client.post(path, json=body).status_code == 422
         assert not calls

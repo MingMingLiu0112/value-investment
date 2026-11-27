@@ -3084,15 +3084,24 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
   const [revision, setRevision] = useState(0);
   const pending = useRef(false);
 
-  async function start(continueFrom?: string) {
+  async function start(continueFrom?: string, fresh = false) {
     if (pending.current) return;
     pending.current = true;
     setBusy(true);
     setMessage("");
     try {
-      const task = await api.startCompanyParentCashTask(symbol, continueFrom);
+      const slot = "parent-cash-fresh-intent:" + symbol;
+      let intent = fresh ? sessionStorage.getItem(slot) : null;
+      if (fresh && !intent) {
+        intent = crypto.randomUUID().replace(/-/g, "");
+        sessionStorage.setItem(slot, intent);
+      }
+      const task = intent
+        ? await api.newCompanyParentCashTask(symbol, intent)
+        : await api.startCompanyParentCashTask(symbol, continueFrom);
       if (task.action !== "no_order" || !/^rt-[a-f0-9]{32}$/.test(task.task_id))
         throw new Error("Invalid task");
+      if (intent) sessionStorage.removeItem(slot);
       setMessage(
         `任务 ${task.task_id} · ${task.status}。在下方刷新历史查看进度与估值。`,
       );
@@ -3144,6 +3153,9 @@ function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
     <>
       <Button onClick={() => void start()} loading={busy}>
         启动股东现金估值研究
+      </Button>
+      <Button onClick={() => void start(undefined, true)} loading={busy}>
+        从零新建研究（使用当日模型预算）
       </Button>
       {message && <p role="status">{message}</p>}
       <ParentCashTaskHistoryView

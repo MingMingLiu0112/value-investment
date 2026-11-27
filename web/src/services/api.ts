@@ -2648,6 +2648,11 @@ export const api = {
       "research-tasks?symbol=" + encodeURIComponent(symbol),
       signal,
     ),
+  newCompanyParentCashTask: (symbol: string, intent: string) =>
+    post<{ task_id: string; status: string; action: string }>(
+      "operating-research/parent-cash-tasks/by-company",
+      { symbol, new_run_id: intent },
+    ),
   startCompanyParentCashTask: (symbol: string, continueFrom?: string) =>
     post<{ task_id: string; status: string; action: string }>(
       "operating-research/parent-cash-tasks/by-company",

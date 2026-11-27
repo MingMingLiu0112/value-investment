@@ -305,7 +305,7 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
             if len(raw) > 128:
                 raise ValueError("PARENT_V3_REQUEST_TOO_LARGE")
             body = json.loads(raw)
-            if (not isinstance(body, dict) or set(body) not in ({"symbol"}, {"symbol", "continue_from_task_id"})
+            if (not isinstance(body, dict) or set(body) not in ({"symbol"}, {"symbol", "continue_from_task_id"}, {"symbol", "new_run_id"})
                     or not isinstance(body["symbol"], str)
                     or not re.fullmatch(r"[0-9]{6}", body["symbol"])):
                 raise ValueError("PARENT_V3_REQUEST_INVALID")
@@ -315,6 +315,15 @@ def register_parent_cash_history_routes(api: FastAPI, *, project, sessions, port
                 return reply(dict(status="BLOCKED", reason="PARENT_V3_BOUND_COMPANY_INPUTS_MISSING",
                                   symbol=symbol, action="no_order"), 409)
             from hashlib import sha256
+            if "new_run_id" in body:
+                intent = body["new_run_id"]
+                if not isinstance(intent, str) or not re.fullmatch(r"[0-9a-f]{32}", intent):
+                    raise ValueError("PARENT_V3_INVALID_NEW_RUN_ID")
+                key = sha256(f"{symbol}:{intent}".encode("ascii")).hexdigest()
+                task = numbered_service.create(spec_binding=binding, request_key="value-fresh-" + key)
+                if task["status"] == "QUEUED":
+                    background.add_task(run_numbered, task["task_id"])
+                return reply(task, 202)
             if "continue_from_task_id" in body:
                 predecessor = body["continue_from_task_id"]
                 if not isinstance(predecessor, str) or not re.fullmatch(r"rt-[0-9a-f]{32}", predecessor):
