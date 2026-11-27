@@ -1,0 +1,31 @@
+{
+  "schema_version": "reviewed-company-business-sections-v2",
+  "symbol": "600809",
+  "issuer_name": "山西杏花村汾酒厂股份有限公司",
+  "profile_id": "quality_compounder",
+  "action": "no_order",
+  "reports": [
+    {
+      "period": "2025-12-31",
+      "page": 7,
+      "start": "一、报告期内公司从事的业务情况",
+      "end": "二、报告期内公司所处行业情况",
+      "section_sha256": "df4e1f91e6f90c864b13b6abf69bd8c71b42c2168af8d55e40403913ad1de5ae",
+      "receipt_binding": {
+        "path": "runtime/600809-public-report-sources-20261127/2025-12-31/receipt.json",
+        "sha256": "e06e58d6bdc6699315f896e3ec21ee1ec4597b064d1f8f678429450455d85913"
+      }
+    },
+    {
+      "period": "2026-06-30",
+      "page": 6,
+      "start": "一、报告期内公司所属行业及主营业务情况说明",
+      "end": "二、经营情况的讨论与分析",
+      "section_sha256": "284f338adbe42c0f5c6d4a5af31aace8e13d97dce79a3eb6b8e2aae9647f9bd1",
+      "receipt_binding": {
+        "path": "runtime/600809-public-report-sources-20261127/2026-06-30/receipt.json",
+        "sha256": "85fb0b8bb16367598c049bcefbf00884ee8a3ef6ff899403c361bb5de8419f18"
+      }
+    }
+  ]
+}

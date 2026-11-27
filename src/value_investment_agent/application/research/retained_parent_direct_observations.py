@@ -204,13 +204,28 @@ def read_retained_year_end_ordinary_shares(
 
 def read_retained_parent_d2_preflight(
     *, root, symbol, issuer_name, annual_period, annual_receipt, interim_period, interim_receipt,
-    supporting_root, supporting_sources, evaluated_at,
+    supporting_root, supporting_sources, evaluated_at, source_adapter_version=None,
 ):
     """Combine the existing parent source bridge with a dated ordinary-share anchor."""
     from .parent_direct_owner_cash_sources import read_parent_direct_owner_cash_sources
 
     if interim_period != f"{int(annual_period[:4]) + 1}-06-30":
         raise ValueError("RETAINED_D2_NONCONSECUTIVE_PERIODS")
+    if source_adapter_version is not None:
+        from .parent_note_grid_sources_v1 import VERSION, read_note_grid_parent_cash
+        if source_adapter_version != VERSION or supporting_sources:
+            raise ValueError("RETAINED_D2_NOTE_GRID_SOURCE_CONTRACT_INVALID")
+        sources = [dict(period_end=period, receipt_binding=pin) for period, pin in (
+            (annual_period, annual_receipt), (interim_period, interim_receipt))]
+        cash = read_note_grid_parent_cash(root=root, symbol=symbol, issuer_name=issuer_name,
+                                         sources=sources, evaluated_at=evaluated_at)
+        shares = cash["statements"][0]["ordinary_shares_evidence"]
+        if shares is None:
+            raise ValueError("RETAINED_D2_ANNUAL_ORDINARY_SHARES_REQUIRED")
+        return dict(schema_version="retained-parent-d2-preflight-note-grid-v1", symbol=symbol,
+                    valuation_date=annual_period, ordinary_shares=shares, cash_source_bridge=cash,
+                    status="SOURCE_BOUND_D2_PREFLIGHT_ONLY", model_applicability_verified=False,
+                    action="no_order", formal_eligibility=False)
     shares = read_retained_year_end_ordinary_shares(
         root=root, symbol=symbol, issuer_name=issuer_name, period_end=annual_period,
         receipt_binding=annual_receipt, supporting_root=supporting_root,

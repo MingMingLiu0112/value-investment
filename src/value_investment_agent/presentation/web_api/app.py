@@ -970,8 +970,8 @@ def create_app(
             cutoff = datetime.now(timezone.utc)
             result = load_company_profile(root=project, symbol=symbol, now=cutoff)
             if result.get("blockers") == ["NO_CURRENT_SOURCE_BOUND_RESEARCH"]:
-                from ...application.research.company_profile_sources_v1 import load_source_company_profile
-                result = load_source_company_profile(root=project, symbol=symbol, now=cutoff)
+                from ...application.research.company_profile_sources_v2 import load_registered_source_profile
+                result = load_registered_source_profile(root=project, symbol=symbol, now=cutoff)
             if result.get("profile"):
                 from ...domain.research.profile_applicability_v1 import contract_for_profile
                 result["applicability_contract"] = contract_for_profile(result["profile"]["profile_id"])

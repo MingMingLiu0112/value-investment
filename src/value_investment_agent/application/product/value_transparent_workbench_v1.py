@@ -12,7 +12,7 @@ from .common import require_inside
 from ..discovery.sse_main_screening import read_screen
 from ..discovery.value_candidate_selection import select_current_value_candidates
 from ..research.company_profile import load_company_profile
-from ..research.company_profile_sources_v1 import load_source_company_profile
+from ..research.company_profile_sources_v2 import load_registered_source_profile as load_source_company_profile
 from ..research.operating_assumption_draft_v1 import load_operating_assumption_draft
 from ..research.value_research_analysis import load_current_value_research_analysis
 from .first_research_input_view_v1 import read_first_research_input
