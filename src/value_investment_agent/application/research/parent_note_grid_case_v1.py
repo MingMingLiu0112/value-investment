@@ -9,7 +9,7 @@ from ...research_application import ResearchRunSpec
 from ...infrastructure.filings.official_report_acquisition import load_retained_official_report
 
 # Additive case registration. The historical issuer registry is receipt-bound.
-CNINFO_ISSUERS = {"600809": ("gssh0600809", "山西杏花村汾酒厂股份有限公司")}
+from ...infrastructure.filings.note_grid_issuer_identity_v1 import CNINFO_ISSUERS
 
 
 def verified_descriptors(root, spec, case):
