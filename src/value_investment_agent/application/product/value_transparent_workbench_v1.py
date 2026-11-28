@@ -93,9 +93,15 @@ def _bindings(root, value):
                 if key in singular and child is not None:
                     check(child)
                 elif key in plural:
-                    if not isinstance(child, list):
+                    # Financial observations name their artifact references by role.
+                    if key == 'source_bindings' and isinstance(child, dict):
+                        members = (binding for group in child.values()
+                                   for binding in (group if isinstance(group, list) else [group]))
+                    elif isinstance(child, list):
+                        members = child
+                    else:
                         raise ValueError('PUBLIC_SOURCE_BINDING_LIST_REQUIRED')
-                    for binding in child:
+                    for binding in members:
                         check(binding)
                 visit(child)
         elif isinstance(item, (list, tuple)):
