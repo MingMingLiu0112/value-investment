@@ -1160,3 +1160,30 @@ it("does not display a parsed statement without full cash reconciliation", () =>
   expect(visible).toContain("母公司现金原件尚未完成独立核验");
   expect(visible).not.toContain("455.93");
 });
+
+it("rejects a newer registered receipt when reviewing the displayed valuation", () => {
+  const data = {
+    ...example(),
+    receipt_binding: {
+      path: "runtime/TEST_ONLY/receipt.json",
+      sha256: "b".repeat(64),
+    },
+  };
+  state.value = { data, loading: false };
+  const mismatch = renderToStaticMarkup(
+    <FirstResearchInputPanel
+      symbol="000568"
+      expectedReceiptSha={"a".repeat(64)}
+    />,
+  );
+  expect(mismatch).toContain("研究登记已变化");
+  expect(mismatch).not.toContain("22.22");
+  const match = renderToStaticMarkup(
+    <FirstResearchInputPanel
+      symbol="000568"
+      expectedReceiptSha={data.receipt_binding.sha256}
+    />,
+  );
+  expect(match).not.toContain("研究登记已变化");
+  expect(match).toContain("22.22");
+});

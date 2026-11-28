@@ -396,12 +396,32 @@ function Content({
     );
   return <p>当前缺少可核验内容，请查看本节缺口；不以源码位置充当投资解释。</p>;
 }
-function RegisteredPriceReview({ symbol }: { symbol: string }) {
+function registeredReceiptSha(value: ValueWorkbenchResponse) {
+  const valuation = value.sections.find(
+    (section) => section.id === "valuation",
+  );
+  const firstInput = obj(obj(valuation?.data?.native_results).first_input);
+  const sha = obj(firstInput.receipt_binding).sha256;
+  return typeof sha === "string" ? sha : undefined;
+}
+
+function RegisteredPriceReview({
+  symbol,
+  receiptSha,
+}: {
+  symbol: string;
+  receiptSha?: string;
+}) {
   const [opened, setOpened] = useState(false);
   return (
     <details onToggle={(event) => setOpened(event.currentTarget.open)}>
       <summary>核验已登记研究的当前价格</summary>
-      {opened && <FirstResearchInputPanel symbol={symbol} />}
+      {opened && (
+        <FirstResearchInputPanel
+          symbol={symbol}
+          expectedReceiptSha={receiptSha}
+        />
+      )}
     </details>
   );
 }
@@ -502,7 +522,11 @@ export function ValueWorkbenchSections({
               />
             )}
             {section.id === "price" && (
-              <RegisteredPriceReview key={symbol} symbol={symbol} />
+              <RegisteredPriceReview
+                key={symbol}
+                symbol={symbol}
+                receiptSha={registeredReceiptSha(value)}
+              />
             )}
             {section.status === "UNASSESSABLE" ? (
               <p>

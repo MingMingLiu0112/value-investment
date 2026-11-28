@@ -1464,7 +1464,13 @@ export function FirstResearchInputView({
   );
 }
 
-export function FirstResearchInputPanel({ symbol }: { symbol: string }) {
+export function FirstResearchInputPanel({
+  symbol,
+  expectedReceiptSha,
+}: {
+  symbol: string;
+  expectedReceiptSha?: string;
+}) {
   const load = useCallback(
     (signal: AbortSignal) => api.firstResearchInput(symbol, signal),
     [symbol],
@@ -1480,6 +1486,16 @@ export function FirstResearchInputPanel({ symbol }: { symbol: string }) {
         description={
           <Button onClick={result.retry}>重新读取首次研究输入</Button>
         }
+      />
+    );
+  if (
+    expectedReceiptSha &&
+    result.data.receipt_binding?.sha256 !== expectedReceiptSha
+  )
+    return (
+      <Alert
+        type="warning"
+        message="研究登记已变化，请重新读取公开研究后再核验价格。"
       />
     );
   return <FirstResearchInputView data={result.data} symbol={symbol} />;
