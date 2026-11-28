@@ -33,7 +33,12 @@ export interface TrackingPoolView {
   source_receipt_batch?: {
     as_of: string;
     sha256: string;
-    items: { symbol: string; status: string; evidence_count: number }[];
+    items: {
+      symbol: string;
+      status: string;
+      evidence_count: number;
+      reason_code?: string | null;
+    }[];
   };
 }
 export interface ValueTrackingResearchPoolProps {
@@ -254,6 +259,16 @@ export function ValueTrackingResearchPool({
                           "未提供"}
                       </p>
                       <p>入池理由：{row.reason}</p>
+                      {batchRows.get(row.symbol)?.status ===
+                        "SOURCE_REPLAYED_SELECTION_PROPOSAL" && (
+                        <p>
+                          <a
+                            href={`/decisions/${row.symbol}?strategy=value#operating-research`}
+                          >
+                            前往经营研究
+                          </a>
+                        </p>
+                      )}
                       {batchRows.has(row.symbol) && (
                         <p>
                           财报收据：
@@ -266,7 +281,10 @@ export function ValueTrackingResearchPool({
                               : batchRows.get(row.symbol)?.status ===
                                   "PARENT_CASH_LAYOUT_REPLAYED_D2_ADAPTER_REQUIRED"
                                 ? `已核验两期母公司现金表（${batchRows.get(row.symbol)?.evidence_count} 项），此批次尚未核验 D2 现金政策`
-                                : "来源重放未通过"}
+                                : batchRows.get(row.symbol)?.reason_code ===
+                                    "HORIZON_SELECTION_REGISTRY_CONFLICT"
+                                  ? "两份登记来源的报告绑定冲突，暂不进入经营研究"
+                                  : "来源重放未通过"}
                         </p>
                       )}
                       <p>

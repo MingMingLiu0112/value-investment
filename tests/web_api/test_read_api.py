@@ -499,3 +499,47 @@ def test_daily_public_packet_binds_the_registered_quote_bridge(tmp_path):
     daily = client.get("/api/v1/daily-decisions").json()
     assert daily["publication"]["publication_id"] == packet["publication_id"]
 
+
+
+def test_first_input_keeps_one_cutoff_across_e2_f2_and_quote(tmp_path, monkeypatch):
+    from datetime import datetime, timedelta, timezone
+    from fastapi import FastAPI
+    from value_investment_agent.application.product import first_input_quote_alignment_v1
+    from value_investment_agent.presentation.web_api import first_research_input_routes
+
+    cutoff = datetime(2026, 11, 18, 15, 59, 59, tzinfo=timezone.utc)
+    next_day = cutoff + timedelta(seconds=2)
+    clock = iter((cutoff, next_day))
+    consumed = {}
+
+    def first(**kwargs):
+        consumed["E2"] = kwargs["now"]
+        return {"status": "SOURCE_BOUND_FIRST_INPUT_COMPILED", "receipt_binding": {},
+                "action": "no_order"}
+
+    def alignment(**kwargs):
+        consumed["F2"] = kwargs["now"]
+        return {"status": "UNASSESSABLE"}
+
+    def successor(**kwargs):
+        consumed["E1"] = kwargs["now"]
+        return {"status": "NOT_AVAILABLE"}
+
+    def quote(_project, _symbol, *, today):
+        consumed["quote"] = today
+        return {"status": "UNAVAILABLE"}
+
+    monkeypatch.setattr(first_research_input_routes, "read_first_research_input", first)
+    monkeypatch.setattr(first_input_quote_alignment_v1, "read_first_input_quote_alignment", alignment)
+    monkeypatch.setattr(first_research_input_routes, "read_first_research_update", successor)
+    monkeypatch.setattr(first_research_input_routes, "execute_quote_bridge_for_symbol", quote)
+    app = FastAPI()
+    first_research_input_routes.register_first_research_input_routes(
+        app, project=tmp_path, clock=lambda: next(clock),
+    )
+
+    response = TestClient(app).get("/api/v1/first-research-inputs/600887")
+    assert response.status_code == 200
+    assert response.json()["action"] == "no_order"
+    assert consumed == dict.fromkeys(("E2", "F2", "E1", "quote"), cutoff)
+    assert next(clock) == next_day

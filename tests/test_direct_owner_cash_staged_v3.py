@@ -128,6 +128,97 @@ def test_numbered_annual_history_drives_cash_preflight(monkeypatch, tmp_path):
         staged.preflight_annual_cash_upper_bound_v3(**args)
     policy["series"]["debt_repayment"]["values"] = ["25"]
     staged.preflight_annual_cash_upper_bound_v3(**args)
+    context["annual_capex_floor"] = {"year": 2026, "minimum_cny": "5"}
+    with pytest.raises(ValueError, match="PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH:2026"):
+        staged.preflight_annual_cash_upper_bound_v3(**args)
+    policy["series"]["maintenance_capex"]["values"] = ["2"]
+    policy["series"]["growth_capex"]["values"] = ["3"]
+    staged.preflight_annual_cash_upper_bound_v3(**args)
+    context["annual_investment_receipts_floor"] = {"year": 2026, "minimum_cny": "4"}
+    with pytest.raises(ValueError, match="PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_BELOW_REALISED_CASH:2026"):
+        staged.preflight_annual_cash_upper_bound_v3(**args)
+    policy["series"]["investment_cash_received"]["values"] = ["4"]
+    staged.preflight_annual_cash_upper_bound_v3(**args)
+    context["annual_paid_note_interest_floor"] = {"year": 2026, "minimum_cny": "1"}
+    with pytest.raises(ValueError, match="PARENT_V3_ANNUAL_INTEREST_BELOW_REALISED_CASH:2026"):
+        staged.preflight_annual_cash_upper_bound_v3(**args)
+    policy["series"]["interest_outside_cfo"]["values"] = ["1"]
+    staged.preflight_annual_cash_upper_bound_v3(**args)
     policy["series"]["maintenance_capex"]["values"] = ["40"]
     with pytest.raises(ValueError, match="UNFUNDED_CASH_REQUIREMENT:2026"):
         staged.preflight_annual_cash_upper_bound_v3(**args)
+
+
+@pytest.mark.parametrize("debt,interest,reason", [
+    ("0", "1", "TERMINAL_REFINANCING_ARITHMETIC_INVALID"),
+    ("85", "0", "TERMINAL_CASH_INTEREST_REQUIRED"),
+    ("85", "1", None),
+])
+def test_v3_terminal_refinancing_checks_opening_debt_and_cash_interest(debt, interest, reason):
+    request = LLMRequest(role="FUNDAMENTAL", system="", user=json.dumps({
+        "forecast_closing_debt_after_annual_years": {"value_cny": debt}}),
+        output_schema={"type": "object"})
+    stage = {"terminal": {"financing": {"mode": "CONSTANT_DEBT_REFINANCING"},
+             "policy": {"debt_repayment": {"values": ["0"]},
+                        "new_borrowing": {"values": ["0"]},
+                        "interest_outside_cfo": {"values": [interest]}}}}
+    if reason:
+        with pytest.raises(ValueError, match=reason):
+            staged.preflight_terminal_forecast_debt_v3(request=request, parsed_stage=stage)
+    else:
+        staged.preflight_terminal_forecast_debt_v3(request=request, parsed_stage=stage)
+
+def test_v3_rejects_finite_commitment_before_next_scenario():
+    request = LLMRequest(role="FUNDAMENTAL", system="", user=json.dumps({
+        "forecast_closing_debt_after_annual_years": {"value_cny": "0"}}),
+        output_schema={"type": "object"})
+    policy = {"commitments_outside_capex": {"values": ["410000000.00"]}}
+    stage = {"terminal": {"policy": policy, "financing": None}}
+    with pytest.raises(ValueError, match="FINITE_COMMITMENT_IN_TERMINAL"):
+        staged.preflight_terminal_forecast_debt_v3(request=request, parsed_stage=stage)
+    policy["commitments_outside_capex"]["values"][0] = "0"
+    staged.preflight_terminal_forecast_debt_v3(request=request, parsed_stage=stage)
+
+
+def test_policy_request_separates_cash_drivers_and_reserves(monkeypatch):
+    request = LLMRequest(role="FUNDAMENTAL", system="", user=json.dumps({
+        "required_years": [2026], "source_context": {
+            "historical_financing_observations": [{"financing_cash_flows": {
+                "period_start": "2026-01-01", "period_end": "2026-06-30",
+                "components": {field: {"classification": "FACT", "value_cny": "1"}
+                               for field in ("borrowings_received_cny", "debt_repayments_paid_cny")},
+            }}],
+        },
+    }), output_schema={"type": "object"}, transport_output_contract="Bound request.")
+    monkeypatch.setattr(staged, "staged_parent_cash_request", lambda **kwargs: request)
+
+    revised = staged.staged_parent_cash_request_v3(stage="policy")
+
+    assert "working-capital residual again" in revised.transport_output_contract
+    assert "not a minimum operating reserve" in revised.transport_output_contract
+
+
+def test_policy_money_wire_rejects_extra_billion_multiplier():
+    policy = {"years": [2026, 2027], "series": {
+        "growth_capex": {"values": ["6500000000.0000", "6000000000000000000.00"]},
+        "payout_ratio": {"values": ["0.70", "0.68"]},
+    }}
+    with pytest.raises(ValueError, match="PARENT_V3_POLICY_CNY_WIRE_INVALID:2027:growth_capex"):
+        staged.validate_policy_money_wire(policy)
+    policy["series"]["growth_capex"]["values"][1] = "6000000000.00"
+    staged.validate_policy_money_wire(policy)
+
+
+def test_q3_repayment_floor_adds_only_later_issues_due_same_year():
+    from decimal import Decimal
+
+    def issue(code, start, maturity, amount):
+        return dict(code=code, issue_date=start, maturity=maturity, principal_cny=amount,
+                    classification="FACT", scope="ISSUER_FINANCING_DISCLOSURE", currency="CNY")
+
+    context = {"constraints": {"issued_financing": [
+        issue("IN_YTD", "2026-06-30", "2026-09-29", "70"),
+        issue("LATER", "2026-10-12", "2026-12-30", "80"),
+        issue("NEXT_YEAR", "2026-10-28", "2027-11-12", "90"),
+    ]}}
+    assert staged._post_observation_repayment_floor(context, 2026, "2026-09-30", "200") == Decimal("280")

@@ -3,23 +3,50 @@ from copy import deepcopy
 from datetime import datetime
 import hashlib
 import json
-from .agent_review.operating_sources_v1 import build_operating_source_context
+from pathlib import Path
+from .agent_review.operating_task_v2 import LiveOperatingTaskService
 from ...domain.research.operating_cash_consumption_v1 import SCHEMA, consume_operating_earnings
+# The pre-dispatch v1 identity stays valid for the unchanged legacy projection.
+_LEGACY_IMPLEMENTATION_SHA256 = "dc275327d565e4cbc21b2c2e5f3d3b25ce0c0900e77b60c74fd13f7cbae71da2"
+
+
+def _cold_task_context(*, root, task, now):
+    service = LiveOperatingTaskService(root)
+    # No recovery, locks or writes. The Store verifies the published head and
+    # immutable input/state chain, then replays all saved role responses.
+    spec, state, pin = service._load(task["task_id"], recover=False)
+    for value in (spec["created_at"], state["updated_at"]):
+        stamp = datetime.fromisoformat(value)
+        if stamp.utcoffset() is None or now.utcoffset() is None or stamp > now:
+            raise ValueError("SOURCE_CUTOFF_INVALID")
+    if (spec["mode"] != "LIVE_OPERATING" or state["status"] != "SUCCEEDED"
+            or pin != task["record_binding"]):
+        raise ValueError("OPERATING_TASK_STATE_MISMATCH")
+    fresh = service._view(spec, state, pin, now)
+    if fresh["status"] != "SUCCEEDED":
+        raise ValueError("OPERATING_TASK_COLD_REPLAY_FAILED:" + str(fresh.get("error_code")))
+    if fresh != task:
+        raise ValueError("OPERATING_TASK_INPUT_OR_OUTPUT_MISMATCH")
+    context = service._context(spec)
+    if context["snapshot_fingerprint"] != fresh["context_fingerprint"]:
+        raise ValueError("OPERATING_CONTEXT_CHANGED")
+    return context
+
+
 def read_operating_cash_consumption(*, root, task, now):
     """Read-only source replay outside the immutable paid-task implementation."""
+    result, _ = _read_with_context(root=root, task=task, now=now)
+    return result
+
+
+def _read_with_context(*, root, task, now):
     if task.get("status") != "SUCCEEDED" or task.get("scope") != "LIVE_LLM_OPERATING_RESEARCH_NOT_ADMITTED":
         return dict(schema_version=SCHEMA, status="NOT_STARTED", action="no_order",
-                    reason="SUCCEEDED_VERIFIED_OPERATING_TASK_REQUIRED", formal_eligibility=False)
+                    reason="SUCCEEDED_VERIFIED_OPERATING_TASK_REQUIRED", formal_eligibility=False), None
     if "operating_driver_bridge" not in task:
         return dict(schema_version=SCHEMA, status="NOT_STARTED", action="no_order",
-                    reason="STRUCTURED_OPERATING_DRIVER_BRIDGE_REQUIRED", formal_eligibility=False)
-    cutoff = datetime.fromisoformat(task["research_as_of"])
-    if cutoff.utcoffset() is None or now.utcoffset() is None or cutoff > now:
-        raise ValueError("SOURCE_CUTOFF_INVALID")
-    context = build_operating_source_context(root=root, symbol=task["symbol"], now=cutoff,
-                                            binding=task["source_binding"])
-    if context["snapshot_fingerprint"] != task["context_fingerprint"]:
-        raise ValueError("OPERATING_CONTEXT_CHANGED")
+                    reason="STRUCTURED_OPERATING_DRIVER_BRIDGE_REQUIRED", formal_eligibility=False), None
+    context = _cold_task_context(root=root, task=task, now=now)
     registry=json.loads((root/"config/current-operating-research-sources-v1.json").read_bytes())
     earnings_error=None
     try:
@@ -32,6 +59,13 @@ def read_operating_cash_consumption(*, root, task, now):
         result=dict(schema_version=SCHEMA,status="UNASSESSABLE",reason=earnings_error,
                     action="no_order",formal_eligibility=False,condition_price=None,
                     historical_parent_cash=[],current_blockers=[])
+    if (context.get("d1_projection_version") and result.get("scenarios")
+            and all(row["period_basis"] == "FY" for row in result["scenarios"].values())):
+        for blocker in result["current_blockers"]:
+            if blocker["code"] == "COMPLETE_ANNUAL_OPERATING_PATH_REQUIRED":
+                blocker["explanation"] = (
+                    "FY earnings witnesses are available; a complete annual horizon, "
+                    "explicit witness selection and cash policies are still required.")
     result.update(task_id=task["task_id"], context_fingerprint=task["context_fingerprint"],
                   source_binding=deepcopy(task["source_binding"]), research_as_of=task["research_as_of"])
     ref=registry["cases"].get(task["symbol"],{}).get("cash_followup")
@@ -58,14 +92,27 @@ def read_operating_cash_consumption(*, root, task, now):
         # request the right public evidence without guessing a cash policy.
         result["cash_followup_readiness"]=_missing_cash_followup_readiness(
             context=context, registry=registry, result=result)
-    from pathlib import Path
+    readiness = result.get("cash_followup_readiness")
+    if context.get("d1_projection_version") and readiness:
+        # The existing Web view renders current_blockers; keep the structured
+        # readiness record and also show the issuer-specific gaps there.
+        blockers = result["current_blockers"]
+        existing = {blocker["code"] for blocker in blockers}
+        for gap in readiness["missing_evidence"]:
+            if gap["code"] in existing:
+                continue
+            details = [gap["explanation"], gap.get("reason"), ", ".join(gap.get("fields", []))]
+            blockers.append(dict(code=gap["code"], stage="shareholder_cash",
+                                 explanation=" ".join(part for part in details if part)))
     from ...domain.research import operating_cash_consumption_v1 as kernel
     from ...domain.valuation import signed_parent_profit
     result["implementation_sha256"]={m.__name__:hashlib.sha256(Path(m.__file__).read_bytes()).hexdigest() for m in (kernel,signed_parent_profit)}
     from ...domain.valuation import operating_profit_cash_path_v1, joint_capital_cash_path_v4
     from ...valuation_models import residual_income_path_v4
     result["implementation_sha256"].update({m.__name__:hashlib.sha256(Path(m.__file__).read_bytes()).hexdigest() for m in (operating_profit_cash_path_v1,joint_capital_cash_path_v4,residual_income_path_v4)})
-    result["implementation_sha256"][__name__]=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    result["implementation_sha256"][__name__] = (
+        hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+        if context.get("d1_projection_version") else _LEGACY_IMPLEMENTATION_SHA256)
     annual=result.get("annual_followup",{})
     identity=dict(schema_version=SCHEMA,task_id=task["task_id"],source_binding=task["source_binding"],
         context_fingerprint=task["context_fingerprint"],implementation_sha256=result["implementation_sha256"],
@@ -74,7 +121,7 @@ def read_operating_cash_consumption(*, root, task, now):
     result["fingerprint_scope"]="BOUND_INPUTS_AND_IMPLEMENTATIONS_NOT_EXECUTION_METADATA"
     result["consumption_fingerprint"] = hashlib.sha256(json.dumps(identity,sort_keys=True,
         ensure_ascii=False,separators=(",",":"),allow_nan=False).encode()).hexdigest()
-    return result
+    return result, context
 
 
 def _missing_cash_followup_readiness(*, context, registry, result, earnings_error=None):
@@ -182,17 +229,12 @@ def consume_annual_followup(*, root, spec, task, context, now):
     if _bound_json(root,followup_ref)!=spec:
         raise ValueError("CASH_FOLLOWUP_CURRENT_SPEC_CHANGED")
     state=_bound_json(root,spec["task_state_binding"])
-    from .agent_review.operating_task_v2 import LiveOperatingTaskService
-    service=LiveOperatingTaskService(root)
-    frozen_spec,frozen_state,frozen_pin=service._load(state["task_id"],recover=False)
-    fresh_task=service._view(frozen_spec,frozen_state,frozen_pin,now)
-    if frozen_pin!=spec["task_state_binding"] or fresh_task!=task:
+    if state["task_id"] != task["task_id"]:
         raise ValueError("CASH_FOLLOWUP_TASK_MEMORY_DIFFERS_FROM_COLD_STATE")
-    fresh_context=build_operating_source_context(root=root,symbol=fresh_task["symbol"],
-        now=datetime.fromisoformat(fresh_task["research_as_of"]),binding=fresh_task["source_binding"])
-    if fresh_context!=context:
+    fresh_context = _cold_task_context(root=root, task=task, now=now)
+    if fresh_context != context:
         raise ValueError("CASH_FOLLOWUP_CONTEXT_MEMORY_DIFFERS_FROM_COLD_SOURCE")
-    task,context=fresh_task,fresh_context
+    context = fresh_context
     old=replay_first_research_input(root=root,receipt_binding=spec["first_input_receipt"],now=now)
     if old["research_case"]["symbol"]!=task["symbol"] or old["formal_eligibility"] is not False:
         raise ValueError("CASH_POLICY_REUSE_ISSUER_OR_SCOPE_MISMATCH")

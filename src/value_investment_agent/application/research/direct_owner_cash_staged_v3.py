@@ -8,19 +8,45 @@ from __future__ import annotations
 from dataclasses import replace
 from decimal import Decimal, localcontext
 import json
+import re
 from pathlib import Path
 
 from .direct_owner_cash_agent_draft_v1 import _load_spec
 from .direct_owner_cash_agent_draft_v2 import VERSION as DRAFT_VERSION_V2
+from .direct_owner_cash_compilation_v2 import financing_maturity_floor
 from .direct_owner_cash_staged_v2 import (
     merge_staged_parent_cash, staged_parent_cash_request,
 )
 from .parent_direct_owner_cash_sources_v2 import read_parent_direct_owner_cash_sources_v2
+from .parent_direct_owner_cash_unnumbered_v1 import (
+    VERSION as UNNUMBERED_SOURCE, FINANCING_VERSION, UNNUMBERED_VERSIONS,
+    read_unnumbered_parent_cash, read_unnumbered_parent_financing,
+)
 from ...domain.valuation.parent_direct_operating_cash import (
     SCOPE, forecast_parent_operating_cash,
 )
 
 VERSION = "direct-owner-cash-staged-v3"
+POLICY_MONEY_WIRE = "CNY_YUAN_CENT_V1"
+_POLICY_CNY = re.compile(r"[0-9]{1,15}(?:\.[0-9]{1,2}0*)?")
+
+
+def validate_policy_money_wire(policy):
+    """Reject transport-scale errors without repairing the submitted series."""
+    for field, term in policy["series"].items():
+        if field in {"payout_ratio", "reserve_ratio"}:
+            continue
+        for year, value in zip(policy["years"], term["values"], strict=True):
+            if not isinstance(value, str) or not _POLICY_CNY.fullmatch(value):
+                raise ValueError(f"PARENT_V3_POLICY_CNY_WIRE_INVALID:{year}:{field}")
+
+
+def _post_observation_repayment_floor(context, year, period, observed):
+    """Only add obligations issued after the cumulative cash observation."""
+    constraints = context.get("constraints") or {}
+    issues = [issue for issue in constraints.get("issued_financing", [])
+              if issue.get("issue_date", "") > period]
+    return Decimal(observed) + financing_maturity_floor({"issued_financing": issues}, year)
 
 
 def staged_parent_cash_request_v3(**kwargs):
@@ -31,6 +57,119 @@ def staged_parent_cash_request_v3(**kwargs):
     compiler, which still rejects an unsupported stationary tail.
     """
     request = staged_parent_cash_request(**kwargs)
+    if kwargs["stage"] == "policy":
+        payload = json.loads(request.user)
+        context = payload["source_context"]
+        if context.get("policy_money_wire") == POLICY_MONEY_WIRE:
+            request = replace(request, transport_output_contract=request.transport_output_contract +
+                " Policy cash amounts and parent_profit are decimal strings in CNY yuan, "
+                "at most 15 digits before and two digits after the decimal point. "
+                "Example: 6 billion yuan is 6000000000.00; never multiply a value already "
+                "in yuan by one billion. Payout and reserve ratios remain decimal fractions.")
+        issued = (context.get("constraints") or {}).get("issued_financing", [])
+        if any("gross_issue_price_amount_cny" in issue for issue in issued):
+            payload["issuer_financing_cash_scenario"] = [
+                dict(code=issue["code"], issue_date=issue["issue_date"],
+                     maturity=issue["maturity"], principal_due_cny=issue["principal_cny"],
+                     gross_issue_price_amount_cny=issue.get("gross_issue_price_amount_cny"),
+                     actual_unrestricted_receipt_cny=None)
+                for issue in issued
+            ]
+            request = replace(request, transport_output_contract=request.transport_output_contract +
+                " Reconcile each issuer_financing_cash_scenario issue with the annual cash policy. "
+                "Separate observed cumulative parent borrowing from post-observation conditional "
+                "gross proceeds, fees and restrictions, and scheduled principal by maturity year. "
+                "The stated gross issue-price amount is a conditional input, not evidence of "
+                "actual unrestricted receipts. Do not treat an unknown gross amount or actual "
+                "receipt as zero. Explain the evidence and rationale for forecast proceeds or "
+                "their exclusion in each scenario. Never double count issues covered by the "
+                "observed cash period, move a maturity across years, or assume future refinancing.")
+        floors = []
+        for observation in context.get("historical_financing_observations", []):
+            cash = observation["financing_cash_flows"]
+            period = cash["period_end"]
+            year = int(period[:4])
+            if (year not in payload["required_years"] or
+                    cash["period_start"] != f"{year}-01-01" or period == f"{year}-12-31"):
+                continue
+            for observed_field, forecast_field in (
+                ("borrowings_received_cny", "new_borrowing"),
+                ("debt_repayments_paid_cny", "debt_repayment"),
+            ):
+                movement = cash["components"][observed_field]
+                if movement["classification"] == "FACT":
+                    floors.append(dict(year=year, field=forecast_field,
+                                       minimum_cny=movement["value_cny"], observed_through=period))
+                    if (context.get("policy_money_wire") == POLICY_MONEY_WIRE
+                            and (context.get("constraints") or {}).get("issued_financing")
+                            and forecast_field == "debt_repayment" and period.endswith("-09-30")):
+                        minimum = _post_observation_repayment_floor(context, year, period, movement["value_cny"])
+                        floors.append(dict(year=year, field=forecast_field, minimum_cny=str(minimum),
+                                           observed_through=period, includes_later_contractual_principal=True))
+        history = [
+            row for row in context.get("parent_operating_cash_observations", [])
+            if row["period_end"] == context["valuation_date"]
+            and row["scope"] == SCOPE and row["symbol"] == context["symbol"]
+        ]
+        if history:
+            if len(history) != 1 or not context["valuation_date"].endswith("-12-31"):
+                raise ValueError("PARENT_V3_UNIQUE_ANNUAL_OPERATING_HISTORY_REQUIRED")
+            historical = dict(history[0], currency="CNY", classification="FACT",
+                              period_start=context["valuation_date"][:4] + "-01-01")
+            operating = kwargs["prior_drafts"]["operating"]
+            with localcontext() as arithmetic:
+                arithmetic.prec = 48
+                payload["derived_annual_operating_cash_path"] = [
+                    dict(year=year, operating_cash_cny=str(_annual_operating_cash(
+                        historical, context, operating, index, year,
+                        root=kwargs["root"],
+                        spec=_load_spec(kwargs["root"], kwargs["spec_binding"])
+                        if context.get("first_year_operating_cash_method") else None,
+                        now=kwargs["generated_at"])))
+                    for index, year in enumerate(operating["years"])
+                ]
+        capex_floor = context.get("annual_capex_floor")
+        if capex_floor and capex_floor["year"] in payload["required_years"]:
+            payload["realised_annual_capex_floor"] = capex_floor
+            request = replace(request, transport_output_contract=request.transport_output_contract +
+                " The sum of maintenance_capex and growth_capex for the supplied year must "
+                "cover realised_annual_capex_floor.minimum_cny. The source reports gross capex "
+                "and does not establish the maintenance/growth split. Do not add gross capex twice.")
+        receipts_floor = context.get("annual_investment_receipts_floor")
+        if receipts_floor and receipts_floor["year"] in payload["required_years"]:
+            payload["realised_annual_investment_receipts_floor"] = receipts_floor
+            request = replace(request, transport_output_contract=request.transport_output_contract +
+                " First-year investment_cash_received must include the disclosed gross receipts "
+                "already received in realised_annual_investment_receipts_floor, once only. "
+                "Do not assume future receipts, recurrence, principal recycling or distributability.")
+        interest_floor = context.get("annual_paid_note_interest_floor")
+        if interest_floor and interest_floor["year"] in payload["required_years"]:
+            payload["realised_annual_paid_note_interest_floor"] = interest_floor
+            request = replace(request, transport_output_contract=request.transport_output_contract +
+                " For the observed year interest_outside_cfo must include the disclosed paid "
+                "note coupons once. Debt repayment is principal only for those notes. "
+                "Do not add these coupons again in other cash or infer all-year interest.")
+        if floors or history or "issuer_financing_cash_scenario" in payload:
+            payload["realised_annual_financing_floors"] = floors
+            return replace(request, user=json.dumps(payload, ensure_ascii=False, sort_keys=True,
+                                                    separators=(",", ":")),
+                           transport_output_contract=request.transport_output_contract +
+                           " For each realised_annual_financing_floors row, the stated policy series "
+                           "field in that year must be at least minimum_cny. These are gross realised "
+                           "parent cash amounts, not net financing or future refinancing forecasts."
+                           " If derived_annual_operating_cash_path is present, use that cash path to "
+                           "check yearly liquidity and mandatory payments before modelling payout. "
+                           "It is derived from the submitted operating forecast, not a historical fact. "
+                           "Supplier payments, working-capital movements and other operating "
+                           "cash adjustments are already included in this path. "
+                           "For other_mandatory_cash, identify distinct cash payments outside "
+                           "operating cash and the separately forecast capex, commitments, debt "
+                           "repayment and interest lines. Do not deduct an operating cash or "
+                           "working-capital residual again as other_mandatory_cash. "
+                           "A reported closing cash balance is a point-in-time observation, "
+                           "not a minimum operating reserve. Explain the basis and uncertainty "
+                           "of each cash_floor assumption independently of the observed balance. "
+                           "Do not invent financing or other receipts to close a funding gap.")
     if kwargs["stage"] != "terminal":
         return request
     payload = json.loads(request.user)
@@ -85,6 +224,10 @@ def staged_parent_cash_request_v3(**kwargs):
         "operating_cash + investment_cash_received - maintenance_capex - growth_capex "
         "- interest_outside_cfo - other_mandatory_cash + new_borrowing - debt_repayment. "
         "This stationary net must be between zero and parent_profit inclusive. "
+        " The stationary terminal policy field commitments_outside_capex must be zero. "
+        "Allocate supported finite obligations to their finite forecast years. "
+        "If any obligation remains after the forecast or its settlement cannot be supported, "
+        "do not assert a stationary terminal or claim that the obligation disappeared. "
         "A one-time return of investment principal is not a recurring terminal receipt. "
         "Explain the recurring source of investment_cash_received; if it cannot be "
         "supported, leave the terminal economically unassessable rather than inventing "
@@ -126,6 +269,9 @@ def preflight_terminal_forecast_debt_v3(*, request, parsed_stage):
         return  # Older TEST_ONLY requests have no source-bound debt projection.
     debt = Decimal(projected["value_cny"])
     terminal = parsed_stage["terminal"]
+    commitment = terminal.get("policy", {}).get("commitments_outside_capex")
+    if commitment is not None and Decimal(commitment["values"][0]) != 0:
+        raise ValueError("PARENT_V3_FINITE_COMMITMENT_IN_TERMINAL")
     financing = terminal["financing"]
     if debt > 0 and financing is None:
         raise ValueError("PARENT_V3_TERMINAL_DEBT_POLICY_UNSUPPORTED")
@@ -133,8 +279,23 @@ def preflight_terminal_forecast_debt_v3(*, request, parsed_stage):
         policy = terminal["policy"]
         repayment = Decimal(policy["debt_repayment"]["values"][0])
         borrowing = Decimal(policy["new_borrowing"]["values"][0])
-        if repayment > debt or borrowing != repayment:
+        if debt <= 0 or repayment > debt or borrowing != repayment:
             raise ValueError("PARENT_V3_TERMINAL_REFINANCING_ARITHMETIC_INVALID")
+        interest = Decimal(policy["interest_outside_cfo"]["values"][0])
+        if interest <= 0:
+            raise ValueError("PARENT_V3_TERMINAL_CASH_INTEREST_REQUIRED")
+    policy = terminal.get("policy", {})
+    cash_fields = ("operating_cash", "investment_cash_received", "new_borrowing",
+                   "maintenance_capex", "growth_capex", "interest_outside_cfo",
+                   "other_mandatory_cash", "debt_repayment", "parent_profit")
+    if all(field in policy for field in cash_fields):
+        with localcontext() as arithmetic:
+            arithmetic.prec = 48
+            amounts = {field: Decimal(policy[field]["values"][0]) for field in cash_fields}
+            net = (amounts["operating_cash"] + amounts["investment_cash_received"]
+                   + amounts["new_borrowing"] - sum(amounts[field] for field in cash_fields[3:-1]))
+        if not 0 <= net <= amounts["parent_profit"]:
+            raise ValueError("PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION")
 
 
 def merge_staged_parent_cash_v3(**kwargs):
@@ -145,10 +306,15 @@ def merge_staged_parent_cash_v3(**kwargs):
 
 
 def _historical_parent_operating_cash(*, root, spec, evaluated_at):
-    if (spec.get("source_adapter_version") != "NUMBERED_CNINFO_V2"
+    if (spec.get("source_adapter_version") not in {"NUMBERED_CNINFO_V2", *UNNUMBERED_VERSIONS}
             or spec.get("operating_sources") != []):
         raise ValueError("PARENT_V3_NUMBERED_SOURCE_REQUIRED")
-    evidence = read_parent_direct_owner_cash_sources_v2(
+    reader = {
+        UNNUMBERED_SOURCE: read_unnumbered_parent_cash,
+        FINANCING_VERSION: read_unnumbered_parent_financing,
+        "NUMBERED_CNINFO_V2": read_parent_direct_owner_cash_sources_v2,
+    }[spec["source_adapter_version"]]
+    evidence = reader(
         root=root, symbol=spec["symbol"], issuer_name=spec["issuer_name"],
         sources=spec["owner_sources"], evaluated_at=evaluated_at,
         constraint_binding=spec.get("constraint_binding"),
@@ -179,6 +345,23 @@ def _historical_parent_operating_cash(*, root, spec, evaluated_at):
     return observed
 
 
+def _annual_operating_cash(historical, context, operating, index, year, *, root=None, spec=None, now=None):
+    forecast = dict(symbol=context["symbol"], scope=SCOPE, currency="CNY",
+                    classification="FORECAST_ASSUMPTION", period_start=f"{year}-01-01",
+                    period_end=f"{year}-12-31",
+                    rationale="Source-bound conditional parent operating cash forecast",
+                    counter_evidence="Collection and payment conversion may weaken",
+                    reopen_condition="Reopen after new parent-company filing",
+                    **{field: operating["series"][field]["values"][index]
+                       for field in ("revenue", "cost", "other_operating_cash")})
+    if context.get("first_year_operating_cash_method"):
+        from .agent_review.quarterly_parent_cash_source import project_parent_annual_operating_cash
+        prediction = project_parent_annual_operating_cash(
+            root=root, spec=spec, now=now, historical=historical, forecast=forecast)
+        return Decimal(prediction["operating_cash"])
+    return Decimal(forecast_parent_operating_cash(
+        historical=historical, forecast=forecast)["operating_cash"])
+
 def preflight_annual_cash_upper_bound_v3(*, root: Path, spec_binding: dict,
                                          evaluated_at, context: dict,
                                          operating: dict, policy: dict) -> None:
@@ -201,6 +384,8 @@ def preflight_annual_cash_upper_bound_v3(*, root: Path, spec_binding: dict,
     if (opening.get("field") != "closing_cash_and_equivalents_cny"
             or opening.get("period_end") != basis or opening.get("scope") != SCOPE):
         raise ValueError("PARENT_V3_OPENING_CASH_SCOPE_INVALID")
+    if context.get("policy_money_wire") == POLICY_MONEY_WIRE:
+        validate_policy_money_wire(policy)
     if operating["years"] != policy["years"]:
         raise ValueError("PARENT_V3_YEAR_MISMATCH")
     # Annual forecasts cover the full calendar year. A known interim parent
@@ -218,27 +403,48 @@ def preflight_annual_cash_upper_bound_v3(*, root: Path, spec_binding: dict,
             ("debt_repayments_paid_cny", "debt_repayment"),
         ):
             movement = cash["components"][observed_field]
+            if (context.get("policy_money_wire") == POLICY_MONEY_WIRE
+                    and (context.get("constraints") or {}).get("issued_financing")
+                    and forecast_field == "debt_repayment" and period.endswith("-09-30")
+                    and movement["classification"] == "FACT"
+                    and Decimal(policy["series"][forecast_field]["values"][index])
+                    < _post_observation_repayment_floor(context, year, period, movement["value_cny"])):
+                raise ValueError(f"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:{year}:{forecast_field}")
             if (movement["classification"] == "FACT"
                     and Decimal(policy["series"][forecast_field]["values"][index])
                     < Decimal(movement["value_cny"])):
                 raise ValueError(
                     f"PARENT_V3_ANNUAL_FINANCING_BELOW_REALISED_CASH:{year}:{forecast_field}")
+    capex_floor = context.get("annual_capex_floor")
+    if capex_floor and capex_floor["year"] in policy["years"]:
+        year = capex_floor["year"]
+        index = policy["years"].index(year)
+        capex = sum(Decimal(policy["series"][field]["values"][index])
+                    for field in ("maintenance_capex", "growth_capex"))
+        if capex < Decimal(capex_floor["minimum_cny"]):
+            raise ValueError(f"PARENT_V3_ANNUAL_CAPEX_BELOW_REALISED_CASH:{year}")
+    receipts_floor = context.get("annual_investment_receipts_floor")
+    if receipts_floor and receipts_floor["year"] in policy["years"]:
+        year = receipts_floor["year"]
+        index = policy["years"].index(year)
+        if Decimal(policy["series"]["investment_cash_received"]["values"][index]) < Decimal(
+                receipts_floor["minimum_cny"]):
+            raise ValueError(f"PARENT_V3_ANNUAL_INVESTMENT_RECEIPTS_BELOW_REALISED_CASH:{year}")
+    interest_floor = context.get("annual_paid_note_interest_floor")
+    if interest_floor and interest_floor["year"] in policy["years"]:
+        year = interest_floor["year"]
+        index = policy["years"].index(year)
+        if Decimal(policy["series"]["interest_outside_cfo"]["values"][index]) < Decimal(
+                interest_floor["minimum_cny"]):
+            raise ValueError(f"PARENT_V3_ANNUAL_INTEREST_BELOW_REALISED_CASH:{year}")
     mandatory = ("maintenance_capex", "growth_capex", "commitments_outside_capex",
                  "debt_repayment", "interest_outside_cfo", "other_mandatory_cash")
     with localcontext() as arithmetic:
         arithmetic.prec = 48
         cash = Decimal(opening["value_cny"])
         for index, year in enumerate(operating["years"]):
-            forecast = dict(symbol=context["symbol"], scope=SCOPE, currency="CNY",
-                classification="FORECAST_ASSUMPTION", period_start=f"{year}-01-01",
-                period_end=f"{year}-12-31",
-                rationale="Source-bound conditional parent operating cash forecast",
-                counter_evidence="Collection and payment conversion may weaken",
-                reopen_condition="Reopen after new parent-company filing",
-                **{field: operating["series"][field]["values"][index]
-                   for field in ("revenue", "cost", "other_operating_cash")})
-            cfo = Decimal(forecast_parent_operating_cash(
-                historical=historical, forecast=forecast)["operating_cash"])
+            cfo = _annual_operating_cash(historical, context, operating, index, year,
+                                         root=root, spec=spec, now=evaluated_at)
             amounts = {field: Decimal(term["values"][index])
                        for field, term in policy["series"].items()}
             if any(value < 0 for value in amounts.values()):

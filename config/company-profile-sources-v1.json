@@ -91,6 +91,22 @@
         11,
         12
       ]
+    },
+    "000568": {
+      "issuer_name": "泸州老窖股份有限公司",
+      "period": "2025-12-31",
+      "receipt_binding": {
+        "path": "runtime/value-d2-000568-20261110/fy2025/receipt.json",
+        "sha256": "103b6b091097bb5d571e24041696c9adf145273bf2f4b47c18f8c33263fb5e1b"
+      }
+    },
+    "601965": {
+      "issuer_name": "中国汽研",
+      "period": "2025-12-31",
+      "receipt_binding": {
+        "path": "runtime/sse-value-auto-refresh/cycle-20261116T082104-1df08dad/batch-9/queue-inputs/enrichment/601965-official-original/receipt.json",
+        "sha256": "db520e1cf58f399be2383172a19644179cbeb77ab40c80c468d9e1330a207ac4"
+      }
     }
   }
 }

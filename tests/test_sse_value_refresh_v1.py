@@ -83,16 +83,17 @@ def test_explicit_fresh_refresh_invokes_existing_collector_then_queue(cycle,monk
 
 
 def test_operating_tasks_use_existing_service_and_finite_explicit_budget(cycle,monkeypatch):
-    from value_investment_agent.application.research.agent_review import operating_sources_v1,operating_task_v2
+    from value_investment_agent.application.research.agent_review import operating_sources_d1_v2,operating_task_v2
     root,calls=cycle; seen=[]
-    monkeypatch.setattr(operating_sources_v1,'build_operating_source_context',lambda **kw:dict(source_binding={'path':'runtime/TEST_ONLY.json','sha256':'a'*64}))
+    monkeypatch.setattr(operating_sources_d1_v2,'build_d1_source_context',lambda **kw:dict(source_binding={'path':'runtime/TEST_ONLY.json','sha256':'a'*64}))
     monkeypatch.setattr(operating_task_v2,'implementation',lambda: {'TEST_ONLY':'1'})
     class Service:
-        def __init__(self,root):pass
+        def __init__(self,root,**kwargs):pass
         def create(self,**kw):
             seen.append(kw);return dict(task_id='rt-test',status='QUEUED')
         def run(self,task_id):
-            return dict(task_id=task_id,status='SUCCEEDED',new_llm_calls=3)
+            return dict(task_id=task_id,status='SUCCEEDED',new_llm_calls=3,
+                        source_binding={'path':'runtime/TEST_ONLY.json','sha256':'a'*64}, record_binding=None)
     monkeypatch.setattr(operating_task_v2,'LiveOperatingTaskService',Service)
     result=app.run_value_research_refresh(root=root,output_dir=root/'runtime/operating',enrichment_batches=0,operating_budget=1)
     assert len(seen)==1 and result['new_llm_calls']==3
@@ -132,7 +133,7 @@ def test_parser_update_replays_bound_inputs_without_restamping_originals(cycle,m
 
 
 def test_missing_first_company_source_does_not_starve_next_company(cycle,monkeypatch):
-    from value_investment_agent.application.research.agent_review import operating_sources_v1,operating_task_v2
+    from value_investment_agent.application.research.agent_review import operating_sources_d1_v2,operating_task_v2
     root,calls=cycle; real=app.pipeline.prepare_sse_research_run; ran=[]
     def prepare(**kw):
         r=real(**kw);p=root/r['queue']['path'];q=json.loads(p.read_bytes())
@@ -142,12 +143,13 @@ def test_missing_first_company_source_does_not_starve_next_company(cycle,monkeyp
     def context(**kw):
         if kw['symbol']=='600001':raise ValueError('TEST_ONLY_NO_ORIGINAL')
         return {'source_binding':{'path':'runtime/TEST_ONLY.json','sha256':'a'*64}}
-    monkeypatch.setattr(operating_sources_v1,'build_operating_source_context',context)
+    monkeypatch.setattr(operating_sources_d1_v2,'build_d1_source_context',context)
     monkeypatch.setattr(operating_task_v2,'implementation',lambda:{})
     class Service:
-        def __init__(self,root):pass
+        def __init__(self,root,**kwargs):pass
         def create(self,**kw):ran.append(kw['symbol']);return {'task_id':'rt-test','status':'QUEUED'}
-        def run(self,task_id):return {'task_id':task_id,'status':'SUCCEEDED','new_llm_calls':3}
+        def run(self,task_id):return {'task_id':task_id,'status':'SUCCEEDED','new_llm_calls':3,
+                    'source_binding':{'path':'runtime/TEST_ONLY.json','sha256':'a'*64}, 'record_binding':None}
     monkeypatch.setattr(operating_task_v2,'LiveOperatingTaskService',Service)
     result=app.run_value_research_refresh(root=root,output_dir=root/'runtime/continue',enrichment_batches=0,operating_budget=1)
     assert ran==['600002'] and result['new_llm_calls']==3
@@ -169,15 +171,16 @@ def test_verified_zero_candidates_is_not_source_failure(cycle,monkeypatch):
 
 @pytest.mark.parametrize('locked',[False,True])
 def test_reused_model_calls_and_lock_contention_are_not_new_calls(cycle,monkeypatch,locked):
-    from value_investment_agent.application.research.agent_review import operating_sources_v1,operating_task_v2
+    from value_investment_agent.application.research.agent_review import operating_sources_d1_v2,operating_task_v2
     root,calls=cycle;ran=[]
-    monkeypatch.setattr(operating_sources_v1,'build_operating_source_context',lambda **kw:{'source_binding':{'path':'runtime/TEST_ONLY.json','sha256':'a'*64}})
+    monkeypatch.setattr(operating_sources_d1_v2,'build_d1_source_context',lambda **kw:{'source_binding':{'path':'runtime/TEST_ONLY.json','sha256':'a'*64}})
     monkeypatch.setattr(operating_task_v2,'implementation',lambda:{})
     class Service:
-        def __init__(self,root):pass
+        def __init__(self,root,**kwargs):pass
         def create(self,**kw):
             if locked:raise app.LockTimeout('TEST_ONLY_BUSY')
-            return {'task_id':'rt-old','status':'SUCCEEDED','new_llm_calls':3}
+            return {'task_id':'rt-old','status':'SUCCEEDED','new_llm_calls':3,
+                    'source_binding':{'path':'runtime/TEST_ONLY.json','sha256':'a'*64}, 'record_binding':None}
         def run(self,task_id):ran.append(task_id);raise AssertionError('Do not rerun completed research')
     monkeypatch.setattr(operating_task_v2,'LiveOperatingTaskService',Service)
     result=app.run_value_research_refresh(root=root,output_dir=root/'runtime/reused',enrichment_batches=0,operating_budget=1)
@@ -187,14 +190,60 @@ def test_reused_model_calls_and_lock_contention_are_not_new_calls(cycle,monkeypa
 
 
 def test_driver_calendar_preflight_blocks_missing_baseline_before_task_or_fees(cycle,monkeypatch):
-    from value_investment_agent.application.research.agent_review import operating_sources_v1,operating_task_v2
+    from value_investment_agent.application.research.agent_review import operating_sources_d1_v2,operating_task_v2
     root,_=cycle; calls=[]
-    monkeypatch.setattr(operating_sources_v1,'build_operating_source_context',lambda **kw:dict(as_of='2026-11-03',evidence=[]))
+    monkeypatch.setattr(operating_sources_d1_v2,'build_d1_source_context',lambda **kw:dict(as_of='2026-11-03',evidence=[]))
     monkeypatch.setattr(operating_task_v2,'model_configuration',lambda root:{'research_contract':'operating-drivers-v2'})
     class Service:
-        def __init__(self,root):pass
+        def __init__(self,root,**kwargs):pass
         def create(self,**kw):calls.append(kw);raise AssertionError('No task before valid baseline')
     monkeypatch.setattr(operating_task_v2,'LiveOperatingTaskService',Service)
     result=app.run_value_research_refresh(root=root,output_dir=root/'runtime/no-baseline',enrichment_batches=0,operating_budget=1)
     assert not calls and result['new_llm_calls']==0
     assert result['operating_research'][0]['reason']=='ValueError:VERIFIED_BASELINE_REQUIRED'
+
+
+@pytest.mark.parametrize("changed", [False, True])
+def test_task_creation_replays_preflight_pin_and_cutoff(cycle, monkeypatch, changed):
+    from value_investment_agent.application.research.agent_review import operating_sources_d1_v2, operating_task_v2
+
+    root, _ = cycle
+    pin = {"path": "runtime/TEST_ONLY.json", "sha256": "a" * 64}
+    record = {"path": "runtime/TEST_ONLY-record.json", "sha256": "b" * 64}
+    reads, runs = [], []
+
+    def load(*, root, symbol, now, binding=None):
+        reads.append((symbol, now, binding))
+        return dict(source_binding=pin,
+                    snapshot_fingerprint="changed" if binding and changed else "verified")
+
+    class Service:
+        def __init__(self, root, *, source_loader):
+            self.source_loader = source_loader
+
+        def create(self, *, symbol, request_key, now):
+            context = self.source_loader(root=root, symbol=symbol, now=now)
+            return dict(task_id="rt-test", status="QUEUED",
+                        source_binding=context["source_binding"], record_binding=record)
+
+        def run(self, task_id):
+            runs.append(task_id)
+            return dict(task_id=task_id, status="SUCCEEDED", source_binding=pin,
+                        record_binding=record, new_llm_calls=0)
+
+    monkeypatch.setattr(operating_sources_d1_v2, "build_d1_source_context", load)
+    monkeypatch.setattr(operating_task_v2, "LiveOperatingTaskService", Service)
+    result = app.run_value_research_refresh(root=root, output_dir=root / "runtime/pinned",
+                                            enrichment_batches=0, operating_budget=1)
+    assert reads == [("600001", reads[0][1], None), ("600001", reads[0][1], pin)]
+    row, = result["operating_research"]
+    assert row["queue_binding"] == result["latest_research"]["queue"]
+    assert row["source_binding"] == pin
+    assert result["new_llm_calls"] == 0 and result["action"] == "no_order"
+    if changed:
+        assert row["status"] == "BLOCKED"
+        assert row["reason"] == "ValueError:OPERATING_PREFLIGHT_CONTEXT_CHANGED"
+        assert row["task_id"] is None and not runs
+    else:
+        assert runs == ["rt-test"]
+        assert row["task_record_binding"] == record

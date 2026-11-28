@@ -12,7 +12,7 @@ from .common import require_inside
 from ..discovery.sse_main_screening import read_screen
 from ..discovery.value_candidate_selection import select_current_value_candidates
 from ..research.company_profile import load_company_profile
-from ..research.company_profile_sources_v1 import load_source_company_profile
+from ..research.company_profile_sources_v2 import load_registered_source_profile as load_source_company_profile
 from ..research.operating_assumption_draft_v1 import load_operating_assumption_draft
 from ..research.value_research_analysis import load_current_value_research_analysis
 from .first_research_input_view_v1 import read_first_research_input
@@ -93,9 +93,15 @@ def _bindings(root, value):
                 if key in singular and child is not None:
                     check(child)
                 elif key in plural:
-                    if not isinstance(child, list):
+                    # Financial observations name their artifact references by role.
+                    if key == 'source_bindings' and isinstance(child, dict):
+                        members = (binding for group in child.values()
+                                   for binding in (group if isinstance(group, list) else [group]))
+                    elif isinstance(child, list):
+                        members = child
+                    else:
                         raise ValueError('PUBLIC_SOURCE_BINDING_LIST_REQUIRED')
-                    for binding in child:
+                    for binding in members:
                         check(binding)
                 visit(child)
         elif isinstance(item, (list, tuple)):

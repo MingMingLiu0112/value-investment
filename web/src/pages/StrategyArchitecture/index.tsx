@@ -1,3 +1,4 @@
+import { DualStrategySelection } from "../../components/DualStrategySelection";
 import { useState } from "react";
 import { Link } from "@umijs/max";
 import { Alert, Card, Descriptions, Space, Tag, Typography } from "antd";
@@ -631,10 +632,66 @@ export function ArchitectureView({ strategy }: { strategy: StrategyKey }) {
       <Typography.Title level={2}>
         {strategy === "value" ? "价值策略 · 模块交付进度" : flow.title}
       </Typography.Title>
+      <nav aria-label="策略开发进度入口" className="architecture-links">
+        <Link to="/project">价值策略开发进度</Link>
+        <Link to="/strategy/hotspot">热点波段开发进度</Link>
+        <Link to="/strategy/value">价值研究工作台</Link>
+      </nav>
+      {strategy === "value" && (
+        <Card
+          title={`最近交付 · ${deliveryReviewMeta.reviewedAt}`}
+          size="small"
+        >
+          <p>
+            D1、G2 已在公司页实测从零启动
+            deepseek-flash，独立生成任务编号，刷新可恢复状态与费用。11 月 27
+            日的新任务完成悲观经营和现金政策，终值模型给出的年度净现金为负 72.95
+            亿元，D2 拒绝；该任务尚无 E2、F1 估值回执。历史重算另列。
+          </p>
+          <p>
+            可比季度重研已完成悲观经营预测。年度现金政策首次返回了额外的终值意见；一次有预算限制的结构纠正保留了这些意见，并逐项核对十年数值、依据与说明。纠正回执已验证刷新恢复。续研实际运行至悲观终值，支出后仍有
+            26.96
+            亿元现金。封存响应显示，模型因母公司可分配利润和分配审批尚未核实，保守假设派息率为零，未形成有依据的正稳态分配。E2、F1
+            未生成新估值。
+          </p>
+          <p>
+            伊利 FY2025 年报披露 2025–2027
+            年股东回报规划，年度现金分红目标为合并归母净利润的至少
+            75%，且每股至少 1.22
+            元（含税），受章程、分配条件及审批约束。年报披露时，规划尚待股东会审议。FY2025
+            年报披露现金分红比例为
+            75.48%，分母为合并归属于上市公司普通股股东的净利润。上述资料仅供有限期政策核对，不能用于母公司单体利润口径或证明
+            2036 年终值派息能力。
+            <a href="https://static.cninfo.com.cn/finalpage/2026-04-30/1225259562.PDF#page=49">
+              伊利 FY2025 年报（物理页 49）
+            </a>
+          </p>
+          <p>
+            D2
+            已把合同到期本金、期限未知部分及付息分别建模。母公司按前三季度实绩和上年第四季度季节性重算后，悲观情景在
+            原测算缺 70.98 亿元；把十月已付款回购单列后，2027 年缺 71.98
+            亿元。已知本金 35 亿元，另有 87.80
+            亿元保留期限压力测试。多年分期研究逐年用母公司经营剩余、最低现金和两期历史净偿债上限决定还款，余款结转计息。该路径要求剩余本金有相应合同期限或有效展期；另列提前到期、次年清偿的压力结果。三季报的母公司短借覆盖两个自然年，融资现金流滚算余额无法逐笔指定到期日。公司研究页可分别查看余额来源、偿还时点区间和跨年现金影响。
+          </p>
+          <p>
+            E2、F1
+            已用同一经营预测复算三种偿付安排。多年分期条件下三情景均可算；若剩余本金须在
+            2028
+            年清偿，悲观情景现金仍不足。多年展期缺少合同确认，主估值区间未采用。公司研究页可查看逐年本金、利息及封存历史。
+          </p>
+          <p>
+            F2 已核对 11 月 26 日收盘 33.43 元；巨潮收盘行情总股本为
+            6,325,360,667
+            股。登记股本连续性、两路分红实付和重大事件材料性仍待核，当前条件价留空。
+          </p>
+          <Link to="/decisions/600887?strategy=value">打开伊利研究详情</Link>
+        </Card>
+      )}
       {strategy === "value" && (
         <DeliveryOverview stages={flow.stages} onSelect={selectStage} />
       )}
       {strategy === "value" && <ModuleRuntimePanel />}
+      {strategy === "hotspot" && <DualStrategySelection mode="hotspot" />}
       <details open={strategy !== "value"}>
         <summary>流程关系与历史审查说明</summary>
         <Typography.Paragraph>{flow.summary}</Typography.Paragraph>

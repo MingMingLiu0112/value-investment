@@ -71,9 +71,11 @@ describe("versioned strategy architecture", () => {
         expect(html).toContain(text);
       for (const path of ["/daily", "/history", "/system", "/portfolio"])
         expect(html).toContain('href="' + path + '"');
-      expect(html.replace("0.10=10%", "")).not.toMatch(
-        /\d+%|ant-progress|ant-tag-success/,
-      );
+      expect(
+        html
+          .replace("0.10=10%", "")
+          .replace(/合并归母净利润的至少 75%|现金分红比例为 75\.48%/g, ""),
+      ).not.toMatch(/\d+%|ant-progress|ant-tag-success/);
       if (key === "value") {
         expect(html).toContain("模块交付进度");
         expect(html).toContain("可独立交付");
@@ -258,11 +260,9 @@ it("records the current driver bridge arithmetic acceptance without adopting par
     expect(stage.deliveryReview?.done).toContain(
       "年度经营、现金政策和三情景分步任务已实际运行",
     );
-    expect(stage.deliveryReview?.gap).toContain(
-      "Base目标分红超过经常性股东现金",
-    );
-    expect(stage.deliveryReview?.gap).toContain("Bull把有限承诺延伸到永久终值");
-    expect(stage.deliveryReview?.gap).toContain("三情景未进入E2/F1/F2");
+    expect(stage.deliveryReview?.gap).toContain("Base 终值");
+    expect(stage.deliveryReview?.gap).toContain("股息与利息合计");
+    expect(stage.deliveryReview?.gap).toContain("正式三情景仍待核验");
     expect(stage.progress?.acceptance).toContain("尚未确认");
   }
   expect(d1.evidenceStatus).toContain("当前版本三角色研究");

@@ -14,6 +14,10 @@ import re
 
 from .direct_owner_cash_compilation_v1 import SCHEMA
 from .parent_direct_owner_cash_sources_v2 import read_parent_direct_owner_cash_sources_v2
+from .parent_direct_owner_cash_unnumbered_v1 import (
+    VERSION as UNNUMBERED_SOURCE, FINANCING_VERSION, UNNUMBERED_VERSIONS,
+    read_unnumbered_parent_cash, read_unnumbered_parent_financing,
+)
 from ...domain.valuation.parent_direct_operating_cash import SCOPE
 from ..product.common import require_inside
 
@@ -137,13 +141,18 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
             or not spec.get("model_applicability_evidence")
             or not re.fullmatch(r"[0-9]{6}", spec.get("symbol", ""))):
         raise ValueError("PARENT_AGENT_SOURCE_SCOPE_INVALID")
-    if (spec.get("source_adapter_version") != "NUMBERED_CNINFO_V2"
+    if (spec.get("source_adapter_version") not in {"NUMBERED_CNINFO_V2", *UNNUMBERED_VERSIONS}
             or spec.get("operating_sources") != []):
         raise ValueError("PARENT_AGENT_V2_NUMBERED_SOURCE_REQUIRED")
     at = datetime.fromisoformat(spec["computed_at"])
     if at.utcoffset() is None or at > now:
         raise ValueError("PARENT_AGENT_FUTURE_SOURCE")
-    evidence = read_parent_direct_owner_cash_sources_v2(
+    reader = {
+        UNNUMBERED_SOURCE: read_unnumbered_parent_cash,
+        FINANCING_VERSION: read_unnumbered_parent_financing,
+        "NUMBERED_CNINFO_V2": read_parent_direct_owner_cash_sources_v2,
+    }[spec["source_adapter_version"]]
+    evidence = reader(
         root=root, symbol=spec["symbol"], issuer_name=spec["issuer_name"],
         sources=spec["owner_sources"], evaluated_at=at,
         constraint_binding=spec.get("constraint_binding"),
@@ -167,6 +176,32 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
                 row["source_refs"][name] = sourced["source_refs"]
             except (KeyError, TypeError) as error:
                 raise ValueError("PARENT_AGENT_V2_OPERATING_FIELD_MISSING:" + name) from error
+        cash_fields = ("customer_cash", "supplier_cash", "cfo")
+        if all(statement["cash_flow"][numbered_fields[key][1]].get("comparative")
+               is not None for key in cash_fields):
+            changes = {
+                key: Decimal(row[key]) - Decimal(
+                    statement["cash_flow"][numbered_fields[key][1]]["comparative"])
+                for key in cash_fields
+            }
+            row["cash_change_explanation"] = dict(
+                classification="DERIVED_HISTORICAL_CASH_CHANGE_NOT_WORKING_CAPITAL",
+                cfo_change_cny=str(changes["cfo"]),
+                customer_receipt_change_cny=str(changes["customer_cash"]),
+                lower_supplier_payments_contribution_cny=str(-changes["supplier_cash"]),
+                other_operating_cash_change_cny=str(
+                    changes["cfo"] - changes["customer_cash"] + changes["supplier_cash"]),
+            )
+        profit = statement["income"].get("parent_net_profit_cny")
+        if profit is not None and profit.get("current") is not None:
+            observed_profit = Decimal(_finite(profit["current"]))
+            row["profit_and_operating_cash"] = dict(
+                classification="HISTORICAL_CFO_VS_PARENT_PROFIT_NOT_TERMINAL_CONVERSION",
+                parent_profit_cny=str(observed_profit),
+                operating_cash_cny=row["cfo"],
+                operating_cash_minus_parent_profit_cny=str(Decimal(row["cfo"]) - observed_profit),
+                profit_source_refs=profit["source_refs"], cash_source_refs=row["source_refs"]["cfo"],
+            )
         observations.append(row)
     statements = {row["period_end"]: row for row in evidence["statements"]}
     if len(statements) != len(evidence["statements"]):
@@ -213,6 +248,36 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
             or shares.get("classification") not in {"FACT", "DERIVED_FACT"}):
         raise ValueError("PARENT_AGENT_SHARE_SCOPE_INVALID")
     financing = [_historical_financing_range(row) for row in evidence["statements"]]
+    if "quarterly_financing_source" in spec:
+        from .agent_review.quarterly_parent_cash_source import replay_quarterly_parent_cash
+
+        quarter_end = f"{int(spec['valuation_date'][:4]) + 1}-09-30"
+        source = spec["quarterly_financing_source"]
+        if not isinstance(source, dict) or not isinstance(source.get("url"), str):
+            raise ValueError("PARENT_AGENT_QUARTER_SOURCE_INVALID")
+        from datetime import date
+        from zoneinfo import ZoneInfo
+
+        published = date.fromisoformat(source["url"].rsplit("/", 2)[-2])
+        acquired = datetime.fromisoformat(source["acquired_at"])
+        if (acquired.utcoffset() is None or not date.fromisoformat(quarter_end) <= published
+                <= acquired.astimezone(ZoneInfo("Asia/Shanghai")).date()):
+            raise ValueError("PARENT_AGENT_QUARTER_SOURCE_DATE_UNVERIFIED")
+        quarter = replay_quarterly_parent_cash(
+            root=root, source=source, symbol=spec["symbol"],
+            issuer_name=spec["issuer_name"], period_end=quarter_end, now=at,
+            include_financing=True,
+        )
+        source = quarter["source"]
+        flows = {
+            name: {**row, "source_refs": {**source, "available_at": quarter["available_at"],
+                                          "physical_page": row["physical_page"], "excerpt": row["excerpt"]}}
+            for name, row in quarter["financing"].items()
+        }
+        financing.append(_historical_financing_range({
+            "period_start": quarter_end[:4] + "-01-01", "period_end": quarter_end,
+            "cash_flow": flows,
+        }))
     basis_financing = [row for row in financing
                        if row["period_end"] == spec["valuation_date"]]
     if len(basis_financing) != 1:
@@ -231,10 +296,44 @@ def read_parent_cash_agent_facts_v2(*, root: Path, spec_binding: dict,
         source_status=evidence["status"],
         historical_financing_range=basis_financing[0],
         historical_financing_observations=financing,
+        parent_operating_cash_observations=observations,
         working_capital_cash_component=evidence["working_capital_cash_component"],
         constraints=evidence["constraints"], unresolved=evidence["unresolved"],
         fund_commitment_evidence=evidence["fund_commitment_evidence"],
         action="no_order", formal_eligibility=False,
         scope=SCOPE, currency="CNY", forecast_scenarios_present=False)
+    if "policy_money_wire" in spec:
+        if spec["policy_money_wire"] != "CNY_YUAN_CENT_V1":
+            raise ValueError("PARENT_AGENT_POLICY_MONEY_WIRE_UNSUPPORTED")
+        projected["policy_money_wire"] = spec["policy_money_wire"]
+    if "annual_capex_evidence" in spec:
+        if (spec["annual_capex_evidence"] != "PARENT_QUARTER_GROSS_CAPEX_V1"
+                or "quarterly_financing_source" not in spec):
+            raise ValueError("PARENT_AGENT_ANNUAL_CAPEX_EVIDENCE_UNSUPPORTED")
+        from .agent_review.quarterly_parent_cash_source import quarterly_parent_annual_capex_floor
+
+        projected["annual_capex_floor"] = quarterly_parent_annual_capex_floor(quarter)
+    if "first_year_operating_cash_method" in spec:
+        if (spec["first_year_operating_cash_method"] != "OBSERVED_9M_PLUS_CONDITIONAL_Q4_V1"
+                or "quarterly_financing_source" not in spec):
+            raise ValueError("PARENT_AGENT_ANNUAL_OPERATING_CASH_METHOD_UNSUPPORTED")
+        projected["first_year_operating_cash_method"] = spec["first_year_operating_cash_method"]
+    if "first_year_cash_receipts_evidence" in spec:
+        if (spec["first_year_cash_receipts_evidence"] != "PARENT_QUARTER_INVESTMENT_RECEIPTS_V1"
+                or "quarterly_financing_source" not in spec):
+            raise ValueError("PARENT_AGENT_ANNUAL_INVESTMENT_RECEIPTS_EVIDENCE_UNSUPPORTED")
+        from .agent_review.quarterly_parent_cash_source import (
+            quarterly_parent_annual_investment_receipts_floor,
+        )
+
+        projected["annual_investment_receipts_floor"] = quarterly_parent_annual_investment_receipts_floor(quarter)
+    if "paid_note_interest_sources" in spec:
+        if "quarterly_financing_source" not in spec or not isinstance(spec["paid_note_interest_sources"], list):
+            raise ValueError("PARENT_AGENT_PAID_NOTE_INTEREST_EVIDENCE_UNSUPPORTED")
+        from .agent_review.quarterly_parent_cash_source import replay_parent_paid_note_interest
+
+        projected["annual_paid_note_interest_floor"] = replay_parent_paid_note_interest(
+            root=root, sources=spec["paid_note_interest_sources"], symbol=spec["symbol"],
+            issuer_name=spec["issuer_name"], period_end=quarter["period_end"], now=at)
     projected["input_fingerprint"] = hashlib.sha256(_canonical(projected)).hexdigest()
     return projected

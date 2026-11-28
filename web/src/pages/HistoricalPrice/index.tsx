@@ -1,148 +1,21 @@
 import { Link, useParams } from "@umijs/max";
-import {
-  CandlestickSeries,
-  createChart,
-  HistogramSeries,
-} from "lightweight-charts";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert, Segmented, Typography } from "antd";
 import { RemoteState } from "../../components/RemoteState";
 import { Workbench } from "../../components/Workbench";
 import { useApi } from "../../hooks/useApi";
 import { api } from "../../services/api";
-import type { HistoricalBar, HistoricalPriceCase } from "../../types/api";
-import {
-  chartTime,
-  formatShanghaiChartTime,
-  formatShanghaiTick,
-} from "../../utils/chartTime";
+import type { HistoricalPriceCase } from "../../types/api";
 import "./price-chart.css";
 
 type Period = "daily" | "60m" | "15m";
-
-export function PriceChart({
-  bars,
-  period,
-  trigger,
-  invalidation,
-  reference,
-  scope = "历史观察",
-}: {
-  bars: HistoricalBar[];
-  period: Period;
-  trigger: number | null;
-  invalidation: number | null;
-  reference?: number | null;
-  scope?: string;
-}) {
-  const holder = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!holder.current || bars.length === 0) return;
-    const node = holder.current;
-    const chart = createChart(node, {
-      width: node.clientWidth,
-      height: 390,
-      layout: { background: { color: "#ffffff" }, textColor: "#526168" },
-      grid: {
-        vertLines: { color: "#edf0ef" },
-        horzLines: { color: "#edf0ef" },
-      },
-      localization: { locale: "zh-CN", timeFormatter: formatShanghaiChartTime },
-      timeScale: {
-        timeVisible: period !== "daily",
-        secondsVisible: false,
-        tickMarkFormatter: formatShanghaiTick,
-      },
-      rightPriceScale: { borderColor: "#d6dcda" },
-    });
-    const candle = chart.addSeries(CandlestickSeries, {
-      upColor: "#b54e40",
-      downColor: "#26786d",
-      borderUpColor: "#b54e40",
-      borderDownColor: "#26786d",
-      wickUpColor: "#b54e40",
-      wickDownColor: "#26786d",
-      priceScaleId: "right",
-    });
-    candle.setData(
-      bars.map((bar) => ({
-        time: chartTime(bar.time, period),
-        open: Number(bar.open),
-        high: Number(bar.high),
-        low: Number(bar.low),
-        close: Number(bar.close),
-      })),
-    );
-    if (trigger !== null && Number.isFinite(trigger))
-      candle.createPriceLine({
-        price: trigger,
-        color: "#ac6640",
-        lineWidth: 1,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: "突破观察",
-      });
-    if (invalidation !== null && Number.isFinite(invalidation))
-      candle.createPriceLine({
-        price: invalidation,
-        color: "#407067",
-        lineWidth: 1,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: "结构失效",
-      });
-    if (reference != null && Number.isFinite(reference))
-      candle.createPriceLine({
-        price: reference,
-        color: "#526168",
-        lineWidth: 1,
-        lineStyle: 1,
-        axisLabelVisible: true,
-        title: "已核验收盘参考",
-      });
-    const volume = chart.addSeries(HistogramSeries, {
-      priceScaleId: "",
-      priceFormat: { type: "volume" },
-    });
-    volume
-      .priceScale()
-      .applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
-    volume.setData(
-      bars.map((bar) => ({
-        time: chartTime(bar.time, period),
-        value: Number(bar.volume),
-        color: Number(bar.close) >= Number(bar.open) ? "#d9ada6" : "#a8ccc5",
-      })),
-    );
-    chart.timeScale().setVisibleLogicalRange({
-      from: Math.max(0, bars.length - 90),
-      to: bars.length + 3,
-    });
-    const observer = new ResizeObserver(() =>
-      chart.applyOptions({ width: node.clientWidth }),
-    );
-    observer.observe(node);
-    return () => {
-      observer.disconnect();
-      chart.remove();
-    };
-  }, [bars, period, trigger, invalidation, reference]);
-  return (
-    <div
-      className="price-chart"
-      ref={holder}
-      role="img"
-      aria-label={`${period}${scope}K线、成交量、突破观察与结构失效参考线`}
-    />
-  );
-}
 
 function CaseContent({ value }: { value: HistoricalPriceCase }) {
   const [period, setPeriod] = useState<Period>("60m");
   const level = value.levels[period];
   const source = value.source_bindings[period];
   return (
-    <main className="historical-price-page">
+    <section className="historical-price-page">
       <div className="historical-price-heading">
         <div>
           <Typography.Title level={2}>
@@ -190,18 +63,38 @@ function CaseContent({ value }: { value: HistoricalPriceCase }) {
           { label: "15 分钟", value: "15m" },
         ]}
       />
-      <PriceChart
-        bars={value.bars[period]}
-        period={period}
-        trigger={Number(level.entry_trigger_price)}
-        invalidation={Number(level.invalidation_price)}
-      />
-      <p className="historical-chart-credit">
-        TradingView Lightweight Charts™ · Copyright (с) 2025 TradingView, Inc.{" "}
-        <a href="https://www.tradingview.com/" target="_blank" rel="noreferrer">
-          TradingView
-        </a>
-      </p>
+      <details className="historical-price-source">
+        <summary>查看最近 10 条已完成行情</summary>
+        <div className="workbench-table-scroll">
+          <table aria-label="历史行情证据">
+            <thead>
+              <tr>
+                <th scope="col">时间</th>
+                <th scope="col">开盘</th>
+                <th scope="col">最高</th>
+                <th scope="col">最低</th>
+                <th scope="col">收盘</th>
+                <th scope="col">成交量</th>
+              </tr>
+            </thead>
+            <tbody>
+              {value.bars[period]
+                .slice(-10)
+                .reverse()
+                .map((bar) => (
+                  <tr key={bar.time}>
+                    <td>{bar.time}</td>
+                    <td>{bar.open}</td>
+                    <td>{bar.high}</td>
+                    <td>{bar.low}</td>
+                    <td>{bar.close}</td>
+                    <td>{bar.volume}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
       <section className="historical-price-logic">
         <h3>价格条件怎么算</h3>
         <p>
@@ -252,7 +145,7 @@ function CaseContent({ value }: { value: HistoricalPriceCase }) {
           分钟完整交易时段聚合，不是独立日线。
         </p>
       </details>
-    </main>
+    </section>
   );
 }
 

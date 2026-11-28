@@ -1,3 +1,5 @@
+import json
+import pytest
 """The company history projection is read-only and bounded."""
 from pathlib import Path
 
@@ -51,8 +53,19 @@ def test_parent_cash_history_projects_failed_checkpoint_without_execution(tmp_pa
 
 
 def test_numbered_parent_cash_task_api_runs_only_on_explicit_post(tmp_path, monkeypatch):
+    import asyncio
+
     calls = []
     task_id = "rt-" + "b" * 32
+
+    def preflight(service, binding):
+        with pytest.raises(RuntimeError, match="no running event loop"):
+            asyncio.get_running_loop()
+
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", lambda service, task: service.run(task))
+    monkeypatch.setattr(routes, "preflight_parent_cash_task", preflight)
+    monkeypatch.setattr(routes, "seal_completed_parent_cash_task",
+                        lambda service, task: calls.append(("seal", task)))
 
     class NumberedService:
         def __init__(self, root):
@@ -69,7 +82,7 @@ def test_numbered_parent_cash_task_api_runs_only_on_explicit_post(tmp_path, monk
         def read(self, value):
             calls.append(("read", value))
             return {"task_id": value, "status": "SUCCEEDED", "action": "no_order",
-                    "formal_eligibility": False, "main_range_adopted": False}
+                    "mode": "LIVE_PARENT_CASH_V3", "formal_eligibility": False, "main_range_adopted": False}
 
         def cancel(self, value):
             calls.append(("cancel", value))
@@ -95,6 +108,16 @@ def test_numbered_parent_cash_task_api_runs_only_on_explicit_post(tmp_path, monk
     assert client.post(f"{path}/{task_id}/cancel").json()["status"] == "CANCELLED"
     assert client.post(f"{path}/{task_id}/resume").json()["status"] == "QUEUED"
     assert calls[-2:] == [("resume", task_id), ("run", task_id)]
+    sealed = client.post(f"{path}/{task_id}/seal")
+    assert sealed.status_code == 202
+    assert sealed.json() == dict(status="VALUATION_SEAL_REQUESTED", task_id=task_id, action="no_order")
+    assert calls[-2:] == [("read", task_id), ("seal", task_id)]
+    monkeypatch.setattr(NumberedService, "read", lambda *_: {
+        "status": "FAILED", "mode": "LIVE_PARENT_CASH_V3",
+    })
+    before = list(calls)
+    assert client.post(f"{path}/{task_id}/seal").status_code == 409
+    assert calls == before
     assert client.post(path, json={"request_key": "x", "extra": 1}).status_code == 422
     assert client.get(f"{path}/invalid").status_code == 422
 
@@ -141,6 +164,43 @@ def test_numbered_history_is_visible_without_old_task_store(tmp_path, monkeypatc
     assert row["candidate_status"] == "COMPILED_CONDITIONAL_NOT_MAIN"
     assert row["e2_consumption"] == "UNVERIFIED"
     assert row["action"] == "no_order"
+
+    from hashlib import sha256
+
+    folder = tmp_path / "runtime/parent-cash-task-backed-receipts" / directory.name
+    folder.mkdir(parents=True)
+    receipt = folder / "conditional.json"
+    annual_row = dict(year=2027, cash_policy=dict(debt_repayment="3500000000"), cash_distribution_limit_cny="10", total_owner_distribution_cny="0", closing_cash_cny="20", closing_debt_cny="30")
+    receipt.write_text(json.dumps(dict(
+        scope="CONDITIONAL_SENSITIVITY_NOT_CURRENT_VALUATION",
+        f2_status="NOT_EVALUATED_FOR_THIS_SENSITIVITY", action="no_order",
+        valuation_basis="conditional_2026_year_end",
+        cases={"fade": {"result": {"action": "no_order", "formal_eligibility": False,
+                                   "per_share_value": "1.37", "annual_rows": [annual_row]}}})), encoding="utf-8")
+    registration = folder / "debt-timing-sensitivity.json"
+    registration.write_text(json.dumps(dict(
+        symbol="000568", task_id=directory.name, task_head=row["record_binding"],
+        receipt_binding=dict(path=receipt.relative_to(tmp_path).as_posix(),
+                             sha256=sha256(receipt.read_bytes()).hexdigest()))), encoding="utf-8")
+    url = "/api/v1/operating-research/parent-cash-tasks/history?symbol=000568"
+    client = TestClient(app)
+    item = client.get(url).json()["items"][0]
+    assert item == client.get(url).json()["items"][0]
+    sensitivity = item["debt_timing_sensitivity"]
+    assert sensitivity["cases"]["fade"]["per_share_value"] == "1.37"
+    assert sensitivity["cases"]["fade"]["annual_cash"][0]["debt_repayment_cny"] == "3500000000"
+    assert item["valuation_receipt_status"] == "NOT_SEALED"
+    valuation_url = f"/api/v1/operating-research/parent-cash-tasks/v3/{directory.name}/valuation"
+    not_sealed = client.get(valuation_url, params={"symbol": "000568"})
+    assert not_sealed.status_code == 404
+    assert not_sealed.json()["task_status"] == "SUCCEEDED"
+    wrong_company = client.get(valuation_url, params={"symbol": "600887"})
+    assert wrong_company.status_code == 404
+    assert "task_status" not in wrong_company.json()
+    receipt.write_text("{}", encoding="utf-8")
+    assert client.get(url).json()["items"][0]["debt_timing_sensitivity"] == {
+        "status": "SENSITIVITY_UNAVAILABLE",
+    }
 
 
 def test_sibling_execution_root_keeps_code_checkout_v3_history_read_only(tmp_path, monkeypatch):
@@ -193,3 +253,745 @@ def test_sibling_execution_root_keeps_code_checkout_v3_history_read_only(tmp_pat
     assert ("read", code_root, task_id) in calls
     assert ("read", task_root, task_id) not in calls
     assert client.post(f"/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/cancel").status_code == 422
+
+def test_h1_sensitivity_requires_local_authorization(tmp_path, monkeypatch):
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda _: tmp_path)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=8001)
+    client = TestClient(app)
+    endpoint = "/api/v1/operating-research/parent-cash-tasks/v3/rt-" + "1" * 32 + "/h1-sensitivity"
+    denied = client.get(endpoint, params={"symbol": "000568"})
+    assert denied.status_code in (401, 403)
+    assert denied.json()["action"] == "no_order"
+    monkeypatch.setattr(routes, "authorize", lambda *_, **__: None)
+    missing = client.get(endpoint, params={"symbol": "000568"})
+    assert missing.status_code == 404
+    assert missing.json()["status"] == "PARENT_TASK_H1_SENSITIVITY_NOT_REGISTERED"
+
+
+
+@pytest.mark.parametrize("failure", [
+    None, "invalid_json", "unsettled", "operating_series", "financing",
+    "base_terminal", "bear_debt", "bear_debt_unsettled", "coupon_rebuild",
+    "bear_terminal_rebuild", "bear_terminal_unsettled", "base_cash_rebuild",
+    "base_cash_unsettled", "base_tail_rebuild", "base_tail_unsettled",
+])
+def test_company_launch_requires_binding_and_reuses_request_key(tmp_path, monkeypatch, failure):
+    from hashlib import sha256
+
+    binding = {"path": "runtime/spec.json", "sha256": "a" * 64}
+    task_id = "rt-" + "b" * 32
+    calls = []
+
+    class Service:
+        def __init__(self, root):
+            self.root = self.base = root
+            if failure:
+                key = "value-web-" + binding["sha256"]
+                former_id = "rt-" + sha256(("parent-cash-task-v3:" + key).encode()).hexdigest()[:32]
+                (root / former_id).mkdir(exist_ok=True)
+                (root / former_id / "input.json").touch()
+
+        def read(self, _):
+            if failure in {"bear_terminal_rebuild", "bear_terminal_unsettled",
+                           "base_cash_rebuild", "base_cash_unsettled", "base_tail_rebuild", "base_tail_unsettled"}:
+                return dict(
+                    status="FAILED",
+                    error_code="BEAR_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
+                    fixed_financing_research=True,
+                    reservations=(
+                        {"terminal": {"status": "RESERVED"}}
+                        if failure == "bear_terminal_unsettled" else {}
+                    ),
+                )
+            if failure in {"bear_debt", "bear_debt_unsettled", "coupon_rebuild"}:
+                return dict(status="FAILED", error_code="BEAR_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE",
+                    completed_stages=["bear.operating"], reservations=(
+                        {"policy": {"status": "RESERVED"}} if failure == "bear_debt_unsettled" else {}))
+            if failure in {"financing", "base_terminal"}:
+                return dict(status="FAILED",
+                            error_code="BEAR_POLICY_PARENT_FINANCING_ABOVE_DISCLOSED_PROCEEDS:2026")
+            return dict(status="FAILED", error_code=(
+                "BEAR_OPERATING_PARENT_V3_YEARS_OR_SERIES_INVALID" if failure == "operating_series"
+                else "BEAR_POLICY_PARENT_V3_INVALID_JSON"),
+                        completed_stages=["bear.operating"],
+                        reservations={"policy": {"status": "RESERVED"}} if failure == "unsettled" else {})
+
+        def create(self, *, spec_binding, request_key, **options):
+            assert 8 <= len(request_key) <= 80
+            calls.append((spec_binding, request_key, options))
+            if failure in {"base_cash_rebuild", "base_cash_unsettled", "base_tail_rebuild", "base_tail_unsettled"} and request_key.startswith("value-bop2-"):
+                return dict(status="FAILED", task_id=task_id,
+                    error_code="BASE_POLICY_PARENT_V3_ECONOMIC_DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027",
+                    completed_stages=["bear.terminal"],
+                    reservations={"policy": {"status": "RESERVED"}} if failure == "base_cash_unsettled" else {})
+            if failure in {"base_tail_rebuild", "base_tail_unsettled"} and request_key.startswith("value-basecash1-"):
+                return dict(status="FAILED", task_id=task_id,
+                    error_code="BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
+                    completed_stages=["base.policy"],
+                    reservations={"tail": {"status": "RESERVED"}} if failure == "base_tail_unsettled" else {})
+            if failure == "coupon_rebuild" and request_key.startswith("value-bfin1-"):
+                return dict(status="FAILED", task_id=task_id,
+                            error_code="BASE_POLICY_PARENT_DRAFT_TERM_SOURCE_INVALID",
+                            completed_stages=["bear.operating"])
+            if failure == "base_terminal" and request_key.startswith(("value-fin1-", "value-fin2-")):
+                return {"status": "FAILED", "task_id": task_id,
+                        "error_code": "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
+                        "action": "no_order"}
+            return {"status": "QUEUED", "task_id": task_id, "action": "no_order"}
+
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV2", Service)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV3", Service)
+    monkeypatch.setattr(routes, "authorize", lambda *args, **kwargs: None)
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda project: project)
+    monkeypatch.setattr(routes, "registered_cash_task_spec",
+                        lambda service, symbol: binding if symbol == "600323" else None)
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task",
+                        lambda service, identifier: calls.append(identifier))
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=8001)
+    client = TestClient(app)
+    path = "/api/v1/operating-research/parent-cash-tasks/by-company"
+    assert client.post(path, json={"symbol": "600066"}).status_code == 409
+    assert client.post(path, json={"symbol": "600323", "spec_binding": binding}).status_code == 422
+    assert not calls
+    for _ in range(2):
+        response = client.post(path, json={"symbol": "600323"})
+        assert response.status_code == 202 and response.json()["task_id"] == task_id
+    key = "value-web-" + binding["sha256"]
+    options = {}
+    if failure in {"invalid_json", "operating_series", "financing", "base_terminal", "bear_debt", "coupon_rebuild"}:
+        former_id = "rt-" + sha256(("parent-cash-task-v3:" + key).encode()).hexdigest()[:32]
+        key = {"invalid_json": "value-policy1-", "operating_series": "value-op1-",
+               "financing": "value-fin1-", "base_terminal": "value-fin1-",
+               "bear_debt": "value-bfin1-", "coupon_rebuild": "value-bfin1-"}[failure] + binding["sha256"]
+        options = dict(seed_task_id=former_id,
+                       replay_from_stage="bear.operating" if failure == "operating_series" else "bear.policy")
+    if failure in {"bear_terminal_rebuild", "base_cash_rebuild", "base_cash_unsettled", "base_tail_rebuild", "base_tail_unsettled"}:
+        former_id = "rt-" + sha256(("parent-cash-task-v3:" + key).encode()).hexdigest()[:32]
+        key = "value-bop2-" + binding["sha256"]
+        options = dict(seed_task_id=former_id, replay_from_stage="bear.operating")
+    expected = [(binding, key, options)]
+    if failure == "coupon_rebuild":
+        expected.append((binding, "value-coupon1-" + binding["sha256"],
+                         dict(seed_task_id=task_id, replay_from_stage="bear.policy")))
+    if failure == "base_terminal":
+        expected.append((binding, "value-fin2-" + binding["sha256"],
+                         dict(seed_task_id=task_id, replay_from_stage="base.terminal")))
+        expected.append((binding, "value-fin3-" + binding["sha256"],
+                         dict(seed_task_id=task_id, replay_from_stage="base.operating")))
+    if failure in {"base_cash_rebuild", "base_tail_rebuild", "base_tail_unsettled"}:
+        expected.append((binding, "value-basecash1-" + binding["sha256"],
+                         dict(seed_task_id=task_id, replay_from_stage="base.operating")))
+    if failure == "base_tail_rebuild":
+        expected.append((binding, "value-basetail1-" + binding["sha256"],
+                         dict(seed_task_id=task_id, replay_from_stage="base.terminal")))
+    background_calls = [] if failure in {"base_cash_unsettled", "base_tail_unsettled"} else [task_id]
+    assert calls == (expected + background_calls) * 2
+
+    if failure is None:
+        calls.clear()
+        for intent in ("a" * 32, "a" * 32, "b" * 32):
+            response = client.post(path, json={"symbol": "600323", "new_run_id": intent})
+            assert response.status_code == 202
+        first, replay, other = calls[::2]
+        assert first == replay and first != other
+        assert first[2] == other[2] == {}  # No seeded responses on a fresh run.
+        for invalid in ("x", None):
+            assert client.post(path, json={"symbol": "600323", "new_run_id": invalid}).status_code == 422
+        calls.clear()
+        body = {"symbol": "600323", "continue_from_task_id": task_id}
+        assert client.post(path, json=body).status_code == 422
+        assert not calls
+        monkeypatch.setattr(Service, "read", lambda *_: dict(
+            status="FAILED", spec_binding=binding,
+            error_code="BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS",
+            completed_stages=["base.operating"],
+        ))
+        for _ in range(2):
+            assert client.post(path, json=body).status_code == 202
+        key = "value-policy-recovery-" + sha256(task_id.encode()).hexdigest()[:56]
+        assert calls == [(binding, key, dict(seed_task_id=task_id,
+                          replay_from_stage="base.policy")), task_id] * 2
+
+        calls.clear()
+        terminal = dict(status="FAILED", spec_binding=binding,
+            error_code="BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
+            completed_stages=["base.operating", "base.policy"],
+            reused_stages=["base.operating", "base.policy"])
+        monkeypatch.setattr(Service, "read", lambda *_: terminal)
+        assert client.post(path, json=body).status_code == 422
+        terminal["reused_stages"] = ["base.operating"]
+        assert client.post(path, json=body).status_code == 202
+        assert calls == [(binding, "value-earn1-" + binding["sha256"],
+                          dict(seed_task_id=task_id, replay_from_stage="base.policy")), task_id]
+
+        calls.clear()
+        terminal["error_code"] = "BASE_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE"
+        assert client.post(path, json=body).status_code == 422
+        assert not calls
+        first_key = "value-earn1-" + binding["sha256"]
+        predecessor = "rt-" + sha256(("parent-cash-task-v3:" + first_key).encode()).hexdigest()[:32]
+        continuation = dict(body, continue_from_task_id=predecessor)
+        for _ in range(2):
+            assert client.post(path, json=continuation).status_code == 202
+        assert calls == [(binding, "value-earn2-" + binding["sha256"],
+                          dict(seed_task_id=predecessor, replay_from_stage="base.policy")), task_id] * 2
+
+        calls.clear()
+        terminal["error_code"] = "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION"
+        second_key = "value-earn2-" + binding["sha256"]
+        predecessor = "rt-" + sha256(("parent-cash-task-v3:" + second_key).encode()).hexdigest()[:32]
+        continuation = dict(body, continue_from_task_id=predecessor)
+        for _ in range(2):
+            assert client.post(path, json=continuation).status_code == 202
+        assert calls == [(binding, "value-cash-rebuild-" + binding["sha256"][:60],
+                          dict(seed_task_id=predecessor, replay_from_stage="base.operating")), task_id] * 2
+
+        calls.clear()
+        terminal["error_code"] = "BASE_POLICY_PARENT_DRAFT_REJECTED_OR_UNPUBLISHED"
+        assert client.post(path, json=continuation).status_code == 422
+        assert not calls
+        rebuild_key = "value-cash-rebuild-" + binding["sha256"][:60]
+        predecessor = "rt-" + sha256(("parent-cash-task-v3:" + rebuild_key).encode()).hexdigest()[:32]
+        continuation = dict(body, continue_from_task_id=predecessor)
+        for _ in range(2):
+            assert client.post(path, json=continuation).status_code == 202
+        assert calls == [(binding, "value-interest1-" + binding["sha256"][:60],
+                          dict(seed_task_id=predecessor, replay_from_stage="base.policy")), task_id] * 2
+
+
+def test_current_parent_cash_spec_keeps_historical_case_binding(tmp_path):
+    from types import SimpleNamespace
+    from value_investment_agent.application.research.parent_cash_task_completion_v1 import (
+        _case_binding, registered_cash_task_spec,
+    )
+
+    config = tmp_path / "config"
+    config.mkdir()
+    path = config / "parent-cash-task-case-bindings-v1.json"
+    old = {"path": "old.json", "sha256": "1" * 64}
+    current = {"path": "new.json", "sha256": "2" * 64}
+    case = {"path": "case.json", "sha256": "3" * 64}
+    payload = {"schema_version": "parent-cash-task-case-bindings-v1", "specs": {
+        binding["sha256"]: {"symbol": "600887", "spec_binding": binding,
+                             "case_package_binding": case}
+        for binding in (old, current)
+    }}
+    documents = {
+        "new.json": {"symbol": "600887", "action": "no_order", "model_applicable": True},
+        "case.json": {"symbol": "600887", "profile_id": "quality_compounder",
+                      "schema_version": "m1-valuation-package-v2",
+                      "research_case": {"symbol": "600887"}},
+    }
+    service = SimpleNamespace(root=tmp_path, _bound=lambda binding: documents[binding["path"]])
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="PARENT_TASK_AMBIGUOUS_COMPANY_BINDING"):
+        registered_cash_task_spec(service, "600887")
+    payload["active_spec_by_symbol"] = {"600887": current["sha256"]}
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    assert registered_cash_task_spec(service, "600887") == current
+    assert _case_binding(tmp_path, old) == case
+    payload["active_spec_by_symbol"]["600887"] = "4" * 64
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="PARENT_TASK_ACTIVE_SPEC_INVALID"):
+        registered_cash_task_spec(service, "600887")
+
+@pytest.mark.parametrize("reserved", [False, True])
+def test_company_continuation_with_new_annual_evidence_restarts_only_terminal(tmp_path, monkeypatch, reserved):
+    import json
+
+    binding = {"path": "runtime/spec.json", "sha256": "a" * 64}
+    annual = {"path": "runtime/annual.json", "sha256": "b" * 64}
+    predecessor = "rt-" + "c" * 32
+    successor = "rt-" + "d" * 32
+    calls = []
+    config = tmp_path / "config"
+    config.mkdir()
+    (config / "parent-cash-task-case-bindings-v1.json").write_text(json.dumps({
+        "schema_version": "parent-cash-task-case-bindings-v1",
+        "specs": {binding["sha256"]: {"spec_binding": binding, "terminal_parent_prior_annual_receipt": annual}},
+    }), encoding="utf-8")
+
+    class Service:
+        def __init__(self, root):
+            self.root = root
+
+        def read(self, task_id):
+            assert task_id == predecessor
+            return dict(status="FAILED", spec_binding=binding, completed_stages=["base.policy"],
+                        error_code="BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
+                        reservations={"terminal": {"status": "RESERVED"}} if reserved else {})
+
+        def create(self, **options):
+            calls.append(options)
+            return dict(status="QUEUED", task_id=successor, action="no_order")
+
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV2", Service)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV3", Service)
+    monkeypatch.setattr(routes, "authorize", lambda *args, **kwargs: None)
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda project: project)
+    monkeypatch.setattr(routes, "registered_cash_task_spec", lambda service, symbol: binding)
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", lambda service, identifier: None)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=8001)
+    client = TestClient(app)
+    url = "/api/v1/operating-research/parent-cash-tasks/by-company"
+    body = {"symbol": "600887", "continue_from_task_id": predecessor}
+    response = client.post(url, json=body)
+    if reserved:
+        assert response.status_code == 422
+        assert response.json()["reason"] == "PARENT_V3_CONTINUATION_NOT_AVAILABLE"
+        assert not calls
+    else:
+        assert response.status_code == 202
+        assert response.json()["task_id"] == successor
+        assert client.post(url, json=body).status_code == 202
+        assert calls[0] == calls[1]
+        assert calls[0]["request_key"].startswith("value-cohort-")
+        assert calls[0]["seed_task_id"] == predecessor
+        assert calls[0]["replay_from_stage"] == "base.terminal"
+
+
+@pytest.mark.parametrize("status, comparison, quote_status, latest, expected", [
+    ("ALIGNED_FOR_RESEARCH_COMPARISON", True, "QUALIFIED", "2026-11-25",
+     {"trade_date": "2026-11-25", "close_cny": "33.20"}),
+    ("BLOCKED", True, "QUALIFIED", "2026-11-25", None),
+    ("ALIGNED_FOR_RESEARCH_COMPARISON", False, "QUALIFIED", "2026-11-25", None),
+    ("ALIGNED_FOR_RESEARCH_COMPARISON", True, "QUALIFIED", "2026-11-24", "invalid"),
+    ("ALIGNED_FOR_RESEARCH_COMPARISON", True, "BLOCKED", "2026-11-25", "invalid"),
+])
+def test_valuation_comparison_requires_shared_f2_and_latest_qualified_quote(
+    status, comparison, quote_status, latest, expected,
+):
+    alignment = dict(status=status, currentpricecomparison=comparison,
+                     quote=dict(status=quote_status, quote_date="2026-11-25",
+                                current_price="33.20", latest_completed_session=latest))
+    if expected == "invalid":
+        with pytest.raises(ValueError, match="PARENT_TASK_ALIGNMENT_QUOTE_INVALID"):
+            routes._comparison_quote(alignment)
+    else:
+        assert routes._comparison_quote(alignment) == expected
+
+@pytest.mark.parametrize("scheduled,aligned,restricted", [
+    (False, False, False),
+    (True, False, False),
+    (True, True, False),
+    (True, True, True),
+    (True, False, True),
+])
+def test_verified_valuation_api_preserves_annual_cash_and_total_distribution(
+    tmp_path, monkeypatch, scheduled, aligned, restricted,
+):
+    from value_investment_agent.application.research import parent_cash_task_alignment_v3
+    from value_investment_agent.application.research import parent_cash_task_distribution_receipt_v1
+
+    task_id = "rt-" + "e" * 32
+    receipt_path = routes.valuation_receipt_path(tmp_path, task_id)
+    receipt_path.parent.mkdir(parents=True)
+    fixture_schema = "restricted-corrected-test-fixture" if restricted else "legacy-test-fixture"
+    receipt_path.write_text(json.dumps({"schema_version": fixture_schema}), encoding="utf-8")
+    row = dict(year=2027, direct_operating_cash_cny="100.001", closing_cash_cny="40.123",
+               closing_debt_cny="12.345", closing_book_equity_cny="60.987",
+               conditional_distribution_cny="2.10")
+    if scheduled:
+        row["total_owner_distribution_cny"] = "5.75"
+    scenario = dict(per_share_value="10.12", annual_rows=[row], terminal_method="stationary",
+                    terminal_steady_distribution_cny="9.876")
+
+    limits = [dict(field=field, annual_cny=cny, observed_through="2026-09-30",
+                  first_year=2026, through_year=2035,
+                  classification="INTERIM_CASH_REPEATED_AS_ANNUAL_FORECAST_RECURRENCE_UNVERIFIED")
+             for field, cny in (("investment_cash_received", "4987544886.74"), ("total_capex", "1410074492.50"))]
+
+    def replay(**kwargs):
+        assert kwargs["root"] == tmp_path
+        return dict(
+            **(dict(adoptable_valuation=False, annual_input_limitations=limits) if restricted else {}),
+            symbol="600887", provenance=dict(task_id=task_id), action="no_order",
+            formal_eligibility=False, main_range_adopted=False,
+            descriptor=dict(point_in_time=dict(valuation_date="2025-12-31")),
+            input_descriptor_sha256="a" * 64,
+            valuation=dict(assumptions=dict(scenario_calculations=dict.fromkeys(
+                ("bear", "base", "bull"), scenario))),
+        )
+
+    monkeypatch.setattr(parent_cash_task_distribution_receipt_v1, "replay", replay)
+    alignment = dict(status="ALIGNED_FOR_RESEARCH_COMPARISON" if aligned else "BLOCKED",
+                     currentpricecomparison=aligned, reason_codes=[] if aligned else ["TEST_MISSING_SHARE_BASIS"],
+                     quote=dict(status="QUALIFIED", quote_date="2026-11-25", current_price="33.58",
+                                latest_completed_session="2026-11-25"))
+    monkeypatch.setattr(parent_cash_task_alignment_v3, "_align_verified_parent_cash_task", lambda **_: alignment)
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda _: tmp_path)
+    monkeypatch.setattr(routes, "authorize", lambda *args, **kwargs: None)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=0)
+    response = TestClient(app).get(
+        f"/api/v1/operating-research/parent-cash-tasks/v3/{task_id}/valuation",
+        params=dict(symbol="600887"),
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["condition_price"] is None
+    assert payload["formal_eligibility"] is False
+    assert payload["action"] == "no_order"
+    quote = {"trade_date": "2026-11-25", "close_cny": "33.58"}
+    assert payload["qualified_close"] == quote
+    assert payload["current_comparable"] is (aligned and not restricted)
+    assert payload["comparison_quote"] == (quote if aligned and not restricted else None)
+    if not aligned:
+        assert "TEST_MISSING_SHARE_BASIS" in payload["alignment_reason_codes"]
+    if restricted:
+        assert payload["adoptable_valuation"] is False
+        assert payload["annual_input_limitations"] == limits
+        assert payload["alignment_status"] == "RESEARCH_RANGE_NOT_ADOPTED"
+        assert payload["alignment_reason_codes"] == [
+            *alignment["reason_codes"], "RESEARCH_RANGE_NOT_ADOPTED",
+        ]
+    else:
+        assert "adoptable_valuation" not in payload
+        assert "annual_input_limitations" not in payload
+        assert payload["alignment_status"] == alignment["status"]
+        assert payload["alignment_reason_codes"] == alignment["reason_codes"]
+    for value in payload["scenarios"].values():
+        assert value["terminal_steady_distribution_cny"] == "9.876"
+        assert value["annual_cash_path"] == [{
+            "year": 2027, "direct_operating_cash_cny": "100.001", "closing_cash_cny": "40.123",
+            "closing_debt_cny": "12.345", "closing_book_equity_cny": "60.987",
+            "total_owner_distribution_cny": "5.75" if scheduled else "2.10",
+        }]
+
+
+@pytest.mark.parametrize(("case", "expected"), [
+    ("inherited", 202),
+    ("direct", 202),
+    ("legacy_v3", 202),
+    ("unauthorized", 401),
+    ("cross_site", 403),
+    ("wrong_spec", 422),
+    ("wrong_failure", 422),
+    ("not_failed", 422),
+    ("missing_policy", 422),
+    ("missing_policy_charge", 422),
+    ("owner_unsettled", 422),
+    ("unsettled", 422),
+    ("reserved_cost", 422),
+    ("malformed_cost", 422),
+    ("budget_exhausted", 422),
+    ("aggregate_registered", 202),
+    ("aggregate_missing", 409),
+])
+def test_v4_policy_successor_requires_authorized_settled_predecessor(
+        tmp_path, monkeypatch, case, expected):
+    from value_investment_agent.presentation.web_api.local_auth import LocalOperatorSession, SESSION_HEADER
+
+    binding = dict(path="runtime/spec.json", sha256="a" * 64)
+    predecessor, ancestor, successor = ("rt-" + digit * 32 for digit in "bcd")
+    owner = predecessor if case == "direct" else ancestor
+    reservation = "e" * 64
+    policy = dict(path=f"runtime/research-task-execution-v1/parent-cash-task-v3/{owner}/"
+                       f"response-{reservation}.json", sha256="f" * 64)
+    charge = dict(scenario="base.policy", status="SETTLED")
+    owner_state = dict(responses={"base.policy": policy},
+                       reservations={reservation: charge})
+    prior = dict(status="FAILED", spec_binding=binding, terminal_cash_review="RESEARCH_PAYOUT_V4",
+                 error_code="BASE_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION",
+                 responses={"base.policy": policy}, completed_stages=["base.operating", "base.policy"],
+                 reused_stages=[] if case == "direct" else ["base.policy"],
+                 reserved_cost="0", reservations={
+                     "1" * 64: dict(scenario="base.terminal", status="SETTLED")})
+    if case == "direct":
+        prior["reservations"][reservation] = charge
+    elif case == "legacy_v3":
+        prior["terminal_cash_review"] = "RESEARCH_PAYOUT_V3"
+    elif case == "wrong_spec":
+        prior["spec_binding"] = dict(binding, sha256="2" * 64)
+    elif case == "wrong_failure":
+        prior["error_code"] = "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS"
+    elif case == "not_failed":
+        prior["status"] = "RUNNING"
+    elif case == "missing_policy":
+        prior["completed_stages"].remove("base.policy")
+    elif case == "missing_policy_charge":
+        owner_state["reservations"].clear()
+    elif case == "owner_unsettled":
+        charge["status"] = "RESERVED"
+    elif case == "unsettled":
+        prior["reservations"]["1" * 64]["status"] = "RESERVED"
+    elif case == "reserved_cost":
+        prior["reserved_cost"] = "0.01"
+    elif case == "malformed_cost":
+        prior["reserved_cost"] = "invalid"
+    aggregate_plan = dict(path="runtime/capex-plan.json", sha256="3" * 64)
+    if case in {"aggregate_registered", "aggregate_missing"}:
+        prior["error_code"] = "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID"
+        entry = {"gross_capex_plan_binding": aggregate_plan} if case == "aggregate_registered" else {}
+        monkeypatch.setattr(routes, "_case_entry", lambda root, pin: entry)
+    calls, reads, runs = [], [], []
+
+    class Service:
+        def __init__(self, root):
+            self.root = root
+
+        def read(self, task_id):
+            assert task_id == predecessor
+            reads.append(task_id)
+            return prior
+
+        def _load(self, task_id):
+            assert task_id == ancestor
+            return {}, owner_state, {}
+
+        def create(self, **kwargs):
+            calls.append(kwargs)
+            if case == "budget_exhausted":
+                raise ValueError("PARENT_TASK_BUDGET_EXHAUSTED")
+            return dict(status="QUEUED", task_id=successor, action="no_order")
+
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV2", Service)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV3", Service)
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda project: project)
+    monkeypatch.setattr(routes, "registered_cash_task_spec", lambda service, symbol: binding)
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", lambda service, task_id: runs.append(task_id))
+    sessions = LocalOperatorSession(bootstrap_secret="test-bootstrap")
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=sessions, port=8001)
+    client = TestClient(app, base_url="http://127.0.0.1:8001", client=("127.0.0.1", 50000))
+    headers = {} if case == "unauthorized" else {SESSION_HEADER: sessions.unlock("test-bootstrap")}
+    if case == "cross_site":
+        headers["sec-fetch-site"] = "cross-site"
+    url = "/api/v1/operating-research/parent-cash-tasks/by-company"
+    body = dict(symbol="600887", continue_from_task_id=predecessor)
+
+    response = client.post(url, json=body, headers=headers)
+
+    assert response.status_code == expected
+    if expected == 202:
+        assert client.post(url, json=body, headers=headers).status_code == 202
+        first, second = calls
+        assert first == second
+        assert first["spec_binding"] == binding
+        assert first["seed_task_id"] == predecessor
+        if case == "legacy_v3":
+            assert first["replay_from_stage"] == "base.terminal"
+            assert first["request_key"].startswith("value-payout-review-v4-")
+        elif case == "aggregate_registered":
+            assert first["replay_from_stage"] == "base.policy"
+            assert first["gross_capex_plan_binding"] == aggregate_plan
+            assert first["request_key"].startswith("value-gross-capex-v1-")
+        else:
+            assert first["replay_from_stage"] == "base.policy"
+            assert first["request_key"].startswith("value-base-receipts-v1-")
+        assert runs == [successor, successor]
+    else:
+        assert not runs
+        if case == "aggregate_missing":
+            assert response.json()["reason"] == "PARENT_V3_GROSS_CAPEX_PLAN_REQUIRED"
+            assert not calls
+        elif case == "budget_exhausted":
+            assert response.json()["reason"] == "PARENT_TASK_BUDGET_EXHAUSTED"
+            assert len(calls) == 1 and calls[0]["replay_from_stage"] == "base.policy"
+        else:
+            assert not calls
+        if expected in {401, 403}:
+            assert not reads
+
+@pytest.mark.parametrize("fault", [None, "missing", "head", "parent", "receipt", "source", "payment"])
+def test_payout_stress_history_validates_successor_without_hiding_parent(tmp_path, fault):
+    from hashlib import sha256
+
+    task = "rt-" + "a" * 32
+    directory = tmp_path / "runtime" / "parent-cash-task-backed-receipts" / task
+    directory.mkdir(parents=True)
+
+    def bind(name, value):
+        path = directory / name
+        data = value if isinstance(value, bytes) else json.dumps(value).encode("utf-8")
+        path.write_bytes(data)
+        return {"path": path.relative_to(tmp_path).as_posix(), "sha256": sha256(data).hexdigest()}
+
+    head = {"path": "runtime/head.json", "sha256": "a" * 64}
+    scope = "CONDITIONAL_SENSITIVITY_NOT_CURRENT_VALUATION"
+    f2 = "NOT_EVALUATED_FOR_THIS_SENSITIVITY"
+    original_result = dict(formal_eligibility=False, action="no_order", per_share_value="1.37")
+    parent = bind("parent.json", dict(scope=scope, action="no_order", f2_status=f2,
+                  valuation_basis="conditional_2026_year_end", cases={"fade": {"result": original_result}}))
+    identity = dict(task_id=task, symbol="600887", task_head=head)
+    bind("debt-timing-sensitivity.json", dict(**identity, receipt_binding=parent))
+    sources = {name: bind(name + ".pdf", name.encode()) for name in ("proposal", "resolution")}
+    payout = bind("payout.json", dict(
+        schema_version="yili-interim-payout-stress-v1", scope=scope, action="no_order",
+        f2_status=f2, formal_eligibility=False, valuation_basis="conditional_2026_year_end",
+        predecessor_binding=parent, source_bindings=sources,
+        cash_assumption=dict(classification="HYPOTHETICAL_OWNER_DISTRIBUTION_STRESS",
+                             year=2027, gross_amount_cny="2655895396.14", actual_payment_verified=fault == "payment",
+                             implementation_verified=False, actual_payment_date=None, actual_record_date=None),
+        cases={"fade": {"years": [{"year": 2029}],
+                        "result": {"error": "DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2029"}}},
+    ))
+    registration = dict(**identity, schema_version="yili-interim-payout-stress-registration-v1",
+                        parent_receipt_binding=parent, receipt_binding=payout, source_bindings=sources)
+    if fault == "head":
+        registration["task_head"] = dict(head, sha256="b" * 64)
+    if fault == "parent":
+        registration["parent_receipt_binding"] = dict(parent, sha256="b" * 64)
+    if fault != "missing":
+        bind("payout-stress.json", registration)
+    if fault in {"receipt", "source"}:
+        (directory / ("payout.json" if fault == "receipt" else "proposal.pdf")).write_bytes(b"tampered")
+    history = routes._read_debt_timing_sensitivity(tmp_path, task, "600887", head)
+    assert history["status"] == "VERIFIED_CONDITIONAL_SENSITIVITY"
+    assert history["cases"]["fade"]["per_share_value"] == "1.37"
+    if fault == "missing":
+        assert "payout_stress" not in history
+    elif fault:
+        assert history["payout_stress"] == {"status": "UNAVAILABLE"}
+    else:
+        assert history["payout_stress"] == dict(
+            status="VERIFIED", amount_cny="2655895396.14", year=2027, actual_payment_verified=False,
+            receipt_sha256=payout["sha256"], rejected_years={"fade": 2029},
+        )
+
+
+@pytest.mark.parametrize("fault", [None, "reserved", "missing_terminal", "packet_changed", "already_matched",
+                                   "superseded_spec", "wrong_failure", "archive"])
+def test_explicit_bear_quarter_continuation(tmp_path, monkeypatch, fault):
+    from datetime import datetime, timezone
+    from value_investment_agent.application.research.agent_review import parent_cash_task_v3 as native
+    from value_investment_agent.application.research import parent_cash_task_completion_v1 as completion
+
+    now = datetime(2026, 11, 27, tzinfo=timezone.utc)
+    from value_investment_agent.application.product.common import _native_path
+
+    tmp_path = Path(_native_path(tmp_path))
+    seed_id = "rt-" + "7" * 32
+    monkeypatch.setenv("VALUE_AGENT_SHARED_RESEARCH_ROOT", str(tmp_path))
+    root = tmp_path / "archive" if fault == "archive" else tmp_path
+    owner = native.ParentCashTaskServiceV3(root)
+    directory = owner._directory(seed_id)
+    directory.mkdir(parents=True)
+    source = root / "runtime/spec.json"
+    source.write_bytes(native._bytes(dict(symbol="600887", action="no_order")))
+    binding = owner._binding(source)
+    cfg = dict(model_id="deepseek-flash", max_completion_tokens_cap=8192, max_run_cost="10",
+               api_key_env="TEST_BEAR_QUARTER_CREDENTIAL")
+    monkeypatch.setenv(cfg["api_key_env"], "offline-test")
+    spec = dict(schema_version=native.VERSION, task_id=seed_id, mode="LIVE_PARENT_CASH_V3",
+                config=cfg, spec_binding=binding, source_fingerprint="a" * 64, action="no_order",
+                created_at=now.isoformat(), implementation_sha256=native._implementation(),
+                conditional_financing_stress={"residual_stress_rate": "0.03"},
+                financing_wire_sha256=native._hash(Path(native.fixed_financing.__file__).read_bytes()),
+                shared_budget_root=str(tmp_path), mandatory_cash_classification="DISJOINT_V1")
+    if fault == "already_matched":
+        spec["bear_operating_wire"] = "MATCHED_QUARTER_V2"
+    (directory / "input.json").write_bytes(native._bytes(spec))
+    charges, pins = {}, {}
+    for index, stage in enumerate(("bear.operating", "bear.policy", "bear.terminal"), 1):
+        key = str(index) * 64
+        path = directory / f"response-{key}.json"
+        path.write_bytes(native._bytes(dict(scenario=stage, action="no_order", source_fingerprint="a" * 64)))
+        pins[stage] = owner._binding(path)
+        charges[key] = dict(scenario=stage, status="SETTLED", cost="0.1", actual_cost="0.05", day="2026-11-27")
+    if fault == "reserved":
+        charges[key]["status"] = "RESERVED"
+    if fault == "packet_changed":
+        path.write_bytes(b"{}")
+    reason = routes._BEAR_QUARTER_ERROR if fault != "wrong_failure" else "BEAR_POLICY_OTHER"
+    _, head = owner._save(spec, dict(status="FAILED", error_code=reason, formal_eligibility=False,
+        action="no_order", responses={k: v for k, v in pins.items() if k != "bear.terminal"},
+        reservations=charges, returned_responses=list(pins.values())[:2 if fault == "missing_terminal" else 3],
+        reserved_cost="0.1" if fault == "reserved" else "0", settled_cost="0.15"), None, now)
+    ledger = owner.daily.base / "budget/2026-11-27"
+    raw = native._bytes(dict(version=1, previous=None, day="2026-11-27", currency="CNY",
+        records={k: dict(status="SETTLED", cost=v["actual_cost"]) for k, v in charges.items()}))
+    (ledger / "versions").mkdir(parents=True)
+    budget_version = ledger / "versions" / f"0001-{native._hash(raw)}.json"
+    budget_version.write_bytes(raw)
+    owner.daily._head(ledger, owner.daily._binding(budget_version))
+
+    monkeypatch.setattr(routes, "authorize", lambda *a, **kw: None)
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda project: tmp_path)
+    monkeypatch.setattr(routes, "registered_cash_task_spec", lambda service, symbol:
+                        dict(binding, sha256="f" * 64) if fault == "superseded_spec" else binding)
+    monkeypatch.setattr(native.ParentCashTaskServiceV3, "_configuration", lambda self: cfg)
+    monkeypatch.setattr(native, "read_parent_cash_agent_facts_v2", lambda **kw:
+                        dict(input_fingerprint=spec["source_fingerprint"], facts={}))
+    monkeypatch.setattr(native.staged_numbered, "_load_spec", lambda *a:
+                        {"opening": {"debt": {"value": "1", "classification": "FORECAST_ASSUMPTION"}}})
+    monkeypatch.setattr(completion, "preflight_parent_cash_task", lambda *a: (binding, None))
+    # The parent packets stand in for the three provider outputs. Exercise native child creation,
+    # seed selection and ledger verification without a provider or an economic re-parse of fixtures.
+    monkeypatch.setattr(native.ParentCashTaskServiceV3, "read", lambda self, task_id: self._load(task_id)[1])
+    ran = []
+    def reject_offline(service, task_id):
+        child, state, current = service._load(task_id)
+        ran.append(task_id)
+        service._save(child, state, current, now, status="FAILED", error_code=routes._BEAR_QUARTER_ERROR)
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", reject_offline)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=root, sessions=None, port=8001)
+    client = TestClient(app)
+    prefix = "/api/v1/operating-research/parent-cash-tasks"
+    hist = client.get(prefix + "/history", params={"symbol": "600887"})
+    assert hist.status_code == 200
+    assert hist.json()["items"][0]["bear_quarter_continuation"] is (fault is None)
+    body = dict(symbol="600887", continue_from_task_id=seed_id)
+    post = client.post(prefix + "/by-company", json=body)
+    if fault is not None:
+        assert post.status_code == 422
+        assert not ran
+        return
+    assert post.status_code == 202, post.text
+    child_id = post.json()["task_id"]
+    child, state, _ = owner._load(child_id)
+    assert child["seed"] == dict(task_id=seed_id, head=head, responses={})
+    assert child["spec_binding"] == binding and child["ancestor_spend"] == "0.15"
+    assert child["replay_from_stage"] == "bear.operating" and child["bear_operating_wire"] == "MATCHED_QUARTER_V2"
+    assert child["mandatory_cash_classification"] == "DISJOINT_V1"
+    assert state["provider_requests"] == 0 and state["action"] == "no_order"
+    assert client.post(prefix + "/by-company", json=body).json()["task_id"] == child_id
+    assert client.post(prefix + "/by-company", json=dict(body, continue_from_task_id=child_id)).status_code == 422
+    assert ran == [child_id]
+    assert owner._load(seed_id)[2] == head
+
+
+def test_bear_terminal_retry_requires_explicit_true(tmp_path, monkeypatch):
+    calls = []
+    task_id = "rt-" + "f" * 32
+    active = {"path": "runtime/spec.json", "sha256": "a" * 64}
+
+    class Service:
+        def __init__(self, root):
+            self.root = root
+
+        def _load(self, predecessor):
+            return {"terminal_response_wire": wire}, {}, {}
+
+        def continue_bear_terminal_v3(self, predecessor, binding):
+            calls.append("v3")
+            return self.continue_bear_terminal_v2(predecessor, binding)
+
+        def continue_bear_terminal_v2(self, predecessor, binding):
+            calls.append((predecessor, binding))
+            return {"task_id": task_id, "status": "QUEUED", "action": "no_order"}
+
+    monkeypatch.setattr(routes, "resolve_research_task_root", lambda _: tmp_path)
+    monkeypatch.setattr(routes, "ParentCashTaskServiceV3", Service)
+    monkeypatch.setattr(routes, "registered_cash_task_spec", lambda _, symbol: active)
+    monkeypatch.setattr(routes, "run_and_seal_parent_cash_task", lambda _, child: calls.append(child))
+    monkeypatch.setattr(routes, "authorize", lambda *_, **__: None)
+    app = FastAPI()
+    routes.register_parent_cash_history_routes(app, project=tmp_path, sessions=None, port=0)
+    client = TestClient(app)
+    path = "/api/v1/operating-research/parent-cash-tasks/by-company"
+    body = {"symbol": "600809", "continue_from_task_id": "rt-" + "b" * 32}
+    for invalid in (False, "true", 1):
+        assert client.post(path, json=dict(body, retry_sealed_terminal=invalid)).status_code == 422
+    assert calls == []
+    wire = "NOTE_GRID_FLAT_TERMINAL_V1"
+    assert client.post(path, json=dict(body, retry_sealed_terminal=True)).status_code == 202
+    assert calls == [(body["continue_from_task_id"], active), task_id]
+    calls.clear()
+    wire = routes.terminal_v2.WIRE
+    assert client.post(path, json=dict(body, retry_sealed_terminal=True)).status_code == 202
+    assert calls == ["v3", (body["continue_from_task_id"], active), task_id]

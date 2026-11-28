@@ -35,6 +35,10 @@ jobs:
       - name: Verify full offline research gates
         run: >-
           mkdir -p .tmp && python -B -m pytest -q -p no:cacheprovider --basetemp=.tmp/pytest --junitxml=.tmp/offline-core-results.xml
+          tests/test_parent_note_grid_task_receipt_v2.py
+          tests/test_parent_note_grid_terminal_service_v2.py
+          tests/test_parent_note_grid_terminal_service_v3.py
+          tests/test_parent_note_grid_debt_reconciliation.py tests/test_parent_bear_terminal_response_v2.py
           tests/test_research_gate.py
           tests/test_strategy_readiness.py
           tests/test_first_use_value_analysis.py
@@ -235,11 +239,31 @@ jobs:
           tests/test_parent_direct_owner_cash_sources_v2.py
           tests/test_direct_owner_cash_agent_facts_v2.py
           tests/test_direct_owner_cash_staged_v3.py
+          tests/test_parent_cash_funding_revisions.py
+          tests/test_parent_cash_funding_continuation_v1.py
+          tests/test_parent_cash_maturity_recheck.py
+          tests/test_parent_cash_installment_recheck.py
+          tests/test_parent_cash_multiyear_recheck.py
+          tests/test_direct_owner_cash_financing_rows_v1.py
           tests/test_direct_owner_cash_agent_draft_v2.py
           tests/test_direct_owner_cash_compilation_v2.py
+          tests/test_direct_owner_gross_capex_v1.py
+          tests/test_parent_cash_task_aggregate_receipt_v1.py
           tests/test_parent_cash_task_v2.py
           tests/test_parent_cash_task_v3.py
+          tests/test_parent_cash_policy_capital_v1.py
+          tests/test_parent_cash_task_completion_v1.py
+          tests/test_parent_cash_task_receipt_v3.py
+          tests/test_quarterly_parent_cash_paginated_v2.py
+          tests/test_parent_direct_owner_cash_unnumbered_v1.py
           tests/test_parent_cash_history_routes.py
+          tests/test_parent_cash_policy_correction_v1.py
+          tests/test_parent_cash_corrected_continuation_v1.py
+          tests/test_yili_interim_payout_stress_v1.py
+          tests/test_parent_cash_task_alignment_v3.py
+          tests/test_parent_cash_task_share_anchor_v3.py
+          tests/test_parent_h1_opening_cash_v1.py
+          tests/test_direct_parent_half_year_cash_v1.py
           tests/test_direct_owner_cash_v1.py
           tests/test_direct_owner_cash_input_adapter_v1.py
           tests/test_direct_owner_cash_compilation_v1.py
@@ -506,6 +530,7 @@ jobs:
           tests/test_public_three_statements_v1.py
           tests/test_financial_source_comparison_v1.py
           tests/test_verified_screen_cache_v1.py
+          tests/test_verified_research_queue_cache_v1.py
           tests/test_public_debt_details_v1.py
           tests/test_sina_financial_statements_v1.py
           tests/test_official_funding_details_v1.py
@@ -614,13 +639,30 @@ jobs:
           tests/test_first_research_input_v2.py
           tests/test_first_research_input_update_v1.py
           tests/test_first_research_input_update_v2.py
+          tests/test_direct_owner_cash_update_v1.py
+          tests/test_parent_remaining_year_review.py
+          tests/test_parent_remaining_year_cash.py
+          tests/test_parent_remaining_year_successor.py
+          tests/test_parent_remaining_year_alignment.py
+          tests/test_parent_owner_distribution_alignment_v2.py
+          tests/test_parent_owner_distribution_materiality_v1.py
+          tests/web_api/test_parent_owner_distribution_successor_api.py
+          tests/test_quarterly_parent_operating_facts.py
+          tests/test_direct_owner_cash_alignment_v1.py
+          tests/test_direct_owner_cash_materiality_review_context_v1.py
+          tests/test_daily_event_observation_pdf_limit.py
+          tests/test_pending_cash_cross_page.py
+          tests/test_first_research_update_view_v1.py
           tests/test_first_research_financial_update_v1.py
+          tests/test_szse_capital_export.py
           tests/test_first_input_quote_alignment_v1.py
           tests/test_first_input_delivery_v1.py
           tests/test_first_input_parent_cash_observation_v1.py
+          tests/test_first_input_parent_cash_observation_v2.py
           tests/test_first_research_fact_replay_v1.py
           tests/test_first_research_fact_replay_v2.py
           tests/web_api/test_first_research_input_api.py
+          tests/web_api/test_parent_remaining_year_successor_api.py
           tests/web_api/test_operating_assumption_api.py
           tests/test_hotspot_candidate_selection.py
           tests/test_economic_review_cli.py
@@ -629,6 +671,7 @@ jobs:
           tests/test_economic_path_projection.py
           tests/test_pending_candidate_price_proposal.py
           tests/test_pending_candidate_alignment.py
+          tests/test_sse_capital_checkpoint_v1.py
           tests/test_parent_guarantee_event.py tests/test_quarter_operating_breakdown.py
           tests/test_materiality_v4_candidate.py
           tests/test_distribution_capacity_review.py tests/test_operating_event_terms.py tests/test_opening_action_terms.py

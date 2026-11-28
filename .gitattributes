@@ -262,3 +262,10 @@ src/value_investment_agent/application/research/parent_direct_owner_cash_sources
 src/value_investment_agent/application/decision/direct_owner_cash_price_draft_v1.py text eol=lf
 src/value_investment_agent/domain/valuation/direct_parent_owner_cash_v1.py text eol=lf
 src/value_investment_agent/valuation_models/direct_owner_cash_v1.py text eol=lf
+
+# Reviewed source registrations and note-grid replay implementations are hash-bound.
+config/company-profile-sources-v2/600809.json text eol=lf
+src/value_investment_agent/application/research/company_profile_sources_v2.py text eol=lf
+src/value_investment_agent/application/research/parent_note_grid_sources_v1.py text eol=lf
+src/value_investment_agent/application/research/parent_note_grid_agent_facts_v1.py text eol=lf
+src/value_investment_agent/infrastructure/filings/parent_note_grid_v1.py text eol=lf

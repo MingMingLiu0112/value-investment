@@ -7,7 +7,7 @@
 }
 .daily-action-conclusion {
   padding: 16px 0;
-  border-bottom: 1px solid #dce3e5;
+  border-bottom: 1px solid var(--wb-border);
   overflow-wrap: anywhere;
 }
 .daily-navigation {
@@ -36,7 +36,7 @@
 }
 .opportunity-subtitle {
   margin: 0;
-  color: #52626a;
+  color: var(--wb-muted);
   line-height: 1.5;
 }
 .opportunity-freshness {
@@ -44,7 +44,7 @@
   align-items: center;
   gap: 12px;
   flex: none;
-  color: #617078;
+  color: var(--wb-muted);
   font-size: 13px;
 }
 .opportunity-strip {
@@ -52,13 +52,13 @@
   flex-wrap: wrap;
   gap: 8px 28px;
   padding: 12px 0;
-  border-top: 1px solid #dce3e5;
-  border-bottom: 1px solid #dce3e5;
-  color: #52626a;
+  border-top: 1px solid var(--wb-border);
+  border-bottom: 1px solid var(--wb-border);
+  color: var(--wb-muted);
   font-size: 13px;
 }
 .opportunity-strip strong {
-  color: #162d31;
+  color: var(--wb-ink);
   font-size: 16px;
   padding-left: 5px;
 }
@@ -68,7 +68,7 @@
   gap: 18px;
   align-items: center;
   padding: 17px 0;
-  border-bottom: 1px solid #dce3e5;
+  border-bottom: 1px solid var(--wb-border);
 }
 .opportunity-holdings h2,
 .opportunity-held-list h2 {
@@ -103,11 +103,11 @@
   justify-content: space-between;
   align-items: end;
   gap: 14px;
-  border-bottom: 2px solid #294f4b;
+  border-bottom: 2px solid var(--wb-accent);
   padding-bottom: 10px;
 }
 .opportunity-strategy:nth-child(2) .opportunity-strategy-head {
-  border-color: #a96545;
+  border-color: var(--wb-accent);
 }
 .opportunity-horizon {
   color: #66747b;
@@ -148,7 +148,7 @@
   color: #633d35;
 }
 .decision-compact {
-  border: 1px solid #dce3e5;
+  border: 1px solid var(--wb-border);
   border-radius: 6px;
   background: #fff;
   padding: 12px 14px;
@@ -248,7 +248,7 @@
   line-height: 1.6;
 }
 .daily-update-help {
-  border-bottom: 1px solid #dce3e5;
+  border-bottom: 1px solid var(--wb-border);
   padding-bottom: 12px;
   margin-bottom: 14px;
   font-size: 13px;
@@ -262,7 +262,7 @@
 }
 .daily-tasks {
   padding: 12px 0;
-  border-bottom: 1px solid #dce3e5;
+  border-bottom: 1px solid var(--wb-border);
 }
 .daily-tasks h2 {
   font-size: 16px;

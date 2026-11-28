@@ -99,16 +99,52 @@ def build_candidate_event_impact(analysis, events):
                                 classification="REPORTED_YTD_COMPARISON_NOT_FORECAST_CHANGE"))
                 rationale = "前三季度实际收入和归母利润用于检验原预测，需按同期和经营口径核对后再重算。"
                 missing = ["原候选同期间经营基线", "剩余月份及成本税费假设", "候选现金路径的独立复核"]
+            elif kind == "REPORTED_BUYBACK_CANCELLATION_PLAN":
+                judgement = "BUYBACK_PLAN_EXECUTION_FOLLOWUP_REQUIRED"
+                rationale = parsed["summary"] + " 方案预算不进入已付现金，拟注销也不改变现有股数。"
+                missing = ["同方案实际支付与母公司现金路径核对",
+                           "注销生效文件、实际注销数量及比较日股本"]
+            elif kind == "REPORTED_INTERIM_DIVIDEND_PROPOSAL":
+                judgement = "INTERIM_DISTRIBUTION_IMPLEMENTATION_FOLLOWUP_REQUIRED"
+                rationale = parsed["summary"] + " 预案保留为反证与跟踪事件，不能按已支付分红扣除。"
+                missing = ["有权决议和权益分派实施公告", "除息、支付及实际分配额",
+                           "该分配是否已进入同一候选年度现金路径"]
+            elif kind == "REPORTED_INTERIM_DIVIDEND_SHAREHOLDER_APPROVAL":
+                judgement = "APPROVED_INTERIM_DISTRIBUTION_AWAITS_IMPLEMENTATION"
+                rationale = parsed["summary"] + " 现金影响仍待实施公告和支付复核。"
+                missing = ["权益分派实施公告及最终派息金额", "除息和实际支付",
+                           "同一候选的现金分配入模口径"]
+            elif kind == "REPORTED_INTERIM_DIVIDEND_IMPLEMENTATION_SCHEDULE":
+                judgement = "INTERIM_DISTRIBUTION_PAYMENT_AND_MODEL_REVIEW_REQUIRED"
+                rationale = parsed["summary"] + " 实施日程已披露，仍须按实际支付确认现金影响。"
+                missing = ["实际支付的原件、期次及金额",
+                           "同一候选已消费的分配与现金口径",
+                           "登记日股本与报价日股本连续性"]
             elif kind == "REPORTED_BUYBACK_PROGRESS":
                 judgement = "BUYBACK_CASH_AND_SHARE_BASIS_REVIEW_REQUIRED"
                 rationale = "公告披露的是同一回购计划的累计股数和付款。只将同计划两个截止日的差额用于期间现金核对；实购股数不等于已注销股数。"
                 missing = ["估值截止日前同计划累计付款及原模型是否已计入",
                            "报价日前回购增量与实际现金限制",
                            "注销生效文件和报价日精确普通股股数"]
+            elif kind == "REPORTED_SHARE_UNLOCK_NOTICE":
+                judgement = "SHARE_CLASS_TRANSFER_FOLLOWUP_REQUIRED"
+                rationale = "解禁通知列示限售转流通及总股数不变。实际股本结构须以登记结算资料确认。"
+                missing = ["实际流通结构及登记结算证据", "比较日普通股及期间资本行动完整核对"]
             elif kind == "REPORTED_Q3_OPERATING_BREAKDOWN":
                 judgement = "OPERATING_MIX_REVIEW_REQUIRED"
                 rationale = "来源披露本年产品、渠道和地区的主营收入结构。需核对与原预测口径及持续性，不能据此推断同比或量价。"
                 missing = ["对应口径的上年同期及量价分拆", "与原模型营业收入相同范围的经营基线"]
+            elif kind == "REPORTED_ISSUER_FINANCING_ISSUANCE":
+                judgement = "FINANCING_CASH_AND_MATURITY_REVIEW_REQUIRED"
+                rationale = "同一候选需分别核对公告发行额、实际收现、到期还本和付息口径，避免与原借还款假设重复。"
+                missing = ["发行净收现和费用", "逐券到期还本及付息条款", "原候选年度预测的已包含金额"]
+            elif kind == "REPORTED_ISSUER_FINANCING_REDEMPTION":
+                judgement = "FINANCING_REDEMPTION_CASH_REVIEW_REQUIRED"
+                rationale = (
+                    f"公告确认实际兑付日为{parsed['effective_date']}。"
+                    "按兑付日核对本金和利息是否已进入候选现金路径，避免按披露日跨期归类。"
+                )
+                missing = ["原候选已消费期间及对应偿债、付息口径", "逐券金额和现金流合计的对账"]
             elif kind == "PARENT_SUBSIDIARY_GUARANTEE":
                 judgement = "CONTINGENT_PARENT_GUARANTEE_REVIEW_REQUIRED"
                 rationale = parsed["summary"] + " 担保上限不能直接视为新增债务或现金支出。"

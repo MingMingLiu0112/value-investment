@@ -11,8 +11,13 @@ from decimal import Decimal
 import re
 import unicodedata
 
-VERSION = "operating-event-terms-v1"
+VERSION = "operating-event-terms-v2"
 _DATE = r"(?P<{name}>20[0-9]{{2}}年[0-9]{{1,2}}月[0-9]{{1,2}}日)"
+_PUBLICATION_DATE = (
+    r"(?P<{name}>(?:20[0-9]{{2}}年[0-9]{{1,2}}月[0-9]{{1,2}}日|"
+    r"二[〇○零一二三四五六七八九]{{3}}年"
+    r"[一二三四五六七八九十]{{1,3}}月[一二三四五六七八九十]{{1,3}}日))"
+)
 _MONEY = r"[0-9]+(?:\.[0-9]+)?"
 _MEETING = r"第[一二三四五六七八九十]+届董事会20[0-9]{2}年度第[一二三四五六七八九十]+次会议"
 _GUARANTEE = (
@@ -27,6 +32,28 @@ def _reject(reason):
 
 def _day(text):
     match = re.fullmatch(r"(20[0-9]{2})年([0-9]{1,2})月([0-9]{1,2})日", text)
+    if not match:
+        chinese = re.fullmatch(
+            r"(二[〇○零一二三四五六七八九]{3})年"
+            r"([一二三四五六七八九十]{1,3})月"
+            r"([一二三四五六七八九十]{1,3})日",
+            text,
+        )
+        if chinese:
+            digits = {"〇": 0, "○": 0, "零": 0, "一": 1, "二": 2, "三": 3, "四": 4,
+                      "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+
+            def number(value):
+                if "十" not in value:
+                    return digits[value]
+                left, right = value.split("十", 1)
+                return (digits[left] if left else 1) * 10 + (digits[right] if right else 0)
+
+            year = int("".join(str(digits[char]) for char in chinese[1]))
+            try:
+                return date(year, number(chinese[2]), number(chinese[3])).isoformat()
+            except (KeyError, ValueError):
+                _reject("INVALID_DATE")
     if not match:
         _reject("INVALID_DATE")
     try:
@@ -43,10 +70,10 @@ def _match(pattern, text):
 
 
 class _Original:
-    def __init__(self, pages):
-        if (not isinstance(pages, (list, tuple)) or not 1 <= len(pages) <= 3
+    def __init__(self, pages, *, max_pages=3, max_chars=40000):
+        if (not isinstance(pages, (list, tuple)) or not 1 <= len(pages) <= max_pages
                 or any(not isinstance(page, str) or not page.strip() for page in pages)
-                or sum(map(len, pages)) > 40000):
+                or sum(map(len, pages)) > max_chars):
             _reject("BOUNDED_COMPLETE_PAGES_REQUIRED")
         self.pages = pages
         self.text = ""
@@ -287,6 +314,18 @@ def _accounting(body, issuer, published):
 
 
 def _buyback_progress(body, published, *, first_execution=False):
+    plan_rows = list(re.finditer(
+        "回购方案实施期限" + _DATE.format(name="start") + "[~～至]" + _DATE.format(name="end"), body))
+    if len(plan_rows) > 1:
+        _reject("BUYBACK_PLAN_WINDOW_AMBIGUOUS")
+    plan_terms, plan_evidence = {}, []
+    if plan_rows:
+        plan = plan_rows[0]
+        plan_start, plan_end = _day(plan["start"]), _day(plan["end"])
+        if plan_start >= plan_end or plan_start > published:
+            _reject("BUYBACK_PLAN_WINDOW_INVALID")
+        plan_terms = dict(plan_start=plan_start, plan_end=plan_end)
+        plan_evidence = [(plan[0], "buyback_plan_window")]
     quantity = r"[1-9][0-9]{0,2}(?:,[0-9]{3})*|[1-9][0-9]*"
     amount = r"[0-9]+(?:,[0-9]{3})*\.[0-9]{2}"
     summary_rows = list(re.finditer(
@@ -310,12 +349,12 @@ def _buyback_progress(body, published, *, first_execution=False):
             event_type="REPORTED_BUYBACK_PROGRESS", effective_date=None,
             terms=dict(through=through, cumulative_purchased_shares=0,
                        cumulative_paid_cny="0", disclosed_share_percent="0",
-                       completed_cancellation_shares=None),
+                       completed_cancellation_shares=None, **plan_terms),
             affected_model_fields=["cash", "ordinary_shares"],
             summary=f"公告确认截至{through}尚未实施股份回购。",
             implication="仅作为本回购计划已披露累计数据的期初对照。",
             limitations=["该结论限于所述回购计划及截止日。"],
-            _evidence=[(zero_summary, "buyback_summary"), (no_execution[0][0], "buyback_progress")],
+            _evidence=[(zero_summary, "buyback_summary"), (no_execution[0][0], "buyback_progress"), *plan_evidence],
         )
     if first_execution:
         opening = (_DATE.format(name="through") + r",公司通过集中竞价交易方式首次回购股份数量为"
@@ -346,7 +385,7 @@ def _buyback_progress(body, published, *, first_execution=False):
         _reject("BUYBACK_PROGRESS_ARITHMETIC_OR_DATE_INVALID")
     terms = dict(through=through, cumulative_purchased_shares=int(shares),
                  cumulative_paid_cny=str(total), disclosed_share_percent=str(ratio),
-                 completed_cancellation_shares=None)
+                 completed_cancellation_shares=None, **plan_terms)
     if first_execution:
         terms["first_purchase_date"] = through
     return dict(
@@ -356,7 +395,7 @@ def _buyback_progress(body, published, *, first_execution=False):
         summary=f"截至{through}累计购回{int(shares)}股，已支付{total}元（不含交易费用）。",
         implication="核对累计金额的期间增量及后续注销生效公告，当前资料不改变估值股数。",
         limitations=["购回进展不能证明注销生效；累计数不能重复计为各期现金支出。"],
-        _evidence=[(summary_rows[0][0], "buyback_summary"), (row[0], "buyback_progress")],
+        _evidence=[(summary_rows[0][0], "buyback_summary"), (row[0], "buyback_progress"), *plan_evidence],
     )
 
 
@@ -422,7 +461,412 @@ def _buyback_completion(body, published):
     )
 
 
-def parse_operating_event_terms(pages, *, symbol):
+def _buyback_creditor_notice(body, published):
+    future_cancellation = _match(
+        r".*(?P<clause>待回购完成后,本次回购的股份将依法全部予以注销并减少公司注册资本。).*", body,
+    )
+    claim_window = _match(r".*(?P<clause>申报时间:(?P<start>20\d{2}年\d{1,2}月\d{1,2}日)至"
+                          r"(?P<end>20\d{2}年\d{1,2}月\d{1,2}日)).*", body)
+    start, end = _day(claim_window["start"]), _day(claim_window["end"])
+    if start != published or end < start:
+        _reject("BUYBACK_CREDITOR_CLAIM_WINDOW_INVALID")
+    return dict(
+        event_type="BUYBACK_CAPITAL_REDUCTION_CREDITOR_NOTICE",
+        effective_date=None,
+        terms=dict(claim_start=start, claim_end=end, cancellation_status="PLANNED"),
+        affected_model_fields=["cash", "ordinary_shares"],
+        summary=f"拟于回购完成后注销股份；债权申报期间为 {start} 至 {end}。",
+        implication="后续须核对实际回购、注销及资金义务的完成证据。",
+        limitations=["债权人通知不证明已注销、实付金额或债权已结清。"],
+        _evidence=[(future_cancellation["clause"], "planned_cancellation"),
+                   (claim_window["clause"], "creditor_claim_window")],
+    )
+
+def _plan_market_purchase_completion(body, title, published):
+    """Parse a bounded employee/service-plan secondary-market purchase.
+
+    The title is only routing information.  Admission requires the complete
+    body to identify the same plan and to state that shares were bought through
+    an exchange securities trading system.  Any issuance, cancellation,
+    transfer, subscription or other acquisition method is outside this
+    contract and therefore remains unresolved.
+    """
+    title_match = _match(
+        r"关于(?P<plan>第[一二三四五六七八九十]+期(?:长期服务计划|员工持股计划))完成股票购买的公告",
+        title,
+    )
+    plan = title_match["plan"]
+    forbidden = (
+        "非公开发行", "向特定对象发行", "发行新股", "新股发行",
+        "认购新股", "股份注销", "注销股份", "转让股份", "股份转让",
+        "非交易过户", "无偿划转", "大宗交易", "协议转让", "股东赠与",
+    )
+    if any(term in body for term in forbidden):
+        _reject("PLAN_PURCHASE_ISSUANCE_CANCELLATION_OR_TRANSFER_UNRESOLVED")
+    quantity = r"[1-9][0-9]{0,2}(?:,[0-9]{3})+|[1-9][0-9]*"
+    money = r"[1-9][0-9]*(?:,[0-9]{3})*(?:\.[0-9]+)?"
+    price = r"[1-9][0-9]*(?:\.[0-9]+)?"
+    exchange = r"(?P<exchange>上海证券交易所|深圳证券交易所)"
+    row_pattern = (
+        r"截至" + _DATE.format(name="completed") + r"[,，]公司通过" + exchange
+        + r"证券交易系统购买公司股票(?P<shares>" + quantity + r")股[,，]"
+        + r"成交金额(?P<total>" + money + r")元\(不含交易费用\)[,，]"
+        + r"占公司总股本的比例为(?P<ratio>" + _MONEY + r")%[,，]"
+        + r"成交均价为(?P<average>" + price + r")元/股[,，]公司(?P<plan>" + re.escape(plan)
+        + r")标的股票的购买已全部完成。"
+    )
+    rows = list(re.finditer(row_pattern, body))
+    if len(rows) != 1:
+        _reject("PLAN_PURCHASE_METHOD_OR_TERMS_MISSING_OR_AMBIGUOUS")
+    row = rows[0]
+    completed = _day(row["completed"])
+    shares = int(row["shares"].replace(",", ""))
+    total = Decimal(row["total"].replace(",", ""))
+    average = Decimal(row["average"])
+    ratio = Decimal(row["ratio"])
+    if (completed > published or not 0 < ratio <= 100 or total <= 0 or average <= 0
+            or abs(total / shares - average) > Decimal("0.0005")):
+        _reject("PLAN_PURCHASE_ARITHMETIC_OR_DATE_INVALID")
+    return dict(
+        event_type="PLAN_SECONDARY_MARKET_SHARE_PURCHASE_COMPLETED",
+        effective_date=completed,
+        terms=dict(
+            plan_name=plan,
+            completion_date=completed,
+            purchase_method="EXCHANGE_SECURITIES_TRADING_SYSTEM_EXISTING_SHARES",
+            exchange=row["exchange"],
+            purchased_shares=shares,
+            paid_cny=str(total),
+            average_price_cny_per_share=str(average),
+            disclosed_total_share_percent=str(ratio),
+            issued_share_effect="NO_ISSUANCE_OR_CANCELLATION_IN_THIS_PURCHASE_EVENT",
+        ),
+        affected_model_fields=["cash", "ordinary_shares"],
+        summary=(f"{plan}于{completed}前通过{row['exchange']}证券交易系统购买"
+                 f"已有公司股票{shares}股，本次购买已完成。"),
+        implication="该二级市场购买事件本身不发行或注销股份；资金影响及其他股本事件仍需分别核验。",
+        limitations=[
+            "仅证明本公告所述购买通过交易所证券交易系统完成，不证明公告窗口内不存在其他发行或注销。",
+            "购买已有股票不等于股份注销，不得据此调减发行在外股数。",
+        ],
+        _evidence=[(row[0], "plan_exchange_market_purchase_completion")],
+    )
+
+
+def _financing_issuance(body, published):
+    terms = re.compile(
+        r"代码(?P<code>[0-9]{9})期限(?P<days>[0-9]{1,4})天"
+        + "起息日" + _DATE.format(name="starts") + "兑付日" + _DATE.format(name="matures")
+        + rf"计划发行总额{_MONEY}亿元实际发行总额(?P<amount>{_MONEY})亿元"
+          rf"发行利率(?P<rate>{_MONEY})%发行价格(?P<price>{_MONEY})元/百元面值"
+    )
+    rows = list(terms.finditer(body))
+    if not rows or len(rows) != body.count("实际发行总额"):
+        _reject("FINANCING_ISSUANCE_ROWS_INCOMPLETE")
+    issues, evidence = [], []
+    seen = set()
+    for row in rows:
+        code = row["code"]
+        starts, matures = _day(row["starts"]), _day(row["matures"])
+        days = int(row["days"])
+        principal = Decimal(row["amount"]) * 100_000_000
+        rate, price = Decimal(row["rate"]), Decimal(row["price"])
+        if (code in seen or starts > published or published >= matures
+                or (date.fromisoformat(matures) - date.fromisoformat(starts)).days != days
+                or principal <= 0 or principal != principal.to_integral_value()
+                or rate <= 0 or price <= 0):
+            _reject("FINANCING_ISSUANCE_TERMS_CONFLICT")
+        seen.add(code)
+        issues.append(dict(code=code, interest_start=starts, maturity=matures, term_days=days,
+                           face_value_cny=format(principal, "f"), coupon_percent=str(rate),
+                           issue_price_per_100_face_cny=str(price)))
+        evidence.append((row[0], "issuer_financing_issue_terms"))
+    return dict(
+        event_type="REPORTED_ISSUER_FINANCING_ISSUANCE", effective_date=None,
+        summary=f"公告披露{len(issues)}项债务融资工具的发行面额及期限。",
+        implication="分别核对发行面额、实际收现与到期偿付，确认是否已计入该候选。",
+        financing_issues=issues, affected_model_fields=["new_borrowing", "debt_repayment", "interest_outside_cfo"],
+        limitations=["发行面额与票息不证明实际净收现、付息结算、完整债务范围或未来续借。"],
+        _evidence=evidence,
+    )
+
+
+def _financing_redemption(body, published, title, *, grouped=False, kind="超短期融资券"):
+    if grouped:
+        return _grouped_financing_redemption(body, published, title, kind=kind)
+    completed = list(re.finditer(
+        _DATE.format(name="paid") + rf",公司完成了(?P<series>20[0-9]{{2}}年度第[一二三四五六七八九十、]+期{kind})"
+        r"的兑付工作,本息兑付总额(?:分别)?为人民币(?P<amounts>[0-9,.元、]+),"
+        r"(?:均)?由银行间市场清算所股份有限公司代理划付至债券持有人指定的银行账户。", body,
+    ))
+    if len(completed) != 1:
+        _reject("FINANCING_REDEMPTION_COMPLETION_UNVERIFIED")
+    paid = completed[0]
+    day = _day(paid["paid"])
+    schedule = re.compile(
+        rf"公司(?P<year>20[0-9]{{2}})年度第(?P<issue>[一二三四五六七八九十]+)期{kind}"
+        + rf"(?P<principal>{_MONEY})亿元{_MONEY}%[0-9]{{1,4}}天"
+        + _DATE.format(name="starts") + _DATE.format(name="matures") + r"临20[0-9]{2}-[0-9]{3}"
+    )
+    rows = list(schedule.finditer(body))
+    amounts = paid["amounts"].rstrip("元").split("元、")
+    series = re.fullmatch(rf"(20[0-9]{{2}})年度第([一二三四五六七八九十、]+)期{kind}", paid["series"])
+    issues = series[2].split("、")
+    if (not rows or len(rows) != len(amounts) or len(set(issues)) != len(issues)
+            or [row["issue"] for row in rows] != issues
+            or title != "关于" + paid["series"] + "兑付完成的公告" or day > published):
+        _reject("FINANCING_REDEMPTION_ROWS_INCOMPLETE")
+    redeemed = []
+    for row, amount in zip(rows, amounts, strict=True):
+        if not re.fullmatch(r"[0-9]{1,3}(?:,[0-9]{3})*\.[0-9]{2}", amount):
+            _reject("FINANCING_REDEMPTION_AMOUNT_INVALID")
+        principal = Decimal(row["principal"]) * 100_000_000
+        cash = Decimal(amount.replace(",", ""))
+        if (row["year"] != series[1] or not _day(row["starts"]) < day
+                or _day(row["matures"]) != day or not 0 < principal <= cash
+                or principal != principal.to_integral_value()):
+            _reject("FINANCING_REDEMPTION_TERMS_CONFLICT")
+        redeemed.append(dict(issue=series[1] + "-" + row["issue"], principal_cny=format(principal, "f"),
+                             paid_cny=str(cash), inferred_interest_cny=format(cash - principal, ".2f")))
+    return dict(
+        event_type="REPORTED_ISSUER_FINANCING_REDEMPTION", effective_date=day,
+        summary=f"公告确认{len(redeemed)}项超短期融资券已完成本息兑付。",
+        implication="以实际兑付日归期，并与候选的偿债及付息现金逐项核对。",
+        financing_redemptions=redeemed, affected_model_fields=["debt_repayment", "interest_outside_cfo"],
+        limitations=["仅证明列示债券的本息兑付，不证明完整债务范围或其他融资现金流。"],
+        _evidence=[(row[0], "issuer_financing_redemption_schedule") for row in rows]
+        + [(paid[0], "issuer_financing_redemption_completed")],
+    )
+
+
+def _grouped_financing_redemption(body, published, title, *, kind):
+    completion = re.compile(
+        _DATE.format(name="paid") + r",公司完成了20[0-9]{2}年度第"
+        rf"(?P<issues>[一二三四五六七八九十、]+)期{kind}"
+        r"的兑付工作,本息兑付总额(?:分别)?为人民币[0-9,.]+元(?:、[0-9,.]+元)*"
+    )
+    tail = (r",均?由银行间市场清算所股份有限公司"
+            r"代理划付至债券持有人指定的银行账户。")
+    groups = list(completion.finditer(body))
+    if (len(groups) < 2 or body.count("公司完成了") != len(groups)
+            or any(body[a.end():b.start()] != ";" for a, b in zip(groups, groups[1:]))
+            or not re.fullmatch(tail, body[groups[-1].end():])):
+        _reject("FINANCING_REDEMPTION_GROUPS_INCOMPLETE")
+    declared = re.fullmatch(r"关于(20[0-9]{2})年度第([一二三四五六七八九十、]+)期"
+                            rf"{kind}兑付完成的公告", title)
+    if declared is None:
+        _reject("FINANCING_REDEMPTION_GROUP_TITLE_INVALID")
+    issue_order = declared[2].split("、")
+    if len(set(issue_order)) != len(issue_order):
+        _reject("FINANCING_REDEMPTION_GROUP_TITLE_INVALID")
+    prior = body[:groups[0].start()]
+    seen, rows, evidence = [], [], []
+    for group in groups:
+        issues = group["issues"].split("、")
+        year = declared[1]
+        if f"公司完成了{year}年度" not in group[0]:
+            _reject("FINANCING_REDEMPTION_GROUP_TITLE_INVALID")
+        group_title = f"关于{year}年度第{group['issues']}期{kind}兑付完成的公告"
+        # Reuse the strict per-payment validator on the exact original table rows.
+        table_rows = []
+        for issue in issues:
+            matches = re.findall(rf"公司{year}年度第{issue}期{kind}"
+                                 r"[0-9.,亿元%天年月日临-]+", prior)
+            if len(matches) != 1:
+                _reject("FINANCING_REDEMPTION_GROUP_ROWS_INCOMPLETE")
+            table_rows.extend(matches)
+        payment = _financing_redemption("".join(table_rows) + group[0]
+            + body[groups[-1].end():], published, group_title, kind=kind)
+        rows.extend(dict(row, paid_date=payment["effective_date"])
+                    for row in payment["financing_redemptions"])
+        evidence.extend((fragment, label) for fragment, label in payment["_evidence"]
+                        if label == "issuer_financing_redemption_schedule")
+        evidence.append((group[0], "issuer_financing_redemption_completed"))
+        seen.extend(issues)
+    if sorted(seen) != sorted(issue_order) or [row["paid_date"] for row in rows] != sorted(
+            row["paid_date"] for row in rows):
+        _reject("FINANCING_REDEMPTION_GROUP_ROWS_INCOMPLETE")
+    evidence.append((body[groups[-1].end():], "issuer_financing_redemption_settlement_agent"))
+    return dict(event_type="REPORTED_ISSUER_FINANCING_REDEMPTION",
+        effective_date=rows[-1]["paid_date"], financing_redemptions=rows,
+        affected_model_fields=["debt_repayment", "interest_outside_cfo"],
+        summary=f"公告确认{len(rows)}项超短期融资券在多个日期完成本息兑付。",
+        implication="按每笔实际支付日归期。",
+        limitations=["仅证明公告列示的兑付款项。"], _evidence=evidence)
+
+
+_MIXED_REDEMPTION_SERIES = (
+    r"20[0-9]{2}年度第[一二三四五六七八九十]+期科技创新债券"
+    r"(?:\(乡村振兴\))?、[一二三四五六七八九十]+期超短期融资券"
+)
+
+
+def _mixed_financing_redemption(body, published, title):
+    completed = _match(
+        r"(?P<table>.+)(?P<payment>" + _DATE.format(name="paid") +
+        r",公司完成了(?P<series>" + _MIXED_REDEMPTION_SERIES +
+        r")的兑付工作,本息兑付总额分别为人民币(?P<amounts>[0-9,.]+元、[0-9,.]+元)"
+        r"(?P<settlement>,均由银行间市场清算所股份有限公司代理划付至债券持有人指定的银行账户。))",
+        body,
+    )
+    if title != "关于" + completed["series"] + "兑付完成的公告":
+        _reject("FINANCING_REDEMPTION_GROUP_TITLE_INVALID")
+    first, second = completed["series"].split("、")
+    year = first[:4]
+    rows, evidence = [], []
+    for label, amount in zip((first, year + "年度第" + second),
+                             completed["amounts"].split("、"), strict=True):
+        kind = label.split("期", 1)[1]
+        matches = re.findall("公司" + re.escape(label) + r"[0-9.,亿元%天年月日临-]+",
+                             completed["table"])
+        if len(matches) != 1:
+            _reject("FINANCING_REDEMPTION_GROUP_ROWS_INCOMPLETE")
+        synthetic = (matches[0] + completed["paid"] + ",公司完成了" + label
+                     + "的兑付工作,本息兑付总额为人民币" + amount + completed["settlement"])
+        payment = _financing_redemption(synthetic, published,
+            "关于" + label + "兑付完成的公告", kind=re.escape(kind))
+        rows.extend(payment["financing_redemptions"])
+        evidence.append((matches[0], "issuer_financing_redemption_schedule"))
+    if len({row["issue"] for row in rows}) != len(rows):
+        _reject("FINANCING_REDEMPTION_GROUP_ROWS_INCOMPLETE")
+    evidence.append((completed["payment"], "issuer_financing_redemption_completed"))
+    return dict(event_type="REPORTED_ISSUER_FINANCING_REDEMPTION",
+        effective_date=_day(completed["paid"]), financing_redemptions=rows,
+        affected_model_fields=["debt_repayment", "interest_outside_cfo"],
+        summary="公告确认两类债券同日完成本息兑付。",
+        implication="核对本次实际本金和票息现金。",
+        limitations=["仅证明公告列示的兑付款项。"], _evidence=evidence)
+
+
+_FUND_CHANGE_TITLE = "关于出资设立风险投资基金相关事项变更的公告"
+_FUND_PROGRESS_TITLE = "关于出资设立风险投资基金的进展公告"
+
+
+def parse_fund_amendment_terms(pages, *, symbol):
+    """Parse one issuer notice; pairing and external source identity are separate."""
+    original = _Original(pages, max_pages=4)
+    header = _match(
+        r"证券代码:(?P<code>[0-9]{6})证券简称:[^:]{1,30}公告编号:临(?P<number>20[0-9]{2}-[0-9]{3})"
+        r"(?P<issuer>[\u4e00-\u9fff]{2,80}股份有限公司)"
+        rf"(?P<title>{_FUND_CHANGE_TITLE}|{_FUND_PROGRESS_TITLE})"
+        + re.escape(_GUARANTEE) + r"(?P<body>.+)特此公告。?(?P=issuer)董事会"
+        + _PUBLICATION_DATE.format(name="published"), original.text,
+    )
+    if header["code"] != symbol or original.text.count("证券代码:") != 1:
+        _reject("ISSUER_CODE_MISMATCH")
+    published = _day(header["published"])
+    if published[:4] != header["number"][:4]:
+        _reject("ANNOUNCEMENT_YEAR_MISMATCH")
+    body = header["body"]
+
+    def unique(pattern):
+        matches = list(re.finditer(unicodedata.normalize("NFKC", pattern), body))
+        if len(matches) != 1:
+            _reject("FUND_UNSUPPORTED_OR_AMBIGUOUS_TERMS")
+        return matches[0]
+
+    common = unique(
+        rf"同意公司及控股子公司共同出资(?P<commitment>{_MONEY})亿元设立"
+        r"(?P<fund>[\u4e00-\u9fff]{2,80}合伙企业\(有限合伙\))"
+        r"\(简称“合伙企业”或“健瓴基金”\)。(?P<year>20[0-9]{2})年(?P<month>[0-9]{1,2})月,"
+        r"健瓴基金在中国证券投资基金业协会完成了私募投资基金备案手续,备案编码:(?P<code>[A-Z0-9]{6})。"
+    )
+    initial_month = _day(f'{common["year"]}年{common["month"]}月1日')[:7]
+    commitment = Decimal(common["commitment"]) * 100_000_000
+    terms = dict(fund_name=common["fund"], registration_code=common["code"],
+                 initial_registration_month=initial_month,
+                 joint_commitment_cny=format(commitment.normalize(), "f"),
+                 commitment_scope="ISSUER_AND_CONTROLLED_SUBSIDIARY_JOINT",
+                 standalone_parent_commitment_cny=None, standalone_parent_paid_cny=None,
+                 incremental_parent_cash_verified=False)
+    if commitment <= 0:
+        _reject("FUND_INVALID_COMMITMENT")
+    evidence = original.evidence(original.text[:header.start("body")], "issuer_code_and_heading")
+    evidence.extend(original.evidence(common[0], "joint_commitment_and_original_registration"))
+
+    if header["title"] == _FUND_CHANGE_TITLE:
+        if len(pages) != 4:
+            _reject("FUND_COMPLETE_AMENDMENT_PAGES_REQUIRED")
+        paid = unique(r"截至" + _DATE.format(name="as_of") +
+                      r",健瓴基金实缴出资合计(?P<amount>[0-9]{1,3}(?:,[0-9]{3})+(?:\.[0-9]+)?)万元,")
+        previous = unique(r"修订前:2\.7\.2自设立日起至以下情形中较早的一日为合伙企业的“投资期”:"
+                          r"\(1\)自首次提款到账日起满伍\(5\)年之日;"
+                          r"\(2\)普通合伙人确认并宣布全体合伙人届时认缴出资余额"
+                          r"\(违约合伙人之认缴出资余额除外\)都已实际使用或为合理预留之日。")
+        revised = unique(r"修订后:2\.7\.2合伙企业的投资期:自首次提款到账日起满玖\(9\)年之日;"
+                         r"或普通合伙人确认并宣布全体合伙人届时认缴出资余额"
+                         r"\(违约合伙人之认缴出资余额除外\)都已实际使用或为合理预留之日。")
+        approval = unique(r"公司于" + _DATE.format(name="approval") +
+                          r"召开了第十二届董事会临时会议,以11票同意、0票反对、0票弃权审议通过了"
+                          r"《公司关于出资设立风险投资基金相关事项变更的议案》。")
+        evidence.extend(original.evidence(paid[0], "historic_fund_paid_in"))
+        evidence.extend(original.evidence(previous[0], "previous_investment_period"))
+        evidence.extend(original.evidence(revised[0], "revised_investment_period"))
+        evidence.extend(original.evidence(approval[0], "board_approval"))
+        as_of, approved = _day(paid["as_of"]), _day(approval["approval"])
+        if initial_month > as_of[:7] or not as_of <= approved <= published:
+            _reject("FUND_CHRONOLOGY_MISMATCH")
+        terms.update(fund_paid_in_cny=format(Decimal(paid["amount"].replace(",", "")) * 10_000, "f"),
+                     fund_paid_in_as_of=as_of, paid_in_scope="FUND_TOTAL",
+                     board_approval_date=approved, previous_investment_years_from_first_draw=5,
+                     revised_investment_years_from_first_draw=9,
+                     commitment_use_or_reservation_clause_retained=True,
+                     first_draw_date=None, investment_end_date=None, registration_date=None)
+        event_type = "REPORTED_FUND_INVESTMENT_PERIOD_AMENDMENT"
+    else:
+        if len(pages) != 3:
+            _reject("FUND_COMPLETE_REGISTRATION_PAGES_REQUIRED")
+        approval = unique(_DATE.format(name="approval") + r",公司召开第十二届董事会临时会议,审议通过了"
+                          r"《公司关于出资设立风险投资基金相关事项变更的议案》,同意合伙企业相关期限实施延期及其他变更事项。")
+        reference = unique(r"《" + re.escape(header["issuer"] + _FUND_CHANGE_TITLE)
+                           + r"》\(公告编号:临(?P<number>20[0-9]{2}-[0-9]{3})\)。")
+        registration = unique(r"已在中国证券投资基金业协会完成了私募投资基金变更事项备案手续,备案信息如下:"
+                              r"基金名称:(?P<fund>[\u4e00-\u9fff]{2,80}合伙企业\(有限合伙\))"
+                              r"管理人名称:[^:]{2,100}托管人名称:[^:]{2,100}"
+                              r"备案编码:(?P<code>[A-Z0-9]{6})变更备案完成日期:" + _DATE.format(name="completed"))
+        approved, completed = _day(approval["approval"]), _day(registration["completed"])
+        if (registration["code"], registration["fund"]) != (terms["registration_code"], terms["fund_name"]):
+            _reject("FUND_REGISTRATION_IDENTITY_MISMATCH")
+        if initial_month > approved[:7] or not approved <= completed <= published:
+            _reject("FUND_CHRONOLOGY_MISMATCH")
+        for match, field in ((approval, "board_approval"), (reference, "amendment_announcement_reference"),
+                             (registration, "amendment_registration_completion")):
+            evidence.extend(original.evidence(match[0], field))
+        terms.update(board_approval_date=approved, registration_date=completed,
+                     amendment_announcement_number=reference["number"])
+        event_type = "REPORTED_FUND_AMENDMENT_REGISTRATION"
+
+    evidence.extend(original.evidence(original.text[header.end("body"):], "issuer_and_publication_date"))
+    return dict(parser_version="fund-amendment-terms-v1", event_type=event_type, symbol=symbol,
+                issuer_name=header["issuer"], announcement_number=header["number"],
+                published_date=published, effective_date=None, terms=terms,
+                summary=f'{terms["fund_name"]}（{terms["registration_code"]}）披露投资期限变更相关事项。',
+                implication="复核投资期限、未来资金调用及母公司出资范围。",
+                affected_model_fields=["commitments_outside_capex"],
+                evidence_excerpts=evidence, physical_pages=sorted({row["physical_page"] for row in evidence}),
+                limitations=["共同出资及历史基金实缴均未拆至母公司。",
+                             "原件未验证本次新增实付、首次提款日或模型影响。"], action="no_order")
+
+
+def parse_fund_amendment_pair(amendment_pages, registration_pages, *, symbol):
+    """Cross-check the original terms against the issuer's later registration."""
+    amendment = parse_fund_amendment_terms(amendment_pages, symbol=symbol)
+    registration = parse_fund_amendment_terms(registration_pages, symbol=symbol)
+    first, second = amendment["terms"], registration["terms"]
+    if (amendment["event_type"] != "REPORTED_FUND_INVESTMENT_PERIOD_AMENDMENT"
+            or registration["event_type"] != "REPORTED_FUND_AMENDMENT_REGISTRATION"
+            or amendment["issuer_name"] != registration["issuer_name"]
+            or amendment["announcement_number"] != second["amendment_announcement_number"]
+            or amendment["published_date"] > second["registration_date"]
+            or any(first[key] != second[key] for key in (
+                "fund_name", "registration_code", "initial_registration_month", "board_approval_date",
+                "joint_commitment_cny",
+            ))):
+        _reject("FUND_AMENDMENT_PAIR_MISMATCH")
+    return dict(amendment=amendment, registration=registration, action="no_order")
+
+
+def parse_operating_event_terms(pages, *, symbol, grouped_redemptions=False):
     """Extract bounded source terms; ValueError rejects unsupported prose.
 
     Input is the COMPLETE extract_pages output, not a selected excerpt. The
@@ -431,16 +875,29 @@ def parse_operating_event_terms(pages, *, symbol):
     """
     if not isinstance(symbol, str) or not re.fullmatch(r"[0-9]{6}", symbol):
         _reject("EXPECTED_SYMBOL_REQUIRED")
+    if isinstance(pages, (list, tuple)) and pages and isinstance(pages[0], str):
+        heading = re.sub(r"\s+", "", unicodedata.normalize("NFKC", pages[0])).split(
+            unicodedata.normalize("NFKC", _GUARANTEE), 1)[0]
+        if heading.endswith((_FUND_CHANGE_TITLE, _FUND_PROGRESS_TITLE)):
+            return parse_fund_amendment_terms(pages, symbol=symbol)
     original = _Original(pages)
     text = original.text
+    redemption_kind = r"(?:超短期融资券|科技创新债券)" if grouped_redemptions else "超短期融资券"
+    redemption_series = rf"20[0-9]{{2}}年度第[一二三四五六七八九十、]+期{redemption_kind}"
+    if grouped_redemptions:
+        redemption_series = rf"(?:{redemption_series}|{_MIXED_REDEMPTION_SERIES})"
     header = _match(
         r"(?:证券代码:(?P<code_a>[0-9]{6})证券简称:(?P<short_a>[^:]{1,30})公告编号:临|"
         r"证券简称:(?P<short_b>[^:]{1,30})证券代码:(?P<code_b>[0-9]{6})编号:临)"
         r"(?P<year>20[0-9]{2})-(?P<number>[0-9]{3})"
         r"(?P<issuer>[\u4e00-\u9fffA-Za-z()]{2,80}股份有限公司)"
-        r"(?P<title>重大事项公告|" + _MEETING + r"决议公告|关于会计政策变更的公告|(?P<buyback>关于股份回购进展公告|关于以集中竞价交易方式首次回购公司股份的公告|关于股份回购实施结果暨股份变动的公告))"
-        + re.escape(_GUARANTEE) + r"(?P<body>.+)特此公告(?(buyback)。?|。)"
-        r"(?P=issuer)董事会" + _DATE.format(name="published"), text,
+        r"(?P<title>重大事项公告|" + _MEETING + r"决议公告|关于会计政策变更的公告|(?P<no_period>"
+        rf"(?P<redemption>关于{redemption_series}兑付完成的公告)|"
+        r"(?P<financing>关于20[0-9]{2}年度第[一二三四五六七八九十、]+期(?:超短期融资券|科技创新债券)发行结果的公告)|"
+        r"(?P<plan_purchase>关于第[一二三四五六七八九十]+期(?:长期服务计划|员工持股计划)完成股票购买的公告)|"
+        r"(?P<buyback>关于股份回购进展公告|关于以集中竞价交易方式首次回购公司股份的公告|关于股份回购实施结果暨股份变动的公告|关于回购股份减少注册资本通知债权人的公告)))"
+        + re.escape(_GUARANTEE) + r"(?P<body>.+)特此公告(?(no_period)。?|。)"
+        r"(?P=issuer)董事会" + _PUBLICATION_DATE.format(name="published"), text,
     )
     if (header["code_a"] or header["code_b"]) != symbol or len(re.findall(r"证券代码:", text)) != 1:
         _reject("ISSUER_CODE_MISMATCH")
@@ -454,6 +911,18 @@ def parse_operating_event_terms(pages, *, symbol):
         result = _accounting(body, issuer, published)
     elif title == "关于股份回购实施结果暨股份变动的公告":
         result = _buyback_completion(body, published)
+    elif title == "关于回购股份减少注册资本通知债权人的公告":
+        result = _buyback_creditor_notice(body, published)
+    elif header["redemption"] and "科技创新债券" in title and "超短期融资券" in title:
+        result = _mixed_financing_redemption(body, published, title)
+    elif header["redemption"]:
+        result = _financing_redemption(body, published, title,
+            grouped=grouped_redemptions and body.count("公司完成了") > 1,
+            kind="科技创新债券" if "科技创新债券" in title else "超短期融资券")
+    elif header["financing"]:
+        result = _financing_issuance(body, published)
+    elif header["plan_purchase"]:
+        result = _plan_market_purchase_completion(body, title, published)
     elif header["buyback"]:
         result = _buyback_progress(body, published, first_execution="首次回购" in title)
     else:
@@ -477,3 +946,81 @@ def parse_operating_event_terms(pages, *, symbol):
         "不授予材料性、股本不变、模型有效性、策略或交易资格；披露日期须由调用方与来源索引和URL核对。",
     ])
     return result
+
+
+BUYBACK_PLAN_TITLES = (
+    "关于以集中竞价交易方式回购公司股份方案的公告",
+    "关于以集中竞价交易方式回购公司股份的回购报告书",
+)
+
+
+def parse_buyback_cancellation_plan(pages, *, symbol):
+    """Extract a named proposal or approved plan, without asserting execution."""
+    original = _Original(pages, max_pages=10, max_chars=90000)
+    text = original.text
+    title_pattern = "|".join(map(re.escape, BUYBACK_PLAN_TITLES))
+    match = _match(
+        r"(?P<heading>证券代码:(?P<code>[0-9]{6})证券简称:[^:]{1,30}公告编号:临"
+        r"(?P<number>20[0-9]{2}-[0-9]{3})(?P<issuer>[\u4e00-\u9fff]{2,80}股份有限公司)"
+        r"(?P<title>" + title_pattern + r"))(?P<body>.+)特此公告。?"
+        r"(?P<signature>(?P=issuer)董事会" + _PUBLICATION_DATE.format(name="published") + ")",
+        text,
+    )
+    if match["code"] != symbol or text.count("证券代码:") != 1:
+        _reject("ISSUER_CODE_MISMATCH")
+    published = _day(match["published"])
+    if not match["number"].startswith(published[:4]):
+        _reject("ANNOUNCEMENT_YEAR_MISMATCH")
+    terms = re.search(
+        r"回购股份金额:不低于人民币(?P<low>" + _MONEY + r")亿元\(含\)且不超过人民币"
+        r"(?P<high>" + _MONEY + r")亿元\(含\),[^。]+。"
+        r"●回购股份资金来源:公司自有资金。"
+        r"●回购股份用途:本次回购股份将依法全部予以注销并减少公司注册资本。"
+        r"●回购股份价格:不超过人民币(?P<cap>" + _MONEY + r")元/股\(含\)",
+        match["body"],
+    )
+    duration = re.search(
+        r"回购股份期限:自公司股东会审议通过回购方案之日起不超过(?P<months>[1-9][0-9]?)个月。",
+        match["body"],
+    )
+    if terms is None or duration is None:
+        _reject("BUYBACK_PLAN_TERMS_MISSING")
+    low, high, cap = (Decimal(terms[key]) for key in ("low", "high", "cap"))
+    if not 0 < low <= high or cap <= 0:
+        _reject("BUYBACK_PLAN_TERMS_INVALID")
+    pending = "本次回购股份方案尚需提交公司股东会审议通过。"
+    approval = re.search(
+        _DATE.format(name="meeting") + r",公司召开20[0-9]{2}年第[一二三四五六七八九十]+次临时股东会,"
+        r"审议通过了《关于以集中竞价交易方式回购公司股份方案的议案》。",
+        match["body"],
+    )
+    approved_on = None
+    if match["title"] == BUYBACK_PLAN_TITLES[0]:
+        if pending not in match["body"] or approval is not None:
+            _reject("BUYBACK_PLAN_APPROVAL_CONFLICT")
+        status, decision_span = "PROPOSED_SUBJECT_TO_SHAREHOLDER_APPROVAL", pending
+    else:
+        if approval is None or pending in match["body"]:
+            _reject("BUYBACK_PLAN_APPROVAL_MISSING_OR_CONFLICTING")
+        approved_on = _day(approval["meeting"])
+        if approved_on > published:
+            _reject("BUYBACK_PLAN_APPROVAL_AFTER_PUBLICATION")
+        status, decision_span = "SHAREHOLDER_APPROVED_PLAN", approval[0]
+    excerpts = []
+    for fragment, field in ((match["heading"], "issuer"), (terms[0], "budget_funding_purpose_and_price"),
+                            (duration[0], "duration"), (decision_span, "approval"),
+                            (match["signature"], "publication")):
+        excerpts.extend(original.evidence(fragment, field))
+    phase = "董事会方案待股东会审议" if approved_on is None else f"{approved_on}股东会通过方案"
+    return dict(
+        parser_version="buyback-cancellation-plan-v1", event_type="REPORTED_BUYBACK_CANCELLATION_PLAN",
+        symbol=symbol, published_date=published, effective_date=None,
+        summary=f"{phase}。原件回购预算{low}–{high}亿元，价格上限{cap}元/股，拟用于注销减资。",
+        implication="核对后续回购结果及注销生效公告，再重算实际现金和股本。",
+        terms=dict(plan_state=status, shareholder_approved_on=approved_on,
+                   cash_min_cny=str(low * 100000000), cash_max_cny=str(high * 100000000),
+                   price_cap_cny=str(cap), duration_months=int(duration["months"])),
+        affected_model_fields=["ordinary_shares", "shareholder_distributions"],
+        limitations=["方案和资金上限均不证明实际回购金额、注销股数或生效日。"],
+        evidence_excerpts=excerpts, action="no_order",
+    )

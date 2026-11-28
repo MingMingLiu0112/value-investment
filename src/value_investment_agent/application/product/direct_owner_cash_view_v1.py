@@ -104,6 +104,17 @@ def read_direct_owner_cash_view(*,root,receipt_binding,now):
         if key not in seen:
             seen.add(key); assumptions.append(item)
     annual={name:row["calculation"]["annual_rows"] for name,row in compiled["scenarios"].items()}
+    from ..research.parent_remaining_year_review import read_registered_remaining_year_review
+    try:
+        remaining_year = read_registered_remaining_year_review(root=root, receipt_binding=receipt_binding,
+            symbol=result["symbol"], now=now)
+    except (OSError, ValueError, KeyError, TypeError, ArithmeticError) as error:
+        remaining_year = dict(schema_version="parent-remaining-year-review-v1",
+            status="SOURCE_OR_RESEARCH_REJECTED", reason=str(error), scenarios={},
+            symbol=result["symbol"], candidate_binding=receipt_binding,
+            input_descriptor_sha256=result["input_descriptor_sha256"],
+            current_price_qualified=False,
+            action="no_order", successor_adopted=False, formal_eligibility=False)
     return dict(schema_version="first-research-input-view-v1",status="SOURCE_BOUND_FIRST_INPUT_COMPILED",
         reason=None,symbol=result["symbol"],action="no_order",formal_eligibility=False,
         main_range_adopted=False,main_valuation_range=None,current_price=None,condition_price=None,
@@ -122,4 +133,5 @@ def read_direct_owner_cash_view(*,root,receipt_binding,now):
         direct_owner_cash=dict(method="DIRECT_CFO_LESS_EXPLICIT_CAPITAL_DEBT_AND_CONSTRAINED_DISTRIBUTIONS",
             valuation_basis=spec["valuation_date"],scope="ISSUER_PARENT_STANDALONE",
             annual_rows=annual,assumptions=assumptions,conditional_price=price,
-            source_refs=result["source_bindings"],financing_review=financing_review))
+            source_refs=result["source_bindings"],financing_review=financing_review,
+            remaining_year_review=remaining_year))

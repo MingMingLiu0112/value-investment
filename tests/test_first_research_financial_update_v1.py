@@ -5,8 +5,8 @@ from value_investment_agent.application.research.first_research_financial_update
 
 def inputs():
     native = {"symbol": "600519", "financial_basis": "2026-06-30", "facts": [
-        {"field": "revenue", "period_end": "2026-06-30", "unit": "CNY", "value": "90"},
-        {"field": "parent_profit", "period_end": "2026-06-30", "unit": "CNY", "value": "44"},
+        {"field": "revenue", "scope": "consolidated", "period_end": "2026-06-30", "unit": "CNY", "value": "90"},
+        {"field": "parent_profit", "scope": "consolidated_parent", "period_end": "2026-06-30", "unit": "CNY", "value": "44"},
     ]}
     q3 = {"status": "VERIFIED_OBSERVATION_ONLY", "symbol": "600519",
           "source_bindings": {"original": {"path": "runtime/q3.pdf", "sha256": "a" * 64}},
@@ -48,6 +48,30 @@ def test_mismatched_scope_or_missing_h1_does_not_claim_update():
         native_facts=native, q3_read_model=q3)["status"] == "UNASSESSABLE"
 
 
+def test_parent_standalone_profit_cannot_be_subtracted_from_consolidated_ytd():
+    native, q3 = inputs()
+    native["facts"][1]["scope"] = "parent_standalone"
+    result = compare_first_input_financial_update(symbol="600519", financial_basis="2026-06-30",
+                                                   native_facts=native, q3_read_model=q3)
+    assert result["status"] == "UNASSESSABLE"
+    assert result["reason"] == "FINANCIAL_UPDATE_H1_SCOPE_MISMATCH:parent_profit"
+    assert "derived_q3_quarter_cny" not in result
+
+
+def test_only_exact_quarter_end_dates_produce_single_quarter_values():
+    for basis, period in (("2026-06-29", "2026-09-30"), ("2026-06-30", "2026-09-29")):
+        native, q3 = inputs()
+        native["financial_basis"] = basis
+        for fact in native["facts"]:
+            fact["period_end"] = basis
+        q3["ytd_9m_observation"]["report_period"] = period
+        result = compare_first_input_financial_update(
+            symbol="600519", financial_basis=basis, native_facts=native, q3_read_model=q3,
+        )
+        assert result["reason"] == "FINANCIAL_UPDATE_NONCOMPARABLE_PERIODS"
+        assert "derived_q3_quarter_cny" not in result
+
+
 def test_unsupported_issuer_has_no_q3_claim():
     native, _ = inputs()
     assert compare_first_input_financial_update(symbol="600519", financial_basis="2026-06-30",
@@ -69,3 +93,21 @@ def test_verified_income_removes_only_covered_gaps_and_conflict_rejects():
     assert result["valuation_recomputed"] is False and result["price_admitted"] is False
     income["facts"]["2026"]["revenue"] = "131"
     assert evaluate()["reason"] == "FINANCIAL_UPDATE_INCOME_FACT_CONFLICT"
+
+def test_q3_nonrecurring_requires_matching_reported_total():
+    import pytest
+
+    from value_investment_agent.application.research.quarter_income_facts_v2 import (
+        _reported_nonrecurring_ytd,
+    )
+
+    first = (
+        "单位：元 币种：人民币 年初至报告期末\n"
+        "归属于上市公司股东的 扣除非经常性损益的净 利润 10.00 1.00 99.00 2.00"
+    )
+    second = "非经常性损益项目和金额 单位：元 币种：人民币 年初至报告期末 合计 0.20 1.00"
+    assert _reported_nonrecurring_ytd([first, second], "100.00") == "1.00"
+    with pytest.raises(ValueError, match="Q3_NONRECURRING_PROFIT_RECONCILIATION_FAILED"):
+        _reported_nonrecurring_ytd([first, second], "100.01")
+    with pytest.raises(ValueError, match="Q3_NONRECURRING_ROWS_UNVERIFIED"):
+        _reported_nonrecurring_ytd([first, second + " 合计 0.20 1.00"], "100.00")

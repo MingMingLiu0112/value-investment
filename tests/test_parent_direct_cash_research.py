@@ -232,3 +232,128 @@ def test_source_arithmetic_ignores_and_preserves_caller_precision(case, annual):
             root=case["root"], receipt_binding=binding, evaluated_at=NOW)
         assert actual == expected
         assert context.prec == 2
+
+
+@pytest.mark.parametrize("invalid", [None, "issuer", "period", "scope", "unit"])
+def test_retained_direct_annual_layout_preserves_source_contract(case, monkeypatch, invalid):
+    from value_investment_agent.application.research import retained_parent_direct_observations as retained
+
+    issuer = "示例股份有限公司"
+    pages = case["pages"][:]
+    for page in (1, 2):
+        lines = pages[page].replace("2026年半年度", "2026年度").replace(
+            "2025年半年度", "2025年度").replace("1—6月", "1—12月").splitlines()
+        pages[page] = "\n".join([issuer + " 2026 年年度报告 93", "财务报告",
+            lines[2], "编制单位：" + issuer, lines[1], *lines[3:]])
+    if invalid:
+        substitutions = {
+            "issuer": ("编制单位：" + issuer, "编制单位：其他发行人"),
+            "period": ("1—12月", "1—6月"),
+            "scope": ("母公司利润表", "合并利润表"),
+            "unit": ("单位：元", "单位：万元"),
+        }
+        old, new = substitutions[invalid]
+        pages[1] = pages[1].replace(old, new)
+        assert old not in pages[1]
+    source = dict(path="runtime/original.pdf", sha256=sha256(case["pdf"].read_bytes()).hexdigest(),
+                  available_at="2027-04-30T00:00:00+00:00")
+    monkeypatch.setattr(retained, "load_retained_official_report", lambda **kwargs: dict(
+        source=source, fetched_at=source["available_at"], completed_at=source["available_at"]))
+    monkeypatch.setattr(retained, "extract_pages", lambda path: pages)
+    args = dict(root=case["root"], symbol="600123", issuer_name=issuer, period_end="2026-12-31",
+                receipt_binding=case["seal"](), income_page=2, cash_page=3, evaluated_at=NOW)
+    if invalid:
+        with pytest.raises(ValueError, match="PARENT_DIRECT_CASH_"):
+            retained.read_retained_parent_direct_observations(**args)
+    else:
+        first, prior = retained.read_retained_parent_direct_observations(**args)
+        assert (first["period_end"], first["cfo"], prior["period_end"], prior["revenue"]) == (
+            "2026-12-31", "30.00", "2025-12-31", "90.00")
+        assert first["source_refs"][0]["income_page"] == 2
+        assert first["classification"] == "FACT"
+
+
+@pytest.mark.parametrize("mutation", [None, "scope", "currency", "period"])
+def test_retained_annual_balance_requires_exact_parent_header(case, monkeypatch, mutation):
+    from value_investment_agent.application.research import retained_parent_direct_observations as retained
+
+    issuer = "示例股份有限公司"
+    page = (
+        f"{issuer} 2026 年年度报告 93\n财务报告\n2026年12月31日\n编制单位：{issuer}\n"
+        "母公司资产负债表\n单位：元 币种：人民币\n项目 附注 2026年12月31日 2025年12月31日\n"
+        "货币资金 80.00 70.00\n实收资本（或股本） 30.00 30.00\n"
+        "盈余公积 4.00 3.00\n未分配利润 22.00 15.00"
+    )
+    if mutation:
+        old, new = {
+            "scope": ("编制单位：" + issuer, "编制单位：其他公司"),
+            "currency": ("人民币", "美元"),
+            "period": ("2025年12月31日", "2025年06月30日"),
+        }[mutation]
+        page = page.replace(old, new)
+    available_at = "2027-04-30T00:00:00+00:00"
+    source = dict(path="runtime/original.pdf", sha256=sha256(case["pdf"].read_bytes()).hexdigest(),
+                  available_at=available_at, period="2026-12-31")
+    monkeypatch.setattr(retained, "load_retained_official_report", lambda **kwargs: dict(
+        source=source, fetched_at=available_at, completed_at=available_at, source_id="TEST_ONLY"))
+    monkeypatch.setattr(retained, "extract_pages", lambda path: [page, "合并利润表"])
+
+    result = retained.read_retained_parent_balance_observations(
+        root=case["root"], symbol="600123", issuer_name=issuer, period_end="2026-12-31",
+        receipt_binding=case["seal"](), evaluated_at=NOW,
+    )
+
+    if mutation:
+        assert not result["evidence"]
+        assert result["gaps"] == ["PARENT_BALANCE_OWNER_UNIT_OR_COLUMNS_INVALID"]
+    else:
+        assert not result["gaps"]
+        assert {row["field"]: row["value"] for row in result["evidence"]} == {
+            "parent_cash_balance": "80.00", "parent_ordinary_share_capital": "30.00",
+            "parent_surplus_reserve": "4.00", "parent_retained_earnings": "22.00",
+        }
+        assert {row["physical_page"] for row in result["evidence"]} == {1}
+
+
+def test_retained_d2_preflight_yutong_originals():
+    import os
+    from pathlib import Path
+
+    from value_investment_agent.application.research.retained_parent_direct_observations import (
+        read_retained_parent_d2_preflight,
+    )
+
+    root = os.environ.get("VALUE_REAL_SOURCE_ROOT")
+    if not root:
+        pytest.skip("real original root explicitly required")
+    root = Path(root).resolve()
+    d = root / "runtime/value-f2-replays"
+    observations = json.loads((d / "b-retained-direct-observations-two-companies-20261120.json").read_bytes())
+    pins = {period: rows[0]["source_refs"][0]["receipt_binding"]
+            for period, rows in observations["candidates"]["600066"]["periods"].items()}
+    raw = (d / "yutong-opening-shares-20261120/retained-ordinary-shares-adapter.json").read_bytes()
+    assert sha256(raw).hexdigest() == "26a0215fb467d046e4792552e7f9c9dd58c116cd26ba7b8b8cb0f00b7a457734"
+    share_refs = json.loads(raw)["source_refs"][1:]
+    support = {role: {key: ref[key] for key in ("path", "sha256", "source_url", "available_at")}
+               for role, ref in zip(("proposal", "charter", "charter_vote"), share_refs, strict=True)}
+    args = dict(root=root.parent / "vf1", symbol="600066", issuer_name="宇通客车股份有限公司",
+                annual_period="2025-12-31", annual_receipt=pins["2025-12-31"],
+                interim_period="2026-06-30", interim_receipt=pins["2026-06-30"],
+                supporting_root=root, supporting_sources=support, evaluated_at=NOW)
+
+    result = read_retained_parent_d2_preflight(**args)
+    assert result["ordinary_shares"]["count"] == "2213939223"
+    assert result["status"] == "SOURCE_BOUND_D2_PREFLIGHT_ONLY"
+    assert not result["formal_eligibility"] and not result["model_applicability_verified"]
+    bridge = result["cash_source_bridge"]
+    assert bridge["owner_cash_cny"] is None and bridge["distribution_capacity_cny"] is None
+    assert [row["period_end"] for row in bridge["statements"]] == ["2025-12-31", "2026-06-30"]
+    assert all(row["checks"]["cash_statement_reconciled"] for row in bridge["statements"])
+    assert all(row["checks"]["balance_equation_reconciled"] for row in bridge["statements"])
+    with pytest.raises(ValueError, match="RETAINED_D2_NONCONSECUTIVE_PERIODS"):
+        read_retained_parent_d2_preflight(**dict(args, interim_period="2027-06-30"))
+    with pytest.raises(ValueError):
+        read_retained_parent_d2_preflight(**dict(args, symbol="600398"))
+    corrupted = dict(support, charter=dict(support["charter"], sha256="0" * 64))
+    with pytest.raises(ValueError, match="HASH_CHANGED"):
+        read_retained_parent_d2_preflight(**dict(args, supporting_sources=corrupted))

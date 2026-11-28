@@ -28,10 +28,19 @@ def collect_official_m2_input(directory: Path, root: Path, *, allow_partial: boo
     verify_calendar_archives(root)
     if type(allow_partial) is not bool:
         raise ValueError('Official partial acquisition requires an explicit boolean')
-    if allow_partial and not directory.resolve().is_relative_to(root.resolve()):
-        raise ValueError('Official partial acquisition must remain inside project root')
+    root = root.resolve(strict=True)
+    directory = directory.resolve()
+    if not directory.is_relative_to(root):
+        raise ValueError('Official acquisition must remain inside project root')
     collector = collect_security_lists_with_coverage if allow_partial else collect_security_lists_v2
     payload = collector(directory / 'official-raw')
+    references = list(payload['sources'])
+    for venue in payload.get('venue_coverage', {}).values():
+        references.extend(venue['source_bindings'])
+    for reference in references:
+        path = Path(reference['local_path'])
+        reference['local_path'] = path.relative_to(root).as_posix()
+    verify_retained_official_input(payload, root=root)
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2).encode('utf-8')
     path = directory / 'official-universe.json'
     write_new_bytes(path, raw)

@@ -2,12 +2,14 @@
 from copy import deepcopy
 import hashlib
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
 
 from value_investment_agent.application.research.first_research_input_v2 import build_first_research_input_v2
 from value_investment_agent.application.research.first_research_input_update_v2 import (
+    build_first_research_input_update_v2,
     link_first_research_input_update_v2,
 )
 from value_investment_agent.application.product import first_research_update_view_v1 as public_view
@@ -83,3 +85,31 @@ def test_v2_e1_registered_reader_cold_replays_both_versions(tmp_path, monkeypatc
     assert view["valuation_changed"] is True and view["change_rationale"] == update["change_rationale"]
     assert view["formal_eligibility"] is view["main_range_adopted"] is view["price_admitted"] is False
     assert before == {p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+
+
+def test_v2_e1_compiles_and_links_a_revised_spec(tmp_path):
+    root, old, new, cold = _versions(tmp_path)
+    revised = json.loads((root / new["receipt_binding"]["path"]).read_bytes())
+    output = root / "runtime/relinked"
+    update = build_first_research_input_update_v2(root=root,
+        predecessor_binding=old["receipt_binding"], successor_spec_binding=revised["spec_binding"],
+        output_dir=output, now=_fixture.NOW, fact_replay=cold)
+    assert (output / "update/update.json").is_file()
+    assert update["successor_binding"]["path"].startswith("runtime/relinked/compilation/")
+    assert update["valuation_changed"] and update["formal_eligibility"] is False
+    assert update["action"] == "no_order"
+    with pytest.raises(FileExistsError):
+        build_first_research_input_update_v2(root=root,
+            predecessor_binding=old["receipt_binding"], successor_spec_binding=revised["spec_binding"],
+            output_dir=output, now=_fixture.NOW, fact_replay=cold)
+
+
+def test_v2_build_rejects_text_only_revision_before_writing(tmp_path):
+    root, old, new, cold = _versions(tmp_path, economic_change=False)
+    revised = json.loads((root / new["receipt_binding"]["path"]).read_bytes())
+    output = root / "runtime/text-only"
+    with pytest.raises(ValueError, match="changed source-bound economic input"):
+        build_first_research_input_update_v2(root=root,
+            predecessor_binding=old["receipt_binding"], successor_spec_binding=revised["spec_binding"],
+            output_dir=output, now=_fixture.NOW, fact_replay=cold)
+    assert not output.exists()

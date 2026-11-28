@@ -22,6 +22,8 @@ const calls = vi.hoisted(() => ({
   start: vi.fn(),
   history: vi.fn(),
   parentCashHistory: vi.fn(),
+  parentCashValuation: vi.fn(),
+  fundingRevisions: vi.fn(),
   refresh: vi.fn(),
   cancel: vi.fn(),
   resume: vi.fn(),
@@ -70,6 +72,8 @@ vi.mock("../src/services/api", async (importOriginal) => {
       operatingResearchTask: calls.refresh,
       operatingResearchTasks: calls.history,
       parentCashTaskHistory: calls.parentCashHistory,
+      parentCashTaskValuation: calls.parentCashValuation,
+      parentCashFundingRevisions: calls.fundingRevisions,
       cancelOperatingResearchTask: calls.cancel,
       resumeOperatingResearchTask: calls.resume,
     },
@@ -84,6 +88,8 @@ import {
   CurrentCapitalObservationView,
   FiscalDistributionReviewView,
   ParentCashTaskHistoryView,
+  ParentCashTaskValuationRead,
+  ParentCashFundingRevisionRead,
 } from "../src/components/LiveOperatingResearchPanel";
 
 function task(
@@ -1972,3 +1978,348 @@ it("labels transport-normalized research as economically unapproved", () => {
   expect(html).toContain("经济复核尚未通过");
   expect(html).toContain("不认可任何经营假设");
 });
+
+it("offers the valuation read only for a successful V3 history row", async () => {
+  const row = {
+    task_id: "ready",
+    task_contract: "parent-cash-task-v3",
+    status: "SUCCEEDED",
+    source_years: [],
+    completed_stages: [],
+    charges: [],
+  };
+  calls.parentCashHistory.mockResolvedValue({
+    symbol: "600519",
+    items: [
+      row,
+      { ...row, task_id: "failed", status: "FAILED" },
+      { ...row, task_id: "legacy", task_contract: "parent-cash-task-v2" },
+    ],
+  });
+  ParentCashTaskHistoryView({ symbol: "600519" });
+  await Promise.resolve();
+  hooks.cursor = 0;
+  const tree = ParentCashTaskHistoryView({ symbol: "600519" });
+  expect(
+    nodes(tree)
+      .filter((node) => node.type === ParentCashTaskValuationRead)
+      .map((node) => node.props.taskId),
+  ).toEqual(["ready"]);
+  expect(calls.parentCashValuation).not.toHaveBeenCalled();
+});
+
+it("confirms a terminal retry for the eligible V2 predecessor only", async () => {
+  const row = {
+    task_id: "v2-parent",
+    task_contract: "parent-cash-task-v3",
+    status: "FAILED",
+    source_years: [],
+    completed_stages: ["bear.operating", "bear.policy"],
+    charges: [],
+    bear_terminal_v3_retry: true,
+  };
+  calls.parentCashHistory.mockResolvedValue({
+    symbol: "600809",
+    items: [
+      row,
+      { ...row, read_only_archive: true, task_id: "archive" },
+      { ...row, bear_terminal_v3_retry: false, task_id: "ineligible" },
+    ],
+  });
+  const onContinue = vi.fn();
+  ParentCashTaskHistoryView({ symbol: "600809", onContinue });
+  await Promise.resolve();
+  hooks.cursor = 0;
+  const tree = ParentCashTaskHistoryView({ symbol: "600809", onContinue });
+  const actions = nodes(tree).filter(
+    (node) => node.props.title === "复用已通过的两个阶段，请求新的悲观终值？",
+  );
+  expect(actions).toHaveLength(1);
+  expect(onContinue).not.toHaveBeenCalled();
+  actions[0].props.onConfirm();
+  expect(onContinue.mock.calls).toEqual([["v2-parent", undefined, true]]);
+});
+
+it("offers the annual cash rebuild only for the eligible failed V4 history row", async () => {
+  const row = {
+    task_id: "annual-cash",
+    task_contract: "parent-cash-task-v3",
+    terminal_cash_review: "RESEARCH_PAYOUT_V4",
+    status: "FAILED",
+    error_code:
+      "BASE_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION",
+    source_years: [],
+    completed_stages: ["base.operating", "base.policy"],
+    charges: [{ status: "SETTLED" }],
+  };
+  calls.parentCashHistory.mockResolvedValue({
+    symbol: "600887",
+    items: [
+      row,
+      { ...row, task_id: "still-reserved", charges: [{ status: "RESERVED" }] },
+      { ...row, task_id: "historical", read_only_archive: true },
+      {
+        ...row,
+        task_id: "missing-policy",
+        completed_stages: ["base.operating"],
+      },
+    ],
+  });
+  const onContinue = vi.fn();
+  ParentCashTaskHistoryView({ symbol: "600887", onContinue });
+  await Promise.resolve();
+  hooks.cursor = 0;
+  const tree = ParentCashTaskHistoryView({ symbol: "600887", onContinue });
+  const actions = nodes(tree).filter(
+    (node) => node.props.title === "从 Base 年度现金政策重建？",
+  );
+  expect(actions).toHaveLength(1);
+  expect(onContinue).not.toHaveBeenCalled();
+  await actions[0].props.onConfirm();
+  expect(onContinue.mock.calls).toEqual([["annual-cash"]]);
+});
+
+it.each([true, false])(
+  "keeps the historical benchmark separate from reassessment on expand (%s)",
+  async (hasReview) => {
+    const scenario = {
+      per_share_value: "11.51168",
+      annual_rows: [
+        {
+          year: 2027,
+          opening_cash_cny: "11",
+          direct_operating_cash_cny: "22",
+          total_owner_distribution_cny: "33",
+          closing_cash_cny: "44",
+          closing_debt_cny: "55",
+        },
+      ],
+    };
+    calls.fundingRevisions.mockResolvedValue({
+      task_id: "failed",
+      symbol: "600887",
+      original_task_status: "FAILED",
+      action: "no_order",
+      current_comparable: false,
+      revisions: [
+        {
+          status: "VERIFIED",
+          receipt_sha256: "a".repeat(64),
+          input_descriptor_sha256: "b".repeat(64),
+          valuation_date: "2025-12-31",
+          completed_at: "2026-11-26T12:00:00Z",
+          current_reassessment: hasReview
+            ? {
+                status: "REJECTED",
+                reason: "悲观情景还本后现金低于底线",
+                current_research_range_adopted: false,
+                scenario_rows: {
+                  bear: {
+                    status: "REJECTED",
+                    year: 2027,
+                    reason: "DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027",
+                    before: "40",
+                    floor: "90",
+                  },
+                },
+              }
+            : null,
+          scenarios: { bear: scenario, base: scenario, bull: scenario },
+        },
+        {
+          status: "UNAVAILABLE",
+          reason: "SOURCE_BINDING",
+          receipt_sha256: "c".repeat(64),
+        },
+      ],
+    });
+    const renderRevision = () => {
+      hooks.cursor = 0;
+      return ParentCashFundingRevisionRead({
+        taskId: "failed",
+        symbol: "600887",
+      });
+    };
+    const tree = renderRevision();
+    expect(calls.fundingRevisions).not.toHaveBeenCalled();
+    const target = { open: true };
+    tree.props.onToggle({ target, currentTarget: target });
+    await Promise.resolve();
+    const { renderToStaticMarkup } = require("react-dom/server");
+    const html = renderToStaticMarkup(renderRevision());
+    expect(html).toContain("历史基准条件估值 · 沿用注册经营假设");
+    expect(html).toContain("FAILED");
+    expect(html).toContain("F2 尚未对齐此版本");
+    expect(html).toContain("11.51 元/期初普通股");
+    expect(html).toContain("来源文件缺失或绑定校验失败");
+    expect(html.match(/情景逐年现金（元）/g)).toHaveLength(3);
+    if (hasReview) {
+      expect(html.indexOf("当前经营假设重验被拒")).toBeLessThan(
+        html.indexOf("11.51"),
+      );
+      expect(html).toContain("现金底线 90 元");
+    } else expect(html).toContain("缺少当前经营假设重验记录");
+  },
+);
+
+const valuationScenario = {
+  per_share_value: "12.34567890123456789",
+  annual_years: 8,
+  terminal_method: "stationary",
+};
+const valuationReceipt = {
+  status: "VERIFIED_CONDITIONAL_VALUATION",
+  task_id: "ready",
+  symbol: "600519",
+  valuation_date: "2026-11-21",
+  scenarios: {
+    bear: valuationScenario,
+    base: valuationScenario,
+    bull: valuationScenario,
+  },
+  input_descriptor_sha256: "a".repeat(64),
+  receipt_sha256: "b".repeat(64),
+  action: "no_order",
+  formal_eligibility: false,
+  current_comparable: false,
+  condition_price: null,
+};
+function renderValuation() {
+  hooks.cursor = 0;
+  return ParentCashTaskValuationRead({ symbol: "600519", taskId: "ready" });
+}
+async function readValuation() {
+  await nodes(renderValuation())
+    .find((node) => node.props.children === "读取条件估值")
+    .props.onClick();
+}
+
+it("reads only on click and shows exact reported values and evidence", async () => {
+  calls.parentCashValuation.mockResolvedValue(valuationReceipt);
+  renderValuation();
+  expect(calls.parentCashValuation).not.toHaveBeenCalled();
+  await readValuation();
+  expect(calls.parentCashValuation).toHaveBeenCalledWith(
+    "ready",
+    "600519",
+    expect.any(AbortSignal),
+  );
+  const shown = JSON.stringify(renderValuation());
+  for (const field of [
+    "12.34567890123456789",
+    "2026-11-21",
+    "stationary",
+    valuationReceipt.receipt_sha256,
+    valuationReceipt.input_descriptor_sha256,
+    "当前价格比较待核验，估值仅供历史条件研究。",
+  ])
+    expect(shown).toContain(field);
+});
+
+it("shows the receipt's annual cash and terminal distribution without rounding", async () => {
+  calls.parentCashValuation.mockResolvedValue({
+    ...valuationReceipt,
+    scenarios: {
+      ...valuationReceipt.scenarios,
+      base: {
+        ...valuationScenario,
+        terminal_steady_distribution_cny: "612345678.012345",
+        annual_cash_path: [
+          {
+            year: 2027,
+            direct_operating_cash_cny: "3123456789.012345",
+            total_owner_distribution_cny: "1234567890.012345",
+            closing_cash_cny: "54321.012345",
+            closing_debt_cny: "987654321.012345",
+            closing_book_equity_cny: "2876543210.012345",
+          },
+        ],
+      },
+    },
+  });
+  await readValuation();
+  const shown = JSON.stringify(renderValuation());
+  for (const text of [
+    "年度股东现金路径",
+    "612345678.012345",
+    "3123456789.012345",
+    "1234567890.012345",
+    "987654321.012345",
+    "2876543210.012345",
+  ])
+    expect(shown).toContain(text);
+});
+
+it("shows an independently verified quote without claiming comparability", async () => {
+  calls.parentCashValuation.mockResolvedValue({
+    ...valuationReceipt,
+    alignment_status: "BLOCKED",
+    alignment_reason_codes: ["TEST_MISSING_SHARE_BASIS"],
+    qualified_close: { trade_date: "2026-11-25", close_cny: "33.58" },
+  });
+  await readValuation();
+  const shown = JSON.stringify(renderValuation());
+  expect(shown).toContain("已核验收盘");
+  expect(shown).toContain("33.58");
+  expect(shown).toContain("TEST_MISSING_SHARE_BASIS");
+  expect(shown).not.toContain("同口径收盘");
+});
+
+it("shows the aligned closing quote without granting formal eligibility", async () => {
+  calls.parentCashValuation.mockResolvedValue({
+    ...valuationReceipt,
+    current_comparable: true,
+    alignment_status: "ALIGNED_FOR_RESEARCH_COMPARISON",
+    comparison_quote: { trade_date: "2026-11-25", close_cny: "33.20" },
+  });
+  await readValuation();
+  const shown = JSON.stringify(renderValuation());
+  expect(shown).toContain("已完成当前价格研究对齐，仍待正式准入。");
+  expect(shown).toContain("33.20");
+  expect(shown).toContain("2026-11-25");
+});
+
+it.each([
+  [
+    new ApiError(404, "NOT_FOUND", null),
+    "研究执行已结束，但还没有封存条件估值回执",
+  ],
+  [
+    new ApiError(
+      404,
+      "PARENT_TASK_VALUATION_NOT_SEALED",
+      "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID",
+    ),
+    "Base 情景终值的来源引用未通过核验",
+  ],
+  [new ApiError(422, "UNVERIFIED", null), "无法通过核验"],
+  [
+    new ApiError(
+      409,
+      "PARENT_TASK_VALUATION_BLOCKED",
+      "PARENT_TASK_CASE_BINDING_REQUIRED",
+    ),
+    "此任务的估值封存受阻（PARENT_TASK_CASE_BINDING_REQUIRED）",
+  ],
+  [
+    new ApiError(
+      409,
+      "PARENT_TASK_VALUATION_BLOCKED",
+      "DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:2027",
+    ),
+    "此任务的估值封存受阻（2027 年现金低于模型底线）",
+  ],
+  [{ ...valuationReceipt, symbol: "000568" }, "响应无法核验"],
+  [{ ...valuationReceipt, current_comparable: true }, "响应无法核验"],
+])(
+  "suppresses amounts when the receipt cannot be read or trusted",
+  async (response, message) => {
+    if (response instanceof ApiError)
+      calls.parentCashValuation.mockRejectedValue(response);
+    else calls.parentCashValuation.mockResolvedValue(response);
+    await readValuation();
+    const shown = JSON.stringify(renderValuation());
+    expect(shown).toContain(message);
+    expect(shown).not.toContain(valuationScenario.per_share_value);
+  },
+);

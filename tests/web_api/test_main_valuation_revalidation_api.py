@@ -24,7 +24,7 @@ def revalidation(api, monkeypatch):
     data.rows = [task]
     siblings = {}
     for module, function, key in (
-        (cash, 'read_operating_cash_consumption', 'cash_consumption'),
+        (cash, '_read_with_context', 'cash_consumption'),
         (capital, 'read_current_capital_observation', 'current_capital_observation'),
         (distribution, 'read_operating_distribution_review', 'fiscal_distribution_review'),
         (funding, 'read_registered_parent_funding_review', 'parent_funding_review'),
@@ -32,7 +32,11 @@ def revalidation(api, monkeypatch):
         value = dict(status='TEST_ONLY_EXISTING_RESEARCH', action='no_order',
                      formal_eligibility=False, marker=key)
         siblings[key] = deepcopy(value)
-        monkeypatch.setattr(module, function, lambda *a, _value=value, **k: deepcopy(_value))
+        if key == 'cash_consumption':
+            # Preserve the annual supplement path above the base consumer.
+            monkeypatch.setattr(module, function, lambda *a, _value=value, **k: (deepcopy(_value), None))
+        else:
+            monkeypatch.setattr(module, function, lambda *a, _value=value, **k: deepcopy(_value))
     comparison = {'status': 'TEST_ONLY_COMPARISON'}
     monkeypatch.setattr(funding, 'compare_parent_cash_opening', lambda *a: deepcopy(comparison))
     siblings['parent_funding_review']['cash_input_comparison'] = comparison

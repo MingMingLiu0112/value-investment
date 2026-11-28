@@ -1,7 +1,7 @@
 import { MainValuationRevalidationPanel } from "./MainValuationRevalidationPanel";
 import { ParentFundingResearchPanel } from "./ParentFundingResearchPanel";
 import { useEffect, useRef, useState } from "react";
-import { Alert, Button, Space, Table } from "antd";
+import { Alert, Button, Popconfirm, Space, Table } from "antd";
 import {
   api,
   ApiError,
@@ -19,27 +19,918 @@ import {
   type FiscalDistributionReview,
   type FiscalDistributionScenario,
   type ParentCashTaskHistory,
+  type ParentCashFundingRevisions,
+  type ParentCashH1Sensitivity,
+  type ParentCashTaskValuation,
 } from "../services/api";
 
-export function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
+import { FundingContinuationPanel } from "./FundingContinuationPanel";
+
+const CASH_ALIGNMENT_REASONS: Record<string, string> = {
+  EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING: "这份估值尚未绑定专属核验资料。",
+  CURRENT_SHARE_COUNT_AND_EFFECTIVE_ACTION_CHAIN_NOT_RECONCILED:
+    "估值日至报价日的股本及已生效股本变动尚未完成对账。",
+  SOURCE_BOUND_RECONCILIATION_MISSING: "缺少逐项引用原件的对账记录。",
+  PERIOD_DISTRIBUTIONS_AND_MODEL_INCLUSION_NOT_RECONCILED:
+    "期间分配及其是否已计入估值尚未完成核对。",
+  EVENT_WINDOW_DOES_NOT_COVER_VALUATION_TO_QUOTE:
+    "公告核验未覆盖从估值日至报价日的完整区间。",
+  EXACT_CANDIDATE_MATERIALITY_REVIEW_NOT_BOUND:
+    "这份估值尚未绑定重大事件影响复核。",
+  FINANCIAL_UPDATES_NOT_RECONCILED_TO_EXACT_CANDIDATE:
+    "期间新增财务披露尚未与这份估值逐项核对。",
+};
+
+function cashFundingYear(reason: string): string | undefined {
+  return /^DIRECT_OWNER_UNFUNDED_CASH_REQUIREMENT:([0-9]{4})$/.exec(
+    reason,
+  )?.[1];
+}
+
+function publicationBlockageLabel(reason: string): string {
+  const year = cashFundingYear(reason);
+  return year ? `${year} 年现金低于模型底线` : reason;
+}
+
+const CASH_VALUATION_SCENARIOS = [
+  ["bear", "压力"],
+  ["base", "基准"],
+  ["bull", "乐观"],
+] as const;
+
+const revisionErrors: Record<string, string> = {
+  RECEIPT_HASH: "回执文件或其哈希校验失败",
+  SPEC_HASH: "修订规格文件校验失败",
+  DESCRIPTOR_HASH: "输入描述符文件校验失败",
+  VALUATION_HASH: "估值文件校验失败",
+  DESCRIPTOR_IDENTITY: "输入描述符指纹不一致",
+  TASK_IDENTITY: "原任务、任务版本或登记规格不匹配",
+  REVISION_SCOPE: "回执的条件研究范围不符",
+  "FINANCING-EVIDENCE_HASH": "融资证据包文件或哈希校验失败",
+  REASSESSMENT_SPEC: "经营现金重验规格的文件或来源校验失败",
+  REASSESSMENT_FORMAT: "经营现金重验记录格式无效",
+  SOURCE_IDENTITY: "修订来源与原任务绑定不一致",
+  SOURCE_BINDING: "来源文件缺失或绑定校验失败",
+  VALUATION_IDENTITY: "公司、估值日期或结果状态不匹配",
+  SCENARIO_CASH: "三情景或逐年现金校验失败",
+  REVISION_DATE: "研究完成时间或估值日期无效",
+  REVISION_FORMAT: "回执结构无效",
+};
+
+export function ParentCashFundingRevisionRead({
+  taskId,
+  symbol,
+}: {
+  taskId: string;
+  symbol: string;
+}) {
+  const [result, setResult] = useState<ParentCashFundingRevisions>();
+  const [error, setError] = useState("");
+  const active = useRef<AbortController | null>(null);
+  useEffect(() => () => active.current?.abort(), [taskId, symbol]);
+  async function toggle(open: boolean) {
+    active.current?.abort();
+    if (!open) return;
+    const controller = new AbortController();
+    active.current = controller;
+    setResult(undefined);
+    setError("");
+    try {
+      const data = await api.parentCashFundingRevisions(
+        taskId,
+        symbol,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      if (
+        data.task_id !== taskId ||
+        data.symbol !== symbol ||
+        data.action !== "no_order" ||
+        data.current_comparable !== false ||
+        !Array.isArray(data.revisions)
+      )
+        throw new Error();
+      setResult(data);
+    } catch (cause) {
+      if (!controller.signal.aborted)
+        setError(
+          cause instanceof ApiError && cause.status === 401
+            ? "本机研究会话需重新解锁。"
+            : "修订目录读取失败，收起后可重新读取。",
+        );
+    }
+  }
+  return (
+    <details
+      onToggle={(event) => {
+        if (event.target === event.currentTarget)
+          void toggle(event.currentTarget.open);
+      }}
+    >
+      <summary>历史基准条件估值 · 沿用注册经营假设</summary>
+      {error ? (
+        <p role="alert">{error}</p>
+      ) : !result ? (
+        <p>正在核对修订来源…</p>
+      ) : (
+        <>
+          <p>
+            原 V3 任务
+            {result.original_task_status === "FAILED"
+              ? "运行失败（FAILED）"
+              : "状态为 " + result.original_task_status}
+            。修订按期初普通股计算整体股东分配，尚未批准。F2
+            尚未对齐此版本，不能与当前收盘价比较。核验须使用本回执的输入版本，逐项确认比较日股本、期间每笔分配的模型处理和重大事件影响。
+          </p>
+          {!result.revisions.length && <p>此任务暂无已登记修订。</p>}
+          {result.revisions.map((version) => (
+            <section key={version.receipt_sha256}>
+              <h5>修订版本 {version.receipt_sha256.slice(0, 12)}</h5>
+              {version.status === "UNAVAILABLE" ? (
+                <p role="alert">
+                  {revisionErrors[version.reason] ?? "版本校验失败"}
+                </p>
+              ) : (
+                <>
+                  {version.current_reassessment ? (
+                    <section aria-label="当前经营假设重验">
+                      <p>
+                        <strong>
+                          {version.current_reassessment.status === "REJECTED"
+                            ? "当前经营假设重验被拒"
+                            : "当前经营假设重验不可用"}
+                        </strong>
+                        {" · "}
+                        {revisionErrors[version.current_reassessment.reason] ??
+                          version.current_reassessment.reason}
+                        {" · 当前研究区间未采用"}
+                      </p>
+                      <ul>
+                        {CASH_VALUATION_SCENARIOS.map(([key, label]) => {
+                          const row =
+                            version.current_reassessment?.scenario_rows[key];
+                          return (
+                            row && (
+                              <li key={key}>
+                                {label} ·{" "}
+                                {row.status === "REJECTED"
+                                  ? "未通过"
+                                  : row.status === "CALCULATED"
+                                    ? "单项已计算"
+                                    : row.status}
+                                {row.reason &&
+                                  " · " + publicationBlockageLabel(row.reason)}
+                                {row.year && " · " + row.year + " 年"}
+                                {row.before !== undefined &&
+                                  " · 分配前现金 " + row.before + " 元"}
+                                {row.floor !== undefined &&
+                                  " · 现金底线 " + row.floor + " 元"}
+                                {row.status === "REJECTED" &&
+                                  row.floor !== undefined &&
+                                  row.before !== undefined &&
+                                  Number(row.floor) - Number(row.before) >=
+                                    1e8 &&
+                                  " · 资金缺口约 " +
+                                    (
+                                      (Number(row.floor) - Number(row.before)) /
+                                      1e8
+                                    ).toFixed(2) +
+                                    " 亿元"}
+                                {row.per_share_value !== undefined &&
+                                  " · 此情景单项结果 " +
+                                    Number(row.per_share_value).toFixed(2) +
+                                    " 元/期初普通股"}
+                              </li>
+                            )
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  ) : (
+                    <p>此回执缺少当前经营假设重验记录，当前研究区间未采用。</p>
+                  )}
+                  {version.current_reassessment?.status === "REJECTED" &&
+                    version.financing_terms?.status === "VERIFIED" && (
+                      <FundingContinuationPanel
+                        task={taskId}
+                        receipt={version.receipt_sha256}
+                        symbol={symbol}
+                      />
+                    )}
+                  <p>历史基准条件估值 · 沿用注册经营假设</p>
+                  <p>
+                    估值基准日 {version.valuation_date} · 完成时间{" "}
+                    {version.completed_at} · 技术回执绑定已核验
+                  </p>
+                  {CASH_VALUATION_SCENARIOS.map(([key, label]) => {
+                    const scenario = version.scenarios[key];
+                    return (
+                      <details key={key}>
+                        <summary>
+                          {label}（{key}） ·{" "}
+                          {Number(scenario.per_share_value).toFixed(2)}{" "}
+                          元/期初普通股
+                        </summary>
+                        <table>
+                          <caption>{label}情景逐年现金（元）</caption>
+                          <thead>
+                            <tr>
+                              {[
+                                "年度",
+                                "期初现金",
+                                "经营现金流",
+                                "股东总分配",
+                                "期末现金",
+                                "期末债务",
+                              ].map((name) => (
+                                <th key={name} scope="col">
+                                  {name}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {scenario.annual_rows.map((row) => (
+                              <tr key={row.year}>
+                                <th scope="row">{row.year}</th>
+                                <td>{row.opening_cash_cny}</td>
+                                <td>{row.direct_operating_cash_cny}</td>
+                                <td>{row.total_owner_distribution_cny}</td>
+                                <td>{row.closing_cash_cny}</td>
+                                <td>{row.closing_debt_cny}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </details>
+                    );
+                  })}
+                  {version.financing_terms?.status === "VERIFIED" ? (
+                    <details>
+                      <summary>已知到期本金、期限未知本金与利息口径</summary>
+                      <table>
+                        <caption>已披露的合同到期本金（元）</caption>
+                        <thead>
+                          <tr>
+                            <th>债券代码</th>
+                            <th>合同到期日</th>
+                            <th>本金</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {version.financing_terms.known_maturities.map(
+                            (issue) => (
+                              <tr key={issue.code}>
+                                <td>{issue.code}</td>
+                                <td>{issue.maturity}</td>
+                                <td>{issue.principal_cny}</td>
+                              </tr>
+                            ),
+                          )}
+                        </tbody>
+                      </table>
+                      <p>
+                        期限未知本金{" "}
+                        {version.financing_terms.residual_principal_cny}{" "}
+                        元，为历史基准情景测算余额，实际到期日待核。
+                      </p>
+                      <p>
+                        前三季度可核实已付票息下限{" "}
+                        {
+                          version.financing_terms
+                            .cash_interest_9m_verified_floor
+                        }{" "}
+                        元。 混合付现扣除已实施股利后的余额{" "}
+                        {version.financing_terms.mixed_less_dividend_cny}{" "}
+                        元，仍含未逐笔归类支出。
+                      </p>
+                      <p>
+                        期限未知本金的年利率假设：
+                        {Object.entries(
+                          version.financing_terms.unknown_rate_assumptions,
+                        )
+                          .map(
+                            ([key, rate]) =>
+                              (CASH_VALUATION_SCENARIOS.find(
+                                ([name]) => name === key,
+                              )?.[1] ?? key) +
+                              " " +
+                              (Number(rate) * 100).toFixed(2) +
+                              "%",
+                          )
+                          .join("、")}
+                        。基准采用历史利息费用率代理。
+                      </p>
+                      {version.financing_terms
+                        .five_scp_conditional_coupon_2026Q4 && (
+                        <p>
+                          2026 年四季度五笔短融条件票息{" "}
+                          {
+                            version.financing_terms
+                              .five_scp_conditional_coupon_2026Q4
+                          }{" "}
+                          元。
+                        </p>
+                      )}
+                      {version.financing_terms.mtn_conditional_coupon_2027 && (
+                        <p>
+                          2027 年已知中票条件票息{" "}
+                          {version.financing_terms.mtn_conditional_coupon_2027}{" "}
+                          元；全年母公司付息总额待核。
+                        </p>
+                      )}
+                    </details>
+                  ) : (
+                    <p>此版本的本金与利息明细暂不可核验。</p>
+                  )}
+                  <p>
+                    输入指纹 <code>{version.input_descriptor_sha256}</code>
+                  </p>
+                </>
+              )}
+              <p>
+                回执 SHA-256 <code>{version.receipt_sha256}</code>
+              </p>
+            </section>
+          ))}
+        </>
+      )}
+    </details>
+  );
+}
+
+function ParentCashH1SensitivityRead({
+  symbol,
+  taskId,
+}: {
+  symbol: string;
+  taskId: string;
+}) {
+  const [result, setResult] = useState<ParentCashH1Sensitivity>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+  const request = useRef<AbortController>();
+  useEffect(() => () => request.current?.abort(), []);
+
+  async function read() {
+    if (request.current) return;
+    const controller = new AbortController();
+    request.current = controller;
+    setLoading(true);
+    setError(undefined);
+    setResult(undefined);
+    try {
+      const data = await api.parentCashH1Sensitivity(
+        taskId,
+        symbol,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      if (
+        data?.status !== "RESEARCH_SENSITIVITY_NOT_ADOPTED" ||
+        data.symbol !== symbol ||
+        data.task_id !== taskId ||
+        !/^\d{4}-06-30$/.test(data.period_end) ||
+        data.action !== "no_order" ||
+        data.condition_price !== null ||
+        data.formal_eligibility !== false ||
+        !CASH_VALUATION_SCENARIOS.every(([key]) => {
+          const row = data.scenarios?.[key];
+          return row?.status === "SCENARIO_REJECTED"
+            ? typeof row.reason === "string" && row.reason.length > 0
+            : row?.status === "CONDITIONAL_SENSITIVITY_COMPUTED" &&
+                /^-?\d+(?:\.\d+)?$/.test(row.per_share_value);
+        })
+      )
+        throw new Error("Invalid H1 sensitivity");
+      setResult(data);
+    } catch (cause) {
+      if (!controller.signal.aborted) {
+        setError(
+          cause instanceof ApiError && cause.status === 404
+            ? "此任务尚未登记半年期重估。"
+            : "半年期重估结果无法读取或核验，请重试。",
+        );
+      }
+    } finally {
+      request.current = undefined;
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <Button onClick={read} loading={loading}>
+        读取半年期敏感性结果
+      </Button>
+      {error && <p role="status">{error}</p>}
+      {result && (
+        <section aria-label="未采纳的半年期敏感性">
+          <p>
+            估值基准 {result.period_end} ·
+            敏感性研究，未形成可采用的估值区间或条件价格。
+          </p>
+          <ul>
+            {CASH_VALUATION_SCENARIOS.map(([key, label]) => {
+              const row = result.scenarios[key];
+              if (row.status === "CONDITIONAL_SENSITIVITY_COMPUTED") {
+                return (
+                  <li key={key}>
+                    {label} · {row.per_share_value} 元/股
+                  </li>
+                );
+              }
+              const fundingYear = cashFundingYear(row.reason);
+              return (
+                <li key={key}>
+                  {label} ·{" "}
+                  {fundingYear
+                    ? `${fundingYear} 年资金不足，未出值`
+                    : `未出值（${row.reason}）`}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+export function ParentCashTaskValuationRead({
+  symbol,
+  taskId,
+}: {
+  symbol: string;
+  taskId: string;
+}) {
+  const request = useRef<AbortController>();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+  const [valuation, setValuation] = useState<ParentCashTaskValuation>();
+
+  useEffect(() => () => request.current?.abort(), []);
+
+  async function readValuation() {
+    if (request.current) return;
+    const controller = new AbortController();
+    request.current = controller;
+    setLoading(true);
+    setError(undefined);
+    setValuation(undefined);
+    try {
+      const value = await api.parentCashTaskValuation(
+        taskId,
+        symbol,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
+      if (
+        value?.status !== "VERIFIED_CONDITIONAL_VALUATION" ||
+        value.task_id !== taskId ||
+        value.symbol !== symbol ||
+        value.action !== "no_order" ||
+        value.formal_eligibility !== false ||
+        typeof value.current_comparable !== "boolean" ||
+        (value.adoptable_valuation === false && value.current_comparable) ||
+        (value.current_comparable
+          ? value.alignment_status !== "ALIGNED_FOR_RESEARCH_COMPARISON" ||
+            !value.comparison_quote ||
+            !/^\d{4}-\d{2}-\d{2}$/.test(value.comparison_quote.trade_date) ||
+            !Number.isFinite(Number(value.comparison_quote.close_cny)) ||
+            Number(value.comparison_quote.close_cny) <= 0
+          : value.comparison_quote != null) ||
+        value.condition_price !== null ||
+        typeof value.valuation_date !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(value.valuation_date) ||
+        ![value.input_descriptor_sha256, value.receipt_sha256].every(
+          (hash) => typeof hash === "string" && /^[a-f0-9]{64}$/.test(hash),
+        ) ||
+        !CASH_VALUATION_SCENARIOS.every(([key]) => {
+          const row = value.scenarios?.[key];
+          return (
+            row &&
+            typeof row.per_share_value === "string" &&
+            /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(row.per_share_value) &&
+            Number.isSafeInteger(row.annual_years) &&
+            row.annual_years > 0 &&
+            typeof row.terminal_method === "string" &&
+            row.terminal_method.trim()
+          );
+        })
+      )
+        throw new Error("Invalid conditional valuation receipt");
+      setValuation(value);
+    } catch (cause) {
+      if (controller.signal.aborted) return;
+      const apiError = cause instanceof ApiError ? cause : undefined;
+      const status = apiError?.status;
+      if (
+        status === 409 &&
+        apiError?.code === "PARENT_TASK_VALUATION_BLOCKED"
+      ) {
+        const reason = apiError.detail;
+        setError(
+          typeof reason === "string" &&
+            (/^[A-Z0-9_]{3,120}$/.test(reason) ||
+              cashFundingYear(reason) !== undefined)
+            ? `此任务的估值封存受阻（${publicationBlockageLabel(reason)}）。请在任务历史查看封存状态。`
+            : "此任务的估值封存受阻，请在任务历史查看封存状态。",
+        );
+        return;
+      }
+      if (
+        status === 404 &&
+        apiError?.code === "PARENT_TASK_VALUATION_NOT_SEALED" &&
+        typeof apiError.detail === "string" &&
+        /^[A-Z0-9_]{3,120}$/.test(apiError.detail)
+      ) {
+        const reason = apiError.detail;
+        setError(
+          reason === "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID"
+            ? "Base 情景终值的来源引用未通过核验，研究未完成，尚无估值回执。"
+            : `研究未完成（${reason}），尚无估值回执。`,
+        );
+        return;
+      }
+      setError(
+        status === 404
+          ? "研究执行已结束，但还没有封存条件估值回执。请先查看该任务的研究结论与缺项；重新读取不会再次调用模型。"
+          : status === 422
+            ? "此任务的条件估值无法通过核验。"
+            : "条件估值暂不可读取或响应无法核验，请手动重试。",
+      );
+    } finally {
+      request.current = undefined;
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <Button onClick={readValuation} loading={loading}>
+        读取条件估值
+      </Button>
+      {error && <p role="status">{error}</p>}
+      {valuation && (
+        <section aria-label="已核验的条件估值">
+          {valuation.adoptable_valuation === false && (
+            <p>
+              该研究区间尚未采用，不能与现价判断高低。
+              {valuation.annual_input_limitations?.map((row) => (
+                <span key={row.field}>
+                  {" "}
+                  {row.field === "total_capex" ? "资本开支" : "投资收现"}在{" "}
+                  {row.first_year}–{row.through_year} 年沿用同一年度假设
+                  {row.observed_through
+                    ? `，观察依据截至 ${row.observed_through}`
+                    : ""}
+                  。
+                </span>
+              ))}
+            </p>
+          )}
+          <p>
+            估值日期 {valuation.valuation_date} ·
+            {valuation.current_comparable
+              ? "已完成当前价格研究对齐，仍待正式准入。"
+              : "当前价格比较待核验，估值仅供历史条件研究。"}
+          </p>
+          <ul>
+            {CASH_VALUATION_SCENARIOS.map(([key, label]) => {
+              const row = valuation.scenarios[key];
+              return (
+                <li key={key}>
+                  {label} · {row.per_share_value} 元/股 · {row.annual_years} 年
+                  · 终值方法 {row.terminal_method}
+                  {!!row.annual_cash_path?.length && (
+                    <details>
+                      <summary>{label} · 年度股东现金路径</summary>
+                      <p>
+                        终值稳态年度分配 {row.terminal_steady_distribution_cny}{" "}
+                        元
+                      </p>
+                      <div style={{ overflowX: "auto" }}>
+                        <table>
+                          <caption>现金与权益预测（元）</caption>
+                          <thead>
+                            <tr>
+                              <th scope="col">年度</th>
+                              <th scope="col">母公司经营现金</th>
+                              <th scope="col">股东分配</th>
+                              <th scope="col">期末现金</th>
+                              <th scope="col">期末债务</th>
+                              <th scope="col">期末权益</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {row.annual_cash_path.map((year) => (
+                              <tr key={year.year}>
+                                <th scope="row">{year.year}</th>
+                                <td>{year.direct_operating_cash_cny}</td>
+                                <td>{year.total_owner_distribution_cny}</td>
+                                <td>{year.closing_cash_cny}</td>
+                                <td>{year.closing_debt_cny}</td>
+                                <td>{year.closing_book_equity_cny}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </details>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {valuation.comparison_quote && (
+            <p>
+              同口径收盘 {valuation.comparison_quote.close_cny} 元/股 ·{" "}
+              {valuation.comparison_quote.trade_date}
+            </p>
+          )}
+          {!valuation.comparison_quote && valuation.qualified_close && (
+            <p>
+              已核验收盘 {valuation.qualified_close.close_cny} 元/股 ·{" "}
+              {valuation.qualified_close.trade_date} · 估值口径待核验
+            </p>
+          )}
+          {valuation.alignment_status === "BLOCKED" && (
+            <details open>
+              <summary>当期价格核验待补证</summary>
+              <ul>
+                {valuation.alignment_reason_codes?.map((reason) => (
+                  <li key={reason}>
+                    {CASH_ALIGNMENT_REASONS[reason] ?? reason}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          <ParentCashH1SensitivityRead
+            key={taskId + ":" + symbol}
+            symbol={symbol}
+            taskId={taskId}
+          />
+          <details>
+            <summary>核验证据 SHA-256</summary>
+            <p>
+              输入描述符 <code>{valuation.input_descriptor_sha256}</code>
+            </p>
+            <p>
+              回执 <code>{valuation.receipt_sha256}</code>
+            </p>
+          </details>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function ParentCashTerminalFailure({
+  taskId,
+  investingOnly = false,
+}: {
+  taskId: string;
+  investingOnly?: boolean;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  type TerminalIssue = NonNullable<
+    NonNullable<
+      Awaited<
+        ReturnType<typeof api.parentCashTaskTerminalFailure>
+      >["terminal_cash_failure"]
+    >["issues"]
+  >[number];
+  const [issues, setIssues] = useState<TerminalIssue[]>([]);
+  const [investing, setInvesting] =
+    useState<
+      Awaited<
+        ReturnType<typeof api.parentCashTaskTerminalFailure>
+      >["observed_investing_cash"]
+    >();
+
+  async function read() {
+    setBusy(true);
+    try {
+      const task = await api.parentCashTaskTerminalFailure(taskId);
+      setInvesting(
+        task.task_id === taskId ? task.observed_investing_cash : undefined,
+      );
+      const diagnostic = task.terminal_cash_failure;
+      setIssues(
+        task.task_id === taskId &&
+          diagnostic?.action === "no_order" &&
+          diagnostic.classification === "REJECTED_FORECAST_EVIDENCE_DIAGNOSTIC"
+          ? (diagnostic.issues ?? [])
+          : [],
+      );
+      if (investingOnly) {
+        setMessage(
+          task.task_id === taskId && task.observed_investing_cash
+            ? ""
+            : "该任务没有可读取的母公司投资现金原件。",
+        );
+        return;
+      }
+      const bridge = task.terminal_cash_failure;
+      if (task.task_id !== taskId || bridge?.action !== "no_order") {
+        setMessage("暂时无法核验这份终值拆解。");
+        return;
+      }
+      const amounts = [
+        bridge.net_cash_cny,
+        bridge.net_cash_minus_profit_cny,
+        bridge.net_cash_excluding_investment_receipts_minus_profit_cny,
+      ].map(Number);
+      if (!amounts.every(Number.isFinite)) {
+        setMessage("终值拆解金额无法核验。");
+        return;
+      }
+      const [net, gap, withoutReceipts] = amounts.map((value) =>
+        (value / 100_000_000).toFixed(2),
+      );
+      if (
+        bridge.rejection_code?.endsWith(
+          "_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION",
+        )
+      ) {
+        const operating = Number(
+          bridge.net_cash_excluding_financing_and_investment_cny,
+        );
+        if (!Number.isFinite(operating)) {
+          setMessage("无法核验剔除投资和融资收支后的终值现金。");
+          return;
+        }
+        setMessage(
+          `草案终值净现金 ${net} 亿元，剔除投资和融资收支后为 ${(operating / 100_000_000).toFixed(2)} 亿元。草案未形成有依据的正分配，估值未生成。该金额仍需核对持续投入、法定分配能力及储备约束。`,
+        );
+        return;
+      }
+      setMessage(
+        `终值净现金 ${net} 亿元，净现金减利润 ${gap} 亿元。剔除投资收现后，差额为 ${withoutReceipts} 亿元。请核对持续性投资收现、资本投入和经营现金转换。`,
+      );
+    } catch {
+      setInvesting(undefined);
+      setIssues([]);
+      setMessage("无法读取终值拆解，请检查本机研究授权后重试。");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <>
+      <Button loading={busy} onClick={() => void read()}>
+        {investingOnly ? "查看母公司投资现金" : "查看终值现金拆解"}
+      </Button>
+      {busy && (
+        <p role="status">正在核对封存的原件和任务输入，完成后显示现金拆解。</p>
+      )}
+      {message && <p role="status">{message}</p>}
+      {!!issues.length && (
+        <section aria-label="终值假设与原件核对">
+          <h5>Base 终值假设与原件核对</h5>
+          <ul>
+            {issues.map((issue) => (
+              <li key={issue.field}>
+                {(
+                  {
+                    growth_capex: "增长投入",
+                    maintenance_capex: "维护投入",
+                    interest_outside_cfo: "经营现金外的利息",
+                  } as Record<string, string>
+                )[issue.field] ?? issue.field}
+                ：草案填入 {issue.submitted_value} 元。{issue.source_period_end}{" "}
+                截至当期累计数为 {issue.source_supported_value_cny} 元 （原件第{" "}
+                {issue.source_binding.physical_page} 页）。
+                {issue.source_support === "HISTORICAL_PARENT_GROSS_CAPEX_ONLY"
+                  ? "该行仅披露母公司购建总额。须说明稳态总投入依据，单列增长或维护还须说明拆分依据。"
+                  : "该行合列股息、利润和利息。纯利息须以独立付款证据或适用债务条款推算。"}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {investing?.classification === "SOURCE_NOT_REPLAYABLE" && (
+        <p role="status">母公司投资现金原件暂无法重放。</p>
+      )}
+      {investing?.classification === "HISTORICAL_STANDALONE_NOT_FORECAST" && (
+        <section aria-label="母公司投资现金">
+          <p>截至 {investing.period_end} 的母公司累计投资现金（元）</p>
+          <dl>
+            <dt>收回投资</dt>
+            <dd>{investing.recovered_cny}</dd>
+            <dt>投资支付</dt>
+            <dd>{investing.invested_cny}</dd>
+            <dt>本金收付净额</dt>
+            <dd>{investing.net_principal_cash_cny}</dd>
+            <dt>投资收益收现</dt>
+            <dd>{investing.cash_investment_income_cny}</dd>
+          </dl>
+          {investing.reconciled_ytd_cash && (
+            <details>
+              <summary>期初至期末现金对账</summary>
+              <dl>
+                <dt>期初现金及现金等价物</dt>
+                <dd>
+                  {
+                    investing.reconciled_ytd_cash
+                      .opening_cash_and_equivalents_cny
+                  }
+                </dd>
+                <dt>经营现金净额</dt>
+                <dd>{investing.reconciled_ytd_cash.cfo_cny}</dd>
+                <dt>投资现金净额</dt>
+                <dd>{investing.reconciled_ytd_cash.cfi_cny}</dd>
+                <dt>筹资现金净额</dt>
+                <dd>{investing.reconciled_ytd_cash.cff_cny}</dd>
+                <dt>汇率影响</dt>
+                <dd>{investing.reconciled_ytd_cash.fx_cny}</dd>
+                <dt>期末现金及现金等价物</dt>
+                <dd>
+                  {
+                    investing.reconciled_ytd_cash
+                      .closing_cash_and_equivalents_cny
+                  }
+                </dd>
+              </dl>
+              <p>从期末余额推算下一期时，已发生的现金流不再计入。</p>
+            </details>
+          )}
+          <p>以上为历史收付。未来可回收金额和现金分配能力仍须核验。</p>
+          <details>
+            <summary>原件页码与校验值</summary>
+            <p>
+              第 {investing.physical_pages.join("、")} 页 · SHA-256{" "}
+              <code>{investing.source_binding.sha256}</code>
+            </p>
+          </details>
+        </section>
+      )}
+    </>
+  );
+}
+
+export function ParentCashTaskHistoryView({
+  symbol,
+  onContinue,
+  busy,
+}: {
+  symbol: string;
+  onContinue?: (
+    taskId: string,
+    correctionReceipt?: string,
+    retryTerminal?: boolean,
+  ) => Promise<void>;
+  busy?: boolean;
+}) {
   const [history, setHistory] = useState<ParentCashTaskHistory>();
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<"authorization" | "history">();
+  const [sealing, setSealing] = useState<string>();
+  const [sealMessage, setSealMessage] = useState("");
+  const [revision, setRevision] = useState(0);
+
+  async function seal(taskId: string) {
+    setSealing(taskId);
+    setSealMessage("");
+    try {
+      const result = await api.sealParentCashTaskValuation(taskId);
+      if (
+        result.task_id !== taskId ||
+        result.action !== "no_order" ||
+        result.status !== "VALUATION_SEAL_REQUESTED"
+      )
+        throw new Error("Invalid seal receipt");
+      setSealMessage("已请求重新封存同一任务。刷新任务历史查看结果。");
+    } catch {
+      setSealMessage("封存请求未受理，请检查本机授权及任务状态。");
+    } finally {
+      setSealing(undefined);
+    }
+  }
   useEffect(() => {
     let active = true;
     setHistory(undefined);
-    setError(false);
+    setError(undefined);
     void api.parentCashTaskHistory(symbol).then(
       (value) => {
         if (active) setHistory(value);
       },
-      () => {
-        if (active) setError(true);
+      (failure: unknown) => {
+        if (!active) return;
+        setError(
+          failure instanceof ApiError && failure.status === 401
+            ? "authorization"
+            : "history",
+        );
       },
     );
     return () => {
       active = false;
     };
-  }, [symbol]);
+  }, [symbol, revision]);
   return (
     <section aria-label="母公司现金任务历史">
       <h4>母公司现金任务历史 · 非正式研究</h4>
@@ -48,32 +939,412 @@ export function ParentCashTaskHistoryView({ symbol }: { symbol: string }) {
         成功只表示条件现金候选完成编译。 费用为任务记录，E2
         实际使用仍需核验，不构成正式结论或下单依据。
       </p>
-      {error && <p>任务历史暂不可读取。</p>}
+      {error === "authorization" && (
+        <p role="alert">
+          本机研究会话未解锁或已过期。请在此浏览器打开本机启动时生成的授权链接，再返回公司研究页刷新任务历史。
+        </p>
+      )}
+      {error === "history" && <p role="alert">任务历史暂不可读取。</p>}
+      {sealMessage && <p role="status">{sealMessage}</p>}
+      <Button onClick={() => setRevision((value) => value + 1)}>
+        刷新现金任务历史
+      </Button>
       {history?.items.length === 0 && <p>暂无相关记录。</p>}
-      {history?.items.map((item) => (
-        <div key={item.task_id}>
-          <strong>{item.task_id}</strong> · {item.task_contract || "历史任务"} ·{" "}
-          {item.status}
-          {item.candidate_status === "COMPILED_CONDITIONAL_NOT_MAIN" &&
-            " · 条件现金候选已编译，主估值未采用"}{" "}
-          · 当前阶段：
-          {item.stage || "未记录"}· 来源年份：
-          {item.source_years.join("、") || "未记录"}· 错误：
-          {item.error_code || "无"}· 完成阶段：
-          {item.completed_stages.join("、") || "无"}· 预留 ¥
-          {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
-          实际使用：未核实
-          <ul>
-            {item.charges.map((charge, index) => (
-              <li key={index}>
-                {charge.stage} {charge.status} · 预留 ¥{charge.reserved_cny}
-                {charge.settled_cny != null &&
-                  ` · 已结算 ¥${charge.settled_cny}`}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+      {history?.items.map((item) => {
+        const rebuildInterest =
+          item.base_operating_wire === "MATCHED_QUARTER_V2" &&
+          !item.base_interest_wire &&
+          (item.error_code ===
+            "BASE_POLICY_PARENT_DRAFT_REJECTED_OR_UNPUBLISHED" ||
+            item.error_code ===
+              "BASE_POLICY_PARENT_FINANCING_ABOVE_DISCLOSED_PROCEEDS:2026");
+        const rebuildPayout =
+          item.terminal_cash_review === "RESEARCH_PAYOUT_V3" &&
+          item.error_code ===
+            "BASE_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION" &&
+          item.completed_stages.includes("base.policy") &&
+          (item.charges || []).every((charge) => charge.status === "SETTLED");
+        const rebuildAnnualCash =
+          item.terminal_cash_review === "RESEARCH_PAYOUT_V4" &&
+          item.error_code ===
+            "BASE_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION" &&
+          item.completed_stages.includes("base.policy") &&
+          (item.charges || []).every((charge) => charge.status === "SETTLED");
+        const rebuildGrossCapex =
+          item.terminal_cash_review === "RESEARCH_PAYOUT_V4" &&
+          item.error_code ===
+            "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID" &&
+          item.completed_stages.includes("base.policy") &&
+          (item.charges || []).every((charge) => charge.status === "SETTLED");
+        const resumeLabel = rebuildGrossCapex
+          ? "核验总额投入计划并续跑"
+          : rebuildAnnualCash
+            ? "从 Base 年度现金政策重建"
+            : rebuildPayout || item.terminal_cohort_continuation
+              ? "用新增证据从 Base 终值续跑"
+              : rebuildInterest
+                ? "从 Base 付息政策续跑"
+                : item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V2"
+                  ? "从 Base 经营重建"
+                  : "从 Base 现金政策续跑";
+        return (
+          <div key={item.task_id}>
+            <strong>{item.task_id}</strong> · {item.task_contract || "历史任务"}{" "}
+            · {item.status}
+            {item.candidate_status === "COMPILED_CONDITIONAL_NOT_MAIN" &&
+              " · 条件现金候选已编译，主估值未采用"}{" "}
+            · 当前阶段：
+            {item.stage || "未记录"}· 来源年份：
+            {item.source_years.join("、") || "未记录"}· 错误：
+            {item.error_code || "无"}· 完成阶段：
+            {item.completed_stages.join("、") || "无"}· 预留 ¥
+            {item.reserved_cost_cny} · 已结算 ¥{item.settled_cost_cny}· E2
+            实际使用：未核实
+            {onContinue &&
+              !item.read_only_archive &&
+              ((item.terminal_debt_reconciliation &&
+                item.terminal_debt_reconciliation
+                  .legacy_terminal_review_available !== false) ||
+                item.bear_terminal_v3_retry) && (
+                <>
+                  {item.terminal_debt_reconciliation && (
+                    <Button
+                      disabled={busy}
+                      onClick={() => onContinue(item.task_id)}
+                    >
+                      重验封存终值与融资口径（免费）
+                    </Button>
+                  )}
+                  <Popconfirm
+                    title="复用已通过的两个阶段，请求新的悲观终值？"
+                    description="按当日预算计费。上界情景单独核算；母公司融资口径未核实时不能进入基准估值。"
+                    onConfirm={() => onContinue(item.task_id, undefined, true)}
+                  >
+                    <Button disabled={busy}>
+                      续跑悲观终值（deepseek-flash）
+                    </Button>
+                  </Popconfirm>
+                </>
+              )}
+            {item.terminal_debt_reconciliation && (
+              <details>
+                <summary>终值融资待核 · 查看压力余额的年度推导</summary>
+                <p>
+                  期初使用母公司总负债作压力上界。按年度假设滚算的期末上界为
+                  {item.terminal_debt_reconciliation.stress_closing_cny} 元。
+                  实际融资余额、偿付及续借仍需母公司同口径证据。
+                </p>
+                {Boolean(
+                  item.terminal_debt_reconciliation.unbound_policy_terms
+                    ?.length,
+                ) && (
+                  <p>
+                    缺少可核验输入的政策项：
+                    {item.terminal_debt_reconciliation.unbound_policy_terms?.join(
+                      "、",
+                    )}
+                  </p>
+                )}
+                {item.terminal_debt_reconciliation.operating_cash_bridge && (
+                  <p>
+                    {
+                      item.terminal_debt_reconciliation.operating_cash_bridge
+                        .forecast_year
+                    }{" "}
+                    年经营现金按已通过的路径复算为
+                    {
+                      item.terminal_debt_reconciliation.operating_cash_bridge
+                        .continuity_cash_cny
+                    }{" "}
+                    元。 被拒草案的经营现金与该路径相差
+                    {
+                      item.terminal_debt_reconciliation.operating_cash_bridge
+                        .gap_cny
+                    }{" "}
+                    元，终值持续性待核。
+                  </p>
+                )}
+                {item.terminal_debt_reconciliation.terminal_arithmetic && (
+                  <p>
+                    依据被拒草案的付息金额复算，压力情景隐含年息
+                    {Number(
+                      item.terminal_debt_reconciliation.terminal_arithmetic
+                        .implied_annual_interest_percent,
+                    ).toFixed(4)}
+                    %。
+                  </p>
+                )}
+                <ul>
+                  {item.terminal_debt_reconciliation.annual_path.map((row) => (
+                    <li key={row.year}>
+                      {row.year} 年（元）：期初 {row.opening_debt_cny} ＋ 新借{" "}
+                      {row.new_borrowing_cny}－ 假设偿还{" "}
+                      {row.debt_repayment_cny} ＝ 期末 {row.closing_debt_cny}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {item.error_code ===
+              "PARENT_V3_BASE_OPENING_FINANCING_BALANCE_UNVERIFIED" && (
+              <p>
+                悲观终值已封存。基准情景缺母公司期初融资余额，本次在 Base
+                调用前停止计费。 三情景尚未编齐，F2 无本次估值可与收盘价比较。
+              </p>
+            )}
+            {history.symbol === symbol && item.has_funding_revisions && (
+              <ParentCashFundingRevisionRead
+                key={symbol + item.task_id}
+                taskId={item.task_id}
+                symbol={symbol}
+              />
+            )}
+            {item.debt_timing_sensitivity?.status ===
+              "VERIFIED_CONDITIONAL_SENSITIVITY" && (
+              <section aria-label="债务期限条件试算">
+                <h5>债务期限条件试算 · 未批准</h5>
+                <p>
+                  以 2026 年情景年末为基准。已证本金按披露日期偿还，
+                  其余本金按假设分期。仅供压力复核，当前价格不可比较。
+                </p>
+                <ul>
+                  {Object.entries(item.debt_timing_sensitivity.cases ?? {}).map(
+                    ([name, result]) => (
+                      <li key={name}>
+                        {name === "FADE_TO_HISTORICAL_FY25"
+                          ? "资本开支回落"
+                          : name === "PERSIST_AT_CONDITIONAL_FY26"
+                            ? "资本开支持续偏高"
+                            : name}
+                        {" · "}
+                        {result.status === "CALCULATED"
+                          ? `条件值 ${result.per_share_value} 元/股`
+                          : `未形成条件值（${result.reason}）`}
+                        {!!result.annual_cash?.length && (
+                          <details>
+                            <summary>逐年现金、偿债与分配（元）</summary>
+                            <ul>
+                              {result.annual_cash.map((row) => (
+                                <li key={row.year}>
+                                  {row.year} 年 · 偿还本金{" "}
+                                  {row.debt_repayment_cny} · 现金分配上限{" "}
+                                  {row.cash_distribution_limit_cny} · 情景分配{" "}
+                                  {row.total_owner_distribution_cny} · 期末现金{" "}
+                                  {row.closing_cash_cny} · 期末债务{" "}
+                                  {row.closing_debt_cny}
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        )}
+                      </li>
+                    ),
+                  )}
+                </ul>
+                {item.debt_timing_sensitivity.payout_stress?.status ===
+                  "VERIFIED" && (
+                  <section aria-label="中期分红对现金底线的影响">
+                    <h6>中期分红对现金底线的影响</h6>
+                    <p>
+                      假设在 {item.debt_timing_sensitivity.payout_stress.year}{" "}
+                      年按预案参考股数支付
+                      {
+                        item.debt_timing_sensitivity.payout_stress.amount_cny
+                      }{" "}
+                      元。实际付款日与最终金额待核。
+                    </p>
+                    <ul>
+                      {Object.entries(
+                        item.debt_timing_sensitivity.payout_stress
+                          .rejected_years,
+                      ).map(([name, year]) => (
+                        <li key={name}>
+                          {name === "FADE_TO_HISTORICAL_FY25"
+                            ? "资本开支回落"
+                            : name === "PERSIST_AT_CONDITIONAL_FY26"
+                              ? "资本开支持续偏高"
+                              : name}
+                          ：{year} 年首次低于现金底线。
+                        </li>
+                      ))}
+                    </ul>
+                    <details>
+                      <summary>查看压力重算版本</summary>
+                      {
+                        item.debt_timing_sensitivity.payout_stress
+                          .receipt_sha256
+                      }
+                    </details>
+                  </section>
+                )}
+                {item.debt_timing_sensitivity.payout_stress?.status ===
+                  "UNAVAILABLE" && (
+                  <p>中期付款压力回执未通过核验，原偿债情景仍可查看。</p>
+                )}
+                <p>
+                  回执 SHA-256：{item.debt_timing_sensitivity.receipt_sha256}
+                </p>
+                <p>
+                  正式 V3 仍须封存；跨日股本、分配和重大事件按 F2 结果复核。
+                </p>
+              </section>
+            )}
+            {item.debt_timing_sensitivity?.status ===
+              "SENSITIVITY_UNAVAILABLE" && (
+              <p role="alert">债务期限试算回执暂无法核验。</p>
+            )}
+            {onContinue &&
+              item.financing_policy_terminal_continuation_available &&
+              item.financing_policy_correction_receipt_sha256 && (
+                <Popconfirm
+                  title="从已核验年度政策继续研究？"
+                  description="仅作条件研究。年度投资收现和资本支出沿用期中金额，长期可重复性待核，结果不能采用为当前公允价值。将从悲观终值开始调用模型，计入当日总预算。"
+                  onConfirm={() =>
+                    onContinue(
+                      item.task_id,
+                      item.financing_policy_correction_receipt_sha256,
+                    )
+                  }
+                >
+                  <Button disabled={busy}>从政策回执继续终值研究</Button>
+                </Popconfirm>
+              )}
+            {item.financing_policy_correction_source_sha256 && (
+              <PolicyCorrectionReceipt
+                taskId={item.task_id}
+                source={item.financing_policy_correction_source_sha256}
+              />
+            )}
+            {onContinue &&
+              !item.read_only_archive &&
+              item.financing_policy_correction_available && (
+                <Popconfirm
+                  title="核对封存原文并纠正年度政策结构？"
+                  description="仅允许一次模型调用。所有逐年数值、依据和说明必须与原件相同，终值意见单独保留。费用计入当日预算。"
+                  onConfirm={() => onContinue(item.task_id)}
+                >
+                  <Button disabled={busy}>纠正年度政策结构</Button>
+                </Popconfirm>
+              )}
+            {onContinue &&
+              !item.read_only_archive &&
+              item.error_code === "BEAR_TERMINAL_PARENT_V3_INVALID_JSON" &&
+              item.completed_stages.includes("bear.operating") &&
+              item.completed_stages.includes("bear.policy") && (
+                <Popconfirm
+                  title="复用经营和现金政策，从悲观终值续跑？"
+                  description="已完成的两阶段沿用原响应。后续模型调用计入当日预算。"
+                  onConfirm={() => onContinue(item.task_id)}
+                >
+                  <Button disabled={busy}>从悲观终值续跑</Button>
+                </Popconfirm>
+              )}
+            {onContinue &&
+              !item.read_only_archive &&
+              item.bear_quarter_continuation && (
+                <Popconfirm
+                  title="用可比季度原件重建悲观经营预测？"
+                  description="创建关联任务，重新核验经营与终值。可能产生模型费用，计入每日总预算。"
+                  onConfirm={() => onContinue(item.task_id)}
+                >
+                  <Button disabled={busy}>按可比季度重建悲观情景</Button>
+                </Popconfirm>
+              )}
+            {onContinue &&
+              !item.read_only_archive &&
+              item.status === "FAILED" &&
+              ((item.completed_stages.length === 9 &&
+                (item.error_code ===
+                  "PARENT_V3_ECONOMIC_DIRECT_INPUT_DATED_SHARE_FACT_REQUIRED" ||
+                  item.error_code ===
+                    "PARENT_V3_ECONOMIC_DIRECT_OWNER_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION")) ||
+                item.terminal_cohort_continuation ||
+                rebuildAnnualCash ||
+                rebuildGrossCapex ||
+                rebuildPayout ||
+                rebuildInterest ||
+                (item.base_operating_wire !== "MATCHED_QUARTER_V2" &&
+                  (item.error_code ===
+                    "BASE_POLICY_PARENT_PROVIDER_OR_SETTLEMENT_AMBIGUOUS" ||
+                    (item.error_code ===
+                      "BASE_POLICY_PARENT_V3_FORECAST_DEBT_NEGATIVE" &&
+                      item.base_policy_wire === "ANNUAL_EARNINGS_BRIDGE_V1") ||
+                    (item.error_code ===
+                      "BASE_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION" &&
+                      item.completed_stages.includes("base.policy") &&
+                      item.reused_stages?.includes("base.operating") &&
+                      !item.reused_stages.includes("base.policy"))))) &&
+              item.completed_stages.includes("base.operating") && (
+                <Popconfirm
+                  title={`${resumeLabel}？`}
+                  description="将复用已核验阶段并保留原调用的未结算预留。本次可能产生新费用，仍计入每日总预算。"
+                  onConfirm={() => onContinue(item.task_id)}
+                >
+                  <Button disabled={busy}>{resumeLabel}</Button>
+                </Popconfirm>
+              )}
+            {item.task_contract === "parent-cash-task-v3" &&
+              item.status === "FAILED" &&
+              (item.error_code?.endsWith(
+                "_TERMINAL_PARENT_V3_UNSUPPORTED_STATIONARY_CASH_CONVERSION",
+              ) ||
+                item.error_code?.endsWith(
+                  "_TERMINAL_PARENT_V3_NO_POSITIVE_SUPPORTED_TERMINAL_DISTRIBUTION",
+                )) && <ParentCashTerminalFailure taskId={item.task_id} />}
+            {item.error_code ===
+              "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID" && (
+              <ParentCashTerminalFailure taskId={item.task_id} investingOnly />
+            )}
+            {item.status === "SUCCEEDED" &&
+              item.valuation_receipt_status === "BLOCKED" && (
+                <p>
+                  估值封存受阻：
+                  {publicationBlockageLabel(
+                    item.valuation_blockage?.reason_code || "未记录原因",
+                  )}
+                </p>
+              )}
+            {item.status === "SUCCEEDED" &&
+              item.valuation_receipt_status === "NOT_SEALED" && (
+                <p>研究已执行完成，估值回执尚未封存。</p>
+              )}
+            {item.task_contract === "parent-cash-task-v3" &&
+              !item.read_only_archive &&
+              item.status === "SUCCEEDED" &&
+              (item.valuation_receipt_status === "BLOCKED" ||
+                item.valuation_receipt_status === "NOT_SEALED") && (
+                <Button
+                  loading={sealing === item.task_id}
+                  disabled={Boolean(sealing)}
+                  onClick={() => void seal(item.task_id)}
+                >
+                  重试封存估值
+                </Button>
+              )}
+            {history.symbol === symbol &&
+              item.task_contract === "parent-cash-task-v3" &&
+              (item.status === "SUCCEEDED" ||
+                (item.status === "FAILED" &&
+                  item.error_code ===
+                    "BASE_TERMINAL_PARENT_DRAFT_TERM_SOURCE_INVALID")) && (
+                <ParentCashTaskValuationRead
+                  key={symbol}
+                  symbol={symbol}
+                  taskId={item.task_id}
+                />
+              )}
+            <ul>
+              {item.charges.map((charge, index) => (
+                <li key={index}>
+                  {charge.stage} {charge.status} · 预留 ¥{charge.reserved_cny}
+                  {charge.settled_cny != null &&
+                    ` · 已结算 ¥${charge.settled_cny}`}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
     </section>
   );
 }
@@ -1980,6 +3251,169 @@ export function PublicOperatingResearchView({
     );
   return <LiveOperatingResearchDraft task={value} />;
 }
+function PolicyCorrectionReceipt({
+  taskId,
+  source,
+}: {
+  taskId: string;
+  source: string;
+}) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function read() {
+    setBusy(true);
+    try {
+      const row = await api.parentCashPolicyCorrection(taskId, source);
+      if (
+        row.task_id !== taskId ||
+        row.stage !== "bear.policy" ||
+        row.action !== "no_order"
+      ) {
+        throw new Error("unexpected receipt");
+      }
+      const states: Record<string, string> = {
+        CORRECTION_NOT_STARTED: "尚未执行年度政策结构纠正。",
+        CORRECTION_PENDING: "纠正结果尚未封存。",
+        CORRECTION_VERIFIED: "年度政策已按原值复核，下一阶段为悲观终值。",
+        CORRECTION_REJECTED: "年度政策纠正未通过。",
+      };
+      setText(
+        [
+          states[row.status] || row.status,
+          row.reason,
+          row.receipt_sha256,
+          row.settled_cost_cny && `结算 ¥${row.settled_cost_cny}`,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      );
+    } catch {
+      setText("纠正回执无法核验，请检查研究会话并重新读取。");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <>
+      <Button loading={busy} onClick={() => void read()}>
+        查看年度政策纠正记录
+      </Button>
+      {text && <p role="status">{text}</p>}
+    </>
+  );
+}
+function CompanyParentCashLaunch({ symbol }: { symbol: string }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [revision, setRevision] = useState(0);
+  const pending = useRef(false);
+
+  async function start(
+    continueFrom?: string,
+    fresh = false,
+    correctionReceipt?: string,
+    retryTerminal = false,
+  ) {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setMessage("");
+    try {
+      const slot = "parent-cash-fresh-intent:" + symbol;
+      let intent = fresh ? sessionStorage.getItem(slot) : null;
+      if (fresh && !intent) {
+        intent = crypto.randomUUID().replace(/-/g, "");
+        sessionStorage.setItem(slot, intent);
+      }
+      const task = intent
+        ? await api.newCompanyParentCashTask(symbol, intent)
+        : await api.startCompanyParentCashTask(
+            symbol,
+            continueFrom,
+            correctionReceipt,
+            retryTerminal,
+          );
+      if (task.action !== "no_order" || !/^rt-[a-f0-9]{32}$/.test(task.task_id))
+        throw new Error("Invalid task");
+      if (intent) sessionStorage.removeItem(slot);
+      setMessage(
+        `任务 ${task.task_id} · ${task.status}。在下方刷新历史查看进度与估值。`,
+      );
+      setRevision((value) => value + 1);
+    } catch (cause) {
+      if (
+        cause instanceof ApiError &&
+        cause.status === 409 &&
+        cause.detail === "NOTE_GRID_FINANCING_BALANCE_UNVERIFIED"
+      ) {
+        setMessage(
+          "封存终值的单值格式已重放。期末使用总负债压力上界，缺母公司融资余额及到期勾稽，无法生成可采用的三情景。未重复调用模型。",
+        );
+        return;
+      }
+      if (
+        cause instanceof ApiError &&
+        cause.status === 409 &&
+        cause.detail === "PARENT_V3_GROSS_CAPEX_PLAN_REQUIRED"
+      ) {
+        setMessage(
+          "缺少已核验的母公司资本开支总额计划，需补齐逐年投入与终值依据。未启动现金任务。",
+        );
+        return;
+      }
+      if (
+        cause instanceof ApiError &&
+        cause.status === 422 &&
+        typeof cause.detail === "string"
+      ) {
+        const reasons: Record<string, string> = {
+          GROSS_CAPEX_BASE_OPERATING_REPLAY_REQUIRED:
+            "已封存的 Base 经营响应无法按当前研究输入重放。未创建任务，也未发起模型调用。",
+          GROSS_CAPEX_PLAN_HORIZON_MISMATCH:
+            "母公司资本开支计划未覆盖 Base 情景的全部预测年度。未创建任务。",
+          GROSS_CAPEX_BELOW_FIRST_YEAR_REALIZED:
+            "资本开支计划首年金额低于已核验的实际支出。未创建任务。",
+        };
+        const reason = reasons[cause.detail];
+        if (reason) {
+          setMessage(reason);
+          return;
+        }
+      }
+      setMessage(
+        cause instanceof ApiError && cause.status === 409
+          ? "缺少已绑定的连续年度、母公司现金原件或公司估值输入包；未启动现金任务。"
+          : cause instanceof ApiError && [401, 403].includes(cause.status)
+            ? "请先解锁本机研究会话。"
+            : "现金任务未启动或响应无法核验，请查看研究输入状态。",
+      );
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <Button onClick={() => void start()} loading={busy}>
+        启动股东现金估值研究
+      </Button>
+      <Button onClick={() => void start(undefined, true)} loading={busy}>
+        从零新建研究（使用当日模型预算）
+      </Button>
+      {message && <p role="status">{message}</p>}
+      <ParentCashTaskHistoryView
+        key={revision}
+        symbol={symbol}
+        onContinue={(taskId, receipt, retryTerminal) =>
+          start(taskId, false, receipt, retryTerminal)
+        }
+        busy={busy}
+      />
+    </>
+  );
+}
+
 type Operation =
   "status" | "start" | "history" | "refresh" | "cancel" | "resume" | "finalize";
 export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
@@ -2174,7 +3608,7 @@ export function LiveOperatingResearchPanel({ symbol }: { symbol: string }) {
   const active = task?.status === "QUEUED" || task?.status === "RUNNING";
   return (
     <section aria-label="新Agent经营研究" style={{ marginBlock: 20 }}>
-      <ParentCashTaskHistoryView symbol={symbol} />
+      <CompanyParentCashLaunch key={symbol} symbol={symbol} />
       <h3>新Agent经营研究 · {symbol}</h3>
       <p>
         打开此区仅读取模型状态与已生成公开研究，不发起模型调用；点击启动才可能产生新调用费用。运行中每3秒读取一次真实任务状态，失败时暂停读取；刷新页面后点击读取已有任务即可恢复跟踪，不重复启动研究。研究结果仍需复核，不审批、不下单。

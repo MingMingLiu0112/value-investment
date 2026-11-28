@@ -105,6 +105,20 @@ def test_bad_main_isolated_without_fallback_to_old_success(tmp_path, consumers, 
     assert s['valuation']['blockers']
 
 
+def test_named_source_groups_are_verified_individually(tmp_path):
+    original = tmp_path / 'original.pdf'
+    currency = tmp_path / 'currency.pdf'
+    original.write_bytes(b'TEST_ONLY original')
+    currency.write_bytes(b'TEST_ONLY currency')
+    original_ref = dict(path=original.name, sha256=hashlib.sha256(original.read_bytes()).hexdigest())
+    currency_ref = dict(path=currency.name, sha256=hashlib.sha256(currency.read_bytes()).hexdigest())
+    record = dict(source_bindings=dict(original=original_ref, currency_basis=[currency_ref]))
+    assert app._bindings(tmp_path, record) == [currency_ref, original_ref]
+    currency.write_bytes(b'TEST_ONLY changed')
+    with pytest.raises(ValueError, match='PUBLIC_SOURCE_BINDING_CHANGED'):
+        app._bindings(tmp_path, record)
+
+
 def test_bound_sources_and_mid_read_mutation_fail_closed(tmp_path, consumers, monkeypatch):
     values, _ = consumers
     p = tmp_path / 'original.pdf'

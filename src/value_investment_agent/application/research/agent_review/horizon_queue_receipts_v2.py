@@ -5,7 +5,7 @@ from itertools import islice
 from pathlib import Path
 
 from ...product.common import require_inside, write_new_bytes
-from ..sse_research_pipeline_v1 import read_sse_research_pool
+from ..sse_research_pipeline_v2 import read_sse_research_pool_for_web
 from . import horizon_receipt_selection as legacy
 from . import operating_horizon_sources_parent_layout as alternate
 from .task_execution_v1 import _bytes, _hash
@@ -35,30 +35,54 @@ def _registries(root):
     return base["cases"], variants, {"base": base_hash, "parent_layout": alternate_hash}
 
 
+def _registered_receipt_pair(entry):
+    invalid = "HORIZON_SELECTION_REGISTRY_ENTRY_INVALID"
+    if not isinstance(entry, dict):
+        raise ValueError(invalid)
+    issuer = entry.get("issuer_name")
+    pins = entry.get("parent_cash_observation_receipts")
+    if not isinstance(issuer, str) or not issuer.strip() or not isinstance(pins, list):
+        raise ValueError(invalid)
+    periods = {}
+    for pin in pins:
+        if not isinstance(pin, dict):
+            raise ValueError(invalid)
+        period, binding = pin.get("period"), pin.get("receipt_binding")
+        if not isinstance(period, str) or period in periods or not isinstance(binding, dict):
+            raise ValueError(invalid)
+        periods[period] = binding
+    if set(periods) != set(legacy.REQUIRED_PERIODS):
+        return None
+    return dict(issuer_name=issuer, receipts_by_period=periods)
+
+
 def persist_current_queue_receipt_batch(*, queue_root, research_root, expected_queue, budget, as_of):
     if type(budget) is not int or not 1 <= budget <= 30:
         raise ValueError("HORIZON_SELECTION_BATCH_BUDGET_INVALID")
     if not isinstance(as_of, datetime) or as_of.utcoffset() is None:
         raise ValueError("HORIZON_SELECTION_REQUIRES_AWARE_CUTOFF")
-    queue = read_sse_research_pool(root=queue_root, now=as_of)
+    queue = read_sse_research_pool_for_web(root=queue_root, now=as_of)
     if queue["status"] != "AVAILABLE" or not expected_queue or queue["queue_binding"] != expected_queue:
         raise ValueError("HORIZON_SELECTION_TRACKING_QUEUE_CHANGED")
     root = Path(research_root).resolve()
     base, variants, registry_hashes = _registries(root)
     inputs = {}
-    conflicts = set()
+    rejections = {}
     for item in queue["items"][:budget]:
         symbol = item["symbol"]
-        for entry in (base.get(symbol), variants.get(symbol)):
-            if entry is None:
+        for registry in (base, variants):
+            if symbol not in registry:
                 continue
-            pins = entry["parent_cash_observation_receipts"]
-            periods = {pin["period"]: pin["receipt_binding"] for pin in pins}
-            if len(periods) != len(pins) or set(periods) != set(legacy.REQUIRED_PERIODS):
+            try:
+                proposed = _registered_receipt_pair(registry[symbol])
+            except ValueError as error:
+                rejections[symbol] = str(error)
+                inputs.pop(symbol, None)
+                break
+            if proposed is None:
                 continue
-            proposed = dict(issuer_name=entry["issuer_name"], receipts_by_period=periods)
             if symbol in inputs and inputs[symbol] != proposed:
-                conflicts.add(symbol)
+                rejections[symbol] = "HORIZON_SELECTION_REGISTRY_CONFLICT"
                 del inputs[symbol]
                 break
             inputs[symbol] = proposed
@@ -66,8 +90,8 @@ def persist_current_queue_receipt_batch(*, queue_root, research_root, expected_q
         root=root, queue_rows=queue["items"], receipts=inputs, budget=budget, as_of=as_of,
     )
     for row in result["items"]:
-        if row["symbol"] in conflicts:
-            row.update(status="SOURCE_REPLAY_REJECTED", reason="HORIZON_SELECTION_REGISTRY_CONFLICT")
+        if row["symbol"] in rejections:
+            row.update(status="SOURCE_REPLAY_REJECTED", reason=rejections[row["symbol"]])
     result.update(schema_version=VERSION, queue_binding=expected_queue, registry_hashes=registry_hashes,
                   receipt_inputs=inputs, new_llm_calls=0)
     raw = _bytes(result)
@@ -120,6 +144,12 @@ def read_queue_receipt_batch(*, research_root, queue_binding, as_of):
     _, digest, result = latest
     return dict(as_of=result["as_of"], sha256=digest, items=[
         dict(symbol=row["symbol"], status=row["status"],
+             reason_code=(
+                 row['reason']
+                 if row.get('reason') in {'HORIZON_SELECTION_REGISTRY_CONFLICT',
+                                          'HORIZON_SELECTION_REGISTRY_ENTRY_INVALID'}
+                 else 'HORIZON_SELECTION_SOURCE_REPLAY_FAILED'
+                 if row['status'] == 'SOURCE_REPLAY_REJECTED' else None),
              evidence_count=len(row.get("evidence_ids", [])) or
              sum(len(statement["rows"]) for statement in row.get("historical_parent_cash", [])))
         for row in result["items"]

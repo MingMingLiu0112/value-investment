@@ -1,14 +1,17 @@
 from datetime import datetime, timezone
 import json
 
+import pytest
+
 from value_investment_agent.application.research.agent_review import horizon_queue_receipts_v2 as batch
 
 
-def test_reads_both_registries_and_rejects_conflict_without_losing_next_company(tmp_path, monkeypatch):
+@pytest.mark.parametrize("fault", ["conflict", "non_object", "broken_pin", "duplicate_period"])
+def test_reads_both_registries_and_isolates_bad_entry(tmp_path, monkeypatch, fault):
     now = datetime(2026, 11, 16, tzinfo=timezone.utc)
     queue = {"sha256": "a" * 64}
     symbols = ["600001", "600002", "600003"]
-    monkeypatch.setattr(batch, "read_sse_research_pool", lambda **_: {
+    monkeypatch.setattr(batch, "read_sse_research_pool_for_web", lambda **_: {
         "status": "AVAILABLE", "queue_binding": queue,
         "items": [{"symbol": symbol} for symbol in symbols],
     })
@@ -32,7 +35,16 @@ def test_reads_both_registries_and_rejects_conflict_without_losing_next_company(
         "cases": {symbol: entry(symbol) for symbol in symbols[:2]},
     })
     variants = {symbols[1]: entry(symbols[1], "-different"), symbols[2]: entry(symbols[2])}
+    if fault == "non_object":
+        variants[symbols[1]] = None
+    elif fault == "broken_pin":
+        variants[symbols[1]]["parent_cash_observation_receipts"] = [{"period": []}]
+    elif fault == "duplicate_period":
+        pins = variants[symbols[1]]["parent_cash_observation_receipts"]
+        pins.append(pins[0])
     write(batch.alternate.CONFIG, variants)
+    expected_reason = ("HORIZON_SELECTION_REGISTRY_CONFLICT" if fault == "conflict"
+                       else "HORIZON_SELECTION_REGISTRY_ENTRY_INVALID")
     replayed = []
 
     def replay(*, symbol, **kwargs):
@@ -44,10 +56,13 @@ def test_reads_both_registries_and_rejects_conflict_without_losing_next_company(
         queue_root=tmp_path, research_root=tmp_path, expected_queue=queue, budget=3, as_of=now,
     )
     assert replayed == [symbols[0], symbols[2]]
-    assert receipt["result"]["items"][1]["reason"] == "HORIZON_SELECTION_REGISTRY_CONFLICT"
-    assert batch.read_queue_receipt_batch(
+    assert receipt["result"]["items"][1]["reason"] == expected_reason
+    view = batch.read_queue_receipt_batch(
         research_root=tmp_path, queue_binding=queue, as_of=now,
-    )["sha256"] == receipt["binding"]["sha256"]
+    )
+    assert view["sha256"] == receipt["binding"]["sha256"]
+    assert view["items"][1]["reason_code"] == expected_reason
+    assert view["items"][2]["reason_code"] is None
     variants.pop(symbols[2])
     write(batch.alternate.CONFIG, variants)
     assert batch.read_queue_receipt_batch(research_root=tmp_path, queue_binding=queue, as_of=now) is None

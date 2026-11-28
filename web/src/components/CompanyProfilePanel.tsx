@@ -4,6 +4,20 @@ import { Alert, Button, Descriptions, Tag } from "antd";
 import { api } from "../services/api";
 import { useApi } from "../hooks/useApi";
 
+const invalidationNames = new Map([
+  ["SOURCE_HASH_OR_BINDING_CHANGED", "来源文件或证据绑定发生变化"],
+  ["ISSUER_OR_REPORT_PERIOD_CHANGED", "发行人或财务报告期间发生变化"],
+  [
+    "BUSINESS_STRUCTURE_OR_CAPITAL_ALLOCATION_CHANGED",
+    "业务结构或资本配置发生变化",
+  ],
+  ["REQUIRED_MODEL_INPUTS_CHANGED", "模型必需输入发生变化"],
+  [
+    "COUNTEREVIDENCE_OR_THESIS_BREAKER_TRIGGERED",
+    "出现关键反证或触发投资逻辑失效条件",
+  ],
+]);
+
 export interface CompanyProfile {
   schema_version: string;
   symbol: string;
@@ -87,9 +101,11 @@ export function CompanyProfileView({
   symbol: string;
 }) {
   if (
-    !["company-research-profile-v1", "source-company-profile-v1"].includes(
-      data.schema_version,
-    ) ||
+    ![
+      "company-research-profile-v1",
+      "source-company-profile-v1",
+      "source-company-profile-v2",
+    ].includes(data.schema_version) ||
     data.symbol !== symbol ||
     data.action !== "no_order" ||
     data.formal_eligibility !== false
@@ -244,7 +260,9 @@ export function CompanyProfileView({
           ? data.invalidation_conditions
           : ["业务或资本结构变化后重新核验"]
         ).map((line, i) => (
-          <li key={i}>{line}</li>
+          <li key={i} style={{ overflowWrap: "anywhere" }}>
+            {invalidationNames.get(line) ?? line}
+          </li>
         ))}
       </ul>
       {!!data.blockers?.length && (

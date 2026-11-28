@@ -238,10 +238,15 @@ def _companies(project):
     """Registration discovery only: do not open/revalidate the registered research."""
     registered = {}
     sources = []
-    for name, schema, field in (
+    from ...application.product.first_research_input_view_v1 import REGISTRY, SCHEMA
+
+    registries = [
         ('config/current-research-drafts.json', 'current-research-drafts-v1', 'pending_candidates'),
         ('config/current-operating-research-sources-v1.json', 'current-operating-research-sources-v1', 'cases'),
-    ):
+    ]
+    if (project / REGISTRY).exists():
+        registries.append((REGISTRY, SCHEMA, 'cases'))
+    for name, schema, field in registries:
         try:
             path = require_inside(project, project / name, 'public company registry')
             if path.stat().st_size > 2_000_000:

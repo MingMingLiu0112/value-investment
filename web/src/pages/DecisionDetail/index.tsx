@@ -1,3 +1,4 @@
+import "./value-tracking.css";
 import { LiveOperatingResearchPanel } from "../../components/LiveOperatingResearchPanel";
 import { CompanyProfilePanel } from "../../components/CompanyProfilePanel";
 import { OperatingAssumptionDraftPanel } from "../../components/OperatingAssumptionDraftPanel";
@@ -26,6 +27,7 @@ import { ValueResearchAnalysis } from "../../components/ValueResearchAnalysis";
 import { blockerText } from "../../utils/packet";
 import {
   selectionPriceCondition,
+  valueChannelName,
   SwingWaitExplanation,
 } from "../../components/DualStrategySelection";
 import { ProductContinuationCandidate } from "../../components/ProductContinuationCandidate";
@@ -906,6 +908,7 @@ export function OnDemandSection({
 
 export default function DecisionDetail() {
   const { id = "" } = useParams<{ id: string }>();
+  const [operatingSymbol, setOperatingSymbol] = useState("");
   const requestedStrategy =
     typeof window === "undefined"
       ? null
@@ -1165,499 +1168,605 @@ export default function DecisionDetail() {
     packet.data.publication_id === data?.publication?.publication_id
       ? packet.data.company_statuses?.[decision?.symbol ?? ""]?.decision_chain
       : undefined;
+  const valuePage =
+    strategy !== "hotspot" &&
+    /^[0-9]{6}$/.test(id) &&
+    decision?.strategy !== "HOTSPOT_SATELLITE" &&
+    decision?.strategy !== "hotspot";
+  const candidate =
+    !loading && !error && data?.action === "no_order"
+      ? data.selection_candidate
+      : undefined;
+  const matches =
+    candidate?.channel_evaluations?.filter((item) => item.status === "PASS") ??
+    [];
+  const historical =
+    candidate &&
+    "detail_source" in candidate &&
+    candidate.detail_source === "LEGACY_SELECTION_CONTEXT_NOT_CURRENT_SSE";
+  const DetailContainer = valuePage ? "details" : "div";
   return (
     <Workbench>
-      <Typography.Title level={2}>
-        {strategy === "hotspot" ? "热点波段跟踪" : "公司研究与条件判断"}
-      </Typography.Title>
-      {strategy !== "hotspot" && /^[0-9]{6}$/.test(id) && (
-        <>
-          <CompanyProfilePanel symbol={id} />
-          <FirstResearchInputPanel key={"first-" + id} symbol={id} />
-          <OperatingAssumptionDraftPanel key={id} symbol={id} />
-          <LiveOperatingResearchPanel key={"live-" + id} symbol={id} />
-        </>
-      )}
-      <RemoteState loading={loading} error={error} retry={retry}>
-        {!decision ? (
-          <Alert
-            type="info"
-            showIcon
-            message="暂无可核验的操作逻辑"
-            description={data?.reason || data?.status || "未找到该决策"}
-          />
-        ) : (
-          <>
-            <Typography.Title level={3}>
-              {String(decision.name || decision.symbol || decision.id)}{" "}
-              {decision.name && decision.symbol}
+      <header className="workbench-hero">
+        {valuePage && <Link to="/strategy/value">← 返回价值候选池</Link>}
+        <Typography.Title level={2}>
+          {valuePage
+            ? [!loading && !error && decision?.name, id]
+                .filter(Boolean)
+                .join(" · ")
+            : strategy === "hotspot"
+              ? "热点波段跟踪"
+              : "公司研究与条件判断"}
+        </Typography.Title>
+        {valuePage && (
+          <section aria-label="跟踪理由">
+            <Typography.Title level={4}>
+              {historical ? "当时为什么跟踪" : "为什么关注这家公司"}
             </Typography.Title>
-            {data?.action === "no_order" && data.research_draft && (
-              <ResearchDraftPanel draft={data.research_draft} />
+            {loading ? (
+              <p>正在读取候选记录…</p>
+            ) : error ? (
+              <p>候选记录读取失败，请在下方重试。</p>
+            ) : matches.length ? (
+              <ul>
+                {matches.map((item) => (
+                  <li key={item.channel}>
+                    <strong>{valueChannelName(item.channel)}</strong> ·{" "}
+                    {blockerText(item.reason)}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>
+                {candidate?.reasons
+                  ?.map(blockerText)
+                  .filter(Boolean)
+                  .join("；") ||
+                  decision?.why_selected ||
+                  decision?.reason ||
+                  "尚无可核验的入池理由。"}
+              </p>
             )}
-            {data?.action === "no_order" && data.selection_candidate && (
-              <section aria-label="公开候选依据">
-                <h3>
-                  {strategy === "hotspot" ? "热点结构观察" : "价值初筛研究依据"}
-                </h3>
-                {strategy !== "hotspot" &&
-                "detail_source" in data.selection_candidate &&
-                data.selection_candidate.detail_source ===
-                  "CURRENT_VERIFIED_SSE_SCREEN" ? (
-                  <p>
-                    来源可得时间：
-                    {data.selection_candidate.source_available_at || "未提供"}
-                    ；行情日期：
-                    {data.selection_candidate.quote_date || "待核验"}
-                    {data.selection_candidate.quote_date
-                      ? "（原来源日期，交易日资格待核验）"
-                      : ""}
-                    。来源可得时间不代表行情交易日。
-                  </p>
-                ) : strategy !== "hotspot" &&
+            {candidate && (
+              <small>
+                {historical ? "历史候选记录" : "筛选记录"} ·{" "}
+                {candidate.industry || "行业待核实"} · 资料日期{" "}
+                {candidate.source_available_at ||
+                  candidate.quote_date ||
+                  candidate.trade_date ||
+                  "未提供"}
+              </small>
+            )}
+          </section>
+        )}
+      </header>
+      {valuePage && (
+        <div className="workbench-surface value-tracking-modules" key={id}>
+          <details id="company-profile">
+            <summary>
+              <strong>企业画像</strong>　公司靠什么赚钱，适合怎样估值
+            </summary>
+            <CompanyProfilePanel symbol={id} />
+          </details>
+          <details
+            id="operating-research"
+            onToggle={(event) => {
+              if (event.currentTarget.open) setOperatingSymbol(id);
+            }}
+          >
+            <summary>
+              <strong>经营研究</strong>　利润和现金能否持续
+            </summary>
+            {operatingSymbol === id && (
+              <>
+                <OperatingAssumptionDraftPanel key={id} symbol={id} />
+                <LiveOperatingResearchPanel key={"live-" + id} symbol={id} />
+              </>
+            )}
+          </details>
+          <details id="company-valuation" open>
+            <summary>
+              <strong>股东现金、估值与价格判断</strong>　三情景与当前比价依据
+            </summary>
+            <FirstResearchInputPanel key={"first-" + id} symbol={id} />
+          </details>
+        </div>
+      )}
+      <DetailContainer>
+        {valuePage && <summary>筛选明细、原始证据与复核记录</summary>}
+        <div id="company-decision" />
+        <RemoteState loading={loading} error={error} retry={retry}>
+          {!decision ? (
+            <Alert
+              type="info"
+              showIcon
+              message="暂无可核验的操作逻辑"
+              description={data?.reason || data?.status || "未找到该决策"}
+            />
+          ) : (
+            <>
+              <Typography.Title level={3}>
+                {String(decision.name || decision.symbol || decision.id)}{" "}
+                {decision.name && decision.symbol}
+              </Typography.Title>
+              {data?.action === "no_order" && data.research_draft && (
+                <ResearchDraftPanel draft={data.research_draft} />
+              )}
+              {data?.action === "no_order" && data.selection_candidate && (
+                <section aria-label="公开候选依据">
+                  <h3>
+                    {strategy === "hotspot"
+                      ? "热点结构观察"
+                      : "价值初筛研究依据"}
+                  </h3>
+                  {strategy !== "hotspot" &&
                   "detail_source" in data.selection_candidate &&
                   data.selection_candidate.detail_source ===
-                    "LEGACY_SELECTION_CONTEXT_NOT_CURRENT_SSE" ? (
-                  <p>
-                    历史候选参考，当前SSE未核验。历史记录行情日期：
-                    {data.selection_candidate.quote_date ||
-                      data.selection_candidate.trade_date ||
-                      "未提供"}
-                    ；来源可得时间：
-                    {data.selection_candidate.source_available_at || "未提供"}
-                    。不作为当前沪市主板候选依据。
-                  </p>
-                ) : (
-                  <p>
-                    资料日期：
-                    {data.selection_candidate.quote_date ||
-                      data.selection_candidate.trade_date ||
-                      "未提供"}
-                  </p>
-                )}
-                <p>
-                  行业：{data.selection_candidate.industry || "未提供"}。
-                  初筛候选不是已批准操作计划。
-                </p>
-                <ul>
-                  {data.selection_candidate.channel_evaluations?.map((item) => (
-                    <li key={item.channel}>
-                      {item.channel} · {item.status} · {item.reason}
-                    </li>
-                  ))}
-                </ul>
-                <ul>
-                  {data.selection_candidate.reasons?.map((reason) => (
-                    <li key={reason}>{blockerText(reason)}</li>
-                  ))}
-                </ul>
-                {strategy === "hotspot" ? (
-                  <>
+                    "CURRENT_VERIFIED_SSE_SCREEN" ? (
                     <p>
-                      确认条件：
-                      {selectionPriceCondition(
-                        data.selection_candidate.entry_condition,
-                      )}
+                      来源可得时间：
+                      {data.selection_candidate.source_available_at || "未提供"}
+                      ；行情日期：
+                      {data.selection_candidate.quote_date || "待核验"}
+                      {data.selection_candidate.quote_date
+                        ? "（原来源日期，交易日资格待核验）"
+                        : ""}
+                      。来源可得时间不代表行情交易日。
                     </p>
+                  ) : strategy !== "hotspot" &&
+                    "detail_source" in data.selection_candidate &&
+                    data.selection_candidate.detail_source ===
+                      "LEGACY_SELECTION_CONTEXT_NOT_CURRENT_SSE" ? (
                     <p>
-                      失效条件：
-                      {selectionPriceCondition(
-                        data.selection_candidate.invalidation_condition,
-                        true,
-                      )}
+                      历史候选参考，当前SSE未核验。历史记录行情日期：
+                      {data.selection_candidate.quote_date ||
+                        data.selection_candidate.trade_date ||
+                        "未提供"}
+                      ；来源可得时间：
+                      {data.selection_candidate.source_available_at || "未提供"}
+                      。不作为当前沪市主板候选依据。
                     </p>
-                    <SwingWaitExplanation row={data.selection_candidate} />
-                    <HotspotSampleReview
-                      sample={data.hotspot_sample_review}
-                      symbol={String(decision.symbol ?? decision.id)}
-                    />
-                  </>
-                ) : (
-                  <p>
-                    此初筛记录本身不包含深度经营研究及条件估值，不据此判断低估；已形成的独立研究见上方对应研究区。
-                  </p>
-                )}
-                <ul>
-                  {data.selection_candidate.blockers?.map((reason) => (
-                    <li key={reason}>{blockerText(reason)}</li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            {!loading &&
-              !error &&
-              data?.action === "no_order" &&
-              (data.publication?.packet_status === "CURRENT" ||
-                decision.research_analysis != null) &&
-              decision.strategy !== "hotspot" &&
-              decision.strategy !== "HOTSPOT_SATELLITE" && (
-                <ValueResearchAnalysis decision={decision} />
-              )}
-            {showPublicReview && publicReview && publicReviewIntent && (
-              <Typography.Paragraph role="status">
-                证券级条件性人工复核：
-                {
-                  {
-                    OPEN: "建仓",
-                    ADD: "加仓",
-                    HOLD: "持有",
-                    REDUCE: "减仓",
-                    EXIT: "退出",
-                  }[publicReviewIntent]
-                }
-                。{publicReview.decision_reason}
-                未核验个人资金与持仓，不提供个人可操作股数，也不是下单许可。
-              </Typography.Paragraph>
-            )}
-            {readinessItem?.readiness && (
-              <StrategyReadinessPanel
-                item={readinessItem}
-                decision={decision}
-                company={
-                  packet.data?.source_bindings_verified === true
-                    ? packet.data.company_statuses?.[readinessItem.symbol]
-                    : undefined
-                }
-              />
-            )}
-            {chain?.research_conclusion?.evidence_verified &&
-              chain.research_conclusion.summary && (
-                <Alert
-                  type="warning"
-                  showIcon
-                  message="当前研究判断（不构成投资批准）"
-                  description={chain.research_conclusion.summary}
-                  style={{ marginTop: 12 }}
-                />
-              )}
-            {verifiedProgress && progress && (
-              <Typography.Paragraph role="status">
-                财务补证已回流研究：已核验采纳 {progress.adopted_fact_count}{" "}
-                个派生事实，财务覆盖从{" "}
-                {(Number(progress.quality_coverage_before) * 100).toFixed(1)}%
-                到 {(Number(progress.quality_coverage_after) * 100).toFixed(1)}
-                %。 这是财务输入更新；估值、事件审核和投资资格仍独立核验。
-                {Array.isArray(progress.adopted_metrics) &&
-                  progress.adopted_metrics
-                    .filter(
-                      (metric) =>
-                        [
-                          "debt_ratio",
-                          "revenue_yoy",
-                          "net_income_yoy",
-                          "net_income",
-                        ].includes(metric.field_name) &&
-                        metric.unit ===
-                          (metric.field_name === "net_income"
-                            ? "CNY"
-                            : "percent") &&
-                        typeof metric.value === "string" &&
-                        metric.value.trim() !== "" &&
-                        Number.isFinite(Number(metric.value)) &&
-                        /^\d{4}-12-31$/.test(metric.period_label),
-                    )
-                    .map((metric) => (
-                      <span
-                        key={`${metric.field_name}-${metric.period_label}`}
-                        style={{ display: "block" }}
-                      >
-                        {metric.period_label} ·{" "}
-                        {
-                          {
-                            debt_ratio: "资产负债率",
-                            revenue_yoy: "营业收入同比",
-                            net_income_yoy: "归母净利润同比",
-                            net_income: "归母净利润",
-                          }[metric.field_name]
-                        }
-                        ：{Number(metric.value).toFixed(2)}
-                        {metric.field_name === "net_income" ? " 元" : "%"}
-                      </span>
-                    ))}
-                {factSourceUsable && factSource && (
-                  <span style={{ display: "block", overflowWrap: "anywhere" }}>
-                    <a
-                      href={factSource.source_url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      原始财报
-                    </a>
-                    {" · "}
-                    <span title={factSource.sha256}>
-                      SHA-256 {shortDigest(factSource.sha256)}
-                    </span>
-                    {" · 取得时间（北京时间）"}
-                    {new Date(factSource.available_at).toLocaleString("zh-CN", {
-                      timeZone: "Asia/Shanghai",
-                      hour12: false,
-                    })}
-                    {progress.verification_methods?.includes(
-                      "OFFICIAL_BALANCE_RECONCILIATION_V1",
-                    ) &&
-                      " · 资产负债率：官方报表单一来源勾稽核验，非双源验证或审计鉴证。"}
-                  </span>
-                )}
-              </Typography.Paragraph>
-            )}
-            {compositionBound && composition && (
-              <Typography.Paragraph role="status">
-                融资构成已补证（{composition.source_binding.period}
-                ，合并口径）：六类融资相关账面余额
-                {(
-                  Number(composition.six_balance_buckets_cny) / 100000000
-                ).toFixed(2)}
-                亿元； 加其他非流动负债后为
-                {(
-                  Number(composition.six_buckets_plus_other_noncurrent_cny) /
-                  100000000
-                ).toFixed(2)}
-                亿元； 报告另披露的带息合同合计
-                {(
-                  Number(composition.reported_interest_contracts_total_cny) /
-                  100000000
-                ).toFixed(2)}
-                亿元。 两个范围仍相差
-                {Number(
-                  composition.balance_subset_minus_reported_interest_contracts_cny,
-                ).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}
-                元。
-                当前与非当前租赁分别归类，不重复计入；其他融资性质与范围差额尚未核清，完整有息债仍未确认，不将这些合计直接用于净负债估值。
-              </Typography.Paragraph>
-            )}
-            {relevantFunding && (
-              <Typography.Paragraph role="status">
-                {fundingBound &&
-                funding.status ===
-                  "SOURCE_BOUND_CLASSIFICATIONS_VALIDATED_NOT_NEW_FACT_ADMISSION" &&
-                Array.isArray(funding.unresolved_fields) &&
-                funding.unresolved_fields.length === 0 &&
-                new Set(funding.required_fields).size ===
-                  funding.required_fields.length &&
-                funding.required_fields.every(
-                  (field) =>
-                    fundingRows.filter((row) => row.field_name === field)
-                      .length === 1,
-                )
-                  ? "金融融资范围已显式分类；完整债务及投资资格仍单独核验。"
-                  : "金融融资范围仍需核验：不能只按工业借款与租赁判断完整有息负债。"}
-                以下仅为官方原件观察，未采纳为完整债务；不是母公司可分配现金，也不从权益估值重复扣除。
-                {fundingRows.map((row) => (
-                  <span
-                    key={`${row.field_name}-${row.page}`}
-                    style={{ display: "block" }}
-                  >
-                    {row.period_label} · {fundingLabels[row.field_name]}：
-                    {(Number(row.value) / 100000000).toLocaleString("zh-CN", {
-                      maximumFractionDigits: 2,
-                    })}
-                    亿元（合并账面余额，原件第{row.page}页，非本金拆分）。
-                  </span>
-                ))}
-                {fundingRows.length === 0 &&
-                  "当前融资金额或出处不能可靠展示，不能据此认定没有该项义务。"}
-                空白项目不等于零；利息口径、其他债务、独立核验及母公司资金可取性仍需分别评价。
-                {cashRows.length > 0 && (
-                  <span style={{ display: "block" }}>
-                    同期资金与现金口径观察（{cashContext?.period_label}）：
-                    {cashRows.map((row) => (
-                      <span key={row.field_name} style={{ display: "block" }}>
-                        {cashLabels[row.field_name].label}：
-                        {Number(row.value).toLocaleString("zh-CN", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                        元；原件第{row.page}页。
-                      </span>
-                    ))}
-                    {concentration && (
-                      <>
-                        控股集团存款占比：
-                        {(Number(concentration.value) * 100).toFixed(2)}
-                        %（来源金额推导）。
-                      </>
-                    )}
-                    合并现金与母公司现金不可相加，均不等于已证明可全部分配的现金；存款来源集中不证明其稳定存续。单期观察不代表跨期变化。
-                  </span>
-                )}
-              </Typography.Paragraph>
-            )}
-            {(replay?.status === "VERIFIED_EXACT_INPUT_REPLAY" ||
-              replay?.status === "VERIFIED_NEW_INPUT_CANDIDATE") &&
-              replay.symbol === decision.symbol &&
-              replay.action === "no_order" &&
-              replay.formal_eligibility === false &&
-              replay.approval_changed === false &&
-              replay.research_admitted === false &&
-              replay.price_admitted === false &&
-              replay.scope === "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY" && (
-                <Typography.Paragraph role="status">
-                  {replay.status === "VERIFIED_NEW_INPUT_CANDIDATE"
-                    ? "新来源版本已完成研究消费，可办理精确版本审核；研究日为 "
-                    : "原研究已按当前程序核验重放，研究日仍为 "}
-                  {replay.research_as_of}
-                  {replay.valuation_basis_scope ===
-                    "EX_POST_PRIOR_COMPLETED_SESSION" &&
-                    replay.valuation_basis_date && (
-                      <>
-                        ；估值基准为 {replay.valuation_basis_date}
-                        收盘，属事后估计，不代表当前行情有效
-                      </>
-                    )}
-                  ；未获经济或买卖批准。{" "}
-                  <a href="#value-review-handoff">
-                    查看有权审核人的材料与签署路径
-                  </a>
-                </Typography.Paragraph>
-              )}
-            {replay?.status === "SOURCE_UNAVAILABLE" && (
-              <Typography.Paragraph role="status">
-                研究审核材料当前核验未通过，不能据此办理审核或更新操作资格。
-              </Typography.Paragraph>
-            )}
-            <JudgmentSummary
-              decision={decision}
-              boundDraft={
-                data?.research_draft?.schema_version ===
-                "public-research-draft-v2"
-              }
-              personalContext={
-                decision.symbol && /^\d{6}$/.test(decision.symbol) ? (
-                  <OnDemandSection key={decision.symbol} label="查看私人持仓">
-                    <CurrentHolding decision={decision} />
-                  </OnDemandSection>
-                ) : undefined
-              }
-            />
-            {(decision.strategy === "hotspot" ||
-              decision.strategy === "HOTSPOT_SATELLITE") && (
-              <HotspotLifecycleReview
-                symbol={decision.symbol ?? ""}
-                plan={decision.price_action_plan}
-                review={data?.hotspot_lifecycle_review}
-                available={
-                  !loading &&
-                  !error &&
-                  data?.action === "no_order" &&
-                  data.publication?.packet_status === "CURRENT"
-                }
-              />
-            )}
-            {!loading && !error && data?.action === "no_order" && (
-              <ProductContinuationCandidate
-                symbol={decision.symbol ?? ""}
-                value={data.product_continuation_candidate}
-              />
-            )}
-            <Space wrap style={{ margin: "12px 0" }}>
-              {decision.symbol && /^\d{6}$/.test(decision.symbol) && (
-                <Link to={`${fillLink(decision)}#portfolio-fill`}>
-                  <Button type="primary">记录我的实际成交</Button>
-                </Link>
-              )}
-              <Link to="/daily">
-                <Button>返回每日建议</Button>
-              </Link>
-              <Link to="/history">
-                <Button>查看历史判断</Button>
-              </Link>
-            </Space>
-            {decision.symbol && /^\d{6}$/.test(decision.symbol) && (
-              <OnDemandSection key={decision.symbol} label="加载 AI 研究材料">
-                <AgentResearchPanel symbol={decision.symbol} />
-              </OnDemandSection>
-            )}
-            {!!chain?.gaps.length && (
-              <details>
-                <summary>
-                  下一步办理路径与未满足条件（{chain.gaps.length}）
-                </summary>
-                <ul>
-                  {chain.gaps.map((gap, index) => (
-                    <li key={`${gap.code}-${index}`}>
-                      {
-                        {
-                          ENGINEERING: "工程接线",
-                          DATA: "数据待补齐",
-                          EVIDENCE: "研究证据不足",
-                          HUMAN: "有权审核人办理",
-                          STRATEGY: "策略尚未验证",
-                          PRIVATE: "本人资料待确认",
-                        }[gap.classification]
-                      }
-                      ：{gap.reason} <Link to={gap.next_url}>查看办理材料</Link>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            )}
-            {(decision.strategy === "hotspot" ||
-              decision.strategy === "HOTSPOT_SATELLITE") &&
-              decision.price_action_plan && (
-                <CurrentJudgmentChart decision={decision} />
-              )}
-            <details>
-              <summary>展开研究底稿、估值与历史资格核验</summary>
-              {!decision.price_action_plan && (
-                <section aria-label="操作摘要" style={{ maxWidth: 960 }}>
-                  <Typography.Text type="secondary">
-                    {strategyText(decision.strategy)} ·{" "}
-                    {decision.as_of || "研究日期待核验"}
-                  </Typography.Text>
-                  <Descriptions
-                    column={1}
-                    size="small"
-                    style={{ marginTop: 12 }}
-                    items={[
-                      {
-                        key: "action",
-                        label: "当前能做什么",
-                        children:
-                          "以本页正式操作资格与未满足条件为准；不自动下单",
-                      },
-                      {
-                        key: "reason",
-                        label: "为什么关注",
-                        children:
-                          decision.reason ||
-                          decision.why_selected ||
-                          "关注理由尚待核验",
-                      },
-                      {
-                        key: "trigger",
-                        label: "何时再复核",
-                        children:
-                          firstResearchText(decision.next_events) ||
-                          "触发条件仍待研究",
-                      },
-                      {
-                        key: "risk",
-                        label: "关键风险",
-                        children:
-                          firstResearchText(decision.counter_evidence) ||
-                          firstResearchText(decision.thesis_breakers) ||
-                          publicBlockerText(decision.blockers?.[0]) ||
-                          "主要风险仍待核验",
-                      },
-                    ]}
-                  />
-                  {decision.status !== "FORMALLY_ADMITTED_REVIEW" && (
-                    <Typography.Text type="secondary">
-                      {codeText(decision.blockers?.[0]) ||
-                        "研究、价格或组合条件尚未全部通过。"}
-                    </Typography.Text>
+                  ) : (
+                    <p>
+                      资料日期：
+                      {data.selection_candidate.quote_date ||
+                        data.selection_candidate.trade_date ||
+                        "未提供"}
+                    </p>
                   )}
+                  <p>
+                    行业：{data.selection_candidate.industry || "未提供"}。
+                    初筛候选不是已批准操作计划。
+                  </p>
+                  <ul>
+                    {data.selection_candidate.channel_evaluations?.map(
+                      (item) => (
+                        <li key={item.channel}>
+                          {item.channel} · {item.status} · {item.reason}
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                  <ul>
+                    {data.selection_candidate.reasons?.map((reason) => (
+                      <li key={reason}>{blockerText(reason)}</li>
+                    ))}
+                  </ul>
+                  {strategy === "hotspot" ? (
+                    <>
+                      <p>
+                        确认条件：
+                        {selectionPriceCondition(
+                          data.selection_candidate.entry_condition,
+                        )}
+                      </p>
+                      <p>
+                        失效条件：
+                        {selectionPriceCondition(
+                          data.selection_candidate.invalidation_condition,
+                          true,
+                        )}
+                      </p>
+                      <SwingWaitExplanation row={data.selection_candidate} />
+                      <HotspotSampleReview
+                        sample={data.hotspot_sample_review}
+                        symbol={String(decision.symbol ?? decision.id)}
+                      />
+                    </>
+                  ) : (
+                    <p>
+                      此初筛记录本身不包含深度经营研究及条件估值，不据此判断低估；已形成的独立研究见上方对应研究区。
+                    </p>
+                  )}
+                  <ul>
+                    {data.selection_candidate.blockers?.map((reason) => (
+                      <li key={reason}>{blockerText(reason)}</li>
+                    ))}
+                  </ul>
                 </section>
               )}
-              {research ? (
-                <ResearchDecision decision={decision} research={research} />
-              ) : decision.price_action_plan ? null : (
-                <LegacyDecision decision={decision} />
+              {!loading &&
+                !error &&
+                data?.action === "no_order" &&
+                (data.publication?.packet_status === "CURRENT" ||
+                  decision.research_analysis != null) &&
+                decision.strategy !== "hotspot" &&
+                decision.strategy !== "HOTSPOT_SATELLITE" && (
+                  <ValueResearchAnalysis decision={decision} />
+                )}
+              {showPublicReview && publicReview && publicReviewIntent && (
+                <Typography.Paragraph role="status">
+                  证券级条件性人工复核：
+                  {
+                    {
+                      OPEN: "建仓",
+                      ADD: "加仓",
+                      HOLD: "持有",
+                      REDUCE: "减仓",
+                      EXIT: "退出",
+                    }[publicReviewIntent]
+                  }
+                  。{publicReview.decision_reason}
+                  未核验个人资金与持仓，不提供个人可操作股数，也不是下单许可。
+                </Typography.Paragraph>
               )}
-            </details>
-          </>
-        )}
-      </RemoteState>
+              {readinessItem?.readiness && (
+                <StrategyReadinessPanel
+                  item={readinessItem}
+                  decision={decision}
+                  company={
+                    packet.data?.source_bindings_verified === true
+                      ? packet.data.company_statuses?.[readinessItem.symbol]
+                      : undefined
+                  }
+                />
+              )}
+              {chain?.research_conclusion?.evidence_verified &&
+                chain.research_conclusion.summary && (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    message="当前研究判断（不构成投资批准）"
+                    description={chain.research_conclusion.summary}
+                    style={{ marginTop: 12 }}
+                  />
+                )}
+              {verifiedProgress && progress && (
+                <Typography.Paragraph role="status">
+                  财务补证已回流研究：已核验采纳 {progress.adopted_fact_count}{" "}
+                  个派生事实，财务覆盖从{" "}
+                  {(Number(progress.quality_coverage_before) * 100).toFixed(1)}%
+                  到{" "}
+                  {(Number(progress.quality_coverage_after) * 100).toFixed(1)}
+                  %。 这是财务输入更新；估值、事件审核和投资资格仍独立核验。
+                  {Array.isArray(progress.adopted_metrics) &&
+                    progress.adopted_metrics
+                      .filter(
+                        (metric) =>
+                          [
+                            "debt_ratio",
+                            "revenue_yoy",
+                            "net_income_yoy",
+                            "net_income",
+                          ].includes(metric.field_name) &&
+                          metric.unit ===
+                            (metric.field_name === "net_income"
+                              ? "CNY"
+                              : "percent") &&
+                          typeof metric.value === "string" &&
+                          metric.value.trim() !== "" &&
+                          Number.isFinite(Number(metric.value)) &&
+                          /^\d{4}-12-31$/.test(metric.period_label),
+                      )
+                      .map((metric) => (
+                        <span
+                          key={`${metric.field_name}-${metric.period_label}`}
+                          style={{ display: "block" }}
+                        >
+                          {metric.period_label} ·{" "}
+                          {
+                            {
+                              debt_ratio: "资产负债率",
+                              revenue_yoy: "营业收入同比",
+                              net_income_yoy: "归母净利润同比",
+                              net_income: "归母净利润",
+                            }[metric.field_name]
+                          }
+                          ：{Number(metric.value).toFixed(2)}
+                          {metric.field_name === "net_income" ? " 元" : "%"}
+                        </span>
+                      ))}
+                  {factSourceUsable && factSource && (
+                    <span
+                      style={{ display: "block", overflowWrap: "anywhere" }}
+                    >
+                      <a
+                        href={factSource.source_url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        原始财报
+                      </a>
+                      {" · "}
+                      <span title={factSource.sha256}>
+                        SHA-256 {shortDigest(factSource.sha256)}
+                      </span>
+                      {" · 取得时间（北京时间）"}
+                      {new Date(factSource.available_at).toLocaleString(
+                        "zh-CN",
+                        {
+                          timeZone: "Asia/Shanghai",
+                          hour12: false,
+                        },
+                      )}
+                      {progress.verification_methods?.includes(
+                        "OFFICIAL_BALANCE_RECONCILIATION_V1",
+                      ) &&
+                        " · 资产负债率：官方报表单一来源勾稽核验，非双源验证或审计鉴证。"}
+                    </span>
+                  )}
+                </Typography.Paragraph>
+              )}
+              {compositionBound && composition && (
+                <Typography.Paragraph role="status">
+                  融资构成已补证（{composition.source_binding.period}
+                  ，合并口径）：六类融资相关账面余额
+                  {(
+                    Number(composition.six_balance_buckets_cny) / 100000000
+                  ).toFixed(2)}
+                  亿元； 加其他非流动负债后为
+                  {(
+                    Number(composition.six_buckets_plus_other_noncurrent_cny) /
+                    100000000
+                  ).toFixed(2)}
+                  亿元； 报告另披露的带息合同合计
+                  {(
+                    Number(composition.reported_interest_contracts_total_cny) /
+                    100000000
+                  ).toFixed(2)}
+                  亿元。 两个范围仍相差
+                  {Number(
+                    composition.balance_subset_minus_reported_interest_contracts_cny,
+                  ).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}
+                  元。
+                  当前与非当前租赁分别归类，不重复计入；其他融资性质与范围差额尚未核清，完整有息债仍未确认，不将这些合计直接用于净负债估值。
+                </Typography.Paragraph>
+              )}
+              {relevantFunding && (
+                <Typography.Paragraph role="status">
+                  {fundingBound &&
+                  funding.status ===
+                    "SOURCE_BOUND_CLASSIFICATIONS_VALIDATED_NOT_NEW_FACT_ADMISSION" &&
+                  Array.isArray(funding.unresolved_fields) &&
+                  funding.unresolved_fields.length === 0 &&
+                  new Set(funding.required_fields).size ===
+                    funding.required_fields.length &&
+                  funding.required_fields.every(
+                    (field) =>
+                      fundingRows.filter((row) => row.field_name === field)
+                        .length === 1,
+                  )
+                    ? "金融融资范围已显式分类；完整债务及投资资格仍单独核验。"
+                    : "金融融资范围仍需核验：不能只按工业借款与租赁判断完整有息负债。"}
+                  以下仅为官方原件观察，未采纳为完整债务；不是母公司可分配现金，也不从权益估值重复扣除。
+                  {fundingRows.map((row) => (
+                    <span
+                      key={`${row.field_name}-${row.page}`}
+                      style={{ display: "block" }}
+                    >
+                      {row.period_label} · {fundingLabels[row.field_name]}：
+                      {(Number(row.value) / 100000000).toLocaleString("zh-CN", {
+                        maximumFractionDigits: 2,
+                      })}
+                      亿元（合并账面余额，原件第{row.page}页，非本金拆分）。
+                    </span>
+                  ))}
+                  {fundingRows.length === 0 &&
+                    "当前融资金额或出处不能可靠展示，不能据此认定没有该项义务。"}
+                  空白项目不等于零；利息口径、其他债务、独立核验及母公司资金可取性仍需分别评价。
+                  {cashRows.length > 0 && (
+                    <span style={{ display: "block" }}>
+                      同期资金与现金口径观察（{cashContext?.period_label}）：
+                      {cashRows.map((row) => (
+                        <span key={row.field_name} style={{ display: "block" }}>
+                          {cashLabels[row.field_name].label}：
+                          {Number(row.value).toLocaleString("zh-CN", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                          元；原件第{row.page}页。
+                        </span>
+                      ))}
+                      {concentration && (
+                        <>
+                          控股集团存款占比：
+                          {(Number(concentration.value) * 100).toFixed(2)}
+                          %（来源金额推导）。
+                        </>
+                      )}
+                      合并现金与母公司现金不可相加，均不等于已证明可全部分配的现金；存款来源集中不证明其稳定存续。单期观察不代表跨期变化。
+                    </span>
+                  )}
+                </Typography.Paragraph>
+              )}
+              {(replay?.status === "VERIFIED_EXACT_INPUT_REPLAY" ||
+                replay?.status === "VERIFIED_NEW_INPUT_CANDIDATE") &&
+                replay.symbol === decision.symbol &&
+                replay.action === "no_order" &&
+                replay.formal_eligibility === false &&
+                replay.approval_changed === false &&
+                replay.research_admitted === false &&
+                replay.price_admitted === false &&
+                replay.scope === "UNADMITTED_WEB_RESEARCH_SUPPLEMENT_ONLY" && (
+                  <Typography.Paragraph role="status">
+                    {replay.status === "VERIFIED_NEW_INPUT_CANDIDATE"
+                      ? "新来源版本已完成研究消费，可办理精确版本审核；研究日为 "
+                      : "原研究已按当前程序核验重放，研究日仍为 "}
+                    {replay.research_as_of}
+                    {replay.valuation_basis_scope ===
+                      "EX_POST_PRIOR_COMPLETED_SESSION" &&
+                      replay.valuation_basis_date && (
+                        <>
+                          ；估值基准为 {replay.valuation_basis_date}
+                          收盘，属事后估计，不代表当前行情有效
+                        </>
+                      )}
+                    ；未获经济或买卖批准。{" "}
+                    <a href="#value-review-handoff">
+                      查看有权审核人的材料与签署路径
+                    </a>
+                  </Typography.Paragraph>
+                )}
+              {replay?.status === "SOURCE_UNAVAILABLE" && (
+                <Typography.Paragraph role="status">
+                  研究审核材料当前核验未通过，不能据此办理审核或更新操作资格。
+                </Typography.Paragraph>
+              )}
+              <JudgmentSummary
+                decision={decision}
+                boundDraft={
+                  data?.research_draft?.schema_version ===
+                  "public-research-draft-v2"
+                }
+                personalContext={
+                  decision.symbol && /^\d{6}$/.test(decision.symbol) ? (
+                    <OnDemandSection key={decision.symbol} label="查看私人持仓">
+                      <CurrentHolding decision={decision} />
+                    </OnDemandSection>
+                  ) : undefined
+                }
+              />
+              {(decision.strategy === "hotspot" ||
+                decision.strategy === "HOTSPOT_SATELLITE") && (
+                <HotspotLifecycleReview
+                  symbol={decision.symbol ?? ""}
+                  plan={decision.price_action_plan}
+                  review={data?.hotspot_lifecycle_review}
+                  available={
+                    !loading &&
+                    !error &&
+                    data?.action === "no_order" &&
+                    data.publication?.packet_status === "CURRENT"
+                  }
+                />
+              )}
+              {!loading && !error && data?.action === "no_order" && (
+                <ProductContinuationCandidate
+                  symbol={decision.symbol ?? ""}
+                  value={data.product_continuation_candidate}
+                />
+              )}
+              <Space wrap style={{ margin: "12px 0" }}>
+                {decision.symbol && /^\d{6}$/.test(decision.symbol) && (
+                  <Link to={`${fillLink(decision)}#portfolio-fill`}>
+                    <Button type="primary">记录我的实际成交</Button>
+                  </Link>
+                )}
+                <Link to="/daily">
+                  <Button>返回每日建议</Button>
+                </Link>
+                <Link to="/history">
+                  <Button>查看历史判断</Button>
+                </Link>
+              </Space>
+              {decision.symbol && /^\d{6}$/.test(decision.symbol) && (
+                <OnDemandSection key={decision.symbol} label="加载 AI 研究材料">
+                  <AgentResearchPanel symbol={decision.symbol} />
+                </OnDemandSection>
+              )}
+              {!!chain?.gaps.length && (
+                <details>
+                  <summary>
+                    下一步办理路径与未满足条件（{chain.gaps.length}）
+                  </summary>
+                  <ul>
+                    {chain.gaps.map((gap, index) => (
+                      <li key={`${gap.code}-${index}`}>
+                        {
+                          {
+                            ENGINEERING: "工程接线",
+                            DATA: "数据待补齐",
+                            EVIDENCE: "研究证据不足",
+                            HUMAN: "有权审核人办理",
+                            STRATEGY: "策略尚未验证",
+                            PRIVATE: "本人资料待确认",
+                          }[gap.classification]
+                        }
+                        ：{gap.reason}{" "}
+                        <Link to={gap.next_url}>查看办理材料</Link>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              {(decision.strategy === "hotspot" ||
+                decision.strategy === "HOTSPOT_SATELLITE") &&
+                decision.price_action_plan && (
+                  <CurrentJudgmentChart decision={decision} />
+                )}
+              <details>
+                <summary>展开研究底稿、估值与历史资格核验</summary>
+                {!decision.price_action_plan && (
+                  <section aria-label="操作摘要" style={{ maxWidth: 960 }}>
+                    <Typography.Text type="secondary">
+                      {strategyText(decision.strategy)} ·{" "}
+                      {decision.as_of || "研究日期待核验"}
+                    </Typography.Text>
+                    <Descriptions
+                      column={1}
+                      size="small"
+                      style={{ marginTop: 12 }}
+                      items={[
+                        {
+                          key: "action",
+                          label: "当前能做什么",
+                          children:
+                            "以本页正式操作资格与未满足条件为准；不自动下单",
+                        },
+                        {
+                          key: "reason",
+                          label: "为什么关注",
+                          children:
+                            decision.reason ||
+                            decision.why_selected ||
+                            "关注理由尚待核验",
+                        },
+                        {
+                          key: "trigger",
+                          label: "何时再复核",
+                          children:
+                            firstResearchText(decision.next_events) ||
+                            "触发条件仍待研究",
+                        },
+                        {
+                          key: "risk",
+                          label: "关键风险",
+                          children:
+                            firstResearchText(decision.counter_evidence) ||
+                            firstResearchText(decision.thesis_breakers) ||
+                            publicBlockerText(decision.blockers?.[0]) ||
+                            "主要风险仍待核验",
+                        },
+                      ]}
+                    />
+                    {decision.status !== "FORMALLY_ADMITTED_REVIEW" && (
+                      <Typography.Text type="secondary">
+                        {codeText(decision.blockers?.[0]) ||
+                          "研究、价格或组合条件尚未全部通过。"}
+                      </Typography.Text>
+                    )}
+                  </section>
+                )}
+                {research ? (
+                  <ResearchDecision decision={decision} research={research} />
+                ) : decision.price_action_plan ? null : (
+                  <LegacyDecision decision={decision} />
+                )}
+              </details>
+            </>
+          )}
+        </RemoteState>
+      </DetailContainer>
     </Workbench>
   );
 }

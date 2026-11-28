@@ -82,6 +82,46 @@ function example(): FirstResearchInputResponse {
     },
   };
 }
+it("shows verified partial cash rows without calling missing values zero or reconciled", () => {
+  const data = example();
+  data.parent_cash_observation = {
+    status: "SOURCE_REPLAYED_PARTIAL_PARENT_CASH_OBSERVATIONS",
+    action: "no_order",
+    future_cash_proven: false,
+    whole_statement_reconciled: false,
+    periods: [
+      {
+        report_period: "2026-06-30",
+        rows: {
+          cfo_cny: {
+            label: "TEST_ONLY经营现金",
+            statement_scope: "listed_parent_only",
+            currency: "CNY",
+            unit: "CNY",
+            physical_page: 35,
+            columns: [{ period: "H12026", value: "123456.78" }],
+          },
+        },
+        unknown_fields: { fx_cny: "EMPTY_PRINTED_COLUMN" },
+      },
+    ],
+  };
+  const html = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol="000568" />,
+  );
+  expect(html).toContain("123,456.78");
+  expect(html).toContain("未完成全表勾稽");
+  expect(html).toContain("EMPTY_PRINTED_COLUMN");
+  expect(html).not.toContain("母公司现金原件尚未完成独立核验");
+  expect(html).not.toContain("TTM流量（FY");
+  data.parent_cash_observation.whole_statement_reconciled = true;
+  const invalid = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol="000568" />,
+  );
+  expect(invalid).toContain("部分现金观察边界不符");
+  expect(invalid).not.toContain("123,456.78");
+});
+
 function visibleHtml(html: string): string {
   let depth = 0;
   return html
@@ -155,6 +195,323 @@ function directFixture(): FirstResearchInputResponse {
     },
   };
 }
+
+it("shows a bound remaining-year CFO split without promoting its owner calculation to a price", () => {
+  const data = directFixture();
+  data.receipt_binding = {
+    path: "runtime/TEST_ONLY-direct.json",
+    sha256: "a".repeat(64),
+  };
+  data.input_descriptor_sha256 = "b".repeat(64);
+  data.main_range_adopted = false;
+  data.direct_owner_cash!.remaining_year_review = {
+    schema_version: "parent-remaining-year-review-v1",
+    symbol: data.symbol,
+    candidate_binding: data.receipt_binding,
+    input_descriptor_sha256: data.input_descriptor_sha256,
+    action: "no_order",
+    formal_eligibility: false,
+    successor_adopted: false,
+    current_price_qualified: false,
+    status: "PARTIAL_CONDITIONAL_RESEARCH",
+    capital_policy_mode: "REPORTED_9M_PLUS_PRIOR_Q4",
+    reported_facts: {
+      period_start: "2026-01-01",
+      period_end: "2026-09-30",
+      period_basis: "YTD_9M",
+      scope: "ISSUER_PARENT_STANDALONE",
+      currency: "CNY",
+      cash_fields: { cfo: { current: "39649908007.27" } },
+    },
+    scenarios: {
+      base: {
+        status: "CONDITIONAL_RECALCULATION_NOT_ADOPTED",
+        annual: {
+          full_year: {
+            cfo: {
+              fact_9m: "39649908007.27",
+              forecast_q4: "-5414707226.13",
+              total: "34235200781.14",
+              fact_classification: "FACT",
+              forecast_classification: "FORECAST_ASSUMPTION",
+            },
+          },
+        },
+        calculation: { per_share_value: "DO_NOT_RENDER_VALUE" },
+        reported_9m_parent_profit: "11224391992.81",
+        retained_annual_parent_profit: "12000000000",
+        implied_q4_parent_profit: "775608007.19",
+        economic_review: {
+          classification: "RETAINED_PLAN_STRESS_NOT_NEW_EARNINGS_FORECAST",
+          adopted: false,
+          warnings: ["TEST_ONLY_Q4_PROFIT_STRESS_REQUIRES_REVIEW"],
+          explanation: "旧计划净利不是新盈利预测",
+          next_evidence: "TEST_ONLY_NEW_PARENT_REPORT",
+        },
+        capital_policy_changes: {
+          gross_capex: {
+            classification: "FORECAST_ASSUMPTION",
+            fact_9m: "1410074492.50",
+            assumed_q4: "281437265.21",
+            rationale: "上年第四季度支出仅作条件假设",
+          },
+        },
+      },
+      bear: { status: "REJECTED", reason: "TEST_ONLY_EXACT_SOURCE_MISSING" },
+      bull: { status: "REJECTED", reason: "TEST_ONLY_Q4_ASSUMPTION_INVALID" },
+    },
+  };
+  const html = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol={data.symbol} />,
+  );
+  expect(html).toContain("九个月事实＋条件第四季度");
+  expect(html).toContain("39,649,908,007.27");
+  expect(html).toContain("-5,414,707,226.13");
+  expect(html).toContain("34,235,200,781.14");
+  expect(html).toContain("上年第四季度支出仅作条件假设");
+  expect(html).toContain("第四季度条件 CFO 为负");
+  expect(html).toContain("隐含第四季度净利 775,608,007.19 元");
+  expect(html).toContain("旧全年母公司净利目标 12,000,000,000.00 元");
+  expect(html).toContain("仅为保留计划压力重算，不是新的盈利预测");
+  expect(html).toContain("不是已认可的 Base");
+  expect(html).toContain("TEST_ONLY_Q4_PROFIT_STRESS_REQUIRES_REVIEW");
+  expect(html).toContain("TEST_ONLY_NEW_PARENT_REPORT");
+  expect(html).toContain("TEST_ONLY_EXACT_SOURCE_MISSING");
+  expect(html).toContain("TEST_ONLY_Q4_ASSUMPTION_INVALID");
+  expect(html).toContain("不是已采纳 E1、主估值区间或当前买价");
+  expect(html).not.toContain("DO_NOT_RENDER_VALUE");
+  data.direct_owner_cash!.remaining_year_review.candidate_binding = {
+    path: data.receipt_binding.path,
+    sha256: "c".repeat(64),
+  };
+  const mismatched = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol={data.symbol} />,
+  );
+  expect(mismatched).toContain("年度现金更新身份不符，停止展示");
+  expect(mismatched).not.toContain("34,235,200,781.14");
+});
+
+it("shows the bound source-or-research rejection reason without scenario cash", () => {
+  const data = directFixture();
+  data.receipt_binding = {
+    path: "runtime/TEST_ONLY-direct.json",
+    sha256: "a".repeat(64),
+  };
+  data.input_descriptor_sha256 = "b".repeat(64);
+  data.direct_owner_cash!.remaining_year_review = {
+    schema_version: "parent-remaining-year-review-v1",
+    symbol: data.symbol,
+    candidate_binding: data.receipt_binding,
+    input_descriptor_sha256: data.input_descriptor_sha256,
+    status: "SOURCE_OR_RESEARCH_REJECTED",
+    reason: "TEST_ONLY_EXACT_RECEIPT_SOURCE_REJECTED",
+    scenarios: {},
+    current_price_qualified: false,
+    action: "no_order",
+    successor_adopted: false,
+    formal_eligibility: false,
+  };
+  const html = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol={data.symbol} />,
+  );
+  expect(html).toContain("年度现金更新来源或研究未通过核验");
+  expect(html).toContain("TEST_ONLY_EXACT_RECEIPT_SOURCE_REJECTED");
+  expect(html).not.toContain("九个月事实＋条件第四季度");
+  expect(html).not.toContain("全年条件 CFO");
+});
+
+function successorFixture(): FirstResearchInputResponse {
+  const data = directFixture();
+  const receipt = {
+    path: "runtime/TEST_ONLY-successor.json",
+    sha256: "a".repeat(64),
+  };
+  const predecessor = {
+    path: "runtime/TEST_ONLY-predecessor.json",
+    sha256: "b".repeat(64),
+  };
+  data.receipt_binding = receipt;
+  data.receipt_schema_version = "parent-remaining-year-successor-receipt-v1";
+  data.predecessor_binding = predecessor;
+  data.input_descriptor_sha256 = "c".repeat(64);
+  data.main_range_adopted = false;
+  data.main_valuation_range = null;
+  data.current_price = null;
+  data.condition_price = null;
+  data.direct_owner_cash!.conditional_price = null;
+  data.direct_owner_cash!.assumptions = { bear: {}, base: {}, bull: {} };
+  data.direct_cash_alignment = {
+    schema_version: "direct-owner-cash-alignment-v1",
+    status: "BLOCKED",
+    action: "no_order",
+    formal_eligibility: false,
+    currentpricecomparison: false,
+    reason_codes: ["EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING"],
+  } as FirstResearchInputResponse["direct_cash_alignment"];
+  const annual = Object.fromEntries(
+    (["bear", "base", "bull"] as const).map((name) => [
+      name,
+      {
+        symbol: data.symbol,
+        action: "no_order" as const,
+        formal_eligibility: false as const,
+        scope: "ISSUER_PARENT_STANDALONE",
+        currency: "CNY",
+        current_nine_months: {
+          period_start: "2026-01-01",
+          period_end: "2026-09-30",
+          classification: "FACT" as const,
+          cfo: "40",
+        },
+        conditional_q4: {
+          period_start: "2026-10-01",
+          period_end: "2026-12-31",
+          classification: "FORECAST_ASSUMPTION" as const,
+          cfo: name === "base" ? "60" : "20",
+        },
+        full_year: {
+          cfo: {
+            total: name === "base" ? "100" : "60",
+            fact_9m: "40",
+            forecast_q4: name === "base" ? "60" : "20",
+            fact_classification: "FACT" as const,
+            forecast_classification: "FORECAST_ASSUMPTION" as const,
+          },
+        },
+        annualized_nine_months: false as const,
+      },
+    ]),
+  ) as NonNullable<FirstResearchInputResponse["annual_recalculations"]>;
+  data.annual_recalculations = annual;
+  data.direct_owner_cash!.remaining_year_review = {
+    schema_version: "parent-remaining-year-successor-receipt-v1",
+    status: "SOURCE_BOUND_CONDITIONAL_SUCCESSOR",
+    symbol: data.symbol,
+    candidate_binding: receipt,
+    predecessor_binding: predecessor,
+    input_descriptor_sha256: data.input_descriptor_sha256,
+    action: "no_order",
+    formal_eligibility: false,
+    successor_adopted: false,
+    current_price_qualified: false,
+    annual_recalculations: annual,
+    scenarios: { bear: {}, base: {}, bull: {} },
+  };
+  return data;
+}
+
+it("shows bound successor annual facts, Q4 forecast and yearly cash without a price", () => {
+  const data = successorFixture();
+  const html = renderToStaticMarkup(
+    <FirstResearchInputView data={data} symbol={data.symbol} />,
+  );
+  expect(html).toContain("九个月事实＋条件第四季度：全年现金后继研究");
+  expect(html).toContain("九个月经营现金事实 40.00 元");
+  expect(html).toContain("第四季度条件预测 60.00 元");
+  expect(html).toContain("全年条件经营现金 100.00 元");
+  expect(html).toContain("逐年现金账 1 年");
+  expect(html).toContain("EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING");
+  expect(html).toContain("未采纳");
+  expect(html).toContain("不是买价");
+  expect(html).not.toContain("建仓条件价");
+  expect(html).not.toContain("7.13");
+});
+
+it.each([
+  "symbol",
+  "candidate",
+  "predecessor",
+  "descriptor",
+  "adoption",
+  "forecast",
+])(
+  "rejects tampered successor %s before showing cash or valuation",
+  (fault) => {
+    const data = successorFixture();
+    const review = data.direct_owner_cash!.remaining_year_review!;
+    if (review.schema_version !== "parent-remaining-year-successor-receipt-v1")
+      throw new Error("fixture schema");
+    if (fault === "symbol") review.symbol = "000333";
+    if (fault === "candidate")
+      review.candidate_binding = {
+        ...review.candidate_binding,
+        sha256: "d".repeat(64),
+      };
+    if (fault === "predecessor")
+      review.predecessor_binding = {
+        ...review.predecessor_binding,
+        sha256: "e".repeat(64),
+      };
+    if (fault === "descriptor") review.input_descriptor_sha256 = "f".repeat(64);
+    if (fault === "adoption")
+      (review as unknown as { successor_adopted: boolean }).successor_adopted =
+        true;
+    if (fault === "forecast")
+      review.annual_recalculations.base.full_year.cfo.forecast_classification =
+        "FACT" as "FORECAST_ASSUMPTION";
+    const html = renderToStaticMarkup(
+      <FirstResearchInputView data={data} symbol={data.symbol} />,
+    );
+    expect(html).toMatch(/年度现金更新身份不符|年度现金更新事实或预测分类不符/);
+    expect(html).not.toContain("全年条件经营现金 100.00 元");
+    expect(html).not.toContain("逐年现金账 1 年");
+    expect(html).not.toContain("建仓条件价");
+  },
+);
+
+it.each([false, true])(
+  "shows direct receipt alignment and refuses another candidate identity (successor=%s)",
+  (successor) => {
+    const data = directFixture();
+    data.receipt_binding = {
+      path: "runtime/TEST_ONLY-receipt.json",
+      sha256: "a".repeat(64),
+    };
+    data.input_descriptor_sha256 = "b".repeat(64);
+    data.financial_basis = "2025-12-31";
+    if (successor)
+      data.receipt_schema_version =
+        "parent-owner-distribution-successor-receipt-v2";
+    data.direct_cash_alignment = {
+      schema_version: successor
+        ? "parent-owner-distribution-alignment-v2"
+        : "direct-owner-cash-alignment-v1",
+      research_artifact_kind: successor
+        ? "PARENT_OWNER_DISTRIBUTION_SUCCESSOR_RECEIPT"
+        : "DIRECT_OWNER_CASH_RECEIPT",
+      receipt_binding: data.receipt_binding,
+      candidate_binding: data.receipt_binding,
+      input_descriptor_sha256: data.input_descriptor_sha256,
+      valuation_date: data.financial_basis,
+      action: "no_order",
+      formal_eligibility: false,
+      status: "BLOCKED",
+      currentpricecomparison: false,
+      reason_codes: ["TEST_ONLY_MISSING_PERIOD_DISTRIBUTIONS"],
+      checks: [
+        {
+          id: "distributions",
+          status: "BLOCKED",
+          reason_codes: ["TEST_ONLY_PERIOD_GAP"],
+          explanation: "TEST_ONLY期间分配未核验",
+        },
+      ],
+    };
+    const render = () =>
+      renderToStaticMarkup(
+        <FirstResearchInputView data={data} symbol="000568" />,
+      );
+    expect(render()).toContain("TEST_ONLY期间分配未核验");
+    expect(render()).not.toContain("当前研究比较口径已核验");
+    data.direct_cash_alignment.candidate_binding = {
+      ...data.receipt_binding,
+      sha256: "c".repeat(64),
+    };
+    expect(render()).toContain("当前对齐证据与候选/输入/估值日期不匹配");
+    expect(render()).not.toContain("TEST_ONLY期间分配未核验");
+    expect(render()).toContain("TEST_ONLY_RATIONALE");
+  },
+);
 
 it("shows dated financing issuance only when a source-bound review exists", () => {
   const data = directFixture();
@@ -310,7 +667,7 @@ it("formats direct prices while keeping exact originals collapsed and assumption
   data.valuation!.base_value = "2345.6789123456789";
   data.valuation!.bull_value = "3456.789123456789";
   const cash = data.direct_owner_cash!;
-  cash.conditional_price.draft_prices = {
+  cash.conditional_price!.draft_prices = {
     entry: "123.456789123456",
     add: null,
     reduce: "345.678912345678",
@@ -387,8 +744,8 @@ it("shows exact refusal reasons without inventing missing valuations, prices or 
   const data = directFixture();
   data.valuation = null;
   const cash = data.direct_owner_cash!;
-  cash.conditional_price.draft_prices = null;
-  cash.conditional_price.reason_codes = [
+  cash.conditional_price!.draft_prices = null;
+  cash.conditional_price!.reason_codes = [
     "TEST_ONLY_F1_MISSING_SOURCE",
     "TEST_ONLY_F2_EXPIRED",
   ];
@@ -415,7 +772,7 @@ it.each([{ action: "order" }, { currentpricecomparison: true }])(
   "rejects direct price authority violations %s",
   (patch) => {
     const data = directFixture();
-    Object.assign(data.direct_owner_cash!.conditional_price, patch);
+    Object.assign(data.direct_owner_cash!.conditional_price!, patch);
     const html = renderToStaticMarkup(
       <FirstResearchInputView data={data} symbol="000568" />,
     );
@@ -440,37 +797,42 @@ it.each([
   expect(html).not.toContain("22.22");
   expect(html).not.toContain("7.125");
 });
-it("shows the real E1 version difference as unapproved conditional research", () => {
-  const data = example();
-  data.successor_update = {
-    status: "SOURCE_BOUND_CONDITIONAL_SUCCESSOR",
-    symbol: "000568",
-    action: "no_order",
-    formal_eligibility: false,
-    main_range_adopted: false,
-    price_admitted: false,
-    research_as_of: "2026-11-11",
-    financial_basis: "2026-06-30",
-    changed_input_fields: ["assumption_binding"],
-    change_rationale: "TEST_ONLY季度收入压力延续假设",
-    countercase: "TEST_ONLY后续销售恢复须重开",
-    predecessor_input_fingerprint: "old",
-    successor_input_fingerprint: "new",
-    predecessor_valuation: data.valuation,
-    successor_valuation: { ...data.valuation!, bear_value: "9.45" },
-  };
-  const visible = visibleHtml(
-    renderToStaticMarkup(
-      <FirstResearchInputView data={data} symbol="000568" />,
-    ),
-  );
-  expect(visible).toContain("E1 研究版本更新");
-  expect(visible).toContain("11.11");
-  expect(visible).toContain("9.45");
-  expect(visible).toContain("不是当前可比较的主估值或买价");
-  expect(visible).toContain("TEST_ONLY季度收入压力延续假设");
-  expect(visible).toContain("TEST_ONLY后续销售恢复须重开");
-});
+it.each(["legacy", "direct"])(
+  "shows E1 version differences for %s cash research",
+  (mode) => {
+    const data = mode === "direct" ? directFixture() : example();
+    data.successor_update = {
+      status: "SOURCE_BOUND_CONDITIONAL_SUCCESSOR",
+      symbol: data.symbol,
+      action: "no_order",
+      formal_eligibility: false,
+      main_range_adopted: false,
+      price_admitted: false,
+      displayed_version_role: "SUCCESSOR",
+      research_as_of: "2026-11-11",
+      financial_basis: "2026-06-30",
+      changed_input_fields: ["assumption_binding"],
+      change_rationale: "TEST_ONLY季度收入压力延续假设",
+      countercase: "TEST_ONLY后续销售恢复须重开",
+      predecessor_input_fingerprint: "old",
+      successor_input_fingerprint: "new",
+      predecessor_valuation: data.valuation,
+      successor_valuation: { ...data.valuation!, bear_value: "9.45" },
+    };
+    const visible = visibleHtml(
+      renderToStaticMarkup(
+        <FirstResearchInputView data={data} symbol={data.symbol} />,
+      ),
+    );
+    expect(visible).toContain("E1 研究版本更新");
+    expect(visible).toContain("本页当前研究已是下方新版");
+    expect(visible).toContain("旧版");
+    expect(visible).toContain("9.45");
+    expect(visible).toContain("不是当前可比较的主估值或买价");
+    expect(visible).toContain("TEST_ONLY季度收入压力延续假设");
+    expect(visible).toContain("TEST_ONLY后续销售恢复须重开");
+  },
+);
 beforeEach(() => {
   state.value = { loading: false, error: undefined, retry: vi.fn() };
 });
@@ -613,11 +975,11 @@ it("does not render an incomplete annual compilation as a successful range", () 
   expect(html).not.toContain("22.22");
 });
 
-it("keeps loading invisible and read errors scoped to this panel", () => {
+it("shows evidence loading and keeps read errors scoped to this panel", () => {
   state.value.loading = true;
   expect(
     renderToStaticMarkup(<FirstResearchInputPanel symbol="600519" />),
-  ).toBe("");
+  ).toContain('role="status">正在核验估值、季度财务及原始证据…');
   state.value = { loading: false, error: "TEST_ONLY_NETWORK", retry: vi.fn() };
   const html = renderToStaticMarkup(
     <FirstResearchInputPanel symbol="000568" />,
@@ -641,15 +1003,18 @@ it("only makes safe official source URLs clickable", () => {
 
 it("places E2 next to C/D2 only in the existing non-hotspot value-company guard", () => {
   const page = readFileSync("src/pages/DecisionDetail/index.tsx", "utf8");
+  expect(page).toMatch(
+    /const valuePage =\s*strategy !== "hotspot" &&\s*\/\^\[0-9\]\{6\}\$\/\.test\(id\)/,
+  );
   const start = page.indexOf(
-    '{strategy !== "hotspot" && /^[0-9]{6}$/.test(id) && (',
+    '{valuePage && (\n        <div className="workbench-surface value-tracking-modules"',
   );
   expect(start).toBeGreaterThan(-1);
   const guarded = page.slice(start, page.indexOf("<RemoteState", start));
   expect(guarded.indexOf("<CompanyProfilePanel")).toBeLessThan(
     guarded.indexOf("<OperatingAssumptionDraftPanel"),
   );
-  expect(guarded.indexOf("<FirstResearchInputPanel")).toBeLessThan(
+  expect(guarded.indexOf("<FirstResearchInputPanel")).toBeGreaterThan(
     guarded.indexOf("<OperatingAssumptionDraftPanel"),
   );
   expect(guarded).toContain(
@@ -794,4 +1159,31 @@ it("does not display a parsed statement without full cash reconciliation", () =>
   );
   expect(visible).toContain("母公司现金原件尚未完成独立核验");
   expect(visible).not.toContain("455.93");
+});
+
+it("rejects a newer registered receipt when reviewing the displayed valuation", () => {
+  const data = {
+    ...example(),
+    receipt_binding: {
+      path: "runtime/TEST_ONLY/receipt.json",
+      sha256: "b".repeat(64),
+    },
+  };
+  state.value = { data, loading: false };
+  const mismatch = renderToStaticMarkup(
+    <FirstResearchInputPanel
+      symbol="000568"
+      expectedReceiptSha={"a".repeat(64)}
+    />,
+  );
+  expect(mismatch).toContain("研究登记已变化");
+  expect(mismatch).not.toContain("22.22");
+  const match = renderToStaticMarkup(
+    <FirstResearchInputPanel
+      symbol="000568"
+      expectedReceiptSha={data.receipt_binding.sha256}
+    />,
+  );
+  expect(match).not.toContain("研究登记已变化");
+  expect(match).toContain("22.22");
 });

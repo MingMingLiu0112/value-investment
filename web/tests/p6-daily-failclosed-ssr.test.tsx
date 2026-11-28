@@ -107,12 +107,29 @@ it.each(["OPEN", "ADD", "HOLD", "REDUCE", "EXIT"])(
         },
       ],
     };
+    state.daily.data.sections.value = [
+      {
+        id: "600519",
+        symbol: "600519",
+        name: "TEST_ONLY action security",
+        strategy: "value",
+        price_action_plan: {
+          action: "no_order",
+          signal_state: "ACTION_ELIGIBLE",
+          action_eligibility: true,
+        },
+      },
+    ];
     const html = renderToStaticMarkup(<DailyDecisions />);
     expect(html).toContain("存在证券级条件复核");
     expect(html).toContain("不代表个人可交易");
-    expect(html).toContain("TEST_ONLY native security review");
-    expect(html).toContain("无法评价");
-    expect(html).toContain("TEST_ONLY model unavailable");
+    if (intent === "HOLD") {
+      expect(html).not.toContain("TEST_ONLY action security");
+    } else {
+      expect(html).toContain("TEST_ONLY action security");
+    }
+    expect(html).toContain("证据或资格不足");
+    expect(html).not.toContain("TEST_ONLY model unavailable");
     expect(html).not.toContain("无符合全部条件的新交易机会");
     expect(html).not.toContain("已评价后暂不新建仓");
   },
@@ -356,29 +373,17 @@ it("shows evaluated no-trade reasons separately from missing value inputs", () =
     },
   ];
   const html = renderToStaticMarkup(<DailyDecisions />);
-  expect(html).toContain("已评价，暂不新建仓");
+  expect(html).toContain("当前发布范围内已评价");
   expect(html).toContain("已有持仓的加减仓与退出须独立复核");
-  expect(html).toContain("日线与主周期结构冲突，本次不交易。");
-  expect(html).toContain("输入或资格不足，无法评价");
-  expect(html).toContain("现金流口径仍待核验，无法评价。");
+  expect(html).not.toContain("日线与主周期结构冲突，本次不交易。");
+  expect(html).toContain("证据或资格不足");
+  expect(html).not.toContain("现金流口径仍待核验，无法评价。");
   expect(html).toContain("不能据此判断市场没有机会");
-  expect(html).toContain('href="#daily-hotspot"');
-  expect(html).toContain('href="#daily-value"');
+  expect(html).toContain('href="#daily-actions"');
   expect(html).toContain('href="/portfolio"');
 });
 
-it("puts hotspot condition review and sizing entry in the daily confirmation queue", () => {
-  const html = renderToStaticMarkup(<DailyDecisions />);
-  expect(html).toContain("热点条件复核");
-  expect(html).toContain("查看热点操作条件");
-  expect(html).toContain(
-    'href="/decisions/hotspot-300364?independent_hotspot=true"',
-  );
-  expect(html).toContain("进入风险试算与成交登记");
-  expect(html).toContain("不把 WATCH 当作买入");
-});
-
-it("keeps unvalued company research reachable without claiming there are no value leads", () => {
+it("keeps watch and unvalued candidates outside daily action and confirmation", () => {
   state.daily.data.sections.value = [
     {
       id: "600887",
@@ -390,15 +395,10 @@ it("keeps unvalued company research reachable without claiming there are no valu
     },
   ];
   const html = renderToStaticMarkup(<DailyDecisions />);
-  expect(html).toContain('aria-label="价值研究快捷入口"');
-  expect(html).toContain('href="/decisions/600887"');
-  expect(html).toContain("尚无可用的价值投资操作价");
-  expect(html).not.toContain("当前没有可展示的价值投资线索");
-  expect(html).not.toContain("正式可买入");
-  state.packet.data.publication_id = "wrong-publication";
-  expect(renderToStaticMarkup(<DailyDecisions />)).not.toContain(
-    'aria-label="价值研究快捷入口"',
-  );
+  expect(html).not.toContain('href="/decisions/600887"');
+  expect(html).not.toContain("中文在线回归候选");
+  expect(html).not.toContain("热点条件复核");
+  expect(html).toContain("当前已核验发布中没有需要操作复核的股票");
 });
 
 it("shows an explicit unfinished-update message when finished_at is null", () => {
@@ -424,7 +424,7 @@ it.each(["daily", "packet", "both"] as const)(
   "hides retained successful data after %s refresh fails",
   (failed) => {
     const render = () => renderToStaticMarkup(<DailyDecisions />);
-    expect(render()).toContain("中文在线回归候选");
+    expect(render()).toContain('aria-label="今日操作复核"');
     const retainedDaily = state.daily.data;
     const retainedPacket = state.packet.data;
     // useApi deliberately retains these successful payloads when a retry rejects.
@@ -489,7 +489,7 @@ it.each(["gate_code", "blockers", "reason"])(
     state.packet.data.chain_error = "PUBLICATION_CHAIN_UNAVAILABLE";
     const html = renderToStaticMarkup(<DailyDecisions />);
     expect(html).toContain("正式决策快照依赖的价值初筛回执缺失或未通过核验");
-    expect(html).toContain("上方独立候选池按自身来源单独核验");
+    expect(html).toContain("策略页的候选池按自身来源单独核验");
     expect(html).toContain("正式发布不可核验，已停止展示正式结果。");
     expect(html).not.toContain("判断与快照版本不一致");
     expect(html).not.toContain("发布链不可用（哈希或结构校验未通过）");
@@ -584,13 +584,13 @@ it("never calls incomplete evaluation a market with no opportunities", () => {
   };
   const html = renderToStaticMarkup(<DailyDecisions />);
   expect(html).toContain("不能据此判断市场没有机会");
-  expect(html).toContain("无法评价");
+  expect(html).toContain("证据或资格不足");
   expect(html).not.toContain("· 不交易");
-  expect(html).toContain("经济假设未批准");
+  expect(html).not.toContain("经济假设未批准");
   expect(html).not.toContain("本次已评价范围内，无符合全部条件的新交易机会。");
 });
 
-it("mounts separate readiness workflows only within the verified daily publication", () => {
+it("keeps candidate readiness workflows off today while preserving action review", () => {
   const value = evaluationFixture();
   const hotspot = evaluationFixture("HOTSPOT_SATELLITE");
   state.daily.data.actionable_evaluation = {
@@ -600,18 +600,16 @@ it("mounts separate readiness workflows only within the verified daily publicati
     unassessable_count: 2,
   };
   const html = renderToStaticMarkup(<DailyDecisions />);
-  expect(html).toContain('aria-label="每日双策略流程"');
-  expect(html).toContain("公司研究形成");
-  expect(html).toContain("回放与策略验证");
-  expect(html).toContain("无法评价");
-  expect(html).toContain("independent_hotspot=true");
+  expect(html).toContain('aria-label="今日操作复核"');
+  expect(html).not.toContain('aria-label="每日双策略流程"');
+  expect(html).not.toContain("independent_hotspot=true");
   state.packet.data.publication_id = "other-publication";
   expect(renderToStaticMarkup(<DailyDecisions />)).not.toContain(
     'aria-label="每日双策略流程"',
   );
 });
 
-it("keeps the old daily UI without readiness and never changes UNASSESSABLE to NO_TRADE", () => {
+it("keeps the daily summary without readiness and never changes UNASSESSABLE to NO_TRADE", () => {
   const legacy = { ...evaluationFixture(), readiness: undefined };
   state.daily.data.actionable_evaluation = {
     items: [legacy],
@@ -621,8 +619,8 @@ it("keeps the old daily UI without readiness and never changes UNASSESSABLE to N
   };
   const html = renderToStaticMarkup(<DailyDecisions />);
   expect(html).not.toContain('aria-label="每日双策略流程"');
-  expect(html).toContain("逐公司结论与统计范围");
-  expect(html).toContain("无法评价");
+  expect(html).not.toContain("逐公司结论与统计范围");
+  expect(html).toContain("证据或资格不足");
   expect(html).not.toContain("· 不交易");
 });
 
@@ -642,10 +640,10 @@ it("keeps today's screening leads distinct from published research and actions",
     },
   };
   const html = renderToStaticMarkup(<DailyDecisions />);
-  expect(html).toContain("本次全市场初筛（尚非交易机会）");
-  expect(html).toContain("5575");
-  expect(html).toContain("111");
-  expect(html).toContain("全市场行情日期仍需独立核验");
+  expect(html).not.toContain("本次全市场初筛（尚非交易机会）");
+  expect(html).not.toContain("5575");
+  expect(html).not.toContain("111");
+  expect(html).not.toContain("全市场行情日期仍需独立核验");
 });
 
 it("shows research scheduling separately from successful enrichment and approvals", () => {
@@ -765,7 +763,7 @@ it.each([
   "daily loading",
   "packet loading",
 ])(
-  "keeps independent source research visible during %s without exposing formal results",
+  "keeps candidate pools off today during %s without exposing formal results",
   (failure) => {
     state.selection.data = independentSelectionFixture();
     state.daily.data.actionable_evaluation = {
@@ -788,9 +786,8 @@ it.each([
     });
     try {
       const html = renderToStaticMarkup(<DailyDecisions />);
-      expect(html.match(/aria-label="双策略选股"/g)).toHaveLength(1);
-      expect(html).toContain("TEST_ONLY 独立来源研究候选");
-      expect(html).toContain("尚未成为官方核验事实");
+      expect(html).not.toContain('aria-label="双策略选股"');
+      expect(html).not.toContain("TEST_ONLY 独立来源研究候选");
       expect(html).not.toContain("TEST_ONLY retained formal review");
       expect(html).not.toContain('aria-label="明确行动结论"');
       expect(html).not.toContain('aria-label="每日双策略流程"');
@@ -800,13 +797,8 @@ it.each([
       expect(html).not.toContain("记录我的实际成交");
       if (!failure.endsWith("loading")) {
         expect(html).toContain("正式发布不可核验，已停止展示正式结果。");
-        expect(html.indexOf("正式发布不可核验")).toBeGreaterThan(
-          html.indexOf('aria-label="双策略选股"'),
-        );
       } else {
-        expect(html.indexOf("ant-skeleton")).toBeGreaterThan(
-          html.indexOf('aria-label="双策略选股"'),
-        );
+        expect(html).toContain("ant-skeleton");
       }
       expect(transport).not.toHaveBeenCalled();
     } finally {
@@ -823,8 +815,8 @@ it.each(["current", "unavailable"])(
     if (publication === "unavailable")
       state.packet.error = "TEST_ONLY packet failed";
     const html = renderToStaticMarkup(<DailyDecisions />);
-    expect(html.match(/aria-label="双策略选股"/g)).toHaveLength(1);
-    expect(html).toContain("选股来源暂不可核验，未生成新结论");
+    expect(html).not.toContain('aria-label="双策略选股"');
+    expect(html).not.toContain("选股来源暂不可核验，未生成新结论");
     expect(html).not.toContain("TEST_ONLY 独立来源研究候选");
     expect(html).not.toContain("存在证券级条件复核");
   },
@@ -839,19 +831,17 @@ it("keeps an independently rejected source unknown rather than zero candidates",
   selection.value.coverage = {} as typeof selection.value.coverage;
   state.selection.data = selection;
   const html = renderToStaticMarkup(<DailyDecisions />);
-  expect(html).toContain("无法核验，不代表零候选");
+  expect(html).not.toContain("无法核验，不代表零候选");
   expect(html).not.toContain("TEST_ONLY 独立来源研究候选");
   expect(html).not.toContain("覆盖 0 家");
   expect(html).not.toContain('aria-label="明确行动结论"');
 });
 
-it("keeps independent discovery before the action conclusion when both sources are available", () => {
+it("keeps only action review on today when both sources are available", () => {
   state.selection.data = independentSelectionFixture();
   const html = renderToStaticMarkup(<DailyDecisions />);
-  expect(html.match(/aria-label="双策略选股"/g)).toHaveLength(1);
-  expect(html).toContain("TEST_ONLY 独立来源研究候选");
-  expect(html).toContain("中文在线回归候选");
-  expect(html.indexOf('aria-label="双策略选股"')).toBeLessThan(
-    html.indexOf('aria-label="明确行动结论"'),
-  );
+  expect(html).not.toContain('aria-label="双策略选股"');
+  expect(html).not.toContain("TEST_ONLY 独立来源研究候选");
+  expect(html).not.toContain("中文在线回归候选");
+  expect(html).toContain('aria-label="明确行动结论"');
 });

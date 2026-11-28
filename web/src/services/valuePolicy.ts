@@ -48,6 +48,17 @@ type JointTerminalEconomicsV4 = Omit<
 
 export type CandidateNativeSourceConsumption = {
   status?: string;
+  closing_capital?: {
+    status?: string;
+    as_of?: string;
+    ordinary_shares?: string | null;
+    anchors?: { evidence_binding: EvidenceBinding }[];
+    rollforward_comparison?: {
+      status: "MATCH" | "CONFLICT";
+      observed_ordinary_shares: string;
+      calculated_ordinary_shares: string;
+    };
+  };
   reports?: {
     status?: string;
     binding?: EvidenceBinding;
@@ -134,6 +145,8 @@ export type CandidateAlignmentCheck = {
     | null;
 };
 export type CandidatePriceAlignment = {
+  materiality_input_adapter?: { status?: string; approval_granted?: boolean };
+  implemented_distribution_model_inclusion?: unknown;
   schema_version?: string;
   status?: string;
   action?: "no_order";

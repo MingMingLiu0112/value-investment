@@ -110,3 +110,28 @@ def test_custom_selector_never_loads_research(tmp_path, monkeypatch):
         value_selector=lambda **kw: dict(action='no_order', items=[dict(symbol='600519', research_priority_eligible=True)]),
         hotspot_selector=lambda **kw: dict(action='no_order', items=[]))
     assert 'research_summary' not in result['value']['items'][0]
+
+def test_api_sse_owned_pagination_honors_requested_page_size(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+    from value_investment_agent.application.discovery import dual_strategy_selection as selection
+    from value_investment_agent.application.discovery.sse_main_screening import POINTER
+    from value_investment_agent.presentation.web_api.app import create_app
+
+    pointer = tmp_path / POINTER
+    pointer.parent.mkdir(parents=True)
+    pointer.write_text('{}', encoding='utf-8')
+    def source_page(*, root, now, offset, limit, query):
+        rows = [dict(symbol=str(i)) for i in range(offset, min(offset + limit, 25))]
+        return dict(action='no_order', items=rows, presentation_pagination_owned=True,
+                    pagination=dict(offset=offset, limit=limit, total=25))
+
+    monkeypatch.setattr(selection, 'select_source_bound_sse_main_value_candidates', source_page)
+    monkeypatch.setattr(selection, '_research_summaries', lambda *args, **kwargs: None)
+    client = TestClient(create_app(tmp_path))
+    first = client.get('/api/v1/strategy-selection?limit=10').json()['value']
+    second = client.get('/api/v1/strategy-selection?limit=10&value_offset=10').json()['value']
+    assert first['pagination'] == dict(offset=0, limit=10, total=25)
+    assert second['pagination'] == dict(offset=10, limit=10, total=25)
+    assert len(first['shortlist']) == len(second['shortlist']) == 10
+    assert not ({r['symbol'] for r in first['shortlist']}
+                & {r['symbol'] for r in second['shortlist']})

@@ -1708,6 +1708,16 @@
           "type": "cli",
           "path": "scripts/current/build_joint_cash_v4_candidates.py",
           "entrypoint": "main / CASES"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/direct_owner_cash_update_v1.py",
+          "entrypoint": "build_direct_owner_cash_update"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/direct_owner_cash_update_v1.py",
+          "entrypoint": "replay_direct_owner_cash_update"
         }
       ],
       "method_status": {
@@ -1807,6 +1817,15 @@
           "sha256": "96e5894b08dd1342139c6a8dd88867619334f77807f7bf6fc28af64067fd6f42",
           "result": "同共享v4消费；不是无旧包",
           "evidence_kind": "INDEPENDENT_REPLAY_D2_F_AUDIT"
+        },
+        {
+          "symbols": [
+            "600887"
+          ],
+          "path": "runtime/remaining-q4-successor-20261118/20261118T000059574371Z/compiled/receipt.json",
+          "sha256": "b39c98491c0bbc0feba0bc3394e42ac1d6593682ad063b3d320f576f7681ed2d",
+          "result": "真实9M母公司事实加显式Q4条件假设形成不可变后继；旧版本保留，后继未采纳，action=no_order",
+          "evidence_kind": "REAL_SOURCE_CONDITIONAL_SUCCESSOR_COLD_REPLAY"
         }
       ],
       "errors": {
@@ -1850,7 +1869,7 @@
       "axes": {
         "engineering": {
           "status": "BOUNDED_NATIVE_CAPABILITY",
-          "scope": "prepare与verify可独立传参；需要旧包，不能替代E2。 两个真实旧包候选被独立verify及public analysis重算。",
+          "scope": "旧候选更新与直接股东现金后继均可独立冷重放。600887已把真实9M事实与显式Q4条件假设编译为新回执并由API消费；后继未采纳，不能替代E2首编。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md"
           ]
@@ -1876,10 +1895,11 @@
           ]
         },
         "application": {
-          "description": "prepare_pending_research_candidate；从明确旧package及source-bound policy/choice生成并校验新候选。",
+          "description": "prepare_pending_research_candidate；从明确旧package及source-bound policy/choice生成并校验新候选。 直接股东现金候选亦可连接不可变前后版本，逐端冷重算、比较实质经济输入；仅改时间、价格有效期或数字格式不算更新。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
-            "src/value_investment_agent/application/product/pending_research_candidate.py"
+            "src/value_investment_agent/application/product/pending_research_candidate.py",
+            "src/value_investment_agent/application/research/direct_owner_cash_update_v1.py"
           ]
         },
         "input_output_schema": {
@@ -1925,10 +1945,11 @@
           ]
         },
         "web": {
-          "description": "既有DecisionDetail research_analysis / JointCapitalReview。",
+          "description": "既有DecisionDetail research_analysis / JointCapitalReview。首编API及公司页面展示直接现金修订与前后版本。新增母公司已报9M事实加剩余Q4条件现金的重算：原全年资本支出低于已发生支出时拒绝；显式同季假设可进入共享现金内核，同时列出隐含Q4亏损及现金流出。此结果是未采纳压力研究，不能冒充E1已采用后继或当前价格资格。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/abc-e-audit.md",
-            "src/value_investment_agent/presentation/web_api/app.py"
+            "src/value_investment_agent/presentation/web_api/app.py",
+            "src/value_investment_agent/application/research/direct_owner_cash_update_v1.py"
           ]
         },
         "hardcoded": {
@@ -2675,6 +2696,16 @@
           "type": "python_function",
           "path": "src/value_investment_agent/model_validity.py",
           "entrypoint": "evaluate_model_validity"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/direct_owner_cash_alignment_v1.py",
+          "entrypoint": "read_direct_owner_cash_alignment"
+        },
+        {
+          "type": "python_function",
+          "path": "src/value_investment_agent/application/research/parent_owner_distribution_alignment_v2.py",
+          "entrypoint": "read_parent_owner_distribution_alignment"
         }
       ],
       "method_status": {
@@ -2757,7 +2788,12 @@
         "tests/test_pending_candidate_alignment.py",
         "tests/test_current_snapshot_quote_bridge.py",
         "tests/test_incremental_quote_bridge.py",
-        "tests/test_main_valuation_revalidation_v1.py"
+        "tests/test_main_valuation_revalidation_v1.py",
+        "tests/test_parent_remaining_year_alignment.py",
+        "tests/web_api/test_parent_remaining_year_successor_api.py",
+        "tests/test_parent_owner_distribution_alignment_v2.py",
+        "tests/test_parent_owner_distribution_materiality_v1.py",
+        "tests/web_api/test_parent_owner_distribution_successor_api.py"
       ],
       "real_samples": [
         {
@@ -2773,9 +2809,10 @@
           "symbols": [
             "600887"
           ],
-          "path": "config/current-research-drafts.json",
-          "result": "独立analysis：EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING；不等当前决策成功",
-          "evidence_kind": "INDEPENDENT_REPLAY"
+          "path": "runtime/parent-owner-distribution-successor-600887-20261118-v3/compiled/receipt.json",
+          "sha256": "dcf8dcf4dbf3965d31c5e787d22d103d4fb2e6bc6a8ca3f2fbc682e21eecf027",
+      "result": "当前E1后继已把已实施现金分配纳入三情景年度账并进入F2共享门禁；报价、已实施分配模型内含、精确Q3财务更新冷重算闭包及材料性复核输入适配均通过。材料性人工结论没有自动授予；股本连续性、完整期间行动覆盖和有权材料性复核仍分别阻断，条件价格为空",
+          "evidence_kind": "REAL_SOURCE_SUCCESSOR_ALIGNMENT_PARTIAL_POSITIVE_PATH"
         },
         {
           "symbols": [
@@ -2832,7 +2869,7 @@
       "axes": {
         "engineering": {
           "status": "BOUNDED_NATIVE_CAPABILITY",
-          "scope": "可读exact候选alignment；跨日期原生有效行动链与当前正例尚未完成。 三家本范围没有已证明当前决策联合正例；真实拒绝是能力证据不是成功投资。",
+      "scope": "旧候选、直接股东现金回执及两个版本化后继回执均进入同一F2共享门禁。600887新回执只按自身Hash取配置；合格报价、已实施分配模型内含、Q3财务更新冷重算闭包及精确材料性复核信封已实际通过，股本连续性、完整期间行动覆盖和有权材料性结论仍阻断。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/d2-f-audit.md"
           ]
@@ -2858,10 +2895,11 @@
           ]
         },
         "application": {
-          "description": "load_pending_candidate_alignment；核对同一研究候选的报价、股本、分配、事件和财务更新，再判断条件价格资格。",
+        "description": "load_pending_candidate_alignment；核对同一研究候选的报价、股本、分配、事件和财务更新，再判断条件价格资格。直接股东现金及parent-owner-distribution v2后继可经精确来源、描述符和冷重放信封进入同一五项对齐核验；信封只准备材料性复核输入，不授予人工结论。真实119条公告归档、年度现金分红解析与合格报价已消费；Q3原件必须沿前驱回执、来源Hash和输入描述符证明实际重算后，财务更新门禁才可独立通过，不能因原件仅在来源闭包中就放行。半年度不变声明可连接已消费期初普通股，预案总股本与回购库存单列；当前股本连续性、完整期间行动覆盖和有权材料性复核仍分别阻断当前比较。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
-            "src/value_investment_agent/application/research/pending_candidate_alignment.py"
+            "src/value_investment_agent/application/research/pending_candidate_alignment.py",
+            "src/value_investment_agent/application/research/direct_owner_cash_alignment_v1.py"
           ]
         },
         "input_output_schema": {
@@ -2886,7 +2924,7 @@
           ]
         },
         "real_case": {
-          "description": "600519：真实partial；本轮alignment BLOCKED，旧10/29报价非最新10/30、资本/分配/材料性/更新未闭合；600887：独立analysis：EXACT_CANDIDATE_ALIGNMENT_BINDING_MISSING；不等当前决策成功；000568：current_comparable=false/main_range_adopted=false/quantity=null；rules空、threshold NOT_PREPARED",
+          "description": "600519：真实partial，资本/分配/材料性/更新未闭合；600887：后继候选已绑定当前报价、已实施分配、Q3财务更新和精确材料性复核输入，但比较日股本连续性、完整行动覆盖及人工材料性结论仍阻断；000568：current_comparable=false/main_range_adopted=false/quantity=null；rules空、threshold NOT_PREPARED",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
             ".tmp/value-followup-acceptance/real-business-receipt.json"
@@ -2907,10 +2945,11 @@
           ]
         },
         "web": {
-          "description": "CandidatePriceDraft及main价格政策分清dated未批准与当前资格。",
+          "description": "CandidatePriceDraft及main价格政策分清dated未批准与当前资格。 公司首编研究页面消费direct回执的同版本对齐结果；显示分项通过与阻断，不沿用旧候选资格。",
           "source_refs": [
             "docs/current/value-mainline-p0-20261101/d2-f-audit.md",
-            "src/value_investment_agent/presentation/web_api/app.py"
+            "src/value_investment_agent/presentation/web_api/app.py",
+            "src/value_investment_agent/application/research/direct_owner_cash_alignment_v1.py"
           ]
         },
         "hardcoded": {

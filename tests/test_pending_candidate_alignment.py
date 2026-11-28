@@ -1,6 +1,6 @@
 """TEST_ONLY arithmetic negatives; native quote/coverage/signature replay positives."""
 from copy import deepcopy
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import json
 
@@ -20,6 +20,61 @@ def write(root, name, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
     return dict(path=name, sha256=sha256_file(path))
+
+
+def test_sse_checkpoint_consumption_preserves_share_class_and_cutoff(tmp_path, monkeypatch):
+    """TEST_ONLY extraction cache; native parser and consumer remain real."""
+    from test_sse_capital_checkpoint_v1 import sample
+    h1, proposal, _ = sample()
+    root = tmp_path
+    opening = write(root, "runtime/opening.json", {"TEST_ONLY": "ordinary shares"})
+    analysis = dict(symbol="600888", consumed_operating_inputs=dict(ordinary_shares="6325360667"),
+        source_bindings=[opening], source_catalog=[dict(id="opening", **opening)],
+        official_fact_anchors=[dict(source_id="opening", field="ordinary_shares", unit="shares",
+            period_end="2025-12-31", source_value="6325360667")],
+        review_binding=dict(candidate_binding=opening), input_descriptor_sha256="a" * 64)
+    h1_ref = write(root, "runtime/h1.json", h1)
+    proposal_ref = write(root, "runtime/proposal.json", proposal)
+    sources = {
+        (h1_ref["path"], h1_ref["sha256"], "https://static.cninfo.com.cn/finalpage/2026-08-27/123.PDF"): "2026-11-18T00:00:00+00:00",
+        (proposal_ref["path"], proposal_ref["sha256"], "https://static.cninfo.com.cn/finalpage/2026-10-30/456.PDF"): "2026-11-18T00:00:00+00:00",
+    }
+    cache = {h1_ref["sha256"]: h1, proposal_ref["sha256"]: proposal}
+    now = datetime(2026, 11, 18, 1, tzinfo=timezone.utc)
+    def consume(value, end=date(2026, 11, 17)):
+        return service._native_basis_fields(value, date(2025, 12, 31), end, now,
+            sources, lambda ref: _bound(root, ref), cache, [])
+    result = consume(analysis)
+    assert len(result["reports"]) == 2 and not result["unresolved_sources"]
+    terms = {r["terms"]["kind"]: r["terms"] for r in result["reports"]}
+    assert terms["H1_REPORT_UNCHANGED"]["ordinary_shares"] == "6325360667"
+    assert terms["H1_REPORT_UNCHANGED"]["classification"] == "DERIVED_FACT"
+    assert terms["INTERIM_PROPOSAL_DATED_SHARES"]["ordinary_shares"] is None
+    assert terms["INTERIM_PROPOSAL_DATED_SHARES"]["issued_shares"] == "6325360667"
+    assert result["closing_capital"]["ordinary_shares"] is None
+    assert result["complete_action_coverage"] is False
+    followup = service._basis_followup(analysis, dict(native_source_consumption=result),
+        dict(outstanding_authorizations=[]), [], date(2026, 11, 17))
+    assert len(followup["capital_checkpoints"]) == 2
+    assert followup["latest_capital_checkpoint"]["treasury_shares"] == "1800200"
+    assert followup["latest_capital_checkpoint"]["proposal_only"] is True
+    assert followup["latest_capital_checkpoint"]["proposed_cash_per_share_cny"] == "0.42"
+    assert followup["current_comparison_granted"] is False
+    wrong = deepcopy(analysis)
+    wrong["official_fact_anchors"] = []
+    assert all(r["terms"]["ordinary_shares"] is None for r in consume(wrong)["reports"])
+    assert not consume(analysis, date(2026, 8, 26))["reports"]
+    h1["43"] = "三、股份总数 ６,３２５,３６０,６６７ １００ 其他变动表"
+    guarded = consume(analysis)
+    assert all(r["terms"]["kind"] != "H1_REPORT_UNCHANGED" for r in guarded["reports"])
+    del h1["43"]
+    from value_investment_agent.infrastructure.filings import interim_capital_distribution
+    def contradictory(*args, **kwargs):
+        raise ValueError("INTERIM_CAPITAL_ROLLFORWARD_CONFLICT")
+    monkeypatch.setattr(interim_capital_distribution, "parse_interim_capital_distribution", contradictory)
+    rejected = consume(analysis)
+    assert not rejected["reports"]
+    assert all(r["reason"] == "INTERIM_CAPITAL_ROLLFORWARD_CONFLICT" for r in rejected["unresolved_sources"])
 
 
 @pytest.fixture
@@ -87,15 +142,218 @@ def cash(case, *, in_period=False):
         amount_basis="implemented_gross_entitlement", evidence=[case["anchor"]])
 
 
+@pytest.mark.parametrize(("verified", "elapsed"), [(True, True), (False, True), (True, False)])
+def test_publication_window_only_counts_verified_completed_days(reconciliation, verified, elapsed):
+    first = reconciliation["windows"][0]
+    first.update(scan_to="2020-01-01", source_integrity_verified=True)
+    reconciliation["windows"].append(dict(
+        first, scan_from="2020-01-02", scan_to="2020-01-02",
+        source_integrity_verified=verified, full_calendar_window_elapsed=elapsed,
+    ))
+
+    result = reconcile(reconciliation)
+
+    assert ("ACTION_PUBLICATION_WINDOW_MISSING" in result["reason_codes"]) is not (verified and elapsed)
+    assert result["current_price_basis_compatible"] is False
+
+
+@pytest.mark.parametrize("elapsed,covered", [(True, True), (False, False)])
+def test_cross_date_facts_keep_empty_verified_window_blocked(reconciliation, elapsed, covered):
+    case = reconciliation
+    case["windows"][0].update(source_integrity_verified=True, coverage_status="COMPLETE",
+                              full_calendar_window_elapsed=elapsed)
+    result = reconcile(case)
+    facts = result["cross_date_action_facts"]
+    assert facts["publication_window_covered"] is covered
+    assert facts["candidate_binding"] == case["ledger"]["candidate_binding"]
+    assert facts["ledger_binding"]["sha256"] == sha256_file(case["root"] / "runtime/reconciliation.json")
+    assert facts["announcements"] == []
+    assert facts["row_proof_reconciliation"]["status"] == "NO_IN_PERIOD_ROWS"
+    assert facts["row_proof_reconciliation"]["closed_window_matched_rows"] == []
+    assert "NATIVE_ANNOUNCEMENT_DISPOSITIONS_UNRESOLVED" in facts["reason_codes"]
+    assert facts["status"] == "BLOCKED"
+    assert not facts["effective_action_continuity_proven"]
+    assert not result["current_price_basis_compatible"]
+
+
+def test_cross_date_facts_use_native_terminal_observations_and_reject_conflicting_identity():
+    purchase, confirmation, cash_ref, unrelated = [
+        dict(path=f"runtime/{i}.pdf", sha256=f"{i:064x}", source_url=f"https://example.invalid/{i}.pdf")
+        for i in range(1, 5)
+    ]
+    events = [dict(announcement_id=str(i), title=f"TEST_ONLY {i}",
+                   published_at="2020-01-02T00:00:00+00:00", evidence_refs=[ref])
+              for i, ref in enumerate((purchase, confirmation, cash_ref, unrelated), 1)]
+    window = dict(scan_from="2020-01-01", scan_to="2020-01-02", coverage_status="COMPLETE",
+                  source_integrity_verified=True, full_calendar_window_elapsed=True,
+                  observation_binding=dict(path="runtime/window.json", sha256="a" * 64),
+                  announcements=events)
+    decisions = ("SHARE_ACTION", "SHARE_ACTION", "CASH_DISTRIBUTION", "NO_CAPITAL_OR_DISTRIBUTION_EFFECT")
+    ledger = dict(candidate_binding=dict(path="runtime/candidate.json", sha256="b" * 64),
+                  input_descriptor_sha256="c" * 64,
+                  reviewed_documents=[dict(announcement_id=str(i), disposition=decision)
+                                      for i, decision in enumerate(decisions, 1)])
+    proof = dict(purchase_binding={key: purchase[key] for key in ("path", "sha256")},
+                 status="NATIVE_BUYBACK_CANCELLATION_MATCHED")
+    inputs = dict(ledger_binding=dict(path="runtime/ledger.json", sha256="d" * 64),
+                  ledger=ledger, start=date(2020, 1, 1), end=date(2020, 1, 2),
+                  action_rows=[dict(id="cancel", native_cancellation=proof)],
+                  cash_rows=[dict(id="cash", model_inclusion="NOT_NATIVE_VERIFIED",
+                                  ex_date="2020-01-02", cash_payment_date="2020-01-02")],
+                  cancellations=[dict(announcement_id="2", matched_ledger_ids=["cancel"], status="MATCHED",
+                                      evidence_binding=confirmation)],
+                  cash_implementations=[dict(announcement_id="3", matched_ledger_ids=["cash"],
+                                             status="ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED", evidence_binding=cash_ref, terms={})])
+    facts = service._cross_date_action_facts(**inputs, windows=[window])
+    rows = facts["announcements"]
+    assert [row["status"] for row in rows] == ["NATIVE_TERMINAL_MATCHED", "NATIVE_TERMINAL_MATCHED",
+                                             "SCHEDULE_TERMS_ONLY", "UNRESOLVED"]
+    assert rows[1]["facts"][0]["native_proof"] == proof
+    assert rows[2]["facts"][0]["cash_payment_proven"] is False
+    assert not facts["effective_action_continuity_proven"]
+    proof = facts["row_proof_reconciliation"]
+    assert proof["status"] == "MATCHED"
+    assert [row["ledger_id"] for row in proof["matched_rows"]] == ["cancel", "cash"]
+    assert proof["matched_rows"][1]["cash_payment_proven"] is False
+    assert proof["unverified_cash_payment_ledger_ids"] == ["cash"]
+    assert proof["unverified_cash_model_inclusion_ledger_ids"] == ["cash"]
+
+    included = deepcopy(inputs)
+    included["cash_rows"][0]["model_inclusion"] = (
+        "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE"
+    )
+    included_proof = service._cross_date_action_facts(
+        **included, windows=[window],
+    )["row_proof_reconciliation"]
+    assert included_proof["unverified_cash_model_inclusion_ledger_ids"] == []
+    assert included_proof["unverified_cash_payment_ledger_ids"] == ["cash"]
+    incomplete_window = dict(window, scan_from="2020-01-02")
+    incomplete = service._cross_date_action_facts(**included, windows=[incomplete_window])
+    proof_without_coverage = incomplete["row_proof_reconciliation"]
+    assert proof_without_coverage["matched_rows"] == []
+    assert incomplete["missing_publication_windows"] == [{"from_date": "2020-01-01", "to_date": "2020-01-01"}]
+    action, distribution = proof_without_coverage["closed_window_matched_rows"]
+    assert action["ledger_id"] == "cancel"
+    assert distribution["ledger_id"] == "cash"
+    assert distribution["cash_payment_proven"] is False
+    assert distribution["model_inclusion"] == "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE"
+    assert proof_without_coverage["unverified_cash_payment_ledger_ids"] == ["cash"]
+    assert proof_without_coverage["unverified_cash_model_inclusion_ledger_ids"] == []
+    assert not incomplete["current_price_basis_compatible"]
+    no_cash_review = deepcopy(included)
+    no_cash_review["ledger"]["reviewed_documents"] = [
+        row for row in no_cash_review["ledger"]["reviewed_documents"]
+        if row["disposition"] != "CASH_DISTRIBUTION"
+    ]
+    partial = service._cross_date_action_facts(**no_cash_review, windows=[incomplete_window])
+    partial_proof = partial["row_proof_reconciliation"]
+    assert partial_proof["matched_rows"] == []
+    assert [row["ledger_id"] for row in partial_proof["closed_window_matched_rows"]] == ["cancel", "cash"]
+    schedule = next(row for row in partial["announcements"] if row["announcement_id"] == "3")
+    assert schedule["disposition"] is None
+    assert schedule["status"] == "SCHEDULE_TERMS_ONLY"
+    assert not schedule["facts"][0]["cash_payment_proven"]
+    invalid = deepcopy(no_cash_review)
+    invalid["cash_implementations"][0]["evidence_binding"] = unrelated
+    mismatched = service._cross_date_action_facts(**invalid, windows=[incomplete_window])
+    assert next(row for row in mismatched["announcements"] if row["announcement_id"] == "3")["status"] == "UNRESOLVED"
+    assert not partial["effective_action_continuity_proven"]
+    assert facts["status"] == "BLOCKED"
+    assert not facts["current_price_basis_compatible"]
+
+    orphan = deepcopy(inputs)
+    orphan["action_rows"].append(dict(id="offsetting_increase"))
+    proof = service._cross_date_action_facts(**orphan, windows=[window])["row_proof_reconciliation"]
+    assert proof["status"] == "UNRESOLVED"
+    assert proof["unmatched_ledger_ids"] == ["offsetting_increase"]
+
+    duplicate = deepcopy(orphan)
+    duplicate["action_rows"][1]["native_cancellation"] = deepcopy(duplicate["action_rows"][0]["native_cancellation"])
+    alias = deepcopy(duplicate["cancellations"][0])
+    alias["matched_ledger_ids"] = ["offsetting_increase"]
+    alias["evidence_binding"]["path"] = "runtime/duplicate.pdf"
+    duplicate["cancellations"].append(alias)
+    proof = service._cross_date_action_facts(**duplicate, windows=[window])["row_proof_reconciliation"]
+    assert proof["status"] == "UNRESOLVED"
+    assert proof["unmatched_ledger_ids"] == ["cancel", "offsetting_increase"]
+    assert len(proof["duplicate_native_proofs"]) == 2
+    assert len(proof["unmatched_native_proofs"]) == 2
+
+    for variant in ("detached", "missing_sha", "wrong_disposition", "partial_window", "aliased_original"):
+        altered, archive = deepcopy(inputs), deepcopy(window)
+        observation = altered["cancellations"][0]
+        if variant == "detached":
+            observation["announcement_id"] = "absent"
+        elif variant == "missing_sha":
+            observation["evidence_binding"].pop("sha256")
+        elif variant == "wrong_disposition":
+            altered["ledger"]["reviewed_documents"][1]["disposition"] = "NO_CAPITAL_OR_DISTRIBUTION_EFFECT"
+        elif variant == "partial_window":
+            archive["scan_from"] = "2020-01-02"
+        else:
+            archive["announcements"].append(dict(archive["announcements"][1], announcement_id="alias"))
+        facts = service._cross_date_action_facts(**altered, windows=[archive])
+        proof = facts["row_proof_reconciliation"]
+        assert proof["status"] == "UNRESOLVED", variant
+        assert "cancel" in proof["unmatched_ledger_ids"], variant
+        if variant == "aliased_original":
+            assert {row["announcement_id"] for row in facts["announcements"]
+                    if row["status"] == "ANNOUNCEMENT_METADATA_CONFLICT"} == {"2", "alias"}
+
+    changed = deepcopy(window)
+    changed["announcements"][1]["published_at"] = "2020-01-02T05:00:00+00:00"
+    conflict = service._cross_date_action_facts(**inputs, windows=[window, changed])
+    assert conflict["announcements"][1]["status"] == "ANNOUNCEMENT_METADATA_CONFLICT"
+    assert conflict["status"] == "BLOCKED"
+
+
 def test_cross_date_manual_arithmetic_cannot_grant_native_alignment(reconciliation):
     result = reconcile(reconciliation)
     assert reconciliation["ledger"]["comparison_date"] != reconciliation["ledger"]["valuation_date"]
     assert result["status"] == "PARTIAL" and result["arithmetic_status"] == "RECONCILED"
+    assert "CROSS_DATE_NATIVE_CAPITAL_AND_DISTRIBUTION_CLOSURE_NOT_SUPPORTED" in result["reason_codes"]
     assert result["current_price_basis_compatible"] is False
     assert result["native_basis_semantics_verified"] is False
     assert result["closing_shares"] == result["calculated_closing_shares"] == "100"
     assert result["formal_eligibility"] is False
     assert result["action"] == "no_order"
+
+
+@pytest.mark.parametrize("closing_values,expected_status,expected_gap", [
+    (["100", "100"], "EXACT_REPORT_DATE_SHARES_VERIFIED", None),
+    (["105"], "EXACT_REPORT_DATE_SHARES_VERIFIED", "NATIVE_CLOSING_SHARE_COUNT_DIFFERS_FROM_ROLLFORWARD"),
+    (["100", "105"], "EXACT_CLOSING_REPORT_ANCHORS_CONFLICT", "EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHORS_CONFLICT"),
+    ([], "EXACT_CLOSING_REPORT_ANCHOR_MISSING", "EXACT_COMPARISON_DATE_NATIVE_CAPITAL_ANCHOR_MISSING"),
+])
+def test_comparison_date_closing_reports_agree_with_each_other_and_rollforward(
+    reconciliation, monkeypatch, closing_values, expected_status, expected_gap
+):
+    def report(value, index, *, published="2020-01-02", status="NATIVE_REPORT_FIELDS_VERIFIED"):
+        return dict(status=status, binding=dict(path=f"TEST_ONLY-{index}", sha256=f"{index:064x}"),
+                    published_date=published, terms=dict(period_end="2020-01-02", ordinary_shares=value))
+
+    reports = [
+        report(value, index) for index, value in enumerate(closing_values, 1)
+    ] + [
+        report("200", 10, published="2020-01-03"),
+        report("200", 11, status="NATIVE_CAPITAL_CHECKPOINT_VERIFIED"),
+    ]
+
+    def native_fields(analysis, start, end, now, native_sources, read, cache, cash_rows):
+        return dict(reports=reports, closing_capital=service._close_report_checkpoint(reports, end),
+                    distribution_inclusion=dict(comparisons=[]))
+
+    monkeypatch.setattr(service, "_native_basis_fields", native_fields)
+    result = reconcile(reconciliation)
+    closing = result["native_source_consumption"]["closing_capital"]
+    assert closing["status"] == expected_status
+    assert len(closing["anchors"]) == len(closing_values)
+    assert not closing["continuity_to_opening_verified"]
+    assert not result["current_price_basis_compatible"]
+    if expected_gap:
+        assert expected_gap in result["reason_codes"]
+    if expected_status == "EXACT_REPORT_DATE_SHARES_VERIFIED":
+        assert closing["rollforward_comparison"]["status"] == ("CONFLICT" if expected_gap else "MATCH")
 
 
 def test_partial_retains_prevaluation_cash_without_double_deduction(reconciliation):
@@ -125,6 +383,51 @@ def test_effective_shares_recompute_but_never_mechanically_change_prices(reconci
     assert case["analysis"]["valuation"]["bear_value"] == "10"
 
 
+def test_share_actions_use_effective_order_for_cancellation_basis(reconciliation, monkeypatch):
+    from value_investment_agent.infrastructure.filings import pdf_text
+
+    case = reconciliation
+    anchor = case["anchor"]
+    anchor["excerpt"] += " 2020-01-02 10; 2020-01-03 105"
+    monkeypatch.setattr(pdf_text, "extract_pages", lambda path: [anchor["excerpt"]])
+    close = date(2020, 1, 3)
+    case["ledger"]["comparison_date"] = close.isoformat()
+    case["ledger"]["closing_shares"].update(as_of=close.isoformat(), value="105")
+    case["windows"][0]["scan_to"] = close.isoformat()
+    case["ledger"]["share_actions"] = [
+        dict(id="TEST_ONLY_LATER", kind="DECREASE", shares="5",
+             effective_date=close.isoformat(), evidence=[anchor]),
+        dict(id="TEST_ONLY_EARLIER", kind="INCREASE", shares="10",
+             effective_date="2020-01-02", evidence=[anchor]),
+    ]
+    proof = []
+
+    def verify(row, *, before, after, **kwargs):
+        proof.append((before, after))
+        return dict(status="NATIVE_CANCELLATION_PAIR_UNVERIFIED")
+
+    monkeypatch.setattr(service, "_verify_period_buyback_cancellation", verify)
+    ref = write(case["root"], "runtime/reconciliation.json", case["ledger"])
+    result = service._reconcile(case["root"], case["analysis"], ref, close,
+        case["windows"], case["now"], lambda binding: _bound(case["root"], binding))
+    assert proof == [(110, 105)]
+    assert [row["id"] for row in result["share_actions"]] == ["TEST_ONLY_EARLIER", "TEST_ONLY_LATER"]
+    assert result["calculated_closing_shares"] == "105"
+    assert not result["current_price_basis_compatible"]
+
+
+def test_reconciled_closing_count_cannot_hide_nonpositive_intermediate_balance(reconciliation):
+    case = reconciliation
+    case["ledger"]["share_actions"] = [
+        dict(id="TEST_ONLY_DECREASE", kind="DECREASE", shares="100",
+             effective_date="2020-01-02", evidence=[case["anchor"]]),
+        dict(id="TEST_ONLY_REISSUE", kind="INCREASE", shares="100",
+             effective_date="2020-01-02", evidence=[case["anchor"]]),
+    ]
+    with pytest.raises(ValueError, match="NONPOSITIVE_RECONCILED_SHARE_COUNT"):
+        reconcile(case)
+
+
 def test_in_period_cash_is_not_blindly_subtracted_or_declared_included(reconciliation):
     case = reconciliation
     case["ledger"]["distributions"] = [cash(case, in_period=True)]
@@ -134,6 +437,138 @@ def test_in_period_cash_is_not_blindly_subtracted_or_declared_included(reconcili
     assert result["distributions"][0]["model_inclusion"] == "NOT_NATIVE_VERIFIED"
     assert result["distributions"][0]["verified_cash_per_share"] is None
     assert result["distributions"][0]["price_deduction_applied"] == "0"
+
+
+def test_period_decrease_with_only_manual_excerpt_stays_unverified(reconciliation):
+    case = reconciliation
+    case["ledger"]["share_actions"] = [
+        dict(id="TEST_ONLY_DECREASE", kind="DECREASE", shares="5",
+             effective_date="2020-01-02", evidence=[case["anchor"]])
+    ]
+    case["ledger"]["closing_shares"] = None
+    result = reconcile(case)
+    assert result["calculated_closing_shares"] == "95"
+    assert result["share_actions"][0]["native_cancellation"]["status"] == "NATIVE_CANCELLATION_PAIR_UNVERIFIED"
+    assert "PERIOD_DECREASE_NATIVE_CANCELLATION_UNVERIFIED" in result["reason_codes"]
+    assert not result["current_price_basis_compatible"]
+
+
+def test_period_cancellation_requires_pair_and_post_publication_cutoff(monkeypatch):
+    from value_investment_agent.infrastructure.filings import opening_action_terms, operating_event_terms
+
+    purchase = ("buyback.pdf", "a" * 64, "https://static.cninfo.com.cn/finalpage/2020-01-02/321.PDF")
+    confirmation = ("cancel.pdf", "b" * 64, "https://static.cninfo.com.cn/finalpage/2020-01-03/322.PDF")
+
+    def parse_purchase(pages, *, symbol):
+        if pages != ["purchase"]:
+            raise ValueError("TEST_ONLY_NOT_PURCHASE")
+        return dict(symbol=symbol, published_date="2020-01-02",
+                    terms=dict(purchase_state="COMPLETED", cancellation_state="SCHEDULED_UNCONFIRMED",
+                               scheduled_cancellation_date="2020-01-02",
+                               cumulative_purchased_shares=5, planned_post_cancellation_shares=95))
+
+    def parse_confirmation(pages, *, symbol):
+        if pages != ["confirmation"]:
+            raise ValueError("TEST_ONLY_NOT_CONFIRMATION")
+        return dict(symbol=symbol, published_date="2020-01-03",
+                    terms=dict(completion_notice_on="2020-01-02", confirmed_cancellation_date="2020-01-02",
+                               cancelled_shares="5", issued_shares="95", capital_as_of="2020-01-03"),
+                    term_pages=dict(confirmed_cancellation=[2]))
+
+    monkeypatch.setattr(operating_event_terms, "parse_operating_event_terms", parse_purchase)
+    monkeypatch.setattr(opening_action_terms, "parse_opening_action_terms", parse_confirmation)
+    row = dict(effective_date="2020-01-02", evidence=[
+        dict(binding=dict(path=path, sha256=sha), source_url=url)
+        for path, sha, url in (purchase, confirmation)
+    ])
+    inputs = dict(symbol="600519", before=Decimal(100), after=Decimal(95), end=date(2020, 1, 3),
+                  cache={purchase[1]: ["purchase"], confirmation[1]: ["confirmation"]},
+                  window_sources={purchase, confirmation})
+    proof = service._verify_period_buyback_cancellation(row, **inputs)
+    assert proof["status"] == "NATIVE_BUYBACK_CANCELLATION_MATCHED"
+    assert proof["confirmation_physical_pages"] == [2]
+    for changes in (dict(end=date(2020, 1, 2)), dict(window_sources={purchase}), dict(after=Decimal(94))):
+        proof = service._verify_period_buyback_cancellation(row, **(inputs | changes))
+        assert proof["status"] == "NATIVE_CANCELLATION_PAIR_UNVERIFIED"
+
+
+@pytest.mark.parametrize("live_task", [False, True])
+def test_exact_consumed_distribution_removes_only_its_recomputation_gap(reconciliation, monkeypatch, live_task):
+    case = reconciliation
+    case["ledger"]["distributions"] = [cash(case, in_period=True)]
+    closures = [dict(
+        status="PASS", reason_code="IMPLEMENTED_DISTRIBUTION_INCLUDED_IN_MODEL",
+        scope="EXACT_IMPLEMENTED_DISTRIBUTION_ONLY_NOT_PERIOD_COMPLETENESS",
+        paid_date="2020-01-02", per_share_cny="2", total_cny="200",
+        original_binding=case["anchor"]["binding"], period_cash_coverage_complete=False,
+        capital_structure_aligned=False, materiality_approved=False,
+        financial_updates_reconciled=False, formal_eligibility=False, action="no_order")]
+    if live_task:
+        case["analysis"]["distribution_model_inclusion"] = lambda start, end: closures
+    else:
+        case["analysis"]["consumed_implemented_distributions"] = closures
+    with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
+        reconcile(case)
+    terms = dict(published_date="2020-01-01", record_date="2020-01-01",
+        ex_date="2020-01-02", cash_payment_date="2020-01-02",
+        cash_per_share="2", total_gross_cash="201")
+    monkeypatch.setattr(service, "_cash_terms", lambda pages, symbol: terms)
+    with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
+        reconcile(case)
+    terms["total_gross_cash"] = "200"
+    case["ledger"]["distributions"][0]["cash_payment_date"] = "2020-01-03"
+    closures[0]["paid_date"] = "2020-01-03"
+    terms["cash_payment_date"] = "2020-01-03"
+    case["anchor"]["excerpt"] += " 2020-01-03"
+    from value_investment_agent.infrastructure.filings import pdf_text
+    extract = pdf_text.extract_pages
+    monkeypatch.setattr(pdf_text, "extract_pages",
+        lambda path: [page + " 2020-01-03" for page in extract(path)])
+    with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
+        reconcile(case)
+    case["ledger"]["distributions"][0]["cash_payment_date"] = "2020-01-02"
+    closures[0]["paid_date"] = "2020-01-02"
+    terms["cash_payment_date"] = "2020-01-02"
+
+    result = reconcile(case)
+    assert result["implemented_distribution_inclusion_complete"] is True
+    assert result["unconsumed_period_cash_per_share"] == "0"
+    assert result["distributions"][0]["model_inclusion"] == (
+        "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE")
+    assert "IN_PERIOD_CASH_FLOW_INCLUSION_REQUIRES_CANDIDATE_RECOMPUTATION" not in result["reason_codes"]
+    assert result["current_price_basis_compatible"] is False
+
+    anchor = case["anchor"]
+    case["windows"][0].update(
+        source_integrity_verified=True, acquired_at=anchor["available_at"],
+        announcements=[dict(
+            announcement_id="124", title="TEST_ONLY权益分派实施公告更正",
+            published_at="2019-12-31T16:00:00+00:00",
+            evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])],
+        )],
+    )
+    announcement = case["windows"][0]["announcements"][0]
+    announcement.update(title="TEST_ONLY权益分派实施公告")
+    case["windows"][0]["coverage_status"] = "COMPLETE"
+    case["ledger"]["reviewed_documents"] = [dict(
+        announcement_id="124", disposition="CASH_DISTRIBUTION",
+        rationale="TEST_ONLY", evidence=[anchor],
+    )]
+    facts = reconcile(case)["cross_date_action_facts"]
+    row, = facts["announcements"]
+    fact, = row["facts"]
+    assert row["status"] == "SCHEDULE_TERMS_ONLY"
+    assert fact["model_inclusion"] == "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE"
+    assert fact["cash_payment_proven"] is False
+    assert facts["status"] == "BLOCKED"
+    assert not facts["current_price_basis_compatible"]
+
+    announcement.update(title="TEST_ONLY权益分派实施公告更正")
+    result = reconcile(case)
+    assert result["unconsumed_period_cash_per_share"] == "0"
+    assert not result["implemented_distribution_inclusion_complete"]
+    assert "COVERED_CASH_IMPLEMENTATION_LINEAGE_UNRESOLVED: 124" in result["reason_codes"]
+    assert not result["current_price_basis_compatible"]
 
 
 @pytest.mark.parametrize("path,value", [
@@ -201,6 +636,48 @@ def test_native_raw_window_stays_pending_and_does_not_approve_reconciled_basis(r
     assert checks[1]["status"] == checks[2]["status"] == "BLOCKED"
     assert validity.status == "UNKNOWN" and not ready and bridge.bridge_status != "READY"
 
+    # A verified share basis cannot stand in for period-distribution evidence.
+    result.update(native_basis_semantics_verified=True, current_price_basis_compatible=True,
+                  closing_shares="100", period_cash_coverage_complete=False)
+    checks, _, _, ready = service._assess(case["analysis"],
+        ValuationResultCodec().from_payload(case["analysis"]["valuation"]), quote, q, windows, scans, result)
+    assert checks[1]["status"] == "PASS"
+    assert checks[2]["status"] == "BLOCKED"
+    assert checks[2]["details"]["actual_cash_per_share"] is None
+    assert not ready
+
+
+def test_replay_failures_block_checks_and_price_bridge(reconciliation, monkeypatch):
+    case = reconciliation
+    root, analysis = case["root"], case["analysis"]
+    candidate = analysis["review_binding"]["candidate_binding"]
+    event = write(root, "runtime/events/broken.json", {"TEST_ONLY": True})
+    ledger = write(root, "runtime/reconciliation.json", case["ledger"])
+    write(root, f"{service.CONFIG_DIRECTORY}/{candidate['sha256']}.json", dict(
+        schema_version=service.INPUT_SCHEMA, candidate_binding=candidate,
+        input_descriptor_sha256=analysis["input_descriptor_sha256"],
+        event_observation_bindings=[event], reconciliation_binding=ledger,
+    ))
+    (root / event["path"]).write_bytes(b"changed event")
+    (root / ledger["path"]).write_bytes(b"changed reconciliation")
+
+    def replay_windows(root, analysis, bindings, now, read):
+        for binding in bindings:
+            read(binding)
+        return [], []
+
+    monkeypatch.setattr(service, "_event_windows", replay_windows)
+    result = service.load_pending_candidate_alignment(root=root, analysis=analysis, now=case["now"])
+    assert result["status"] == "BLOCKED" and not result["currentpricecomparison"]
+    for index, prefix in ((1, "RECONCILIATION_REPLAY_FAILED:"),
+                          (2, "RECONCILIATION_REPLAY_FAILED:"),
+                          (3, "EVENT_SOURCE_REPLAY_FAILED:")):
+        check = result["checks"][index]
+        assert check["status"] == "BLOCKED"
+        reason, = [reason for reason in check["reason_codes"] if reason.startswith(prefix)]
+        assert reason in result["model_validity"]["blockers"]
+        assert reason in result["price_bridge"]["blockers"]
+
 
 def test_legacy_draft_comparison_flags_and_thresholds_stay_unchanged(reconciliation, monkeypatch):
     case = reconciliation
@@ -215,7 +692,9 @@ def test_legacy_draft_comparison_flags_and_thresholds_stay_unchanged(reconciliat
     assert case["analysis"]["current_alignment"] == price["alignment"]
 
 
-def test_existing_signed_materiality_packet_is_consumed_for_exact_package_and_scan(transport):
+@pytest.mark.parametrize("supplement", ["none", "contained_empty", "extends", "announcement", "blocker"])
+def test_existing_signed_materiality_packet_is_consumed_for_exact_package_and_scan(transport, supplement):
+    from datetime import timedelta
     from value_investment_agent.application.product.research_materiality_reviews import consume_materiality_review_response
     from value_investment_agent.infrastructure.evidence.trust_root_registry import _use_test_trust_registry
     from value_investment_agent.event_scan import event_scan_from_payload
@@ -227,9 +706,24 @@ def test_existing_signed_materiality_packet_is_consumed_for_exact_package_and_sc
     scan = event_scan_from_payload(json.loads(f["scan_path"].read_text(encoding="utf-8")))
     with _use_test_trust_registry(registry):
         receipt = consume_materiality_review_response(**args)
+        window = dict(scan_binding=scan_ref, source_integrity_verified=True,
+                      full_calendar_window_elapsed=True)
+        windows, scans = [window], [scan]
+        if supplement != "none":
+            from types import SimpleNamespace
+            windows.insert(0, dict(window, scan_binding={"path": "supplement.json", "sha256": "0" * 64}))
+            scans.insert(0, SimpleNamespace(
+                scan_from=scan.scan_from, scan_to=scan.scan_to + timedelta(days=supplement == "extends"),
+                coverage_status="COMPLETE", status="COMPLETE_NO_MATERIAL_EVENT_IN_VALIDITY_WINDOW",
+                announcements=scan.announcements if supplement == "announcement" else [],
+                blockers=["unresolved"] if supplement == "blocker" else [],
+            ))
         review, route = service._materiality(f["root"], analysis, receipt["review_packet_binding"],
-            [dict(scan_binding=scan_ref)], [scan], datetime.now(timezone.utc),
-            lambda ref: _bound(f["root"], ref))
+            windows, scans, datetime.now(timezone.utc), lambda ref: _bound(f["root"], ref))
+        if supplement in {"extends", "announcement", "blocker"}:
+            assert review is None
+            assert route["status"] == "MATERIALITY_SCAN_CARDINALITY_UNSUPPORTED"
+            return
         assert route["status"] == "EXISTING_AUTHENTICATED_MATERIALITY_REPLAYED"
         assert len(review.decisions) == 2
         assert receipt["whole_model_approved"] is False
@@ -332,11 +826,13 @@ def real_candidate():
         pytest.skip("VALUE_ALIGNMENT_REAL_ROOT unset: real originals not installed; skip is not real acceptance")
     assert configured.strip(), "VALUE_ALIGNMENT_REAL_ROOT must name the installed real evidence root"
     root = Path(configured).resolve(strict=True)
-    ledger = root / "config/pending-candidate-alignments-v1/600519-basis-reconciliation-20261029.json"
-    original = json.loads(ledger.read_bytes())  # Explicit opt-in: missing evidence must fail.
     now = datetime.now(timezone.utc)
     analysis = load_current_value_research_analysis(root=root, symbol="600519", now=now)
     assert analysis["status"] == "CONDITIONAL_ANALYSIS_VERIFIED", analysis
+    candidate = analysis["review_binding"]["candidate_binding"]
+    config = json.loads((root / service.CONFIG_DIRECTORY / f"{candidate['sha256']}.json").read_bytes())
+    assert config["candidate_binding"] == candidate
+    original = json.loads(_bound(root, config["reconciliation_binding"]).read_bytes())
     alignment = analysis["current_alignment"]
     quote = alignment["quote"]
     # Real retained sources outlive a trading session. The same archived quote
@@ -533,24 +1029,25 @@ def test_real_native_report_cutoffs_and_exact_closing_date(real_candidate):
 
 def test_real_new_complete_window_does_not_grant_semantics_or_materiality(real_candidate):
     root, analysis, ledger, now = real_candidate
-    path = root / "runtime/value-alignment-event-observation/20261030T034906348838Z/observation.json"
-    assert path.is_file(), "Explicit real run requires Root supplied complete window"
-    ref = dict(path=path.relative_to(root).as_posix(), sha256=sha256_file(path))
-    windows, scans = service._event_windows(root, analysis, [ref], now, lambda r: _bound(root, r))
-    assert len(scans[0].announcements) == 7
-    assert windows[0]["full_calendar_window_elapsed"]
-    assert not windows[0]["materiality_approved"]
     config = json.loads((root / service.CONFIG_DIRECTORY /
         (analysis["review_binding"]["candidate_binding"]["sha256"] + ".json")).read_bytes())
+    refs = config["event_observation_bindings"]
+    assert len(refs) == 1
+    ref = refs[0]
+    observation = json.loads(_bound(root, ref).read_bytes())
+    windows, scans = service._event_windows(root, analysis, refs, now, lambda r: _bound(root, r))
+    assert len(scans[0].announcements) == observation["announcement_count"] > 0
+    assert windows[0]["full_calendar_window_elapsed"]
+    assert not windows[0]["materiality_approved"]
     sources, _ = service._event_windows(root, analysis, config["source_observation_bindings"], now,
         lambda r: _bound(root, r))
-    result = service._reconcile(root, analysis, config["reconciliation_binding"], date(2026,10,29),
+    result = service._reconcile(root, analysis, config["reconciliation_binding"], date.fromisoformat(ledger["comparison_date"]),
         windows, now, lambda r: _bound(root, r), sources)
     assert result["native_source_consumption"]["status"] == "NATIVE_FIELDS_VERIFIED_CHAIN_INCOMPLETE"
     assert not result["native_basis_semantics_verified"]
-    # Acquisition on Oct 30 must never become an Oct 29 historical proof.
+    # The later acquisition cannot be used immediately before the archived retrieval.
     with pytest.raises(ValueError):
-        service._event_windows(root, analysis, [ref], datetime(2026,10,29,15,tzinfo=timezone.utc),
+        service._event_windows(root, analysis, [ref], datetime.fromisoformat(observation["acquired_at"]) - timedelta(seconds=1),
             lambda r: _bound(root, r))
     quote, _ = service._qualified_quote(root, analysis, config["quote_bundle_binding"], now, lambda r: _bound(root, r))
     checks, _, _, ready = service._assess(analysis, ValuationResultCodec().from_payload(analysis["valuation"]),
@@ -558,7 +1055,31 @@ def test_real_new_complete_window_does_not_grant_semantics_or_materiality(real_c
                     native_status="TEST"), windows, scans, result)
     assert not ready and checks[3]["status"] == "BLOCKED"
     rows = checks[3]["details"]["matched_input_sources"] + checks[3]["details"]["unresolved_sources"]
-    assert len(rows) == 7 and all(r["source_url"].startswith("https://static.cninfo.com.cn/") for r in rows)
+    assert len(rows) == observation["announcement_count"]
+    assert all(r["source_url"].startswith("https://static.cninfo.com.cn/") for r in rows)
+
+    from dataclasses import replace
+
+    scan = scans[0]
+    first = scan.announcements[0]
+    moved = replace(first, evidence_refs=tuple(
+        {**ref, "path": "runtime/alternate-verified-copy.pdf"} for ref in first.evidence_refs
+    ))
+    quote_result = dict(status="QUALIFIED", reason_codes=[], explanation="TEST",
+                        bundle_binding=None, native_status="TEST")
+    valuation = ValuationResultCodec().from_payload(analysis["valuation"])
+    duplicate = replace(scan, announcements=(moved, *scan.announcements[1:]))
+    duplicate_checks, _, _, ready = service._assess(
+        analysis, valuation, quote, quote_result, windows * 2, [scan, duplicate], result)
+    assert not ready
+    assert duplicate_checks[4]["details"]["matched_input_sources"] == checks[4]["details"]["matched_input_sources"]
+    assert duplicate_checks[4]["details"]["unresolved_sources"] == checks[4]["details"]["unresolved_sources"]
+
+    conflict = replace(moved, title=moved.title + " TEST_ONLY conflict")
+    conflicting_scan = replace(duplicate, announcements=(conflict, *duplicate.announcements[1:]))
+    with pytest.raises(ValueError, match="CONFLICTING_FINANCIAL_EVENT_IDENTITY"):
+        service._assess(analysis, valuation, quote, quote_result,
+                        windows * 2, [scan, conflicting_scan], result)
 
 
 @pytest.mark.parametrize("old,new", [
@@ -661,6 +1182,22 @@ def test_same_day_exempts_only_empty_interval_gaps(reconciliation, issue, reason
         assert result["reason_codes"] == []
         assert result["status"] == "RECONCILED"
         assert result["closing_shares"] == "100"
+        assert result["arithmetic_status"] == "RECONCILED"
+
+
+@pytest.mark.parametrize("disposition,missing", [("SHARE_ACTION", True), ("CASH_DISTRIBUTION", False)])
+def test_review_disposition_requires_ledger_row_of_same_kind(reconciliation, disposition, missing):
+    case = reconciliation
+    anchor = case["anchor"]
+    case["windows"][0].update(acquired_at=anchor["available_at"], announcements=[dict(
+        announcement_id="123", evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
+    case["ledger"].update(distributions=[cash(case)], reviewed_documents=[dict(
+        announcement_id="123", disposition=disposition, rationale="TEST_ONLY", evidence=[anchor])])
+
+    result = reconcile(case)
+
+    assert ("REVIEWED_ACTION_MISSING_LEDGER_ROW: 123" in result["reason_codes"]) is missing
+    assert result["current_price_basis_compatible"] is False
 
 
 def test_operating_event_terms_are_research_not_materiality(reconciliation, monkeypatch):
@@ -683,6 +1220,34 @@ def test_operating_event_terms_are_research_not_materiality(reconciliation, monk
     assert rows[0]["materiality_approved"] is False
     assert rows[0]["model_inputs_changed"] is False
     assert rows[0]["facts"][0]["terms"]["effective_date"] == "2020-01-02"
+    from value_investment_agent.infrastructure.filings import pdf_text
+    extracted, verified = [], []
+    original_extract = pdf_text.extract_pages
+
+    def extract_once(path):
+        extracted.append(path)
+        return original_extract(path)
+
+    def verify(ref):
+        verified.append(ref)
+        return _bound(case["root"], ref)
+
+    monkeypatch.setattr(pdf_text, "extract_pages", extract_once)
+    cache = {}
+    for _ in range(2):
+        assert service._operating_events(case["analysis"], [window], case["now"],
+            verify, page_cache=cache) == rows
+    assert len(extracted) == 1 and len(verified) == 2
+    original_path = case["root"] / anchor["binding"]["path"]
+    original_bytes = original_path.read_bytes()
+    try:
+        original_path.write_bytes(original_bytes + b"modified")
+        modified = service._operating_events(case["analysis"], [window], case["now"],
+            verify, page_cache=cache)
+        assert not modified[0]["facts"] and modified[0]["unresolved"]
+        assert len(extracted) == 1 and len(verified) == 3
+    finally:
+        original_path.write_bytes(original_bytes)
     window["announcements"][0]["announcement_id"] = "999"
     rows = service._operating_events(case["analysis"], [window], case["now"],
         lambda ref: _bound(case["root"], ref))
@@ -730,7 +1295,13 @@ def test_operating_event_duplicate_id_conflict_is_not_silently_deduplicated(reco
         service._operating_events(case["analysis"], [window, other], case["now"], read)
 
 
-def test_operating_event_available_local_day_is_not_rejected_by_utc_date(reconciliation, monkeypatch):
+@pytest.mark.parametrize("stamp,accepted", [
+    ("2020-01-01T00:00:00+08:00", True),
+    ("2019-12-31T16:00:00+00:00", True),
+    ("2020-01-01T01:00:01+08:00", False),
+    ("2020-01-01T00:00:00", False),
+])
+def test_operating_event_requires_local_day_and_not_after_capture(reconciliation, monkeypatch, stamp, accepted):
     from value_investment_agent.infrastructure.filings import operating_event_terms
     case = reconciliation
     anchor = case["anchor"]
@@ -738,19 +1309,22 @@ def test_operating_event_available_local_day_is_not_rejected_by_utc_date(reconci
         lambda pages, symbol: dict(published_date="2020-01-01", action="no_order"))
     window = dict(acquired_at="2019-12-31T17:00:00+00:00",
         announcements=[dict(announcement_id="123", title="TEST_ONLY",
-            published_at="2020-01-01T00:00:00+08:00", source_url=anchor["source_url"],
+            published_at=stamp, source_url=anchor["source_url"],
             evidence_refs=[dict(anchor["binding"], source_url=anchor["source_url"])])])
     rows=service._operating_events(case["analysis"], [window],
         datetime.fromisoformat("2019-12-31T18:00:00+00:00"), lambda ref: _bound(case["root"], ref))
-    assert rows[0]["status"] == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
+    if accepted:
+        assert rows[0]["status"] == "SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW"
+    else:
+        assert rows[0]["unresolved"][0]["reason"] == "OPERATING_EVENT_PUBLICATION_MISMATCH"
 
 
-@pytest.mark.parametrize("kind", ["standard", "excluded", "unknown"])
+@pytest.mark.parametrize("kind", ["standard", "excluded", "unknown", "full_annual", "full_interim", "full_wrong_year"])
 def test_opening_chain_maps_only_supported_distribution_object_contracts(kind):
     analysis = dict(valuation_date="2020-06-30", consumed_operating_inputs=dict(ordinary_shares="100"),
         review_binding=dict(candidate_binding=dict(path="TEST_ONLY", sha256="a"*64)))
     terms = dict(currency="CNY", annual_cash_per_share="2", annual_total_cash_cny="200",
-        eligible_distribution_shares="100")
+        eligible_distribution_shares="100", annual_distribution_year="2019")
     rows=[dict(facts=[dict(binding=dict(path="TEST_ONLY",sha256="b"*64),
         terms=dict(published_date="2020-06-01",event_type="TEST_ONLY_ADJUSTMENT",terms=terms))])]
     native=dict(currency="CNY",cash_per_share="2",total_gross_cash="200",
@@ -760,15 +1334,38 @@ def test_opening_chain_maps_only_supported_distribution_object_contracts(kind):
             event_kind="EXPLICIT_NONDIFFERENTIAL_CASH_ONLY_IMPLEMENTATION", total_shares="100")
     else:
         native.update(parser_version="sse-repurchase-excluded-gross-cash-scheme-v1" if kind=="excluded" else "UNKNOWN",
-            eligible_distribution_shares="100")
+            eligible_distribution_shares="100", annual_distribution_year="2019")
+    if kind.startswith("full_"):
+        native.update(parser_version="sse-full-share-cross-page-cash-scheme-v1",
+            distribution_period="中期" if kind == "full_interim" else "年度",
+            distribution_year="2018" if kind == "full_wrong_year" else "2019",
+            body_terms_reconciled=True)
     reconciliation=dict(distributions=[dict(id="TEST_ONLY_CASH",native_terms=native)])
     result=service._opening_chain_research(analysis,rows,reconciliation)
     assert result["distribution_links"][0]["status"] == (
-        "TERMS_NOT_MATCHED" if kind=="unknown" else "MATCHED_PREVALUATION_IMPLEMENTATION_TERMS")
+        "TERMS_NOT_MATCHED" if kind in {"unknown", "full_interim", "full_wrong_year"} else "MATCHED_PREVALUATION_IMPLEMENTATION_TERMS")
     assert not result["comparison_date_capital_proven"]
     native["total_gross_cash"]="201"
     changed=service._opening_chain_research(analysis,rows,reconciliation)
     assert changed["distribution_links"][0]["status"]=="TERMS_NOT_MATCHED"
+
+
+def test_buyback_differences_do_not_cross_plan_windows_or_ambiguous_dates():
+    def point(through, shares, paid, plan_end="2026-12-31"):
+        return dict(plan_start="2026-01-01", plan_end=plan_end, through=through,
+                    shares=shares, paid_cny=Decimal(paid), binding={"path": through})
+
+    first = point("2026-02-01", 10, "100.25")
+    second = point("2026-03-01", 15, "145.75")
+    other_plan = point("2026-04-01", 99, "999", "2026-11-30")
+    result = service._buyback_checkpoint_deltas([second, other_plan, first])
+    assert len(result) == 1
+    assert result[0]["purchase_share_delta"] == 5
+    assert result[0]["disclosed_cash_delta_cny"] == "45.50"
+    assert result[0]["before_binding"] == first["binding"]
+    assert result[0]["after_binding"] == second["binding"]
+    assert service._buyback_checkpoint_deltas([first, second, point("2026-03-01", 12, "120")]) == []
+    assert service._buyback_checkpoint_deltas([first, point("2026-03-01", 5, "95")]) == []
 
 
 def test_basis_followup_keeps_no_proposal_distinct_from_revocation(reconciliation):
@@ -808,6 +1405,22 @@ def test_basis_empty_retrieval_cannot_prove_capital_or_zero_dividend(reconciliat
     assert result["latest_capital_checkpoint"] is None
     assert not result["complete_effective_action_coverage"]
     assert not result["current_comparison_granted"]
+
+
+def test_basis_followup_classifies_existing_share_purchases_without_granting_continuity(reconciliation):
+    case = reconciliation
+    event = dict(announcement_id="TEST_ONLY_EVENT", title="完成股票购买的公告",
+        published_at="2020-01-02T08:00:00+08:00", facts=[dict(
+            binding=case["anchor"]["binding"], terms=dict(
+                event_type="PLAN_SECONDARY_MARKET_SHARE_PURCHASE_COMPLETED",
+                terms=dict(issued_share_effect="NO_ISSUANCE_OR_CANCELLATION_IN_THIS_PURCHASE_EVENT")))])
+    result = service._basis_followup(case["analysis"], None,
+        dict(outstanding_authorizations=[]), [], date(2020, 1, 3), [event])
+    classified = result["capital_event_classifications"][0]
+    assert classified["classification"] == "EXISTING_SHARE_TRANSACTION_NO_ISSUED_SHARE_CHANGE"
+    assert classified["window_completeness_granted"] is False
+    assert result["complete_effective_action_coverage"] is False
+    assert result["current_comparison_granted"] is False
 
 
 def test_event_impact_binds_consumed_years_not_profit_uplift(reconciliation):
@@ -905,16 +1518,56 @@ def test_shenzhen_clearing_date_does_not_verify_issuer_direct_payment():
         parse_mixed_cash_entitlement([*pages, "更正"], symbol="000001")
 
 
-def test_mixed_payment_ledger_does_not_claim_issuer_payment(reconciliation, monkeypatch):
+@pytest.mark.parametrize("live_task", [False, True])
+def test_mixed_payment_ledger_does_not_claim_issuer_payment(reconciliation, monkeypatch, live_task):
     from value_investment_agent.infrastructure.filings import szse_cash_entitlement
 
     case = reconciliation
     case["ledger"]["distributions"] = [cash(case, in_period=True)]
     terms = dict(cash_per_share="2", record_date="2020-01-01", ex_date="2020-01-02",
                  published_date="2020-01-01", clearing_house_scheduled_payment_date="2020-01-02",
-                 issuer_direct_payment_date=None, cash_payment_status="ISSUER_DIRECT_PAYMENT_UNVERIFIED")
+                 gross_declared_cash_cny="200", issuer_direct_payment_date=None, cash_payment_status="ISSUER_DIRECT_PAYMENT_UNVERIFIED")
     monkeypatch.setattr(szse_cash_entitlement, "parse_mixed_cash_entitlement", lambda *a, **k: terms)
+    anchor = case["anchor"]
+    case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
+        announcements=[dict(announcement_id="123", title="TEST_ONLY年度分红派息实施公告",
+            published_at="2019-12-31T16:00:00+00:00",
+            evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
+    if live_task:
+        closure = dict(
+            status="PASS", reason_code="IMPLEMENTED_DISTRIBUTION_INCLUDED_IN_MODEL",
+            scope="EXACT_IMPLEMENTED_DISTRIBUTION_ONLY_NOT_PERIOD_COMPLETENESS",
+            paid_date="2020-01-02", per_share_cny="2", total_cny="200",
+            original_binding=anchor["binding"], formal_eligibility=False, action="no_order")
+        case["analysis"]["distribution_model_inclusion"] = lambda start, end: [closure]
     result = reconcile(case)
+    assert not result["implemented_distribution_inclusion_complete"]
+    assert not result["period_cash_coverage_complete"]
+    if live_task:
+        assert result["unconsumed_period_cash_per_share"] == "0"
+        assert result["distributions"][0]["model_inclusion"] == (
+            "EXACT_IMPLEMENTED_DISTRIBUTION_COLD_RECOMPUTED_IN_CANDIDATE")
+        terms["gross_declared_cash_cny"] = "201"
+        with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
+            reconcile(case)
+        terms["gross_declared_cash_cny"] = "200"
+        from value_investment_agent.infrastructure.filings import pdf_text
+
+        anchor["excerpt"] += " 2020/1/3"
+        monkeypatch.setattr(pdf_text, "extract_pages", lambda _: [anchor["excerpt"]])
+        # A forecast may already include a distribution scheduled after the
+        # comparison date, but that schedule cannot close this cash interval.
+        terms["clearing_house_scheduled_payment_date"] = "2020-01-03"
+        case["ledger"]["distributions"][0]["cash_payment_date"] = "2020-01-03"
+        closure["paid_date"] = "2020-01-03"
+        with pytest.raises(ValueError, match="CONSUMED_IMPLEMENTED_DISTRIBUTION_NOT_UNIQUELY_RECONCILED"):
+            reconcile(case)
+        terms["clearing_house_scheduled_payment_date"] = "2020-01-02"
+        case["ledger"]["distributions"][0]["cash_payment_date"] = "2020-01-02"
+        closure["paid_date"] = "2020-01-02"
+    observed, = result["covered_cash_implementations"]
+    assert observed["status"] == "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED"
+    assert observed["matched_ledger_ids"] == ["TEST_ONLY_CASH"]
     row = result["distributions"][0]
     assert row["field_semantics_status"] == "NATIVE_ENTITLEMENT_ONLY_VERIFIED"
     assert row["verified_cash_per_share"] == "2"
@@ -929,8 +1582,46 @@ def test_mixed_payment_ledger_does_not_claim_issuer_payment(reconciliation, monk
         reconcile(case)
 
 
+@pytest.mark.parametrize("net_change", ["0", "-5"])
+def test_unlock_notice_is_not_effective_share_reduction(reconciliation, monkeypatch, net_change):
+    from value_investment_agent.infrastructure.filings import native_capital_observation_v1
+
+    case = reconciliation
+    source = dict(case["anchor"]["binding"],
+                  source_url="https://static.cninfo.com.cn/finalpage/2020-01-02/123.PDF")
+    monkeypatch.setattr(native_capital_observation_v1, "parse_native_capital_observation",
+        lambda pages, symbol: dict(kind="share_unlock_notice", status="VERIFIED",
+            observation_date="2020-01-02", share_effective_date="2020-01-06",
+            net_share_change=net_change, historical_cancelled_shares="5"))
+    window = dict(acquired_at="2020-01-03T00:00:00+08:00", announcements=[dict(
+        announcement_id="123", title="TEST_ONLY 解除限售股份上市流通的提示性公告",
+        published_at="2020-01-02T00:00:00+08:00", source_url=source["source_url"], evidence_refs=[source])])
+    row, = service._operating_events(case["analysis"], [window], case["now"],
+        lambda ref: _bound(case["root"], ref))
+    assert not row["materiality_approved"] and not row["model_inputs_changed"]
+    if net_change == "0":
+        terms = row["facts"][0]["terms"]
+        assert terms["event_type"] == "REPORTED_SHARE_UNLOCK_NOTICE"
+        assert terms["effective_date"] is None
+        assert terms["planned_implementation_date"] == "2020-01-06"
+        assert terms["affected_model_fields"] == []
+        from value_investment_agent.application.research.candidate_event_impact import build_candidate_event_impact
+
+        analysis = case["analysis"]
+        analysis["joint_capital_review"]["economic_path"]["candidate_binding"] = row["candidate_binding"]
+        draft = build_candidate_event_impact(analysis, [row])
+        impact, = draft["items"]
+        assert impact["status"] == "SHARE_CLASS_TRANSFER_FOLLOWUP_REQUIRED"
+        assert impact["consumed_model_values"] == []
+        assert not draft["materiality_approved"] and not draft["model_validity_granted"]
+    else:
+        assert not row["facts"]
+        assert row["unresolved"][0]["reason"] == "UNLOCK_ORIGINAL_NOT_VERIFIED_FOR_EVENT"
+
+
 @pytest.mark.parametrize("report_end,verified", [("2020-09-30", True), ("2021-09-30", False)])
-def test_quarter_event_keeps_candidate_review_separate(reconciliation, monkeypatch, report_end, verified):
+@pytest.mark.parametrize("title", ["2020年第三季度报告", "2020年三季度报告"])
+def test_quarter_event_keeps_candidate_review_separate(reconciliation, monkeypatch, report_end, verified, title):
     from value_investment_agent.infrastructure.filings import native_capital_observation_v1
 
     case = reconciliation
@@ -940,7 +1631,7 @@ def test_quarter_event_keeps_candidate_review_separate(reconciliation, monkeypat
             period_start=report_end[:4] + "-01-01", period_end=report_end,
             fields=dict(revenue_cny={"value": "200"}, parent_profit_cny={"value": "20"}))))
     window = dict(acquired_at="2020-10-30T00:00:00+08:00", announcements=[dict(
-        announcement_id="123", title="TEST_ONLY 2020年第三季度报告",
+        announcement_id="123", title="TEST_ONLY " + title,
         published_at="2020-10-29T00:00:00+08:00", source_url=source["source_url"], evidence_refs=[source])])
     row, = service._operating_events(case["analysis"], [window], case["now"],
         lambda ref: _bound(case["root"], ref))
@@ -1016,3 +1707,902 @@ def test_opening_purchase_link_needs_exact_later_confirmation(reconciliation, co
     assert (result["purchase_links"][0]["cancellation_binding"] == confirmation["binding"]) == (confirmed_quantity == "2")
     assert not result["complete_opening_action_coverage"]
     assert not result["comparison_date_capital_proven"]
+
+
+@pytest.mark.parametrize("signed_date,fiscal_year", [("2020-10-29", "2019"),
+    ("2020-10-28", "2019"), ("2020-10-29", "2018")])
+def test_dividend_schedule_does_not_admit_payment(reconciliation, monkeypatch, signed_date, fiscal_year):
+    from value_investment_agent.infrastructure.filings import native_capital_observation_v1
+
+    case = reconciliation
+    source = dict(case["anchor"]["binding"],
+                  source_url="https://static.cninfo.com.cn/finalpage/2020-10-29/123.PDF")
+    monkeypatch.setattr(native_capital_observation_v1, "parse_native_capital_observation",
+        lambda pages, symbol: dict(kind="dividend_implementation", status="VERIFIED",
+            observation_date=signed_date, dividend_fiscal_year=fiscal_year,
+            record_date="2020-11-02", ex_date="2020-11-03",
+            dividend_per_10_shares_cny="10.50", payment_completion_state="UNKNOWN"))
+    window = dict(acquired_at="2020-10-30T00:00:00+08:00", announcements=[dict(
+        announcement_id="123", title="2019年度分红派息实施公告",
+        published_at="2020-10-29T00:00:00+08:00", source_url=source["source_url"], evidence_refs=[source])])
+    row, = service._operating_events(case["analysis"], [window], case["now"],
+        lambda ref: _bound(case["root"], ref))
+    assert not row["materiality_approved"] and not row["model_inputs_changed"]
+    if signed_date != "2020-10-29" or fiscal_year != "2019":
+        assert not row["facts"]
+        assert row["unresolved"][0]["reason"] == "DIVIDEND_ORIGINAL_NOT_VERIFIED_FOR_EVENT"
+        return
+    fact, = row["facts"]
+    terms = fact["terms"]
+    assert terms["event_type"] == "REPORTED_ANNUAL_DIVIDEND_IMPLEMENTATION_SCHEDULE"
+    assert terms["effective_date"] is None
+    assert terms["terms"]["payment_completion_state"] == "UNKNOWN"
+    assert terms["action"] == "no_order"
+
+
+@pytest.mark.parametrize(("first_end", "required_end", "covered"), [
+    ("2026-11-17", "2026-11-18", True),
+    ("2026-11-16", "2026-11-18", False),
+    ("2026-11-17", "2026-11-19", False),
+])
+def test_publication_window_can_use_adjacent_archives(first_end, required_end, covered):
+    windows = [
+        {"scan_from": "2026-11-18", "scan_to": "2026-11-18"},
+        {"scan_from": "2025-12-31", "scan_to": first_end},
+    ]
+    assert service._continuous_publication_window(
+        windows, date(2025, 12, 31), date.fromisoformat(required_end),
+    ) is covered
+
+
+@pytest.mark.parametrize("observed_date,lower,upper,expected", [
+    ("2020-01-02", 95, 104, True),
+    ("2020-01-02", 101, 110, False),
+    ("2020-01-01", 95, 104, None),
+])
+def test_rounded_capital_never_supplies_exact_closing_shares(
+    reconciliation, monkeypatch, observed_date, lower, upper, expected,
+):
+    from value_investment_agent.infrastructure.filings import sse_current_capital_snapshot_v1 as sse
+
+    case = reconciliation
+    snapshot = write(case["root"], "runtime/rounded.json", {"scope": "TEST_ONLY"})
+    case["ledger"].update(closing_shares=None, rounded_capital_snapshot_binding=snapshot)
+
+    def replay(*, receipt_path, symbol, as_of):
+        assert receipt_path == case["root"] / snapshot["path"]
+        assert symbol == case["analysis"]["symbol"] and as_of == case["now"]
+        return dict(trade_date=observed_date, lower_bound_shares=lower,
+                    upper_bound_shares=upper, exact_share_count=False)
+
+    monkeypatch.setattr(sse, "replay_sse_current_capital_snapshot", replay)
+    if expected is None:
+        with pytest.raises(ValueError, match="ROUNDED_CAPITAL_SNAPSHOT_COMPARISON_DATE_MISMATCH"):
+            reconcile(case)
+        return
+    result = reconcile(case)
+    assert result["rounded_capital_observation"]["rollforward_within_range"] is expected
+    assert result["closing_shares"] is None
+    assert not result["current_price_basis_compatible"]
+    assert ("ROUNDED_CAPITAL_SNAPSHOT_CONFLICTS_WITH_ROLLFORWARD" in result["reason_codes"]) is not expected
+
+
+def test_sse_closing_value_corroboration_requires_same_day_and_integral_shares(tmp_path):
+    packet = {"code": "600887", "date": 20261119, "time": 162900,
+              "snap": ["TEST_ONLY", 32.91, 32.39, None, None, 208167619550.97, "E110    "]}
+    ref = write(tmp_path, "runtime/TEST_ONLY-sse-close.json", packet)
+    binding = dict(
+        source_url="https://yunhq.sse.com.cn:32042/v1/sh1/snap/600887"
+                   "?select=name%2Clast%2Cprev_close%2CtotalShares%2CnonRestrictedShares%2CtotalValue%2Ctradephase",
+        observed_at="2026-11-19T21:00:00+08:00", response_binding=ref,
+    )
+    now = datetime.fromisoformat("2026-11-19T21:01:00+08:00")
+    options = dict(symbol="600887", comparison_date=date(2026, 11, 19), now=now,
+                   read=lambda ref: _bound(tmp_path, ref))
+    result = service._market_value_share_corroboration(binding, **options)
+    assert result["share_count"] == 6325360667
+    assert service._market_value_share_corroboration(
+        binding, **options, qualified_close=Decimal("32.9100"),
+    )["share_count"] == 6325360667
+    with pytest.raises(ValueError, match="SSE_CLOSING_VALUE_CONFLICTS_WITH_QUALIFIED_CLOSE"):
+        service._market_value_share_corroboration(binding, **options, qualified_close=Decimal("32.90"))
+    assert not result["exact_registry_count"] and not result["continuity_verified"]
+    with pytest.raises(ValueError, match="SSE_CLOSING_VALUE_SOURCE_OR_CLOCK_INVALID"):
+        service._market_value_share_corroboration(
+            binding, **{**options, "comparison_date": date(2026, 11, 18)},
+        )
+    with pytest.raises(ValueError, match="SSE_CLOSING_VALUE_CLOCK_AHEAD_OF_ACQUISITION"):
+        service._market_value_share_corroboration(
+            dict(binding, observed_at="2026-11-19T16:28:59.999+08:00"), **options,
+        )
+    packet["snap"][5] = 208167619550.98
+    binding["response_binding"] = write(tmp_path, "runtime/TEST_ONLY-fractional.json", packet)
+    with pytest.raises(ValueError, match="SSE_CLOSING_VALUE_SHARE_COUNT_NOT_INTEGRAL"):
+        service._market_value_share_corroboration(binding, **options)
+
+
+@pytest.mark.parametrize("conflict", [False, True])
+def test_overlapping_action_windows_require_same_announcement_original(reconciliation, conflict):
+    root = reconciliation["root"]
+    url = "https://static.cninfo.com.cn/finalpage/2020-01-02/123.PDF"
+    original = dict(**write(root, "runtime/first.pdf", {"1": "TEST_ONLY original"}), source_url=url)
+    other = dict(**write(root, "runtime/second.pdf",
+                         {"1": "TEST_ONLY changed" if conflict else "TEST_ONLY original"}), source_url=url)
+    window = reconciliation["windows"][0]
+    window["acquired_at"] = reconciliation["now"].isoformat()
+    window["announcements"] = [dict(announcement_id="123", evidence_refs=[original])]
+    replay = deepcopy(window)
+    replay["announcements"][0]["evidence_refs"] = [other]
+    reconciliation["windows"].append(replay)
+    if conflict:
+        with pytest.raises(ValueError, match="PUBLIC_ACTION_ANNOUNCEMENT_ORIGINAL_CONFLICT"):
+            reconcile(reconciliation)
+    else:
+        result = reconcile(reconciliation)
+        assert "PUBLIC_ACTION_REVIEW_DOES_NOT_COVER_ALL_ANNOUNCEMENTS" in result["reason_codes"]
+
+
+@pytest.mark.parametrize("payment,outside", [("2020-01-01", True), ("2020-01-02", False)])
+def test_opening_dividend_schedule_does_not_claim_receipt(reconciliation, payment, outside):
+    rows = [{"facts": [{"binding": reconciliation["anchor"]["binding"],
+        "terms": {"event_type": "PREVALUATION_DISTRIBUTION_SCHEDULE",
+                  "published_date": "2019-12-31", "terms": {"cash_per_share": "0.48",
+                  "ex_date": "2020-01-01", "cash_payment_date": payment}}}]}]
+    result = service._opening_chain_research(reconciliation["analysis"], rows, None)
+    schedule, = result["prevaluation_distribution_schedules"]
+    assert schedule["outside_comparison_interval"] is outside
+    assert schedule["cash_receipt_proven"] is False
+    assert result["complete_opening_action_coverage"] is False
+
+
+@pytest.mark.parametrize("stamp,rejected", [
+    ("2019-12-31T16:00:01+00:00", False),
+    ("2019-12-31T15:59:59+00:00", True),
+])
+def test_reconciliation_uses_exchange_local_day_for_publication(reconciliation, stamp, rejected):
+    assert "/2020-01-01/" in reconciliation["anchor"]["source_url"]
+    reconciliation["anchor"]["available_at"] = stamp
+    reconciliation["analysis"]["source_catalog"][0]["source_available_at"] = stamp
+    if rejected:
+        with pytest.raises(ValueError, match="OFFICIAL_RECONCILIATION_SOURCE_UNAVAILABLE"):
+            reconcile(reconciliation)
+    else:
+        result = reconcile(reconciliation)
+        assert result["arithmetic_status"] == "RECONCILED"
+        assert not result["current_price_basis_compatible"]
+
+
+@pytest.mark.parametrize("row_count", [0, 1, 2])
+@pytest.mark.parametrize("mixed_shanghai", [False, True])
+def test_covered_cash_original_requires_exactly_one_ledger_row(
+    reconciliation, monkeypatch, row_count, mixed_shanghai,
+):
+    monkeypatch.setattr(service, "_shanghai_mixed_cash_schedule", lambda text: mixed_shanghai)
+    case = reconciliation
+    anchor = case["anchor"]
+    case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
+        announcements=[dict(announcement_id="123", title="TEST_ONLY权益分派实施公告",
+            published_at="2019-12-31T16:00:00+00:00",
+            evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
+    case["ledger"]["distributions"] = [
+        dict(cash(case, in_period=True), id=f"TEST_ONLY_CASH_{i}") for i in range(row_count)
+    ]
+    terms = dict(published_date="2020-01-01", record_date="2020-01-01",
+        ex_date="2020-01-02", cash_payment_date="2020-01-02",
+        cash_per_share="2", total_gross_cash="200")
+    monkeypatch.setattr(service, "_cash_terms", lambda pages, symbol: terms)
+
+    if row_count > 1:
+        with pytest.raises(ValueError, match="DUPLICATE_NATIVE_CASH_IMPLEMENTATION_ORIGINAL"):
+            reconcile(case)
+        return
+    result = reconcile(case)
+
+    observed, = result["covered_cash_implementations"]
+    assert observed["terms"] == terms
+    assert len(observed["matched_ledger_ids"]) == row_count
+    expected = "ENTITLEMENT_MATCHED_PAYMENT_UNRESOLVED" if mixed_shanghai else "MATCHED"
+    assert observed["status"] == (expected if row_count == 1 else "LEDGER_MISMATCH")
+    if mixed_shanghai:
+        assert observed["issuer_direct_payment_verified"] is False
+        assert observed["clearing_house_payment_verified"] is False
+    for code in ("SHANGHAI_CLEARING_DIVIDEND_PAYMENT_UNVERIFIED",
+                 "ISSUER_DIRECT_DIVIDEND_PAYMENT_UNVERIFIED"):
+        assert (code in result["reason_codes"]) == (mixed_shanghai and row_count == 1)
+    if mixed_shanghai:
+        assert result["current_price_basis_compatible"] is False
+    assert ("COVERED_CASH_IMPLEMENTATION_REQUIRES_UNIQUE_LEDGER_ROW: 123" in
+            result["reason_codes"]) == (row_count != 1)
+    assert result["period_cash_coverage_complete"] is False
+
+
+@pytest.mark.parametrize("suffix", ["（修订版）", "（已取消）"])
+@pytest.mark.parametrize("notice_title", ["权益分派实施公告", "利润分配实施公告", "现金分红实施公告"])
+def test_covered_cash_notice_variants_require_lineage_resolution(reconciliation, suffix, notice_title):
+    case = reconciliation
+    anchor = case["anchor"]
+    case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
+        announcements=[dict(announcement_id="123", title="TEST_ONLY" + notice_title + suffix,
+            evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
+
+    result = reconcile(case)
+
+    assert result["covered_cash_implementations"] == [
+        dict(announcement_id="123", status="LINEAGE_UNRESOLVED")
+    ]
+    assert "COVERED_CASH_IMPLEMENTATION_LINEAGE_UNRESOLVED: 123" in result["reason_codes"]
+    assert not result["current_price_basis_compatible"]
+
+@pytest.mark.parametrize(("effective", "expects_mismatch"), [
+    ("2020-01-02", True), ("2020-01-01", False),
+])
+def test_covered_cancellation_cannot_be_omitted(reconciliation, monkeypatch, effective, expects_mismatch):
+    from value_investment_agent.infrastructure.filings import opening_action_terms
+
+    case = reconciliation
+    anchor = case["anchor"]
+    case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
+        announcements=[dict(announcement_id="123", title="TEST_ONLY完成回购注销公告",
+            published_at="2020-01-01T16:00:00+00:00",
+            evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
+    monkeypatch.setattr(opening_action_terms, "parse_opening_action_terms", lambda pages, symbol: dict(
+        terms=dict(confirmed_cancellation_date=effective), published_date="2020-01-02"))
+
+    result = reconcile(case)
+
+    assert ("COVERED_CANCELLATION_REQUIRES_UNIQUE_LEDGER_ROW: 123" in result["reason_codes"]
+            ) is expects_mismatch
+    assert result["current_price_basis_compatible"] is False
+    assert [row["status"] for row in result["covered_share_cancellations"]] == (
+        ["LEDGER_MISMATCH"] if expects_mismatch else [])
+
+
+def test_dividend_adjustment_without_cancellation_is_not_a_share_action(reconciliation):
+    case = reconciliation
+    anchor = case["anchor"]
+    case["windows"][0].update(source_integrity_verified=True, acquired_at=anchor["available_at"],
+        announcements=[dict(announcement_id="123", title="TEST_ONLY调整年度利润分配方案每股分红金额的公告",
+            published_at="2020-01-01T16:00:00+00:00",
+            evidence_refs=[dict(**anchor["binding"], source_url=anchor["source_url"])])])
+
+    result = reconcile(case)
+
+    assert result["covered_share_cancellations"] == []
+    assert not any(code.startswith("COVERED_CANCELLATION") for code in result["reason_codes"])
+    assert not result["current_price_basis_compatible"]
+
+
+@pytest.mark.parametrize("matches_original_title", [True, False])
+def test_interim_distribution_schedule_is_not_payment(reconciliation, monkeypatch, matches_original_title):
+    from value_investment_agent.infrastructure.filings import pdf_text
+
+    case = reconciliation
+    source = dict(case["anchor"]["binding"],
+                  source_url="https://static.cninfo.com.cn/finalpage/2020-01-02/123.PDF")
+    heading = "中期权益分派实施公告" if matches_original_title else "中期利润分配预案的公告"
+    monkeypatch.setattr(pdf_text, "extract_pages", lambda path: [heading])
+    monkeypatch.setattr(service, "_cash_terms", lambda pages, symbol: dict(
+        published_date="2020-01-02", cash_per_share="0.42", cash_payment_date="2020-01-08"))
+    window = dict(acquired_at="2020-01-03T00:00:00+08:00", announcements=[dict(
+        announcement_id="123", title="TEST_ONLY 中期权益分派实施公告",
+        published_at="2020-01-02T00:00:00+08:00", source_url=source["source_url"], evidence_refs=[source])])
+    row, = service._operating_events(case["analysis"], [window], case["now"],
+        lambda ref: _bound(case["root"], ref))
+
+    assert not row["materiality_approved"] and not row["model_inputs_changed"]
+    if matches_original_title:
+        event = row["facts"][0]["terms"]
+        assert event["event_type"] == "REPORTED_INTERIM_DIVIDEND_IMPLEMENTATION_SCHEDULE"
+        assert event["effective_date"] is None
+        assert event["terms"]["cash_payment_date"] == "2020-01-08"
+        assert event["action"] == "no_order"
+    else:
+        assert not row["facts"]
+
+
+def test_implementation_schedule_requires_actual_cash_review(reconciliation):
+    from value_investment_agent.application.research.candidate_event_impact import build_candidate_event_impact
+
+    analysis = reconciliation["analysis"]
+    candidate = analysis["review_binding"]["candidate_binding"]
+    analysis["joint_capital_review"]["economic_path"]["candidate_binding"] = candidate
+    event = dict(status="SOURCE_TERMS_VERIFIED_REQUIRES_CANDIDATE_REVIEW",
+                 announcement_id="TEST_ONLY", title="TEST_ONLY", published_at="2020-01-02",
+                 source_url="https://static.cninfo.com.cn/finalpage/2020-01-02/123.PDF",
+                 candidate_binding=candidate, input_descriptor_sha256=analysis["input_descriptor_sha256"],
+                 facts=[dict(terms=dict(
+                     event_type="REPORTED_INTERIM_DIVIDEND_IMPLEMENTATION_SCHEDULE",
+                     summary="每股派现0.42元", effective_date=None,
+                     affected_model_fields=["shareholder_distributions"]),
+                     binding=reconciliation["anchor"]["binding"], source_url=reconciliation["anchor"]["source_url"],
+                     source_available_at=reconciliation["anchor"]["available_at"])])
+    result = build_candidate_event_impact(analysis, [event])
+    item, = result["items"]
+    assert item["status"] == "INTERIM_DISTRIBUTION_PAYMENT_AND_MODEL_REVIEW_REQUIRED"
+    assert "实际支付" in item["rationale"]
+    assert not result["materiality_approved"]
+    assert result["action"] == "no_order"
+
+
+@pytest.mark.parametrize("mutation", [None, "issuer", "vote_count", "outcome", "agenda"])
+def test_interim_dividend_resolution_never_confirms_payment(mutation):
+    from value_investment_agent.infrastructure.filings.interim_dividend_resolution import (
+        parse_interim_dividend_resolution,
+    )
+    pages = [
+        "证券代码：600123\n2026年第二次临时股东会决议公告\n"
+        "股东会召开的时间：2026年11月20日\n"
+        "2、出席会议的股东所持有表决权的股份总数（股） 10,000\n3、其他信息",
+        "1、议案名称：《公司2026年中期利润分配预案》\n审议结果：通过\n"
+        "A 股 9,800 98.00 100 1.00 100 1.00\n"
+        "2、议案名称：《其他议案》\n审议结果：通过\n董事会\n2026年11月21日",
+    ]
+    if mutation:
+        old, new = {
+            "issuer": ("600123", "600124"),
+            "vote_count": ("9,800", "9,999"),
+            "outcome": ("结果：通过", "结果：未通过"),
+            "agenda": ("中期利润分配预案", "回购股份"),
+        }[mutation]
+        with pytest.raises(ValueError, match="INTERIM_DIVIDEND_RESOLUTION"):
+            parse_interim_dividend_resolution([p.replace(old, new, 1) for p in pages],
+                                              symbol="600123", published=date(2026, 11, 21))
+    else:
+        result = parse_interim_dividend_resolution(pages, symbol="600123", published=date(2026, 11, 21))
+        assert result["decision"] == "APPROVED"
+        assert result["meeting_date"] == "2026-11-20"
+        assert not result["payment_verified"] and not result["implementation_verified"]
+        assert result["action"] == "no_order"
+
+
+def test_quarterly_unlock_confirmation_requires_completed_listing_in_report_period():
+    from value_investment_agent.application.research.pending_candidate_alignment import (
+        _reported_unlock_completions,
+    )
+
+    title = "关于股权激励解除限售股份上市流通的提示性公告"
+    text = (
+        f"2026 年 9 月 23 日，公司披露了《{title}》，"
+        "公司该计划限制性股票于 2026 年 9 月 28 日上市流通。"
+    )
+    assert list(_reported_unlock_completions(["非相关页", text], "2026-09-30")) == [{
+        "notice_date": "2026-09-23",
+        "listing_date": "2026-09-28",
+        "normalized_notice_title": title,
+        "physical_page": 2,
+    }]
+    assert not list(_reported_unlock_completions([text], "2026-09-27"))
+    assert not list(_reported_unlock_completions([text.replace("于 2026", "拟于 2026")], "2026-09-30"))
+
+
+@pytest.mark.parametrize("scenario", [
+    "confirmed", "notice_only", "before_confirmation", "at_opening", "nonzero",
+])
+def test_basis_followup_consumes_only_in_period_confirmed_zero_net_unlock(reconciliation, scenario):
+    case = reconciliation
+    analysis = dict(case["analysis"], valuation_date=(
+        "2026-09-28" if scenario == "at_opening" else "2026-06-30"))
+    comparison = date(2026, 10, 29) if scenario == "before_confirmation" else date(2026, 11, 20)
+    notice_binding = case["anchor"]["binding"]
+    confirmation = dict(
+        listing_date="2026-09-28", notice_date="2026-09-23", physical_page=12,
+        announcement_id="TEST_Q3", published_date="2026-10-30",
+        source_available_at="2026-11-20T20:00:00+08:00",
+        source_url="https://static.cninfo.com.cn/finalpage/2026-10-30/456.PDF",
+        binding=dict(path="runtime/q3.pdf", sha256="b" * 64),
+    )
+    terms = dict(event_type="REPORTED_SHARE_UNLOCK_NOTICE", effective_date=None,
+        share_unlock_observation=dict(net_share_change="-5" if scenario == "nonzero" else "0"))
+    if scenario != "notice_only":
+        terms["issuer_reported_listing_confirmation"] = confirmation
+    event = dict(announcement_id="TEST_NOTICE", title="解除限售股份上市流通的提示性公告",
+        published_at="2026-09-23T08:00:00+08:00", facts=[dict(binding=notice_binding,
+            source_url="https://static.cninfo.com.cn/finalpage/2026-09-23/123.PDF",
+            source_available_at="2026-11-20T20:00:00+08:00", terms=terms)])
+    result = service._basis_followup(analysis, None,
+        dict(outstanding_authorizations=[]), [], comparison, [event])
+
+    assert result["latest_capital_checkpoint"] is None
+    assert not result["complete_effective_action_coverage"]
+    assert not result["current_comparison_granted"]
+    assert not result["human_approval_granted"]
+    assert result["action"] == "no_order"
+    if scenario != "confirmed":
+        assert result["capital_event_classifications"] == []
+        return
+    classified, = result["capital_event_classifications"]
+    assert classified["classification"] == "ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK"
+    assert classified["effective_date"] == "2026-09-28"
+    assert classified["net_share_change"] == "0"
+    assert classified["source_binding"] == notice_binding
+    assert classified["issuer_reported_listing_confirmation"] == confirmation
+    assert not classified["window_completeness_granted"]
+    assert classified["action"] == "no_order"
+
+
+@pytest.mark.parametrize("variant", [
+    "verified", "notice_hash", "report_hash", "report_missing", "report_conflict",
+    "snapshot", "contradictory_disposition", "duplicate_confirmation",
+])
+def test_cross_date_unlock_requires_exact_notice_and_q3_originals(variant):
+    notice_id, report_id = "1225576512", "1225639079"
+    notice_url = "https://static.cninfo.com.cn/finalpage/2026-09-23/1225576512.PDF"
+    report_url = "https://static.cninfo.com.cn/finalpage/2026-10-30/1225639079.PDF"
+    notice = dict(announcement_id=notice_id, title="TEST_ONLY 解除限售股份上市流通的提示性公告",
+                  published_at="2026-09-23T00:00:00+08:00", status="UNRESOLVED",
+                  disposition=None, facts=[], originals=[dict(source_url=notice_url, sha256="a" * 64)])
+    report = dict(announcement_id=report_id, status="UNRESOLVED",
+                  originals=[dict(source_url=report_url, sha256="b" * 64)])
+    other = dict(announcement_id="TEST_OTHER", status="UNRESOLVED",
+                 disposition="NO_CAPITAL_OR_DISTRIBUTION_EFFECT", facts=[])
+    confirmation = dict(announcement_id=report_id, source_url=report_url,
+                        binding=dict(path="runtime/q3.pdf", sha256="b" * 64),
+                        physical_page=6, listing_date="2026-09-28")
+    event = dict(announcement_id=notice_id, title=notice["title"], published_at=notice["published_at"],
+                 source_url=notice_url, source_binding=dict(path="runtime/notice.pdf", sha256="a" * 64),
+                 classification="ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK", net_share_change="0",
+                 issuer_reported_listing_confirmation=confirmation)
+    window_binding = dict(path="runtime/window.json", sha256="c" * 64)
+    rows = [notice, report, other]
+    facts = dict(coverage_observation_bindings=[window_binding], announcements=rows,
+                 effective_action_continuity_proven=False, current_price_basis_compatible=False,
+                 status="BLOCKED", reason_codes=["NATIVE_ANNOUNCEMENT_DISPOSITIONS_UNRESOLVED"])
+    windows = [dict(observation_binding=window_binding, announcements=rows)]
+    events = [event]
+    if variant == "notice_hash":
+        notice["originals"][0]["sha256"] = "d" * 64
+    elif variant == "report_hash":
+        report["originals"][0]["sha256"] = "d" * 64
+    elif variant == "report_missing":
+        rows.remove(report)
+    elif variant == "report_conflict":
+        report["status"] = "ANNOUNCEMENT_METADATA_CONFLICT"
+    elif variant == "snapshot":
+        facts["coverage_observation_bindings"] = []
+    elif variant == "contradictory_disposition":
+        notice["disposition"] = "SHARE_ACTION"
+    elif variant == "duplicate_confirmation":
+        events.append(deepcopy(event))
+
+    service._attach_confirmed_unlock_facts(dict(cross_date_action_facts=facts), windows, events)
+
+    if variant == "verified":
+        assert notice["status"] == "NATIVE_TERMINAL_MATCHED"
+        assert notice["facts"] == [dict(kind="ISSUER_CONFIRMED_RESTRICTED_SHARE_UNLOCK", native_proof=event)]
+    else:
+        assert notice["status"] == "UNRESOLVED"
+        assert notice["facts"] == []
+    assert report["status"] == ("ANNOUNCEMENT_METADATA_CONFLICT" if variant == "report_conflict" else "UNRESOLVED")
+    assert other["status"] == "UNRESOLVED"
+    assert facts["status"] == "BLOCKED"
+    assert not facts["effective_action_continuity_proven"]
+    assert not facts["current_price_basis_compatible"]
+
+
+@pytest.mark.parametrize("complete", [True, False])
+@pytest.mark.parametrize("incomplete_enclosing_window", [False, True])
+def test_adjacent_full_windows_report_coverage_without_materiality_admission(
+    reconciliation, complete, incomplete_enclosing_window,
+):
+    from types import SimpleNamespace
+
+    analysis = reconciliation["analysis"]
+    valuation = ValuationResultCodec().from_payload(analysis["valuation"])
+    start = valuation.valuation_date
+    end = start + timedelta(days=1)
+    windows = [
+        dict(scan_from=day.isoformat(), scan_to=day.isoformat(),
+             source_integrity_verified=True, full_calendar_window_elapsed=True,
+             observation_binding={"sha256": "a" * 64})
+        for day in (start, end)
+    ]
+    scans = [
+        SimpleNamespace(scan_from=day, scan_to=day, announcements=(), blockers=(),
+                        status="COMPLETE_NO_MATERIAL_EVENT_IN_VALIDITY_WINDOW",
+                        coverage_status="COMPLETE" if index == 0 or complete else "INCOMPLETE")
+        for index, day in enumerate((start, end))
+    ]
+    if incomplete_enclosing_window:
+        windows.insert(0, dict(windows[0], scan_to=end.isoformat()))
+        scans.insert(0, SimpleNamespace(
+            scan_from=start, scan_to=end, announcements=(), blockers=(),
+            status="COMPLETE_NO_MATERIAL_EVENT_IN_VALIDITY_WINDOW", coverage_status="INCOMPLETE",
+        ))
+    quote = QuoteSnapshot(valuation.symbol, end, Decimal("15"), "verified_close", [dict(id="TEST_ONLY", sha256="b" * 64)])
+    quote_result = dict(status="QUALIFIED", reason_codes=[], explanation="TEST_ONLY",
+                        bundle_binding=None, native_status="TEST_ONLY")
+    checks, validity, _, ready = service._assess(analysis, valuation, quote, quote_result, windows, scans)
+    event = next(check for check in checks if check["id"] == "material_events")
+    assert event["details"]["publication_window_continuous"] is complete
+    assert event["details"]["missing_publication_windows"] == (
+        [] if complete else [{"from_date": end.isoformat(), "to_date": end.isoformat()}]
+    )
+    assert event["status"] == "BLOCKED" and validity.status != "VALID" and not ready
+    expected = ("MULTI_WINDOW_MATERIALITY_REPLAY_NOT_SUPPORTED" if complete
+                else "EVENT_WINDOW_DOES_NOT_COVER_VALUATION_TO_QUOTE")
+    assert expected in event["reason_codes"]
+
+def test_opening_share_excerpt_requires_exact_compiler_binding(reconciliation, monkeypatch):
+    from value_investment_agent.infrastructure.filings import pdf_text
+
+    case = reconciliation
+    original = "半年报股本章节：股份总数100股；股份余额仍为100股。"
+    monkeypatch.setattr(pdf_text, "extract_pages", lambda path: [original])
+    excerpt = {**case["anchor"], "excerpt": "股份总数100股"}
+    case["analysis"]["consumed_opening_capital_excerpt"] = {
+        **excerpt, "period_end": case["ledger"]["valuation_date"],
+    }
+    case["ledger"].update(closing_shares=None, opening_pending_actions=None)
+    case["ledger"]["opening_shares"]["evidence"] = [excerpt]
+    result = reconcile(case)
+    assert result["opening_shares_semantics"] == "NATIVE_CONSUMED_FACT_MATCHED"
+    assert result["current_price_basis_compatible"] is False
+
+    case["ledger"]["opening_shares"]["evidence"] = [{**excerpt, "excerpt": "股份余额仍为100股"}]
+    with pytest.raises(ValueError, match="RECONCILIATION_EXCERPT_OR_ISSUER_MISMATCH"):
+        reconcile(case)
+
+def test_opening_share_period_cannot_be_borrowed_from_a_different_source(reconciliation):
+    case = reconciliation
+    fact = case["analysis"]["official_fact_anchors"][0]
+    case["analysis"]["official_fact_anchors"] = [
+        {**fact, "period_end": "2019-12-31"},
+        {**fact, "source_id": "cninfo:456"},
+    ]
+
+    result = reconcile(case)
+
+    assert result["opening_shares_semantics"] == "NOT_VERIFIED"
+    assert "OPENING_SHARES_NOT_MATCHED_TO_NATIVE_FACT_ANCHOR" in result["reason_codes"]
+    assert result["current_price_basis_compatible"] is False
+
+
+def test_opening_share_document_identity_cannot_borrow_another_consumed_hash(reconciliation):
+    case = reconciliation
+    anchor = case["anchor"]
+    alternative = case["root"] / "runtime/alternative.pdf"
+    original = case["root"] / anchor["binding"]["path"]
+    alternative.write_bytes(original.read_bytes() + b"\n")
+    binding = dict(path="runtime/alternative.pdf", sha256=sha256_file(alternative))
+    case["analysis"]["source_bindings"].append(binding)
+    case["ledger"]["opening_shares"]["evidence"] = [{**anchor, "binding": binding}]
+    case["windows"][0]["announcements"] = [
+        dict(evidence_refs=[{**binding, "source_url": anchor["source_url"]}]),
+    ]
+    case["windows"][0]["acquired_at"] = anchor["available_at"]
+
+    with pytest.raises(ValueError, match="OPENING_CAPITAL_SOURCE_NOT_CONSUMED"):
+        reconcile(case)
+
+
+@pytest.mark.parametrize("count", ["100", "101"])
+def test_exact_szse_end_count_requires_matching_rollforward(reconciliation, count):
+    case = reconciliation
+    case["ledger"].update(closing_shares=None)
+    ref = write(case["root"], "runtime/reconciliation.json", case["ledger"])
+    observation = dict(
+        ordinary_a_shares=count, comparison_date="2020-01-02", evidence_binding=ref,
+    )
+
+    def run():
+        return service._reconcile(
+            case["root"], case["analysis"], ref, date(2020, 1, 2),
+            case["windows"], case["now"], lambda binding: _bound(case["root"], binding),
+            closing_export=observation,
+        )
+
+    if count != "100":
+        with pytest.raises(ValueError, match="SZSE_CAPITAL_EXPORT_ROLLFORWARD_DISAGREEMENT"):
+            run()
+        return
+    result = run()
+    checkpoint = result["native_closing_capital_checkpoint"]
+    assert checkpoint["status"] == "NATIVE_ENDPOINT_MATCHES_ROLLFORWARD"
+    assert checkpoint["ordinary_shares"] == "100"
+    assert checkpoint["evidence_bindings"] == [ref]
+    assert result["closing_shares"] == result["calculated_closing_shares"] == "100"
+    assert "CLOSING_SHARE_COUNT_UNVERIFIED" not in result["reason_codes"]
+    assert "NATIVE_CLOSING_SHARES_OPENING_CONTINUITY_UNVERIFIED" in result["reason_codes"]
+    assert result["current_price_basis_compatible"] is False
+
+@pytest.mark.parametrize("observations, status", [
+    ([], "UNVERIFIED"),
+    (["100"], "NATIVE_ENDPOINT_MATCHES_ROLLFORWARD"),
+    (["101"], "CONFLICT"),
+    (["100", "101"], "CONFLICT"),
+])
+def test_native_report_closing_checkpoint_is_independent_of_interval_closure(
+        reconciliation, monkeypatch, observations, status):
+    case = reconciliation
+    case["ledger"]["closing_shares"] = None
+    end = date(2020, 1, 2)
+    reports = [
+        dict(status="NATIVE_REPORT_FIELDS_VERIFIED", published_date=end.isoformat(),
+             terms=dict(period_end=end.isoformat(), ordinary_shares=shares),
+             binding=dict(path=f"runtime/report-{index}.pdf", sha256=str(index) * 64))
+        for index, shares in enumerate(observations, 1)
+    ]
+    native_basis_fields = service._native_basis_fields
+
+    def replay(*args, **kwargs):
+        result = native_basis_fields(*args, **kwargs)
+        result["closing_capital"] = service._close_report_checkpoint(reports, end)
+        result["reports"] = reports
+        return result
+
+    monkeypatch.setattr(service, "_native_basis_fields", replay)
+    result = reconcile(case)
+    checkpoint = result["native_closing_capital_checkpoint"]
+    assert checkpoint["status"] == status
+    if status == "NATIVE_ENDPOINT_MATCHES_ROLLFORWARD":
+        assert checkpoint["ordinary_shares"] == result["closing_shares"] == "100"
+        assert checkpoint["evidence_bindings"] == [reports[0]["binding"]]
+        assert "CLOSING_SHARE_COUNT_UNVERIFIED" not in result["reason_codes"]
+    else:
+        assert checkpoint["ordinary_shares"] is None
+        assert result["closing_shares"] is None
+    assert "CROSS_DATE_NATIVE_CAPITAL_AND_DISTRIBUTION_CLOSURE_NOT_SUPPORTED" in result["reason_codes"]
+    assert not result["native_basis_semantics_verified"]
+    assert not result["period_cash_coverage_complete"]
+    assert not result["current_price_basis_compatible"]
+
+
+@pytest.mark.parametrize("export_shares", [None, "2000"])
+def test_native_report_checkpoint_replays_report_and_detects_export_conflict(
+        reconciliation, monkeypatch, export_shares):
+    from pypdf import PdfWriter
+    from value_investment_agent.infrastructure.filings import pdf_text
+
+    case = reconciliation
+    end = date(2020, 6, 30)
+    case["ledger"].update(comparison_date=end.isoformat(), closing_shares=None)
+    case["windows"][0]["scan_to"] = end.isoformat()
+    opening = case["anchor"]
+    opening_shares = export_shares or "1000"
+    case["analysis"]["consumed_operating_inputs"]["ordinary_shares"] = opening_shares
+    case["analysis"]["official_fact_anchors"][0]["source_value"] = opening_shares
+    opening["excerpt"] += " " + format(int(opening_shares), ",")
+    case["ledger"]["opening_shares"]["value"] = opening_shares
+
+    report = case["root"] / "runtime/interim.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    with report.open("wb") as stream:
+        writer.write(stream)
+    report_ref = dict(path="runtime/interim.pdf", sha256=sha256_file(report))
+    case["analysis"]["source_catalog"].append(dict(
+        kind="official_issuer_filing", local_path=report_ref["path"], sha256=report_ref["sha256"],
+        location="https://static.cninfo.com.cn/finalpage/2020-06-30/124.PDF",
+        issuer_identity=dict(security_code="600519"),
+        source_available_at="2020-06-30T14:00:00+08:00"))
+    # Stub only PDF text extraction. The native interim parser and source
+    # admission still execute, including share-class and table reconciliation.
+    capital = "2,000 100 - 1,000 - 1,000 1,000 100"
+    pages = [
+        "公司代码：600519 公司简称 TEST_ONLY 2020年半年度报告",
+        "报告期指2020年1月1日至2020年6月30日",
+        f"单位：股 本次变动前 本次变动增减 1、人民币普通股 {capital} 2、境内上市的外资股 "
+        f"三、股份总数 {capital} 2、股份变动情况说明",
+        "截至资产负债表日，公司已累计回购股份1,000股，已支付总金额100.00元（不含交易费用），"
+        "并已在中国证券登记结算有限责任公司上海分公司办理完成注销。",
+        "半年度拟定的利润分配预案、公积金转增股本预案是否分配或转增否三、",
+        "十六、资产负债表日后事项1、重要的非调整事项□适用√不适用2、利润分配情况□适用√不适用3、销售退回",
+        "报告期后到半年报披露日期间发生股份变动对每股收益、每股净资产等财务指标的影响（如有）□适用√不适用4、",
+        "42、未分配利润√适用□不适用单位：元币种：人民币项目本期上年度"
+        "应付普通股股利1.002.00转作股本的普通股股利43、营业收入和营业成本",
+    ]
+    monkeypatch.setattr(pdf_text, "extract_pages",
+                        lambda path: pages if path == report else [opening["excerpt"]])
+    ref = write(case["root"], "runtime/reconciliation.json", case["ledger"])
+    export = (dict(ordinary_a_shares=export_shares, comparison_date=end.isoformat(), evidence_binding=ref)
+              if export_shares is not None else None)
+    result = service._reconcile(case["root"], case["analysis"], ref, end,
+        case["windows"], case["now"], lambda binding: _bound(case["root"], binding), closing_export=export)
+
+    report_fact, = result["native_source_consumption"]["reports"]
+    assert report_fact["status"] == "NATIVE_REPORT_FIELDS_VERIFIED"
+    assert report_fact["binding"] == report_ref
+    checkpoint = result["native_closing_capital_checkpoint"]
+    if export is None:
+        assert checkpoint["status"] == "NATIVE_ENDPOINT_MATCHES_ROLLFORWARD"
+        assert checkpoint["ordinary_shares"] == "1000"
+        assert checkpoint["evidence_bindings"] == [report_ref]
+    else:
+        assert result["closing_shares"] == result["calculated_closing_shares"] == export_shares
+        assert checkpoint["status"] == "CONFLICT"
+        assert checkpoint["ordinary_shares"] is None
+        assert checkpoint["evidence_bindings"] == [report_ref, ref]
+        assert "NATIVE_CLOSING_SHARE_COUNT_DIFFERS_FROM_ROLLFORWARD" in result["reason_codes"]
+    assert not result["native_basis_semantics_verified"]
+    assert not result["period_cash_coverage_complete"]
+    assert not result["current_price_basis_compatible"]
+
+
+@pytest.mark.parametrize("yes, approved", [(90, True), (89, False)])
+def test_numbered_annual_distribution_resolution_checks_full_votes(yes, approved):
+    from value_investment_agent.infrastructure.filings.interim_dividend_resolution import (
+        parse_annual_dividend_resolution,
+    )
+
+    pages = [
+        "证券代码：000568\n2025年度股东会决议公告\n"
+        "1.会议召开日期和时间：\n（1）现场会议时间：2026年6月30日",
+        "股东出席的总体情况：通过现场和网络投票的股东3人，代表股份100股，\n"
+        "4.00《2025年度利润分配方案》\n表决结果：审议通过。\n总表决情况："
+        f"同意{yes}股，占出席会议所有股东所持股份的90.0%；"
+        "反对5股，占出席会议所有股东所持股份的5.0%；"
+        "弃权5股，占出席会议所有股东所持股份的5.0%。\n董事会\n2026年6月30日",
+    ]
+    if not approved:
+        with pytest.raises(ValueError, match="VOTES_NOT_RECONCILED"):
+            parse_annual_dividend_resolution(pages, symbol="000568", published=date(2026, 7, 1))
+        return
+    result = parse_annual_dividend_resolution(pages, symbol="000568", published=date(2026, 7, 1))
+    assert result["yes_votes"] == 90
+    assert result["decision"] == "APPROVED" and result["payment_verified"] is False
+
+@pytest.mark.parametrize("native_column", [0, 1])
+def test_opening_dividend_payable_requires_current_period_column(reconciliation, monkeypatch, native_column):
+    from value_investment_agent.infrastructure.filings import first_research_fact_replay_v1, pdf_text
+
+    case = reconciliation
+    anchor = case["anchor"]
+    opening_pages = [
+        anchor["excerpt"] + "\n2、母公司资产负债表\n单位：元\n项目 期末余额 期初余额",
+        "应付股利 123.45\n3、合并利润表",
+    ]
+    monkeypatch.setattr(pdf_text, "extract_pages", lambda path: opening_pages)
+    monkeypatch.setattr(first_research_fact_replay_v1, "_native_column",
+                        lambda *args: native_column)
+    case["analysis"]["consumed_opening_capital_excerpt"] = {
+        **anchor, "period_end": case["ledger"]["valuation_date"],
+    }
+    case["ledger"]["distributions"] = [cash(case, in_period=True)]
+    result = reconcile(case)
+    payable = result["opening_parent_dividend_payable"]
+    if native_column == 1:
+        assert payable is None
+    else:
+        assert payable["parent_dividend_payable_cny"] == "123.45"
+        assert payable["physical_page"] == 2
+        assert payable["disallow_automatic_second_equity_deduction"]
+        assert payable["cash_payment_proven"] is False
+    assert result["current_price_basis_compatible"] is False
+
+
+@pytest.mark.parametrize("in_period", [False, True])
+@pytest.mark.parametrize("alias", ["single", "new_id", "copied_original"])
+def test_native_cash_original_identity_precedes_ledger_ids(
+    reconciliation, monkeypatch, in_period, alias
+):
+    """TEST_ONLY PDF extraction; native terms and reconciliation run unchanged."""
+    from pypdf import PdfWriter
+    from value_investment_agent.infrastructure.filings import pdf_text
+
+    case = reconciliation
+    row = cash(case, in_period=in_period)
+    published = "2020-01-01" if in_period else "2019-12-28"
+    publication_text = "2020年1月1日" if in_period else "2019年12月28日"
+    native_dates = {key: date.fromisoformat(row[key]).strftime("%Y年%m月%d日")
+                    for key in ("record_date", "ex_date", "cash_payment_date")}
+    text = (
+        "证券代码：600519 公告编号：2020-001 TEST_ONLY 权益分派实施公告\n"
+        "差异化分红送转：否 A股每股现金红利2元（含税）\n"
+        "（三）分配方案：本次利润分配以方案实施前的公司总股本100股为基数，"
+        "每股派发现金红利2元（含税），共计派发现金红利200元（含税）。\n"
+        "三、相关日期\n"
+        f"股权登记日：{native_dates['record_date']}\n除息日：{native_dates['ex_date']}\n"
+        f"现金红利发放日：{native_dates['cash_payment_date']}\n董事会{publication_text}"
+    )
+    original = case["root"] / "runtime/cash.pdf"
+    pdf = PdfWriter()
+    pdf.add_blank_page(width=100, height=100)
+    pdf.add_metadata({"/Title": "TEST_ONLY cash"})
+    with original.open("wb") as stream:
+        pdf.write(stream)
+    binding = dict(path="runtime/cash.pdf", sha256=sha256_file(original))
+    anchor = dict(case["anchor"], binding=binding, excerpt=text,
+        source_url=f"https://static.cninfo.com.cn/finalpage/{published}/456.PDF")
+    source = dict(case["analysis"]["source_catalog"][0], local_path=binding["path"],
+                  sha256=binding["sha256"], location=anchor["source_url"])
+    case["analysis"]["source_catalog"].append(source)
+    row["evidence"] = [anchor]
+    case["ledger"]["distributions"] = [row]
+    opening_text = case["anchor"]["excerpt"]
+    monkeypatch.setattr(pdf_text, "extract_pages", lambda path:
+        [text] if sha256_file(path) == binding["sha256"] else [opening_text])
+    # No stubbed native parser or invented action-coverage proof.
+    assert service._cash_terms([text], "600519")["total_gross_cash"] == "200"
+    if alias != "single":
+        duplicate = deepcopy(row)
+        duplicate["id"] = "TEST_ONLY_DIFFERENT_LEDGER_ID"
+        if alias == "copied_original":
+            copied = case["root"] / "runtime/copied-cash.pdf"
+            copied.write_bytes(original.read_bytes())
+            duplicate["evidence"][0]["binding"]["path"] = "runtime/copied-cash.pdf"
+            case["analysis"]["source_catalog"].append(dict(source, local_path="runtime/copied-cash.pdf"))
+        case["ledger"]["distributions"].append(duplicate)
+        with pytest.raises(ValueError, match="DUPLICATE_NATIVE_CASH_IMPLEMENTATION_ORIGINAL"):
+            reconcile(case)
+    else:
+        result = reconcile(case)
+        assert result["distributions"][0]["native_terms"] is not None
+        assert result["period_cash_per_share"] == ("2" if in_period else "0")
+        assert result["distributions"][0]["price_deduction_applied"] == "0"
+        assert not result["current_price_basis_compatible"]
+
+
+def test_cross_date_caller_completeness_flags_are_not_a_native_contract(reconciliation):
+    case = reconciliation
+    case["windows"][0].update(source_integrity_verified=True, coverage_status="COMPLETE")
+    case["ledger"].update(complete_action_coverage=True, no_change=True,
+        effective_action_continuity_proven=True, period_cash_coverage_complete=True)
+    result = reconcile(case)
+    assert result["cross_date_action_facts"]["publication_window_covered"]
+    assert not result["native_basis_semantics_verified"]
+    assert not result["period_cash_coverage_complete"]
+    assert not result["current_price_basis_compatible"]
+    assert "OPENING_PENDING_SCHEMES_AND_EFFECTIVE_ACTION_CHAIN_INCOMPLETE" in result["reason_codes"]
+
+@pytest.mark.parametrize("published,scheduled,expected", [
+    ("2019-12-29", "2020-01-02", "DISCLOSED_CANCELLATION_SCHEDULE_AFTER_OPENING"),
+    ("2019-12-29", "2020-01-01", "OPENING_PENDING_STATUS_NOT_ESTABLISHED"),
+    ("2019-12-29", "2019-12-30", "OPENING_PENDING_STATUS_NOT_ESTABLISHED"),
+    ("2020-01-01", "2020-01-02", "OPENING_PENDING_STATUS_NOT_ESTABLISHED"),
+    ("2020-01-02", "2020-01-03", None),
+])
+def test_opening_purchase_schedule_retains_only_dated_native_followup(
+        reconciliation, published, scheduled, expected):
+    binding = {"path": "runtime/buyback.pdf", "sha256": "a" * 64}
+    url = f"https://static.cninfo.com.cn/finalpage/{published}/123.PDF"
+    purchase = dict(binding=binding, source_url=url, terms=dict(published_date=published,
+        terms=dict(purchase_state="COMPLETED", cancellation_state="SCHEDULED_UNCONFIRMED",
+            through="2019-12-28", scheduled_cancellation_date=scheduled,
+            cumulative_purchased_shares=2, cumulative_paid_cny="20", planned_post_cancellation_shares=98)))
+    result = service._opening_chain_research(reconciliation["analysis"], [{"facts": [purchase]}], None)
+    if expected is None:
+        assert result["purchase_links"] == []
+    else:
+        link, = result["purchase_links"]
+        assert link["opening_status"] == expected
+        assert link["purchase_binding"] == binding
+        assert link["source_url"] == url
+        assert link["cancellation_binding"] is None
+    assert not result["complete_opening_action_coverage"]
+    assert not result["comparison_date_capital_proven"]
+
+
+@pytest.mark.parametrize("variant", ["complete", "adjusted", "changed_url", "duplicate", "early_capture", "hash"])
+def test_historical_single_cash_event_uses_two_unadjusted_closes(tmp_path, variant):
+    from value_investment_agent.application.research.historical_cash_close_pair import replay_cash_close_pair
+
+    # TEST_ONLY event; the separate actual receipt is replayed against issuer and vendor bytes.
+    symbol = "600000"
+    original = write(tmp_path, "runtime/implementation.json", {"issuer": symbol})
+    bars = [["2020-01-02", "10.2", "10"], ["2020-01-03", "9.1", "9.4"]]
+    field = "qfqday" if variant == "adjusted" else "day"
+    price = write(tmp_path, "runtime/raw.json", {"code": 0, "data": {"sh600000": {field: bars}}})
+    terms = dict(symbol=symbol, currency="CNY", body_terms_reconciled=True,
+                 parser_version="sse-explicit-cash-implementation-body-v1",
+                 record_date="2020-01-02", ex_date="2020-01-03", cash_per_share="1")
+    row = dict(native_terms=terms, evidence=[dict(binding=original)], model_inclusion="NOT_NATIVE_VERIFIED")
+    binding = dict(original_binding=original, price_binding=price, acquired_at="2020-01-03T08:00:00Z",
+                   url="https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=sh600000,day,2020-01-02,2020-01-03,2,")
+    if variant == "changed_url":
+        binding["url"] += "qfq"
+    elif variant == "early_capture":
+        binding["acquired_at"] = "2020-01-03T01:00:00Z"
+    elif variant == "hash":
+        (tmp_path / price["path"]).write_bytes(b"{}")
+    args = dict(root=tmp_path, read=lambda ref: _bound(tmp_path, ref), binding=binding,
+                symbol=symbol, distributions=[row, row] if variant == "duplicate" else [row],
+                end=date(2020, 1, 6), now=datetime(2020, 1, 6, tzinfo=timezone.utc))
+    if variant != "complete":
+        with pytest.raises(ValueError):
+            replay_cash_close_pair(**args)
+        return
+    pair = replay_cash_close_pair(**args)
+    assert Decimal(pair["theoretical_ex_reference_cny"]) == 9
+    assert Decimal(pair["market_move_cny"]) == Decimal("0.4")
+    assert pair["model_inclusion"] == "NOT_NATIVE_VERIFIED"
+    assert not pair["current_price_comparison"] and not pair["settlement_proven"]

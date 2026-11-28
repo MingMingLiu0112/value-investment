@@ -118,8 +118,7 @@ def publication_registry_status(root: Path, packet: dict | None) -> dict:
         "current_price_conditions": "config/current-price-conditions.json",
         "hotspot_structure_rule": "config/hotspot-confirmed-structure-v1.json",
     }
-    if (not isinstance(packet, dict) or packet.get("packet_status") != "CURRENT"
-            or packet.get("source_bindings_verified") is not True):
+    if not isinstance(packet, dict) or packet.get("packet_status") != "CURRENT":
         return {"status": "UNAVAILABLE", "checked_count": 0, "mismatched_roles": []}
     inputs = packet.get("identity_inputs")
     inputs = inputs if isinstance(inputs, dict) else {}
@@ -134,7 +133,12 @@ def publication_registry_status(root: Path, packet: dict | None) -> dict:
                 or sha256(target) != binding["observed_sha256"]):
             mismatches.append(role)
     return {"status": "MISMATCH" if mismatches else "MATCHED",
-            "checked_count": len(roles), "mismatched_roles": mismatches}
+            "checked_count": len(roles), "mismatched_roles": mismatches,
+            "source_validation": {
+                "status": "VERIFIED" if packet.get("source_bindings_verified") is True else "NOT_VERIFIED",
+                "blockers": packet.get("blockers", []),
+                "scope": "PUBLISHED_PACKET_SOURCE_AND_PRICE_VALIDATION_NOT_REGISTRY_IDENTITY",
+            }}
 
 
 def runtime_identity(root: Path, *, backend_head: str | None,

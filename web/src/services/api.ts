@@ -22,6 +22,7 @@ import type {
 } from "../types/api";
 import type { CurrentScreening } from "../types/discovery";
 import type { DualStrategySelection } from "../types/selection";
+import type { CandidatePriceAlignment } from "./valuePolicy";
 
 export interface PublicEvidenceStatus {
   schema_version: "public-evidence-status-v1";
@@ -96,7 +97,10 @@ export class ApiError extends Error {
   }
 }
 
-async function read(response: Response): Promise<Record<string, unknown>> {
+async function read(
+  response: Response,
+  legacyErrorStatuses: readonly number[] = [],
+): Promise<Record<string, unknown>> {
   let body: unknown = null;
   try {
     body = await response.json();
@@ -108,6 +112,9 @@ async function read(response: Response): Promise<Record<string, unknown>> {
     typeof body !== "object" ||
     (body as Record<string, unknown>).action !== "no_order"
   ) {
+    if (!response.ok && legacyErrorStatuses.includes(response.status)) {
+      throw new ApiError(response.status, "HTTP_ERROR", null);
+    }
     throw new Error("服务响应不符合只读决策契约");
   }
   const record = body as Record<string, unknown>;
@@ -301,7 +308,11 @@ async function post<T>(
   return (await read(response)) as T;
 }
 
-async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
+async function getPrivate<T>(
+  path: string,
+  signal?: AbortSignal,
+  expectedErrorStatuses: readonly number[] = [],
+): Promise<T> {
   let usedToken = "";
   const send = async (): Promise<Response> => {
     usedToken = await operatorToken();
@@ -318,7 +329,7 @@ async function getPrivate<T>(path: string, signal?: AbortSignal): Promise<T> {
     forgetRefusedSession(usedToken);
     response = await send();
   }
-  return (await read(response)) as T;
+  return (await read(response, expectedErrorStatuses)) as T;
 }
 
 export type QuotePlanObservation = {
@@ -406,11 +417,13 @@ export type DirectOwnerCash = {
       schema_version: string;
       period_start: string;
       period_end: string;
-      opening_identified_balance_cny: string;
-      closing_identified_balance_cny: string;
-      identified_balance_change_cny: string;
+      opening_identified_balance_cny: string | null;
+      closing_identified_balance_cny: string | null;
+      identified_balance_change_cny: string | null;
       reported_net_borrowing_cash_cny: string;
-      unallocated_reconciliation_difference_cny: string;
+      unallocated_reconciliation_difference_cny: string | null;
+      comparable_balance_fields?: string[];
+      missing_balance_fields_by_period?: Record<string, string[]>;
       reconciliation_status: string;
       complete_debt_scope_verified: boolean;
       maturity_schedule_verified: boolean;
@@ -434,30 +447,165 @@ export type DirectOwnerCash = {
       retention_assumption: string;
     }>
   >;
-  assumptions: Array<{
-    name: string;
-    rationale: string;
-    counter_evidence: string;
-  }>;
+  assumptions:
+    | Array<{
+        name: string;
+        rationale: string;
+        counter_evidence: string;
+      }>
+    | Record<FirstResearchScenarioKey, Record<string, unknown>>;
   conditional_price: {
     status: string;
     draft_prices: unknown;
     reason_codes: string[];
     expires_at?: string;
     currentpricecomparison: false;
+    candidate_binding?: { path: string; sha256: string };
+    input_descriptor_sha256?: string;
+    quote_date?: string;
+    approved?: false;
+    registered?: false;
     action: "no_order";
-  };
+  } | null;
   source_refs: Array<Record<string, unknown>>;
 };
 
+type RemainingYearCfoSplit = {
+  total: string;
+  fact_9m: string;
+  forecast_q4: string;
+  fact_classification: "FACT";
+  forecast_classification: "FORECAST_ASSUMPTION";
+};
+
+type RemainingYearLegacyReview = {
+  schema_version: "parent-remaining-year-review-v1";
+  symbol: string;
+  candidate_binding?: { path: string; sha256: string };
+  input_descriptor_sha256?: string;
+  action: "no_order";
+  formal_eligibility: false;
+  successor_adopted: false;
+  current_price_qualified: false;
+  status: string;
+  reason?: string;
+  capital_policy_mode?: string;
+  reported_facts?: {
+    period_start?: string;
+    period_end?: string;
+    period_basis?: string;
+    scope?: string;
+    currency?: string;
+    cash_fields?: { cfo?: { current?: string } };
+  };
+  scenarios?: Partial<
+    Record<
+      FirstResearchScenarioKey,
+      {
+        status: string;
+        reason?: string;
+        reported_9m_parent_profit?: string;
+        retained_annual_parent_profit?: string;
+        implied_q4_parent_profit?: string;
+        economic_review?: {
+          classification: "RETAINED_PLAN_STRESS_NOT_NEW_EARNINGS_FORECAST";
+          warnings?: string[];
+          adopted: false;
+          explanation?: string;
+          next_evidence?: string;
+        };
+        annual?: { full_year?: { cfo?: Partial<RemainingYearCfoSplit> } };
+        calculation?: Record<string, unknown>;
+        capital_policy_changes?: {
+          gross_capex?: {
+            classification?: string;
+            fact_9m?: string;
+            assumed_q4?: string;
+            full_year?: string;
+            rationale?: string;
+          };
+        };
+      }
+    >
+  >;
+  limitation?: string;
+};
+
+type RemainingYearSuccessorReview = {
+  schema_version: "parent-remaining-year-successor-receipt-v1";
+  symbol: string;
+  candidate_binding: { path: string; sha256: string };
+  predecessor_binding: { path: string; sha256: string };
+  input_descriptor_sha256: string;
+  action: "no_order";
+  formal_eligibility: false;
+  successor_adopted: false;
+  current_price_qualified: false;
+  status: "SOURCE_BOUND_CONDITIONAL_SUCCESSOR";
+  annual_recalculations: Record<
+    FirstResearchScenarioKey,
+    {
+      symbol: string;
+      action: "no_order";
+      formal_eligibility: false;
+      scope: string;
+      currency: string;
+      current_nine_months: {
+        period_start: string;
+        period_end: string;
+        classification: "FACT";
+        cfo: string;
+      };
+      conditional_q4: {
+        period_start: string;
+        period_end: string;
+        classification: "FORECAST_ASSUMPTION";
+        cfo: string;
+      };
+      full_year: { cfo: RemainingYearCfoSplit };
+      annualized_nine_months: false;
+    }
+  >;
+  scenarios: Record<FirstResearchScenarioKey, Record<string, unknown>>;
+};
+
 export type FirstResearchInputResponse = {
-  direct_owner_cash?: DirectOwnerCash;
+  pending_candidate_alignment?: CandidatePriceAlignment;
+  receipt_binding?: { path: string; sha256: string };
+  direct_owner_cash?: DirectOwnerCash & {
+    remaining_year_review?:
+      RemainingYearLegacyReview | RemainingYearSuccessorReview;
+  };
+  direct_cash_alignment?: CandidatePriceAlignment & {
+    research_artifact_kind?:
+      | "DIRECT_OWNER_CASH_RECEIPT"
+      | "PARENT_OWNER_DISTRIBUTION_SUCCESSOR_RECEIPT";
+    receipt_binding?: { path: string; sha256: string };
+  };
   schema_version?: string;
+  receipt_schema_version?: string;
+  predecessor_binding?: { path: string; sha256: string };
+  annual_recalculations?: RemainingYearSuccessorReview["annual_recalculations"];
   symbol: string;
   status: "NOT_STARTED" | "SOURCE_BOUND_FIRST_INPUT_COMPILED" | "UNASSESSABLE";
   scope: string;
   action: "no_order";
   successor_update?: {
+    displayed_version_role?: "PREDECESSOR" | "SUCCESSOR" | null;
+    changed_assumptions?: {
+      spec_path: string;
+      successor: Record<string, unknown>;
+      evidence_anchors: Record<string, Record<string, unknown>>;
+    }[];
+    yearly_changes?: Partial<
+      Record<
+        FirstResearchScenarioKey,
+        {
+          predecessor: Record<string, unknown>[];
+          successor: Record<string, unknown>[];
+        }
+      >
+    >;
     status:
       "NOT_STARTED" | "SOURCE_BOUND_CONDITIONAL_SUCCESSOR" | "UNASSESSABLE";
     reason?: string;
@@ -513,6 +661,16 @@ export type FirstResearchInputResponse = {
     price_admitted: boolean;
     comparison_eligible: boolean;
   };
+  parent_financing_evidence?: {
+    reconciliation_status: string;
+    period_start?: string;
+    period_end?: string;
+    identified_balance_change_cny?: string | null;
+    reported_net_borrowing_cash_cny?: string;
+    formal_eligibility: false;
+    model_inputs_changed: false;
+    action: "no_order";
+  };
   e2_quote_alignment?: {
     status: string;
     reason: string | null;
@@ -539,6 +697,8 @@ export type FirstResearchInputResponse = {
       status: string;
       report_period: string;
       facts: Record<string, Record<string, string>>;
+      source_bindings?: { original?: { source_url?: string } };
+      original_rows?: Record<string, { physical_page: number }>;
     } | null;
     e1_recompile_requirements?: {
       current_ytd_source_fields_missing: string[];
@@ -551,15 +711,20 @@ export type FirstResearchInputResponse = {
     price_admitted: false;
     action: "no_order";
   } | null;
-  condition_price: null;
+  condition_price: DirectOwnerCash["conditional_price"];
+  condition_price_status?: string;
+  condition_price_blockers?: string[];
   personal_quantity: null;
   parent_cash_observation?: {
     status: string;
     reason?: string;
     whole_statement_reconciled?: boolean;
     periods?: {
-      period: string;
-      flows: Record<string, string>;
+      period?: string;
+      flows?: Record<string, string>;
+      report_period?: string;
+      rows?: Record<string, unknown>;
+      unknown_fields?: unknown;
       closing_cash_and_equivalents_cny?: string;
       physical_pages?: Record<string, number>;
       source_sha256?: string;
@@ -1737,6 +1902,374 @@ export type ValueWorkbenchTaskHistory = {
     record: Record<string, unknown>;
   }[];
 };
+export interface ParentCashTaskValuation {
+  status: "VERIFIED_CONDITIONAL_VALUATION";
+  task_id: string;
+  symbol: string;
+  valuation_date: string;
+  scenarios: Record<
+    "bear" | "base" | "bull",
+    {
+      per_share_value: string;
+      annual_years: number;
+      terminal_method: string;
+      terminal_steady_distribution_cny?: string;
+      annual_cash_path?: {
+        year: number;
+        direct_operating_cash_cny: string;
+        total_owner_distribution_cny: string;
+        closing_cash_cny: string;
+        closing_debt_cny: string;
+        closing_book_equity_cny: string;
+      }[];
+    }
+  >;
+  input_descriptor_sha256: string;
+  receipt_sha256: string;
+  action: "no_order";
+  formal_eligibility: false;
+  current_comparable: boolean;
+  adoptable_valuation?: false;
+  annual_input_limitations?: {
+    field: string;
+    first_year: number;
+    through_year: number;
+    annual_cny: string;
+    observed_through?: string;
+  }[];
+  comparison_quote: { trade_date: string; close_cny: string } | null;
+  qualified_close?: { trade_date: string; close_cny: string } | null;
+  condition_price: null;
+  alignment_status?: string;
+  alignment_reason_codes?: string[];
+}
+
+export interface ParentCashH1Sensitivity {
+  status: "RESEARCH_SENSITIVITY_NOT_ADOPTED";
+  symbol: string;
+  task_id: string;
+  period_end: string;
+  scenarios: Record<
+    "bear" | "base" | "bull",
+    | { status: "CONDITIONAL_SENSITIVITY_COMPUTED"; per_share_value: string }
+    | { status: "SCENARIO_REJECTED"; reason: string }
+  >;
+  formal_eligibility: false;
+  condition_price: null;
+  action: "no_order";
+}
+
+export type FundingDeficitLedger = Record<
+  | "opening_cash_cny"
+  | "operating_cash_cny"
+  | "investment_cash_cny"
+  | "new_borrowing_cny"
+  | "known_principal_cny"
+  | "assumed_other_repayment_cny"
+  | "interest_cny"
+  | "maintenance_capex_cny"
+  | "growth_capex_cny"
+  | "commitments_cny"
+  | "other_required_cash_cny"
+  | "cash_before_distribution_cny"
+  | "floor_cny"
+  | "shortfall_cny"
+  | "scheduled_distribution_cny"
+  | "coupon_component_cny"
+  | "other_interest_cny"
+  | "cash_if_unknown_not_due_cny"
+  | "coverage_before_unknown_repayment_cny",
+  string
+> & {
+  year: number;
+  maturity_dates: string[];
+  floor_equals_opening_basis: boolean;
+};
+export interface FundingContinuation {
+  status: "REPLAYED";
+  task_id: string;
+  receipt_sha256: string;
+  action: "no_order";
+  new_llm_calls: 0;
+  continuation_sha256: string;
+  fixed_payment_recheck: {
+    status: string;
+    predecessor_shortfall_cny: string;
+    source_payment: { through: string; paid_cny: string };
+    scenarios: Record<
+      "bear" | "base" | "bull",
+      {
+        status: string;
+        per_share_value?: string;
+        ledger?: FundingDeficitLedger;
+      }
+    >;
+  };
+}
+export interface MaturityFinancingRow {
+  payment_status:
+    | "CALCULATED_CONDITIONAL"
+    | "BEFORE_FIRST_FAILURE"
+    | "NOT_COMPLETED"
+    | "NOT_REACHED";
+  year: number;
+  known_principal_cny: string;
+  opening_proxy_residual_cny: string;
+  assumed_proxy_repayment_cny: string;
+  closing_proxy_residual_cny: string;
+  new_borrowing_cny: string;
+  interest_cny: string;
+}
+
+export type MaturityScenario = {
+  financing_rows: MaturityFinancingRow[];
+  financing_rows_basis: "CONDITIONAL_PAYMENT_PLAN";
+  first_failed_year: number | null;
+} & (
+  | { status: "CALCULATED"; per_share_value: string }
+  | { status: "REJECTED"; reason: string; ledger?: FundingDeficitLedger }
+);
+
+type MaturityScenarios = Record<"bear" | "base" | "bull", MaturityScenario>;
+
+export interface MaturityContinuation extends Pick<
+  FundingContinuation,
+  | "status"
+  | "task_id"
+  | "receipt_sha256"
+  | "action"
+  | "new_llm_calls"
+  | "continuation_sha256"
+> {
+  symbol: string;
+  continuation_version: "maturity-v1";
+  completed_at: string;
+  valuation_date: string;
+  paid_task_status: string;
+  reassessment_spec_sha256: string;
+  formal_eligibility: false;
+  current_comparable: false;
+  maturity_recheck: {
+    schema_version: "parent-cash-maturity-recheck-v1";
+    task_id: string;
+    parent_receipt: string;
+    predecessor_input: string;
+    symbol: string;
+    valuation_date: string;
+    action: "no_order";
+    formal_eligibility: false;
+    current_comparable: false;
+    current_research_range_adopted: boolean;
+    status: "REJECTED" | "CALCULATED";
+    scenario_basis: string;
+    alternative_basis: string;
+    scenarios: MaturityScenarios;
+    alternative_scenarios: MaturityScenarios;
+    maturity_evidence: {
+      year: number;
+      known_principal_cny: string;
+      proxy_residual_cny: string;
+      opening_reported_debt_cny: string;
+      reported_9m_borrowing_cny: string;
+      reported_9m_repayment_cny: string;
+      q3_carrying_basket_cny: string;
+      q3_basket_components_cny: Record<string, string>;
+      proxy_minus_basket_cny: string;
+      q3_short_borrowing_cny: string;
+      short_borrowing_window_start: string;
+      short_borrowing_window_end: string;
+      registration_ceiling_cny: string;
+      observed_issuance_cny: string;
+      assumed_future_borrowing_cny: string;
+      total_repayment_min_cny: string;
+      total_repayment_max_cny: string;
+      sources: Record<string, string>;
+      zero_new_borrowing_from_year: number;
+      first_year: number;
+      first_year_issue_proceeds_assumed_at_par_cny: string;
+      first_year_contractual_maturities_cny: string;
+      proxy_repayment_min_cny: string;
+      proxy_repayment_max_cny: string;
+      actual_unknown_maturity_cny: string | null;
+      actual_total_principal_upper_cny: string | null;
+      source_matrix_sha256: string;
+    };
+  };
+}
+
+export interface InstallmentContinuation {
+  task_id: string;
+  symbol: string;
+  receipt_sha256: string;
+  continuation_sha256: string;
+  continuation_version: "installment-v1";
+  action: "no_order";
+  installment_recheck: {
+    base_basis: string;
+    scenarios: Record<
+      "bear" | "base" | "bull",
+      {
+        status: "CALCULATED" | "REJECTED";
+        per_share_value?: string;
+        first_failed_year: number | null;
+        ledger?: { shortfall_cny: string };
+        financing_rows: Array<{
+          year: number;
+          known_principal_cny: string;
+          assumed_proxy_repayment_cny: string;
+          interest_cny: string;
+          closing_proxy_residual_cny: string;
+        }>;
+      }
+    >;
+  };
+}
+
+export type MultiyearScenario = {
+  financing_rows: MaturityFinancingRow[];
+  financing_rows_basis: "CONDITIONAL_PAYMENT_PLAN";
+  first_failed_year: number | null;
+} & (
+  | {
+      status: "CALCULATED";
+      per_share_value: string;
+      annual_rows: {
+        year: number;
+        closing_cash_cny: string;
+        closing_debt_cny: string;
+      }[];
+    }
+  | {
+      status: "REJECTED";
+      reason: string;
+      ledger?: {
+        shortfall_cny?: string;
+        remaining_proxy_principal_cny?: string;
+      };
+    }
+);
+
+export interface MultiyearContinuation extends Omit<
+  MaturityContinuation,
+  "continuation_version" | "maturity_recheck"
+> {
+  continuation_version: "multiyear-v1";
+  new_model_cost_cny: 0;
+  multiyear_recheck: Pick<
+    MaturityContinuation["maturity_recheck"],
+    | "task_id"
+    | "parent_receipt"
+    | "predecessor_input"
+    | "valuation_date"
+    | "symbol"
+    | "formal_eligibility"
+    | "current_comparable"
+    | "current_research_range_adopted"
+    | "action"
+    | "status"
+  > & {
+    schema_version: "parent-cash-multiyear-recheck-v1";
+    financing_condition_verified: false;
+    unverified_financing_fallback_status: "CALCULATED" | "REJECTED";
+    base_basis: string;
+    scenarios: Record<"bear" | "base" | "bull", MultiyearScenario>;
+    original_installment_stress: Record<
+      "bear" | "base" | "bull",
+      MultiyearScenario
+    >;
+    early_maturity_stress: Record<"bear" | "base" | "bull", MultiyearScenario>;
+  };
+}
+
+function fundingContinuationPath(
+  task: string,
+  receipt: string,
+  symbol: string,
+  version?: "maturity-v1" | "installment-v1" | "multiyear-v1",
+) {
+  return (
+    "operating-research/parent-cash-tasks/v3/" +
+    encodeURIComponent(task) +
+    "/funding-revisions/" +
+    encodeURIComponent(receipt) +
+    "/replay?symbol=" +
+    encodeURIComponent(symbol) +
+    (version ? "&version=" + version : "")
+  );
+}
+
+export type FundingRevision =
+  | { status: "UNAVAILABLE"; receipt_sha256: string; reason: string }
+  | {
+      status: "VERIFIED";
+      receipt_sha256: string;
+      input_descriptor_sha256: string;
+      valuation_date: string;
+      completed_at: string;
+      provenance: "DETERMINISTIC_RESEARCH_REVISION";
+      financing_terms?:
+        | null
+        | { status: "UNAVAILABLE" }
+        | {
+            status: "VERIFIED";
+            known_maturities: {
+              code: string;
+              maturity: string;
+              principal_cny: string;
+            }[];
+            residual_principal_cny: string;
+            cash_interest_9m_verified_floor: string;
+            mixed_less_dividend_cny: string;
+            unknown_rate_assumptions: Record<"bear" | "base" | "bull", string>;
+            five_scp_conditional_coupon_2026Q4?: string;
+            mtn_conditional_coupon_2027?: string;
+          };
+      current_reassessment: null | {
+        status: "REJECTED" | "UNAVAILABLE";
+        reason: string;
+        current_research_range_adopted: false;
+        scenario_rows: Partial<
+          Record<
+            "bear" | "base" | "bull",
+            {
+              status: string;
+              per_share_value?: string;
+              reason?: string;
+              year?: number;
+              floor?: string;
+              before?: string;
+            }
+          >
+        >;
+      };
+      formal_eligibility: false;
+      current_comparable: false;
+      action: "no_order";
+      scenarios: Record<
+        "bear" | "base" | "bull",
+        {
+          per_share_value: string;
+          annual_rows: {
+            year: number;
+            opening_cash_cny: string;
+            direct_operating_cash_cny: string;
+            total_owner_distribution_cny: string;
+            closing_cash_cny: string;
+            closing_debt_cny: string;
+          }[];
+        }
+      >;
+    };
+
+export interface ParentCashFundingRevisions {
+  task_id: string;
+  symbol: string;
+  original_task_status: string;
+  revisions: FundingRevision[];
+  action: "no_order";
+  current_comparable: false;
+}
+
 export interface ParentCashTaskHistory {
   action: "no_order";
   symbol: string;
@@ -1744,7 +2277,76 @@ export interface ParentCashTaskHistory {
   items: Array<{
     task_id: string;
     task_contract?: "parent-cash-task-v2" | "parent-cash-task-v3";
+    read_only_archive?: boolean;
+    reused_stages?: string[];
+    base_policy_wire?: string | null;
+    base_operating_wire?: string | null;
+    base_interest_wire?: string | null;
+    terminal_cohort_continuation?: boolean;
+    bear_terminal_v3_retry?: boolean;
+    terminal_debt_reconciliation?: {
+      status: "FINANCING_BALANCE_UNVERIFIED";
+      stress_closing_cny: string;
+      legacy_terminal_review_available?: boolean;
+      unbound_policy_terms?: string[];
+      operating_cash_bridge?: {
+        forecast_year: number;
+        continuity_cash_cny: string;
+        gap_cny: string;
+      } | null;
+      terminal_arithmetic?: {
+        interest_outside_cfo_cny: string;
+        implied_annual_interest_percent: string | null;
+      } | null;
+      annual_path: {
+        year: number;
+        opening_debt_cny: string;
+        new_borrowing_cny: string;
+        debt_repayment_cny: string;
+        closing_debt_cny: string;
+      }[];
+    };
+    bear_quarter_continuation?: boolean;
+    financing_policy_correction_available?: boolean;
+    financing_policy_terminal_continuation_available?: boolean;
+    financing_policy_correction_receipt_sha256?: string;
+    financing_policy_terminal_task_id?: string;
+    financing_policy_correction_source_sha256?: string;
+    terminal_cash_review?: string | null;
     candidate_status?: "COMPILED_CONDITIONAL_NOT_MAIN" | "NOT_COMPILED";
+    has_funding_revisions?: boolean;
+    debt_timing_sensitivity?: {
+      status: "VERIFIED_CONDITIONAL_SENSITIVITY" | "SENSITIVITY_UNAVAILABLE";
+      payout_stress?:
+        | { status: "UNAVAILABLE" }
+        | {
+            status: "VERIFIED";
+            amount_cny: string;
+            year: number;
+            actual_payment_verified: false;
+            receipt_sha256: string;
+            rejected_years: Record<string, number>;
+          }
+        | null;
+      receipt_sha256?: string;
+      valuation_basis?: string;
+      cases?: Record<
+        string,
+        {
+          status: string;
+          per_share_value?: string;
+          reason?: string;
+          annual_cash?: Array<{
+            year: number;
+            debt_repayment_cny: string;
+            cash_distribution_limit_cny: string;
+            total_owner_distribution_cny: string;
+            closing_cash_cny: string;
+            closing_debt_cny: string;
+          }>;
+        }
+      >;
+    } | null;
     status: string;
     stage: string | null;
     completed_stages: string[];
@@ -1758,6 +2360,9 @@ export interface ParentCashTaskHistory {
       reserved_cny: string;
       settled_cny?: string;
     }>;
+    valuation_receipt_status?:
+      "SEALED_REPLAY_REQUIRED" | "NOT_SEALED" | "BLOCKED";
+    valuation_blockage?: { reason_code: string } | null;
     e2_consumption: "UNVERIFIED";
     formal: false;
   }>;
@@ -2080,11 +2685,195 @@ export const api = {
       "research-tasks?symbol=" + encodeURIComponent(symbol),
       signal,
     ),
+  parentCashPolicyCorrection: (taskId: string, sourceHash: string) =>
+    getPrivate<{
+      task_id: string;
+      action: string;
+      stage: string;
+      status: string;
+      reason?: string;
+      receipt_sha256?: string;
+      settled_cost_cny?: string;
+    }>(
+      `operating-research/parent-cash-tasks/v3/${taskId}/bear-policy-correction-v1/${sourceHash}`,
+    ),
+  newCompanyParentCashTask: (symbol: string, intent: string) =>
+    post<{ task_id: string; status: string; action: string }>(
+      "operating-research/parent-cash-tasks/by-company",
+      { symbol, new_run_id: intent },
+    ),
+  startCompanyParentCashTask: (
+    symbol: string,
+    continueFrom?: string,
+    correctionReceipt?: string,
+    retryTerminal = false,
+  ) =>
+    post<{ task_id: string; status: string; action: string }>(
+      "operating-research/parent-cash-tasks/by-company",
+      continueFrom
+        ? {
+            symbol,
+            continue_from_task_id: continueFrom,
+            ...(retryTerminal ? { retry_sealed_terminal: true } : {}),
+            ...(correctionReceipt
+              ? { policy_correction_receipt_sha256: correctionReceipt }
+              : {}),
+          }
+        : { symbol },
+    ),
+  parentCashTaskTerminalFailure: (taskId: string) =>
+    getPrivate<{
+      task_id: string;
+      observed_investing_cash?:
+        | {
+            classification: "HISTORICAL_STANDALONE_NOT_FORECAST";
+            period_end: string;
+            currency: "CNY";
+            recovered_cny: string;
+            invested_cny: string;
+            net_principal_cash_cny: string;
+            cash_investment_income_cny: string;
+            reconciled_ytd_cash?: {
+              opening_cash_and_equivalents_cny: string;
+              cfo_cny: string;
+              cfi_cny: string;
+              cff_cny: string;
+              fx_cny: string;
+              closing_cash_and_equivalents_cny: string;
+            };
+            source_binding: { sha256: string };
+            physical_pages: number[];
+          }
+        | { classification: "SOURCE_NOT_REPLAYABLE" };
+      terminal_cash_failure?: {
+        classification?: string;
+        issues?: {
+          field: string;
+          submitted_value: string;
+          source_supported_value_cny: string;
+          source_period_end: string;
+          source_binding: { physical_page: number; sha256: string };
+          source_support: string;
+        }[];
+        scenario: string;
+        net_cash_cny?: string;
+        rejection_code?: string;
+        net_cash_excluding_financing_and_investment_cny?: string;
+        net_cash_minus_profit_cny?: string;
+        net_cash_excluding_investment_receipts_minus_profit_cny?: string;
+        action: "no_order";
+      };
+    }>("operating-research/parent-cash-tasks/v3/" + encodeURIComponent(taskId)),
+  sealParentCashTaskValuation: (taskId: string) =>
+    post<{ status: string; task_id: string; action: "no_order" }>(
+      "operating-research/parent-cash-tasks/v3/" +
+        encodeURIComponent(taskId) +
+        "/seal",
+      {},
+    ),
   parentCashTaskHistory: (symbol: string, signal?: AbortSignal) =>
     getPrivate<ParentCashTaskHistory>(
       "operating-research/parent-cash-tasks/history?symbol=" +
         encodeURIComponent(symbol),
       signal,
+    ),
+  readFundingContinuation: (
+    task: string,
+    receipt: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<FundingContinuation>(
+      fundingContinuationPath(task, receipt, symbol),
+      signal,
+    ),
+  runFundingContinuation: (task: string, receipt: string, symbol: string) =>
+    post<FundingContinuation>(
+      fundingContinuationPath(task, receipt, symbol),
+      {},
+    ),
+  readInstallmentContinuation: (
+    task: string,
+    receipt: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<InstallmentContinuation>(
+      fundingContinuationPath(task, receipt, symbol, "installment-v1"),
+      signal,
+    ),
+  runInstallmentContinuation: (task: string, receipt: string, symbol: string) =>
+    post<InstallmentContinuation>(
+      fundingContinuationPath(task, receipt, symbol, "installment-v1"),
+      {},
+    ),
+  readMultiyearContinuation: (
+    task: string,
+    receipt: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<MultiyearContinuation>(
+      fundingContinuationPath(task, receipt, symbol, "multiyear-v1"),
+      signal,
+    ),
+  runMultiyearContinuation: (task: string, receipt: string, symbol: string) =>
+    post<MultiyearContinuation>(
+      fundingContinuationPath(task, receipt, symbol, "multiyear-v1"),
+      {},
+    ),
+  readMaturityContinuation: (
+    task: string,
+    receipt: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<MaturityContinuation>(
+      fundingContinuationPath(task, receipt, symbol, "maturity-v1"),
+      signal,
+    ),
+  runMaturityContinuation: (task: string, receipt: string, symbol: string) =>
+    post<MaturityContinuation>(
+      fundingContinuationPath(task, receipt, symbol, "maturity-v1"),
+      {},
+    ),
+  parentCashFundingRevisions: (
+    taskId: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<ParentCashFundingRevisions>(
+      "operating-research/parent-cash-tasks/v3/" +
+        encodeURIComponent(taskId) +
+        "/funding-revisions?symbol=" +
+        encodeURIComponent(symbol),
+      signal,
+    ),
+  parentCashTaskValuation: (
+    taskId: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<ParentCashTaskValuation>(
+      "operating-research/parent-cash-tasks/v3/" +
+        encodeURIComponent(taskId) +
+        "/valuation?symbol=" +
+        encodeURIComponent(symbol),
+      signal,
+      [404, 422],
+    ),
+  parentCashH1Sensitivity: (
+    taskId: string,
+    symbol: string,
+    signal?: AbortSignal,
+  ) =>
+    getPrivate<ParentCashH1Sensitivity>(
+      "operating-research/parent-cash-tasks/v3/" +
+        encodeURIComponent(taskId) +
+        "/h1-sensitivity?symbol=" +
+        encodeURIComponent(symbol),
+      signal,
+      [404, 422],
     ),
   researchTask: (taskId: string, signal?: AbortSignal) =>
     getPrivate<ResearchTaskResponse>(
