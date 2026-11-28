@@ -1,4 +1,5 @@
 import { Alert, Card } from "antd";
+import { useState } from "react";
 import type {
   ValueWorkbenchResponse,
   ValueWorkbenchSection,
@@ -9,7 +10,10 @@ import type {
 import type { CompanyProfile } from "./CompanyProfilePanel";
 import { CompanyProfileView } from "./CompanyProfilePanel";
 import { OperatingAssumptionDraftView } from "./OperatingAssumptionDraftPanel";
-import { FirstResearchInputView } from "./FirstResearchInputPanel";
+import {
+  FirstResearchInputPanel,
+  FirstResearchInputView,
+} from "./FirstResearchInputPanel";
 import { MainValuationRevalidationPanel } from "./MainValuationRevalidationPanel";
 import {
   OperatingDriverBridgeView,
@@ -382,6 +386,16 @@ function Content({
     );
   return <p>当前缺少可核验内容，请查看本节缺口；不以源码位置充当投资解释。</p>;
 }
+function RegisteredPriceReview({ symbol }: { symbol: string }) {
+  const [opened, setOpened] = useState(false);
+  return (
+    <details onToggle={(event) => setOpened(event.currentTarget.open)}>
+      <summary>核验已登记研究的当前价格</summary>
+      {opened && <FirstResearchInputPanel symbol={symbol} />}
+    </details>
+  );
+}
+
 export function ValueWorkbenchSections({
   value,
   symbol,
@@ -476,6 +490,9 @@ export function ValueWorkbenchSections({
                   </ul>
                 }
               />
+            )}
+            {section.id === "price" && (
+              <RegisteredPriceReview key={symbol} symbol={symbol} />
             )}
             {section.status === "UNASSESSABLE" ? (
               <p>
