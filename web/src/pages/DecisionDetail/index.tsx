@@ -908,6 +908,7 @@ export function OnDemandSection({
 
 export default function DecisionDetail() {
   const { id = "" } = useParams<{ id: string }>();
+  const [operatingSymbol, setOperatingSymbol] = useState("");
   const requestedStrategy =
     typeof window === "undefined"
       ? null
@@ -1247,41 +1248,27 @@ export default function DecisionDetail() {
             </summary>
             <CompanyProfilePanel symbol={id} />
           </details>
-          <details id="operating-research">
+          <details
+            id="operating-research"
+            onToggle={(event) => {
+              if (event.currentTarget.open) setOperatingSymbol(id);
+            }}
+          >
             <summary>
               <strong>经营研究</strong>　利润和现金能否持续
             </summary>
-            <OperatingAssumptionDraftPanel key={id} symbol={id} />
-            <LiveOperatingResearchPanel key={"live-" + id} symbol={id} />
+            {operatingSymbol === id && (
+              <>
+                <OperatingAssumptionDraftPanel key={id} symbol={id} />
+                <LiveOperatingResearchPanel key={"live-" + id} symbol={id} />
+              </>
+            )}
           </details>
-          <details id="company-valuation">
+          <details id="company-valuation" open>
             <summary>
-              <strong>股东现金与估值</strong>　三种情景分别值多少
+              <strong>股东现金、估值与价格判断</strong>　三情景与当前比价依据
             </summary>
             <FirstResearchInputPanel key={"first-" + id} symbol={id} />
-          </details>
-          <details open>
-            <summary>
-              <strong>价格判断</strong>　目前能否比较
-            </summary>
-            <p>
-              {loading
-                ? "正在读取价格条件…"
-                : !error && research && data?.action === "no_order"
-                  ? researchHeadline({
-                      valuation: research.valuation ?? {},
-                      bridge: bridgeExecutionView(
-                        research.price_bridge_execution,
-                        id,
-                      ),
-                      researchDay: research.decision_cutoff,
-                      marginToBase: marginText(
-                        research.margin_to_base ??
-                          research.price?.margin_to_base,
-                      ),
-                    })
-                  : "尚无可核验的价格比较结论。"}
-            </p>
           </details>
         </div>
       )}
