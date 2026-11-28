@@ -692,7 +692,9 @@ def test_legacy_draft_comparison_flags_and_thresholds_stay_unchanged(reconciliat
     assert case["analysis"]["current_alignment"] == price["alignment"]
 
 
-def test_existing_signed_materiality_packet_is_consumed_for_exact_package_and_scan(transport):
+@pytest.mark.parametrize("supplement", ["none", "contained_empty", "extends", "announcement", "blocker"])
+def test_existing_signed_materiality_packet_is_consumed_for_exact_package_and_scan(transport, supplement):
+    from datetime import timedelta
     from value_investment_agent.application.product.research_materiality_reviews import consume_materiality_review_response
     from value_investment_agent.infrastructure.evidence.trust_root_registry import _use_test_trust_registry
     from value_investment_agent.event_scan import event_scan_from_payload
@@ -704,9 +706,24 @@ def test_existing_signed_materiality_packet_is_consumed_for_exact_package_and_sc
     scan = event_scan_from_payload(json.loads(f["scan_path"].read_text(encoding="utf-8")))
     with _use_test_trust_registry(registry):
         receipt = consume_materiality_review_response(**args)
+        window = dict(scan_binding=scan_ref, source_integrity_verified=True,
+                      full_calendar_window_elapsed=True)
+        windows, scans = [window], [scan]
+        if supplement != "none":
+            from types import SimpleNamespace
+            windows.insert(0, dict(window, scan_binding={"path": "supplement.json", "sha256": "0" * 64}))
+            scans.insert(0, SimpleNamespace(
+                scan_from=scan.scan_from, scan_to=scan.scan_to + timedelta(days=supplement == "extends"),
+                coverage_status="COMPLETE", status="COMPLETE_NO_MATERIAL_EVENT_IN_VALIDITY_WINDOW",
+                announcements=scan.announcements if supplement == "announcement" else [],
+                blockers=["unresolved"] if supplement == "blocker" else [],
+            ))
         review, route = service._materiality(f["root"], analysis, receipt["review_packet_binding"],
-            [dict(scan_binding=scan_ref)], [scan], datetime.now(timezone.utc),
-            lambda ref: _bound(f["root"], ref))
+            windows, scans, datetime.now(timezone.utc), lambda ref: _bound(f["root"], ref))
+        if supplement in {"extends", "announcement", "blocker"}:
+            assert review is None
+            assert route["status"] == "MATERIALITY_SCAN_CARDINALITY_UNSUPPORTED"
+            return
         assert route["status"] == "EXISTING_AUTHENTICATED_MATERIALITY_REPLAYED"
         assert len(review.decisions) == 2
         assert receipt["whole_model_approved"] is False

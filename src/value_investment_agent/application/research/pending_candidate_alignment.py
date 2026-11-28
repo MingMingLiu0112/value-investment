@@ -2195,17 +2195,34 @@ def _materiality(root, analysis, ref, windows, scans, now, read):
         prepare_materiality_review_handoff, verify_authenticated_materiality,
     )
     route = dict(status="EXACT_MATERIALITY_REVIEW_NOT_BOUND", review_binding=deepcopy(ref))
-    if not scans or len(scans) != 1:
+    pairs = list(zip(windows, scans, strict=True))
+    if len(pairs) > 1:
+        # Keep the signed review tied to one original scan. A contained, verified
+        # empty window cannot add a disclosure or extend the reviewed interval.
+        pairs = [(window, scan) for window, scan in pairs
+            if window.get("source_integrity_verified") is True
+            and window.get("full_calendar_window_elapsed") is True
+            and scan.coverage_status == "COMPLETE"
+            and all(other_window is window or (
+                other_window.get("source_integrity_verified") is True
+                and other_window.get("full_calendar_window_elapsed") is True
+                and other.coverage_status == "COMPLETE"
+                and other.status == "COMPLETE_NO_MATERIAL_EVENT_IN_VALIDITY_WINDOW"
+                and not other.announcements and not other.blockers
+                and scan.scan_from <= other.scan_from <= other.scan_to <= scan.scan_to
+            ) for other_window, other in zip(windows, scans, strict=True))]
+    if len(pairs) != 1:
         route.update(status="MATERIALITY_SCAN_CARDINALITY_UNSUPPORTED",
                      reason="当前原生材料性消费者要求一个精确扫描；未合并多份扫描或复核。")
         return None, route
-    scan_ref = windows[0]["scan_binding"]
+    window, scan = pairs[0]
+    scan_ref = window["scan_binding"]
     package_ref = analysis["review_binding"].get("package_binding")
     if package_ref is None:
         prepare_unsigned = analysis.get("prepare_unsigned_task_materiality")
         if ref is None and prepare_unsigned is not None:
             try:
-                route["unsigned_task_handoff"] = prepare_unsigned(windows[0])
+                route["unsigned_task_handoff"] = prepare_unsigned(window)
             except (ValueError, OSError) as error:
                 route.update(status="NATIVE_MATERIALITY_HANDOFF_REJECTED", reason=str(error))
             else:
@@ -2215,9 +2232,8 @@ def _materiality(root, analysis, ref, windows, scans, now, read):
                      reason="EXACT_RESEARCH_PACKAGE_MATERIALITY_HANDOFF_NOT_BOUND",
                      engineering_gap="当前研究回执尚未绑定既有材料性复核输入；不能复用其他候选的批准。")
         return None, route
-    scan = scans[0]
     preflight = []
-    if scan.coverage_status != "COMPLETE" or windows[0].get("full_calendar_window_elapsed") is False:
+    if scan.coverage_status != "COMPLETE" or window.get("full_calendar_window_elapsed") is False:
         preflight.append("materiality handoff requires complete acquired scan coverage")
     if analysis.get("valuation_date") and scan.validity_from != _day(analysis["valuation_date"]):
         preflight.append("materiality scan validity start mismatch")
@@ -2253,8 +2269,8 @@ def _materiality(root, analysis, ref, windows, scans, now, read):
     raw = load_json_object(read(artifact_ref), "existing materiality artifact")
     review = event_materiality_review_from_payload(raw)
     if (review.symbol != analysis["symbol"] or review.scan_sha256 != scan_ref["sha256"]
-            or review.reviewed_at > now or review.reviewed_at < scans[0].retrieved_at
-            or review.scan_from != scans[0].scan_from or review.scan_to != scans[0].scan_to):
+            or review.reviewed_at > now or review.reviewed_at < scan.retrieved_at
+            or review.scan_from != scan.scan_from or review.scan_to != scan.scan_to):
         raise ValueError("MATERIALITY_EXACT_SCAN_OR_AVAILABILITY_MISMATCH")
     verify_authenticated_materiality(root=root, packet=packet,
         model_context=handoff["model_context"], materiality=raw, packet_sha256=ref["sha256"])
