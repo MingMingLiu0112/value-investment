@@ -30,7 +30,14 @@ backups/
 *.viportfolio
 *.m3-decision-addon.xlsx
 evidence-archive/
-.agents/
+# Track only project skill instructions and their Markdown references. Other agent state stays local.
+/.agents/*
+!/.agents/skills/
+/.agents/skills/**
+!/.agents/skills/*/
+!/.agents/skills/*/SKILL.md
+!/.agents/skills/*/references/
+!/.agents/skills/*/references/*.md
 
 # Editor and operating-system files
 .DS_Store
