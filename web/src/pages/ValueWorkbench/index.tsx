@@ -220,7 +220,7 @@ export default function ValueWorkbench() {
             <Link to="/project">价值策略开发进度</Link>
             <Link to="/strategy/hotspot">热点波段开发进度</Link>
             <Link to="/system">当前服务与数据状态</Link>
-            <Link to="/daily">全部研究候选</Link>
+            <a href="#value-candidates">研究候选</a>
           </Space>
           <nav className="workbench-jump" aria-label="价值研究导航">
             <a href="#value-tracking">长期跟踪池</a>
@@ -276,7 +276,11 @@ export default function ValueWorkbench() {
             description={selection.error}
           />
         )}
-        <Button onClick={selection.retry} disabled={selection.loading}>
+        <Button
+          id="value-candidates"
+          onClick={selection.retry}
+          disabled={selection.loading}
+        >
           刷新候选列表
         </Button>
         {!selection.loading && !selection.error && valid && (

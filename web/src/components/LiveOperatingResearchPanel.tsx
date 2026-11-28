@@ -1002,7 +1002,9 @@ export function ParentCashTaskHistoryView({
             实际使用：未核实
             {onContinue &&
               !item.read_only_archive &&
-              (item.terminal_debt_reconciliation ||
+              ((item.terminal_debt_reconciliation &&
+                item.terminal_debt_reconciliation
+                  .legacy_terminal_review_available !== false) ||
                 item.bear_terminal_v3_retry) && (
                 <>
                   {item.terminal_debt_reconciliation && (
@@ -1032,6 +1034,46 @@ export function ParentCashTaskHistoryView({
                   {item.terminal_debt_reconciliation.stress_closing_cny} 元。
                   实际融资余额、偿付及续借仍需母公司同口径证据。
                 </p>
+                {Boolean(
+                  item.terminal_debt_reconciliation.unbound_policy_terms
+                    ?.length,
+                ) && (
+                  <p>
+                    缺少可核验输入的政策项：
+                    {item.terminal_debt_reconciliation.unbound_policy_terms?.join(
+                      "、",
+                    )}
+                  </p>
+                )}
+                {item.terminal_debt_reconciliation.operating_cash_bridge && (
+                  <p>
+                    {
+                      item.terminal_debt_reconciliation.operating_cash_bridge
+                        .forecast_year
+                    }{" "}
+                    年经营现金按已通过的路径复算为
+                    {
+                      item.terminal_debt_reconciliation.operating_cash_bridge
+                        .continuity_cash_cny
+                    }{" "}
+                    元。 被拒草案的经营现金与该路径相差
+                    {
+                      item.terminal_debt_reconciliation.operating_cash_bridge
+                        .gap_cny
+                    }{" "}
+                    元，终值持续性待核。
+                  </p>
+                )}
+                {item.terminal_debt_reconciliation.terminal_arithmetic && (
+                  <p>
+                    依据被拒草案的付息金额复算，压力情景隐含年息
+                    {Number(
+                      item.terminal_debt_reconciliation.terminal_arithmetic
+                        .implied_annual_interest_percent,
+                    ).toFixed(4)}
+                    %。
+                  </p>
+                )}
                 <ul>
                   {item.terminal_debt_reconciliation.annual_path.map((row) => (
                     <li key={row.year}>

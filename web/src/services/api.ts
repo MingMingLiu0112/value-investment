@@ -2287,6 +2287,17 @@ export interface ParentCashTaskHistory {
     terminal_debt_reconciliation?: {
       status: "FINANCING_BALANCE_UNVERIFIED";
       stress_closing_cny: string;
+      legacy_terminal_review_available?: boolean;
+      unbound_policy_terms?: string[];
+      operating_cash_bridge?: {
+        forecast_year: number;
+        continuity_cash_cny: string;
+        gap_cny: string;
+      } | null;
+      terminal_arithmetic?: {
+        interest_outside_cfo_cny: string;
+        implied_annual_interest_percent: string | null;
+      } | null;
       annual_path: {
         year: number;
         opening_debt_cny: string;
