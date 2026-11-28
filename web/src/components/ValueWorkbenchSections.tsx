@@ -1,5 +1,6 @@
 import { Alert, Card } from "antd";
 import { useState } from "react";
+import { Link } from "@umijs/max";
 import type {
   ValueWorkbenchResponse,
   ValueWorkbenchSection,
@@ -369,7 +370,16 @@ function Content({
   if (section.id === "continuity")
     return (
       <p>
-        此公开工作台不读取账户、持仓或成交。没有个人上下文，不展示个人买卖数量或虚构持有结论。
+        公开研究区不读取账户。打开本机组合后可查看已确认持仓、风险和持有逻辑。
+        <Link
+          to={
+            "/portfolio?symbol=" +
+            encodeURIComponent(symbol) +
+            "&strategy=value#portfolio-positions"
+          }
+        >
+          前往持仓跟踪
+        </Link>
       </p>
     );
   if (section.id === "evidence")

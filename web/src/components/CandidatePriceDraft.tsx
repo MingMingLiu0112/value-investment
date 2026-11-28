@@ -440,6 +440,13 @@ export function CandidateAlignmentPanel({
         估值日期：{text(alignment.valuation_date)}；核验时点：
         {text(alignment.evaluated_at)}。
       </p>
+      {object(alignment.materiality_input_adapter) &&
+        alignment.materiality_input_adapter.status ===
+          "EXACT_OWNER_DISTRIBUTION_REVIEW_ENVELOPE_BOUND" &&
+        alignment.materiality_input_adapter.approval_granted === false &&
+        strings(alignment.reason_codes).includes(
+          "EXACT_CANDIDATE_MATERIALITY_REVIEW_NOT_BOUND",
+        ) && <p>公告复核材料已绑定本次估值回执，等待有权复核人签署。</p>}
       {object(distribution) &&
         distribution.reason_code ===
           "IMPLEMENTED_DISTRIBUTION_INCLUDED_IN_MODEL" &&

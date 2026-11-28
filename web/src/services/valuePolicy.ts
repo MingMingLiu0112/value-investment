@@ -145,6 +145,7 @@ export type CandidateAlignmentCheck = {
     | null;
 };
 export type CandidatePriceAlignment = {
+  materiality_input_adapter?: { status?: string; approval_granted?: boolean };
   implemented_distribution_model_inclusion?: unknown;
   schema_version?: string;
   status?: string;
